@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-12">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-13">
 
 <front>
 <title abbrev="Interactive Audio Codec">Definition of the Opus Audio Codec</title>
@@ -53,7 +53,7 @@
 </address>
 </author>
 
-<date day="24" month="April" year="2012" />
+<date day="15" month="May" year="2012" />
 
 <area>General</area>
 
@@ -83,7 +83,7 @@ It is composed of a linear
  prediction (LP)-based <xref target="LPC"/> layer and a Modified Discrete Cosine Transform
  (MDCT)-based <xref target="MDCT"/> layer.
 The main idea behind using two layers is that in speech, linear prediction
- techniques (such as CELP) code low frequencies more efficiently than transform
+ techniques (such as Code-Excited Linear Prediction, or CELP) code low frequencies more efficiently than transform
  (e.g., MDCT) domain techniques, while the situation is reversed for music and
  higher speech frequencies.
 Thus a codec with both layers available can operate over a wider range than
@@ -98,7 +98,7 @@ Only the decoder portion of this software is normative, though a
  significant amount of code is shared by both the encoder and decoder.
 <xref target="conformance"/> provides a decoder conformance test.
 The decoder contains a great deal of integer and fixed-point arithmetic which
- must be performed exactly, including all rounding considerations, so any
+ needs to be performed exactly, including all rounding considerations, so any
  useful specification requires domain-specific symbolic language to adequately
  define these operations.
 Additionally, any
@@ -136,8 +136,8 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
  interpreted as described in RFC 2119 <xref target="rfc2119"></xref>.
 </t>
 <t>
-Even when using floating-point, various operations in the codec require
- bit-exact fixed-point behavior.
+Various operations in the codec require bit-exact fixed-point behavior, even
+ when writing a floating point implementation.
 The notation "Q&lt;n&gt;", where n is an integer, denotes the number of binary
  digits to the right of the decimal point in a fixed-point number.
 For example, a signed Q14 value in a 16-bit word can represent values from
@@ -186,6 +186,41 @@ The sign of x, i.e.,
           ( -1,  x < 0 ,
 sign(x) = <  0,  x == 0 ,
           (  1,  x > 0 .
+]]></artwork>
+</figure>
+</t>
+</section>
+
+<section anchor="abs" toc="exclude" title="abs(x)">
+<t>
+The absolute value of x, i.e.,
+<figure align="center">
+<artwork align="center"><![CDATA[
+abs(x) = sign(x)*x .
+]]></artwork>
+</figure>
+</t>
+</section>
+
+<section anchor="floor" toc="exclude" title="floor(f)">
+<t>
+The largest integer z such that z &lt;= f.
+</t>
+</section>
+
+<section anchor="ceil" toc="exclude" title="ceil(f)">
+<t>
+The smallest integer z such that z &gt;= f.
+</t>
+</section>
+
+<section anchor="round" toc="exclude" title="round(f)">
+<t>
+The integer z nearest to f, with ties rounded towards negative infinity,
+ i.e.,
+<figure align="center">
+<artwork align="center"><![CDATA[
+ round(f) = ceil(f - 0.5) .
 ]]></artwork>
 </figure>
 </t>
@@ -279,7 +314,7 @@ It supports NB, MB, or WB audio and frame sizes from 10&nbsp;ms to 60&nbsp;ms,
  and requires an additional 5&nbsp;ms look-ahead for noise shaping estimation.
 A small additional delay (up to 1.5 ms) may be required for sampling rate
  conversion.
-Like Vorbis and many other modern codecs, SILK is inherently designed for
+Like Vorbis <xref target='Vorbis-website'/> and many other modern codecs, SILK is inherently designed for
  variable-bitrate (VBR) coding, though the encoder can also produce
  constant-bitrate (CBR) streams.
 The version of SILK used in Opus is substantially modified from, and not
@@ -306,10 +341,9 @@ On the other hand, non-speech signals are not always adequately coded using
 <t>
 A "Hybrid" mode allows the use of both layers simultaneously with a frame size
  of 10&nbsp;or 20&nbsp;ms and a SWB or FB audio bandwidth.
-Each frame is split into a low frequency signal and a high frequency signal,
- with a cutoff of 8&nbsp;kHz.
-The LP layer then codes the low frequency signal, followed by the MDCT layer
- coding the high frequency signal.
+The LP layer codes the low frequencies by resampling the signal down to WB.
+The MDCT layer follows, coding the high frequency portion of the signal.
+The cutoff between the two lies at 8&nbsp;kHz, the maximum WB audio bandwidth.
 In the MDCT layer, all bands below 8&nbsp;kHz are discarded, so there is no
  coding redundancy between the two layers.
 </t>
@@ -477,7 +511,8 @@ is required. There are two main reasons to operate in CBR mode:
 
 When low-latency transmission is required over a relatively slow connection, then
 constrained VBR can also be used. This uses VBR in a way that simulates a
-"bit reservoir" and is equivalent to what MP3 and AAC call CBR (i.e. not true
+"bit reservoir" and is equivalent to what MP3 (MPEG 1, Layer 3) and
+AAC (Advanced Audio Coding) call CBR (i.e., not true
 CBR due to the bit reservoir).
 </t>
 </section>
@@ -507,7 +542,8 @@ A single packet may contain multiple audio frames, so long as they share a
 This section describes the possible combinations of these parameters and the
  internal framing used to pack multiple frames into a single packet.
 This framing is not self-delimiting.
-Instead, it assumes that a higher layer (such as UDP or RTP or Ogg or Matroska)
+Instead, it assumes that a higher layer (such as UDP or RTP <xref target='RFC3550'/>
+or Ogg <xref target='RFC3533'/> or Matroska <xref target='Matroska-website'/>)
  will communicate the length, in bytes, of the packet, and it uses this
  information to reduce the framing overhead in the packet itself.
 A decoder implementation MUST support the framing described in this section.
@@ -520,6 +556,10 @@ Support for that variant is OPTIONAL.
 All bit diagrams in this document number the bits so that bit 0 is the most
  significant bit of the first byte, and bit 7 is the least significant.
 Bit 8 is thus the most significant bit of the second byte, etc.
+Well-formed Opus packets obey certain requirements, marked [R1] through [R7]
+ below.
+These are summarized in <xref target="malformed-packets"/> along with
+ appropriate means of handling malformed packets.
 </t>
 
 <section anchor="toc_byte" title="The TOC Byte">
@@ -545,13 +585,13 @@ A description of each of these fields follows.
 <t>
 The top five bits of the TOC byte, labeled "config", encode one of 32 possible
  configurations of operating mode, audio bandwidth, and frame size.
-As described, the LP layer and MDCT layer can be combined in three possible
+As described, the LP (SILK) layer and MDCT (CELT) layer can be combined in three possible
  operating modes:
 <list style="numbers">
-<t>An LP-only mode for use in low bitrate connections with an audio bandwidth
+<t>A SILK-only mode for use in low bitrate connections with an audio bandwidth
  of WB or less,</t>
-<t>A Hybrid (LP+MDCT) mode for SWB or FB speech at medium bitrates, and</t>
-<t>An MDCT-only mode for very low delay speech transmission as well as music
+<t>A Hybrid (SILK+CELT) mode for SWB or FB speech at medium bitrates, and</t>
+<t>A CELT-only mode for very low delay speech transmission as well as music
  transmission (NB to FB).</t>
 </list>
 The 32 possible configurations each identify which one of these operating modes
@@ -598,9 +638,10 @@ This draft refers to a packet as a code 0 packet, code 1 packet, etc., based on
  the value of "c".
 </t>
 
-<t>
+<t anchor="R1">
 A well-formed Opus packet MUST contain at least one byte with the TOC
- information, though the frame(s) within a packet MAY be zero bytes long.
+ information&nbsp;[R1], though the frame(s) within a packet MAY be zero bytes
+ long.
 </t>
 </section>
 
@@ -619,7 +660,7 @@ When a packet contains multiple VBR frames (i.e., code 2 or 3), the compressed
 <list style="symbols">
 <t>0:          No frame (discontinuous transmission (DTX) or lost packet)</t>
 <t>1...251:    Length of the frame in bytes</t>
-<t>252...255:  A second byte is needed. The total length is (len[1]*4)+len[0]</t>
+<t>252...255:  A second byte is needed. The total length is (second_byte*4)+first_byte</t>
 </list>
 </t>
 
@@ -641,12 +682,13 @@ It is also roughly the maximum useful rate of the MDCT layer, as shortly
  on the codebook sizes.
 </t>
 
-<t>
+<t anchor="R2">
 No length is transmitted for the last frame in a VBR packet, or for any of the
  frames in a CBR packet, as it can be inferred from the total size of the
  packet and the size of all other data in the packet.
-However, the length of any individual frame MUST NOT exceed 1275&nbsp;bytes, to
- allow for repacketization by gateways, conference bridges, or other software.
+However, the length of any individual frame MUST NOT exceed
+ 1275&nbsp;bytes&nbsp;[R2], to allow for repacketization by gateways,
+ conference bridges, or other software.
 </t>
 </section>
 
@@ -673,13 +715,13 @@ For code&nbsp;0 packets, the TOC byte is immediately followed by N-1&nbsp;bytes
 </section>
 
 <section title="Code 1: Two Frames in the Packet, Each with Equal Compressed Size">
-<t>
+<t anchor="R3">
 For code 1 packets, the TOC byte is immediately followed by the
  (N-1)/2&nbsp;bytes of compressed data for the first frame, followed by
  (N-1)/2&nbsp;bytes of compressed data for the second frame, as illustrated in
  <xref target="code1_packet"/>.
 The number of payload bytes available for compressed data, N-1, MUST be even
- for all code 1 packets.
+ for all code 1 packets&nbsp;[R3].
 </t>
 <figure anchor="code1_packet" title="A Code 1 Packet" align="center">
 <artwork align="center"><![CDATA[
@@ -701,9 +743,9 @@ The number of payload bytes available for compressed data, N-1, MUST be even
 </section>
 
 <section title="Code 2: Two Frames in the Packet, with Different Compressed Sizes">
-<t>
+<t anchor="R4">
 For code 2 packets, the TOC byte is followed by a one- or two-byte sequence
- indicating the length of the first frame (marked N1 in the figure below),
+ indicating the length of the first frame (marked N1 in <xref target='code2_packet'/>),
  followed by N1 bytes of compressed data for the first frame.
 The remaining N-N1-2 or N-N1-3&nbsp;bytes are the compressed data for the
  second frame.
@@ -712,7 +754,7 @@ A code 2 packet MUST contain enough bytes to represent a valid length.
 For example, a 1-byte code 2 packet is always invalid, and a 2-byte code 2
  packet whose second byte is in the range 252...255 is also invalid.
 The length of the first frame, N1, MUST also be no larger than the size of the
- payload remaining after decoding that length for all code 2 packets.
+ payload remaining after decoding that length for all code 2 packets&nbsp;[R4].
 This makes, for example, a 2-byte code 2 packet with a second byte in the range
  1...251 invalid as well (the only valid 2-byte code 2 packet is one where the
  length of both frames is zero).
@@ -737,17 +779,17 @@ This makes, for example, a 2-byte code 2 packet with a second byte in the range
 </section>
 
 <section title="Code 3: A Signaled Number of Frames in the Packet">
-<t>
+<t anchor="R5">
 Code 3 packets signal the number of frames, as well as additional
  padding, called "Opus padding" to indicate that this padding is added at the
  Opus layer, rather than at the transport layer.
-Code 3 packets MUST have at least 2 bytes.
+Code 3 packets MUST have at least 2 bytes&nbsp;[R6,R7].
 The TOC byte is followed by a byte encoding the number of frames in the packet
- in bits 2 to 7 (marked "M" in the figure below), with bit 1 indicating whether
- or not Opus padding is inserted (marked "p" in the figure below), and bit 0
- indicating VBR (marked "v" in the figure below).
+ in bits 2 to 7 (marked "M" in <xref target='frame_count_byte'/>), with bit 1 indicating whether
+ or not Opus padding is inserted (marked "p" in <xref target='frame_count_byte'/>), and bit 0
+ indicating VBR (marked "v" in <xref target='frame_count_byte'/>).
 M MUST NOT be zero, and the audio duration contained within a packet MUST NOT
- exceed 120&nbsp;ms.
+ exceed 120&nbsp;ms&nbsp;[R5].
 This limits the maximum frame count for any frame size to 48 (for 2.5&nbsp;ms
  frames), with lower limits for longer frame sizes.
 <xref target="frame_count_byte"/> illustrates the layout of the frame count
@@ -769,7 +811,7 @@ Values from 0...254 indicate that 0...254&nbsp;bytes of padding are included,
  in addition to the byte(s) used to indicate the size of the padding.
 If the value is 255, then the size of the additional padding is 254&nbsp;bytes,
  plus the padding value encoded in the next byte.
-There MUST be at least one more byte in the packet in this case.
+There MUST be at least one more byte in the packet in this case&nbsp;[R6,R7].
 The additional padding bytes appear at the end of the packet, and MUST be set
  to zero by the encoder to avoid creating a covert channel.
 The decoder MUST accept any value for the padding bytes, however.
@@ -787,17 +829,17 @@ To add 256 bytes to a packet, set the padding bit to 1, insert two bytes after
 By using the value 255 multiple times, it is possible to create a packet of any
  specific, desired size.
 Let P be the number of header bytes used to indicate the padding size plus the
- total amount of padding bytes (i.e., the total number of bytes added to the
- packet).
-Then P MUST be no more than N-2.
+ number of padding bytes themselves (i.e., P is the total number of bytes added
+ to the packet).
+Then P MUST be no more than N-2&nbsp;[R6,R7].
 </t>
-<t>
-In the CBR case, the compressed length of each frame in bytes is equal to the
- number of remaining bytes in the packet after subtracting the (optional)
- padding, (N-2-P), divided by M.
-This number MUST be a non-negative integer multiple of M.
-The compressed data for all M frames then follows, each of size
- (N-2-P)/M&nbsp;bytes, as illustrated in <xref target="code3cbr_packet"/>.
+<t anchor="R6">
+In the CBR case, let R=N-2-P be the number of bytes remaining in the packet
+ after subtracting the (optional) padding.
+Then the compressed length of each frame in bytes is equal to R/M.
+The value R MUST be a non-negative integer multiple of M&nbsp;[R6].
+The compressed data for all M frames follows, each of size
+ R/M&nbsp;bytes, as illustrated in <xref target="code3cbr_packet"/>.
 </t>
 
 <figure anchor="code3cbr_packet" title="A CBR Code 3 Packet" align="center">
@@ -808,11 +850,11 @@ The compressed data for all M frames then follows, each of size
 | config  |s|1|1|0|p|     M     |  Padding length (Optional)    :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
-:            Compressed frame 1 ((N-2-P)/M bytes)...            :
+:               Compressed frame 1 (R/M bytes)...               :
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
-:            Compressed frame 2 ((N-2-P)/M bytes)...            :
+:               Compressed frame 2 (R/M bytes)...               :
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
@@ -820,7 +862,7 @@ The compressed data for all M frames then follows, each of size
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
-:            Compressed frame M ((N-2-P)/M bytes)...            :
+:               Compressed frame M (R/M bytes)...               :
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 :                  Opus Padding (Optional)...                   |
@@ -828,19 +870,19 @@ The compressed data for all M frames then follows, each of size
 ]]></artwork>
 </figure>
 
-<t>
+<t anchor="R7">
 In the VBR case, the (optional) padding length is followed by M-1 frame
- lengths (indicated by "N1" to "N[M-1]" in the figure below), each encoded in a
+ lengths (indicated by "N1" to "N[M-1]" in <xref target='code3vbr_packet'/>), each encoded in a
  one- or two-byte sequence as described above.
 The packet MUST contain enough data for the M-1 lengths after removing the
  (optional) padding, and the sum of these lengths MUST be no larger than the
- number of bytes remaining in the packet after decoding them.
+ number of bytes remaining in the packet after decoding them&nbsp;[R7].
 The compressed data for all M frames follows, each frame consisting of the
  indicated number of bytes, with the final frame consuming any remaining bytes
  before the final padding, as illustrated in <xref target="code3cbr_packet"/>.
 The number of header bytes (TOC byte, frame count byte, padding length bytes,
- and frame length bytes), plus the length of the first M-1 frames themselves,
- plus the length of the padding MUST be no larger than N, the total size of the
+ and frame length bytes), plus the signaled length of the first M-1 frames themselves,
+ plus the signaled length of the padding MUST be no larger than N, the total size of the
  packet.
 </t>
 
@@ -881,7 +923,7 @@ The number of header bytes (TOC byte, frame count byte, padding length bytes,
 Simplest case, one NB mono 20&nbsp;ms SILK frame:
 </t>
 
-<figure>
+<figure anchor='framing_example_1'>
 <artwork><![CDATA[
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -895,7 +937,7 @@ Simplest case, one NB mono 20&nbsp;ms SILK frame:
 Two FB mono 5&nbsp;ms CELT frames of the same compressed size:
 </t>
 
-<figure>
+<figure anchor='framing_example_2'>
 <artwork><![CDATA[
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -909,7 +951,7 @@ Two FB mono 5&nbsp;ms CELT frames of the same compressed size:
 Two FB mono 20&nbsp;ms Hybrid frames of different compressed size:
 </t>
 
-<figure>
+<figure anchor='framing_example_3'>
 <artwork><![CDATA[
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -925,7 +967,7 @@ Two FB mono 20&nbsp;ms Hybrid frames of different compressed size:
 Four FB stereo 20&nbsp;ms CELT frames of the same compressed size:
 </t>
 
-<figure>
+<figure anchor='framing_example_4'>
 <artwork><![CDATA[
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -936,7 +978,7 @@ Four FB stereo 20&nbsp;ms CELT frames of the same compressed size:
 </figure>
 </section>
 
-<section title="Receiving Malformed Packets">
+<section anchor="malformed-packets" title="Receiving Malformed Packets">
 <t>
 A receiver MUST NOT process packets which violate any of the rules above as
  normal Opus packets.
@@ -948,15 +990,16 @@ Packets which violate these constraints may cause implementations of
 </t>
 <t>
 These constraints are summarized here for reference:
-<list style="symbols">
+<list style="format [R%d]">
 <t>Packets are at least one byte.</t>
 <t>No implicit frame length is larger than 1275 bytes.</t>
 <t>Code 1 packets have an odd total length, N, so that (N-1)/2 is an
  integer.</t>
-<t>Code 2 packets have enough bytes after the TOC for a valid frame length, and
- that length is no larger than the number of bytes remaining in the packet.</t>
-<t>Code 3 packets contain at least one frame, but no more than 120&nbsp;ms of
- audio total.</t>
+<t>Code 2 packets have enough bytes after the TOC for a valid frame
+ length, and that length is no larger than the number of bytes remaining in the
+ packet.</t>
+<t>Code 3 packets contain at least one frame, but no more than 120&nbsp;ms
+ of audio total.</t>
 <t>The length of a CBR code 3 packet, N, is at least two bytes, the number of
  bytes added to indicate the padding size plus the trailing padding bytes
  themselves, P, is no more than N-2, and the frame count, M, satisfies
@@ -1000,7 +1043,8 @@ stream  |  Range  |---+  +---------+    +------------+  /---\  Audio
 
 <section anchor="range-decoder" title="Range Decoder">
 <t>
-Opus uses an entropy coder based on <xref target="range-coding"></xref>,
+Opus uses an entropy coder based on range coding <xref target="range-coding"></xref>
+<xref target="Martin79"></xref>,
 which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
 It is very similar to arithmetic encoding, except that encoding is done with
 digits in any base instead of with bits,
@@ -1069,13 +1113,21 @@ The range decoder maintains an internal state vector composed of the two-tuple
  current range and the actual coded value, minus one, and the size of the
  current range, respectively.
 Both val and rng are 32-bit unsigned integer values.
-The decoder initializes rng to 128 and initializes val to 127 minus the top 7
- bits of the first input octet.
-It saves the remaining bit for use in the renormalization procedure described
- in <xref target="range-decoder-renorm"/>, which the decoder invokes
- immediately after initialization to read additional bits and establish the
- invariant that rng&nbsp;&gt;&nbsp;2**23.
 </t>
+
+<section anchor="range-decoder-init" title="Range Decoder Initialization">
+<t>
+Let b0 be the first input octet (or zero if there are no octets in this Opus
+ frame).
+The decoder initializes rng to 128 and initializes val to
+ (127&nbsp;-&nbsp;(b0&gt;&gt;1)), where (b0&gt;&gt;1) is the top 7 bits of the
+ first input octet.
+It saves the remaining bit, (b0&amp;1), for use in the renormalization
+ procedure described in <xref target="range-decoder-renorm"/>, which the
+ decoder invokes immediately after initialization to read additional bits and
+ establish the invariant that rng&nbsp;&gt;&nbsp;2**23.
+</t>
+</section>
 
 <section anchor="decoding-symbols" title="Decoding Symbols">
 <t>
@@ -1094,7 +1146,7 @@ fs = ft - min(------ + 1, ft) .
               rng/ft
 ]]></artwork>
 </figure>
-The divisions here are exact integer division.
+The divisions here are integer division.
 </t>
 <t>
 The decoder then identifies the symbol in the current context corresponding to
@@ -1150,13 +1202,14 @@ To normalize the range, the decoder repeats the following process, implemented
  by ec_dec_normalize() (entdec.c), until rng&nbsp;&gt;&nbsp;2**23.
 If rng is already greater than 2**23, the entire process is skipped.
 First, it sets rng to (rng&lt;&lt;8).
-Then it reads the next octet of the payload and combines it with the left-over
- bit buffered from the previous octet to form the 8-bit value sym.
-It takes the left-over bit as the high bit (bit 7) of sym, and the top 7 bits
- of the octet it just read as the other 7 bits of sym.
+Then it reads the next octet of the Opus frame and forms an 8-bit value sym,
+ using the left-over bit buffered from the previous octet as the high bit
+ and the top 7 bits of the octet just read as the other 7 bits of sym.
 The remaining bit in the octet just read is buffered for use in the next
  iteration.
 If no more input octets remain, it uses zero bits instead.
+See <xref target="range-decoder-init"/> for the initialization used to process
+ the first octet.
 Then, it sets
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -1427,7 +1480,7 @@ Let
 <figure align="center">
 <artwork align="center">
 <![CDATA[
-r_Q15 = rng >> (l-16) ,
+r_Q15 = rng >> (lg-16) ,
 ]]></artwork>
 </figure>
  so that 32768 &lt;= r_Q15 &lt; 65536, an unsigned Q15 value representing the
@@ -1505,8 +1558,8 @@ An overview of the decoder is given in <xref target="silk_decoder_figure"/>.
 1: Range encoded bitstream
 2: Coded parameters
 3: Pulses, LSBs, and signs
-4: Pitch lags, LTP coefficients
-5: LPC coefficients and gains
+4: Pitch lags, Long-Term Prediction (LTP) coefficients
+5: Linear Prediction Coefficients (LPC) and gains
 6: Decoded signal (mono or mid-side stereo)
 7: Unmixed signal (mono or left-right stereo)
 8: Resampled signal
@@ -1594,7 +1647,7 @@ Figures&nbsp;<xref format="counter" target="silk_mono_60ms_frame"/>
 <ttcol align="center">PDF(s)</ttcol>
 <ttcol align="center">Condition</ttcol>
 
-<c>VAD flags</c>
+<c>Voice Activity Detection (VAD) flags</c>
 <c>{1, 1}/2</c>
 <c/>
 
@@ -1762,6 +1815,8 @@ In order to properly produce LBRR frames under all conditions, an encoder might
  transitions.
 However, the reference implementation opts to disable LBRR frames at the
  transition point for simplicity.
+Since transitions are relatively infrequent in normal usage, this does not have
+ a significant impact on packet loss robustness.
 </t>
 
 <t>
@@ -1805,7 +1860,7 @@ Each SILK frame includes a set of side information that encodes
 <t>The frame type and quantization type (<xref target="silk_frame_type"/>),</t>
 <t>Quantization gains (<xref target="silk_gains"/>),</t>
 <t>Short-term prediction filter coefficients (<xref target="silk_nlsfs"/>),</t>
-<t>An LSF interpolation weight (<xref target="silk_nlsf_interpolation"/>),</t>
+<t>A Line Spectral Frequencies (LSF) interpolation weight (<xref target="silk_nlsf_interpolation"/>),</t>
 <t>
 Long-term prediction filter lags and gains (<xref target="silk_ltp_params"/>),
  and
@@ -1840,11 +1895,11 @@ The quantized excitation signal (see <xref target="silk_excitation"/>) follows
 <c><xref target="silk_gains"/></c>
 <c/>
 
-<c>Normalized LSF Stage 1 Index</c>
+<c>Normalized LSF Stage-1 Index</c>
 <c><xref target="silk_nlsf_stage1_pdfs"/></c>
 <c/>
 
-<c>Normalized LSF Stage 2 Residual</c>
+<c>Normalized LSF Stage-2 Residual</c>
 <c><xref target="silk_nlsf_stage2"/></c>
 <c/>
 
@@ -1969,7 +2024,7 @@ wi0 = i0 + 3*(n/5)
 wi1 = i2 + 3*(n%5)
 ]]></artwork>
 </figure>
- where the division is exact integer division.
+ where the division is integer division.
 The range of these indices is 0 to 14, inclusive.
 Let w[i] be the i'th weight from <xref target="silk_stereo_weights_table"/>.
 Then the two prediction weights, w0_Q13 and w1_Q13, are
@@ -1985,6 +2040,9 @@ w0_Q13 = w_Q13[wi0]
 </figure>
 N.b., w1_Q13 is computed first here, because w0_Q13 depends on it.
 The constant 6554 is approximately 0.1 in Q16.
+Although wi0 and wi1 only have 15 possible values,
+ <xref target="silk_stereo_weights_table"/> contains 16 entries to allow
+ interpolation between entry wi0 and (wi0&nbsp;+&nbsp;1) (and likewise for wi1).
 </t>
 
 <texttable anchor="silk_stereo_weights_table"
@@ -2055,6 +2113,7 @@ In that case, if this flag is zero (indicating that there should be a side
  channel), then Packet Loss Concealment (PLC, see
  <xref target="Packet Loss Concealment"/>) SHOULD be invoked to recover a
  side channel signal.
+Otherwise, the stereo image will collapse.
 </t>
 
 <texttable anchor="silk_mid_only_pdf" title="Mid-only Flag PDF">
@@ -2162,7 +2221,7 @@ The 3 least significant bits are decoded using a uniform PDF:
 </texttable>
 
 <t>
-These 6 bits are combined to form a gain index between 0 and 63.
+These 6 bits are combined to form a value, gain_index, between 0 and 63.
 When the gain for the previous subframe is available, then the current gain is
  limited as follows:
 <figure align="center">
@@ -2173,11 +2232,10 @@ log_gain = max(gain_index, previous_log_gain - 16) .
 This may help some implementations limit the change in precision of their
  internal LTP history.
 The indices which this clamp applies to cannot simply be removed from the
- codebook, because the previous gain index will not be available after packet
- loss.
-This step is skipped after a decoder reset, and in the side channel if the
- previous frame in the side channel was not coded, since there is no previous
- gain index.
+ codebook, because previous_log_gain will not be available after packet loss.
+The clamping is skipped after a decoder reset, and in the side channel if the
+ previous frame in the side channel was not coded, since there is no value for
+ previous_log_gain available.
 It MAY also be skipped after packet loss.
 </t>
 
@@ -2186,7 +2244,7 @@ For subframes which do not have an independent gain (including the first
  subframe of frames not listed as using independent coding above), the
  quantization gain is coded relative to the gain from the previous subframe (in
  the same channel).
-The PDF in <xref target="silk_delta_gain_pdf"/> yields a delta gain index
+The PDF in <xref target="silk_delta_gain_pdf"/> yields a delta_gain_index value
  between 0 and 40, inclusive.
 </t>
 <texttable anchor="silk_delta_gain_pdf"
@@ -2203,8 +2261,8 @@ The following formula translates this index into a quantization gain for the
  current subframe using the gain from the previous subframe:
 <figure align="center">
 <artwork align="center"><![CDATA[
-log_gain = clamp(0, max(2*gain_index - 16,
-                   previous_log_gain + gain_index - 4), 63) .
+log_gain = clamp(0, max(2*delta_gain_index - 16,
+                   previous_log_gain + delta_gain_index - 4), 63) .
 ]]></artwork>
 </figure>
 </t>
@@ -2242,10 +2300,10 @@ A set of normalized Line Spectral Frequency (LSF) coefficients follow the
  Coding (LPC) coefficients for the current SILK frame.
 Once decoded, the normalized LSFs form an increasing list of Q15 values between
  0 and 1.
-These represent the interleaved zeros on the unit circle between 0 and pi
- (hence "normalized") in the standard decomposition of the LPC filter into a
- symmetric part and an anti-symmetric part (P and Q in
- <xref target="silk_nlsf2lpc"/>).
+These represent the interleaved zeros on the upper half of the unit circle
+ (between 0 and pi, hence "normalized") in the standard decomposition
+ <xref target="line-spectral-pairs"/> of the LPC filter into a symmetric part
+ and an anti-symmetric part (P and Q in <xref target="silk_nlsf2lpc"/>).
 Because of non-linear effects in the decoding process, an implementation SHOULD
  match the fixed-point arithmetic described in this section exactly.
 An encoder SHOULD also use the same process.
@@ -2266,7 +2324,7 @@ After reconstructing the normalized LSFs
 All of this is necessary to ensure the reconstruction process is stable.
 </t>
 
-<section anchor="silk_nlsf_stage1" title="Stage 1 Normalized LSF Decoding">
+<section anchor="silk_nlsf_stage1" title="Normalized LSF Stage 1 Decoding">
 <t>
 The first VQ stage uses a 32-element codebook, coded with one of the PDFs in
  <xref target="silk_nlsf_stage1_pdfs"/>, depending on the audio bandwidth and
@@ -2282,7 +2340,7 @@ The actual codebook elements are listed in
 </t>
 
 <texttable anchor="silk_nlsf_stage1_pdfs"
- title="PDFs for Normalized LSF Index Stage-1 Decoding">
+ title="PDFs for Normalized LSF Stage-1 Index Decoding">
 <ttcol align="left">Audio Bandwidth</ttcol>
 <ttcol align="left">Signal Type</ttcol>
 <ttcol align="left">PDF</ttcol>
@@ -2318,7 +2376,7 @@ The actual codebook elements are listed in
 
 </section>
 
-<section anchor="silk_nlsf_stage2" title="Stage 2 Normalized LSF Decoding">
+<section anchor="silk_nlsf_stage2" title="Normalized LSF Stage 2 Decoding">
 <t>
 A total of 16 PDFs are available for the LSF residual in the second stage: the
  8 (a...h) for NB and MB frames given in
@@ -2332,7 +2390,7 @@ Which PDF is used for which coefficient is driven by the index, I1,
 </t>
 
 <texttable anchor="silk_nlsf_stage2_nbmb_pdfs"
- title="PDFs for NB/MB Normalized LSF Index Stage-2 Decoding">
+ title="PDFs for NB/MB Normalized LSF Stage-2 Index Decoding">
 <ttcol align="left">Codebook</ttcol>
 <ttcol align="left">PDF</ttcol>
 <c>a</c> <c>{1,   1,   1,  15, 224,  11,   1,   1,   1}/256</c>
@@ -2346,7 +2404,7 @@ Which PDF is used for which coefficient is driven by the index, I1,
 </texttable>
 
 <texttable anchor="silk_nlsf_stage2_wb_pdfs"
- title="PDFs for WB Normalized LSF Index Stage-2 Decoding">
+ title="PDFs for WB Normalized LSF Stage-2 Index Decoding">
 <ttcol align="left">Codebook</ttcol>
 <ttcol align="left">PDF</ttcol>
 <c>i</c> <c>{1,   1,   1,   9, 232,   9,   1,   1,   1}/256</c>
@@ -2360,7 +2418,7 @@ Which PDF is used for which coefficient is driven by the index, I1,
 </texttable>
 
 <texttable anchor="silk_nlsf_nbmb_stage2_cb_sel"
- title="Codebook Selection for NB/MB Normalized LSF Index Stage 2 Decoding">
+ title="Codebook Selection for NB/MB Normalized LSF Stage-2 Index Decoding">
 <ttcol>I1</ttcol>
 <ttcol>Coefficient</ttcol>
 <c/>
@@ -2432,7 +2490,7 @@ Which PDF is used for which coefficient is driven by the index, I1,
 </texttable>
 
 <texttable anchor="silk_nlsf_wb_stage2_cb_sel"
- title="Codebook Selection for WB Normalized LSF Index Stage 2 Decoding">
+ title="Codebook Selection for WB Normalized LSF Stage-2 Index Decoding">
 <ttcol>I1</ttcol>
 <ttcol>Coefficient</ttcol>
 <c/>
@@ -2754,7 +2812,7 @@ w2_Q18[k] = (1024/(cb1_Q8[k] - cb1_Q8[k-1])
 </artwork>
 </figure>
  where cb1_Q8[-1]&nbsp;=&nbsp;0 and cb1_Q8[d_LPC]&nbsp;=&nbsp;256, and the
- division is exact integer division.
+ division is integer division.
 This is reduced to an unsquared, Q9 value using the following square-root
  approximation:
 <figure align="center">
@@ -2777,7 +2835,7 @@ The reference implementation already requires code to compute these weights on
 </t>
 
 <texttable anchor="silk_nlsf_nbmb_codebook"
-           title="Codebook Vectors for NB/MB Normalized LSF Stage 1 Decoding">
+           title="NB/MB Normalized LSF Stage-1 Codebook Vectors">
 <ttcol>I1</ttcol>
 <ttcol>Codebook (Q8)</ttcol>
 <c/>
@@ -2849,7 +2907,7 @@ The reference implementation already requires code to compute these weights on
 </texttable>
 
 <texttable anchor="silk_nlsf_wb_codebook"
-           title="Codebook Vectors for WB Normalized LSF Stage 1 Decoding">
+           title="WB Normalized LSF Stage-1 Codebook Vectors">
 <ttcol>I1</ttcol>
 <ttcol>Codebook (Q8)</ttcol>
 <c/>
@@ -2930,11 +2988,11 @@ NLSF_Q15[k] = clamp(0,
                (cb1_Q8[k]<<7) + (res_Q10[k]<<14)/w_Q9[k], 32767) ,
 ]]></artwork>
 </figure>
- where the division is exact integer division.
+ where the division is integer division.
 However, nothing in either the reconstruction process or the
  quantization process in the encoder thus far guarantees that the coefficients
  are monotonically increasing and separated well enough to ensure a stable
- filter.
+ filter <xref target="Kabal86"/>.
 When using the reference encoder, roughly 2% of frames violate this constraint.
 The next section describes a stabilization procedure used to make these
  guarantees.
@@ -3001,16 +3059,16 @@ For all other values of i, both NLSF_Q15[i-1] and NLSF_Q15[i] are updated as
  follows:
 <figure align="center">
 <artwork align="center"><![CDATA[
-                                      i-1
-                                      __
- min_center_Q15 = (NDeltaMin[i]>>1) + \  NDeltaMin[k]
-                                      /_
-                                      k=0
-                                             d_LPC
-                                              __
- max_center_Q15 = 32768 - (NDeltaMin[i]>>1) - \  NDeltaMin[k]
-                                              /_
-                                             k=i+1
+                                          i-1
+                                          __
+ min_center_Q15 = (NDeltaMin_Q15[i]>>1) + \  NDeltaMin_Q15[k]
+                                          /_
+                                          k=0
+                                                 d_LPC
+                                                  __
+ max_center_Q15 = 32768 - (NDeltaMin_Q15[i]>>1) - \  NDeltaMin_Q15[k]
+                                                  /_
+                                                 k=i+1
 center_freq_Q15 = clamp(min_center_Q15[i],
                         (NLSF_Q15[i-1] + NLSF_Q15[i] + 1)>>1,
                         max_center_Q15[i])
@@ -3344,7 +3402,7 @@ sc_Q16[0] = 65470 - -------------------------- ,
                     (maxabs_Q12 * (k+1)) >> 2
 ]]></artwork>
 </figure>
- where the division here is exact integer division.
+ where the division here is integer division.
 This is an approximation of the chirp factor needed to reduce the target
  coefficient to 32767, though it is both less than 0.999 and, for
  k&nbsp;&gt;&nbsp;0 when maxabs_Q12 is much greater than 32767, still slightly
@@ -3527,11 +3585,11 @@ Otherwise, a round of bandwidth expansion is applied using the same procedure
  as in <xref target="silk_lpc_range_limit"/>, with
 <figure align="center">
 <artwork align="center"><![CDATA[
-sc_Q16[0] = 65536 - i*(i+9) .
+sc_Q16[0] = 65536 - (2<<i) .
 ]]></artwork>
 </figure>
-If, after the 18th round, the filter still fails these stability checks, then
- a_Q12[k] is set to 0 for all k.
+During the 15th round, sc_Q16[0] becomes 0 in the above equation, so a_Q12[k]
+ is set to 0 for all k, guaranteeing a stable filter.
 </t>
 </section>
 
@@ -4762,6 +4820,78 @@ When the decoder is reset, any samples remaining in the resampling buffer
 <section title="CELT Decoder">
 
 <t>
+The CELT layer of Opus is based on the Modified Discrete Cosine Transform
+<xref target='MDCT'/> with partially overlapping windows of 5 to 22.5 ms.
+The main principle behind CELT is that the MDCT spectrum is divided into
+bands that (roughly) follow the Bark scale, i.e., the scale of the ear's
+critical bands. The normal CELT layer uses 21 of those bands, though Opus
+ Custom (see <xref target="opus-custom"/>) may use a different number of bands.
+A band can contain as little as one MDCT bin per channel, and as many as 176
+bins per channel, as detailed in <xref target="celt_band_sizes"/>.
+In each band, the gain (energy) is coded separately from
+the shape of the spectrum. Coding the gain explicitly makes it easy to
+preserve the spectral envelope of the signal. The remaining unit-norm shape
+vector is encoded using a Pyramid Vector Quantizer (PVQ)&nbsp;<xref target='PVQ-decoder'/>.
+</t>
+
+<texttable anchor="celt_band_sizes"
+ title="MDCT Bins Per Channel Per Band for Each Frame Size">
+<ttcol>Frame Size:</ttcol>
+<ttcol align="right">2.5&nbsp;ms</ttcol>
+<ttcol align="right">5&nbsp;ms</ttcol>
+<ttcol align="right">10&nbsp;ms</ttcol>
+<ttcol align="right">20&nbsp;ms</ttcol>
+<ttcol align="right">Start Frequency</ttcol>
+<ttcol align="right">Stop Frequency</ttcol>
+<c>Band</c> <c>Bins:</c> <c/> <c/> <c/> <c/> <c/>
+ <c>0</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>     <c>0&nbsp;Hz</c>   <c>200&nbsp;Hz</c>
+ <c>1</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>   <c>200&nbsp;Hz</c>   <c>400&nbsp;Hz</c>
+ <c>2</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>   <c>400&nbsp;Hz</c>   <c>600&nbsp;Hz</c>
+ <c>3</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>   <c>600&nbsp;Hz</c>   <c>800&nbsp;Hz</c>
+ <c>4</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>   <c>800&nbsp;Hz</c>  <c>1000&nbsp;Hz</c>
+ <c>5</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>  <c>1000&nbsp;Hz</c>  <c>1200&nbsp;Hz</c>
+ <c>6</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>  <c>1200&nbsp;Hz</c>  <c>1400&nbsp;Hz</c>
+ <c>7</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>  <c>1400&nbsp;Hz</c>  <c>1600&nbsp;Hz</c>
+ <c>8</c>  <c>2</c>  <c>4</c>  <c>8</c>  <c>16</c>  <c>1600&nbsp;Hz</c>  <c>2000&nbsp;Hz</c>
+ <c>9</c>  <c>2</c>  <c>4</c>  <c>8</c>  <c>16</c>  <c>2000&nbsp;Hz</c>  <c>2400&nbsp;Hz</c>
+<c>10</c>  <c>2</c>  <c>4</c>  <c>8</c>  <c>16</c>  <c>2400&nbsp;Hz</c>  <c>2800&nbsp;Hz</c>
+<c>11</c>  <c>2</c>  <c>4</c>  <c>8</c>  <c>16</c>  <c>2800&nbsp;Hz</c>  <c>3200&nbsp;Hz</c>
+<c>12</c>  <c>4</c>  <c>8</c> <c>16</c>  <c>32</c>  <c>3200&nbsp;Hz</c>  <c>4000&nbsp;Hz</c>
+<c>13</c>  <c>4</c>  <c>8</c> <c>16</c>  <c>32</c>  <c>4000&nbsp;Hz</c>  <c>4800&nbsp;Hz</c>
+<c>14</c>  <c>4</c>  <c>8</c> <c>16</c>  <c>32</c>  <c>4800&nbsp;Hz</c>  <c>5600&nbsp;Hz</c>
+<c>15</c>  <c>6</c> <c>12</c> <c>24</c>  <c>48</c>  <c>5600&nbsp;Hz</c>  <c>6800&nbsp;Hz</c>
+<c>16</c>  <c>6</c> <c>12</c> <c>24</c>  <c>48</c>  <c>6800&nbsp;Hz</c>  <c>8000&nbsp;Hz</c>
+<c>17</c>  <c>8</c> <c>16</c> <c>32</c>  <c>64</c>  <c>8000&nbsp;Hz</c>  <c>9600&nbsp;Hz</c>
+<c>18</c> <c>12</c> <c>24</c> <c>48</c>  <c>96</c>  <c>9600&nbsp;Hz</c> <c>12000&nbsp;Hz</c>
+<c>19</c> <c>18</c> <c>36</c> <c>72</c> <c>144</c> <c>12000&nbsp;Hz</c> <c>15600&nbsp;Hz</c>
+<c>20</c> <c>22</c> <c>44</c> <c>88</c> <c>176</c> <c>15600&nbsp;Hz</c> <c>20000&nbsp;Hz</c>
+</texttable>
+
+<t>
+Transients are notoriously difficult for transform codecs to code.
+CELT uses two different strategies for them:
+<list style="numbers">
+<t>Using multiple smaller MDCTs instead of a single large MDCT, and</t>
+<t>Dynamic time-frequency resolution changes (See <xref target='tf-change'/>).</t>
+</list>
+To improve quality on highly tonal and periodic signals, CELT includes
+a prefilter/postfilter combination. The prefilter on the encoder side
+attenuates the signal's harmonics. The postfilter on the decoder side
+restores the original gain of the harmonics, while shaping the coding noise
+to roughly follow the harmonics. Such noise shaping reduces the perception
+of the noise.
+</t>
+
+<t>
+When coding a stereo signal, three coding methods are available:
+<list style="symbols">
+<t>mid-side stereo: encodes the mean and the difference of the left and right channels,</t>
+<t>intensity stereo: only encodes the mean of the left and right channels (discards the difference),</t>
+<t>dual stereo: encodes the left and right channels separately.</t>
+</list>
+</t>
+
+<t>
 An overview of the decoder is given in <xref target="celt-decoder-overview"/>.
 </t>
 
@@ -4798,7 +4928,7 @@ The decoder is based on the following symbols and sets of symbols:
 </t>
 
 <texttable anchor="celt_symbols"
- title="Order of the symbols in the CELT section of the bitstream">
+ title="Order of the Symbols in the CELT Section of the Bitstream">
 <ttcol align="center">Symbol(s)</ttcol>
 <ttcol align="center">PDF</ttcol>
 <ttcol align="center">Condition</ttcol>
@@ -4827,20 +4957,22 @@ The decoder is based on the following symbols and sets of symbols:
 
 <t>
 The decoder extracts information from the range-coded bitstream in the order
-described in the figure above. In some circumstances, it is
+described in <xref target='celt_symbols'/>. In some circumstances, it is
 possible for a decoded value to be out of range due to a very small amount of redundancy
 in the encoding of large integers by the range coder.
 In that case, the decoder should assume there has been an error in the coding,
 decoding, or transmission and SHOULD take measures to conceal the error and/or report
-to the application that a problem has occurred.
+to the application that a problem has occurred. Such out of range errors cannot occur
+in the SILK layer.
 </t>
 
 <section anchor="transient-decoding" title="Transient Decoding">
 <t>
-The "transient" flag encoded in the bitstream has a probability of 1/8.
+The "transient" flag indicates whether the frame uses a single long MDCT or several short MDCTs.
 When it is set, then the MDCT coefficients represent multiple
 short MDCTs in the frame. When not set, the coefficients represent a single
-long MDCT for the frame. In addition to the global transient flag is a per-band
+long MDCT for the frame. The flag is encoded in the bitstream with a probability of 1/8.
+In addition to the global transient flag is a per-band
 binary flag to change the time-frequency (tf) resolution independently in each band. The
 change in tf resolution is defined in tf_select_table[][] in celt.c and depends
 on the frame size, whether the transient flag is set, and the value of tf_select.
@@ -4855,7 +4987,7 @@ tf_change flags.
 <t>
 It is important to quantize the energy with sufficient resolution because
 any energy quantization error cannot be compensated for at a later
-stage. Regardless of the resolution used for encoding the shape of a band,
+stage. Regardless of the resolution used for encoding the spectral shape of a band,
 it is perceptually important to preserve the energy in each band. CELT uses a
 three-step coarse-fine-fine strategy for encoding the energy in the base-2 log
 domain, as implemented in quant_bands.c</t>
@@ -4869,7 +5001,7 @@ bands). The part of the prediction that is based on the
 previous frame can be disabled, creating an "intra" frame where the energy
 is coded without reference to prior frames. The decoder first reads the intra flag
 to determine what prediction is used.
-The 2-D z-transform of
+The 2-D z-transform <xref target='z-transform'/> of
 the prediction filter is:
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -4887,10 +5019,12 @@ The time-domain prediction is based on the final fine quantization of the previo
 frame, while the frequency domain (within the current frame) prediction is based
 on coarse quantization only (because the fine quantization has not been computed
 yet). The prediction is clamped internally so that fixed point implementations with
-limited dynamic range do not suffer desynchronization.
+limited dynamic range always remain in the same state as floating point implementations.
 We approximate the ideal
 probability distribution of the prediction error using a Laplace distribution
-with separate parameters for each frame size in intra- and inter-frame modes. The
+with separate parameters for each frame size in intra- and inter-frame modes. These
+parameters are held in the e_prob_model table in quant_bands.c.
+The
 coarse energy quantization is performed by unquant_coarse_energy() and
 unquant_coarse_energy_impl() (quant_bands.c). The encoding of the Laplace-distributed values is
 implemented in ec_laplace_decode() (laplace.c).
@@ -4924,21 +5058,6 @@ This is implemented in unquant_energy_finalise() (quant_bands.c).
 </section> <!-- Energy decode -->
 
 <section anchor="allocation" title="Bit Allocation">
-<t>Many codecs transmit significant amounts of side information for
-the purpose of controlling bit allocation within a frame. Often this
-side information controls bit usage indirectly and must be carefully
-selected to achieve the desired rate constraints.</t>
-
-<t>The band-energy normalized structure of Opus MDCT mode ensures that a
-constant bit allocation for the shape content of a band will result in a
-roughly constant tone to noise ratio, which provides for fairly consistent
-perceptual performance. The effectiveness of this approach is the result of
-two factors: that the band energy, which is understood to be perceptually
-important on its own, is always preserved regardless of the shape precision, and because
-the constant tone-to-noise ratio implies a constant intra-band noise to masking ratio.
-Intra-band masking is the strongest of the perceptual masking effects. This structure
-means that the ideal allocation is more consistent from frame to frame than
-it is for other codecs without an equivalent structure.</t>
 
 <t>Because the bit allocation drives the decoding of the range-coder
 stream, it MUST be recovered exactly so that identical coding decisions are
@@ -4946,16 +5065,37 @@ made in the encoder and decoder. Any deviation from the reference's resulting
 bit allocation will result in corrupted output, though implementers are
 free to implement the procedure in any way which produces identical results.</t>
 
-<t>Because all of the information required to decode a frame must be derived
-from that frame alone in order to retain robustness to packet loss, the
-overhead of explicitly signaling the allocation would be considerable,
-especially for low-latency (small frame size) applications,
-even though the allocation is relatively static.</t>
+<t>The per-band gain-shape structure of the CELT layer ensures that using
+ the same number of bits for the spectral shape of a band in every frame will
+ result in a roughly constant signal-to-noise ratio in that band.
+This results in coding noise that has the same spectral envelope as the signal.
+The masking curve produced by a standard psychoacoustic model also closely
+ follows the spectral envelope of the signal.
+This structure means that the ideal allocation is more consistent from frame to
+ frame than it is for other codecs without an equivalent structure, and that a
+ fixed allocation provides fairly consistent perceptual
+ performance&nbsp;<xref target='Valin2010'/>.</t>
+
+<t>Many codecs transmit significant amounts of side information to control the
+ bit allocation within a frame.
+Often this control is only indirect, and must be exercised carefully to
+ achieve the desired rate constraints.
+The CELT layer, however, can adapt over a very wide range of rates, and thus
+ has a large number of codebooks sizes to choose from for each band.
+Explicitly signaling the size of each of these codebooks would impose
+ considerable overhead, even though the allocation is relatively static from
+ frame to frame.
+This is because all of the information required to compute these codebook sizes
+ must be derived from a single frame by itself, in order to retain robustness
+ to packet loss, so the signaling cannot take advantage of knowledge of the
+ allocation in neighboring frames.
+This problem is exacerbated in low-latency (small frame size) applications,
+ which would include this overhead in every frame.</t>
 
 <t>For this reason, in the MDCT mode Opus uses a primarily implicit bit
 allocation. The available bitstream capacity is known in advance to both
 the encoder and decoder without additional signaling, ultimately from the
-packet sizes expressed by a higher-level protocol. Using this information
+packet sizes expressed by a higher-level protocol. Using this information,
 the codec interpolates an allocation from a hard-coded table.</t>
 
 <t>While the band-energy structure effectively models intra-band masking,
@@ -4983,8 +5123,8 @@ will be allocated no shape bits at all.</t>
 
 <t>In stereo mode there are two additional parameters
 potentially coded as part of the allocation procedure: a parameter to allow the
-selective elimination of allocation for the 'side' in jointly coded bands,
-and a flag to deactivate joint coding. These values are not signaled if
+selective elimination of allocation for the 'side' (i.e., intensity stereo) in jointly coded bands,
+and a flag to deactivate joint coding (i.e., dual stereo). These values are not signaled if
 they would be meaningless in the overall context of the allocation.</t>
 
 <t>Because every signaled adjustment increases overhead and implementation
@@ -5010,6 +5150,51 @@ controlling the use of remaining bits at the end of the frame, and a
 remaining balance of unallocated space, which is usually zero except
 at very high rates.</t>
 
+<t>
+The "static" bit allocation (in 1/8 bits) for a quality q, excluding the minimums, maximums,
+tilt and boosts, is equal to channels*N*alloc[band][q]&lt;&lt;LM&gt;&gt;2, where
+alloc[][] is given in <xref target="static_alloc"/> and LM=log2(frame_size/120). The allocation
+is obtained by linearly interpolating between two values of q (in steps of 1/64) to find the
+highest allocation that does not exceed the number of bits remaining.
+</t>
+
+<texttable anchor="static_alloc"
+ title="CELT Static Allocation Table">
+ <preamble>Rows indicate the MDCT bands, columns are the different quality (q) parameters. The units are 1/32 bit per MDCT bin.</preamble>
+<ttcol align="right">0</ttcol>
+<ttcol align="right">1</ttcol>
+<ttcol align="right">2</ttcol>
+<ttcol align="right">3</ttcol>
+<ttcol align="right">4</ttcol>
+<ttcol align="right">5</ttcol>
+<ttcol align="right">6</ttcol>
+<ttcol align="right">7</ttcol>
+<ttcol align="right">8</ttcol>
+<ttcol align="right">9</ttcol>
+<ttcol align="right">10</ttcol>
+<c>0</c><c>90</c><c>110</c><c>118</c><c>126</c><c>134</c><c>144</c><c>152</c><c>162</c><c>172</c><c>200</c>
+<c>0</c><c>80</c><c>100</c><c>110</c><c>119</c><c>127</c><c>137</c><c>145</c><c>155</c><c>165</c><c>200</c>
+<c>0</c><c>75</c><c>90</c><c>103</c><c>112</c><c>120</c><c>130</c><c>138</c><c>148</c><c>158</c><c>200</c>
+<c>0</c><c>69</c><c>84</c><c>93</c><c>104</c><c>114</c><c>124</c><c>132</c><c>142</c><c>152</c><c>200</c>
+<c>0</c><c>63</c><c>78</c><c>86</c><c>95</c><c>103</c><c>113</c><c>123</c><c>133</c><c>143</c><c>200</c>
+<c>0</c><c>56</c><c>71</c><c>80</c><c>89</c><c>97</c><c>107</c><c>117</c><c>127</c><c>137</c><c>200</c>
+<c>0</c><c>49</c><c>65</c><c>75</c><c>83</c><c>91</c><c>101</c><c>111</c><c>121</c><c>131</c><c>200</c>
+<c>0</c><c>40</c><c>58</c><c>70</c><c>78</c><c>85</c><c>95</c><c>105</c><c>115</c><c>125</c><c>200</c>
+<c>0</c><c>34</c><c>51</c><c>65</c><c>72</c><c>78</c><c>88</c><c>98</c><c>108</c><c>118</c><c>198</c>
+<c>0</c><c>29</c><c>45</c><c>59</c><c>66</c><c>72</c><c>82</c><c>92</c><c>102</c><c>112</c><c>193</c>
+<c>0</c><c>20</c><c>39</c><c>53</c><c>60</c><c>66</c><c>76</c><c>86</c><c>96</c><c>106</c><c>188</c>
+<c>0</c><c>18</c><c>32</c><c>47</c><c>54</c><c>60</c><c>70</c><c>80</c><c>90</c><c>100</c><c>183</c>
+<c>0</c><c>10</c><c>26</c><c>40</c><c>47</c><c>54</c><c>64</c><c>74</c><c>84</c><c>94</c><c>178</c>
+<c>0</c><c>0</c><c>20</c><c>31</c><c>39</c><c>47</c><c>57</c><c>67</c><c>77</c><c>87</c><c>173</c>
+<c>0</c><c>0</c><c>12</c><c>23</c><c>32</c><c>41</c><c>51</c><c>61</c><c>71</c><c>81</c><c>168</c>
+<c>0</c><c>0</c><c>0</c><c>15</c><c>25</c><c>35</c><c>45</c><c>55</c><c>65</c><c>75</c><c>163</c>
+<c>0</c><c>0</c><c>0</c><c>4</c><c>17</c><c>29</c><c>39</c><c>49</c><c>59</c><c>69</c><c>158</c>
+<c>0</c><c>0</c><c>0</c><c>0</c><c>12</c><c>23</c><c>33</c><c>43</c><c>53</c><c>63</c><c>153</c>
+<c>0</c><c>0</c><c>0</c><c>0</c><c>1</c><c>16</c><c>26</c><c>36</c><c>46</c><c>56</c><c>148</c>
+<c>0</c><c>0</c><c>0</c><c>0</c><c>0</c><c>10</c><c>15</c><c>20</c><c>30</c><c>45</c><c>129</c>
+<c>0</c><c>0</c><c>0</c><c>0</c><c>0</c><c>1</c><c>1</c><c>1</c><c>1</c><c>20</c><c>104</c>
+</texttable>
+
 <t>The maximum allocation vector is an approximation of the maximum space
 that can be used by each band for a given mode. The value is
 approximate because the shape encoding is variable rate (due
@@ -5018,8 +5203,11 @@ maximum achievable quality in a band while setting it too high
 may result in waste: bitstream capacity available at the end
 of the frame which can not be put to any use. The maximums
 specified by the codec reflect the average maximum. In the reference
-the maximums are provided in partially computed form, in order to fit in less
-memory as a static table (see cache_caps50[] in static_modes_float.h). Implementations are expected
+implementation, the maximums in bit/sample are precomputed in a static table
+(see cache_caps50[] in static_modes_float.h) for each band,
+for each value of LM, and for both mono and stereo.
+
+Implementations are expected
 to simply use the same table data, but the procedure for generating
 this table is included in rate.c as part of compute_pulse_cache().</t>
 
@@ -5027,22 +5215,22 @@ this table is included in rate.c as part of compute_pulse_cache().</t>
 set nbBands to the maximum number of bands for this mode, and stereo to
 zero if stereo is not in use and one otherwise. For each band set N
 to the number of MDCT bins covered by the band (for one channel), set LM
-to the shift value for the frame size (e.g. 0 for 120, 1 for 240, 3 for 480),
+to the shift value for the frame size,
 then set i to nbBands*(2*LM+stereo). Then set the maximum for the band to
 the i-th index of cache.caps + 64 and multiply by the number of channels
 in the current frame (one or two) and by N, then divide the result by 4
-using truncating integer division. The resulting vector will be called
+using integer division. The resulting vector will be called
 cap[]. The elements fit in signed 16-bit integers but do not fit in 8 bits.
 This procedure is implemented in the reference in the function init_caps() in celt.c.
 </t>
 
 <t>The band boosts are represented by a series of binary symbols which
-are coded with very low probability. Each band can potentially be boosted
+are entropy coded with very low probability. Each band can potentially be boosted
 multiple times, subject to the frame actually having enough room to obey
 the boost and having enough room to code the boost symbol. The default
-coding cost for a boost starts out at six bits, but subsequent boosts
+coding cost for a boost starts out at six bits (probability p=1/64), but subsequent boosts
 in a band cost only a single bit and every time a band is boosted the
-initial cost is reduced (down to a minimum of two). Since the initial
+initial cost is reduced (down to a minimum of two bits, or p=1/4). Since the initial
 cost of coding a boost is 6 bits, the coding cost of the boost symbols when
 completely unused is 0.48 bits/frame for a 21 band mode (21*-log2(1-1/2**6)).</t>
 
@@ -5065,14 +5253,14 @@ total_bits, and set dynalloc_loop_log to 1. When the while loop finishes
 boost contains the boost for this band. If boost is non-zero and dynalloc_logp
 is greater than 2, decrease dynalloc_logp.  Once this process has been
 executed on all bands, the band boosts have been decoded. This procedure
-is implemented around line 2469 of celt.c.</t>
+is implemented around line 2474 of celt.c.</t>
 
 <t>At very low rates it is possible that there won't be enough available
 space to execute the inner loop even once. In these cases band boost
 is not possible but its overhead is completely eliminated. Because of the
 high cost of band boost when activated, a reasonable encoder should not be
 using it at very low rates. The reference implements its dynalloc decision
-logic around line 1299 of celt.c.</t>
+logic around line 1304 of celt.c.</t>
 
 <t>The allocation trim is a integer value from 0-10. The default value of
 5 indicates no trim. The trim parameter is entropy coded in order to
@@ -5081,7 +5269,7 @@ lower the coding cost of less extreme adjustments. Values lower than
 bias it towards higher frequencies. Like other signaled parameters, signaling
 of the trim is gated so that it is not included if there is insufficient space
 available in the bitstream. To decode the trim, first set
-the trim value to 5, then iff the count of decoded 8th bits so far (ec_tell_frac)
+the trim value to 5, then if and only if the count of decoded 8th bits so far (ec_tell_frac)
 plus 48 (6 bits) is less than or equal to the total frame size in 8th
 bits minus total_boost (a product of the above band boost procedure),
 decode the trim value using the PDF in <xref target="celt_trim_pdf"/>.</t>
@@ -5104,14 +5292,14 @@ bit is reserved for dual stereo if available.</t>
 'total' is set to the remaining available 8th bits, computed by taking the
 size of the coded frame times 8 and subtracting ec_tell_frac(). From this value, one (8th bit)
 is subtracted to ensure that the resulting allocation will be conservative. 'anti_collapse_rsv'
-is set to 8 (8th bits) iff the frame is a transient, LM is greater than 1, and total is
+is set to 8 (8th bits) if and only if the frame is a transient, LM is greater than 1, and total is
 greater than or equal to (LM+2) * 8. Total is then decremented by anti_collapse_rsv and clamped
 to be equal to or greater than zero. 'skip_rsv' is set to 8 (8th bits) if total is greater than
 8, otherwise it is zero. Total is then decremented by skip_rsv. This reserves space for the
 final skipping flag.</t>
 
 <t>If the current frame is stereo, intensity_rsv is set to the conservative log2 in 8th bits
-of the number of coded bands for this frame (given by the table LOG2_FRAC_TABLE). If
+of the number of coded bands for this frame (given by the table LOG2_FRAC_TABLE in rate.c). If
 intensity_rsv is greater than total then intensity_rsv is set to zero. Otherwise total is
 decremented by intensity_rsv, and if total is still greater than 8, dual_stereo_rsv is
 set to 8 and total is decremented by dual_stereo_rsv.</t>
@@ -5240,7 +5428,7 @@ where N is the number of dimensions, K is the number of pulses, and f_r depends 
 the value of the "spread" parameter in the bit-stream.
 </t>
 
-<texttable anchor="spread values" title="Spreading values">
+<texttable anchor="spread values" title="Spreading Values">
 <ttcol>Spread value</ttcol>
 <ttcol>f_r</ttcol>
  <c>0</c> <c>infinite (no rotation)</c>
@@ -5274,10 +5462,11 @@ R(x_N-2, X_N-1), ..., R(x_1, x_2).
 
 <t>
 If the decoded vector represents more
-than one time block, then the following process is applied separately on each time block.
+than one time block, then this spreading process is applied separately on each time block.
 Also, if each block represents 8 samples or more, then another N-D rotation, by
 (pi/2-theta), is applied <spanx style="emph">before</spanx> the rotation described above. This
-extra rotation is applied in an interleaved manner with a stride equal to round(sqrt(N/nb_blocks))
+extra rotation is applied in an interleaved manner with a stride equal to round(sqrt(N/nb_blocks)),
+i.e., it is applied independently for each set of sample S_k = {stride*n + k}, n=0..N/stride-1.
 </t>
 </section>
 
@@ -5289,8 +5478,8 @@ needed, the vector is instead split in two sub-vectors of size N/2.
 A quantized gain parameter with precision
 derived from the current allocation is entropy coded to represent the relative
 gains of each side of the split, and the entire decoding process is recursively
-applied. Multiple levels of splitting may be applied up to a frame size
-dependent limit. The same recursive mechanism is applied for the joint coding
+applied. Multiple levels of splitting may be applied up to a limit of LM+1 splits.
+The same recursive mechanism is applied for the joint coding
 of stereo audio.
 </t>
 
@@ -5308,7 +5497,7 @@ resolution is shown in the tables below.
 </t>
 
 <texttable anchor='tf_00'
- title="TF adjustments for non-transient frames and tf_select=0">
+ title="TF Adjustments for Non-transient Frames and tf_select=0">
 <ttcol align='center'>Frame size (ms)</ttcol>
 <ttcol align='center'>0</ttcol>
 <ttcol align='center'>1</ttcol>
@@ -5319,7 +5508,7 @@ resolution is shown in the tables below.
 </texttable>
 
 <texttable anchor='tf_01'
- title="TF adjustments for non-transient frames and tf_select=1">
+ title="TF Adjustments for Non-transient Frames and tf_select=1">
 <ttcol align='center'>Frame size (ms)</ttcol>
 <ttcol align='center'>0</ttcol>
 <ttcol align='center'>1</ttcol>
@@ -5331,7 +5520,7 @@ resolution is shown in the tables below.
 
 
 <texttable anchor='tf_10'
- title="TF adjustments for transient frames and tf_select=0">
+ title="TF Adjustments for Transient Frames and tf_select=0">
 <ttcol align='center'>Frame size (ms)</ttcol>
 <ttcol align='center'>0</ttcol>
 <ttcol align='center'>1</ttcol>
@@ -5342,7 +5531,7 @@ resolution is shown in the tables below.
 </texttable>
 
 <texttable anchor='tf_11'
- title="TF adjustments for transient frames and tf_select=1">
+ title="TF Adjustments for Transient Frames and tf_select=1">
 <ttcol align='center'>Frame size (ms)</ttcol>
 <ttcol align='center'>0</ttcol>
 <ttcol align='center'>1</ttcol>
@@ -5370,11 +5559,14 @@ is sorted in time.
 
 <section anchor="anti-collapse" title="Anti-Collapse Processing">
 <t>
+The anti-collapse feature is designed to avoid the situation where the use of multiple
+short MDCTs causes the energy in one or more of the MDCTs to be zero for
+some bands, causing unpleasant artifacts.
 When the frame has the transient bit set, an anti-collapse bit is decoded.
 When anti-collapse is set, the energy in each small MDCT is prevented
 from collapsing to zero. For each band of each MDCT where a collapse is
 detected, a pseudo-random signal is inserted with an energy corresponding
-to the min energy over the two previous frames. A renormalization step is
+to the minimum energy over the two previous frames. A renormalization step is
 then required to ensure that the anti-collapse step did not alter the
 energy preservation property.
 </t>
@@ -5382,7 +5574,7 @@ energy preservation property.
 
 <section anchor="denormalization" title="Denormalization">
 <t>
-Just like each band was normalized in the encoder, the last step of the decoder before
+Just as each band was normalized in the encoder, the last step of the decoder before
 the inverse MDCT is to denormalize the bands. Each decoded normalized band is
 multiplied by the square root of the decoded energy. This is done by denormalise_bands()
 (bands.c).
@@ -5405,7 +5597,8 @@ W(n) = |sin|-- * sin|-- * -------| | | .
 ]]></artwork>
 </figure>
 The low-overlap window is created by zero-padding the basic window and inserting ones in the
-middle, such that the resulting window still satisfies power complementarity. The IMDCT and
+middle, such that the resulting window still satisfies power complementarity <xref target='Princen86'/>.
+The IMDCT and
 windowing are performed by mdct_backward (mdct.c).
 </t>
 
@@ -5505,7 +5698,7 @@ the PLC.
 
 <t>
 When the sender's clock runs faster than the receiver's, too many packets will
-be received.  The receiver MAY respond by skipping any packet (i.e. not
+be received.  The receiver MAY respond by skipping any packet (i.e., not
 submitting the packet for decoding).  This is likely to produce a less severe
 artifact than if the frame were dropped after decoding.
 </t>
@@ -5566,7 +5759,7 @@ For example, if the content switches from speech to music, and the encoder does
  not have enough latency in its analysis to detect this in advance, there may
  be no convenient silence period during which to make the transition for quite
  some time.
-To avoid or reduces glitches during these problematic mode transitions, and
+To avoid or reduce glitches during these problematic mode transitions, and
  also between audio bandwidth changes in the SILK-only modes, transitions MAY
  include redundant side information ("redundancy"), in the form of an
  additional CELT frame embedded in the Opus frame.
@@ -5610,7 +5803,7 @@ The presence of redundancy is signaled in all SILK-only and Hybrid frames, not
  just those involved in a mode transition.
 This allows the frames to be decoded correctly even if an adjacent frame is
  lost.
-For for SILK-only frames, this signaling is implicit, based on the size of the
+For SILK-only frames, this signaling is implicit, based on the size of the
  of the Opus frame and the number of bits consumed decoding the SILK portion of
  it.
 After decoding the SILK portion of the Opus frame, the decoder uses ec_tell()
@@ -5722,7 +5915,7 @@ The frame size is fixed at 5&nbsp;ms, the channel count is set to that of the
 <t>
 If the redundancy belongs at the beginning (in a CELT-only to SILK-only or
  Hybrid transition), the final reconstructed output uses the first 2.5&nbsp;ms
- of audio output by the decoder for the redundant frame is as-is, discarding
+ of audio output by the decoder for the redundant frame as-is, discarding
  the corresponding output from the SILK-only or Hybrid portion of the frame.
 The remaining 2.5&nbsp;ms is cross-lapped with the decoded SILK/Hybrid signal
  using the CELT's power-complementary MDCT window to ensure a smooth
@@ -5906,7 +6099,7 @@ A block diagram of the encoder is illustrated below.
   +-----------+  |  | Conversion |    |         | +---------+
   | Optional  |  |  +------------+    +---------+ |  Range  |
 ->| High-pass |--+                                | Encoder |---->
-  +  Filter   +  |  +--------------+  +---------+ |         | Bit-
+  |  Filter   |  |  +--------------+  +---------+ |         | Bit-
   +-----------+  |  |    Delay     |  |  CELT   | +---------+ stream
                  +->| Compensation |->| Encoder |      ^
                     |              |  |         |------+
@@ -5940,7 +6133,7 @@ interactive applications).
 When the encoder is configured for voice over IP applications, the input signal is
 filtered by a high-pass filter to remove the lowest part of the spectrum
 that contains little speech energy and may contain background noise. This is a second order
-Auto Regressive Moving Average (ARMA) filter with a cut-off frequency around 50&nbsp;Hz.
+Auto Regressive Moving Average (i.e., with poles and zeros) filter with a cut-off frequency around 50&nbsp;Hz.
 In the future, a music detector may also be used to lower the cut-off frequency when the
 input signal is detected to be music rather than speech.
 </t>
@@ -6026,7 +6219,7 @@ rng = rng - --- * (fh - fl) .
             ft
 ]]></artwork>
 </figure>
-The divisions here are exact integer division.
+The divisions here are integer division.
 </t>
 
 <section anchor="range-encoder-renorm" title="Renormalization">
@@ -6148,7 +6341,7 @@ The procedure in <xref target="encoder-finalizing"/> does this in a way that
 The function ec_enc_uint() (entenc.c) encodes one of ft equiprobable symbols in
  the range 0 to (ft&nbsp;-&nbsp;1), inclusive, each with a frequency of 1,
  where ft may be as large as (2**32&nbsp;-&nbsp;1).
-Like the decoder (see <xref target="ec_dec_uint"/>), it splits it splits up the
+Like the decoder (see <xref target="ec_dec_uint"/>), it splits up the
  value into a range coded symbol representing up to 8 of the high bits, and, if
  necessary, raw bits representing the remainder of the value.
 </t>
@@ -6797,7 +6990,7 @@ They are then transformed back to obtain quantized LPC coefficients, which
 are then used to filter the input signal and measure residual energy for
 each of the four subframes.
 </t>
-<section title='Burgs method'>
+<section title="Burg's Method">
 <t>
 The main purpose of LPC coding in SILK is to reduce the bitrate by
 minimizing the residual energy.
@@ -6834,7 +7027,7 @@ bits.
 <t>
 Unlike many other speech codecs, SILK uses variable bitrate coding
 for the LSFs.
-This improves the average rate-distortion tradeoff and reduces outliers.
+This improves the average rate-distortion (R-D) tradeoff and reduces outliers.
 The variable bitrate coding minimizes a linear combination of the weighted
 quantization errors and the bitrate.
 The weights for the quantization errors are the Inverse
@@ -6848,7 +7041,7 @@ The first stage is an (unweighted) vector quantizer (VQ), with a
 codebook size of 32 vectors.
 The quantization errors for the codebook vector are sorted, and
 for the N best vectors a second stage quantizer is run.
-By varying the number N a tradeoff is made between R/D performance
+By varying the number N a tradeoff is made between R-D performance
 and computational efficiency.
 For each of the N codebook vectors the Laroia weights corresponding
 to that vector (and not to the input vector) are calculated.
@@ -6875,7 +7068,7 @@ This subtraction can be interpreted as shifting the quantization levels
 of the scalar quantizer, and as a result the quantization error of
 each value depends on the quantization decision of the previous value.
 This dependency is exploited by the delayed decision mechanism to
-search for a quantization sequency with best R/D performance
+search for a quantization sequency with best R-D performance
 with a Viterbi-like algorithm <xref target="Viterbi"/>.
 The quantizer processes the residual LSF vector in reverse order
 (i.e., it starts with the highest residual LSF value).
@@ -7080,7 +7273,7 @@ on the bit allocation and not on the values that are coded.
 <section title="Bit Allocation">
 <t>The encoder must use exactly the same bit allocation process as used by the decoder
 and described in <xref target="allocation"/>. The three mechanisms that can be used by the
-encoder to adjust the bitrate on a frame-by-frame basis are band boost, allocation trim, 
+encoder to adjust the bitrate on a frame-by-frame basis are band boost, allocation trim,
 and band skipping.
 </t>
 
@@ -7136,7 +7329,7 @@ to use mid-side is made if and only if
 bins + E        bins
 ]]></artwork>
 </figure>
-where bins is the number of MDCT bins in the first 13 bands and extra is the number of extra degrees of
+where bins is the number of MDCT bins in the first 13 bands and E is the number of extra degrees of
 freedom for mid-side coding. For LM>1, E=13, otherwise E=5.
 </t>
 
@@ -7146,7 +7339,7 @@ band using intensity coding is as follows:
 </t>
 
 <texttable anchor="intensity-thresholds"
- title="Thresholds for intensity stereo">
+ title="Thresholds for Intensity Stereo">
 <ttcol align='center'>bitrate (kb/s)</ttcol>
 <ttcol align='center'>start band</ttcol>
 <c>&lt;35</c>      <c>8</c>
@@ -7164,11 +7357,11 @@ band using intensity coding is as follows:
 <section title="Time-Frequency Decision">
 <t>
 The choice of time-frequency resolution used in <xref target="tf-change"></xref> is based on
-rate-distortion (RD) optimization. The distortion is the L1-norm (sum of absolute values) of each band
+R-D optimization. The distortion is the L1-norm (sum of absolute values) of each band
 after each TF resolution under consideration. The L1 norm is used because it represents the entropy
 for a Laplacian source. The number of bits required to code a change in TF resolution between
 two bands is higher than the cost of having those two bands use the same resolution, which is
-what requires the RD optimization. The optimal decision is computed using the Viterbi algorithm.
+what requires the R-D optimization. The optimal decision is computed using the Viterbi algorithm.
 See tf_analysis() in celt/celt.c.
 </t>
 </section>
@@ -7292,14 +7485,14 @@ Compliance with this specification means that in addition to following the norma
  a decoder's output MUST also be
  within the thresholds specified by the opus_compare.c tool (included
  with the code) when compared to the reference implementation for each of the
- test vectors provided (see <xref target="test-vectors"></xref>) and for each output 
+ test vectors provided (see <xref target="test-vectors"></xref>) and for each output
  sampling rate and channel count supported. In addition, a compliant
  decoder implementation MUST have the same final range decoder state as that of the
- reference decoder. It is therefore RECOMMENDED that the 
+ reference decoder. It is therefore RECOMMENDED that the
  decoder implement the same functional behavior as the reference.
- 
+
  A decoder implementation is not required to support all output sampling
- rates or all output channel counts. 
+ rates or all output channel counts.
 </t>
 
 <section title="Testing">
@@ -7336,7 +7529,7 @@ additive white noise with a 48 dB SNR (similar to what can be obtained on a cass
 It is still possible for an implementation to sound very good with such a low quality measure
 (e.g. if the deviation is due to inaudible phase distortion), but unless this is verified by
 listening tests, it is RECOMMENDED that implementations achive a quality above 90 for 48 kHz
-decoding. For other sampling rates, it is normal for the quality metric to be lower 
+decoding. For other sampling rates, it is normal for the quality metric to be lower
 (typically as low as 50 even for a good implementation) because of harmless mismatch with
 the delay and phase of the internal sampling rate conversion.
 </t>
@@ -7352,16 +7545,17 @@ are built and &lt;vector path&gt; is the directory containing the test vectors.
 </t>
 </section>
 
-<section title="Opus Custom">
+<section anchor="opus-custom" title="Opus Custom">
 <t>
 Opus Custom is an OPTIONAL part of the specification that is defined to
 handle special sample rates and frame rates that are not supported by the
 main Opus specification. Use of Opus Custom is discouraged for all but very
 special applications for which a frame size different from 2.5, 5, 10, or 20&nbsp;ms is
 needed (for either complexity or latency reasons). Because Opus Custom is
-optional, applications using that part of the specification may not be compatible
-with other applications implementing Opus. In Opus Custom operation,
-only the CELT layer is available, using the opus_custom_* function
+optional, streams encoded using Opus Custom cannot be expected to be decodable by all Opus
+implementations. Also, because no in-band mechanism exists for specifying the sampling
+rate and frame size of Opus Custom streams, out-of-band signaling is required.
+In Opus Custom operation, only the CELT layer is available, using the opus_custom_* function
 calls in opus_custom.h.
 </t>
 </section>
@@ -7372,7 +7566,7 @@ calls in opus_custom.h.
 
 <t>
 Implementations of the Opus codec need to take appropriate security considerations
-into account, as outlined in <xref target="DOS"/> and <xref target="SECGUIDE"/>.
+into account, as outlined in <xref target="DOS"/>.
 It is extremely important for the decoder to be robust against malicious
 payloads.
 Malicious payloads must not cause the decoder to overrun its allocated memory
@@ -7444,10 +7638,10 @@ for their bug reports and feedback.
 </section>
 
 <section title="Copying Conditions">
-<t>The authors agree to grant third parties the irrevocable right to copy, use and distribute 
-the work (excluding Code Components available under the simplified BSD license), with or 
-without modification, in any medium, without royalty, provided that, unless separate 
-permission is granted, redistributed modified works do not contain misleading author, version, 
+<t>The authors agree to grant third parties the irrevocable right to copy, use and distribute
+the work (excluding Code Components available under the simplified BSD license), with or
+without modification, in any medium, without royalty, provided that, unless separate
+permission is granted, redistributed modified works do not contain misleading author, version,
 name of work, or endorsement information.</t>
 </section>
 
@@ -7487,6 +7681,9 @@ name of work, or endorsement information.</t>
 <seriesInfo name='RFC' value='6366' />
 <format type='TXT' target='http://tools.ietf.org/rfc/rfc6366.txt' />
 </reference>
+
+<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml"?>
+<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3533.xml"?>
 
 <reference anchor='SILK' target='http://developer.skype.com/silk'>
 <front>
@@ -7573,27 +7770,10 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <format type='TXT' octets='91844' target='ftp://ftp.isi.edu/in-notes/rfc4732.txt' />
 </reference>
 
-<reference anchor='SECGUIDE'>
-<front>
-<title>Guidelines for Writing RFC Text on Security Considerations</title>
-<author initials='E.' surname='Rescorla' fullname='E. Rescorla'>
-<organization /></author>
-<author initials='B.' surname='Korver' fullname='B. Korver'>
-<organization /></author>
-<date year='2003' month='July' />
-<abstract>
-<t>All RFCs are required to have a Security Considerations section.  Historically, such sections have been relatively weak.  This document provides guidelines to RFC authors on how to write a good Security Considerations section.  This document specifies an Internet Best Current Practices for the Internet Community, and requests discussion and suggestions for improvements.</t></abstract></front>
-
-<seriesInfo name='BCP' value='72' />
-<seriesInfo name='RFC' value='3552' />
-<format type='TXT' octets='110393' target='ftp://ftp.isi.edu/in-notes/rfc3552.txt' />
-</reference>
-
-<reference anchor="range-coding">
+<reference anchor="Martin79">
 <front>
 <title>Range encoding: An algorithm for removing redundancy from a digitised message</title>
-<author initials="G." surname="Nigel" fullname=""><organization/></author>
-<author initials="N." surname="Martin" fullname=""><organization/></author>
+<author initials="G.N.N." surname="Martin" fullname="G. Nigel N. Martin"><organization/></author>
 <date year="1979" />
 </front>
 <seriesInfo name="Proc. Institution of Electronic and Radio Engineers International Conference on Video and Data Recording" value="" />
@@ -7617,6 +7797,17 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <seriesInfo name="IEEE Trans. on Information Theory, Vol. 32" value="pp. 568-583" />
 </reference>
 
+<reference anchor="Kabal86">
+<front>
+<title>The Computation of Line Spectral Frequencies Using Chebyshev Polynomials</title>
+<author initials="P." surname="Kabal" fullname="P. Kabal"><organization/></author>
+<author initials="R." surname="Ramachandran" fullname="R. P. Ramachandran"><organization/></author>
+<date month="December" year="1986" />
+</front>
+<seriesInfo name="IEEE Trans. Acoustics, Speech, Signal Processing, vol. 34, no. 6" value="pp. 1419-1426" />
+</reference>
+
+
 <reference anchor="Valgrind" target="http://valgrind.org/">
 <front>
 <title>Valgrind website</title>
@@ -7638,7 +7829,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 </front>
 </reference>
 
-   
+
 <reference anchor="Opus-git" target="git://git.xiph.org/opus.git">
 <front>
 <title>Opus Git Repository</title>
@@ -7649,6 +7840,20 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <reference anchor="Opus-website" target="http://opus-codec.org/">
 <front>
 <title>Opus website</title>
+<author></author>
+</front>
+</reference>
+
+<reference anchor="Vorbis-website" target="http://xiph.org/vorbis/">
+<front>
+<title>Vorbis website</title>
+<author></author>
+</front>
+</reference>
+
+<reference anchor="Matroska-website" target="http://matroska.org/">
+<front>
+<title>Matroska website</title>
 <author></author>
 </front>
 </reference>
@@ -7664,6 +7869,20 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Opus Testvectors (proceedings)</title>
 <author></author>
+</front>
+</reference>
+
+<reference anchor="line-spectral-pairs" target="http://en.wikipedia.org/wiki/Line_spectral_pairs">
+<front>
+<title>Line Spectral Pairs</title>
+<author><organization>Wikipedia</organization></author>
+</front>
+</reference>
+
+<reference anchor="range-coding" target="http://en.wikipedia.org/wiki/Range_coding">
+<front>
+<title>Range Coding</title>
+<author><organization>Wikipedia</organization></author>
 </front>
 </reference>
 
@@ -7709,6 +7928,14 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 </front>
 </reference>
 
+<reference anchor="z-transform" target="http://en.wikipedia.org/wiki/Z-transform">
+<front>
+<title>Z-transform</title>
+<author><organization>Wikipedia</organization></author>
+</front>
+</reference>
+
+
 <reference anchor="Burg">
 <front>
 <title>Maximum Entropy Spectral Analysis</title>
@@ -7724,6 +7951,28 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 </front>
 <seriesInfo name="ICASSP-1977, Proc. IEEE Int. Conf. Acoust., Speech, Signal Processing, pp. 257-259, October" value="1977"/>
 </reference>
+
+<reference anchor="Princen86">
+<front>
+<title>Analysis/synthesis filter bank design based on time domain aliasing cancellation</title>
+<author initials="J." surname="Princen" fullname="John P. Princen"><organization/></author>
+<author initials="A." surname="Bradley" fullname="Alan B. Bradley"><organization/></author>
+</front>
+<seriesInfo name="IEEE Trans. Acoust. Speech Sig. Proc. ASSP-34 (5), 1153-1161" value="1986"/>
+</reference>
+
+<reference anchor="Valin2010">
+<front>
+<title>A High-Quality Speech and Audio Codec With Less Than 10 ms delay</title>
+<author initials="JM" surname="Valin" fullname="Jean-Marc Valin"><organization/>
+</author>
+<author initials="T. B." surname="Terriberry" fullname="Timothy Terriberry"><organization/></author>
+<author initials="C." surname="Montgomery" fullname="Christopher Montgomery"><organization/></author>
+<author initials="G." surname="Maxwell" fullname="Gregory Maxwell"><organization/></author>
+</front>
+<seriesInfo name="IEEE Trans. on Audio, Speech and Language Processing, Vol. 18, No. 1, pp. 58-67" value="2010" />
+</reference>
+
 
 </references>
 
@@ -7787,7 +8036,7 @@ On systems where the provided Makefile does not work, the following command line
 the source code:
 <list style="symbols">
 <t><![CDATA[
-cc -O2 -g -o opus_demo src/opus_demo.c `cat *.mk | grep -v fixed | sed -e 's/.*=//' -e 's/\\\\//'` -DOPUS_BUILD -Iinclude -Icelt -Isilk -Isilk/float -Drestrict= -lm
+cc -O2 -g -o opus_demo src/opus_demo.c `cat *.mk | grep -v fixed | sed -e 's/.*=//' -e 's/\\\\//'` -DOPUS_BUILD -Iinclude -Icelt -Isilk -Isilk/float -DUSE_ALLOCA -Drestrict= -lm
 ]]></t></list>
 </t>
 
@@ -7805,11 +8054,13 @@ cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/...###//' > opus.b
 
 <section title="Up-to-date Implementation">
 <t>
-As of the time of publication of this memo, up-to-date source code implementing
+As of the time of publication of this memo, an up-to-date implementation conforming to
 this standard is available in a
  <xref target='Opus-git'>Git repository</xref>.
 Releases and other resources are available at
- <xref target='Opus-website'/>. 
+ <xref target='Opus-website'/>. However, although that implementation is expected to
+ remain conformant with the standard, it is the code in this document that shall
+ remain normative.
 </t>
 </section>
 

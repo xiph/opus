@@ -34,7 +34,7 @@ cp -a "${toplevel}"/README.draft "${destdir}"/README
 cp -a "${toplevel}"/COPYING "${destdir}"/COPYING
 cp -a "${toplevel}"/tests/run_vectors.sh "${destdir}"/
 
-tar czf opus_source.tar.gz "${destdir}"
+GZIP=-9 tar --owner=root --group=root --format=v7 -czf opus_source.tar.gz "${destdir}"
 echo building base64 version
 cat opus_source.tar.gz| base64 | tr -d '\n' | fold -w 64 | \
  sed -e 's/^/\<spanx style="vbare"\>###/' -e 's/$/\<\/spanx\>\<vspace\/\>/' > \
@@ -49,6 +49,11 @@ cat opus_source.tar.gz| base64 | tr -d '\n' | fold -w 64 | \
 #echo '</artwork>' >> opus_compare_escaped.c
 #echo '</figure>' >> opus_compare_escaped.c
 
+if [[ ! -d ../opus_testvectors ]] ; then
+  echo "Downloading test vectors..."
+  wget 'http://www.opus-codec.org/testvectors/opus_testvectors-draft11.tar.gz'
+  tar -C .. -xvzf opus_testvectors-draft11.tar.gz
+fi
 echo '<figure>' > testvectors_sha1
 echo '<artwork>' >> testvectors_sha1
 echo '<![CDATA[' >> testvectors_sha1

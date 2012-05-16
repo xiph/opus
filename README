@@ -1,4 +1,3 @@
-
 Opus is a codec for interactive speech and audio transmission over the Internet.
 
   Opus can handle a wide range of interactive audio applications, including
@@ -31,7 +30,6 @@ Opus-tools can be found at:
  http://git.xiph.org/?p=users/greg/opus-tools.git
 
 == Compiling libopus ==
-
 To build from a distribution tarball, you only need to do the following:
 
 % ./configure
@@ -74,7 +72,7 @@ options:
 -dtx                 : enable SILK DTX
 -loss <perc>         : simulate packet loss, in percent (0-100); default: 0
 
-input and output are little endian signed 16-bit PCM files or opus bitstreams
+input and output are little-endian signed 16-bit PCM files or opus bitstreams
 with simple opus_demo proprietary framing.
 
 == Testing ==
