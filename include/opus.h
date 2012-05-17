@@ -179,6 +179,8 @@ OPUS_EXPORT int opus_encoder_get_size(int channels);
  *
  * @ref OPUS_APPLICATION_RESTRICTED_LOWDELAY configures low-delay mode that
  *    disables the speech-optimized mode in exchange for slightly reduced delay.
+ *    This mode can only be set on an newly initialized or freshly reset encoder
+ *    because it changes the codec delay.
  *
  * This is useful when the caller knows that the speech-optimized modes will not be needed (use with caution).
  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate of input signal (Hz)
