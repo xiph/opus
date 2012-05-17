@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-13">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-14">
 
 <front>
 <title abbrev="Interactive Audio Codec">Definition of the Opus Audio Codec</title>
@@ -53,7 +53,7 @@
 </address>
 </author>
 
-<date day="15" month="May" year="2012" />
+<date day="17" month="May" year="2012" />
 
 <area>General</area>
 
@@ -1044,7 +1044,7 @@ Opus uses an entropy coder based on range coding <xref target="range-coding"></x
 which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
 It is very similar to arithmetic encoding, except that encoding is done with
 digits in any base instead of with bits,
-so it is faster when using larger bases (i.e., an octet). All of the
+so it is faster when using larger bases (i.e., a byte). All of the
 calculations in the range coder must use bit-exact integer arithmetic.
 </t>
 <t>
@@ -1113,11 +1113,11 @@ Both val and rng are 32-bit unsigned integer values.
 
 <section anchor="range-decoder-init" title="Range Decoder Initialization">
 <t>
-Let b0 be the first input octet (or zero if there are no octets in this Opus
+Let b0 be the first input byte (or zero if there are no bytes in this Opus
  frame).
 The decoder initializes rng to 128 and initializes val to
  (127&nbsp;-&nbsp;(b0&gt;&gt;1)), where (b0&gt;&gt;1) is the top 7 bits of the
- first input octet.
+ first input byte.
 It saves the remaining bit, (b0&amp;1), for use in the renormalization
  procedure described in <xref target="range-decoder-renorm"/>, which the
  decoder invokes immediately after initialization to read additional bits and
@@ -1198,14 +1198,14 @@ To normalize the range, the decoder repeats the following process, implemented
  by ec_dec_normalize() (entdec.c), until rng&nbsp;&gt;&nbsp;2**23.
 If rng is already greater than 2**23, the entire process is skipped.
 First, it sets rng to (rng&lt;&lt;8).
-Then it reads the next octet of the Opus frame and forms an 8-bit value sym,
- using the left-over bit buffered from the previous octet as the high bit
- and the top 7 bits of the octet just read as the other 7 bits of sym.
-The remaining bit in the octet just read is buffered for use in the next
+Then it reads the next byte of the Opus frame and forms an 8-bit value sym,
+ using the left-over bit buffered from the previous byte as the high bit
+ and the top 7 bits of the byte just read as the other 7 bits of sym.
+The remaining bit in the byte just read is buffered for use in the next
  iteration.
-If no more input octets remain, it uses zero bits instead.
+If no more input bytes remain, it uses zero bits instead.
 See <xref target="range-decoder-init"/> for the initialization used to process
- the first octet.
+ the first byte.
 Then, it sets
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -6160,9 +6160,9 @@ Integers from 0 to (ft&nbsp;-&nbsp;1) (where ft is not a power of two) using
 <t>
 The range encoder maintains an internal state vector composed of the four-tuple
  (val,&nbsp;rng,&nbsp;rem,&nbsp;ext) representing the low end of the current
- range, the size of the current range, a single buffered output octet, and a
- count of additional carry-propagating output octets.
-Both val and rng are 32-bit unsigned integer values, rem is an octet value or
+ range, the size of the current range, a single buffered output byte, and a
+ count of additional carry-propagating output bytes.
+Both val and rng are 32-bit unsigned integer values, rem is a byte value or
  less than 255 or the special value -1, and ext is an unsigned integer with at
  least 11 bits.
 This state vector is initialized at the start of each each frame to the value
@@ -6181,11 +6181,11 @@ The decoder has no analog for rem and ext.
 These are used to perform carry propagation in the renormalization loop below.
 Each iteration of this loop produces 9 bits of output, consisting of 8 data
  bits and a carry flag.
-The encoder cannot determine the final value of the output octets until it
+The encoder cannot determine the final value of the output bytes until it
  propagates these carry flags.
 Therefore the reference implementation buffers a single non-propagating output
- octet (i.e., one less than 255) in rem and keeps a count of additional
- propagating (i.e., 255) output octets in ext.
+ byte (i.e., one less than 255) in rem and keeps a count of additional
+ propagating (i.e., 255) output bytes in ext.
 An implementation may choose to use any mathematically equivalent scheme to
  perform carry propagation.
 </t>
@@ -6254,12 +6254,12 @@ Otherwise, let b&nbsp;=&nbsp;(c&gt;&gt;8) be the carry bit.
 Then,
 <list style="symbols">
 <t>
-If the buffered octet rem contains a value other than -1, the encoder outputs
- the octet (rem&nbsp;+&nbsp;b).
-Otherwise, if rem is -1, no octet is output.
+If the buffered byte rem contains a value other than -1, the encoder outputs
+ the byte (rem&nbsp;+&nbsp;b).
+Otherwise, if rem is -1, no byte is output.
 </t>
 <t>
-If ext is non-zero, then the encoder outputs ext octets---all with a value of 0
+If ext is non-zero, then the encoder outputs ext bytes---all with a value of 0
  if b is set, or 255 if b is unset---and sets ext to 0.
 </t>
 <t>
@@ -6329,7 +6329,7 @@ The raw bits used by the CELT layer are packed at the end of the buffer using
  ec_enc_bits() (entenc.c).
 Because the raw bits may continue into the last byte output by the range coder
  if there is room in the low-order bits, the encoder must be prepared to merge
- these values into a single octet.
+ these values into a single byte.
 The procedure in <xref target="encoder-finalizing"/> does this in a way that
  ensures both the range coded data and the raw bits can be decoded
  successfully.
@@ -6384,7 +6384,7 @@ Then, while end is not zero, the top 9 bits of end, i.e., (end&gt;&gt;23), are
 end = (end<<8) & 0x7FFFFFFF .
 ]]></artwork>
 </figure>
-Finally, if the buffered output octet, rem, is neither zero nor the special
+Finally, if the buffered output byte, rem, is neither zero nor the special
  value -1, or the carry count, ext, is greater than zero, then 9 zero bits are
  sent to the carry buffer to flush it to the output buffer.
 When outputting the final byte from the range coder, if it would overlap any
