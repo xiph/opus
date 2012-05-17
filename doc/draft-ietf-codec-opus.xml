@@ -1804,7 +1804,7 @@ For example, when switching from 20&nbsp;ms to 60&nbsp;ms, the 60&nbsp;ms Opus
 When switching from 20&nbsp;ms to 10&nbsp;ms, the 10&nbsp;ms Opus frame can
  contain an LBRR frame covering at most half the prior 20&nbsp;ms Opus frame,
  potentially leaving a hole that needs to be concealed from even a single
- packet loss.
+ packet loss (see <xref target="Packet Loss Concealment"/>).
 When switching from mono to stereo, the LBRR frames in the first stereo Opus
  frame MAY contain a non-trivial side channel.
 </t>
@@ -4824,10 +4824,11 @@ The CELT layer of Opus is based on the Modified Discrete Cosine Transform
 <xref target='MDCT'/> with partially overlapping windows of 5 to 22.5 ms.
 The main principle behind CELT is that the MDCT spectrum is divided into
 bands that (roughly) follow the Bark scale, i.e., the scale of the ear's
-critical bands. The normal CELT layer uses 21 of those bands, though Opus
+critical bands <xref target="Zwicker61"/>. The normal CELT layer uses 21 of those bands, though Opus
  Custom (see <xref target="opus-custom"/>) may use a different number of bands.
 A band can contain as little as one MDCT bin per channel, and as many as 176
 bins per channel, as detailed in <xref target="celt_band_sizes"/>.
+In hybrid mode, the first 17 bands (up to 8 kHz) are not coded.
 In each band, the gain (energy) is coded separately from
 the shape of the spectrum. Coding the gain explicitly makes it easy to
 preserve the spectral envelope of the signal. The remaining unit-norm shape
@@ -5081,7 +5082,7 @@ This structure means that the ideal allocation is more consistent from frame to
 Often this control is only indirect, and must be exercised carefully to
  achieve the desired rate constraints.
 The CELT layer, however, can adapt over a very wide range of rates, and thus
- has a large number of codebooks sizes to choose from for each band.
+ has a large number of codebook sizes to choose from for each band.
 Explicitly signaling the size of each of these codebooks would impose
  considerable overhead, even though the allocation is relatively static from
  frame to frame.
@@ -5203,7 +5204,7 @@ maximum achievable quality in a band while setting it too high
 may result in waste: bitstream capacity available at the end
 of the frame which can not be put to any use. The maximums
 specified by the codec reflect the average maximum. In the reference
-implementation, the maximums in bit/sample are precomputed in a static table
+implementation, the maximums in bits/sample are precomputed in a static table
 (see cache_caps50[] in static_modes_float.h) for each band,
 for each value of LM, and for both mono and stereo.
 
@@ -5239,10 +5240,9 @@ amount of storage required to signal a boost in bits, 'total_bits' to the
 size of the frame in 8th bits, 'total_boost' to zero, and 'tell' to the total number
 of 8th bits decoded
 so far. For each band from the coding start (0 normally, but 17 in Hybrid mode)
-to the coding end (which changes depending on the signaled bandwidth): set 'width'
-to the number of MDCT bins in this band for all channels. Take the larger of width
-and 64, then the minimum of that value and the width times eight and set 'quanta'
-to the result. This represents a boost step size of six bits subject to limits
+to the coding end (which changes depending on the signaled bandwidth), the boost quanta
+in units of 1/8 bit is calculated as quanta = min(8*N, max(48, N)).
+This represents a boost step size of six bits subject to limits
 of 1/bit/sample and 1/8th bit/sample. Set 'boost' to zero and 'dynalloc_loop_logp'
 to dynalloc_logp. While dynalloc_loop_log (the current worst case symbol cost) in
 8th bits plus tell is less than total_bits plus total_boost and boost is less than cap[] for this
@@ -7523,8 +7523,8 @@ for mono.
 <t>In addition to indicating whether the test vector comparison passes, the opus_compare tool
 outputs an "Opus quality metric" that indicates how well the tested decoder matches the
 reference implementation. A quality of 0 corresponds to the passing threshold, while
-a quality of 100 means that the output of the tested decoder is identical to the reference
-implementation. The passing threshold was calibrated in such a way that it corresponds to
+a quality of 100 is the highest possible value and means that the output of the tested decoder is identical to the reference
+implementation. The passing threshold (quality 0) was calibrated in such a way that it corresponds to
 additive white noise with a 48 dB SNR (similar to what can be obtained on a cassette deck).
 It is still possible for an implementation to sound very good with such a low quality measure
 (e.g. if the deviation is due to inaudible phase distortion), but unless this is verified by
@@ -7971,6 +7971,16 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <author initials="G." surname="Maxwell" fullname="Gregory Maxwell"><organization/></author>
 </front>
 <seriesInfo name="IEEE Trans. on Audio, Speech and Language Processing, Vol. 18, No. 1, pp. 58-67" value="2010" />
+</reference>
+
+
+<reference anchor="Zwicker61">
+<front>
+<title>Subdivision of the audible frequency range into critical bands</title>
+<author initials="E." surname="Zwicker" fullname="E. Zwicker"><organization/></author>
+<date month="February" year="1961" />
+</front>
+<seriesInfo name="The Journal of the Acoustical Society of America, Vol. 33, No 2" value="p. 248" />
 </reference>
 
 
