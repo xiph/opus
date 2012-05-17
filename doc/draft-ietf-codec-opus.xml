@@ -563,16 +563,17 @@ These are summarized in <xref target="malformed-packets"/> along with
 </t>
 
 <section anchor="toc_byte" title="The TOC Byte">
-<t>
-An Opus packet begins with a single-byte table-of-contents (TOC) header that
- signals which of the various modes and configurations a given packet uses.
+<t anchor="R1">
+A well-formed Opus packet MUST contain at least one byte&nbsp;[R1].
+This byte forms a table-of-contents (TOC) header that signals which of the
+ various modes and configurations a given packet uses.
 It is composed of a configuration number, "config", a stereo flag, "s", and a
  frame count code, "c", arranged as illustrated in
  <xref target="toc_byte_fig"/>.
 A description of each of these fields follows.
 </t>
 
-<figure anchor="toc_byte_fig" title="The TOC byte">
+<figure anchor="toc_byte_fig" title="The TOC Byte">
 <artwork align="center"><![CDATA[
  0
  0 1 2 3 4 5 6 7
@@ -638,11 +639,6 @@ This draft refers to a packet as a code 0 packet, code 1 packet, etc., based on
  the value of "c".
 </t>
 
-<t anchor="R1">
-A well-formed Opus packet MUST contain at least one byte with the TOC
- information&nbsp;[R1], though the frame(s) within a packet MAY be zero bytes
- long.
-</t>
 </section>
 
 <section title="Frame Packing">
@@ -668,7 +664,7 @@ When a packet contains multiple VBR frames (i.e., code 2 or 3), the compressed
 The special length 0 indicates that no frame is available, either because it
  was dropped during transmission by some intermediary or because the encoder
  chose not to transmit it.
-A length of 0 is valid for any Opus frame in any mode.
+Any Opus frame in any mode MAY have a length of 0.
 </t>
 
 <t>
@@ -1559,7 +1555,7 @@ An overview of the decoder is given in <xref target="silk_decoder_figure"/>.
 2: Coded parameters
 3: Pulses, LSBs, and signs
 4: Pitch lags, Long-Term Prediction (LTP) coefficients
-5: Linear Prediction Coefficients (LPC) and gains
+5: Linear Predictive Coding (LPC) coefficients and gains
 6: Decoded signal (mono or mid-side stereo)
 7: Unmixed signal (mono or left-right stereo)
 8: Resampled signal
@@ -2329,10 +2325,13 @@ All of this is necessary to ensure the reconstruction process is stable.
 The first VQ stage uses a 32-element codebook, coded with one of the PDFs in
  <xref target="silk_nlsf_stage1_pdfs"/>, depending on the audio bandwidth and
  the signal type of the current SILK frame.
-This yields a single index, I1, for the entire frame.
-This indexes an element in a coarse codebook, selects the PDFs for the
- second stage of the VQ, and selects the prediction weights used to remove
- intra-frame redundancy from the second stage.
+This yields a single index, I1, for the entire frame, which
+<list style="numbers">
+<t>Indexes an element in a coarse codebook,</t>
+<t>Selects the PDFs for the second stage of the VQ, and</t>
+<t>Selects the prediction weights used to remove intra-frame redundancy from
+ the second stage.</t>
+</list>
 The actual codebook elements are listed in
  <xref target="silk_nlsf_nbmb_codebook"/> and
  <xref target="silk_nlsf_wb_codebook"/>, but they are not needed until the last
@@ -4563,9 +4562,9 @@ Voiced SILK frames (see <xref target="silk_frame_type"/>) pass the excitation
  <xref target="silk_ltp_params"/> to produce an LPC residual.
 The LTP filter requires LPC residual values from before the current subframe as
  input.
-However, since the LPCs may have changed, it obtains this residual by
- "rewhitening" the corresponding output signal using the LPCs from the current
- subframe.
+However, since the LPC coefficients may have changed, it obtains this residual
+ by "rewhitening" the corresponding output signal using the LPC coefficients
+ from the current subframe.
 Let out[i] for
  (j&nbsp;-&nbsp;pitch_lags[s]&nbsp;-&nbsp;d_LPC&nbsp;-&nbsp;2)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j
  be the fully reconstructed output signal from the last
@@ -4824,11 +4823,11 @@ The CELT layer of Opus is based on the Modified Discrete Cosine Transform
 <xref target='MDCT'/> with partially overlapping windows of 5 to 22.5 ms.
 The main principle behind CELT is that the MDCT spectrum is divided into
 bands that (roughly) follow the Bark scale, i.e., the scale of the ear's
-critical bands <xref target="Zwicker61"/>. The normal CELT layer uses 21 of those bands, though Opus
+critical bands&nbsp;<xref target="Zwicker61"/>. The normal CELT layer uses 21 of those bands, though Opus
  Custom (see <xref target="opus-custom"/>) may use a different number of bands.
+In Hybrid mode, the first 17 bands (up to 8&nbsp;kHz) are not coded.
 A band can contain as little as one MDCT bin per channel, and as many as 176
 bins per channel, as detailed in <xref target="celt_band_sizes"/>.
-In hybrid mode, the first 17 bands (up to 8 kHz) are not coded.
 In each band, the gain (energy) is coded separately from
 the shape of the spectrum. Coding the gain explicitly makes it easy to
 preserve the spectral envelope of the signal. The remaining unit-norm shape
@@ -5242,8 +5241,9 @@ of 8th bits decoded
 so far. For each band from the coding start (0 normally, but 17 in Hybrid mode)
 to the coding end (which changes depending on the signaled bandwidth), the boost quanta
 in units of 1/8 bit is calculated as quanta = min(8*N, max(48, N)).
-This represents a boost step size of six bits subject to limits
-of 1/bit/sample and 1/8th bit/sample. Set 'boost' to zero and 'dynalloc_loop_logp'
+This represents a boost step size of six bits, subject to a lower limit of
+1/8th&nbsp;bit/sample and an upper limit of 1&nbsp;bit/sample.
+Set 'boost' to zero and 'dynalloc_loop_logp'
 to dynalloc_logp. While dynalloc_loop_log (the current worst case symbol cost) in
 8th bits plus tell is less than total_bits plus total_boost and boost is less than cap[] for this
 band: Decode a bit from the bitstream with a with dynalloc_loop_logp as the cost
@@ -6963,9 +6963,9 @@ The processing for voiced and unvoiced speech is described in
   The LTP coefficients are quantized using the method described in
   <xref target='ltp_quantizer_overview_section'/>, and the quantized LTP
   coefficients are used to compute the LTP residual signal.
-  This LTP residual signal is the input to an LPC analysis where the LPCs are
+  This LTP residual signal is the input to an LPC analysis where the LPC coefficients are
   estimated using Burg's method <xref target="Burg"/>, such that the residual energy is minimized.
-  The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector
+  The estimated LPC coefficients are converted to a Line Spectral Frequency (LSF) vector
   and quantized as described in <xref target='lsf_quantizer_overview_section'/>.
 After quantization, the quantized LSF vector is converted back to LPC
 coefficients using the full procedure in <xref target="silk_nlsfs"/>.
@@ -6992,7 +6992,7 @@ each of the four subframes.
 </t>
 <section title="Burg's Method">
 <t>
-The main purpose of LPC coding in SILK is to reduce the bitrate by
+The main purpose of linear prediction in SILK is to reduce the bitrate by
 minimizing the residual energy.
 At least at high bitrates, perceptual aspects are handled
 independently by the noise shaping filter.
@@ -7528,7 +7528,7 @@ implementation. The passing threshold (quality 0) was calibrated in such a way t
 additive white noise with a 48 dB SNR (similar to what can be obtained on a cassette deck).
 It is still possible for an implementation to sound very good with such a low quality measure
 (e.g. if the deviation is due to inaudible phase distortion), but unless this is verified by
-listening tests, it is RECOMMENDED that implementations achive a quality above 90 for 48 kHz
+listening tests, it is RECOMMENDED that implementations achive a quality above 90 for 48&nbsp;kHz
 decoding. For other sampling rates, it is normal for the quality metric to be lower
 (typically as low as 50 even for a good implementation) because of harmless mismatch with
 the delay and phase of the internal sampling rate conversion.
