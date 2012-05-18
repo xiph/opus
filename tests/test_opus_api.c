@@ -92,7 +92,7 @@ opus_int32 test_dec_api(void)
 #endif
    short sbuf[960*2];
    int c,err;
-   int *nullvalue;
+   opus_int32 *nullvalue;
    nullvalue=0;
 
    cfgs=0;

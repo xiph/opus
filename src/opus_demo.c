@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
     int packet_loss_perc;
     opus_int32 count=0, count_act=0;
     int k;
-    int skip=0;
+    opus_int32 skip=0;
     int stop=0;
     short *in, *out;
     int application=OPUS_APPLICATION_AUDIO;

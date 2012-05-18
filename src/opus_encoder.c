@@ -437,7 +437,7 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 
 #ifdef FIXED_POINT
 #define opus_encode_native opus_encode
-int opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
+opus_int32 opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes)
 #else
 #define opus_encode_native opus_encode_float
@@ -1248,7 +1248,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
 #ifdef FIXED_POINT
 
 #ifndef DISABLE_FLOAT_API
-int opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
+opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
       unsigned char *data, opus_int32 max_data_bytes)
 {
    int i, ret;
