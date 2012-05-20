@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-/** @defgroup errorcodes Error codes
+/** @defgroup opus_errorcodes Error codes
  * @{
  */
 /** No error @hideinitializer*/
@@ -112,8 +112,8 @@ extern "C" {
 #define __opus_check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
 /** @endcond */
 
-/** @defgroup ctlvalues Pre-defined values for CTL interface
-  * @see genericctls, encoderctls
+/** @defgroup opus_ctlvalues Pre-defined values for CTL interface
+  * @see opus_genericctls, opus_encoderctls
   * @{
   */
 /* Values for the various encoder CTLs */
@@ -141,7 +141,7 @@ extern "C" {
 /**@}*/
 
 
-/** @defgroup encoderctls Encoder related CTLs
+/** @defgroup opus_encoderctls Encoder related CTLs
   *
   * These are convenience macros for use with the \c opus_encode_ctl
   * interface. They are used to generate the appropriate series of
@@ -161,7 +161,7 @@ extern "C" {
   * opus_encoder_ctl(enc_ctx, OPUS_RESET_STATE);
   * @endcode
   *
-  * @see genericctls, opusencoder
+  * @see opus_genericctls, opus_encoder
   * @{
   */
 
@@ -347,7 +347,7 @@ extern "C" {
 #define OPUS_GET_DTX(x) OPUS_GET_DTX_REQUEST, __opus_check_int_ptr(x)
 /**@}*/
 
-/** @defgroup genericctls Generic CTLs
+/** @defgroup opus_genericctls Generic CTLs
   *
   * These macros are used with the \c opus_decoder_ctl and
   * \c opus_encoder_ctl calls to generate a particular
@@ -377,7 +377,7 @@ extern "C" {
   * }
   * @endcode
   *
-  * @see opusencoder, opus_decoder_ctl, opus_encoder_ctl
+  * @see opus_encoder, opus_decoder_ctl, opus_encoder_ctl
   * @{
   */
 
@@ -417,7 +417,7 @@ extern "C" {
 
 /**@}*/
 
-/** @defgroup libinfo Opus library information functions
+/** @defgroup opus_libinfo Opus library information functions
   * @{
   */
 

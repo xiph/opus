@@ -63,13 +63,13 @@ extern "C" {
  * @li Floating point and fixed-point implementation
  *
  * Documentation sections:
- * @li @ref opusencoder
- * @li @ref opusdecoder
- * @li @ref repacketizer
- * @li @ref libinfo
+ * @li @ref opus_encoder
+ * @li @ref opus_decoder
+ * @li @ref opus_repacketizer
+ * @li @ref opus_libinfo
  */
 
-/** @defgroup opusencoder Opus Encoder
+/** @defgroup opus_encoder Opus Encoder
   * @{
   *
   * Since Opus is a stateful codec, the encoding process starts with creating an encoder
@@ -119,7 +119,7 @@ extern "C" {
   * @arg complexity is a value from 1 to 10, where 1 is the lowest complexity and 10 is the highest
   * @arg signal_type is either OPUS_AUTO (default), OPUS_SIGNAL_VOICE, or OPUS_SIGNAL_MUSIC
   *
-  * See @ref encoderctls and @ref genericctls for a complete list of parameters that can be set or queried. Most parameters can be set or changed at any time during a stream.
+  * See @ref opus_encoderctls and @ref opus_genericctls for a complete list of parameters that can be set or queried. Most parameters can be set or changed at any time during a stream.
   *
   * To encode a frame, opus_encode() or opus_encode_float() must be called with exactly one frame (2.5, 5, 10, 20, 40 or 60 ms) of audio data:
   * @code
@@ -186,7 +186,7 @@ OPUS_EXPORT int opus_encoder_get_size(int channels);
  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate of input signal (Hz)
  * @param [in] channels <tt>int</tt>: Number of channels (1/2) in input signal
  * @param [in] application <tt>int</tt>: Coding mode (@ref OPUS_APPLICATION_VOIP/@ref OPUS_APPLICATION_AUDIO/@ref OPUS_APPLICATION_RESTRICTED_LOWDELAY)
- * @param [out] error <tt>int*</tt>: @ref errorcodes
+ * @param [out] error <tt>int*</tt>: @ref opus_errorcodes
  * @note Regardless of the sampling rate and number channels selected, the Opus encoder
  * can switch to a lower audio audio bandwidth or number of channels if the bitrate
  * selected is too low. This also means that it is safe to always use 48 kHz stereo input
@@ -208,7 +208,7 @@ OPUS_EXPORT OpusEncoder *opus_encoder_create(
   * @param [in] Fs <tt>opus_int32</tt>: Sampling rate of input signal (Hz)
   * @param [in] channels <tt>int</tt>: Number of channels (1/2) in input signal
   * @param [in] application <tt>int</tt>: Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO/OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-  * @retval OPUS_OK Success or @ref errorcodes
+  * @retval OPUS_OK Success or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_encoder_init(
     OpusEncoder *st,
@@ -227,7 +227,7 @@ OPUS_EXPORT int opus_encoder_init(
   * @param [in] frame_size <tt>int</tt>: Number of samples per frame of input signal
   * @param [out] data <tt>char*</tt>: Output payload (at least max_data_bytes long)
   * @param [in] max_data_bytes <tt>opus_int32</tt>: Allocated memory for payload; don't use for controlling bitrate
-  * @returns length of the data payload (in bytes) or @ref errorcodes
+  * @returns length of the data payload (in bytes) or @ref opus_errorcodes
   */
 OPUS_EXPORT opus_int32 opus_encode(
     OpusEncoder *st,
@@ -247,7 +247,7 @@ OPUS_EXPORT opus_int32 opus_encode(
   * @param [in] frame_size <tt>int</tt>: Number of samples per frame of input signal
   * @param [out] data <tt>char*</tt>: Output payload (at least max_data_bytes long)
   * @param [in] max_data_bytes <tt>opus_int32</tt>: Allocated memory for payload; don't use for controlling bitrate
-  * @returns length of the data payload (in bytes) or @ref errorcodes
+  * @returns length of the data payload (in bytes) or @ref opus_errorcodes
   */
 OPUS_EXPORT opus_int32 opus_encode_float(
     OpusEncoder *st,
@@ -266,12 +266,12 @@ OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
   *
   * Generally the request and subsequent arguments are generated
   * by a convenience macro.
-  * @see encoderctls
+  * @see opus_encoderctls
   */
 OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
 /**@}*/
 
-/** @defgroup opusdecoder Opus Decoder
+/** @defgroup opus_decoder Opus Decoder
   * @{
   *
   *
@@ -337,7 +337,7 @@ OPUS_EXPORT int opus_decoder_get_size(int channels);
 /** Allocates and initializes a decoder state.
   * @param [in] Fs <tt>opus_int32</tt>: Sample rate to decode at (Hz)
   * @param [in] channels <tt>int</tt>: Number of channels (1/2) to decode
-  * @param [out] error <tt>int*</tt>: OPUS_OK Success or @ref errorcodes
+  * @param [out] error <tt>int*</tt>: OPUS_OK Success or @ref opus_errorcodes
   *
   * Internally Opus stores data at 48000 Hz, so that should be the default
   * value for Fs. However, the decoder can efficiently decode to buffers
@@ -360,7 +360,7 @@ OPUS_EXPORT OpusDecoder *opus_decoder_create(
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state.
   * @param [in] Fs <tt>opus_int32</tt>: Sampling rate to decode to (Hz)
   * @param [in] channels <tt>int</tt>: Number of channels (1/2) to decode
-  * @retval OPUS_OK Success or @ref errorcodes
+  * @retval OPUS_OK Success or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_decoder_init(
     OpusDecoder *st,
@@ -378,7 +378,7 @@ OPUS_EXPORT int opus_decoder_init(
   *  if less than the maximum frame size (120ms) some frames can not be decoded
   * @param [in] decode_fec <tt>int</tt>: Flag (0/1) to request that any in-band forward error correction data be
   *  decoded. If no such data is available the frame is decoded as if it were lost.
-  * @returns Number of decoded samples or @ref errorcodes
+  * @returns Number of decoded samples or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_decode(
     OpusDecoder *st,
@@ -399,7 +399,7 @@ OPUS_EXPORT int opus_decode(
   *  if less than the maximum frame size (120ms) some frames can not be decoded
   * @param [in] decode_fec <tt>int</tt>: Flag (0/1) to request that any in-band forward error correction data be
   *  decoded. If no such data is available the frame is decoded as if it were lost.
-  * @returns Number of decoded samples or @ref errorcodes
+  * @returns Number of decoded samples or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_decode_float(
     OpusDecoder *st,
@@ -414,7 +414,7 @@ OPUS_EXPORT int opus_decode_float(
   *
   * Generally the request and subsequent arguments are generated
   * by a convenience macro.
-  * @see genericctls
+  * @see opus_genericctls
   */
 OPUS_EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...);
 
@@ -489,7 +489,7 @@ OPUS_EXPORT int opus_packet_get_nb_frames(const unsigned char packet[], opus_int
 OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], opus_int32 len);
 /**@}*/
 
-/** @defgroup repacketizer Repacketizer
+/** @defgroup opus_repacketizer Repacketizer
   * @{
   *
   * The repacketizer can be used to merge multiple Opus packets into a single packet
