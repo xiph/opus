@@ -2,8 +2,6 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 lib_LTLIBRARIES = libopus.la
 
-SUBDIRS = . doc
-
 INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/celt -I$(top_srcdir)/silk -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed
 
 include celt_sources.mk
@@ -81,7 +79,43 @@ opus_custom_demo_SOURCES = celt/opus_custom_demo.c
 opus_custom_demo_LDADD = libopus.la -lm
 endif
 
-EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in
+EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in doc
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = opus.pc
+
+
+# Targets to build and install just the library without the docs
+opus check-opus install-opus: export NO_DOXYGEN = 1
+
+opus: all
+check-opus: check
+install-opus: install
+
+
+# Or just the docs
+docs:
+	$(MAKE) $(AM_MAKEFLAGS) -C doc
+
+install-docs:
+	$(MAKE) $(AM_MAKEFLAGS) -C doc install
+
+
+# Or everything (by default)
+all-local:
+	@[ -n "$(NO_DOXYGEN)" ] || $(MAKE) $(AM_MAKEFLAGS) -C doc
+
+install-data-local:
+	@[ -n "$(NO_DOXYGEN)" ] || $(MAKE) $(AM_MAKEFLAGS) -C doc install
+
+clean-local:
+	$(MAKE) $(AM_MAKEFLAGS) -C doc clean
+
+distclean-local:
+	$(MAKE) $(AM_MAKEFLAGS) -C doc distclean
+
+uninstall-local:
+	$(MAKE) $(AM_MAKEFLAGS) -C doc uninstall
+
+
+.PHONY: opus check-opus install-opus docs install-docs
