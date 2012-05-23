@@ -893,7 +893,7 @@ static inline opus_int32 silk_abs_int32_(opus_int32 a, char *file, int line){
         silk_assert( 0 );
 #endif
     }
-    return abs(a);
+    return silk_abs(a);
 }
 
 #undef silk_CHECK_FIT8

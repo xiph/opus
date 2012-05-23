@@ -29,7 +29,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #endif
 
-#include <stdlib.h>
 #include "main.h"
 
 /* Silk VAD noise level estimation */

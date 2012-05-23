@@ -45,7 +45,7 @@ static inline void silk_PLC_update(
 static inline void silk_PLC_conceal(
     silk_decoder_state                  *psDec,             /* I/O Decoder state        */
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
-    opus_int16                          signal[]            /* O LPC residual signal    */
+    opus_int16                          frame[]             /* O LPC residual signal    */
 );
 
 

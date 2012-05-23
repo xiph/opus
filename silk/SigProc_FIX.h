@@ -37,7 +37,6 @@ extern "C"
 
 #define SILK_MAX_ORDER_LPC            16            /* max order of the LPC analysis in schur() and k2a() */
 
-#include <stdlib.h>                                 /* for abs() */
 #include <string.h>                                 /* for memset(), memcpy(), memmove() */
 #include "typedef.h"
 #include "resampler_structs.h"

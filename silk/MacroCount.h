@@ -477,7 +477,7 @@ static inline opus_int64 silk_abs_int64(opus_int64 a){
 #undef    silk_abs_int32
 static inline opus_int32 silk_abs_int32(opus_int32 a){
     ops_count += 1;
-    return abs(a);
+    return silk_abs(a);
 }
 
 
