@@ -35,6 +35,10 @@
 
 #include "opus.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct OpusMSEncoder OpusMSEncoder;
 typedef struct OpusMSDecoder OpusMSDecoder;
 
@@ -160,5 +164,9 @@ OPUS_EXPORT int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...
 
 /** Deallocate a multistream decoder state object */
 OPUS_EXPORT void opus_multistream_decoder_destroy(OpusMSDecoder *st);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* OPUS_MULTISTREAM_H */
