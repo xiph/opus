@@ -11,10 +11,11 @@ DOCINPUTS = $(top_srcdir)/include/opus.h \
 
 EXTRA_DIST = Doxyfile.in opus_logo.svg
 
-all-local: doxygen-build.stamp
-
 
 if HAVE_DOXYGEN
+
+all-local: doxygen-build.stamp
+
 doxygen-build.stamp: Doxyfile $(DOCINPUTS)
 	doxygen
 	touch $@
@@ -27,14 +28,7 @@ install-data-local:
 	$(INSTALL) -d $(DESTDIR)$(mandir)/man3
 	cd man && find man3 -type f \
 		  -exec $(INSTALL_DATA) \{} $(DESTDIR)$(mandir)/man3 \;
-else
-doxygen-build.stamp: Doxyfile $(DOCINPUTS)
-	@echo "*** Warning: Doxygen not found; API documentation will not be built."
-	touch $@
-endif
 
-
-# delete doxygen subdirs
 clean-local:
 	$(RM) -r html
 	$(RM) -r latex
@@ -44,3 +38,5 @@ clean-local:
 uninstall-local:
 	$(RM) -r $(DESTDIR)$(docdir)/html
 	$(RM) $(DESTDIR)$(mandir)/man3/opus_*.3 $(DESTDIR)$(mandir)/man3/opus.h.3
+
+endif
