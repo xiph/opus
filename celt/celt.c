@@ -1385,6 +1385,9 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      opus_int32 min_allowed;
      int lm_diff = st->mode->maxLM - LM;
 
+     /* Don't attempt to use more than 510 kb/s, even for frames smaller than 20 ms.
+        The CELT allocator will just not be able to use more than that anyway. */
+     nbCompressedBytes = IMIN(nbCompressedBytes,1275>>(3-LM));
      target = vbr_rate + (st->vbr_offset>>lm_diff) - ((40*C+20)<<BITRES);
 
      /* Shortblocks get a large boost in bitrate, but since they

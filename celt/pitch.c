@@ -111,10 +111,17 @@ void pitch_downsample(celt_sig * restrict x[], opus_val16 * restrict x_lp,
    opus_val16 lpc[4], mem[4]={0,0,0,0};
 #ifdef FIXED_POINT
    int shift;
-   opus_val32 maxabs = MAX32(1, celt_maxabs32(x[0], len));
+   opus_val32 maxabs = celt_maxabs32(x[0], len);
    if (C==2)
-      maxabs = MAX32(maxabs, celt_maxabs32(x[1], len));
-   shift = IMAX(0,celt_ilog2(maxabs)-10);
+   {
+      opus_val32 maxabs_1 = celt_maxabs32(x[1], len);
+      maxabs = MAX32(maxabs, maxabs_1);
+   }
+   if (maxabs<1)
+      maxabs=1;
+   shift = celt_ilog2(maxabs)-10;
+   if (shift<0)
+      shift=0;
    if (C==2)
       shift++;
 #endif
@@ -173,6 +180,7 @@ void pitch_search(const opus_val16 * restrict x_lp, opus_val16 * restrict y,
    VARDECL(opus_val32, xcorr);
 #ifdef FIXED_POINT
    opus_val32 maxcorr=1;
+   opus_val16 xmax, ymax;
    int shift=0;
 #endif
    int offset;
@@ -194,7 +202,9 @@ void pitch_search(const opus_val16 * restrict x_lp, opus_val16 * restrict y,
       y_lp4[j] = y[2*j];
 
 #ifdef FIXED_POINT
-   shift = celt_ilog2(MAX16(1, MAX16(celt_maxabs16(x_lp4, len>>2), celt_maxabs16(y_lp4, lag>>2))))-11;
+   xmax = celt_maxabs16(x_lp4, len>>2);
+   ymax = celt_maxabs16(y_lp4, lag>>2);
+   shift = celt_ilog2(MAX16(1, MAX16(xmax, ymax)))-11;
    if (shift>0)
    {
       for (j=0;j<len>>2;j++)
