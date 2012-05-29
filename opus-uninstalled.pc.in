@@ -8,5 +8,5 @@ Description: Opus IETF audio codec (not installed)
 Version: @VERSION@
 Requires:
 Conflicts:
-Libs: ${libdir}/libopus.a
-Cflags: -I${includedir}/src -I${includedir}/celt
+Libs: -L${libdir} -lopus
+Cflags: -I${includedir}/include -I${includedir}/src -I${includedir}/celt
