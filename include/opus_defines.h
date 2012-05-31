@@ -69,7 +69,7 @@ extern "C" {
 # ifdef OPUS_BUILD
 #   define OPUS_EXPORT __declspec(dllexport)
 # else
-#   define OPUS_EXPORT __declspec(dllimport)
+#   define OPUS_EXPORT
 # endif
 #else
 # define OPUS_EXPORT
