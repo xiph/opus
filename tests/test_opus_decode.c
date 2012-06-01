@@ -329,6 +329,7 @@ int test_decoder_code0(int no_fuzz)
       fprintf(stdout,"  dec[%3d] pre-selected random packets OK.\n",t);
    }
 
+   free(decbak);
    for(t=0;t<5*2;t++)opus_decoder_destroy(dec[t]);
    printf("  Decoders stopped.\n");
 
