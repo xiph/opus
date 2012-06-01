@@ -75,6 +75,29 @@ extern "C" {
 # define OPUS_EXPORT
 #endif
 
+# if !defined(OPUS_GNUC_PREREQ)
+#  if defined(__GNUC__)&&defined(__GNUC_MINOR__)
+#   define OPUS_GNUC_PREREQ(_maj,_min) \
+ ((__GNUC__<<16)+__GNUC_MINOR__>=((_maj)<<16)+(_min))
+#  else
+#   define OPUS_GNUC_PREREQ(_maj,_min) 0
+#  endif
+# endif
+
+/**Warning attributes for opus functions
+  * NONNULL is not used in OPUS_BUILD to avoid the compiler optimizing out
+  * some paranoid null checks. */
+#if defined(__GNUC__) && OPUS_GNUC_PREREQ(3, 4)
+# define OPUS_WARN_UNUSED_RESULT __attribute__ ((__warn_unused_result__))
+#else
+# define OPUS_WARN_UNUSED_RESULT
+#endif
+#if !defined(OPUS_BUILD) && defined(__GNUC__) && OPUS_GNUC_PREREQ(3, 4)
+# define OPUS_ARG_NONNULL(_x)  __attribute__ ((__nonnull__(_x)))
+#else
+# define OPUS_ARG_NONNULL(_x)
+#endif
+
 /** These are the actual Encoder CTL ID numbers.
   * They should not be used directly by applications. */
 #define OPUS_SET_APPLICATION_REQUEST         4000

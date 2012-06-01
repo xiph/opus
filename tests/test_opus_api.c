@@ -1382,7 +1382,7 @@ int test_repacketizer_api(void)
  * handling in our codebase, and the lack of thread saftey isn't an
  * issue here. We therefore disable the warning for this function.
  */
-#if __GNUC_PREREQ(4,6)
+#if OPUS_GNUC_PREREQ(4,6)
 /* Save the current warning settings */
 #pragma GCC diagnostic push
 #endif
