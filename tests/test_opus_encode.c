@@ -356,6 +356,7 @@ int run_test1(int no_fuzz)
    opus_multistream_encoder_destroy(MSenc);
    opus_decoder_destroy(dec);
    opus_multistream_decoder_destroy(MSdec);
+   opus_multistream_decoder_destroy(MSdec_err);
    for(i=0;i<10;i++)opus_decoder_destroy(dec_err[i]);
    free(inbuf);
    free(outbuf);
