@@ -1,5 +1,5 @@
-/* Copyright (C) 2003-2008 Jean-Marc Valin
-   Copyright (C) 2007-2009 Xiph.Org Foundation */
+/* Copyright (C) 2003-2012 IETF Trust, Jean-Marc Valin,
+                           Xiph.Org Foundation. All rights reserved.*/
 /**
    @file fixed_debug.h
    @brief Fixed-point operations with debugging

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008 CSIRO */
+/* Copyright (C) 2008-2012 IETF Trust, CSIRO. All rights reserved. */
 /**
    @file fixed_c6x.h
    @brief Fixed-point operations for the TI C6x DSP family

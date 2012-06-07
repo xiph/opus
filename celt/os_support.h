@@ -1,4 +1,4 @@
-/* Copyright (C) 2007 Jean-Marc Valin
+/* Copyright (C) 2007-2012 IETF Trust, Jean-Marc Valin. All rights reserved.
 
    File: os_support.h
    This is the (tiny) OS abstraction layer. Aside from math.h, this is the

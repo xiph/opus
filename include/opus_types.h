@@ -1,4 +1,4 @@
-/* (C) COPYRIGHT 1994-2002 Xiph.Org Foundation */
+/* (C) COPYRIGHT 1994-2012 IETF Trust, Xiph.Org Foundation. All rights reserved */
 /* Modified by Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without

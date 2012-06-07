@@ -1,5 +1,4 @@
-/* Copyright (c) 2008 CSIRO
-   Copyright (c) 2008-2009 Xiph.Org Foundation
+/* Copyright (c) 2008-2012 IETF Trust, CSIRO, Xiph.Org Foundation. All rights reserved.
    Written by Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without

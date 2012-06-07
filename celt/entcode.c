@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2011 Timothy B. Terriberry
+/* Copyright (c) 2001-2012 IETF Trust, Timothy B. Terriberry. All rights reserved.
 */
 /*
    Redistribution and use in source and binary forms, with or without

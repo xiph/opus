@@ -1,6 +1,5 @@
-/* Copyright (c) 2002-2008 Jean-Marc Valin
-   Copyright (c) 2007-2008 CSIRO
-   Copyright (c) 2007-2009 Xiph.Org Foundation
+/* Copyright (c) 2002-2012 IETF Trust, Jean-Marc Valin, CSIRO,
+                           Xiph.Org Foundation. All rights reserved.
    Written by Jean-Marc Valin */
 /**
    @file mathops.h

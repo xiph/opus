@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Jean-Marc Valin */
+/* Copyright (C) 2003-2012 IETF Trust, Jean-Marc Valin. All rights reserved.*/
 /**
    @file fixed_c5x.h
    @brief Fixed-point operations for the TI C5x DSP family

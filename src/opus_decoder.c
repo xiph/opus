@@ -1,4 +1,4 @@
-/* Copyright (c) 2010 Xiph.Org Foundation, Skype Limited
+/* Copyright (c) 2010-2012 IETF Trust, Xiph.Org Foundation, Skype Limited. All rights reserved.
    Written by Jean-Marc Valin and Koen Vos */
 /*
    Redistribution and use in source and binary forms, with or without
