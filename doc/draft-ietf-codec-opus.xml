@@ -173,8 +173,7 @@ clamp(lo,x,hi) = max(lo,min(x,hi))
 ]]></artwork>
 </figure>
 <t>
-With this definition, if lo&nbsp;&gt;&nbsp;hi, the lower bound is the one that
- is enforced.
+With this definition, if lo&nbsp;&gt;&nbsp;hi, then lo is returned.
 </t>
 </section>
 
@@ -501,7 +500,11 @@ choose a trade-off between bitrate and amount of error propagation.
 <section title="Constant/Variable Bitrate" toc="exlcude">
 <t>
 Opus is more efficient when operating with variable bitrate (VBR), which is
-the default. However, in some (rare) applications, constant bitrate (CBR)
+the default. When low-latency transmission is required over a relatively slow connection, then
+constrained VBR can also be used. This uses VBR in a way that simulates a
+"bit reservoir" and is equivalent to what MP3 (MPEG 1, Layer 3) and
+AAC (Advanced Audio Coding) call CBR (i.e., not true
+CBR due to the bit reservoir). In some (rare) applications, constant bitrate (CBR)
 is required. There are two main reasons to operate in CBR mode:
 <list style="symbols">
 <t>When the transport only supports a fixed size for each compressed frame</t>
@@ -509,11 +512,11 @@ is required. There are two main reasons to operate in CBR mode:
    (e.g. yes/no, recorded prompts) or highly sensitive <xref target="SRTP-VBR"></xref> </t>
 </list>
 
-When low-latency transmission is required over a relatively slow connection, then
-constrained VBR can also be used. This uses VBR in a way that simulates a
-"bit reservoir" and is equivalent to what MP3 (MPEG 1, Layer 3) and
-AAC (Advanced Audio Coding) call CBR (i.e., not true
-CBR due to the bit reservoir).
+Bitrate may still be allowed
+to vary, even with sensitive data, as long as the variation is not
+driven by the input signal (for example, to match changing network
+conditions). To achieve this, an application should still run Opus
+in CBR mode, but change the target rate before each packet.
 </t>
 </section>
 
@@ -542,7 +545,7 @@ A single packet may contain multiple audio frames, so long as they share a
 This section describes the possible combinations of these parameters and the
  internal framing used to pack multiple frames into a single packet.
 This framing is not self-delimiting.
-Instead, it assumes that a higher layer (such as UDP or RTP <xref target='RFC3550'/>
+Instead, it assumes that a lower layer (such as UDP or RTP <xref target='RFC3550'/>
 or Ogg <xref target='RFC3533'/> or Matroska <xref target='Matroska-website'/>)
  will communicate the length, in bytes, of the packet, and it uses this
  information to reduce the framing overhead in the packet itself.
@@ -1084,7 +1087,8 @@ Each symbol coded by the range coder is drawn from a finite alphabet and coded
 Suppose there is a context with n symbols, identified with an index that ranges
  from 0 to n-1.
 The parameters needed to encode or decode symbol k in this context are
- represented by a three-tuple (fl[k],&nbsp;fh[k],&nbsp;ft), with
+ represented by a three-tuple (fl[k],&nbsp;fh[k],&nbsp;ft), all 16-bit unsigned
+ integers, with
  0&nbsp;&lt;=&nbsp;fl[k]&nbsp;&lt;&nbsp;fh[k]&nbsp;&lt;=&nbsp;ft&nbsp;&lt;=&nbsp;65535.
 The values of this tuple are derived from the probability model for the
  symbol, represented by traditional "frequency counts".
@@ -1113,8 +1117,8 @@ Both val and rng are 32-bit unsigned integer values.
 
 <section anchor="range-decoder-init" title="Range Decoder Initialization">
 <t>
-Let b0 be the first input byte (or zero if there are no bytes in this Opus
- frame).
+Let b0 be an 8-bit unsigned integer containing first input byte (or containing
+ zero if there are no bytes in this Opus frame).
 The decoder initializes rng to 128 and initializes val to
  (127&nbsp;-&nbsp;(b0&gt;&gt;1)), where (b0&gt;&gt;1) is the top 7 bits of the
  first input byte.
@@ -1311,7 +1315,7 @@ This is the primary interface with the range decoder in the SILK layer, though
 Although icdf[k] is more convenient for the code, the frequency counts, f[k],
  are a more natural representation of the probability distribution function
  (PDF) for a given symbol.
-Therefore this draft lists the latter, not the former, when describing the
+Therefore this document lists the latter, not the former, when describing the
  context in which a symbol is coded as a list, e.g., {4, 4, 4, 4}/16 for a
  uniform context with four possible values and ft&nbsp;=&nbsp;16.
 The value of ft after the slash is always the sum of the entries in the PDF,
@@ -1393,7 +1397,8 @@ t = (t << (ftb - 8)) | ec_dec_bits(ftb - 8) .
 If, at this point, t >= ft, then the current frame is corrupt.
 In that case, the decoder should assume there has been an error in the coding,
  decoding, or transmission and SHOULD take measures to conceal the
- error and/or report to the application that the error has occurred.
+ error (e.g. saturate to ft-1 or use the PLC) and/or report to the application
+ that the error has occurred.
 </t>
 
 </section>
@@ -6246,8 +6251,8 @@ rng = rng<<8 .
 <t>
 The function ec_enc_carry_out() (entenc.c) implements carry propagation and
  output buffering.
-It takes as input a 9-bit value, c, consisting of 8 data bits and an additional
- carry bit.
+It takes as input a 9-bit unsigned value, c, consisting of 8 data bits and an
+ additional carry bit.
 If c is equal to the value 255, then ext is simply incremented, and no other
  state updates are performed.
 Otherwise, let b&nbsp;=&nbsp;(c&gt;&gt;8) be the carry bit.
@@ -6346,9 +6351,9 @@ Like the decoder (see <xref target="ec_dec_uint"/>), it splits up the
  necessary, raw bits representing the remainder of the value.
 </t>
 <t>
-ec_enc_uint() takes a two-tuple (t,&nbsp;ft), where t is the value to be
- encoded, 0&nbsp;&lt;=&nbsp;t&nbsp;&lt;&nbsp;ft, and ft is not necessarily a
- power of two.
+ec_enc_uint() takes a two-tuple (t,&nbsp;ft), where t is the unsigned integer
+ to be encoded, 0&nbsp;&lt;=&nbsp;t&nbsp;&lt;&nbsp;ft, and ft is not
+ necessarily a power of two.
 Let ftb&nbsp;=&nbsp;ilog(ft&nbsp;-&nbsp;1), i.e., the number of bits required
  to store (ft&nbsp;-&nbsp;1) in two's complement notation.
 If ftb is 8 or less, then t is encoded directly using ec_encode() with the
@@ -6369,8 +6374,8 @@ If ftb is greater than 8, then the top 8 bits of t are encoded using the
 <t>
 After all symbols are encoded, the stream must be finalized by outputting a
  value inside the current range.
-Let end be the integer in the interval [val,&nbsp;val&nbsp;+&nbsp;rng) with the
- largest number of trailing zero bits, b, such that
+Let end be the unsigned integer in the interval [val,&nbsp;val&nbsp;+&nbsp;rng)
+ with the largest number of trailing zero bits, b, such that
  (end&nbsp;+&nbsp;(1&lt;&lt;b)&nbsp;-&nbsp;1) is also in the interval
  [val,&nbsp;val&nbsp;+&nbsp;rng).
 This choice of end allows the maximum number of trailing bits to be set to
@@ -7565,6 +7570,11 @@ calls in opus_custom.h.
 <section anchor="security" title="Security Considerations">
 
 <t>
+Like any other audio codec, Opus should not be used with bad ciphers
+that are vulnerable to known-plaintext attacks. In addition to the zeros used
+in Opus padding, digital silence frames generate predictable compressed results
+and the TOC byte may have an easily predictable value.</t>
+<t>
 Implementations of the Opus codec need to take appropriate security considerations
 into account, as outlined in <xref target="DOS"/>.
 It is extremely important for the decoder to be robust against malicious
@@ -7941,6 +7951,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <title>Maximum Entropy Spectral Analysis</title>
 <author initials="JP." surname="Burg" fullname="J.P. Burg"><organization/></author>
 </front>
+<seriesInfo name="Proceedings of the 37th Annual International SEG Meeting, Vol. 6" value="1975"/>
 </reference>
 
 <reference anchor="Schur">
@@ -7992,7 +8003,8 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 reference implementation of the Opus codec written in C. By default,
 this implementation relies on floating-point arithmetic, but it can be
 compiled to use only fixed-point arithmetic by defining the FIXED_POINT
-macro. Information on building and using the reference implementation is
+macro. The normative behaviour is defined as the output using the floating-point
+confguration. Information on building and using the reference implementation is
 available in the README file.
 </t>
 
@@ -8034,7 +8046,7 @@ following command line:
 
 <list style="symbols">
 <t><![CDATA[
-cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/...###//' | base64 -d > opus_source.tar.gz
+cat rfcXXXX.txt | grep '^\ \ \ ###' | sed -e 's/...###//' | base64 -d > opus_source.tar.gz
 ]]></t>
 <t>
 tar xzvf opus_source.tar.gz
@@ -8054,11 +8066,11 @@ cc -O2 -g -o opus_demo src/opus_demo.c `cat *.mk | grep -v fixed | sed -e 's/.*=
 On systems where the base64 utility is not present, the following commands can be used instead:
 <list style="symbols">
 <t><![CDATA[
-cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/...###//' > opus.b64
+cat rfcXXXX.txt | grep '^\ \ \ ###' | sed -e 's/...###//' > opus.b64
 ]]></t>
 <t>openssl base64 -d -in opus.b64 > opus_source.tar.gz</t>
 </list>
-
+The SHA1 hash of the opus_source.tar.gz file is <?rfc include="code_sha1"?>
 </t>
 </section>
 

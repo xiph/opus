@@ -66,6 +66,8 @@ echo ']]>' >> testvectors_sha1
 echo '</artwork>' >> testvectors_sha1
 echo '</figure>' >> testvectors_sha1
 
+sha1sum opus_source.tar.gz | sed 's/ *opus.*$/\./' > code_sha1
+
 echo running xml2rfc
 xml2rfc draft-ietf-codec-opus.xml draft-ietf-codec-opus.html &
 xml2rfc draft-ietf-codec-opus.xml
