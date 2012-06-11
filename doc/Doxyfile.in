@@ -840,13 +840,13 @@ HTML_FILE_EXTENSION    = .html
 # that header. Note that the header is subject to change so you typically
 # have to redo this when upgrading to a newer version of doxygen or when changing the value of configuration settings such as GENERATE_TREEVIEW!
 
-HTML_HEADER            = header.html
+HTML_HEADER            = @top_srcdir@/doc/header.html
 
 # The HTML_FOOTER tag can be used to specify a personal HTML footer for
 # each generated HTML page. If it is left blank doxygen will generate a
 # standard footer.
 
-HTML_FOOTER            = footer.html
+HTML_FOOTER            = @top_srcdir@/doc/footer.html
 
 # If the HTML_TIMESTAMP tag is set to YES then the generated HTML documentation will contain the timesstamp.
 
@@ -859,7 +859,7 @@ HTML_TIMESTAMP         = NO
 # the style sheet file to the HTML output directory, so don't put your own
 # stylesheet in the HTML output directory as well, or it will be erased!
 
-HTML_STYLESHEET        = customdoxygen.css
+HTML_STYLESHEET        = @top_srcdir@/doc/customdoxygen.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -868,7 +868,7 @@ HTML_STYLESHEET        = customdoxygen.css
 # files. In the HTML_STYLESHEET file, use the file name only. Also note that
 # the files will be copied as-is; there are no commands or markers available.
 
-HTML_EXTRA_FILES       = opus_logo.svg
+HTML_EXTRA_FILES       = @top_srcdir@/doc/opus_logo.svg
 
 # The HTML_COLORSTYLE_HUE tag controls the color of the HTML output.
 # Doxygen will adjust the colors in the stylesheet and background images

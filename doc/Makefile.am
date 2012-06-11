@@ -4,9 +4,12 @@ DOCINPUTS = $(top_srcdir)/include/opus.h \
             $(top_srcdir)/include/opus_multistream.h \
             $(top_srcdir)/include/opus_defines.h \
             $(top_srcdir)/include/opus_types.h \
-            $(top_srcdir)/include/opus_custom.h
+            $(top_srcdir)/include/opus_custom.h \
+            $(top_srcdir)/doc/header.html \
+            $(top_srcdir)/doc/footer.html \
+            $(top_srcdir)/doc/customdoxygen.css
 
-EXTRA_DIST = Doxyfile.in
+EXTRA_DIST = Doxyfile.in opus_logo.svg
 
 all-local: doxygen-build.stamp
 
