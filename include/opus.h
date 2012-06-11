@@ -67,6 +67,7 @@ extern "C" {
  * @li @ref opus_decoder
  * @li @ref opus_repacketizer
  * @li @ref opus_libinfo
+ * @li @ref opus_custom
  */
 
 /** @defgroup opus_encoder Opus Encoder
@@ -243,7 +244,12 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
   * Passing in a duration of less than 10ms (480 samples at 48kHz) will
   * prevent the encoder from using the LPC or hybrid modes.
   * @param [in] st <tt>OpusEncoder*</tt>: Encoder state
-  * @param [in] pcm <tt>float*</tt>: Input signal (interleaved if 2 channels). length is frame_size*channels*sizeof(float)
+  * @param [in] pcm <tt>float*</tt>: Input in float format (interleaved if 2 channels), with a normal range of +/-1.0.
+  *          Samples with a range beyond +/-1.0 are supported but will
+  *          be clipped by decoders using the integer API and should
+  *          only be used if it is known that the far end supports
+  *          extended dynamic range.
+  *          length is frame_size*channels*sizeof(float)
   * @param [in] frame_size <tt>int</tt>: Number of samples per frame of input signal
   * @param [out] data <tt>char*</tt>: Output payload (at least max_data_bytes long)
   * @param [in] max_data_bytes <tt>opus_int32</tt>: Allocated memory for payload; don't use for controlling bitrate

@@ -3,7 +3,8 @@
 DOCINPUTS = $(top_srcdir)/include/opus.h \
             $(top_srcdir)/include/opus_multistream.h \
             $(top_srcdir)/include/opus_defines.h \
-            $(top_srcdir)/include/opus_types.h
+            $(top_srcdir)/include/opus_types.h \
+            $(top_srcdir)/include/opus_custom.h
 
 EXTRA_DIST = Doxyfile.in
 
