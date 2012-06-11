@@ -1,0 +1,22 @@
+--- footer.orig.html	2012-06-11 00:32:00.237427961 -0400
++++ footer.html	2012-06-11 00:45:51.518437796 -0400
+@@ -6,11 +6,15 @@
+  </div>
+ <!--END GENERATE_TREEVIEW-->
+ <!--BEGIN !GENERATE_TREEVIEW-->
+-<hr class="footer"/><address class="footer"><small>
+-$generatedby &#160;<a href="http://www.doxygen.org/index.html">
+-<img class="footer" src="$relpath$doxygen.png" alt="doxygen"/>
++<hr class="footer"/>
++<table width="100%"><tbody><tr><td>
++For more information visit the <a href="http://opus-codec.org">Opus Website</a>.
++</td><td><address class="footer"><small>
++&copy;$year<br/>
++$generatedby <a href="http://www.doxygen.org/index.html">
++<!--<img class="footer" src="$relpath$doxygen.png" alt="doxygen"/>-->doxygen
+ </a> $doxygenversion
+-</small></address>
++</small></address></tr></tbody></table>
+ <!--END !GENERATE_TREEVIEW-->
+ </body>
+ </html>

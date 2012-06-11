@@ -53,11 +53,12 @@ extern "C" {
  * stereo music. Its main features are:
 
  * @li Sampling rates from 8 to 48 kHz
- * @li Bit-rates from 6 kb/s 510 kb/s
+ * @li Bit-rates from 6 kb/s to 510 kb/s
  * @li Support for both constant bit-rate (CBR) and variable bit-rate (VBR)
  * @li Audio bandwidth from narrowband to full-band
  * @li Support for speech and music
  * @li Support for mono and stereo
+ * @li Support for multichannel (up to 255 channels)
  * @li Frame sizes from 2.5 ms to 60 ms
  * @li Good loss robustness and packet loss concealment (PLC)
  * @li Floating point and fixed-point implementation

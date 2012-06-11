@@ -37,7 +37,7 @@ PROJECT_NUMBER         = @VERSION@
 # for a project that appears at the top of each page and should give viewer
 # a quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "IETF low-delay audio codec"
+PROJECT_BRIEF          = "IETF low-delay audio codec: API and operations manual"
 
 # With the PROJECT_LOGO tag one can specify an logo or icon that is
 # included in the documentation. The maximum height of the logo should not
@@ -840,13 +840,13 @@ HTML_FILE_EXTENSION    = .html
 # that header. Note that the header is subject to change so you typically
 # have to redo this when upgrading to a newer version of doxygen or when changing the value of configuration settings such as GENERATE_TREEVIEW!
 
-HTML_HEADER            =
+HTML_HEADER            = header.html
 
 # The HTML_FOOTER tag can be used to specify a personal HTML footer for
 # each generated HTML page. If it is left blank doxygen will generate a
 # standard footer.
 
-HTML_FOOTER            =
+HTML_FOOTER            = footer.html
 
 # If the HTML_TIMESTAMP tag is set to YES then the generated HTML documentation will contain the timesstamp.
 
@@ -859,7 +859,7 @@ HTML_TIMESTAMP         = NO
 # the style sheet file to the HTML output directory, so don't put your own
 # stylesheet in the HTML output directory as well, or it will be erased!
 
-HTML_STYLESHEET        =
+HTML_STYLESHEET        = customdoxygen.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -868,7 +868,7 @@ HTML_STYLESHEET        =
 # files. In the HTML_STYLESHEET file, use the file name only. Also note that
 # the files will be copied as-is; there are no commands or markers available.
 
-HTML_EXTRA_FILES       =
+HTML_EXTRA_FILES       = opus_logo.svg
 
 # The HTML_COLORSTYLE_HUE tag controls the color of the HTML output.
 # Doxygen will adjust the colors in the stylesheet and background images
@@ -884,7 +884,7 @@ HTML_COLORSTYLE_HUE    = 220
 # the colors in the HTML output. For a value of 0 the output will use
 # grayscales only. A value of 255 will produce the most vivid colors.
 
-HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_SAT    = 0
 
 # The HTML_COLORSTYLE_GAMMA tag controls the gamma correction applied to
 # the luminance component of the colors in the HTML output. Values below
@@ -1200,7 +1200,7 @@ COMPACT_LATEX          = NO
 # by the printer. Possible values are: a4, letter, legal and
 # executive. If left blank a4wide will be used.
 
-PAPER_TYPE             = a4
+PAPER_TYPE             = letter
 
 # The EXTRA_PACKAGES tag can be to specify one or more names of LaTeX
 # packages that should be included in the LaTeX output.
