@@ -2,6 +2,8 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 lib_LTLIBRARIES = libopus.la
 
+DIST_SUBDIRS = doc
+
 INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/celt -I$(top_srcdir)/silk -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed
 
 include celt_sources.mk
@@ -79,7 +81,7 @@ opus_custom_demo_SOURCES = celt/opus_custom_demo.c
 opus_custom_demo_LDADD = libopus.la -lm
 endif
 
-EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in doc
+EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = opus.pc
@@ -109,10 +111,7 @@ install-data-local:
 	@[ -n "$(NO_DOXYGEN)" ] || $(MAKE) $(AM_MAKEFLAGS) -C doc install
 
 clean-local:
-	$(MAKE) $(AM_MAKEFLAGS) -C doc clean
-
-distclean-local:
-	$(MAKE) $(AM_MAKEFLAGS) -C doc distclean
+	-$(MAKE) $(AM_MAKEFLAGS) -C doc clean
 
 uninstall-local:
 	$(MAKE) $(AM_MAKEFLAGS) -C doc uninstall
