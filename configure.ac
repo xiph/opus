@@ -136,9 +136,11 @@ has_float_approx=no
 #esac    
 
 ac_enable_fixed="no";
-AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point    compile as fixed-point],
+ac_enable_float="yes";
+AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point       compile without floating point],
 [if test "$enableval" = yes; then
   ac_enable_fixed="yes";
+  ac_enable_float="no";
   AC_DEFINE([FIXED_POINT], [1], [Compile as fixed-point])
 else
   AC_DEFINE([FLOATING_POINT], , [Compile as floating-point])
@@ -146,21 +148,21 @@ fi],
 AC_DEFINE([FLOATING_POINT], , [Compile as floating-point]))
 
 ac_enable_fixed_debug="no"
-AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug  debug fixed-point implementation],
+AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug debug fixed-point implementation],
 [if test "$enableval" = yes; then
   ac_enable_fixed_debug="yes"
   AC_DEFINE([FIXED_DEBUG], , [Debug fixed-point implementation])
 fi])
 
 ac_enable_custom_modes="no"
-AC_ARG_ENABLE(custom-modes, [  --enable-custom-modes        Enable non-Opus modes, like 44.1 kHz and powers of two ],
+AC_ARG_ENABLE(custom-modes, [  --enable-custom-modes      enable non-Opus modes, e.g. 44.1 kHz & 2^n frames],
 [if test "$enableval" = yes; then
   ac_enable_custom_modes="yes"
   AC_DEFINE([CUSTOM_MODES], , [Custom modes])
 fi])
 
 float_approx=$has_float_approx
-AC_ARG_ENABLE(float-approx, [  --enable-float-approx   enable fast approximations for floating point],
+AC_ARG_ENABLE(float-approx, [  --enable-float-approx      enable fast approximations for floating point],
     [ if test "$enableval" = yes; then
     AC_WARN([Floating point approximations are not supported on all platforms.])
     float_approx=yes
@@ -173,14 +175,14 @@ if test "x${float_approx}" = "xyes"; then
 fi
 
 ac_enable_assertions="no"
-AC_ARG_ENABLE(assertions, [  --enable-assertions     enable additional software error checking],
+AC_ARG_ENABLE(assertions, [  --enable-assertions        enable additional software error checking],
 [if test "$enableval" = yes; then
   ac_enable_assertions="yes"
   AC_DEFINE([ENABLE_ASSERTIONS], , [Assertions])
 fi])
 
 ac_enable_fuzzing="no"
-AC_ARG_ENABLE(fuzzing, [  --enable-fuzzing     causes the encoder to make random decisions],
+AC_ARG_ENABLE(fuzzing, [  --enable-fuzzing           causes the encoder to make random decisions],
 [if test "$enableval" = yes; then
   ac_enable_fuzzing="yes"
   AC_DEFINE([FUZZING], , [Fuzzing])
@@ -285,8 +287,8 @@ AC_MSG_RESULT([
     
     General configuration:
     
+      Floating point support: ........ ${ac_enable_float}
       Fast float approximations: ..... ${float_approx}
-      Fixed point support: ........... ${ac_enable_fixed}
       Fixed point debugging: ......... ${ac_enable_fixed_debug}
       Custom modes: .................. ${ac_enable_custom_modes}
       Assertion checking: ............ ${ac_enable_assertions}
