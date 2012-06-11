@@ -73,6 +73,8 @@ extern "C" {
 /** @defgroup opus_encoder Opus Encoder
   * @{
   *
+  * @brief This page describes the process and functions used to encode Opus.
+  *
   * Since Opus is a stateful codec, the encoding process starts with creating an encoder
   * state. This can be done with:
   *
@@ -280,6 +282,7 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
 /** @defgroup opus_decoder Opus Decoder
   * @{
   *
+  * @brief This page describes the process and functions used to decode Opus.
   *
   * The decoding process also starts with creating a decoder
   * state. This can be done with:
