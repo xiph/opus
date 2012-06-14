@@ -1,0 +1,880 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!ENTITY rfc2119 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml'>
+<!ENTITY rfc3550 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml'>
+<!ENTITY rfc3711 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3711.xml'>
+<!ENTITY rfc3551 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3551.xml'>
+<!ENTITY rfc4288 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4288.xml'>
+<!ENTITY rfc4855 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4855.xml'>
+<!ENTITY rfc4566 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4566.xml'>
+<!ENTITY rfc3264 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3264.xml'>
+<!ENTITY rfc2974 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2974.xml'>
+<!ENTITY rfc2326 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2326.xml'>
+<!ENTITY rfc3555 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3555.xml'>
+<!ENTITY rfc6562 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6562.xml'>
+  
+  ]>
+
+  <rfc category="info" ipr="trust200902" docName="draft-spittka-payload-rtp-opus-01.txt">
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+
+<?rfc strict="yes" ?>
+<?rfc toc="yes" ?>
+<?rfc tocdepth="3" ?>
+<?rfc tocappendix='no' ?>
+<?rfc tocindent='yes' ?>
+<?rfc symrefs="yes" ?>
+<?rfc sortrefs="yes" ?>
+<?rfc compact="no" ?>
+<?rfc subcompact="yes" ?>
+<?rfc iprnotified="yes" ?>
+
+  <front>
+    <title abbrev="RTP Payload Format for Opus Codec">
+      RTP Payload Format for Opus Speech and Audio Codec
+    </title>
+
+    <author fullname="Julian Spittka" initials="J." surname="Spittka">
+      <organization>Skype Technologies S.A.</organization>
+      <address>
+        <postal>
+          <street>3210 Porter Drive</street>
+          <code>94304</code>
+          <city>Palo Alto</city>
+          <region>CA</region>
+          <country>USA</country>
+        </postal>
+        <email>julian.spittka@skype.net</email>
+      </address>
+    </author>
+
+    <author initials='K.' surname='Vos' fullname='Koen Vos'>
+      <organization>Skype Technologies S.A.</organization>
+      <address>
+        <postal>
+          <street>3210 Porter Drive</street>
+          <code>94304</code>
+          <city>Palo Alto</city>
+          <region>CA</region>
+          <country>USA</country>
+        </postal>
+        <email>koen.vos@skype.net</email>
+      </address>
+    </author>
+
+    <author initials="JM" surname="Valin" fullname="Jean-Marc Valin">
+      <organization>Mozilla</organization>
+      <address>
+        <postal>
+          <street>650 Castro Street</street>
+          <city>Mountain View</city>
+          <region>CA</region>
+          <code>94041</code>
+          <country>USA</country>
+        </postal>
+        <email>jmvalin@jmvalin.ca</email>
+      </address>
+    </author>
+
+    <date day='1' month='May' year='2012' />
+
+    <abstract>
+      <t>
+        This document defines the Real-time Transport Protocol (RTP) payload
+        format for packetization of Opus encoded 
+        speech and audio data that is essential to integrate the codec in the 
+        most compatible way. Further, media type registrations 
+        are described for the RTP payload format.
+      </t>
+    </abstract>
+  </front>
+
+  <middle>
+    <section title='Introduction'>
+      <t>
+        The Opus codec is a speech and audio codec developed within the
+        IETF Internet Wideband Audio Codec working group [codec]. The codec 
+        has a very low algorithmic delay and is
+        is highly scalable in terms of audio bandwidth, bitrate, and
+        complexity. Further, it provides different modes to efficiently encode speech signals
+        as well as music signals, thus, making it the codec of choice for
+        various applications using the Internet or similar networks.
+      </t>
+      <t>
+        This document defines the Real-time Transport Protocol (RTP)
+        <xref target="RFC3550"/> payload format for packetization
+        of Opus encoded speech and audio data that is essential to
+        integrate the Opus codec in the
+        most compatible way. Further, media type registrations are described for
+        the RTP payload format. More information on the Opus
+        codec can be obtained from the following IETF draft 
+        [Opus].
+      </t>
+    </section>
+
+    <section title='Conventions, Definitions and Acronyms used in this document'>
+      <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+      "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+      document are to be interpreted as described in <xref target="RFC2119"/>.</t>
+      <t>
+      <list style='hanging'>
+        <t hangText="CPU:"> Central Processing Unit</t>
+	      <t hangText="IP:"> Internet Protocol</t>
+	      <t hangText="PSTN:"> Public Switched Telephone Network</t>
+	      <t hangText="samples:"> Speech or audio samples</t>
+	      <t hangText="SDP:"> Session Description Protocol</t>
+      </list>
+      </t>
+      <section title='Audio Bandwidth'>
+	<t>
+	  Throughout this document, we refer to the following definitions:
+	</t>
+          <texttable anchor='bandwidth_definitions'>
+	    <ttcol align='center'>Abbreviation</ttcol>
+            <ttcol align='center'>Name</ttcol>
+            <ttcol align='center'>Bandwidth</ttcol>
+            <ttcol align='center'>Sampling</ttcol>
+            <c>nb</c>
+            <c>Narrowband</c>
+            <c>0 - 4000</c>
+            <c>8000</c>
+
+            <c>mb</c>
+            <c>Mediumband</c>
+            <c>0 - 6000</c>
+            <c>12000</c>
+
+            <c>wb</c>
+            <c>Wideband</c>
+            <c>0 - 8000</c>
+            <c>16000</c>
+	    
+            <c>swb</c>
+            <c>Super-wideband</c>
+            <c>0 - 12000</c>
+            <c>24000</c>
+	    
+            <c>fb</c>
+            <c>Fullband</c>
+            <c>0 - 20000</c>
+            <c>48000</c>
+
+            <postamble>
+              Audio bandwidth naming
+            </postamble>
+          </texttable>
+      </section>
+    </section>
+
+    <section title='Opus Codec'>
+      <t>
+        The Opus [Opus] speech and audio codec has been developed to encode speech
+        signals as well as audio signals. Two different modes, a voice mode 
+        or an audio mode, may be chosen to allow the most efficient coding 
+        dependent on the type of input signal, the sampling frequency of the 
+        input signal, and the specific application.
+      </t>
+
+      <t>
+        The voice mode allows to efficiently encode voice signals at lower bit
+        rates while the audio mode is optimized for audio signals at medium and 
+        higher bitrates. 
+      </t>
+
+      <t>
+        The Opus speech and audio codec is highly scalable in terms of audio
+        bandwidth and bitrate and complexity. Further, Opus allows to
+        transmit stereo signals.
+      </t>
+
+      <section title='Network Bandwidth'>
+          <t>
+	    Opus supports all bitrates from 6&nbsp;kb/s to 510&nbsp;kb/s. 
+	    The bitrate can be changed dynamically within that range. 
+	    All 
+	    other parameters being
+	    equal, higher bitrate results in higher quality. 
+	  </t>
+	  <section title='Recommended Bitrate' anchor='bitrate_by_bandwidth'>
+	  <t>
+	    For a frame size of 
+	    20&nbsp;ms, these
+	    are the bitrate "sweet spots" for Opus in various configurations:
+	    
+
+          <list style="symbols">
+	    <t>8-12 kb/s for NB speech,</t>
+	    <t>16-20 kb/s for WB speech,</t>
+	    <t>28-40 kb/s for FB speech,</t>
+	    <t>48-64 kb/s for FB mono music, and</t>
+	    <t>64-128 kb/s for FB stereo music.</t>
+	  </list>
+	</t>
+      </section>
+        <section title='Variable versus Constant Bit Rate'  anchor='variable-vs-constant-bitrate'>
+          <t>
+	    For the same average bitrate, variable bitrate (VBR) can achieve higher quality
+	    than constant bitrate (CBR). For the majority of voice transmission application, VBR
+	    is the best choice. One potential reason for choosing CBR is the potential 
+	    information leak that <spanx style='emph'>may</spanx> occur when encrypting the
+	    compressed stream. See <xref target="RFC6562"/> for guidelines on when VBR is
+	    appropriate for encrypted audio communications. In the case where an existing
+	    VBR stream needs to be converted to CBR for security reasons, then the Opus padding
+	    mechanism described in [Opus] is the RECOMMENDED way to achieve padding
+	    because the RTP padding bit is unencrypted.</t>
+	    
+	    <t> 
+            The bitrate can be adjusted at any point in time. To avoid congestion,
+            the average bitrate SHOULD be adjusted to the available
+            network capacity. If no target bitrate is specified the average bitrate 
+            may go up to the highest bitrate specified in 
+            <xref target='bitrate_by_bandwidth'/>. 
+          </t>
+            
+        </section>
+
+        <section title='Discontinuous Transmission (DTX)'>
+
+          <t>
+            The Opus codec may, as described in <xref target='variable-vs-constant-bitrate'/>, 
+            be operated with an adaptive bitrate. In that case, the bitrate 
+            will automatically be reduced for certain input signals like periods 
+            of silence. During continuous transmission the bitrate will be 
+            reduced, when the input signal allows to do so, but the transmission 
+            to the receiver itself will never be interrupted. Therefore, the 
+            received signal will maintain the same high level of quality over the 
+            full duration of a transmission while minimizing the average bit 
+            rate over time.
+          </t>
+
+          <t>
+            In cases where the bitrate of Opus needs to be reduced even
+            further or in cases where only constant bitrate is available, 
+            the Opus encoder may be set to use discontinuous
+            transmission (DTX), where parts of the encoded signal that
+            correspond to periods of silence in the input speech or audio signal
+            are not transmitted to the receiver.
+          </t>
+
+          <t>
+            On the receiving side, the non-transmitted parts will be handled by a
+            frame loss concealment unit in the Opus decoder which generates a
+            comfort noise signal to replace the non transmitted parts of the
+            speech or audio signal.
+          </t>
+
+          <t>
+            The DTX mode of Opus will have a slightly lower speech or audio
+            quality than the continuous mode. Therefore, it is RECOMMENDED to
+            use Opus in the continuous mode unless restraints on network
+            capacity are severe. The DTX mode can be engaged for operation
+            in both adaptive or constant bitrate.
+          </t>
+
+        </section>
+        
+        </section>
+
+      <section title='Complexity'>
+
+        <t>
+          Complexity can be scaled to optimize for CPU resources in real-time, mostly as
+          a trade-off between audio quality and bitrate. Also, different modes of Opus have different complexity.
+        </t>
+        
+      </section>
+
+      <section title="Forward Error Correction (FEC)">
+
+        <t>
+          The voice mode of Opus allows for "in-band" forward error correction (FEC)
+          data to be embedded into the bit stream of Opus. This FEC scheme adds
+          redundant information about the previous packet (n-1) to the current 
+          output packet n. For
+          each frame, the encoder decides whether to use FEC based on (1) an
+          externally-provided estimate of the channel's packet loss rate; (2) an
+          externally-provided estimate of the channel's capacity; (3) the
+          sensitivity of the audio or speech signal to packet loss; (4) whether
+          the receiving decoder has indicated it can take advantage of "in-band"
+          FEC information. The decision to send "in-band" FEC information is
+          entirely controlled by the encoder and therefore no special precautions
+          for the payload have to be taken.
+        </t>
+
+        <t>
+          On the receiving side, the decoder can take advantage of this
+          additional information when, in case of a packet loss, the next packet
+          is available.  In order to use the FEC data, the jitter buffer needs
+          to provide access to payloads with the FEC data.  The decoder API function
+          has a flag to indicate that a FEC frame rather than a regular frame should
+          be decoded.  If no FEC data is available for the current frame, the decoder
+          will consider the frame lost and invokes the frame loss concealment.
+        </t>
+
+        <t>
+          If the FEC scheme is not implemented on the receiving side, FEC
+          SHOULD NOT be used, as it leads to an inefficient usage of network
+          resources. Decoder support for FEC SHOULD be indicated at the time a
+          session is set up.
+        </t>
+      
+      </section>
+
+      <section title='Stereo Operation'>
+
+        <t>
+          Opus allows for transmission of stereo audio signals. This operation
+          is signaled in-band in the Opus payload and no special arrangement
+          is required in the payload format. Any implementation of the Opus
+          decoder MUST be capable of receiving stereo signals.
+        </t>
+        <t>
+          If a decoder can not take advantage of the benefits of a stereo signal 
+          this SHOULD be indicated at the time a session is set up. In that case
+          the sending side SHOULD NOT send stereo signals as it leads to an 
+          inefficient usage of the network.
+        </t>
+
+      </section>
+
+    </section>
+ 
+    <section title='Opus RTP Payload Format' anchor='opus-rtp-payload-format'>
+      <t>The payload format for Opus consists of the RTP header and Opus payload
+      data.</t>
+      <section title='RTP Header Usage'>
+        <t>The format of the RTP header is specified in <xref target="RFC3550"/>. The Opus
+        payload format uses the fields of the RTP header consistent with this
+        specification.</t>
+
+        <t>The payload length of Opus is a multiple number of octets and
+        therefore no padding is required. The payload MAY be padded by an
+        integer number of octets according to <xref target="RFC3550"/>.</t>
+
+        <t>The marker bit (M) of the RTP header has no function in combination
+        with Opus and MAY be ignored.</t>
+
+        <t>The RTP payload type for Opus has not been assigned statically and is
+        expected to be assigned dynamically.</t>
+
+        <t>The receiving side MUST be prepared to receive duplicates of RTP
+        packets. Only one of those payloads MUST be provided to the Opus decoder
+        for decoding and others MUST be discarded.</t>
+
+        <t>Opus supports 5 different audio bandwidths which may be adjusted during
+        the duration of a call. The RTP timestamp clock frequency is defined as 
+        the highest supported sampling frequency of Opus, i.e. 48000 Hz, for all 
+        modes and sampling rates of Opus. The unit
+        for the timestamp is samples per single (mono) channel. The RTP timestamp corresponds to the
+        sample time of the first encoded sample in the encoded frame. For sampling
+        rates lower than 48000 Hz the number of samples has to be multiplied with 
+        a multiplier according to <xref target="fs-upsample-factors"/> to determine 
+        the RTP timestamp.</t>
+
+        <texttable anchor='fs-upsample-factors'>
+          <ttcol align='center'>fs (Hz)</ttcol>
+          <ttcol align='center'>Multiplier</ttcol>
+          <c>8000</c>
+          <c>6</c>
+          <c>12000</c>
+          <c>4</c>
+          <c>16000</c>
+          <c>3</c>
+          <c>24000</c>
+          <c>2</c>
+          <c>48000</c>
+          <c>1</c>
+          <postamble>
+            fs specifies the audio sampling frequency in Hertz (Hz); Multiplier is the 
+            value that the number of samples have to be multiplied with to calculate 
+            the RTP timestamp.
+          </postamble>
+        </texttable>
+      </section>
+
+      <section title='Payload Structure'>
+        <t>
+          The Opus encoder can be set to output encoded frames representing 2.5, 5, 10, 20,
+          40, or 60 ms of speech or audio data. Further, an arbitrary number of frames can be
+          combined into a packet. The maximum packet length is limited to the amount of encoded
+          data representing 120 ms of speech or audio data. The packetization of encoded data
+          is purely done by the Opus encoder and therefore only one packet output from the Opus
+          encoder MUST be used as a payload.
+        </t>
+
+        <t><xref target='payload-structure'/> shows the structure combined with the RTP header.</t>
+
+        <figure anchor="payload-structure"
+                title="Payload Structure with RTP header">
+          <artwork>
+            <![CDATA[
++----------+--------------+
+|RTP Header| Opus Payload |
++----------+--------------+
+           ]]>
+          </artwork>
+        </figure>
+
+        <t>
+          <xref target='opus-packetization'/> shows supported frame sizes for different modes
+          and sampling rates of Opus and how the timestamp needs to be incremented for 
+          packetization.
+        </t>
+
+        <texttable anchor='opus-packetization'>
+            <ttcol align='center'>Mode</ttcol>
+            <ttcol align='center'>fs</ttcol>
+            <ttcol align='center'>2.5</ttcol>
+            <ttcol align='center'>5</ttcol>
+            <ttcol align='center'>10</ttcol>
+            <ttcol align='center'>20</ttcol>
+            <ttcol align='center'>40</ttcol>
+            <ttcol align='center'>60</ttcol>
+            <c>ts incr</c>
+            <c>all</c>
+            <c>120</c>
+            <c>240</c>
+            <c>480</c>
+            <c>960</c>
+            <c>1920</c>
+            <c>2880</c>
+            <c>voice</c>
+            <c>nb/mb/wb/swb/fb</c>
+            <c></c>
+            <c></c>
+            <c>x</c>
+            <c>x</c>
+            <c>x</c>
+            <c>x</c>
+            <c>audio</c>
+            <c>nb/wb/swb/fb</c>
+            <c>x</c>
+            <c>x</c>
+            <c>x</c>
+            <c>x</c>
+            <c></c>
+            <c></c>
+            <postamble>
+              Mode specifies the Opus mode of operation; fs specifies the audio sampling 
+              frequency in Hertz (Hz); 2.5, 5, 10, 20, 40, and 60 represent the duration of 
+              encoded speech or audio data in a packet; ts incr specifies the 
+              value the timestamp needs to be incremented for the representing packet size.
+              For multiple frames in a packet these values have to be multiplied with the 
+              respective number of frames.
+            </postamble>
+          </texttable>
+
+      </section>
+
+    </section>
+
+    <section title='Congestion Control'>
+      
+      <t>The adaptive nature of the Opus codec allows for an efficient
+      congestion control.</t>
+
+      <t>The target bitrate of Opus can be adjusted at any point in time and 
+      thus allowing for an efficient congestion control. Furthermore, the amount
+      of encoded speech or audio data encoded in a 
+      single packet can be used for congestion control since the transmission 
+      rate is inversely proportional to these frame sizes. A lower packet 
+      transmission rate reduces the amount of header overhead but at the same 
+      time increases latency and error sensitivity and should be done with care.</t>
+
+      <t>It is RECOMMENDED that congestion control is applied during the
+      transmission of Opus encoded data.</t>
+    </section>
+
+    <section title='IANA Considerations'>
+      <t>One media subtype (audio/opus) has been defined and registered as
+      described in the following section.</t>
+
+      <section title='Opus Media Type Registration'>
+        <t>Media type registration is done according to <xref
+        target="RFC4288"/> and <xref target="RFC4855"/>.<vspace
+        blankLines='1'/></t>
+
+          <t>Type name: audio<vspace blankLines='1'/></t>
+          <t>Subtype name: opus<vspace blankLines='1'/></t>
+
+          <t>Required parameters:</t>
+          <t><list style="hanging">
+            <t hangText="rate:"> RTP timestamp clock rate is incremented with 
+            48000 Hz clock rate for all modes of Opus and all sampling 
+            frequencies. For audio sampling rates other than 48000 Hz the rate
+            has to be adjusted to 48000 Hz according to <xref target="fs-upsample-factors"/>.
+          </t>
+          </list></t>
+
+          <t>Optional parameters:</t>
+          
+          <t><list style="hanging">
+            <t hangText="maxcodedaudiobandwidth:">
+              a hint about the maximum audio bandwidth that the receiver is capable of rendering.
+	      The decoder MUST be capable of decoding 
+              any audio bandwidth but due to hardware limitations only signals 
+              up to the specified audio bandwidth can be processed. Sending signals 
+              with higher audio bandwidth results in higher than necessary network 
+              usage and encoding complexity, so an encoder SHOULD NOT encode
+	      frequencies above the audio bandwidth specified by maxcodedaudiobandwidth. 
+	      Possible values are nb, mb, wb, swb, fb. By default, the receiver
+	      is assumed to have no limitations, i.e. fb. 
+              <vspace blankLines='1'/>
+            </t>
+            
+            <t hangText="maxptime:"> the decoder's maximum length of time in
+            milliseconds rounded up to the next full integer value represented 
+            by the media in a packet that can be
+            encapsulated in a received packet according to Section 6 of
+            <xref target="RFC4566"/>. Possible values are 3, 5, 10, 20, 40, 
+            and 60 or an arbitrary multiple of Opus frame sizes rounded up to 
+            the next full integer value up to a maximum value of 120 as 
+            defined in <xref target='opus-rtp-payload-format'/>. If no value is
+              specified, 120 is assumed as default. This value is a recommendation 
+              by the decoding side to ensure the best
+              performance for the decoder. The decoder MUST be
+              capable of accepting any allowed packet sizes to
+              ensure maximum compatibility.
+              <vspace blankLines='1'/></t>
+            
+            <t hangText="ptime:"> the decoder's recommended length of time in
+            milliseconds rounded up to the next full integer value represented 
+            by the media in a packet according to
+            Section 6 of <xref target="RFC4566"/>. Possible values are
+            3, 5, 10, 20, 40, or 60 or an arbitrary multiple of Opus frame sizes 
+            rounded up to the next full integer value up to a maximum 
+            value of 120 as defined in <xref
+            target='opus-rtp-payload-format'/>. If no value is
+              specified, 20 is assumed as default. If ptime is greater than
+              maxptime, ptime MUST be ignored. This parameter MAY be changed
+              during a session. This value is a recommendation by the decoding 
+              side to ensure the best
+              performance for the decoder. The decoder MUST be
+              capable of accepting any allowed packet sizes to
+              ensure maximum compatibility.
+              <vspace blankLines='1'/></t>
+            
+            <t hangText="minptime:"> the decoder's minimum length of time in
+            milliseconds rounded up to the next full integer value represented 
+            by the media in a packet that SHOULD
+            be encapsulated in a received packet according to Section 6 of <xref
+            target="RFC4566"/>. Possible values are 3, 5, 10, 20, 40, and 60 
+            or an arbitrary multiple of Opus frame sizes rounded up to the next 
+            full integer value up to a maximum value of 120
+            as defined in <xref target='opus-rtp-payload-format'/>. If no value is
+              specified, 3 is assumed as default. This value is a recommendation 
+              by the decoding side to ensure the best
+              performance for the decoder. The decoder MUST be
+              capable to accept any allowed packet sizes to
+              ensure maximum compatibility.
+              <vspace blankLines='1'/></t>
+
+            <t hangText="maxaveragebitrate:"> specifies the maximum average
+	    receive bitrate of a session in bits per second (b/s). The actual
+            value of the bitrate may vary as it is dependent on the
+            characteristics of the media in a packet. Note that the maximum
+            average bitrate MAY be modified dynamically during a session. Any
+            positive integer is allowed but values outside the range between 
+            6000 and 510000 SHOULD be ignored. If no value is specified, the 
+            maximum value specified in <xref target='bitrate_by_bandwidth'/>
+            for the corresponding mode of Opus and corresponding maxcodedaudiobandwidth: 
+            will be the default.<vspace blankLines='1'/></t>
+
+            <t hangText="stereo:">
+              specifies whether the decoder prefers receiving stereo or mono signals.
+              Possible values are 1 and 0 where 1 specifies that stereo signals are preferred
+              and 0 specifies that only mono signals are preferred.
+              Independent of the stereo parameter every receiver MUST be able to receive and
+              decode stereo signals but sending stereo signals to a receiver that signaled a
+              preference for mono signals may result in higher than necessary network
+              utilisation and encoding complexity. If no value is specified, mono
+              is assumed (stereo=0).<vspace blankLines='1'/>
+            </t>
+            
+            <t hangText="cbr:">
+              specifies if the decoder prefers the use of a constant bitrate versus
+              variable bitrate. Possible values are 1 and 0 where 1 specifies constant 
+              bitrate and 0 specifies variable bitrate. If no value is specified, cbr
+              is assumed to be 0. Note that the maximum average bitrate may still be 
+              changed, e.g. to adapt to changing network conditions.<vspace blankLines='1'/>
+            </t>
+
+            <t hangText="useinbandfec:"> specifies that Opus in-band FEC is
+            supported by the decoder and MAY be used during a
+            session. Possible values are 1 and 0. It is RECOMMENDED to provide
+            0 in case FEC is not implemented on the receiving side. If no
+            value is specified, useinbandfec is assumed to be 1.<vspace blankLines='1'/></t>
+
+            <t hangText="usedtx:"> specifies if the decoder prefers the use of
+            DTX. Possible values are 1 and 0. If no value is specified, usedtx
+            is assumed to be 0.<vspace blankLines='1'/></t>
+          </list></t>
+
+          <t>Encoding considerations:<vspace blankLines='1'/></t>
+          <t><list style="hanging">
+            <t>Opus media type is framed and consists of binary data according
+            to Section 4.8 in <xref target="RFC4288"/>.</t>
+          </list></t>
+          
+          <t>Security considerations: </t>
+          <t><list style="hanging">
+            <t>See <xref target='security-considerations'/> of this document.</t>
+          </list></t>
+
+          <t>Interoperability considerations: none<vspace blankLines='1'/></t>
+          <t>Published specification: none<vspace blankLines='1'/></t>
+
+          <t>Applications that use this media type: </t>
+          <t><list style="hanging">
+            <t>Any application that requires the transport of
+            speech or audio data may use this media type. Some examples are,
+            but not limited to, audio and video conferencing, Voice over IP,
+            media streaming.</t>
+          </list></t>
+          
+          <t>Person & email address to contact for further information:</t>
+          <t><list style="hanging">
+            <t>SILK Support silksupport@skype.net</t>
+            <t>Jean-Marc Valin jmvalin@jmvalin.ca</t>
+          </list></t>
+          
+          <t>Intended usage: COMMON<vspace blankLines='1'/></t>
+          
+          <t>Restrictions on usage:<vspace blankLines='1'/></t> 
+          
+          <t><list style="hanging">
+            <t>For transfer over RTP, the RTP payload format (<xref
+            target='opus-rtp-payload-format'/> of this document) SHALL be
+            used.</t>
+          </list></t>
+          
+          <t>Author:</t>
+          <t><list style="hanging">
+            <t>Julian Spittka julian.spittka@skype.net<vspace blankLines='1'/></t>
+            <t>Koen Vos koen.vos@skype.net<vspace blankLines='1'/></t>
+            <t>Jean-Marc Valin jmvalin@jmvalin.ca<vspace blankLines='1'/></t>
+          </list></t>
+          
+          <t> Change controller: TBD</t>
+      </section>
+      
+      <section title='Mapping to SDP Parameters'>
+        <t>The information described in the media type specification has a
+        specific mapping to fields in the Session Description Protocol (SDP)
+        <xref target="RFC4566"/>, which is commonly used to describe RTP
+        sessions. When SDP is used to specify sessions employing the Opus codec,
+        the mapping is as follows:</t>
+
+        <t>
+          <list style="symbols">
+            <t>The media type ("audio") goes in SDP "m=" as the media name.</t>
+          
+            <t>The media subtype ("opus") goes in SDP "a=rtpmap" as the encoding
+            name. The RTP clock rate in "a=rtpmap" MUST be mapped to the required
+            media type parameter "rate".</t>
+
+            <t>The optional media type parameters "ptime" and "maxptime" are
+            mapped to "a=ptime" and "a=maxptime" attributes, respectively, in the
+            SDP.</t>
+
+            <t>All remaining media type parameters are mapped to the "a=fmtp"
+            attribute in the SDP by copying them directly from the media type
+            parameter string as a semicolon-separated list of parameter=value
+            pairs (e.g. maxaveragebitrate=20000).</t>
+          </list>
+        </t>
+
+        <t>Below are some examples of SDP session descriptions for Opus:</t>
+
+        <t>Example 1: Standard session with 48000 Hz clock rate</t>
+          <figure>  
+            <artwork>
+              <![CDATA[
+    m=audio 54312 RTP/AVP 101
+    a=rtpmap:101 opus/48000
+              ]]>
+            </artwork>
+          </figure>
+
+
+        <t>Example 2: 16000 Hz clock rate, maximum packet size of 40 ms,
+        recommended packet size of 40 ms, maximum average bitrate of 20000 bps,
+        stereo signals are preferred, FEC is allowed, DTX is not allowed</t>
+
+        <figure>  
+          <artwork> 
+            <![CDATA[
+    m=audio 54312 RTP/AVP 101
+    a=rtpmap:101 opus/48000
+    a=fmtp:101 maxcodedaudiobandwidth=wb; maxaveragebitrate=20000; 
+    stereo=1; useinbandfec=1; usedtx=0
+    a=ptime:40
+    a=maxptime:40
+            ]]>
+          </artwork> 
+        </figure>
+
+      <section title='Offer-Answer Model Considerations for Opus'>
+
+          <t>When using the offer-answer procedure described in <xref
+          target="RFC3264"/> to negotiate the use of Opus, the following
+          considerations apply:</t>
+
+          <t><list style="symbols">
+
+            <t>Opus supports several clock rates. For signaling purposes only
+            the highest, i.e. 48000, is used. The actual clock rate of the 
+            corresponding media is signaled inside the payload and is not 
+            subject to this payload format description. The decoder MUST be
+            capable to decode every received clock rate. An example
+            is shown below:
+
+            <figure>  
+              <artwork> 
+                <![CDATA[
+        m=audio 54312 RTP/AVP 100
+        a=rtpmap:100 opus/48000
+                ]]> 
+              </artwork> 
+            </figure>
+            </t>
+
+            <t>The parameters "ptime" and "maxptime" are unidirectional
+            receive-only parameters and typically will not compromise
+            interoperability; however, dependent on the set values of the
+            parameters the performance of the application may suffer.  <xref
+            target="RFC3264"/> defines the SDP offer-answer handling of the
+            "ptime" parameter. The "maxptime" parameter MUST be handled in the
+            same way.</t>
+
+            <t>
+              The parameter "minptime" is a unidirectional
+              receive-only parameters and typically will not compromise
+              interoperability; however, dependent on the set values of the
+              parameter the performance of the application may suffer and should be
+              set with care.
+            </t>
+
+            <t>
+              The parameter "maxcodedaudiobandwidth" is a unidirectional receive-only
+              parameter that reflects limitations of the local receiver. The sender
+              of the other side SHOULD NOT send with an audio bandwidth higher than
+              "maxcodedaudiobandwidth" as this would lead to inefficient use of network resources. The "maxcodedaudiobandwidth" parameter does not 
+	      affect interoperability. Also, this parameter SHOULD NOT be used
+	      to adjust the audio bandwidth as a function of the bitrates, as this
+	      is the responsability of the Opus encoder implementation.
+            </t>
+            
+            <t>The parameter "maxaveragebitrate" is a unidirectional receive-only
+            parameter that reflects limitations of the local receiver. The sender
+            of the other side MUST NOT send with an average bitrate higher than
+            "maxaveragebitrate" as it might overload the network and/or
+            receiver. The parameter "maxaveragebitrate" typically will not
+            compromise interoperability; however, dependent on the set value of
+            the parameter the performance of the application may suffer and should
+            be set with care.</t>
+            
+            <t>If the parameter "maxaveragebitrate" is below the range specified
+            in <xref target='bitrate_by_bandwidth'/> the session MUST be rejected.</t>
+
+            <t>
+              The parameter "stereo" is a unidirectional receive-only
+              parameter.
+            </t>
+
+            <t>
+              The parameter "cbr" is a unidirectional receive-only
+              parameter.
+            </t>
+
+            <t>The parameter "useinbandfec" is a unidirectional receive-only
+            parameter.</t>
+            
+            <t>The parameter "usedtx" is a unidirectional receive-only
+            parameter.</t>
+            
+            <t>Any unknown parameter in an offer MUST be ignored by the receiver
+            and MUST be removed from the answer.</t>
+            
+          </list></t>
+      </section>
+
+      <section title='Declarative SDP Considerations for Opus'>
+
+        <t>For declarative use of SDP such as in Session Announcement Protocol
+        (SAP), <xref target="RFC2974"/>, and RTSP, <xref target="RFC2326"/>, for
+        Opus, the following needs to be considered:</t>
+
+        <t><list style="symbols">
+
+          <t>The values for "maxptime", "ptime", "minptime", "maxcodedaudiobandwidth", and 
+          "maxaveragebitrate" should be selected carefully to ensure that a 
+          reasonable performance can be achieved for the participants of a session.</t>
+
+          <t>
+            The values for "maxptime", "ptime", and "minptime" of the payload
+            format configuration are recommendations by the decoding side to ensure 
+            the best performance for the decoder. The decoder MUST be
+            capable to accept any allowed packet sizes to
+            ensure maximum compatibility.
+          </t>
+
+          <t>All other parameters of the payload format configuration are declarative
+          and a participant MUST use the configurations that are provided for
+          the session. More than one configuration may be provided if necessary
+          by declaring multiple RTP payload types; however, the number of types
+          should be kept small.</t>
+        </list></t>
+      </section>
+    </section>
+  </section>
+
+    <section title='Security Considerations' anchor='security-considerations'> 
+      
+      <t>All RTP packets using the payload format defined in this specification
+      are subject to the general security considerations discussed in the RTP
+      specification <xref target="RFC3550"/> and any profile from
+      e.g. <xref target="RFC3711"/> or <xref target="RFC3551"/>.</t>
+
+      <t>This payload format transports Opus encoded speech or audio data,
+      hence, security issues include confidentiality, integrity protection, and
+      authentication of the speech or audio itself. The Opus payload format does
+      not have any built-in security mechanisms. Any suitable external
+      mechanisms, such as SRTP <xref target="RFC3711"/>, MAY be used.</t>
+
+      <t>This payload format and the Opus encoding do not exhibit any
+      significant non-uniformity in the receiver-end computational load and thus
+      are unlikely to pose a denial-of-service threat due to the receipt of
+      pathological datagrams.</t>
+    </section>
+    
+    <section title='Acknowledgements'>
+    <t>TBD</t>
+    </section>
+  </middle>
+
+  <back>
+    <references title="Normative References"> 
+      &rfc2119;
+      &rfc3550;
+      &rfc3711;
+      &rfc3551;
+      &rfc4288;
+      &rfc4855;
+      &rfc4566;
+      &rfc3264;
+      &rfc2974;
+      &rfc2326;
+    </references>
+
+
+    <section title='Informational References'>
+      <t><list style="hanging">
+      <t>[codec]  http://datatracker.ietf.org/wg/codec/</t>
+      <t>[Opus]  http://datatracker.ietf.org/doc/draft-ietf-codec-opus/</t>
+      </list></t>
+    </section>
+
+    
+  </back>
+</rfc>
