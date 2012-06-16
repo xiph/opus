@@ -1982,7 +1982,7 @@ To summarize, these weights are coded if and only if
 
 <t>
 The prediction weights are coded in three separate pieces, which are decoded
- by silk_stereo_decode_pred() (decode_stereo_pred.c).
+ by silk_stereo_decode_pred() (stereo_decode_pred.c).
 The first piece jointly codes the high-order part of a table index for both
  weights.
 The second piece codes the low-order part of each table index.
@@ -2027,15 +2027,15 @@ wi1 = i2 + 3*(n%5)
 </figure>
  where the division is integer division.
 The range of these indices is 0 to 14, inclusive.
-Let w[i] be the i'th weight from <xref target="silk_stereo_weights_table"/>.
+Let w_Q13[i] be the i'th weight from <xref target="silk_stereo_weights_table"/>.
 Then the two prediction weights, w0_Q13 and w1_Q13, are
 <figure align="center">
 <artwork align="center"><![CDATA[
 w1_Q13 = w_Q13[wi1]
-         + ((w_Q13[wi1+1] - w_Q13[wi1])*6554) >> 16)*(2*i3 + 1)
+         + (((w_Q13[wi1+1] - w_Q13[wi1])*6554) >> 16)*(2*i3 + 1)
 
 w0_Q13 = w_Q13[wi0]
-         + ((w_Q13[wi0+1] - w_Q13[wi0])*6554) >> 16)*(2*i1 + 1)
+         + (((w_Q13[wi0+1] - w_Q13[wi0])*6554) >> 16)*(2*i1 + 1)
          - w1_Q13
 ]]></artwork>
 </figure>
@@ -2103,7 +2103,7 @@ It is also omitted for an LBRR frame when the corresponding LBRR flags
 <t>
 When the flag is present, the decoder reads a single value using the PDF in
  <xref target="silk_mid_only_pdf"/>, as implemented in
- silk_stereo_decode_mid_only() (decode_stereo_pred.c).
+ silk_stereo_decode_mid_only() (stereo_decode_pred.c).
 If the flag is set, then there is no corresponding SILK frame for the side
  channel, the entire decoding process for the side channel is skipped, and
  zeros are fed to the stereo unmixing process (see
