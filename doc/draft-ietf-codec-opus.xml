@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-14">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-15">
 
 <front>
 <title abbrev="Interactive Audio Codec">Definition of the Opus Audio Codec</title>
@@ -53,7 +53,7 @@
 </address>
 </author>
 
-<date day="17" month="May" year="2012" />
+<date day="9" month="June" year="2012" />
 
 <area>General</area>
 
@@ -5902,7 +5902,7 @@ When encoding Hybrid frames which do not include redundancy, the encoder must
 <t>
 After determining the size of the redundant CELT frame, the decoder reduces
  the size of the buffer currently in use by the range coder by that amount.
-The CELT layer read any raw bits from the end of this reduced buffer, and all
+The MDCT layer reads any raw bits from the end of this reduced buffer, and all
  calculations of the number of bits remaining in the buffer must be done using
  this new, reduced size, rather than the original size of the Opus frame.
 </t>
@@ -7570,8 +7570,8 @@ calls in opus_custom.h.
 <section anchor="security" title="Security Considerations">
 
 <t>
-Like any other audio codec, Opus should not be used with bad ciphers
-that are vulnerable to known-plaintext attacks. In addition to the zeros used
+Like any other audio codec, Opus should not be used with insecure ciphers
+or cipher-modes that are vulnerable to known-plaintext attacks. In addition to the zeros used
 in Opus padding, digital silence frames generate predictable compressed results
 and the TOC byte may have an easily predictable value.</t>
 <t>
@@ -7642,7 +7642,8 @@ This document has no actions for IANA.
 Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen, Gregory Maxwell,
 Christopher Montgomery, and Karsten Vandborg Soerensen. We would also
 like to thank Igor Dyakonov, Jan Skoglund, and Christian Hoene for their help with subjective testing of the
-Opus codec. Thanks to Ralph Giles, John Ridges, Ben Schwartz, Keith Yan, Christian Hoene, Kat Walsh, and many others on the Opus and CELT mailing lists
+Opus codec. Thanks to Ralph Giles, John Ridges, Ben Schwartz, Keith Yan, Christian Hoene, Kat Walsh, Elwyn Davies,
+and many others on the Opus and CELT mailing lists
 for their bug reports and feedback.
 </t>
 </section>
