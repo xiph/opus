@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2012 IETF Trust, Jean-Marc Valin, Xiph.Org Foundation. 
+/* Copyright (C) 2002-2012 IETF Trust, Jean-Marc Valin, Xiph.Org Foundation.
                            All rights reserved.*/
 /**
    @file stack_alloc.h
