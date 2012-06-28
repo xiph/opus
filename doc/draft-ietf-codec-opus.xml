@@ -8047,12 +8047,12 @@ following command line:
 
 <list style="symbols">
 <t><![CDATA[
-cat rfcXXXX.txt | grep '^\ \ \ ###' | sed -e 's/...###//' | base64 -d > opus_source.tar.gz
+cat rfcXXXX.txt | grep '^\ \ \ ###' | sed -e 's/...###//' | base64 -d > opus-rfcXXXX.tar.gz
 ]]></t>
 <t>
-tar xzvf opus_source.tar.gz
+tar xzvf opus-rfcXXXX.tar.gz
 </t>
-<t>cd opus_source</t>
+<t>cd opus-rfcXXXX</t>
 <t>make</t>
 </list>
 On systems where the provided Makefile does not work, the following command line may be used to compile
@@ -8069,7 +8069,7 @@ On systems where the base64 utility is not present, the following commands can b
 <t><![CDATA[
 cat rfcXXXX.txt | grep '^\ \ \ ###' | sed -e 's/...###//' > opus.b64
 ]]></t>
-<t>openssl base64 -d -in opus.b64 > opus_source.tar.gz</t>
+<t>openssl base64 -d -in opus.b64 > opus-rfcXXXX.tar.gz</t>
 </list>
 The SHA1 hash of the opus_source.tar.gz file is <?rfc include="code_sha1"?>
 </t>
@@ -8089,7 +8089,7 @@ Releases and other resources are available at
 
 <section title="Base64-encoded Source Code">
 <t>
-<?rfc include="opus_source.base64"?>
+<?rfc include="opus-rfcXXXX.base64"?>
 </t>
 </section>
 

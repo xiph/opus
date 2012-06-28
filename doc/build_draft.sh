@@ -6,7 +6,7 @@ set -e
 [ -n "${0%/*}" ] && cd "${0%/*}"
 
 toplevel=".."
-destdir="opus_source"
+destdir="opus-rfcXXXX"
 
 echo packaging source code
 rm -rf "${destdir}"
@@ -35,11 +35,11 @@ cp -a "${toplevel}"/README.draft "${destdir}"/README
 cp -a "${toplevel}"/COPYING "${destdir}"/COPYING
 cp -a "${toplevel}"/tests/run_vectors.sh "${destdir}"/
 
-GZIP=-9 tar --owner=root --group=root --format=v7 -czf opus_source.tar.gz "${destdir}"
+GZIP=-9 tar --owner=root --group=root --format=v7 -czf ${destdir}.tar.gz "${destdir}"
 echo building base64 version
-cat opus_source.tar.gz| base64 | tr -d '\n' | fold -w 64 | \
+cat ${destdir}.tar.gz| base64 | tr -d '\n' | fold -w 64 | \
  sed -e 's/^/\<spanx style="vbare"\>###/' -e 's/$/\<\/spanx\>\<vspace\/\>/' > \
- opus_source.base64
+ ${destdir}.base64
 
 
 #echo '<figure>' > opus_compare_escaped.c
@@ -59,9 +59,6 @@ echo '<figure>' > testvectors_sha1
 echo '<artwork>' >> testvectors_sha1
 echo '<![CDATA[' >> testvectors_sha1
 (cd ../opus_testvectors; sha1sum *.bit *.dec) >> testvectors_sha1
-#cd opus_testvectors
-#sha1sum *.bit *.dec >> ../testvectors_sha1
-#cd ..
 echo ']]>' >> testvectors_sha1
 echo '</artwork>' >> testvectors_sha1
 echo '</figure>' >> testvectors_sha1
