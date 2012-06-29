@@ -8077,7 +8077,7 @@ cat rfcXXXX.txt | grep '^\ \ \ ###' | sed -e 's/...###//' > opus.b64
 ]]></t>
 <t>openssl base64 -d -in opus.b64 > opus-rfcXXXX.tar.gz</t>
 </list>
-The SHA1 hash of the opus_source.tar.gz file is <?rfc include="code_sha1"?>
+The SHA1 hash of the opus-rfcXXXX.tar.gz file is <?rfc include="code_sha1"?>
 </t>
 </section>
 
