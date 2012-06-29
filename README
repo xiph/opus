@@ -1,3 +1,6 @@
+All the files in this project are extracted from RFCXXXX. Please see that RFC
+for additional information.
+
 To build from a distribution tarball, you only need to do the following:
 
 % ./configure
