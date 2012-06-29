@@ -209,7 +209,18 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
 CFLAGS="$saved_CFLAGS $SYMBOL_VISIBILITY"
 AC_SUBST(SYMBOL_VISIBILITY)
 
-if test $ac_cv_c_compiler_gnu = yes ; then
+ac_build_stack_protector=yes
+AC_ARG_ENABLE(stack-protector,
+     AS_HELP_STRING([--disable-stack-protector],[Disable compiler stack hardening]),
+     [
+       if test "x$enableval" = "xno"; then
+         ac_build_stack_protector=$enableval
+       fi
+     ], [
+       ac_build_stack_protector=yes
+     ])
+if test "x$ac_build_stack_protector" = "xyes"; then
+if test "x$ac_cv_c_compiler_gnu" = "xyes" ; then
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fstack-protector-all"
 AC_MSG_CHECKING([if ${CC} supports -fstack-protector-all])
@@ -218,6 +229,7 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
         STACK_PROTECTOR="-fstack-protector-all" ],
         AC_MSG_RESULT([no]))
 CFLAGS="$saved_CFLAGS $STACK_PROTECTOR"
+fi
 fi
 
 CFLAGS="$CFLAGS -W"
