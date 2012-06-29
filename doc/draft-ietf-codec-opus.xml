@@ -7644,12 +7644,13 @@ This document has no actions for IANA.
 
 <section anchor="Acknowledgements" title="Acknowledgements">
 <t>
-Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen, Gregory Maxwell,
-Christopher Montgomery, and Karsten Vandborg Soerensen. We would also
-like to thank Igor Dyakonov, Jan Skoglund, and Christian Hoene for their help with subjective testing of the
-Opus codec. Thanks to Ralph Giles, John Ridges, Ben Schwartz, Keith Yan, Christian Hoene, Kat Walsh, Elwyn Davies,
-and many others on the Opus and CELT mailing lists
-for their bug reports and feedback.
+Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen,
+ Gregory Maxwell, Christopher Montgomery, and Karsten Vandborg Soerensen.
+We would also like to thank Igor Dyakonov, Christian Hoene, and Jan Skoglund
+ for their help with subjective testing of the Opus codec.
+Thanks to Andrew D'Addesio, Elwyn Davies, Ralph Giles, Christian Hoene,
+ John Ridges, Ben Schwartz, Kat Walsh, Keith Yan, and many others on the Opus
+ and CELT mailing lists for their bug reports and feedback.
 </t>
 </section>
 
