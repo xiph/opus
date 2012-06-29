@@ -233,8 +233,8 @@ The base-two logarithm of f.
 
 <section anchor="ilog" toc="exclude" title="ilog(n)">
 <t>
-The minimum number of bits required to store a positive integer n in two's
- complement notation, or 0 for a non-positive integer n.
+The minimum number of bits required to store a positive integer n in binary, or
+ 0 for a non-positive integer n.
 <figure align="center">
 <artwork align="center"><![CDATA[
           ( 0,                 n <= 0,
@@ -3013,7 +3013,7 @@ This process ensures that consecutive values of the normalized LSF
  (predetermined to be the 0.01 percentile of a large training set).
 <xref target="silk_nlsf_min_spacing"/> gives the minimum spacings for NB and MB
  and those for WB, where row k is the minimum allowed value of
- NLSF_Q[k]-NLSF_Q[k-1].
+ NLSF_Q15[k]-NLSF_Q15[k-1].
 For the purposes of computing this spacing for the first and last coefficient,
  NLSF_Q15[-1] is taken to be 0, and NLSF_Q15[d_LPC] is taken to be 32768.
 </t>
@@ -3102,6 +3102,11 @@ Next, for each value of k from d_LPC-1 down to 0, NLSF_Q15[k] is set to
 min(NLSF_Q15[k], NLSF_Q15[k+1] - NDeltaMin_Q15[k+1]) .
 ]]></artwork>
 </figure>
+</t>
+<t>
+There is no need to check if the coefficients satisfy all the constraints
+ before applying this fallback procedure.
+If they do, then it will not change their values.
 </t>
 
 </section>
