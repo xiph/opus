@@ -4,6 +4,10 @@
    @brief Fixed-point operations for the TI C6x DSP family
 */
 /*
+
+   This file is extracted from RFCXXXX. Please see that RFC for additional
+   information.
+
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:

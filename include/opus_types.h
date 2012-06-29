@@ -1,6 +1,10 @@
 /* (C) COPYRIGHT 1994-2012 IETF Trust, Xiph.Org Foundation. All rights reserved */
 /* Modified by Jean-Marc Valin */
 /*
+
+   This file is extracted from RFCXXXX. Please see that RFC for additional
+   information.
+
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
