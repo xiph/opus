@@ -3029,6 +3029,7 @@ const char *opus_strerror(int error)
 const char *opus_get_version_string(void)
 {
     return "libopus " OPUS_VERSION
+          "-exp_wip5-"
 #ifdef FIXED_POINT
           "-fixed"
 #endif
