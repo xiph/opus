@@ -52,8 +52,8 @@ if [ -d $VECTOR_PATH ]; then
     echo Test vectors found in $VECTOR_PATH
 else
     echo No test vectors found
-    #Don't make the test fail here because the test vectors will be 
-    #distributed separateyl
+    #Don't make the test fail here because the test vectors will be
+    #distributed separately
     exit 0
 fi
 
