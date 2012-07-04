@@ -1332,6 +1332,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    if (shortBlocks)
    {
       VARDECL(celt_sig, freq2);
+      VARDECL(opus_val32, bandE2);
       ALLOC(freq2, CC*N, celt_sig);
       compute_mdcts(st->mode, 0, in, freq2, CC, LM);
       if (CC==2&&C==1)
