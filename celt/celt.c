@@ -293,7 +293,7 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
 }
 
 static int transient_analysis(const opus_val32 * restrict in, int len, int C,
-                              int overlap, opus_val16 *tf_estimate, int *tf_chan, AnalysisInfo *analysis)
+                              int overlap, float *tf_estimate, int *tf_chan, AnalysisInfo *analysis)
 {
    int i;
    VARDECL(opus_val16, tmp);
@@ -317,7 +317,6 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    N=len/block-1;
    ALLOC(bins, N, opus_val16);
 
-   *tf_estimate = 0;
    tf_max = 0;
    for (c=0;c<C;c++)
    {
@@ -983,7 +982,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    int anti_collapse_on=0;
    int silence=0;
    int tf_chan = 0;
-   opus_val16 tf_estimate=0;
+   float tf_estimate=1;
    opus_val16 stereo_saving = 0;
    int pitch_change=0;
    opus_int32 tot_boost=0;
