@@ -293,7 +293,7 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
 }
 
 static int transient_analysis(const opus_val32 * restrict in, int len, int C,
-                              int overlap, float *tf_estimate, int *tf_chan, AnalysisInfo *analysis)
+                              int overlap, opus_val16 *tf_estimate, int *tf_chan, AnalysisInfo *analysis)
 {
    int i;
    VARDECL(opus_val16, tmp);
@@ -408,7 +408,9 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          tf_max = metric;
       }
    }
-   *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20);
+   /* *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20); */
+   *tf_estimate = QCONST16(1.f, 14) + celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0025f,14),IMIN(420,tf_max)),14)-QCONST32(0.075f,28)));
+
    RESTORE_STACK;
 #ifdef FUZZING
    is_transient = rand()&0x1;
@@ -982,12 +984,13 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    int anti_collapse_on=0;
    int silence=0;
    int tf_chan = 0;
-   float tf_estimate=1;
+   opus_val16 tf_estimate;
    opus_val16 stereo_saving = 0;
    int pitch_change=0;
    opus_int32 tot_boost=0;
    ALLOC_STACK;
 
+   tf_estimate = QCONST16(1.0f,14);
    if (nbCompressedBytes<2 || pcm==NULL)
      return OPUS_BAD_ARG;
 
@@ -1446,7 +1449,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          if (i<8)
             follower[i] *= 2;
          if (i>=12)
-            follower[i] *= .5;
+            follower[i] = HALF16(follower[i]);
          follower[i] = MIN16(follower[i], QCONST16(4, DB_SHIFT));
          width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
          if (width<6)
@@ -1578,17 +1581,18 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
         target -= (coded_bins<<BITRES)*1*(.4-st->analysis.activity);
 #endif
      if (C==2)
+     {
         target -= MIN32(target/3, SHR16(MULT16_16(stereo_saving,(st->mode->eBands[intensity]<<LM<<BITRES)),8));
-     target += (coded_bins<<BITRES)*.05;
-     target -= (coded_bins<<BITRES)*.13;
+        target += MULT16_16_Q15(QCONST16(0.05f,15),coded_bins<<BITRES);
+     }
+     /* Compensates for the average tonality boost */
+     target -= MULT16_16_Q15(QCONST16(0.13f,15),coded_bins<<BITRES);
+     /* Limits starving of other bands when using dynalloc */
      target += IMAX(0,tot_boost-100)/2;
-     target *= .96;
+     /* Compensates for the average transient boost */
+     target = MULT16_32_Q15(QCONST16(0.96f,15),target);
 
-#ifdef FIXED_POINT
-     new_target = SHL32(MULT16_32_Q15(target, tf_estimate),1);
-#else
-     new_target = target*tf_estimate;
-#endif
+     new_target = SHL32(MULT16_32_Q15(tf_estimate, target),1);
 
 #ifndef FIXED_POINT
      if (st->analysis.valid) {
