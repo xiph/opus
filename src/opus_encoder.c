@@ -40,8 +40,8 @@
 #include "arch.h"
 #include "opus_private.h"
 #include "os_support.h"
-#include "analysis.c"
-
+#include "analysis.h"
+#include "mathops.h"
 #include "tuning_parameters.h"
 #ifdef FIXED_POINT
 #include "fixed/structs_FIX.h"

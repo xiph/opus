@@ -35,10 +35,10 @@
 #include "arch.h"
 #include "quant_bands.h"
 #include <stdio.h>
-#ifndef FIXED_POINT
-#include "mlp.c"
-#include "mlp_data.c"
-#endif
+#include "analysis.h"
+#include "mlp.h"
+
+extern const MLP net;
 
 #ifndef M_PI
 #define M_PI 3.141592653
@@ -96,9 +96,6 @@ float analysis_window[240] = {
       0.997902f, 0.998459f, 0.998929f, 0.999315f, 0.999615f, 0.999829f, 0.999957f, 1.000000f,
 };
 
-#define NB_FRAMES 8
-
-#define NB_TBANDS 18
 static const int tbands[NB_TBANDS+1] = {
        2,  4,  6,  8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120
 };
@@ -108,28 +105,6 @@ static const float tweight[NB_TBANDS+1] = {
 };
 
 #define NB_TONAL_SKIP_BANDS 9
-
-typedef struct {
-   float angle[240];
-   float d_angle[240];
-   float d2_angle[240];
-   float prev_band_tonality[NB_TBANDS];
-   float prev_tonality;
-   float E[NB_FRAMES][NB_TBANDS];
-   float lowE[NB_TBANDS], highE[NB_TBANDS];
-   float meanE[NB_TBANDS], meanRE[NB_TBANDS];
-   float mem[32];
-   float cmean[8];
-   float std[9];
-   float music_prob;
-   float Etracker;
-   float lowECount;
-   int E_count;
-   int last_music;
-   int last_transition;
-   int count;
-   int opus_bandwidth;
-} TonalityAnalysisState;
 
 #define cA 0.43157974f
 #define cB 0.67848403f
