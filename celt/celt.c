@@ -351,7 +351,6 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          opus_val16 max_abs=0;
          for (j=0;j<2*block;j++)
             max_abs = MAX16(max_abs, ABS16(tmp[i*block+j]));
-         //printf("%f ", max_abs);
          bins[i] = max_abs;
          maxbin = MAX16(maxbin, bins[i]);
       }
@@ -398,7 +397,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       bmetric = 5*count1 + 4*count2 + 3*count3 + 2*count4 + count5;
       metric = fmetric+bmetric;
 
-      //if (metric>40)
+      /*if (metric>40)*/
       if (metric>20+50*MAX16(analysis->tonality, analysis->noisiness))
          is_transient=1;
 
@@ -415,7 +414,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
 #ifdef FUZZING
    is_transient = rand()&0x1;
 #endif
-   //printf("%d %f %f %f %f\n", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);
+   /*printf("%d %f %f %f %f\n", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);*/
    return is_transient;
 }
 
