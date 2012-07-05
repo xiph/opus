@@ -494,7 +494,7 @@ sample *= pow(10, output_gain/(20.0*256)) ,
 <vspace blankLines="1"/>
 Virtually all players and media frameworks should apply it by default.
 If a player chooses to apply any volume adjustment or gain modification, such
- as the R128_TRACK_GAIN (see <xref target="comment_header"/> or a user-facing
+ as the R128_TRACK_GAIN (see <xref target="comment_header"/>) or a user-facing
  volume knob, the adjustment MUST be applied in addition to this output gain in
  order to achieve playback at the desired volume.
 <vspace blankLines="1"/>
