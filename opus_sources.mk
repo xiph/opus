@@ -3,3 +3,8 @@ src/opus_decoder.c \
 src/opus_encoder.c \
 src/opus_multistream.c \
 src/repacketizer.c
+
+OPUS_SOURCES_FLOAT = \
+src/analysis.c \
+src/mlp.c \
+src/mlp_data.c
