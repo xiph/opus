@@ -224,7 +224,7 @@ if test "x$ac_cv_c_compiler_gnu" = "xyes" ; then
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fstack-protector-all"
 AC_MSG_CHECKING([if ${CC} supports -fstack-protector-all])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
+AC_LINK_IFELSE([AC_LANG_SOURCE([void main(void){char foo;}])],
       [ AC_MSG_RESULT([yes])
         STACK_PROTECTOR="-fstack-protector-all" ],
         AC_MSG_RESULT([no]))
