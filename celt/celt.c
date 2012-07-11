@@ -156,6 +156,7 @@ struct OpusCustomEncoder {
    int signalling;
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
    int loss_rate;
+   int lsb_depth;
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
@@ -187,6 +188,7 @@ struct OpusCustomEncoder {
    opus_int32 vbr_drift;
    opus_int32 vbr_offset;
    opus_int32 vbr_count;
+   opus_val16 overlap_max;
 
 #ifdef RESYNTH
    celt_sig syn_mem[2][2*MAX_PERIOD];
@@ -267,6 +269,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMod
    st->vbr = 0;
    st->force_intra  = 0;
    st->complexity = 5;
+   st->lsb_depth=24;
 
    opus_custom_encoder_ctl(st, OPUS_RESET_STATE);
 
@@ -987,6 +990,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    opus_val16 stereo_saving = 0;
    int pitch_change=0;
    opus_int32 tot_boost=0;
+   opus_val16 sample_max;
+   opus_val16 maxDepth;
    ALLOC_STACK;
 
    tf_estimate = QCONST16(1.0f,14);
@@ -1104,6 +1109,9 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
 
    ALLOC(in, CC*(N+st->overlap), celt_sig);
 
+   sample_max=MAX16(st->overlap_max, celt_maxabs16(pcm, C*(N-st->mode->overlap)));
+   st->overlap_max=celt_maxabs16(pcm+C*(N-st->mode->overlap), C*st->mode->overlap);
+   sample_max=MAX16(sample_max, st->overlap_max);
    /* Find pitch period and gain */
    {
       VARDECL(celt_sig, _pre);
@@ -1143,13 +1151,17 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             *inp = tmp + st->preemph_memE[c];
             st->preemph_memE[c] = MULT16_32_Q15(st->mode->preemph[1], *inp)
                                    - MULT16_32_Q15(st->mode->preemph[0], tmp);
-            silence = silence && *inp == 0;
             inp++;
          }
          OPUS_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
          OPUS_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
       } while (++c<CC);
 
+#ifdef FIXED_POINT
+      silence = (sample_max==0);
+#else
+      silence = (sample_max <= (opus_val16)1/(1<<st->lsb_depth));
+#endif
 #ifdef FUZZING
       if ((rand()&0x3F)==0)
          silence = 1;
@@ -1413,10 +1425,12 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    /* Dynamic allocation code */
+   maxDepth=-QCONST16(32.f, DB_SHIFT);
    /* Make sure that dynamic allocation can't make us bust the budget */
    if (effectiveBytes > 50 && LM>=1)
    {
-      opus_val16 follower[42]={0};
+      VARDECL(opus_val16, follower);
+      ALLOC(follower, C*st->mode->nbEBands, opus_val16);
       c=0;do
       {
          follower[c*st->mode->nbEBands] = bandLogE2[c*st->mode->nbEBands];
@@ -1424,6 +1438,17 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE2[c*st->mode->nbEBands+i]);
          for (i=effEnd-2;i>=0;i--)
             follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*st->mode->nbEBands+i]));
+         for (i=0;i<st->end;i++)
+         {
+            opus_val16 noise_floor;
+            /* Noise floor must take into account eMeans, the depth, the width of the bands
+               and the preemphasis filter (approx. square of bark band ID) */
+            noise_floor = MULT16_16(QCONST16(0.0625f, DB_SHIFT),st->mode->logN[i])
+                  +QCONST16(.5f,DB_SHIFT)+SHL16(9-st->lsb_depth,DB_SHIFT)-SHL16(eMeans[i],6)
+                  +MULT16_16(QCONST16(.0062,DB_SHIFT),(i+5)*(i+5));
+            follower[c*st->mode->nbEBands+i] = MAX16(follower[c*st->mode->nbEBands+i], noise_floor);
+            maxDepth = MAX16(maxDepth, bandLogE[i]-noise_floor);
+         }
       } while (++c<C);
       if (C==2)
       {
@@ -1606,6 +1631,16 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      }
 #endif
 
+     {
+        opus_int32 floor_depth;
+        int bins;
+        bins = st->mode->eBands[st->mode->nbEBands-2]<<LM;
+        /*floor_depth = SHR32(MULT16_16((C*bins<<BITRES),celt_log2(SHL32(MAX16(1,sample_max),13))), DB_SHIFT);*/
+        floor_depth = SHR32(MULT16_16((C*bins<<BITRES),maxDepth), DB_SHIFT);
+        floor_depth = IMAX(floor_depth, new_target>>2);
+        new_target = IMIN(new_target, floor_depth);
+        /*printf("%f %d\n", maxDepth, floor_depth);*/
+     }
      /* The current offset is removed from the target and the space used
         so far is added*/
      target=new_target+tell;
@@ -2002,6 +2037,20 @@ int opus_custom_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          if (value<1 || value>2)
             goto bad_arg;
          st->stream_channels = value;
+      }
+      break;
+      case OPUS_SET_LSB_DEPTH_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          if (value<8 || value>24)
+             goto bad_arg;
+          st->lsb_depth=value;
+      }
+      break;
+      case OPUS_GET_LSB_DEPTH_REQUEST:
+      {
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          *value=st->lsb_depth;
       }
       break;
       case OPUS_RESET_STATE:

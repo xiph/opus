@@ -35,6 +35,12 @@
 #include "entdec.h"
 #include "mathops.h"
 
+#ifdef FIXED_POINT
+extern const signed char eMeans[25];
+#else
+extern const opus_val16 eMeans[25];
+#endif
+
 void amp2Log2(const CELTMode *m, int effEnd, int end,
       celt_ener *bandE, opus_val16 *bandLogE, int C);
 
