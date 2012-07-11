@@ -45,6 +45,7 @@
 #include "os_support.h"
 #include "structs.h"
 #include "define.h"
+#include "mathops.h"
 
 struct OpusDecoder {
    int          celt_dec_offset;
@@ -62,6 +63,7 @@ struct OpusDecoder {
    int          prev_mode;
    int          frame_size;
    int          prev_redundancy;
+   int          decode_gain;
 
    opus_uint32  rangeFinal;
 };
@@ -503,6 +505,18 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       }
    }
 
+   if(st->decode_gain)
+   {
+      opus_val32 gain;
+      gain = celt_exp2(MULT16_16_P15(QCONST16(6.48814081e-4f, 25), st->decode_gain));
+      for (i=0;i<frame_size*st->channels;i++)
+      {
+         opus_val32 x;
+         x = MULT16_32_P16(pcm[i],gain);
+         pcm[i] = SATURATE(x, 32767);
+      }
+   }
+
    if (len <= 1)
       st->rangeFinal = 0;
    else
@@ -854,6 +868,28 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
          celt_decoder_ctl(celt_dec, OPUS_GET_PITCH(value));
       else
          *value = st->DecControl.prevPitchLag;
+   }
+   break;
+   case OPUS_GET_GAIN_REQUEST:
+   {
+      opus_int32 *value = va_arg(ap, opus_int32*);
+      if (value==NULL)
+      {
+         ret = OPUS_BAD_ARG;
+         break;
+      }
+      *value = st->decode_gain;
+   }
+   break;
+   case OPUS_SET_GAIN_REQUEST:
+   {
+       opus_int32 value = va_arg(ap, opus_int32);
+       if (value<-32768 || value>32767)
+       {
+          ret = OPUS_BAD_ARG;
+          break;
+       }
+       st->decode_gain = value;
    }
    break;
    default:

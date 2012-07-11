@@ -128,6 +128,8 @@ extern "C" {
 /* #define OPUS_RESET_STATE 4028 */
 #define OPUS_GET_FINAL_RANGE_REQUEST         4031
 #define OPUS_GET_PITCH_REQUEST               4033
+#define OPUS_SET_GAIN_REQUEST                4034
+#define OPUS_GET_GAIN_REQUEST                4045
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
@@ -400,7 +402,7 @@ extern "C" {
   * }
   * @endcode
   *
-  * @see opus_encoder, opus_decoder_ctl, opus_encoder_ctl
+  * @see opus_encoder, opus_decoder_ctl, opus_encoder_ctl, opus_decoderctls, opus_encoderctls
   * @{
   */
 
@@ -437,6 +439,29 @@ extern "C" {
   * @param[out] x <tt>int*</tt>: Bandwidth value
   * @hideinitializer */
 #define OPUS_GET_BANDWIDTH(x) OPUS_GET_BANDWIDTH_REQUEST, __opus_check_int_ptr(x)
+
+/**@}*/
+
+/** @defgroup opus_decoderctls Decoder related CTLs
+  * @see opus_genericctls, opus_encoderctls, opus_decoder
+  * @{
+  */
+
+/** Configures decoder gain adjustment.
+  * Scales the decoded output by a factor specified in Q8 dB units.
+  * This has a maximum range of -32768 to 32767 inclusive, and returns
+  * OPUS_BAD_ARG otherwise.
+  *
+  * gain = pow(10, x/(20.0*256))
+  *
+  * @param[in] x <tt>opus_int32</tt>:   Amount to scale PCM signal by in Q8 dB units.
+  * @hideinitializer */
+#define OPUS_SET_GAIN(x) OPUS_SET_GAIN_REQUEST, __opus_check_int(x)
+/** Gets the decoder's configured gain adjustment. @see OPUS_SET_GAIN
+  *
+  * @param[out] x <tt>opus_int32*</tt>: Amount to scale PCM signal by in Q8 dB units.
+  * @hideinitializer */
+#define OPUS_GET_GAIN(x) OPUS_GET_GAIN_REQUEST, __opus_check_int_ptr(x)
 
 /**@}*/
 

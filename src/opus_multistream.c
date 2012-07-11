@@ -845,7 +845,27 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
           }
           *value = (OpusDecoder*)ptr;
        }
-          break;
+       break;
+       case OPUS_SET_GAIN_REQUEST:
+       {
+          int s;
+          /* This works for int32 params */
+          opus_int32 value = va_arg(ap, opus_int32);
+          for (s=0;s<st->layout.nb_streams;s++)
+          {
+             OpusDecoder *dec;
+
+             dec = (OpusDecoder*)ptr;
+             if (s < st->layout.nb_coupled_streams)
+                ptr += align(coupled_size);
+             else
+                ptr += align(mono_size);
+             ret = opus_decoder_ctl(dec, request, value);
+             if (ret != OPUS_OK)
+                break;
+          }
+       }
+       break;
        default:
           ret = OPUS_UNIMPLEMENTED;
        break;

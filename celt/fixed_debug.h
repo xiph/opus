@@ -47,6 +47,8 @@ extern long long celt_mips;
 /** 16x32 multiplication, followed by a 16-bit shift right. Results fits in 32 bits */
 #define MULT16_32_Q16(a,b) ADD32(MULT16_16((a),SHR32((b),16)), SHR32(MULT16_16SU((a),((b)&0x0000ffff)),16))
 
+#define MULT16_32_P16(a,b) MULT16_32_PX(a,b,16)
+
 #define QCONST16(x,bits) ((opus_val16)(.5+(x)*(((opus_val32)1)<<(bits))))
 #define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_val32)1)<<(bits))))
 
@@ -456,6 +458,39 @@ static inline int MULT16_32_QX_(int a, long long b, int Q, char *file, int line)
       celt_mips+=3;
    else
       celt_mips+=4;
+   return res;
+}
+
+#define MULT16_32_PX(a, b, Q) MULT16_32_PX_(a, b, Q, __FILE__, __LINE__)
+static inline int MULT16_32_PX_(int a, long long b, int Q, char *file, int line)
+{
+   long long res;
+   if (!VERIFY_SHORT(a) || !VERIFY_INT(b))
+   {
+      fprintf (stderr, "MULT16_32_P%d: inputs are not short+int: %d %d in %s: line %d\n\n", Q, (int)a, (int)b, file, line);
+#ifdef FIXED_DEBUG_ASSERT
+      celt_assert(0);
+#endif
+   }
+   if (ABS32(b)>=((opus_val32)(1)<<(15+Q)))
+   {
+      fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d in %s: line %d\n\n", Q, (int)a, (int)b, file, line);
+#ifdef FIXED_DEBUG_ASSERT
+      celt_assert(0);
+#endif
+   }
+   res = ((((long long)a)*(long long)b) + (((opus_val32)(1)<<Q)>>1))>> Q;
+   if (!VERIFY_INT(res))
+   {
+      fprintf (stderr, "MULT16_32_P%d: output is not int: %d*%d=%d in %s: line %d\n\n", Q, (int)a, (int)b,(int)res, file, line);
+#ifdef FIXED_DEBUG_ASSERT
+      celt_assert(0);
+#endif
+   }
+   if (Q==15)
+      celt_mips+=4;
+   else
+      celt_mips+=5;
    return res;
 }
 
