@@ -422,13 +422,14 @@ opus_int32 test_msdec_api(void)
    cfgs++;
    err=opus_multistream_decoder_ctl(dec, OPUS_MULTISTREAM_GET_DECODER_STATE(1,&streamdec));
    if(err!=OPUS_OK||streamdec==NULL)test_failed();
+   VG_CHECK(streamdec,opus_decoder_get_size(1));
    cfgs++;
    err=opus_multistream_decoder_ctl(dec, OPUS_MULTISTREAM_GET_DECODER_STATE(2,&streamdec));
    if(err!=OPUS_BAD_ARG)test_failed();
    cfgs++;
    err=opus_multistream_decoder_ctl(dec, OPUS_MULTISTREAM_GET_DECODER_STATE(0,&streamdec));
    if(err!=OPUS_OK||streamdec==NULL)test_failed();
-   VG_CHECK(streamdec,opus_decoder_get_size(2));
+   VG_CHECK(streamdec,opus_decoder_get_size(1));
    fprintf(stdout,"    OPUS_MULTISTREAM_GET_DECODER_STATE ........... OK.\n");
    cfgs++;
 
