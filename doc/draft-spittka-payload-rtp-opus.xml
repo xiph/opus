@@ -76,7 +76,7 @@
       </address>
     </author>
 
-    <date day='1' month='May' year='2012' />
+    <date day='9' month='July' year='2012' />
 
     <abstract>
       <t>
@@ -864,6 +864,7 @@
       &rfc3264;
       &rfc2974;
       &rfc2326;
+      &rfc6562;
     </references>
 
 
