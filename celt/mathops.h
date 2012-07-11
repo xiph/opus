@@ -43,6 +43,33 @@
 
 unsigned isqrt32(opus_uint32 _val);
 
+#ifndef OVERRIDE_CELT_MAXABS16
+static inline opus_val16 celt_maxabs16(const opus_val16 *x, int len)
+{
+   int i;
+   opus_val16 maxval = 0;
+   for (i=0;i<len;i++)
+      maxval = MAX16(maxval, ABS16(x[i]));
+   return maxval;
+}
+#endif
+
+#ifndef OVERRIDE_CELT_MAXABS32
+#ifdef FIXED_POINT
+static inline opus_val32 celt_maxabs32(const opus_val32 *x, int len)
+{
+   int i;
+   opus_val32 maxval = 0;
+   for (i=0;i<len;i++)
+      maxval = MAX32(maxval, ABS32(x[i]));
+   return maxval;
+}
+#else
+#define celt_maxabs32(x,len) celt_maxabs16(x,len)
+#endif
+#endif
+
+
 #ifndef FIXED_POINT
 
 #define PI 3.141592653f
@@ -117,27 +144,6 @@ static inline opus_int16 celt_ilog2(opus_int32 x)
 }
 #endif
 
-#ifndef OVERRIDE_CELT_MAXABS16
-static inline opus_val16 celt_maxabs16(opus_val16 *x, int len)
-{
-   int i;
-   opus_val16 maxval = 0;
-   for (i=0;i<len;i++)
-      maxval = MAX16(maxval, ABS16(x[i]));
-   return maxval;
-}
-#endif
-
-#ifndef OVERRIDE_CELT_MAXABS32
-static inline opus_val32 celt_maxabs32(opus_val32 *x, int len)
-{
-   int i;
-   opus_val32 maxval = 0;
-   for (i=0;i<len;i++)
-      maxval = MAX32(maxval, ABS32(x[i]));
-   return maxval;
-}
-#endif
 
 /** Integer log in base2. Defined for zero, but not for negative numbers */
 static inline opus_int16 celt_zlog2(opus_val32 x)
