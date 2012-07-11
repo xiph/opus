@@ -450,7 +450,8 @@ extern "C" {
 /** Configures decoder gain adjustment.
   * Scales the decoded output by a factor specified in Q8 dB units.
   * This has a maximum range of -32768 to 32767 inclusive, and returns
-  * OPUS_BAD_ARG otherwise.
+  * OPUS_BAD_ARG otherwise. The default is zero indicating no adjustment.
+  * This setting survives decoder reset.
   *
   * gain = pow(10, x/(20.0*256))
   *

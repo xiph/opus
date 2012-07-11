@@ -53,6 +53,7 @@ struct OpusDecoder {
    int          channels;
    opus_int32   Fs;          /** Sampling rate (at the API level) */
    silk_DecControlStruct DecControl;
+   int          decode_gain;
 
    /* Everything beyond this point gets cleared on a reset */
 #define OPUS_DECODER_RESET_START stream_channels
@@ -63,7 +64,6 @@ struct OpusDecoder {
    int          prev_mode;
    int          frame_size;
    int          prev_redundancy;
-   int          decode_gain;
 
    opus_uint32  rangeFinal;
 };
