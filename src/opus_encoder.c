@@ -366,10 +366,13 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 }
 
 static void stereo_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus_val16 g2,
-        int overlap, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
+        int overlap48, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
 {
     int i;
-    int inc = 48000/Fs;
+    int overlap;
+    int inc;
+    inc = 48000/Fs;
+    overlap=overlap48/inc;
     g1 = Q15ONE-g1;
     g2 = Q15ONE-g2;
     for (i=0;i<overlap;i++)
