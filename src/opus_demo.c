@@ -498,6 +498,7 @@ int main(int argc, char *argv[])
        opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
 
        opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
+       opus_encoder_ctl(enc, OPUS_SET_LSB_DEPTH(16));
     }
     if (!encode_only)
     {

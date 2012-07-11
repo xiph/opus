@@ -156,6 +156,7 @@ struct OpusCustomEncoder {
    int signalling;
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
    int loss_rate;
+   int lsb_depth;
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
@@ -266,6 +267,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMod
    st->vbr = 0;
    st->force_intra  = 0;
    st->complexity = 5;
+   st->lsb_depth=24;
 
    opus_custom_encoder_ctl(st, OPUS_RESET_STATE);
 
@@ -1821,6 +1823,20 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
          if (value<1 || value>2)
             goto bad_arg;
          st->stream_channels = value;
+      }
+      break;
+      case OPUS_SET_LSB_DEPTH_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          if (value<8 || value>24)
+             goto bad_arg;
+          st->lsb_depth=value;
+      }
+      break;
+      case OPUS_GET_LSB_DEPTH_REQUEST:
+      {
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          *value=st->lsb_depth;
       }
       break;
       case OPUS_RESET_STATE:

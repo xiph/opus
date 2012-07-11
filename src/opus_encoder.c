@@ -1537,6 +1537,18 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->rangeFinal;
         }
         break;
+        case OPUS_SET_LSB_DEPTH_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            ret = celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(value));
+        }
+        break;
+        case OPUS_GET_LSB_DEPTH_REQUEST:
+        {
+            opus_int32 *value = va_arg(ap, opus_int32*);
+            celt_encoder_ctl(celt_enc, OPUS_GET_LSB_DEPTH(value));
+        }
+        break;
         case OPUS_RESET_STATE:
         {
            void *silk_enc;
