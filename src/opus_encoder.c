@@ -79,6 +79,7 @@ struct OpusEncoder {
     int          stream_channels;
     opus_int16   hybrid_stereo_width_Q14;
     opus_int32   variable_HP_smth2_Q15;
+    opus_val16   prev_HB_gain;
     opus_val32   hp_mem[4];
     int          mode;
     int          prev_mode;
@@ -217,6 +218,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->delay_compensation = st->Fs/250;
 
     st->hybrid_stereo_width_Q14 = 1 << 14;
+    st->prev_HB_gain = Q15ONE;
     st->variable_HP_smth2_Q15 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
     st->first = 1;
     st->mode = MODE_HYBRID;
@@ -399,6 +401,30 @@ static void stereo_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, op
     }
 }
 
+static void gain_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus_val16 g2,
+        int overlap48, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
+{
+    int i;
+    int inc;
+    int overlap;
+    inc = 48000/Fs;
+    overlap=overlap48/inc;
+    for (i=0;i<overlap;i++)
+    {
+       opus_val16 g, w;
+       w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+       g = SHR32(MAC16_16(MULT16_16(w,g2),
+             Q15ONE-w, g1), 15);
+       out[i*channels] = MULT16_16_Q15(g, in[i*channels]);
+       out[i*channels+1] = MULT16_16_Q15(g, in[i*channels+1]);
+    }
+    for (;i<frame_size;i++)
+    {
+       out[i*channels] = MULT16_16_Q15(g2, in[i*channels]);
+       out[i*channels+1] = MULT16_16_Q15(g2, in[i*channels+1]);
+    }
+}
+
 OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int application, int *error)
 {
    int ret;
@@ -473,6 +499,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int frame_rate;
     opus_int32 max_rate;
     int curr_bandwidth;
+    opus_val16 HB_gain;
     VARDECL(opus_val16, tmp_prefill);
 
     ALLOC_STACK;
@@ -840,9 +867,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
 
     /* SILK processing */
+    HB_gain = Q15ONE;
     if (st->mode != MODE_CELT_ONLY)
     {
-        opus_int32 total_bitRate, celt_rate, HB_gain_Q16;
+        opus_int32 total_bitRate, celt_rate;
 #ifdef FIXED_POINT
        const opus_int16 *pcm_silk;
 #else
@@ -853,6 +881,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         /* Distribute bits between SILK and CELT */
         total_bitRate = 8 * bytes_target * frame_rate;
         if( st->mode == MODE_HYBRID ) {
+            int HB_gain_ref;
             /* Base rate for SILK */
             st->silk_mode.bitRate = st->stream_channels * ( 5000 + 1000 * ( st->Fs == 100 * frame_size ) );
             if( curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND ) {
@@ -868,11 +897,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             }
             /* Increasingly attenuate high band when it gets allocated fewer bits */
             celt_rate = total_bitRate - st->silk_mode.bitRate;
-            if( curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND ) {
-                HB_gain_Q16 = ( celt_rate << 10 ) / ( ( celt_rate + st->stream_channels * 2000 ) >> 6 );
-            } else { /* FULLBAND */
-                HB_gain_Q16 = ( celt_rate << 10 ) / ( ( celt_rate + st->stream_channels * 2400 ) >> 6 );
-            }
+            HB_gain_ref = (curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND) ? 2000 : 2400;
+            HB_gain = SHL32((opus_val32)celt_rate, 9) / SHR32((opus_val32)celt_rate + st->stream_channels*HB_gain_ref, 6);
         } else {
             /* SILK gets all bits */
             st->silk_mode.bitRate = total_bitRate;
@@ -985,19 +1011,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
            celt_to_silk = 0;
            st->silk_bw_switch = 1;
         }
-
-        if( st->mode == MODE_HYBRID ) {
-#ifdef FIXED_POINT
-            for (i=0;i<frame_size*st->channels;i++) {
-                pcm_buf[delay_compensation*st->channels + i] = (opus_val16)( ( HB_gain_Q16 * pcm_buf[delay_compensation*st->channels + i] ) >> 16 );
-            }
-#else
-            float HB_gain = HB_gain_Q16 / 65536.0f;
-            for (i=0;i<frame_size*st->channels;i++) {
-                pcm_buf[delay_compensation*st->channels + i] *= HB_gain;
-            }
-#endif
-        }
     }
 
     /* CELT processing */
@@ -1071,7 +1084,16 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     for (;i<st->encoder_buffer*st->channels;i++)
         st->delay_buffer[i] = pcm_buf[(frame_size+delay_compensation-st->encoder_buffer)*st->channels+i];
 
+    /* gain_fade() and stereo_fade() need to be after the buffer copying
+       because we don't want any of this to affect the SILK part */
+    if( st->prev_HB_gain < Q15ONE || HB_gain < Q15ONE ) {
+       const CELTMode *celt_mode;
 
+       celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
+       gain_fade(pcm_buf, pcm_buf,
+             st->prev_HB_gain, HB_gain, celt_mode->overlap, frame_size, st->channels, celt_mode->window, st->Fs);
+    }
+    st->prev_HB_gain = HB_gain;
     if (st->mode != MODE_HYBRID || st->stream_channels==1)
        st->silk_mode.stereoWidth_Q14 = 1<<14;
     if( st->channels == 2 ) {
@@ -1532,6 +1554,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            silk_InitEncoder( silk_enc, &dummy );
            st->stream_channels = st->channels;
            st->hybrid_stereo_width_Q14 = 1 << 14;
+           st->prev_HB_gain = Q15ONE;
            st->first = 1;
            st->mode = MODE_HYBRID;
            st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
