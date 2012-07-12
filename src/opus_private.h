@@ -77,7 +77,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 le
 /* Make sure everything's aligned to sizeof(void *) bytes */
 static inline int align(int i)
 {
-    return (i+sizeof(void *)-1)&-((int)sizeof(void *));
+    return (i+(int)sizeof(void *)-1)&-(int)sizeof(void *);
 }
 
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen, int self_delimited);
