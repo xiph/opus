@@ -5,6 +5,7 @@
 
 #define restrict 
 #define inline __inline
+#define getpid _getpid
 
 #define USE_ALLOCA            1
 
