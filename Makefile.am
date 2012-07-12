@@ -17,6 +17,10 @@ SILK_SOURCES += $(SILK_SOURCES_FLOAT)
 OPUS_SOURCES += $(OPUS_SOURCES_FLOAT)
 endif
 
+include celt_headers.mk
+include silk_headers.mk
+include opus_headers.mk
+
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(OPUS_SOURCES)
 
 pkginclude_HEADERS = include/opus.h include/opus_multistream.h include/opus_types.h include/opus_defines.h
