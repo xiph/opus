@@ -160,9 +160,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="corrMatrix_FIX.c" />
     <ClCompile Include="encode_frame_FIX.c" />
     <ClCompile Include="find_LPC_FIX.c" />

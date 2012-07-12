@@ -160,9 +160,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="apply_sine_window_FLP.c" />
     <ClCompile Include="autocorrelation_FLP.c" />
     <ClCompile Include="burg_modified_FLP.c" />
