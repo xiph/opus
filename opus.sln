@@ -29,6 +29,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "silk_float", "silk\float\si
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "celt", "celt\celt.vcxproj", "{245603E3-F580-41A5-9632-B25FE3372CBF}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opus_demo", "src\opus_demo.vcxproj", "{016C739D-6389-43BF-8D88-24B2BF6F620F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{219EC965-228A-1824-174D-96449D05F88A} = {219EC965-228A-1824-174D-96449D05F88A}
+		{9C4961D2-5DDB-40C7-9BE8-CA918DC4E782} = {9C4961D2-5DDB-40C7-9BE8-CA918DC4E782}
+		{245603E3-F580-41A5-9632-B25FE3372CBF} = {245603E3-F580-41A5-9632-B25FE3372CBF}
+		{C303D2FC-FF97-49B8-9DDD-467B4C9A0B16} = {C303D2FC-FF97-49B8-9DDD-467B4C9A0B16}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -77,6 +85,12 @@ Global
 		{245603E3-F580-41A5-9632-B25FE3372CBF}.Release|Win32.Build.0 = Release|Win32
 		{245603E3-F580-41A5-9632-B25FE3372CBF}.Release|x64.ActiveCfg = Release|x64
 		{245603E3-F580-41A5-9632-B25FE3372CBF}.Release|x64.Build.0 = Release|x64
+		{016C739D-6389-43BF-8D88-24B2BF6F620F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{016C739D-6389-43BF-8D88-24B2BF6F620F}.Debug|Win32.Build.0 = Debug|Win32
+		{016C739D-6389-43BF-8D88-24B2BF6F620F}.Debug|x64.ActiveCfg = Debug|Win32
+		{016C739D-6389-43BF-8D88-24B2BF6F620F}.Release|Win32.ActiveCfg = Release|Win32
+		{016C739D-6389-43BF-8D88-24B2BF6F620F}.Release|Win32.Build.0 = Release|Win32
+		{016C739D-6389-43BF-8D88-24B2BF6F620F}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
