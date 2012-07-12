@@ -672,7 +672,7 @@ static int opus_packet_parse_impl(const unsigned char *data, int len,
       *out_toc = toc;
 
    if (payload_offset)
-      *payload_offset = data-data0;
+      *payload_offset = (int)(data-data0);
 
    return count;
 }

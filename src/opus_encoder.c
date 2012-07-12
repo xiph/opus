@@ -99,8 +99,8 @@ struct OpusEncoder {
 static const opus_int32 mono_voice_bandwidth_thresholds[8] = {
         11000, 1000, /* NB<->MB */
         14000, 1000, /* MB<->WB */
-        21000, 2000, /* WB<->SWB */
-        29000, 2000, /* SWB<->FB */
+        17000, 1000, /* WB<->SWB */
+        20000, 1000, /* SWB<->FB */
 };
 static const opus_int32 mono_music_bandwidth_thresholds[8] = {
         14000, 1000, /* MB not allowed */
@@ -842,37 +842,40 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     /* SILK processing */
     if (st->mode != MODE_CELT_ONLY)
     {
+        opus_int32 total_bitRate, celt_rate, HB_gain_Q16;
 #ifdef FIXED_POINT
        const opus_int16 *pcm_silk;
 #else
        VARDECL(opus_int16, pcm_silk);
        ALLOC(pcm_silk, st->channels*frame_size, opus_int16);
 #endif
-        st->silk_mode.bitRate = 8*bytes_target*frame_rate;
+
+        /* Distribute bits between SILK and CELT */
+        total_bitRate = 8 * bytes_target * frame_rate;
         if( st->mode == MODE_HYBRID ) {
-            st->silk_mode.bitRate /= st->stream_channels;
+            /* Base rate for SILK */
+            st->silk_mode.bitRate = st->stream_channels * ( 5000 + 1000 * ( st->Fs == 100 * frame_size ) );
             if( curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND ) {
-                if( st->Fs == 100 * frame_size ) {
-                    /* 24 kHz, 10 ms */
-                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 2000 + st->use_vbr * 1000 ) * 2 ) / 3;
-                } else {
-                    /* 24 kHz, 20 ms */
-                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 1000 + st->use_vbr * 1000 ) * 2 ) / 3;
-                }
-            } else {
-                if( st->Fs == 100 * frame_size ) {
-                    /* 48 kHz, 10 ms */
-                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 8000 + st->use_vbr * 3000 ) / 2;
-                } else {
-                    /* 48 kHz, 20 ms */
-                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 9000 + st->use_vbr * 1000 ) / 2;
-                }
+                /* SILK gets 2/3 of the remaining bits */
+                st->silk_mode.bitRate += ( total_bitRate - st->silk_mode.bitRate ) * 2 / 3;
+            } else { /* FULLBAND */
+                /* SILK gets 3/5 of the remaining bits */
+                st->silk_mode.bitRate += ( total_bitRate - st->silk_mode.bitRate ) * 3 / 5;
             }
-            st->silk_mode.bitRate *= st->stream_channels;
-            /* don't let SILK use more than 80% */
-            if( st->silk_mode.bitRate > ( st->bitrate_bps - 8*st->Fs/frame_size ) * 4/5 ) {
-                st->silk_mode.bitRate = ( st->bitrate_bps - 8*st->Fs/frame_size ) * 4/5;
+            /* Don't let SILK use more than 80% */
+            if( st->silk_mode.bitRate > total_bitRate * 4/5 ) {
+                st->silk_mode.bitRate = total_bitRate * 4/5;
             }
+            /* Increasingly attenuate high band when it gets allocated fewer bits */
+            celt_rate = total_bitRate - st->silk_mode.bitRate;
+            if( curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND ) {
+                HB_gain_Q16 = ( celt_rate << 10 ) / ( ( celt_rate + st->stream_channels * 2000 ) >> 6 );
+            } else { /* FULLBAND */
+                HB_gain_Q16 = ( celt_rate << 10 ) / ( ( celt_rate + st->stream_channels * 2400 ) >> 6 );
+            }
+        } else {
+            /* SILK gets all bits */
+            st->silk_mode.bitRate = total_bitRate;
         }
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
@@ -981,6 +984,19 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
            redundancy = 1;
            celt_to_silk = 0;
            st->silk_bw_switch = 1;
+        }
+
+        if( st->mode == MODE_HYBRID ) {
+#ifdef FIXED_POINT
+            for (i=0;i<frame_size*st->channels;i++) {
+                pcm_buf[delay_compensation*st->channels + i] = (opus_val16)( ( HB_gain_Q16 * pcm_buf[delay_compensation*st->channels + i] ) >> 16 );
+            }
+#else
+            float HB_gain = HB_gain_Q16 / 65536.0f;
+            for (i=0;i<frame_size*st->channels;i++) {
+                pcm_buf[delay_compensation*st->channels + i] *= HB_gain;
+            }
+#endif
         }
     }
 

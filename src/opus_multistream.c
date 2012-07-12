@@ -348,7 +348,7 @@ int opus_multistream_encode(
    ALLOC(in, frame_size*st->layout.nb_channels, float);
 
    for (i=0;i<frame_size*st->layout.nb_channels;i++)
-      in[i] = (1./32768)*pcm[i];
+      in[i] = (1.f/32768)*pcm[i];
    ret = opus_multistream_encode_float(st, in, frame_size, data, max_data_bytes);
    RESTORE_STACK;
    return ret;
