@@ -18,4 +18,6 @@
 #pragma warning(disable : 4996)/* This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details. */
 #endif
 
+#define OPUS_VERSION "0.9.11 win32"
+
 #endif CONFIG_H

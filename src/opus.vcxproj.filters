@@ -27,9 +27,6 @@
     <ClCompile Include="repacketizer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="opus_demo.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="opus_multistream.c">
       <Filter>Source Files</Filter>
     </ClCompile>
