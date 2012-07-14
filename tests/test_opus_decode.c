@@ -36,7 +36,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-#ifndef _WIN32
+#if (!defined WIN32 && !defined _WIN32) || defined(__MINGW32__)
 #include <unistd.h>
 #endif
 #include "opus.h"
