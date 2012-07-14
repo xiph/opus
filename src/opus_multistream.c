@@ -163,6 +163,10 @@ int opus_multistream_encoder_init(
    int i;
    char *ptr;
 
+   if ((channels>255) || (coupled_streams>streams) ||
+       (coupled_streams+streams>255) || (streams<1) || (coupled_streams<0))
+      return OPUS_BAD_ARG;
+
    st->layout.nb_channels = channels;
    st->layout.nb_streams = streams;
    st->layout.nb_coupled_streams = coupled_streams;
@@ -533,6 +537,10 @@ int opus_multistream_decoder_init(
    int mono_size;
    int i, ret;
    char *ptr;
+
+   if ((channels>255) || (coupled_streams>streams) ||
+       (coupled_streams+streams>255) || (streams<1) || (coupled_streams<0))
+      return OPUS_BAD_ARG;
 
    st->layout.nb_channels = channels;
    st->layout.nb_streams = streams;
