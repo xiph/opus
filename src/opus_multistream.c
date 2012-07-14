@@ -407,6 +407,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       }
    }
    break;
+   case OPUS_GET_LSB_DEPTH_REQUEST:
    case OPUS_GET_VBR_REQUEST:
    case OPUS_GET_APPLICATION_REQUEST:
    case OPUS_GET_BANDWIDTH_REQUEST:
@@ -446,6 +447,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       }
    }
    break;
+   case OPUS_SET_LSB_DEPTH_REQUEST:
    case OPUS_SET_COMPLEXITY_REQUEST:
    case OPUS_SET_VBR_REQUEST:
    case OPUS_SET_VBR_CONSTRAINT_REQUEST:
