@@ -442,6 +442,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       }
    }
    break;
+   case OPUS_SET_LSB_DEPTH_REQUEST:
    case OPUS_SET_COMPLEXITY_REQUEST:
    case OPUS_SET_VBR_REQUEST:
    case OPUS_SET_VBR_CONSTRAINT_REQUEST:
@@ -846,6 +847,26 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
           *value = (OpusDecoder*)ptr;
        }
           break;
+       case OPUS_GET_LSB_DEPTH_REQUEST:
+       {
+          int s;
+          /* This works for int32 params */
+          opus_int32 value = va_arg(ap, opus_int32);
+          for (s=0;s<st->layout.nb_streams;s++)
+          {
+             OpusDecoder *dec;
+
+             dec = (OpusDecoder*)ptr;
+             if (s < st->layout.nb_coupled_streams)
+                ptr += align(coupled_size);
+             else
+                ptr += align(mono_size);
+             ret = opus_decoder_ctl(dec, request, value);
+             if (ret != OPUS_OK)
+                break;
+          }
+       }
+       break;
        default:
           ret = OPUS_UNIMPLEMENTED;
        break;
