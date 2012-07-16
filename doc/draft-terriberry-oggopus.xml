@@ -36,6 +36,21 @@
 </address>
 </author>
 
+<author initials="R." surname="Giles" fullname="Ralph Giles">
+<organization>Mozilla Corporation</organization>
+<address>
+<postal>
+<street>163 West Hastings Street</street>
+<city>Vancouver</city>
+<region>BC</region>
+<code>V6B 1H5</code>
+<country>Canada</country>
+</postal>
+<phone>+1 604 778 1540</phone>
+<email>giles@xiph.org</email>
+</address>
+</author>
+
 <date day="3" month="July" year="2012"/>
 <area>RAI</area>
 <workgroup>codec</workgroup>
