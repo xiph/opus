@@ -3,7 +3,7 @@
 
 #define CELT_BUILD            1
 
-#define restrict 
+#define restrict
 #define inline __inline
 #define getpid _getpid
 
