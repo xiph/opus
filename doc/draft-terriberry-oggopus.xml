@@ -172,6 +172,8 @@ The remaining Opus packet is packed at the end of the audio data packet
  <xref target="RFCOpus"/>.
 All of the Opus packets in a single Ogg packet MUST be constrained to have the
  same duration.
+The duration and coding modes of each Opus packet are contained in the
+ TOC (table of contents) sequence in the first few bytes.
 A decoder SHOULD treat any Opus packet whose duration is different from that of
  the first Opus packet in an Ogg packet as if it were an Opus packet with an
  illegal TOC sequence.
