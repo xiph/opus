@@ -315,8 +315,8 @@ However, to do so, Vorbis requires that the first audio data page contains
  adjustments before needing to return any PCM data.
 Opus uses the pre-skip mechanism for this purpose instead, since the encoder
  may introduce more than a single packet's worth of latency, and since very
- large packets in streams with a very large number of channels might not fit on
- a single page.
+ large packets in streams with a very large number of channels might not fit
+ on a single page.
 </t>
 </section>
 
