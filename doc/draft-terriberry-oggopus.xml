@@ -167,9 +167,8 @@ The value N is specified in the ID header (see
 The first N-1 Opus packets, if any, are packed one after another in sequence
  into the Ogg packet, using the self-delimiting framing from Appendix&nbsp;B
  of <xref target="RFCOpus"/>.
-The remaining Opus packet is packed at the end of the audio data packet
- using the regular, undelimited framing from Section&nbsp;3 of
- <xref target="RFCOpus"/>.
+The remaining Opus packet is packed at the end of the Ogg packet using the
+ regular, undelimited framing from Section&nbsp;3 of <xref target="RFCOpus"/>.
 All of the Opus packets in a single Ogg packet MUST be constrained to have the
  same duration.
 The duration and coding modes of each Opus packet are contained in the
@@ -261,7 +260,8 @@ However, a decoder will want to skip these samples after decoding them.
 
 <t>
 A 'pre-skip' field in the ID header (see <xref target="id_header"/>) signals
- the number of samples which should be skipped at the beginning of the stream.
+ the number of samples which should be skipped (decoded but discarded) at the
+ beginning of the stream.
 This provides sufficient history to the decoder so that it has already
  converged before the stream's output begins.
 It may also be used to perform sample-accurate cropping of existing encoded
@@ -306,7 +306,7 @@ In this case, the PCM sample position of the first audio sample to be played
 <t>
 Vorbis streams use a granule position smaller than the number of audio samples
  contained in the first audio data page to indicate that some of those samples
- must be trimmed from the output.
+ must be trimmed from the output. See <xref target="vorbis-trim"/>.
 However, to do so, Vorbis requires that the first audio data page contains
  exactly two packets, in order to allow the decoder to perform PCM position
  adjustments before needing to return any PCM data.
@@ -473,12 +473,12 @@ The original sample rate of the encoder input is not preserved by the lossy
 An Ogg Opus player SHOULD select the playback sample rate according to the
  following procedure:
 <list style="numbers">
-<t>If the hardware supports 48&nbsp;kHz playback, decode at 48&nbsp;kHz</t>
-<t>Else if the hardware's highest available sample rate is a supported rate,
- decode at this sample rate,</t>
-<t>Else if the hardware's highest available sample rate is less than
- 48&nbsp;kHz, decode at the highest supported rate above this and resample.</t>
-<t>Else decode at 48&nbsp;kHz and resample.</t>
+<t>If the hardware supports 48&nbsp;kHz playback, decode at 48&nbsp;kHz;</t>
+<t>Else, if the hardware's highest available sample rate is a supported
+ rate, decode at this sample rate;</t>
+<t>Else, if the hardware's highest available sample rate is less than
+ 48&nbsp;kHz, decode at the highest supported rate above this and resample;</t>
+<t>Else, decode at 48&nbsp;kHz and resample.</t>
 </list>
 However, the 'Input Sample Rate' field allows the encoder to pass the sample
  rate of the original input stream as metadata.
@@ -675,7 +675,7 @@ Decoders SHOULD NOT produce output for channels mapped to stream index 255
 </t>
 </list>
 The remaining channel mapping families (2...254) are reserved.
-A decoder encountering a reserved channel mapping family value should act as
+A decoder encountering a reserved channel mapping family value SHOULD act as
  though the value is 255.
 <vspace blankLines="1"/>
 An Ogg Opus player MUST play any Ogg Opus stream with a channel mapping family
@@ -758,6 +758,11 @@ It MUST NOT indicate that the vendor string is longer than the rest of the
 This is a simple human-readable tag for vendor information, encoded as a UTF-8
  string.
 No terminating NUL octet is required.
+<vspace blankLines="1"/>
+This tag is intended to identify the codec encoder and encapsulation
+ implementations, for tracing differences in technical behavior. The
+ user-facing encoding application can use the 'Encoded-by' user commment
+ tag name to identify themselves.
 <vspace blankLines="1"/>
 </t>
 <t><spanx style="strong">User Comment List Length</spanx> (32 bits, unsigned,
@@ -853,7 +858,7 @@ Encoders SHOULD use no more padding than required to make a variable bitrate
 Decoders SHOULD avoid attempting to allocate excessive amounts of memory when
  presented with a very large packet.
 The presence of an extremely large packet in the stream could indicate a
- potential memory exhaustion attack or stream corruption.
+ memory exhaustion attack or stream corruption.
 Decoders SHOULD reject a packet that is too large to process, and display a
  warning message.
 </t>
@@ -985,6 +990,15 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <author initials="T.B." surname="Terriberry" fullname="Timothy B. Terriberry"/>
 </front>
 <seriesInfo name="RFC" value="XXXX"/>
+</reference>
+
+<reference anchor="vorbis-trim"
+  target="http://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
+<front>
+<title>The Vorbis I Specification, Appendix A Embedding Vorbis into an Ogg stream</title>
+<author initials="C." surname="Montgomery"
+ fullname="Christopher &quot;Monty&quot; Montgomery"/>
+</front>
 </reference>
 
 <reference anchor="vorbis-mapping"
