@@ -814,7 +814,7 @@ No terminating NUL octet is required.
 This tag is intended to identify the codec encoder and encapsulation
  implementations, for tracing differences in technical behavior.
 The user-facing encoding application can use the 'ENCODER' user commment tag
- name to identify themselves.
+ name to identify itself.
 <vspace blankLines="1"/>
 </t>
 <t><spanx style="strong">User Comment List Length</spanx> (32 bits, unsigned,
