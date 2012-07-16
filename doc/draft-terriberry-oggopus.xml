@@ -941,7 +941,7 @@ A more reasonable limit is (7,664*N&nbsp;-&nbsp;2) octets, or about 7.5&nbsp;kB
 This corresponds to 120&nbsp;ms of audio encoded as 20&nbsp;ms stereo MDCT-mode
  frames, with a total bitrate just under 511&nbsp;kbps (not counting the Ogg
  encapsulation overhead).
-With N=8, the maximum number of streams currently defined by mapping
+With N=8, the maximum number of channels currently defined by mapping
  family&nbsp;1, this gives a maximum packet size of 61,310&nbsp;octets, or just
  under 60&nbsp;kB.
 This is still quite conservative, as it assumes each output channel is taken
@@ -1048,10 +1048,18 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <seriesInfo name="RFC" value="XXXX"/>
 </reference>
 
-<reference anchor="vorbis-trim"
-  target="http://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
+<reference anchor="EBU-R128" target="http://tech.ebu.ch/loudness">
 <front>
-<title>The Vorbis I Specification, Appendix A Embedding Vorbis into an Ogg stream</title>
+<title>"Loudness Recommendation EBU R128</title>
+<author fullname="EBU Technical Committee"/>
+</front>
+</reference>
+
+<reference anchor="vorbis-comment"
+ target="http://www.xiph.org/vorbis/doc/v-comment.html">
+<front>
+<title>Ogg Vorbis I Format Specification: Comment Field and Header
+ Specification</title>
 <author initials="C." surname="Montgomery"
  fullname="Christopher &quot;Monty&quot; Montgomery"/>
 </front>
@@ -1066,29 +1074,21 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </front>
 </reference>
 
-<reference anchor="vorbis-comment"
- target="http://www.xiph.org/vorbis/doc/v-comment.html">
-<front>
-<title>Ogg Vorbis I Format Specification: Comment Field and Header
- Specification</title>
-<author initials="C." surname="Montgomery"
- fullname="Christopher &quot;Monty&quot; Montgomery"/>
-</front>
-</reference>
-
-<reference anchor="EBU-R128" target="http://tech.ebu.ch/loudness">
-<front>
-<title>"Loudness Recommendation EBU R128</title>
-<author fullname="EBU Technical Committee"/>
-</front>
-</reference>
-
 </references>
 
 <references title="Informative References">
 
 <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml"?-->
 <?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.4732.xml"?>
+
+<reference anchor="replay-gain"
+ target="http://wiki.xiph.org/VorbisComment#Replay_Gain">
+<front>
+<title>VorbisComment: Replay Gain</title>
+<author initials="C." surname="Parker" fullname="Conrad Parker"/>
+<author initials="M." surname="Leese" fullname="Martin Leese"/>
+</front>
+</reference>
 
 <reference anchor="seeking"
  target="http://wiki.xiph.org/Seeking">
@@ -1100,12 +1100,12 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </front>
 </reference>
 
-<reference anchor="replay-gain"
- target="http://wiki.xiph.org/VorbisComment#Replay_Gain">
+<reference anchor="vorbis-trim"
+  target="http://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
 <front>
-<title>VorbisComment: Replay Gain</title>
-<author initials="C." surname="Parker" fullname="Conrad Parker"/>
-<author initials="M." surname="Leese" fullname="Martin Leese"/>
+<title>The Vorbis I Specification, Appendix A Embedding Vorbis into an Ogg stream</title>
+<author initials="C." surname="Montgomery"
+ fullname="Christopher &quot;Monty&quot; Montgomery"/>
 </front>
 </reference>
 
