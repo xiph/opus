@@ -559,7 +559,7 @@ kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
 
         st->nfft=nfft;
 #ifndef FIXED_POINT
-        st->scale = 1./nfft;
+        st->scale = 1.f/nfft;
 #endif
         if (base != NULL)
         {

@@ -307,11 +307,11 @@ void silk_biquad_float(
     opus_val32 inval;
     opus_val32 A[2], B[3];
 
-    A[0] = (opus_val32)(A_Q28[0] * (1./((opus_int32)1<<28)));
-    A[1] = (opus_val32)(A_Q28[1] * (1./((opus_int32)1<<28)));
-    B[0] = (opus_val32)(B_Q28[0] * (1./((opus_int32)1<<28)));
-    B[1] = (opus_val32)(B_Q28[1] * (1./((opus_int32)1<<28)));
-    B[2] = (opus_val32)(B_Q28[2] * (1./((opus_int32)1<<28)));
+    A[0] = (opus_val32)(A_Q28[0] * (1.f/((opus_int32)1<<28)));
+    A[1] = (opus_val32)(A_Q28[1] * (1.f/((opus_int32)1<<28)));
+    B[0] = (opus_val32)(B_Q28[0] * (1.f/((opus_int32)1<<28)));
+    B[1] = (opus_val32)(B_Q28[1] * (1.f/((opus_int32)1<<28)));
+    B[2] = (opus_val32)(B_Q28[2] * (1.f/((opus_int32)1<<28)));
 
     /* Negate A_Q28 values and split in two parts */
 
@@ -1079,8 +1079,8 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
             g1 = g1==16384 ? Q15ONE : SHL16(g1,1);
             g2 = g2==16384 ? Q15ONE : SHL16(g2,1);
 #else
-            g1 *= (1./16384);
-            g2 *= (1./16384);
+            g1 *= (1.f/16384);
+            g2 *= (1.f/16384);
 #endif
             stereo_fade(pcm_buf, pcm_buf, g1, g2, celt_mode->overlap,
                   frame_size, st->channels, celt_mode->window, st->Fs);

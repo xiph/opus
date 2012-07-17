@@ -453,7 +453,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
          pcm[i] = SAT16(pcm[i] + pcm_silk[i]);
 #else
       for (i=0;i<frame_size*st->channels;i++)
-         pcm[i] = pcm[i] + (opus_val16)((1./32768.)*pcm_silk[i]);
+         pcm[i] = pcm[i] + (opus_val16)((1.f/32768.f)*pcm_silk[i]);
 #endif
    }
 
