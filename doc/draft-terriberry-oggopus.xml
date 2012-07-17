@@ -604,8 +604,8 @@ An Ogg Opus stream allows mapping one number of Opus streams (N) to a possibly
  larger number of decoded channels (M+N) to yet another number of output
  channels (C), which might be larger or smaller than the number of decoded
  channels.
-The order and meaning these channels is defined by a channel mapping, which
- consists of the 'channel mapping family' octet and, for channel mapping
+The order and meaning of these channels are defined by a channel mapping,
+ which consists of the 'channel mapping family' octet and, for channel mapping
  families other than family&nbsp;0, a channel mapping table, as illustrated in
  <xref target="channel_mapping_table"/>.
 </t>
