@@ -504,16 +504,22 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     if (max_data_bytes<3 || st->bitrate_bps < 3*frame_rate*8
        || (frame_rate<50 && (max_data_bytes*frame_rate<300 || st->bitrate_bps < 2400)))
     {
+       /*If the space is too low to do something useful, emit 'PLC' frames.*/
        int tocmode = st->mode;
+       int bw = st->bandwidth == 0 ? OPUS_BANDWIDTH_NARROWBAND : st->bandwidth;
        if (tocmode==0)
           tocmode = MODE_SILK_ONLY;
        if (frame_rate>100)
           tocmode = MODE_CELT_ONLY;
        if (frame_rate < 50)
           tocmode = MODE_SILK_ONLY;
-       data[0] = gen_toc(tocmode, frame_rate,
-                         st->bandwidth == 0 ? OPUS_BANDWIDTH_NARROWBAND : st->bandwidth,
-                         st->stream_channels);
+       if(tocmode==MODE_SILK_ONLY&&bw>OPUS_BANDWIDTH_WIDEBAND)
+          bw=OPUS_BANDWIDTH_WIDEBAND;
+       else if (tocmode==MODE_CELT_ONLY&&bw==OPUS_BANDWIDTH_MEDIUMBAND)
+          bw=OPUS_BANDWIDTH_NARROWBAND;
+       else if (bw<=OPUS_BANDWIDTH_SUPERWIDEBAND)
+          bw=OPUS_BANDWIDTH_SUPERWIDEBAND;
+       data[0] = gen_toc(tocmode, frame_rate, bw, st->stream_channels);
        RESTORE_STACK;
        return 1;
     }
