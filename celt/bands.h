@@ -51,14 +51,14 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
  * @param X Spectrum (returned normalised)
  * @param bands Square root of the energy for each band
  */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bandE, int end, int C, int M);
+void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, celt_norm * OPUS_RESTRICT X, const celt_ener *bandE, int end, int C, int M);
 
 /** Denormalise each band of X to restore full amplitude
  * @param m Mode data
  * @param X Spectrum (returned de-normalised)
  * @param bands Square root of the energy for each band
  */
-void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bandE, int end, int C, int M);
+void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X, celt_sig * OPUS_RESTRICT freq, const celt_ener *bandE, int end, int C, int M);
 
 #define SPREAD_NONE       (0)
 #define SPREAD_LIGHT      (1)

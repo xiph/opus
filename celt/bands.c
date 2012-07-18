@@ -111,7 +111,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bandE, int end, int C, int M)
+void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, celt_norm * OPUS_RESTRICT X, const celt_ener *bandE, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
@@ -153,7 +153,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bandE, int end, int C, int M)
+void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, celt_norm * OPUS_RESTRICT X, const celt_ener *bandE, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
@@ -172,15 +172,15 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
 #endif /* FIXED_POINT */
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bandE, int end, int C, int M)
+void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X, celt_sig * OPUS_RESTRICT freq, const celt_ener *bandE, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
    N = M*m->shortMdctSize;
    celt_assert2(C<=2, "denormalise_bands() not implemented for >2 channels");
    c=0; do {
-      celt_sig * restrict f;
-      const celt_norm * restrict x;
+      celt_sig * OPUS_RESTRICT f;
+      const celt_norm * OPUS_RESTRICT x;
       f = freq+c*N;
       x = X+c*N;
       for (i=0;i<end;i++)
@@ -397,7 +397,7 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
 {
    int i, c, N0;
    int sum = 0, nbBands=0;
-   const opus_int16 * restrict eBands = m->eBands;
+   const opus_int16 * OPUS_RESTRICT eBands = m->eBands;
    int decision;
    int hf_sum=0;
 
@@ -412,7 +412,7 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
       {
          int j, N, tmp=0;
          int tcount[3] = {0,0,0};
-         celt_norm * restrict x = X+M*eBands[i]+c*N0;
+         celt_norm * OPUS_RESTRICT x = X+M*eBands[i]+c*N0;
          N = M*(eBands[i+1]-eBands[i]);
          if (N<=8)
             continue;
@@ -1175,8 +1175,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 {
    int i;
    opus_int32 remaining_bits;
-   const opus_int16 * restrict eBands = m->eBands;
-   celt_norm * restrict norm, * restrict norm2;
+   const opus_int16 * OPUS_RESTRICT eBands = m->eBands;
+   celt_norm * OPUS_RESTRICT norm, * OPUS_RESTRICT norm2;
    VARDECL(celt_norm, _norm);
    VARDECL(celt_norm, lowband_scratch);
    int B;
@@ -1206,7 +1206,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       int N;
       opus_int32 curr_balance;
       int effective_lowband=-1;
-      celt_norm * restrict X, * restrict Y;
+      celt_norm * OPUS_RESTRICT X, * OPUS_RESTRICT Y;
       int tf_change=0;
       unsigned x_cm;
       unsigned y_cm;

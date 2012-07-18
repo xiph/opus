@@ -102,7 +102,7 @@ void clt_mdct_clear(mdct_lookup *l)
 #endif /* CUSTOM_MODES */
 
 /* Forward MDCT trashes the input array */
-void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out,
+void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
       const opus_val16 *window, int overlap, int shift, int stride)
 {
    int i;
@@ -126,11 +126,11 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    /* Window, shuffle, fold */
    {
       /* Temp pointers to make it really clear to the compiler what we're doing */
-      const kiss_fft_scalar * restrict xp1 = in+(overlap>>1);
-      const kiss_fft_scalar * restrict xp2 = in+N2-1+(overlap>>1);
-      kiss_fft_scalar * restrict yp = f;
-      const opus_val16 * restrict wp1 = window+(overlap>>1);
-      const opus_val16 * restrict wp2 = window+(overlap>>1)-1;
+      const kiss_fft_scalar * OPUS_RESTRICT xp1 = in+(overlap>>1);
+      const kiss_fft_scalar * OPUS_RESTRICT xp2 = in+N2-1+(overlap>>1);
+      kiss_fft_scalar * OPUS_RESTRICT yp = f;
+      const opus_val16 * OPUS_RESTRICT wp1 = window+(overlap>>1);
+      const opus_val16 * OPUS_RESTRICT wp2 = window+(overlap>>1)-1;
       for(i=0;i<(overlap>>2);i++)
       {
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
@@ -164,7 +164,7 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    }
    /* Pre-rotation */
    {
-      kiss_fft_scalar * restrict yp = f;
+      kiss_fft_scalar * OPUS_RESTRICT yp = f;
       const kiss_twiddle_scalar *t = &l->trig[0];
       for(i=0;i<N4;i++)
       {
@@ -185,9 +185,9 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    /* Post-rotate */
    {
       /* Temp pointers to make it really clear to the compiler what we're doing */
-      const kiss_fft_scalar * restrict fp = in;
-      kiss_fft_scalar * restrict yp1 = out;
-      kiss_fft_scalar * restrict yp2 = out+stride*(N2-1);
+      const kiss_fft_scalar * OPUS_RESTRICT fp = in;
+      kiss_fft_scalar * OPUS_RESTRICT yp1 = out;
+      kiss_fft_scalar * OPUS_RESTRICT yp2 = out+stride*(N2-1);
       const kiss_twiddle_scalar *t = &l->trig[0];
       /* Temp pointers to make it really clear to the compiler what we're doing */
       for(i=0;i<N4;i++)
@@ -206,8 +206,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    RESTORE_STACK;
 }
 
-void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out,
-      const opus_val16 * restrict window, int overlap, int shift, int stride)
+void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
+      const opus_val16 * OPUS_RESTRICT window, int overlap, int shift, int stride)
 {
    int i;
    int N, N2, N4;
@@ -231,9 +231,9 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    /* Pre-rotate */
    {
       /* Temp pointers to make it really clear to the compiler what we're doing */
-      const kiss_fft_scalar * restrict xp1 = in;
-      const kiss_fft_scalar * restrict xp2 = in+stride*(N2-1);
-      kiss_fft_scalar * restrict yp = f2;
+      const kiss_fft_scalar * OPUS_RESTRICT xp1 = in;
+      const kiss_fft_scalar * OPUS_RESTRICT xp2 = in+stride*(N2-1);
+      kiss_fft_scalar * OPUS_RESTRICT yp = f2;
       const kiss_twiddle_scalar *t = &l->trig[0];
       for(i=0;i<N4;i++)
       {
@@ -253,7 +253,7 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
 
    /* Post-rotate */
    {
-      kiss_fft_scalar * restrict fp = f;
+      kiss_fft_scalar * OPUS_RESTRICT fp = f;
       const kiss_twiddle_scalar *t = &l->trig[0];
 
       for(i=0;i<N4;i++)
@@ -271,9 +271,9 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    }
    /* De-shuffle the components for the middle of the window only */
    {
-      const kiss_fft_scalar * restrict fp1 = f;
-      const kiss_fft_scalar * restrict fp2 = f+N2-1;
-      kiss_fft_scalar * restrict yp = f2;
+      const kiss_fft_scalar * OPUS_RESTRICT fp1 = f;
+      const kiss_fft_scalar * OPUS_RESTRICT fp2 = f+N2-1;
+      kiss_fft_scalar * OPUS_RESTRICT yp = f2;
       for(i = 0; i < N4; i++)
       {
          *yp++ =-*fp1;
@@ -285,11 +285,11 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    out -= (N2-overlap)>>1;
    /* Mirror on both sides for TDAC */
    {
-      kiss_fft_scalar * restrict fp1 = f2+N4-1;
-      kiss_fft_scalar * restrict xp1 = out+N2-1;
-      kiss_fft_scalar * restrict yp1 = out+N4-overlap/2;
-      const opus_val16 * restrict wp1 = window;
-      const opus_val16 * restrict wp2 = window+overlap-1;
+      kiss_fft_scalar * OPUS_RESTRICT fp1 = f2+N4-1;
+      kiss_fft_scalar * OPUS_RESTRICT xp1 = out+N2-1;
+      kiss_fft_scalar * OPUS_RESTRICT yp1 = out+N4-overlap/2;
+      const opus_val16 * OPUS_RESTRICT wp1 = window;
+      const opus_val16 * OPUS_RESTRICT wp2 = window+overlap-1;
       for(i = 0; i< N4-overlap/2; i++)
       {
          *xp1 = *fp1;
@@ -307,11 +307,11 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
       }
    }
    {
-      kiss_fft_scalar * restrict fp2 = f2+N4;
-      kiss_fft_scalar * restrict xp2 = out+N2;
-      kiss_fft_scalar * restrict yp2 = out+N-1-(N4-overlap/2);
-      const opus_val16 * restrict wp1 = window;
-      const opus_val16 * restrict wp2 = window+overlap-1;
+      kiss_fft_scalar * OPUS_RESTRICT fp2 = f2+N4;
+      kiss_fft_scalar * OPUS_RESTRICT xp2 = out+N2;
+      kiss_fft_scalar * OPUS_RESTRICT yp2 = out+N-1-(N4-overlap/2);
+      const opus_val16 * OPUS_RESTRICT wp1 = window;
+      const opus_val16 * OPUS_RESTRICT wp2 = window+overlap-1;
       for(i = 0; i< N4-overlap/2; i++)
       {
          *xp2 = *fp2;

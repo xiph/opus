@@ -92,7 +92,7 @@ extern "C" {
 
 int celt_encoder_get_size(int channels);
 
-int celt_encode_with_ec(OpusCustomEncoder * restrict st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
+int celt_encode_with_ec(OpusCustomEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
 
 int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels);
 
@@ -105,7 +105,7 @@ int celt_decoder_get_size(int channels);
 
 int celt_decoder_init(CELTDecoder *st, opus_int32 sampling_rate, int channels);
 
-int celt_decode_with_ec(OpusCustomDecoder * restrict st, const unsigned char *data, int len, opus_val16 * restrict pcm, int frame_size, ec_dec *dec);
+int celt_decode_with_ec(OpusCustomDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec);
 
 #define celt_encoder_ctl opus_custom_encoder_ctl
 #define celt_decoder_ctl opus_custom_decoder_ctl
