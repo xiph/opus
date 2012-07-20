@@ -318,7 +318,7 @@ OPUS_CUSTOM_EXPORT OPUS_WARN_UNUSED_RESULT int opus_custom_decode(
   * by a convenience macro.
   * @see opus_genericctls
   */
-OPUS_CUSTOM_EXPORT int opus_custom_decoder_ctl(OpusCustomDecoder * restrict st, int request, ...) OPUS_ARG_NONNULL(1);
+OPUS_CUSTOM_EXPORT int opus_custom_decoder_ctl(OpusCustomDecoder * OPUS_RESTRICT st, int request, ...) OPUS_ARG_NONNULL(1);
 
 /**@}*/
 
