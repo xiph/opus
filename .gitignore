@@ -31,3 +31,7 @@ tools/celtenc
 celt.pc
 celt.spec
 celt/dump_modes/dump_modes
+*.vcxproj.user
+opus.sdf
+opus.suo
+version.h
