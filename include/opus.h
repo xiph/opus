@@ -328,8 +328,20 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
   * opus_decode() and opus_decode_float() return the number of samples (per channel) decoded from the packet.
   * If that value is negative, then an error has occured. This can occur if the packet is corrupted or if the audio
   * buffer is too small to hold the decoded audio.
-
-*/
+  *
+  * Opus is a stateful codec with overlapping blocks and as a result Opus
+  * packets are not coded independently of each other. Packets must be
+  * passed into the decoder serially and in the correct order for a correct
+  * decode. Lost packets can be replaced with loss concealment by calling
+  * the decoder with a null pointer and zero length for the missing packet.
+  *
+  * A single codec state may only be accessed from a single thread at
+  * a time and any required locking must be performed by the caller. Separate
+  * streams must be decoded with separate decoder states and can be decoded
+  * in parallel unless the library was compiled with NONTHREADSAFE_PSEUDOSTACK
+  * defined.
+  *
+  */
 
 /** Opus decoder state.
   * This contains the complete state of an Opus decoder.
