@@ -822,17 +822,19 @@ static void init_caps(const CELTMode *m,int *cap,int LM,int C)
 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
-      AnalysisInfo *analysis, opus_val16 *stereo_saving, opus_val16 tf_estimate)
+      AnalysisInfo *analysis, opus_val16 *stereo_saving, opus_val16 tf_estimate,
+      int intensity)
 {
    int i;
    opus_val32 diff=0;
    int c;
    int trim_index = 5;
    opus_val16 trim = QCONST16(5.f, 8);
-   opus_val16 logXC;
+   opus_val16 logXC, logXC2;
    if (C==2)
    {
       opus_val16 sum = 0; /* Q10 */
+      opus_val16 minXC; /* Q10 */
       /* Compute inter-channel correlation for low frequencies */
       for (i=0;i<8;i++)
       {
@@ -843,6 +845,15 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          sum = ADD16(sum, EXTRACT16(SHR32(partial, 18)));
       }
       sum = MULT16_16_Q15(QCONST16(1.f/8, 15), sum);
+      minXC = sum;
+      for (i=8;i<intensity;i++)
+      {
+         int j;
+         opus_val32 partial = 0;
+         for (j=m->eBands[i]<<LM;j<m->eBands[i+1]<<LM;j++)
+            partial = MAC16_16(partial, X[j], X[N0+j]);
+         minXC = MIN16(minXC, EXTRACT16(SHR32(partial, 18)));
+      }
       /*printf ("%f\n", sum);*/
       if (sum > QCONST16(.995f,10))
          trim_index-=4;
@@ -852,14 +863,18 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          trim_index-=2;
       else if (sum > QCONST16(.8f,10))
          trim_index-=1;
+      /* mid-side savings estimations based on the LF average*/
       logXC = celt_log2(QCONST32(1.001f, 20)-MULT16_16(sum, sum));
+      /* mid-side savings estimations based on min correlation */
+      logXC2 = MAX16(HALF16(logXC), celt_log2(QCONST32(1.001f, 20)-MULT16_16(minXC, minXC)));
 #ifdef FIXED_POINT
       /* Compensate for Q20 vs Q14 input and convert output to Q8 */
       logXC = PSHR32(logXC-QCONST16(6.f, DB_SHIFT),DB_SHIFT-8);
+      logXC2 = PSHR32(logXC2-QCONST16(6.f, DB_SHIFT),DB_SHIFT-8);
 #endif
 
       trim += MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC));
-      *stereo_saving = MULT16_16_Q15(-QCONST16(0.25f, 15), logXC);
+      *stereo_saving = -HALF16(logXC2);
    }
 
    /* Estimate spectral tilt */
@@ -1429,14 +1444,22 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    /* Make sure that dynamic allocation can't make us bust the budget */
    if (effectiveBytes > 50 && LM>=1)
    {
+      int last=0;
       VARDECL(opus_val16, follower);
       ALLOC(follower, C*st->mode->nbEBands, opus_val16);
       c=0;do
       {
          follower[c*st->mode->nbEBands] = bandLogE2[c*st->mode->nbEBands];
          for (i=1;i<st->end;i++)
+         {
+            /* The last band to be at least 3 dB higher than the previous one
+               is the last we'll consider. Otherwise, we run into problems on
+               bandlimited signals. */
+            if (bandLogE2[c*st->mode->nbEBands+i] > bandLogE2[c*st->mode->nbEBands+i-1]+QCONST16(.5f,DB_SHIFT))
+               last=i;
             follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE2[c*st->mode->nbEBands+i]);
-         for (i=effEnd-2;i>=0;i--)
+         }
+         for (i=last-1;i>=0;i--)
             follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*st->mode->nbEBands+i]));
          for (i=0;i<st->end;i++)
          {
@@ -1537,14 +1560,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          dynalloc_logp = IMAX(2, dynalloc_logp-1);
       offsets[i] = boost;
    }
-   alloc_trim = 5;
-   if (tell+(6<<BITRES) <= total_bits - total_boost)
-   {
-      alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
-            st->end, LM, C, N, &st->analysis, &stereo_saving, tf_estimate);
-      ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
-      tell = ec_tell_frac(enc);
-   }
 
    if (C==2)
    {
@@ -1576,6 +1591,15 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       intensity = IMIN(st->end,IMAX(st->start, intensity));
    }
 
+   alloc_trim = 5;
+   if (tell+(6<<BITRES) <= total_bits - total_boost)
+   {
+      alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
+            st->end, LM, C, N, &st->analysis, &stereo_saving, tf_estimate, intensity);
+      ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
+      tell = ec_tell_frac(enc);
+   }
+
    /* Variable bitrate */
    if (vbr_rate>0)
    {
@@ -1599,15 +1623,20 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      if (st->constrained_vbr)
         target += (st->vbr_offset>>lm_diff);
 
-     /*printf("%f %f %f\n", st->analysis.activity, st->analysis.tonality, tf_estimate);*/
+     /*printf("%f %f %f %f ", st->analysis.activity, st->analysis.tonality, tf_estimate, stereo_saving);*/
 #ifndef FIXED_POINT
      if (st->analysis.valid && st->analysis.activity<.4)
         target -= (coded_bins<<BITRES)*1*(.4-st->analysis.activity);
 #endif
      if (C==2)
      {
-        target -= MIN32(target/3, SHR16(MULT16_16(stereo_saving,(st->mode->eBands[intensity]<<LM<<BITRES)),8));
-        target += MULT16_16_Q15(QCONST16(0.05f,15),coded_bins<<BITRES);
+        int coded_stereo_bands;
+        int coded_stereo_dof;
+        coded_stereo_bands = IMIN(intensity, coded_bands);
+        coded_stereo_dof = (st->mode->eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
+        /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
+        target -= MIN32(target/3, SHR16(MULT16_16(stereo_saving,(coded_stereo_dof<<BITRES)),8));
+        target += MULT16_16_Q15(QCONST16(0.035,15),coded_stereo_dof<<BITRES);
      }
      /* Compensates for the average tonality boost */
      target -= MULT16_16_Q15(QCONST16(0.13f,15),coded_bins<<BITRES);
