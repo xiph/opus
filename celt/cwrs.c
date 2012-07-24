@@ -48,8 +48,9 @@ int log2_frac(opus_uint32 val, int frac)
   l=EC_ILOG(val);
   if(val&(val-1)){
     /*This is (val>>l-16), but guaranteed to round up, even if adding a bias
-       before the shift would cause overflow (e.g., for 0xFFFFxxxx).*/
-    if(l>16)val=(val>>(l-16))+(((val&((1<<(l-16))-1))+(1<<(l-16))-1)>>(l-16));
+       before the shift would cause overflow (e.g., for 0xFFFFxxxx).
+       Doesn't work for val=0, but that case fails the test above.*/
+    if(l>16)val=((val-1)>>(l-16))+1;
     else val<<=16-l;
     l=(l-1)<<frac;
     /*Note that we always need one iteration, since the rounding up above means
