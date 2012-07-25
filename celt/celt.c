@@ -189,6 +189,7 @@ struct OpusCustomEncoder {
    opus_int32 vbr_offset;
    opus_int32 vbr_count;
    opus_val16 overlap_max;
+   opus_val16 stereo_saving;
 
 #ifdef RESYNTH
    celt_sig syn_mem[2][2*MAX_PERIOD];
@@ -874,7 +875,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
 #endif
 
       trim += MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC));
-      *stereo_saving = -HALF16(logXC2);
+      *stereo_saving = MIN16(*stereo_saving + QCONST16(0.25f, 8), -HALF16(logXC2));
    }
 
    /* Estimate spectral tilt */
@@ -1002,7 +1003,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    int silence=0;
    int tf_chan = 0;
    opus_val16 tf_estimate;
-   opus_val16 stereo_saving = 0;
    int pitch_change=0;
    opus_int32 tot_boost=0;
    opus_val16 sample_max;
@@ -1595,7 +1595,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
       alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
-            st->end, LM, C, N, &st->analysis, &stereo_saving, tf_estimate, intensity);
+            st->end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate, intensity);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
@@ -1623,7 +1623,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      if (st->constrained_vbr)
         target += (st->vbr_offset>>lm_diff);
 
-     /*printf("%f %f %f %f ", st->analysis.activity, st->analysis.tonality, tf_estimate, stereo_saving);*/
+     /*printf("%f %f %f %f %d %d ", st->analysis.activity, st->analysis.tonality, tf_estimate, st->stereo_saving, tot_boost, coded_bands);*/
 #ifndef FIXED_POINT
      if (st->analysis.valid && st->analysis.activity<.4)
         target -= (coded_bins<<BITRES)*1*(.4-st->analysis.activity);
@@ -1635,7 +1635,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
         coded_stereo_bands = IMIN(intensity, coded_bands);
         coded_stereo_dof = (st->mode->eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
         /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
-        target -= MIN32(target/3, SHR16(MULT16_16(stereo_saving,(coded_stereo_dof<<BITRES)),8));
+        target -= MIN32(target/3, SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
         target += MULT16_16_Q15(QCONST16(0.035,15),coded_stereo_dof<<BITRES);
      }
      /* Compensates for the average tonality boost */
