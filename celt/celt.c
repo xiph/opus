@@ -411,7 +411,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       }
    }
    /* *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20); */
-   *tf_estimate = QCONST16(1.f, 14) + celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0025f,14),IMIN(420,tf_max)),14)-QCONST32(0.075f,28)));
+   *tf_estimate = QCONST16(1.f, 14) + celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0069,14),IMIN(163,tf_max)),14)-QCONST32(0.139,28)));
 
    RESTORE_STACK;
 #ifdef FUZZING
@@ -1641,7 +1641,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      /* Compensates for the average tonality boost */
      target -= MULT16_16_Q15(QCONST16(0.13f,15),coded_bins<<BITRES);
      /* Limits starving of other bands when using dynalloc */
-     target += IMAX(0,tot_boost-100)/2;
+     target += tot_boost;
      /* Compensates for the average transient boost */
      target = MULT16_32_Q15(QCONST16(0.96f,15),target);
 
