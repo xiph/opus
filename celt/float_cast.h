@@ -90,14 +90,14 @@
 #include <math.h>
 #define float2int(x) lrint(x)
 
-#elif (_MSC_VER >= 1400) && (defined (WIN64) || defined (_WIN64))
+#elif (defined(_MSC_VER) && _MSC_VER >= 1400) && (defined (WIN64) || defined (_WIN64))
         #include <xmmintrin.h>
 
         __inline long int float2int(float value)
         {
                 return _mm_cvtss_si32(_mm_load_ss(&value));
         }
-#elif (_MSC_VER >= 1400) && (defined (WIN32) || defined (_WIN32))
+#elif (defined(_MSC_VER) && _MSC_VER >= 1400) && (defined (WIN32) || defined (_WIN32))
         #include <math.h>
 
         /*      Win32 doesn't seem to have these functions.
@@ -127,6 +127,7 @@
         #define float2int(flt) ((int)(floor(.5+flt)))
 #endif
 
+#ifndef DISABLE_FLOAT_API
 static inline opus_int16 FLOAT2INT16(float x)
 {
    x = x*CELT_SIG_SCALE;
@@ -134,5 +135,6 @@ static inline opus_int16 FLOAT2INT16(float x)
    x = MIN32(x, 32767);
    return (opus_int16)float2int(x);
 }
+#endif /* DISABLE_FLOAT_API */
 
 #endif /* FLOAT_CAST_H */

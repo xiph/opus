@@ -87,7 +87,7 @@ extern "C" {
 #if (!defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L) )
 # if OPUS_GNUC_PREREQ(3,0)
 #  define OPUS_RESTRICT __restrict__
-# elif (_MSC_VER >= 1400)
+# elif (defined(_MSC_VER) && _MSC_VER >= 1400)
 #  define OPUS_RESTRICT __restrict
 # else
 #  define OPUS_RESTRICT
