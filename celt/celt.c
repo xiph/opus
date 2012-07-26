@@ -190,6 +190,7 @@ struct OpusCustomEncoder {
    opus_int32 vbr_count;
    opus_val16 overlap_max;
    opus_val16 stereo_saving;
+   int intensity;
 
 #ifdef RESYNTH
    celt_sig syn_mem[2][2*MAX_PERIOD];
@@ -986,7 +987,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    int alloc_trim;
    int pitch_index=COMBFILTER_MINPERIOD;
    opus_val16 gain1 = 0;
-   int intensity=0;
    int dual_stereo=0;
    int effectiveBytes;
    opus_val16 pf_threshold;
@@ -1569,33 +1569,27 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       if (LM!=0)
          dual_stereo = stereo_analysis(st->mode, X, LM, N);
 
+      static const opus_val16 intensity_thresholds[21]=
+      /* 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19  20  off*/
+        { 16,21,23,25,27,29,31,33,35,38,42,46,50,54,58,63,68,75,84,102,130};
+      static const opus_val16 intensity_histeresis[21]=
+        {  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6,  8, 12};
+
       /* Account for coarse energy */
       effectiveRate = (8*effectiveBytes - 80)>>LM;
 
       /* effectiveRate in kb/s */
       effectiveRate = 2*effectiveRate/5;
-      if (effectiveRate<35)
-         intensity = 8;
-      else if (effectiveRate<50)
-         intensity = 12;
-      else if (effectiveRate<68)
-         intensity = 16;
-      else if (effectiveRate<84)
-         intensity = 18;
-      else if (effectiveRate<102)
-         intensity = 19;
-      else if (effectiveRate<130)
-         intensity = 20;
-      else
-         intensity = 100;
-      intensity = IMIN(st->end,IMAX(st->start, intensity));
+
+      st->intensity = hysteresis_decision(effectiveRate, intensity_thresholds, intensity_histeresis, 21, st->intensity);
+      st->intensity = IMIN(st->end,IMAX(st->start, st->intensity));
    }
 
    alloc_trim = 5;
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
       alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
-            st->end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate, intensity);
+            st->end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate, st->intensity);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
@@ -1614,7 +1608,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      coded_bands = st->lastCodedBands ? st->lastCodedBands : st->mode->nbEBands;
      coded_bins = st->mode->eBands[coded_bands]<<LM;
      if (C==2)
-        coded_bins += st->mode->eBands[IMIN(intensity, coded_bands)]<<LM;
+        coded_bins += st->mode->eBands[IMIN(st->intensity, coded_bands)]<<LM;
 
      /* Don't attempt to use more than 510 kb/s, even for frames smaller than 20 ms.
         The CELT allocator will just not be able to use more than that anyway. */
@@ -1632,7 +1626,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      {
         int coded_stereo_bands;
         int coded_stereo_dof;
-        coded_stereo_bands = IMIN(intensity, coded_bands);
+        coded_stereo_bands = IMIN(st->intensity, coded_bands);
         coded_stereo_dof = (st->mode->eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
         /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
         target -= MIN32(target/3, SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
@@ -1744,7 +1738,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=((LM+2)<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
-         alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
+         alloc_trim, &st->intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands);
    st->lastCodedBands = codedBands;
 
@@ -1764,7 +1758,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    /* Residual quantisation */
    ALLOC(collapse_masks, C*st->mode->nbEBands, unsigned char);
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
-         bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res,
+         bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, st->intensity, tf_res,
          nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv, balance, enc, LM, codedBands, &st->rng);
 
    if (anti_collapse_rsv > 0)
