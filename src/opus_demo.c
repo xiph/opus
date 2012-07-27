@@ -763,7 +763,7 @@ int main(int argc, char *argv[])
     }
     fprintf (stderr, "average bitrate:             %7.3f kb/s\n",
                      1e-3*bits*sampling_rate/(frame_size*(double)count));
-    fprintf (stderr, "maximum bitrate:             %7.3f bkp/s\n",
+    fprintf (stderr, "maximum bitrate:             %7.3f kb/s\n",
                      1e-3*bits_max*sampling_rate/frame_size);
     if (!decode_only)
        fprintf (stderr, "active bitrate:              %7.3f kb/s\n",
