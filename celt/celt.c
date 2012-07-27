@@ -1357,7 +1357,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    printf("\n");*/
 
    ALLOC(bandLogE2, C*st->mode->nbEBands, opus_val16);
-   if (shortBlocks)
+   if (shortBlocks && st->complexity>=8)
    {
       VARDECL(celt_sig, freq2);
       VARDECL(opus_val32, bandE2);
@@ -1513,19 +1513,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          offsets[i] = boost;
       }
    }
-#ifndef FIXED_POINT
-   if (0 && st->analysis.valid)
-   {
-      if (st->analysis.boost_amount[0]>.2)
-         offsets[st->analysis.boost_band[0]]+=2;
-      if (st->analysis.boost_amount[0]>.4)
-         offsets[st->analysis.boost_band[0]]+=2;
-      if (st->analysis.boost_amount[1]>.2)
-         offsets[st->analysis.boost_band[1]]+=2;
-      if (st->analysis.boost_amount[1]>.4)
-         offsets[st->analysis.boost_band[1]]+=2;
-   }
-#endif
    dynalloc_logp = 6;
    total_bits<<=BITRES;
    total_boost = 0;
@@ -1635,8 +1622,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
         target -= MIN32(target/3, SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
         target += MULT16_16_Q15(QCONST16(0.035,15),coded_stereo_dof<<BITRES);
      }
-     /* Compensates for the average tonality boost */
-     target -= MULT16_16_Q15(QCONST16(0.13f,15),coded_bins<<BITRES);
      /* Limits starving of other bands when using dynalloc */
      target += tot_boost;
      /* Compensates for the average transient boost */
@@ -1649,6 +1634,10 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      if (st->analysis.valid) {
         int tonal_target;
         float tonal;
+
+        /* Compensates for the average tonality boost */
+        target -= MULT16_16_Q15(QCONST16(0.13f,15),coded_bins<<BITRES);
+
         tonal = MAX16(0,st->analysis.tonality-.2);
         tonal_target = target + (coded_bins<<BITRES)*2.0f*tonal;
         if (pitch_change)
