@@ -223,7 +223,7 @@ OPUS_EXPORT int opus_encoder_init(
 
 /** Encodes an Opus frame.
   * The passed frame_size must an opus frame size for the encoder's sampling rate.
-  * For example, at 48kHz the permitted values are 120, 240, 480, or 960.
+  * For example, at 48kHz the permitted values are 120, 240, 480, 960, 1920, and 2880.
   * Passing in a duration of less than 10ms (480 samples at 48kHz) will
   * prevent the encoder from using the LPC or hybrid modes.
   * @param [in] st <tt>OpusEncoder*</tt>: Encoder state
@@ -243,7 +243,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
 
 /** Encodes an Opus frame from floating point input.
   * The passed frame_size must an opus frame size for the encoder's sampling rate.
-  * For example, at 48kHz the permitted values are 120, 240, 480, or 960.
+  * For example, at 48kHz the permitted values are 120, 240, 480, 960, 1920, and 2880.
   * Passing in a duration of less than 10ms (480 samples at 48kHz) will
   * prevent the encoder from using the LPC or hybrid modes.
   * @param [in] st <tt>OpusEncoder*</tt>: Encoder state
