@@ -340,6 +340,7 @@ opus_int silk_Decode(                                   /* O    Returns error co
     return ret;
 }
 
+#if 0
 /* Getting table of contents for a packet */
 opus_int silk_get_TOC(
     const opus_uint8                *payload,           /* I    Payload data                                */
@@ -371,3 +372,4 @@ opus_int silk_get_TOC(
 
     return ret;
 }
+#endif
