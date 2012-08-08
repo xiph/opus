@@ -1155,6 +1155,10 @@ opus_int32 test_enc_api(void)
      "    OPUS_SET_SIGNAL .............................. OK.\n",
      "    OPUS_GET_SIGNAL .............................. OK.\n")
 
+   CHECK_SETGET(OPUS_SET_LSB_DEPTH(i),OPUS_GET_LSB_DEPTH(&i),7,25,16,24,
+     "    OPUS_SET_LSB_DEPTH ........................... OK.\n",
+     "    OPUS_GET_LSB_DEPTH ........................... OK.\n")
+
    /*OPUS_SET_FORCE_MODE is not tested here because it's not a public API, however the encoder tests use it*/
 
    if(opus_encoder_ctl(enc,OPUS_GET_FINAL_RANGE(&enc_final_range))!=OPUS_OK)test_failed();
