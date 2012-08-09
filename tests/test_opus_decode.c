@@ -198,8 +198,15 @@ int test_decoder_code0(int no_fuzz)
    if(no_fuzz)
    {
       fprintf(stdout,"  Skipping many tests which fuzz the decoder as requested.\n");
+      free(decbak);
       for(t=0;t<5*2;t++)opus_decoder_destroy(dec[t]);
       printf("  Decoders stopped.\n");
+
+      err=0;
+      for(i=0;i<8*2;i++)err|=outbuf_int[i]!=32749;
+      for(i=MAX_FRAME_SAMP*2;i<(MAX_FRAME_SAMP+8)*2;i++)err|=outbuf[i]!=32749;
+      if(err)test_failed();
+
       free(outbuf_int);
       free(packet);
       return 0;
