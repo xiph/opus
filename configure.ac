@@ -49,6 +49,7 @@ AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
 AM_MAINTAINER_MODE
 
 AC_CANONICAL_HOST
+AC_MINGW32
 AM_PROG_LIBTOOL
 AM_PROG_CC_C_O
 
@@ -209,7 +210,8 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
 CFLAGS="$saved_CFLAGS $SYMBOL_VISIBILITY"
 AC_SUBST(SYMBOL_VISIBILITY)
 
-ac_build_stack_protector=yes
+ac_build_stack_protector=no
+if test "x$ac_cv_c_compiler_gnu" = "xyes" && test "x$MINGW32" != "xyes" ; then
 AC_ARG_ENABLE(stack-protector,
      AS_HELP_STRING([--disable-stack-protector],[Disable compiler stack hardening]),
      [
@@ -229,6 +231,7 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([void main(void){char foo;}])],
         STACK_PROTECTOR="-fstack-protector-all" ],
         AC_MSG_RESULT([no]))
 CFLAGS="$saved_CFLAGS $STACK_PROTECTOR"
+fi
 fi
 fi
 
