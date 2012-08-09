@@ -82,7 +82,29 @@ opus_custom_demo_SOURCES = celt/opus_custom_demo.c
 opus_custom_demo_LDADD = libopus.la -lm
 endif
 
-EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in
+EXTRA_DIST = opus.pc.in \
+             opus-uninstalled.pc.in \
+             opus.sln \
+             celt/celt.vcxproj \
+             celt/celt.vcxproj.filters \
+             src/opus_demo.vcxproj \
+             src/opus.vcxproj \
+             src/opus.vcxproj.filters \
+             src/opus_demo.vcxproj.filters \
+             tests/test_opus_decode.vcxproj.filters \
+             tests/test_opus_decode.vcxproj \
+             tests/test_opus_encode.vcxproj.filters \
+             tests/test_opus_encode.vcxproj \
+             tests/test_opus_api.vcxproj.filters \
+             tests/test_opus_api.vcxproj \
+             silk/float/silk_float.vcxproj.filters \
+             silk/float/silk_float.vcxproj \
+             silk/fixed/silk_fixed.vcxproj.filters \
+             silk/fixed/silk_fixed.vcxproj \
+             silk/silk_common.vcxproj \
+             silk/silk_common.vcxproj.filters \
+             win32/genversion.bat \
+             win32/config.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = opus.pc
