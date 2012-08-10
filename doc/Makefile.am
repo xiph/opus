@@ -26,7 +26,7 @@ install-data-local:
 	done
 
 	$(INSTALL) -d $(DESTDIR)$(mandir)/man3
-	cd man && find man3 -type f \
+	cd man && find man3 -type f -name opus_*.3 \
 		  -exec $(INSTALL_DATA) \{} $(DESTDIR)$(mandir)/man3 \;
 
 clean-local:
