@@ -207,20 +207,20 @@ extern "C" {
 /** Configures the encoder's computational complexity.
   * The supported range is 0-10 inclusive with 10 representing the highest complexity.
   * @see OPUS_GET_COMPLEXITY
-  * @param[in] x <tt>opus_int32</tt>: Allowed values: 0-10, inclusive
-  *                                   (default: 10).
+  * @param[in] x <tt>opus_int32</tt>: Allowed values: 0-10, inclusive.
+  *
   * @hideinitializer */
 #define OPUS_SET_COMPLEXITY(x) OPUS_SET_COMPLEXITY_REQUEST, __opus_check_int(x)
 /** Gets the encoder's complexity configuration.
   * @see OPUS_SET_COMPLEXITY
   * @param[out] x <tt>opus_int32 *</tt>: Returns a value in the range 0-10,
-  *                                      inclusive (default: 10).
+  *                                      inclusive.
   * @hideinitializer */
 #define OPUS_GET_COMPLEXITY(x) OPUS_GET_COMPLEXITY_REQUEST, __opus_check_int_ptr(x)
 
 /** Configures the bitrate in the encoder.
   * Rates from 500 to 512000 bits per second are meaningful, as well as the
-  * special values #OPUS_BITRATE_AUTO and #OPUS_BITRATE_MAX.
+  * special values #OPUS_AUTO and #OPUS_BITRATE_MAX.
   * The value #OPUS_BITRATE_MAX can be used to cause the codec to use as much
   * rate as it can, which is useful for controlling the rate by adjusting the
   * output buffer size.
@@ -247,9 +247,8 @@ extern "C" {
   * @see OPUS_SET_VBR_CONSTRAINT
   * @param[in] x <tt>opus_int32</tt>: Allowed values:
   * <dl>
-  * <dt>0</dt><dd>Hard CBR. In the MDCT mode all packets will be the same size.
-  *               In other modes, they will be as close as possible to that
-  *               size.</dd>
+  * <dt>0</dt><dd>Hard CBR. For LPC/hybrid modes at very low bit-rate, this can
+  *               cause noticeable quality degradation.</dd>
   * <dt>1</dt><dd>VBR (default). The exact type of VBR is controlled by
   *               #OPUS_SET_VBR_CONSTRAINT.</dd>
   * </dl>
