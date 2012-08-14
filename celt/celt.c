@@ -1470,7 +1470,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
                   +QCONST16(.5f,DB_SHIFT)+SHL16(9-st->lsb_depth,DB_SHIFT)-SHL16(eMeans[i],6)
                   +MULT16_16(QCONST16(.0062,DB_SHIFT),(i+5)*(i+5));
             follower[c*st->mode->nbEBands+i] = MAX16(follower[c*st->mode->nbEBands+i], noise_floor);
-            maxDepth = MAX16(maxDepth, bandLogE[i]-noise_floor);
+            maxDepth = MAX16(maxDepth, bandLogE[c*st->mode->nbEBands+i]-noise_floor);
          }
       } while (++c<C);
       if (C==2)
