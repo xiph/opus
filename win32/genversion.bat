@@ -30,7 +30,8 @@ echo %version_out%> %1_temp
 
 if %version%==unknown goto :skipgenerate
 
-echo %version_mk%> "%~dp0..\version.mk"
+echo # static version string; update manually every release.> "%~dp0..\version.mk"
+echo %version_mk%>> "%~dp0..\version.mk"
 
 :skipgenerate
 
