@@ -7,12 +7,25 @@ AM_CONFIG_HEADER([config.h])
 dnl enable silent rules on automake 1.11 and later
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-OPUS_MAJOR_VERSION=1
-OPUS_MINOR_VERSION=0
-OPUS_MICRO_VERSION=1
-OPUS_EXTRA_VERSION=-rc2
+# Read our default version string from version.mk.
+# Please update this file for releases.
+AC_MSG_CHECKING([version.mk])
+MK_VERSION=$(awk 'BEGIN { FS = "=" }
+                  /OPUS_VERSION/ { ver = $2}
+                  END {
+                        gsub(/"/, "", ver);
+                        gsub(/^ /, "", ver);
+                        gsub(/ $/, "", ver);
+                        print ver;
+                  }' $srcdir/version.mk)
+if test -z "$MK_VERSION"; then
+  AC_MSG_RESULT([no])
+else
+  AC_MSG_RESULT([$MK_VERSION])
+  OPUS_VERSION="$MK_VERSION"
+fi
 
-OPUS_VERSION="$OPUS_MAJOR_VERSION.$OPUS_MINOR_VERSION.$OPUS_MICRO_VERSION$OPUS_EXTRA_VERSION"
+# Override with the git version, if available.
 AC_MSG_CHECKING([git revision])
 GIT_VERSION=$(git describe --tags --match 'v*' 2>/dev/null | sed 's/^v//')
 if test -z "$GIT_VERSION"; then
@@ -22,21 +35,20 @@ else
   OPUS_VERSION="$GIT_VERSION"
 fi
 
-# For automake.
-VERSION=$OPUS_VERSION
-PACKAGE=opus
+# Use 'unknown' if all else fails.
+if test -z "$OPUS_VERSION"; then
+  OPUS_VERSION="unknown"
+fi
 
-# For our version string.
+# For automake.
+PACKAGE=opus
+VERSION=$OPUS_VERSION
+
+# For config.h.
 AC_SUBST(OPUS_VERSION)
 
-# For config.h
-AC_DEFINE_UNQUOTED(OPUS_VERSION, "${OPUS_VERSION}", [Complete version string])
-AC_DEFINE_UNQUOTED(OPUS_MAJOR_VERSION, ${OPUS_MAJOR_VERSION}, [Version major])
-AC_DEFINE_UNQUOTED(OPUS_MINOR_VERSION, ${OPUS_MINOR_VERSION}, [Version minor])
-AC_DEFINE_UNQUOTED(OPUS_MICRO_VERSION, ${OPUS_MICRO_VERSION}, [Version micro])
-AC_DEFINE_UNQUOTED(OPUS_EXTRA_VERSION, "${OPUS_EXTRA_VERSION}", [Version extra])
-
 # For libtool.
+dnl Please update these for releases.
 OPUS_LT_CURRENT=2
 OPUS_LT_REVISION=0
 OPUS_LT_AGE=2

@@ -82,7 +82,8 @@ opus_custom_demo_SOURCES = celt/opus_custom_demo.c
 opus_custom_demo_LDADD = libopus.la -lm
 endif
 
-EXTRA_DIST = opus.pc.in \
+EXTRA_DIST = version.mk \
+	     opus.pc.in \
              opus-uninstalled.pc.in \
              opus.sln \
              celt/celt.vcxproj \
