@@ -4,6 +4,7 @@ aclocal.m4
 autom4te.cache
 *.kdevelop.pcs
 *.kdevses
+compile
 config.guess
 config.h
 config.h.in
