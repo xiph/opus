@@ -85,6 +85,7 @@ endif
 EXTRA_DIST = version.mk \
 	     opus.pc.in \
              opus-uninstalled.pc.in \
+             tests/run_vectors.sh \
              opus.sln \
              celt/celt.vcxproj \
              celt/celt.vcxproj.filters \
