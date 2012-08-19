@@ -462,7 +462,7 @@ static inline int MULT16_32_QX_(int a, long long b, int Q, char *file, int line)
 }
 
 #define MULT16_32_PX(a, b, Q) MULT16_32_PX_(a, b, Q, __FILE__, __LINE__)
-static inline int MULT16_32_PX_(int a, long long b, int Q, char *file, int line)
+static inline int MULT16_32_PX_(int a, opus_int64 b, int Q, char *file, int line)
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_INT(b))
@@ -472,14 +472,14 @@ static inline int MULT16_32_PX_(int a, long long b, int Q, char *file, int line)
       celt_assert(0);
 #endif
    }
-   if (ABS32(b)>=((opus_val32)(1)<<(15+Q)))
+   if (ABS32(b)>=((opus_int64)(1)<<(15+Q)))
    {
-      fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d in %s: line %d\n\n", Q, (int)a, (int)b, file, line);
+      fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d in %s: line %d\n\n", Q, (int)a, (int)b,file, line);
 #ifdef FIXED_DEBUG_ASSERT
       celt_assert(0);
 #endif
    }
-   res = ((((long long)a)*(long long)b) + (((opus_val32)(1)<<Q)>>1))>> Q;
+   res = ((((opus_int64)a)*(opus_int64)b) + (((opus_val32)(1)<<Q)>>1))>> Q;
    if (!VERIFY_INT(res))
    {
       fprintf (stderr, "MULT16_32_P%d: output is not int: %d*%d=%d in %s: line %d\n\n", Q, (int)a, (int)b,(int)res, file, line);
