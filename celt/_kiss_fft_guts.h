@@ -48,7 +48,6 @@
 #include "arch.h"
 
 
-# define SAMPPROD long long
 #define SAMP_MAX 2147483647
 #define TWID_MAX 32767
 #define TRIG_UPSCALE 1
