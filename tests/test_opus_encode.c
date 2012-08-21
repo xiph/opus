@@ -113,7 +113,7 @@ int run_test1(int no_fuzz)
 {
    static const int fsizes[6]={960*3,960*2,120,240,480,960};
    static const char *mstrings[3] = {"    LP","Hybrid","  MDCT"};
-   unsigned char mapping[256] = {0,1};
+   unsigned char mapping[256] = {0,1,255};
    unsigned char db62[36];
    opus_int32 i;
    int rc,j,err;
@@ -144,13 +144,16 @@ int run_test1(int no_fuzz)
    MSenc = opus_multistream_encoder_create(8000, 2, 2, 0, mapping, OPUS_APPLICATION_AUDIO, &err);
    if(err != OPUS_OK || MSenc==NULL)test_failed();
 
+   if(opus_multistream_encoder_ctl(MSenc, OPUS_GET_BITRATE(&i))!=OPUS_OK)test_failed();
+   if(opus_multistream_encoder_ctl(MSenc, OPUS_GET_LSB_DEPTH(&i))!=OPUS_OK)test_failed();
+
    dec = opus_decoder_create(48000, 2, &err);
    if(err != OPUS_OK || dec==NULL)test_failed();
 
    MSdec = opus_multistream_decoder_create(48000, 2, 2, 0, mapping, &err);
    if(err != OPUS_OK || MSdec==NULL)test_failed();
 
-   MSdec_err = opus_multistream_decoder_create(48000, 1, 2, 0, mapping, &err);
+   MSdec_err = opus_multistream_decoder_create(48000, 3, 2, 0, mapping, &err);
    if(err != OPUS_OK || MSdec_err==NULL)test_failed();
 
    dec_err[0]=(OpusDecoder *)malloc(opus_decoder_get_size(2));
@@ -178,7 +181,7 @@ int run_test1(int no_fuzz)
 
    inbuf=(short *)malloc(sizeof(short)*SAMPLES*2);
    outbuf=(short *)malloc(sizeof(short)*SAMPLES*2);
-   out2buf=(short *)malloc(sizeof(short)*MAX_FRAME_SAMP*2);
+   out2buf=(short *)malloc(sizeof(short)*MAX_FRAME_SAMP*3);
    if(inbuf==NULL || outbuf==NULL || out2buf==NULL)test_failed();
 
    generate_music(inbuf,SAMPLES);
