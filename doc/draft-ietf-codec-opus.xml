@@ -65,43 +65,15 @@ the title) for use on http://www.rfc-editor.org/rfcsearch.html. -->
 <keyword>example</keyword>
 
 
-<!-- [rfced] Throughout the text, the following terminology appears to be used 
-inconsistently.  
-
-Please review these occurrences and let us know if/how they may be made 
-consistent.  
-
-Linear Predictive Coding vs. Linear Prediction Coding 
-
-variable-bitrate (VBR) vs. variable bitrate (VBR) vs. Variable Bitrate (VBR) 
-*Note, a similar convention should probably be applied to CBR expansions as well*
-
-Voice Activity Detection (VAD) vs. Voice Activity Detector (VAD)
-
-Pyramid Vector Quantization (PVQ) vs. Pyramid Vector Quantizer (PVQ)
-
-bit-stream vs. bitstream
-
--->
-
 <abstract>
 <t>
 This document defines the Opus interactive speech and audio codec.
 Opus is designed to handle a wide range of interactive audio applications,
  including Voice over IP, videoconferencing, in-game chat, and even live,
  distributed music performances.
-It scales from low bitrate narrowband speech at 6 kb/s to very high quality
- stereo music at 510 kb/s.
+It scales from low bitrate narrowband speech at 6 kbit/s to very high quality
+ stereo music at 510 kbit/s.
 
-<!-- [rfced] This document uses "kb/s". We believe this should
-be "kbit/s" or "kB/s" per the SI decimal prefix and more common usage. Please
-let us know if you agree.
-
-For additional information, please see:
-http://en.wikipedia.org/wiki/Bit_rate
-http://en.wikipedia.org/wiki/Data_rate_units 
-
--->
 
 Opus uses both Linear Prediction (LP) and the Modified Discrete Cosine
  Transform (MDCT) to achieve good compression of both speech and music.
@@ -320,7 +292,7 @@ Examples:
 <section anchor="overview" title="Opus Codec Overview">
 
 <t>
-The Opus codec scales from 6&nbsp;kb/s narrowband mono speech to 510&nbsp;kb/s
+The Opus codec scales from 6&nbsp;kbit/s narrowband mono speech to 510&nbsp;kbit/s
  fullband stereo music, with algorithmic delays ranging from 5&nbsp;ms to
  65.2&nbsp;ms.
 At any given time, either the LP layer, the MDCT layer, or both, may be active.
@@ -377,8 +349,8 @@ It supports NB, MB, or WB audio and frame sizes from 10&nbsp;ms to 60&nbsp;ms,
 A small additional delay (up to 1.5 ms) may be required for sampling rate
  conversion.
 Like Vorbis <xref target='VORBIS-WEBSITE'/> and many other modern codecs, SILK is inherently designed for
- variable-bitrate (VBR) coding, though the encoder can also produce
- constant-bitrate (CBR) streams.
+ variable bitrate (VBR) coding, though the encoder can also produce
+ constant bitrate (CBR) streams.
 The version of SILK used in Opus is substantially modified from, and not
  compatible with, the stand-alone SILK codec previously deployed by Skype.
 This document does not serve to define that format, but those interested in the
@@ -453,7 +425,7 @@ Although the LP layer is VBR, the bit allocation of the MDCT layer can produce
 <t>
 The Opus codec includes a number of control parameters that can be changed dynamically during
 regular operation of the codec, without interrupting the audio stream from the encoder to the decoder.
-These parameters only affect the encoder since any impact they have on the bit-stream is signaled
+These parameters only affect the encoder since any impact they have on the bitstream is signaled
 in-band such that a decoder can decode any Opus stream without any out-of-band signaling. Any Opus
 implementation can add or modify these control parameters without affecting interoperability. The most
 important encoder control parameters in the reference encoder are listed below.
@@ -461,15 +433,15 @@ important encoder control parameters in the reference encoder are listed below.
 
 <section title="Bitrate" toc="exlcude">
 <t>
-Opus supports all bitrates from 6&nbsp;kb/s to 510&nbsp;kb/s. All other parameters being
+Opus supports all bitrates from 6&nbsp;kbit/s to 510&nbsp;kbit/s. All other parameters being
 equal, higher bitrate results in higher quality. For a frame size of 20&nbsp;ms, these
 are the bitrate "sweet spots" for Opus in various configurations:
 <list style="symbols">
-<t>8-12 kb/s for NB speech,</t>
-<t>16-20 kb/s for WB speech,</t>
-<t>28-40 kb/s for FB speech,</t>
-<t>48-64 kb/s for FB mono music, and</t>
-<t>64-128 kb/s for FB stereo music.</t>
+<t>8-12 kbit/s for NB speech,</t>
+<t>16-20 kbit/s for WB speech,</t>
+<t>28-40 kbit/s for FB speech,</t>
+<t>48-64 kbit/s for FB mono music, and</t>
+<t>64-128 kbit/s for FB stereo music.</t>
 </list>
 </t>
 </section>
@@ -533,7 +505,7 @@ computations for which such trade-offs may occur are:
 <t>The order of the short-term noise shaping filter,</t>
 <t>The number of states in delayed decision quantization of the
 residual signal, and</t>
-<t>The use of certain bit-stream features such as variable time-frequency
+<t>The use of certain bitstream features such as variable time-frequency
 resolution and the pitch post-filter.</t>
 </list>
 </t>
@@ -737,7 +709,7 @@ Any Opus frame in any mode MAY have a length of 0.
 
 <t>
 The maximum representable length is 255*4+255=1275&nbsp;bytes.
-For 20&nbsp;ms frames, this represents a bitrate of 510&nbsp;kb/s, which is
+For 20&nbsp;ms frames, this represents a bitrate of 510&nbsp;kbit/s, which is
  approximately the highest useful rate for lossily compressed fullband stereo
  music.
 Beyond this point, lossless codecs are more appropriate.
@@ -4265,7 +4237,7 @@ The decoder reads the seed using the uniform 4-entry PDF in
 <section anchor="silk_excitation" toc="include" title="Excitation">
 <t>
 SILK codes the excitation using a modified version of the Pyramid Vector
- Quantization (PVQ) codebook <xref target="PVQ"/>.
+ Quantizer (PVQ) codebook <xref target="PVQ"/>.
 The PVQ codebook is designed for Laplace-distributed values and consists of all
  sums of K signed, unit pulses in a vector of dimension N, where two pulses at
  the same position are required to have the same sign.
@@ -5539,7 +5511,7 @@ from the coarse energy coding.</t>
 <section anchor="PVQ-decoder" title="Shape Decoding">
 <t>
 In each band, the normalized "shape" is encoded
-using a vector quantization scheme called a "pyramid vector quantizer".
+using Pyramid Vector Quantizer.
 </t>
 
 <t>In
@@ -5636,7 +5608,7 @@ g_r = N / (N + f_r*K)
 </figure>
 
 where N is the number of dimensions, K is the number of pulses, and f_r depends on
-the value of the "spread" parameter in the bit-stream.
+the value of the "spread" parameter in the bitstream.
 </t>
 
 <?rfc compact="no" ?> 
@@ -5966,7 +5938,7 @@ However, other transitions between SILK-only packets or between NB or MB SILK
  new sample rate.
 These switches SHOULD be delayed by the encoder until quiet periods or
  transients, where the inevitable glitches will be less audible. Additionally,
- the bit-stream MAY include redundant side information ("redundancy"), in the
+ the bitstream MAY include redundant side information ("redundancy"), in the
  form of additional CELT frames embedded in each of the Opus frames around the
  transition.
 </t>
@@ -6311,7 +6283,7 @@ Just like the decoder, the Opus encoder also normally consists of two main block
 SILK encoder and the CELT encoder. However, unlike the case of the decoder, a valid
 (though potentially suboptimal) Opus encoder is not required to support all modes and
 may thus only include a SILK encoder module or a CELT encoder module.
-The output bit-stream of the Opus encoding contains bits from the SILK and CELT
+The output bitstream of the Opus encoding contains bits from the SILK and CELT
  encoders, though these are not separable due to the use of a range coder.
 A block diagram of the encoder is illustrated below.
 
@@ -6739,7 +6711,7 @@ the remainder of this section. An overview of the encoder is given in
      +---------+          |      +---------+                 |   |
      |Voice    |          |      |LTP      |12               |   |
  +-->|Activity |--+       +----->|Scaling  |-----------+---->|   |
- |   |Detector |3 |       |      |Control  |<--+       |     |   |
+ |   |Detection|3 |       |      |Control  |<--+       |     |   |
  |   +---------+  |       |      +---------+   |       |     |   |
  |                |       |      +---------+   |       |     |   |
  |                |       |      |Gains    |   |       |     |   |
@@ -6794,7 +6766,7 @@ the remainder of this section. An overview of the encoder is given in
 
 <section title='Voice Activity Detection'>
 <t>
-The input signal is processed by a Voice Activity Detector (VAD) to produce
+The input signal is processed by a Voice Activity Detection (VAD) algorithm to produce
 a measure of voice activity, spectral tilt, and signal-to-noise estimates for
 each frame. The VAD uses a sequence of half-band filterbanks to split the
 signal into four subbands: 0...Fs/16, Fs/16...Fs/8, Fs/8...Fs/4, and
@@ -6873,7 +6845,7 @@ frames classified as voiced, four pitch lags per frame -- one for each
 5&nbsp;ms subframe -- and a pitch correlation indicating the periodicity of
 the signal.
 The input is first whitened using a Linear Prediction (LP) whitening filter,
-where the coefficients are computed through standard Linear Prediction Coding
+where the coefficients are computed through standard Linear Predictive Coding
 (LPC) analysis. The order of the whitening filter is 16 for best results, but
 is reduced to 12 for medium complexity and 8 for low complexity modes.
 The whitened signal is analyzed to find pitch lags for which the time
@@ -7428,8 +7400,8 @@ performance of the quantizer.
 
 <section title='Constant Bitrate Mode'>
 <t>
-  SILK was designed to run in Variable Bitrate (VBR) mode.  However,
-  the reference implementation also has a Constant Bitrate (CBR) mode
+  SILK was designed to run in variable bitrate (VBR) mode.  However,
+  the reference implementation also has a constant bitrate (CBR) mode
   for SILK.  In CBR mode, SILK will attempt to encode each packet with
   no more than the allowed number of bits.  The Opus wrapper code
   then pads the bitstream if any unused bits are left in SILK mode, or it
@@ -7454,7 +7426,7 @@ performance of the quantizer.
 Most of the aspects of the CELT encoder can be directly derived from the description
 of the decoder. For example, the filters and rotations in the encoder are simply the
 inverse of the operation performed by the decoder. Similarly, the quantizers generally
-optimize for the mean square error (because noise shaping is part of the bit-stream itself),
+optimize for the mean square error (because noise shaping is part of the bitstream itself),
 so no special search is required. For this reason, only the less straightforward aspects of the
 encoder are described here.
 </t>
@@ -7574,7 +7546,7 @@ band using intensity coding is as follows:
 <?rfc compact="no" ?> 
 <texttable anchor="intensity-thresholds"
  title="Thresholds for Intensity Stereo">
-<ttcol align='center'>bitrate (kb/s)</ttcol>
+<ttcol align='center'>bitrate (kbit/s)</ttcol>
 <ttcol align='center'>start band</ttcol>
 <c>&lt;35</c>      <c>8</c>
 <c>35-50</c>      <c>12</c>
@@ -7615,8 +7587,8 @@ values are considered more tonal and a decision is made by combining all bands w
 </section>
 
 <section anchor="pvq" title="Spherical Vector Quantization">
-<t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref>
-codebook for quantizing the details of the spectrum in each band that have not
+<t>CELT uses a Pyramid Vector Quantizer (PVQ) <xref target="PVQ"></xref>
+for quantizing the details of the spectrum in each band that have not
 been predicted by the pitch predictor. The PVQ codebook consists of all sums
 of K signed pulses in a vector of N samples, where two pulses at the same position
 are required to have the same sign. Thus, the codebook includes
