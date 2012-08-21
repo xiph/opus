@@ -6,7 +6,7 @@
  */
 /*
 
-   This file is extracted from RFCXXXX. Please see that RFC for additional
+   This file is extracted from RFC6716. Please see that RFC for additional
    information.
 
    Redistribution and use in source and binary forms, with or without

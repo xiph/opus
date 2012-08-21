@@ -6,7 +6,7 @@ set -e
 [ -n "${0%/*}" ] && cd "${0%/*}"
 
 toplevel=".."
-destdir="opus-rfcXXXX"
+destdir="opus-rfc6716"
 
 echo packaging source code
 rm -rf "${destdir}"
