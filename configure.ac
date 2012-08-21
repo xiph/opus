@@ -46,6 +46,8 @@ VERSION=$OPUS_VERSION
 
 # For config.h.
 AC_SUBST(OPUS_VERSION)
+AC_DEFINE_UNQUOTED([OPUS_VERSION], ["$OPUS_VERSION"],
+                   [Opus library version string])
 
 # For libtool.
 dnl Please update these for releases.
