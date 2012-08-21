@@ -44,8 +44,10 @@ fi
 PACKAGE=opus
 VERSION=$OPUS_VERSION
 
-# For config.h.
+# For autoconf
 AC_SUBST(OPUS_VERSION)
+
+# For config.h.
 AC_DEFINE_UNQUOTED([OPUS_VERSION], ["$OPUS_VERSION"],
                    [Opus library version string])
 
