@@ -102,12 +102,12 @@ To run the integrated tests:
 
 There is also collection of standard test vectors which are not
 included in this package for size reasons but can be obtained from:
-http://opus-codec.org/testvectors/opus_testvectors-draft11.tar.gz
+http://opus-codec.org/testvectors/opus_testvectors.tar.gz
 
 To run compare the code to these test vectors:
 
-% curl -O http://opus-codec.org/testvectors/opus_testvectors-draft11.tar.gz
-% tar -zxf opus_testvectors-draft11.tar.gz
+% curl -O http://opus-codec.org/testvectors/opus_testvectors.tar.gz
+% tar -zxf opus_testvectors.tar.gz
 % ./tests/run_vectors.sh ./ opus_testvectors 48000
 
 == Portability notes ==
