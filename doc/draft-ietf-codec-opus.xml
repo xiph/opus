@@ -87,15 +87,16 @@ Opus uses both Linear Prediction (LP) and the Modified Discrete Cosine
 <t>
 The Opus codec is a real-time interactive audio codec designed to meet the requirements
 described in <xref target="REQUIREMENTS"></xref>.
-It is composed of a layer based on Linear Prediction (LP) <xref target="LPC"/> and a layer based on Modified Discrete Cosine Transform
- (MDCT) <xref target="MDCT"/>.
+It is composed of a layer based on Linear Prediction (LP)&nbsp;<xref target="LPC"/>
+ and a layer based on the Modified Discrete Cosine Transform
+ (MDCT)&nbsp;<xref target="MDCT"/>.
 The main idea behind using two layers is as follows: in speech, linear prediction
  techniques (such as Code-Excited Linear Prediction, or CELP) code low frequencies more efficiently than transform
  (e.g., MDCT) domain techniques, while the situation is reversed for music and
  higher speech frequencies.
 Thus, a codec with both layers available can operate over a wider range than
- either one alone, and, by combining them, better quality can be achieved than by using either
- one individually.
+ either one alone and can achieve better quality by combining them than by
+ using either one individually.
 </t>
 
 <t>
@@ -104,7 +105,7 @@ The primary normative part of this specification is provided by the source code
 Only the decoder portion of this software is normative, though a
  significant amount of code is shared by both the encoder and decoder.
 <xref target="conformance"/> provides a decoder conformance test.
-The decoder contains a great deal of integer and fixed-point arithmetic, which
+The decoder contains a great deal of integer and fixed-point arithmetic that
  needs to be performed exactly, including all rounding considerations, so any
  useful specification requires domain-specific symbolic language to adequately
  define these operations.
@@ -369,7 +370,8 @@ It internally allocates bits to exactly fill any given target budget, and an
 The MDCT layer is not used for speech when the audio bandwidth is WB or less,
  as it is not useful there.
 On the other hand, non-speech signals are not always adequately coded using
- linear prediction; therefore, the MDCT layer should be used for music-only signals.
+ linear prediction.
+Therefore, the MDCT layer should be used for music-only signals.
 </t>
 
 <t>
@@ -1155,9 +1157,9 @@ fl[k] = \  f[i],  fh[k] = fl[k] + f[k],  ft = \  f[i]
 The range decoder extracts the symbols and integers encoded using the range
  encoder in <xref target="range-encoder"/>.
 The range decoder maintains an internal state vector composed of the two-tuple
- (val,&nbsp;rng), representing the difference between the high end of the
- current range and the actual coded value, minus one and the size of the
- current range, respectively.
+ (val,&nbsp;rng), where val represents the difference between the high end of
+ the current range and the actual coded value, minus one, and rng represents
+ the size of the current range.
 Both val and rng are 32-bit unsigned integer values.
 </t>
 
@@ -1269,9 +1271,9 @@ It is normal and expected that the range decoder will read several bytes
  frame is completely decoded, as illustrated in
  <xref target="finalize-example"/>.
 This same data MUST also be returned as raw bits when requested.
-The encoder is expected to terminate the stream in such a way that the decoder
- will decode the intended values regardless of the data contained in the raw
- bits.
+The encoder is expected to terminate the stream in such a way that the range
+ decoder will decode the intended values regardless of the data contained in
+ the raw bits.
 <xref target="encoder-finalizing"/> describes a procedure for doing this.
 If the range decoder consumes all of the bytes belonging to the current frame,
  it MUST continue to use zero when any further input bytes are required, even
@@ -1301,7 +1303,7 @@ If the range decoder consumes all of the bytes belonging to the current frame,
 <section anchor="decoding-alternate" title="Alternate Decoding Methods">
 <t>
 The reference implementation uses three additional decoding methods that are
- exactly equivalent to the above, but they make assumptions and simplifications that
+ exactly equivalent to the above but make assumptions and simplifications that
  allow for a more efficient implementation.
 </t>
 <section anchor="ec_decode_bin" title="ec_decode_bin()">
@@ -2141,8 +2143,9 @@ It appears only when
  (see <xref target="silk_header_bits"/>) indicate that the corresponding side
  channel is not active.</t>
 <t>
-This is an LBRR frame where the LBRR flags
- (see Sections <xref target="silk_header_bits" format="counter"/> and <xref target="silk_lbrr_flags" format="counter"/>)
+This is an LBRR frame where the LBRR flags (see
+ Sections&nbsp;<xref target="silk_header_bits" format="counter"/>
+ and&nbsp;<xref target="silk_lbrr_flags" format="counter"/>)
  indicate that the corresponding side channel is not coded.
 </t>
 </list>
@@ -2380,9 +2383,11 @@ An encoder SHOULD also use the same process.
 </t>
 <t>
 The normalized LSFs are coded using a two-stage vector quantizer (VQ)
- (Sections <xref target="silk_nlsf_stage1" format="counter"/> and <xref target="silk_nlsf_stage2" format="counter"/>).
+ (Sections&nbsp;<xref target="silk_nlsf_stage1" format="counter"/>
+ and&nbsp;<xref target="silk_nlsf_stage2" format="counter"/>).
 NB and MB frames use an order-10 predictor, while WB frames use an order-16
- predictor; thus, they have different sets of tables.
+ predictor.
+Thus, there are different sets of tables used for each of these two cases.
 After reconstructing the normalized LSFs
  (<xref target="silk_nlsf_reconstruction"/>), the decoder runs them through a
  stabilization process (<xref target="silk_nlsf_stabilization"/>), interpolates
@@ -2406,10 +2411,10 @@ This yields a single index, I1, for the entire frame, which
 <t>Selects the prediction weights used to remove intra-frame redundancy from
  the second stage.</t>
 </list>
-The actual codebook elements are listed in Tables
- <xref target="silk_nlsf_nbmb_codebook" format="counter"/> and
- <xref target="silk_nlsf_wb_codebook" format="counter"/>, but they are not needed until the last
- stages of reconstructing the LSF coefficients.
+The actual codebook elements are listed in
+ Tables&nbsp;<xref target="silk_nlsf_nbmb_codebook" format="counter"/>
+ and&nbsp;<xref target="silk_nlsf_wb_codebook" format="counter"/>, but they are
+ not needed until the last stages of reconstructing the LSF coefficients.
 </t>
 
 <?rfc compact="no" ?>
@@ -3991,10 +3996,12 @@ The importance of the filter coefficients generally depends on two factors: the
  periodicity of the signal and relative energy between the current subframe and
  the signal from one period earlier.
 Greater periodicity and decaying energy both lead to more important filter
- coefficients; thus, they should be coded with lower distortion and higher rate.
+ coefficients.
+Thus, they should be coded with lower distortion and higher rate.
 These properties are relatively stable over the duration of a single SILK
- frame; hence, all of the subframes in a SILK frame choose their filter from the
- same codebook.
+ frame.
+Hence, all of the subframes in a SILK frame choose their filter from the same
+ codebook.
 This is signaled with an explicitly-coded "periodicity index".
 This immediately follows the subframe pitch lags, and is coded using the
  3-entry PDF from <xref target="silk_perindex_pdf"/>.
@@ -4754,7 +4761,7 @@ During reconstruction of the first subframe for this channel after either
 <figure align="center">
 <artwork align="center"><![CDATA[
          4.0*LTP_scale_Q14
-res[i] = ----------------- * clamp(-1.0
+res[i] = ----------------- * clamp(-1.0,
             gain_Q16[s]
 
                                    d_LPC-1
@@ -4811,7 +4818,7 @@ res[i] = ---------
 <t>
 LPC synthesis uses the short-term LPC filter to predict the next output
  coefficient.
-For i, such that (j&nbsp;-&nbsp;d_LPC)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j, let
+For i such that (j&nbsp;-&nbsp;d_LPC)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j, let
  lpc[i] be the result of LPC synthesis from the last d_LPC samples of the
  previous subframe or zeros in the first subframe for this channel after
  either
@@ -4819,7 +4826,7 @@ For i, such that (j&nbsp;-&nbsp;d_LPC)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j, let
 <t>An uncoded regular SILK frame (if this is the side channel), or</t>
 <t>A decoder reset (see <xref target="decoder-reset"/>).</t>
 </list>
-Then, for i, such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n), the
+Then, for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n), the
  result of LPC synthesis for the current subframe is
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -4890,7 +4897,7 @@ If the side channel is not coded (see <xref target="silk_mid_only_flag"/>),
 Also, let j be defined as in <xref target="silk_frame_reconstruction"/>, n1 be
  the number of samples in phase&nbsp;1 (64 for NB, 96 for MB, and 128 for WB),
  and n2 be the total number of samples in the frame.
-Then, for i, such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n2),
+Then, for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n2),
  the left and right channel output is
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -5264,8 +5271,8 @@ This structure means that the ideal allocation is more consistent from frame to
  bit allocation within a frame.
 Often this control is only indirect, and it must be exercised carefully to
  achieve the desired rate constraints.
-The CELT layer, however, can adapt over a very wide range of rates; thus, it
- has a large number of codebook sizes to choose from for each band.
+The CELT layer, however, can adapt over a very wide range of rates, so it has a
+ large number of codebook sizes to choose from for each band.
 Explicitly signaling the size of each of these codebooks would impose
  considerable overhead, even though the allocation is relatively static from
  frame to frame.
@@ -5401,8 +5408,8 @@ this table is included in rate.c as part of compute_pulse_cache().</t>
 set nbBands to the maximum number of bands for this mode, and stereo to
 zero if stereo is not in use and one otherwise. For each band, set N
 to the number of MDCT bins covered by the band (for one channel), set LM
-to the shift value for the frame size;
-then, set i to nbBands*(2*LM+stereo). Next, set the maximum for the band to
+to the shift value for the frame size.
+Then, set i to nbBands*(2*LM+stereo). Next, set the maximum for the band to
 the i-th index of cache.caps + 64 and multiply by the number of channels
 in the current frame (one or two) and by N, then divide the result by 4
 using integer division. The resulting vector will be called
@@ -5433,16 +5440,16 @@ Set 'boost' to zero and 'dynalloc_loop_logp'
 to dynalloc_logp. While dynalloc_loop_log (the current worst case symbol cost) in
 8th bits plus tell is less than total_bits plus total_boost and boost is less than cap[] for this
 band: Decode a bit from the bitstream with a with dynalloc_loop_logp as the cost
-of a one, update tell to reflect the current used capacity, if the decoded value
-is zero break the  loop; otherwise, add quanta to boost and total_boost, subtract quanta from
+of a one and update tell to reflect the current used capacity.
+If the decoded value is zero break the loop.
+Otherwise, add quanta to boost and total_boost, subtract quanta from
 total_bits, and set dynalloc_loop_log to 1. When the while loop finishes
-boost contains the boost for this band.
+'boost' contains the boost for this band.
 
 <!--[rfced] We had trouble parsing the following sentence.  Please consider whether updates should be made for clarity:
 
 Original:
-When the while loop finishes
-boost contains the boost for this band.
+When the while loop finishes boost contains the boost for this band.
 
 -->
 
@@ -6996,11 +7003,11 @@ tilt coefficient c_tilt, and where
 <figure align="center">
 <artwork align="center">
 <![CDATA[
-               16                            d
-               __             -k        -L  __            -k
-Wana(z) = (1 - \ (a_ana(k) * z  )*(1 - z  * \ b_ana(k) * z  )
-               /_                           /_
-               k=1                          k=-d
+               16                           d
+               __            -k        -L  __            -k
+Wana(z) = (1 - \ a_ana(k) * z  )*(1 - z  * \ b_ana(k) * z  )
+               /_                          /_
+               k=1                         k=-d
 ]]>
 </artwork>
 </figure>
@@ -7015,11 +7022,11 @@ Similarly, but without the tilt adjustment, the synthesis part can be written as
 <figure align="center">
 <artwork align="center">
 <![CDATA[
-               16                            d
-               __             -k        -L  __            -k
-Wsyn(z) = (1 - \ (a_syn(k) * z  )*(1 - z  * \ b_syn(k) * z  )
-               /_                           /_
-               k=1                          k=-d
+               16                           d
+               __            -k        -L  __            -k
+Wsyn(z) = (1 - \ a_syn(k) * z  )*(1 - z  * \ b_syn(k) * z  )
+               /_                          /_
+               k=1                         k=-d
             ]]>
 </artwork>
 </figure>
@@ -7347,7 +7354,8 @@ A decaying energy leads to a larger W_ltp than an increasing energy.
 Both aspects fluctuate relatively slowly, which causes the W_ltp matrices for
 different subframes of one frame often to be similar.
 Because of this, one of the three codebooks typically gives good performance
-for all subframes; therefore, the codebook search for the subframe LTP
+for all subframes.
+Therefore, the codebook search for the subframe LTP
 vectors is constrained to only allow codebook vectors to be chosen from the
 same codebook, resulting in a rate reduction.
 </t>
@@ -15922,7 +15930,8 @@ necessary updates.
 Because of size constraints, the Opus test vectors are not distributed in this
 document. They are available in the proceedings of the 83rd IETF meeting (Paris) <xref target="VECTORS-PROC"/> and from the Opus codec website at
 <xref target="VECTORS-WEBSITE"/>. These test vectors were created specifically to exercise
-all aspects of the decoder; therefore, the audio quality of the decoded output is
+all aspects of the decoder.
+Therefore, the audio quality of the decoded output is
 significantly lower than what Opus can achieve in normal operation.
 </t>
 
