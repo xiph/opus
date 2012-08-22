@@ -82,7 +82,7 @@ opus_custom_demo_SOURCES = celt/opus_custom_demo.c
 opus_custom_demo_LDADD = libopus.la -lm
 endif
 
-EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in
+EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in tests/run_vectors.sh
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = opus.pc
