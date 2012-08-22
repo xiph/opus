@@ -5217,7 +5217,7 @@ with separate parameters for each frame size in intra- and inter-frame modes. Th
 parameters are held in the e_prob_model table in quant_bands.c.
 The
 coarse energy quantization is performed by unquant_coarse_energy() and
-unquant_coarse_energy_impl() (quant_bands.c). The encoding of the Laplace-distributed values is
+unquant_coarse_energy_impl() (quant_bands.c). The decoding of the Laplace-distributed values is
 implemented in ec_laplace_decode() (laplace.c).
 </t>
 
@@ -7846,7 +7846,7 @@ There were no errors reported on any of the tested conditions.
 <t>
 Thanks to all other developers, including Henrik Astrom, Jon Bergenheim, 
 Raymond Chen, Soeren Skak Jensen,
- Gregory Maxwell, Christopher Montgomery, and Karsten Vandborg Soerensen.
+ Gregory Maxwell, Christopher Montgomery, and Karsten Vandborg Sorensen.
 We would also like to thank Igor Dyakonov, Hoang Thi Minh Nguyet, Christian Hoene, Gian-Carlo Pascutto,
 and Jan Skoglund for their help with testing of the Opus codec.
 Thanks to Andrew D'Addesio, Elwyn Davies, Ralph Giles,
@@ -7974,7 +7974,7 @@ or left in their current order?
     <organization />
 </author>
 
-<author initials='K' surname='Soerensen' fullname='Karsten Vandborg Soerensen'>
+<author initials='K' surname='Sorensen' fullname='Karsten Vandborg Sorensen'>
     <organization />
 </author>
 
