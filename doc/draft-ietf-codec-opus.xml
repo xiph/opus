@@ -7844,12 +7844,13 @@ There were no errors reported on any of the tested conditions.
 
 <section anchor="Acknowledgements" title="Acknowledgements">
 <t>
-Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen,
+Thanks to all other developers, including Henrik Astrom, Jon Bergenheim, 
+Raymond Chen, Soeren Skak Jensen,
  Gregory Maxwell, Christopher Montgomery, and Karsten Vandborg Soerensen.
-We would also like to thank Igor Dyakonov, Christian Hoene, Gian-Carlo Pascutto,
-and Jan Skoglund for their help with subjective testing of the Opus codec.
+We would also like to thank Igor Dyakonov, Hoang Thi Minh Nguyet, Christian Hoene, Gian-Carlo Pascutto,
+and Jan Skoglund for their help with testing of the Opus codec.
 Thanks to Andrew D'Addesio, Elwyn Davies, Ralph Giles,
- John Ridges, Ben Schwartz, Kat Walsh, Keith Yan, and many others on the Opus
+ John Ridges, Ben Schwartz, Kat Walsh, Mark Warner, Keith Yan, and many others on the Opus
  and CELT mailing lists for their bug reports and feedback. At last, the
 authors would like to thank Robert Sparks, Cullen Jennings, and Jonathan
 Rosenberg for their support throughout the standardization process.
