@@ -123,14 +123,14 @@ For these reasons, this RFC uses the reference implementation as the sole
 always the easiest way to understand the codec's operation. For this reason,
 this document also describes significant parts of the codec in English and
 takes the opportunity to explain the rationale behind many of the more
-surprising elements of the design. 
+surprising elements of the design.
 
-<!-- [rfced] We wondering whether "English" should be replaced with "prose" in 
+<!-- [rfced] We wondering whether "English" should be replaced with "prose" in
 the following:
 
 Section 5.3.5
    For this reason,
-   this document also describes significant parts of the codec in English and 
+   this document also describes significant parts of the codec in English and
    takes the opportunity to explain the rationale behind many of the more
    surprising elements of the design.
 
@@ -193,7 +193,7 @@ The largest of two values x and y.
 </section>
 
 <section anchor="clamp" toc="exclude" title="clamp(lo,x,hi)">
-<!-- [rfced] Please note that we have removed puctuation from the equations 
+<!-- [rfced] Please note that we have removed puctuation from the equations
 included in this document, as we believe it is more clear.  Please review and
 let us know if you have any objections. -->
 
@@ -212,9 +212,9 @@ With this definition, if lo&nbsp;&gt;&nbsp;hi, then lo is returned.
 The sign of x, i.e.,
 <figure align="center">
 <artwork align="center"><![CDATA[
-          ( -1,  x < 0 
-sign(x) = <  0,  x == 0 
-          (  1,  x > 0 
+          ( -1,  x < 0
+sign(x) = <  0,  x == 0
+          (  1,  x > 0
 ]]></artwork>
 </figure>
 </t>
@@ -225,7 +225,7 @@ sign(x) = <  0,  x == 0
 The absolute value of x, i.e.,
 <figure align="center">
 <artwork align="center"><![CDATA[
-abs(x) = sign(x)*x 
+abs(x) = sign(x)*x
 ]]></artwork>
 </figure>
 </t>
@@ -249,7 +249,7 @@ The integer z nearest to f, with ties rounded towards negative infinity,
  i.e.,
 <figure align="center">
 <artwork align="center"><![CDATA[
- round(f) = ceil(f - 0.5) 
+ round(f) = ceil(f - 0.5)
 ]]></artwork>
 </figure>
 </t>
@@ -304,7 +304,7 @@ The codec allows input and output of various audio bandwidths, defined as
 </t>
 
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="audio-bandwidth">
 <ttcol>Abbreviation</ttcol>
 <ttcol align="right">Audio Bandwidth</ttcol>
@@ -314,7 +314,7 @@ The codec allows input and output of various audio bandwidths, defined as
 <c>WB (wideband)</c>         <c>8&nbsp;kHz</c> <c>16&nbsp;kHz</c>
 <c>SWB (super-wideband)</c> <c>12&nbsp;kHz</c> <c>24&nbsp;kHz</c>
 <c>FB (fullband)</c>        <c>20&nbsp;kHz (*)</c> <c>48&nbsp;kHz</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -637,7 +637,7 @@ The 32 possible configurations each identify which one of these operating modes
  the packet uses, as well as the audio bandwidth and the frame size.
 <xref target="config_bits"/> lists the parameters for each configuration.
 </t>
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="config_bits" title="TOC Byte Configuration Parameters">
 <ttcol>Configuration Number(s)</ttcol>
 <ttcol>Mode</ttcol>
@@ -652,7 +652,7 @@ The 32 possible configurations each identify which one of these operating modes
 <c>20...23</c> <c>CELT-only</c> <c>WB</c>  <c>2.5, 5, 10, 20&nbsp;ms</c>
 <c>24...27</c> <c>CELT-only</c> <c>SWB</c> <c>2.5, 5, 10, 20&nbsp;ms</c>
 <c>28...31</c> <c>CELT-only</c> <c>FB</c>  <c>2.5, 5, 10, 20&nbsp;ms</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 <t>
 The configuration numbers in each range (e.g., 0...3 for NB SILK-only)
@@ -1120,8 +1120,8 @@ MSB = Most Significant Bit
 ]]></artwork>
 </figure>
 
-<!--[rfced] Please review our addition of expanatory text regarding the 
-acronyms in Figure 12.   
+<!--[rfced] Please review our addition of explanatory text regarding the
+acronyms in Figure 12.
 
 -->
 <t>
@@ -1184,11 +1184,11 @@ The second step updates the range decoder state with the three-tuple
  (fl[k],&nbsp;fh[k],&nbsp;ft) corresponding to that symbol.
 </t>
 <t>
-The first step is implemented by ec_decode() (entdec.c), which computes 
+The first step is implemented by ec_decode() (entdec.c), which computes
 <figure align="center">
 <artwork align="center"><![CDATA[
                val
-fs = ft - min(------ + 1, ft) 
+fs = ft - min(------ + 1, ft)
               rng/ft
 ]]></artwork>
 </figure>
@@ -1202,7 +1202,7 @@ It uses this tuple to update val according to
 <figure align="center">
 <artwork align="center"><![CDATA[
             rng
-val = val - --- * (ft - fh[k]) 
+val = val - --- * (ft - fh[k])
             ft
 ]]></artwork>
 </figure>
@@ -1210,7 +1210,7 @@ If fl[k] is greater than zero, then the decoder updates rng using
 <figure align="center">
 <artwork align="center"><![CDATA[
       rng
-rng = --- * (fh[k] - fl[k]) 
+rng = --- * (fh[k] - fl[k])
       ft
 ]]></artwork>
 </figure>
@@ -1218,7 +1218,7 @@ Otherwise, it updates rng using
 <figure align="center">
 <artwork align="center"><![CDATA[
             rng
-rng = rng - --- * (ft - fh[k]) 
+rng = rng - --- * (ft - fh[k])
             ft
 ]]></artwork>
 </figure>
@@ -1256,17 +1256,18 @@ The remaining bit in the byte just read is buffered for use in the next
 If no more input bytes remain, it uses zero bits instead.
 See <xref target="range-decoder-init"/> for the initialization used to process
  the first byte.
-Then, it sets 
+Then, it sets
 <figure align="center">
 <artwork align="center"><![CDATA[
-val = ((val<<8) + (255-sym)) & 0x7FFFFFFF 
+val = ((val<<8) + (255-sym)) & 0x7FFFFFFF
 ]]></artwork>
 </figure>
 </t>
 <t>
 It is normal and expected that the range decoder will read several bytes
- into the data of the raw bits (if any) at the end of the packet by the time the frame
- is completely decoded, as illustrated in <xref target="finalize-example"/>.
+ into the data of the raw bits (if any) at the end of the frame by the time the
+ frame is completely decoded, as illustrated in
+ <xref target="finalize-example"/>.
 This same data MUST also be returned as raw bits when requested.
 The encoder is expected to terminate the stream in such a way that the decoder
  will decode the intended values regardless of the data contained in the raw
@@ -1381,7 +1382,7 @@ In such contexts, ec_dec_icdf() can decode the symbol by using a table that
 
 <section anchor="decoding-bits" title="Decoding Raw Bits">
 <t>
-The raw bits used by the CELT layer are packed at the end of the packet, with
+The raw bits used by the CELT layer are packed at the end of the frame, with
  the least significant bit of the first value packed in the least significant
  bit of the last byte, filling up to the most significant bit in the last byte,
  continuing on to the least significant bit of the penultimate byte, and so on.
@@ -1425,10 +1426,10 @@ If ftb is 8 or less, then t is decoded with t&nbsp;=&nbsp;ec_decode(ft), and
  ft).
 </t>
 <t>
-If ftb is greater than 8, then the top 8 bits of t are decoded using 
+If ftb is greater than 8, then the top 8 bits of t are decoded using
 <figure align="center">
 <artwork align="center"><![CDATA[
-t = ec_decode(((ft - 1) >> (ftb - 8)) + 1) 
+t = ec_decode(((ft - 1) >> (ftb - 8)) + 1)
 ]]></artwork>
 </figure>
  the decoder state is updated using the three-tuple
@@ -1437,7 +1438,7 @@ t = ec_decode(((ft - 1) >> (ftb - 8)) + 1)
  and the remaining bits are decoded as raw bits, setting
 <figure align="center">
 <artwork align="center"><![CDATA[
-t = (t << (ftb - 8)) | ec_dec_bits(ftb - 8) 
+t = (t << (ftb - 8)) | ec_dec_bits(ftb - 8)
 ]]></artwork>
 </figure>
 If, at this point, t >= ft, then the current frame is corrupt.
@@ -1527,7 +1528,7 @@ Let
 <figure align="center">
 <artwork align="center">
 <![CDATA[
-r_Q15 = rng >> (lg-16) 
+r_Q15 = rng >> (lg-16)
 ]]></artwork>
 </figure>
  so that 32768 &lt;= r_Q15 &lt; 65536, an unsigned Q15 value representing the
@@ -1537,21 +1538,21 @@ First, update
 <figure align="center">
 <artwork align="center">
 <![CDATA[
-r_Q15 = (r_Q15*r_Q15) >> 15 
+r_Q15 = (r_Q15*r_Q15) >> 15
 ]]></artwork>
 </figure>
 Then, add the 16th bit of r_Q15 to lg via
 <figure align="center">
 <artwork align="center">
 <![CDATA[
-lg = 2*lg + (r_Q15 >> 16) 
+lg = 2*lg + (r_Q15 >> 16)
 ]]></artwork>
 </figure>
 Finally, if this bit was a 1, reduce r_Q15 by a factor of two via
 <figure align="center">
 <artwork align="center">
 <![CDATA[
-r_Q15 = r_Q15 >> 1 
+r_Q15 = r_Q15 >> 1
 ]]></artwork>
 </figure>
  so that it once again lies in the range 32768 &lt;= r_Q15 &lt; 65536.
@@ -1688,7 +1689,7 @@ Figures&nbsp;<xref format="counter" target="silk_mono_60ms_frame"/>
  mono and stereo, respectively.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_symbols"
  title="Organization of the SILK layer of an Opus Frame">
 <ttcol align="center">Symbol(s)</ttcol>
@@ -1715,7 +1716,7 @@ Figures&nbsp;<xref format="counter" target="silk_mono_60ms_frame"/>
 <c><xref target="silk_frame"/></c>
 <c/>
 
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <figure align="center" anchor="silk_mono_60ms_frame"
@@ -1818,13 +1819,13 @@ For each channel, the resulting 2- or 3-bit integer contains the corresponding
  LBRR flag for each frame, packed in order from the LSB to the MSB.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_lbrr_flag_pdfs" title="LBRR Flag PDFs">
 <ttcol>Frame Size</ttcol>
 <ttcol>PDF</ttcol>
 <c>40&nbsp;ms</c> <c>{0, 53, 53, 150}/256</c>
 <c>60&nbsp;ms</c> <c>{0, 41, 20, 29, 41, 15, 28, 82}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -1924,7 +1925,7 @@ The quantized excitation signal (see <xref target="silk_excitation"/>) follows
  SILK frame.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_frame_symbols"
  title="Order of the Symbols in an Individual SILK Frame">
 <ttcol align="center">Symbol(s)</ttcol>
@@ -2003,7 +2004,7 @@ The quantized excitation signal (see <xref target="silk_excitation"/>) follows
 <c><xref target="silk_sign_pdfs"/></c>
 <c/>
 
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <section anchor="silk_stereo_pred" toc="include"
@@ -2052,7 +2053,7 @@ Then, let i0 and i1 be indices decoded with the stage-2 and stage-3 PDFs in
  order.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_stereo_pred_pdfs" title="Stereo Weight PDFs">
 <ttcol align="left">Stage</ttcol>
 <ttcol align="left">PDF</ttcol>
@@ -2068,7 +2069,7 @@ Then, let i0 and i1 be indices decoded with the stage-2 and stage-3 PDFs in
 
 <c>Stage 3</c>
 <c>{51, 51, 52, 51, 51}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -2100,7 +2101,7 @@ Although wi0 and wi1 only have 15 possible values,
  interpolation between entry wi0 and (wi0&nbsp;+&nbsp;1) (and likewise for wi1).
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_stereo_weights_table"
  title="Stereo Weight Table">
 <ttcol align="left">Index</ttcol>
@@ -2121,7 +2122,7 @@ Although wi0 and wi1 only have 15 possible values,
 <c>13</c>   <c>8266</c>
 <c>14</c>  <c>10050</c>
 <c>15</c>  <c>13732</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -2173,11 +2174,11 @@ In that case, if this flag is zero (indicating that there should be a side
 Otherwise, the stereo image will collapse.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_mid_only_pdf" title="Mid-only Flag PDF">
 <ttcol align="left">PDF</ttcol>
 <c>{192, 64}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -2198,16 +2199,16 @@ If the frame is an LBRR frame or a regular SILK frame whose VAD flag was set
  type.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_frame_type_pdfs" title="Frame Type PDFs">
 <ttcol>VAD Flag</ttcol>
 <ttcol>PDF</ttcol>
 <c>Inactive</c> <c>{26, 230, 0, 0, 0, 0}/256</c>
 <c>Active</c>   <c>{0, 0, 24, 74, 148, 10}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_frame_type_table"
  title="Signal Type and Quantization Offset Type from Frame Type">
 <ttcol>Frame Type</ttcol>
@@ -2219,7 +2220,7 @@ If the frame is an LBRR frame or a regular SILK frame whose VAD flag was set
 <c>3</c> <c>Unvoiced</c> <c>High</c>
 <c>4</c> <c>Voiced</c>   <c>Low</c>
 <c>5</c> <c>Voiced</c>   <c>High</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -2265,7 +2266,7 @@ In an independently coded subframe gain, the 3 most significant bits of the
  type (see <xref target="silk_frame_type"/>).
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_independent_gain_msb_pdfs"
  title="PDFs for Independent Quantization Gain MSB Coding">
 <ttcol align="left">Signal Type</ttcol>
@@ -2273,18 +2274,18 @@ In an independently coded subframe gain, the 3 most significant bits of the
 <c>Inactive</c> <c>{32, 112, 68, 29, 12,  1,  1, 1}/256</c>
 <c>Unvoiced</c>  <c>{2,  17, 45, 60, 62, 47, 19, 4}/256</c>
 <c>Voiced</c>    <c>{1,   3, 26, 71, 94, 50,  9, 2}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
 The 3 least significant bits are decoded using a uniform PDF:
 </t>
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_independent_gain_lsb_pdf"
  title="PDF for Independent Quantization Gain LSB Coding">
 <ttcol align="left">PDF</ttcol>
 <c>{32, 32, 32, 32, 32, 32, 32, 32}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -2293,7 +2294,7 @@ When the gain for the previous subframe is available, then the current gain is
  limited as follows:
 <figure align="center">
 <artwork align="center"><![CDATA[
-log_gain = max(gain_index, previous_log_gain - 16) 
+log_gain = max(gain_index, previous_log_gain - 16)
 ]]></artwork>
 </figure>
 This may help some implementations limit the change in precision of their
@@ -2314,7 +2315,7 @@ For subframes that do not have an independent gain (including the first
 The PDF in <xref target="silk_delta_gain_pdf"/> yields a delta_gain_index value
  between 0 and 40, inclusive.
 </t>
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_delta_gain_pdf"
  title="PDF for Delta Quantization Gain Coding">
 <ttcol align="left">PDF</ttcol>
@@ -2323,7 +2324,7 @@ The PDF in <xref target="silk_delta_gain_pdf"/> yields a delta_gain_index value
     1,   1,   1,   1,   1,   1,   1,   1,
     1,   1,   1,   1,   1,   1,   1,   1,
     1,   1,   1,   1,   1,   1,   1,   1,   1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 <t>
 The following formula translates this index into a quantization gain for the
@@ -2331,7 +2332,7 @@ The following formula translates this index into a quantization gain for the
 <figure align="center">
 <artwork align="center"><![CDATA[
 log_gain = clamp(0, max(2*delta_gain_index - 16,
-                   previous_log_gain + delta_gain_index - 4), 63) 
+                   previous_log_gain + delta_gain_index - 4), 63)
 ]]></artwork>
 </figure>
 </t>
@@ -2411,7 +2412,7 @@ The actual codebook elements are listed in Tables
  stages of reconstructing the LSF coefficients.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_stage1_pdfs"
  title="PDFs for Normalized LSF Stage-1 Index Decoding">
 <ttcol align="left">Audio Bandwidth</ttcol>
@@ -2445,7 +2446,7 @@ The actual codebook elements are listed in Tables
 14, 12,  2,  6,  1, 12, 12, 11,
 10,  3, 10,  5,  1,  1,  1,  3}/256
 </c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -2463,7 +2464,7 @@ Which PDF is used for which coefficient is driven by the index, I1,
  <xref target="silk_nlsf_wb_stage2_cb_sel"/> lists the same information for WB.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_stage2_nbmb_pdfs"
  title="PDFs for NB/MB Normalized LSF Stage-2 Index Decoding">
 <ttcol align="left">Codebook</ttcol>
@@ -2476,10 +2477,10 @@ Which PDF is used for which coefficient is driven by the index, I1,
 <c>f</c> <c>{1,   3,  17,  55,  90,  73,  15,   1,   1}/256</c>
 <c>g</c> <c>{1,   7,  24,  53,  74,  67,  26,   3,   1}/256</c>
 <c>h</c> <c>{1,   1,  18,  63,  78,  58,  30,   6,   1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_stage2_wb_pdfs"
  title="PDFs for WB Normalized LSF Stage-2 Index Decoding">
 <ttcol align="left">Codebook</ttcol>
@@ -2492,10 +2493,10 @@ Which PDF is used for which coefficient is driven by the index, I1,
 <c>n</c> <c>{1,   1,  14,  54, 100,  72,  12,   1,   1}/256</c>
 <c>o</c> <c>{1,   1,  15,  61,  87,  61,  25,   4,   1}/256</c>
 <c>p</c> <c>{1,   7,  21,  50,  77,  81,  17,   1,   1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_nbmb_stage2_cb_sel"
  title="Codebook Selection for NB/MB Normalized LSF Stage-2 Index Decoding">
 <ttcol>I1</ttcol>
@@ -2566,10 +2567,10 @@ Which PDF is used for which coefficient is driven by the index, I1,
 <c><spanx style="vbare">c&nbsp;f&nbsp;d&nbsp;h&nbsp;f&nbsp;f&nbsp;e&nbsp;e&nbsp;f&nbsp;e</spanx></c>
 <c>31</c>
 <c><spanx style="vbare">e&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;g&nbsp;f&nbsp;g&nbsp;f&nbsp;e</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_wb_stage2_cb_sel"
  title="Codebook Selection for WB Normalized LSF Stage-2 Index Decoding">
 <ttcol>I1</ttcol>
@@ -2640,7 +2641,7 @@ Which PDF is used for which coefficient is driven by the index, I1,
 <c><spanx style="vbare">l&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;p&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;j&nbsp;&nbsp;i</spanx></c>
 <c>31</c>
 <c><spanx style="vbare">k&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;k&nbsp;&nbsp;o&nbsp;&nbsp;m&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -2655,12 +2656,12 @@ If the index is either -4 or 4, it reads a second symbol using the PDF in
 This gives the index, I2[k], a total range of -10 to 10, inclusive.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_ext_pdf"
  title="PDF for Normalized LSF Index Extension Decoding">
 <ttcol align="left">PDF</ttcol>
 <c>{156, 60, 24,  9,  4,  2,  1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -2677,7 +2678,7 @@ There are two lists for NB and MB, and another two lists for WB, giving two
  possible prediction weights for each coefficient.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_pred_weights"
  title="Prediction Weights for Normalized LSF Decoding">
 <ttcol align="left">Coefficient</ttcol>
@@ -2700,7 +2701,7 @@ There are two lists for NB and MB, and another two lists for WB, giving two
 <c>12</c> <c/>        <c/>      <c>198</c> <c>160</c>
 <c>13</c> <c/>        <c/>      <c>192</c> <c>142</c>
 <c>14</c> <c/>        <c/>      <c>182</c> <c>155</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -2726,7 +2727,7 @@ res_Q10[k] = (k+1 < d_LPC ? (res_Q10[k+1]*pred_Q8[k])>>8 : 0)
  respectively).
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_nbmb_weight_sel"
  title="Prediction Weight Selection for NB/MB Normalized LSF Decoding">
 <ttcol>I1</ttcol>
@@ -2797,10 +2798,10 @@ res_Q10[k] = (k+1 < d_LPC ? (res_Q10[k+1]*pred_Q8[k])>>8 : 0)
 <c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;A&nbsp;B</spanx></c>
 <c>31</c>
 <c><spanx style="vbare">B&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;B</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_wb_weight_sel"
  title="Prediction Weight Selection for WB Normalized LSF Decoding">
 <ttcol>I1</ttcol>
@@ -2871,7 +2872,7 @@ res_Q10[k] = (k+1 < d_LPC ? (res_Q10[k+1]*pred_Q8[k])>>8 : 0)
 <c><spanx style="vbare">D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
 <c>31</c>
 <c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -2897,7 +2898,7 @@ Then, for 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC, the following expression
 <artwork align="center">
 <![CDATA[
 w2_Q18[k] = (1024/(cb1_Q8[k] - cb1_Q8[k-1])
-             + 1024/(cb1_Q8[k+1] - cb1_Q8[k])) << 16 
+             + 1024/(cb1_Q8[k+1] - cb1_Q8[k])) << 16
 ]]>
 </artwork>
 </figure>
@@ -2924,7 +2925,7 @@ The reference implementation already requires code to compute these weights on
  required.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_nbmb_codebook"
            title="NB/MB Normalized LSF Stage-1 Codebook Vectors">
 <ttcol>I1</ttcol>
@@ -2995,10 +2996,10 @@ The reference implementation already requires code to compute these weights on
 <c><spanx style="vbare">24&nbsp;&nbsp;30&nbsp;&nbsp;52&nbsp;&nbsp;84&nbsp;131&nbsp;150&nbsp;166&nbsp;186&nbsp;203&nbsp;229</spanx></c>
 <c>31</c>
 <c><spanx style="vbare">37&nbsp;&nbsp;48&nbsp;&nbsp;64&nbsp;&nbsp;84&nbsp;104&nbsp;118&nbsp;156&nbsp;177&nbsp;201&nbsp;230</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_wb_codebook"
            title="WB Normalized LSF Stage-1 Codebook Vectors">
 <ttcol>I1</ttcol>
@@ -3069,7 +3070,7 @@ The reference implementation already requires code to compute these weights on
 <c><spanx style="vbare">16&nbsp;29&nbsp;47&nbsp;61&nbsp;76&nbsp;&nbsp;90&nbsp;106&nbsp;119&nbsp;133&nbsp;147&nbsp;161&nbsp;176&nbsp;193&nbsp;209&nbsp;224&nbsp;240</spanx></c>
 <c>31</c>
 <c><spanx style="vbare">15&nbsp;21&nbsp;35&nbsp;50&nbsp;61&nbsp;&nbsp;73&nbsp;&nbsp;86&nbsp;&nbsp;97&nbsp;110&nbsp;119&nbsp;129&nbsp;141&nbsp;175&nbsp;198&nbsp;218&nbsp;237</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -3079,7 +3080,7 @@ Given the stage-1 codebook entry cb1_Q8[], the stage-2 residual res_Q10[], and
 <figure align="center">
 <artwork align="center"><![CDATA[
 NLSF_Q15[k] = clamp(0,
-               (cb1_Q8[k]<<7) + (res_Q10[k]<<14)/w_Q9[k], 32767) 
+               (cb1_Q8[k]<<7) + (res_Q10[k]<<14)/w_Q9[k], 32767)
 ]]></artwork>
 </figure>
  where the division is integer division.
@@ -3108,7 +3109,7 @@ For the purposes of computing this spacing for the first and last coefficient,
  NLSF_Q15[-1] is taken to be 0 and NLSF_Q15[d_LPC] is taken to be 32768.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_min_spacing"
            title="Minimum Spacing for Normalized LSF Coefficients">
 <ttcol>Coefficient</ttcol>
@@ -3131,7 +3132,7 @@ For the purposes of computing this spacing for the first and last coefficient,
 <c>14</c>       <c/>   <c>7</c>
 <c>15</c>       <c/>   <c>3</c>
 <c>16</c>       <c/> <c>347</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -3171,7 +3172,7 @@ center_freq_Q15 = clamp(min_center_Q15[i],
 
  NLSF_Q15[i-1] = center_freq_Q15 - (NDeltaMin_Q15[i]>>1)
 
-   NLSF_Q15[i] = NLSF_Q15[i-1] + NDeltaMin_Q15[i] 
+   NLSF_Q15[i] = NLSF_Q15[i-1] + NDeltaMin_Q15[i]
 ]]></artwork>
 </figure>
 Then, the procedure repeats again, until it has either executed 20 times or
@@ -3185,13 +3186,13 @@ First, the values of NLSF_Q15[k] for 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC
 Then, for each value of k from 0 to d_LPC-1, NLSF_Q15[k] is set to
 <figure align="center">
 <artwork align="center"><![CDATA[
-max(NLSF_Q15[k], NLSF_Q15[k-1] + NDeltaMin_Q15[k]) 
+max(NLSF_Q15[k], NLSF_Q15[k-1] + NDeltaMin_Q15[k])
 ]]></artwork>
 </figure>
 Next, for each value of k from d_LPC-1 down to 0, NLSF_Q15[k] is set to
 <figure align="center">
 <artwork align="center"><![CDATA[
-min(NLSF_Q15[k], NLSF_Q15[k+1] - NDeltaMin_Q15[k+1]) 
+min(NLSF_Q15[k], NLSF_Q15[k+1] - NDeltaMin_Q15[k+1])
 ]]></artwork>
 </figure>
 </t>
@@ -3222,12 +3223,12 @@ After either
 For 10&nbsp;ms SILK frames, this factor is not stored at all.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_interp_pdf"
            title="PDF for Normalized LSF Interpolation Index">
 <ttcol>PDF</ttcol>
 <c>{13, 22, 29, 11, 181}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -3238,7 +3239,7 @@ Then, the normalized LSF coefficients used for the first half of a 20&nbsp;ms
  frame, n1_Q15[k], are
 <figure align="center">
 <artwork align="center"><![CDATA[
-n1_Q15[k] = n0_Q15[k] + (w_Q2*(n2_Q15[k] - n0_Q15[k]) >> 2) 
+n1_Q15[k] = n0_Q15[k] + (w_Q2*(n2_Q15[k] - n0_Q15[k]) >> 2)
 ]]></artwork>
 </figure>
 This interpolation is performed in silk_decode_parameters()
@@ -3267,7 +3268,7 @@ with
 P(z) = A(z) + z         * A(z  )
 
                -d_LPC-1      -1
-Q(z) = A(z) - z         * A(z  ) 
+Q(z) = A(z) - z         * A(z  )
 ]]></artwork>
 </figure>
 The even normalized LSF coefficients correspond to a pair of conjugate roots of
@@ -3306,7 +3307,7 @@ These values are also re-ordered to improve numerical accuracy when
  constructing the LPC polynomials.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_nlsf_orderings"
            title="LSF Ordering for Polynomial Evaluation">
 <ttcol>Coefficient</ttcol>
@@ -3328,7 +3329,7 @@ These values are also re-ordered to improve numerical accuracy when
 <c>13</c>      <c/>  <c>9</c>
 <c>14</c>      <c/> <c>14</c>
 <c>15</c>      <c/>  <c>1</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -3341,7 +3342,7 @@ Then, the re-ordered, approximated cosine, c_Q17[ordering[k]], is
 <figure align="center">
 <artwork align="center"><![CDATA[
 c_Q17[ordering[k]] = (cos_Q12[i]*256
-                      + (cos_Q12[i+1]-cos_Q12[i])*f + 4) >> 3 
+                      + (cos_Q12[i+1]-cos_Q12[i])*f + 4) >> 3
 ]]></artwork>
 </figure>
  where ordering[k] is the k'th entry of the column of
@@ -3349,7 +3350,7 @@ c_Q17[ordering[k]] = (cos_Q12[i]*256
  bandwidth and cos_Q12[i] is the i'th entry of <xref target="silk_cos_table"/>.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_cos_table"
            title="Q12 Cosine Table for LSF Conversion">
 <ttcol align="right">i</ttcol>
@@ -3423,7 +3424,7 @@ c_Q17[ordering[k]] = (cos_Q12[i]*256
 <c>-4076</c><c>-4085</c><c>-4091</c><c>-4095</c>
 <c>128</c>
 <c>-4096</c>        <c/>        <c/>        <c/>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -3444,10 +3445,10 @@ Then, for 0&nbsp;&lt;&nbsp;k&nbsp;&lt;&nbsp;d2 and 0&nbsp;&lt;=&nbsp;j&nbsp;&lt;
 <figure align="center">
 <artwork align="center"><![CDATA[
 p_Q16[k][j] = p_Q16[k-1][j] + p_Q16[k-1][j-2]
-              - ((c_Q17[2*k]*p_Q16[k-1][j-1] + 32768)>>16) 
+              - ((c_Q17[2*k]*p_Q16[k-1][j-1] + 32768)>>16)
 
 q_Q16[k][j] = q_Q16[k-1][j] + q_Q16[k-1][j-2]
-              - ((c_Q17[2*k+1]*q_Q16[k-1][j-1] + 32768)>>16) 
+              - ((c_Q17[2*k+1]*q_Q16[k-1][j-1] + 32768)>>16)
 ]]></artwork>
 </figure>
 The use of Q17 values for the cosine terms in an otherwise Q16 expression
@@ -3464,7 +3465,7 @@ silk_NLSF2A() uses the values from the last row of this recurrence to
 <figure align="center">
 <artwork align="center"><![CDATA[
 a32_Q17[k]         = -(q_Q16[d2-1][k+1] - q_Q16[d2-1][k])
-                     - (p_Q16[d2-1][k+1] + p_Q16[d2-1][k])) 
+                     - (p_Q16[d2-1][k+1] + p_Q16[d2-1][k]))
 
 a32_Q17[d_LPC-k-1] =  (q_Q16[d2-1][k+1] - q_Q16[d2-1][k])
                      - (p_Q16[d2-1][k+1] + p_Q16[d2-1][k]))
@@ -3497,7 +3498,7 @@ Then, it computes the corresponding Q12 precision value, maxabs_Q12, subject to
  an upper bound to avoid overflow in subsequent computations:
 <figure align="center">
 <artwork align="center"><![CDATA[
-maxabs_Q12 = min((maxabs_Q17 + 16) >> 5, 163838) 
+maxabs_Q12 = min((maxabs_Q17 + 16) >> 5, 163838)
 ]]></artwork>
 </figure>
 If this is larger than 32767, the procedure derives the chirp factor,
@@ -3505,7 +3506,7 @@ If this is larger than 32767, the procedure derives the chirp factor,
 <figure align="center">
 <artwork align="center"><![CDATA[
                     (maxabs_Q12 - 32767) << 14
-sc_Q16[0] = 65470 - -------------------------- 
+sc_Q16[0] = 65470 - --------------------------
                     (maxabs_Q12 * (k+1)) >> 2
 ]]></artwork>
 </figure>
@@ -3542,7 +3543,7 @@ After 10 rounds of bandwidth expansion are performed, they are simply saturated
  to 16 bits:
 <figure align="center">
 <artwork align="center"><![CDATA[
-a32_Q17[k] = clamp(-32768, (a32_Q17[k] + 16) >> 5, 32767) << 5 
+a32_Q17[k] = clamp(-32768, (a32_Q17[k] + 16) >> 5, 32767) << 5
 ]]></artwork>
 </figure>
 Because this performs the actual saturation in the Q12 domain, but converts the
@@ -3562,7 +3563,7 @@ The prediction gain of an LPC synthesis filter is the square root of the output
  energy when the filter is excited by a unit-energy impulse.
 Even if the Q12 coefficients would fit, the resulting filter may still have a
  significant gain (especially for voiced sounds), making the filter unstable.
-silk_NLSF2A() applies up to 18 additional rounds of bandwidth expansion to
+silk_NLSF2A() applies up to 16 additional rounds of bandwidth expansion to
  limit the prediction gain.
 Instead of controlling the amount of bandwidth expansion using the prediction
  gain itself (which may diverge to infinity for an unstable filter),
@@ -3578,7 +3579,7 @@ The reflection coefficients, rc[k], can be computed using a simple Levinson
     rc[k] = -a[k][k] ,
 
             a[k][n] - a[k][k-n-1]*rc[k]
-a[k-1][n] = --------------------------- 
+a[k-1][n] = ---------------------------
                              2
                     1 - rc[k]
 ]]></artwork>
@@ -3616,43 +3617,55 @@ Increasing the precision of these Q12 coefficients to Q24 for intermediate
  so the decoder initializes the recurrence via
 <figure align="center">
 <artwork align="center"><![CDATA[
-a32_Q24[d_LPC-1][n] = a32_Q12[n] << 12 
+inv_gain_Q30[d_LPC] = 1 << 30
+
+a32_Q24[d_LPC-1][n] = a32_Q12[n] << 12
 ]]></artwork>
 </figure>
 Then, for each k from d_LPC-1 down to 0, if
  abs(a32_Q24[k][k])&nbsp;&gt;&nbsp;16773022, the filter is unstable and the
  recurrence stops.
 The constant 16773022 here is approximately 0.99975 in Q24.
-Otherwise, row k-1 of a32_Q24 is computed from row k as
+Otherwise, the inverse of the prediction gain, inv_gain_Q30[k], is updated via
 <figure align="center">
 <artwork align="center"><![CDATA[
-      rc_Q31[k] = -a32_Q24[k][k] << 7 
+      rc_Q31[k] = -a32_Q24[k][k] << 7
 
      div_Q30[k] = (1<<30) - (rc_Q31[k]*rc_Q31[k] >> 32)
 
-          b1[k] = ilog(div_Q30[k]) 
+inv_gain_Q30[k] = (inv_gain_Q30[k+1]*div_Q30[k] >> 32) << 2
+]]></artwork>
+</figure>
+ and if inv_gain_Q30[k]&nbsp;&lt;&nbsp;107374, the filter is unstable and the
+ recurrence stops.
+The constant 107374 here is approximately 1/10000 in Q30.
+If neither of these checks determine that the filter is unstable and
+ k&nbsp;&gt;&nbsp;0, row k-1 of a32_Q24 is computed from row k as
+<figure align="center">
+<artwork align="center"><![CDATA[
+          b1[k] = ilog(div_Q30[k])
 
-          b2[k] = b1[k] - 16 
+          b2[k] = b1[k] - 16
 
                         (1<<29) - 1
-     inv_Qb2[k] = ----------------------- 
+     inv_Qb2[k] = -----------------------
                   div_Q30[k] >> (b2[k]+1)
 
      err_Q29[k] = (1<<29)
-                  - ((div_Q30[k]<<(15-b2[k]))*inv_Qb2[k] >> 16) 
+                  - ((div_Q30[k]<<(15-b2[k]))*inv_Qb2[k] >> 16)
 
     gain_Qb1[k] = ((inv_Qb2[k] << 16)
-                   + (err_Q29[k]*inv_Qb2[k] >> 13)) 
+                   + (err_Q29[k]*inv_Qb2[k] >> 13))
 
 num_Q24[k-1][n] = a32_Q24[k][n]
-                  - ((a32_Q24[k][k-n-1]*rc_Q31[k] + (1<<30)) >> 31) 
+                  - ((a32_Q24[k][k-n-1]*rc_Q31[k] + (1<<30)) >> 31)
 
 a32_Q24[k-1][n] = (num_Q24[k-1][n]*gain_Qb1[k]
-                   + (1<<(b1[k]-1))) >> b1[k] 
+                   + (1<<(b1[k]-1))) >> b1[k]
 ]]></artwork>
 </figure>
  where 0&nbsp;&lt;=&nbsp;n&nbsp;&lt;&nbsp;k.
-Here, rc_Q30[k] are the reflection coefficients.
+In the above, rc_Q31[k] are the reflection coefficients.
 div_Q30[k] is the denominator for each iteration, and gain_Qb1[k] is its
  multiplicative inverse (with b1[k] fractional bits, where b1[k] ranges from
  20 to 31).
@@ -3670,8 +3683,10 @@ In practice, because each row only depends on the next one, an implementation
  does not need to store them all.
 </t>
 <t>
-If abs(a32_Q24[k][k])&nbsp;&lt;=&nbsp;16773022 for
- 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC, then the filter is considered stable.
+If abs(a32_Q24[k][k])&nbsp;&lt;=&nbsp;16773022 and
+ inv_gain_Q30[k]&nbsp;&gt;=&nbsp;107374 for
+ 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC, then the filter is considered
+ stable.
 However, the problem of determining stability is ill-conditioned when the
  filter contains several reflection coefficients whose magnitude is very close
  to one.
@@ -3680,22 +3695,22 @@ This fixed-point algorithm is not mathematically guaranteed to correctly
  in practice.
 </t>
 <t>
-On round i, 1&nbsp;&lt;=&nbsp;i&nbsp;&lt;=&nbsp;18, if the filter passes these
+On round i, 0&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;16, if the filter passes these
  stability checks, then this procedure stops, and the final LPC coefficients to
  use for reconstruction in <xref target="silk_lpc_synthesis"/> are
 <figure align="center">
 <artwork align="center"><![CDATA[
-a_Q12[k] = (a32_Q17[k] + 16) >> 5 
+a_Q12[k] = (a32_Q17[k] + 16) >> 5
 ]]></artwork>
 </figure>
 Otherwise, a round of bandwidth expansion is applied using the same procedure
  as in <xref target="silk_lpc_range_limit"/>, with
 <figure align="center">
 <artwork align="center"><![CDATA[
-sc_Q16[0] = 65536 - (2<<i) 
+sc_Q16[0] = 65536 - (2<<i)
 ]]></artwork>
 </figure>
-During the 15th round, sc_Q16[0] becomes 0 in the above equation, so a_Q12[k]
+During round 15, sc_Q16[0] becomes 0 in the above equation, so a_Q12[k]
  is set to 0 for all k, guaranteeing a stable filter.
 </t>
 </section>
@@ -3738,10 +3753,11 @@ That previous SILK frame was coded, but was not voiced (see
 With absolute coding, the primary pitch lag may range from 2&nbsp;ms
  (inclusive) up to 18&nbsp;ms (exclusive), corresponding to pitches from
  500&nbsp;Hz down to 55.6&nbsp;Hz, respectively.
-It is comprised of a high part and a low part, where the decoder reads the high
- part using the 32-entry codebook in <xref target="silk_abs_pitch_high_pdf"/>
- and the low part using the codebook corresponding to the current audio
- bandwidth from <xref target="silk_abs_pitch_low_pdf"/>.
+It is comprised of a high part and a low part, where the decoder first reads
+ the high part using the 32-entry codebook in
+ <xref target="silk_abs_pitch_high_pdf"/> and then the low part using the
+ codebook corresponding to the current audio bandwidth from
+ <xref target="silk_abs_pitch_low_pdf"/>.
 The final primary pitch lag is then
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -3753,7 +3769,7 @@ lag = lag_high*lag_scale + lag_low + lag_min
  <xref target="silk_abs_pitch_low_pdf"/>, respectively.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_abs_pitch_high_pdf"
  title="PDF for High Part of Primary Pitch Lag">
 <ttcol align="left">PDF</ttcol>
@@ -3761,10 +3777,10 @@ lag = lag_high*lag_scale + lag_low + lag_min
    11,  10,  12,  13,  13,  12,  11,   9,
     8,   7,   6,   4,   2,   2,   2,   1,
     1,   1,   1,   1,   1,   1,   1,   1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_abs_pitch_low_pdf"
  title="PDF for Low Part of Primary Pitch Lag">
 <ttcol>Audio Bandwidth</ttcol>
@@ -3775,7 +3791,7 @@ lag = lag_high*lag_scale + lag_low + lag_min
 <c>NB</c> <c>{64, 64, 64, 64}/256</c>                 <c>4</c> <c>16</c> <c>144</c>
 <c>MB</c> <c>{43, 42, 43, 43, 42, 43}/256</c>         <c>6</c> <c>24</c> <c>216</c>
 <c>WB</c> <c>{32, 32, 32, 32, 32, 32, 32, 32}/256</c> <c>8</c> <c>32</c> <c>288</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -3801,14 +3817,14 @@ However, because an Opus frame can use relative coding for at most two
  consecutive SILK frames, integer overflow should not be an issue.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_rel_pitch_pdf"
  title="PDF for Primary Pitch Lag Change">
 <ttcol align="left">PDF</ttcol>
 <c>{46,  2,  2,  3,  4,  6, 10, 15,
     26, 38, 30, 22, 15, 10,  7,  6,
      4,  4,  2,  2,  2}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -3824,7 +3840,7 @@ Tables&nbsp;<xref format="counter" target="silk_pitch_contour_cb_nb10ms"/>
  subframe given the decoded codebook index.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_pitch_contour_pdfs"
  title="PDFs for Subframe Pitch Contour">
 <ttcol>Audio Bandwidth</ttcol>
@@ -3845,10 +3861,10 @@ Tables&nbsp;<xref format="counter" target="silk_pitch_contour_cb_nb10ms"/>
      5,  4,  4,  4,  3,  3,  3,  2,
      2,  2,  2,  2,  2,  2,  1,  1,
      1,  1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_pitch_contour_cb_nb10ms"
  title="Codebook Vectors for Subframe Pitch Contour: NB, 10&nbsp;ms Frames">
 <ttcol>Index</ttcol>
@@ -3856,10 +3872,10 @@ Tables&nbsp;<xref format="counter" target="silk_pitch_contour_cb_nb10ms"/>
 <c>0</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0</spanx></c>
 <c>1</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;0</spanx></c>
 <c>2</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;1</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_pitch_contour_cb_nb20ms"
  title="Codebook Vectors for Subframe Pitch Contour: NB, 20&nbsp;ms Frames">
 <ttcol>Index</ttcol>
@@ -3875,10 +3891,10 @@ Tables&nbsp;<xref format="counter" target="silk_pitch_contour_cb_nb10ms"/>
  <c>8</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0</spanx></c>
  <c>9</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;-1</spanx></c>
 <c>10</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;-1</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_pitch_contour_cb_mbwb10ms"
  title="Codebook Vectors for Subframe Pitch Contour: MB or WB, 10&nbsp;ms Frames">
 <ttcol>Index</ttcol>
@@ -3895,10 +3911,10 @@ Tables&nbsp;<xref format="counter" target="silk_pitch_contour_cb_nb10ms"/>
  <c>9</c> <c><spanx style="vbare">-2&nbsp;&nbsp;3</spanx></c>
 <c>10</c> <c><spanx style="vbare">&nbsp;3&nbsp;-2</spanx></c>
 <c>11</c> <c><spanx style="vbare">-3&nbsp;&nbsp;3</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_pitch_contour_cb_mbwb20ms"
  title="Codebook Vectors for Subframe Pitch Contour: MB or WB, 20&nbsp;ms Frames">
 <ttcol>Index</ttcol>
@@ -3937,7 +3953,7 @@ Tables&nbsp;<xref format="counter" target="silk_pitch_contour_cb_nb10ms"/>
 <c>31</c> <c><spanx style="vbare">&nbsp;5&nbsp;&nbsp;2&nbsp;-2&nbsp;-5</spanx></c>
 <c>32</c> <c><spanx style="vbare">&nbsp;8&nbsp;&nbsp;3&nbsp;-2&nbsp;-7</spanx></c>
 <c>33</c> <c><spanx style="vbare">-9&nbsp;-3&nbsp;&nbsp;3&nbsp;&nbsp;9</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -3984,11 +4000,11 @@ This immediately follows the subframe pitch lags, and is coded using the
  3-entry PDF from <xref target="silk_perindex_pdf"/>.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_perindex_pdf" title="Periodicity Index PDF">
 <ttcol>PDF</ttcol>
 <c>{77, 80, 99}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -4000,7 +4016,7 @@ Tables&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs0"/>
  contain the corresponding filter taps as signed Q7 integers.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_ltp_filter_pdfs" title="LTP Filter PDFs">
 <ttcol>Periodicity Index</ttcol>
 <ttcol align="right">Codebook Size</ttcol>
@@ -4012,10 +4028,10 @@ Tables&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs0"/>
                        11, 10,  9,  9,  9,  9,  8,  8,
                         8,  8,  7,  7,  6,  6,  5,  4,
                         5,  4,  4,  4,  3,  4,  3,  2}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_ltp_filter_coeffs0"
  title="Codebook Vectors for LTP Filter, Periodicity Index 0">
 <ttcol>Index</ttcol>
@@ -4036,10 +4052,10 @@ Tables&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs0"/>
 <c><spanx style="vbare">&nbsp;-6&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;66&nbsp;&nbsp;&nbsp;7&nbsp;&nbsp;-8</spanx></c>
  <c>7</c>
 <c><spanx style="vbare">&nbsp;16&nbsp;&nbsp;14&nbsp;&nbsp;38&nbsp;&nbsp;-3&nbsp;&nbsp;33</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_ltp_filter_coeffs1"
  title="Codebook Vectors for LTP Filter, Periodicity Index 1">
 <ttcol>Index</ttcol>
@@ -4077,10 +4093,10 @@ Tables&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs0"/>
 <c><spanx style="vbare">&nbsp;-2&nbsp;&nbsp;55&nbsp;&nbsp;46&nbsp;&nbsp;-2&nbsp;&nbsp;15</spanx></c>
 <c>15</c>
 <c><spanx style="vbare">&nbsp;&nbsp;3&nbsp;&nbsp;-1&nbsp;&nbsp;21&nbsp;&nbsp;16&nbsp;&nbsp;41</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_ltp_filter_coeffs2"
  title="Codebook Vectors for LTP Filter, Periodicity Index 2">
 <ttcol>Index</ttcol>
@@ -4149,7 +4165,7 @@ Tables&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs0"/>
 <c><spanx style="vbare">&nbsp;81&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;11&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;7</spanx></c>
 <c>31</c>
 <c><spanx style="vbare">&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;9&nbsp;&nbsp;10&nbsp;&nbsp;88</spanx></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -4197,12 +4213,12 @@ Frames that do not code the scaling parameter use the default factor of 15565
  (approximately 0.95).
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_ltp_scaling_pdf"
  title="PDF for LTP Scaling Parameter">
 <ttcol align="left">PDF</ttcol>
 <c>{128, 64, 64}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -4224,12 +4240,12 @@ The decoder reads the seed using the uniform 4-entry PDF in
  <xref target="silk_seed_pdf"/>, yielding a value between 0 and 3, inclusive.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_seed_pdf"
  title="PDF for LCG Seed">
 <ttcol align="left">PDF</ttcol>
 <c>{64, 64, 64, 64}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -4247,7 +4263,7 @@ Thus, the codebook includes all integer codevectors y of dimension N that
 <artwork align="center"><![CDATA[
 N-1
 __
-\  abs(y[j]) = K 
+\  abs(y[j]) = K
 /_
 j=0
 ]]></artwork>
@@ -4279,7 +4295,7 @@ The decoder contains no special case that prevents an encoder from placing
  if present, but they are otherwise ignored.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_shell_block_table"
  title="Number of Shell Blocks Per SILK Frame">
 <ttcol>Audio Bandwidth</ttcol>
@@ -4291,7 +4307,7 @@ The decoder contains no special case that prevents an encoder from placing
 <c>NB</c> <c>20&nbsp;ms</c> <c>10</c>
 <c>MB</c> <c>20&nbsp;ms</c> <c>15</c>
 <c>WB</c> <c>20&nbsp;ms</c> <c>20</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <section anchor="silk_rate_level" title="Rate Level">
@@ -4312,7 +4328,7 @@ Level&nbsp;0 provides a more efficient encoding at low rates generally, and
 An encoder should, but is not required to, use the most efficient rate level.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_rate_level_pdfs"
  title="PDFs for the Rate Level">
 <ttcol>Signal Type</ttcol>
@@ -4321,7 +4337,7 @@ An encoder should, but is not required to, use the most efficient rate level.
 <c>{15, 51, 12, 46, 45, 13, 33, 27, 14}/256</c>
 <c>Voiced</c>
 <c>{33, 30, 36, 17, 34, 49, 18, 21, 18}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -4350,7 +4366,7 @@ The cumulative distribution for rate level&nbsp;10 is just a shifted version of
  that for 9 and thus does not require any additional storage.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_pulse_count_pdfs"
  title="PDFs for the Pulse Count">
 <ttcol>Rate Level</ttcol>
@@ -4377,7 +4393,7 @@ The cumulative distribution for rate level&nbsp;10 is just a shifted version of
 <c>{1, 1, 1, 6, 27, 58, 56, 39, 25, 14, 10, 6, 3, 3, 2, 1, 1, 2}/256</c>
 <c>10</c>
 <c>{2, 1, 6, 27, 58, 56, 39, 25, 14, 10, 6, 3, 3, 2, 1, 1, 2, 0}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -4411,7 +4427,7 @@ This process skips partitions without any pulses, i.e., where the initial pulse
 These partitions have nothing to code, so they require no PDF.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_shell_code3_pdfs"
  title="PDFs for Pulse Count Split, 16 Sample Partitions">
 <ttcol>Pulse Count</ttcol>
@@ -4432,10 +4448,10 @@ These partitions have nothing to code, so they require no PDF.
 <c>14</c> <c>{1, 1, 4, 10, 17, 27, 37, 47, 43, 33, 21, 9, 4, 1, 1}/256</c>
 <c>15</c> <c>{1, 1, 1, 8, 14, 22, 33, 40, 43, 38, 28, 16, 8, 1, 1, 1}/256</c>
 <c>16</c> <c>{1, 1, 1, 1, 13, 18, 27, 36, 41, 41, 34, 24, 14, 1, 1, 1, 1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_shell_code2_pdfs"
  title="PDFs for Pulse Count Split, 8 Sample Partitions">
 <ttcol>Pulse Count</ttcol>
@@ -4456,10 +4472,10 @@ These partitions have nothing to code, so they require no PDF.
 <c>14</c> <c>{1, 1, 4, 10, 20, 31, 40, 42, 40, 31, 20, 10, 4, 1, 1}/256</c>
 <c>15</c> <c>{1, 1, 3, 8, 16, 26, 35, 38, 38, 35, 26, 16, 8, 3, 1, 1}/256</c>
 <c>16</c> <c>{1, 1, 2, 6, 12, 21, 30, 36, 38, 36, 30, 21, 12, 6, 2, 1, 1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_shell_code1_pdfs"
  title="PDFs for Pulse Count Split, 4 Sample Partitions">
 <ttcol>Pulse Count</ttcol>
@@ -4480,10 +4496,10 @@ These partitions have nothing to code, so they require no PDF.
 <c>14</c> <c>{1, 3, 7, 14, 22, 29, 34, 36, 34, 29, 22, 14, 7, 3, 1}/256</c>
 <c>15</c> <c>{1, 2, 5, 11, 18, 25, 31, 35, 35, 31, 25, 18, 11, 5, 2, 1}/256</c>
 <c>16</c> <c>{1, 1, 4, 9, 15, 21, 28, 32, 34, 32, 28, 21, 15, 9, 4, 1, 1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_shell_code0_pdfs"
  title="PDFs for Pulse Count Split, 2 Sample Partitions">
 <ttcol>Pulse Count</ttcol>
@@ -4504,7 +4520,7 @@ These partitions have nothing to code, so they require no PDF.
 <c>14</c> <c>{1, 4, 7, 13, 21, 29, 35, 36, 35, 29, 21, 13, 7, 4, 1}/256</c>
 <c>15</c> <c>{1, 2, 5, 10, 17, 25, 32, 36, 36, 32, 25, 17, 10, 5, 2, 1}/256</c>
 <c>16</c> <c>{1, 2, 4, 7, 13, 21, 28, 34, 36, 34, 28, 21, 13, 7, 4, 2, 1}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -4521,11 +4537,11 @@ The LSBs are coded from most significant to least significant, and they all use
  the PDF in <xref target="silk_shell_lsb_pdf"/>.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_shell_lsb_pdf" title="PDF for Excitation LSBs">
 <ttcol>PDF</ttcol>
 <c>{136, 120}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -4561,7 +4577,7 @@ If a block contains many positive coefficients, it is sometimes beneficial to
  coefficient magnitude encoding.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_sign_pdfs"
  title="PDFs for Excitation Signs">
 <ttcol>Signal Type</ttcol>
@@ -4610,7 +4626,7 @@ If a block contains many positive coefficients, it is sometimes beneficial to
 <c>Voiced</c>   <c>High</c> <c>4</c>         <c>{168, 88}/256</c>
 <c>Voiced</c>   <c>High</c> <c>5</c>         <c>{161, 95}/256</c>
 <c>Voiced</c>   <c>High</c> <c>6 or more</c> <c>{154, 102}/256</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 </section>
@@ -4627,7 +4643,7 @@ The constant quantization offset varies depending on the signal type and
  quantization offset type (see <xref target="silk_frame_type"/>).
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_quantization_offsets"
  title="Excitation Quantization Offsets">
 <ttcol align="left">Signal Type</ttcol>
@@ -4639,7 +4655,7 @@ The constant quantization offset varies depending on the signal type and
 <c>Unvoiced</c> <c>High</c> <c>60</c>
 <c>Voiced</c>   <c>Low</c>   <c>8</c>
 <c>Voiced</c>   <c>High</c> <c>25</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -4734,8 +4750,7 @@ During reconstruction of the first subframe for this channel after either
 <t>An uncoded regular SILK frame (if this is the side channel), or</t>
 <t>A decoder reset (see <xref target="decoder-reset"/>),</t>
 </list>
- out[] is rewhitened into an LPC residual,
- res[i], via
+ out[i] is rewhitened into an LPC residual, res[i], via
 <figure align="center">
 <artwork align="center"><![CDATA[
          4.0*LTP_scale_Q14
@@ -4744,7 +4759,7 @@ res[i] = ----------------- * clamp(-1.0
 
                                    d_LPC-1
                                      __              a_Q12[k]
-                            out[i] - \  out[i-k-1] * --------, 1.0) 
+                            out[i] - \  out[i-k-1] * --------, 1.0)
                                      /_               4096.0
                                      k=0
 ]]></artwork>
@@ -4771,7 +4786,7 @@ Then for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n),
 <artwork align="center"><![CDATA[
                       4
           e_Q23[i]   __                                  b_Q7[k]
-res[i] = --------- + \  res[i - pitch_lags[s] + 2 - k] * ------- 
+res[i] = --------- + \  res[i - pitch_lags[s] + 2 - k] * -------
           2.0**23    /_                                   128.0
                      k=0
 ]]></artwork>
@@ -4810,7 +4825,7 @@ Then, for i, such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n), the
 <artwork align="center"><![CDATA[
                               d_LPC-1
          gain_Q16[i]            __              a_Q12[k]
-lpc[i] = ----------- * res[i] + \  lpc[i-k-1] * -------- 
+lpc[i] = ----------- * res[i] + \  lpc[i-k-1] * --------
            65536.0              /_               4096.0
                                 k=0
 ]]></artwork>
@@ -4825,7 +4840,7 @@ This requires storage for up to 16 values of lpc[i] (for WB frames).
 Then, the signal is clamped into the final nominal range:
 <figure align="center">
 <artwork align="center"><![CDATA[
-out[i] = clamp(-1.0, lpc[i], 1.0) 
+out[i] = clamp(-1.0, lpc[i], 1.0)
 ]]></artwork>
 </figure>
 This clamping occurs entirely after the LPC synthesis filter has run.
@@ -4880,18 +4895,18 @@ Then, for i, such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n2),
 <figure align="center">
 <artwork align="center"><![CDATA[
               prev_w0_Q13                  (w0_Q13 - prev_w0_Q13)
-        w0 =  ----------- + min(i - j, n1)*---------------------- 
+        w0 =  ----------- + min(i - j, n1)*----------------------
                 8192.0                           8192.0*n1
 
               prev_w1_Q13                  (w1_Q13 - prev_w1_Q13)
-        w1 =  ----------- + min(i - j, n1)*---------------------- 
+        w1 =  ----------- + min(i - j, n1)*----------------------
                 8192.0                            8192.0*n1
 
              mid[i-2] + 2*mid[i-1] + mid[i]
-        p0 = ------------------------------ 
+        p0 = ------------------------------
                           4.0
 
- left[i] = clamp(-1.0, (1 + w1)*mid[i-1] + side[i-1] + w0*p0, 1.0) 
+ left[i] = clamp(-1.0, (1 + w1)*mid[i-1] + side[i-1] + w0*p0, 1.0)
 
 right[i] = clamp(-1.0, (1 - w1)*mid[i-1] - side[i-1] - w0*p0, 1.0)
 ]]></artwork>
@@ -4948,7 +4963,7 @@ However, such deviations are unlikely to be perceptible, and the comparison
 The delays listed here are the ones that should be targeted by the encoder.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="silk_resampler_delay_alloc"
  title="SILK Resampler Delay Allocations">
 <ttcol>Audio Bandwidth</ttcol>
@@ -4956,7 +4971,7 @@ The delays listed here are the ones that should be targeted by the encoder.
 <c>NB</c> <c>0.538</c>
 <c>MB</c> <c>0.692</c>
 <c>WB</c> <c>0.706</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -4994,7 +5009,7 @@ preserve the spectral envelope of the signal. The remaining unit-norm shape
 vector is encoded using a Pyramid Vector Quantizer (PVQ)&nbsp;<xref target='PVQ-decoder'/>.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="celt_band_sizes"
  title="MDCT Bins per Channel per Band for Each Frame Size">
 <ttcol>Frame Size:</ttcol>
@@ -5026,7 +5041,7 @@ vector is encoded using a Pyramid Vector Quantizer (PVQ)&nbsp;<xref target='PVQ-
 <c>18</c> <c>12</c> <c>24</c> <c>48</c>  <c>96</c>  <c>9600&nbsp;Hz</c> <c>12000&nbsp;Hz</c>
 <c>19</c> <c>18</c> <c>36</c> <c>72</c> <c>144</c> <c>12000&nbsp;Hz</c> <c>15600&nbsp;Hz</c>
 <c>20</c> <c>22</c> <c>44</c> <c>88</c> <c>176</c> <c>15600&nbsp;Hz</c> <c>20000&nbsp;Hz</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -5094,7 +5109,7 @@ IMDCT = Inverse MDCT
 The decoder is based on the following symbols and sets of symbols:
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="celt_symbols"
  title="Order of the Symbols in the CELT Section of the Bitstream">
 <ttcol align="center">Symbol(s)</ttcol>
@@ -5113,7 +5128,7 @@ The decoder is based on the following symbols and sets of symbols:
 <c>tf_select</c>    <c>{1, 1}/2</c><c><xref target="transient-decoding"/></c>
 <c>spread</c>       <c>{7, 2, 21, 2}/32</c><c></c>
 <c>dyn. alloc.</c>  <c><xref target="allocation"/></c><c></c>
-<c>alloc. trim</c>  <c>{2, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2}/128</c><c></c>
+<c>alloc. trim</c>  <c><xref target="celt_trim_pdf"/></c><c></c>
 <c>skip</c>         <c>{1, 1}/2</c><c><xref target="allocation"/></c>
 <c>intensity</c>    <c>uniform</c><c><xref target="allocation"/></c>
 <c>dual</c>         <c>{1, 1}/2</c><c></c>
@@ -5121,7 +5136,7 @@ The decoder is based on the following symbols and sets of symbols:
 <c>residual</c>     <c><xref target="PVQ-decoder"/></c><c></c>
 <c>anti-collapse</c><c>{1, 1}/2</c><c><xref target="anti-collapse"/></c>
 <c>finalize</c>     <c><xref target="energy-decoding"/></c><c></c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -5327,7 +5342,7 @@ is obtained by linearly interpolating between two values of q (in steps of 1/64)
 highest allocation that does not exceed the number of bits remaining.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="static_alloc"
  title="CELT Static Allocation Table">
  <preamble>Rows indicate the MDCT bands, columns are the different quality (q) parameters. The units are 1/32 bit per MDCT bin.</preamble>
@@ -5363,7 +5378,7 @@ highest allocation that does not exceed the number of bits remaining.
 <c>0</c><c>0</c><c>0</c><c>0</c><c>1</c><c>16</c><c>26</c><c>36</c><c>46</c><c>56</c><c>148</c>
 <c>0</c><c>0</c><c>0</c><c>0</c><c>0</c><c>10</c><c>15</c><c>20</c><c>30</c><c>45</c><c>129</c>
 <c>0</c><c>0</c><c>0</c><c>0</c><c>0</c><c>1</c><c>1</c><c>1</c><c>1</c><c>20</c><c>104</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>The maximum allocation vector is an approximation of the maximum space
@@ -5421,13 +5436,13 @@ band: Decode a bit from the bitstream with a with dynalloc_loop_logp as the cost
 of a one, update tell to reflect the current used capacity, if the decoded value
 is zero break the  loop; otherwise, add quanta to boost and total_boost, subtract quanta from
 total_bits, and set dynalloc_loop_log to 1. When the while loop finishes
-boost contains the boost for this band. 
+boost contains the boost for this band.
 
 <!--[rfced] We had trouble parsing the following sentence.  Please consider whether updates should be made for clarity:
 
 Original:
 When the while loop finishes
-boost contains the boost for this band. 
+boost contains the boost for this band.
 
 -->
 
@@ -5455,11 +5470,11 @@ plus 48 (6 bits) is less than or equal to the total frame size in 8th
 bits minus total_boost (a product of the above band boost procedure),
 decode the trim value using the PDF in <xref target="celt_trim_pdf"/>.</t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="celt_trim_pdf" title="PDF for the Trim">
 <ttcol>PDF</ttcol>
-<c>{1, 1, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2}/128</c>
-</texttable> 
+<c>{2, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2}/128</c>
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>For 10 ms and 20 ms frames using short blocks and that have at least LM+2 bits left prior to
@@ -5611,7 +5626,7 @@ where N is the number of dimensions, K is the number of pulses, and f_r depends 
 the value of the "spread" parameter in the bitstream.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="spread values" title="Spreading Values">
 <ttcol>Spread value</ttcol>
 <ttcol>f_r</ttcol>
@@ -5619,7 +5634,7 @@ the value of the "spread" parameter in the bitstream.
  <c>1</c> <c>15</c>
  <c>2</c> <c>10</c>
  <c>3</c> <c>5</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -5681,7 +5696,7 @@ otherwise. The mapping between the decoded TF choices and the adjustment in TF
 resolution is shown in the tables below.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor='tf_00'
  title="TF Adjustments for Non-transient Frames and tf_select=0">
 <ttcol align='center'>Frame size (ms)</ttcol>
@@ -5691,10 +5706,10 @@ resolution is shown in the tables below.
 <c>5</c>      <c>0</c> <c>-1</c>
 <c>10</c>      <c>0</c> <c>-2</c>
 <c>20</c>      <c>0</c> <c>-2</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor='tf_01'
  title="TF Adjustments for Non-transient Frames and tf_select=1">
 <ttcol align='center'>Frame size (ms)</ttcol>
@@ -5704,11 +5719,11 @@ resolution is shown in the tables below.
 <c>5</c>      <c>0</c> <c>-2</c>
 <c>10</c>      <c>0</c> <c>-3</c>
 <c>20</c>      <c>0</c> <c>-3</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor='tf_10'
  title="TF Adjustments for Transient Frames and tf_select=0">
 <ttcol align='center'>Frame size (ms)</ttcol>
@@ -5718,10 +5733,10 @@ resolution is shown in the tables below.
 <c>5</c>      <c>1</c> <c>0</c>
 <c>10</c>      <c>2</c> <c>0</c>
 <c>20</c>      <c>3</c> <c>0</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor='tf_11'
  title="TF Adjustments for Transient Frames and tf_select=1">
 <ttcol align='center'>Frame size (ms)</ttcol>
@@ -5731,7 +5746,7 @@ resolution is shown in the tables below.
 <c>5</c>      <c>1</c> <c>-1</c>
 <c>10</c>      <c>1</c> <c>-1</c>
 <c>20</c>      <c>1</c> <c>-1</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -5785,7 +5800,7 @@ It is derived from a basic (full-overlap) 240-sample version of the window used 
 <artwork align="center"><![CDATA[
                                       2
        /   /pi      /pi   n + 1/2\ \ \
-W(n) = |sin|-- * sin|-- * -------| | | 
+W(n) = |sin|-- * sin|-- * -------| | |
        \   \2       \2       L   / / /
 ]]></artwork>
 </figure>
@@ -5839,7 +5854,7 @@ used in the encoder:
 <figure align="center">
 <artwork align="center"><![CDATA[
  1            1
----- = --------------- 
+---- = ---------------
 A(z)                -1
        1 - alpha_p*z
 ]]></artwork>
@@ -5997,8 +6012,7 @@ The presence of redundancy is signaled in all SILK-only and Hybrid frames, not
 This allows the frames to be decoded correctly even if an adjacent frame is
  lost.
 For SILK-only frames, this signaling is implicit, based on the size of the
- of the Opus frame and the number of bits consumed decoding the SILK portion of
- it.
+ Opus frame and the number of bits consumed decoding the SILK portion of it.
 After decoding the SILK portion of the Opus frame, the decoder uses ec_tell()
  (see <xref target="ec_tell"/>) to check if there are at least 17 bits
  remaining.
@@ -6016,11 +6030,11 @@ Otherwise (if there were fewer than 37 bits left or the value was 0), the frame
  does not contain redundancy.
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="opus_redundancy_flag_pdf" title="Redundancy Flag PDF">
 <ttcol>PDF</ttcol>
 <c>{4095, 1}/4096</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 </section>
 
@@ -6036,11 +6050,11 @@ After determining that a frame contains redundancy, the decoder reads a
  (<xref target="opus_redundancy_pos_pdf"/>).
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="opus_redundancy_pos_pdf" title="Redundancy Position PDF">
 <ttcol>PDF</ttcol>
 <c>{1, 1}/2</c>
-</texttable> 
+</texttable>
 <?rfc compact="yes" ?>
 
 <t>
@@ -6311,7 +6325,7 @@ For a normal encoder where both the SILK and the CELT modules are included, an o
 encoder should select which coding mode to use at run-time depending on the conditions.
 In the reference implementation, the frame size is selected by the application, but the
 other configuration parameters (number of channels, bandwidth, mode) are automatically
-selected (unless explicitly overridden by the application) depend on the following:
+selected (unless explicitly overridden by the application) depending on the following:
 <list style="symbols">
 <t>Requested bitrate</t>
 <t>Input sampling rate</t>
@@ -6400,11 +6414,11 @@ If fl[k] is greater than zero, then
 <figure align="center">
 <artwork align="center"><![CDATA[
                   rng
-val = val + rng - --- * (ft - fl) 
+val = val + rng - --- * (ft - fl)
                   ft
 
       rng
-rng = --- * (fh - fl) 
+rng = --- * (fh - fl)
       ft
 ]]></artwork>
 </figure>
@@ -6430,7 +6444,7 @@ First, the top 9 bits of val, (val&gt;&gt;23), are sent to the carry buffer,
 Then, the encoder sets
 <figure align="center">
 <artwork align="center"><![CDATA[
-val = (val<<8) & 0x7FFFFFFF 
+val = (val<<8) & 0x7FFFFFFF
 
 rng = rng<<8
 ]]></artwork>
@@ -6463,7 +6477,7 @@ If ext is non-zero, then the encoder outputs ext bytes -- all with a value of 0
 rem is set to the 8 data bits:
 <figure align="center">
 <artwork align="center"><![CDATA[
-rem = c & 255 
+rem = c & 255
 ]]></artwork>
 </figure>
 </t>
@@ -6578,7 +6592,7 @@ Then, while end is not zero, the top 9 bits of end, i.e., (end&gt;&gt;23), are
  <xref target="ec_enc_carry_out"/>, and end is updated via
 <figure align="center">
 <artwork align="center"><![CDATA[
-end = (end<<8) & 0x7FFFFFFF 
+end = (end<<8) & 0x7FFFFFFF
 ]]></artwork>
 </figure>
 Finally, if the buffered output byte, rem, is neither zero nor the special
@@ -6757,7 +6771,7 @@ the remainder of this section. An overview of the encoder is given in
 9:  LSF coefficients
 10: Quantized LSF coefficients
 11: Processed gains, and synthesis noise shape coefficients
-12: LTP state scaling coefficient.  Controlling error 
+12: LTP state scaling coefficient.  Controlling error
     propagation / prediction gain trade-off
 13: Quantized signal
 ]]>
@@ -7045,7 +7059,7 @@ origin, using the formulas
  a_ana(k) = a(k)*g_ana   and
 
                       k
- a_syn(k) = a(k)*g_syn 
+ a_syn(k) = a(k)*g_syn
 ]]>
 </artwork>
 </figure>
@@ -7122,7 +7136,7 @@ as
 <![CDATA[
                K
               ___          2  -0.5
- predGain = ( | | 1 - (r_k)  )    
+ predGain = ( | | 1 - (r_k)  )
               k=1
 ]]>
 </artwork>
@@ -7537,7 +7551,7 @@ taking into account the frame size by subtracting 80 bits per frame for coarse e
 band using intensity coding is as follows:
 </t>
 
-<?rfc compact="no" ?> 
+<?rfc compact="no" ?>
 <texttable anchor="intensity-thresholds"
  title="Thresholds for Intensity Stereo">
 <ttcol align='center'>bitrate (kbit/s)</ttcol>
@@ -7549,8 +7563,8 @@ band using intensity coding is as follows:
 <c>84-102</c>     <c>19</c>
 <c>102-130</c>     <c>20</c>
 <c>&gt;130</c>     <c>disabled</c>
-</texttable> 
-<?rfc compact="yes" ?> 
+</texttable>
+<?rfc compact="yes" ?>
 
 
 </section>
@@ -7836,16 +7850,16 @@ We would also like to thank Igor Dyakonov, Christian Hoene, and Jan Skoglund
 Thanks to Andrew D'Addesio, Elwyn Davies, Ralph Giles, Christian Hoene,
  John Ridges, Ben Schwartz, Kat Walsh, Keith Yan, and many others on the Opus
  and CELT mailing lists for their bug reports and feedback. At last, the
-authors would like to thank Robert Sparks, Cullen Jennings, and Johathan
+authors would like to thank Robert Sparks, Cullen Jennings, and Jonathan
 Rosenberg for their support throughout the standardization process.
 </t>
 </section>
 
 <section title="Copying Conditions">
 
-<!-- [rfced] Please note that there is discussion within legal@ietf.org 
-regarding whether this is appropriate in an RFC.  We will discuss the outcome 
-of the discussion with you when there is some agreement.  
+<!-- [rfced] Please note that there is discussion within legal@ietf.org
+regarding whether this is appropriate in an RFC.  We will discuss the outcome
+of the discussion with you when there is some agreement.
 
 9.  Copying Conditions
 
@@ -8168,14 +8182,14 @@ http://git.xiph.org/?p=opus.git
 </front>
 </reference>
 
-<!--[rfced] As Wikipedia content changes over time, are there other places that 
-might offer more suitable references for the items listing Wikipedia pages? 
-Otherwise, please note that the Wikipedia URLs will be updated to be the dated 
-pages; for example, we would make the following update: 
+<!--[rfced] As Wikipedia content changes over time, are there other places that
+might offer more suitable references for the items listing Wikipedia pages?
+Otherwise, please note that the Wikipedia URLs will be updated to be the dated
+pages; for example, we would make the following update:
 
    http://en.wikipedia.org/wiki/Line_spectral_pairs
 
-to 
+to
 
    http://en.wikipedia.org/w/index.php?title=Line_spectral_pairs&oldid=365426016
 
@@ -8382,10 +8396,10 @@ this standard is available in a
 
 <!-- In the following, should "standard" be "Proposed Standard" (occurs 2x)?
 
-   As of the time of publication of this memo, an up-to-date implementation  
+   As of the time of publication of this memo, an up-to-date implementation
    conforming to this standard is available in a Git repository [OPUS-GIT].
    However, although that implementation is expected to
-   remain conformant with the standard, it is the code in this document that 
+   remain conformant with the standard, it is the code in this document that
    shall remain normative.
 
 -->
@@ -8398,22 +8412,22 @@ Releases and other resources are available at
 </section>
 
 <!--[rfced] We note that the files you sent (3 July) do not match what was
-included in the original version 16 submitted.  After speaking with Robert 
+included in the original version 16 submitted.  After speaking with Robert
 Sparks, our understanding is that you will send us an updated file
-that includes the RFC number and addresses these RFC Editor notes from the 
+that includes the RFC number and addresses these RFC Editor notes from the
 Protocol Action:
 
    Please work with the draft editors to replace rfcXXXX as it appears in the
    files in the appendix with the rfc number assigned for this draft.
 
-   Please work with the draft editors to ensure that the following is added (with 
+   Please work with the draft editors to ensure that the following is added (with
    XXXX replaced appropriately) to  the README file in the appendix: "These
-   files were extracted from RFCXXXX. Please see that RFC for additional 
+   files were extracted from RFCXXXX. Please see that RFC for additional
    information."
 
-Additionally, we will ask Robert Sparks to approve the final update.  Please 
-let us know if you need any additional information from us to make the 
-necessary updates. 
+Additionally, we will ask Robert Sparks to approve the final update.  Please
+let us know if you need any additional information from us to make the
+necessary updates.
 
 -->
 <section title="Base64-Encoded Source Code">
@@ -15906,7 +15920,7 @@ necessary updates.
 <section anchor="test-vectors" title="Test Vectors">
 <t>
 Because of size constraints, the Opus test vectors are not distributed in this
-document. They are available in the proceedings of the 83th IETF meeting (Paris) <xref target="VECTORS-PROC"/> and from the Opus codec website at
+document. They are available in the proceedings of the 83rd IETF meeting (Paris) <xref target="VECTORS-PROC"/> and from the Opus codec website at
 <xref target="VECTORS-WEBSITE"/>. These test vectors were created specifically to exercise
 all aspects of the decoder; therefore, the audio quality of the decoded output is
 significantly lower than what Opus can achieve in normal operation.
