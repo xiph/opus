@@ -37,7 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 /* Approximation of 2^() (very close inverse of silk_lin2log()) */
 /* Convert input to a linear scale    */
-opus_int32 silk_log2lin( 
+opus_int32 silk_log2lin(
     const opus_int32            inLog_Q7            /* I  input on log scale                                            */
 )
 {

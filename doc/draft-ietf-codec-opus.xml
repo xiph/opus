@@ -71,8 +71,8 @@ This document defines the Opus interactive speech and audio codec.
 Opus is designed to handle a wide range of interactive audio applications,
  including Voice over IP, videoconferencing, in-game chat, and even live,
  distributed music performances.
-It scales from low bitrate narrowband speech at 6 kbit/s to very high quality
- stereo music at 510 kbit/s.
+It scales from low bitrate narrowband speech at 6&nbsp;kbit/s to very high
+ quality stereo music at 510&nbsp;kbit/s.
 
 
 Opus uses both Linear Prediction (LP) and the Modified Discrete Cosine
@@ -544,9 +544,9 @@ AAC (Advanced Audio Coding) call CBR (i.e., not true
 CBR due to the bit reservoir). In some (rare) applications, constant bitrate (CBR)
 is required. There are two main reasons to operate in CBR mode:
 <list style="symbols">
-<t>When the transport only supports a fixed size for each compressed frame</t>
+<t>When the transport only supports a fixed size for each compressed frame, or</t>
 <t>When encryption is used for an audio stream that is either highly constrained
-   (e.g., yes/no, recorded prompts) or highly sensitive <xref target="SRTP-VBR"></xref> </t>
+   (e.g., yes/no, recorded prompts) or highly sensitive <xref target="SRTP-VBR"></xref>.</t>
 </list>
 
 Bitrate may still be allowed
@@ -2252,7 +2252,7 @@ This is the first subframe in the current SILK frame, and
 <t>
 This is the first SILK frame of its type (LBRR or regular) for this channel in
  the current Opus frame, or
- </t>
+</t>
 <t>
 The previous SILK frame of the same type (LBRR or regular) for this channel in
  the same Opus frame was not coded.
@@ -2387,7 +2387,7 @@ The normalized LSFs are coded using a two-stage vector quantizer (VQ)
  and&nbsp;<xref target="silk_nlsf_stage2" format="counter"/>).
 NB and MB frames use an order-10 predictor, while WB frames use an order-16
  predictor.
-Thus, there are different sets of tables used for each of these two cases.
+Thus, each of these two cases uses a different set of tables.
 After reconstructing the normalized LSFs
  (<xref target="silk_nlsf_reconstruction"/>), the decoder runs them through a
  stabilization process (<xref target="silk_nlsf_stabilization"/>), interpolates
@@ -4738,32 +4738,58 @@ Also, let n be the number of samples in a subframe (40 for NB, 60 for MB, and
 
 <section anchor="silk_ltp_synthesis" title="LTP Synthesis">
 <t>
-Voiced SILK frames (see <xref target="silk_frame_type"/>) pass the excitation
- through an LTP filter using the parameters decoded in
- <xref target="silk_ltp_params"/> to produce an LPC residual.
+For unvoiced frames (see <xref target="silk_frame_type"/>), the LPC residual
+ for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n) is simply
+ a normalized copy of the excitation signal, i.e.,
+<figure align="center">
+<artwork align="center"><![CDATA[
+          e_Q23[i]
+res[i] = ---------
+          2.0**23
+]]></artwork>
+</figure>
+</t>
+
+<t>
+Voiced SILK frames, on the other hand, pass the excitation through an LTP
+ filter using the parameters decoded in <xref target="silk_ltp_params"/> to
+ produce an LPC residual.
 The LTP filter requires LPC residual values from before the current subframe as
  input.
 However, since the LPC coefficients may have changed, it obtains this residual
  by "rewhitening" the corresponding output signal using the LPC coefficients
  from the current subframe.
-Let out[i] for
+Let out[i] for i such that
  (j&nbsp;-&nbsp;pitch_lags[s]&nbsp;-&nbsp;d_LPC&nbsp;-&nbsp;2)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j
  be the fully reconstructed output signal from the last
  (pitch_lags[s]&nbsp;+&nbsp;d_LPC&nbsp;+&nbsp;2) samples of previous subframes
  (see <xref target="silk_lpc_synthesis"/>), where pitch_lags[s] is the pitch
  lag for the current subframe from <xref target="silk_ltp_lags"/>.
+Additionally, let lpc[i] for i such that
+ (j&nbsp;-&nbsp;s*n&nbsp;-&nbsp;d_LPC)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j
+ be the fully reconstructed output signal from the last
+ (s*n&nbsp;+&nbsp;d_LPC) samples of previous subframes before clamping
+ (see <xref target="silk_lpc_synthesis"/>).
 During reconstruction of the first subframe for this channel after either
 <list style="symbols">
 <t>An uncoded regular SILK frame (if this is the side channel), or</t>
 <t>A decoder reset (see <xref target="decoder-reset"/>),</t>
 </list>
+ out[i] and lpc[i] are initially cleared to all zeros.
+If this is the third or fourth subframe of a 20&nbsp;ms SILK frame and the LSF
+ interpolation factor, w_Q2 (see <xref target="silk_nlsf_interpolation"/>), is
+ less than 4, then let out_end be set to (j&nbsp;-&nbsp;(s-2)*n) and let
+ LTP_scale_Q14 be set to 16384.
+Otherwise, set out_end to (j&nbsp;-&nbsp;s*n) and set LTP_scale_Q14 to the Q14
+ LTP scaling value from <xref target="silk_ltp_scaling"/>.
+Then, for i such that
+ (j&nbsp;-&nbsp;pitch_lags[s]&nbsp;-&nbsp;2)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;out_end,
  out[i] is rewhitened into an LPC residual, res[i], via
 <figure align="center">
 <artwork align="center"><![CDATA[
          4.0*LTP_scale_Q14
 res[i] = ----------------- * clamp(-1.0,
             gain_Q16[s]
-
                                    d_LPC-1
                                      __              a_Q12[k]
                             out[i] - \  out[i-k-1] * --------, 1.0)
@@ -4776,8 +4802,26 @@ This requires storage to buffer up to 306 values of out[i] from previous
 This corresponds to WB with a maximum pitch lag of
  18&nbsp;ms&nbsp;*&nbsp;16&nbsp;kHz samples, plus 16 samples for d_LPC, plus 2
  samples for the width of the LTP filter.
+Then, for i such that out_end&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j, lpc[i] is
+ rewhitened into an LPC residual, res[i], via
+<figure align="center">
+<artwork align="center"><![CDATA[
+                               d_LPC-1
+           65536.0               __              a_Q12[k]
+res[i] = ----------- * (lpc[i] - \  lpc[i-k-1] * --------)
+         gain_Q16[s]             /_               4096.0
+                                 k=0
+]]></artwork>
+</figure>
+This requires storage to buffer up to 256 values of lpc[i] from previous
+ subframes (240 from the current SILK frame and 16 from the previous SILK
+ frame).
+This corresponds to WB with up to three previous subframes in the current SILK
+ frame, plus 16 samples for d_LPC.
+The astute reader will notice that, given the definition of lpc[i] in
+ <xref target="silk_lpc_synthesis"/>, the output of this latter equation is
+ merely a scaled version of the values of res[i] from previous subframes.
 </t>
-
 <t>
 Let e_Q23[i] for j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n) be the
  excitation for the current subframe, and b_Q7[k] for
@@ -4800,18 +4844,6 @@ res[i] = --------- + \  res[i - pitch_lags[s] + 2 - k] * -------
 </figure>
 </t>
 
-<t>
-For unvoiced frames, the LPC residual for
- j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n) is simply a normalized
- copy of the excitation signal, i.e.,
-<figure align="center">
-<artwork align="center"><![CDATA[
-          e_Q23[i]
-res[i] = ---------
-          2.0**23
-]]></artwork>
-</figure>
-</t>
 </section>
 
 <section anchor="silk_lpc_synthesis" title="LPC Synthesis">
@@ -7495,7 +7527,7 @@ and band skipping.
 <t>The reference encoder makes a decision to boost a band when the energy of that band is significantly
 higher than that of the neighboring bands. Let E_j be the log-energy of band j, we define
 <list>
-<t>D_j = 2*E_j - E_j-1 - E_j+1 </t>
+<t>D_j = 2*E_j - E_j-1 - E_j+1</t>
 </list>
 
 The allocation of band j is boosted once if D_j &gt; t1 and twice if D_j &gt; t2. For LM&gt;=1, t1=2 and t2=4,
@@ -7513,7 +7545,7 @@ trim is increased by up to 2, while for signals with more high frequencies, the 
 decreased by up to 2.
 For stereo inputs, the trim value can
 be decreased by up to 4 when the inter-channel correlation at low frequency (first 8 bands)
-is high. </t>
+is high.</t>
 </section>
 
 <section title="Band Skipping">
@@ -7844,8 +7876,8 @@ There were no errors reported on any of the tested conditions.
 
 <section anchor="Acknowledgements" title="Acknowledgements">
 <t>
-Thanks to all other developers, including Henrik Astrom, Jon Bergenheim, 
-Raymond Chen, Soeren Skak Jensen,
+Thanks to all other developers, including Henrik Astrom, Jon Bergenheim,
+Raymond Chen, Soren Skak Jensen,
  Gregory Maxwell, Christopher Montgomery, and Karsten Vandborg Sorensen.
 We would also like to thank Igor Dyakonov, Hoang Thi Minh Nguyet, Christian Hoene, Gian-Carlo Pascutto,
 and Jan Skoglund for their help with testing of the Opus codec.
@@ -7944,9 +7976,9 @@ or left in their current order?
 
 <front>
 <title>Requirements for an Internet Audio Codec</title>
-<author initials='J.' surname='Valin' fullname='J. Valin'>
+<author initials='JM' surname='Valin' fullname='Jean-Marc Valin'>
 <organization /></author>
-<author initials='K.' surname='Vos' fullname='K. Vos'>
+<author initials='K.' surname='Vos' fullname='Koen Vos'>
 <organization /></author>
 <date year='2011' month='August' />
 <abstract>
@@ -7966,15 +7998,15 @@ or left in their current order?
 <front>
 <title>SILK Speech Codec</title>
 
-<author initials='K' surname='Vos' fullname='Koen Vos'>
+<author initials='K.' surname='Vos' fullname='Koen Vos'>
     <organization />
 </author>
 
-<author initials='S' surname='Jensen' fullname='Soeren Skak Jensen'>
+<author initials='S.' surname='Jensen' fullname='Soren Skak Jensen'>
     <organization />
 </author>
 
-<author initials='K' surname='Sorensen' fullname='Karsten Vandborg Sorensen'>
+<author initials='K.' surname='Sorensen' fullname='Karsten Vandborg Sorensen'>
     <organization />
 </author>
 
@@ -7995,13 +8027,13 @@ or left in their current order?
 <title abbrev="Robust and Efficient Quantization of Speech LSP">
 Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vector Quantization
 </title>
-<author initials="R.L." surname="Laroia" fullname="R.">
+<author initials="R." surname="Laroia" fullname="Rajiv Laroia">
 <organization/>
 </author>
-<author initials="N.P." surname="Phamdo" fullname="N.">
+<author initials="N." surname="Phamdo" fullname="Nam Phamdo">
 <organization/>
 </author>
-<author initials="N.F." surname="Farvardin" fullname="N.">
+<author initials="N." surname="Farvardin" fullname="Nariman Favardin">
 <organization/>
 </author>
 </front>
@@ -8016,19 +8048,19 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Constrained-Energy Lapped Transform (CELT) Codec</title>
 
-<author initials='J' surname='Valin' fullname='Jean-Marc Valin'>
+<author initials='JM' surname='Valin' fullname='Jean-Marc Valin'>
     <organization />
 </author>
 
-<author initials='T' surname='Terriberry' fullname='Timothy Terriberry'>
+<author initials='T. B.' surname='Terriberry' fullname='Timothy B. Terriberry'>
     <organization />
 </author>
 
-<author initials='G' surname='Maxwell' fullname='Gregory Maxwell'>
+<author initials='G.' surname='Maxwell' fullname='Gregory Maxwell'>
     <organization />
 </author>
 
-<author initials='C' surname='Montgomery' fullname='Christopher Montgomery'>
+<author initials='C.' surname='Montgomery' fullname='Christopher Montgomery'>
     <organization />
 </author>
 
@@ -8044,9 +8076,9 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <reference anchor='SRTP-VBR'>
 <front>
 <title>Guidelines for the Use of Variable Bit Rate Audio with Secure RTP</title>
-<author initials='C.' surname='Perkins' fullname='C. Perkins'>
+<author initials='C.' surname='Perkins' fullname='Colin Perkins'>
 <organization /></author>
-<author initials='JM.' surname='Valin' fullname='JM. Valin'>
+<author initials='JM' surname='Valin' fullname='Jean-Marc Valin'>
 <organization /></author>
 <date year='2012' month='March' />
 <abstract>
@@ -8061,9 +8093,9 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 
 <front>
 <title>Internet Denial-of-Service Considerations</title>
-<author initials='M.' surname='Handley' fullname='M. Handley'>
+<author initials='M.' surname='Handley' fullname='Mark Handley'>
 <organization /></author>
-<author initials='E.' surname='Rescorla' fullname='E. Rescorla'>
+<author initials='E.' surname='Rescorla' fullname='Eric Rescorla'>
 <organization /></author>
 <author>
 <organization>IAB</organization></author>
@@ -8090,7 +8122,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <reference anchor="CODING-THESIS">
 <front>
 <title>Source coding algorithms for fast data compression</title>
-<author initials="R." surname="Pasco" fullname=""><organization/></author>
+<author initials="R." surname="Pasco" fullname="Richard C. Pasco"><organization/></author>
 <date month="May" year="1976" />
 </front>
 <seriesInfo name="Ph.D. thesis" value="Dept. of Electrical Engineering, Stanford University" />
@@ -8099,7 +8131,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <reference anchor="PVQ">
 <front>
 <title>A Pyramid Vector Quantizer</title>
-<author initials="T." surname="Fischer" fullname=""><organization/></author>
+<author initials="T." surname="Fischer" fullname="Thomas R. Fischer"><organization/></author>
 <date month="July" year="1986" />
 </front>
 <seriesInfo name="IEEE Trans. on Information Theory, Vol. 32," value="pp. 568-583" />
@@ -8108,8 +8140,8 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <reference anchor="KABAL86">
 <front>
 <title>The Computation of Line Spectral Frequencies Using Chebyshev Polynomials</title>
-<author initials="P." surname="Kabal" fullname="P. Kabal"><organization/></author>
-<author initials="R." surname="Ramachandran" fullname="R. P. Ramachandran"><organization/></author>
+<author initials="P." surname="Kabal" fullname="Peter Kabal"><organization/></author>
+<author initials="R." surname="Ramachandran" fullname="Ravi P. Ramachandran"><organization/></author>
 <date month="December" year="1986" />
 </front>
 <seriesInfo name="IEEE Trans. Acoustics, Speech, Signal Processing, Vol. 34, no. 6," value="pp. 1419-1426" />
@@ -8251,7 +8283,7 @@ http://git.xiph.org/?p=opus.git
 <reference anchor="BURG">
 <front>
 <title>Maximum Entropy Spectral Analysis</title>
-<author initials="JP." surname="Burg" fullname="J.P. Burg"><organization/></author>
+<author initials="J.P." surname="Burg" fullname="John Parker Burg"><organization/></author>
 </front>
 <seriesInfo name="Proceedings of the 37th Annual International SEG Meeting, Vol. 6," value="1975"/>
 </reference>
@@ -8259,8 +8291,8 @@ http://git.xiph.org/?p=opus.git
 <reference anchor="SCHUR">
 <front>
 <title>A fixed point computation of partial correlation coefficients</title>
-<author initials="J." surname="Le Roux" fullname="J. Le Roux"><organization/></author>
-<author initials="C." surname="Gueguen" fullname="C. Gueguen"><organization/></author>
+<author initials="J." surname="Le Roux" fullname="Joel Le Roux"><organization/></author>
+<author initials="C." surname="Gueguen" fullname="Claude J. Gueguen"><organization/></author>
 </front>
 <seriesInfo name="ICASSP-1977, Proc. IEEE Int. Conf. Acoustics, Speech, and Signal Processing, pp. 257-259, June" value="1977"/>
 </reference>
@@ -8279,7 +8311,7 @@ http://git.xiph.org/?p=opus.git
 <title>A High-Quality Speech and Audio Codec With Less Than 10 ms Delay</title>
 <author initials="JM" surname="Valin" fullname="Jean-Marc Valin"><organization/>
 </author>
-<author initials="T. B." surname="Terriberry" fullname="Timothy Terriberry"><organization/></author>
+<author initials="T. B." surname="Terriberry" fullname="Timothy B. Terriberry"><organization/></author>
 <author initials="C." surname="Montgomery" fullname="Christopher Montgomery"><organization/></author>
 <author initials="G." surname="Maxwell" fullname="Gregory Maxwell"><organization/></author>
 </front>

@@ -198,9 +198,9 @@ static inline void silk_short2float_array(
 }
 
 /* using log2() helps the fixed-point conversion */
-static inline silk_float silk_log2( double x ) 
-{ 
-    return ( silk_float )( 3.32192809488736 * log10( x ) ); 
+static inline silk_float silk_log2( double x )
+{
+    return ( silk_float )( 3.32192809488736 * log10( x ) );
 }
 
 #ifdef  __cplusplus

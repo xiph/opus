@@ -216,7 +216,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->voice_ratio = -1;
     st->encoder_buffer = st->Fs/100;
 
-    /* Delay compensation of 4 ms (2.5 ms for SILK's extra look-ahead 
+    /* Delay compensation of 4 ms (2.5 ms for SILK's extra look-ahead
        + 1.5 ms for SILK resamplers and stereo prediction) */
     st->delay_compensation = st->Fs/250;
 

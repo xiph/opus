@@ -60,13 +60,13 @@ AC_CACHE_CHECK([for C/C++ restrict keyword], ac_cv_c_restrict,
    for ac_kw in __restrict __restrict__ _Restrict restrict; do
      AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
       [[typedef int * int_ptr;
-	int foo (int_ptr $ac_kw ip, int * $ac_kw baz[]) {
-	return ip[0];
+        int foo (int_ptr $ac_kw ip, int * $ac_kw baz[]) {
+        return ip[0];
        }]],
       [[int s[1];
-	int * $ac_kw t = s;
-	t[0] = 0;
-	return foo(t, (void *)0)]])],
+        int * $ac_kw t = s;
+        t[0] = 0;
+        return foo(t, (void *)0)]])],
       [ac_cv_c_restrict=$ac_kw])
      test "$ac_cv_c_restrict" != no && break
    done
@@ -134,7 +134,7 @@ has_float_approx=no
 #i[[3456]]86 | x86_64 | powerpc64 | powerpc32 | ia64)
 #  has_float_approx=yes
 #  ;;
-#esac    
+#esac
 
 ac_enable_fixed="no";
 AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point    compile as fixed-point],
@@ -277,15 +277,15 @@ AC_OUTPUT([Makefile opus.pc opus-uninstalled.pc
 AC_MSG_RESULT([
 ------------------------------------------------------------------------
   $PACKAGE $VERSION:  Automatic configuration OK.
-  
+
     Compiler support:
 
       C99 var arrays: ................ ${has_var_arrays}
       C99 lrintf: .................... ${ac_cv_func_lrintf}
       Alloca: ........................ ${has_alloca}
-    
+
     General configuration:
-    
+
       Fast float approximations: ..... ${float_approx}
       Fixed point support: ........... ${ac_enable_fixed}
       Fixed point debugging: ......... ${ac_enable_fixed_debug}

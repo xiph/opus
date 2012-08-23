@@ -73,7 +73,7 @@ for file in 01 02 03 04 05 06 07 08 09 10 11 12
 do
     if [ -e $VECTOR_PATH/testvector$file.bit ]; then
         echo Testing testvector$file
-    else 
+    else
         echo Bitstream file not found: testvector$file.bit
     fi
     if $OPUS_DEMO -d $RATE 1 $VECTOR_PATH/testvector$file.bit tmp.out >> logs_mono.txt 2>&1; then
@@ -102,7 +102,7 @@ for file in 01 02 03 04 05 06 07 08 09 10 11 12
 do
     if [ -e $VECTOR_PATH/testvector$file.bit ]; then
         echo Testing testvector$file
-    else 
+    else
         echo Bitstream file not found: testvector$file
     fi
     if $OPUS_DEMO -d $RATE 2 $VECTOR_PATH/testvector$file.bit tmp.out >> logs_stereo.txt 2>&1; then

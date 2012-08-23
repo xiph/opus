@@ -50,7 +50,7 @@ static const opus_int32 sigm_LUT_neg_Q15[ 6 ] = {
     16384, 8812, 3906, 1554, 589, 219
 };
 
-opus_int silk_sigm_Q15( 
+opus_int silk_sigm_Q15(
     opus_int                    in_Q5               /* I                                                                */
 )
 {

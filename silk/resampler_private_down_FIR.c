@@ -37,12 +37,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "resampler_private.h"
 
 static inline opus_int16 *silk_resampler_private_down_FIR_INTERPOL(
-    opus_int16          *out, 
-    opus_int32          *buf, 
-    const opus_int16    *FIR_Coefs, 
+    opus_int16          *out,
+    opus_int32          *buf,
+    const opus_int16    *FIR_Coefs,
     opus_int            FIR_Order,
     opus_int            FIR_Fracs,
-    opus_int32          max_index_Q16, 
+    opus_int32          max_index_Q16,
     opus_int32          index_increment_Q16
 )
 {
@@ -174,7 +174,7 @@ void silk_resampler_private_down_FIR(
         max_index_Q16 = silk_LSHIFT32( nSamplesIn, 16 );
 
         /* Interpolate filtered signal */
-        out = silk_resampler_private_down_FIR_INTERPOL( out, buf, FIR_Coefs, S->FIR_Order, 
+        out = silk_resampler_private_down_FIR_INTERPOL( out, buf, FIR_Coefs, S->FIR_Order,
             S->FIR_Fracs, max_index_Q16, index_increment_Q16 );
 
         in += nSamplesIn;
