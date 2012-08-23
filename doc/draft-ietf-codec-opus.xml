@@ -5471,7 +5471,7 @@ This represents a boost step size of six bits, subject to a lower limit of
 Set 'boost' to zero and 'dynalloc_loop_logp'
 to dynalloc_logp. While dynalloc_loop_log (the current worst case symbol cost) in
 8th bits plus tell is less than total_bits plus total_boost and boost is less than cap[] for this
-band: Decode a bit from the bitstream with a with dynalloc_loop_logp as the cost
+band: Decode a bit from the bitstream with dynalloc_loop_logp as the cost
 of a one and update tell to reflect the current used capacity.
 If the decoded value is zero break the loop.
 Otherwise, add quanta to boost and total_boost, subtract quanta from
@@ -8338,7 +8338,7 @@ reference implementation of the Opus codec written in C.&nbsp; By default,
 this implementation relies on floating-point arithmetic, but it can be
 compiled to use only fixed-point arithmetic by defining the FIXED_POINT
 macro. The normative behavior is defined as the output using the floating-point
-confguration. Information on building and using the reference implementation is
+configuration. Information on building and using the reference implementation is
 available in the README file.
 </t>
 
