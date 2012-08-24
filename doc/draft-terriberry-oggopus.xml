@@ -179,8 +179,8 @@ A decoder SHOULD treat any Opus packet whose duration is different from that of
 </t>
 <t>
 The first audio data page SHOULD NOT have the 'continued packet' flag set
- (which would indicated the first audio data packet is continued from a
- previous page).
+ (which would indicate the first audio data packet is continued from a previous
+ page).
 Packets MUST be placed into Ogg pages in order until the end of stream.
 Audio packets MAY span page boundaries.
 A decoder MUST treat a zero-octet audio data packet as if it were an Opus
