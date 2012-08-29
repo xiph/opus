@@ -208,6 +208,7 @@
     <ClInclude Include="..\include\opus.h" />
     <ClInclude Include="..\include\opus_defines.h" />
     <ClInclude Include="..\include\opus_types.h" />
+    <ClInclude Include="..\include\opus_multistream.h" />
     <ClInclude Include="..\win32\config.h" />
     <ClInclude Include="opus_private.h" />
   </ItemGroup>
