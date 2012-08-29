@@ -41,7 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Matlab code for table:
    for k=16:9*4:16+2*9*4, fprintf(' %7.d,', -round(65536*pi ./ (k:4:k+8*4))); fprintf('\n'); end
 */
-static opus_int16 freq_table_Q16[ 27 ] = {
+static const opus_int16 freq_table_Q16[ 27 ] = {
    12111,    9804,    8235,    7100,    6239,    5565,    5022,    4575,    4202,
     3885,    3612,    3375,    3167,    2984,    2820,    2674,    2542,    2422,
     2313,    2214,    2123,    2038,    1961,    1889,    1822,    1760,    1702,

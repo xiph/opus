@@ -2841,7 +2841,7 @@ bad_request:
 
 const char *opus_strerror(int error)
 {
-   static const char *error_strings[8] = {
+   static const char * const error_strings[8] = {
       "success",
       "invalid argument",
       "buffer too small",
