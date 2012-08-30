@@ -85,6 +85,7 @@ endif
 EXTRA_DIST = version.mk \
 	     opus.pc.in \
              opus-uninstalled.pc.in \
+             opus.m4 \
              tests/run_vectors.sh \
              opus.sln \
              celt/celt.vcxproj \
@@ -111,6 +112,8 @@ EXTRA_DIST = version.mk \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = opus.pc
 
+m4datadir = $(datadir)/aclocal
+m4data_DATA = opus.m4
 
 # Targets to build and install just the library without the docs
 opus check-opus install-opus: export NO_DOXYGEN = 1
