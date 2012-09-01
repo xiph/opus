@@ -86,6 +86,7 @@ EXTRA_DIST = version.mk \
 	     opus.pc.in \
              opus-uninstalled.pc.in \
              opus.m4 \
+             Makefile.unix \
              tests/run_vectors.sh \
              opus.sln \
              celt/celt.vcxproj \
