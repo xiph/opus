@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main.h"
+#include "stack_alloc.h"
 #include "PLC.h"
 
 /****************/
@@ -44,12 +45,16 @@ opus_int silk_decode_frame(
     opus_int                    condCoding                      /* I    The type of conditional coding to use       */
 )
 {
-    silk_decoder_control sDecCtrl;
+    VARDECL( silk_decoder_control, psDecCtrl );
     opus_int         L, mv_len, ret = 0;
-    opus_int         pulses[ MAX_FRAME_LENGTH ];
+    VARDECL( opus_int, pulses );
+    SAVE_STACK;
 
     L = psDec->frame_length;
-    sDecCtrl.LTP_scale_Q14 = 0;
+    ALLOC( psDecCtrl, 1, silk_decoder_control );
+    ALLOC( pulses, (L + SHELL_CODEC_FRAME_LENGTH - 1) &
+                   ~(SHELL_CODEC_FRAME_LENGTH - 1), opus_int );
+    psDecCtrl->LTP_scale_Q14 = 0;
 
     /* Safety checks */
     silk_assert( L > 0 && L <= MAX_FRAME_LENGTH );
@@ -71,20 +76,17 @@ opus_int silk_decode_frame(
         /********************************************/
         /* Decode parameters and pulse signal       */
         /********************************************/
-        silk_decode_parameters( psDec, &sDecCtrl, condCoding );
-
-        /* Update length. Sampling frequency may have changed */
-        L = psDec->frame_length;
+        silk_decode_parameters( psDec, psDecCtrl, condCoding );
 
         /********************************************************/
         /* Run inverse NSQ                                      */
         /********************************************************/
-        silk_decode_core( psDec, &sDecCtrl, pOut, pulses );
+        silk_decode_core( psDec, psDecCtrl, pOut, pulses );
 
         /********************************************************/
         /* Update PLC state                                     */
         /********************************************************/
-        silk_PLC( psDec, &sDecCtrl, pOut, 0 );
+        silk_PLC( psDec, psDecCtrl, pOut, 0 );
 
         psDec->lossCnt = 0;
         psDec->prevSignalType = psDec->indices.signalType;
@@ -94,7 +96,7 @@ opus_int silk_decode_frame(
         psDec->first_frame_after_reset = 0;
     } else {
         /* Handle packet loss by extrapolation */
-        silk_PLC( psDec, &sDecCtrl, pOut, 1 );
+        silk_PLC( psDec, psDecCtrl, pOut, 1 );
     }
 
     /*************************/
@@ -113,13 +115,14 @@ opus_int silk_decode_frame(
     /************************************************/
     /* Comfort noise generation / estimation        */
     /************************************************/
-    silk_CNG( psDec, &sDecCtrl, pOut, L );
+    silk_CNG( psDec, psDecCtrl, pOut, L );
 
     /* Update some decoder state variables */
-    psDec->lagPrev = sDecCtrl.pitchL[ psDec->nb_subfr - 1 ];
+    psDec->lagPrev = psDecCtrl->pitchL[ psDec->nb_subfr - 1 ];
 
     /* Set output frame length */
     *pN = L;
 
+    RESTORE_STACK;
     return ret;
 }

@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main.h"
+#include "stack_alloc.h"
 #include "PLC.h"
 
 #define NB_ATT 2
@@ -178,12 +179,17 @@ static inline void silk_PLC_conceal(
     opus_int16 rand_scale_Q14;
     opus_int16 *B_Q14, *exc_buf_ptr;
     opus_int32 *sLPC_Q14_ptr;
-    opus_int16 exc_buf[ 2 * MAX_SUB_FRAME_LENGTH ];
+    VARDECL( opus_int16, exc_buf );
     opus_int16 A_Q12[ MAX_LPC_ORDER ];
-    opus_int16 sLTP[ MAX_FRAME_LENGTH ];
-    opus_int32 sLTP_Q14[ 2 * MAX_FRAME_LENGTH ];
+    VARDECL( opus_int16, sLTP );
+    VARDECL( opus_int32, sLTP_Q14 );
     silk_PLC_struct *psPLC = &psDec->sPLC;
     opus_int32 prevGain_Q10[2];
+    SAVE_STACK;
+
+    ALLOC( exc_buf, 2*psPLC->subfr_length, opus_int16 );
+    ALLOC( sLTP, psDec->ltp_mem_length, opus_int16 );
+    ALLOC( sLTP_Q14, psDec->ltp_mem_length + psDec->frame_length, opus_int32 );
 
     prevGain_Q10[0] = silk_RSHIFT( psPLC->prevGain_Q16[ 0 ], 6);
     prevGain_Q10[1] = silk_RSHIFT( psPLC->prevGain_Q16[ 1 ], 6);
@@ -354,6 +360,7 @@ static inline void silk_PLC_conceal(
     for( i = 0; i < MAX_NB_SUBFR; i++ ) {
         psDecCtrl->pitchL[ i ] = lag;
     }
+    RESTORE_STACK;
 }
 
 /* Glues concealed frames with new good recieved frames */
