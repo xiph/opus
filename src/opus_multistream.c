@@ -224,10 +224,11 @@ OpusMSEncoder *opus_multistream_encoder_create(
 /* Max size in case the encoder decides to return three frames */
 #define MS_FRAME_TMP (3*1275+7)
 #ifdef FIXED_POINT
-int opus_multistream_encode(
+int opus_multistream_encode
 #else
-int opus_multistream_encode_float(
+int opus_multistream_encode_float
 #endif
+(
     OpusMSEncoder *st,
     const opus_val16 *pcm,
     int frame_size,
