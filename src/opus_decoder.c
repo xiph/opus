@@ -228,6 +228,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       RESTORE_STACK;
       return OPUS_BUFFER_TOO_SMALL;
    }
+   /* Limit frame_size to avoid excessive stack allocations. */
+   frame_size = IMIN(frame_size, st->Fs/25*3);
    /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
    if (len<=1)
    {
@@ -854,6 +856,17 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       silk_InitDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
+   }
+   break;
+   case OPUS_GET_SAMPLE_RATE_REQUEST:
+   {
+      opus_int32 *value = va_arg(ap, opus_int32*);
+      if (value==NULL)
+      {
+         ret = OPUS_BAD_ARG;
+         break;
+      }
+      *value = st->Fs;
    }
    break;
    case OPUS_GET_PITCH_REQUEST:

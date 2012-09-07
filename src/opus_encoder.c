@@ -1531,6 +1531,17 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                 *value += st->delay_compensation;
         }
         break;
+        case OPUS_GET_SAMPLE_RATE_REQUEST:
+        {
+            opus_int32 *value = va_arg(ap, opus_int32*);
+            if (value==NULL)
+            {
+                ret = OPUS_BAD_ARG;
+                break;
+            }
+            *value = st->Fs;
+        }
+        break;
         case OPUS_GET_FINAL_RANGE_REQUEST:
         {
             opus_uint32 *value = va_arg(ap, opus_uint32*);

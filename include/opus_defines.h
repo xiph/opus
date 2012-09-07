@@ -111,7 +111,8 @@ extern "C" {
 #endif
 
 /** These are the actual Encoder CTL ID numbers.
-  * They should not be used directly by applications. */
+  * They should not be used directly by applications.
+  * In general, SETs should be even and GETs should be odd.*/
 #define OPUS_SET_APPLICATION_REQUEST         4000
 #define OPUS_GET_APPLICATION_REQUEST         4001
 #define OPUS_SET_BITRATE_REQUEST             4002
@@ -138,6 +139,7 @@ extern "C" {
 #define OPUS_GET_SIGNAL_REQUEST              4025
 #define OPUS_GET_LOOKAHEAD_REQUEST           4027
 /* #define OPUS_RESET_STATE 4028 */
+#define OPUS_GET_SAMPLE_RATE_REQUEST         4029
 #define OPUS_GET_FINAL_RANGE_REQUEST         4031
 #define OPUS_GET_PITCH_REQUEST               4033
 #define OPUS_SET_GAIN_REQUEST                4034
@@ -421,6 +423,14 @@ extern "C" {
   * </dl>
   * @hideinitializer */
 #define OPUS_GET_APPLICATION(x) OPUS_GET_APPLICATION_REQUEST, __opus_check_int_ptr(x)
+
+/** Gets the sampling rate the encoder or decoder was initialized with.
+  * This simply returns the <code>Fs</code> value passed to opus_encoder_init()
+  * or opus_decoder_init().
+  * @param[out] x <tt>opus_int32 *</tt>: Sampling rate of encoder or decoder.
+  * @hideinitializer
+  */
+#define OPUS_GET_SAMPLE_RATE(x) OPUS_GET_SAMPLE_RATE_REQUEST, __opus_check_int_ptr(x)
 
 /** Gets the total samples of delay added by the entire codec.
   * This can be queried by the encoder and then the provided number of samples can be
