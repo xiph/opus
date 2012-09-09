@@ -67,6 +67,7 @@ extern "C" {
  * @li @ref opus_encoder
  * @li @ref opus_decoder
  * @li @ref opus_repacketizer
+ * @li @ref opus_multistream
  * @li @ref opus_libinfo
  * @li @ref opus_custom
  */
@@ -161,7 +162,7 @@ extern "C" {
   */
 typedef struct OpusEncoder OpusEncoder;
 
-/** Gets the size of an OpusEncoder structure.
+/** Gets the size of an <code>OpusEncoder</code> structure.
   * @param[in] channels <tt>int</tt>: Number of channels.
   *                                   This must be 1 or 2.
   * @returns The size in bytes.
@@ -193,7 +194,9 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_encoder_get_size(int channels);
  *
  * This is useful when the caller knows that the speech-optimized modes will not be needed (use with caution).
  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate of input signal (Hz)
- * @param [in] channels <tt>int</tt>: Number of channels (1/2) in input signal
+ *                                     This must be one of 8000, 12000, 16000,
+ *                                     24000, or 48000.
+ * @param [in] channels <tt>int</tt>: Number of channels (1 or 2) in input signal
  * @param [in] application <tt>int</tt>: Coding mode (@ref OPUS_APPLICATION_VOIP/@ref OPUS_APPLICATION_AUDIO/@ref OPUS_APPLICATION_RESTRICTED_LOWDELAY)
  * @param [out] error <tt>int*</tt>: @ref opus_errorcodes
  * @note Regardless of the sampling rate and number channels selected, the Opus encoder
@@ -209,15 +212,17 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusEncoder *opus_encoder_create(
 );
 
 /** Initializes a previously allocated encoder state
-  * The memory pointed to by st must be the size returned by opus_encoder_get_size.
+  * The memory pointed to by st must be the size returned by opus_encoder_get_size().
   * This is intended for applications which use their own allocator instead of malloc.
   * @see opus_encoder_create(),opus_encoder_get_size()
-  * To reset a previously initialized state use the OPUS_RESET_STATE CTL.
+  * To reset a previously initialized state, use the #OPUS_RESET_STATE CTL.
   * @param [in] st <tt>OpusEncoder*</tt>: Encoder state
   * @param [in] Fs <tt>opus_int32</tt>: Sampling rate of input signal (Hz)
-  * @param [in] channels <tt>int</tt>: Number of channels (1/2) in input signal
+ *                                      This must be one of 8000, 12000, 16000,
+ *                                      24000, or 48000.
+  * @param [in] channels <tt>int</tt>: Number of channels (1 or 2) in input signal
   * @param [in] application <tt>int</tt>: Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO/OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-  * @retval OPUS_OK Success or @ref opus_errorcodes
+  * @retval #OPUS_OK Success or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_encoder_init(
     OpusEncoder *st,
@@ -227,16 +232,30 @@ OPUS_EXPORT int opus_encoder_init(
 ) OPUS_ARG_NONNULL(1);
 
 /** Encodes an Opus frame.
-  * The passed frame_size must an opus frame size for the encoder's sampling rate.
-  * For example, at 48kHz the permitted values are 120, 240, 480, 960, 1920, and 2880.
-  * Passing in a duration of less than 10ms (480 samples at 48kHz) will
-  * prevent the encoder from using the LPC or hybrid modes.
   * @param [in] st <tt>OpusEncoder*</tt>: Encoder state
   * @param [in] pcm <tt>opus_int16*</tt>: Input signal (interleaved if 2 channels). length is frame_size*channels*sizeof(opus_int16)
-  * @param [in] frame_size <tt>int</tt>: Number of samples per frame of input signal
-  * @param [out] data <tt>char*</tt>: Output payload (at least max_data_bytes long)
-  * @param [in] max_data_bytes <tt>opus_int32</tt>: Allocated memory for payload; don't use for controlling bitrate
-  * @returns length of the data payload (in bytes) or @ref opus_errorcodes
+  * @param [in] frame_size <tt>int</tt>: Number of samples per channel in the
+  *                                      input signal.
+  *                                      This must be an Opus frame size for
+  *                                      the encoder's sampling rate.
+  *                                      For example, at 48 kHz the permitted
+  *                                      values are 120, 240, 480, 960, 1920,
+  *                                      and 2880.
+  *                                      Passing in a duration of less than
+  *                                      10 ms (480 samples at 48 kHz) will
+  *                                      prevent the encoder from using the LPC
+  *                                      or hybrid modes.
+  * @param [out] data <tt>unsigned char*</tt>: Output payload.
+  *                                            This must contain storage for at
+  *                                            least \a max_data_bytes.
+  * @param [in] max_data_bytes <tt>opus_int32</tt>: Size of the allocated
+  *                                                 memory for the output
+  *                                                 payload.
+  *                                                 This should not be used by
+  *                                                 itself to control the
+  *                                                 bitrate.
+  * @returns The length of the encoded packet (in bytes) on success or a
+  *          negative error code (see @ref opus_errorcodes) on failure.
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
     OpusEncoder *st,
@@ -247,10 +266,6 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
 ) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(2) OPUS_ARG_NONNULL(4);
 
 /** Encodes an Opus frame from floating point input.
-  * The passed frame_size must an opus frame size for the encoder's sampling rate.
-  * For example, at 48kHz the permitted values are 120, 240, 480, 960, 1920, and 2880.
-  * Passing in a duration of less than 10ms (480 samples at 48kHz) will
-  * prevent the encoder from using the LPC or hybrid modes.
   * @param [in] st <tt>OpusEncoder*</tt>: Encoder state
   * @param [in] pcm <tt>float*</tt>: Input in float format (interleaved if 2 channels), with a normal range of +/-1.0.
   *          Samples with a range beyond +/-1.0 are supported but will
@@ -258,10 +273,28 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
   *          only be used if it is known that the far end supports
   *          extended dynamic range.
   *          length is frame_size*channels*sizeof(float)
-  * @param [in] frame_size <tt>int</tt>: Number of samples per frame of input signal
-  * @param [out] data <tt>char*</tt>: Output payload (at least max_data_bytes long)
-  * @param [in] max_data_bytes <tt>opus_int32</tt>: Allocated memory for payload; don't use for controlling bitrate
-  * @returns length of the data payload (in bytes) or @ref opus_errorcodes
+  * @param [in] frame_size <tt>int</tt>: Number of samples per channel in the
+  *                                      input signal.
+  *                                      This must be an Opus frame size for
+  *                                      the encoder's sampling rate.
+  *                                      For example, at 48 kHz the permitted
+  *                                      values are 120, 240, 480, 960, 1920,
+  *                                      and 2880.
+  *                                      Passing in a duration of less than
+  *                                      10 ms (480 samples at 48 kHz) will
+  *                                      prevent the encoder from using the LPC
+  *                                      or hybrid modes.
+  * @param [out] data <tt>unsigned char*</tt>: Output payload.
+  *                                            This must contain storage for at
+  *                                            least \a max_data_bytes.
+  * @param [in] max_data_bytes <tt>opus_int32</tt>: Size of the allocated
+  *                                                 memory for the output
+  *                                                 payload.
+  *                                                 This should not be used by
+  *                                                 itself to control the
+  *                                                 bitrate.
+  * @returns The length of the encoded packet (in bytes) on success or a
+  *          negative error code (see @ref opus_errorcodes) on failure.
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode_float(
     OpusEncoder *st,
@@ -271,7 +304,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode_float(
     opus_int32 max_data_bytes
 ) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(2) OPUS_ARG_NONNULL(4);
 
-/** Frees an OpusEncoder allocated by opus_encoder_create.
+/** Frees an <code>OpusEncoder</code> allocated by opus_encoder_create().
   * @param[in] st <tt>OpusEncoder*</tt>: State to be freed.
   */
 OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
@@ -280,6 +313,11 @@ OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
   *
   * Generally the request and subsequent arguments are generated
   * by a convenience macro.
+  * @param st <tt>OpusEncoder*</tt>: Encoder state.
+  * @param request This and all remaining parameters should be replaced by one
+  *                of the convenience macros in @ref opus_genericctls or
+  *                @ref opus_encoderctls.
+  * @see opus_genericctls
   * @see opus_encoderctls
   */
 OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NONNULL(1);
@@ -300,7 +338,7 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
   * where
   * @li Fs is the sampling rate and must be 8000, 12000, 16000, 24000, or 48000
   * @li channels is the number of channels (1 or 2)
-  * @li error will hold the error code in case or failure (or OPUS_OK on success)
+  * @li error will hold the error code in case or failure (or #OPUS_OK on success)
   * @li the return value is a newly created decoder state to be used for decoding
   *
   * While opus_decoder_create() allocates memory for the state, it's also possible
@@ -355,7 +393,7 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
   */
 typedef struct OpusDecoder OpusDecoder;
 
-/** Gets the size of an OpusDecoder structure.
+/** Gets the size of an <code>OpusDecoder</code> structure.
   * @param [in] channels <tt>int</tt>: Number of channels.
   *                                    This must be 1 or 2.
   * @returns The size in bytes.
@@ -363,9 +401,11 @@ typedef struct OpusDecoder OpusDecoder;
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_size(int channels);
 
 /** Allocates and initializes a decoder state.
-  * @param [in] Fs <tt>opus_int32</tt>: Sample rate to decode at (Hz)
-  * @param [in] channels <tt>int</tt>: Number of channels (1/2) to decode
-  * @param [out] error <tt>int*</tt>: OPUS_OK Success or @ref opus_errorcodes
+  * @param [in] Fs <tt>opus_int32</tt>: Sample rate to decode at (Hz).
+  *                                     This must be one of 8000, 12000, 16000,
+  *                                     24000, or 48000.
+  * @param [in] channels <tt>int</tt>: Number of channels (1 or 2) to decode
+  * @param [out] error <tt>int*</tt>: #OPUS_OK Success or @ref opus_errorcodes
   *
   * Internally Opus stores data at 48000 Hz, so that should be the default
   * value for Fs. However, the decoder can efficiently decode to buffers
@@ -382,13 +422,15 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusDecoder *opus_decoder_create(
 );
 
 /** Initializes a previously allocated decoder state.
-  * The state must be the size returned by opus_decoder_get_size.
+  * The state must be the size returned by opus_decoder_get_size().
   * This is intended for applications which use their own allocator instead of malloc. @see opus_decoder_create,opus_decoder_get_size
-  * To reset a previously initialized state use the OPUS_RESET_STATE CTL.
+  * To reset a previously initialized state, use the #OPUS_RESET_STATE CTL.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state.
-  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate to decode to (Hz)
-  * @param [in] channels <tt>int</tt>: Number of channels (1/2) to decode
-  * @retval OPUS_OK Success or @ref opus_errorcodes
+  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate to decode to (Hz).
+  *                                     This must be one of 8000, 12000, 16000,
+  *                                     24000, or 48000.
+  * @param [in] channels <tt>int</tt>: Number of channels (1 or 2) to decode
+  * @retval #OPUS_OK Success or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_decoder_init(
     OpusDecoder *st,
@@ -396,16 +438,17 @@ OPUS_EXPORT int opus_decoder_init(
     int channels
 ) OPUS_ARG_NONNULL(1);
 
-/** Decode an Opus frame
+/** Decode an Opus packet.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
   * @param [in] data <tt>char*</tt>: Input payload. Use a NULL pointer to indicate packet loss
   * @param [in] len <tt>opus_int32</tt>: Number of bytes in payload*
   * @param [out] pcm <tt>opus_int16*</tt>: Output signal (interleaved if 2 channels). length
   *  is frame_size*channels*sizeof(opus_int16)
-  * @param [in] frame_size Number of samples per channel of available space in *pcm,
-  *  if less than the maximum frame size (120ms) some frames can not be decoded
-  * @param [in] decode_fec <tt>int</tt>: Flag (0/1) to request that any in-band forward error correction data be
-  *  decoded. If no such data is available the frame is decoded as if it were lost.
+  * @param [in] frame_size Number of samples per channel of available space in \a pcm.
+  *  If this is less than the maximum frame size (120 ms), this function will
+  *  not be capable of decoding some packets.
+  * @param [in] decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band forward error correction data be
+  *  decoded. If no such data is available, the frame is decoded as if it were lost.
   * @returns Number of decoded samples or @ref opus_errorcodes
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode(
@@ -417,7 +460,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode(
     int decode_fec
 ) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(4);
 
-/** Decode an opus frame with floating point output
+/** Decode an Opus packet with floating point output.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
   * @param [in] data <tt>char*</tt>: Input payload. Use a NULL pointer to indicate packet loss
   * @param [in] len <tt>opus_int32</tt>: Number of bytes in payload
@@ -425,7 +468,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode(
   *  is frame_size*channels*sizeof(float)
   * @param [in] frame_size Number of samples per channel of available space in *pcm,
   *  if less than the maximum frame size (120ms) some frames can not be decoded
-  * @param [in] decode_fec <tt>int</tt>: Flag (0/1) to request that any in-band forward error correction data be
+  * @param [in] decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band forward error correction data be
   *  decoded. If no such data is available the frame is decoded as if it were lost.
   * @returns Number of decoded samples or @ref opus_errorcodes
   */
@@ -442,11 +485,16 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode_float(
   *
   * Generally the request and subsequent arguments are generated
   * by a convenience macro.
+  * @param st <tt>OpusDecoder*</tt>: Decoder state.
+  * @param request This and all remaining parameters should be replaced by one
+  *                of the convenience macros in @ref opus_genericctls or
+  *                @ref opus_decoderctls.
   * @see opus_genericctls
+  * @see opus_decoderctls
   */
 OPUS_EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...) OPUS_ARG_NONNULL(1);
 
-/** Frees an OpusDecoder allocated by opus_decoder_create.
+/** Frees an <code>OpusDecoder</code> allocated by opus_decoder_create().
   * @param[in] st <tt>OpusDecoder*</tt>: State to be freed.
   */
 OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
