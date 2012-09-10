@@ -525,7 +525,11 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_nb_samples(const OpusDe
   *
   * The repacketizer can be used to merge multiple Opus packets into a single
   * packet or alternatively to split Opus packets that have previously been
-  * merged. The repacketizer currently only operates on elementary Opus
+  * merged. Splitting valid Opus packets is always guaranteed to succeed,
+  * whereas merging valid packets only succeeds if all frames have the same
+  * mode, bandwidth, and frame size, and when the total duration of the merged
+  * packet is no more than 120 ms.
+  * The repacketizer currently only operates on elementary Opus
   * streams. It will not manipualte multistream packets successfully, except in
   * the degenerate case where they consist of data from a single stream.
   *
@@ -581,12 +585,12 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_nb_samples(const OpusDe
   * contain up to <code>TARGET_DURATION_MS</code> milliseconds of data:
   * @code
   * // The maximum number of packets with duration TARGET_DURATION_MS occurs
-  * // when the frame size is 2.5 ms, for a total of (TARGET_DURATION_MS*5/2)
+  * // when the frame size is 2.5 ms, for a total of (TARGET_DURATION_MS*2/5)
   * // packets.
-  * unsigned char *data[(TARGET_DURATION_MS*5/2)+1];
-  * opus_int32 len[(TARGET_DURATION_MS*5/2)+1];
+  * unsigned char *data[(TARGET_DURATION_MS*2/5)+1];
+  * opus_int32 len[(TARGET_DURATION_MS*2/5)+1];
   * int nb_packets;
-  * unsigned char out[1277*(TARGET_DURATION_MS*5/2)];
+  * unsigned char out[1277*(TARGET_DURATION_MS*2/2)];
   * opus_int32 out_len;
   * int prev_toc;
   * nb_packets = 0;
@@ -613,8 +617,8 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_nb_samples(const OpusDe
   *   // reference to data[nb_packets][0] should be valid.
   *   if (nb_packets > 0 && (
   *       ((prev_toc & 0xFC) != (data[nb_packets][0] & 0xFC)) ||
-  *       opus_packet_get_samples_per_frame(data[nb_packets], 2000)*nb_frames >
-  *       TARGET_DURATION_MS*2))
+  *       opus_packet_get_samples_per_frame(data[nb_packets], 48000)*nb_frames >
+  *       TARGET_DURATION_MS*48))
   *   {
   *     out_len = opus_repacketizer_out(rp, out, sizeof(out));
   *     if (out_len < 0)
@@ -648,6 +652,12 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_nb_samples(const OpusDe
   *   output_next_packet(out, out_len);
   * }
   * @endcode
+  *
+  * An alternate way of merging packets is to simply call opus_repacketizer_cat()
+  * unconditionally until it fails. At that point, the merged packet can be
+  * obtained with opus_repacketizer_out() and the input packet for which
+  * opus_repacketizer_cat() needs to be re-added to a newly reinitialized
+  * repacketizer state.
   */
 
 typedef struct OpusRepacketizer OpusRepacketizer;
@@ -658,7 +668,7 @@ typedef struct OpusRepacketizer OpusRepacketizer;
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_repacketizer_get_size(void);
 
 /** (Re)initializes a previously allocated repacketizer state.
-  * The state must be the size returned by opus_repacketizer_get_size().
+  * The state must be at least the size returned by opus_repacketizer_get_size().
   * This can be used for applications which use their own allocator instead of
   * malloc().
   * It must also be called to reset the queue of packets waiting to be
@@ -676,7 +686,8 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_repacketizer_get_size(void);
   */
 OPUS_EXPORT OpusRepacketizer *opus_repacketizer_init(OpusRepacketizer *rp) OPUS_ARG_NONNULL(1);
 
-/** Allocates and initializes a repacketizer state.
+/** Allocates memory and initializes the new repacketizer with
+ * opus_repacketizer_init().
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusRepacketizer *opus_repacketizer_create(void);
 
