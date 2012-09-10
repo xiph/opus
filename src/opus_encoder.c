@@ -291,7 +291,7 @@ static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channel
 }
 
 #ifndef FIXED_POINT
-void silk_biquad_float(
+static void silk_biquad_float(
     const opus_val16      *in,            /* I:    Input signal                   */
     const opus_int32      *B_Q28,         /* I:    MA coefficients [3]            */
     const opus_int32      *A_Q28,         /* I:    AR coefficients [2]            */

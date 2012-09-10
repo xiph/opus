@@ -40,6 +40,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FLP.h"
 #endif
 
+/***************************************/
+/* Read control structure from encoder */
+/***************************************/
+static opus_int silk_QueryEncoder(                      /* O    Returns error code                              */
+    const void                      *encState,          /* I    State                                           */
+    silk_EncControlStruct           *encStatus          /* O    Encoder Status                                  */
+);
+
 /****************************************/
 /* Encoder functions                    */
 /****************************************/
@@ -90,7 +98,7 @@ opus_int silk_InitEncoder(                              /* O    Returns error co
 /***************************************/
 /* Read control structure from encoder */
 /***************************************/
-opus_int silk_QueryEncoder(                             /* O    Returns error code                              */
+static opus_int silk_QueryEncoder(                      /* O    Returns error code                              */
     const void                      *encState,          /* I    State                                           */
     silk_EncControlStruct           *encStatus          /* O    Encoder Status                                  */
 )

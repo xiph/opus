@@ -67,14 +67,6 @@ opus_int silk_InitEncoder(                              /* O    Returns error co
     silk_EncControlStruct           *encStatus          /* O    Encoder Status                                  */
 );
 
-/***************************************/
-/* Read control structure from encoder */
-/***************************************/
-opus_int silk_QueryEncoder(                             /* O    Returns error code                              */
-    const void                      *encState,          /* I    State                                           */
-    silk_EncControlStruct           *encStatus          /* O    Encoder Status                                  */
-);
-
 /**************************/
 /* Encode frame with Silk */
 /**************************/

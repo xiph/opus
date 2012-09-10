@@ -47,7 +47,7 @@ static inline void silk_prefilt_FLP(
     opus_int                    length              /* I */
 );
 
-void silk_warped_LPC_analysis_filter_FLP(
+static void silk_warped_LPC_analysis_filter_FLP(
           silk_float                 state[],            /* I/O  State [order + 1]                       */
           silk_float                 res[],              /* O    Residual signal [length]                */
     const silk_float                 coef[],             /* I    Coefficients [order]                    */
