@@ -67,8 +67,8 @@ const opus_uint8  silk_stereo_pred_joint_iCDF[ 25 ] = {
 const opus_uint8  silk_stereo_only_code_mid_iCDF[ 2 ] = { 64, 0 };
 
 /* Tables for LBRR flags */
-const opus_uint8 silk_LBRR_flags_2_iCDF[ 3 ] = { 203, 150, 0 };
-const opus_uint8 silk_LBRR_flags_3_iCDF[ 7 ] = { 215, 195, 166, 125, 110, 82, 0 };
+static const opus_uint8 silk_LBRR_flags_2_iCDF[ 3 ] = { 203, 150, 0 };
+static const opus_uint8 silk_LBRR_flags_3_iCDF[ 7 ] = { 215, 195, 166, 125, 110, 82, 0 };
 const opus_uint8 * const silk_LBRR_flags_iCDF_ptr[ 2 ] = {
     silk_LBRR_flags_2_iCDF,
     silk_LBRR_flags_3_iCDF
