@@ -68,7 +68,7 @@ extern "C" {
   * well.
   * In addition, you may retrieve the encoder or decoder state for an specific
   * stream via #OPUS_MULTISTREAM_GET_ENCODER_STATE or
-  * #OPUS_MULTISTREAM_GET_DECODER and apply CTLs to it individually.
+  * #OPUS_MULTISTREAM_GET_DECODER_STATE and apply CTLs to it individually.
   */
 /**@{*/
 
@@ -111,8 +111,9 @@ extern "C" {
   * duration, can be computed without any special negotation.
   *
   * The format for multistream Opus packets is defined in the
-  * <a href="http://tools.ietf.org/html/draft-terriberry-oggopus-01">Ogg
-  * encapsulation specification</a>.
+  * <a href="http://tools.ietf.org/html/draft-terriberry-oggopus">Ogg
+  * encapsulation specification</a> and is based on the self-delimited Opus
+  * framing described in Appendix B of <a href="http://tools.ietf.org/html/rfc6716">RFC 6716</a>.
   * Normal Opus packets are just a degenerate case of multistream Opus packets,
   * and can be encoded or decoded with the multistream API by setting
   * <code>streams</code> to <code>1</code> when initializing the encoder or
@@ -124,13 +125,25 @@ extern "C" {
   * The streams are ordered so that all coupled streams appear at the
   * beginning.
   *
-  * A <code>mapping</code> table defines which decoded channel should be used
-  * for each output channel. The output channels specified by the encoder
+  * A <code>mapping</code> table defines which decoded channel <code>i</code>
+  * should be used for each input/output (I/O) channel <code>j</code>. This table is
+  * typically provided as an unsigned char array.
+  * Let <code>i = mapping[j]</code> be the index for I/O channel <code>j</code>.
+  * If <code>i < 2*coupled_streams</code>, then I/O channel <code>j</code> is
+  * encoded as the left channel of stream <code>(i/2)</code> if <code>i</code>
+  * is even, or  as the right channel of stream <code>(i/2)</code> if
+  * <code>i</code> is odd. Otherwise, I/O channel <code>j</code> is encoded as
+  * mono in stream <code>(i - coupled_streams)</code>, unless it has the special
+  * value 255, in which case it is omitted from the encoding entirely (the
+  * decoder will reproduce it as silence). Each value <code>i</code> must either
+  * be the special value 255 or be less than <code>streams + coupled_streams</code>.
+  *
+  * The output channels specified by the encoder
   * should use the
   * <a href="http://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-800004.3.9">Vorbis
   * channel ordering</a>. A decoder may wish to apply an additional permutation
   * to the mapping the encoder used to achieve a different output channel
-  * order.
+  * order (e.g. for outputing in WAV order).
   *
   * Each multistream packet contains an Opus packet for each stream, and all of
   * the Opus packets in a single multistream packet must have the same
@@ -200,12 +213,12 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_multistream_encoder_get_size
   *                                24000, or 48000.
   * @param channels <tt>int</tt>: Number of channels in the input signal.
   *                               This must be at most 255.
-  *                               It may be different from the number of
-  *                               channels (<code>streams +
+  *                               It may be greater than the number of
+  *                               coded channels (<code>streams +
   *                               coupled_streams</code>).
   * @param streams <tt>int</tt>: The total number of streams to encode from the
   *                              input.
-  *                              This must be no more than 255.
+  *                              This must be no more than the number of channels.
   * @param coupled_streams <tt>int</tt>: Number of coupled (2 channel) streams
   *                                      to encode.
   *                                      This must be no larger than the total
@@ -213,24 +226,13 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_multistream_encoder_get_size
   *                                      Additionally, The total number of
   *                                      encoded channels (<code>streams +
   *                                      coupled_streams</code>) must be no
-  *                                      more than 255.
+  *                                      more than the number of input channels.
   * @param[in] mapping <code>const unsigned char[channels]</code>: Mapping from
-  *                    encoded channels to input channels.
-  *                    Let <code>i = mapping[j]</code> be the index for input
-  *                    channel <code>j</code>.
-  *                    If <code>i < 2*coupled_streams</code>, then input
-  *                    channel <code>j</code> is encoded as the left channel of
-  *                    stream <code>(i/2)</code> if <code>i</code> is even, and
-  *                    as the right channel of stream <code>(i/2)</code> if
-  *                    <code>i</code> is odd.
-  *                    Otherwise, input channel <code>j</code> is encoded as
-  *                    mono in stream <code>(i - coupled_streams)</code>,
-  *                    unless it has the special value 255, in which case it is
-  *                    omitted from the encoding entirely (the decoder will
-  *                    reproduce it as silence).
-  *                    Each value <code>i</code> must either be the special
-  *                    value 255 or be less than
-  *                    <code>streams + coupled_streams</code>.
+  *                    encoded channels to input channels, as described in
+  *                    @ref opus_multistream. As an extra constraint, the
+  *                    multistream encoder does not allow encoding coupled
+  *                    streams for which one channel is unused since this
+  *                    is never a good idea.
   * @param application <tt>int</tt>: The target encoder application.
   *                                  This must be one of the following:
   * <dl>
@@ -257,7 +259,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusMSEncoder *opus_multistream_encoder_crea
 ) OPUS_ARG_NONNULL(5);
 
 /** Initialize a previously allocated multistream encoder state.
-  * The memory pointed to by \a st must be the size returned by
+  * The memory pointed to by \a st must be at least the size returned by
   * opus_multistream_encoder_get_size().
   * This is intended for applications which use their own allocator instead of
   * malloc.
@@ -270,12 +272,12 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusMSEncoder *opus_multistream_encoder_crea
   *                                24000, or 48000.
   * @param channels <tt>int</tt>: Number of channels in the input signal.
   *                               This must be at most 255.
-  *                               It may be different from the number of
+  *                               It may be greater than the number of
   *                               coded channels (<code>streams +
   *                               coupled_streams</code>).
   * @param streams <tt>int</tt>: The total number of streams to encode from the
   *                              input.
-  *                              This must be no more than 255.
+  *                              This must be no more than the number of channels.
   * @param coupled_streams <tt>int</tt>: Number of coupled (2 channel) streams
   *                                      to encode.
   *                                      This must be no larger than the total
@@ -283,10 +285,13 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusMSEncoder *opus_multistream_encoder_crea
   *                                      Additionally, The total number of
   *                                      encoded channels (<code>streams +
   *                                      coupled_streams</code>) must be no
-  *                                      more than 255.
+  *                                      more than the number of input channels.
   * @param[in] mapping <code>const unsigned char[channels]</code>: Mapping from
-  *                    encoded channels to input channels.
-  *                    See opus_multistream_encoder_create() for details.
+  *                    encoded channels to input channels, as described in
+  *                    @ref opus_multistream. As an extra constraint, the
+  *                    multistream encoder does not allow encoding coupled
+  *                    streams for which one channel is unused since this
+  *                    is never a good idea.
   * @param application <tt>int</tt>: The target encoder application.
   *                                  This must be one of the following:
   * <dl>
@@ -314,7 +319,7 @@ OPUS_EXPORT int opus_multistream_encoder_init(
 /** Encodes a multistream Opus frame.
   * @param st <tt>OpusMSEncoder*</tt>: Multistream encoder state.
   * @param[in] pcm <tt>const opus_int16*</tt>: The input signal as interleaved
-  *                                            samples. 
+  *                                            samples.
   *                                            This must contain
   *                                            <code>frame_size*channels</code>
   *                                            samples.
@@ -331,9 +336,11 @@ OPUS_EXPORT int opus_multistream_encoder_init(
   *                                           This must contain storage for at
   *                                           least \a max_data_bytes.
   * @param max_data_bytes <tt>opus_int32</tt>: Size of the allocated memory for
-  *                                            the output payload.
-  *                                            This should not be used by
-  *                                            itself to control the bitrate.
+  *                                            the output payload. This may be
+  *                                            used to impose an upper limit on
+  *                                            the variable bitrate, but should
+  *                                            not be used as the only bitrate
+  *                                            control.
   * @returns The length of the encoded packet (in bytes) on success or a
   *          negative error code (see @ref opus_errorcodes) on failure.
   */
@@ -372,9 +379,11 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_multistream_encode(
   *                                           This must contain storage for at
   *                                           least \a max_data_bytes.
   * @param max_data_bytes <tt>opus_int32</tt>: Size of the allocated memory for
-  *                                            the output payload.
-  *                                            This should not be used by
-  *                                            itself to control the bitrate.
+  *                                            the output payload. This may be
+  *                                            used to impose an upper limit on
+  *                                            the variable bitrate, but should
+  *                                            not be used as the only bitrate
+  *                                            control.
   * @returns The length of the encoded packet (in bytes) on success or a
   *          negative error code (see @ref opus_errorcodes) on failure.
   */
@@ -437,7 +446,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_multistream_decoder_get_size
   * @param Fs <tt>opus_int32</tt>: Sampling rate to decode at (in Hz).
   *                                This must be one of 8000, 12000, 16000,
   *                                24000, or 48000.
-  * @param channels <tt>int</tt>: Number of channels to decode.
+  * @param channels <tt>int</tt>: Number of channels to output.
   *                               This must be at most 255.
   *                               It may be different from the number of coded
   *                               channels (<code>streams +
@@ -454,21 +463,8 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_multistream_decoder_get_size
   *                                      coupled_streams</code>) must be no
   *                                      more than 255.
   * @param[in] mapping <code>const unsigned char[channels]</code>: Mapping from
-  *                    coded channels to output channels.
-  *                    Let <code>i = mapping[j]</code> be the index for output
-  *                    channel <code>j</code>.
-  *                    If <code>i < 2*coupled_streams</code>, then the output
-  *                    for channel <code>j</code> is taken from the left
-  *                    channel of stream <code>(i/2)</code> if <code>i</code>
-  *                    <code>i</code> is even, and from the right channel of
-  *                    stream <code>(i/2)</code> if <code>i</code> is odd.
-  *                    Otherwise, the output for channel <code>j</code> is
-  *                    taken from stream <code>(i - coupled_streams)</code>
-  *                    decoded as mono, unless it has the special value 255, in
-  *                    which case silence is used instead.
-  *                    Each value <code>i</code> must either be the special
-  *                    value 255 or be less than
-  *                    <code>streams + coupled_streams</code>.
+  *                    coded channels to output channels, as described in
+  *                    @ref opus_multistream.
   * @param[out] error <tt>int *</tt>: Returns #OPUS_OK on success, or an error
   *                                   code (see @ref opus_errorcodes) on
   *                                   failure.
@@ -483,7 +479,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusMSDecoder *opus_multistream_decoder_crea
 ) OPUS_ARG_NONNULL(5);
 
 /** Intialize a previously allocated decoder state object.
-  * The memory pointed to by \a st must be the size returned by
+  * The memory pointed to by \a st must be at least the size returned by
   * opus_multistream_encoder_get_size().
   * This is intended for applications which use their own allocator instead of
   * malloc.
@@ -494,7 +490,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusMSDecoder *opus_multistream_decoder_crea
   * @param Fs <tt>opus_int32</tt>: Sampling rate to decode at (in Hz).
   *                                This must be one of 8000, 12000, 16000,
   *                                24000, or 48000.
-  * @param channels <tt>int</tt>: Number of channels to decode.
+  * @param channels <tt>int</tt>: Number of channels to output.
   *                               This must be at most 255.
   *                               It may be different from the number of coded
   *                               channels (<code>streams +
@@ -511,8 +507,8 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusMSDecoder *opus_multistream_decoder_crea
   *                                      coupled_streams</code>) must be no
   *                                      more than 255.
   * @param[in] mapping <code>const unsigned char[channels]</code>: Mapping from
-  *                    coded channels to output channels.
-  *                    See opus_multistream_decoder_create() for details.
+  *                    coded channels to output channels, as described in
+  *                    @ref opus_multistream.
   * @returns #OPUS_OK on success, or an error code (see @ref opus_errorcodes)
   *          on failure.
   */

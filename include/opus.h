@@ -200,7 +200,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_encoder_get_size(int channels);
  * @param [in] application <tt>int</tt>: Coding mode (@ref OPUS_APPLICATION_VOIP/@ref OPUS_APPLICATION_AUDIO/@ref OPUS_APPLICATION_RESTRICTED_LOWDELAY)
  * @param [out] error <tt>int*</tt>: @ref opus_errorcodes
  * @note Regardless of the sampling rate and number channels selected, the Opus encoder
- * can switch to a lower audio audio bandwidth or number of channels if the bitrate
+ * can switch to a lower audio bandwidth or number of channels if the bitrate
  * selected is too low. This also means that it is safe to always use 48 kHz stereo input
  * and let the encoder optimize the encoding.
  */
@@ -212,7 +212,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusEncoder *opus_encoder_create(
 );
 
 /** Initializes a previously allocated encoder state
-  * The memory pointed to by st must be the size returned by opus_encoder_get_size().
+  * The memory pointed to by st must be at least the size returned by opus_encoder_get_size().
   * This is intended for applications which use their own allocator instead of malloc.
   * @see opus_encoder_create(),opus_encoder_get_size()
   * To reset a previously initialized state, use the #OPUS_RESET_STATE CTL.
@@ -250,10 +250,11 @@ OPUS_EXPORT int opus_encoder_init(
   *                                            least \a max_data_bytes.
   * @param [in] max_data_bytes <tt>opus_int32</tt>: Size of the allocated
   *                                                 memory for the output
-  *                                                 payload.
-  *                                                 This should not be used by
-  *                                                 itself to control the
-  *                                                 bitrate.
+  *                                                 payload. This may be
+  *                                                 used to impose an upper limit on
+  *                                                 the variable bitrate, but should
+  *                                                 not be used as the only bitrate
+  *                                                 control.
   * @returns The length of the encoded packet (in bytes) on success or a
   *          negative error code (see @ref opus_errorcodes) on failure.
   */
@@ -289,10 +290,11 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
   *                                            least \a max_data_bytes.
   * @param [in] max_data_bytes <tt>opus_int32</tt>: Size of the allocated
   *                                                 memory for the output
-  *                                                 payload.
-  *                                                 This should not be used by
-  *                                                 itself to control the
-  *                                                 bitrate.
+  *                                                 payload. This may be
+  *                                                 used to impose an upper limit on
+  *                                                 the variable bitrate, but should
+  *                                                 not be used as the only bitrate
+  *                                                 control.
   * @returns The length of the encoded packet (in bytes) on success or a
   *          negative error code (see @ref opus_errorcodes) on failure.
   */
@@ -422,7 +424,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusDecoder *opus_decoder_create(
 );
 
 /** Initializes a previously allocated decoder state.
-  * The state must be the size returned by opus_decoder_get_size().
+  * The state must be at least the size returned by opus_decoder_get_size().
   * This is intended for applications which use their own allocator instead of malloc. @see opus_decoder_create,opus_decoder_get_size
   * To reset a previously initialized state, use the #OPUS_RESET_STATE CTL.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state.
