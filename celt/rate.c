@@ -84,7 +84,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
    unsigned char *bits;
    unsigned char *cap;
 
-   cindex = opus_alloc(sizeof(cache->index[0])*m->nbEBands*(LM+2));
+   cindex = (opus_int16 *)opus_alloc(sizeof(cache->index[0])*m->nbEBands*(LM+2));
    cache->index = cindex;
 
    /* Scan for all unique band sizes */
@@ -124,7 +124,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
          }
       }
    }
-   bits = opus_alloc(sizeof(unsigned char)*curr);
+   bits = (unsigned char *)opus_alloc(sizeof(unsigned char)*curr);
    cache->bits = bits;
    cache->size = curr;
    /* Compute the cache for all unique sizes */
@@ -140,7 +140,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 
    /* Compute the maximum rate for each band at which we'll reliably use as
        many bits as we ask for. */
-   cache->caps = cap = opus_alloc(sizeof(cache->caps[0])*(LM+1)*2*m->nbEBands);
+   cache->caps = cap = (unsigned char *)opus_alloc(sizeof(cache->caps[0])*(LM+1)*2*m->nbEBands);
    for (i=0;i<=LM;i++)
    {
       for (C=1;C<=2;C++)
@@ -259,7 +259,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    int alloc_floor;
    opus_int32 left, percoeff;
    int done;
-   int balance;
+   opus_int32 balance;
    SAVE_STACK;
 
    alloc_floor = C<<BITRES;
@@ -432,17 +432,17 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       int N0, N, den;
       int offset;
       int NClogN;
-      int excess;
+      opus_int32 excess, bit;
 
       celt_assert(bits[j] >= 0);
       N0 = m->eBands[j+1]-m->eBands[j];
       N=N0<<LM;
-      bits[j] += balance;
+      bit = (opus_int32)bits[j]+balance;
 
       if (N>1)
       {
-         excess = IMAX(bits[j]-cap[j],0);
-         bits[j] -= excess;
+         excess = MAX32(bit-cap[j],0);
+         bits[j] = bit-excess;
 
          /* Compensate for the extra DoF in stereo */
          den=(C*N+ ((C==2 && N>2 && !*dual_stereo && j<*intensity) ? 1 : 0));
@@ -483,8 +483,8 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 
       } else {
          /* For N=1, all bits go to fine energy except for a single sign bit */
-         excess = IMAX(0,bits[j]-(C<<BITRES));
-         bits[j] -= excess;
+         excess = MAX32(0,bit-(C<<BITRES));
+         bits[j] = bit-excess;
          ebits[j] = 0;
          fine_priority[j] = 1;
       }
