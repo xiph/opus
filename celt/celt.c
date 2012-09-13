@@ -583,7 +583,7 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, opus_val16 bias
    L1 = 0;
    for (i=0;i<N;i++)
       L1 += EXTEND32(ABS16(tmp[i]));
-   /* When in doubt, prefer goo freq resolution */
+   /* When in doubt, prefer good freq resolution */
    L1 = MAC16_32_Q15(L1, LM*bias, L1);
    return L1;
 
@@ -600,7 +600,10 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
    VARDECL(int, path0);
    VARDECL(int, path1);
    VARDECL(celt_norm, tmp);
+   VARDECL(celt_norm, tmp_1);
    int lambda;
+   int sel;
+   int selcost[2];
    int tf_select=0;
    opus_val16 bias;
 
@@ -623,9 +626,10 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
       lambda = 4;
    else
       lambda = 3;
-
+   lambda*=2;
    ALLOC(metric, len, int);
    ALLOC(tmp, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
+   ALLOC(tmp_1, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
    ALLOC(path0, len, int);
    ALLOC(path1, len, int);
 
@@ -633,9 +637,12 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
    for (i=0;i<len;i++)
    {
       int j, k, N;
+      int narrow;
       opus_val32 L1, best_L1;
       int best_level=0;
       N = (m->eBands[i+1]-m->eBands[i])<<LM;
+      /* band is too narrow to be split down to LM=-1 */
+      narrow = (m->eBands[i+1]-m->eBands[i])==1;
       for (j=0;j<N;j++)
          tmp[j] = X[tf_chan*N0 + j+(m->eBands[i]<<LM)];
       /* Just add the right channel if we're in stereo */
@@ -644,8 +651,21 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
             tmp[j] = ADD16(SHR16(tmp[j], 1),SHR16(X[N0+j+(m->eBands[i]<<LM)], 1));*/
       L1 = l1_metric(tmp, N, isTransient ? LM : 0, bias);
       best_L1 = L1;
+      /* Check the -1 case for transients */
+      if (isTransient && !narrow)
+      {
+         for (j=0;j<N;j++)
+            tmp_1[j] = tmp[j];
+         haar1(tmp_1, N>>LM, 1<<LM);
+         L1 = l1_metric(tmp_1, N, LM+1, bias);
+         if (L1<best_L1)
+         {
+            best_L1 = L1;
+            best_level = -1;
+         }
+      }
       /*printf ("%f ", L1);*/
-      for (k=0;k<LM;k++)
+      for (k=0;k<LM+!(isTransient||narrow);k++)
       {
          int B;
 
@@ -654,10 +674,7 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
          else
             B = k+1;
 
-         if (isTransient)
-            haar1(tmp, N>>(LM-k), 1<<(LM-k));
-         else
-            haar1(tmp, N>>k, 1<<k);
+         haar1(tmp, N>>k, 1<<k);
 
          L1 = l1_metric(tmp, N, B, bias);
 
@@ -668,18 +685,40 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
          }
       }
       /*printf ("%d ", isTransient ? LM-best_level : best_level);*/
+      /* metric is in Q1 to be able to select the mid-point (-0.5) for narrower bands */
       if (isTransient)
-         metric[i] = best_level;
+         metric[i] = 2*best_level;
       else
-         metric[i] = -best_level;
+         metric[i] = -2*best_level;
+      *tf_sum += (isTransient ? LM : 0) - metric[i]/2;
+      /* For bands that can't be split to -1, set the metric to the half-way point to avoid
+         biasing the decision */
+      if (narrow && (metric[i]==0 || metric[i]==-2*LM))
+         metric[i]-=1;
       /*printf("%d ", metric[i]);*/
-      *tf_sum += (isTransient ? LM : 0) - metric[i];
    }
    /*printf("\n");*/
-   /* NOTE: Future optimized implementations could detect extreme transients and set
-      tf_select = 1 but so far we have not found a reliable way of making this useful */
+   /* Search for the optimal tf resolution, including tf_select */
    tf_select = 0;
-
+   for (sel=0;sel<2;sel++)
+   {
+      cost0 = 0;
+      cost1 = isTransient ? 0 : lambda;
+      for (i=1;i<len;i++)
+      {
+         int curr0, curr1;
+         curr0 = IMIN(cost0, cost1 + lambda);
+         curr1 = IMIN(cost0 + lambda, cost1);
+         cost0 = curr0 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+0]);
+         cost1 = curr1 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+1]);
+      }
+      cost0 = IMIN(cost0, cost1);
+      selcost[sel]=cost0;
+   }
+   /* For now, we're conservative and only allow tf_select=1 for transients.
+    * If tests confirm it's useful for non-transients, we could allow it. */
+   if (selcost[1]<selcost[0] && isTransient)
+      tf_select=1;
    cost0 = 0;
    cost1 = isTransient ? 0 : lambda;
    /* Viterbi forward pass */
@@ -709,8 +748,8 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
          curr1 = from1;
          path1[i]= 1;
       }
-      cost0 = curr0 + abs(metric[i]-tf_select_table[LM][4*isTransient+2*tf_select+0]);
-      cost1 = curr1 + abs(metric[i]-tf_select_table[LM][4*isTransient+2*tf_select+1]);
+      cost0 = curr0 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+0]);
+      cost1 = curr1 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+1]);
    }
    tf_res[len-1] = cost0 < cost1 ? 0 : 1;
    /* Viterbi backward pass to check the decisions */
@@ -769,7 +808,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
       tf_select = 0;
    for (i=start;i<end;i++)
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
-   /*for(i=0;i<end;i++)printf("%d ", isTransient ? LM-tf_res[i] : -tf_res[i]);printf("\n");*/
+   /*for(i=0;i<end;i++)printf("%d ", isTransient ? tf_res[i] : LM+tf_res[i]);printf("\n");*/
 }
 
 static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, ec_dec *dec)
