@@ -64,16 +64,22 @@ static inline double tansig_approx(double x)
 {
 	int i;
 	double y, dy;
-	if (x>=10)
-		return 1;
-	if (x<=-10)
-		return -1;
+	double sign=1;
+    if (x>=8)
+        return 1;
+    if (x<=-8)
+        return -1;
+	if (x<0)
+	{
+	   x=-x;
+	   sign=-1;
+	}
 	i = lrint(25*x);
 	x -= .04*i;
-	y = tansig_table[250+i];
+	y = tansig_table[i];
 	dy = 1-y*y;
 	y = y + x*dy*(1 - y*x);
-	return y;
+	return sign*y;
 }
 #endif
 
