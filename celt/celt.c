@@ -1527,29 +1527,47 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             follower[i] = MAX16(0, bandLogE[i]-follower[i]);
          }
       }
+      /* For non-transient CBR/CVBR frames, halve the dynalloc contribution */
+      if ((!st->vbr || st->constrained_vbr)&&!isTransient)
+      {
+         for (i=st->start;i<st->end;i++)
+            follower[i] = HALF16(follower[i]);
+      }
       for (i=st->start;i<st->end;i++)
       {
          int width;
          int boost;
+         int boost_bits;
 
          if (i<8)
             follower[i] *= 2;
          if (i>=12)
             follower[i] = HALF16(follower[i]);
          follower[i] = MIN16(follower[i], QCONST16(4, DB_SHIFT));
+
+         /* FIXME: Adaptively reduce follower at low rate or for cbr/cvbr */
          width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
          if (width<6)
          {
             boost = SHR32(EXTEND32(follower[i]),DB_SHIFT);
-            tot_boost += boost*width<<BITRES;
+            boost_bits = boost*width<<BITRES;
          } else if (width > 48) {
             boost = SHR32(EXTEND32(follower[i])*8,DB_SHIFT);
-            tot_boost += (boost*width<<BITRES)/8;
+            boost_bits = (boost*width<<BITRES)/8;
          } else {
             boost = SHR32(EXTEND32(follower[i])*width/6,DB_SHIFT);
-            tot_boost += boost*6<<BITRES;
+            boost_bits = boost*6<<BITRES;
          }
-         offsets[i] = boost;
+         /* For CBR and non-transient CVBR frames, limit dynalloc to 1/4 of the bits */
+         if ((!st->vbr || (st->constrained_vbr&&!isTransient))
+               && (tot_boost+boost_bits)>>BITRES>>3 > effectiveBytes/4)
+         {
+            offsets[i] = 0;
+            break;
+         } else {
+            offsets[i] = boost;
+            tot_boost += boost_bits;
+         }
       }
    }
    dynalloc_logp = 6;
