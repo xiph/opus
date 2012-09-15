@@ -1422,7 +1422,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       compute_band_energies(st->mode, freq2, bandE2, effEnd, C, M);
       amp2Log2(st->mode, effEnd, st->end, bandE2, bandLogE2, C);
       for (i=0;i<C*st->mode->nbEBands;i++)
-         bandLogE2[i] += HALF16(SHL(LM, DB_SHIFT));
+         bandLogE2[i] += HALF16(SHL16(LM, DB_SHIFT));
    } else {
       for (i=0;i<C*st->mode->nbEBands;i++)
          bandLogE2[i] = bandLogE[i];
