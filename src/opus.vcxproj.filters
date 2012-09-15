@@ -68,5 +68,8 @@
     <ClInclude Include="..\include\opus_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\opus_multistream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

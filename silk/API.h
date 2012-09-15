@@ -67,14 +67,6 @@ opus_int silk_InitEncoder(                              /* O    Returns error co
     silk_EncControlStruct           *encStatus          /* O    Encoder Status                                  */
 );
 
-/***************************************/
-/* Read control structure from encoder */
-/***************************************/
-opus_int silk_QueryEncoder(                             /* O    Returns error code                              */
-    const void                      *encState,          /* I    State                                           */
-    silk_EncControlStruct           *encStatus          /* O    Encoder Status                                  */
-);
-
 /**************************/
 /* Encode frame with Silk */
 /**************************/
@@ -121,6 +113,7 @@ opus_int silk_Decode(                                   /* O    Returns error co
     opus_int32                      *nSamplesOut        /* O    Number of samples decoded                       */
 );
 
+#if 0
 /**************************************/
 /* Get table of contents for a packet */
 /**************************************/
@@ -130,6 +123,7 @@ opus_int silk_get_TOC(
     const opus_int                  nFramesPerPayload,  /* I    Number of SILK frames per payload           */
     silk_TOC_struct                 *Silk_TOC           /* O    Type of content                             */
 );
+#endif
 
 #ifdef __cplusplus
 }

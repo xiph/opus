@@ -24,12 +24,6 @@
     <ClInclude Include="celt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="celt_header.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="celt_types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="cwrs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -90,7 +84,7 @@
     <ClInclude Include="vq.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\win32\config.h">
+    <ClInclude Include="..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

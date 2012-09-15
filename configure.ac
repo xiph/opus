@@ -7,12 +7,25 @@ AM_CONFIG_HEADER([config.h])
 dnl enable silent rules on automake 1.11 and later
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-OPUS_MAJOR_VERSION=0
-OPUS_MINOR_VERSION=9
-OPUS_MICRO_VERSION=14
-OPUS_EXTRA_VERSION=
+# Read our default version string from version.mk.
+# Please update this file for releases.
+AC_MSG_CHECKING([version.mk])
+MK_VERSION=$(awk 'BEGIN { FS = "=" }
+                  /OPUS_VERSION/ { ver = $2}
+                  END {
+                        gsub(/"/, "", ver);
+                        gsub(/^ /, "", ver);
+                        gsub(/ $/, "", ver);
+                        print ver;
+                  }' $srcdir/version.mk)
+if test -z "$MK_VERSION"; then
+  AC_MSG_RESULT([no])
+else
+  AC_MSG_RESULT([$MK_VERSION])
+  OPUS_VERSION="$MK_VERSION"
+fi
 
-OPUS_VERSION="$OPUS_MAJOR_VERSION.$OPUS_MINOR_VERSION.$OPUS_MICRO_VERSION$OPUS_EXTRA_VERSION"
+# Override with the git version, if available.
 AC_MSG_CHECKING([git revision])
 GIT_VERSION=$(git describe --tags --match 'v*' 2>/dev/null | sed 's/^v//')
 if test -z "$GIT_VERSION"; then
@@ -22,24 +35,27 @@ else
   OPUS_VERSION="$GIT_VERSION"
 fi
 
-# For automake.
-VERSION=$OPUS_VERSION
-PACKAGE=opus
+# Use 'unknown' if all else fails.
+if test -z "$OPUS_VERSION"; then
+  OPUS_VERSION="unknown"
+fi
 
-# For our version string.
+# For automake.
+PACKAGE=opus
+VERSION=$OPUS_VERSION
+
+# For autoconf
 AC_SUBST(OPUS_VERSION)
 
-# For config.h
-AC_DEFINE_UNQUOTED(OPUS_VERSION, "${OPUS_VERSION}", [Complete version string])
-AC_DEFINE_UNQUOTED(OPUS_MAJOR_VERSION, ${OPUS_MAJOR_VERSION}, [Version major])
-AC_DEFINE_UNQUOTED(OPUS_MINOR_VERSION, ${OPUS_MINOR_VERSION}, [Version minor])
-AC_DEFINE_UNQUOTED(OPUS_MICRO_VERSION, ${OPUS_MICRO_VERSION}, [Version micro])
-AC_DEFINE_UNQUOTED(OPUS_EXTRA_VERSION, "${OPUS_EXTRA_VERSION}", [Version extra])
+# For config.h.
+AC_DEFINE_UNQUOTED([OPUS_VERSION], ["$OPUS_VERSION"],
+                   [Opus library version string])
 
 # For libtool.
-OPUS_LT_CURRENT=0
+dnl Please update these for releases.
+OPUS_LT_CURRENT=2
 OPUS_LT_REVISION=0
-OPUS_LT_AGE=0
+OPUS_LT_AGE=2
 
 AC_SUBST(OPUS_LT_CURRENT)
 AC_SUBST(OPUS_LT_REVISION)
@@ -49,6 +65,7 @@ AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
 AM_MAINTAINER_MODE
 
 AC_CANONICAL_HOST
+AC_MINGW32
 AM_PROG_LIBTOOL
 AM_PROG_CC_C_O
 
@@ -137,15 +154,15 @@ has_float_approx=no
 
 ac_enable_fixed="no";
 ac_enable_float="yes";
-AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point       compile without floating point],
+AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point       compile without floating point (for machines without a fast enough FPU)],
 [if test "$enableval" = yes; then
   ac_enable_fixed="yes";
   ac_enable_float="no";
-  AC_DEFINE([FIXED_POINT], [1], [Compile as fixed-point])
+  AC_DEFINE([FIXED_POINT], [1], [Compile as fixed-point (for machines without a fast enough FPU)])
 else
-  AC_DEFINE([FLOATING_POINT], , [Compile as floating-point])
+  AC_DEFINE([FLOATING_POINT], , [Compile as floating-point (for machines with a fast enough FPU)])
 fi],
-AC_DEFINE([FLOATING_POINT], , [Compile as floating-point]))
+AC_DEFINE([FLOATING_POINT], , [Compile as floating-point (for machines with a fast enough FPU)]))
 
 ac_enable_fixed_debug="no"
 AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug debug fixed-point implementation],
@@ -208,29 +225,6 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
         AC_MSG_RESULT([no]))
 CFLAGS="$saved_CFLAGS $SYMBOL_VISIBILITY"
 AC_SUBST(SYMBOL_VISIBILITY)
-
-ac_build_stack_protector=yes
-AC_ARG_ENABLE(stack-protector,
-     AS_HELP_STRING([--disable-stack-protector],[Disable compiler stack hardening]),
-     [
-       if test "x$enableval" = "xno"; then
-         ac_build_stack_protector=$enableval
-       fi
-     ], [
-       ac_build_stack_protector=yes
-     ])
-if test "x$ac_build_stack_protector" = "xyes"; then
-if test "x$ac_cv_c_compiler_gnu" = "xyes" ; then
-saved_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -fstack-protector-all"
-AC_MSG_CHECKING([if ${CC} supports -fstack-protector-all])
-AC_LINK_IFELSE([AC_LANG_SOURCE([void main(void){char foo;}])],
-      [ AC_MSG_RESULT([yes])
-        STACK_PROTECTOR="-fstack-protector-all" ],
-        AC_MSG_RESULT([no]))
-CFLAGS="$saved_CFLAGS $STACK_PROTECTOR"
-fi
-fi
 
 CFLAGS="$CFLAGS -W"
 

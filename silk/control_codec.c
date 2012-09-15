@@ -38,18 +38,18 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 #include "pitch_est_defines.h"
 
-opus_int silk_setup_resamplers(
+static opus_int silk_setup_resamplers(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
     opus_int                        fs_kHz              /* I                        */
 );
 
-opus_int silk_setup_fs(
+static opus_int silk_setup_fs(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
     opus_int                        fs_kHz,             /* I                        */
     opus_int                        PacketSize_ms       /* I                        */
 );
 
-opus_int silk_setup_complexity(
+static opus_int silk_setup_complexity(
     silk_encoder_state              *psEncC,            /* I/O                      */
     opus_int                        Complexity          /* I                        */
 );
@@ -131,7 +131,7 @@ opus_int silk_control_encoder(
     return ret;
 }
 
-opus_int silk_setup_resamplers(
+static opus_int silk_setup_resamplers(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
     opus_int                         fs_kHz              /* I                        */
 )
@@ -186,7 +186,7 @@ opus_int silk_setup_resamplers(
     return ret;
 }
 
-opus_int silk_setup_fs(
+static opus_int silk_setup_fs(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
     opus_int                        fs_kHz,             /* I                        */
     opus_int                        PacketSize_ms       /* I                        */
@@ -299,7 +299,7 @@ opus_int silk_setup_fs(
     return ret;
 }
 
-opus_int silk_setup_complexity(
+static opus_int silk_setup_complexity(
     silk_encoder_state              *psEncC,            /* I/O                      */
     opus_int                        Complexity          /* I                        */
 )

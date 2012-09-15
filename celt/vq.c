@@ -109,7 +109,7 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
-static void normalise_residual(int * restrict iy, celt_norm * restrict X,
+static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT X,
       int N, opus_val32 Ryy, opus_val16 gain)
 {
    int i;

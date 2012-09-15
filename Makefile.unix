@@ -20,7 +20,8 @@ CFLAGS := -Drestrict= $(CFLAGS)
 
 ###################### END OF OPTIONS ######################
 
-CFLAGS += -DOPUS_VERSION='"0.9.14"'
+include version.mk
+CFLAGS += -DOPUS_VERSION='$(OPUS_VERSION)'
 include silk_sources.mk
 include celt_sources.mk
 include opus_sources.mk

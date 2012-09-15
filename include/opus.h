@@ -67,6 +67,7 @@ extern "C" {
  * @li @ref opus_encoder
  * @li @ref opus_decoder
  * @li @ref opus_repacketizer
+ * @li @ref opus_multistream
  * @li @ref opus_libinfo
  * @li @ref opus_custom
  */
@@ -161,6 +162,11 @@ extern "C" {
   */
 typedef struct OpusEncoder OpusEncoder;
 
+/** Gets the size of an <code>OpusEncoder</code> structure.
+  * @param[in] channels <tt>int</tt>: Number of channels.
+  *                                   This must be 1 or 2.
+  * @returns The size in bytes.
+  */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_encoder_get_size(int channels);
 
 /**
@@ -188,11 +194,13 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_encoder_get_size(int channels);
  *
  * This is useful when the caller knows that the speech-optimized modes will not be needed (use with caution).
  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate of input signal (Hz)
- * @param [in] channels <tt>int</tt>: Number of channels (1/2) in input signal
+ *                                     This must be one of 8000, 12000, 16000,
+ *                                     24000, or 48000.
+ * @param [in] channels <tt>int</tt>: Number of channels (1 or 2) in input signal
  * @param [in] application <tt>int</tt>: Coding mode (@ref OPUS_APPLICATION_VOIP/@ref OPUS_APPLICATION_AUDIO/@ref OPUS_APPLICATION_RESTRICTED_LOWDELAY)
  * @param [out] error <tt>int*</tt>: @ref opus_errorcodes
  * @note Regardless of the sampling rate and number channels selected, the Opus encoder
- * can switch to a lower audio audio bandwidth or number of channels if the bitrate
+ * can switch to a lower audio bandwidth or number of channels if the bitrate
  * selected is too low. This also means that it is safe to always use 48 kHz stereo input
  * and let the encoder optimize the encoding.
  */
@@ -204,15 +212,17 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusEncoder *opus_encoder_create(
 );
 
 /** Initializes a previously allocated encoder state
-  * The memory pointed to by st must be the size returned by opus_encoder_get_size.
+  * The memory pointed to by st must be at least the size returned by opus_encoder_get_size().
   * This is intended for applications which use their own allocator instead of malloc.
   * @see opus_encoder_create(),opus_encoder_get_size()
-  * To reset a previously initialized state use the OPUS_RESET_STATE CTL.
+  * To reset a previously initialized state, use the #OPUS_RESET_STATE CTL.
   * @param [in] st <tt>OpusEncoder*</tt>: Encoder state
   * @param [in] Fs <tt>opus_int32</tt>: Sampling rate of input signal (Hz)
-  * @param [in] channels <tt>int</tt>: Number of channels (1/2) in input signal
+ *                                      This must be one of 8000, 12000, 16000,
+ *                                      24000, or 48000.
+  * @param [in] channels <tt>int</tt>: Number of channels (1 or 2) in input signal
   * @param [in] application <tt>int</tt>: Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO/OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-  * @retval OPUS_OK Success or @ref opus_errorcodes
+  * @retval #OPUS_OK Success or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_encoder_init(
     OpusEncoder *st,
@@ -222,16 +232,31 @@ OPUS_EXPORT int opus_encoder_init(
 ) OPUS_ARG_NONNULL(1);
 
 /** Encodes an Opus frame.
-  * The passed frame_size must an opus frame size for the encoder's sampling rate.
-  * For example, at 48kHz the permitted values are 120, 240, 480, or 960.
-  * Passing in a duration of less than 10ms (480 samples at 48kHz) will
-  * prevent the encoder from using the LPC or hybrid modes.
   * @param [in] st <tt>OpusEncoder*</tt>: Encoder state
   * @param [in] pcm <tt>opus_int16*</tt>: Input signal (interleaved if 2 channels). length is frame_size*channels*sizeof(opus_int16)
-  * @param [in] frame_size <tt>int</tt>: Number of samples per frame of input signal
-  * @param [out] data <tt>char*</tt>: Output payload (at least max_data_bytes long)
-  * @param [in] max_data_bytes <tt>opus_int32</tt>: Allocated memory for payload; don't use for controlling bitrate
-  * @returns length of the data payload (in bytes) or @ref opus_errorcodes
+  * @param [in] frame_size <tt>int</tt>: Number of samples per channel in the
+  *                                      input signal.
+  *                                      This must be an Opus frame size for
+  *                                      the encoder's sampling rate.
+  *                                      For example, at 48 kHz the permitted
+  *                                      values are 120, 240, 480, 960, 1920,
+  *                                      and 2880.
+  *                                      Passing in a duration of less than
+  *                                      10 ms (480 samples at 48 kHz) will
+  *                                      prevent the encoder from using the LPC
+  *                                      or hybrid modes.
+  * @param [out] data <tt>unsigned char*</tt>: Output payload.
+  *                                            This must contain storage for at
+  *                                            least \a max_data_bytes.
+  * @param [in] max_data_bytes <tt>opus_int32</tt>: Size of the allocated
+  *                                                 memory for the output
+  *                                                 payload. This may be
+  *                                                 used to impose an upper limit on
+  *                                                 the variable bitrate, but should
+  *                                                 not be used as the only bitrate
+  *                                                 control.
+  * @returns The length of the encoded packet (in bytes) on success or a
+  *          negative error code (see @ref opus_errorcodes) on failure.
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
     OpusEncoder *st,
@@ -242,10 +267,6 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
 ) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(2) OPUS_ARG_NONNULL(4);
 
 /** Encodes an Opus frame from floating point input.
-  * The passed frame_size must an opus frame size for the encoder's sampling rate.
-  * For example, at 48kHz the permitted values are 120, 240, 480, or 960.
-  * Passing in a duration of less than 10ms (480 samples at 48kHz) will
-  * prevent the encoder from using the LPC or hybrid modes.
   * @param [in] st <tt>OpusEncoder*</tt>: Encoder state
   * @param [in] pcm <tt>float*</tt>: Input in float format (interleaved if 2 channels), with a normal range of +/-1.0.
   *          Samples with a range beyond +/-1.0 are supported but will
@@ -253,10 +274,29 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
   *          only be used if it is known that the far end supports
   *          extended dynamic range.
   *          length is frame_size*channels*sizeof(float)
-  * @param [in] frame_size <tt>int</tt>: Number of samples per frame of input signal
-  * @param [out] data <tt>char*</tt>: Output payload (at least max_data_bytes long)
-  * @param [in] max_data_bytes <tt>opus_int32</tt>: Allocated memory for payload; don't use for controlling bitrate
-  * @returns length of the data payload (in bytes) or @ref opus_errorcodes
+  * @param [in] frame_size <tt>int</tt>: Number of samples per channel in the
+  *                                      input signal.
+  *                                      This must be an Opus frame size for
+  *                                      the encoder's sampling rate.
+  *                                      For example, at 48 kHz the permitted
+  *                                      values are 120, 240, 480, 960, 1920,
+  *                                      and 2880.
+  *                                      Passing in a duration of less than
+  *                                      10 ms (480 samples at 48 kHz) will
+  *                                      prevent the encoder from using the LPC
+  *                                      or hybrid modes.
+  * @param [out] data <tt>unsigned char*</tt>: Output payload.
+  *                                            This must contain storage for at
+  *                                            least \a max_data_bytes.
+  * @param [in] max_data_bytes <tt>opus_int32</tt>: Size of the allocated
+  *                                                 memory for the output
+  *                                                 payload. This may be
+  *                                                 used to impose an upper limit on
+  *                                                 the variable bitrate, but should
+  *                                                 not be used as the only bitrate
+  *                                                 control.
+  * @returns The length of the encoded packet (in bytes) on success or a
+  *          negative error code (see @ref opus_errorcodes) on failure.
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode_float(
     OpusEncoder *st,
@@ -266,7 +306,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode_float(
     opus_int32 max_data_bytes
 ) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(2) OPUS_ARG_NONNULL(4);
 
-/** Frees an OpusEncoder allocated by opus_encoder_create.
+/** Frees an <code>OpusEncoder</code> allocated by opus_encoder_create().
   * @param[in] st <tt>OpusEncoder*</tt>: State to be freed.
   */
 OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
@@ -275,6 +315,11 @@ OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
   *
   * Generally the request and subsequent arguments are generated
   * by a convenience macro.
+  * @param st <tt>OpusEncoder*</tt>: Encoder state.
+  * @param request This and all remaining parameters should be replaced by one
+  *                of the convenience macros in @ref opus_genericctls or
+  *                @ref opus_encoderctls.
+  * @see opus_genericctls
   * @see opus_encoderctls
   */
 OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NONNULL(1);
@@ -295,7 +340,7 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
   * where
   * @li Fs is the sampling rate and must be 8000, 12000, 16000, 24000, or 48000
   * @li channels is the number of channels (1 or 2)
-  * @li error will hold the error code in case or failure (or OPUS_OK on success)
+  * @li error will hold the error code in case or failure (or #OPUS_OK on success)
   * @li the return value is a newly created decoder state to be used for decoding
   *
   * While opus_decoder_create() allocates memory for the state, it's also possible
@@ -328,8 +373,20 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
   * opus_decode() and opus_decode_float() return the number of samples (per channel) decoded from the packet.
   * If that value is negative, then an error has occured. This can occur if the packet is corrupted or if the audio
   * buffer is too small to hold the decoded audio.
-
-*/
+  *
+  * Opus is a stateful codec with overlapping blocks and as a result Opus
+  * packets are not coded independently of each other. Packets must be
+  * passed into the decoder serially and in the correct order for a correct
+  * decode. Lost packets can be replaced with loss concealment by calling
+  * the decoder with a null pointer and zero length for the missing packet.
+  *
+  * A single codec state may only be accessed from a single thread at
+  * a time and any required locking must be performed by the caller. Separate
+  * streams must be decoded with separate decoder states and can be decoded
+  * in parallel unless the library was compiled with NONTHREADSAFE_PSEUDOSTACK
+  * defined.
+  *
+  */
 
 /** Opus decoder state.
   * This contains the complete state of an Opus decoder.
@@ -338,16 +395,19 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
   */
 typedef struct OpusDecoder OpusDecoder;
 
-/** Gets the size of an OpusDecoder structure.
-  * @param [in] channels <tt>int</tt>: Number of channels
-  * @returns size
+/** Gets the size of an <code>OpusDecoder</code> structure.
+  * @param [in] channels <tt>int</tt>: Number of channels.
+  *                                    This must be 1 or 2.
+  * @returns The size in bytes.
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_size(int channels);
 
 /** Allocates and initializes a decoder state.
-  * @param [in] Fs <tt>opus_int32</tt>: Sample rate to decode at (Hz)
-  * @param [in] channels <tt>int</tt>: Number of channels (1/2) to decode
-  * @param [out] error <tt>int*</tt>: OPUS_OK Success or @ref opus_errorcodes
+  * @param [in] Fs <tt>opus_int32</tt>: Sample rate to decode at (Hz).
+  *                                     This must be one of 8000, 12000, 16000,
+  *                                     24000, or 48000.
+  * @param [in] channels <tt>int</tt>: Number of channels (1 or 2) to decode
+  * @param [out] error <tt>int*</tt>: #OPUS_OK Success or @ref opus_errorcodes
   *
   * Internally Opus stores data at 48000 Hz, so that should be the default
   * value for Fs. However, the decoder can efficiently decode to buffers
@@ -364,13 +424,15 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusDecoder *opus_decoder_create(
 );
 
 /** Initializes a previously allocated decoder state.
-  * The state must be the size returned by opus_decoder_get_size.
+  * The state must be at least the size returned by opus_decoder_get_size().
   * This is intended for applications which use their own allocator instead of malloc. @see opus_decoder_create,opus_decoder_get_size
-  * To reset a previously initialized state use the OPUS_RESET_STATE CTL.
+  * To reset a previously initialized state, use the #OPUS_RESET_STATE CTL.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state.
-  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate to decode to (Hz)
-  * @param [in] channels <tt>int</tt>: Number of channels (1/2) to decode
-  * @retval OPUS_OK Success or @ref opus_errorcodes
+  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate to decode to (Hz).
+  *                                     This must be one of 8000, 12000, 16000,
+  *                                     24000, or 48000.
+  * @param [in] channels <tt>int</tt>: Number of channels (1 or 2) to decode
+  * @retval #OPUS_OK Success or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_decoder_init(
     OpusDecoder *st,
@@ -378,16 +440,17 @@ OPUS_EXPORT int opus_decoder_init(
     int channels
 ) OPUS_ARG_NONNULL(1);
 
-/** Decode an Opus frame
+/** Decode an Opus packet.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
   * @param [in] data <tt>char*</tt>: Input payload. Use a NULL pointer to indicate packet loss
   * @param [in] len <tt>opus_int32</tt>: Number of bytes in payload*
   * @param [out] pcm <tt>opus_int16*</tt>: Output signal (interleaved if 2 channels). length
   *  is frame_size*channels*sizeof(opus_int16)
-  * @param [in] frame_size Number of samples per channel of available space in *pcm,
-  *  if less than the maximum frame size (120ms) some frames can not be decoded
-  * @param [in] decode_fec <tt>int</tt>: Flag (0/1) to request that any in-band forward error correction data be
-  *  decoded. If no such data is available the frame is decoded as if it were lost.
+  * @param [in] frame_size Number of samples per channel of available space in \a pcm.
+  *  If this is less than the maximum frame size (120 ms), this function will
+  *  not be capable of decoding some packets.
+  * @param [in] decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band forward error correction data be
+  *  decoded. If no such data is available, the frame is decoded as if it were lost.
   * @returns Number of decoded samples or @ref opus_errorcodes
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode(
@@ -399,7 +462,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode(
     int decode_fec
 ) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(4);
 
-/** Decode an opus frame with floating point output
+/** Decode an Opus packet with floating point output.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
   * @param [in] data <tt>char*</tt>: Input payload. Use a NULL pointer to indicate packet loss
   * @param [in] len <tt>opus_int32</tt>: Number of bytes in payload
@@ -407,7 +470,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode(
   *  is frame_size*channels*sizeof(float)
   * @param [in] frame_size Number of samples per channel of available space in *pcm,
   *  if less than the maximum frame size (120ms) some frames can not be decoded
-  * @param [in] decode_fec <tt>int</tt>: Flag (0/1) to request that any in-band forward error correction data be
+  * @param [in] decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band forward error correction data be
   *  decoded. If no such data is available the frame is decoded as if it were lost.
   * @returns Number of decoded samples or @ref opus_errorcodes
   */
@@ -424,11 +487,16 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode_float(
   *
   * Generally the request and subsequent arguments are generated
   * by a convenience macro.
+  * @param st <tt>OpusDecoder*</tt>: Decoder state.
+  * @param request This and all remaining parameters should be replaced by one
+  *                of the convenience macros in @ref opus_genericctls or
+  *                @ref opus_decoderctls.
   * @see opus_genericctls
+  * @see opus_decoderctls
   */
 OPUS_EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...) OPUS_ARG_NONNULL(1);
 
-/** Frees an OpusDecoder allocated by opus_decoder_create.
+/** Frees an <code>OpusDecoder</code> allocated by opus_decoder_create().
   * @param[in] st <tt>OpusDecoder*</tt>: State to be freed.
   */
 OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
@@ -467,10 +535,13 @@ OPUS_EXPORT int opus_packet_parse(
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_get_bandwidth(const unsigned char *data) OPUS_ARG_NONNULL(1);
 
 /** Gets the number of samples per frame from an Opus packet.
-  * @param [in] data <tt>char*</tt>: Opus packet
-  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate in Hz
-  * @returns Number of samples per frame
-  * @retval OPUS_INVALID_PACKET The compressed data passed is corrupted or of an unsupported type
+  * @param [in] data <tt>char*</tt>: Opus packet.
+  *                                  This must contain at least one byte of
+  *                                  data.
+  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate in Hz.
+  *                                     This must be a multiple of 400, or
+  *                                     inaccurate results will be returned.
+  * @returns Number of samples per frame.
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_get_samples_per_frame(const unsigned char *data, opus_int32 Fs) OPUS_ARG_NONNULL(1);
 
@@ -502,27 +573,304 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_nb_samples(const OpusDe
 /** @defgroup opus_repacketizer Repacketizer
   * @{
   *
-  * The repacketizer can be used to merge multiple Opus packets into a single packet
-  * or alternatively to split Opus packets that have previously been merged.
+  * The repacketizer can be used to merge multiple Opus packets into a single
+  * packet or alternatively to split Opus packets that have previously been
+  * merged. Splitting valid Opus packets is always guaranteed to succeed,
+  * whereas merging valid packets only succeeds if all frames have the same
+  * mode, bandwidth, and frame size, and when the total duration of the merged
+  * packet is no more than 120 ms.
+  * The repacketizer currently only operates on elementary Opus
+  * streams. It will not manipualte multistream packets successfully, except in
+  * the degenerate case where they consist of data from a single stream.
   *
+  * The repacketizing process starts with creating a repacketizer state, either
+  * by calling opus_repacketizer_create() or by allocating the memory yourself,
+  * e.g.,
+  * @code
+  * OpusRepacketizer *rp;
+  * rp = (OpusRepacketizer*)malloc(opus_repacketizer_get_size());
+  * if (rp != NULL)
+  *     opus_repacketizer_init(rp);
+  * @endcode
+  *
+  * Then the application should submit packets with opus_repacketizer_cat(),
+  * extract new packets with opus_repacketizer_out() or
+  * opus_repacketizer_out_range(), and then reset the state for the next set of
+  * input packets via opus_repacketizer_init().
+  *
+  * For example, to split a sequence of packets into individual frames:
+  * @code
+  * unsigned char *data;
+  * int len;
+  * while (get_next_packet(&data, &len))
+  * {
+  *   unsigned char out[1276];
+  *   opus_int32 out_len;
+  *   int nb_frames;
+  *   int err;
+  *   int i;
+  *   err = opus_repacketizer_cat(rp, data, len);
+  *   if (err != OPUS_OK)
+  *   {
+  *     release_packet(data);
+  *     return err;
+  *   }
+  *   nb_frames = opus_repacketizer_get_nb_frames(rp);
+  *   for (i = 0; i < nb_frames; i++)
+  *   {
+  *     out_len = opus_repacketizer_out_range(rp, i, i+1, out, sizeof(out));
+  *     if (out_len < 0)
+  *     {
+  *        release_packet(data);
+  *        return (int)out_len;
+  *     }
+  *     output_next_packet(out, out_len);
+  *   }
+  *   opus_repacketizer_init(rp);
+  *   release_packet(data);
+  * }
+  * @endcode
+  *
+  * Alternatively, to combine a sequence of frames into packets that each
+  * contain up to <code>TARGET_DURATION_MS</code> milliseconds of data:
+  * @code
+  * // The maximum number of packets with duration TARGET_DURATION_MS occurs
+  * // when the frame size is 2.5 ms, for a total of (TARGET_DURATION_MS*2/5)
+  * // packets.
+  * unsigned char *data[(TARGET_DURATION_MS*2/5)+1];
+  * opus_int32 len[(TARGET_DURATION_MS*2/5)+1];
+  * int nb_packets;
+  * unsigned char out[1277*(TARGET_DURATION_MS*2/2)];
+  * opus_int32 out_len;
+  * int prev_toc;
+  * nb_packets = 0;
+  * while (get_next_packet(data+nb_packets, len+nb_packets))
+  * {
+  *   int nb_frames;
+  *   int err;
+  *   nb_frames = opus_packet_get_nb_frames(data[nb_packets], len[nb_packets]);
+  *   if (nb_frames < 1)
+  *   {
+  *     release_packets(data, nb_packets+1);
+  *     return nb_frames;
+  *   }
+  *   nb_frames += opus_repacketizer_get_nb_frames(rp);
+  *   // If adding the next packet would exceed our target, or it has an
+  *   // incompatible TOC sequence, output the packets we already have before
+  *   // submitting it.
+  *   // N.B., The nb_packets > 0 check ensures we've submitted at least one
+  *   // packet since the last call to opus_repacketizer_init(). Otherwise a
+  *   // single packet longer than TARGET_DURATION_MS would cause us to try to
+  *   // output an (invalid) empty packet. It also ensures that prev_toc has
+  *   // been set to a valid value. Additionally, len[nb_packets] > 0 is
+  *   // guaranteed by the call to opus_packet_get_nb_frames() above, so the
+  *   // reference to data[nb_packets][0] should be valid.
+  *   if (nb_packets > 0 && (
+  *       ((prev_toc & 0xFC) != (data[nb_packets][0] & 0xFC)) ||
+  *       opus_packet_get_samples_per_frame(data[nb_packets], 48000)*nb_frames >
+  *       TARGET_DURATION_MS*48))
+  *   {
+  *     out_len = opus_repacketizer_out(rp, out, sizeof(out));
+  *     if (out_len < 0)
+  *     {
+  *        release_packets(data, nb_packets+1);
+  *        return (int)out_len;
+  *     }
+  *     output_next_packet(out, out_len);
+  *     opus_repacketizer_init(rp);
+  *     release_packets(data, nb_packets);
+  *     data[0] = data[nb_packets];
+  *     len[0] = len[nb_packets];
+  *     nb_packets = 0;
+  *   }
+  *   err = opus_repacketizer_cat(rp, data[nb_packets], len[nb_packets]);
+  *   if (err != OPUS_OK)
+  *   {
+  *     release_packets(data, nb_packets+1);
+  *     return err;
+  *   }
+  *   prev_toc = data[nb_packets][0];
+  *   nb_packets++;
+  * }
+  * // Output the final, partial packet.
+  * if (nb_packets > 0)
+  * {
+  *   out_len = opus_repacketizer_out(rp, out, sizeof(out));
+  *   release_packets(data, nb_packets);
+  *   if (out_len < 0)
+  *     return (int)out_len;
+  *   output_next_packet(out, out_len);
+  * }
+  * @endcode
+  *
+  * An alternate way of merging packets is to simply call opus_repacketizer_cat()
+  * unconditionally until it fails. At that point, the merged packet can be
+  * obtained with opus_repacketizer_out() and the input packet for which
+  * opus_repacketizer_cat() needs to be re-added to a newly reinitialized
+  * repacketizer state.
   */
 
 typedef struct OpusRepacketizer OpusRepacketizer;
 
+/** Gets the size of an <code>OpusRepacketizer</code> structure.
+  * @returns The size in bytes.
+  */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_repacketizer_get_size(void);
 
+/** (Re)initializes a previously allocated repacketizer state.
+  * The state must be at least the size returned by opus_repacketizer_get_size().
+  * This can be used for applications which use their own allocator instead of
+  * malloc().
+  * It must also be called to reset the queue of packets waiting to be
+  * repacketized, which is necessary if the maximum packet duration of 120 ms
+  * is reached or if you wish to submit packets with a different Opus
+  * configuration (coding mode, audio bandwidth, frame size, or channel count).
+  * Failure to do so will prevent a new packet from being added with
+  * opus_repacketizer_cat().
+  * @see opus_repacketizer_create
+  * @see opus_repacketizer_get_size
+  * @see opus_repacketizer_cat
+  * @param rp <tt>OpusRepacketizer*</tt>: The repacketizer state to
+  *                                       (re)initialize.
+  * @returns A pointer to the same repacketizer state that was passed in.
+  */
 OPUS_EXPORT OpusRepacketizer *opus_repacketizer_init(OpusRepacketizer *rp) OPUS_ARG_NONNULL(1);
 
+/** Allocates memory and initializes the new repacketizer with
+ * opus_repacketizer_init().
+  */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusRepacketizer *opus_repacketizer_create(void);
 
+/** Frees an <code>OpusRepacketizer</code> allocated by
+  * opus_repacketizer_create().
+  * @param[in] rp <tt>OpusRepacketizer*</tt>: State to be freed.
+  */
 OPUS_EXPORT void opus_repacketizer_destroy(OpusRepacketizer *rp);
 
+/** Add a packet to the current repacketizer state.
+  * This packet must match the configuration of any packets already submitted
+  * for repacketization since the last call to opus_repacketizer_init().
+  * This means that it must have the same coding mode, audio bandwidth, frame
+  * size, and channel count.
+  * This can be checked in advance by examining the top 6 bits of the first
+  * byte of the packet, and ensuring they match the top 6 bits of the first
+  * byte of any previously submitted packet.
+  * The total duration of audio in the repacketizer state also must not exceed
+  * 120 ms, the maximum duration of a single packet, after adding this packet.
+  *
+  * The contents of the current repacketizer state can be extracted into new
+  * packets using opus_repacketizer_out() or opus_repacketizer_out_range().
+  *
+  * In order to add a packet with a different configuration or to add more
+  * audio beyond 120 ms, you must clear the repacketizer state by calling
+  * opus_repacketizer_init().
+  * If a packet is too large to add to the current repacketizer state, no part
+  * of it is added, even if it contains multiple frames, some of which might
+  * fit.
+  * If you wish to be able to add parts of such packets, you should first use
+  * another repacketizer to split the packet into pieces and add them
+  * individually.
+  * @see opus_repacketizer_out_range
+  * @see opus_repacketizer_out
+  * @see opus_repacketizer_init
+  * @param rp <tt>OpusRepacketizer*</tt>: The repacketizer state to which to
+  *                                       add the packet.
+  * @param[in] data <tt>const unsigned char*</tt>: The packet data.
+  *                                                The application must ensure
+  *                                                this pointer remains valid
+  *                                                until the next call to
+  *                                                opus_repacketizer_init() or
+  *                                                opus_repacketizer_destroy().
+  * @param len <tt>opus_int32</tt>: The number of bytes in the packet data.
+  * @returns An error code indicating whether or not the operation succeeded.
+  * @retval #OPUS_OK The packet's contents have been added to the repacketizer
+  *                  state.
+  * @retval #OPUS_INVALID_PACKET The packet did not have a valid TOC sequence,
+  *                              the packet's TOC sequence was not compatible
+  *                              with previously submitted packets (because
+  *                              the coding mode, audio bandwidth, frame size,
+  *                              or channel count did not match), or adding
+  *                              this packet would increase the total amount of
+  *                              audio stored in the repacketizer state to more
+  *                              than 120 ms.
+  */
 OPUS_EXPORT int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(2);
 
+
+/** Construct a new packet from data previously submitted to the repacketizer
+  * state via opus_repacketizer_cat().
+  * @param rp <tt>OpusRepacketizer*</tt>: The repacketizer state from which to
+  *                                       construct the new packet.
+  * @param begin <tt>int</tt>: The index of the first frame in the current
+  *                            repacketizer state to include in the output.
+  * @param end <tt>int</tt>: One past the index of the last frame in the
+  *                          current repacketizer state to include in the
+  *                          output.
+  * @param[out] data <tt>const unsigned char*</tt>: The buffer in which to
+  *                                                 store the output packet.
+  * @param maxlen <tt>opus_int32</tt>: The maximum number of bytes to store in
+  *                                    the output buffer. In order to guarantee
+  *                                    success, this should be at least
+  *                                    <code>1276</code> for a single frame,
+  *                                    or for multiple frames,
+  *                                    <code>1277*(end-begin)</code>.
+  *                                    However, <code>1*(end-begin)</code> plus
+  *                                    the size of all packet data submitted to
+  *                                    the repacketizer since the last call to
+  *                                    opus_repacketizer_init() or
+  *                                    opus_repacketizer_create() is also
+  *                                    sufficient, and possibly much smaller.
+  * @returns The total size of the output packet on success, or an error code
+  *          on failure.
+  * @retval #OPUS_BAD_ARG <code>[begin,end)</code> was an invalid range of
+  *                       frames (begin < 0, begin >= end, or end >
+  *                       opus_repacketizer_get_nb_frames()).
+  * @retval #OPUS_BUFFER_TOO_SMALL \a maxlen was insufficient to contain the
+  *                                complete output packet.
+  */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(4);
 
+/** Return the total number of frames contained in packet data submitted to
+  * the repacketizer state so far via opus_repacketizer_cat() since the last
+  * call to opus_repacketizer_init() or opus_repacketizer_create().
+  * This defines the valid range of packets that can be extracted with
+  * opus_repacketizer_out_range() or opus_repacketizer_out().
+  * @param rp <tt>OpusRepacketizer*</tt>: The repacketizer state containing the
+  *                                       frames.
+  * @returns The total number of frames contained in the packet data submitted
+  *          to the repacketizer state.
+  */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp) OPUS_ARG_NONNULL(1);
 
+/** Construct a new packet from data previously submitted to the repacketizer
+  * state via opus_repacketizer_cat().
+  * This is a convenience routine that returns all the data submitted so far
+  * in a single packet.
+  * It is equivalent to calling
+  * @code
+  * opus_repacketizer_out_range(rp, 0, opus_repacketizer_get_nb_frames(rp),
+  *                             data, maxlen)
+  * @endcode
+  * @param rp <tt>OpusRepacketizer*</tt>: The repacketizer state from which to
+  *                                       construct the new packet.
+  * @param[out] data <tt>const unsigned char*</tt>: The buffer in which to
+  *                                                 store the output packet.
+  * @param maxlen <tt>opus_int32</tt>: The maximum number of bytes to store in
+  *                                    the output buffer. In order to guarantee
+  *                                    success, this should be at least
+  *                                    <code>1277*opus_repacketizer_get_nb_frames(rp)</code>.
+  *                                    However,
+  *                                    <code>1*opus_repacketizer_get_nb_frames(rp)</code>
+  *                                    plus the size of all packet data
+  *                                    submitted to the repacketizer since the
+  *                                    last call to opus_repacketizer_init() or
+  *                                    opus_repacketizer_create() is also
+  *                                    sufficient, and possibly much smaller.
+  * @returns The total size of the output packet on success, or an error code
+  *          on failure.
+  * @retval #OPUS_BUFFER_TOO_SMALL \a maxlen was insufficient to contain the
+  *                                complete output packet.
+  */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, opus_int32 maxlen) OPUS_ARG_NONNULL(1);
 
 /**@}*/

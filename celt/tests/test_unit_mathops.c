@@ -209,10 +209,20 @@ void testilog2(void)
    opus_val32 x;
    for (x=1;x<=268435455;x+=127)
    {
-      opus_val32 error = abs(celt_ilog2(x)-(int)floor(log2(x)));
-      if (error!=0)
+      opus_val32 lg;
+      opus_val32 y;
+
+      lg = celt_ilog2(x);
+      if (lg<0 || lg>=31)
       {
-         printf("celt_ilog2 failed: celt_ilog2(x)!=floor(log2(x)) (x = %d, error = %d)\n",x,error);
+         printf("celt_ilog2 failed: 0<=celt_ilog2(x)<31 (x = %d, celt_ilog2(x) = %d)\n",x,lg);
+         ret = 1;
+      }
+      y = 1<<lg;
+
+      if (x<y || (x>>1)>=y)
+      {
+         printf("celt_ilog2 failed: 2**celt_ilog2(x)<=x<2**(celt_ilog2(x)+1) (x = %d, 2**celt_ilog2(x) = %d)\n",x,y);
          ret = 1;
       }
    }

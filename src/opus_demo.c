@@ -95,7 +95,7 @@ static void check_encoder_option(int decode_only, const char *opt)
    }
 }
 
-int silk8_test[][4] = {
+static const int silk8_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960*3, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960*2, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960,   1},
@@ -106,7 +106,7 @@ int silk8_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 480,   2}
 };
 
-int silk12_test[][4] = {
+static const int silk12_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 960*3, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 960*2, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 960,   1},
@@ -117,7 +117,7 @@ int silk12_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 480,   2}
 };
 
-int silk16_test[][4] = {
+static const int silk16_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 960*3, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 960*2, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 960,   1},
@@ -128,21 +128,21 @@ int silk16_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 480,   2}
 };
 
-int hybrid24_test[][4] = {
+static const int hybrid24_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 960, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 480, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 960, 2},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 480, 2}
 };
 
-int hybrid48_test[][4] = {
+static const int hybrid48_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND, 960, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND, 480, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND, 960, 2},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND, 480, 2}
 };
 
-int celt_test[][4] = {
+static const int celt_test[][4] = {
       {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      960, 1},
       {MODE_CELT_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 960, 1},
       {MODE_CELT_ONLY, OPUS_BANDWIDTH_WIDEBAND,      960, 1},
@@ -185,7 +185,7 @@ int celt_test[][4] = {
 
 };
 
-int celt_hq_test[][4] = {
+static const int celt_hq_test[][4] = {
       {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      960, 2},
       {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      480, 2},
       {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      240, 2},
@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
     int random_framesize=0, newsize=0, delayed_celt=0;
     int sweep_max=0, sweep_min=0;
     int random_fec=0;
-    int (*mode_list)[4]=NULL;
+    const int (*mode_list)[4]=NULL;
     int nb_modes_in_list=0;
     int curr_mode=0;
     int curr_mode_count=0;
@@ -764,7 +764,7 @@ int main(int argc, char *argv[])
     }
     fprintf (stderr, "average bitrate:             %7.3f kb/s\n",
                      1e-3*bits*sampling_rate/(frame_size*(double)count));
-    fprintf (stderr, "maximum bitrate:             %7.3f bkp/s\n",
+    fprintf (stderr, "maximum bitrate:             %7.3f kb/s\n",
                      1e-3*bits_max*sampling_rate/frame_size);
     if (!decode_only)
        fprintf (stderr, "active bitrate:              %7.3f kb/s\n",

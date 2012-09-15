@@ -22,6 +22,7 @@ include silk_headers.mk
 include opus_headers.mk
 
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(OPUS_SOURCES)
+libopus_la_LDFLAGS = -no-undefined -version-info @OPUS_LT_CURRENT@:@OPUS_LT_REVISION@:@OPUS_LT_AGE@
 
 pkginclude_HEADERS = include/opus.h include/opus_multistream.h include/opus_types.h include/opus_defines.h
 
@@ -82,11 +83,39 @@ opus_custom_demo_SOURCES = celt/opus_custom_demo.c
 opus_custom_demo_LDADD = libopus.la -lm
 endif
 
-EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in
+EXTRA_DIST = version.mk \
+	     opus.pc.in \
+             opus-uninstalled.pc.in \
+             opus.m4 \
+             Makefile.unix \
+             tests/run_vectors.sh \
+             opus.sln \
+             celt/celt.vcxproj \
+             celt/celt.vcxproj.filters \
+             src/opus_demo.vcxproj \
+             src/opus.vcxproj \
+             src/opus.vcxproj.filters \
+             src/opus_demo.vcxproj.filters \
+             tests/test_opus_decode.vcxproj.filters \
+             tests/test_opus_decode.vcxproj \
+             tests/test_opus_encode.vcxproj.filters \
+             tests/test_opus_encode.vcxproj \
+             tests/test_opus_api.vcxproj.filters \
+             tests/test_opus_api.vcxproj \
+             silk/float/silk_float.vcxproj.filters \
+             silk/float/silk_float.vcxproj \
+             silk/fixed/silk_fixed.vcxproj.filters \
+             silk/fixed/silk_fixed.vcxproj \
+             silk/silk_common.vcxproj \
+             silk/silk_common.vcxproj.filters \
+             win32/genversion.bat \
+             win32/config.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = opus.pc
 
+m4datadir = $(datadir)/aclocal
+m4data_DATA = opus.m4
 
 # Targets to build and install just the library without the docs
 opus check-opus install-opus: export NO_DOXYGEN = 1
@@ -98,24 +127,24 @@ install-opus: install
 
 # Or just the docs
 docs:
-	$(MAKE) $(AM_MAKEFLAGS) -C doc
+	cd doc && $(MAKE) $(AM_MAKEFLAGS)
 
 install-docs:
-	$(MAKE) $(AM_MAKEFLAGS) -C doc install
+	cd doc && $(MAKE) $(AM_MAKEFLAGS) install
 
 
 # Or everything (by default)
 all-local:
-	@[ -n "$(NO_DOXYGEN)" ] || $(MAKE) $(AM_MAKEFLAGS) -C doc
+	@[ -n "$(NO_DOXYGEN)" ] || cd doc && $(MAKE) $(AM_MAKEFLAGS)
 
 install-data-local:
-	@[ -n "$(NO_DOXYGEN)" ] || $(MAKE) $(AM_MAKEFLAGS) -C doc install
+	@[ -n "$(NO_DOXYGEN)" ] || cd doc && $(MAKE) $(AM_MAKEFLAGS) install
 
 clean-local:
-	-$(MAKE) $(AM_MAKEFLAGS) -C doc clean
+	-cd doc && $(MAKE) $(AM_MAKEFLAGS) clean
 
 uninstall-local:
-	$(MAKE) $(AM_MAKEFLAGS) -C doc uninstall
+	cd doc && $(MAKE) $(AM_MAKEFLAGS) uninstall
 
 
 .PHONY: opus check-opus install-opus docs install-docs

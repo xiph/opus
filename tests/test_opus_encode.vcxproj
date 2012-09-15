@@ -58,7 +58,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)$(Configuration)$(PlatformArchitecture)\opus.lib;$(SolutionDir)$(Configuration)$(PlatformArchitecture)\celt.lib;$(SolutionDir)$(Configuration)$(PlatformArchitecture)\silk_common.lib;$(SolutionDir)$(Configuration)$(PlatformArchitecture)\silk_float.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)$(Configuration)\opus.lib;$(SolutionDir)$(Configuration)\celt.lib;$(SolutionDir)$(Configuration)\silk_common.lib;$(SolutionDir)$(Configuration)\silk_float.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -75,10 +75,9 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(SolutionDir)$(Configuration)$(PlatformArchitecture)\opus.lib;$(SolutionDir)$(Configuration)$(PlatformArchitecture)\celt.lib;$(SolutionDir)$(Configuration)$(PlatformArchitecture)\silk_common.lib;$(SolutionDir)$(Configuration)$(PlatformArchitecture)\silk_float.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)$(Configuration)\opus.lib;$(SolutionDir)$(Configuration)\celt.lib;$(SolutionDir)$(Configuration)\silk_common.lib;$(SolutionDir)$(Configuration)\silk_float.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
