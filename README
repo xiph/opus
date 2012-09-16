@@ -59,6 +59,10 @@ To build from the git repository, the following steps are necessary:
 % ./configure
 % make
 
+3) Install the codec libraries (optional)
+
+% sudo make install
+
 Once you have compiled the codec, there will be a opus_demo executable
 in the top directory.
 
