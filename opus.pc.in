@@ -11,5 +11,6 @@ URL: http://opus-codec.org/
 Version: @VERSION@
 Requires:
 Conflicts:
-Libs: -L${libdir} -lopus @PC_LIBM@
+Libs: -L${libdir} -lopus
+Libs.private: @PC_LIBM@
 Cflags: -I${includedir}/opus
