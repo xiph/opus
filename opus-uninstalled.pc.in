@@ -4,9 +4,9 @@ libdir=${pcfiledir}/.libs
 includedir=${pcfiledir}
 
 Name: opus uninstalled
-Description: Opus IETF audio codec (not installed)
+Description: Opus IETF audio codec (not installed, @PC_BUILD@)
 Version: @VERSION@
 Requires:
 Conflicts:
-Libs: ${libdir}/libopus.a
+Libs: ${libdir}/libopus.a @PC_LIBM@
 Cflags: -I${includedir}/include

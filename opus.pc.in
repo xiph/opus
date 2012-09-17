@@ -6,10 +6,10 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: Opus
-Description: Opus IETF audio codec
+Description: Opus IETF audio codec (@PC_BUILD@ build)
 URL: http://opus-codec.org/
 Version: @VERSION@
 Requires:
 Conflicts:
-Libs: -L${libdir} -lopus
+Libs: -L${libdir} -lopus @PC_LIBM@
 Cflags: -I${includedir}/opus

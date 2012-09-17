@@ -275,6 +275,17 @@ AC_SUBST(SIZE32)
 AM_CONDITIONAL([FIXED_POINT], [test x$ac_enable_fixed = xyes])
 AM_CONDITIONAL([CUSTOM_MODES], [test x$ac_enable_custom_modes = xyes])
 
+dnl subsitutions for the pkg-config files
+if test x$ac_enable_float = xyes; then
+  PC_BUILD="floating-point"
+  PC_LIBM=$LIBM
+else
+  PC_BUILD="fixed-point"
+  PC_LIBM=
+fi
+AC_SUBST([PC_BUILD])
+AC_SUBST([PC_LIBM])
+
 AC_OUTPUT([Makefile opus.pc opus-uninstalled.pc
            doc/Makefile doc/Doxyfile])
 
