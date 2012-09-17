@@ -159,10 +159,7 @@ AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point       compile without floatin
   ac_enable_fixed="yes";
   ac_enable_float="no";
   AC_DEFINE([FIXED_POINT], [1], [Compile as fixed-point (for machines without a fast enough FPU)])
-else
-  AC_DEFINE([FLOATING_POINT], , [Compile as floating-point (for machines with a fast enough FPU)])
-fi],
-AC_DEFINE([FLOATING_POINT], , [Compile as floating-point (for machines with a fast enough FPU)]))
+fi])
 
 ac_enable_fixed_debug="no"
 AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug debug fixed-point implementation],
