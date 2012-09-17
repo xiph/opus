@@ -6,7 +6,7 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: Opus
-Description: Opus IETF low-latency audio codec
+Description: Opus IETF audio codec
 URL: http://opus-codec.org/
 Version: @VERSION@
 Requires:
