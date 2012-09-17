@@ -1,4 +1,4 @@
-# opus codec reference implementation pkg-config file
+# Opus codec reference implementation pkg-config file
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@

@@ -1,4 +1,4 @@
-# opus codec reference implementation uninstalled pkg-config file
+# Opus codec reference implementation uninstalled pkg-config file
 
 libdir=${pcfiledir}/.libs
 includedir=${pcfiledir}
