@@ -283,6 +283,11 @@ else
   PC_BUILD="fixed-point"
   PC_LIBM=
 fi
+dnl opus_custom requires libm as well
+if test x$ac_enable_custom_modes = xyes; then
+  PC_BUILD="${PC_BUILD}, custom modes"
+  PC_LIBM=$LIBM
+fi
 AC_SUBST([PC_BUILD])
 AC_SUBST([PC_LIBM])
 
