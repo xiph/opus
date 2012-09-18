@@ -291,8 +291,18 @@ fi
 AC_SUBST([PC_BUILD])
 AC_SUBST([PC_LIBM])
 
-AC_OUTPUT([Makefile opus.pc opus-uninstalled.pc
-           doc/Makefile doc/Doxyfile])
+
+AC_CONFIG_COMMANDS([builddir-include],
+                   [ if test ! -e include; then
+                        $LN_S $ac_top_srcdir/include include
+                     fi
+                   ],[ LN_S="$LN_S" ]
+                  )
+
+AC_CONFIG_FILES([Makefile opus.pc opus-uninstalled.pc
+                 doc/Makefile doc/Doxyfile])
+
+AC_OUTPUT
 
 AC_MSG_RESULT([
 ------------------------------------------------------------------------
