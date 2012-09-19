@@ -9,4 +9,4 @@ Version: @VERSION@
 Requires:
 Conflicts:
 Libs: ${libdir}/libopus.a @PC_LIBM@
-Cflags: -I${includedir}/include
+Cflags: -I${pcfiledir}/@top_srcdir@/include
