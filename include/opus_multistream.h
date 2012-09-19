@@ -535,8 +535,8 @@ OPUS_EXPORT int opus_multistream_decoder_init(
   *                                       samples.
   * @param frame_size <tt>int</tt>: The number of samples per channel of
   *                                 available space in \a pcm.
-  *                                 If this is less than the maximum frame size
-  *                                 (120 ms), this function will not be capable
+  *                                 If this is less than the maximum packet duration
+  *                                 (120 ms; 5760 for 48kHz), this function will not be capable
   *                                 of decoding some packets.
   * @param decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band
   *                                 forward error correction data be decoded.
@@ -568,8 +568,8 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_multistream_decode(
   *                                       samples.
   * @param frame_size <tt>int</tt>: The number of samples per channel of
   *                                 available space in \a pcm.
-  *                                 If this is less than the maximum frame size
-  *                                 (120 ms), this function will not be capable
+  *                                 If this is less than the maximum packet duration
+  *                                 (120 ms; 5760 for 48kHz), this function will not be capable
   *                                 of decoding some packets.
   * @param decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band
   *                                 forward error correction data be decoded.

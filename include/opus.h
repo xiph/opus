@@ -447,7 +447,7 @@ OPUS_EXPORT int opus_decoder_init(
   * @param [out] pcm <tt>opus_int16*</tt>: Output signal (interleaved if 2 channels). length
   *  is frame_size*channels*sizeof(opus_int16)
   * @param [in] frame_size Number of samples per channel of available space in \a pcm.
-  *  If this is less than the maximum frame size (120 ms), this function will
+  *  If this is less than the maximum packet duration (120ms; 5760 for 48kHz), this function will
   *  not be capable of decoding some packets.
   * @param [in] decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band forward error correction data be
   *  decoded. If no such data is available, the frame is decoded as if it were lost.
@@ -468,8 +468,9 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode(
   * @param [in] len <tt>opus_int32</tt>: Number of bytes in payload
   * @param [out] pcm <tt>float*</tt>: Output signal (interleaved if 2 channels). length
   *  is frame_size*channels*sizeof(float)
-  * @param [in] frame_size Number of samples per channel of available space in *pcm,
-  *  if less than the maximum frame size (120ms) some frames can not be decoded
+  * @param [in] frame_size Number of samples per channel of available space in \a pcm.
+  *  If this is less than the maximum packet duration (120ms; 5760 for 48kHz), this function will
+  *  not be capable of decoding some packets.
   * @param [in] decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band forward error correction data be
   *  decoded. If no such data is available the frame is decoded as if it were lost.
   * @returns Number of decoded samples or @ref opus_errorcodes
