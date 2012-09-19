@@ -1136,7 +1136,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     if (st->mode != MODE_SILK_ONLY && st->mode != st->prev_mode && st->prev_mode > 0)
     {
        for (i=0;i<st->channels*st->Fs/400;i++)
-          tmp_prefill[i] = st->delay_buffer[(st->encoder_buffer-total_buffer-st->Fs/400)*st->channels + i];
+          tmp_prefill[i] = st->delay_buffer[(extra_buffer+st->encoder_buffer-total_buffer-st->Fs/400)*st->channels + i];
     }
 
     for (i=0;i<st->channels*(st->encoder_buffer-(frame_size+total_buffer));i++)
