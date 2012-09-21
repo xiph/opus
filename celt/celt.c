@@ -193,9 +193,13 @@ struct OpusCustomEncoder {
 #endif
 
    celt_sig in_mem[1]; /* Size = channels*mode->overlap */
-   /* celt_sig prefilter_mem[],  Size = channels*COMBFILTER_PERIOD */
-   /* celt_sig overlap_mem[],  Size = channels*mode->overlap */
-   /* opus_val16 oldEBands[], Size = 2*channels*mode->nbEBands */
+   /* celt_sig prefilter_mem[],  Size = channels*COMBFILTER_MAXPERIOD */
+   /* opus_val16 oldBandE[],     Size = channels*mode->nbEBands */
+   /* opus_val16 oldLogE[],      Size = channels*mode->nbEBands */
+   /* opus_val16 oldLogE2[],     Size = channels*mode->nbEBands */
+#ifdef RESYNTH
+   /* opus_val16 overlap_mem[],  Size = channels*overlap */
+#endif
 };
 
 int celt_encoder_get_size(int channels)
@@ -207,9 +211,14 @@ int celt_encoder_get_size(int channels)
 OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_get_size(const CELTMode *mode, int channels)
 {
    int size = sizeof(struct CELTEncoder)
-         + (2*channels*mode->overlap-1)*sizeof(celt_sig)
-         + channels*COMBFILTER_MAXPERIOD*sizeof(celt_sig)
-         + 3*channels*mode->nbEBands*sizeof(opus_val16);
+         + (channels*mode->overlap-1)*sizeof(celt_sig)    /* celt_sig in_mem[channels*mode->overlap]; */
+         + channels*COMBFILTER_MAXPERIOD*sizeof(celt_sig) /* celt_sig prefilter_mem[channels*COMBFILTER_MAXPERIOD]; */
+         + 3*channels*mode->nbEBands*sizeof(opus_val16);  /* opus_val16 oldBandE[channels*mode->nbEBands]; */
+                                                          /* opus_val16 oldLogE[channels*mode->nbEBands]; */
+                                                          /* opus_val16 oldLogE2[channels*mode->nbEBands]; */
+#ifdef RESYNTH
+   size += channels*mode->overlap*sizeof(celt_sig);       /* celt_sig overlap_mem[channels*mode->nbEBands]; */
+#endif
    return size;
 }
 
@@ -944,7 +953,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    N = M*st->mode->shortMdctSize;
 
    prefilter_mem = st->in_mem+CC*(st->overlap);
-   oldBandE = (opus_val16*)(st->in_mem+CC*(2*st->overlap+COMBFILTER_MAXPERIOD));
+   oldBandE = (opus_val16*)(st->in_mem+CC*(st->overlap+COMBFILTER_MAXPERIOD));
    oldLogE = oldBandE + CC*st->mode->nbEBands;
    oldLogE2 = oldLogE + CC*st->mode->nbEBands;
 
@@ -1588,7 +1597,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       if (CC==2)
          out_mem[1] = st->syn_mem[1]+MAX_PERIOD;
 
-      overlap_mem[0] = prefilter_mem+CC*COMBFILTER_MAXPERIOD;
+      overlap_mem[0] = (celt_sig*)(oldLogE2 + CC*st->mode->nbEBands);
       if (CC==2)
          overlap_mem[1] = overlap_mem[0] + st->overlap;
 
@@ -1843,7 +1852,7 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
       {
          int i;
          opus_val16 *oldBandE, *oldLogE, *oldLogE2;
-         oldBandE = (opus_val16*)(st->in_mem+st->channels*(2*st->overlap+COMBFILTER_MAXPERIOD));
+         oldBandE = (opus_val16*)(st->in_mem+st->channels*(st->overlap+COMBFILTER_MAXPERIOD));
          oldLogE = oldBandE + st->channels*st->mode->nbEBands;
          oldLogE2 = oldLogE + st->channels*st->mode->nbEBands;
          OPUS_CLEAR((char*)&st->ENCODER_RESET_START,
