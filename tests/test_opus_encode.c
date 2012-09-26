@@ -144,8 +144,18 @@ int run_test1(int no_fuzz)
    MSenc = opus_multistream_encoder_create(8000, 2, 2, 0, mapping, OPUS_APPLICATION_AUDIO, &err);
    if(err != OPUS_OK || MSenc==NULL)test_failed();
 
+   /*Some multistream encoder API tests*/
    if(opus_multistream_encoder_ctl(MSenc, OPUS_GET_BITRATE(&i))!=OPUS_OK)test_failed();
    if(opus_multistream_encoder_ctl(MSenc, OPUS_GET_LSB_DEPTH(&i))!=OPUS_OK)test_failed();
+   if(i<16)test_failed();
+
+   {
+      OpusEncoder *tmp_enc;
+      if(opus_multistream_encoder_ctl(MSenc,  OPUS_MULTISTREAM_GET_ENCODER_STATE(1,&tmp_enc))!=OPUS_OK)test_failed();
+      if(opus_encoder_ctl(tmp_enc, OPUS_GET_LSB_DEPTH(&j))!=OPUS_OK)test_failed();
+      if(i!=j)test_failed();
+      if(opus_multistream_encoder_ctl(MSenc,  OPUS_MULTISTREAM_GET_ENCODER_STATE(2,&tmp_enc))!=OPUS_BAD_ARG)test_failed();
+   }
 
    dec = opus_decoder_create(48000, 2, &err);
    if(err != OPUS_OK || dec==NULL)test_failed();
