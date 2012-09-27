@@ -101,7 +101,7 @@ void silk_find_pitch_lags_FIX(
     }
 
     /* Do BWE */
-    silk_bwexpander( A_Q12, psEnc->sCmn.pitchEstimationLPCOrder, SILK_FIX_CONST( FIND_PITCH_BANDWITH_EXPANSION, 16 ) );
+    silk_bwexpander( A_Q12, psEnc->sCmn.pitchEstimationLPCOrder, SILK_FIX_CONST( FIND_PITCH_BANDWIDTH_EXPANSION, 16 ) );
 
     /*****************************************/
     /* LPC analysis filtering                */

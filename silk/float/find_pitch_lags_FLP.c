@@ -96,7 +96,7 @@ void silk_find_pitch_lags_FLP(
     silk_k2a_FLP( A, refl_coef, psEnc->sCmn.pitchEstimationLPCOrder );
 
     /* Bandwidth expansion */
-    silk_bwexpander_FLP( A, psEnc->sCmn.pitchEstimationLPCOrder, FIND_PITCH_BANDWITH_EXPANSION );
+    silk_bwexpander_FLP( A, psEnc->sCmn.pitchEstimationLPCOrder, FIND_PITCH_BANDWIDTH_EXPANSION );
 
     /*****************************************/
     /* LPC analysis filtering                */

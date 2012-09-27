@@ -44,7 +44,7 @@ extern "C"
 #define FIND_PITCH_WHITE_NOISE_FRACTION                 1e-3f
 
 /* Bandwidth expansion for whitening filter in pitch analysis */
-#define FIND_PITCH_BANDWITH_EXPANSION                   0.99f
+#define FIND_PITCH_BANDWIDTH_EXPANSION                  0.99f
 
 /*********************/
 /* Linear prediction */
