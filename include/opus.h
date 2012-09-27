@@ -136,7 +136,8 @@ extern "C" {
   * <li>audio_frame is the audio data in opus_int16 (or float for opus_encode_float())</li>
   * <li>frame_size is the duration of the frame in samples (per channel)</li>
   * <li>packet is the byte array to which the compressed data is written</li>
-  * <li>max_packet is the maximum number of bytes that can be written in the packet (4000 bytes is recommended)</li>
+  * <li>max_packet is the maximum number of bytes that can be written in the packet (4000 bytes is recommended).
+  *     Do not use max_packet to control VBR target bitrate, instead use the #OPUS_SET_BITRATE CTL.</li>
   * </ul>
   *
   * opus_encode() and opus_encode_float() return the number of bytes actually written to the packet.
@@ -252,9 +253,10 @@ OPUS_EXPORT int opus_encoder_init(
   *                                                 memory for the output
   *                                                 payload. This may be
   *                                                 used to impose an upper limit on
-  *                                                 the variable bitrate, but should
+  *                                                 the instant bitrate, but should
   *                                                 not be used as the only bitrate
-  *                                                 control.
+  *                                                 control. Use #OPUS_SET_BITRATE to
+  *                                                 control the bitrate.
   * @returns The length of the encoded packet (in bytes) on success or a
   *          negative error code (see @ref opus_errorcodes) on failure.
   */
@@ -292,9 +294,10 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_encode(
   *                                                 memory for the output
   *                                                 payload. This may be
   *                                                 used to impose an upper limit on
-  *                                                 the variable bitrate, but should
+  *                                                 the instant bitrate, but should
   *                                                 not be used as the only bitrate
-  *                                                 control.
+  *                                                 control. Use #OPUS_SET_BITRATE to
+  *                                                 control the bitrate.
   * @returns The length of the encoded packet (in bytes) on success or a
   *          negative error code (see @ref opus_errorcodes) on failure.
   */

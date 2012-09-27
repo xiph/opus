@@ -335,12 +335,14 @@ OPUS_EXPORT int opus_multistream_encoder_init(
   * @param[out] data <tt>unsigned char*</tt>: Output payload.
   *                                           This must contain storage for at
   *                                           least \a max_data_bytes.
-  * @param max_data_bytes <tt>opus_int32</tt>: Size of the allocated memory for
-  *                                            the output payload. This may be
-  *                                            used to impose an upper limit on
-  *                                            the variable bitrate, but should
-  *                                            not be used as the only bitrate
-  *                                            control.
+  * @param [in] max_data_bytes <tt>opus_int32</tt>: Size of the allocated
+  *                                                 memory for the output
+  *                                                 payload. This may be
+  *                                                 used to impose an upper limit on
+  *                                                 the instant bitrate, but should
+  *                                                 not be used as the only bitrate
+  *                                                 control. Use #OPUS_SET_BITRATE to
+  *                                                 control the bitrate.
   * @returns The length of the encoded packet (in bytes) on success or a
   *          negative error code (see @ref opus_errorcodes) on failure.
   */
@@ -378,12 +380,14 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_multistream_encode(
   * @param[out] data <tt>unsigned char*</tt>: Output payload.
   *                                           This must contain storage for at
   *                                           least \a max_data_bytes.
-  * @param max_data_bytes <tt>opus_int32</tt>: Size of the allocated memory for
-  *                                            the output payload. This may be
-  *                                            used to impose an upper limit on
-  *                                            the variable bitrate, but should
-  *                                            not be used as the only bitrate
-  *                                            control.
+  * @param [in] max_data_bytes <tt>opus_int32</tt>: Size of the allocated
+  *                                                 memory for the output
+  *                                                 payload. This may be
+  *                                                 used to impose an upper limit on
+  *                                                 the instant bitrate, but should
+  *                                                 not be used as the only bitrate
+  *                                                 control. Use #OPUS_SET_BITRATE to
+  *                                                 control the bitrate.
   * @returns The length of the encoded packet (in bytes) on success or a
   *          negative error code (see @ref opus_errorcodes) on failure.
   */
