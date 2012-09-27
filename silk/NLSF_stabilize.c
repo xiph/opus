@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 /* NLSF stabilizer:                                         */
 /*                                                          */
-/* - Moves NLSFs futher apart if they are too close         */
+/* - Moves NLSFs further apart if they are too close        */
 /* - Moves NLSFs away from borders if they are too close    */
 /* - High effort to achieve a modification with minimum     */
 /*     Euclidean distance to input vector                   */

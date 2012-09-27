@@ -108,7 +108,7 @@ extern "C" {
   * elementary Opus stream, the encoder and decoder must negotiate the channel
   * configuration before the decoder can successfully interpret the data in the
   * packets produced by the encoder. Some basic information, such as packet
-  * duration, can be computed without any special negotation.
+  * duration, can be computed without any special negotiation.
   *
   * The format for multistream Opus packets is defined in the
   * <a href="http://tools.ietf.org/html/draft-terriberry-oggopus">Ogg

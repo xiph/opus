@@ -199,7 +199,7 @@ void silk_noise_shape_analysis_FIX(
     /*************************/
     /* Set quantizer offset */
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
-        /* Initally set to 0; may be overruled in process_gains(..) */
+        /* Initially set to 0; may be overruled in process_gains(..) */
         psEnc->sCmn.indices.quantOffsetType = 0;
         psEncCtrl->sparseness_Q8 = 0;
     } else {

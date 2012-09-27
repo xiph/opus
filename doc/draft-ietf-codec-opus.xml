@@ -7528,7 +7528,7 @@ implementation. The passing threshold (quality 0) was calibrated in such a way t
 additive white noise with a 48 dB SNR (similar to what can be obtained on a cassette deck).
 It is still possible for an implementation to sound very good with such a low quality measure
 (e.g. if the deviation is due to inaudible phase distortion), but unless this is verified by
-listening tests, it is RECOMMENDED that implementations achive a quality above 90 for 48&nbsp;kHz
+listening tests, it is RECOMMENDED that implementations achieve a quality above 90 for 48&nbsp;kHz
 decoding. For other sampling rates, it is normal for the quality metric to be lower
 (typically as low as 50 even for a good implementation) because of harmless mismatch with
 the delay and phase of the internal sampling rate conversion.

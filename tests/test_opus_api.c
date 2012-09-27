@@ -1538,7 +1538,7 @@ int test_repacketizer_api(void)
 #ifdef MALLOC_FAIL
 /* GLIBC 2.14 declares __malloc_hook as deprecated, generating a warning
  * under GCC. However, this is the cleanest way to test malloc failure
- * handling in our codebase, and the lack of thread saftey isn't an
+ * handling in our codebase, and the lack of thread safety isn't an
  * issue here. We therefore disable the warning for this function.
  */
 #if OPUS_GNUC_PREREQ(4,6)

@@ -33,13 +33,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 void silk_LTP_analysis_filter_FIX(
     opus_int16                      *LTP_res,                               /* O    LTP residual signal of length MAX_NB_SUBFR * ( pre_length + subfr_length )  */
-    const opus_int16                *x,                                     /* I    Pointer to input signal with at least max( pitchL ) preceeding samples      */
+    const opus_int16                *x,                                     /* I    Pointer to input signal with at least max( pitchL ) preceding samples       */
     const opus_int16                LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ],/* I    LTP_ORDER LTP coefficients for each MAX_NB_SUBFR subframe                   */
     const opus_int                  pitchL[ MAX_NB_SUBFR ],                 /* I    Pitch lag, one for each subframe                                            */
     const opus_int32                invGains_Q16[ MAX_NB_SUBFR ],           /* I    Inverse quantization gains, one for each subframe                           */
     const opus_int                  subfr_length,                           /* I    Length of each subframe                                                     */
     const opus_int                  nb_subfr,                               /* I    Number of subframes                                                         */
-    const opus_int                  pre_length                              /* I    Length of the preceeding samples starting at &x[0] for each subframe        */
+    const opus_int                  pre_length                              /* I    Length of the preceding samples starting at &x[0] for each subframe         */
 )
 {
     const opus_int16 *x_ptr, *x_lag_ptr;

@@ -47,7 +47,7 @@ void silk_burg_modified(
     opus_int32                  A_Q16[],            /* O    Prediction coefficients (length order)                      */
     const opus_int16            x[],                /* I    Input signal, length: nb_subfr * ( D + subfr_length )       */
     const opus_int32            minInvGain_Q30,     /* I    Inverse of max prediction gain                              */
-    const opus_int              subfr_length,       /* I    Input signal subframe length (incl. D preceeding samples)   */
+    const opus_int              subfr_length,       /* I    Input signal subframe length (incl. D preceding samples)    */
     const opus_int              nb_subfr,           /* I    Number of subframes stacked in x                            */
     const opus_int              D                   /* I    Order                                                       */
 )
@@ -238,7 +238,7 @@ void silk_burg_modified(
             /* Scale coefficients */
             A_Q16[ k ] = -silk_RSHIFT_ROUND( Af_QA[ k ], QA - 16 );
         }
-        /* Subtract energy of preceeding samples from C0 */
+        /* Subtract energy of preceding samples from C0 */
         if( rshifts > 0 ) {
             for( s = 0; s < nb_subfr; s++ ) {
                 x_ptr = x + s * subfr_length;

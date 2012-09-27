@@ -500,7 +500,7 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
         silk_assert( lag == silk_SAT16( lag ) );
         contour_bias_Q20 = silk_DIV32_16( SILK_FIX_CONST( PE_FLATCONTOUR_BIAS, 20 ), lag );
 
-        /* Set up codebook parameters acording to complexity setting and frame length */
+        /* Set up codebook parameters according to complexity setting and frame length */
         if( nb_subfr == PE_MAX_NB_SUBFR ) {
             nb_cbk_search   = (opus_int)silk_nb_cbk_searchs_stage3[ complexity ];
             cbk_size        = PE_NB_CBKS_STAGE3_MAX;

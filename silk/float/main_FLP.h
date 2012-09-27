@@ -164,17 +164,17 @@ void silk_find_LTP_FLP(
 
 void silk_LTP_analysis_filter_FLP(
     silk_float                      *LTP_res,                           /* O    LTP res MAX_NB_SUBFR*(pre_lgth+subfr_lngth) */
-    const silk_float                *x,                                 /* I    Input signal, with preceeding samples       */
+    const silk_float                *x,                                 /* I    Input signal, with preceding samples        */
     const silk_float                B[ LTP_ORDER * MAX_NB_SUBFR ],      /* I    LTP coefficients for each subframe          */
     const opus_int                  pitchL[   MAX_NB_SUBFR ],           /* I    Pitch lags                                  */
     const silk_float                invGains[ MAX_NB_SUBFR ],           /* I    Inverse quantization gains                  */
     const opus_int                  subfr_length,                       /* I    Length of each subframe                     */
     const opus_int                  nb_subfr,                           /* I    number of subframes                         */
-    const opus_int                  pre_length                          /* I    Preceeding samples for each subframe        */
+    const opus_int                  pre_length                          /* I    Preceding samples for each subframe         */
 );
 
 /* Calculates residual energies of input subframes where all subframes have LPC_order   */
-/* of preceeding samples                                                                */
+/* of preceding samples                                                                 */
 void silk_residual_energy_FLP(
     silk_float                      nrgs[ MAX_NB_SUBFR ],               /* O    Residual energy per subframe                */
     const silk_float                x[],                                /* I    Input signal                                */

@@ -371,7 +371,7 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
   * @li max_size is the max duration of the frame in samples (per channel) that can fit into the decoded_frame array
   *
   * opus_decode() and opus_decode_float() return the number of samples (per channel) decoded from the packet.
-  * If that value is negative, then an error has occured. This can occur if the packet is corrupted or if the audio
+  * If that value is negative, then an error has occurred. This can occur if the packet is corrupted or if the audio
   * buffer is too small to hold the decoded audio.
   *
   * Opus is a stateful codec with overlapping blocks and as a result Opus

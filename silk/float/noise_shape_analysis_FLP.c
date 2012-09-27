@@ -174,7 +174,7 @@ void silk_noise_shape_analysis_FLP(
     /*************************/
     /* Set quantizer offset */
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
-        /* Initally set to 0; may be overruled in process_gains(..) */
+        /* Initially set to 0; may be overruled in process_gains(..) */
         psEnc->sCmn.indices.quantOffsetType = 0;
         psEncCtrl->sparseness = 0.0f;
     } else {

@@ -419,7 +419,7 @@ opus_int silk_pitch_analysis_core_FLP(      /* O    Voicing estimate: 0 voiced, 
         silk_assert( lag == silk_SAT16( lag ) );
         contour_bias = PE_FLATCONTOUR_BIAS / lag;
 
-        /* Set up cbk parameters acording to complexity setting and frame length */
+        /* Set up cbk parameters according to complexity setting and frame length */
         if( nb_subfr == PE_MAX_NB_SUBFR ) {
             nb_cbk_search = (opus_int)silk_nb_cbk_searchs_stage3[ complexity ];
             cbk_size      = PE_NB_CBKS_STAGE3_MAX;

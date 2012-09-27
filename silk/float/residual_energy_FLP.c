@@ -87,7 +87,7 @@ silk_float silk_residual_energy_covar_FLP(                              /* O    
 }
 
 /* Calculates residual energies of input subframes where all subframes have LPC_order   */
-/* of preceeding samples                                                                */
+/* of preceding samples                                                                 */
 void silk_residual_energy_FLP(
     silk_float                      nrgs[ MAX_NB_SUBFR ],               /* O    Residual energy per subframe                */
     const silk_float                x[],                                /* I    Input signal                                */

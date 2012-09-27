@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FIX.h"
 
 /* Calculates residual energies of input subframes where all subframes have LPC_order   */
-/* of preceeding samples                                                                */
+/* of preceding samples                                                                 */
 void silk_residual_energy_FIX(
           opus_int32                nrgs[ MAX_NB_SUBFR ],                   /* O    Residual energy per subframe                                                */
           opus_int                  nrgsQ[ MAX_NB_SUBFR ],                  /* O    Q value per subframe                                                        */
@@ -54,7 +54,7 @@ void silk_residual_energy_FIX(
 
     /* Filter input to create the LPC residual for each frame half, and measure subframe energies */
     for( i = 0; i < nb_subfr >> 1; i++ ) {
-        /* Calculate half frame LPC residual signal including preceeding samples */
+        /* Calculate half frame LPC residual signal including preceding samples */
         silk_LPC_analysis_filter( LPC_res, x_ptr, a_Q12[ i ], ( MAX_NB_SUBFR >> 1 ) * offset, LPC_order );
 
         /* Point to first subframe of the just calculated LPC residual signal */

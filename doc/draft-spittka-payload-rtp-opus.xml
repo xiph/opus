@@ -761,7 +761,7 @@
               "maxcodedaudiobandwidth" as this would lead to inefficient use of network resources. The "maxcodedaudiobandwidth" parameter does not
 	      affect interoperability. Also, this parameter SHOULD NOT be used
 	      to adjust the audio bandwidth as a function of the bitrates, as this
-	      is the responsability of the Opus encoder implementation.
+	      is the responsibility of the Opus encoder implementation.
             </t>
 
             <t>The parameter "maxaveragebitrate" is a unidirectional receive-only
