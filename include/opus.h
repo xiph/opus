@@ -343,7 +343,7 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
   * where
   * @li Fs is the sampling rate and must be 8000, 12000, 16000, 24000, or 48000
   * @li channels is the number of channels (1 or 2)
-  * @li error will hold the error code in case or failure (or #OPUS_OK on success)
+  * @li error will hold the error code in case of failure (or #OPUS_OK on success)
   * @li the return value is a newly created decoder state to be used for decoding
   *
   * While opus_decoder_create() allocates memory for the state, it's also possible
