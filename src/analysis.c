@@ -123,15 +123,15 @@ static inline float fast_atan2f(float y, float x) {
    if(x2<y2){
       float den = (y2 + cB*x2) * (y2 + cC*x2);
       if (den!=0)
-         return -x*y*(y2 + cA*x2) / den + copysignf(cE,y);
+         return -x*y*(y2 + cA*x2) / den + (y<0 ? -cE : cE);
       else
-         return copysignf(cE,y);
+         return (y<0 ? -cE : cE);
    }else{
       float den = (x2 + cB*y2) * (x2 + cC*y2);
       if (den!=0)
-         return  x*y*(x2 + cA*y2) / den + copysignf(cE,y) - copysignf(cE,x*y);
+         return  x*y*(x2 + cA*y2) / den + (y<0 ? -cE : cE) - (x*y<0 ? -cE : cE);
       else
-         return copysignf(cE,y) - copysignf(cE,x*y);
+         return (y<0 ? -cE : cE) - (x*y<0 ? -cE : cE);
    }
 }
 
