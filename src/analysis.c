@@ -249,8 +249,6 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        }
     }
     relativeE = 0;
-    info->boost_amount[0]=info->boost_amount[1]=0;
-    info->boost_band[0]=info->boost_band[1]=0;
     frame_loudness = 0;
     bandwidth_mask = 0;
     for (b=0;b<NB_TBANDS;b++)
@@ -316,19 +314,6 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        max_frame_tonality = MAX16(max_frame_tonality, (1+.03*(b-NB_TBANDS))*frame_tonality);
        slope += band_tonality[b]*(b-8);
        /*printf("%f %f ", band_tonality[b], stationarity);*/
-       if (band_tonality[b] > info->boost_amount[1] && b>=7 && b < NB_TBANDS-1)
-       {
-          if (band_tonality[b] > info->boost_amount[0])
-          {
-             info->boost_amount[1] = info->boost_amount[0];
-             info->boost_band[1] = info->boost_band[0];
-             info->boost_amount[0] = band_tonality[b];
-             info->boost_band[0] = b;
-          } else {
-             info->boost_amount[1] = band_tonality[b];
-             info->boost_band[1] = b;
-          }
-       }
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
 
@@ -359,14 +344,6 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     frame_tonality = (max_frame_tonality/(NB_TBANDS-NB_TONAL_SKIP_BANDS));
     frame_tonality = MAX16(frame_tonality, tonal->prev_tonality*.8);
     tonal->prev_tonality = frame_tonality;
-    info->boost_amount[0] -= frame_tonality+.2;
-    info->boost_amount[1] -= frame_tonality+.2;
-    if (band_tonality[info->boost_band[0]] < band_tonality[info->boost_band[0]+1]+.15
-        || band_tonality[info->boost_band[0]] < band_tonality[info->boost_band[0]-1]+.15)
-       info->boost_amount[0]=0;
-    if (band_tonality[info->boost_band[1]] < band_tonality[info->boost_band[1]+1]+.15
-        || band_tonality[info->boost_band[1]] < band_tonality[info->boost_band[1]-1]+.15)
-       info->boost_amount[1]=0;
 
     slope /= 8*8;
     info->tonality_slope = slope;

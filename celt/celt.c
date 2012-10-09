@@ -322,7 +322,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    opus_val16 follower;
    int metric=0;
    int fmetric=0, bmetric=0;
-   int count1, count2, count3, count4, count5;;
+   int count1, count2, count3, count4, count5;
 
    SAVE_STACK;
    ALLOC(tmp, len, opus_val16);
@@ -3180,7 +3180,6 @@ const char *opus_strerror(int error)
 const char *opus_get_version_string(void)
 {
     return "libopus " OPUS_VERSION
-          "-exp_analysis"
 #ifdef FIXED_POINT
           "-fixed"
 #endif

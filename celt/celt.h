@@ -56,8 +56,6 @@ typedef struct {
    opus_val16 tonality_slope;
    opus_val16 noisiness;
    opus_val16 activity;
-   int boost_band[2];
-   opus_val16 boost_amount[2];
    opus_val16 music_prob;
 }AnalysisInfo;
 
