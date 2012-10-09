@@ -895,6 +895,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          sum = ADD16(sum, EXTRACT16(SHR32(partial, 18)));
       }
       sum = MULT16_16_Q15(QCONST16(1.f/8, 15), sum);
+      sum = MIN16(QCONST16(1.f, 10), ABS16(sum));
       minXC = sum;
       for (i=8;i<intensity;i++)
       {
@@ -902,8 +903,9 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          opus_val32 partial = 0;
          for (j=m->eBands[i]<<LM;j<m->eBands[i+1]<<LM;j++)
             partial = MAC16_16(partial, X[j], X[N0+j]);
-         minXC = MIN16(minXC, EXTRACT16(SHR32(partial, 18)));
+         minXC = MIN16(minXC, ABS16(EXTRACT16(SHR32(partial, 18))));
       }
+      minXC = MIN16(QCONST16(1.f, 10), ABS16(minXC));
       /*printf ("%f\n", sum);*/
       if (sum > QCONST16(.995f,10))
          trim_index-=4;
