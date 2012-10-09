@@ -409,10 +409,9 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
 
 #ifndef FIXED_POINT
     mlp_process(&net, features, &frame_prob);
-    /* Adds a "probability dead zone", with a cap on certainty */
-    frame_prob = .90*frame_prob*frame_prob*frame_prob;
-
     frame_prob = .5*(frame_prob+1);
+    /* Curve fitting between the MLP probability and the actual probability */
+    frame_prob = .01 + 1.21*frame_prob*frame_prob - .23*pow(frame_prob, 10);
 
     /*printf("%f\n", frame_prob);*/
     {
@@ -422,7 +421,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        /* One transition every 3 minutes */
        tau = .00005;
        beta = .1;
-       max_certainty = 1.f/(10+1*tonal->last_transition);
+       max_certainty = .01+1.f/(20+.5*tonal->last_transition);
        p0 = (1-tonal->music_prob)*(1-tau) +    tonal->music_prob *tau;
        p1 =    tonal->music_prob *(1-tau) + (1-tonal->music_prob)*tau;
        p0 *= pow(1-frame_prob, beta);
