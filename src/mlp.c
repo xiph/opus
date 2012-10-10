@@ -74,7 +74,7 @@ static inline double tansig_approx(double x)
 	   x=-x;
 	   sign=-1;
 	}
-	i = lrint(25*x);
+	i = floor(.5+25*x);
 	x -= .04*i;
 	y = tansig_table[i];
 	dy = 1-y*y;
