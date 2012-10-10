@@ -1174,8 +1174,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(in, CC*(N+st->overlap), celt_sig);
 
-   sample_max=MAX16(st->overlap_max, celt_maxabs16(pcm, C*(N-st->mode->overlap)));
-   st->overlap_max=celt_maxabs16(pcm+C*(N-st->mode->overlap), C*st->mode->overlap);
+   sample_max=MAX16(st->overlap_max, celt_maxabs16(pcm, C*(N-st->mode->overlap)/st->upsample));
+   st->overlap_max=celt_maxabs16(pcm+C*(N-st->mode->overlap)/st->upsample, C*st->mode->overlap/st->upsample);
    sample_max=MAX16(sample_max, st->overlap_max);
    /* Find pitch period and gain */
    {
