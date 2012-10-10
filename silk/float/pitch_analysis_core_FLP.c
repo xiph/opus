@@ -471,18 +471,18 @@ opus_int silk_pitch_analysis_core_FLP(      /* O    Voicing estimate: 0 voiced, 
 }
 
 /***********************************************************************
-/* Calculates the correlations used in stage 3 search. In order to cover
-/* the whole lag codebook for all the searched offset lags (lag +- 2),
-/* the following correlations are needed in each sub frame:
-/* 
-/* sf1: lag range [-8,...,7] total 16 correlations
-/* sf2: lag range [-4,...,4] total 9 correlations
-/* sf3: lag range [-3,....4] total 8 correltions
-/* sf4: lag range [-6,....8] total 15 correlations
-/* 
-/* In total 48 correlations. The direct implementation computed in worst 
-/* case 4*12*5 = 240 correlations, but more likely around 120.
-/***********************************************************************/
+ * Calculates the correlations used in stage 3 search. In order to cover
+ * the whole lag codebook for all the searched offset lags (lag +- 2),
+ * the following correlations are needed in each sub frame:
+ *
+ * sf1: lag range [-8,...,7] total 16 correlations
+ * sf2: lag range [-4,...,4] total 9 correlations
+ * sf3: lag range [-3,....4] total 8 correltions
+ * sf4: lag range [-6,....8] total 15 correlations
+ *
+ * In total 48 correlations. The direct implementation computed in worst
+ * case 4*12*5 = 240 correlations, but more likely around 120.
+ ***********************************************************************/
 static void silk_P_Ana_calc_corr_st3(
     silk_float cross_corr_st3[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE3_MAX ][ PE_NB_STAGE3_LAGS ], /* O 3 DIM correlation array */
     const silk_float    frame[],            /* I vector to correlate                                            */
