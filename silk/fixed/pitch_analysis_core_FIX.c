@@ -485,7 +485,7 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
             Lag_CB_ptr      = &silk_CB_lags_stage3_10_ms[ 0 ][ 0 ];
         }
 
-        target_ptr = &frame[ PE_LTP_MEM_LENGTH_MS * Fs_kHz ];
+        target_ptr = &input_frame_ptr[ PE_LTP_MEM_LENGTH_MS * Fs_kHz ];
         energy_target = silk_ADD32( silk_inner_prod_aligned( target_ptr, target_ptr, nb_subfr * sf_length ), 1 );
         for( d = start_lag; d <= end_lag; d++ ) {
             for( j = 0; j < nb_cbk_search; j++ ) {
