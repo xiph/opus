@@ -483,6 +483,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_GET_LOOKAHEAD_REQUEST:
    case OPUS_GET_SAMPLE_RATE_REQUEST:
    case OPUS_GET_INBAND_FEC_REQUEST:
+   case OPUS_GET_FORCE_CHANNELS_REQUEST:
    {
       OpusEncoder *enc;
       /* For int32* GET params, just query the first stream */
@@ -522,6 +523,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
    case OPUS_SET_DTX_REQUEST:
    case OPUS_SET_FORCE_MODE_REQUEST:
+   case OPUS_SET_FORCE_CHANNELS_REQUEST:
    {
       int s;
       /* This works for int32 params */
