@@ -191,9 +191,8 @@ opus_int silk_Encode(                                   /* O    Returns error co
     if( prefillFlag ) {
         /* Only accept input length of 10 ms */
         if( nBlocksOf10ms != 1 ) {
-            ret = SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
             silk_assert( 0 );
-            return ret;
+            return SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
         }
         /* Reset Encoder */
         for( n = 0; n < encControl->nChannelsInternal; n++ ) {
@@ -212,15 +211,13 @@ opus_int silk_Encode(                                   /* O    Returns error co
     } else {
         /* Only accept input lengths that are a multiple of 10 ms */
         if( nBlocksOf10ms * encControl->API_sampleRate != 100 * nSamplesIn || nSamplesIn < 0 ) {
-            ret = SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
             silk_assert( 0 );
-            return ret;
+            return SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
         }
         /* Make sure no more than one packet can be produced */
         if( 1000 * (opus_int32)nSamplesIn > encControl->payloadSize_ms * encControl->API_sampleRate ) {
-            ret = SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
             silk_assert( 0 );
-            return ret;
+            return SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
         }
     }
 

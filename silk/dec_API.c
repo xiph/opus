@@ -97,6 +97,8 @@ opus_int silk_Decode(                                   /* O    Returns error co
     opus_int stereo_to_mono;
     SAVE_STACK;
 
+    silk_assert( decControl->nChannelsInternal == 1 || decControl->nChannelsInternal == 2 );
+
     /**********************************/
     /* Test if first frame in payload */
     /**********************************/

@@ -1187,7 +1187,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       pre[0] = _pre;
       pre[1] = _pre + (N+COMBFILTER_MAXPERIOD);
 
-      silence = 1;
       c=0; do {
          int count = 0;
          const opus_val16 * OPUS_RESTRICT pcmp = pcm+c;

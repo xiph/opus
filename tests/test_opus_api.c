@@ -987,7 +987,7 @@ opus_int32 test_parse(void)
       }
    }
    fprintf(stdout,"    code 3 padding (%2d cases) ............... OK.\n",cfgs);
-   cfgs_total+=cfgs;cfgs=0;
+   cfgs_total+=cfgs;
    fprintf(stdout,"    opus_packet_parse ............................ OK.\n");
    fprintf(stdout,"                      All packet parsing tests passed\n");
    fprintf(stdout,"                          (%d API invocations)\n",cfgs_total);
