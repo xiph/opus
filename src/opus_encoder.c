@@ -458,22 +458,37 @@ static void gain_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus
     int i;
     int inc;
     int overlap;
+    int c;
     inc = 48000/Fs;
     overlap=overlap48/inc;
-    for (i=0;i<overlap;i++)
+    if (channels==1)
     {
-       opus_val16 g, w;
-       w = MULT16_16_Q15(window[i*inc], window[i*inc]);
-       g = SHR32(MAC16_16(MULT16_16(w,g2),
-             Q15ONE-w, g1), 15);
-       out[i*channels] = MULT16_16_Q15(g, in[i*channels]);
-       out[i*channels+1] = MULT16_16_Q15(g, in[i*channels+1]);
+       for (i=0;i<overlap;i++)
+       {
+          opus_val16 g, w;
+          w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+          g = SHR32(MAC16_16(MULT16_16(w,g2),
+                Q15ONE-w, g1), 15);
+          out[i] = MULT16_16_Q15(g, in[i]);
+       }
+    } else {
+       for (i=0;i<overlap;i++)
+       {
+          opus_val16 g, w;
+          w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+          g = SHR32(MAC16_16(MULT16_16(w,g2),
+                Q15ONE-w, g1), 15);
+          out[i*2] = MULT16_16_Q15(g, in[i*2]);
+          out[i*2+1] = MULT16_16_Q15(g, in[i*2+1]);
+       }
     }
-    for (;i<frame_size;i++)
-    {
-       out[i*channels] = MULT16_16_Q15(g2, in[i*channels]);
-       out[i*channels+1] = MULT16_16_Q15(g2, in[i*channels+1]);
+    c=0;do {
+       for (;i<frame_size;i++)
+       {
+          out[i*channels+c] = MULT16_16_Q15(g2, in[i*channels+c]);
+       }
     }
+    while (++c<channels);
 }
 
 OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int application, int *error)
@@ -1194,7 +1209,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
        const CELTMode *celt_mode;
 
        celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
-       gain_fade(pcm_buf, pcm_buf,
+       gain_fade(pcm_buf+extra_buffer*st->channels, pcm_buf+extra_buffer*st->channels,
              st->prev_HB_gain, HB_gain, celt_mode->overlap, frame_size, st->channels, celt_mode->window, st->Fs);
     }
     st->prev_HB_gain = HB_gain;
