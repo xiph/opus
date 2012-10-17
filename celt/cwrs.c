@@ -337,7 +337,7 @@ static opus_uint32 ncwrs_urow(unsigned _n,unsigned _k,opus_uint32 *_u){
     but _k isn't tested here because k<=52 for n=7*/
   if(_n<=6)
 #endif
- {
+  {
     /*If _n==0, _u[0] should be 1 and the rest should be 0.*/
     /*If _n==1, _u[i] should be 1 for i>1.*/
     celt_assert(_n>=2);
