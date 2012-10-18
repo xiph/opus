@@ -126,24 +126,24 @@ install-opus: install
 
 # Or just the docs
 docs:
-	cd doc && $(MAKE) $(AM_MAKEFLAGS)
+	( cd doc && $(MAKE) $(AM_MAKEFLAGS) )
 
 install-docs:
-	cd doc && $(MAKE) $(AM_MAKEFLAGS) install
+	( cd doc && $(MAKE) $(AM_MAKEFLAGS) install )
 
 
 # Or everything (by default)
 all-local:
-	@[ -n "$(NO_DOXYGEN)" ] || cd doc && $(MAKE) $(AM_MAKEFLAGS)
+	@[ -n "$(NO_DOXYGEN)" ] || ( cd doc && $(MAKE) $(AM_MAKEFLAGS) )
 
 install-data-local:
-	@[ -n "$(NO_DOXYGEN)" ] || cd doc && $(MAKE) $(AM_MAKEFLAGS) install
+	@[ -n "$(NO_DOXYGEN)" ] || ( cd doc && $(MAKE) $(AM_MAKEFLAGS) install )
 
 clean-local:
-	-cd doc && $(MAKE) $(AM_MAKEFLAGS) clean
+	-( cd doc && $(MAKE) $(AM_MAKEFLAGS) clean )
 
 uninstall-local:
-	cd doc && $(MAKE) $(AM_MAKEFLAGS) uninstall
+	( cd doc && $(MAKE) $(AM_MAKEFLAGS) uninstall )
 
 
 .PHONY: opus check-opus install-opus docs install-docs
