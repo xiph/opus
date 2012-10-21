@@ -253,35 +253,26 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
    opus_ifft(l->kfft[shift], (kiss_fft_cpx *)f2, (kiss_fft_cpx *)f);
 
-   /* Post-rotate */
+   /* Post-rotate and de-shuffle */
    {
       kiss_fft_scalar * OPUS_RESTRICT fp = f;
+      kiss_fft_scalar * OPUS_RESTRICT yp0 = f2;
+      kiss_fft_scalar * OPUS_RESTRICT yp1 = f2+N2-1;
       const kiss_twiddle_scalar *t = &l->trig[0];
 
       for(i=0;i<N4;i++)
       {
          kiss_fft_scalar re, im, yr, yi;
-         re = fp[0];
-         im = fp[1];
+         re = *fp++;
+         im = *fp++;
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
          yr = S_MUL(re,t[i<<shift]) - S_MUL(im,t[(N4-i)<<shift]);
          yi = S_MUL(im,t[i<<shift]) + S_MUL(re,t[(N4-i)<<shift]);
          /* works because the cos is nearly one */
-         *fp++ = yr - S_MUL(yi,sine);
-         *fp++ = yi + S_MUL(yr,sine);
-      }
-   }
-   /* De-shuffle the components for the middle of the window only */
-   {
-      const kiss_fft_scalar * OPUS_RESTRICT fp1 = f;
-      const kiss_fft_scalar * OPUS_RESTRICT fp2 = f+N2-1;
-      kiss_fft_scalar * OPUS_RESTRICT yp = f2;
-      for(i = 0; i < N4; i++)
-      {
-         *yp++ =-*fp1;
-         *yp++ = *fp2;
-         fp1 += 2;
-         fp2 -= 2;
+         *yp0 = -(yr - S_MUL(yi,sine));
+         *yp1 = yi + S_MUL(yr,sine);
+         yp0 += 2;
+         yp1 -= 2;
       }
    }
    out -= (N2-overlap)>>1;
