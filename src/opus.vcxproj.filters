@@ -30,6 +30,15 @@
     <ClCompile Include="opus_multistream.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="analysis.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mlp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mlp_data.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\win32\config.h">
@@ -69,6 +78,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\opus_multistream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="analysis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mlp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

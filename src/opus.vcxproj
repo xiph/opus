@@ -191,6 +191,9 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="analysis.c" />
+    <ClCompile Include="mlp.c" />
+    <ClCompile Include="mlp_data.c" />
     <ClCompile Include="opus.c" />
     <ClCompile Include="opus_decoder.c" />
     <ClCompile Include="opus_encoder.c" />
@@ -210,6 +213,8 @@
     <ClInclude Include="..\include\opus_types.h" />
     <ClInclude Include="..\include\opus_multistream.h" />
     <ClInclude Include="..\win32\config.h" />
+    <ClInclude Include="analysis.h" />
+    <ClInclude Include="mlp.h" />
     <ClInclude Include="opus_private.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

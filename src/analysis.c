@@ -142,9 +142,9 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     const kiss_fft_state *kfft;
     kiss_fft_cpx in[480], out[480];
     int N = 480, N2=240;
-    float * restrict A = tonal->angle;
-    float * restrict dA = tonal->d_angle;
-    float * restrict d2A = tonal->d2_angle;
+    float * OPUS_RESTRICT A = tonal->angle;
+    float * OPUS_RESTRICT dA = tonal->d_angle;
+    float * OPUS_RESTRICT d2A = tonal->d2_angle;
     float tonality[240];
     float noisiness[240];
     float band_tonality[NB_TBANDS];
