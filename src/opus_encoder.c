@@ -401,7 +401,7 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
    int c, i;
    float coef;
 
-   coef = 4.*cutoff_Hz/Fs;
+   coef = 4.0f*cutoff_Hz/Fs;
    for (c=0;c<channels;c++)
    {
       for (i=0;i<len;i++)
@@ -978,7 +978,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
        for (i=0;i<nb_analysis_frames;i++)
           tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm_buf+i*(st->Fs/100)*st->channels, st->channels);
        if (st->signal_type == OPUS_AUTO)
-          st->voice_ratio = floor(.5+100*(1-analysis_info.music_prob));
+          st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
     } else {
        analysis_info.valid = 0;
        st->voice_ratio = -1;
