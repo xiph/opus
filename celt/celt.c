@@ -503,10 +503,11 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
    RESTORE_STACK;
 }
 
-static void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem)
+static void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem, celt_sig * OPUS_RESTRICT scratch)
 {
    int c;
-   int count=0;
+   int Nd;
+   Nd = N/downsample;
    c=0; do {
       int j;
       celt_sig * OPUS_RESTRICT x;
@@ -514,24 +515,30 @@ static void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsa
       celt_sig m = mem[c];
       x =in[c];
       y = pcm+c;
-      for (j=0;j<N;j++)
+      /* Shortcut for the standard (non-custom modes) case */
+      if (coef[1] == 0)
       {
-         celt_sig tmp = *x + m;
-         m = MULT16_32_Q15(coef[0], tmp)
-           - MULT16_32_Q15(coef[1], *x);
-         tmp = SHL32(MULT16_32_Q15(coef[3], tmp), 2);
-         x++;
-         /* Technically the store could be moved outside of the if because
-            the stores we don't want will just be overwritten */
-         if (count==0)
-            *y = SCALEOUT(SIG2WORD16(tmp));
-         if (++count==downsample)
+         for (j=0;j<N;j++)
          {
-            y+=C;
-            count=0;
+            celt_sig tmp = x[j] + m;
+            m = MULT16_32_Q15(coef[0], tmp);
+            scratch[j] = tmp;
+         }
+      } else {
+         for (j=0;j<N;j++)
+         {
+            celt_sig tmp = x[j] + m;
+            m = MULT16_32_Q15(coef[0], tmp)
+              - MULT16_32_Q15(coef[1], x[j]);
+            tmp = SHL32(MULT16_32_Q15(coef[3], tmp), 2);
+            scratch[j] = tmp;
          }
       }
       mem[c] = m;
+
+      /* Perform down-sampling */
+      for (j=0;j<Nd;j++)
+         y[j*C] = SCALEOUT(SIG2WORD16(scratch[j*downsample]));
    } while (++c<C);
 }
 
@@ -1920,7 +1927,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
                   st->mode->window, st->mode->overlap);
       } while (++c<CC);
 
-      deemphasis(out_mem, (opus_val16*)pcm, N, CC, st->upsample, st->mode->preemph, st->preemph_memD);
+      /* We reuse freq[] as scratch space for the de-emphasis */
+      deemphasis(out_mem, (opus_val16*)pcm, N, CC, st->upsample, st->mode->preemph, st->preemph_memD, freq);
       st->prefilter_period_old = st->prefilter_period;
       st->prefilter_gain_old = st->prefilter_gain;
       st->prefilter_tapset_old = st->prefilter_tapset;
@@ -2360,6 +2368,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
    opus_val16 *lpc;
    opus_val32 *out_syn[2];
    opus_val16 *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
+   VARDECL(celt_sig, scratch);
    SAVE_STACK;
 
    c=0; do {
@@ -2599,7 +2608,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       } while (++c<C);
    }
 
-   deemphasis(out_syn, pcm, N, C, st->downsample, st->mode->preemph, st->preemph_memD);
+   ALLOC(scratch, N, celt_sig);
+   deemphasis(out_syn, pcm, N, C, st->downsample, st->mode->preemph, st->preemph_memD, scratch);
 
    st->loss_count++;
 
@@ -2974,7 +2984,8 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    } while (++c<2);
    st->rng = dec->rng;
 
-   deemphasis(out_syn, pcm, N, CC, st->downsample, st->mode->preemph, st->preemph_memD);
+   /* We reuse freq[] as scratch space for the de-emphasis */
+   deemphasis(out_syn, pcm, N, CC, st->downsample, st->mode->preemph, st->preemph_memD, freq);
    st->loss_count = 0;
    RESTORE_STACK;
    if (ec_tell(dec) > 8*len)
