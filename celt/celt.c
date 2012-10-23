@@ -2136,6 +2136,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       compute_inv_mdcts(st->mode, 0, freq, out_syn, overlap_mem, C, LM);
    } else {
       /* Pitch-based PLC */
+      VARDECL(opus_val32, e);
+
       if (st->loss_count == 0)
       {
          opus_val16 pitch_buf[DECODE_BUFFER_SIZE>>1];
@@ -2153,15 +2155,13 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          fade = QCONST16(.8f,15);
       }
 
+      ALLOC(e, MAX_PERIOD+2*st->mode->overlap, opus_val32);
       c=0; do {
-         VARDECL(opus_val32, e);
          opus_val16 exc[MAX_PERIOD];
          opus_val32 ac[LPC_ORDER+1];
          opus_val16 decay = 1;
          opus_val32 S1=0;
          opus_val16 mem[LPC_ORDER]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
-         ALLOC(e, MAX_PERIOD+2*st->mode->overlap, opus_val32);
 
          offset = MAX_PERIOD-pitch_index;
          for (i=0;i<MAX_PERIOD;i++)
@@ -2396,6 +2396,13 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    if (effEnd > st->mode->effEBands)
       effEnd = st->mode->effEBands;
 
+   if (data == NULL || len<=1)
+   {
+      celt_decode_lost(st, pcm, N, LM);
+      RESTORE_STACK;
+      return frame_size/st->downsample;
+   }
+
    ALLOC(freq, IMAX(CC,C)*N, celt_sig); /**< Interleaved signal MDCTs */
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
    ALLOC(bandE, st->mode->nbEBands*C, celt_ener);
@@ -2407,13 +2414,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       for (i=M*st->mode->eBands[effEnd];i<N;i++)
          X[c*N+i] = 0;
    while (++c<C);
-
-   if (data == NULL || len<=1)
-   {
-      celt_decode_lost(st, pcm, N, LM);
-      RESTORE_STACK;
-      return frame_size/st->downsample;
-   }
 
    if (dec == NULL)
    {
