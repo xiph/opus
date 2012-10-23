@@ -4,7 +4,6 @@
 #define CELT_BUILD            1
 
 #define inline __inline
-#define getpid _getpid
 
 #define USE_ALLOCA            1
 
