@@ -38,6 +38,9 @@
 #include <time.h>
 #if (!defined WIN32 && !defined _WIN32) || defined(__MINGW32__)
 #include <unistd.h>
+#else
+#include <process.h>
+#define getpid _getpid
 #endif
 #include "opus_multistream.h"
 #include "opus.h"
