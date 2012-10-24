@@ -1067,11 +1067,13 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    const OpusCustomMode *mode;
    int nbEBands;
    int overlap;
+   const opus_int16 *eBands;
    ALLOC_STACK;
 
    mode = st->mode;
    nbEBands = mode->nbEBands;
    overlap = mode->overlap;
+   eBands = mode->eBands;
    tf_estimate = QCONST16(1.0f,14);
    if (nbCompressedBytes<2 || pcm==NULL)
      return OPUS_BAD_ARG;
@@ -1569,7 +1571,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          follower[i] = MIN16(follower[i], QCONST16(4, DB_SHIFT));
 
          /* FIXME: Adaptively reduce follower at low rate or for cbr/cvbr */
-         width = C*(mode->eBands[i+1]-mode->eBands[i])<<LM;
+         width = C*(eBands[i+1]-eBands[i])<<LM;
          if (width<6)
          {
             boost = SHR32(EXTEND32(follower[i]),DB_SHIFT);
@@ -1603,7 +1605,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       int dynalloc_loop_logp;
       int boost;
       int j;
-      width = C*(mode->eBands[i+1]-mode->eBands[i])<<LM;
+      width = C*(eBands[i+1]-eBands[i])<<LM;
       /* quanta is 6 bits, but no more than 1 bit/sample
          and no less than 1/8 bit/sample */
       quanta = IMIN(width<<BITRES, IMAX(6<<BITRES, width));
@@ -1673,9 +1675,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      int coded_bands;
      int lm_diff = mode->maxLM - LM;
      coded_bands = st->lastCodedBands ? st->lastCodedBands : nbEBands;
-     coded_bins = mode->eBands[coded_bands]<<LM;
+     coded_bins = eBands[coded_bands]<<LM;
      if (C==2)
-        coded_bins += mode->eBands[IMIN(st->intensity, coded_bands)]<<LM;
+        coded_bins += eBands[IMIN(st->intensity, coded_bands)]<<LM;
 
      /* Don't attempt to use more than 510 kb/s, even for frames smaller than 20 ms.
         The CELT allocator will just not be able to use more than that anyway. */
@@ -1697,7 +1699,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         int coded_stereo_bands;
         int coded_stereo_dof;
         coded_stereo_bands = IMIN(st->intensity, coded_bands);
-        coded_stereo_dof = (mode->eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
+        coded_stereo_dof = (eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
         /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
         target -= MIN32(target/3, SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
         target += MULT16_16_Q15(QCONST16(0.035,15),coded_stereo_dof<<BITRES);
@@ -1730,7 +1732,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      {
         opus_int32 floor_depth;
         int bins;
-        bins = mode->eBands[nbEBands-2]<<LM;
+        bins = eBands[nbEBands-2]<<LM;
         /*floor_depth = SHR32(MULT16_16((C*bins<<BITRES),celt_log2(SHL32(MAX16(1,sample_max),13))), DB_SHIFT);*/
         floor_depth = SHR32(MULT16_16((C*bins<<BITRES),maxDepth), DB_SHIFT);
         floor_depth = IMAX(floor_depth, target>>2);
@@ -1897,11 +1899,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          OPUS_MOVE(st->syn_mem[1], st->syn_mem[1]+N, MAX_PERIOD);
 
       c=0; do
-         for (i=0;i<M*mode->eBands[st->start];i++)
+         for (i=0;i<M*eBands[st->start];i++)
             freq[c*N+i] = 0;
       while (++c<C);
       c=0; do
-         for (i=M*mode->eBands[st->end];i<N;i++)
+         for (i=M*eBands[st->end];i<N;i++)
             freq[c*N+i] = 0;
       while (++c<C);
 
@@ -2363,7 +2365,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
 {
    int c;
    int pitch_index;
-   int overlap = st->mode->overlap;
    opus_val16 fade = Q15ONE;
    int i, len;
    const int C = st->channels;
@@ -2374,8 +2375,17 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
    opus_val16 *lpc;
    opus_val32 *out_syn[2];
    opus_val16 *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
+   const OpusCustomMode *mode;
+   int nbEBands;
+   int overlap;
+   const opus_int16 *eBands;
    VARDECL(celt_sig, scratch);
    SAVE_STACK;
+
+   mode = st->mode;
+   nbEBands = mode->nbEBands;
+   overlap = mode->overlap;
+   eBands = mode->eBands;
 
    c=0; do {
       decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+st->overlap);
@@ -2384,15 +2394,15 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
    } while (++c<C);
    lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
    oldBandE = lpc+C*LPC_ORDER;
-   oldLogE = oldBandE + 2*st->mode->nbEBands;
-   oldLogE2 = oldLogE + 2*st->mode->nbEBands;
-   backgroundLogE = oldLogE2  + 2*st->mode->nbEBands;
+   oldLogE = oldBandE + 2*nbEBands;
+   oldLogE2 = oldLogE + 2*nbEBands;
+   backgroundLogE = oldLogE2  + 2*nbEBands;
 
    out_syn[0] = out_mem[0]+MAX_PERIOD-N;
    if (C==2)
       out_syn[1] = out_mem[1]+MAX_PERIOD-N;
 
-   len = N+st->mode->overlap;
+   len = N+overlap;
 
    if (st->loss_count >= 5 || st->start!=0)
    {
@@ -2404,37 +2414,37 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       int effEnd;
 
       effEnd = st->end;
-      if (effEnd > st->mode->effEBands)
-         effEnd = st->mode->effEBands;
+      if (effEnd > mode->effEBands)
+         effEnd = mode->effEBands;
 
       ALLOC(freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
       ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
-      ALLOC(bandE, st->mode->nbEBands*C, celt_ener);
+      ALLOC(bandE, nbEBands*C, celt_ener);
 
       if (st->loss_count >= 5)
-         log2Amp(st->mode, st->start, st->end, bandE, backgroundLogE, C);
+         log2Amp(mode, st->start, st->end, bandE, backgroundLogE, C);
       else {
          /* Energy decay */
          opus_val16 decay = st->loss_count==0 ? QCONST16(1.5f, DB_SHIFT) : QCONST16(.5f, DB_SHIFT);
          c=0; do
          {
             for (i=st->start;i<st->end;i++)
-               oldBandE[c*st->mode->nbEBands+i] -= decay;
+               oldBandE[c*nbEBands+i] -= decay;
          } while (++c<C);
-         log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
+         log2Amp(mode, st->start, st->end, bandE, oldBandE, C);
       }
       seed = st->rng;
       for (c=0;c<C;c++)
       {
-         for (i=0;i<(st->mode->eBands[st->start]<<LM);i++)
+         for (i=0;i<(eBands[st->start]<<LM);i++)
             X[c*N+i] = 0;
-         for (i=st->start;i<st->mode->effEBands;i++)
+         for (i=st->start;i<mode->effEBands;i++)
          {
             int j;
             int boffs;
             int blen;
-            boffs = N*c+(st->mode->eBands[i]<<LM);
-            blen = (st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
+            boffs = N*c+(eBands[i]<<LM);
+            blen = (eBands[i+1]-eBands[i])<<LM;
             for (j=0;j<blen;j++)
             {
                seed = celt_lcg_rand(seed);
@@ -2442,25 +2452,25 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             }
             renormalise_vector(X+boffs, blen, Q15ONE);
          }
-         for (i=(st->mode->eBands[st->end]<<LM);i<N;i++)
+         for (i=(eBands[st->end]<<LM);i<N;i++)
             X[c*N+i] = 0;
       }
       st->rng = seed;
 
-      denormalise_bands(st->mode, X, freq, bandE, st->mode->effEBands, C, 1<<LM);
+      denormalise_bands(mode, X, freq, bandE, mode->effEBands, C, 1<<LM);
 
       c=0; do
-         for (i=0;i<st->mode->eBands[st->start]<<LM;i++)
+         for (i=0;i<eBands[st->start]<<LM;i++)
             freq[c*N+i] = 0;
       while (++c<C);
       c=0; do {
-         int bound = st->mode->eBands[effEnd]<<LM;
+         int bound = eBands[effEnd]<<LM;
          if (st->downsample!=1)
             bound = IMIN(bound, N/st->downsample);
          for (i=bound;i<N;i++)
             freq[c*N+i] = 0;
       } while (++c<C);
-      compute_inv_mdcts(st->mode, 0, freq, out_syn, overlap_mem, C, LM);
+      compute_inv_mdcts(mode, 0, freq, out_syn, overlap_mem, C, LM);
    } else {
       /* Pitch-based PLC */
       VARDECL(opus_val32, e);
@@ -2482,7 +2492,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          fade = QCONST16(.8f,15);
       }
 
-      ALLOC(e, MAX_PERIOD+2*st->mode->overlap, opus_val32);
+      ALLOC(e, MAX_PERIOD+2*overlap, opus_val32);
       c=0; do {
          opus_val16 exc[MAX_PERIOD];
          opus_val32 ac[LPC_ORDER+1];
@@ -2496,7 +2506,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
 
          if (st->loss_count == 0)
          {
-            _celt_autocorr(exc, ac, st->mode->window, st->mode->overlap,
+            _celt_autocorr(exc, ac, mode->window, overlap,
                   LPC_ORDER, MAX_PERIOD);
 
             /* Noise floor -40 dB */
@@ -2541,7 +2551,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          }
 
          /* Copy excitation, taking decay into account */
-         for (i=0;i<len+st->mode->overlap;i++)
+         for (i=0;i<len+overlap;i++)
          {
             opus_val16 tmp;
             if (offset+i >= MAX_PERIOD)
@@ -2555,9 +2565,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          }
          for (i=0;i<LPC_ORDER;i++)
             mem[i] = ROUND16(out_mem[c][MAX_PERIOD-1-i], SIG_SHIFT);
-         for (i=0;i<len+st->mode->overlap;i++)
+         for (i=0;i<len+overlap;i++)
             e[i] = MULT16_32_Q15(fade, e[i]);
-         celt_iir(e, lpc+c*LPC_ORDER, e, len+st->mode->overlap, LPC_ORDER, mem);
+         celt_iir(e, lpc+c*LPC_ORDER, e, len+overlap, LPC_ORDER, mem);
 
          {
             opus_val32 S2=0;
@@ -2589,7 +2599,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
                st->postfilter_gain, st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
                NULL, 0);
 
-         for (i=0;i<MAX_PERIOD+st->mode->overlap-N;i++)
+         for (i=0;i<MAX_PERIOD+overlap-N;i++)
             out_mem[c][i] = out_mem[c][N+i];
 
          /* Apply TDAC to the concealed audio so that it blends with the
@@ -2597,10 +2607,10 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          for (i=0;i<overlap/2;i++)
          {
             opus_val32 tmp;
-            tmp = MULT16_32_Q15(st->mode->window[i],           e[N+overlap-1-i]) +
-                  MULT16_32_Q15(st->mode->window[overlap-i-1], e[N+i          ]);
-            out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(st->mode->window[overlap-i-1], tmp);
-            out_mem[c][MAX_PERIOD+overlap-i-1] = MULT16_32_Q15(st->mode->window[i], tmp);
+            tmp = MULT16_32_Q15(mode->window[i],           e[N+overlap-1-i]) +
+                  MULT16_32_Q15(mode->window[overlap-i-1], e[N+i          ]);
+            out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(mode->window[overlap-i-1], tmp);
+            out_mem[c][MAX_PERIOD+overlap-i-1] = MULT16_32_Q15(mode->window[i], tmp);
          }
          for (i=0;i<N;i++)
             out_mem[c][MAX_PERIOD-N+i] = e[i];
@@ -2615,7 +2625,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
    }
 
    ALLOC(scratch, N, celt_sig);
-   deemphasis(out_syn, pcm, N, C, st->downsample, st->mode->preemph, st->preemph_memD, scratch);
+   deemphasis(out_syn, pcm, N, C, st->downsample, mode->preemph, st->preemph_memD, scratch);
 
    st->loss_count++;
 
@@ -2669,11 +2679,13 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    const OpusCustomMode *mode;
    int nbEBands;
    int overlap;
+   const opus_int16 *eBands;
    ALLOC_STACK;
 
    mode = st->mode;
    nbEBands = mode->nbEBands;
    overlap = mode->overlap;
+   eBands = mode->eBands;
    frame_size *= st->downsample;
 
    c=0; do {
@@ -2741,11 +2753,11 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
    ALLOC(bandE, nbEBands*C, celt_ener);
    c=0; do
-      for (i=0;i<M*mode->eBands[st->start];i++)
+      for (i=0;i<M*eBands[st->start];i++)
          X[c*N+i] = 0;
    while (++c<C);
    c=0; do
-      for (i=M*mode->eBands[effEnd];i<N;i++)
+      for (i=M*eBands[effEnd];i<N;i++)
          X[c*N+i] = 0;
    while (++c<C);
 
@@ -2837,7 +2849,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       int width, quanta;
       int dynalloc_loop_logp;
       int boost;
-      width = C*(mode->eBands[i+1]-mode->eBands[i])<<LM;
+      width = C*(eBands[i+1]-eBands[i])<<LM;
       /* quanta is 6 bits, but no more than 1 bit/sample
          and no less than 1/8 bit/sample */
       quanta = IMIN(width<<BITRES, IMAX(6<<BITRES, width));
@@ -2909,11 +2921,11 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       OPUS_MOVE(decode_mem[1], decode_mem[1]+N, DECODE_BUFFER_SIZE-N);
 
    c=0; do
-      for (i=0;i<M*mode->eBands[st->start];i++)
+      for (i=0;i<M*eBands[st->start];i++)
          freq[c*N+i] = 0;
    while (++c<C);
    c=0; do {
-      int bound = M*mode->eBands[effEnd];
+      int bound = M*eBands[effEnd];
       if (st->downsample!=1)
          bound = IMIN(bound, N/st->downsample);
       for (i=bound;i<N;i++)
