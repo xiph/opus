@@ -509,11 +509,11 @@ static void preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_R
    int i;
    opus_val16 coef0, coef1;
    celt_sig m;
+   int Nu;
 
    coef0 = coef[0];
    coef1 = coef[1];
 
-   int Nu;
 
    Nu = N/upsample;
    if (upsample!=1)
