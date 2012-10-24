@@ -549,6 +549,7 @@ static void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
    int i;
    /* printf ("%d %d %f %f\n", T0, T1, g0, g1); */
    opus_val16 g00, g01, g02, g10, g11, g12;
+   opus_val32 x0, x1, x2, x3, x4;
    static const opus_val16 gains[3][3] = {
          {QCONST16(0.3066406250f, 15), QCONST16(0.2170410156f, 15), QCONST16(0.1296386719f, 15)},
          {QCONST16(0.4638671875f, 15), QCONST16(0.2680664062f, 15), QCONST16(0.f, 15)},
@@ -559,30 +560,41 @@ static void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
    g10 = MULT16_16_Q15(g1, gains[tapset1][0]);
    g11 = MULT16_16_Q15(g1, gains[tapset1][1]);
    g12 = MULT16_16_Q15(g1, gains[tapset1][2]);
+   x1 = x[-T1+1];
+   x2 = x[-T1  ];
+   x3 = x[-T1-1];
+   x4 = x[-T1-2];
    for (i=0;i<overlap;i++)
    {
       opus_val16 f;
+      x0=x[i-T1+2];
       f = MULT16_16_Q15(window[i],window[i]);
       y[i] = x[i]
                + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g00),x[i-T0])
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g01),x[i-T0-1])
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g01),x[i-T0+1])
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g02),x[i-T0-2])
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g02),x[i-T0+2])
-               + MULT16_32_Q15(MULT16_16_Q15(f,g10),x[i-T1])
-               + MULT16_32_Q15(MULT16_16_Q15(f,g11),x[i-T1-1])
-               + MULT16_32_Q15(MULT16_16_Q15(f,g11),x[i-T1+1])
-               + MULT16_32_Q15(MULT16_16_Q15(f,g12),x[i-T1-2])
-               + MULT16_32_Q15(MULT16_16_Q15(f,g12),x[i-T1+2]);
+               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g01),ADD32(x[i-T0+1],x[i-T0-1]))
+               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g02),ADD32(x[i-T0+2],x[i-T0-2]))
+               + MULT16_32_Q15(MULT16_16_Q15(f,g10),x2)
+               + MULT16_32_Q15(MULT16_16_Q15(f,g11),ADD32(x1,x3))
+               + MULT16_32_Q15(MULT16_16_Q15(f,g12),ADD32(x0,x4));
+      x4=x3;
+      x3=x2;
+      x2=x1;
+      x1=x0;
 
    }
-   for (i=overlap;i<N;i++)
+   /* OPT: For machines where the movs are costly, unroll by 5 */
+   for (;i<N;i++)
+   {
+      x0=x[i-T1+2];
       y[i] = x[i]
-               + MULT16_32_Q15(g10,x[i-T1])
-               + MULT16_32_Q15(g11,x[i-T1-1])
-               + MULT16_32_Q15(g11,x[i-T1+1])
-               + MULT16_32_Q15(g12,x[i-T1-2])
-               + MULT16_32_Q15(g12,x[i-T1+2]);
+               + MULT16_32_Q15(g10,x2)
+               + MULT16_32_Q15(g11,ADD32(x1,x3))
+               + MULT16_32_Q15(g12,ADD32(x0,x4));
+      x4=x3;
+      x3=x2;
+      x2=x1;
+      x1=x0;
+   }
 }
 
 static const signed char tf_select_table[4][8] = {
