@@ -503,6 +503,71 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
    RESTORE_STACK;
 }
 
+static void preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
+                        int N, int CC, int upsample, const opus_val16 *coef, celt_sig *mem, int clip)
+{
+   int i;
+   opus_val16 coef0, coef1;
+   celt_sig m;
+
+   coef0 = coef[0];
+   coef1 = coef[1];
+
+   int Nu;
+
+   Nu = N/upsample;
+   if (upsample!=1)
+   {
+      for (i=0;i<N;i++)
+         inp[i] = 0;
+   }
+   for (i=0;i<Nu;i++)
+   {
+      celt_sig x;
+
+      x = SCALEIN(pcmp[CC*i]);
+#ifndef FIXED_POINT
+      /* Replace NaNs with zeros */
+      if (!(x==x))
+         x = 0;
+#endif
+      inp[i*upsample] = x;
+   }
+
+#ifndef FIXED_POINT
+   if (clip)
+   {
+      /* Clip input to avoid encoding non-portable files */
+      for (i=0;i<Nu;i++)
+         inp[i*upsample] = MAX32(-65536.f, MIN32(65536.f,inp[i*upsample]));
+   }
+#endif
+   m = *mem;
+   if (coef1 == 0)
+   {
+      for (i=0;i<N;i++)
+      {
+         celt_sig x;
+         x = SHL32(inp[i], SIG_SHIFT);
+         /* Apply pre-emphasis */
+         inp[i] = x + m;
+         m = - MULT16_32_Q15(coef0, x);
+      }
+   } else {
+      opus_val16 coef2 = coef[2];
+      for (i=0;i<N;i++)
+      {
+         opus_val16 x, tmp;
+         x = inp[i];
+         /* Apply pre-emphasis */
+         tmp = MULT16_16(coef2, x);
+         inp[i] = tmp + m;
+         m = MULT16_32_Q15(coef1, inp[i]) - MULT16_32_Q15(coef0, tmp);
+      }
+   }
+   *mem = m;
+}
+
 static void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem, celt_sig * OPUS_RESTRICT scratch)
 {
    int c;
@@ -1215,35 +1280,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       pre[1] = _pre + (N+COMBFILTER_MAXPERIOD);
 
       c=0; do {
-         int count = 0;
-         const opus_val16 * OPUS_RESTRICT pcmp = pcm+c;
-         celt_sig * OPUS_RESTRICT inp = in+c*(N+st->overlap)+st->overlap;
 
-         for (i=0;i<N;i++)
-         {
-            celt_sig x, tmp;
+         preemphasis(pcm+c, in+c*(N+st->overlap)+st->overlap, N, CC, st->upsample,
+                     mode->preemph, st->preemph_memE+c, st->clip);
 
-            x = SCALEIN(*pcmp);
-#ifndef FIXED_POINT
-            if (!(x==x))
-               x = 0;
-            if (st->clip)
-               x = MAX32(-65536.f, MIN32(65536.f,x));
-#endif
-            if (++count==st->upsample)
-            {
-               count=0;
-               pcmp+=CC;
-            } else {
-               x = 0;
-            }
-            /* Apply pre-emphasis */
-            tmp = MULT16_16(mode->preemph[2], x);
-            *inp = tmp + st->preemph_memE[c];
-            st->preemph_memE[c] = MULT16_32_Q15(mode->preemph[1], *inp)
-                                   - MULT16_32_Q15(mode->preemph[0], tmp);
-            inp++;
-         }
          OPUS_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
          OPUS_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
       } while (++c<CC);
