@@ -1087,6 +1087,130 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
          > MULT16_32_Q15(m->eBands[13]<<(LM+1), sumLR);
 }
 
+static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem, int CC, int N,
+      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes)
+{
+   int c;
+   VARDECL(celt_sig, _pre);
+   celt_sig *pre[2];
+   const CELTMode *mode;
+   int pitch_index;
+   opus_val16 gain1;
+   opus_val16 pf_threshold;
+   int pf_on;
+   int qg;
+   SAVE_STACK;
+
+   mode = st->mode;
+   ALLOC(_pre, CC*(N+COMBFILTER_MAXPERIOD), celt_sig);
+
+   pre[0] = _pre;
+   pre[1] = _pre + (N+COMBFILTER_MAXPERIOD);
+
+
+   c=0; do {
+      OPUS_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
+      OPUS_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
+   } while (++c<CC);
+
+   if (enabled)
+   {
+      VARDECL(opus_val16, pitch_buf);
+      ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, opus_val16);
+
+      pitch_downsample(pre, pitch_buf, COMBFILTER_MAXPERIOD+N, CC);
+      /* Don't search for the fir last 1.5 octave of the range because
+         there's too many false-positives due to short-term correlation */
+      pitch_search(pitch_buf+(COMBFILTER_MAXPERIOD>>1), pitch_buf, N,
+            COMBFILTER_MAXPERIOD-3*COMBFILTER_MINPERIOD, &pitch_index);
+      pitch_index = COMBFILTER_MAXPERIOD-pitch_index;
+
+      gain1 = remove_doubling(pitch_buf, COMBFILTER_MAXPERIOD, COMBFILTER_MINPERIOD,
+            N, &pitch_index, st->prefilter_period, st->prefilter_gain);
+      if (pitch_index > COMBFILTER_MAXPERIOD-2)
+         pitch_index = COMBFILTER_MAXPERIOD-2;
+      gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
+      /*printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);*/
+      if (st->loss_rate>2)
+         gain1 = HALF32(gain1);
+      if (st->loss_rate>4)
+         gain1 = HALF32(gain1);
+      if (st->loss_rate>8)
+         gain1 = 0;
+   } else {
+      gain1 = 0;
+      pitch_index = COMBFILTER_MINPERIOD;
+   }
+
+   /* Gain threshold for enabling the prefilter/postfilter */
+   pf_threshold = QCONST16(.2f,15);
+
+   /* Adjusting the threshold based on rate and continuity */
+   if (abs(pitch_index-st->prefilter_period)*10>pitch_index)
+      pf_threshold += QCONST16(.2f,15);
+   if (nbAvailableBytes<25)
+      pf_threshold += QCONST16(.1f,15);
+   if (nbAvailableBytes<35)
+      pf_threshold += QCONST16(.1f,15);
+   if (st->prefilter_gain > QCONST16(.4f,15))
+      pf_threshold -= QCONST16(.1f,15);
+   if (st->prefilter_gain > QCONST16(.55f,15))
+      pf_threshold -= QCONST16(.1f,15);
+
+   /* Hard threshold at 0.2 */
+   pf_threshold = MAX16(pf_threshold, QCONST16(.2f,15));
+   if (gain1<pf_threshold)
+   {
+      gain1 = 0;
+      pf_on = 0;
+      qg = 0;
+   } else {
+      /*This block is not gated by a total bits check only because
+        of the nbAvailableBytes check above.*/
+      if (ABS16(gain1-st->prefilter_gain)<QCONST16(.1f,15))
+         gain1=st->prefilter_gain;
+
+#ifdef FIXED_POINT
+      qg = ((gain1+1536)>>10)/3-1;
+#else
+      qg = (int)floor(.5f+gain1*32/3)-1;
+#endif
+      qg = IMAX(0, IMIN(7, qg));
+      gain1 = QCONST16(0.09375f,15)*(qg+1);
+      pf_on = 1;
+   }
+   /*printf("%d %f\n", pitch_index, gain1);*/
+
+   c=0; do {
+      int offset = mode->shortMdctSize-st->overlap;
+      st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
+      OPUS_COPY(in+c*(N+st->overlap), st->in_mem+c*(st->overlap), st->overlap);
+      if (offset)
+         comb_filter(in+c*(N+st->overlap)+st->overlap, pre[c]+COMBFILTER_MAXPERIOD,
+               st->prefilter_period, st->prefilter_period, offset, -st->prefilter_gain, -st->prefilter_gain,
+               st->prefilter_tapset, st->prefilter_tapset, NULL, 0);
+
+      comb_filter(in+c*(N+st->overlap)+st->overlap+offset, pre[c]+COMBFILTER_MAXPERIOD+offset,
+            st->prefilter_period, pitch_index, N-offset, -st->prefilter_gain, -gain1,
+            st->prefilter_tapset, prefilter_tapset, mode->window, st->overlap);
+      OPUS_COPY(st->in_mem+c*(st->overlap), in+c*(N+st->overlap)+N, st->overlap);
+
+      if (N>COMBFILTER_MAXPERIOD)
+      {
+         OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD, pre[c]+N, COMBFILTER_MAXPERIOD);
+      } else {
+         OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD, prefilter_mem+c*COMBFILTER_MAXPERIOD+N, COMBFILTER_MAXPERIOD-N);
+         OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD+COMBFILTER_MAXPERIOD-N, pre[c]+COMBFILTER_MAXPERIOD, N);
+      }
+   } while (++c<CC);
+
+   RESTORE_STACK;
+   *gain = gain1;
+   *pitch = pitch_index;
+   *qgain = qg;
+   return pf_on;
+}
+
 int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
    int i, c, N;
@@ -1123,7 +1247,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_val16 gain1 = 0;
    int dual_stereo=0;
    int effectiveBytes;
-   opus_val16 pf_threshold;
    int dynalloc_logp;
    opus_int32 vbr_rate;
    opus_int32 total_bits;
@@ -1269,123 +1392,60 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    sample_max=MAX16(st->overlap_max, celt_maxabs16(pcm, C*(N-overlap)/st->upsample));
    st->overlap_max=celt_maxabs16(pcm+C*(N-overlap)/st->upsample, C*overlap/st->upsample);
    sample_max=MAX16(sample_max, st->overlap_max);
-   /* Find pitch period and gain */
-   {
-      VARDECL(celt_sig, _pre);
-      celt_sig *pre[2];
-      SAVE_STACK;
-      ALLOC(_pre, CC*(N+COMBFILTER_MAXPERIOD), celt_sig);
-
-      pre[0] = _pre;
-      pre[1] = _pre + (N+COMBFILTER_MAXPERIOD);
-
-      c=0; do {
-
-         preemphasis(pcm+c, in+c*(N+st->overlap)+st->overlap, N, CC, st->upsample,
-                     mode->preemph, st->preemph_memE+c, st->clip);
-
-         OPUS_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
-         OPUS_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
-      } while (++c<CC);
-
 #ifdef FIXED_POINT
-      silence = (sample_max==0);
+   silence = (sample_max==0);
 #else
-      silence = (sample_max <= (opus_val16)1/(1<<st->lsb_depth));
+   silence = (sample_max <= (opus_val16)1/(1<<st->lsb_depth));
 #endif
 #ifdef FUZZING
-      if ((rand()&0x3F)==0)
-         silence = 1;
+   if ((rand()&0x3F)==0)
+      silence = 1;
 #endif
-      if (tell==1)
-         ec_enc_bit_logp(enc, silence, 15);
-      else
-         silence=0;
-      if (silence)
+   if (tell==1)
+      ec_enc_bit_logp(enc, silence, 15);
+   else
+      silence=0;
+   if (silence)
+   {
+      /*In VBR mode there is no need to send more than the minimum. */
+      if (vbr_rate>0)
       {
-         /*In VBR mode there is no need to send more than the minimum. */
-         if (vbr_rate>0)
-         {
-            effectiveBytes=nbCompressedBytes=IMIN(nbCompressedBytes, nbFilledBytes+2);
-            total_bits=nbCompressedBytes*8;
-            nbAvailableBytes=2;
-            ec_enc_shrink(enc, nbCompressedBytes);
-         }
-         /* Pretend we've filled all the remaining bits with zeros
+         effectiveBytes=nbCompressedBytes=IMIN(nbCompressedBytes, nbFilledBytes+2);
+         total_bits=nbCompressedBytes*8;
+         nbAvailableBytes=2;
+         ec_enc_shrink(enc, nbCompressedBytes);
+      }
+      /* Pretend we've filled all the remaining bits with zeros
             (that's what the initialiser did anyway) */
-         tell = nbCompressedBytes*8;
-         enc->nbits_total+=tell-ec_tell(enc);
-      }
-      if (nbAvailableBytes>12*C && st->start==0 && !silence && !st->disable_pf && st->complexity >= 5)
-      {
-         VARDECL(opus_val16, pitch_buf);
-         ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, opus_val16);
+      tell = nbCompressedBytes*8;
+      enc->nbits_total+=tell-ec_tell(enc);
+   }
+   c=0; do {
+      preemphasis(pcm+c, in+c*(N+st->overlap)+st->overlap, N, CC, st->upsample,
+                  mode->preemph, st->preemph_memE+c, st->clip);
+   } while (++c<CC);
 
-         pitch_downsample(pre, pitch_buf, COMBFILTER_MAXPERIOD+N, CC);
-         /* Don't search for the fir last 1.5 octave of the range because
-            there's too many false-positives due to short-term correlation */
-         pitch_search(pitch_buf+(COMBFILTER_MAXPERIOD>>1), pitch_buf, N,
-               COMBFILTER_MAXPERIOD-3*COMBFILTER_MINPERIOD, &pitch_index);
-         pitch_index = COMBFILTER_MAXPERIOD-pitch_index;
 
-         gain1 = remove_doubling(pitch_buf, COMBFILTER_MAXPERIOD, COMBFILTER_MINPERIOD,
-               N, &pitch_index, st->prefilter_period, st->prefilter_gain);
-         if (pitch_index > COMBFILTER_MAXPERIOD-2)
-            pitch_index = COMBFILTER_MAXPERIOD-2;
-         gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
-         if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && st->analysis.tonality > .3
-               && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
-            pitch_change = 1;
-         /*printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);*/
-         if (st->loss_rate>2)
-            gain1 = HALF32(gain1);
-         if (st->loss_rate>4)
-            gain1 = HALF32(gain1);
-         if (st->loss_rate>8)
-            gain1 = 0;
-         prefilter_tapset = st->tapset_decision;
-      } else {
-         gain1 = 0;
-      }
 
-      /* Gain threshold for enabling the prefilter/postfilter */
-      pf_threshold = QCONST16(.2f,15);
+   /* Find pitch period and gain */
+   {
+      int enabled;
+      int qg;
+      enabled = nbAvailableBytes>12*C && st->start==0 && !silence && !st->disable_pf && st->complexity >= 5;
 
-      /* Adjusting the threshold based on rate and continuity */
-      if (abs(pitch_index-st->prefilter_period)*10>pitch_index)
-         pf_threshold += QCONST16(.2f,15);
-      if (nbAvailableBytes<25)
-         pf_threshold += QCONST16(.1f,15);
-      if (nbAvailableBytes<35)
-         pf_threshold += QCONST16(.1f,15);
-      if (st->prefilter_gain > QCONST16(.4f,15))
-         pf_threshold -= QCONST16(.1f,15);
-      if (st->prefilter_gain > QCONST16(.55f,15))
-         pf_threshold -= QCONST16(.1f,15);
-
-      /* Hard threshold at 0.2 */
-      pf_threshold = MAX16(pf_threshold, QCONST16(.2f,15));
-      if (gain1<pf_threshold)
+      prefilter_tapset = st->tapset_decision;
+      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes);
+      if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && st->analysis.tonality > .3
+            && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
+         pitch_change = 1;
+      if (pf_on==0)
       {
          if(st->start==0 && tell+16<=total_bits)
             ec_enc_bit_logp(enc, 0, 1);
-         gain1 = 0;
-         pf_on = 0;
       } else {
          /*This block is not gated by a total bits check only because
            of the nbAvailableBytes check above.*/
-         int qg;
          int octave;
-
-         if (ABS16(gain1-st->prefilter_gain)<QCONST16(.1f,15))
-            gain1=st->prefilter_gain;
-
-#ifdef FIXED_POINT
-         qg = ((gain1+1536)>>10)/3-1;
-#else
-         qg = (int)floor(.5f+gain1*32/3)-1;
-#endif
-         qg = IMAX(0, IMIN(7, qg));
          ec_enc_bit_logp(enc, 1, 1);
          pitch_index += 1;
          octave = EC_ILOG(pitch_index)-5;
@@ -1393,39 +1453,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          ec_enc_bits(enc, pitch_index-(16<<octave), 4+octave);
          pitch_index -= 1;
          ec_enc_bits(enc, qg, 3);
-         if (ec_tell(enc)+2<=total_bits)
-            ec_enc_icdf(enc, prefilter_tapset, tapset_icdf, 2);
-         else
-           prefilter_tapset = 0;
-         gain1 = QCONST16(0.09375f,15)*(qg+1);
-         pf_on = 1;
+         ec_enc_icdf(enc, prefilter_tapset, tapset_icdf, 2);
       }
-      /*printf("%d %f\n", pitch_index, gain1);*/
-
-      c=0; do {
-         int offset = mode->shortMdctSize-overlap;
-         st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
-         OPUS_COPY(in+c*(N+st->overlap), st->in_mem+c*(st->overlap), st->overlap);
-         if (offset)
-            comb_filter(in+c*(N+st->overlap)+st->overlap, pre[c]+COMBFILTER_MAXPERIOD,
-                  st->prefilter_period, st->prefilter_period, offset, -st->prefilter_gain, -st->prefilter_gain,
-                  st->prefilter_tapset, st->prefilter_tapset, NULL, 0);
-
-         comb_filter(in+c*(N+st->overlap)+st->overlap+offset, pre[c]+COMBFILTER_MAXPERIOD+offset,
-               st->prefilter_period, pitch_index, N-offset, -st->prefilter_gain, -gain1,
-               st->prefilter_tapset, prefilter_tapset, mode->window, overlap);
-         OPUS_COPY(st->in_mem+c*(st->overlap), in+c*(N+st->overlap)+N, st->overlap);
-
-         if (N>COMBFILTER_MAXPERIOD)
-         {
-            OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD, pre[c]+N, COMBFILTER_MAXPERIOD);
-         } else {
-            OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD, prefilter_mem+c*COMBFILTER_MAXPERIOD+N, COMBFILTER_MAXPERIOD-N);
-            OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD+COMBFILTER_MAXPERIOD-N, pre[c]+COMBFILTER_MAXPERIOD, N);
-         }
-      } while (++c<CC);
-
-      RESTORE_STACK;
    }
 
    isTransient = 0;
