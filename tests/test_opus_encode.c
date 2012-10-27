@@ -141,6 +141,29 @@ int run_test1(int no_fuzz)
    enc = opus_encoder_create(48000, 2, OPUS_APPLICATION_VOIP, &err);
    if(err != OPUS_OK || enc==NULL)test_failed();
 
+   for(i=0;i<2;i++)
+   {
+      int *ret_err;
+      ret_err = i?0:&err;
+      MSenc = opus_multistream_encoder_create(8000, 2, 2, 0, mapping, OPUS_UNIMPLEMENTED, ret_err);
+      if((ret_err && *ret_err != OPUS_BAD_ARG) || MSenc!=NULL)test_failed();
+
+      MSenc = opus_multistream_encoder_create(8000, 0, 1, 0, mapping, OPUS_APPLICATION_VOIP, ret_err);
+      if((ret_err && *ret_err != OPUS_BAD_ARG) || MSenc!=NULL)test_failed();
+
+      MSenc = opus_multistream_encoder_create(44100, 2, 2, 0, mapping, OPUS_APPLICATION_VOIP, ret_err);
+      if((ret_err && *ret_err != OPUS_BAD_ARG) || MSenc!=NULL)test_failed();
+
+      MSenc = opus_multistream_encoder_create(8000, 2, 2, 3, mapping, OPUS_APPLICATION_VOIP, ret_err);
+      if((ret_err && *ret_err != OPUS_BAD_ARG) || MSenc!=NULL)test_failed();
+
+      MSenc = opus_multistream_encoder_create(8000, 2, -1, 0, mapping, OPUS_APPLICATION_VOIP, ret_err);
+      if((ret_err && *ret_err != OPUS_BAD_ARG) || MSenc!=NULL)test_failed();
+
+      MSenc = opus_multistream_encoder_create(8000, 256, 2, 0, mapping, OPUS_APPLICATION_VOIP, ret_err);
+      if((ret_err && *ret_err != OPUS_BAD_ARG) || MSenc!=NULL)test_failed();
+   }
+
    MSenc = opus_multistream_encoder_create(8000, 2, 2, 0, mapping, OPUS_APPLICATION_AUDIO, &err);
    if(err != OPUS_OK || MSenc==NULL)test_failed();
 

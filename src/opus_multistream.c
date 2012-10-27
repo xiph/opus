@@ -159,7 +159,7 @@ int opus_multistream_encoder_init(
 {
    int coupled_size;
    int mono_size;
-   int i;
+   int i, ret;
    char *ptr;
 
    if ((channels>255) || (channels<1) || (coupled_streams>streams) ||
@@ -180,12 +180,14 @@ int opus_multistream_encoder_init(
 
    for (i=0;i<st->layout.nb_coupled_streams;i++)
    {
-      opus_encoder_init((OpusEncoder*)ptr, Fs, 2, application);
+      ret = opus_encoder_init((OpusEncoder*)ptr, Fs, 2, application);
+      if(ret!=OPUS_OK)return ret;
       ptr += align(coupled_size);
    }
    for (;i<st->layout.nb_streams;i++)
    {
-      opus_encoder_init((OpusEncoder*)ptr, Fs, 1, application);
+      ret = opus_encoder_init((OpusEncoder*)ptr, Fs, 1, application);
+      if(ret!=OPUS_OK)return ret;
       ptr += align(mono_size);
    }
    return OPUS_OK;
@@ -202,7 +204,15 @@ OpusMSEncoder *opus_multistream_encoder_create(
 )
 {
    int ret;
-   OpusMSEncoder *st = (OpusMSEncoder *)opus_alloc(opus_multistream_encoder_get_size(streams, coupled_streams));
+   OpusMSEncoder *st;
+   if ((channels>255) || (channels<1) || (coupled_streams>streams) ||
+       (coupled_streams+streams>255) || (streams<1) || (coupled_streams<0))
+   {
+      if (error)
+         *error = OPUS_BAD_ARG;
+      return NULL;
+   }
+   st = (OpusMSEncoder *)opus_alloc(opus_multistream_encoder_get_size(streams, coupled_streams));
    if (st==NULL)
    {
       if (error)
@@ -647,7 +657,15 @@ OpusMSDecoder *opus_multistream_decoder_create(
 )
 {
    int ret;
-   OpusMSDecoder *st = (OpusMSDecoder *)opus_alloc(opus_multistream_decoder_get_size(streams, coupled_streams));
+   OpusMSDecoder *st;
+   if ((channels>255) || (channels<1) || (coupled_streams>streams) ||
+       (coupled_streams+streams>255) || (streams<1) || (coupled_streams<0))
+   {
+      if (error)
+         *error = OPUS_BAD_ARG;
+      return NULL;
+   }
+   st = (OpusMSDecoder *)opus_alloc(opus_multistream_decoder_get_size(streams, coupled_streams));
    if (st==NULL)
    {
       if (error)
@@ -663,8 +681,6 @@ OpusMSDecoder *opus_multistream_decoder_create(
       st = NULL;
    }
    return st;
-
-
 }
 
 typedef void (*opus_copy_channel_out_func)(

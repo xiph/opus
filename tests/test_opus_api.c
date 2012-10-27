@@ -126,6 +126,9 @@ opus_int32 test_dec_api(void)
          dec = opus_decoder_create(fs, c, &err);
          if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
          cfgs++;
+         dec = opus_decoder_create(fs, c, 0);
+         if(dec!=NULL)test_failed();
+         cfgs++;
          dec=malloc(opus_decoder_get_size(2));
          if(dec==NULL)test_failed();
          err = opus_decoder_init(dec,fs,c);
@@ -366,6 +369,9 @@ opus_int32 test_msdec_api(void)
          dec = opus_multistream_decoder_create(fs, c, 1, c-1, mapping, &err);
          if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
          cfgs++;
+         dec = opus_multistream_decoder_create(fs, c, 1, c-1, mapping, 0);
+         if(dec!=NULL)test_failed();
+         cfgs++;
          dec=malloc(opus_multistream_decoder_get_size(1,1));
          if(dec==NULL)test_failed();
          err = opus_multistream_decoder_init(dec,fs,c,1,c-1, mapping);
@@ -375,116 +381,128 @@ opus_int32 test_msdec_api(void)
       }
    }
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, 2, 1, 0, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err==OPUS_OK || dec!=NULL)test_failed();
-   cfgs++;
+   for(c=0;c<2;c++)
+   {
+      int *ret_err;
+      ret_err = c?0:&err;
 
-   VG_UNDEF(&err,sizeof(err));
-   mapping[0]=mapping[1]=0;
-   dec = opus_multistream_decoder_create(48000, 2, 1, 0, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_OK || dec==NULL)test_failed();
-   cfgs++;
-   opus_multistream_decoder_destroy(dec);
-   cfgs++;
+      mapping[0]=0;
+      mapping[1]=1;
+      for(i=2;i<256;i++)VG_UNDEF(&mapping[i],sizeof(unsigned char));
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, 1, 4, 1, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_OK || dec==NULL)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, 2, 1, 0, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
 
-   err = opus_multistream_decoder_init(dec,48000, 1, 0, 0, mapping);
-   if(err!=OPUS_BAD_ARG)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      mapping[0]=mapping[1]=0;
+      dec = opus_multistream_decoder_create(48000, 2, 1, 0, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_OK) || dec==NULL)test_failed();
+      cfgs++;
+      opus_multistream_decoder_destroy(dec);
+      cfgs++;
 
-   err = opus_multistream_decoder_init(dec,48000, 1, 1, -1, mapping);
-   if(err!=OPUS_BAD_ARG)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, 1, 4, 1, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_OK) || dec==NULL)test_failed();
+      cfgs++;
 
-   opus_multistream_decoder_destroy(dec);
-   cfgs++;
+      err = opus_multistream_decoder_init(dec,48000, 1, 0, 0, mapping);
+      if(err!=OPUS_BAD_ARG)test_failed();
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, 2, 1, 1, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_OK || dec==NULL)test_failed();
-   cfgs++;
-   opus_multistream_decoder_destroy(dec);
-   cfgs++;
+      err = opus_multistream_decoder_init(dec,48000, 1, 1, -1, mapping);
+      if(err!=OPUS_BAD_ARG)test_failed();
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, 255, 255, 1, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
-   cfgs++;
+      opus_multistream_decoder_destroy(dec);
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, -1, 1, 1, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, 2, 1, 1, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_OK) || dec==NULL)test_failed();
+      cfgs++;
+      opus_multistream_decoder_destroy(dec);
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, 0, 1, 1, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, 255, 255, 1, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, 1, -1, 2, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, -1, 1, 1, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, 1, -1, -1, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, 0, 1, 1, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, 256, 255, 1, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, 1, -1, 2, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   dec = opus_multistream_decoder_create(48000, 256, 255, 0, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, 1, -1, -1, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   mapping[0]=255;
-   mapping[1]=1;
-   mapping[2]=2;
-   dec = opus_multistream_decoder_create(48000, 3, 2, 0, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, 256, 255, 1, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
 
-   VG_UNDEF(&err,sizeof(err));
-   mapping[0]=0;
-   mapping[1]=0;
-   mapping[2]=0;
-   dec = opus_multistream_decoder_create(48000, 3, 2, 1, mapping, &err);
-   VG_CHECK(&err,sizeof(err));
-   if(err!=OPUS_OK || dec==NULL)test_failed();
-   cfgs++;
-   opus_multistream_decoder_destroy(dec);
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      dec = opus_multistream_decoder_create(48000, 256, 255, 0, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
 
-   mapping[0]=0;
-   mapping[1]=255;
-   mapping[2]=1;
-   mapping[3]=2;
-   mapping[4]=3;
-   dec = opus_multistream_decoder_create(48001, 5, 4, 1, mapping, 0);
-   if(dec!=NULL)test_failed();
-   cfgs++;
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      mapping[0]=255;
+      mapping[1]=1;
+      mapping[2]=2;
+      dec = opus_multistream_decoder_create(48000, 3, 2, 0, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
+
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      mapping[0]=0;
+      mapping[1]=0;
+      mapping[2]=0;
+      dec = opus_multistream_decoder_create(48000, 3, 2, 1, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_OK) || dec==NULL)test_failed();
+      cfgs++;
+      opus_multistream_decoder_destroy(dec);
+      cfgs++;
+
+      VG_UNDEF(ret_err,sizeof(*ret_err));
+      mapping[0]=0;
+      mapping[1]=255;
+      mapping[2]=1;
+      mapping[3]=2;
+      mapping[4]=3;
+      dec = opus_multistream_decoder_create(48001, 5, 4, 1, mapping, ret_err);
+      if(ret_err){VG_CHECK(ret_err,sizeof(*ret_err));}
+      if((ret_err && *ret_err!=OPUS_BAD_ARG) || dec!=NULL)test_failed();
+      cfgs++;
+   }
 
    VG_UNDEF(&err,sizeof(err));
    mapping[0]=0;
@@ -1060,6 +1078,9 @@ opus_int32 test_enc_api(void)
          VG_UNDEF(&err,sizeof(err));
          enc = opus_encoder_create(fs, c, OPUS_APPLICATION_VOIP, &err);
          if(err!=OPUS_BAD_ARG || enc!=NULL)test_failed();
+         cfgs++;
+         enc = opus_encoder_create(fs, c, OPUS_APPLICATION_VOIP, 0);
+         if(enc!=NULL)test_failed();
          cfgs++;
          opus_encoder_destroy(enc);
          enc=malloc(opus_encoder_get_size(2));
