@@ -77,7 +77,7 @@ static void find_best_pitch(opus_val32 *xcorr, opus_val16 *y, int len,
 #ifndef FIXED_POINT
          /* Considering the range of xcorr16, this should avoid both underflows
             and overflows (inf) when squaring xcorr16 */
-         xcorr16 *= 1e-12;
+         xcorr16 *= 1e-12f;
 #endif
          num = MULT16_16_Q15(xcorr16,xcorr16);
          if (MULT16_32_Q15(num,best_den[1]) > MULT16_32_Q15(best_num[1],Syy))
