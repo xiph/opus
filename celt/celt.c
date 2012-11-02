@@ -306,44 +306,43 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
 #endif
 }
 
-static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int C,
-                              int overlap, opus_val16 *tf_estimate, int *tf_chan, AnalysisInfo *analysis)
+ int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int C,
+                              opus_val16 *tf_estimate, int *tf_chan)
 {
    int i;
    VARDECL(opus_val16, tmp);
    opus_val32 mem0,mem1;
    int is_transient = 0;
-   int block;
-   int c, N;
-   opus_val16 maxbin;
+   opus_int32 mask_metric = 0;
+   int c;
    int tf_max;
-   VARDECL(opus_val16, bins);
-   opus_val16 T1, T2, T3, T4, T5;
-   opus_val16 follower;
-   int metric=0;
-   int fmetric=0, bmetric=0;
-   int count1, count2, count3, count4, count5;
-
+   /* Table of 6*64/x, trained on real data to minimize the average error */
+   static const unsigned char inv_table[128] = {
+         255,255,156,110, 86, 70, 59, 51, 45, 40, 37, 33, 31, 28, 26, 25,
+          23, 22, 21, 20, 19, 18, 17, 16, 16, 15, 15, 14, 13, 13, 12, 12,
+          12, 12, 11, 11, 11, 10, 10, 10,  9,  9,  9,  9,  9,  9,  8,  8,
+           8,  8,  8,  7,  7,  7,  7,  7,  7,  6,  6,  6,  6,  6,  6,  6,
+           6,  6,  6,  6,  6,  6,  6,  6,  6,  5,  5,  5,  5,  5,  5,  5,
+           5,  5,  5,  5,  5,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
+           4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  3,  3,
+           3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  2,
+   };
    SAVE_STACK;
    ALLOC(tmp, len, opus_val16);
-
-   block = overlap/4;
-   N=len/block-1;
-   ALLOC(bins, N, opus_val16);
 
    tf_max = 0;
    for (c=0;c<C;c++)
    {
+      opus_val32 mean;
+      opus_int32 unmask=0;
+      opus_val32 norm;
       mem0=0;
       mem1=0;
-      for (i=0;i<len;i++)
-         tmp[i] = SHR32(in[i+c*len],SIG_SHIFT);
-
       /* High-pass filter: (1 - 2*z^-1 + z^-2) / (1 - z^-1 + .5*z^-2) */
       for (i=0;i<len;i++)
       {
          opus_val32 x,y;
-         x = tmp[i];
+         x = SHR32(in[i+c*len],SIG_SHIFT);
          y = ADD32(mem0, x);
 #ifdef FIXED_POINT
          mem0 = mem1 + y - SHL32(x,1);
@@ -352,83 +351,100 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          mem0 = mem1 + y - 2*x;
          mem1 = x - .5f*y;
 #endif
-         tmp[i] = EXTRACT16(SHR(y,2));
+         tmp[i] = EXTRACT16(SHR32(y,2));
+         /*printf("%f ", tmp[i]);*/
       }
+      /*printf("\n");*/
       /* First few samples are bad because we don't propagate the memory */
       for (i=0;i<12;i++)
          tmp[i] = 0;
 
-      maxbin=0;
-      for (i=0;i<N;i++)
+#ifdef FIXED_POINT
+      /* Normalize tmp to max range */
       {
-         int j;
-         opus_val16 max_abs=0;
-         for (j=0;j<2*block;j++)
-            max_abs = MAX16(max_abs, ABS16(tmp[i*block+j]));
-         bins[i] = max_abs;
-         maxbin = MAX16(maxbin, bins[i]);
+         int shift=0;
+         shift = 14-celt_ilog2(1+celt_maxabs16(tmp, len));
+         if (shift!=0)
+         {
+            for (i=0;i<len;i++)
+               tmp[i] = SHL16(tmp[i], shift);
+         }
+      }
+#endif
+
+      mean=EPSILON;
+      mem0=0;
+      /*  Grouping by two to reduce complexity */
+      len/=2;
+      /* Forward pass to compute the post-echo threshold*/
+      for (i=0;i<len;i++)
+      {
+         opus_val16 x2 = SHR32(MULT16_16(tmp[2*i],tmp[2*i]) + MULT16_16(tmp[2*i+1],tmp[2*i+1]),15);
+         mean += x2;
+#ifdef FIXED_POINT
+         tmp[i] = mem0 + SHR16(x2-mem0,4);
+#else
+         tmp[i] = mem0 + MULT16_16_P15(QCONST16(.0625f,15),x2-mem0);
+#endif
+         mem0 = tmp[i];
       }
 
-      T1 = QCONST16(.09f, 15);
-      T2 = QCONST16(.12f, 15);
-      T3 = QCONST16(.18f, 15);
-      T4 = QCONST16(.28f, 15);
-      T5 = QCONST16(.4f, 15);
-
-      follower = 0;
-      count1=count2=count3=count4=count5=0;
-      for (i=0;i<N;i++)
+      mem0=0;
+      /* Backward pass to compute the pre-echo threshold */
+      for (i=len-1;i>=0;i--)
       {
-         follower = MAX16(bins[i], MULT16_16_Q15(QCONST16(0.97f, 15), follower));
-         if (bins[i] < MULT16_16_Q15(T1, follower))
-            count1++;
-         if (bins[i] < MULT16_16_Q15(T2, follower))
-            count2++;
-         if (bins[i] < MULT16_16_Q15(T3, follower))
-            count3++;
-         if (bins[i] < MULT16_16_Q15(T4, follower))
-            count4++;
-         if (bins[i] < MULT16_16_Q15(T5, follower))
-            count5++;
+#ifdef FIXED_POINT
+         tmp[i] = mem0 + SHR16(tmp[i]-mem0,3);
+#else
+         tmp[i] = mem0 + MULT16_16_P15(QCONST16(0.125f,15),tmp[i]-mem0);
+#endif
+         mem0 = tmp[i];
       }
-      fmetric = (5*count1 + 4*count2 + 3*count3 + 2*count4 + count5)/2;
-      follower=0;
-      count1=count2=count3=count4=count5=0;
-      for (i=N-1;i>=0;i--)
+      /*for (i=0;i<len;i++)printf("%f ", tmp[i]/mean);printf("\n");*/
+
+      /* Compute the ratio of the mean energy over the harmonic mean of the energy.
+         This essentially corresponds to a bitrate-normalized temporal noise-to-mask
+         ratio */
+
+      /* Inverse of the mean energy in Q15+6 */
+      norm = SHL32(EXTEND32(len),6+14)/SHR32(mean,1);
+      /* Compute harmonic mean discarding the unreliable boundaries
+         The data is smooth, so we only take 1/4th of the samples */
+      unmask=0;
+      for (i=12;i<len-5;i+=4)
       {
-         follower = MAX16(bins[i], MULT16_16_Q15(QCONST16(0.97f, 15), follower));
-         if (bins[i] < MULT16_16_Q15(T1, follower))
-            count1++;
-         if (bins[i] < MULT16_16_Q15(T2, follower))
-            count2++;
-         if (bins[i] < MULT16_16_Q15(T3, follower))
-            count3++;
-         if (bins[i] < MULT16_16_Q15(T4, follower))
-            count4++;
-         if (bins[i] < MULT16_16_Q15(T5, follower))
-            count5++;
+         int id;
+#ifdef FIXED_POINT
+         if (MULT16_16(len,tmp[i]) >= SHL32(mean,1)-SHR32(mean,6))
+            id = 127;
+         else
+            id = MULT16_32_Q15(tmp[i],norm); /* Do not round to nearest */
+#else
+         id = IMIN(127,floor(64*norm*tmp[i])); /* Do not round to nearest */
+#endif
+         unmask += inv_table[id];
       }
-      bmetric = 5*count1 + 4*count2 + 3*count3 + 2*count4 + count5;
-      metric = fmetric+bmetric;
-
-      /*if (metric>40)*/
-      if (metric>20+50*MAX16(analysis->tonality, analysis->noisiness))
-         is_transient=1;
-
-      if (metric>tf_max)
+      /*printf("%d\n", unmask);*/
+      /* Normalize, compensate for the 1/4th of the sample and the factor of 6 in the inverse table */
+      unmask = 64*unmask*4/(6*(len-17));
+      if (unmask>mask_metric)
       {
          *tf_chan = c;
-         tf_max = metric;
+         mask_metric = unmask;
       }
    }
+   is_transient = mask_metric>141;
+
+   /* Arbitrary metric for VBR boost */
+   tf_max = MAX16(0,celt_sqrt(64*mask_metric)-64);
    /* *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20); */
    *tf_estimate = QCONST16(1.f, 14) + celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0069,14),IMIN(163,tf_max)),14)-QCONST32(0.139,28)));
-
+   /*printf("%d %f\n", tf_max, mask_metric);*/
    RESTORE_STACK;
 #ifdef FUZZING
    is_transient = rand()&0x1;
 #endif
-   /*printf("%d %f %f %f %f\n", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);*/
+   /*printf("%d %f %d\n", is_transient, (float)*tf_estimate, tf_max);*/
    return is_transient;
 }
 
@@ -1469,7 +1485,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       if (st->complexity > 1)
       {
          isTransient = transient_analysis(in, N+st->overlap, CC,
-                  st->overlap, &tf_estimate, &tf_chan, &st->analysis);
+                  &tf_estimate, &tf_chan);
          if (isTransient)
             shortBlocks = M;
       }
@@ -1656,7 +1672,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
             follower[i] = HALF16(follower[i]);
          follower[i] = MIN16(follower[i], QCONST16(4, DB_SHIFT));
 
-         /* FIXME: Adaptively reduce follower at low rate or for cbr/cvbr */
          width = C*(eBands[i+1]-eBands[i])<<LM;
          if (width<6)
          {
