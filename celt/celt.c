@@ -372,7 +372,7 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
       }
 #endif
 
-      mean=EPSILON;
+      mean=0;
       mem0=0;
       /*  Grouping by two to reduce complexity */
       len/=2;
@@ -407,7 +407,7 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
          ratio */
 
       /* Inverse of the mean energy in Q15+6 */
-      norm = SHL32(EXTEND32(len),6+14)/SHR32(mean,1);
+      norm = SHL32(EXTEND32(len),6+14)/ADD32(EPSILON,SHR32(mean,1));
       /* Compute harmonic mean discarding the unreliable boundaries
          The data is smooth, so we only take 1/4th of the samples */
       unmask=0;
