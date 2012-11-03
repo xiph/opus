@@ -639,6 +639,14 @@ static void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
          {QCONST16(0.3066406250f, 15), QCONST16(0.2170410156f, 15), QCONST16(0.1296386719f, 15)},
          {QCONST16(0.4638671875f, 15), QCONST16(0.2680664062f, 15), QCONST16(0.f, 15)},
          {QCONST16(0.7998046875f, 15), QCONST16(0.1000976562f, 15), QCONST16(0.f, 15)}};
+
+   if (g0==0 && g1==0)
+   {
+      /* OPT: Happens to work without the OPUS_MOVE(), but only because the current encoder already copies x to y */
+      if (x!=y)
+         OPUS_MOVE(y, x, N);
+      return;
+   }
    g00 = MULT16_16_Q15(g0, gains[tapset0][0]);
    g01 = MULT16_16_Q15(g0, gains[tapset0][1]);
    g02 = MULT16_16_Q15(g0, gains[tapset0][2]);
@@ -666,6 +674,13 @@ static void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       x2=x1;
       x1=x0;
 
+   }
+   if (g1==0)
+   {
+      /* OPT: Happens to work without the OPUS_MOVE(), but only because the current encoder already copies x to y */
+      if (x!=y)
+         OPUS_MOVE(y+overlap, x+overlap, N-overlap);
+      return;
    }
    /* OPT: For machines where the movs are costly, unroll by 5 */
    for (;i<N;i++)
