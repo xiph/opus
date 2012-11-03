@@ -306,7 +306,7 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
 #endif
 }
 
- int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int C,
+static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int C,
                               opus_val16 *tf_estimate, int *tf_chan)
 {
    int i;
