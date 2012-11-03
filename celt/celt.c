@@ -379,10 +379,11 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
       /* Forward pass to compute the post-echo threshold*/
       for (i=0;i<len;i++)
       {
-         opus_val16 x2 = SHR32(MULT16_16(tmp[2*i],tmp[2*i]) + MULT16_16(tmp[2*i+1],tmp[2*i+1]),15);
+         opus_val16 x2 = PSHR32(MULT16_16(tmp[2*i],tmp[2*i]) + MULT16_16(tmp[2*i+1],tmp[2*i+1]),16);
          mean += x2;
 #ifdef FIXED_POINT
-         tmp[i] = mem0 + SHR16(x2-mem0,4);
+         /* FIXME: Use PSHR16() instead */
+         tmp[i] = mem0 + PSHR32(x2-mem0,4);
 #else
          tmp[i] = mem0 + MULT16_16_P15(QCONST16(.0625f,15),x2-mem0);
 #endif
@@ -394,7 +395,8 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
       for (i=len-1;i>=0;i--)
       {
 #ifdef FIXED_POINT
-         tmp[i] = mem0 + SHR16(tmp[i]-mem0,3);
+         /* FIXME: Use PSHR16() instead */
+         tmp[i] = mem0 + PSHR32(tmp[i]-mem0,3);
 #else
          tmp[i] = mem0 + MULT16_16_P15(QCONST16(0.125f,15),tmp[i]-mem0);
 #endif
@@ -415,12 +417,9 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
       {
          int id;
 #ifdef FIXED_POINT
-         if (MULT16_16(len,tmp[i]) >= SHL32(mean,1)-SHR32(mean,6))
-            id = 127;
-         else
-            id = MULT16_32_Q15(tmp[i],norm); /* Do not round to nearest */
+         id = IMAX(0,IMIN(127,MULT16_32_Q15(tmp[i],norm))); /* Do not round to nearest */
 #else
-         id = IMIN(127,floor(64*norm*tmp[i])); /* Do not round to nearest */
+         id = IMAX(0,IMIN(127,floor(64*norm*tmp[i]))); /* Do not round to nearest */
 #endif
          unmask += inv_table[id];
       }
