@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
+<!DOCTYPE rfc SYSTEM 'rfc2629.dtd' [
+<!ENTITY rfc2119 PUBLIC '' 'https://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml'>
+<!ENTITY rfc3533 PUBLIC '' 'https://xml.resource.org/public/rfc/bibxml/reference.RFC.3533.xml'>
+<!ENTITY rfc3534 PUBLIC '' 'https://xml.resource.org/public/rfc/bibxml/reference.RFC.3534.xml'>
+<!ENTITY rfc4732 PUBLIC '' 'https://xml.resource.org/public/rfc/bibxml/reference.RFC.4732.xml'>
+<!ENTITY rfc3629 PUBLIC '' 'https://xml.resource.org/public/rfc/bibxml/reference.RFC.3629.xml'>
+<!ENTITY rfc6381 PUBLIC '' 'https://xml.resource.org/public/rfc/bibxml/reference.RFC.6381.xml'>
+<!ENTITY rfc6716 PUBLIC '' 'https://xml.resource.org/public/rfc/bibxml/reference.RFC.6716.xml'>
+]>
 <?rfc toc="yes" symrefs="yes" ?>
 
 <rfc ipr="trust200902" category="std" docName="draft-terriberry-oggopus-01">
@@ -78,7 +86,7 @@ It also provides a live streamable format, capable of delivery over a reliable
 <t>
 The IETF Opus codec is a low-latency audio codec optimized for both voice and
  general-purpose audio.
-See <xref target="RFCOpus"/> for technical details.
+See <xref target="RFC6716"/> for technical details.
 This document defines the encapsulation of Opus in a continuous, logical Ogg
  bitstream&nbsp;<xref target="RFC3533"/>.
 </t>
@@ -166,9 +174,9 @@ The value N is specified in the ID header (see
 <t>
 The first N-1 Opus packets, if any, are packed one after another into the Ogg
  packet, using the self-delimiting framing from Appendix&nbsp;B of
- <xref target="RFCOpus"/>.
+ <xref target="RFC6716"/>.
 The remaining Opus packet is packed at the end of the Ogg packet using the
- regular, undelimited framing from Section&nbsp;3 of <xref target="RFCOpus"/>.
+ regular, undelimited framing from Section&nbsp;3 of <xref target="RFC6716"/>.
 All of the Opus packets in a single Ogg packet MUST be constrained to have the
  same duration.
 The duration and coding modes of each Opus packet are contained in the
@@ -240,7 +248,7 @@ For this to work, there cannot be any gaps.
 In order to support capturing a stream that uses discontinuous transmission
  (DTX), an encoder SHOULD emit packets that explicitly request the use of
  Packet Loss Concealment (PLC) (i.e., with a frame length of 0, as defined in
- Section 3.2.1 of <xref target="RFCOpus"/>) in place of the packets that were
+ Section 3.2.1 of <xref target="RFC6716"/>) in place of the packets that were
  not transmitted.
 </t>
 
@@ -320,7 +328,7 @@ Opus uses the pre-skip mechanism for this purpose instead, since the encoder
 </t>
 </section>
 
-<section title="end_trimming" title="End Trimming">
+<section anchor="end_trimming" title="End Trimming">
 <t>
 The page with the 'end of stream' flag set MAY have a granule position that
  indicates the page contains less audio data than would normally be returned by
@@ -983,7 +991,7 @@ An "Ogg Opus file" consists of one or more sequentially multiplexed segments,
 The RECOMMENDED mime-type for Ogg Opus files is "audio/ogg".
 When Opus is concurrently multiplexed with other streams in an Ogg container,
  one SHOULD use one of the "audio/ogg", "video/ogg", or "application/ogg"
- mime-types, as defined in <xref target="RFC5334"/>.
+ mime-types, as defined in <xref target="RFC3534"/>.
 </t>
 
 <t>
@@ -1031,27 +1039,18 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </middle>
 <back>
 <references title="Normative References">
-
-<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?>
-<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3629.xml"?>
-<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3533.xml"?>
-<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.5334.xml"?>
-<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.6381.xml"?>
-
-<reference anchor="RFCOpus">
-<front>
-<title>Definition of the Opus Audio Codec</title>
-<author initials="JM" surname="Valin" fullname="Jean-Marc Valin"/>
-<author initials="K." surname="Vos" fullname="Koen Vos"/>
-<author initials="T.B." surname="Terriberry" fullname="Timothy B. Terriberry"/>
-</front>
-<seriesInfo name="RFC" value="XXXX"/>
-</reference>
+ &rfc2119;
+ &rfc3533;
+ &rfc3534;
+ &rfc3629;
+ &rfc6381;
+ &rfc6716;
 
 <reference anchor="EBU-R128" target="http://tech.ebu.ch/loudness">
 <front>
 <title>"Loudness Recommendation EBU R128</title>
 <author fullname="EBU Technical Committee"/>
+<date month="August" year="2011"/>
 </front>
 </reference>
 
@@ -1062,6 +1061,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  Specification</title>
 <author initials="C." surname="Montgomery"
  fullname="Christopher &quot;Monty&quot; Montgomery"/>
+<date month="July" year="2002"/>
 </front>
 </reference>
 
@@ -1071,6 +1071,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <title>The Vorbis I Specification, Section 4.3.9 Output Channel Order</title>
 <author initials="C." surname="Montgomery"
  fullname="Christopher &quot;Monty&quot; Montgomery"/>
+<date month="January" year="2010"/>
 </front>
 </reference>
 
@@ -1079,7 +1080,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <references title="Informative References">
 
 <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml"?-->
-<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.4732.xml"?>
+ &rfc4732;
 
 <reference anchor="replay-gain"
  target="http://wiki.xiph.org/VorbisComment#Replay_Gain">
@@ -1087,6 +1088,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <title>VorbisComment: Replay Gain</title>
 <author initials="C." surname="Parker" fullname="Conrad Parker"/>
 <author initials="M." surname="Leese" fullname="Martin Leese"/>
+<date month="June" year="2009"/>
 </front>
 </reference>
 
@@ -1097,6 +1099,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <author initials="S." surname="Pfeiffer" fullname="Silvia Pfeiffer"/>
 <author initials="C." surname="Parker" fullname="Conrad Parker"/>
 <author initials="G." surname="Maxwell" fullname="Greg Maxwell"/>
+<date month="May" year="2012"/>
 </front>
 </reference>
 
@@ -1106,6 +1109,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <title>The Vorbis I Specification, Appendix A Embedding Vorbis into an Ogg stream</title>
 <author initials="C." surname="Montgomery"
  fullname="Christopher &quot;Monty&quot; Montgomery"/>
+<date month="November" year="2008"/>
 </front>
 </reference>
 
