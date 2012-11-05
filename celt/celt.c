@@ -446,28 +446,28 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
     all channels in a frame */
 static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS_RESTRICT in, celt_sig * OPUS_RESTRICT out, int C, int LM)
 {
-   if (C==1 && !shortBlocks)
+   const int overlap = OVERLAP(mode);
+   int N;
+   int B;
+   int shift;
+   int b, c;
+   if (shortBlocks)
    {
-      const int overlap = OVERLAP(mode);
-      clt_mdct_forward(&mode->mdct, in, out, mode->window, overlap, mode->maxLM-LM, 1);
+      B = shortBlocks;
+      N = mode->shortMdctSize;
+      shift = mode->maxLM;
    } else {
-      const int overlap = OVERLAP(mode);
-      int N = mode->shortMdctSize<<LM;
-      int B = 1;
-      int b, c;
-      if (shortBlocks)
-      {
-         N = mode->shortMdctSize;
-         B = shortBlocks;
-      }
-      c=0; do {
-         for (b=0;b<B;b++)
-         {
-            /* Interleaving the sub-frames while doing the MDCTs */
-            clt_mdct_forward(&mode->mdct, in+c*(B*N+overlap)+b*N, &out[b+c*N*B], mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM, B);
-         }
-      } while (++c<C);
+      B = 1;
+      N = mode->shortMdctSize<<LM;
+      shift = mode->maxLM-LM;
    }
+   c=0; do {
+      for (b=0;b<B;b++)
+      {
+         /* Interleaving the sub-frames while doing the MDCTs */
+         clt_mdct_forward(&mode->mdct, in+c*(B*N+overlap)+b*N, &out[b+c*N*B], mode->window, overlap, shift, B);
+      }
+   } while (++c<C);
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and
@@ -475,31 +475,27 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS
 static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X,
       celt_sig * OPUS_RESTRICT out_mem[], int C, int LM)
 {
-   int c;
-   const int N = mode->shortMdctSize<<LM;
+   int b, c;
+   int B;
+   int N;
+   int shift;
    const int overlap = OVERLAP(mode);
-   SAVE_STACK;
 
+   if (shortBlocks)
+   {
+      B = shortBlocks;
+      N = mode->shortMdctSize;
+      shift = mode->maxLM;
+   } else {
+      B = 1;
+      N = mode->shortMdctSize<<LM;
+      shift = mode->maxLM-LM;
+   }
    c=0; do {
-      int b;
-      int N2 = N;
-      int B = 1;
-
-      if (shortBlocks)
-      {
-         N2 = mode->shortMdctSize;
-         B = shortBlocks;
-      }
-      /* The imdct does the overlap-add */
-      OPUS_COPY(out_mem[c], out_mem[c]+N, overlap);
-
+      /* IMDCT on the interleaved the sub-frames, overlap-add is performed by the IMDCT */
       for (b=0;b<B;b++)
-      {
-         /* IMDCT on the interleaved the sub-frames */
-         clt_mdct_backward(&mode->mdct, &X[b+c*N2*B], out_mem[c]+N2*b, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM, B);
-      }
+         clt_mdct_backward(&mode->mdct, &X[b+c*N*B], out_mem[c]+N*b, mode->window, overlap, shift, B);
    } while (++c<C);
-   RESTORE_STACK;
 }
 
 static void preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
@@ -1992,9 +1988,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       /* Synthesis */
       denormalise_bands(mode, X, freq, bandE, effEnd, C, M);
 
-      OPUS_MOVE(st->syn_mem[0], st->syn_mem[0]+N, 2*MAX_PERIOD-N);
-      if (CC==2)
-         OPUS_MOVE(st->syn_mem[1], st->syn_mem[1]+N, 2*MAX_PERIOD-N);
+      c=0; do {
+         OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, 2*MAX_PERIOD-N+overlap);
+      } while (++c<CC);
 
       c=0; do
          for (i=0;i<M*eBands[st->start];i++)
@@ -2011,9 +2007,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
             freq[N+i] = freq[i];
       }
 
-      out_mem[0] = st->syn_mem[0]+2*MAX_PERIOD-N;
-      if (CC==2)
-         out_mem[1] = st->syn_mem[1]+2*MAX_PERIOD-N;
+      c=0; do {
+         out_mem[c] = st->syn_mem[c]+2*MAX_PERIOD-N;
+      } while (++c<CC);
 
       compute_inv_mdcts(mode, shortBlocks, freq, out_mem, CC, LM);
 
@@ -2490,9 +2486,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
    oldLogE2 = oldLogE + 2*nbEBands;
    backgroundLogE = oldLogE2  + 2*nbEBands;
 
-   out_syn[0] = out_mem[0]+MAX_PERIOD-N;
-   if (C==2)
-      out_syn[1] = out_mem[1]+MAX_PERIOD-N;
+   c=0; do {
+      out_syn[c] = out_mem[c]+MAX_PERIOD-N;
+   } while (++c<C);
 
    len = N+overlap;
 
@@ -2561,6 +2557,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             bound = IMIN(bound, N/st->downsample);
          for (i=bound;i<N;i++)
             freq[c*N+i] = 0;
+      } while (++c<C);
+      c=0; do {
+         OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);
       } while (++c<C);
       compute_inv_mdcts(mode, 0, freq, out_syn, C, LM);
    } else {
@@ -3006,9 +3005,9 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    /* Synthesis */
    denormalise_bands(mode, X, freq, bandE, effEnd, C, M);
 
-   OPUS_MOVE(decode_mem[0], decode_mem[0]+N, DECODE_BUFFER_SIZE-N);
-   if (CC==2)
-      OPUS_MOVE(decode_mem[1], decode_mem[1]+N, DECODE_BUFFER_SIZE-N);
+   c=0; do {
+      OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);
+   } while (++c<CC);
 
    c=0; do
       for (i=0;i<M*eBands[st->start];i++)
@@ -3022,9 +3021,9 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
          freq[c*N+i] = 0;
    } while (++c<C);
 
-   out_syn[0] = out_mem[0]+MAX_PERIOD-N;
-   if (CC==2)
-      out_syn[1] = out_mem[1]+MAX_PERIOD-N;
+   c=0; do {
+      out_syn[c] = out_mem[c]+MAX_PERIOD-N;
+   } while (++c<CC);
 
    if (CC==2&&C==1)
    {
