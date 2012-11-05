@@ -2838,9 +2838,8 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       return frame_size/st->downsample;
    }
 
-   ALLOC(freq, IMAX(CC,C)*N, celt_sig); /**< Interleaved signal MDCTs */
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
-   ALLOC(bandE, nbEBands*C, celt_ener);
+
    c=0; do
       for (i=0;i<M*eBands[st->start];i++)
          X[c*N+i] = 0;
@@ -2923,12 +2922,11 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    if (tell+4 <= total_bits)
       spread_decision = ec_dec_icdf(dec, spread_icdf, 5);
 
-   ALLOC(pulses, nbEBands, int);
    ALLOC(cap, nbEBands, int);
-   ALLOC(offsets, nbEBands, int);
-   ALLOC(fine_priority, nbEBands, int);
 
    init_caps(mode,cap,LM,C);
+
+   ALLOC(offsets, nbEBands, int);
 
    dynalloc_logp = 6;
    total_bits<<=BITRES;
@@ -2968,6 +2966,10 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    bits = (((opus_int32)len*8)<<BITRES) - ec_tell_frac(dec) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=((LM+2)<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
+
+   ALLOC(pulses, nbEBands, int);
+   ALLOC(fine_priority, nbEBands, int);
+
    codedBands = compute_allocation(mode, st->start, st->end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, dec, 0, 0);
@@ -2992,6 +2994,8 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       anti_collapse(mode, X, collapse_masks, LM, C, N,
             st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
 
+   ALLOC(bandE, nbEBands*C, celt_ener);
+
    log2Amp(mode, st->start, st->end, bandE, oldBandE, C);
 
    if (silence)
@@ -3002,6 +3006,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
          oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
       }
    }
+   ALLOC(freq, IMAX(CC,C)*N, celt_sig); /**< Interleaved signal MDCTs */
    /* Synthesis */
    denormalise_bands(mode, X, freq, bandE, effEnd, C, M);
 

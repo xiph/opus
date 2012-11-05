@@ -200,8 +200,14 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    int i, silk_ret=0, celt_ret=0;
    ec_dec dec;
    opus_int32 silk_frame_size;
+   int pcm_silk_size;
    VARDECL(opus_int16, pcm_silk);
-   VARDECL(opus_val16, pcm_transition);
+   int pcm_transition_silk_size;
+   VARDECL(opus_val16, pcm_transition_silk);
+   int pcm_transition_celt_size;
+   VARDECL(opus_val16, pcm_transition_celt);
+   opus_val16 *pcm_transition;
+   int redundant_audio_size;
    VARDECL(opus_val16, redundant_audio);
 
    int audiosize;
@@ -274,16 +280,26 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       RESTORE_STACK;
       return frame_size;
    }
-   ALLOC(pcm_transition, F5*st->channels, opus_val16);
 
+   pcm_transition_silk_size = 0;
+   pcm_transition_celt_size = 0;
    if (data!=NULL && st->prev_mode > 0 && (
        (mode == MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY && !st->prev_redundancy)
     || (mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY) )
       )
    {
       transition = 1;
+      /* Decide where to allocate the stack memory for pcm_transition */
       if (mode == MODE_CELT_ONLY)
-         opus_decode_frame(st, NULL, 0, pcm_transition, IMIN(F5, audiosize), 0);
+         pcm_transition_celt_size = F5*st->channels;
+      else
+         pcm_transition_silk_size = F5*st->channels;
+   }
+   ALLOC(pcm_transition_celt, pcm_transition_celt_size, opus_val16);
+   if (transition && mode == MODE_CELT_ONLY)
+   {
+      pcm_transition = pcm_transition_celt;
+      opus_decode_frame(st, NULL, 0, pcm_transition, IMIN(F5, audiosize), 0);
    }
    if (audiosize > frame_size)
    {
@@ -294,8 +310,9 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       frame_size = audiosize;
    }
 
-   ALLOC(pcm_silk, IMAX(F10, frame_size)*st->channels, opus_int16);
-   ALLOC(redundant_audio, F5*st->channels, opus_val16);
+   /* Don't allocate any memory when in CELT-only mode */
+   pcm_silk_size = (mode != MODE_CELT_ONLY) ? IMAX(F10, frame_size)*st->channels : 0;
+   ALLOC(pcm_silk, pcm_silk_size, opus_int16);
 
    /* SILK processing */
    if (mode != MODE_CELT_ONLY)
@@ -409,10 +426,22 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    }
 
    if (redundancy)
+   {
       transition = 0;
+      pcm_transition_silk_size=0;
+   }
+
+   ALLOC(pcm_transition_silk, pcm_transition_silk_size, opus_val16);
 
    if (transition && mode != MODE_CELT_ONLY)
+   {
+      pcm_transition = pcm_transition_silk;
       opus_decode_frame(st, NULL, 0, pcm_transition, IMIN(F5, audiosize), 0);
+   }
+
+   /* Only allocation memory for redundancy if/when needed */
+   redundant_audio_size = redundancy ? F5*st->channels : 0;
+   ALLOC(redundant_audio, redundant_audio_size, opus_val16);
 
    /* 5 ms redundant frame for CELT->SILK*/
    if (redundancy && celt_to_silk)
