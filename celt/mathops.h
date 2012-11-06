@@ -48,9 +48,13 @@ static inline opus_val16 celt_maxabs16(const opus_val16 *x, int len)
 {
    int i;
    opus_val16 maxval = 0;
+   opus_val16 minval = 0;
    for (i=0;i<len;i++)
-      maxval = MAX16(maxval, ABS16(x[i]));
-   return maxval;
+   {
+      maxval = MAX16(maxval, x[i]);
+      minval = MIN16(minval, x[i]);
+   }
+   return MAX16(maxval,-minval);
 }
 #endif
 
@@ -60,9 +64,13 @@ static inline opus_val32 celt_maxabs32(const opus_val32 *x, int len)
 {
    int i;
    opus_val32 maxval = 0;
+   opus_val32 minval = 0;
    for (i=0;i<len;i++)
-      maxval = MAX32(maxval, ABS32(x[i]));
-   return maxval;
+   {
+      maxval = MAX32(maxval, x[i]);
+      minval = MIN32(minval, x[i]);
+   }
+   return MAX32(maxval, -minval);
 }
 #else
 #define celt_maxabs32(x,len) celt_maxabs16(x,len)
