@@ -1283,6 +1283,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    int nbEBands;
    int overlap;
    const opus_int16 *eBands;
+   int secondMdct;
    ALLOC_STACK;
 
    mode = st->mode;
@@ -1489,7 +1490,34 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    ALLOC(freq, CC*N, celt_sig); /**< Interleaved signal MDCTs */
    ALLOC(bandE,nbEBands*CC, celt_ener);
    ALLOC(bandLogE,nbEBands*CC, opus_val16);
-   /* Compute MDCTs */
+
+   secondMdct = shortBlocks && st->complexity>=8;
+   ALLOC(bandLogE2, C*nbEBands, opus_val16);
+   if (secondMdct)
+   {
+      compute_mdcts(mode, 0, in, freq, CC, LM);
+      if (CC==2&&C==1)
+      {
+         for (i=0;i<N;i++)
+            freq[i] = ADD32(HALF32(freq[i]), HALF32(freq[N+i]));
+      }
+      if (st->upsample != 1)
+      {
+         c=0; do
+         {
+            int bound = N/st->upsample;
+            for (i=0;i<bound;i++)
+               freq[c*N+i] *= st->upsample;
+            for (;i<N;i++)
+               freq[c*N+i] = 0;
+         } while (++c<C);
+      }
+      compute_band_energies(mode, freq, bandE, effEnd, C, M);
+      amp2Log2(mode, effEnd, st->end, bandE, bandLogE2, C);
+      for (i=0;i<C*nbEBands;i++)
+         bandLogE2[i] += HALF16(SHL16(LM, DB_SHIFT));
+   }
+
    compute_mdcts(mode, shortBlocks, in, freq, CC, LM);
 
    if (CC==2&&C==1)
@@ -1516,35 +1544,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       printf("%f ", bandLogE[i]);
    printf("\n");*/
 
-   ALLOC(bandLogE2, C*nbEBands, opus_val16);
-   if (shortBlocks && st->complexity>=8)
+   if (!secondMdct)
    {
-      VARDECL(celt_sig, freq2);
-      VARDECL(opus_val32, bandE2);
-      ALLOC(freq2, CC*N, celt_sig);
-      compute_mdcts(mode, 0, in, freq2, CC, LM);
-      if (CC==2&&C==1)
-      {
-         for (i=0;i<N;i++)
-            freq2[i] = ADD32(HALF32(freq2[i]), HALF32(freq2[N+i]));
-      }
-      if (st->upsample != 1)
-      {
-         c=0; do
-         {
-            int bound = N/st->upsample;
-            for (i=0;i<bound;i++)
-               freq2[c*N+i] *= st->upsample;
-            for (;i<N;i++)
-               freq2[c*N+i] = 0;
-         } while (++c<C);
-      }
-      ALLOC(bandE2, C*nbEBands, opus_val32);
-      compute_band_energies(mode, freq2, bandE2, effEnd, C, M);
-      amp2Log2(mode, effEnd, st->end, bandE2, bandLogE2, C);
-      for (i=0;i<C*nbEBands;i++)
-         bandLogE2[i] += HALF16(SHL16(LM, DB_SHIFT));
-   } else {
       for (i=0;i<C*nbEBands;i++)
          bandLogE2[i] = bandLogE[i];
    }
