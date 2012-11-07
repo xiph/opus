@@ -1208,9 +1208,11 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 
    M = 1<<LM;
    B = shortBlocks ? M : 1;
-   ALLOC(_norm, C*M*eBands[m->nbEBands], celt_norm);
+   /* No need to allocate norm for the last band because we don't need an
+      output in that band */
+   ALLOC(_norm, C*M*eBands[m->nbEBands-1], celt_norm);
    norm = _norm;
-   norm2 = norm + M*eBands[m->nbEBands];
+   norm2 = norm + M*eBands[m->nbEBands-1];
    /* We can use the last band as scratch space because we don't need that
       scratch space for the last band */
    lowband_scratch = X_+M*eBands[m->nbEBands-1];
@@ -1227,6 +1229,9 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       int tf_change=0;
       unsigned x_cm;
       unsigned y_cm;
+      int last;
+
+      last = (i==end-1);
 
       X = X_+M*eBands[i];
       if (Y_!=NULL)
@@ -1300,14 +1305,14 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       {
          x_cm = quant_band(encode, m, i, X, NULL, N, b/2, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm+effective_lowband : NULL, ec, &remaining_bits, LM,
-               norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm);
+               last?NULL:norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm);
          y_cm = quant_band(encode, m, i, Y, NULL, N, b/2, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm2+effective_lowband : NULL, ec, &remaining_bits, LM,
-               norm2+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, y_cm);
+               last?NULL:norm2+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, y_cm);
       } else {
          x_cm = quant_band(encode, m, i, X, Y, N, b, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm+effective_lowband : NULL, ec, &remaining_bits, LM,
-               norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm|y_cm);
+               last?NULL:norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm|y_cm);
          y_cm = x_cm;
       }
       collapse_masks[i*C+0] = (unsigned char)x_cm;
