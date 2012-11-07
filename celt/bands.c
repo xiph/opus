@@ -1199,6 +1199,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    int lowband_offset;
    int update_lowband = 1;
    int C = Y_ != NULL ? 2 : 1;
+   int norm_offset;
 #ifdef RESYNTH
    int resynth = 1;
 #else
@@ -1208,11 +1209,12 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 
    M = 1<<LM;
    B = shortBlocks ? M : 1;
+   norm_offset = M*eBands[start];
    /* No need to allocate norm for the last band because we don't need an
       output in that band */
-   ALLOC(_norm, C*M*eBands[m->nbEBands-1], celt_norm);
+   ALLOC(_norm, C*(M*eBands[m->nbEBands-1]-norm_offset), celt_norm);
    norm = _norm;
-   norm2 = norm + M*eBands[m->nbEBands-1];
+   norm2 = norm + M*eBands[m->nbEBands-1]-norm_offset;
    /* We can use the last band as scratch space because we don't need that
       scratch space for the last band */
    lowband_scratch = X_+M*eBands[m->nbEBands-1];
@@ -1275,11 +1277,11 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          int fold_end;
          int fold_i;
          /* This ensures we never repeat spectral content within one band */
-         effective_lowband = IMAX(M*eBands[start], M*eBands[lowband_offset]-N);
+         effective_lowband = IMAX(0, M*eBands[lowband_offset]-norm_offset-N);
          fold_start = lowband_offset;
-         while(M*eBands[--fold_start] > effective_lowband);
+         while(M*eBands[--fold_start] > effective_lowband+norm_offset);
          fold_end = lowband_offset-1;
-         while(M*eBands[++fold_end] < effective_lowband+N);
+         while(M*eBands[++fold_end] < effective_lowband+norm_offset+N);
          x_cm = y_cm = 0;
          fold_i = fold_start; do {
            x_cm |= collapse_masks[fold_i*C+0];
@@ -1298,21 +1300,21 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          /* Switch off dual stereo to do intensity */
          dual_stereo = 0;
          if (resynth)
-            for (j=M*eBands[start];j<M*eBands[i];j++)
+            for (j=0;j<M*eBands[i]-norm_offset;j++)
                norm[j] = HALF32(norm[j]+norm2[j]);
       }
       if (dual_stereo)
       {
          x_cm = quant_band(encode, m, i, X, NULL, N, b/2, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm+effective_lowband : NULL, ec, &remaining_bits, LM,
-               last?NULL:norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm);
+               last?NULL:norm+M*eBands[i]-norm_offset, bandE, 0, seed, Q15ONE, lowband_scratch, x_cm);
          y_cm = quant_band(encode, m, i, Y, NULL, N, b/2, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm2+effective_lowband : NULL, ec, &remaining_bits, LM,
-               last?NULL:norm2+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, y_cm);
+               last?NULL:norm2+M*eBands[i]-norm_offset, bandE, 0, seed, Q15ONE, lowband_scratch, y_cm);
       } else {
          x_cm = quant_band(encode, m, i, X, Y, N, b, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm+effective_lowband : NULL, ec, &remaining_bits, LM,
-               last?NULL:norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm|y_cm);
+               last?NULL:norm+M*eBands[i]-norm_offset, bandE, 0, seed, Q15ONE, lowband_scratch, x_cm|y_cm);
          y_cm = x_cm;
       }
       collapse_masks[i*C+0] = (unsigned char)x_cm;
