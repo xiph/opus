@@ -187,7 +187,8 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
 #endif /* FIXED_POINT */
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X, celt_sig * OPUS_RESTRICT freq, const celt_ener *bandE, int end, int C, int M)
+void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
+      celt_sig * OPUS_RESTRICT freq, const celt_ener *bandE, int start, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
@@ -197,8 +198,10 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X, cel
       celt_sig * OPUS_RESTRICT f;
       const celt_norm * OPUS_RESTRICT x;
       f = freq+c*N;
-      x = X+c*N;
-      for (i=0;i<end;i++)
+      x = X+c*N+M*eBands[start];
+      for (i=0;i<M*eBands[start];i++)
+         *f++ = 0;
+      for (i=start;i<end;i++)
       {
          int j, band_end;
          opus_val32 g = SHR32(bandE[i+c*m->nbEBands],1);

@@ -1987,20 +1987,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       }
 
       /* Synthesis */
-      denormalise_bands(mode, X, freq, bandE, effEnd, C, M);
+      denormalise_bands(mode, X, freq, bandE, st->start, effEnd, C, M);
 
       c=0; do {
          OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, 2*MAX_PERIOD-N+overlap);
       } while (++c<CC);
-
-      c=0; do
-         for (i=0;i<M*eBands[st->start];i++)
-            freq[c*N+i] = 0;
-      while (++c<C);
-      c=0; do
-         for (i=M*eBands[st->end];i<N;i++)
-            freq[c*N+i] = 0;
-      while (++c<C);
 
       if (CC==2&&C==1)
       {
@@ -2525,8 +2516,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       seed = st->rng;
       for (c=0;c<C;c++)
       {
-         for (i=0;i<(eBands[st->start]<<LM);i++)
-            X[c*N+i] = 0;
          for (i=st->start;i<mode->effEBands;i++)
          {
             int j;
@@ -2541,12 +2530,10 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             }
             renormalise_vector(X+boffs, blen, Q15ONE);
          }
-         for (i=(eBands[st->end]<<LM);i<N;i++)
-            X[c*N+i] = 0;
       }
       st->rng = seed;
 
-      denormalise_bands(mode, X, freq, bandE, mode->effEBands, C, 1<<LM);
+      denormalise_bands(mode, X, freq, bandE, st->start, mode->effEBands, C, 1<<LM);
 
       c=0; do
          for (i=0;i<eBands[st->start]<<LM;i++)
@@ -2970,15 +2957,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
 
-   c=0; do
-      for (i=0;i<M*eBands[st->start];i++)
-         X[c*N+i] = 0;
-   while (++c<C);
-   c=0; do
-      for (i=M*eBands[effEnd];i<N;i++)
-         X[c*N+i] = 0;
-   while (++c<C);
-
    quant_all_bands(0, mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
          len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng);
@@ -3009,7 +2987,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    }
    ALLOC(freq, IMAX(CC,C)*N, celt_sig); /**< Interleaved signal MDCTs */
    /* Synthesis */
-   denormalise_bands(mode, X, freq, bandE, effEnd, C, M);
+   denormalise_bands(mode, X, freq, bandE, st->start, effEnd, C, M);
 
    c=0; do {
       OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);

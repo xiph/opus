@@ -58,7 +58,8 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
  * @param X Spectrum (returned de-normalised)
  * @param bands Square root of the energy for each band
  */
-void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X, celt_sig * OPUS_RESTRICT freq, const celt_ener *bandE, int end, int C, int M);
+void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
+      celt_sig * OPUS_RESTRICT freq, const celt_ener *bandE, int start, int end, int C, int M);
 
 #define SPREAD_NONE       (0)
 #define SPREAD_LIGHT      (1)
