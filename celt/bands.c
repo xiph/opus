@@ -716,7 +716,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
          recombine = tf_change;
       /* Band recombining to increase frequency resolution */
 
-      if (lowband && (recombine || ((N_B&1) == 0 && tf_change<0) || B0>1))
+      if (lowband_scratch && lowband && (recombine || ((N_B&1) == 0 && tf_change<0) || B0>1))
       {
          int j;
          for (j=0;j<N;j++)
@@ -1193,7 +1193,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    const opus_int16 * OPUS_RESTRICT eBands = m->eBands;
    celt_norm * OPUS_RESTRICT norm, * OPUS_RESTRICT norm2;
    VARDECL(celt_norm, _norm);
-   VARDECL(celt_norm, lowband_scratch);
+   celt_norm *lowband_scratch;
    int B;
    int M;
    int lowband_offset;
@@ -1209,9 +1209,11 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    M = 1<<LM;
    B = shortBlocks ? M : 1;
    ALLOC(_norm, C*M*eBands[m->nbEBands], celt_norm);
-   ALLOC(lowband_scratch, M*(eBands[m->nbEBands]-eBands[m->nbEBands-1]), celt_norm);
    norm = _norm;
    norm2 = norm + M*eBands[m->nbEBands];
+   /* We can use the last band as scratch space because we don't need that
+      scratch space for the last band */
+   lowband_scratch = X_+M*eBands[m->nbEBands-1];
 
    lowband_offset = 0;
    for (i=start;i<end;i++)
@@ -1255,7 +1257,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          X=norm;
          if (Y_!=NULL)
             Y = norm;
+         lowband_scratch = NULL;
       }
+      if (i==end-1)
+         lowband_scratch = NULL;
 
       /* Get a conservative estimate of the collapse_mask's for the bands we're
           going to be folding from. */

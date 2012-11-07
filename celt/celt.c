@@ -2839,17 +2839,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       return frame_size/st->downsample;
    }
 
-   ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
-
-   c=0; do
-      for (i=0;i<M*eBands[st->start];i++)
-         X[c*N+i] = 0;
-   while (++c<C);
-   c=0; do
-      for (i=M*eBands[effEnd];i<N;i++)
-         X[c*N+i] = 0;
-   while (++c<C);
-
    if (dec == NULL)
    {
       ec_dec_init(&_dec,(unsigned char*)data,len);
@@ -2979,6 +2968,17 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    /* Decode fixed codebook */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
+   ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
+
+   c=0; do
+      for (i=0;i<M*eBands[st->start];i++)
+         X[c*N+i] = 0;
+   while (++c<C);
+   c=0; do
+      for (i=M*eBands[effEnd];i<N;i++)
+         X[c*N+i] = 0;
+   while (++c<C);
+
    quant_all_bands(0, mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
          len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng);
