@@ -31,8 +31,7 @@
 #include "config.h"
 #endif
 
-#define CELT_C
-#define ENCODER
+#define CELT_ENCODER_C
 
 #include "os_support.h"
 #include "mdct.h"

@@ -46,7 +46,7 @@ extern "C" {
 # define OPUS_CUSTOM_EXPORT_STATIC OPUS_EXPORT
 #else
 # define OPUS_CUSTOM_EXPORT
-# ifdef CELT_C
+# ifdef OPUS_BUILD
 #  define OPUS_CUSTOM_EXPORT_STATIC static inline
 # else
 #  define OPUS_CUSTOM_EXPORT_STATIC
@@ -127,7 +127,7 @@ OPUS_CUSTOM_EXPORT OPUS_WARN_UNUSED_RESULT OpusCustomMode *opus_custom_mode_crea
 OPUS_CUSTOM_EXPORT void opus_custom_mode_destroy(OpusCustomMode *mode);
 
 
-#if defined(CELT_C) && defined(ENCODER)
+#if !defined(OPUS_BUILD) || defined(CELT_ENCODER_C)
 
 /* Encoder */
 /** Gets the size of an OpusCustomEncoder structure.
@@ -237,7 +237,7 @@ OPUS_CUSTOM_EXPORT OPUS_WARN_UNUSED_RESULT int opus_custom_encode(
 OPUS_CUSTOM_EXPORT int opus_custom_encoder_ctl(OpusCustomEncoder * OPUS_RESTRICT st, int request, ...) OPUS_ARG_NONNULL(1);
 
 
-#if defined(CELT_C) && defined(DECODER)
+#if !defined(OPUS_BUILD) || defined(CELT_DECODER_C)
 /* Decoder */
 
 /** Gets the size of an OpusCustomDecoder structure.
