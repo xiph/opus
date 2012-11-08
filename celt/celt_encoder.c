@@ -1282,10 +1282,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    if (ec_tell(enc)+4<=total_bits)
    {
-      if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C)
+      if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C || st->start != 0)
       {
          if (st->complexity == 0)
             st->spread_decision = SPREAD_NONE;
+         else
+            st->spread_decision = SPREAD_NORMAL;
       } else {
          if (st->analysis.valid)
          {
