@@ -40,6 +40,19 @@ struct OpusRepacketizer {
    int framesize;
 };
 
+typedef struct ChannelLayout {
+   int nb_channels;
+   int nb_streams;
+   int nb_coupled_streams;
+   unsigned char mapping[256];
+} ChannelLayout;
+
+int validate_layout(const ChannelLayout *layout);
+int get_left_channel(const ChannelLayout *layout, int stream_id, int prev);
+int get_right_channel(const ChannelLayout *layout, int stream_id, int prev);
+int get_mono_channel(const ChannelLayout *layout, int stream_id, int prev);
+
+
 
 #define MODE_SILK_ONLY          1000
 #define MODE_HYBRID             1001
