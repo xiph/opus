@@ -456,8 +456,8 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, opus_val16 bias
 
 }
 
-static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
-      int *tf_res, int nbCompressedBytes, celt_norm *X, int N0, int LM,
+static int tf_analysis(const CELTMode *m, int len, int isTransient,
+      int *tf_res, int lambda, celt_norm *X, int N0, int LM,
       int *tf_sum, opus_val16 tf_estimate, int tf_chan)
 {
    int i;
@@ -468,7 +468,6 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
    VARDECL(int, path1);
    VARDECL(celt_norm, tmp);
    VARDECL(celt_norm, tmp_1);
-   int lambda;
    int sel;
    int selcost[2];
    int tf_select=0;
@@ -478,22 +477,6 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
    bias = MULT16_16_Q14(QCONST16(.04f,15), MAX16(-QCONST16(.25f,14), QCONST16(1.5f,14)-tf_estimate));
    /*printf("%f ", bias);*/
 
-   if (nbCompressedBytes<15*C)
-   {
-      *tf_sum = 0;
-      for (i=0;i<len;i++)
-         tf_res[i] = isTransient;
-      return 0;
-   }
-   if (nbCompressedBytes<40)
-      lambda = 12;
-   else if (nbCompressedBytes<60)
-      lambda = 6;
-   else if (nbCompressedBytes<100)
-      lambda = 4;
-   else
-      lambda = 3;
-   lambda*=2;
    ALLOC(metric, len, int);
    ALLOC(tmp, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
    ALLOC(tmp_1, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
@@ -1266,9 +1249,28 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    normalise_bands(mode, freq, X, bandE, effEnd, C, M);
 
    ALLOC(tf_res, nbEBands, int);
-   tf_select = tf_analysis(mode, effEnd, C, isTransient, tf_res, effectiveBytes, X, N, LM, &tf_sum, tf_estimate, tf_chan);
-   for (i=effEnd;i<st->end;i++)
-      tf_res[i] = tf_res[effEnd-1];
+   /* Disable variable tf resolution for hybrid and at very low bitrate */
+   if (effectiveBytes>=15*C && st->start==0)
+   {
+      int lambda;
+      if (effectiveBytes<40)
+         lambda = 12;
+      else if (effectiveBytes<60)
+         lambda = 6;
+      else if (effectiveBytes<100)
+         lambda = 4;
+      else
+         lambda = 3;
+      lambda*=2;
+      tf_select = tf_analysis(mode, effEnd, isTransient, tf_res, lambda, X, N, LM, &tf_sum, tf_estimate, tf_chan);
+      for (i=effEnd;i<st->end;i++)
+         tf_res[i] = tf_res[effEnd-1];
+   } else {
+      tf_sum = 0;
+      for (i=0;i<st->end;i++)
+         tf_res[i] = isTransient;
+      tf_select=0;
+   }
 
    ALLOC(error, C*nbEBands, opus_val16);
    quant_coarse_energy(mode, st->start, st->end, effEnd, bandLogE,
