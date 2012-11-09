@@ -176,15 +176,15 @@
       </t>
 
       <t>
-        The voice mode allows to efficiently encode voice signals at lower bit
+        The voice mode allows efficient encoding of voice signals at lower bit
         rates while the audio mode is optimized for audio signals at medium and
         higher bitrates.
       </t>
 
       <t>
         The Opus speech and audio codec is highly scalable in terms of audio
-        bandwidth and bitrate and complexity. Further, Opus allows to
-        transmit stereo signals.
+        bandwidth, bitrate, and complexity. Further, Opus allows
+        transmitting stereo signals.
       </t>
 
       <section title='Network Bandwidth'>
@@ -325,7 +325,8 @@
           Opus allows for transmission of stereo audio signals. This operation
           is signaled in-band in the Opus payload and no special arrangement
           is required in the payload format. Any implementation of the Opus
-          decoder MUST be capable of receiving stereo signals.
+          decoder MUST be capable of receiving stereo signals, although it MAY
+	  decode those signals as mono.
         </t>
         <t>
           If a decoder can not take advantage of the benefits of a stereo signal
@@ -350,8 +351,8 @@
         therefore no padding is required. The payload MAY be padded by an
         integer number of octets according to <xref target="RFC3550"/>.</t>
 
-        <t>The marker bit (M) of the RTP header has no function in combination
-        with Opus and MAY be ignored.</t>
+        <t>The marker bit (M) of the RTP header is used in accordance with
+	Section 4.1 of <xref target="RFC3551"/>.</t>
 
         <t>The RTP payload type for Opus has not been assigned statically and is
         expected to be assigned dynamically.</t>
@@ -521,6 +522,18 @@
               <vspace blankLines='1'/>
             </t>
 
+            <t hangText="sprop-maxcodedaudiobandwidth:">
+              a hint about the maximum audio bandwidth that the sender is likely to produce.
+	      This is not a guarantee that the sender will never send any higher bandwidth
+	      (e.g. it could send a pre-recorded prompt that uses a higher bandwidth), but it
+	      indicates to the receiver that frequencies above this maximum can safely be discarded.
+	      This parameter is useful to avoid wasting receiver resources by operating the audio
+	      processing pipeline (e.g. AEC) at a higher rate than necessary.
+	      Possible values are nb, mb, wb, swb, fb. By default, the sender
+	      is assumed to have no limitations, i.e. fb.
+              <vspace blankLines='1'/>
+            </t>
+
             <t hangText="maxptime:"> the decoder's maximum length of time in
             milliseconds rounded up to the next full integer value represented
             by the media in a packet that can be
@@ -587,6 +600,19 @@
               decode stereo signals but sending stereo signals to a receiver that signaled a
               preference for mono signals may result in higher than necessary network
               utilisation and encoding complexity. If no value is specified, mono
+              is assumed (stereo=0).<vspace blankLines='1'/>
+            </t>
+
+            <t hangText="sprop-stereo:">
+              specifies whether the sender is likely to produce stereo audio.
+              Possible values are 1 and 0 where 1 specifies that stereo signals are likely to
+	      be sent, and 0 speficies that the sender will likely only send mono.
+	      This is not a guarantee that the sender will never send stereo audio
+	      (e.g. it could send a pre-recorded prompt that uses stereo), but it
+	      indicates to the receiver that the received signal can be safely downmixed to mono.
+	      This parameter is useful to avoid wasting receiver resources by operating the audio
+	      processing pipeline (e.g. AEC) in stereo when not necessary.
+              If no value is specified, mono
               is assumed (stereo=0).<vspace blankLines='1'/>
             </t>
 
@@ -669,8 +695,8 @@
             <t>The media type ("audio") goes in SDP "m=" as the media name.</t>
 
             <t>The media subtype ("opus") goes in SDP "a=rtpmap" as the encoding
-            name. The RTP clock rate in "a=rtpmap" MUST be mapped to the required
-            media type parameter "rate".</t>
+            name. The RTP clock rate in "a=rtpmap" MUST be 48000 and the number of
+	    channels MUST be 2.</t>
 
             <t>The optional media type parameters "ptime" and "maxptime" are
             mapped to "a=ptime" and "a=maxptime" attributes, respectively, in the
@@ -690,7 +716,7 @@
             <artwork>
               <![CDATA[
     m=audio 54312 RTP/AVP 101
-    a=rtpmap:101 opus/48000
+    a=rtpmap:101 opus/48000/2
               ]]>
             </artwork>
           </figure>
@@ -704,7 +730,7 @@
           <artwork>
             <![CDATA[
     m=audio 54312 RTP/AVP 101
-    a=rtpmap:101 opus/48000
+    a=rtpmap:101 opus/48000/2
     a=fmtp:101 maxcodedaudiobandwidth=wb; maxaveragebitrate=20000;
     stereo=1; useinbandfec=1; usedtx=0
     a=ptime:40
@@ -731,8 +757,8 @@
             <figure>
               <artwork>
                 <![CDATA[
-        m=audio 54312 RTP/AVP 100
-        a=rtpmap:100 opus/48000
+    m=audio 54312 RTP/AVP 100
+    a=rtpmap:100 opus/48000/2
                 ]]>
               </artwork>
             </figure>
@@ -777,19 +803,19 @@
             in <xref target='bitrate_by_bandwidth'/> the session MUST be rejected.</t>
 
             <t>
-              The parameter "stereo" is a unidirectional receive-only
+              The "stereo" parameter is a unidirectional receive-only
               parameter.
             </t>
 
             <t>
-              The parameter "cbr" is a unidirectional receive-only
+              The "cbr" parameter is a unidirectional receive-only
               parameter.
             </t>
 
-            <t>The parameter "useinbandfec" is a unidirectional receive-only
+            <t>The "useinbandfec" parameter is a unidirectional receive-only
             parameter.</t>
 
-            <t>The parameter "usedtx" is a unidirectional receive-only
+            <t>The "usedtx" parameter is a unidirectional receive-only
             parameter.</t>
 
             <t>Any unknown parameter in an offer MUST be ignored by the receiver
