@@ -283,12 +283,15 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    /* Encode the global flags using a simple probability model
       (first symbols in the stream) */
 
+   max_decay = QCONST16(16.f,DB_SHIFT);
+   if (end-start>10)
+   {
 #ifdef FIXED_POINT
-      max_decay = MIN32(QCONST16(16.f,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
+      max_decay = MIN32(max_decay, SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
 #else
-   max_decay = MIN32(16.f, .125f*nbAvailableBytes);
+      max_decay = MIN32(max_decay, .125f*nbAvailableBytes);
 #endif
-
+   }
    enc_start_state = *enc;
 
    ALLOC(oldEBands_intra, C*m->nbEBands, opus_val16);
