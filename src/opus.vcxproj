@@ -198,6 +198,8 @@
     <ClCompile Include="opus_decoder.c" />
     <ClCompile Include="opus_encoder.c" />
     <ClCompile Include="opus_multistream.c" />
+    <ClCompile Include="opus_multistream_decoder.c" />
+    <ClCompile Include="opus_multistream_encoder.c" />
     <ClCompile Include="repacketizer.c" />
   </ItemGroup>
   <ItemGroup>

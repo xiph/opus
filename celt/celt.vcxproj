@@ -216,6 +216,8 @@
   <ItemGroup>
     <ClCompile Include="bands.c" />
     <ClCompile Include="celt.c" />
+    <ClCompile Include="celt_decoder.c" />
+    <ClCompile Include="celt_encoder.c" />
     <ClCompile Include="cwrs.c" />
     <ClCompile Include="entcode.c" />
     <ClCompile Include="entdec.c" />

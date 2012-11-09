@@ -95,6 +95,12 @@
     <ClCompile Include="celt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="celt_decoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt_encoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="cwrs.c">
       <Filter>Source Files</Filter>
     </ClCompile>

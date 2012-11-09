@@ -30,6 +30,12 @@
     <ClCompile Include="opus_multistream.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="opus_multistream_decoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="opus_multistream_encoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="analysis.c">
       <Filter>Source Files</Filter>
     </ClCompile>
