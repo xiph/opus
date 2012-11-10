@@ -795,6 +795,120 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
          > MULT16_32_Q15(m->eBands[13]<<(LM+1), sumLR);
 }
 
+static int dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
+      int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
+      int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
+      int effectiveBytes, opus_int32 *tot_boost_)
+{
+   int i, c;
+   opus_int32 tot_boost=0;
+   opus_val16 maxDepth;
+   VARDECL(opus_val16, follower);
+   VARDECL(opus_val16, noise_floor);
+   SAVE_STACK;
+   ALLOC(follower, C*nbEBands, opus_val16);
+   ALLOC(noise_floor, C*nbEBands, opus_val16);
+   for (i=0;i<nbEBands;i++)
+      offsets[i] = 0;
+   /* Dynamic allocation code */
+   maxDepth=-QCONST16(32.f, DB_SHIFT);
+   for (i=0;i<end;i++)
+   {
+      /* Noise floor must take into account eMeans, the depth, the width of the bands
+         and the preemphasis filter (approx. square of bark band ID) */
+      noise_floor[i] = MULT16_16(QCONST16(0.0625f, DB_SHIFT),logN[i])
+            +QCONST16(.5f,DB_SHIFT)+SHL16(9-lsb_depth,DB_SHIFT)-SHL16(eMeans[i],6)
+            +MULT16_16(QCONST16(.0062,DB_SHIFT),(i+5)*(i+5));
+   }
+   c=0;do
+   {
+      for (i=0;i<end;i++)
+         maxDepth = MAX16(maxDepth, bandLogE[c*nbEBands+i]-noise_floor[i]);
+   } while (++c<C);
+   /* Make sure that dynamic allocation can't make us bust the budget */
+   if (effectiveBytes > 50 && LM>=1)
+   {
+      int last=0;
+      c=0;do
+      {
+         follower[c*nbEBands] = bandLogE2[c*nbEBands];
+         for (i=1;i<end;i++)
+         {
+            /* The last band to be at least 3 dB higher than the previous one
+               is the last we'll consider. Otherwise, we run into problems on
+               bandlimited signals. */
+            if (bandLogE2[c*nbEBands+i] > bandLogE2[c*nbEBands+i-1]+QCONST16(.5f,DB_SHIFT))
+               last=i;
+            follower[c*nbEBands+i] = MIN16(follower[c*nbEBands+i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE2[c*nbEBands+i]);
+         }
+         for (i=last-1;i>=0;i--)
+            follower[c*nbEBands+i] = MIN16(follower[c*nbEBands+i], MIN16(follower[c*nbEBands+i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*nbEBands+i]));
+         for (i=0;i<end;i++)
+            follower[c*nbEBands+i] = MAX16(follower[c*nbEBands+i], noise_floor[i]);
+      } while (++c<C);
+      if (C==2)
+      {
+         for (i=start;i<end;i++)
+         {
+            /* Consider 24 dB "cross-talk" */
+            follower[nbEBands+i] = MAX16(follower[nbEBands+i], follower[         i]-QCONST16(4.f,DB_SHIFT));
+            follower[         i] = MAX16(follower[         i], follower[nbEBands+i]-QCONST16(4.f,DB_SHIFT));
+            follower[i] = HALF16(MAX16(0, bandLogE[i]-follower[i]) + MAX16(0, bandLogE[nbEBands+i]-follower[nbEBands+i]));
+         }
+      } else {
+         for (i=start;i<end;i++)
+         {
+            follower[i] = MAX16(0, bandLogE[i]-follower[i]);
+         }
+      }
+      /* For non-transient CBR/CVBR frames, halve the dynalloc contribution */
+      if ((!vbr || constrained_vbr)&&!isTransient)
+      {
+         for (i=start;i<end;i++)
+            follower[i] = HALF16(follower[i]);
+      }
+      for (i=start;i<end;i++)
+      {
+         int width;
+         int boost;
+         int boost_bits;
+
+         if (i<8)
+            follower[i] *= 2;
+         if (i>=12)
+            follower[i] = HALF16(follower[i]);
+         follower[i] = MIN16(follower[i], QCONST16(4, DB_SHIFT));
+
+         width = C*(eBands[i+1]-eBands[i])<<LM;
+         if (width<6)
+         {
+            boost = SHR32(EXTEND32(follower[i]),DB_SHIFT);
+            boost_bits = boost*width<<BITRES;
+         } else if (width > 48) {
+            boost = SHR32(EXTEND32(follower[i])*8,DB_SHIFT);
+            boost_bits = (boost*width<<BITRES)/8;
+         } else {
+            boost = SHR32(EXTEND32(follower[i])*width/6,DB_SHIFT);
+            boost_bits = boost*6<<BITRES;
+         }
+         /* For CBR and non-transient CVBR frames, limit dynalloc to 1/4 of the bits */
+         if ((!vbr || (constrained_vbr&&!isTransient))
+               && (tot_boost+boost_bits)>>BITRES>>3 > effectiveBytes/4)
+         {
+            offsets[i] = 0;
+            break;
+         } else {
+            offsets[i] = boost;
+            tot_boost += boost_bits;
+         }
+      }
+   }
+   *tot_boost_ = tot_boost;
+   RESTORE_STACK;
+   return maxDepth;
+}
+
+
 static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem, int CC, int N,
       int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes)
 {
@@ -969,7 +1083,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    int tf_chan = 0;
    opus_val16 tf_estimate;
    int pitch_change=0;
-   opus_int32 tot_boost=0;
+   opus_int32 tot_boost;
    opus_val16 sample_max;
    opus_val16 maxDepth;
    const OpusCustomMode *mode;
@@ -1308,103 +1422,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
    }
 
-   ALLOC(cap, nbEBands, int);
    ALLOC(offsets, nbEBands, int);
 
+   maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, st->start, st->end, C, offsets,
+         st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
+         eBands, LM, effectiveBytes, &tot_boost);
+   ALLOC(cap, nbEBands, int);
    init_caps(mode,cap,LM,C);
-   for (i=0;i<nbEBands;i++)
-      offsets[i] = 0;
-   /* Dynamic allocation code */
-   maxDepth=-QCONST16(32.f, DB_SHIFT);
-   /* Make sure that dynamic allocation can't make us bust the budget */
-   if (effectiveBytes > 50 && LM>=1)
-   {
-      int last=0;
-      VARDECL(opus_val16, follower);
-      ALLOC(follower, C*nbEBands, opus_val16);
-      c=0;do
-      {
-         follower[c*nbEBands] = bandLogE2[c*nbEBands];
-         for (i=1;i<st->end;i++)
-         {
-            /* The last band to be at least 3 dB higher than the previous one
-               is the last we'll consider. Otherwise, we run into problems on
-               bandlimited signals. */
-            if (bandLogE2[c*nbEBands+i] > bandLogE2[c*nbEBands+i-1]+QCONST16(.5f,DB_SHIFT))
-               last=i;
-            follower[c*nbEBands+i] = MIN16(follower[c*nbEBands+i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE2[c*nbEBands+i]);
-         }
-         for (i=last-1;i>=0;i--)
-            follower[c*nbEBands+i] = MIN16(follower[c*nbEBands+i], MIN16(follower[c*nbEBands+i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*nbEBands+i]));
-         for (i=0;i<st->end;i++)
-         {
-            opus_val16 noise_floor;
-            /* Noise floor must take into account eMeans, the depth, the width of the bands
-               and the preemphasis filter (approx. square of bark band ID) */
-            noise_floor = MULT16_16(QCONST16(0.0625f, DB_SHIFT),mode->logN[i])
-                  +QCONST16(.5f,DB_SHIFT)+SHL16(9-st->lsb_depth,DB_SHIFT)-SHL16(eMeans[i],6)
-                  +MULT16_16(QCONST16(.0062,DB_SHIFT),(i+5)*(i+5));
-            follower[c*nbEBands+i] = MAX16(follower[c*nbEBands+i], noise_floor);
-            maxDepth = MAX16(maxDepth, bandLogE[c*nbEBands+i]-noise_floor);
-         }
-      } while (++c<C);
-      if (C==2)
-      {
-         for (i=st->start;i<st->end;i++)
-         {
-            /* Consider 24 dB "cross-talk" */
-            follower[nbEBands+i] = MAX16(follower[nbEBands+i], follower[                   i]-QCONST16(4.f,DB_SHIFT));
-            follower[                   i] = MAX16(follower[                   i], follower[nbEBands+i]-QCONST16(4.f,DB_SHIFT));
-            follower[i] = HALF16(MAX16(0, bandLogE[i]-follower[i]) + MAX16(0, bandLogE[nbEBands+i]-follower[nbEBands+i]));
-         }
-      } else {
-         for (i=st->start;i<st->end;i++)
-         {
-            follower[i] = MAX16(0, bandLogE[i]-follower[i]);
-         }
-      }
-      /* For non-transient CBR/CVBR frames, halve the dynalloc contribution */
-      if ((!st->vbr || st->constrained_vbr)&&!isTransient)
-      {
-         for (i=st->start;i<st->end;i++)
-            follower[i] = HALF16(follower[i]);
-      }
-      for (i=st->start;i<st->end;i++)
-      {
-         int width;
-         int boost;
-         int boost_bits;
 
-         if (i<8)
-            follower[i] *= 2;
-         if (i>=12)
-            follower[i] = HALF16(follower[i]);
-         follower[i] = MIN16(follower[i], QCONST16(4, DB_SHIFT));
-
-         width = C*(eBands[i+1]-eBands[i])<<LM;
-         if (width<6)
-         {
-            boost = SHR32(EXTEND32(follower[i]),DB_SHIFT);
-            boost_bits = boost*width<<BITRES;
-         } else if (width > 48) {
-            boost = SHR32(EXTEND32(follower[i])*8,DB_SHIFT);
-            boost_bits = (boost*width<<BITRES)/8;
-         } else {
-            boost = SHR32(EXTEND32(follower[i])*width/6,DB_SHIFT);
-            boost_bits = boost*6<<BITRES;
-         }
-         /* For CBR and non-transient CVBR frames, limit dynalloc to 1/4 of the bits */
-         if ((!st->vbr || (st->constrained_vbr&&!isTransient))
-               && (tot_boost+boost_bits)>>BITRES>>3 > effectiveBytes/4)
-         {
-            offsets[i] = 0;
-            break;
-         } else {
-            offsets[i] = boost;
-            tot_boost += boost_bits;
-         }
-      }
-   }
    dynalloc_logp = 6;
    total_bits<<=BITRES;
    total_boost = 0;
