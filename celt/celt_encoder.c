@@ -216,6 +216,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    opus_int32 mask_metric = 0;
    int c;
    int tf_max;
+   int len2;
    /* Table of 6*64/x, trained on real data to minimize the average error */
    static const unsigned char inv_table[128] = {
          255,255,156,110, 86, 70, 59, 51, 45, 40, 37, 33, 31, 28, 26, 25,
@@ -230,6 +231,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    SAVE_STACK;
    ALLOC(tmp, len, opus_val16);
 
+   len2=len/2;
    tf_max = 0;
    for (c=0;c<C;c++)
    {
@@ -275,9 +277,8 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       mean=0;
       mem0=0;
       /*  Grouping by two to reduce complexity */
-      len/=2;
       /* Forward pass to compute the post-echo threshold*/
-      for (i=0;i<len;i++)
+      for (i=0;i<len2;i++)
       {
          opus_val16 x2 = PSHR32(MULT16_16(tmp[2*i],tmp[2*i]) + MULT16_16(tmp[2*i+1],tmp[2*i+1]),16);
          mean += x2;
@@ -292,7 +293,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
 
       mem0=0;
       /* Backward pass to compute the pre-echo threshold */
-      for (i=len-1;i>=0;i--)
+      for (i=len2-1;i>=0;i--)
       {
 #ifdef FIXED_POINT
          /* FIXME: Use PSHR16() instead */
@@ -309,11 +310,11 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          ratio */
 
       /* Inverse of the mean energy in Q15+6 */
-      norm = SHL32(EXTEND32(len),6+14)/ADD32(EPSILON,SHR32(mean,1));
+      norm = SHL32(EXTEND32(len2),6+14)/ADD32(EPSILON,SHR32(mean,1));
       /* Compute harmonic mean discarding the unreliable boundaries
          The data is smooth, so we only take 1/4th of the samples */
       unmask=0;
-      for (i=12;i<len-5;i+=4)
+      for (i=12;i<len2-5;i+=4)
       {
          int id;
 #ifdef FIXED_POINT
@@ -325,7 +326,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       }
       /*printf("%d\n", unmask);*/
       /* Normalize, compensate for the 1/4th of the sample and the factor of 6 in the inverse table */
-      unmask = 64*unmask*4/(6*(len-17));
+      unmask = 64*unmask*4/(6*(len2-17));
       if (unmask>mask_metric)
       {
          *tf_chan = c;
