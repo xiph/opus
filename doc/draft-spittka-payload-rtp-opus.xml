@@ -509,28 +509,33 @@
           <t>Optional parameters:</t>
 
           <t><list style="hanging">
-            <t hangText="maxcodedaudiobandwidth:">
-              a hint about the maximum audio bandwidth that the receiver is capable of rendering.
-	      The decoder MUST be capable of decoding
+            <t hangText="maxplaybackrate:">
+              a hint about the maximum output sampling rate that the receiver is
+              capable of renderingin in Hz.
+              The decoder MUST be capable of decoding
               any audio bandwidth but due to hardware limitations only signals
-              up to the specified audio bandwidth can be processed. Sending signals
+              up to the specified sampling rate can be played back. Sending signals
               with higher audio bandwidth results in higher than necessary network
               usage and encoding complexity, so an encoder SHOULD NOT encode
-	      frequencies above the audio bandwidth specified by maxcodedaudiobandwidth.
-	      Possible values are nb, mb, wb, swb, fb. By default, the receiver
-	      is assumed to have no limitations, i.e. fb.
+              frequencies above the audio bandwidth specified by maxplaybackrate.
+              This parameter can take any value between 8000 and 48000, although
+              commonly the value will match one of the Opus bandwidths 
+              (<xref target="bandwidth_definitions"/>).
+              By default, the receiver is assumed to have no limitations, i.e. 48000.
               <vspace blankLines='1'/>
             </t>
 
-            <t hangText="sprop-maxcodedaudiobandwidth:">
-              a hint about the maximum audio bandwidth that the sender is likely to produce.
-	      This is not a guarantee that the sender will never send any higher bandwidth
-	      (e.g. it could send a pre-recorded prompt that uses a higher bandwidth), but it
-	      indicates to the receiver that frequencies above this maximum can safely be discarded.
-	      This parameter is useful to avoid wasting receiver resources by operating the audio
-	      processing pipeline (e.g. AEC) at a higher rate than necessary.
-	      Possible values are nb, mb, wb, swb, fb. By default, the sender
-	      is assumed to have no limitations, i.e. fb.
+            <t hangText="sprop-maxcapturerate:">
+              a hint about the maximum input sampling rate that the sender is likely to produce.
+              This is not a guarantee that the sender will never send any higher bandwidth
+              (e.g. it could send a pre-recorded prompt that uses a higher bandwidth), but it
+              indicates to the receiver that frequencies above this maximum can safely be discarded.
+              This parameter is useful to avoid wasting receiver resources by operating the audio
+              processing pipeline (e.g. echo cancellation) at a higher rate than necessary.
+              This parameter can take any value between 8000 and 48000, although
+              commonly the value will match one of the Opus bandwidths 
+              (<xref target="bandwidth_definitions"/>).
+              By default, the sender is assumed to have no limitations, i.e. 48000.
               <vspace blankLines='1'/>
             </t>
 
@@ -589,7 +594,7 @@
             positive integer is allowed but values outside the range between
             6000 and 510000 SHOULD be ignored. If no value is specified, the
             maximum value specified in <xref target='bitrate_by_bandwidth'/>
-            for the corresponding mode of Opus and corresponding maxcodedaudiobandwidth:
+            for the corresponding mode of Opus and corresponding maxplaybackrate:
             will be the default.<vspace blankLines='1'/></t>
 
             <t hangText="stereo:">
@@ -611,7 +616,7 @@
 	      (e.g. it could send a pre-recorded prompt that uses stereo), but it
 	      indicates to the receiver that the received signal can be safely downmixed to mono.
 	      This parameter is useful to avoid wasting receiver resources by operating the audio
-	      processing pipeline (e.g. AEC) in stereo when not necessary.
+	      processing pipeline (e.g. echo cancellation) in stereo when not necessary.
               If no value is specified, mono
               is assumed (stereo=0).<vspace blankLines='1'/>
             </t>
@@ -731,7 +736,7 @@
             <![CDATA[
     m=audio 54312 RTP/AVP 101
     a=rtpmap:101 opus/48000/2
-    a=fmtp:101 maxcodedaudiobandwidth=wb; maxaveragebitrate=20000;
+    a=fmtp:101 maxplaybackrate=16000; maxaveragebitrate=20000;
     stereo=1; useinbandfec=1; usedtx=0
     a=ptime:40
     a=maxptime:40
@@ -781,10 +786,11 @@
             </t>
 
             <t>
-              The parameter "maxcodedaudiobandwidth" is a unidirectional receive-only
+              The parameter "maxplaybackrate" is a unidirectional receive-only
               parameter that reflects limitations of the local receiver. The sender
               of the other side SHOULD NOT send with an audio bandwidth higher than
-              "maxcodedaudiobandwidth" as this would lead to inefficient use of network resources. The "maxcodedaudiobandwidth" parameter does not
+              "maxplaybackrate" as this would lead to inefficient use of network resources.
+              The "maxplaybackrate" parameter does not
 	      affect interoperability. Also, this parameter SHOULD NOT be used
 	      to adjust the audio bandwidth as a function of the bitrates, as this
 	      is the responsibility of the Opus encoder implementation.
@@ -832,7 +838,7 @@
 
         <t><list style="symbols">
 
-          <t>The values for "maxptime", "ptime", "minptime", "maxcodedaudiobandwidth", and
+          <t>The values for "maxptime", "ptime", "minptime", "maxplaybackrate", and
           "maxaveragebitrate" should be selected carefully to ensure that a
           reasonable performance can be achieved for the participants of a session.</t>
 
