@@ -394,10 +394,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
 
       denormalise_bands(mode, X, freq, bandE, st->start, mode->effEBands, C, 1<<LM);
 
-      c=0; do
-         for (i=0;i<eBands[st->start]<<LM;i++)
-            freq[c*N+i] = 0;
-      while (++c<C);
       c=0; do {
          int bound = eBands[effEnd]<<LM;
          if (st->downsample!=1)
@@ -852,10 +848,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);
    } while (++c<CC);
 
-   c=0; do
-      for (i=0;i<M*eBands[st->start];i++)
-         freq[c*N+i] = 0;
-   while (++c<C);
    c=0; do {
       int bound = M*eBands[effEnd];
       if (st->downsample!=1)
