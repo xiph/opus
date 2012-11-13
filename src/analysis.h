@@ -36,6 +36,7 @@ typedef struct {
    float angle[240];
    float d_angle[240];
    float d2_angle[240];
+   float inmem[240];
    float prev_band_tonality[NB_TBANDS];
    float prev_tonality;
    float E[NB_FRAMES][NB_TBANDS];

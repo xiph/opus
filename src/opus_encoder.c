@@ -592,18 +592,32 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     lsb_depth = IMIN(lsb_depth, st->lsb_depth);
 
 #ifndef FIXED_POINT
-    perform_analysis = st->silk_mode.complexity >= 7 && frame_size >= st->Fs/100 && st->Fs==48000;
+    /* Only perform analysis for 10- and 20-ms frames. We don't have enough buffering for shorter
+       ones and longer ones will be split if they're in CELT-only mode. */
+    perform_analysis = st->silk_mode.complexity >= 7
+                       && (frame_size >= st->Fs/100 || frame_size >= st->Fs/50)
+                       && st->Fs==48000;
+    if (perform_analysis)
+    {
+       int nb_analysis_frames;
+       nb_analysis_frames = frame_size/(st->Fs/100);
+       for (i=0;i<nb_analysis_frames;i++)
+          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+i*(st->Fs/100)*st->channels, st->channels, lsb_depth);
+       if (st->signal_type == OPUS_AUTO)
+          st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
+       st->detected_bandwidth = analysis_info.opus_bandwidth;
+    } else {
+       analysis_info.valid = 0;
+       st->voice_ratio = -1;
+       st->detected_bandwidth = 0;
+    }
 #endif
+
     if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
        delay_compensation = 0;
     else
        delay_compensation = st->delay_compensation;
-    if (perform_analysis)
-    {
-       total_buffer = IMAX(st->Fs/200, delay_compensation);
-    } else {
-       total_buffer = delay_compensation;
-    }
+    total_buffer = delay_compensation;
     extra_buffer = total_buffer-delay_compensation;
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
 
@@ -975,22 +989,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     }
 
-#ifndef FIXED_POINT
-    if (perform_analysis)
-    {
-       int nb_analysis_frames;
-       nb_analysis_frames = frame_size/(st->Fs/100);
-       for (i=0;i<nb_analysis_frames;i++)
-          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm_buf+i*(st->Fs/100)*st->channels, st->channels, lsb_depth);
-       if (st->signal_type == OPUS_AUTO)
-          st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
-       st->detected_bandwidth = analysis_info.opus_bandwidth;
-    } else {
-       analysis_info.valid = 0;
-       st->voice_ratio = -1;
-       st->detected_bandwidth = 0;
-    }
-#endif
+
 
     /* SILK processing */
     HB_gain = Q15ONE;
