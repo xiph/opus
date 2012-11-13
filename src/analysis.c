@@ -180,19 +180,21 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        for (i=0;i<N2;i++)
        {
           float w = analysis_window[i];
-          in[i].r = MULT16_16(w, x[i]);
-          in[i].i = MULT16_16(w, x[N-N2+i]);
-          in[N-i-1].r = MULT16_16(w, x[N-i-1]);
-          in[N-i-1].i = MULT16_16(w, x[2*N-N2-i-1]);
+          in[i].r = MULT16_16(w, tonal->inmem[i]);
+          in[i].i = MULT16_16(w, x[i]);
+          in[N-i-1].r = MULT16_16(w, x[N2-i-1]);
+          in[N-i-1].i = MULT16_16(w, x[N-i-1]);
+          tonal->inmem[i] = x[N2+i];
        }
     } else {
        for (i=0;i<N2;i++)
        {
           float w = analysis_window[i];
-          in[i].r = MULT16_16(w, x[2*i]+x[2*i+1]);
-          in[i].i = MULT16_16(w, x[2*(N-N2+i)]+x[2*(N-N2+i)+1]);
-          in[N-i-1].r = MULT16_16(w, x[2*(N-i-1)]+x[2*(N-i-1)+1]);
-          in[N-i-1].i = MULT16_16(w, x[2*(2*N-N2-i-1)]+x[2*(2*N-N2-i-1)+1]);
+          in[i].r = MULT16_16(w, tonal->inmem[i]);
+          in[i].i = MULT16_16(w, x[2*i]+x[2*i+1]);
+          in[N-i-1].r = MULT16_16(w, x[2*(N2-i-1)]+x[2*(N2-i-1)+1]);
+          in[N-i-1].i = MULT16_16(w, x[2*(N-i-1)]+x[2*(N-i-1)+1]);
+          tonal->inmem[i] = x[2*(N2+i)]+x[2*(N2+i)+1];
        }
     }
     opus_fft(kfft, in, out);
