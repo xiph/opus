@@ -139,7 +139,7 @@ static inline float fast_atan2f(float y, float x) {
    }
 }
 
-void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEncoder *celt_enc, const opus_val16 *x, int C, int lsb_depth)
+void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEncoder *celt_enc, const opus_val16 *x, int len, int C, int lsb_depth)
 {
     int i, b;
     const CELTMode *mode;
@@ -170,6 +170,8 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     int bandwidth=0;
     float maxE = 0;
     float noise_floor;
+    int remaining;
+
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&mode));
 
     tonal->last_transition++;
@@ -180,28 +182,43 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     if (tonal->count<4)
        tonal->music_prob = .5;
     kfft = mode->mdct.kfft[0];
+    if (tonal->count==0)
+       tonal->mem_fill = 240;
     if (C==1)
     {
-       for (i=0;i<N2;i++)
-       {
-          float w = analysis_window[i];
-          in[i].r = MULT16_16(w, tonal->inmem[i]);
-          in[i].i = MULT16_16(w, x[i]);
-          in[N-i-1].r = MULT16_16(w, x[N2-i-1]);
-          in[N-i-1].i = MULT16_16(w, x[N-i-1]);
-          tonal->inmem[i] = x[N2+i];
-       }
+       for (i=0;i<IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill);i++)
+          tonal->inmem[i+tonal->mem_fill] = x[i];
     } else {
-       for (i=0;i<N2;i++)
-       {
-          float w = analysis_window[i];
-          in[i].r = MULT16_16(w, tonal->inmem[i]);
-          in[i].i = MULT16_16(w, x[2*i]+x[2*i+1]);
-          in[N-i-1].r = MULT16_16(w, x[2*(N2-i-1)]+x[2*(N2-i-1)+1]);
-          in[N-i-1].i = MULT16_16(w, x[2*(N-i-1)]+x[2*(N-i-1)+1]);
-          tonal->inmem[i] = x[2*(N2+i)]+x[2*(N2+i)+1];
-       }
+       for (i=0;i<IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill);i++)
+          tonal->inmem[i+tonal->mem_fill] = x[2*i]+x[2*i+1];
     }
+    if (tonal->mem_fill+len < ANALYSIS_BUF_SIZE)
+    {
+       tonal->mem_fill += len;
+       /* Don't have enough to update the analysis */
+       return;
+    }
+
+    for (i=0;i<N2;i++)
+    {
+       float w = analysis_window[i];
+       in[i].r = MULT16_16(w, tonal->inmem[i]);
+       in[i].i = MULT16_16(w, tonal->inmem[N2+i]);
+       in[N-i-1].r = MULT16_16(w, tonal->inmem[N-i-1]);
+       in[N-i-1].i = MULT16_16(w, tonal->inmem[N+N2-i-1]);
+    }
+    OPUS_MOVE(tonal->inmem, tonal->inmem+ANALYSIS_BUF_SIZE-240, 240);
+    remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
+    if (C==1)
+    {
+       for (i=0;i<remaining;i++)
+          tonal->inmem[240+i] = x[ANALYSIS_BUF_SIZE-tonal->mem_fill+i];
+    } else {
+       for (i=0;i<remaining;i++)
+          tonal->inmem[240+i] = x[2*(ANALYSIS_BUF_SIZE-tonal->mem_fill+i)]
+                              + x[2*(ANALYSIS_BUF_SIZE-tonal->mem_fill+i)+1];
+    }
+    tonal->mem_fill = 240 + remaining;
     opus_fft(kfft, in, out);
 
     for (i=1;i<N2;i++)

@@ -31,16 +31,18 @@
 #define NB_FRAMES 8
 #define NB_TBANDS 18
 #define NB_TOT_BANDS 21
-
+#define ANALYSIS_BUF_SIZE 720 /* 15 ms at 48 kHz */
 typedef struct {
    float angle[240];
    float d_angle[240];
    float d2_angle[240];
-   float inmem[240];
+   float inmem[ANALYSIS_BUF_SIZE];
+   int   mem_fill;                      /* number of usable samples in the buffer */
    float prev_band_tonality[NB_TBANDS];
    float prev_tonality;
    float E[NB_FRAMES][NB_TBANDS];
-   float lowE[NB_TBANDS], highE[NB_TBANDS];
+   float lowE[NB_TBANDS];
+   float highE[NB_TBANDS];
    float meanE[NB_TOT_BANDS];
    float mem[32];
    float cmean[8];
@@ -56,6 +58,6 @@ typedef struct {
 } TonalityAnalysisState;
 
 void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info,
-     CELTEncoder *celt_enc, const opus_val16 *x, int C, int lsb_depth);
+     CELTEncoder *celt_enc, const opus_val16 *x, int len, int C, int lsb_depth);
 
 #endif
