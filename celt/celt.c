@@ -572,7 +572,7 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, int width)
 
 static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
       int *tf_res, int nbCompressedBytes, celt_norm *X, int N0, int LM,
-      int *tf_sum)
+      int start, int *tf_sum)
 {
    int i;
    VARDECL(int, metric);
@@ -585,7 +585,7 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
    int tf_select=0;
    SAVE_STACK;
 
-   if (nbCompressedBytes<15*C)
+   if (nbCompressedBytes<15*C || start!=0)
    {
       *tf_sum = 0;
       for (i=0;i<len;i++)
@@ -1275,7 +1275,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    normalise_bands(st->mode, freq, X, bandE, effEnd, C, M);
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_select = tf_analysis(st->mode, effEnd, C, isTransient, tf_res, effectiveBytes, X, N, LM, &tf_sum);
+   tf_select = tf_analysis(st->mode, effEnd, C, isTransient, tf_res, effectiveBytes, X, N, LM, st->start, &tf_sum);
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
