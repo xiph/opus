@@ -39,6 +39,6 @@ set -e
 [ -n "${0%/*}" ] && cd "${0%/*}"
 
 echo running xml2rfc
-xml2rfc draft-terriberry-oggopus.xml draft-terriberry-oggopus.html &
-xml2rfc draft-terriberry-oggopus.xml
+xml2rfc draft-ietf-codec-oggopus.xml draft-ietf-codec-oggopus.html &
+xml2rfc draft-ietf-codec-oggopus.xml
 wait
