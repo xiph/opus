@@ -1294,16 +1294,18 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    isTransient = 0;
    shortBlocks = 0;
+   if (st->complexity >= 1)
+   {
+      isTransient = transient_analysis(in, N+st->overlap, CC,
+            &tf_estimate, &tf_chan);
+   }
    if (LM>0 && ec_tell(enc)+3<=total_bits)
    {
-      if (st->complexity >= 1)
-      {
-         isTransient = transient_analysis(in, N+st->overlap, CC,
-                  &tf_estimate, &tf_chan);
-         if (isTransient)
-            shortBlocks = M;
-      }
+      if (isTransient)
+         shortBlocks = M;
       ec_enc_bit_logp(enc, isTransient, 3);
+   } else {
+      isTransient = 0;
    }
 
    ALLOC(freq, CC*N, celt_sig); /**< Interleaved signal MDCTs */
