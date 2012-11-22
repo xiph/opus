@@ -67,6 +67,7 @@ struct OpusEncoder {
     opus_int32   Fs;
     int          use_vbr;
     int          vbr_constraint;
+    int          variable_duration;
     opus_int32   bitrate_bps;
     opus_int32   user_bitrate_bps;
     int          encoder_buffer;
@@ -87,6 +88,7 @@ struct OpusEncoder {
     int          first;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef FIXED_POINT
+    opus_val32   subframe_mem[3];
     TonalityAnalysisState analysis;
 #endif
     opus_uint32  rangeFinal;
@@ -532,6 +534,205 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
     return st->user_bitrate_bps;
 }
 
+#ifndef FIXED_POINT
+/* Don't use more than 60 ms for the frame size analysis */
+#define MAX_DYNAMIC_FRAMESIZE 24
+/* Estimates how much the bitrate will be boosted based on the sub-frame energy */
+static float transient_boost(const float *E, const float *E_1, int LM, int maxM)
+{
+   int i;
+   int M;
+   float sumE=0, sumE_1=0;
+   float metric;
+
+   M = IMIN(maxM, (1<<LM)+1);
+   for (i=0;i<M;i++)
+   {
+      sumE += E[i];
+      sumE_1 += E_1[i];
+   }
+   metric = sumE*sumE_1/(M*M);
+   /*if (LM==3)
+      printf("%f\n", metric);*/
+   /*return metric>10 ? 1 : 0;*/
+   /*return MAX16(0,1-exp(-.25*(metric-2.)));*/
+   return MIN16(1,sqrt(MAX16(0,.05*(metric-2))));
+}
+
+/* Viterbi decoding trying to find the best frame size combination using look-ahead
+
+   State numbering:
+    0: unused
+    1:  2.5 ms
+    2:  5 ms (#1)
+    3:  5 ms (#2)
+    4: 10 ms (#1)
+    5: 10 ms (#2)
+    6: 10 ms (#3)
+    7: 10 ms (#4)
+    8: 20 ms (#1)
+    9: 20 ms (#2)
+   10: 20 ms (#3)
+   11: 20 ms (#4)
+   12: 20 ms (#5)
+   13: 20 ms (#6)
+   14: 20 ms (#7)
+   15: 20 ms (#8)
+*/
+static int transient_viterbi(const float *E, const float *E_1, int N, int frame_cost, int rate)
+{
+   int i;
+   float cost[MAX_DYNAMIC_FRAMESIZE][16];
+   int states[MAX_DYNAMIC_FRAMESIZE][16];
+   float best_cost;
+   int best_state;
+
+   for (i=0;i<16;i++)
+   {
+      /* Impossible state */
+      states[0][i] = -1;
+      cost[0][i] = 1e10;
+   }
+   for (i=0;i<4;i++)
+   {
+      cost[0][1<<i] = frame_cost + rate*(1<<i)*transient_boost(E, E_1, i, N+1);
+      states[0][1<<i] = i;
+   }
+   for (i=1;i<N;i++)
+   {
+      int j;
+
+      /* Follow continuations */
+      for (j=2;j<16;j++)
+      {
+         cost[i][j] = cost[i-1][j-1];
+         states[i][j] = j-1;
+      }
+
+      /* New frames */
+      for(j=0;j<4;j++)
+      {
+         int k;
+         float min_cost;
+         float curr_cost;
+         states[i][1<<j] = 1;
+         min_cost = cost[i-1][1];
+         for(k=1;k<4;k++)
+         {
+            float tmp = cost[i-1][(1<<(k+1))-1];
+            if (tmp < min_cost)
+            {
+               states[i][1<<j] = (1<<(k+1))-1;
+               min_cost = tmp;
+            }
+         }
+         curr_cost = frame_cost+rate*(1<<j)*transient_boost(E+i, E_1+i, j, N-i+1);
+         cost[i][1<<j] = min_cost;
+         /* If part of the frame is outside the analysis window, only count part of the cost */
+         if (N-i < (1<<j))
+            cost[i][1<<j] += curr_cost*(float)(N-i)/(1<<j);
+         else
+            cost[i][1<<j] += curr_cost;
+      }
+   }
+
+   best_state=1;
+   best_cost = cost[N-1][1];
+   /* Find best end state (doesn't force a frame to end at N-1) */
+   for (i=2;i<16;i++)
+   {
+      if (cost[N-1][i]<best_cost)
+      {
+         best_cost = cost[N-1][i];
+         best_state = i;
+      }
+   }
+
+   /* Follow transitions back */
+   for (i=N-1;i>=0;i--)
+   {
+      /*printf("%d ", best_state);*/
+      best_state = states[i][best_state];
+   }
+   /*printf("%d\n", best_state);*/
+   return best_state;
+}
+
+static int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
+                int bitrate, opus_val16 tonality, opus_val32 *mem, int buffering)
+{
+   int N;
+   int i;
+   float e[MAX_DYNAMIC_FRAMESIZE+4];
+   float e_1[MAX_DYNAMIC_FRAMESIZE+3];
+   float memx;
+   int bestLM=0;
+   int subframe;
+   int pos;
+
+   subframe = Fs/400;
+   e[0]=mem[0];
+   e_1[0]=1./(EPSILON+mem[0]);
+   if (buffering)
+   {
+      /* Consider the CELT delay when not in restricted-lowdelay */
+      /* We assume the buffering is between 2.5 and 5 ms */
+      int offset = 2*subframe - buffering;
+      celt_assert(offset>=0 && offset <= subframe);
+      x += C*offset;
+      len -= offset;
+      e[1]=mem[1];
+      e_1[1]=1./(EPSILON+mem[1]);
+      e[2]=mem[2];
+      e_1[2]=1./(EPSILON+mem[2]);
+      pos = 3;
+   } else {
+      pos=1;
+   }
+   N=IMIN(len/subframe, MAX_DYNAMIC_FRAMESIZE);
+   memx = x[0];
+   for (i=0;i<N;i++)
+   {
+      float tmp;
+      float tmpx;
+      int j;
+      tmp=EPSILON;
+      if (C==1)
+      {
+         for (j=0;j<subframe;j++)
+         {
+            tmpx = x[subframe*i+j];
+            tmp += (tmpx-memx)*(tmpx-memx);
+            memx = tmpx;
+         }
+      } else {
+         for (j=0;j<subframe;j++)
+         {
+            tmpx = x[(subframe*i+j)*2]+x[(subframe*i+j)*2+1];
+            tmp += (tmpx-memx)*(tmpx-memx);
+            memx = tmpx;
+         }
+      }
+      e[i+pos] = tmp;
+      e_1[i+pos] = 1.f/tmp;
+   }
+   /* Hack to get 20 ms working with APPLICATION_AUDIO
+      The real problem is that the corresponding memory needs to use 1.5 ms
+      from this frame and 1 ms from the next frame */
+   e[i+pos] = e[i+pos-1];
+   if (buffering)
+      N=IMIN(MAX_DYNAMIC_FRAMESIZE, N+2);
+   bestLM = transient_viterbi(e, e_1, N, (1.f+.5*tonality)*(40*C+40), bitrate/400);
+   mem[0] = e[1<<bestLM];
+   if (buffering)
+   {
+      mem[1] = e[(1<<bestLM)+1];
+      mem[2] = e[(1<<bestLM)+2];
+   }
+   return bestLM;
+}
+#endif
+
 #ifdef FIXED_POINT
 #define opus_encode_native opus_encode
 opus_int32 opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
@@ -569,6 +770,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     opus_int32 max_data_bytes; /* Max number of bytes we're allowed to use */
     int extra_buffer, total_buffer;
     int perform_analysis=0;
+    int orig_frame_size;
 #ifndef FIXED_POINT
     AnalysisInfo analysis_info;
 #endif
@@ -579,20 +781,34 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     max_data_bytes = IMIN(1276, out_data_bytes);
 
     st->rangeFinal = 0;
-    if (400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
+    if ((!st->variable_duration && 400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
          50*frame_size != st->Fs &&  25*frame_size != st->Fs &&  50*frame_size != 3*st->Fs)
-    {
-       RESTORE_STACK;
-       return OPUS_BAD_ARG;
-    }
-    if (max_data_bytes<=0)
+         || (400*frame_size < st->Fs)
+         || max_data_bytes<=0
+         )
     {
        RESTORE_STACK;
        return OPUS_BAD_ARG;
     }
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
+    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+       delay_compensation = 0;
+    else
+       delay_compensation = st->delay_compensation;
 
+    orig_frame_size = IMIN(frame_size,st->Fs/50);
+    if (st->variable_duration)
+    {
+       int LM = 3;
+#ifndef FIXED_POINT
+       LM = optimize_framesize(pcm, frame_size, st->channels, st->Fs, st->bitrate_bps,
+             st->analysis.prev_tonality, st->subframe_mem, delay_compensation);
+#endif
+       while ((st->Fs/400<<LM)>frame_size)
+          LM--;
+       frame_size = (st->Fs/400<<LM);
+    }
 #ifndef FIXED_POINT
     /* Only perform analysis up to 20-ms frames. Longer ones will be split if
        they're in CELT-only mode. */
@@ -611,10 +827,6 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     }
 #endif
 
-    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-       delay_compensation = 0;
-    else
-       delay_compensation = st->delay_compensation;
     total_buffer = delay_compensation;
     extra_buffer = total_buffer-delay_compensation;
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
@@ -1175,9 +1387,18 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
         } else {
             if (st->use_vbr)
             {
+                opus_int32 bonus=0;
+#ifndef FIXED_POINT
+                if (orig_frame_size != frame_size)
+                {
+                   bonus = (40*st->stream_channels+40)*(48000/frame_size-48000/orig_frame_size);
+                   if (analysis_info.valid)
+                      bonus = bonus*(1.f+.5*analysis_info.tonality);
+                }
+#endif
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR(1));
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR_CONSTRAINT(st->vbr_constraint));
-                celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps));
+                celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps+bonus));
                 nb_compr_bytes = max_data_bytes-1-redundancy_bytes;
             } else {
                 nb_compr_bytes = bytes_target;
@@ -1704,6 +1925,20 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
             celt_encoder_ctl(celt_enc, OPUS_GET_LSB_DEPTH(value));
+        }
+        break;
+        case OPUS_SET_EXPERT_VARIABLE_DURATION_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value<0 || value>1)
+               goto bad_arg;
+            st->variable_duration = value;
+        }
+        break;
+        case OPUS_GET_EXPERT_VARIABLE_DURATION_REQUEST:
+        {
+            opus_int32 *value = va_arg(ap, opus_int32*);
+            *value = st->variable_duration;
         }
         break;
         case OPUS_RESET_STATE:
