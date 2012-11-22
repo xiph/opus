@@ -17,7 +17,7 @@
 
   ]>
 
-  <rfc category="info" ipr="trust200902" docName="draft-spittka-payload-rtp-opus-01.txt">
+  <rfc category="info" ipr="trust200902" docName="draft-spittka-payload-rtp-opus-02">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -70,7 +70,7 @@
       </address>
     </author>
 
-    <date day='9' month='July' year='2012' />
+    <date day='22' month='November' year='2012' />
 
     <abstract>
       <t>
@@ -739,7 +739,7 @@
 
         <t>Example 2: 16000 Hz clock rate, maximum packet size of 40 ms,
         recommended packet size of 40 ms, maximum average bitrate of 20000 bps,
-        stereo signals are preferred but only mono can be sent, FEC is allowed,
+        prefers to receive stereo but only plans to send mono, FEC is allowed,
         DTX is not allowed</t>
 
         <figure>
@@ -829,11 +829,13 @@
             the parameter the performance of the application may suffer and should
             be set with care.</t>
 
-            <t>The "sprop-maxcaptureerate" and "sprop-stereo" parameters are 
+            <t>The "sprop-maxcaptureerate" and "sprop-stereo" parameters are
             unidirectional sender-only parameters that reflect limitations of
             the sender side.
-            They allow the receiver to adjust allocation of resources accordingly.
-            Both neither "sprop-maxcaptureerate", nor "sprop-stereo affect
+            They allow the receiver to set up a reduced-complexity audio
+            processing pipeline if the  sender is not planning to use the full
+            range of Opus's capabilities.
+            Neither "sprop-maxcaptureerate" nor "sprop-stereo" affect
             interoperability and the receiver MUST be capable of receiving any signal.
             </t>
 
