@@ -713,21 +713,22 @@
             present, MUST be included in the "a=fmtp" attribute in the SDP,
             expressed as a media type string in the form of a
             semicolon-separated list of parameter=value pairs (e.g.,
-            maxaveragebitrate=20000). They MUST NOT be specified in an "fmtp"
-            source attribute parameter.</t>
+            maxaveragebitrate=20000). They MUST NOT be specified in an
+            SSRC-specific "fmtp" source-level attribute (as defined in
+            Section&nbsp;6.3 of&nbsp;<xref target="RFC5576"/>).</t>
 
             <t>The OPTIONAL media type parameters "sprop-maxcapturerate",
             and "sprop-stereo" MAY be mapped to the "a=fmtp" SDP attribute by
             copying them directly from the media type parameter string as part
             of the semicolon-separated list of parameter=value pairs (e.g.,
             sprop-stereo=1). These same OPTIONAL media type parameters MAY also
-            be specified using an "fmtp" source attribute as described in
-            Section&nbsp;6.3 of&nbsp;<xref target="RFC5576"/>. They MAY be
-            specified in both places, in which case the "fmtp" source attribute
-            parameter overrides the one found on the "a=fmtp" line. The value
-            of any parameter which is not specified in the "fmtp" source
-            attribute parameter MUST be taken from the "a=fmtp" line, if it is
-            present there.</t>
+            be specified using an SSRC-specific "fmtp" source-level attribute
+            as described in Section&nbsp;6.3 of&nbsp;<xref target="RFC5576"/>.
+            They MAY be specified in both places, in which case the parameter
+            in the source-level attribute overrides the one found on the
+            "a=fmtp" line. The value of any parameter which is not specified in
+            a source-level source attribute MUST be taken from the "a=fmtp"
+            line, if it is present there.</t>
 
           </list>
         </t>
