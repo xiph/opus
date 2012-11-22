@@ -13,6 +13,7 @@
 <!ENTITY rfc3555 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3555.xml'>
 <!ENTITY rfc5576 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5576.xml'>
 <!ENTITY rfc6562 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6562.xml'>
+<!ENTITY rfc6716 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6716.xml'>
 
   ]>
 
@@ -36,16 +37,8 @@
     </title>
 
     <author fullname="Julian Spittka" initials="J." surname="Spittka">
-      <organization>Skype Technologies S.A.</organization>
       <address>
-        <postal>
-          <street>3210 Porter Drive</street>
-          <code>94304</code>
-          <city>Palo Alto</city>
-          <region>CA</region>
-          <country>USA</country>
-        </postal>
-        <email>julian.spittka@skype.net</email>
+        <email>jspittka@gmail.com</email>
       </address>
     </author>
 
@@ -59,7 +52,7 @@
           <region>CA</region>
           <country>USA</country>
         </postal>
-        <email>koen.vos@skype.net</email>
+        <email>koenvos74@gmail.com</email>
       </address>
     </author>
 
@@ -94,7 +87,7 @@
     <section title='Introduction'>
       <t>
         The Opus codec is a speech and audio codec developed within the
-        IETF Internet Wideband Audio Codec working group [codec]. The codec
+        IETF Internet Wideband Audio Codec working group (codec). The codec
         has a very low algorithmic delay and is
         is highly scalable in terms of audio bandwidth, bitrate, and
         complexity. Further, it provides different modes to efficiently encode speech signals
@@ -108,8 +101,7 @@
         integrate the Opus codec in the
         most compatible way. Further, media type registrations are described for
         the RTP payload format. More information on the Opus
-        codec can be obtained from the following IETF draft
-        [Opus].
+        codec can be obtained from <xref target="RFC6716"/>.
       </t>
     </section>
 
@@ -169,7 +161,7 @@
 
     <section title='Opus Codec'>
       <t>
-        The Opus [Opus] speech and audio codec has been developed to encode speech
+        The Opus <xref target="RFC6716"/> speech and audio codec has been developed to encode speech
         signals as well as audio signals. Two different modes, a voice mode
         or an audio mode, may be chosen to allow the most efficient coding
         dependent on the type of input signal, the sampling frequency of the
@@ -220,15 +212,14 @@
 	    compressed stream. See <xref target="RFC6562"/> for guidelines on when VBR is
 	    appropriate for encrypted audio communications. In the case where an existing
 	    VBR stream needs to be converted to CBR for security reasons, then the Opus padding
-	    mechanism described in [Opus] is the RECOMMENDED way to achieve padding
+	    mechanism described in <xref target="RFC6716"/> is the RECOMMENDED way to achieve padding
 	    because the RTP padding bit is unencrypted.</t>
 
 	    <t>
             The bitrate can be adjusted at any point in time. To avoid congestion,
             the average bitrate SHOULD be adjusted to the available
-            network capacity. If no target bitrate is specified the average bitrate
-            may go up to the highest bitrate specified in
-            <xref target='bitrate_by_bandwidth'/>.
+            network capacity. If no target bitrate is specified, the bitrates specified in
+            <xref target='bitrate_by_bandwidth'/> are RECOMMENDED.
           </t>
 
         </section>
@@ -512,7 +503,7 @@
           <t><list style="hanging">
             <t hangText="maxplaybackrate:">
               a hint about the maximum output sampling rate that the receiver is
-              capable of renderingin in Hz.
+              capable of rendering in Hz.
               The decoder MUST be capable of decoding
               any audio bandwidth but due to hardware limitations only signals
               up to the specified sampling rate can be played back. Sending signals
@@ -619,7 +610,7 @@
 	      This parameter is useful to avoid wasting receiver resources by operating the audio
 	      processing pipeline (e.g. echo cancellation) in stereo when not necessary.
               If no value is specified, mono
-              is assumed (stereo=0).<vspace blankLines='1'/>
+              is assumed (sprop-stereo=0).<vspace blankLines='1'/>
             </t>
 
             <t hangText="cbr:">
@@ -735,7 +726,7 @@
 
         <t>Below are some examples of SDP session descriptions for Opus:</t>
 
-        <t>Example 1: Standard session with 48000 Hz clock rate</t>
+        <t>Example 1: Standard mono session with 48000 Hz clock rate</t>
           <figure>
             <artwork>
               <![CDATA[
@@ -748,20 +739,34 @@
 
         <t>Example 2: 16000 Hz clock rate, maximum packet size of 40 ms,
         recommended packet size of 40 ms, maximum average bitrate of 20000 bps,
-        stereo signals are preferred, FEC is allowed, DTX is not allowed</t>
+        stereo signals are preferred but only mono can be sent, FEC is allowed,
+        DTX is not allowed</t>
 
         <figure>
           <artwork>
             <![CDATA[
     m=audio 54312 RTP/AVP 101
     a=rtpmap:101 opus/48000/2
-    a=fmtp:101 maxplaybackrate=16000; maxaveragebitrate=20000;
-    stereo=1; useinbandfec=1; usedtx=0
+    a=fmtp:101 maxplaybackrate=16000; sprop-maxcapturerate=16000;
+    maxaveragebitrate=20000; stereo=1; useinbandfec=1; usedtx=0
     a=ptime:40
     a=maxptime:40
             ]]>
           </artwork>
         </figure>
+
+        <t>Example 3: Two-way full-band stereo preferred</t>
+
+        <figure>
+          <artwork>
+            <![CDATA[
+    m=audio 54312 RTP/AVP 101
+    a=rtpmap:101 opus/48000/2
+    a=fmtp:101 stereo=1; sprop-stereo=1
+            ]]>
+          </artwork>
+        </figure>
+
 
       <section title='Offer-Answer Model Considerations for Opus'>
 
@@ -788,7 +793,7 @@
             </figure>
             </t>
 
-            <t>The parameters "ptime" and "maxptime" are unidirectional
+            <t>The "ptime" and "maxptime" parameters are unidirectional
             receive-only parameters and typically will not compromise
             interoperability; however, dependent on the set values of the
             parameters the performance of the application may suffer.  <xref
@@ -797,7 +802,7 @@
             same way.</t>
 
             <t>
-              The parameter "minptime" is a unidirectional
+              The "minptime" parameter is a unidirectional
               receive-only parameters and typically will not compromise
               interoperability; however, dependent on the set values of the
               parameter the performance of the application may suffer and should be
@@ -805,7 +810,7 @@
             </t>
 
             <t>
-              The parameter "maxplaybackrate" is a unidirectional receive-only
+              The "maxplaybackrate" parameter is a unidirectional receive-only
               parameter that reflects limitations of the local receiver. The sender
               of the other side SHOULD NOT send with an audio bandwidth higher than
               "maxplaybackrate" as this would lead to inefficient use of network resources.
@@ -815,17 +820,22 @@
 	      is the responsibility of the Opus encoder implementation.
             </t>
 
-            <t>The parameter "maxaveragebitrate" is a unidirectional receive-only
+            <t>The "maxaveragebitrate" parameter is a unidirectional receive-only
             parameter that reflects limitations of the local receiver. The sender
             of the other side MUST NOT send with an average bitrate higher than
             "maxaveragebitrate" as it might overload the network and/or
-            receiver. The parameter "maxaveragebitrate" typically will not
+            receiver. The "maxaveragebitrate" parameter typically will not
             compromise interoperability; however, dependent on the set value of
             the parameter the performance of the application may suffer and should
             be set with care.</t>
 
-            <t>If the parameter "maxaveragebitrate" is below the range specified
-            in <xref target='bitrate_by_bandwidth'/> the session MUST be rejected.</t>
+            <t>The "sprop-maxcaptureerate" and "sprop-stereo" parameters are 
+            unidirectional sender-only parameters that reflect limitations of
+            the sender side.
+            They allow the receiver to adjust allocation of resources accordingly.
+            Both neither "sprop-maxcaptureerate", nor "sprop-stereo affect
+            interoperability and the receiver MUST be capable of receiving any signal.
+            </t>
 
             <t>
               The "stereo" parameter is a unidirectional receive-only
@@ -917,15 +927,8 @@
       &rfc2326;
       &rfc5576;
       &rfc6562;
+      &rfc6716;
     </references>
-
-
-    <section title='Informational References'>
-      <t><list style="hanging">
-      <t>[codec]  http://datatracker.ietf.org/wg/codec/</t>
-      <t>[Opus]  http://datatracker.ietf.org/doc/draft-ietf-codec-opus/</t>
-      </list></t>
-    </section>
 
   </back>
 </rfc>
