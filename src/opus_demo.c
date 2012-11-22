@@ -53,6 +53,7 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-d                   : only runs the decoder (reads the bit-stream as input)\n" );
     fprintf(stderr, "-cbr                 : enable constant bitrate; default: variable bitrate\n" );
     fprintf(stderr, "-cvbr                : enable constrained variable bitrate; default: unconstrained\n" );
+    fprintf(stderr, "-variable-duration   : enable frames of variable duration (experts only); default: disabled\n" );
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB> : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
     fprintf(stderr, "-framesize <2.5|5|10|20|40|60> : frame size in ms; default: 20 \n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
@@ -243,6 +244,7 @@ int main(int argc, char *argv[])
     int mode_switch_time = 48000;
     int nb_encoded;
     int remaining=0;
+    int variable_duration=0;
 
     if (argc < 5 )
     {
@@ -379,6 +381,10 @@ int main(int argc, char *argv[])
             check_encoder_option(decode_only, "-cvbr");
             cvbr = 1;
             args++;
+        } else if( strcmp( argv[ args ], "-variable-duration" ) == 0 ) {
+            check_encoder_option(decode_only, "-variable-duration");
+            variable_duration = 1;
+            args++;
         } else if( strcmp( argv[ args ], "-dtx") == 0 ) {
             check_encoder_option(decode_only, "-dtx");
             use_dtx = 1;
@@ -504,6 +510,7 @@ int main(int argc, char *argv[])
 
        opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
        opus_encoder_ctl(enc, OPUS_SET_LSB_DEPTH(16));
+       opus_encoder_ctl(enc, OPUS_SET_EXPERT_VARIABLE_DURATION(variable_duration));
     }
     if (!encode_only)
     {

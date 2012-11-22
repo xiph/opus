@@ -146,6 +146,8 @@ extern "C" {
 #define OPUS_GET_GAIN_REQUEST                4045
 #define OPUS_SET_LSB_DEPTH_REQUEST           4036
 #define OPUS_GET_LSB_DEPTH_REQUEST           4037
+#define OPUS_SET_EXPERT_VARIABLE_DURATION_REQUEST 4038
+#define OPUS_GET_EXPERT_VARIABLE_DURATION_REQUEST 4039
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
@@ -514,6 +516,32 @@ extern "C" {
   *                                      24 (default: 24).
   * @hideinitializer */
 #define OPUS_GET_LSB_DEPTH(x) OPUS_GET_LSB_DEPTH_REQUEST, __opus_check_int_ptr(x)
+
+/** Configures the encoder's use of variable duration frames.
+  * When enabled, the encoder is free to use a shorter frame size than the one
+  * requested in the opus_encode*() call. It is then the user's responsibility
+  * to verify how much audio was encoded by checking the ToC byte of the encoded
+  * packet. The part of the audio that was not encoded needs to be resent to the
+  * encoder for the next call. Do not use this option unless you <b>really</b>
+  * know what you are doing.
+  * @see OPUS_GET_EXPERT_VARIABLE_DURATION
+  * @param[in] x <tt>opus_int32</tt>: Allowed values:
+  * <dl>
+  * <dt>0</dt><dd>Disable variable duration (default).</dd>
+  * <dt>1</dt><dd>Enable variable duration.</dd>
+  * </dl>
+  * @hideinitializer */
+#define OPUS_SET_EXPERT_VARIABLE_DURATION(x) OPUS_SET_EXPERT_VARIABLE_DURATION_REQUEST, __opus_check_int(x)
+/** Gets the encoder's configured use of variable duration frames.
+  * @see OPUS_SET_EXPERT_VARIABLE_DURATION
+  * @param[out] x <tt>opus_int32 *</tt>: Returns one of the following values:
+  * <dl>
+  * <dt>0</dt><dd>variable duration disabled (default).</dd>
+  * <dt>1</dt><dd>variable duration enabled.</dd>
+  * </dl>
+  * @hideinitializer */
+#define OPUS_GET_EXPERT_VARIABLE_DURATION(x) OPUS_GET_EXPERT_VARIABLE_DURATION_REQUEST, __opus_check_int_ptr(x)
+
 /**@}*/
 
 /** @defgroup opus_genericctls Generic CTLs
