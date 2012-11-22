@@ -11,6 +11,7 @@
 <!ENTITY rfc2974 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2974.xml'>
 <!ENTITY rfc2326 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2326.xml'>
 <!ENTITY rfc3555 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3555.xml'>
+<!ENTITY rfc5576 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5576.xml'>
 <!ENTITY rfc6562 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6562.xml'>
 
   ]>
@@ -703,14 +704,31 @@
             name. The RTP clock rate in "a=rtpmap" MUST be 48000 and the number of
 	    channels MUST be 2.</t>
 
-            <t>The optional media type parameters "ptime" and "maxptime" are
+            <t>The OPTIONAL media type parameters "ptime" and "maxptime" are
             mapped to "a=ptime" and "a=maxptime" attributes, respectively, in the
             SDP.</t>
 
-            <t>All remaining media type parameters are mapped to the "a=fmtp"
-            attribute in the SDP by copying them directly from the media type
-            parameter string as a semicolon-separated list of parameter=value
-            pairs (e.g. maxaveragebitrate=20000).</t>
+            <t>The OPTIONAL media type parameters "maxaveragebitrate",
+            "minptime", "stereo", "cbr", "useinbandfec", and "usedtx", when
+            present, MUST be included in the "a=fmtp" attribute in the SDP,
+            expressed as a media type string in the form of a
+            semicolon-separated list of parameter=value pairs (e.g.,
+            maxaveragebitrate=20000). They MUST NOT be specified in an "fmtp"
+            source attribute parameter.</t>
+
+            <t>The OPTIONAL media type parameters "sprop-maxcapturerate",
+            and "sprop-stereo" MAY be mapped to the "a=fmtp" SDP attribute by
+            copying them directly from the media type parameter string as part
+            of the semicolon-separated list of parameter=value pairs (e.g.,
+            sprop-stereo=1). These same OPTIONAL media type parameters MAY also
+            be specified using an "fmtp" source attribute as described in
+            Section&nbsp;6.3 of&nbsp;<xref target="RFC5576"/>. They MAY be
+            specified in both places, in which case the "fmtp" source attribute
+            parameter overrides the one found on the "a=fmtp" line. The value
+            of any parameter which is not specified in the "fmtp" source
+            attribute parameter MUST be taken from the "a=fmtp" line, if it is
+            present there.</t>
+
           </list>
         </t>
 
@@ -896,6 +914,7 @@
       &rfc3264;
       &rfc2974;
       &rfc2326;
+      &rfc5576;
       &rfc6562;
     </references>
 
