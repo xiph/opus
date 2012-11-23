@@ -317,8 +317,8 @@ int run_test1(int no_fuzz)
             if(enc_final_range!=dec_final_range)test_failed();
             /*LBRR decode*/
             loss=(fast_rand()&63)==0;
-            out_samples = opus_multistream_decode(MSdec_err, packet, loss?0:len, out2buf, MAX_FRAME_SAMP, (fast_rand()&3)!=0);
-            if(loss?out_samples<120:out_samples!=(frame_size*6))test_failed();
+            out_samples = opus_multistream_decode(MSdec_err, packet, loss?0:len, out2buf, frame_size*6, (fast_rand()&3)!=0);
+            if(out_samples!=(frame_size*6))test_failed();
             i+=frame_size;
             count++;
          }while(i<(SSAMPLES/12-MAX_FRAME_SAMP));
