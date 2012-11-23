@@ -263,23 +263,10 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       }
    }
 
-   /* For CELT/hybrid PLC of more than 20 ms, do multiple calls */
-   if (data==NULL && frame_size > F20 && mode != MODE_SILK_ONLY)
-   {
-      int nb_samples = 0;
-      do {
-         int ret = opus_decode_frame(st, NULL, 0, pcm, F20, 0);
-         if (ret != F20)
-         {
-            RESTORE_STACK;
-            return OPUS_INTERNAL_ERROR;
-         }
-         pcm += F20*st->channels;
-         nb_samples += F20;
-      } while (nb_samples < frame_size);
-      RESTORE_STACK;
-      return frame_size;
-   }
+   /* For CELT/hybrid PLC of more than 20 ms, opus_decode_native() will do
+      multiple calls */
+   if (data==NULL  && mode != MODE_SILK_ONLY)
+      frame_size = IMIN(frame_size, F20);
 
    pcm_transition_silk_size = 0;
    pcm_transition_celt_size = 0;
@@ -747,6 +734,9 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    /* 48 x 2.5 ms = 120 ms */
    short size[48];
    if (decode_fec<0 || decode_fec>1)
+      return OPUS_BAD_ARG;
+   /* For FEC/PLC, frame_size has to be a multiple of 2.5 ms */
+   if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
    if (len==0 || data==NULL)
    {
