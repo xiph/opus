@@ -735,7 +735,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    short size[48];
    if (decode_fec<0 || decode_fec>1)
       return OPUS_BAD_ARG;
-   /* For FEC/PLC, frame_size has to be a multiple of 2.5 ms */
+   /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
    if (len==0 || data==NULL)
@@ -773,6 +773,10 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       if (ret<0)
          return ret;
       /* Complete with FEC */
+      st->mode = packet_mode;
+      st->bandwidth = packet_bandwidth;
+      st->frame_size = packet_frame_size;
+      st->stream_channels = packet_stream_channels;
       ret = opus_decode_frame(st, data, size[0], pcm+st->channels*(frame_size-packet_frame_size),
             packet_frame_size, 1);
       if (ret<0)

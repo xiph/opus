@@ -269,7 +269,7 @@ int run_test1(int no_fuzz)
             if(opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range))!=OPUS_OK)test_failed();
             if(enc_final_range!=dec_final_range)test_failed();
             /*LBRR decode*/
-            out_samples = opus_decode(dec_err[0], packet, len, out2buf, MAX_FRAME_SAMP, (fast_rand()&3)!=0);
+            out_samples = opus_decode(dec_err[0], packet, len, out2buf, frame_size, (fast_rand()&3)!=0);
             if(out_samples!=frame_size)test_failed();
             out_samples = opus_decode(dec_err[1], packet, (fast_rand()&3)==0?0:len, out2buf, MAX_FRAME_SAMP, (fast_rand()&7)!=0);
             if(out_samples<120)test_failed();
