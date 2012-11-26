@@ -810,20 +810,23 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifndef FIXED_POINT
     /* Only perform analysis up to 20-ms frames. Longer ones will be split if
        they're in CELT-only mode. */
-    perform_analysis = st->silk_mode.complexity >= 7 && frame_size <= st->Fs/50 && st->Fs==48000;
-    if (perform_analysis)
+    analysis_info.valid = 0;
+    perform_analysis = st->silk_mode.complexity >= 7 && st->Fs==48000;
+    if (!perform_analysis)
     {
-       analysis_info.valid = 0;
+       st->voice_ratio = -1;
+       st->detected_bandwidth = 0;
+    } else if (frame_size <= st->Fs/50)
+    {
        tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm, IMIN(480, frame_size), st->channels, lsb_depth);
        if (frame_size > st->Fs/100)
           tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+(st->Fs/100)*st->channels, 480, st->channels, lsb_depth);
-       if (analysis_info.valid && st->signal_type == OPUS_AUTO)
-          st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
-       st->detected_bandwidth = analysis_info.opus_bandwidth;
-    } else {
-       analysis_info.valid = 0;
-       st->voice_ratio = -1;
-       st->detected_bandwidth = 0;
+       if (analysis_info.valid)
+       {
+          if (st->signal_type == OPUS_AUTO)
+             st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
+          st->detected_bandwidth = analysis_info.opus_bandwidth;
+       }
     }
 #endif
 
@@ -1159,6 +1162,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        st->silk_mode.toMono = bak_to_mono;
        RESTORE_STACK;
        return ret;
+    }
+    /* Perform analysis for 40-60 ms frames */
+    if (perform_analysis && frame_size > st->Fs/50)
+    {
+       int nb_analysis = frame_size/(st->Fs/100);
+       for (i=0;i<nb_analysis;i++)
+          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+i*(st->Fs/100)*st->channels, 480, st->channels, lsb_depth);
+       st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
     }
 
     curr_bandwidth = st->bandwidth;
