@@ -812,18 +812,17 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
 #ifndef FIXED_POINT
     /* Only perform analysis up to 20-ms frames. Longer ones will be split if
        they're in CELT-only mode. */
-    perform_analysis = st->silk_mode.complexity >= 7 && frame_size <= st->Fs/50 && st->Fs==48000;
-    if (perform_analysis)
+    analysis_info.valid = 0;
+    perform_analysis = st->silk_mode.complexity >= 7 && st->Fs==48000;
+    if (!perform_analysis)
+       st->voice_ratio = -1;
+    else if (frame_size <= st->Fs/50)
     {
-       analysis_info.valid = 0;
        tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm, IMIN(480, frame_size), st->channels);
        if (frame_size > st->Fs/100)
           tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+(st->Fs/100)*st->channels, 480, st->channels);
        if (analysis_info.valid && st->signal_type == OPUS_AUTO)
           st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
-    } else {
-       analysis_info.valid = 0;
-       st->voice_ratio = -1;
     }
 #endif
 
@@ -1152,6 +1151,14 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
        st->silk_mode.toMono = bak_to_mono;
        RESTORE_STACK;
        return ret;
+    }
+    /* Perform analysis for 40-60 ms frames */
+    if (perform_analysis && frame_size > st->Fs/50)
+    {
+       int nb_analysis = frame_size/(st->Fs/100);
+       for (i=0;i<nb_analysis;i++)
+          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+i*(st->Fs/100)*st->channels, 480, st->channels);
+       st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
     }
 
     curr_bandwidth = st->bandwidth;
