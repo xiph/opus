@@ -905,8 +905,8 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
          fill &= ((1<<B)-1)<<B;
          delta = 16384;
       } else {
-         imid = bitexact_cos(itheta);
-         iside = bitexact_cos(16384-itheta);
+         imid = bitexact_cos((opus_int16)itheta);
+         iside = bitexact_cos((opus_int16)(16384-itheta));
          /* This is the mid vs side allocation that minimizes squared error
             in that band. */
          delta = FRAC_MUL16((N-1)<<7,bitexact_log2tan(iside,imid));

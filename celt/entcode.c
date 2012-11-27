@@ -33,6 +33,11 @@
 #include "arch.h"
 
 #if !defined(EC_CLZ)
+/*This is a fallback for systems where we don't know how to access
+   a BSR or CLZ instruction (see ecintrin.h).
+  If you are optimizing Opus on a new platform and it has a native CLZ or
+   BZR (e.g. cell, MIPS, x86, etc) then making it available to Opus will be
+   an easy performance win.*/
 int ec_ilog(opus_uint32 _v){
   /*On a Pentium M, this branchless version tested as the fastest on
      1,000,000,000 random 32-bit integers, edging out a similar version with
