@@ -587,6 +587,10 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
    float best_cost;
    int best_state;
 
+   /* Makes variable framesize less aggressive at lower bitrates, but I can't
+      find any valid theretical justification for this (other than it seems
+      to help) */
+   frame_cost *= 720/rate;
    for (i=0;i<16;i++)
    {
       /* Impossible state */
