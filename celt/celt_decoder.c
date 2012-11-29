@@ -441,6 +441,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          for (i=0;i<MAX_PERIOD;i++)
             exc[i] = ROUND16(out_mem[c][i], SIG_SHIFT);
 
+         /* Compute LPC coefficients for the last MAX_PERIOD samples before the loss so we can
+            work in the excitation-filter domain */
          if (st->loss_count == 0)
          {
             _celt_autocorr(exc, ac, mode->window, overlap,
@@ -468,9 +470,12 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          /* Samples just before the beginning of exc  */
          for (i=0;i<LPC_ORDER;i++)
             mem[i] = ROUND16(out_mem[c][-1-i], SIG_SHIFT);
+         /* Compute the excitation for MAX_PERIOD samples before the loss */
          celt_fir(exc, lpc+c*LPC_ORDER, exc, MAX_PERIOD, LPC_ORDER, mem);
-         /*for (i=0;i<MAX_PERIOD;i++)printf("%d ", exc[i]); printf("\n");*/
-         /* Check if the waveform is decaying (and if so how fast) */
+
+         /* Check if the waveform is decaying (and if so how fast)
+            We do this to avoid adding energy when concealing in a segment
+            with decaying energy */
          {
             opus_val32 E1=1, E2=1;
             int period;
@@ -489,10 +494,10 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             attenuation = decay;
          }
 
-         /* Move everything one frame to the left */
+         /* Move memory one frame to the left */
          OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);
 
-         /* Copy excitation, taking decay into account */
+         /* Extrapolate excitation with the right period, taking decay into account */
          for (i=0;i<len;i++)
          {
             opus_val16 tmp;
@@ -505,13 +510,18 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             tmp = ROUND16(out_mem[c][-N+offset+i],SIG_SHIFT);
             S1 += SHR32(MULT16_16(tmp,tmp),8);
          }
-         /* Last samples correctly decoded */
+
+         /* Last samples correctly decoded so we can have a continuous signal */
          for (i=0;i<LPC_ORDER;i++)
             mem[i] = ROUND16(out_mem[c][MAX_PERIOD-N-1-i], SIG_SHIFT);
+         /* Apply the fading if not the first loss */
          for (i=0;i<len;i++)
             e[i] = MULT16_32_Q15(fade, e[i]);
+         /* Synthesis filter -- back in the signal domain */
          celt_iir(e, lpc+c*LPC_ORDER, e, len, LPC_ORDER, mem);
 
+         /* Check if the synthesis energy is higher than expected, which can
+            happen with the signal changes during our window. If so, attenuate. */
          {
             opus_val32 S2=0;
             for (i=0;i<len;i++)
@@ -542,12 +552,14 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             }
          }
 
-         /* Apply pre-filter to the MDCT overlap for the next frame (post-filter will be applied then) */
+         /* Apply pre-filter to the MDCT overlap for the next frame because the
+            post-filter will be re-applied in the decoder after the MDCT overlap */
          comb_filter(etmp, out_mem[c]+MAX_PERIOD, st->postfilter_period, st->postfilter_period, st->overlap,
                -st->postfilter_gain, -st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
                NULL, 0);
 
-         /* Simulate TDAC on the concealed audio so that it blends with the next frames */
+         /* Simulate TDAC on the concealed audio so that it blends with the
+            MDCT of next frames. */
          for (i=0;i<overlap/2;i++)
          {
             opus_val32 tmp;
