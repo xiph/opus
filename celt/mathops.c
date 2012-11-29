@@ -123,6 +123,8 @@ opus_val32 celt_sqrt(opus_val32 x)
    static const opus_val16 C[5] = {23175, 11561, -3011, 1699, -664};
    if (x==0)
       return 0;
+   else if (x>=1073741824)
+      return 32767;
    k = (celt_ilog2(x)>>1)-7;
    x = VSHR32(x, 2*k);
    n = x-32768;
