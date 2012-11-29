@@ -407,7 +407,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       compute_inv_mdcts(mode, 0, freq, out_syn, C, LM);
    } else {
       /* Pitch-based PLC */
-      VARDECL(opus_val32, e);
+      VARDECL(opus_val32, etmp);
 
       if (st->loss_count == 0)
       {
@@ -426,13 +426,16 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          fade = QCONST16(.8f,15);
       }
 
-      ALLOC(e, MAX_PERIOD+2*overlap, opus_val32);
+      ALLOC(etmp, overlap, opus_val32);
       c=0; do {
          opus_val16 exc[MAX_PERIOD];
          opus_val32 ac[LPC_ORDER+1];
-         opus_val16 decay = 1;
+         opus_val16 decay;
+         opus_val16 attenuation;
          opus_val32 S1=0;
          opus_val16 mem[LPC_ORDER]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+         opus_val32 *e = out_syn[c];
+
 
          offset = MAX_PERIOD-pitch_index;
          for (i=0;i<MAX_PERIOD;i++)
@@ -462,8 +465,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
 
             _celt_lpc(lpc+c*LPC_ORDER, ac, LPC_ORDER);
          }
+         /* Samples just before the beginning of exc  */
          for (i=0;i<LPC_ORDER;i++)
-            mem[i] = ROUND16(out_mem[c][MAX_PERIOD-1-i], SIG_SHIFT);
+            mem[i] = ROUND16(out_mem[c][-1-i], SIG_SHIFT);
          celt_fir(exc, lpc+c*LPC_ORDER, exc, MAX_PERIOD, LPC_ORDER, mem);
          /*for (i=0;i<MAX_PERIOD;i++)printf("%d ", exc[i]); printf("\n");*/
          /* Check if the waveform is decaying (and if so how fast) */
@@ -482,30 +486,35 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             if (E1 > E2)
                E1 = E2;
             decay = celt_sqrt(frac_div32(SHR32(E1,1),E2));
+            attenuation = decay;
          }
 
+         /* Move everything one frame to the left */
+         OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);
+
          /* Copy excitation, taking decay into account */
-         for (i=0;i<len+overlap;i++)
+         for (i=0;i<len;i++)
          {
             opus_val16 tmp;
             if (offset+i >= MAX_PERIOD)
             {
                offset -= pitch_index;
-               decay = MULT16_16_Q15(decay, decay);
+               attenuation = MULT16_16_Q15(attenuation, decay);
             }
-            e[i] = SHL32(EXTEND32(MULT16_16_Q15(decay, exc[offset+i])), SIG_SHIFT);
-            tmp = ROUND16(out_mem[c][offset+i],SIG_SHIFT);
+            e[i] = SHL32(EXTEND32(MULT16_16_Q15(attenuation, exc[offset+i])), SIG_SHIFT);
+            tmp = ROUND16(out_mem[c][-N+offset+i],SIG_SHIFT);
             S1 += SHR32(MULT16_16(tmp,tmp),8);
          }
+         /* Last samples correctly decoded */
          for (i=0;i<LPC_ORDER;i++)
-            mem[i] = ROUND16(out_mem[c][MAX_PERIOD-1-i], SIG_SHIFT);
-         for (i=0;i<len+overlap;i++)
+            mem[i] = ROUND16(out_mem[c][MAX_PERIOD-N-1-i], SIG_SHIFT);
+         for (i=0;i<len;i++)
             e[i] = MULT16_32_Q15(fade, e[i]);
-         celt_iir(e, lpc+c*LPC_ORDER, e, len+overlap, LPC_ORDER, mem);
+         celt_iir(e, lpc+c*LPC_ORDER, e, len, LPC_ORDER, mem);
 
          {
             opus_val32 S2=0;
-            for (i=0;i<len+overlap;i++)
+            for (i=0;i<len;i++)
             {
                opus_val16 tmp = ROUND16(e[i],SIG_SHIFT);
                S2 += SHR32(MULT16_16(tmp,tmp),8);
@@ -514,47 +523,39 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
 #ifdef FIXED_POINT
             if (!(S1 > SHR32(S2,2)))
 #else
-               /* Float test is written this way to catch NaNs at the same time */
-               if (!(S1 > 0.2f*S2))
+            /* Float test is written this way to catch NaNs at the same time */
+            if (!(S1 > 0.2f*S2))
 #endif
+            {
+               for (i=0;i<len;i++)
+                  e[i] = 0;
+            } else if (S1 < S2)
+            {
+               opus_val16 ratio = celt_sqrt(frac_div32(SHR32(S1,1)+1,S2+1));
+               for (i=0;i<overlap;i++)
                {
-                  for (i=0;i<len+overlap;i++)
-                     e[i] = 0;
-               } else if (S1 < S2)
-               {
-                  opus_val16 ratio = celt_sqrt(frac_div32(SHR32(S1,1)+1,S2+1));
-                  for (i=0;i<len+overlap;i++)
-                     e[i] = MULT16_32_Q15(ratio, e[i]);
+                  opus_val16 tmp_g = Q15ONE - MULT16_16_Q15(mode->window[i], Q15ONE-ratio);
+                  e[i] = MULT16_32_Q15(tmp_g, e[i]);
                }
+               for (i=overlap;i<len;i++)
+                  e[i] = MULT16_32_Q15(ratio, e[i]);
+            }
          }
 
-         /* Apply post-filter to the MDCT overlap of the previous frame */
-         comb_filter(out_mem[c]+MAX_PERIOD, out_mem[c]+MAX_PERIOD, st->postfilter_period, st->postfilter_period, st->overlap,
-               st->postfilter_gain, st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
+         /* Apply pre-filter to the MDCT overlap for the next frame (post-filter will be applied then) */
+         comb_filter(etmp, out_mem[c]+MAX_PERIOD, st->postfilter_period, st->postfilter_period, st->overlap,
+               -st->postfilter_gain, -st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
                NULL, 0);
 
-         for (i=0;i<MAX_PERIOD+overlap-N;i++)
-            out_mem[c][i] = out_mem[c][N+i];
-
-         /* Apply TDAC to the concealed audio so that it blends with the
-         previous and next frames */
+         /* Simulate TDAC on the concealed audio so that it blends with the next frames */
          for (i=0;i<overlap/2;i++)
          {
             opus_val32 tmp;
-            tmp = MULT16_32_Q15(mode->window[i],           e[N+overlap-1-i]) +
-                  MULT16_32_Q15(mode->window[overlap-i-1], e[N+i          ]);
+            tmp = MULT16_32_Q15(mode->window[i],           etmp[overlap-1-i]) +
+                  MULT16_32_Q15(mode->window[overlap-i-1], etmp[i          ]);
             out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(mode->window[overlap-i-1], tmp);
             out_mem[c][MAX_PERIOD+overlap-i-1] = MULT16_32_Q15(mode->window[i], tmp);
          }
-         for (i=0;i<N;i++)
-            out_mem[c][MAX_PERIOD-N+i] = e[i];
-
-         /* Apply pre-filter to the MDCT overlap for the next frame (post-filter will be applied then) */
-         comb_filter(e, out_mem[c]+MAX_PERIOD, st->postfilter_period, st->postfilter_period, st->overlap,
-               -st->postfilter_gain, -st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
-               NULL, 0);
-         for (i=0;i<overlap;i++)
-            out_mem[c][MAX_PERIOD+i] = e[i];
       } while (++c<C);
    }
 
