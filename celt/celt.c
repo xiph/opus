@@ -2811,7 +2811,6 @@ int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
          *value = st->postfilter_period;
       }
       break;
-#ifdef OPUS_BUILD
       case CELT_GET_MODE_REQUEST:
       {
          const CELTMode ** value = va_arg(ap, const CELTMode**);
@@ -2834,7 +2833,6 @@ int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
          *value=st->rng;
       }
       break;
-#endif
       default:
          goto bad_request;
    }
