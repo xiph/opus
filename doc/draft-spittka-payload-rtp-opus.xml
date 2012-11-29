@@ -88,7 +88,7 @@
       <t>
         The Opus codec is a speech and audio codec developed within the
         IETF Internet Wideband Audio Codec working group (codec). The codec
-        has a very low algorithmic delay and is
+        has a very low algorithmic delay and it
         is highly scalable in terms of audio bandwidth, bitrate, and
         complexity. Further, it provides different modes to efficiently encode speech signals
         as well as music signals, thus, making it the codec of choice for
@@ -111,11 +111,14 @@
       document are to be interpreted as described in <xref target="RFC2119"/>.</t>
       <t>
       <list style='hanging'>
-        <t hangText="CPU:"> Central Processing Unit</t>
+          <t hangText="CBR:"> Constant bitrate</t>
+          <t hangText="CPU:"> Central Processing Unit</t>
+          <t hangText="DTX:"> Discontinuous transmission</t>
+          <t hangText="FEC:"> Forward error correction</t>
 	      <t hangText="IP:"> Internet Protocol</t>
-	      <t hangText="PSTN:"> Public Switched Telephone Network</t>
-	      <t hangText="samples:"> Speech or audio samples</t>
+	      <t hangText="samples:"> Speech or audio samples (usually per channel)</t>
 	      <t hangText="SDP:"> Session Description Protocol</t>
+          <t hangText="VBR:"> Variable bitrate</t>
       </list>
       </t>
       <section title='Audio Bandwidth'>
@@ -363,7 +366,7 @@
         a multiplier according to <xref target="fs-upsample-factors"/> to determine
         the RTP timestamp.</t>
 
-        <texttable anchor='fs-upsample-factors'>
+        <texttable anchor='fs-upsample-factors' title="Timestamp multiplier">
           <ttcol align='center'>fs (Hz)</ttcol>
           <ttcol align='center'>Multiplier</ttcol>
           <c>8000</c>
@@ -376,11 +379,6 @@
           <c>2</c>
           <c>48000</c>
           <c>1</c>
-          <postamble>
-            fs specifies the audio sampling frequency in Hertz (Hz); Multiplier is the
-            value that the number of samples have to be multiplied with to calculate
-            the RTP timestamp.
-          </postamble>
         </texttable>
       </section>
 
@@ -621,11 +619,13 @@
               changed, e.g. to adapt to changing network conditions.<vspace blankLines='1'/>
             </t>
 
-            <t hangText="useinbandfec:"> specifies that Opus in-band FEC is
-            supported by the decoder and MAY be used during a
-            session. Possible values are 1 and 0. It is RECOMMENDED to provide
-            0 in case FEC is not implemented on the receiving side. If no
-            value is specified, useinbandfec is assumed to be 1.<vspace blankLines='1'/></t>
+            <t hangText="useinbandfec:"> specifies that the decoder has the capability to
+            use the Opus in-band FEC. Possible values are 1 and 0. It is RECOMMENDED to provide
+            0 in case FEC cannot be used on the receiving side. If no
+            value is specified, useinbandfec is assumed to be 1.
+            This parameter is only a preference and the receiver MUST be able to process
+            packets that have FEC information, even if it means the FEC part is discarded.
+            <vspace blankLines='1'/></t>
 
             <t hangText="usedtx:"> specifies if the decoder prefers the use of
             DTX. Possible values are 1 and 0. If no value is specified, usedtx
