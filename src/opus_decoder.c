@@ -30,7 +30,7 @@
 #endif
 
 #ifndef OPUS_BUILD
-#error "OPUS_BUILD _MUST_ be defined to build Opus and you probably want a decent config.h, see README for more details."
+#error "OPUS_BUILD _MUST_ be defined to build Opus. This probably means you need other defines as well, as in a config.h. See the included build files for details."
 #endif
 
 #include <stdarg.h>
