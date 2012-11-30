@@ -406,12 +406,16 @@
         </figure>
 
         <t>
-          <xref target='opus-packetization'/> shows supported frame sizes for different modes
-          and sampling rates of Opus and how the timestamp needs to be incremented for
-          packetization.
+          <xref target='opus-packetization'/> shows supported frame sizes in 
+          milliseconds of encoded speech or audio data for speech and audio mode 
+          (Mode) and sampling rates (fs) of Opus and how the timestamp needs to
+          be incremented for packetization (ts incr). If the Opus encoder
+          outputs multiple encoded frames into a single packet the timestamps
+          have to be added up according to the combined frames.
         </t>
 
-        <texttable anchor='opus-packetization'>
+        <texttable anchor='opus-packetization' title="Supported Opus frame 
+         sizes and timestamp increments">
             <ttcol align='center'>Mode</ttcol>
             <ttcol align='center'>fs</ttcol>
             <ttcol align='center'>2.5</ttcol>
@@ -444,14 +448,6 @@
             <c>x</c>
             <c></c>
             <c></c>
-            <postamble>
-              Mode specifies the Opus mode of operation; fs specifies the audio sampling
-              frequency in Hertz (Hz); 2.5, 5, 10, 20, 40, and 60 represent the duration of
-              encoded speech or audio data in a packet; ts incr specifies the
-              value the timestamp needs to be incremented for the representing packet size.
-              For multiple frames in a packet these values have to be multiplied with the
-              respective number of frames.
-            </postamble>
           </texttable>
 
       </section>
@@ -620,11 +616,11 @@
             </t>
 
             <t hangText="useinbandfec:"> specifies that the decoder has the capability to
-            use the Opus in-band FEC. Possible values are 1 and 0. It is RECOMMENDED to provide
-            0 in case FEC cannot be used on the receiving side. If no
-            value is specified, useinbandfec is assumed to be 1.
+            take advantage of the Opus in-band FEC. Possible values are 1 and 0. It is RECOMMENDED to provide
+            0 in case FEC cannot be utilized on the receiving side. If no
+            value is specified, useinbandfec is assumed to be 0.
             This parameter is only a preference and the receiver MUST be able to process
-            packets that have FEC information, even if it means the FEC part is discarded.
+            packets that include FEC information, even if it means the FEC part is discarded.
             <vspace blankLines='1'/></t>
 
             <t hangText="usedtx:"> specifies if the decoder prefers the use of
@@ -672,8 +668,8 @@
 
           <t>Author:</t>
           <t><list style="hanging">
-            <t>Julian Spittka julian.spittka@skype.net<vspace blankLines='1'/></t>
-            <t>Koen Vos koen.vos@skype.net<vspace blankLines='1'/></t>
+            <t>Julian Spittka jspittka@gmail.com<vspace blankLines='1'/></t>
+            <t>Koen Vos koenvos74@gmail.com<vspace blankLines='1'/></t>
             <t>Jean-Marc Valin jmvalin@jmvalin.ca<vspace blankLines='1'/></t>
           </list></t>
 
@@ -699,10 +695,10 @@
             mapped to "a=ptime" and "a=maxptime" attributes, respectively, in the
             SDP.</t>
 
-            <t>The OPTIONAL media type parameters "maxaveragebitrate",
-            "minptime", "stereo", "cbr", "useinbandfec", and "usedtx", when
-            present, MUST be included in the "a=fmtp" attribute in the SDP,
-            expressed as a media type string in the form of a
+            <t>The OPTIONAL media type parameters "maxaveragebitrate", 
+            "maxplaybackrate", "minptime", "stereo", "cbr", "useinbandfec", and 
+            "usedtx", when present, MUST be included in the "a=fmtp" attribute 
+            in the SDP, expressed as a media type string in the form of a
             semicolon-separated list of parameter=value pairs (e.g.,
             maxaveragebitrate=20000). They MUST NOT be specified in an
             SSRC-specific "fmtp" source-level attribute (as defined in
@@ -829,13 +825,13 @@
             the parameter the performance of the application may suffer and should
             be set with care.</t>
 
-            <t>The "sprop-maxcaptureerate" and "sprop-stereo" parameters are
+            <t>The "sprop-maxcapturerate" and "sprop-stereo" parameters are
             unidirectional sender-only parameters that reflect limitations of
             the sender side.
             They allow the receiver to set up a reduced-complexity audio
             processing pipeline if the  sender is not planning to use the full
             range of Opus's capabilities.
-            Neither "sprop-maxcaptureerate" nor "sprop-stereo" affect
+            Neither "sprop-maxcapturerate" nor "sprop-stereo" affect
             interoperability and the receiver MUST be capable of receiving any signal.
             </t>
 
