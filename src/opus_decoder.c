@@ -612,16 +612,14 @@ static int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       /* Padding flag is bit 6 */
       if (ch&0x40)
       {
-         int padding=0;
          int p;
          do {
             if (len<=0)
                return OPUS_INVALID_PACKET;
             p = *data++;
             len--;
-            padding += p==255 ? 254: p;
+            len -= p==255 ? 254: p;
          } while (p==255);
-         len -= padding;
       }
       if (len<0)
          return OPUS_INVALID_PACKET;
