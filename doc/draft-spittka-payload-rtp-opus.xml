@@ -17,7 +17,7 @@
 
   ]>
 
-  <rfc category="info" ipr="trust200902" docName="draft-spittka-payload-rtp-opus-02">
+  <rfc category="info" ipr="trust200902" docName="draft-spittka-payload-rtp-opus-03">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -70,7 +70,7 @@
       </address>
     </author>
 
-    <date day='22' month='November' year='2012' />
+    <date day='30' month='November' year='2012' />
 
     <abstract>
       <t>
