@@ -256,8 +256,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    /* Post-rotate and de-shuffle */
    {
       kiss_fft_scalar * OPUS_RESTRICT fp = f;
-      kiss_fft_scalar * OPUS_RESTRICT yp0 = f2;
-      kiss_fft_scalar * OPUS_RESTRICT yp1 = f2+N2-1;
+      kiss_fft_scalar * OPUS_RESTRICT yp0 = out+overlap/2;
+      kiss_fft_scalar * OPUS_RESTRICT yp1 = out+overlap/2+N2-1;
       const kiss_twiddle_scalar *t = &l->trig[0];
 
       for(i=0;i<N4;i++)
@@ -275,43 +275,23 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          yp1 -= 2;
       }
    }
-   out -= (N2-overlap)>>1;
+
    /* Mirror on both sides for TDAC */
    {
-      kiss_fft_scalar * OPUS_RESTRICT fp1 = f2+N4-1;
-      kiss_fft_scalar * OPUS_RESTRICT xp1 = out+N2-1;
-      kiss_fft_scalar * OPUS_RESTRICT yp1 = out+N4-overlap/2;
+      kiss_fft_scalar * OPUS_RESTRICT xp1 = out+overlap-1;
+      kiss_fft_scalar * OPUS_RESTRICT yp1 = out;
       const opus_val16 * OPUS_RESTRICT wp1 = window;
       const opus_val16 * OPUS_RESTRICT wp2 = window+overlap-1;
-      for(i = 0; i< N4-overlap/2; i++)
-      {
-         *xp1 = *fp1;
-         xp1--;
-         fp1--;
-      }
-      for(; i < N4; i++)
+
+      for(i = 0; i < overlap/2; i++)
       {
          kiss_fft_scalar x1, x2;
-         x1 = *fp1--;
+         x1 = *xp1;
          x2 = *yp1;
          *yp1++ = MULT16_32_Q15(*wp2, x2) - MULT16_32_Q15(*wp1, x1);
          *xp1-- = MULT16_32_Q15(*wp1, x2) + MULT16_32_Q15(*wp2, x1);
          wp1++;
          wp2--;
-      }
-   }
-   {
-      kiss_fft_scalar * OPUS_RESTRICT fp2 = f2+N4;
-      kiss_fft_scalar * OPUS_RESTRICT xp2 = out+N2;
-      for(i = 0; i< N4-overlap/2; i++)
-      {
-         *xp2 = *fp2;
-         xp2++;
-         fp2++;
-      }
-      for(; i < N4; i++)
-      {
-         *xp2++ = *fp2++;
       }
    }
    RESTORE_STACK;
