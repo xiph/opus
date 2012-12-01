@@ -1741,7 +1741,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       denormalise_bands(mode, X, freq, bandE, st->start, effEnd, C, M);
 
       c=0; do {
-         OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, 2*MAX_PERIOD-N+overlap);
+         OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, 2*MAX_PERIOD-N+overlap/2);
       } while (++c<CC);
 
       if (CC==2&&C==1)

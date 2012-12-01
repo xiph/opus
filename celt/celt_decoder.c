@@ -495,7 +495,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          }
 
          /* Move memory one frame to the left */
-         OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);
+         OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap/2);
 
          /* Extrapolate excitation with the right period, taking decay into account */
          for (i=0;i<len;i++)
@@ -562,11 +562,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             MDCT of next frames. */
          for (i=0;i<overlap/2;i++)
          {
-            opus_val32 tmp;
-            tmp = MULT16_32_Q15(mode->window[i],           etmp[overlap-1-i]) +
-                  MULT16_32_Q15(mode->window[overlap-i-1], etmp[i          ]);
-            out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(mode->window[overlap-i-1], tmp);
-            out_mem[c][MAX_PERIOD+overlap-i-1] = MULT16_32_Q15(mode->window[i], tmp);
+            out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(mode->window[i], etmp[overlap-1-i]) +
+                                       MULT16_32_Q15(mode->window[overlap-i-1], etmp[i]);
          }
       } while (++c<C);
    }
@@ -858,7 +855,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    denormalise_bands(mode, X, freq, bandE, st->start, effEnd, C, M);
 
    c=0; do {
-      OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);
+      OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap/2);
    } while (++c<CC);
 
    c=0; do {
