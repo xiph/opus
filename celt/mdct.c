@@ -214,14 +214,12 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    int i;
    int N, N2, N4;
    kiss_twiddle_scalar sine;
-   VARDECL(kiss_fft_scalar, f);
    VARDECL(kiss_fft_scalar, f2);
    SAVE_STACK;
    N = l->n;
    N >>= shift;
    N2 = N>>1;
    N4 = N>>2;
-   ALLOC(f, N2, kiss_fft_scalar);
    ALLOC(f2, N2, kiss_fft_scalar);
    /* sin(x) ~= x here */
 #ifdef FIXED_POINT
@@ -251,26 +249,41 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    }
 
    /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
-   opus_ifft(l->kfft[shift], (kiss_fft_cpx *)f2, (kiss_fft_cpx *)f);
+   opus_ifft(l->kfft[shift], (kiss_fft_cpx *)f2, (kiss_fft_cpx *)(out+(overlap>>1)));
 
-   /* Post-rotate and de-shuffle */
+   /* Post-rotate and de-shuffle from both ends of the buffer at once to make
+      it in-place. */
    {
-      kiss_fft_scalar * OPUS_RESTRICT fp = f;
-      kiss_fft_scalar * OPUS_RESTRICT yp0 = out+overlap/2;
-      kiss_fft_scalar * OPUS_RESTRICT yp1 = out+overlap/2+N2-1;
+      kiss_fft_scalar * OPUS_RESTRICT yp0 = out+(overlap>>1);
+      kiss_fft_scalar * OPUS_RESTRICT yp1 = out+(overlap>>1)+N2-2;
       const kiss_twiddle_scalar *t = &l->trig[0];
-
-      for(i=0;i<N4;i++)
+      /* Loop to (N4+1)>>1 to handle odd N4. When N4 is odd, the
+         middle pair will be computed twice. */
+      for(i=0;i<(N4+1)>>1;i++)
       {
          kiss_fft_scalar re, im, yr, yi;
-         re = *fp++;
-         im = *fp++;
+         kiss_twiddle_scalar t0, t1;
+         re = yp0[0];
+         im = yp0[1];
+         t0 = t[i<<shift];
+         t1 = t[(N4-i)<<shift];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
-         yr = S_MUL(re,t[i<<shift]) - S_MUL(im,t[(N4-i)<<shift]);
-         yi = S_MUL(im,t[i<<shift]) + S_MUL(re,t[(N4-i)<<shift]);
+         yr = S_MUL(re,t0) - S_MUL(im,t1);
+         yi = S_MUL(im,t0) + S_MUL(re,t1);
+         re = yp1[0];
+         im = yp1[1];
          /* works because the cos is nearly one */
-         *yp0 = -(yr - S_MUL(yi,sine));
-         *yp1 = yi + S_MUL(yr,sine);
+         yp0[0] = -(yr - S_MUL(yi,sine));
+         yp1[1] = yi + S_MUL(yr,sine);
+
+         t0 = t[(N4-i-1)<<shift];
+         t1 = t[(i+1)<<shift];
+         /* We'd scale up by 2 here, but instead it's done when mixing the windows */
+         yr = S_MUL(re,t0) - S_MUL(im,t1);
+         yi = S_MUL(im,t0) + S_MUL(re,t1);
+         /* works because the cos is nearly one */
+         yp1[0] = -(yr - S_MUL(yi,sine));
+         yp0[1] = yi + S_MUL(yr,sine);
          yp0 += 2;
          yp1 -= 2;
       }
