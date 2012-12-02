@@ -507,11 +507,14 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
                attenuation = MULT16_16_Q15(attenuation, decay);
             }
             e[i] = SHL32(EXTEND32(MULT16_16_Q15(attenuation, exc[offset+i])), SIG_SHIFT);
+            /* Compute the energy of the previously decoded signal whose
+               excitation we're copying */
             tmp = ROUND16(out_mem[c][-N+offset+i],SIG_SHIFT);
             S1 += SHR32(MULT16_16(tmp,tmp),8);
          }
 
-         /* Last samples correctly decoded so we can have a continuous signal */
+         /* Copy the last decoded samples (prior to the overlap region) to
+            synthesis filter memory so we can have a continuous signal. */
          for (i=0;i<LPC_ORDER;i++)
             mem[i] = ROUND16(out_mem[c][MAX_PERIOD-N-1-i], SIG_SHIFT);
          /* Apply the fading if not the first loss */
