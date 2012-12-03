@@ -133,7 +133,7 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       kiss_fft_scalar * OPUS_RESTRICT yp = f;
       const opus_val16 * OPUS_RESTRICT wp1 = window+(overlap>>1);
       const opus_val16 * OPUS_RESTRICT wp2 = window+(overlap>>1)-1;
-      for(i=0;i<(overlap>>2);i++)
+      for(i=0;i<((overlap+3)>>2);i++)
       {
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
          *yp++ = MULT16_32_Q15(*wp2, xp1[N2]) + MULT16_32_Q15(*wp1,*xp2);
@@ -145,7 +145,7 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       }
       wp1 = window;
       wp2 = window+overlap-1;
-      for(;i<N4-(overlap>>2);i++)
+      for(;i<N4-((overlap+3)>>2);i++)
       {
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
          *yp++ = *xp2;

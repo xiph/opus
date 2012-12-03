@@ -183,15 +183,27 @@ int main(int argc,char ** argv)
         test1d(256,1);
         test1d(512,0);
         test1d(512,1);
+        test1d(1024,0);
+        test1d(1024,1);
+        test1d(2048,0);
+        test1d(2048,1);
 #ifndef RADIX_TWO_ONLY
+        test1d(36,0);
+        test1d(36,1);
         test1d(40,0);
         test1d(40,1);
+        test1d(60,0);
+        test1d(60,1);
         test1d(120,0);
         test1d(120,1);
         test1d(240,0);
         test1d(240,1);
         test1d(480,0);
         test1d(480,1);
+        test1d(960,0);
+        test1d(960,1);
+        test1d(1920,0);
+        test1d(1920,1);
 #endif
     }
     return ret;
