@@ -560,7 +560,7 @@ static int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
    int cbr;
    unsigned char ch, toc;
    int framesize;
-   int last_size;
+   opus_int32 last_size;
    const unsigned char *data0 = data;
 
    if (size==NULL)
@@ -586,7 +586,9 @@ static int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       {
          if (len&0x1)
             return OPUS_INVALID_PACKET;
-         size[0] = last_size = len/2;
+         last_size = len/2;
+         /* If last_size doesn't fit in size[0], we'll catch it later */
+         size[0] = (short)last_size;
       }
       break;
    /* Two VBR frames */
@@ -647,7 +649,7 @@ static int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
          if (last_size*count!=len)
             return OPUS_INVALID_PACKET;
          for (i=0;i<count-1;i++)
-            size[i] = last_size;
+            size[i] = (short)last_size;
       }
       break;
    }
@@ -675,7 +677,7 @@ static int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
          1275. Reject them here.*/
       if (last_size > 1275)
          return OPUS_INVALID_PACKET;
-      size[count-1] = last_size;
+      size[count-1] = (short)last_size;
    }
 
    if (frames)
