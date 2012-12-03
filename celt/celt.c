@@ -2053,7 +2053,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
    int nbEBands;
    int overlap;
    const opus_int16 *eBands;
-   VARDECL(celt_sig, scratch);
    SAVE_STACK;
 
    mode = st->mode;
