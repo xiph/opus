@@ -541,7 +541,12 @@ OPUS_EXPORT int opus_multistream_decoder_init(
   *                                 available space in \a pcm.
   *                                 If this is less than the maximum packet duration
   *                                 (120 ms; 5760 for 48kHz), this function will not be capable
-  *                                 of decoding some packets.
+  *                                 of decoding some packets. In the case of PLC (data==NULL)
+  *                                 or FEC (decode_fec=1), then frame_size needs to be exactly
+  *                                 the duration of audio that is missing, otherwise the
+  *                                 decoder will not be in the optimal state to decode the
+  *                                 next incoming packet. For the PLC and FEC cases, frame_size
+  *                                 <b>must</b> be a multiple of 2.5 ms.
   * @param decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band
   *                                 forward error correction data be decoded.
   *                                 If no such data is available, the frame is
@@ -574,7 +579,12 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_multistream_decode(
   *                                 available space in \a pcm.
   *                                 If this is less than the maximum packet duration
   *                                 (120 ms; 5760 for 48kHz), this function will not be capable
-  *                                 of decoding some packets.
+  *                                 of decoding some packets. In the case of PLC (data==NULL)
+  *                                 or FEC (decode_fec=1), then frame_size needs to be exactly
+  *                                 the duration of audio that is missing, otherwise the
+  *                                 decoder will not be in the optimal state to decode the
+  *                                 next incoming packet. For the PLC and FEC cases, frame_size
+  *                                 <b>must</b> be a multiple of 2.5 ms.
   * @param decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band
   *                                 forward error correction data be decoded.
   *                                 If no such data is available, the frame is
