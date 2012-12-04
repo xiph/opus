@@ -791,7 +791,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 
    tot_offset += offset;
 
-   if (count*st->frame_size > frame_size)
+   if (count*packet_frame_size > frame_size)
       return OPUS_BUFFER_TOO_SMALL;
 
    /* Update the state as the last step to avoid updating it on an invalid packet */
