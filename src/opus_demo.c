@@ -684,18 +684,22 @@ int main(int argc, char *argv[])
         } else {
             int output_samples;
             lost = len[toggle]==0 || (packet_loss_perc>0 && rand()%100 < packet_loss_perc);
+            if (lost)
+               opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
+            else
+               output_samples = max_frame_size;
             if( count >= use_inbandfec ) {
                 /* delay by one packet when using in-band FEC */
                 if( use_inbandfec  ) {
                     if( lost_prev ) {
                         /* attempt to decode with in-band FEC from next packet */
-                        output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, max_frame_size, 1);
+                        output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, output_samples, 1);
                     } else {
                         /* regular decode */
-                        output_samples = opus_decode(dec, data[1-toggle], len[1-toggle], out, max_frame_size, 0);
+                        output_samples = opus_decode(dec, data[1-toggle], len[1-toggle], out, output_samples, 0);
                     }
                 } else {
-                    output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, max_frame_size, 0);
+                    output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, output_samples, 0);
                 }
                 if (output_samples>0)
                 {

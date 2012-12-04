@@ -145,9 +145,13 @@ extern "C" {
 #define OPUS_GET_FINAL_RANGE_REQUEST         4031
 #define OPUS_GET_PITCH_REQUEST               4033
 #define OPUS_SET_GAIN_REQUEST                4034
-#define OPUS_GET_GAIN_REQUEST                4045
+#define OPUS_GET_GAIN_REQUEST                4045 /* Should have been 4035 */
 #define OPUS_SET_LSB_DEPTH_REQUEST           4036
 #define OPUS_GET_LSB_DEPTH_REQUEST           4037
+
+#define OPUS_GET_LAST_PACKET_DURATION_REQUEST 4039
+
+/* Don't use 4045, it's already taken by OPUS_GET_GAIN_REQUEST */
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
@@ -516,6 +520,11 @@ extern "C" {
   *                                      24 (default: 24).
   * @hideinitializer */
 #define OPUS_GET_LSB_DEPTH(x) OPUS_GET_LSB_DEPTH_REQUEST, __opus_check_int_ptr(x)
+
+/** Gets the duration (in samples) of the last packet successfully decoded or concealed.
+  * @param[out] x <tt>opus_int32 *</tt>: Number of samples (at current sampling rate).
+  * @hideinitializer */
+#define OPUS_GET_LAST_PACKET_DURATION(x) OPUS_GET_LAST_PACKET_DURATION_REQUEST, __opus_check_int_ptr(x)
 /**@}*/
 
 /** @defgroup opus_genericctls Generic CTLs
