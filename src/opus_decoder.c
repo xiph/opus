@@ -1021,8 +1021,8 @@ int opus_packet_get_nb_frames(const unsigned char packet[], opus_int32 len)
       return packet[1]&0x3F;
 }
 
-int opus_decoder_get_nb_samples(const OpusDecoder *dec,
-      const unsigned char packet[], opus_int32 len)
+int opus_packet_get_nb_samples(const unsigned char packet[], opus_int32 len,
+      opus_int32 Fs)
 {
    int samples;
    int count = opus_packet_get_nb_frames(packet, len);
@@ -1030,10 +1030,16 @@ int opus_decoder_get_nb_samples(const OpusDecoder *dec,
    if (count<0)
       return count;
 
-   samples = count*opus_packet_get_samples_per_frame(packet, dec->Fs);
+   samples = count*opus_packet_get_samples_per_frame(packet, Fs);
    /* Can't have more than 120 ms */
-   if (samples*25 > dec->Fs*3)
+   if (samples*25 > Fs*3)
       return OPUS_INVALID_PACKET;
    else
       return samples;
+}
+
+int opus_decoder_get_nb_samples(const OpusDecoder *dec,
+      const unsigned char packet[], opus_int32 len)
+{
+   return opus_packet_get_nb_samples(packet, len, dec->Fs);
 }
