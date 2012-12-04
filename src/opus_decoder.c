@@ -785,10 +785,6 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
          return frame_size;
    }
    tot_offset = 0;
-   st->mode = packet_mode;
-   st->bandwidth = packet_bandwidth;
-   st->frame_size = packet_frame_size;
-   st->stream_channels = packet_stream_channels;
    if (count < 0)
       return count;
 
@@ -796,6 +792,13 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 
    if (count*st->frame_size > frame_size)
       return OPUS_BUFFER_TOO_SMALL;
+
+   /* Update the state as the last step to avoid updating it on an invalid packet */
+   st->mode = packet_mode;
+   st->bandwidth = packet_bandwidth;
+   st->frame_size = packet_frame_size;
+   st->stream_channels = packet_stream_channels;
+
    nb_samples=0;
    for (i=0;i<count;i++)
    {
