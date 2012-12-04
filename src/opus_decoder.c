@@ -257,23 +257,10 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       }
    }
 
-   /* For CELT/hybrid PLC of more than 20 ms, do multiple calls */
-   if (data==NULL && frame_size > F20 && mode != MODE_SILK_ONLY)
-   {
-      int nb_samples = 0;
-      do {
-         int ret = opus_decode_frame(st, NULL, 0, pcm, F20, 0);
-         if (ret != F20)
-         {
-            RESTORE_STACK;
-            return OPUS_INTERNAL_ERROR;
-         }
-         pcm += F20*st->channels;
-         nb_samples += F20;
-      } while (nb_samples < frame_size);
-      RESTORE_STACK;
-      return frame_size;
-   }
+   /* For CELT/hybrid PLC of more than 20 ms, opus_decode_native() will do
+      multiple calls */
+   if (data==NULL  && mode != MODE_SILK_ONLY)
+      frame_size = IMIN(frame_size, F20);
    ALLOC(pcm_transition, F5*st->channels, opus_val16);
 
    if (data!=NULL && st->prev_mode > 0 && (
@@ -714,26 +701,68 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    int count, offset;
    unsigned char toc;
    int tot_offset;
+   int packet_frame_size, packet_bandwidth, packet_mode, packet_stream_channels;
    /* 48 x 2.5 ms = 120 ms */
    short size[48];
    if (decode_fec<0 || decode_fec>1)
       return OPUS_BAD_ARG;
+   /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
+   if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
+      return OPUS_BAD_ARG;
    if (len==0 || data==NULL)
-      return opus_decode_frame(st, NULL, 0, pcm, frame_size, 0);
-   else if (len<0)
+   {
+      int pcm_count=0;
+      do {
+         int ret;
+         ret = opus_decode_frame(st, NULL, 0, pcm, frame_size-pcm_count, 0);
+         if (ret<0)
+            return ret;
+         pcm += st->channels*ret;
+         pcm_count += ret;
+      } while (pcm_count < frame_size);
+      return pcm_count;
+   } else if (len<0)
       return OPUS_BAD_ARG;
 
-   tot_offset = 0;
-   st->mode = opus_packet_get_mode(data);
-   st->bandwidth = opus_packet_get_bandwidth(data);
-   st->frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
-   st->stream_channels = opus_packet_get_nb_channels(data);
+   packet_mode = opus_packet_get_mode(data);
+   packet_bandwidth = opus_packet_get_bandwidth(data);
+   packet_frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
+   packet_stream_channels = opus_packet_get_nb_channels(data);
 
    count = opus_packet_parse_impl(data, len, self_delimited, &toc, NULL, size, &offset);
+
+   data += offset;
+
+   if (decode_fec)
+   {
+      int ret;
+      /* If no FEC can be present, run the PLC (recursive call) */
+      if (frame_size <= packet_frame_size || packet_mode == MODE_CELT_ONLY || st->mode == MODE_CELT_ONLY)
+         return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL);
+      /* Otherwise, run the PLC on everything except the size for which we might have FEC */
+      ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL);
+      if (ret<0)
+         return ret;
+      /* Complete with FEC */
+      st->mode = packet_mode;
+      st->bandwidth = packet_bandwidth;
+      st->frame_size = packet_frame_size;
+      st->stream_channels = packet_stream_channels;
+      ret = opus_decode_frame(st, data, size[0], pcm+st->channels*(frame_size-packet_frame_size),
+            packet_frame_size, 1);
+      if (ret<0)
+         return ret;
+      else
+         return frame_size;
+   }
+   tot_offset = 0;
+   st->mode = packet_mode;
+   st->bandwidth = packet_bandwidth;
+   st->frame_size = packet_frame_size;
+   st->stream_channels = packet_stream_channels;
    if (count < 0)
       return count;
 
-   data += offset;
    tot_offset += offset;
 
    if (count*st->frame_size > frame_size)
