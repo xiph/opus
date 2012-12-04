@@ -64,6 +64,7 @@ struct OpusDecoder {
    int          prev_mode;
    int          frame_size;
    int          prev_redundancy;
+   int          last_packet_duration;
 
    opus_uint32  rangeFinal;
 };
@@ -813,6 +814,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    }
    if (packet_offset != NULL)
       *packet_offset = tot_offset;
+   st->last_packet_duration = nb_samples;
    return nb_samples;
 }
 
@@ -964,6 +966,12 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
           break;
        }
        st->decode_gain = value;
+   }
+   break;
+   case OPUS_GET_LAST_PACKET_DURATION_REQUEST:
+   {
+      opus_uint32 *value = va_arg(ap, opus_uint32*);
+      *value = st->last_packet_duration;
    }
    break;
    default:
