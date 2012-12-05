@@ -782,6 +782,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL);
       if (ret<0)
          return ret;
+      celt_assert(ret==frame_size-packet_frame_size);
       /* Complete with FEC */
       st->mode = packet_mode;
       st->bandwidth = packet_bandwidth;
