@@ -12,6 +12,9 @@ patent licensing details:
 Xiph.Org Foundation:
 https://datatracker.ietf.org/ipr/1524/
 
+Microsoft Corporation:
+https://datatracker.ietf.org/ipr/1914/
+
 Skype Limited:
 https://datatracker.ietf.org/ipr/1602/
 
