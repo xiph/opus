@@ -146,4 +146,26 @@ extern char *global_stack_top;
 
 #endif /* VAR_ARRAYS */
 
+
+#ifdef ENABLE_VALGRIND
+
+#include <valgrind/memcheck.h>
+#define OPUS_CHECK_ARRAY(ptr, len) VALGRIND_CHECK_MEM_IS_DEFINED(ptr, len*sizeof(*ptr))
+#define OPUS_CHECK_VALUE(value) VALGRIND_CHECK_VALUE_IS_DEFINED(value)
+#define OPUS_CHECK_ARRAY_COND(ptr, len) VALGRIND_CHECK_MEM_IS_DEFINED(ptr, len*sizeof(*ptr))
+#define OPUS_CHECK_VALUE_COND(value) VALGRIND_CHECK_VALUE_IS_DEFINED(value)
+#define OPUS_PRINT_INT(value) do {fprintf(stderr, #value " = %d at %s:%d\n", value, __FILE__, __LINE__);}while(0)
+#define OPUS_FPRINTF fprintf
+
+#else
+
+static inline int _opus_false(void) {return 0;}
+#define OPUS_CHECK_ARRAY(ptr, len) _opus_false()
+#define OPUS_CHECK_VALUE(value) _opus_false()
+#define OPUS_PRINT_INT(value) do{}while(0)
+#define OPUS_FPRINTF (void)
+
+#endif
+
+
 #endif /* STACK_ALLOC_H */
