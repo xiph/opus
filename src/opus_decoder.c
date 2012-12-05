@@ -779,7 +779,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       if (frame_size <= packet_frame_size || packet_mode == MODE_CELT_ONLY || st->mode == MODE_CELT_ONLY)
          return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL);
       /* Otherwise, run the PLC on everything except the size for which we might have FEC */
-      ret = opus_decode_frame(st, NULL, 0, pcm, frame_size-packet_frame_size, 0);
+      ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL);
       if (ret<0)
          return ret;
       /* Complete with FEC */
