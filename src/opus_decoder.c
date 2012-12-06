@@ -759,6 +759,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       celt_assert(pcm_count == frame_size);
       if (OPUS_CHECK_ARRAY(pcm, pcm_count*st->channels))
          OPUS_PRINT_INT(pcm_count);
+      st->last_packet_duration = pcm_count;
       return pcm_count;
    } else if (len<0)
       return OPUS_BAD_ARG;
@@ -774,14 +775,19 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 
    if (decode_fec)
    {
+      int duration_copy;
       int ret;
       /* If no FEC can be present, run the PLC (recursive call) */
       if (frame_size <= packet_frame_size || packet_mode == MODE_CELT_ONLY || st->mode == MODE_CELT_ONLY)
          return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL);
       /* Otherwise, run the PLC on everything except the size for which we might have FEC */
+      duration_copy = st->last_packet_duration;
       ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL);
       if (ret<0)
+      {
+         st->last_packet_duration = duration_copy;
          return ret;
+      }
       celt_assert(ret==frame_size-packet_frame_size);
       /* Complete with FEC */
       st->mode = packet_mode;
@@ -795,6 +801,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       else {
          if (OPUS_CHECK_ARRAY(pcm, frame_size*st->channels))
             OPUS_PRINT_INT(frame_size);
+         st->last_packet_duration = frame_size;
          return frame_size;
       }
    }
