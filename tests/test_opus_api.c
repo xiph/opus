@@ -226,15 +226,20 @@ opus_int32 test_dec_api(void)
 
    VG_UNDEF(packet,sizeof(packet));
    packet[0]=0;
-   if(opus_packet_get_nb_samples(packet,1,48000)!=480)test_failed();
    if(opus_decoder_get_nb_samples(dec,packet,1)!=480)test_failed();
-   cfgs++;
+   if(opus_packet_get_nb_samples(packet,1,48000)!=480)test_failed();
+   if(opus_packet_get_nb_samples(packet,1,96000)!=960)test_failed();
+   if(opus_packet_get_nb_samples(packet,1,32000)!=320)test_failed();
+   if(opus_packet_get_nb_samples(packet,1,8000)!=80)test_failed();
+   packet[0]=3;
+   if(opus_packet_get_nb_samples(packet,1,24000)!=OPUS_INVALID_PACKET)test_failed();
    packet[0]=(63<<2)|3;
    packet[1]=63;
+   if(opus_packet_get_nb_samples(packet,0,24000)!=OPUS_BAD_ARG)test_failed();
    if(opus_packet_get_nb_samples(packet,2,48000)!=OPUS_INVALID_PACKET)test_failed();
    if(opus_decoder_get_nb_samples(dec,packet,2)!=OPUS_INVALID_PACKET)test_failed();
-   fprintf(stdout,"    opus_{packet,decoder}_get_nb_samples() ................ OK.\n");
-   cfgs++;
+   fprintf(stdout,"    opus_{packet,decoder}_get_nb_samples() ....... OK.\n");
+   cfgs+=9;
 
    if(OPUS_BAD_ARG!=opus_packet_get_nb_frames(packet,0))test_failed();
    for(i=0;i<256;i++) {
