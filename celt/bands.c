@@ -212,6 +212,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
             x++;
          } while (++j<band_end);
       }
+      celt_assert(start <= end);
       for (i=M*eBands[end];i<N;i++)
          *f++ = 0;
    } while (++c<C);
