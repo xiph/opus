@@ -28,8 +28,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define CELT_BUILD            1
-
 #define inline __inline
 
 #define USE_ALLOCA            1
