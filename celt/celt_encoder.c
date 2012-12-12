@@ -1548,11 +1548,15 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      {
         int coded_stereo_bands;
         int coded_stereo_dof;
+        opus_val16 max_frac;
         coded_stereo_bands = IMIN(st->intensity, coded_bands);
         coded_stereo_dof = (eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
+        /* Maximum fraction of the bits we can save if the signal is mono. */
+        max_frac = DIV32_16(MULT16_16(QCONST16(0.8f, 15), coded_stereo_dof), coded_bins);
         /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
-        target -= MIN32(target/3, SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
-        target += MULT16_16_Q15(QCONST16(0.035,15),coded_stereo_dof<<BITRES);
+        target -= MIN32(MULT16_32_Q15(max_frac,target),
+                        SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
+        target += MULT16_16_Q15(QCONST16(0.1f,15),coded_stereo_dof<<BITRES);
      }
      /* Limits starving of other bands when using dynalloc */
      target += tot_boost;
