@@ -1558,8 +1558,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
                         SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
         target += MULT16_16_Q15(QCONST16(0.1f,15),coded_stereo_dof<<BITRES);
      }
-     /* Limits starving of other bands when using dynalloc */
-     target += tot_boost;
+     /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
+     target += tot_boost-128;
      /* Compensates for the average transient boost */
      target = MULT16_32_Q15(QCONST16(0.96f,15),target);
      /* Apply transient boost */
