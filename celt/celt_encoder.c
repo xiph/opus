@@ -1415,7 +1415,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          else
             st->spread_decision = SPREAD_NORMAL;
       } else {
-         if (st->analysis.valid)
+         /* Disable new spreading+tapset estimator until we can show it works
+            better than the old one. So far it seems like spreading_decision()
+            works best. */
+         if (0&&st->analysis.valid)
          {
             static const opus_val16 spread_thresholds[3] = {-QCONST16(.6f, 15), -QCONST16(.2f, 15), -QCONST16(.07f, 15)};
             static const opus_val16 spread_histeresis[3] = {QCONST16(.15f, 15), QCONST16(.07f, 15), QCONST16(.02f, 15)};
