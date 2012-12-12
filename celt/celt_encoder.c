@@ -1568,14 +1568,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         float tonal;
 
         /* Compensates for the average tonality boost */
-        target -= MULT16_16_Q15(QCONST16(0.13f,15),coded_bins<<BITRES);
+        target -= MULT16_16_Q15(QCONST16(0.11f,15),coded_bins<<BITRES);
 
-        tonal = MAX16(0,st->analysis.tonality-.2);
-        tonal_target = target + (coded_bins<<BITRES)*2.0f*tonal;
+        tonal = MAX16(0,st->analysis.tonality-.15);
+        tonal_target = target + (coded_bins<<BITRES)*1.2f*tonal;
         if (pitch_change)
            tonal_target +=  (coded_bins<<BITRES)*.8;
         /*printf("%f %f ", st->analysis.tonality, tonal);*/
-        target = IMAX(tonal_target,target);
+        target = tonal_target;
      }
 #endif
 
