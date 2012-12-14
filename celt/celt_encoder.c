@@ -1296,7 +1296,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    shortBlocks = 0;
    if (LM>0 && ec_tell(enc)+3<=total_bits)
    {
-      if (st->complexity > 1)
+      if (st->complexity >= 1)
       {
          isTransient = transient_analysis(in, N+st->overlap, CC,
                   &tf_estimate, &tf_chan);
@@ -1376,7 +1376,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
-   if (effectiveBytes>=15*C && st->start==0)
+   if (effectiveBytes>=15*C && st->start==0 && st->complexity>=2)
    {
       int lambda;
       if (effectiveBytes<40)
