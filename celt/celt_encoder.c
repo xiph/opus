@@ -349,7 +349,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    /* Arbitrary metric for VBR boost */
    tf_max = MAX16(0,celt_sqrt(27*mask_metric)-42);
    /* *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20); */
-   *tf_estimate = QCONST16(1.f, 14) + celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0069,14),IMIN(163,tf_max)),14)-QCONST32(0.139,28)));
+   *tf_estimate = celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0069,14),IMIN(163,tf_max)),14)-QCONST32(0.139,28)));
    /*printf("%d %f\n", tf_max, mask_metric);*/
    RESTORE_STACK;
 #ifdef FUZZING
@@ -486,7 +486,7 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
    opus_val16 bias;
 
    SAVE_STACK;
-   bias = MULT16_16_Q14(QCONST16(.04f,15), MAX16(-QCONST16(.25f,14), QCONST16(1.5f,14)-tf_estimate));
+   bias = MULT16_16_Q14(QCONST16(.04f,15), MAX16(-QCONST16(.25f,14), QCONST16(.5f,14)-tf_estimate));
    /*printf("%f ", bias);*/
 
    ALLOC(metric, len, int);
@@ -751,7 +751,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    if (diff < -QCONST16(10.f, DB_SHIFT))
       trim_index++;
    trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), SHR16(diff+QCONST16(1.f, DB_SHIFT),DB_SHIFT-8)/6 ));
-   trim -= 2*SHR16(tf_estimate-QCONST16(1.f,14), 14-8);
+   trim -= 2*SHR16(tf_estimate, 14-8);
 #ifndef FIXED_POINT
    if (analysis->valid)
    {
@@ -1109,7 +1109,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    nbEBands = mode->nbEBands;
    overlap = mode->overlap;
    eBands = mode->eBands;
-   tf_estimate = QCONST16(1.0f,14);
+   tf_estimate = 0;
    if (nbCompressedBytes<2 || pcm==NULL)
      return OPUS_BAD_ARG;
 
@@ -1559,11 +1559,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         target += MULT16_16_Q15(QCONST16(0.1f,15),coded_stereo_dof<<BITRES);
      }
      /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
-     target += tot_boost-128;
-     /* Compensates for the average transient boost */
-     target = MULT16_32_Q15(QCONST16(0.96f,15),target);
-     /* Apply transient boost */
-     target = SHL32(MULT16_32_Q15(tf_estimate, target),1);
+     target += tot_boost-(16<<LM);
+     /* Apply transient boost, compensating for average boost. */
+     target += SHL32(MULT16_32_Q15(tf_estimate-QCONST16(0.04f,14), target),1);
 
 #ifndef FIXED_POINT
      /* Apply tonality boost */
