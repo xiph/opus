@@ -1555,8 +1555,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         max_frac = DIV32_16(MULT16_16(QCONST16(0.8f, 15), coded_stereo_dof), coded_bins);
         /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
         target -= MIN32(MULT16_32_Q15(max_frac,target),
-                        SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
-        target += MULT16_16_Q15(QCONST16(0.1f,15),coded_stereo_dof<<BITRES);
+                        SHR16(MULT16_16(st->stereo_saving-QCONST16(0.1f,8),(coded_stereo_dof<<BITRES)),8));
      }
      /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
      target += tot_boost-(16<<LM);
@@ -1569,10 +1568,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         int tonal_target;
         float tonal;
 
-        /* Compensates for the average tonality boost */
-        target -= MULT16_16_Q15(QCONST16(0.11f,15),coded_bins<<BITRES);
-
-        tonal = MAX16(0,st->analysis.tonality-.15);
+        /* Tonality boost (compensating for the average). */
+        tonal = MAX16(0,st->analysis.tonality-.15)-0.09;
         tonal_target = target + (coded_bins<<BITRES)*1.2f*tonal;
         if (pitch_change)
            tonal_target +=  (coded_bins<<BITRES)*.8;
