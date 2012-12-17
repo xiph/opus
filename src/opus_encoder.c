@@ -662,19 +662,21 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
    return best_state;
 }
 
-static int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
+int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
                 int bitrate, opus_val16 tonality, opus_val32 *mem, int buffering)
 {
    int N;
-   int i;
+   int i, c;
    float e[MAX_DYNAMIC_FRAMESIZE+4];
    float e_1[MAX_DYNAMIC_FRAMESIZE+3];
    float memx;
    int bestLM=0;
    int subframe;
    int pos;
+   VARDECL(opus_val16, sub);
 
    subframe = Fs/400;
+   ALLOC(sub, subframe, opus_val16);
    e[0]=mem[0];
    e_1[0]=1./(EPSILON+mem[0]);
    if (buffering)
@@ -695,27 +697,26 @@ static int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs
    }
    N=IMIN(len/subframe, MAX_DYNAMIC_FRAMESIZE);
    memx = x[0];
+   for (c=1;c<C;c++)
+      memx += x[c];
    for (i=0;i<N;i++)
    {
       float tmp;
       float tmpx;
       int j;
       tmp=EPSILON;
-      if (C==1)
+
+      for (j=0;j<subframe;j++)
+         sub[j] = x[(subframe*i+j)*C];
+      for (c=1;c<C;c++)
+         for (j=0;j<subframe;j++)
+            sub[j] += x[(subframe*i+j)*C+c];
+
+      for (j=0;j<subframe;j++)
       {
-         for (j=0;j<subframe;j++)
-         {
-            tmpx = x[subframe*i+j];
-            tmp += (tmpx-memx)*(tmpx-memx);
-            memx = tmpx;
-         }
-      } else {
-         for (j=0;j<subframe;j++)
-         {
-            tmpx = x[(subframe*i+j)*2]+x[(subframe*i+j)*2+1];
-            tmp += (tmpx-memx)*(tmpx-memx);
-            memx = tmpx;
-         }
+         tmpx = sub[j];
+         tmp += (tmpx-memx)*(tmpx-memx);
+         memx = tmpx;
       }
       e[i+pos] = tmp;
       e_1[i+pos] = 1.f/tmp;
@@ -1400,7 +1401,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
             {
                 opus_int32 bonus=0;
 #ifndef FIXED_POINT
-                if (orig_frame_size != frame_size)
+                if (st->variable_duration && orig_frame_size != frame_size)
                 {
                    bonus = (40*st->stream_channels+40)*(48000/frame_size-48000/orig_frame_size);
                    if (analysis_info.valid)

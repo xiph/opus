@@ -40,6 +40,9 @@
 struct OpusMSEncoder {
    ChannelLayout layout;
    int bitrate;
+   int variable_duration;
+   opus_int32 bitrate_bps;
+   opus_val32 subframe_mem[3];
    /* Encoder states go here */
 };
 
@@ -197,10 +200,38 @@ static int opus_multistream_encode_native
    VARDECL(opus_val16, buf);
    unsigned char tmp_data[MS_FRAME_TMP];
    OpusRepacketizer rp;
+   int orig_frame_size;
+   int coded_channels;
+   opus_int32 channel_rate;
    ALLOC_STACK;
 
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
+
+   if (400*frame_size < Fs)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+   orig_frame_size = IMIN(frame_size,Fs/50);
+   if (st->variable_duration)
+   {
+      int LM = 3;
+      int channels;
+      opus_int32 delay_compensation;
+
+      channels = st->layout.nb_streams + st->layout.nb_coupled_streams;
+      opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_LOOKAHEAD(&delay_compensation));
+      delay_compensation -= Fs/400;
+#ifndef FIXED_POINT
+      LM = optimize_framesize(pcm, frame_size, channels, Fs, st->bitrate_bps,
+            0.f, st->subframe_mem, delay_compensation);
+#endif
+      while ((Fs/400<<LM)>frame_size)
+         LM--;
+      frame_size = (Fs/400<<LM);
+   }
+
    /* Validate frame_size before using it to allocate stack space.
       This mirrors the checks in opus_encode[_float](). */
    if (400*frame_size != Fs && 200*frame_size != Fs &&
@@ -219,6 +250,31 @@ static int opus_multistream_encode_native
       RESTORE_STACK;
       return OPUS_BUFFER_TOO_SMALL;
    }
+
+   /* Compute bitrate allocation between streams (this could be a lot better) */
+   coded_channels = st->layout.nb_streams + st->layout.nb_coupled_streams;
+   channel_rate = st->bitrate_bps / coded_channels;
+#ifndef FIXED_POINT
+   if (st->variable_duration && orig_frame_size != frame_size)
+   {
+      opus_int32 bonus;
+      bonus = 60*(48000/frame_size-48000/orig_frame_size);
+      channel_rate += bonus;
+   }
+#endif
+   ptr = (char*)st + align(sizeof(OpusMSEncoder));
+   for (s=0;s<st->layout.nb_streams;s++)
+   {
+      OpusEncoder *enc;
+      enc = (OpusEncoder*)ptr;
+      if (s < st->layout.nb_coupled_streams)
+         ptr += align(coupled_size);
+      else
+         ptr += align(mono_size);
+      opus_encoder_ctl(enc, OPUS_SET_BITRATE(channel_rate * (s < st->layout.nb_coupled_streams ? 2 : 1)));
+   }
+
+   ptr = (char*)st + align(sizeof(OpusMSEncoder));
    /* Counting ToC */
    tot_size = 0;
    for (s=0;s<st->layout.nb_streams;s++)
@@ -382,20 +438,8 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    {
    case OPUS_SET_BITRATE_REQUEST:
    {
-      int chan, s;
       opus_int32 value = va_arg(ap, opus_int32);
-      chan = st->layout.nb_streams + st->layout.nb_coupled_streams;
-      value /= chan;
-      for (s=0;s<st->layout.nb_streams;s++)
-      {
-         OpusEncoder *enc;
-         enc = (OpusEncoder*)ptr;
-         if (s < st->layout.nb_coupled_streams)
-            ptr += align(coupled_size);
-         else
-            ptr += align(mono_size);
-         opus_encoder_ctl(enc, request, value * (s < st->layout.nb_coupled_streams ? 2 : 1));
-      }
+      st->bitrate_bps = value;
    }
    break;
    case OPUS_GET_BITRATE_REQUEST:
@@ -508,7 +552,21 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       }
       *value = (OpusEncoder*)ptr;
    }
-      break;
+   break;
+   case OPUS_SET_EXPERT_VARIABLE_DURATION_REQUEST:
+   {
+       opus_int32 value = va_arg(ap, opus_int32);
+       if (value<0 || value>1)
+          goto bad_arg;
+       st->variable_duration = value;
+   }
+   break;
+   case OPUS_GET_EXPERT_VARIABLE_DURATION_REQUEST:
+   {
+       opus_int32 *value = va_arg(ap, opus_int32*);
+       *value = st->variable_duration;
+   }
+   break;
    default:
       ret = OPUS_UNIMPLEMENTED;
       break;
@@ -516,6 +574,9 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
 
    va_end(ap);
    return ret;
+bad_arg:
+   va_end(ap);
+   return OPUS_BAD_ARG;
 }
 
 void opus_multistream_encoder_destroy(OpusMSEncoder *st)
