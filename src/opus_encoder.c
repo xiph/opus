@@ -769,7 +769,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     int curr_bandwidth;
     opus_val16 HB_gain;
     opus_int32 max_data_bytes; /* Max number of bytes we're allowed to use */
-    int extra_buffer, total_buffer;
+    int total_buffer;
     int perform_analysis=0;
     int orig_frame_size;
 #ifndef FIXED_POINT
@@ -836,7 +836,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #endif
 
     total_buffer = delay_compensation;
-    extra_buffer = total_buffer-delay_compensation;
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
 
     frame_rate = st->Fs/frame_size;
@@ -1450,7 +1449,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (st->mode != MODE_SILK_ONLY && st->mode != st->prev_mode && st->prev_mode > 0)
     {
        for (i=0;i<st->channels*st->Fs/400;i++)
-          tmp_prefill[i] = st->delay_buffer[(extra_buffer+st->encoder_buffer-total_buffer-st->Fs/400)*st->channels + i];
+          tmp_prefill[i] = st->delay_buffer[(st->encoder_buffer-total_buffer-st->Fs/400)*st->channels + i];
     }
 
     for (i=0;i<st->channels*(st->encoder_buffer-(frame_size+total_buffer));i++)
@@ -1464,7 +1463,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        const CELTMode *celt_mode;
 
        celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
-       gain_fade(pcm_buf+extra_buffer*st->channels, pcm_buf+extra_buffer*st->channels,
+       gain_fade(pcm_buf, pcm_buf,
              st->prev_HB_gain, HB_gain, celt_mode->overlap, frame_size, st->channels, celt_mode->window, st->Fs);
     }
     st->prev_HB_gain = HB_gain;
@@ -1486,7 +1485,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             g1 *= (1.f/16384);
             g2 *= (1.f/16384);
 #endif
-            stereo_fade(pcm_buf+extra_buffer*st->channels, pcm_buf+extra_buffer*st->channels, g1, g2, celt_mode->overlap,
+            stereo_fade(pcm_buf, pcm_buf, g1, g2, celt_mode->overlap,
                   frame_size, st->channels, celt_mode->window, st->Fs);
             st->hybrid_stereo_width_Q14 = st->silk_mode.stereoWidth_Q14;
         }
@@ -1540,7 +1539,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         int err;
         celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(0));
-        err = celt_encode_with_ec(celt_enc, pcm_buf+extra_buffer*st->channels, st->Fs/200, data+nb_compr_bytes, redundancy_bytes, NULL);
+        err = celt_encode_with_ec(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes, NULL);
         if (err < 0)
         {
            RESTORE_STACK;
@@ -1570,7 +1569,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            if (perform_analysis)
               celt_encoder_ctl(celt_enc, CELT_SET_ANALYSIS(&analysis_info));
 #endif
-           ret = celt_encode_with_ec(celt_enc, pcm_buf+extra_buffer*st->channels, frame_size, NULL, nb_compr_bytes, &enc);
+           ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
            if (ret < 0)
            {
               RESTORE_STACK;
@@ -1593,9 +1592,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
 
         /* NOTE: We could speed this up slightly (at the expense of code size) by just adding a function that prefills the buffer */
-        celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(extra_buffer+frame_size-N2-N4), N4, dummy, 2, NULL);
+        celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, dummy, 2, NULL);
 
-        err = celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(extra_buffer+frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes, NULL);
+        err = celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes, NULL);
         if (err < 0)
         {
            RESTORE_STACK;
