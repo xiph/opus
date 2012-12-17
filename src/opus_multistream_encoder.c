@@ -39,7 +39,6 @@
 
 struct OpusMSEncoder {
    ChannelLayout layout;
-   int bitrate;
    int variable_duration;
    opus_int32 bitrate_bps;
    opus_val32 subframe_mem[3];
@@ -105,6 +104,7 @@ int opus_multistream_encoder_init(
    st->layout.nb_streams = streams;
    st->layout.nb_coupled_streams = coupled_streams;
 
+   st->bitrate_bps = OPUS_AUTO;
    for (i=0;i<st->layout.nb_channels;i++)
       st->layout.mapping[i] = mapping[i];
    if (!validate_layout(&st->layout) || !validate_encoder_layout(&st->layout))
@@ -249,7 +249,15 @@ static int opus_multistream_encode_native
 
    /* Compute bitrate allocation between streams (this could be a lot better) */
    coded_channels = st->layout.nb_streams + st->layout.nb_coupled_streams;
-   channel_rate = st->bitrate_bps / coded_channels;
+   if (st->bitrate_bps==OPUS_AUTO)
+   {
+      channel_rate = Fs+60*Fs/orig_frame_size;
+   } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
+   {
+      channel_rate = 300000;
+   } else {
+      channel_rate = st->bitrate_bps/coded_channels;
+   }
 #ifndef FIXED_POINT
    if (st->variable_duration && orig_frame_size != frame_size)
    {
@@ -435,6 +443,8 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_BITRATE_REQUEST:
    {
       opus_int32 value = va_arg(ap, opus_int32);
+      if (value<0 && value!=OPUS_AUTO && value!=OPUS_BITRATE_MAX)
+         goto bad_arg;
       st->bitrate_bps = value;
    }
    break;
