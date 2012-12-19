@@ -886,6 +886,9 @@ static unsigned quant_partition(int encode, const CELTMode *m, int i, celt_norm 
       int itheta;
       int qalloc;
       struct split_ctx ctx;
+      celt_norm *next_lowband2=NULL;
+      opus_int32 rebalance;
+
       N >>= 1;
       Y = X+N;
       LM -= 1;
@@ -908,9 +911,6 @@ static unsigned quant_partition(int encode, const CELTMode *m, int i, celt_norm 
       side = (1.f/32768)*iside;
 #endif
 
-      celt_norm *next_lowband2=NULL;
-      opus_int32 rebalance;
-
       /* Give more bits to low-energy MDCTs than they would otherwise deserve */
       if (B0>1 && (itheta&0x3fff))
       {
@@ -931,31 +931,22 @@ static unsigned quant_partition(int encode, const CELTMode *m, int i, celt_norm 
       rebalance = *remaining_bits;
       if (mbits >= sbits)
       {
-         /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
-               mid for folding later */
          cm = quant_partition(encode, m, i, X, N, mbits, spread, B,
                lowband, ec, remaining_bits, LM,
                seed, MULT16_16_P15(gain,mid), fill);
          rebalance = mbits - (rebalance-*remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=0)
             sbits += rebalance - (3<<BITRES);
-
-         /* For a stereo split, the high bits of fill are always zero, so no
-               folding will be done to the side. */
          cm |= quant_partition(encode, m, i, Y, N, sbits, spread, B,
                next_lowband2, ec, remaining_bits, LM,
                seed, MULT16_16_P15(gain,side), fill>>B)<<(B0>>1);
       } else {
-         /* For a stereo split, the high bits of fill are always zero, so no
-               folding will be done to the side. */
          cm = quant_partition(encode, m, i, Y, N, sbits, spread, B,
                next_lowband2, ec, remaining_bits, LM,
                seed, MULT16_16_P15(gain,side), fill>>B)<<(B0>>1);
          rebalance = sbits - (rebalance-*remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=16384)
             mbits += rebalance - (3<<BITRES);
-         /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
-               mid for folding later */
          cm |= quant_partition(encode, m, i, X, N, mbits, spread, B,
                lowband, ec, remaining_bits, LM,
                seed, MULT16_16_P15(gain,mid), fill);
@@ -996,7 +987,7 @@ static unsigned quant_partition(int encode, const CELTMode *m, int i, celt_norm 
          if (resynth)
          {
             unsigned cm_mask;
-            /*B can be as large as 16, so this shift might overflow an int on a
+            /* B can be as large as 16, so this shift might overflow an int on a
                16-bit platform; use a long to get defined behavior.*/
             cm_mask = (unsigned)(1UL<<B)-1;
             fill &= cm_mask;
@@ -1214,8 +1205,8 @@ static unsigned quant_band_stereo(int encode, const CELTMode *m, int i, celt_nor
 #endif
 
    /* This is a special case for N=2 that only works for stereo and takes
-         advantage of the fact that mid and side are orthogonal to encode
-         the side with just one bit. */
+      advantage of the fact that mid and side are orthogonal to encode
+      the side with just one bit. */
    if (N==2)
    {
       int c;
@@ -1223,7 +1214,7 @@ static unsigned quant_band_stereo(int encode, const CELTMode *m, int i, celt_nor
       celt_norm *x2, *y2;
       mbits = b;
       sbits = 0;
-      /* Only need one bit for the side */
+      /* Only need one bit for the side. */
       if (itheta != 0 && itheta != 16384)
          sbits = 1<<BITRES;
       mbits -= sbits;
@@ -1236,7 +1227,7 @@ static unsigned quant_band_stereo(int encode, const CELTMode *m, int i, celt_nor
       {
          if (encode)
          {
-            /* Here we only need to encode a sign for the side */
+            /* Here we only need to encode a sign for the side. */
             sign = x2[0]*y2[1] - x2[1]*y2[0] < 0;
             ec_enc_bits(ec, sign, 1);
          } else {
@@ -1245,10 +1236,11 @@ static unsigned quant_band_stereo(int encode, const CELTMode *m, int i, celt_nor
       }
       sign = 1-2*sign;
       /* We use orig_fill here because we want to fold the side, but if
-             itheta==16384, we'll have cleared the low bits of fill. */
-      cm = quant_band(encode, m, i, x2, N, mbits, spread, B, tf_change, lowband, ec, remaining_bits, LM, lowband_out, seed, Q15ONE, lowband_scratch, orig_fill);
+         itheta==16384, we'll have cleared the low bits of fill. */
+      cm = quant_band(encode, m, i, x2, N, mbits, spread, B, tf_change, lowband, ec,
+            remaining_bits, LM, lowband_out, seed, Q15ONE, lowband_scratch, orig_fill);
       /* We don't split N=2 bands, so cm is either 1 or 0 (for a fold-collapse),
-             and there's no need to worry about mixing with the other channel. */
+         and there's no need to worry about mixing with the other channel. */
       y2[0] = -sign*x2[1];
       y2[1] = sign*x2[0];
       if (resynth)
@@ -1267,48 +1259,42 @@ static unsigned quant_band_stereo(int encode, const CELTMode *m, int i, celt_nor
       }
    } else {
       /* "Normal" split code */
-      celt_norm *next_lowband2=NULL;
-      celt_norm *next_lowband_out1=NULL;
       opus_int32 rebalance;
 
       mbits = IMAX(0, IMIN(b, (b-delta)/2));
       sbits = b-mbits;
       *remaining_bits -= qalloc;
 
-      /* Only stereo needs to pass on lowband_out. Otherwise, it's
-            handled at the end */
-      next_lowband_out1 = lowband_out;
-
       rebalance = *remaining_bits;
       if (mbits >= sbits)
       {
          /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
-               mid for folding later */
+            mid for folding later. */
          cm = quant_band(encode, m, i, X, N, mbits, spread, B, tf_change,
-               lowband, ec, remaining_bits, LM, next_lowband_out1,
+               lowband, ec, remaining_bits, LM, lowband_out,
                seed, Q15ONE, lowband_scratch, fill);
          rebalance = mbits - (rebalance-*remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=0)
             sbits += rebalance - (3<<BITRES);
 
          /* For a stereo split, the high bits of fill are always zero, so no
-               folding will be done to the side. */
+            folding will be done to the side. */
          cm |= quant_band(encode, m, i, Y, N, sbits, spread, B, tf_change,
-               next_lowband2, ec, remaining_bits, LM, NULL,
+               NULL, ec, remaining_bits, LM, NULL,
                seed, side, NULL, fill>>B);
       } else {
          /* For a stereo split, the high bits of fill are always zero, so no
-               folding will be done to the side. */
+            folding will be done to the side. */
          cm = quant_band(encode, m, i, Y, N, sbits, spread, B, tf_change,
-               next_lowband2, ec, remaining_bits, LM, NULL,
+               NULL, ec, remaining_bits, LM, NULL,
                seed, side, NULL, fill>>B);
          rebalance = sbits - (rebalance-*remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=16384)
             mbits += rebalance - (3<<BITRES);
          /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
-               mid for folding later */
+            mid for folding later. */
          cm |= quant_band(encode, m, i, X, N, mbits, spread, B, tf_change,
-               lowband, ec, remaining_bits, LM, next_lowband_out1,
+               lowband, ec, remaining_bits, LM, lowband_out,
                seed, Q15ONE, lowband_scratch, fill);
       }
    }
@@ -1358,12 +1344,12 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    B = shortBlocks ? M : 1;
    norm_offset = M*eBands[start];
    /* No need to allocate norm for the last band because we don't need an
-      output in that band */
+      output in that band. */
    ALLOC(_norm, C*(M*eBands[m->nbEBands-1]-norm_offset), celt_norm);
    norm = _norm;
    norm2 = norm + M*eBands[m->nbEBands-1]-norm_offset;
    /* We can use the last band as scratch space because we don't need that
-      scratch space for the last band */
+      scratch space for the last band. */
    lowband_scratch = X_+M*eBands[m->nbEBands-1];
 
    lowband_offset = 0;
@@ -1417,7 +1403,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          lowband_scratch = NULL;
 
       /* Get a conservative estimate of the collapse_mask's for the bands we're
-          going to be folding from. */
+         going to be folding from. */
       if (lowband_offset != 0 && (spread!=SPREAD_AGGRESSIVE || B>1 || tf_change<0))
       {
          int fold_start;
@@ -1436,7 +1422,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          } while (++fold_i<fold_end);
       }
       /* Otherwise, we'll be using the LCG to fold, so all blocks will (almost
-          always) be non-zero.*/
+         always) be non-zero. */
       else
          x_cm = y_cm = (1<<B)-1;
 
@@ -1444,7 +1430,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       {
          int j;
 
-         /* Switch off dual stereo to do intensity */
+         /* Switch off dual stereo to do intensity. */
          dual_stereo = 0;
          if (resynth)
             for (j=0;j<M*eBands[i]-norm_offset;j++)
@@ -1475,7 +1461,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       collapse_masks[i*C+C-1] = (unsigned char)y_cm;
       balance += pulses[i] + tell;
 
-      /* Update the folding position only as long as we have 1 bit/sample depth */
+      /* Update the folding position only as long as we have 1 bit/sample depth. */
       update_lowband = b>(N<<BITRES);
    }
    RESTORE_STACK;
