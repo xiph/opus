@@ -648,6 +648,41 @@ static int compute_qn(int N, int b, int offset, int pulse_cap, int stereo)
    return qn;
 }
 
+static unsigned quant_band_n1(int encode, celt_norm *X, celt_norm *Y, int b,
+      opus_int32 *remaining_bits, ec_ctx *ec, celt_norm *lowband_out)
+{
+#ifdef RESYNTH
+   int resynth = 1;
+#else
+   int resynth = !encode;
+#endif
+   int c;
+   int stereo;
+   celt_norm *x = X;
+   stereo = Y != NULL;
+   c=0; do {
+      int sign=0;
+      if (*remaining_bits>=1<<BITRES)
+      {
+         if (encode)
+         {
+            sign = x[0]<0;
+            ec_enc_bits(ec, sign, 1);
+         } else {
+            sign = ec_dec_bits(ec, 1);
+         }
+         *remaining_bits -= 1<<BITRES;
+         b-=1<<BITRES;
+      }
+      if (resynth)
+         x[0] = sign ? -NORM_SCALING : NORM_SCALING;
+      x = Y;
+   } while (++c<1+stereo);
+   if (lowband_out)
+      lowband_out[0] = SHR16(X[0],4);
+   return 1;
+}
+
 /* This function is responsible for encoding and decoding a band for both
    the mono and stereo case. Even in the mono case, it can split the band
    in two and transmit the energy difference with the two half-bands. It
@@ -688,29 +723,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
    /* Special case for one sample */
    if (N==1)
    {
-      int c;
-      celt_norm *x = X;
-      c=0; do {
-         int sign=0;
-         if (*remaining_bits>=1<<BITRES)
-         {
-            if (encode)
-            {
-               sign = x[0]<0;
-               ec_enc_bits(ec, sign, 1);
-            } else {
-               sign = ec_dec_bits(ec, 1);
-            }
-            *remaining_bits -= 1<<BITRES;
-            b-=1<<BITRES;
-         }
-         if (resynth)
-            x[0] = sign ? -NORM_SCALING : NORM_SCALING;
-         x = Y;
-      } while (++c<1+stereo);
-      if (lowband_out)
-         lowband_out[0] = SHR16(X[0],4);
-      return 1;
+      return quant_band_n1(encode, X, Y, b, remaining_bits, ec, lowband_out);
    }
 
    if (!stereo && level == 0)
