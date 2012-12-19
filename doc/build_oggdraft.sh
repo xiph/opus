@@ -38,7 +38,15 @@ set -e
 #Set the CWD to the location of this script
 [ -n "${0%/*}" ] && cd "${0%/*}"
 
+if test -z `which xml2rfc 2> /dev/null`; then
+  echo "Error: couldn't find xml2rfc."
+  echo
+  echo "Please install xml2rfc version 2 or later."
+  echo "E.g. 'pip install xml2rfc' or follow the instructions"
+  echo "on http://pypi.python.org/pypi/xml2rfc/ or tools.ietf.org."
+  exit 1
+fi
+
 echo running xml2rfc
-xml2rfc draft-ietf-codec-oggopus.xml draft-ietf-codec-oggopus.html &
-xml2rfc draft-ietf-codec-oggopus.xml
-wait
+# version 2 syntax
+xml2rfc draft-ietf-codec-oggopus.xml --text --html
