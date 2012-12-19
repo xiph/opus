@@ -648,6 +648,175 @@ static int compute_qn(int N, int b, int offset, int pulse_cap, int stereo)
    return qn;
 }
 
+struct split_ctx {
+   int inv;
+   int imid;
+   int iside;
+   int delta;
+   int itheta;
+   int qalloc;
+};
+
+static void compute_theta(struct split_ctx *ctx, int encode, const CELTMode *m,
+      int i, celt_norm *X, celt_norm *Y, int N, int *b, int B, int B0,
+      int intensity, ec_ctx *ec, opus_int32 *remaining_bits, int LM,
+      const celt_ener *bandE, int stereo, int *fill)
+{
+   int qn;
+   int itheta=0;
+   int delta;
+   int imid, iside;
+   int qalloc;
+   int pulse_cap;
+   int offset;
+   opus_int32 tell;
+   int inv=0;
+
+   /* Decide on the resolution to give to the split parameter theta */
+   pulse_cap = m->logN[i]+LM*(1<<BITRES);
+   offset = (pulse_cap>>1) - (stereo&&N==2 ? QTHETA_OFFSET_TWOPHASE : QTHETA_OFFSET);
+   qn = compute_qn(N, *b, offset, pulse_cap, stereo);
+   if (stereo && i>=intensity)
+      qn = 1;
+   if (encode)
+   {
+      /* theta is the atan() of the ratio between the (normalized)
+         side and mid. With just that parameter, we can re-scale both
+         mid and side because we know that 1) they have unit norm and
+         2) they are orthogonal. */
+      itheta = stereo_itheta(X, Y, stereo, N);
+   }
+   tell = ec_tell_frac(ec);
+   if (qn!=1)
+   {
+      if (encode)
+         itheta = (itheta*qn+8192)>>14;
+
+      /* Entropy coding of the angle. We use a uniform pdf for the
+         time split, a step for stereo, and a triangular one for the rest. */
+      if (stereo && N>2)
+      {
+         int p0 = 3;
+         int x = itheta;
+         int x0 = qn/2;
+         int ft = p0*(x0+1) + x0;
+         /* Use a probability of p0 up to itheta=8192 and then use 1 after */
+         if (encode)
+         {
+            ec_encode(ec,x<=x0?p0*x:(x-1-x0)+(x0+1)*p0,x<=x0?p0*(x+1):(x-x0)+(x0+1)*p0,ft);
+         } else {
+            int fs;
+            fs=ec_decode(ec,ft);
+            if (fs<(x0+1)*p0)
+               x=fs/p0;
+            else
+               x=x0+1+(fs-(x0+1)*p0);
+            ec_dec_update(ec,x<=x0?p0*x:(x-1-x0)+(x0+1)*p0,x<=x0?p0*(x+1):(x-x0)+(x0+1)*p0,ft);
+            itheta = x;
+         }
+      } else if (B0>1 || stereo) {
+         /* Uniform pdf */
+         if (encode)
+            ec_enc_uint(ec, itheta, qn+1);
+         else
+            itheta = ec_dec_uint(ec, qn+1);
+      } else {
+         int fs=1, ft;
+         ft = ((qn>>1)+1)*((qn>>1)+1);
+         if (encode)
+         {
+            int fl;
+
+            fs = itheta <= (qn>>1) ? itheta + 1 : qn + 1 - itheta;
+            fl = itheta <= (qn>>1) ? itheta*(itheta + 1)>>1 :
+             ft - ((qn + 1 - itheta)*(qn + 2 - itheta)>>1);
+
+            ec_encode(ec, fl, fl+fs, ft);
+         } else {
+            /* Triangular pdf */
+            int fl=0;
+            int fm;
+            fm = ec_decode(ec, ft);
+
+            if (fm < ((qn>>1)*((qn>>1) + 1)>>1))
+            {
+               itheta = (isqrt32(8*(opus_uint32)fm + 1) - 1)>>1;
+               fs = itheta + 1;
+               fl = itheta*(itheta + 1)>>1;
+            }
+            else
+            {
+               itheta = (2*(qn + 1)
+                - isqrt32(8*(opus_uint32)(ft - fm - 1) + 1))>>1;
+               fs = qn + 1 - itheta;
+               fl = ft - ((qn + 1 - itheta)*(qn + 2 - itheta)>>1);
+            }
+
+            ec_dec_update(ec, fl, fl+fs, ft);
+         }
+      }
+      itheta = (opus_int32)itheta*16384/qn;
+      if (encode && stereo)
+      {
+         if (itheta==0)
+            intensity_stereo(m, X, Y, bandE, i, N);
+         else
+            stereo_split(X, Y, N);
+      }
+      /* NOTE: Renormalising X and Y *may* help fixed-point a bit at very high rate.
+               Let's do that at higher complexity */
+   } else if (stereo) {
+      if (encode)
+      {
+         inv = itheta > 8192;
+         if (inv)
+         {
+            int j;
+            for (j=0;j<N;j++)
+               Y[j] = -Y[j];
+         }
+         intensity_stereo(m, X, Y, bandE, i, N);
+      }
+      if (*b>2<<BITRES && *remaining_bits > 2<<BITRES)
+      {
+         if (encode)
+            ec_enc_bit_logp(ec, inv, 2);
+         else
+            inv = ec_dec_bit_logp(ec, 2);
+      } else
+         inv = 0;
+      itheta = 0;
+   }
+   qalloc = ec_tell_frac(ec) - tell;
+   *b -= qalloc;
+
+   if (itheta == 0)
+   {
+      imid = 32767;
+      iside = 0;
+      *fill &= (1<<B)-1;
+      delta = -16384;
+   } else if (itheta == 16384)
+   {
+      imid = 0;
+      iside = 32767;
+      *fill &= ((1<<B)-1)<<B;
+      delta = 16384;
+   } else {
+      imid = bitexact_cos((opus_int16)itheta);
+      iside = bitexact_cos((opus_int16)(16384-itheta));
+      /* This is the mid vs side allocation that minimizes squared error
+         in that band. */
+      delta = FRAC_MUL16((N-1)<<7,bitexact_log2tan(iside,imid));
+   }
+
+   ctx->inv = inv;
+   ctx->imid = imid;
+   ctx->iside = iside;
+   ctx->delta = delta;
+   ctx->itheta = itheta;
+   ctx->qalloc = qalloc;
+}
 static unsigned quant_band_n1(int encode, celt_norm *X, celt_norm *Y, int b,
       opus_int32 *remaining_bits, ec_ctx *ec, celt_norm *lowband_out)
 {
@@ -796,154 +965,22 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 
    if (split)
    {
-      int qn;
-      int itheta=0;
       int mbits, sbits, delta;
+      int itheta;
       int qalloc;
-      int pulse_cap;
-      int offset;
+      struct split_ctx ctx;
       int orig_fill;
-      opus_int32 tell;
-
-      /* Decide on the resolution to give to the split parameter theta */
-      pulse_cap = m->logN[i]+LM*(1<<BITRES);
-      offset = (pulse_cap>>1) - (stereo&&N==2 ? QTHETA_OFFSET_TWOPHASE : QTHETA_OFFSET);
-      qn = compute_qn(N, b, offset, pulse_cap, stereo);
-      if (stereo && i>=intensity)
-         qn = 1;
-      if (encode)
-      {
-         /* theta is the atan() of the ratio between the (normalized)
-            side and mid. With just that parameter, we can re-scale both
-            mid and side because we know that 1) they have unit norm and
-            2) they are orthogonal. */
-         itheta = stereo_itheta(X, Y, stereo, N);
-      }
-      tell = ec_tell_frac(ec);
-      if (qn!=1)
-      {
-         if (encode)
-            itheta = (itheta*qn+8192)>>14;
-
-         /* Entropy coding of the angle. We use a uniform pdf for the
-            time split, a step for stereo, and a triangular one for the rest. */
-         if (stereo && N>2)
-         {
-            int p0 = 3;
-            int x = itheta;
-            int x0 = qn/2;
-            int ft = p0*(x0+1) + x0;
-            /* Use a probability of p0 up to itheta=8192 and then use 1 after */
-            if (encode)
-            {
-               ec_encode(ec,x<=x0?p0*x:(x-1-x0)+(x0+1)*p0,x<=x0?p0*(x+1):(x-x0)+(x0+1)*p0,ft);
-            } else {
-               int fs;
-               fs=ec_decode(ec,ft);
-               if (fs<(x0+1)*p0)
-                  x=fs/p0;
-               else
-                  x=x0+1+(fs-(x0+1)*p0);
-               ec_dec_update(ec,x<=x0?p0*x:(x-1-x0)+(x0+1)*p0,x<=x0?p0*(x+1):(x-x0)+(x0+1)*p0,ft);
-               itheta = x;
-            }
-         } else if (B0>1 || stereo) {
-            /* Uniform pdf */
-            if (encode)
-               ec_enc_uint(ec, itheta, qn+1);
-            else
-               itheta = ec_dec_uint(ec, qn+1);
-         } else {
-            int fs=1, ft;
-            ft = ((qn>>1)+1)*((qn>>1)+1);
-            if (encode)
-            {
-               int fl;
-
-               fs = itheta <= (qn>>1) ? itheta + 1 : qn + 1 - itheta;
-               fl = itheta <= (qn>>1) ? itheta*(itheta + 1)>>1 :
-                ft - ((qn + 1 - itheta)*(qn + 2 - itheta)>>1);
-
-               ec_encode(ec, fl, fl+fs, ft);
-            } else {
-               /* Triangular pdf */
-               int fl=0;
-               int fm;
-               fm = ec_decode(ec, ft);
-
-               if (fm < ((qn>>1)*((qn>>1) + 1)>>1))
-               {
-                  itheta = (isqrt32(8*(opus_uint32)fm + 1) - 1)>>1;
-                  fs = itheta + 1;
-                  fl = itheta*(itheta + 1)>>1;
-               }
-               else
-               {
-                  itheta = (2*(qn + 1)
-                   - isqrt32(8*(opus_uint32)(ft - fm - 1) + 1))>>1;
-                  fs = qn + 1 - itheta;
-                  fl = ft - ((qn + 1 - itheta)*(qn + 2 - itheta)>>1);
-               }
-
-               ec_dec_update(ec, fl, fl+fs, ft);
-            }
-         }
-         itheta = (opus_int32)itheta*16384/qn;
-         if (encode && stereo)
-         {
-            if (itheta==0)
-               intensity_stereo(m, X, Y, bandE, i, N);
-            else
-               stereo_split(X, Y, N);
-         }
-         /* NOTE: Renormalising X and Y *may* help fixed-point a bit at very high rate.
-                  Let's do that at higher complexity */
-      } else if (stereo) {
-         if (encode)
-         {
-            inv = itheta > 8192;
-            if (inv)
-            {
-               int j;
-               for (j=0;j<N;j++)
-                  Y[j] = -Y[j];
-            }
-            intensity_stereo(m, X, Y, bandE, i, N);
-         }
-         if (b>2<<BITRES && *remaining_bits > 2<<BITRES)
-         {
-            if (encode)
-               ec_enc_bit_logp(ec, inv, 2);
-            else
-               inv = ec_dec_bit_logp(ec, 2);
-         } else
-            inv = 0;
-         itheta = 0;
-      }
-      qalloc = ec_tell_frac(ec) - tell;
-      b -= qalloc;
 
       orig_fill = fill;
-      if (itheta == 0)
-      {
-         imid = 32767;
-         iside = 0;
-         fill &= (1<<B)-1;
-         delta = -16384;
-      } else if (itheta == 16384)
-      {
-         imid = 0;
-         iside = 32767;
-         fill &= ((1<<B)-1)<<B;
-         delta = 16384;
-      } else {
-         imid = bitexact_cos((opus_int16)itheta);
-         iside = bitexact_cos((opus_int16)(16384-itheta));
-         /* This is the mid vs side allocation that minimizes squared error
-            in that band. */
-         delta = FRAC_MUL16((N-1)<<7,bitexact_log2tan(iside,imid));
-      }
 
+      compute_theta(&ctx, encode, m, i, X, Y, N, &b, B, B0, intensity, ec,
+            remaining_bits, LM, bandE, stereo, &fill);
+      inv = ctx.inv;
+      imid = ctx.imid;
+      iside = ctx.iside;
+      delta = ctx.delta;
+      itheta = ctx.itheta;
+      qalloc = ctx.qalloc;
 #ifdef FIXED_POINT
       mid = imid;
       side = iside;
