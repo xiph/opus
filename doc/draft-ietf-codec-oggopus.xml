@@ -423,7 +423,8 @@ If the point 80&nbsp;ms prior to the seek target comes before the initial PCM
 
 <section anchor="headers" title="Header Packets">
 <t>
-An Opus stream contains exactly two mandatory header packets.
+An Opus stream contains exactly two mandatory header packets:
+ an identification header and a comment header.
 </t>
 
 <section anchor="id_header" title="Identification Header">
@@ -506,8 +507,9 @@ See <xref target="channel_mapping"/> for details.
 This is the number of samples (at 48&nbsp;kHz) to discard from the decoder
  output when starting playback, and also the number to subtract from a page's
  granule position to calculate its PCM sample position.
-When constructing cropped Ogg Opus streams, a pre-skip of at least
- 3,840&nbsp;samples (80&nbsp;ms) is RECOMMENDED to ensure complete convergence.
+When cropping the beginning of existing Ogg Opus streams, a pre-skip of at
+ least 3,840&nbsp;samples (80&nbsp;ms) is RECOMMENDED to ensure complete
+ convergence in the decoder.
 <vspace blankLines="1"/>
 </t>
 <t><spanx style="strong">Input Sample Rate</spanx> (32 bits, unsigned, little
@@ -729,10 +731,32 @@ When the 'channel mapping family' octet has this value, the channel mapping
 </t>
 <t>Family&nbsp;1 (Vorbis channel order):
 <vspace blankLines="1"/>
-Allowed numbers of channels: 1...8.<vspace/>
-Channel meanings depend on the number of channels.
-See <xref target="vorbis-mapping"/> for the assignments from output channel
- number to specific speaker locations.
+Allowed numbers of channels: 1...8.
+<vspace/>
+Each channel is assigned to a speaker location in a conventional surround
+ configuration.
+Specific locations depend on the number of channels, and are given below
+ in order of the corresponding channel indicies.
+<list style="symbols">
+  <t>1 channel: monophonic (mono).</t>
+  <t>2 channels: stereo (left, right).</t>
+  <t>3 channels: linear surround (left, center, right)</t>
+  <t>4 channels: quadraphonic (front&nbsp;left, front&nbsp;right, rear&nbsp;left, rear&nbsp;right).</t>
+  <t>5 channels: 5.0 surround (front&nbsp;left, center, front&nbsp;right, rear&nbsp;left, rear&nbsp;right).</t>
+  <t>6 channels: 5.1 surround (front&nbsp;left, center, front&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE).</t>
+  <t>7 channels: 6.1 surround (front&nbsp;left, center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;center, LFE).</t>
+  <t>8 channels: 7.1 surround (front&nbsp;left, center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE)</t>
+</list>
+This set of surround configurations and speaker location orderings is the same
+ as the one used by the Vorbis codec. <xref target="vorbis-mapping"/>
+The ordering is different from the one used by the
+ WAVE <xref target="wave-multichannel"/> and
+ FLAC <xref target="flac"/> formats,
+ although the configurations match, so correct ordering requires permutation
+ of the output channels when encoding from or decoding to those formats.
+Implementations SHOULD identify 'side' or 'rear' speaker locations with
+ 'surround' as appropriate when interfacing with audio formats or systems
+ which prefer that terminology.
 <vspace blankLines="1"/>
 </t>
 <t>Family&nbsp;255 (no defined channel meaning):
@@ -829,7 +853,7 @@ It MUST NOT indicate that the vendor string is longer than the rest of the
 <vspace blankLines="1"/>
 This is a simple human-readable tag for vendor information, encoded as a UTF-8
  string&nbsp;<xref target="RFC3629"/>.
-No terminating NUL octet is required.
+No terminating null octet is required.
 <vspace blankLines="1"/>
 This tag is intended to identify the codec encoder and encapsulation
  implementations, for tracing differences in technical behavior.
@@ -1094,6 +1118,15 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml"?-->
  &rfc4732;
 
+<reference anchor="flac"
+ target="https://xiph.org/flac/format.html">
+  <front>
+    <title>FLAC - Free Lossless Audio Codec Format Description</title>
+    <author initials="J." surname="Coalson" fullname="Josh Coalson"/>
+    <date month="January" year="2008"/>
+  </front>
+</reference>
+
 <reference anchor="replay-gain"
  target="http://wiki.xiph.org/VorbisComment#Replay_Gain">
 <front>
@@ -1124,6 +1157,15 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  fullname="Christopher &quot;Monty&quot; Montgomery"/>
 <date month="November" year="2008"/>
 </front>
+</reference>
+
+<reference anchor="wave-multichannel"
+ target="http://msdn.microsoft.com/en-us/windows/hardware/gg463006.aspx">
+  <front>
+    <title>Multiple Channel Audio Data and WAVE Files</title>
+    <author fullname="Microsoft Corporation"/>
+    <date month="March" year="2007"/>
+  </front>
 </reference>
 
 </references>
