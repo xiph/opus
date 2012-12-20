@@ -665,11 +665,36 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
    return best_state;
 }
 
+void downmix_float(const void *_x, float *sub, int subframe, int i, int C)
+{
+   const float *x;
+   int c, j;
+   x = (const float *)_x;
+   for (j=0;j<subframe;j++)
+      sub[j] = x[(subframe*i+j)*C];
+   for (c=1;c<C;c++)
+      for (j=0;j<subframe;j++)
+         sub[j] += x[(subframe*i+j)*C+c];
+}
+
+void downmix_int(const void *_x, float *sub, int subframe, int i, int C)
+{
+   const opus_int16 *x;
+   int c, j;
+   x = (const opus_int16 *)_x;
+   for (j=0;j<subframe;j++)
+      sub[j] = x[(subframe*i+j)*C];
+   for (c=1;c<C;c++)
+      for (j=0;j<subframe;j++)
+         sub[j] += x[(subframe*i+j)*C+c];
+}
+
 int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
-                int bitrate, opus_val16 tonality, opus_val32 *mem, int buffering)
+                int bitrate, opus_val16 tonality, opus_val32 *mem, int buffering,
+                downmix_func downmix)
 {
    int N;
-   int i, c;
+   int i;
    float e[MAX_DYNAMIC_FRAMESIZE+4];
    float e_1[MAX_DYNAMIC_FRAMESIZE+3];
    float memx;
@@ -700,8 +725,6 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
    }
    N=IMIN(len/subframe, MAX_DYNAMIC_FRAMESIZE);
    memx = x[0];
-   for (c=1;c<C;c++)
-      memx += x[c];
    for (i=0;i<N;i++)
    {
       float tmp;
@@ -709,12 +732,9 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
       int j;
       tmp=EPSILON;
 
-      for (j=0;j<subframe;j++)
-         sub[j] = x[(subframe*i+j)*C];
-      for (c=1;c<C;c++)
-         for (j=0;j<subframe;j++)
-            sub[j] += x[(subframe*i+j)*C+c];
-
+      downmix(x, sub, subframe, i, C);
+      if (i==0)
+         memx = sub[0];
       for (j=0;j<subframe;j++)
       {
          tmpx = sub[j];
@@ -806,7 +826,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        int LM = 3;
 #ifndef FIXED_POINT
        LM = optimize_framesize(pcm, frame_size, st->channels, st->Fs, st->bitrate_bps,
-             st->analysis.prev_tonality, st->subframe_mem, delay_compensation);
+             st->analysis.prev_tonality, st->subframe_mem, delay_compensation, downmix_float);
 #endif
        while ((st->Fs/400<<LM)>frame_size)
           LM--;
@@ -1167,6 +1187,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        RESTORE_STACK;
        return ret;
     }
+#ifndef FIXED_POINT
     /* Perform analysis for 40-60 ms frames */
     if (perform_analysis && frame_size > st->Fs/50)
     {
@@ -1175,7 +1196,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+i*(st->Fs/100)*st->channels, 480, st->channels, lsb_depth);
        st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
     }
-
+#endif
     curr_bandwidth = st->bandwidth;
 
     /* Chooses the appropriate mode for speech
