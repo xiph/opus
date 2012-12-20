@@ -189,6 +189,9 @@ static int opus_multistream_encode_native
     int frame_size,
     unsigned char *data,
     opus_int32 max_data_bytes
+#ifndef FIXED_POINT
+    , downmix_func downmix
+#endif
 )
 {
    opus_int32 Fs;
@@ -225,7 +228,7 @@ static int opus_multistream_encode_native
       delay_compensation -= Fs/400;
 #ifndef FIXED_POINT
       LM = optimize_framesize(pcm, frame_size, channels, Fs, st->bitrate_bps,
-            0.f, st->subframe_mem, delay_compensation);
+            0.f, st->subframe_mem, delay_compensation, downmix);
 #endif
       while ((Fs/400<<LM)>frame_size)
          LM--;
@@ -414,7 +417,7 @@ int opus_multistream_encode_float
 )
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_float,
-      pcm, frame_size, data, max_data_bytes);
+      pcm, frame_size, data, max_data_bytes, downmix_float);
 }
 
 int opus_multistream_encode(
@@ -426,7 +429,7 @@ int opus_multistream_encode(
 )
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_short,
-      pcm, frame_size, data, max_data_bytes);
+      pcm, frame_size, data, max_data_bytes, downmix_int);
 }
 #endif
 
