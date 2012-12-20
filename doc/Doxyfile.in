@@ -37,7 +37,7 @@ PROJECT_NUMBER         = @VERSION@
 # for a project that appears at the top of each page and should give viewer
 # a quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "IETF low-delay audio codec: API and operations manual"
+PROJECT_BRIEF          = "Opus audio codec (RFC 6716): API and operations manual"
 
 # With the PROJECT_LOGO tag one can specify an logo or icon that is
 # included in the documentation. The maximum height of the logo should not
