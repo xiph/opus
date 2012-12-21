@@ -69,6 +69,7 @@ struct OpusEncoder {
     int          vbr_constraint;
     opus_int32   bitrate_bps;
     opus_int32   user_bitrate_bps;
+    int          lsb_depth;
     int          encoder_buffer;
 
 #define OPUS_ENCODER_RESET_START stream_channels
@@ -210,6 +211,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->user_forced_mode = OPUS_AUTO;
     st->voice_ratio = -1;
     st->encoder_buffer = st->Fs/100;
+    st->lsb_depth = 24;
 
     /* Delay compensation of 4 ms (2.5 ms for SILK's extra look-ahead 
        + 1.5 ms for SILK resamplers and stereo prediction) */
@@ -859,6 +861,13 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
         st->bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
     if (st->Fs <= 8000 && st->bandwidth > OPUS_BANDWIDTH_NARROWBAND)
         st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
+#ifndef FIXED_POINT
+    if (analysis_info.valid)
+    {
+       st->bandwidth = IMIN(st->bandwidth, analysis_info.opus_bandwidth);
+    }
+#endif
+    celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(st->lsb_depth));
 
     /* If max_data_bytes represents less than 8 kb/s, switch to CELT-only mode */
     if (max_data_bytes < (frame_rate > 50 ? 12000 : 8000)*frame_size / (st->Fs * 8))
@@ -976,7 +985,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
        int nb_analysis_frames;
        nb_analysis_frames = frame_size/(st->Fs/100);
        for (i=0;i<nb_analysis_frames;i++)
-          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm_buf+i*(st->Fs/100)*st->channels, st->channels);
+          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm_buf+i*(st->Fs/100)*st->channels, st->channels, st->lsb_depth);
        if (st->signal_type == OPUS_AUTO)
           st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
     } else {
@@ -1700,13 +1709,15 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_LSB_DEPTH_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            ret = celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(value));
+            if (value<8 || value>24)
+               goto bad_arg;
+            st->lsb_depth=value;
         }
         break;
         case OPUS_GET_LSB_DEPTH_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
-            celt_encoder_ctl(celt_enc, OPUS_GET_LSB_DEPTH(value));
+            *value = st->lsb_depth;
         }
         break;
         case OPUS_RESET_STATE:
