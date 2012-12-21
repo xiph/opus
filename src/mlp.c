@@ -36,7 +36,6 @@
 #define MAX_NEURONS 100
 
 #ifdef FIXED_POINT
-extern const opus_val16 tansig_table[501];
 static inline opus_val16 tansig_approx(opus_val32 _x) /* Q19 */
 {
 	int i;
@@ -63,11 +62,11 @@ static inline opus_val16 tansig_approx(opus_val32 _x) /* Q19 */
 }
 #else
 /*extern const float tansig_table[501];*/
-static inline double tansig_approx(double x)
+static inline opus_val16 tansig_approx(opus_val16 x)
 {
 	int i;
-	double y, dy;
-	double sign=1;
+	opus_val16 y, dy;
+	opus_val16 sign=1;
     if (x>=8)
         return 1;
     if (x<=-8)
@@ -77,8 +76,8 @@ static inline double tansig_approx(double x)
 	   x=-x;
 	   sign=-1;
 	}
-	i = floor(.5+25*x);
-	x -= .04*i;
+	i = (int)floor(.5f+25*x);
+	x -= .04f*i;
 	y = tansig_table[i];
 	dy = 1-y*y;
 	y = y + x*dy*(1 - y*x);

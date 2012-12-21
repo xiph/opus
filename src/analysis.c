@@ -45,22 +45,22 @@ extern const MLP net;
 #endif
 
 static const float dct_table[128] = {
-        0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000,
-        0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000,
-        0.351851, 0.338330, 0.311806, 0.273300, 0.224292, 0.166664, 0.102631, 0.034654,
-        -0.034654, -0.102631, -0.166664, -0.224292, -0.273300, -0.311806, -0.338330, -0.351851,
-        0.346760, 0.293969, 0.196424, 0.068975, -0.068975, -0.196424, -0.293969, -0.346760,
-        -0.346760, -0.293969, -0.196424, -0.068975, 0.068975, 0.196424, 0.293969, 0.346760,
-        0.338330, 0.224292, 0.034654, -0.166664, -0.311806, -0.351851, -0.273300, -0.102631,
-        0.102631, 0.273300, 0.351851, 0.311806, 0.166664, -0.034654, -0.224292, -0.338330,
-        0.326641, 0.135299, -0.135299, -0.326641, -0.326641, -0.135299, 0.135299, 0.326641,
-        0.326641, 0.135299, -0.135299, -0.326641, -0.326641, -0.135299, 0.135299, 0.326641,
-        0.311806, 0.034654, -0.273300, -0.338330, -0.102631, 0.224292, 0.351851, 0.166664,
-        -0.166664, -0.351851, -0.224292, 0.102631, 0.338330, 0.273300, -0.034654, -0.311806,
-        0.293969, -0.068975, -0.346760, -0.196424, 0.196424, 0.346760, 0.068975, -0.293969,
-        -0.293969, 0.068975, 0.346760, 0.196424, -0.196424, -0.346760, -0.068975, 0.293969,
-        0.273300, -0.166664, -0.338330, 0.034654, 0.351851, 0.102631, -0.311806, -0.224292,
-        0.224292, 0.311806, -0.102631, -0.351851, -0.034654, 0.338330, 0.166664, -0.273300,
+        0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f,
+        0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f,
+        0.351851f, 0.338330f, 0.311806f, 0.273300f, 0.224292f, 0.166664f, 0.102631f, 0.034654f,
+       -0.034654f,-0.102631f,-0.166664f,-0.224292f,-0.273300f,-0.311806f,-0.338330f,-0.351851f,
+        0.346760f, 0.293969f, 0.196424f, 0.068975f,-0.068975f,-0.196424f,-0.293969f,-0.346760f,
+       -0.346760f,-0.293969f,-0.196424f,-0.068975f, 0.068975f, 0.196424f, 0.293969f, 0.346760f,
+        0.338330f, 0.224292f, 0.034654f,-0.166664f,-0.311806f,-0.351851f,-0.273300f,-0.102631f,
+        0.102631f, 0.273300f, 0.351851f, 0.311806f, 0.166664f,-0.034654f,-0.224292f,-0.338330f,
+        0.326641f, 0.135299f,-0.135299f,-0.326641f,-0.326641f,-0.135299f, 0.135299f, 0.326641f,
+        0.326641f, 0.135299f,-0.135299f,-0.326641f,-0.326641f,-0.135299f, 0.135299f, 0.326641f,
+        0.311806f, 0.034654f,-0.273300f,-0.338330f,-0.102631f, 0.224292f, 0.351851f, 0.166664f,
+       -0.166664f,-0.351851f,-0.224292f, 0.102631f, 0.338330f, 0.273300f,-0.034654f,-0.311806f,
+        0.293969f,-0.068975f,-0.346760f,-0.196424f, 0.196424f, 0.346760f, 0.068975f,-0.293969f,
+       -0.293969f, 0.068975f, 0.346760f, 0.196424f,-0.196424f,-0.346760f,-0.068975f, 0.293969f,
+        0.273300f,-0.166664f,-0.338330f, 0.034654f, 0.351851f, 0.102631f,-0.311806f,-0.224292f,
+        0.224292f, 0.311806f,-0.102631f,-0.351851f,-0.034654f, 0.338330f, 0.166664f,-0.273300f,
 };
 
 static const float analysis_window[240] = {
@@ -113,14 +113,14 @@ static const int extra_bands[NB_TOT_BANDS+1] = {
 #define cA 0.43157974f
 #define cB 0.67848403f
 #define cC 0.08595542f
-#define cE (M_PI/2)
+#define cE ((float)M_PI/2)
 static inline float fast_atan2f(float y, float x) {
    float x2, y2;
    /* Should avoid underflow on the values we'll get */
-   if (ABS16(x)+ABS16(y)<1e-9)
+   if (ABS16(x)+ABS16(y)<1e-9f)
    {
-      x*=1e12;
-      y*=1e12;
+      x*=1e12f;
+      y*=1e12f;
    }
    x2 = x*x;
    y2 = y*y;
@@ -159,7 +159,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     float max_frame_tonality;
     /*float tw_sum=0;*/
     float frame_noisiness;
-    const float pi4 = M_PI*M_PI*M_PI*M_PI;
+    const float pi4 = (float)(M_PI*M_PI*M_PI*M_PI);
     float slope=0;
     float frame_stationarity;
     float relativeE;
@@ -213,26 +213,26 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        X2r = out[i].i+out[N-i].i;
        X2i = out[N-i].r-out[i].r;
 
-       angle = (.5/M_PI)*fast_atan2f(X1i, X1r);
+       angle = (float)(.5f/M_PI)*fast_atan2f(X1i, X1r);
        d_angle = angle - A[i];
        d2_angle = d_angle - dA[i];
 
-       angle2 = (.5/M_PI)*fast_atan2f(X2i, X2r);
+       angle2 = (float)(.5f/M_PI)*fast_atan2f(X2i, X2r);
        d_angle2 = angle2 - angle;
        d2_angle2 = d_angle2 - d_angle;
 
-       mod1 = d2_angle - floor(.5+d2_angle);
-       noisiness[i] = fabs(mod1);
+       mod1 = d2_angle - (float)floor(.5+d2_angle);
+       noisiness[i] = ABS16(mod1);
        mod1 *= mod1;
        mod1 *= mod1;
 
-       mod2 = d2_angle2 - floor(.5+d2_angle2);
-       noisiness[i] += fabs(mod2);
+       mod2 = d2_angle2 - (float)floor(.5+d2_angle2);
+       noisiness[i] += ABS16(mod2);
        mod2 *= mod2;
        mod2 *= mod2;
 
-       avg_mod = .25*(d2A[i]+2*mod1+mod2);
-       tonality[i] = 1./(1+40*16*pi4*avg_mod)-.015;
+       avg_mod = .25f*(d2A[i]+2.f*mod1+mod2);
+       tonality[i] = 1.f/(1.f+40.f*16.f*pi4*avg_mod)-.015f;
 
        A[i] = angle2;
        dA[i] = d_angle2;
@@ -267,30 +267,30 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
                      + out[i].i*out[i].i + out[N-i].i*out[N-i].i;
           E += binE;
           tE += binE*tonality[i];
-          nE += binE*2*(.5-noisiness[i]);
+          nE += binE*2.f*(.5f-noisiness[i]);
        }
        tonal->E[tonal->E_count][b] = E;
-       frame_noisiness += nE/(1e-15+E);
+       frame_noisiness += nE/(1e-15f+E);
 
-       frame_loudness += sqrt(E+1e-10);
-       logE[b] = log(E+1e-10);
-       tonal->lowE[b] = MIN32(logE[b], tonal->lowE[b]+.01);
-       tonal->highE[b] = MAX32(logE[b], tonal->highE[b]-.1);
-       if (tonal->highE[b] < tonal->lowE[b]+1)
+       frame_loudness += celt_sqrt(E+1e-10f);
+       logE[b] = (float)log(E+1e-10f);
+       tonal->lowE[b] = MIN32(logE[b], tonal->lowE[b]+.01f);
+       tonal->highE[b] = MAX32(logE[b], tonal->highE[b]-.1f);
+       if (tonal->highE[b] < tonal->lowE[b]+1.f)
        {
-          tonal->highE[b]+=.5;
-          tonal->lowE[b]-=.5;
+          tonal->highE[b]+=.5f;
+          tonal->lowE[b]-=.5f;
        }
        relativeE += (logE[b]-tonal->lowE[b])/(EPSILON+tonal->highE[b]-tonal->lowE[b]);
 
        L1=L2=0;
        for (i=0;i<NB_FRAMES;i++)
        {
-          L1 += sqrt(tonal->E[i][b]);
+          L1 += celt_sqrt(tonal->E[i][b]);
           L2 += tonal->E[i][b];
        }
 
-       stationarity = MIN16(0.99,L1/sqrt(EPSILON+NB_FRAMES*L2));
+       stationarity = MIN16(0.99f,L1/celt_sqrt(EPSILON+NB_FRAMES*L2));
        stationarity *= stationarity;
        stationarity *= stationarity;
        frame_stationarity += stationarity;
@@ -307,7 +307,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        if (b>=NB_TBANDS-NB_TONAL_SKIP_BANDS)
           frame_tonality -= band_tonality[b-NB_TBANDS+NB_TONAL_SKIP_BANDS];
 #endif
-       max_frame_tonality = MAX16(max_frame_tonality, (1+.03*(b-NB_TBANDS))*frame_tonality);
+       max_frame_tonality = MAX16(max_frame_tonality, (1.f+.03f*(b-NB_TBANDS))*frame_tonality);
        slope += band_tonality[b]*(b-8);
        /*printf("%f %f ", band_tonality[b], stationarity);*/
        tonal->prev_band_tonality[b] = band_tonality[b];
@@ -342,15 +342,15 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        }
        E = MAX32(E, tonal->meanE[b]);
        /* 13 dB slope for spreading function */
-       bandwidth_mask = MAX32(.05*bandwidth_mask, E);
+       bandwidth_mask = MAX32(.05f*bandwidth_mask, E);
        /* Checks if band looks like stationary noise or if it's below a (trivial) masking curve */
        if (E>.1*bandwidth_mask && E*1e10f > maxE && E > noise_floor)
           bandwidth = b;
     }
     if (tonal->count<=2)
        bandwidth = 20;
-    frame_loudness = 20*log10(frame_loudness);
-    tonal->Etracker = MAX32(tonal->Etracker-.03, frame_loudness);
+    frame_loudness = 20*(float)log10(frame_loudness);
+    tonal->Etracker = MAX32(tonal->Etracker-.03f, frame_loudness);
     tonal->lowECount *= (1-alphaE);
     if (frame_loudness < tonal->Etracker-30)
        tonal->lowECount += alphaE;
@@ -374,7 +374,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     info->activity = .5*(1+frame_noisiness-frame_stationarity);
 #endif
     frame_tonality = (max_frame_tonality/(NB_TBANDS-NB_TONAL_SKIP_BANDS));
-    frame_tonality = MAX16(frame_tonality, tonal->prev_tonality*.8);
+    frame_tonality = MAX16(frame_tonality, tonal->prev_tonality*.8f);
     tonal->prev_tonality = frame_tonality;
 
     slope /= 8*8;
@@ -385,15 +385,15 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     info->tonality = frame_tonality;
 
     for (i=0;i<4;i++)
-       features[i] = -0.12299*(BFCC[i]+tonal->mem[i+24]) + 0.49195*(tonal->mem[i]+tonal->mem[i+16]) + 0.69693*tonal->mem[i+8] - 1.4349*tonal->cmean[i];
+       features[i] = -0.12299f*(BFCC[i]+tonal->mem[i+24]) + 0.49195f*(tonal->mem[i]+tonal->mem[i+16]) + 0.69693f*tonal->mem[i+8] - 1.4349f*tonal->cmean[i];
 
     for (i=0;i<4;i++)
        tonal->cmean[i] = (1-alpha)*tonal->cmean[i] + alpha*BFCC[i];
 
     for (i=0;i<4;i++)
-        features[4+i] = 0.63246*(BFCC[i]-tonal->mem[i+24]) + 0.31623*(tonal->mem[i]-tonal->mem[i+16]);
+        features[4+i] = 0.63246f*(BFCC[i]-tonal->mem[i+24]) + 0.31623f*(tonal->mem[i]-tonal->mem[i+16]);
     for (i=0;i<3;i++)
-        features[8+i] = 0.53452*(BFCC[i]+tonal->mem[i+24]) - 0.26726*(tonal->mem[i]+tonal->mem[i+16]) -0.53452*tonal->mem[i+8];
+        features[8+i] = 0.53452f*(BFCC[i]+tonal->mem[i+24]) - 0.26726f*(tonal->mem[i]+tonal->mem[i+16]) -0.53452f*tonal->mem[i+8];
 
     if (tonal->count > 5)
     {
@@ -409,7 +409,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        tonal->mem[i] = BFCC[i];
     }
     for (i=0;i<9;i++)
-       features[11+i] = sqrt(tonal->std[i]);
+       features[11+i] = celt_sqrt(tonal->std[i]);
     features[20] = info->tonality;
     features[21] = info->activity;
     features[22] = frame_stationarity;
@@ -418,9 +418,9 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
 
 #ifndef FIXED_POINT
     mlp_process(&net, features, &frame_prob);
-    frame_prob = .5*(frame_prob+1);
+    frame_prob = .5f*(frame_prob+1);
     /* Curve fitting between the MLP probability and the actual probability */
-    frame_prob = .01 + 1.21*frame_prob*frame_prob - .23*pow(frame_prob, 10);
+    frame_prob = .01f + 1.21f*frame_prob*frame_prob - .23f*(float)pow(frame_prob, 10);
 
     /*printf("%f\n", frame_prob);*/
     {
@@ -428,20 +428,20 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        float p0, p1;
        float max_certainty;
        /* One transition every 3 minutes */
-       tau = .00005;
-       beta = .1;
-       max_certainty = .01+1.f/(20+.5*tonal->last_transition);
+       tau = .00005f;
+       beta = .1f;
+       max_certainty = .01f+1.f/(20.f+.5f*tonal->last_transition);
        p0 = (1-tonal->music_prob)*(1-tau) +    tonal->music_prob *tau;
        p1 =    tonal->music_prob *(1-tau) + (1-tonal->music_prob)*tau;
-       p0 *= pow(1-frame_prob, beta);
-       p1 *= pow(frame_prob, beta);
+       p0 *= (float)pow(1-frame_prob, beta);
+       p1 *= (float)pow(frame_prob, beta);
        tonal->music_prob = MAX16(max_certainty, MIN16(1-max_certainty, p1/(p0+p1)));
        info->music_prob = tonal->music_prob;
        /*printf("%f %f\n", frame_prob, info->music_prob);*/
     }
-    if (tonal->last_music != (tonal->music_prob>.5))
+    if (tonal->last_music != (tonal->music_prob>.5f))
        tonal->last_transition=0;
-    tonal->last_music = tonal->music_prob>.5;
+    tonal->last_music = tonal->music_prob>.5f;
 #else
     info->music_prob = 0;
 #endif

@@ -215,7 +215,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    int is_transient = 0;
    opus_int32 mask_metric = 0;
    int c;
-   int tf_max;
+   opus_val16 tf_max;
    int len2;
    /* Table of 6*64/x, trained on real data to minimize the average error */
    static const unsigned char inv_table[128] = {
@@ -318,7 +318,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       /* Costs two sqrt() to avoid overflows */
       mean = MULT16_16(celt_sqrt(mean), celt_sqrt(MULT16_16(maxE,len2>>1)));
 #else
-      mean = sqrt(mean * maxE*.5*len2);
+      mean = celt_sqrt(mean * maxE*.5*len2);
 #endif
       /* Inverse of the mean energy in Q15+6 */
       norm = SHL32(EXTEND32(len2),6+14)/ADD32(EPSILON,SHR32(mean,1));
@@ -331,7 +331,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
 #ifdef FIXED_POINT
          id = IMAX(0,IMIN(127,MULT16_32_Q15(tmp[i],norm))); /* Do not round to nearest */
 #else
-         id = IMAX(0,IMIN(127,floor(64*norm*tmp[i]))); /* Do not round to nearest */
+         id = IMAX(0,IMIN(127,(int)floor(64*norm*tmp[i]))); /* Do not round to nearest */
 #endif
          unmask += inv_table[id];
       }
@@ -349,7 +349,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    /* Arbitrary metric for VBR boost */
    tf_max = MAX16(0,celt_sqrt(27*mask_metric)-42);
    /* *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20); */
-   *tf_estimate = celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0069,14),IMIN(163,tf_max)),14)-QCONST32(0.139,28)));
+   *tf_estimate = celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0069,14),MIN16(163,tf_max)),14)-QCONST32(0.139,28)));
    /*printf("%d %f\n", tf_max, mask_metric);*/
    RESTORE_STACK;
 #ifdef FUZZING
@@ -755,14 +755,14 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
 #ifndef FIXED_POINT
    if (analysis->valid)
    {
-      trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), 2*(analysis->tonality_slope+.05)));
+      trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), 2*(analysis->tonality_slope+.05f)));
    }
 #endif
 
 #ifdef FIXED_POINT
    trim_index = PSHR32(trim, 8);
 #else
-   trim_index = floor(.5+trim);
+   trim_index = (int)floor(.5f+trim);
 #endif
    if (trim_index<0)
       trim_index = 0;
@@ -807,7 +807,7 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
          > MULT16_32_Q15(m->eBands[13]<<(LM+1), sumLR);
 }
 
-static int dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
+static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
       int effectiveBytes, opus_int32 *tot_boost_)
@@ -894,13 +894,13 @@ static int dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandL
          width = C*(eBands[i+1]-eBands[i])<<LM;
          if (width<6)
          {
-            boost = SHR32(EXTEND32(follower[i]),DB_SHIFT);
+            boost = (int)SHR32(EXTEND32(follower[i]),DB_SHIFT);
             boost_bits = boost*width<<BITRES;
          } else if (width > 48) {
-            boost = SHR32(EXTEND32(follower[i])*8,DB_SHIFT);
+            boost = (int)SHR32(EXTEND32(follower[i])*8,DB_SHIFT);
             boost_bits = (boost*width<<BITRES)/8;
          } else {
-            boost = SHR32(EXTEND32(follower[i])*width/6,DB_SHIFT);
+            boost = (int)SHR32(EXTEND32(follower[i])*width/6,DB_SHIFT);
             boost_bits = boost*6<<BITRES;
          }
          /* For CBR and non-transient CVBR frames, limit dynalloc to 1/4 of the bits */
@@ -1501,7 +1501,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       /* effectiveRate in kb/s */
       effectiveRate = 2*effectiveRate/5;
 
-      st->intensity = hysteresis_decision(effectiveRate, intensity_thresholds, intensity_histeresis, 21, st->intensity);
+      st->intensity = hysteresis_decision((opus_val16)effectiveRate, intensity_thresholds, intensity_histeresis, 21, st->intensity);
       st->intensity = IMIN(st->end,IMAX(st->start, st->intensity));
    }
 
@@ -1542,7 +1542,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      /*printf("%f %f %f %f %d %d ", st->analysis.activity, st->analysis.tonality, tf_estimate, st->stereo_saving, tot_boost, coded_bands);*/
 #ifndef FIXED_POINT
      if (st->analysis.valid && st->analysis.activity<.4)
-        target -= (coded_bins<<BITRES)*1*(.4-st->analysis.activity);
+        target -= (opus_int32)((coded_bins<<BITRES)*(.4f-st->analysis.activity));
 #endif
      /* Stereo savings */
      if (C==2)
@@ -1555,25 +1555,25 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         /* Maximum fraction of the bits we can save if the signal is mono. */
         max_frac = DIV32_16(MULT16_16(QCONST16(0.8f, 15), coded_stereo_dof), coded_bins);
         /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
-        target -= MIN32(MULT16_32_Q15(max_frac,target),
+        target -= (opus_int32)MIN32(MULT16_32_Q15(max_frac,target),
                         SHR16(MULT16_16(st->stereo_saving-QCONST16(0.1f,8),(coded_stereo_dof<<BITRES)),8));
      }
      /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
      target += tot_boost-(16<<LM);
      /* Apply transient boost, compensating for average boost. */
-     target += SHL32(MULT16_32_Q15(tf_estimate-QCONST16(0.04f,14), target),1);
+     target += (opus_int32)SHL32(MULT16_32_Q15(tf_estimate-QCONST16(0.04f,14), target),1);
 
 #ifndef FIXED_POINT
      /* Apply tonality boost */
      if (st->analysis.valid) {
-        int tonal_target;
+        opus_int32 tonal_target;
         float tonal;
 
         /* Tonality boost (compensating for the average). */
-        tonal = MAX16(0,st->analysis.tonality-.15)-0.09;
-        tonal_target = target + (coded_bins<<BITRES)*1.2f*tonal;
+        tonal = MAX16(0.f,st->analysis.tonality-.15f)-0.09f;
+        tonal_target = target + (opus_int32)((coded_bins<<BITRES)*1.2f*tonal);
         if (pitch_change)
-           tonal_target +=  (coded_bins<<BITRES)*.8;
+           tonal_target +=  (opus_int32)((coded_bins<<BITRES)*.8f);
         /*printf("%f %f ", st->analysis.tonality, tonal);*/
         target = tonal_target;
      }
@@ -1584,7 +1584,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         int bins;
         bins = eBands[nbEBands-2]<<LM;
         /*floor_depth = SHR32(MULT16_16((C*bins<<BITRES),celt_log2(SHL32(MAX16(1,sample_max),13))), DB_SHIFT);*/
-        floor_depth = SHR32(MULT16_16((C*bins<<BITRES),maxDepth), DB_SHIFT);
+        floor_depth = (opus_int32)SHR32(MULT16_16((C*bins<<BITRES),maxDepth), DB_SHIFT);
         floor_depth = IMAX(floor_depth, target>>2);
         target = IMIN(target, floor_depth);
         /*printf("%f %d\n", maxDepth, floor_depth);*/
@@ -1600,7 +1600,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 #endif
         if (st->constrained_vbr)
            rate_factor = MIN16(rate_factor, QCONST16(0.67f, 15));
-        target = base_target + MULT16_32_Q15(rate_factor, target-base_target);
+        target = base_target + (opus_int32)MULT16_32_Q15(rate_factor, target-base_target);
 
      }
      /* Don't allow more than doubling the rate */
