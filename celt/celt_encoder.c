@@ -1103,6 +1103,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    int overlap;
    const opus_int16 *eBands;
    int secondMdct;
+   int signalBandwidth;
    ALLOC_STACK;
 
    mode = st->mode;
@@ -1678,9 +1679,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    bits = (((opus_int32)nbCompressedBytes*8)<<BITRES) - ec_tell_frac(enc) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=((LM+2)<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
+   signalBandwidth = st->end-1;
+#ifndef FIXED_POINT
+   if (st->analysis.valid)
+      signalBandwidth = st->analysis.bandwidth;
+#endif
    codedBands = compute_allocation(mode, st->start, st->end, offsets, cap,
          alloc_trim, &st->intensity, &dual_stereo, bits, &balance, pulses,
-         fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands);
+         fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands, signalBandwidth);
    st->lastCodedBands = codedBands;
 
    quant_fine_energy(mode, st->start, st->end, oldBandE, error, fine_quant, enc, C);

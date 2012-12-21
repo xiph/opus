@@ -248,7 +248,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int skip_start,
       const int *bits1, const int *bits2, const int *thresh, const int *cap, opus_int32 total, opus_int32 *_balance,
       int skip_rsv, int *intensity, int intensity_rsv, int *dual_stereo, int dual_stereo_rsv, int *bits,
-      int *ebits, int *fine_priority, int C, int LM, ec_ctx *ec, int encode, int prev)
+      int *ebits, int *fine_priority, int C, int LM, ec_ctx *ec, int encode, int prev, int signalBandwidth)
 {
    opus_int32 psum;
    int lo, hi;
@@ -353,7 +353,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 #ifdef FUZZING
             if ((rand()&0x1) == 0)
 #else
-            if (codedBands<=start+2 || band_bits > ((j<prev?7:9)*band_width<<LM<<BITRES)>>4)
+            if (codedBands<=start+2 || (band_bits > ((j<prev?7:9)*band_width<<LM<<BITRES)>>4 && j<=signalBandwidth))
 #endif
             {
                ec_enc_bit_logp(ec, 1, 1);
@@ -524,7 +524,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 }
 
 int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stereo,
-      opus_int32 total, opus_int32 *balance, int *pulses, int *ebits, int *fine_priority, int C, int LM, ec_ctx *ec, int encode, int prev)
+      opus_int32 total, opus_int32 *balance, int *pulses, int *ebits, int *fine_priority, int C, int LM, ec_ctx *ec, int encode, int prev, int signalBandwidth)
 {
    int lo, hi, len, j;
    int codedBands;
@@ -631,7 +631,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    }
    codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh, cap,
          total, balance, skip_rsv, intensity, intensity_rsv, dual_stereo, dual_stereo_rsv,
-         pulses, ebits, fine_priority, C, LM, ec, encode, prev);
+         pulses, ebits, fine_priority, C, LM, ec, encode, prev, signalBandwidth);
    RESTORE_STACK;
    return codedBands;
 }
