@@ -475,7 +475,7 @@ int main(int argc, char **argv)
 	printf ("\n/* hidden layer */\n");
 	for (i=0;i<(topo[0]+1)*topo[1];i++)
 	{
-		printf ("%g, ", net->weights[0][i]);
+		printf ("%gf, ", net->weights[0][i]);
 		if (i%5==4)
 			printf("\n");
 	}
