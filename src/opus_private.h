@@ -84,6 +84,9 @@ int get_mono_channel(const ChannelLayout *layout, int stream_id, int prev);
 
 int encode_size(int size, unsigned char *data);
 
+opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
+      unsigned char *data, opus_int32 out_data_bytes, int lsb_depth);
+
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
       opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited, int *packet_offset);
 

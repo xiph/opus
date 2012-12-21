@@ -43,11 +43,6 @@ struct OpusMSEncoder {
    /* Encoder states go here */
 };
 
-#ifdef FIXED_POINT
-#define opus_encode_native opus_encode
-#else
-#define opus_encode_native opus_encode_float
-#endif
 
 static int validate_encoder_layout(const ChannelLayout *layout)
 {
@@ -185,7 +180,8 @@ static int opus_multistream_encode_native
     const void *pcm,
     int frame_size,
     unsigned char *data,
-    opus_int32 max_data_bytes
+    opus_int32 max_data_bytes,
+    int lsb_depth
 )
 {
    opus_int32 Fs;
@@ -250,7 +246,7 @@ static int opus_multistream_encode_native
       /* Reserve three bytes for the last stream and four for the others */
       curr_max -= IMAX(0,4*(st->layout.nb_streams-s-1)-1);
       curr_max = IMIN(curr_max,MS_FRAME_TMP);
-      len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max);
+      len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth);
       if (len<0)
       {
          RESTORE_STACK;
@@ -321,7 +317,7 @@ int opus_multistream_encode(
 )
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_short,
-      pcm, frame_size, data, max_data_bytes);
+      pcm, frame_size, data, max_data_bytes, 16);
 }
 
 #ifndef DISABLE_FLOAT_API
@@ -334,7 +330,7 @@ int opus_multistream_encode_float(
 )
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_float,
-      pcm, frame_size, data, max_data_bytes);
+      pcm, frame_size, data, max_data_bytes, 16);
 }
 #endif
 
@@ -350,7 +346,7 @@ int opus_multistream_encode_float
 )
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_float,
-      pcm, frame_size, data, max_data_bytes);
+      pcm, frame_size, data, max_data_bytes, 24);
 }
 
 int opus_multistream_encode(
@@ -362,7 +358,7 @@ int opus_multistream_encode(
 )
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_short,
-      pcm, frame_size, data, max_data_bytes);
+      pcm, frame_size, data, max_data_bytes, 16);
 }
 #endif
 
