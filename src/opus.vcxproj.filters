@@ -92,5 +92,8 @@
     <ClInclude Include="mlp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tansig_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
