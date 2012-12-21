@@ -858,7 +858,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (st->Fs <= 8000 && st->bandwidth > OPUS_BANDWIDTH_NARROWBAND)
         st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
 #ifndef FIXED_POINT
-    if (st->detected_bandwidth)
+    if (st->detected_bandwidth && st->user_bandwidth == OPUS_AUTO)
     {
        st->bandwidth = IMIN(st->bandwidth, st->detected_bandwidth);
     }
