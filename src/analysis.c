@@ -317,7 +317,8 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     bandwidth = 0;
     for (b=0;b<NB_TOT_BANDS;b++)
        maxE = MAX32(maxE, tonal->meanE[b]);
-    noise_floor = 3.2e-7f/(1<<(2*IMAX(0,lsb_depth-8)));
+    noise_floor = 5.7e-4f/(1<<(IMAX(0,lsb_depth-8)));
+    noise_floor *= noise_floor;
     for (b=0;b<NB_TOT_BANDS;b++)
     {
        float E=0;
