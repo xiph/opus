@@ -534,15 +534,8 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
     return st->user_bitrate_bps;
 }
 
-#ifdef FIXED_POINT
-#define opus_encode_native opus_encode
-opus_int32 opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-                unsigned char *data, opus_int32 out_data_bytes)
-#else
-#define opus_encode_native opus_encode_float
-opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-                      unsigned char *data, opus_int32 out_data_bytes)
-#endif
+opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
+                unsigned char *data, opus_int32 out_data_bytes, int lsb_depth)
 {
     void *silk_enc;
     CELTEncoder *celt_enc;
@@ -594,6 +587,8 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     }
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
+
+    lsb_depth = IMIN(lsb_depth, st->lsb_depth);
 
 #ifndef FIXED_POINT
     perform_analysis = st->silk_mode.complexity >= 7 && frame_size >= st->Fs/100 && st->Fs==48000;
@@ -867,7 +862,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
        st->bandwidth = IMIN(st->bandwidth, analysis_info.opus_bandwidth);
     }
 #endif
-    celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(st->lsb_depth));
+    celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(lsb_depth));
 
     /* If max_data_bytes represents less than 8 kb/s, switch to CELT-only mode */
     if (max_data_bytes < (frame_rate > 50 ? 12000 : 8000)*frame_size / (st->Fs * 8))
@@ -914,7 +909,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
           /* When switching from SILK/Hybrid to CELT, only ask for a switch at the last frame */
           if (to_celt && i==nb_frames-1)
              st->user_forced_mode = MODE_CELT_ONLY;
-          tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data+i*bytes_per_frame, bytes_per_frame);
+          tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data+i*bytes_per_frame, bytes_per_frame, lsb_depth);
           if (tmp_len<0)
           {
              RESTORE_STACK;
@@ -985,7 +980,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
        int nb_analysis_frames;
        nb_analysis_frames = frame_size/(st->Fs/100);
        for (i=0;i<nb_analysis_frames;i++)
-          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm_buf+i*(st->Fs/100)*st->channels, st->channels, st->lsb_depth);
+          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm_buf+i*(st->Fs/100)*st->channels, st->channels, lsb_depth);
        if (st->signal_type == OPUS_AUTO)
           st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
     } else {
@@ -1432,11 +1427,17 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
 
    for (i=0;i<frame_size*st->channels;i++)
       in[i] = FLOAT2INT16(pcm[i]);
-   ret = opus_encode(st, in, frame_size, data, max_data_bytes);
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16);
    RESTORE_STACK;
    return ret;
 }
 #endif
+
+opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
+                unsigned char *data, opus_int32 out_data_bytes)
+{
+   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 16);
+}
 
 #else
 opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
@@ -1450,9 +1451,15 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
 
    for (i=0;i<frame_size*st->channels;i++)
       in[i] = (1.0f/32768)*pcm[i];
-   ret = opus_encode_float(st, in, frame_size, data, max_data_bytes);
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16);
    RESTORE_STACK;
    return ret;
+}
+opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
+                      unsigned char *data, opus_int32 out_data_bytes)
+{
+   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 24);
+
 }
 #endif
 
