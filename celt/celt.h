@@ -57,6 +57,8 @@ typedef struct {
    opus_val16 noisiness;
    opus_val16 activity;
    opus_val16 music_prob;
+   int        bandwidth;
+   int        opus_bandwidth;
 }AnalysisInfo;
 
 #define __celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))

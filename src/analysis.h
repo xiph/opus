@@ -30,7 +30,7 @@
 
 #define NB_FRAMES 8
 #define NB_TBANDS 18
-
+#define NB_TOT_BANDS 21
 
 typedef struct {
    float angle[240];
@@ -40,7 +40,7 @@ typedef struct {
    float prev_tonality;
    float E[NB_FRAMES][NB_TBANDS];
    float lowE[NB_TBANDS], highE[NB_TBANDS];
-   float meanE[NB_TBANDS], meanRE[NB_TBANDS];
+   float meanE[NB_TOT_BANDS];
    float mem[32];
    float cmean[8];
    float std[9];
@@ -55,6 +55,6 @@ typedef struct {
 } TonalityAnalysisState;
 
 void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info,
-     CELTEncoder *celt_enc, const opus_val16 *x, int C);
+     CELTEncoder *celt_enc, const opus_val16 *x, int C, int lsb_depth);
 
 #endif
