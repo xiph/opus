@@ -89,6 +89,7 @@ struct OpusEncoder {
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef FIXED_POINT
     TonalityAnalysisState analysis;
+    int                   detected_bandwidth;
 #endif
     opus_uint32  rangeFinal;
 };
@@ -857,9 +858,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (st->Fs <= 8000 && st->bandwidth > OPUS_BANDWIDTH_NARROWBAND)
         st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
 #ifndef FIXED_POINT
-    if (analysis_info.valid)
+    if (st->detected_bandwidth)
     {
-       st->bandwidth = IMIN(st->bandwidth, analysis_info.opus_bandwidth);
+       st->bandwidth = IMIN(st->bandwidth, st->detected_bandwidth);
     }
 #endif
     celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(lsb_depth));
@@ -983,9 +984,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm_buf+i*(st->Fs/100)*st->channels, st->channels, lsb_depth);
        if (st->signal_type == OPUS_AUTO)
           st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
+       st->detected_bandwidth = analysis_info.opus_bandwidth;
     } else {
        analysis_info.valid = 0;
        st->voice_ratio = -1;
+       st->detected_bandwidth = 0;
     }
 #endif
 
