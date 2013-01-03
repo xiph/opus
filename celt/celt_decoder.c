@@ -191,10 +191,9 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
 {
    int c;
    int Nd;
-   opus_val16 coef0, coef1;
+   opus_val16 coef0;
 
    coef0 = coef[0];
-   coef1 = coef[1];
    Nd = N/downsample;
    c=0; do {
       int j;
@@ -203,26 +202,31 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
       celt_sig m = mem[c];
       x =in[c];
       y = pcm+c;
-      /* Shortcut for the standard (non-custom modes) case */
-      if (coef1 == 0)
+#ifdef CUSTOM_MODES
+      if (coef[1] != 0)
       {
+         opus_val16 coef1 = coef[1];
+         opus_val16 coef3 = coef[3];
+         for (j=0;j<N;j++)
+         {
+            celt_sig tmp = x[j] + m;
+            m = MULT16_32_Q15(coef0, tmp)
+                          - MULT16_32_Q15(coef1, x[j]);
+            tmp = SHL32(MULT16_32_Q15(coef3, tmp), 2);
+            scratch[j] = tmp;
+         }
+      } else
+#else
+      {
+         /* Shortcut for the standard (non-custom modes) case */
          for (j=0;j<N;j++)
          {
             celt_sig tmp = x[j] + m;
             m = MULT16_32_Q15(coef0, tmp);
             scratch[j] = tmp;
          }
-      } else {
-         opus_val16 coef3 = coef[3];
-         for (j=0;j<N;j++)
-         {
-            celt_sig tmp = x[j] + m;
-            m = MULT16_32_Q15(coef0, tmp)
-              - MULT16_32_Q15(coef1, x[j]);
-            tmp = SHL32(MULT16_32_Q15(coef3, tmp), 2);
-            scratch[j] = tmp;
-         }
       }
+#endif
       mem[c] = m;
 
       /* Perform down-sampling */
