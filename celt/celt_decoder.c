@@ -216,7 +216,7 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
             scratch[j] = tmp;
          }
       } else
-#else
+#endif
       {
          /* Shortcut for the standard (non-custom modes) case */
          for (j=0;j<N;j++)
@@ -226,7 +226,6 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
             scratch[j] = tmp;
          }
       }
-#endif
       mem[c] = m;
 
       /* Perform down-sampling */

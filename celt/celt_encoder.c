@@ -442,7 +442,7 @@ static void preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_R
          m = MULT16_32_Q15(coef1, inp[i]) - MULT16_32_Q15(coef0, tmp);
       }
    } else
-#else
+#endif
    {
       for (i=0;i<N;i++)
       {
@@ -453,7 +453,6 @@ static void preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_R
          m = - MULT16_32_Q15(coef0, x);
       }
    }
-#endif
    *mem = m;
 }
 
