@@ -972,9 +972,8 @@ This is of course a very extreme packet, consisting of 255&nbsp;streams, each
  containing 120&nbsp;ms of audio encoded as 2.5&nbsp;ms frames, each frame
  using the maximum possible number of octets (1275) and stored in the least
  efficient manner allowed (a VBR code&nbsp;3 Opus packet).
-Even in such a packet, most of the data will be zeros, as 2.5&nbsp;ms frames,
- which are required to run in the MDCT mode, cannot actually use all
- 1275&nbsp;octets.
+Even in such a packet, most of the data will be zeros as 2.5&nbsp;ms frames
+ cannot actually use all 1275&nbsp;octets.
 The largest packet consisting of entirely useful data is
  (15,326*N&nbsp;-&nbsp;2) octets, or about 15&nbsp;kB per stream.
 This corresponds to 120&nbsp;ms of audio encoded as 10&nbsp;ms frames in either
