@@ -1097,7 +1097,7 @@ It supports metadata, multichannel, start and end trimming, the gain field,
 Support was first added in early 2011, and is part of the 0.11 and 1.0.x
  releases.
 The code implementing this draft is in the gst-plugins-bad collection,
- which general indicated unsupported and/or experimental code,
+ which generally indicates unsupported and/or experimental code,
  despite its release status.
 This implementation is open source.
 </t>
