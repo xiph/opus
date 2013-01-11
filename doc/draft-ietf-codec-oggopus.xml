@@ -994,6 +994,124 @@ An implementation could reasonably choose any of these numbers for its internal
 </t>
 </section>
 
+<section anchor="implementation" title="Implementation Status">
+<t>
+What follows is a brief summary of major implementations of this
+ draft, and their status.
+Note that this section should be removed before final publication
+ as an RFC as per <xref target="draft-sheffer-running-code"/>.
+</t>
+
+<section anchor="impl-opus-tools" title="opus-tools">
+<t>
+The initial development implementation of this draft was in the
+ opusenc, opusdec, and opusinfo command-line utilties, part of the
+ opus-tools package and repository.
+While still 'development' status (pre-1.0) these utilities are
+ in active public use, and have shipped with some recent Linux
+ distributions.
+Together they implement basic read, write and playback support of
+ Ogg Opus files including metadata, multichannel, start and end
+ trimming.
+This implementation is open source.
+</t>
+<t><list>
+  <t>https://git.xiph.org/?p=opus-tools.git</t>
+  <t>http://www.opus-codec.org/downloads/</t>
+</list></t>
+</section>
+
+<section anchor="impl-opusfile" title="opusfile">
+<t>
+The opusfile library is a separate implementation of this draft
+ as a helper library. Its primary focus is on efficient seeking,
+ including over HTTP and in concatenated streams.
+This library is in early development and is not widely deployed.
+It supports multichannel decode and playback, but does not create
+ Ogg Opus files.
+This implementation is open source.
+</t>
+<t><list>
+  <t>https://git.xiph.org/?p=opusfile.git</t>
+  <t>http://www.opus-codec.org/downloads/</t>
+</list></t>
+</section>
+
+<section anchor="impl-firefox" title="Firefox">
+<t>
+The Firefox web browser is a widely deployed implementation of
+ this draft.
+Basic playback support with the HTML5 &lt;audio&gt; element was
+ added in Firefox 15, in production release starting August 28, 2012.
+Multichannel support was added in Firefox 17, in production release
+ starting November 20, 2012.
+This implementation is open source.
+</t>
+<t><list>
+  <t>https://mozilla.org/firefox/</t>
+  <t>https://hacks.mozilla.org/2012/08/opus-support-for-webrtc/</t>
+  <t>https://bugzilla.mozilla.org/show_bug.cgi?id=748144</t>
+</list></t>
+</section>
+
+<section anchor="impl-chrome" title="Chrome">
+<t>
+Google's Chrome web browser has support for this draft with the
+ HTML5 &lt;audio&gt; element in M25 and M26, the dev and
+ canary channels respectively as of January, 2013.
+Both require passing --enable-opus-playback to the executable
+ to enable support at the time of this writing.
+This implementation is based on open source code in
+ Chromium and WebKit.
+</t>
+<t><list>
+  <t>  https://www.google.com/intl/en/chrome/browser/</t>
+  <t>https://www.google.com/intl/en/chrome/browser/canary.html</t>
+  <t>http://code.google.com/p/chromium/issues/detail?id=104241</t>
+</list></t>
+</section>
+
+<section anchor="impl-gstreamer" title="GStreamer">
+<t>
+The GStreamer media framework includes an implementation of
+ this draft. Support was first added in early 2011, and is part
+ of the 0.11 and 1.0.x releases.
+The code implementing this draft is in the gst-plugins-bad collection,
+ which general indicated unsupported and/or experimental code,
+ despite its release status.
+This implementation is open source.
+</t>
+<t><list>
+  <t>http://gstreamer.net/</t>
+</list></t>
+</section>
+
+<section anchor="impl-ffmpeg" title="FFmpeg">
+<t>
+The popular media framework and conversion tool FFmpeg implements
+ some of this draft.
+End trimming is not implemented, so file durations are not exactly
+ preserved.
+This implementation is open source.
+</t>
+<t><list>
+  <t>http://ffmpeg.org/</t>
+</list></t>
+</section>
+
+<section anchor="impl-libav" title="libav">
+<t>
+The development repository for libav implements this draft,
+ similar to FFmpeg.
+This implementation is open source.
+</t>
+<t><list>
+  <t>http://libav.org/</t>
+</list></t>
+</section>
+
+</section>
+
 <section anchor="security" title="Security Considerations">
 <t>
 Implementations of the Opus codec need to take appropriate security
@@ -1116,6 +1234,16 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 
 <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml"?-->
  &rfc4732;
+
+<reference anchor="draft-sheffer-running-code"
+  target="https://tools.ietf.org/html/draft-sheffer-running-code-01#section-2">
+ <front>
+   <title>Improving "Rough Consensus" with Running Code</title>
+   <author initials="Y." surname="Sheffer" fullname="Yaron Sheffer"/>
+   <author initials="A." surname="Farrel" fullname="Adrian Farrel"/>
+   <date month="December" year="2012"/>
+ </front>
+</reference>
 
 <reference anchor="flac"
  target="https://xiph.org/flac/format.html">
