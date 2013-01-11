@@ -1009,31 +1009,36 @@ The initial development implementation of this draft was in the
  opus-tools package and repository.
 While still 'development' status (pre-1.0) these utilities are
  in active public use, and have shipped with some recent Linux
- distributions.
+ distributions and in homebrew.
 Together they implement basic read, write and playback support of
  Ogg Opus files including metadata, multichannel, start and end
- trimming.
+ trimming, the gain field, live streams, and chained files, but currently do
+ not support seeking.
 This implementation is open source.
 </t>
-<t><list>
-  <t>https://git.xiph.org/?p=opus-tools.git</t>
-  <t>http://www.opus-codec.org/downloads/</t>
+<t><list style="symbols">
+  <t><eref target="https://git.xiph.org/?p=opus-tools.git"/></t>
+  <t><eref target="http://www.opus-codec.org/downloads/"/></t>
 </list></t>
 </section>
 
 <section anchor="impl-opusfile" title="opusfile">
 <t>
-The opusfile library is a separate implementation of this draft
- as a helper library. Its primary focus is on efficient seeking,
- including over HTTP and in concatenated streams.
-This library is in early development and is not widely deployed.
-It supports multichannel decode and playback, but does not create
- Ogg Opus files.
+The opusfile library is a separate implementation of this draft as a helper
+ library for demuxing and decoding.
+Like opus-tools, it supports metadata, multichannel, start and end trimming,
+ the gain field, live streams, and chained files.
+Its primary focus is efficient seeking, including over HTTP and in chained
+ streams.
+It currently does not create Ogg Opus files.
+This library is in early development and is not widely deployed, though several
+ projects are currently using it, including xmms2, taglib, and cmus, and it is
+ shipped in some Linux distributions and in homebrew.
 This implementation is open source.
 </t>
-<t><list>
-  <t>https://git.xiph.org/?p=opusfile.git</t>
-  <t>http://www.opus-codec.org/downloads/</t>
+<t><list style="symbols">
+  <t><eref target="https://git.xiph.org/?p=opusfile.git"/></t>
+  <t><eref target="http://www.opus-codec.org/downloads/"/></t>
 </list></t>
 </section>
 
@@ -1041,16 +1046,25 @@ This implementation is open source.
 <t>
 The Firefox web browser is a widely deployed implementation of
  this draft.
-Basic playback support with the HTML5 &lt;audio&gt; element was
- added in Firefox 15, in production release starting August 28, 2012.
+Basic playback support with the HTML5 &lt;audio&gt; element, including start
+ and end trimming, the gain field, live streams, multiplexing with other
+ streams (for, e.g., the &lt;video&gt; tag), and seeking, was added in
+ Firefox 15, in production release starting August 28, 2012.
 Multichannel support was added in Firefox 17, in production release
  starting November 20, 2012.
+Metadata support was added in Firefox 18, in production release starting
+ January 8, 2013.
+Chained files (as streams only, with seeking disabled) will be supported in
+ Firefox 20, scheduled to enter production release in early April, 2013.
 This implementation is open source.
 </t>
-<t><list>
-  <t>https://mozilla.org/firefox/</t>
-  <t>https://hacks.mozilla.org/2012/08/opus-support-for-webrtc/</t>
-  <t>https://bugzilla.mozilla.org/show_bug.cgi?id=748144</t>
+<t><list style="symbols">
+  <t><eref target="https://mozilla.org/firefox/"/></t>
+  <t><eref target="https://hacks.mozilla.org/2012/08/opus-support-for-webrtc/"/></t>
+  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=674225"/></t>
+  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=748144"/></t>
+  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=778050"/></t>
+  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=455165"/></t>
 </list></t>
 </section>
 
@@ -1059,30 +1073,37 @@ This implementation is open source.
 Google's Chrome web browser has support for this draft with the
  HTML5 &lt;audio&gt; element in M25 and M26, the dev and
  canary channels respectively as of January, 2013.
-Both require passing --enable-opus-playback to the executable
+This implementation currently does not support end trimming, the gain tag,
+ chained files, or the .opus extension.
+Both M25 and M26 require passing --enable-opus-playback to the executable
  to enable support at the time of this writing.
 This implementation is based on open source code in
  Chromium and WebKit.
 </t>
-<t><list>
-  <t>  https://www.google.com/intl/en/chrome/browser/</t>
-  <t>https://www.google.com/intl/en/chrome/browser/canary.html</t>
-  <t>http://code.google.com/p/chromium/issues/detail?id=104241</t>
+<t><list style="symbols">
+  <t><eref target="https://www.google.com/intl/en/chrome/browser/"/></t>
+  <t><eref target="https://www.google.com/intl/en/chrome/browser/canary.html"/></t>
+  <t><eref target="http://code.google.com/p/chromium/issues/detail?id=104241"/></t>
 </list></t>
 </section>
 
 <section anchor="impl-gstreamer" title="GStreamer">
 <t>
 The GStreamer media framework includes an implementation of
- this draft. Support was first added in early 2011, and is part
- of the 0.11 and 1.0.x releases.
+ this draft.
+It supports metadata, multichannel, start and end trimming, the gain field,
+ live streams, chained files, multiplexing with other streams (e.g., video),
+ and seeking.
+Support was first added in early 2011, and is part of the 0.11 and 1.0.x
+ releases.
 The code implementing this draft is in the gst-plugins-bad collection,
  which general indicated unsupported and/or experimental code,
  despite its release status.
 This implementation is open source.
 </t>
-<t><list>
-  <t>http://gstreamer.net/</t>
+<t><list style="symbols">
+  <t><eref target="http://gstreamer.net/"/></t>
+  <t><eref target="http://cgit.freedesktop.org/gstreamer/gst-plugins-bad/"/></t>
 </list></t>
 </section>
 
@@ -1094,8 +1115,8 @@ End trimming is not implemented, so file durations are not exactly
  preserved.
 This implementation is open source.
 </t>
-<t><list>
-  <t>http://ffmpeg.org/</t>
+<t><list style="symbols">
+  <t><eref target="http://ffmpeg.org/"/></t>
 </list></t>
 </section>
 
@@ -1105,8 +1126,59 @@ The development repository for libav implements this draft,
  similar to FFmpeg.
 This implementation is open source.
 </t>
-<t><list>
-  <t>http://libav.org/</t>
+<t><list style="symbols">
+  <t><eref target="http://libav.org/"/></t>
+</list></t>
+</section>
+
+<section anchor="impl-vlc" title="VLC">
+<t>
+VLC is another widely deployed implementation of demuxing, decoding, and
+ playback support for this draft.
+It supports metadata, multichannel, start and end trimming, the gain field,
+ live streams, seeking, chained files (though seeking does not work
+ correctly with chained files), and multiplexing with other streams (e.g.,
+ video).
+Opus support was added in version 2.0.4, released on October 18, 2012.
+This implementation is open source.
+</t>
+<t><list style="symbols">
+  <t><eref target="http://www.videolan.org/vlc/"/></t>
+  <t><eref target="http://git.videolan.org/?p=vlc.git"/></t>
+  <t><eref target="http://trac.videolan.org/vlc/ticket/7185"/></t>
+</list></t>
+</section>
+
+<section anchor="impl-foobar2k" title="foobar2000">
+<t>
+A popular Windows application, foobar2000 implements read, write, and playback
+ support for this draft.
+It supports metadata, multichannel, start and end trimming, the gain field,
+ live streams, chained files, and seeking.
+Opus support was added in version 1.1.14, released on August 17, 2012.
+Encoding support is implemented using opusenc from opus-tools.
+This implementation is closed source.
+</t>
+<t><list style="symbols">
+  <t><eref target="http://www.foobar2000.org/"/></t>
+</list></t>
+</section>
+
+<section anchor="impl-rockbox" title="Rockbox">
+<t>
+Rockbox is an established alternative firmware for portable music players
+ (typically small, embedded devices) that implements demuxing, decoding, and
+ playback support for this draft.
+It supports metadata, start and end trimming, the gain field, and seeking.
+It does not currently support multichannel or chained files.
+Opus is currently only supported in development builds, though it is scheduled
+ to be included in the next stable release (3.13).
+This implementation is open source.
+</t>
+<t><list style="symbols">
+  <t><eref target="http://www.rockbox.org/"/></t>
+  <t><eref target="http://git.rockbox.org/?p=rockbox.git"/></t>
+  <t><eref target="http://gerrit.rockbox.org/r/#/c/300/"/></t>
 </list></t>
 </section>
 
