@@ -1028,7 +1028,7 @@ The opusfile library is a separate implementation of this draft as a helper
  library for demuxing and decoding.
 Like opus-tools, it supports metadata, multichannel, start and end trimming,
  the gain field, live streams, and chained files.
-Its primary focus is efficient seeking, including over HTTP and in chained
+Its primary focus is efficient seeking, including over HTTP(S) and in chained
  streams.
 It currently does not create Ogg Opus files.
 This library is in early development and is not widely deployed, though several
