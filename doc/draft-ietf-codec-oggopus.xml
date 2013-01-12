@@ -742,10 +742,10 @@ Specific locations depend on the number of channels, and are given below
   <t>2 channels: stereo (left, right).</t>
   <t>3 channels: linear surround (left, center, right)</t>
   <t>4 channels: quadraphonic (front&nbsp;left, front&nbsp;right, rear&nbsp;left, rear&nbsp;right).</t>
-  <t>5 channels: 5.0 surround (front&nbsp;left, center, front&nbsp;right, rear&nbsp;left, rear&nbsp;right).</t>
-  <t>6 channels: 5.1 surround (front&nbsp;left, center, front&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE).</t>
-  <t>7 channels: 6.1 surround (front&nbsp;left, center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;center, LFE).</t>
-  <t>8 channels: 7.1 surround (front&nbsp;left, center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE)</t>
+  <t>5 channels: 5.0 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, rear&nbsp;left, rear&nbsp;right).</t>
+  <t>6 channels: 5.1 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE).</t>
+  <t>7 channels: 6.1 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;center, LFE).</t>
+  <t>8 channels: 7.1 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE)</t>
 </list>
 This set of surround configurations and speaker location orderings is the same
  as the one used by the Vorbis codec. <xref target="vorbis-mapping"/>
