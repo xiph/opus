@@ -666,7 +666,7 @@ This MUST be no larger than the total number of streams, N.
 <vspace blankLines="1"/>
 Each packet in an Opus stream has an internal channel count of 1 or 2, which
  can change from packet to packet.
-This is selected by the encoder depending on the bitrate and the contents being
+This is selected by the encoder depending on the bitrate and the audio being
  encoded.
 The original channel count of the encoder input is not preserved by the lossy
  compression.
@@ -723,8 +723,9 @@ Allowed numbers of channels: 1 or 2.
 </list>
 <spanx style="strong">Special mapping</spanx>: This channel mapping value also
  indicates that the contents consists of a single Opus stream that is stereo if
- and only if C==2, with stream index 0 mapped to channel 0, and (if stereo)
- stream index 1 mapped to channel 1.
+ and only if C==2, with stream index 0 mapped to output channel 0 (mono, or
+ left channel) and stream index 1 mapped to output channel 1 (right channel)
+ if stereo.
 When the 'channel mapping family' octet has this value, the channel mapping
  table MUST be omitted from the ID header packet.
 <vspace blankLines="1"/>
@@ -754,9 +755,11 @@ The ordering is different from the one used by the
  FLAC <xref target="flac"/> formats,
  although the configurations match, so correct ordering requires permutation
  of the output channels when encoding from or decoding to those formats.
+'LFE' here refers to a Low Frequency Effects, often mapped to a subwoofer
+ with no particular spacial position.
 Implementations SHOULD identify 'side' or 'rear' speaker locations with
- 'surround' as appropriate when interfacing with audio formats or systems
- which prefer that terminology.
+ 'surround' and 'back' as appropriate when interfacing with audio formats
+ or systems which prefer that terminology.
 <vspace blankLines="1"/>
 </t>
 <t>Family&nbsp;255 (no defined channel meaning):
