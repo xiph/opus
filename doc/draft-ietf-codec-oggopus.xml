@@ -1219,16 +1219,18 @@ An "Ogg Opus file" consists of one or more sequentially multiplexed segments,
 The RECOMMENDED mime-type for Ogg Opus files is "audio/ogg".
 </t>
 
-<t>
+<figure>
+<preamble>
 If more specificity is desired, one MAY indicate the presence of Opus streams
  using the codecs parameter defined in <xref target="RFC6381"/>, e.g.,
-<figure align="center">
-<artwork align="left"><![CDATA[
-audio/ogg; codecs=opus
+</preamble>
+<artwork align="center"><![CDATA[
+    audio/ogg; codecs=opus
 ]]></artwork>
-</figure>
+<postamble>
  for an Ogg Opus file.
-</t>
+</postamble>
+</figure>
 
 <t>
 The RECOMMENDED filename extension for Ogg Opus files is '.opus'.
