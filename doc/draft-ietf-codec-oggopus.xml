@@ -712,11 +712,15 @@ Neither index is coded.
 <t>
 After producing the output channels, the channel mapping family determines the
  semantic meaning of each one.
-Currently there are three defined mapping families, although more may be added:
-<list style="symbols">
-<t>Family&nbsp;0 (RTP mapping):
-<vspace blankLines="1"/>
+Currently there are three defined mapping families, although more may be added.
+</t>
+
+<section anchor="channel_mapping_0" title="Channel Mapping Family 0">
+<t>
 Allowed numbers of channels: 1 or 2.
+RTP mapping.
+</t>
+<t>
 <list style="symbols">
 <t>1 channel: monophonic (mono).</t>
 <t>2 channels: stereo (left, right).</t>
@@ -728,12 +732,15 @@ Allowed numbers of channels: 1 or 2.
  if stereo.
 When the 'channel mapping family' octet has this value, the channel mapping
  table MUST be omitted from the ID header packet.
-<vspace blankLines="1"/>
 </t>
-<t>Family&nbsp;1 (Vorbis channel order):
-<vspace blankLines="1"/>
+</section>
+
+<section anchor="channel_mapping_1" title="Channel Mapping Family 1">
+<t>
 Allowed numbers of channels: 1...8.
-<vspace/>
+Vorbis channel order.
+</t>
+<t>
 Each channel is assigned to a speaker location in a conventional surround
  configuration.
 Specific locations depend on the number of channels, and are given below
@@ -760,11 +767,16 @@ The ordering is different from the one used by the
 Implementations SHOULD identify 'side' or 'rear' speaker locations with
  'surround' and 'back' as appropriate when interfacing with audio formats
  or systems which prefer that terminology.
-<vspace blankLines="1"/>
 </t>
-<t>Family&nbsp;255 (no defined channel meaning):
-<vspace blankLines="1"/>
-Allowed numbers of channels: 1...255.<vspace/>
+</section>
+
+<section anchor="channel_mapping_255"
+ title="Channel Mapping Family 255">
+<t>
+Allowed numbers of channels: 1...255.
+No defined channel meaning.
+</t>
+<t>
 Channels are unidentified.
 General-purpose players SHOULD NOT attempt to play these streams, and offline
  decoders MAY deinterleave the output into separate PCM files, one per channel.
@@ -772,11 +784,19 @@ Decoders SHOULD NOT produce output for channels mapped to stream index 255
  (pure silence) unless they have no other way to indicate the index of
  non-silent channels.
 </t>
-</list>
+</section>
+
+<section anchor="channel_mapping_undefined"
+ title="Undefined Channel Mappings">
+<t>
 The remaining channel mapping families (2...254) are reserved.
 A decoder encountering a reserved channel mapping family value SHOULD act as
  though the value is 255.
-<vspace blankLines="1"/>
+</t>
+</section>
+
+<section anchor="downmix" title="Downmixing">
+<t>
 An Ogg Opus player MUST play any Ogg Opus stream with a channel mapping family
  of 0 or 1, even if the number of channels does not match the physically
  connected audio hardware.
@@ -784,9 +804,130 @@ Players SHOULD perform channel mixing to increase or reduce the number of
  channels as needed.
 </t>
 
-</section>
+<t>
+Implementations MAY use the following matricies to implement downmixing from
+ multichannel files using <xref target="channel_mapping_1">Channel Mapping
+ Family 1</xref>, which are known to give acceptable results for stereo.
+Matricies for 3 and 4 channels are normalized so each coefficent row sums
+ to 1 to avoid clipping.
+For 5 or more channels they are normalized to 2 as a compromize between
+ clipping and dynamic range reduction.
+</t>
+<t>
+In these matricies the front left and front right channels are generally
+passed through directly.
+When a surround channel is split between both the left and right stereo
+ channels, coefficients are chosen so their squares sum to 1, which
+ helps preserve the perceived intensity.
+Rear channels are mixed more diffusely or attenuated to maintain focus
+ on the front channels.
+</t>
+
+<figure anchor="downmix-matrix-3"
+ title="Stereo downmix matrix for the linear surround channel mapping"
+ align="center">
+<artwork align="center"><![CDATA[
+ Left output = ( 0.585786 * left + 0.414214 * center                    )
+Right output = (                   0.414214 * center + 0.585786 * right )
+]]></artwork>
+<postamble>
+Exact coefficient values are 1 and 1/sqrt(2), multiplied by
+ 1/(1 + 1/sqrt(2)) for normalization.
+</postamble>
+</figure>
+
+<figure anchor="downmix-matrix-4"
+ title="Stereo downmix matrix for the quadraphonic channel mapping"
+ align="center">
+<artwork align="center"><![CDATA[
+/          \   /                                     \ / FL \
+| L output |   | 0.422650 0.000000 0.366025 0.211325 | | FR |
+| R output | = | 0.000000 0.422650 0.211325 0.366025 | | RL |
+\          /   \                                     / \ RR /
+]]></artwork>
+<postamble>
+Exact coefficient values are 1, sqrt(3)/2 and 1/2, multiplied by
+ 1/(1&nbsp;+&nbsp;sqrt(3)/2&nbsp;+&nbsp;1/2) for normalization.
+</postamble>
+</figure>
+
+<figure anchor="downmix-matrix-5"
+ title="Stereo downmix matrix for the 5.0 surround mapping"
+ align="center">
+<artwork align="center"><![CDATA[
+                                                         / FL \
+/   \   /                                              \ | FC |
+| L |   | 0.650802 0.460186 0.000000 0.563611 0.325401 | | FR |
+| R | = | 0.000000 0.460186 0.650802 0.325401 0.563611 | | RL |
+\   /   \                                              / | RR |
+                                                         \    /
+]]></artwork>
+<postamble>
+Exact coefficient values are 1, 1/sqrt(2), sqrt(3)/2 and 1/2, multiplied by
+ 2/(1&nbsp;+&nbsp;1/sqrt(2)&nbsp;+&nbsp;sqrt(3)/2&nbsp;+&nbsp;1/2)
+ for normalization.
+</postamble>
+</figure>
+
+<figure anchor="downmix-matrix-6"
+ title="Stereo downmix matrix for the 5.1 surround mapping"
+ align="center">
+<artwork align="center"><![CDATA[
+                                                                /FL \
+/ \   /                                                       \ |FC |
+|L|   | 0.529067 0.374107 0.000000 0.458186 0.264534 0.374107 | |FR |
+|R| = | 0.000000 0.374107 0.529067 0.264534 0.458186 0.374107 | |RL |
+\ /   \                                                       / |RR |
+                                                                \LFE/
+]]></artwork>
+<postamble>
+Exact coefficient values are 1, 1/sqrt(2), sqrt(3)/2 and 1/2, multiplied by
+2/(1&nbsp;+&nbsp;1/sqrt(2)&nbsp;+&nbsp;sqrt(3)/2&nbsp;+&nbsp;1/2 + 1/sqrt(2))
+ for normalization.
+</postamble>
+</figure>
+
+<figure anchor="downmix-matrix-7"
+ title="Stereo downmix matrix for the 6.1 surround mapping"
+ align="center">
+<artwork align="center"><![CDATA[
+ /                                                                \
+ | 0.455310 0.321953 0.000000 0.394310 0.227655 0.278819 0.321953 |
+ | 0.000000 0.321953 0.455310 0.227655 0.394310 0.278819 0.321953 |
+ \                                                                /
+]]></artwork>
+<postamble>
+Exact coefficient values are 1, 1/sqrt(2), sqrt(3)/2, 1/2 and
+ sqrt(3)/2/sqrt(2), multiplied by
+ 2/(1&nbsp;+&nbsp;1/sqrt(2)&nbsp;+&nbsp;sqrt(3)/2&nbsp;+&nbsp;1/2 +
+ sqrt(3)/2/sqrt(2) + 1/sqrt(2)) for normalization.
+The coeffients are in the same order as in <xref target="channel_mapping_1" />,
+ and the matricies above.
+</postamble>
+</figure>
+
+<figure anchor="downmix-matrix-8"
+ title="Stereo downmix matrix for the 7.1 surround mapping"
+ align="center">
+<artwork align="center"><![CDATA[
+/                                                                 \
+| .388631 .274804 .000000 .336565 .194316 .336565 .194316 .274804 |
+| .000000 .274804 .388631 .194316 .336565 .194316 .336565 .274804 |
+\                                                                 /
+]]></artwork>
+<postamble>
+Exact coefficient values are 1, 1/sqrt(2), sqrt(3)/2 and 1/2, multiplied by
+ 2/(2&nbsp;+&nbsp;2/sqrt(2)&nbsp;+&nbsp;sqrt(3)) for normalization.
+The coeffients are in the same order as in <xref target="channel_mapping_1" />,
+ and the matricies above.
+</postamble>
+</figure>
 
 </section>
+
+</section> <!-- end channel_mapping_table -->
+
+</section> <!-- end id_header -->
 
 <section anchor="comment_header" title="Comment Header">
 
