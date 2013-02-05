@@ -486,7 +486,7 @@ static void gain_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus
        }
     }
     c=0;do {
-       for (;i<frame_size;i++)
+       for (i=overlap;i<frame_size;i++)
        {
           out[i*channels+c] = MULT16_16_Q15(g2, in[i*channels+c]);
        }
