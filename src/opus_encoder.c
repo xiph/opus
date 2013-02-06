@@ -1087,6 +1087,20 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         if (prefill)
         {
             opus_int32 zero=0;
+            const CELTMode *celt_mode;
+            int prefill_offset;
+            celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
+            /* Use a smooth onset for the SILK prefill to avoid the encoder trying to encode
+               a discontinuity. The exact location is what we need to avoid leaving any "gap"
+               in the audio when mixing with the redundant CELT frame. Here we can afford to
+               overwrite st->delay_buffer because the only thing that uses it before it gets
+               rewritten is tmp_prefill[] and even then only the part after the ramp really
+               gets used (rather than sent to the encoder and discarded) */
+            prefill_offset = st->channels*(st->encoder_buffer-st->delay_compensation-st->Fs/400);
+            gain_fade(st->delay_buffer+prefill_offset, st->delay_buffer+prefill_offset,
+                  0, Q15ONE, celt_mode->overlap, st->Fs/400, st->channels, celt_mode->window, st->Fs);
+            for(i=0;i<prefill_offset;i++)
+               st->delay_buffer[i]=0;
 #ifdef FIXED_POINT
             pcm_silk = st->delay_buffer;
 #else
