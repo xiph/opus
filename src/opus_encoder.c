@@ -760,18 +760,18 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
    return bestLM;
 }
 
-int run_analysis(TonalityAnalysisState *analysis, CELTEncoder *celt_enc, const opus_val16 *pcm,
+static int run_analysis(TonalityAnalysisState *analysis, CELTEncoder *celt_enc, const void *pcm, const void *analysis_pcm,
       int frame_size, int C, int Fs, int bitrate_bps, int delay_compensation, int lsb_depth, downmix_func downmix)
 {
-   const opus_val16 *analysis_pcm;
+   int offset;
    int pcm_len;
    int LM = 3;
 
-   analysis_pcm = pcm+C*analysis->analysis_offset;
    pcm_len = frame_size - analysis->analysis_offset;
+   offset = 0;
    do {
-      tonality_analysis(analysis, NULL, celt_enc, analysis_pcm, IMIN(480, pcm_len), C, lsb_depth, downmix);
-      analysis_pcm += C*480;
+      tonality_analysis(analysis, NULL, celt_enc, analysis_pcm, IMIN(480, pcm_len), offset, C, lsb_depth, downmix);
+      offset += 480;
       pcm_len -= 480;
    } while (pcm_len>0);
    analysis->analysis_offset = frame_size;
@@ -849,14 +849,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     lsb_depth = IMIN(lsb_depth, st->lsb_depth);
 
-    orig_frame_size = IMIN(frame_size,st->Fs/50);
+    orig_frame_size = st->Fs/50;
     st->voice_ratio = -1;
     st->detected_bandwidth = 0;
 
-#ifndef FIXED_POINT
+#if 0
     perform_analysis = st->silk_mode.complexity >= 7 && st->Fs==48000;
     if (perform_analysis)
-       frame_size = run_analysis(&st->analysis, celt_enc, pcm, frame_size, st->channels, st->Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix_float);
+       frame_size = run_analysis(&st->analysis, celt_enc, pcm, pcm+st->channels*st->analysis.analysis_offset, frame_size, st->channels, st->Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix_float);
 #endif
 
 #ifndef FIXED_POINT
@@ -1214,8 +1214,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (perform_analysis && frame_size > st->Fs/50)
     {
        int nb_analysis = frame_size/(st->Fs/100);
-       for (i=0;i<nb_analysis;i++)
-          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+i*(st->Fs/100)*st->channels, 480, st->channels, lsb_depth, downmix_float);
+       //for (i=0;i<nb_analysis;i++)
+       //   tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+i*(st->Fs/100)*st->channels, 480, st->channels, lsb_depth, downmix_float);
        st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
     }
 #endif
@@ -1737,8 +1737,22 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
       unsigned char *data, opus_int32 max_data_bytes)
 {
    int i, ret;
+   CELTEncoder *celt_enc;
+   int delay_compensation;
+   int lsb_depth;
    VARDECL(float, in);
    ALLOC_STACK;
+
+   celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
+   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+      delay_compensation = 0;
+   else
+      delay_compensation = st->delay_compensation;
+
+   lsb_depth = IMIN(16, st->lsb_depth);
+
+   if (st->silk_mode.complexity >= 7 && st->Fs==48000)
+      frame_size = run_analysis(&st->analysis, celt_enc, pcm, pcm+st->channels*st->analysis.analysis_offset, frame_size, st->channels, st->Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix_int);
 
    ALLOC(in, frame_size*st->channels, float);
 
@@ -1751,6 +1765,21 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
 opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
                       unsigned char *data, opus_int32 out_data_bytes)
 {
+   CELTEncoder *celt_enc;
+   int delay_compensation;
+   int lsb_depth;
+
+   celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
+   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+      delay_compensation = 0;
+   else
+      delay_compensation = st->delay_compensation;
+
+   lsb_depth = IMIN(24, st->lsb_depth);
+
+   if (st->silk_mode.complexity >= 7 && st->Fs==48000)
+      frame_size = run_analysis(&st->analysis, celt_enc, pcm, pcm+st->channels*st->analysis.analysis_offset, frame_size, st->channels, st->Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix_float);
+
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 24);
 
 }
