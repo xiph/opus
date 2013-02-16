@@ -89,9 +89,9 @@ struct OpusEncoder {
     int          first;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef FIXED_POINT
-    opus_val32   subframe_mem[3];
     TonalityAnalysisState analysis;
-    int                   detected_bandwidth;
+    int          detected_bandwidth;
+    int          analysis_offset;
 #endif
     opus_uint32  rangeFinal;
 };
@@ -665,28 +665,28 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
    return best_state;
 }
 
-void downmix_float(const void *_x, float *sub, int subframe, int i, int C)
+void downmix_float(const void *_x, float *sub, int subframe, int offset, int C)
 {
    const float *x;
    int c, j;
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = x[(subframe*i+j)*C];
+      sub[j] = x[(j+offset)*C];
    for (c=1;c<C;c++)
       for (j=0;j<subframe;j++)
-         sub[j] += x[(subframe*i+j)*C+c];
+         sub[j] += x[(j+offset)*C+c];
 }
 
-void downmix_int(const void *_x, float *sub, int subframe, int i, int C)
+void downmix_int(const void *_x, float *sub, int subframe, int offset, int C)
 {
    const opus_int16 *x;
    int c, j;
    x = (const opus_int16 *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = x[(subframe*i+j)*C];
+      sub[j] = x[(j+offset)*C];
    for (c=1;c<C;c++)
       for (j=0;j<subframe;j++)
-         sub[j] += x[(subframe*i+j)*C+c];
+         sub[j] += x[(j+offset)*C+c];
 }
 
 int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
@@ -732,7 +732,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
       int j;
       tmp=EPSILON;
 
-      downmix(x, sub, subframe, i, C);
+      downmix(x, sub, subframe, i*subframe, C);
       if (i==0)
          memx = sub[0];
       for (j=0;j<subframe;j++)
@@ -758,6 +758,35 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
       mem[2] = e[(1<<bestLM)+2];
    }
    return bestLM;
+}
+
+int run_analysis(TonalityAnalysisState *analysis, CELTEncoder *celt_enc, const opus_val16 *pcm,
+      int frame_size, int C, int Fs, int bitrate_bps, int delay_compensation, int lsb_depth, downmix_func downmix)
+{
+   const opus_val16 *analysis_pcm;
+   int pcm_len;
+   int LM = 3;
+
+   analysis_pcm = pcm+C*analysis->analysis_offset;
+   pcm_len = frame_size - analysis->analysis_offset;
+   do {
+      tonality_analysis(analysis, NULL, celt_enc, analysis_pcm, IMIN(480, pcm_len), C, lsb_depth, downmix);
+      analysis_pcm += C*480;
+      pcm_len -= 480;
+   } while (pcm_len>0);
+   analysis->analysis_offset = frame_size;
+
+   //return frame_size;
+#ifndef FIXED_POINT
+   LM = optimize_framesize(pcm, frame_size, C, Fs, bitrate_bps,
+         analysis->prev_tonality, analysis->subframe_mem, delay_compensation, downmix);
+#endif
+   while ((Fs/400<<LM)>frame_size)
+      LM--;
+   frame_size = (Fs/400<<LM);
+   //frame_size = st->Fs/50;
+   analysis->analysis_offset -= frame_size;
+   return frame_size;
 }
 #endif
 
@@ -821,31 +850,23 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     lsb_depth = IMIN(lsb_depth, st->lsb_depth);
 
     orig_frame_size = IMIN(frame_size,st->Fs/50);
-    if (st->variable_duration)
-    {
-       int LM = 3;
+    st->voice_ratio = -1;
+    st->detected_bandwidth = 0;
+
 #ifndef FIXED_POINT
-       LM = optimize_framesize(pcm, frame_size, st->channels, st->Fs, st->bitrate_bps,
-             st->analysis.prev_tonality, st->subframe_mem, delay_compensation, downmix_float);
+    perform_analysis = st->silk_mode.complexity >= 7 && st->Fs==48000;
+    if (perform_analysis)
+       frame_size = run_analysis(&st->analysis, celt_enc, pcm, frame_size, st->channels, st->Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix_float);
 #endif
-       while ((st->Fs/400<<LM)>frame_size)
-          LM--;
-       frame_size = (st->Fs/400<<LM);
-    }
+
 #ifndef FIXED_POINT
     /* Only perform analysis up to 20-ms frames. Longer ones will be split if
        they're in CELT-only mode. */
     analysis_info.valid = 0;
     perform_analysis = st->silk_mode.complexity >= 7 && st->Fs==48000;
-    if (!perform_analysis)
+    if (perform_analysis && frame_size <= st->Fs/50)
     {
-       st->voice_ratio = -1;
-       st->detected_bandwidth = 0;
-    } else if (frame_size <= st->Fs/50)
-    {
-       tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm, IMIN(480, frame_size), st->channels, lsb_depth);
-       if (frame_size > st->Fs/100)
-          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+(st->Fs/100)*st->channels, 480, st->channels, lsb_depth);
+       tonality_get_info(&st->analysis, &analysis_info, frame_size);
        if (analysis_info.valid)
        {
           if (st->signal_type == OPUS_AUTO)
@@ -1188,12 +1209,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        return ret;
     }
 #ifndef FIXED_POINT
+    /* FIXME: This needs to go */
     /* Perform analysis for 40-60 ms frames */
     if (perform_analysis && frame_size > st->Fs/50)
     {
        int nb_analysis = frame_size/(st->Fs/100);
        for (i=0;i<nb_analysis;i++)
-          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+i*(st->Fs/100)*st->channels, 480, st->channels, lsb_depth);
+          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+i*(st->Fs/100)*st->channels, 480, st->channels, lsb_depth, downmix_float);
        st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
     }
 #endif

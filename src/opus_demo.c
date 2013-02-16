@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
     forcechannels = OPUS_AUTO;
     use_dtx = 0;
     packet_loss_perc = 0;
-    max_frame_size = 960*6;
+    max_frame_size = 48000;
     curr_read=0;
 
     while( args < argc - 2 ) {
@@ -566,6 +566,7 @@ int main(int argc, char *argv[])
     if ( use_inbandfec ) {
         data[1] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
     }
+    frame_size = 48000;
     while (!stop)
     {
         if (delayed_celt)
