@@ -72,8 +72,12 @@ typedef struct {
 } TonalityAnalysisState;
 
 void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info,
-     CELTEncoder *celt_enc, const void *x, int len, int offset, int C, int lsb_depth, downmix_func downmix);
+     const CELTMode *celt_mode, const void *x, int len, int offset, int C, int lsb_depth, downmix_func downmix);
 
 void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int len);
+
+int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *pcm,
+                        const void *analysis_pcm, int frame_size, int C, int Fs, int bitrate_bps,
+                        int delay_compensation, int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info);
 
 #endif

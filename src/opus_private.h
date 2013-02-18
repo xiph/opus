@@ -31,6 +31,7 @@
 
 #include "arch.h"
 #include "opus.h"
+#include "celt.h"
 
 struct OpusRepacketizer {
    unsigned char toc;
@@ -92,7 +93,11 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
 int encode_size(int size, unsigned char *data);
 
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-      unsigned char *data, opus_int32 out_data_bytes, int lsb_depth);
+      unsigned char *data, opus_int32 out_data_bytes, int lsb_depth
+#ifndef FIXED_POINT
+                , AnalysisInfo *analysis_info
+#endif
+      );
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
       opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited, int *packet_offset);

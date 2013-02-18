@@ -211,10 +211,9 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
 #endif
 }
 
-void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, CELTEncoder *celt_enc, const void *x, int len, int offset, int C, int lsb_depth, downmix_func downmix)
+void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, const CELTMode *celt_mode, const void *x, int len, int offset, int C, int lsb_depth, downmix_func downmix)
 {
     int i, b;
-    const CELTMode *mode;
     const kiss_fft_state *kfft;
     kiss_fft_cpx in[480], out[480];
     int N = 480, N2=240;
@@ -245,8 +244,6 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, CEL
     int remaining;
     AnalysisInfo *info;
 
-    celt_encoder_ctl(celt_enc, CELT_GET_MODE(&mode));
-
     tonal->last_transition++;
     alpha = 1.f/IMIN(20, 1+tonal->count);
     alphaE = 1.f/IMIN(50, 1+tonal->count);
@@ -254,7 +251,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, CEL
 
     if (tonal->count<4)
        tonal->music_prob = .5;
-    kfft = mode->mdct.kfft[0];
+    kfft = celt_mode->mdct.kfft[0];
     if (tonal->count==0)
        tonal->mem_fill = 240;
     downmix(x, &tonal->inmem[tonal->mem_fill], IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, C);
@@ -583,4 +580,40 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, CEL
     info->valid = 1;
     if (info_out!=NULL)
        OPUS_COPY(info_out, info, 1);
+}
+
+int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *pcm,
+                        const void *analysis_pcm, int frame_size, int C, int Fs, int bitrate_bps,
+                        int delay_compensation, int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info)
+{
+   int offset;
+   int pcm_len;
+   int LM = 3;
+
+   pcm_len = frame_size - analysis->analysis_offset;
+   offset = 0;
+   do {
+      tonality_analysis(analysis, NULL, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, C, lsb_depth, downmix);
+      offset += 480;
+      pcm_len -= 480;
+   } while (pcm_len>0);
+   analysis->analysis_offset = frame_size;
+
+   //return frame_size;
+#ifndef FIXED_POINT
+   LM = optimize_framesize(pcm, frame_size, C, Fs, bitrate_bps,
+         analysis->prev_tonality, analysis->subframe_mem, delay_compensation, downmix);
+#endif
+   while ((Fs/400<<LM)>frame_size)
+      LM--;
+   frame_size = (Fs/400<<LM);
+   //frame_size = st->Fs/50;
+   analysis->analysis_offset -= frame_size;
+
+   /* Only perform analysis up to 20-ms frames. Longer ones will be split if
+      they're in CELT-only mode. */
+   analysis_info->valid = 0;
+   tonality_get_info(analysis, analysis_info, frame_size);
+
+   return frame_size;
 }
