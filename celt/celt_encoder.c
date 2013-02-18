@@ -359,6 +359,44 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    return is_transient;
 }
 
+/* Looks for sudden increases of energy to decide whether we need to patch
+   the transient decision */
+int patch_transient_decision(opus_val16 *new, opus_val16 *old, int nbEBands,
+      int end, int C)
+{
+   int i, c;
+   opus_val32 mean_diff=0;
+   opus_val16 spread_old[26];
+   /* Apply an aggressive (-6 dB/Bark) spreading function to the old frame to
+      avoid false detection caused by irrelevant bands */
+   if (C==1)
+   {
+      spread_old[0] = old[0];
+      for (i=1;i<end;i++)
+         spread_old[i] = MAX16(spread_old[i-1]-QCONST16(1.0f, DB_SHIFT), old[i]);
+   } else {
+      spread_old[0] = MAX16(old[0],old[nbEBands]);
+      for (i=1;i<end;i++)
+         spread_old[i] = MAX16(spread_old[i-1]-QCONST16(1.0f, DB_SHIFT),
+                               MAX16(old[i],old[i+nbEBands]));
+   }
+   for (i=end-2;i>=0;i--)
+      spread_old[i] = MAX16(spread_old[i], spread_old[i+1]-QCONST16(1.0f, DB_SHIFT));
+   /* Compute mean increase */
+   c=0; do {
+      for (i=2;i<end-1;i++)
+      {
+         opus_val16 x1, x2;
+         x1 = MAX16(0, new[i]);
+         x2 = MAX16(0, spread_old[i]);
+         mean_diff = ADD32(mean_diff, EXTEND32(MAX16(0, SUB16(x1, x2))));
+      }
+   } while (++c<C);
+   mean_diff = DIV32(mean_diff, C*(end-3));
+   /*printf("%f %f %d\n", mean_diff, max_diff, count);*/
+   return mean_diff > QCONST16(1.f, DB_SHIFT);
+}
+
 /** Apply window and compute the MDCT for all sub-frames and
     all channels in a frame */
 static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS_RESTRICT in, celt_sig * OPUS_RESTRICT out, int C, int LM)
@@ -1307,7 +1345,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          if (isTransient)
             shortBlocks = M;
       }
-      ec_enc_bit_logp(enc, isTransient, 3);
    }
 
    ALLOC(freq, CC*N, celt_sig); /**< Interleaved signal MDCTs */
@@ -1372,6 +1409,43 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       for (i=0;i<C*nbEBands;i++)
          bandLogE2[i] = bandLogE[i];
    }
+
+   /* Last chance to catch any transient we might have missed in the
+      time-domain analysis */
+   if (LM>0 && ec_tell(enc)+3<=total_bits && !isTransient && st->complexity>=5)
+   {
+      if (patch_transient_decision(bandLogE, oldBandE, nbEBands, st->end, C))
+      {
+         isTransient = 1;
+         shortBlocks = M;
+         compute_mdcts(mode, shortBlocks, in, freq, CC, LM);
+         if (CC==2&&C==1)
+         {
+            for (i=0;i<N;i++)
+               freq[i] = ADD32(HALF32(freq[i]), HALF32(freq[N+i]));
+         }
+         if (st->upsample != 1)
+         {
+            c=0; do
+            {
+               int bound = N/st->upsample;
+               for (i=0;i<bound;i++)
+                  freq[c*N+i] *= st->upsample;
+               for (;i<N;i++)
+                  freq[c*N+i] = 0;
+            } while (++c<C);
+         }
+         compute_band_energies(mode, freq, bandE, effEnd, C, M);
+         amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
+         /* Compensate for the scaling of short vs long mdcts */
+         for (i=0;i<C*nbEBands;i++)
+            bandLogE2[i] += HALF16(SHL16(LM, DB_SHIFT));
+         tf_estimate = QCONST16(.2,14);
+      }
+   }
+
+   if (LM>0 && ec_tell(enc)+3<=total_bits)
+      ec_enc_bit_logp(enc, isTransient, 3);
 
    ALLOC(X, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
 
