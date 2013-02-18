@@ -399,13 +399,14 @@ int patch_transient_decision(opus_val16 *new, opus_val16 *old, int nbEBands,
 
 /** Apply window and compute the MDCT for all sub-frames and
     all channels in a frame */
-static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS_RESTRICT in, celt_sig * OPUS_RESTRICT out, int C, int LM)
+static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS_RESTRICT in,
+                          celt_sig * OPUS_RESTRICT out, int C, int CC, int LM, int upsample)
 {
    const int overlap = OVERLAP(mode);
    int N;
    int B;
    int shift;
-   int b, c;
+   int i, b, c;
    if (shortBlocks)
    {
       B = shortBlocks;
@@ -422,7 +423,23 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS
          /* Interleaving the sub-frames while doing the MDCTs */
          clt_mdct_forward(&mode->mdct, in+c*(B*N+overlap)+b*N, &out[b+c*N*B], mode->window, overlap, shift, B);
       }
-   } while (++c<C);
+   } while (++c<CC);
+   if (CC==2&&C==1)
+   {
+      for (i=0;i<B*N;i++)
+         out[i] = ADD32(HALF32(out[i]), HALF32(out[B*N+i]));
+   }
+   if (upsample != 1)
+   {
+      c=0; do
+      {
+         int bound = B*N/upsample;
+         for (i=0;i<bound;i++)
+            out[c*B*N+i] *= upsample;
+         for (;i<B*N;i++)
+            out[c*B*N+i] = 0;
+      } while (++c<C);
+   }
 }
 
 
@@ -1355,48 +1372,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    ALLOC(bandLogE2, C*nbEBands, opus_val16);
    if (secondMdct)
    {
-      compute_mdcts(mode, 0, in, freq, CC, LM);
-      if (CC==2&&C==1)
-      {
-         for (i=0;i<N;i++)
-            freq[i] = ADD32(HALF32(freq[i]), HALF32(freq[N+i]));
-      }
-      if (st->upsample != 1)
-      {
-         c=0; do
-         {
-            int bound = N/st->upsample;
-            for (i=0;i<bound;i++)
-               freq[c*N+i] *= st->upsample;
-            for (;i<N;i++)
-               freq[c*N+i] = 0;
-         } while (++c<C);
-      }
+      compute_mdcts(mode, 0, in, freq, C, CC, LM, st->upsample);
       compute_band_energies(mode, freq, bandE, effEnd, C, M);
       amp2Log2(mode, effEnd, st->end, bandE, bandLogE2, C);
       for (i=0;i<C*nbEBands;i++)
          bandLogE2[i] += HALF16(SHL16(LM, DB_SHIFT));
    }
 
-   compute_mdcts(mode, shortBlocks, in, freq, CC, LM);
-
-   if (CC==2&&C==1)
-   {
-      for (i=0;i<N;i++)
-         freq[i] = ADD32(HALF32(freq[i]), HALF32(freq[N+i]));
-      tf_chan = 0;
-   }
-   if (st->upsample != 1)
-   {
-      c=0; do
-      {
-         int bound = N/st->upsample;
-         for (i=0;i<bound;i++)
-            freq[c*N+i] *= st->upsample;
-         for (;i<N;i++)
-            freq[c*N+i] = 0;
-      } while (++c<C);
-   }
+   compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample);
    compute_band_energies(mode, freq, bandE, effEnd, C, M);
 
    amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
@@ -1418,23 +1401,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       {
          isTransient = 1;
          shortBlocks = M;
-         compute_mdcts(mode, shortBlocks, in, freq, CC, LM);
-         if (CC==2&&C==1)
-         {
-            for (i=0;i<N;i++)
-               freq[i] = ADD32(HALF32(freq[i]), HALF32(freq[N+i]));
-         }
-         if (st->upsample != 1)
-         {
-            c=0; do
-            {
-               int bound = N/st->upsample;
-               for (i=0;i<bound;i++)
-                  freq[c*N+i] *= st->upsample;
-               for (;i<N;i++)
-                  freq[c*N+i] = 0;
-            } while (++c<C);
-         }
+         compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample);
          compute_band_energies(mode, freq, bandE, effEnd, C, M);
          amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
          /* Compensate for the scaling of short vs long mdcts */
