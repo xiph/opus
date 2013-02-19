@@ -858,9 +858,15 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (st->Fs <= 8000 && st->bandwidth > OPUS_BANDWIDTH_NARROWBAND)
         st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
 #ifndef FIXED_POINT
+    /* Use detected bandwidth to reduce the encoded bandwidth. */
     if (st->detected_bandwidth && st->user_bandwidth == OPUS_AUTO)
     {
-       st->bandwidth = IMIN(st->bandwidth, st->detected_bandwidth);
+       /* When operating in SILK/hybrid mode, we don't go below wideband to avoid
+          more complicated switches that require redundancy */
+       if (st->mode == MODE_CELT_ONLY)
+          st->bandwidth = IMIN(st->bandwidth, st->detected_bandwidth);
+       else
+          st->bandwidth = IMIN(st->bandwidth, IMAX(OPUS_BANDWIDTH_WIDEBAND, st->detected_bandwidth));
     }
 #endif
     celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(lsb_depth));

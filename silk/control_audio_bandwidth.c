@@ -115,6 +115,9 @@ opus_int silk_control_audio_bandwidth(
                        psEncC->sLP.mode = 1;
                    }
                 }
+            } else {
+               if (psEncC->sLP.mode<0)
+                  psEncC->sLP.mode = 1;
             }
         }
     }
