@@ -1380,6 +1380,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    }
 
    compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample);
+   if (CC==2&&C==1)
+      tf_chan = 0;
    compute_band_energies(mode, freq, bandE, effEnd, C, M);
 
    amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
