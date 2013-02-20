@@ -107,6 +107,7 @@ int opus_multistream_encoder_init(
    st->layout.nb_coupled_streams = coupled_streams;
 
    st->bitrate_bps = OPUS_AUTO;
+   st->variable_duration = OPUS_FRAMESIZE_ARG;
    for (i=0;i<st->layout.nb_channels;i++)
       st->layout.mapping[i] = mapping[i];
    if (!validate_layout(&st->layout) || !validate_encoder_layout(&st->layout))
@@ -222,6 +223,7 @@ static int opus_multistream_encode_native
    }
    orig_frame_size = IMIN(frame_size,Fs/50);
 #ifndef FIXED_POINT
+   analysis_info.valid = 0;
    if (complexity >= 7 && Fs==48000)
    {
       opus_int32 delay_compensation;
@@ -232,10 +234,12 @@ static int opus_multistream_encode_native
       delay_compensation -= Fs/400;
 
       frame_size = run_analysis(&st->analysis, celt_mode, pcm, pcm_analysis,
-            frame_size, channels, Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix, &analysis_info);
-   }
+            frame_size, st->variable_duration, channels, Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix, &analysis_info);
+   } else
 #endif
-
+   {
+      frame_size = frame_size_select(frame_size, st->variable_duration, Fs);
+   }
    /* Validate frame_size before using it to allocate stack space.
       This mirrors the checks in opus_encode[_float](). */
    if (400*frame_size != Fs && 200*frame_size != Fs &&
@@ -318,7 +322,11 @@ static int opus_multistream_encode_native
       /* Reserve three bytes for the last stream and four for the others */
       curr_max -= IMAX(0,4*(st->layout.nb_streams-s-1)-1);
       curr_max = IMIN(curr_max,MS_FRAME_TMP);
-      len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth, &analysis_info);
+      len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth
+#ifndef FIXED_POINT
+            , &analysis_info
+#endif
+            );
       if (len<0)
       {
          RESTORE_STACK;

@@ -92,6 +92,8 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
 
 int encode_size(int size, unsigned char *data);
 
+opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs);
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
       unsigned char *data, opus_int32 out_data_bytes, int lsb_depth
 #ifndef FIXED_POINT

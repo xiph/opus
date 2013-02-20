@@ -77,7 +77,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info,
 void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int len);
 
 int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *pcm,
-                        const void *analysis_pcm, int frame_size, int C, int Fs, int bitrate_bps,
+                        const void *analysis_pcm, int frame_size, int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
                         int delay_compensation, int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info);
 
 #endif
