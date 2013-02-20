@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
     int mode_switch_time = 48000;
     int nb_encoded;
     int remaining=0;
-    int variable_duration=0;
+    int variable_duration=OPUS_FRAMESIZE_ARG;
 
     if (argc < 5 )
     {
@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
             args++;
         } else if( strcmp( argv[ args ], "-variable-duration" ) == 0 ) {
             check_encoder_option(decode_only, "-variable-duration");
-            variable_duration = 1;
+            variable_duration = OPUS_FRAMESIZE_VARIABLE;
             args++;
         } else if( strcmp( argv[ args ], "-dtx") == 0 ) {
             check_encoder_option(decode_only, "-dtx");
@@ -510,7 +510,7 @@ int main(int argc, char *argv[])
 
        opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
        opus_encoder_ctl(enc, OPUS_SET_LSB_DEPTH(16));
-       opus_encoder_ctl(enc, OPUS_SET_EXPERT_VARIABLE_DURATION(variable_duration));
+       opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
     }
     if (!encode_only)
     {

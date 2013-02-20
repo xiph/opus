@@ -795,7 +795,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     opus_val16 HB_gain;
     opus_int32 max_data_bytes; /* Max number of bytes we're allowed to use */
     int total_buffer;
-    int orig_frame_size;
     VARDECL(opus_val16, tmp_prefill);
 
     ALLOC_STACK;
@@ -821,7 +820,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     lsb_depth = IMIN(lsb_depth, st->lsb_depth);
 
-    orig_frame_size = st->Fs/50;
     st->voice_ratio = -1;
     st->detected_bandwidth = 0;
 
@@ -1415,9 +1413,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             {
                 opus_int32 bonus=0;
 #ifndef FIXED_POINT
-                if (st->variable_duration && orig_frame_size != frame_size)
+                if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != st->Fs/50)
                 {
-                   bonus = (40*st->stream_channels+40)*(48000/frame_size-50);
+                   bonus = (40*st->stream_channels+40)*(st->Fs/frame_size-50);
                    if (analysis_info->valid)
                       bonus = bonus*(1.f+.5*analysis_info->tonality);
                 }
@@ -2003,7 +2001,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->lsb_depth;
         }
         break;
-        case OPUS_SET_EXPERT_VARIABLE_DURATION_REQUEST:
+        case OPUS_SET_EXPERT_FRAME_DURATION_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
             if (value<0 || value>1)
@@ -2011,7 +2009,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             st->variable_duration = value;
         }
         break;
-        case OPUS_GET_EXPERT_VARIABLE_DURATION_REQUEST:
+        case OPUS_GET_EXPERT_FRAME_DURATION_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->variable_duration;

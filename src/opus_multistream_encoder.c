@@ -267,10 +267,10 @@ static int opus_multistream_encode_native
       channel_rate = st->bitrate_bps/coded_channels;
    }
 #ifndef FIXED_POINT
-   if (st->variable_duration && orig_frame_size != frame_size)
+   if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != Fs/50)
    {
       opus_int32 bonus;
-      bonus = 60*(48000/frame_size-48000/orig_frame_size);
+      bonus = 60*(Fs/frame_size-50);
       channel_rate += bonus;
    }
 #endif
@@ -569,7 +569,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       *value = (OpusEncoder*)ptr;
    }
    break;
-   case OPUS_SET_EXPERT_VARIABLE_DURATION_REQUEST:
+   case OPUS_SET_EXPERT_FRAME_DURATION_REQUEST:
    {
        opus_int32 value = va_arg(ap, opus_int32);
        if (value<0 || value>1)
@@ -577,7 +577,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
        st->variable_duration = value;
    }
    break;
-   case OPUS_GET_EXPERT_VARIABLE_DURATION_REQUEST:
+   case OPUS_GET_EXPERT_FRAME_DURATION_REQUEST:
    {
        opus_int32 *value = va_arg(ap, opus_int32*);
        *value = st->variable_duration;
