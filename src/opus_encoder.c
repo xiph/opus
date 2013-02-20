@@ -89,9 +89,9 @@ struct OpusEncoder {
     int          first;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef FIXED_POINT
-    opus_val32   subframe_mem[3];
     TonalityAnalysisState analysis;
-    int                   detected_bandwidth;
+    int          detected_bandwidth;
+    int          analysis_offset;
 #endif
     opus_uint32  rangeFinal;
 };
@@ -215,6 +215,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->voice_ratio = -1;
     st->encoder_buffer = st->Fs/100;
     st->lsb_depth = 24;
+    st->variable_duration = OPUS_FRAMESIZE_ARG;
 
     /* Delay compensation of 4 ms (2.5 ms for SILK's extra look-ahead 
        + 1.5 ms for SILK resamplers and stereo prediction) */
@@ -665,28 +666,28 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
    return best_state;
 }
 
-void downmix_float(const void *_x, float *sub, int subframe, int i, int C)
+void downmix_float(const void *_x, float *sub, int subframe, int offset, int C)
 {
    const float *x;
    int c, j;
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = x[(subframe*i+j)*C];
+      sub[j] = x[(j+offset)*C];
    for (c=1;c<C;c++)
       for (j=0;j<subframe;j++)
-         sub[j] += x[(subframe*i+j)*C+c];
+         sub[j] += x[(j+offset)*C+c];
 }
 
-void downmix_int(const void *_x, float *sub, int subframe, int i, int C)
+void downmix_int(const void *_x, float *sub, int subframe, int offset, int C)
 {
    const opus_int16 *x;
    int c, j;
    x = (const opus_int16 *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = x[(subframe*i+j)*C];
+      sub[j] = x[(j+offset)*C];
    for (c=1;c<C;c++)
       for (j=0;j<subframe;j++)
-         sub[j] += x[(subframe*i+j)*C+c];
+         sub[j] += x[(j+offset)*C+c];
 }
 
 int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
@@ -732,7 +733,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
       int j;
       tmp=EPSILON;
 
-      downmix(x, sub, subframe, i, C);
+      downmix(x, sub, subframe, i*subframe, C);
       if (i==0)
          memx = sub[0];
       for (j=0;j<subframe;j++)
@@ -759,10 +760,36 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
    }
    return bestLM;
 }
+
 #endif
 
+opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
+{
+   int new_size;
+   if (frame_size<Fs/400)
+      return -1;
+   if (variable_duration == OPUS_FRAMESIZE_ARG)
+      new_size = frame_size;
+   else if (variable_duration == OPUS_FRAMESIZE_VARIABLE)
+      new_size = Fs/50;
+   else if (variable_duration >= OPUS_FRAMESIZE_2_5_MS && variable_duration <= OPUS_FRAMESIZE_60_MS)
+      new_size = IMAX(3*Fs/50, (Fs/400)<<(variable_duration-OPUS_FRAMESIZE_2_5_MS));
+   else
+      return -1;
+   if (new_size>frame_size)
+      return -1;
+   if (400*new_size!=Fs && 200*new_size!=Fs && 100*new_size!=Fs &&
+            50*new_size!=Fs && 25*new_size!=Fs && 50*new_size!=3*Fs)
+      return -1;
+   return new_size;
+}
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-                unsigned char *data, opus_int32 out_data_bytes, int lsb_depth)
+                unsigned char *data, opus_int32 out_data_bytes, int lsb_depth
+#ifndef FIXED_POINT
+                , AnalysisInfo *analysis_info
+#endif
+                )
 {
     void *silk_enc;
     CELTEncoder *celt_enc;
@@ -790,11 +817,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     opus_val16 HB_gain;
     opus_int32 max_data_bytes; /* Max number of bytes we're allowed to use */
     int total_buffer;
-    int perform_analysis=0;
-    int orig_frame_size;
-#ifndef FIXED_POINT
-    AnalysisInfo analysis_info;
-#endif
     VARDECL(opus_val16, tmp_prefill);
 
     ALLOC_STACK;
@@ -820,38 +842,15 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     lsb_depth = IMIN(lsb_depth, st->lsb_depth);
 
-    orig_frame_size = IMIN(frame_size,st->Fs/50);
-    if (st->variable_duration)
-    {
-       int LM = 3;
+    st->voice_ratio = -1;
+
 #ifndef FIXED_POINT
-       LM = optimize_framesize(pcm, frame_size, st->channels, st->Fs, st->bitrate_bps,
-             st->analysis.prev_tonality, st->subframe_mem, delay_compensation, downmix_float);
-#endif
-       while ((st->Fs/400<<LM)>frame_size)
-          LM--;
-       frame_size = (st->Fs/400<<LM);
-    }
-#ifndef FIXED_POINT
-    /* Only perform analysis up to 20-ms frames. Longer ones will be split if
-       they're in CELT-only mode. */
-    analysis_info.valid = 0;
-    perform_analysis = st->silk_mode.complexity >= 7 && st->Fs==48000;
-    if (!perform_analysis)
+    st->detected_bandwidth = 0;
+    if (analysis_info->valid)
     {
-       st->voice_ratio = -1;
-       st->detected_bandwidth = 0;
-    } else if (frame_size <= st->Fs/50)
-    {
-       tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm, IMIN(480, frame_size), st->channels, lsb_depth);
-       if (frame_size > st->Fs/100)
-          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+(st->Fs/100)*st->channels, 480, st->channels, lsb_depth);
-       if (analysis_info.valid)
-       {
-          if (st->signal_type == OPUS_AUTO)
-             st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
-          st->detected_bandwidth = analysis_info.opus_bandwidth;
-       }
+       if (st->signal_type == OPUS_AUTO)
+          st->voice_ratio = (int)floor(.5+100*(1-analysis_info->music_prob));
+       st->detected_bandwidth = analysis_info->opus_bandwidth;
     }
 #endif
 
@@ -1161,7 +1160,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           /* When switching from SILK/Hybrid to CELT, only ask for a switch at the last frame */
           if (to_celt && i==nb_frames-1)
              st->user_forced_mode = MODE_CELT_ONLY;
-          tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data+i*bytes_per_frame, bytes_per_frame, lsb_depth);
+          tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data+i*bytes_per_frame, bytes_per_frame, lsb_depth
+#ifndef FIXED_POINT
+                , analysis_info
+#endif
+                );
           if (tmp_len<0)
           {
              RESTORE_STACK;
@@ -1187,16 +1190,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        RESTORE_STACK;
        return ret;
     }
-#ifndef FIXED_POINT
-    /* Perform analysis for 40-60 ms frames */
-    if (perform_analysis && frame_size > st->Fs/50)
-    {
-       int nb_analysis = frame_size/(st->Fs/100);
-       for (i=0;i<nb_analysis;i++)
-          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm+i*(st->Fs/100)*st->channels, 480, st->channels, lsb_depth);
-       st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
-    }
-#endif
     curr_bandwidth = st->bandwidth;
 
     /* Chooses the appropriate mode for speech
@@ -1446,11 +1439,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             {
                 opus_int32 bonus=0;
 #ifndef FIXED_POINT
-                if (st->variable_duration && orig_frame_size != frame_size)
+                if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != st->Fs/50)
                 {
-                   bonus = (40*st->stream_channels+40)*(48000/frame_size-48000/orig_frame_size);
-                   if (analysis_info.valid)
-                      bonus = bonus*(1.f+.5*analysis_info.tonality);
+                   bonus = (40*st->stream_channels+40)*(st->Fs/frame_size-50);
+                   if (analysis_info->valid)
+                      bonus = bonus*(1.f+.5*analysis_info->tonality);
                 }
 #endif
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR(1));
@@ -1587,8 +1580,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         if (ec_tell(&enc) <= 8*nb_compr_bytes)
         {
 #ifndef FIXED_POINT
-           if (perform_analysis)
-              celt_encoder_ctl(celt_enc, CELT_SET_ANALYSIS(&analysis_info));
+           celt_encoder_ctl(celt_enc, CELT_SET_ANALYSIS(analysis_info));
 #endif
            ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
            if (ret < 0)
@@ -1688,6 +1680,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
    VARDECL(opus_int16, in);
    ALLOC_STACK;
 
+   frame_size = frame_size_select(frame_size, st->variable_duration, st->Fs);
    if(frame_size<0)
    {
       RESTORE_STACK;
@@ -1707,6 +1700,12 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
 opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes)
 {
+   frame_size = frame_size_select(frame_size, st->variable_duration, st->Fs);
+   if(frame_size<0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 16);
 }
 
@@ -1715,21 +1714,74 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
       unsigned char *data, opus_int32 max_data_bytes)
 {
    int i, ret;
+   const CELTMode *celt_mode;
+   int delay_compensation;
+   int lsb_depth;
    VARDECL(float, in);
+   AnalysisInfo analysis_info;
    ALLOC_STACK;
+
+   opus_encoder_ctl(st, CELT_GET_MODE(&celt_mode));
+   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+      delay_compensation = 0;
+   else
+      delay_compensation = st->delay_compensation;
+
+   lsb_depth = IMIN(16, st->lsb_depth);
+
+   analysis_info.valid = 0;
+   if (st->silk_mode.complexity >= 7 && st->Fs==48000)
+   {
+      frame_size = run_analysis(&st->analysis, celt_mode, pcm, pcm+st->channels*st->analysis.analysis_offset,
+            frame_size, st->variable_duration, st->channels, st->Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix_int, &analysis_info);
+   } else {
+      frame_size = frame_size_select(frame_size, st->variable_duration, st->Fs);
+   }
+   if(frame_size<0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
 
    ALLOC(in, frame_size*st->channels, float);
 
    for (i=0;i<frame_size*st->channels;i++)
       in[i] = (1.0f/32768)*pcm[i];
-   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16);
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16, &analysis_info);
    RESTORE_STACK;
    return ret;
 }
 opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
                       unsigned char *data, opus_int32 out_data_bytes)
 {
-   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 24);
+   const CELTMode *celt_mode;
+   int delay_compensation;
+   int lsb_depth;
+   AnalysisInfo analysis_info;
+
+   opus_encoder_ctl(st, CELT_GET_MODE(&celt_mode));
+   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+      delay_compensation = 0;
+   else
+      delay_compensation = st->delay_compensation;
+
+   lsb_depth = IMIN(24, st->lsb_depth);
+
+   analysis_info.valid = 0;
+   if (st->silk_mode.complexity >= 7 && st->Fs==48000)
+   {
+      frame_size = run_analysis(&st->analysis, celt_mode, pcm, pcm+st->channels*st->analysis.analysis_offset,
+            frame_size, st->variable_duration, st->channels, st->Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix_float, &analysis_info);
+   } else {
+      frame_size = frame_size_select(frame_size, st->variable_duration, st->Fs);
+   }
+   if(frame_size<0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+
+   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 24, &analysis_info);
 
 }
 #endif
@@ -1998,15 +2050,13 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->lsb_depth;
         }
         break;
-        case OPUS_SET_EXPERT_VARIABLE_DURATION_REQUEST:
+        case OPUS_SET_EXPERT_FRAME_DURATION_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value<0 || value>1)
-               goto bad_arg;
             st->variable_duration = value;
         }
         break;
-        case OPUS_GET_EXPERT_VARIABLE_DURATION_REQUEST:
+        case OPUS_GET_EXPERT_FRAME_DURATION_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->variable_duration;
@@ -2039,6 +2089,15 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             if ((value < MODE_SILK_ONLY || value > MODE_CELT_ONLY) && value != OPUS_AUTO)
                goto bad_arg;
             st->user_forced_mode = value;
+        }
+        break;
+
+        case CELT_GET_MODE_REQUEST:
+        {
+           const CELTMode ** value = va_arg(ap, const CELTMode**);
+           if (value==0)
+              goto bad_arg;
+           celt_encoder_ctl(celt_enc, CELT_GET_MODE(value));
         }
         break;
         default:

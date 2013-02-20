@@ -31,6 +31,7 @@
 
 #include "arch.h"
 #include "opus.h"
+#include "celt.h"
 
 struct OpusRepacketizer {
    unsigned char toc;
@@ -82,17 +83,23 @@ int get_mono_channel(const ChannelLayout *layout, int stream_id, int prev);
 #define OPUS_SET_FORCE_MODE(x) OPUS_SET_FORCE_MODE_REQUEST, __opus_check_int(x)
 
 typedef void (*downmix_func)(const void *, float *, int, int, int);
-void downmix_float(const void *_x, float *sub, int subframe, int i, int C);
-void downmix_int(const void *_x, float *sub, int subframe, int i, int C);
+void downmix_float(const void *_x, float *sub, int subframe, int offset, int C);
+void downmix_int(const void *_x, float *sub, int subframe, int offset, int C);
 
 int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
                 int bitrate, opus_val16 tonality, opus_val32 *mem, int buffering,
-                void (*downmix)(const void *, float *, int, int, int));
+                downmix_func downmix);
 
 int encode_size(int size, unsigned char *data);
 
+opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs);
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-      unsigned char *data, opus_int32 out_data_bytes, int lsb_depth);
+      unsigned char *data, opus_int32 out_data_bytes, int lsb_depth
+#ifndef FIXED_POINT
+                , AnalysisInfo *analysis_info
+#endif
+      );
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
       opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited, int *packet_offset);

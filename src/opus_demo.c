@@ -244,7 +244,8 @@ int main(int argc, char *argv[])
     int mode_switch_time = 48000;
     int nb_encoded;
     int remaining=0;
-    int variable_duration=0;
+    int variable_duration=OPUS_FRAMESIZE_ARG;
+    int delayed_decision=0;
 
     if (argc < 5 )
     {
@@ -313,7 +314,7 @@ int main(int argc, char *argv[])
     forcechannels = OPUS_AUTO;
     use_dtx = 0;
     packet_loss_perc = 0;
-    max_frame_size = 960*6;
+    max_frame_size = 2*48000;
     curr_read=0;
 
     while( args < argc - 2 ) {
@@ -383,7 +384,11 @@ int main(int argc, char *argv[])
             args++;
         } else if( strcmp( argv[ args ], "-variable-duration" ) == 0 ) {
             check_encoder_option(decode_only, "-variable-duration");
-            variable_duration = 1;
+            variable_duration = OPUS_FRAMESIZE_VARIABLE;
+            args++;
+        } else if( strcmp( argv[ args ], "-delayed-decision" ) == 0 ) {
+            check_encoder_option(decode_only, "-delayed-decision");
+            delayed_decision = 1;
             args++;
         } else if( strcmp( argv[ args ], "-dtx") == 0 ) {
             check_encoder_option(decode_only, "-dtx");
@@ -510,7 +515,7 @@ int main(int argc, char *argv[])
 
        opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
        opus_encoder_ctl(enc, OPUS_SET_LSB_DEPTH(16));
-       opus_encoder_ctl(enc, OPUS_SET_EXPERT_VARIABLE_DURATION(variable_duration));
+       opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
     }
     if (!encode_only)
     {
@@ -565,6 +570,26 @@ int main(int argc, char *argv[])
     data[0] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
     if ( use_inbandfec ) {
         data[1] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
+    }
+    if(delayed_decision)
+    {
+       if (variable_duration!=OPUS_FRAMESIZE_VARIABLE)
+       {
+          if (frame_size==sampling_rate/400)
+             variable_duration = OPUS_FRAMESIZE_2_5_MS;
+          else if (frame_size==sampling_rate/200)
+             variable_duration = OPUS_FRAMESIZE_5_MS;
+          else if (frame_size==sampling_rate/100)
+             variable_duration = OPUS_FRAMESIZE_10_MS;
+          else if (frame_size==sampling_rate/50)
+             variable_duration = OPUS_FRAMESIZE_20_MS;
+          else if (frame_size==sampling_rate/25)
+             variable_duration = OPUS_FRAMESIZE_40_MS;
+          else
+             variable_duration = OPUS_FRAMESIZE_60_MS;
+          opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
+       }
+       frame_size = 2*48000;
     }
     while (!stop)
     {

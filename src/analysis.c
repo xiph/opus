@@ -139,10 +139,81 @@ static inline float fast_atan2f(float y, float x) {
    }
 }
 
-void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEncoder *celt_enc, const opus_val16 *x, int len, int C, int lsb_depth)
+void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int len)
+{
+#if 1
+   int pos;
+   int curr_lookahead;
+   float psum;
+   int i;
+
+   pos = tonal->read_pos;
+   curr_lookahead = tonal->write_pos-tonal->read_pos;
+   if (curr_lookahead<0)
+      curr_lookahead += DETECT_SIZE;
+
+   if (len > 480 && pos != tonal->write_pos)
+   {
+      pos++;
+      if (pos==DETECT_SIZE)
+         pos=0;
+   }
+   if (pos == tonal->write_pos)
+      pos--;
+   if (pos<0)
+      pos = DETECT_SIZE-1;
+   OPUS_COPY(info_out, &tonal->info[pos], 1);
+   tonal->read_subframe += len/120;
+   while (tonal->read_subframe>=4)
+   {
+      tonal->read_subframe -= 4;
+      tonal->read_pos++;
+   }
+   if (tonal->read_pos>=DETECT_SIZE)
+      tonal->read_pos-=DETECT_SIZE;
+
+   /* Compensate for the delay in the features themselves.
+      FIXME: Need a better estimate the 10 I just made up */
+   curr_lookahead = IMAX(curr_lookahead-10, 0);
+
+   psum=0;
+   for (i=0;i<DETECT_SIZE-curr_lookahead;i++)
+      psum += tonal->pmusic[i];
+   for (;i<DETECT_SIZE;i++)
+      psum += tonal->pspeech[i];
+   /*printf("%f %f\n", psum, info_out->music_prob);*/
+
+   info_out->music_prob = psum;
+#else
+   /* If data not available, return invalid */
+   if (tonal->read_pos==tonal->write_pos)
+   {
+      info_out->valid=0;
+      return;
+   }
+
+   OPUS_COPY(info_out, &tonal->info[tonal->read_pos], 1);
+   tonal->read_subframe += len/480;
+   while (tonal->read_subframe>=4)
+   {
+      tonal->read_subframe -= 4;
+      tonal->read_pos++;
+   }
+   if (tonal->read_pos>=DETECT_SIZE)
+      tonal->read_pos-=DETECT_SIZE;
+   if (tonal->read_pos == tonal->write_pos)
+   {
+      tonal->read_pos = tonal->write_pos-1;
+      if (tonal->read_pos<0)
+         tonal->read_pos=DETECT_SIZE-1;
+      tonal->read_subframe = 3;
+   }
+#endif
+}
+
+void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, const CELTMode *celt_mode, const void *x, int len, int offset, int C, int lsb_depth, downmix_func downmix)
 {
     int i, b;
-    const CELTMode *mode;
     const kiss_fft_state *kfft;
     kiss_fft_cpx in[480], out[480];
     int N = 480, N2=240;
@@ -171,8 +242,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     float maxE = 0;
     float noise_floor;
     int remaining;
-
-    celt_encoder_ctl(celt_enc, CELT_GET_MODE(&mode));
+    AnalysisInfo *info;
 
     tonal->last_transition++;
     alpha = 1.f/IMIN(20, 1+tonal->count);
@@ -181,23 +251,19 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
 
     if (tonal->count<4)
        tonal->music_prob = .5;
-    kfft = mode->mdct.kfft[0];
+    kfft = celt_mode->mdct.kfft[0];
     if (tonal->count==0)
        tonal->mem_fill = 240;
-    if (C==1)
-    {
-       for (i=0;i<IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill);i++)
-          tonal->inmem[i+tonal->mem_fill] = x[i];
-    } else {
-       for (i=0;i<IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill);i++)
-          tonal->inmem[i+tonal->mem_fill] = x[2*i]+x[2*i+1];
-    }
+    downmix(x, &tonal->inmem[tonal->mem_fill], IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, C);
     if (tonal->mem_fill+len < ANALYSIS_BUF_SIZE)
     {
        tonal->mem_fill += len;
        /* Don't have enough to update the analysis */
        return;
     }
+    info = &tonal->info[tonal->write_pos++];
+    if (tonal->write_pos>=DETECT_SIZE)
+       tonal->write_pos-=DETECT_SIZE;
 
     for (i=0;i<N2;i++)
     {
@@ -209,15 +275,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     }
     OPUS_MOVE(tonal->inmem, tonal->inmem+ANALYSIS_BUF_SIZE-240, 240);
     remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
-    if (C==1)
-    {
-       for (i=0;i<remaining;i++)
-          tonal->inmem[240+i] = x[ANALYSIS_BUF_SIZE-tonal->mem_fill+i];
-    } else {
-       for (i=0;i<remaining;i++)
-          tonal->inmem[240+i] = x[2*(ANALYSIS_BUF_SIZE-tonal->mem_fill+i)]
-                              + x[2*(ANALYSIS_BUF_SIZE-tonal->mem_fill+i)+1];
-    }
+    downmix(x, &tonal->inmem[240], remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, C);
     tonal->mem_fill = 240 + remaining;
     opus_fft(kfft, in, out);
 
@@ -450,13 +508,49 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        tau = .00005f;
        beta = .1f;
        max_certainty = .01f+1.f/(20.f+.5f*tonal->last_transition);
+       max_certainty = 0;
        p0 = (1-tonal->music_prob)*(1-tau) +    tonal->music_prob *tau;
        p1 =    tonal->music_prob *(1-tau) + (1-tonal->music_prob)*tau;
        p0 *= (float)pow(1-frame_prob, beta);
        p1 *= (float)pow(frame_prob, beta);
        tonal->music_prob = MAX16(max_certainty, MIN16(1-max_certainty, p1/(p0+p1)));
        info->music_prob = tonal->music_prob;
-       /*printf("%f %f\n", frame_prob, info->music_prob);*/
+       info->music_prob = frame_prob;
+
+       float psum=1e-20;
+       float speech0 = (float)pow(1-frame_prob, beta);
+       float music0  = (float)pow(frame_prob, beta);
+       if (tonal->count==1)
+       {
+          tonal->pspeech[0]=.5;
+          tonal->pmusic [0]=.5;
+       }
+       float s0, m0;
+       s0 = tonal->pspeech[0] + tonal->pspeech[1];
+       m0 = tonal->pmusic [0] + tonal->pmusic [1];
+       tonal->pspeech[0] = s0*(1-tau)*speech0;
+       tonal->pmusic [0] = m0*(1-tau)*music0;
+       for (i=1;i<DETECT_SIZE-1;i++)
+       {
+          tonal->pspeech[i] = tonal->pspeech[i+1]*speech0;
+          tonal->pmusic [i] = tonal->pmusic [i+1]*music0;
+       }
+       tonal->pspeech[DETECT_SIZE-1] = m0*tau*speech0;
+       tonal->pmusic [DETECT_SIZE-1] = s0*tau*music0;
+
+       for (i=0;i<DETECT_SIZE;i++)
+          psum += tonal->pspeech[i] + tonal->pmusic[i];
+       psum = 1.f/psum;
+       for (i=0;i<DETECT_SIZE;i++)
+       {
+          tonal->pspeech[i] *= psum;
+          tonal->pmusic [i] *= psum;
+       }
+       psum = tonal->pmusic[0];
+       for (i=1;i<DETECT_SIZE;i++)
+          psum += tonal->pspeech[i];
+
+       /*printf("%f %f %f\n", frame_prob, info->music_prob, psum);*/
     }
     if (tonal->last_music != (tonal->music_prob>.5f))
        tonal->last_transition=0;
@@ -484,4 +578,48 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     /*printf("%d %d\n", info->bandwidth, info->opus_bandwidth);*/
     info->noisiness = frame_noisiness;
     info->valid = 1;
+    if (info_out!=NULL)
+       OPUS_COPY(info_out, info, 1);
+}
+
+int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *pcm,
+                        const void *analysis_pcm, int frame_size, int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
+                        int delay_compensation, int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info)
+{
+   int offset;
+   int pcm_len;
+
+   /* Avoid overflow/wrap-around of the analysis buffer */
+   frame_size = IMIN((DETECT_SIZE-5)*Fs/100, frame_size);
+
+   pcm_len = frame_size - analysis->analysis_offset;
+   offset = 0;
+   do {
+      tonality_analysis(analysis, NULL, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, C, lsb_depth, downmix);
+      offset += 480;
+      pcm_len -= 480;
+   } while (pcm_len>0);
+   analysis->analysis_offset = frame_size;
+
+   if (variable_duration == OPUS_FRAMESIZE_VARIABLE && frame_size >= Fs/200)
+   {
+      int LM = 3;
+      LM = optimize_framesize(pcm, frame_size, C, Fs, bitrate_bps,
+            analysis->prev_tonality, analysis->subframe_mem, delay_compensation, downmix);
+      while ((Fs/400<<LM)>frame_size)
+         LM--;
+      frame_size = (Fs/400<<LM);
+   } else {
+      frame_size = frame_size_select(frame_size, variable_duration, Fs);
+   }
+   if (frame_size<0)
+      return -1;
+   analysis->analysis_offset -= frame_size;
+
+   /* Only perform analysis up to 20-ms frames. Longer ones will be split if
+      they're in CELT-only mode. */
+   analysis_info->valid = 0;
+   tonality_get_info(analysis, analysis_info, frame_size);
+
+   return frame_size;
 }

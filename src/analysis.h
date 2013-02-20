@@ -28,10 +28,16 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 
+#include "celt.h"
+#include "opus_private.h"
+
 #define NB_FRAMES 8
 #define NB_TBANDS 18
 #define NB_TOT_BANDS 21
 #define ANALYSIS_BUF_SIZE 720 /* 15 ms at 48 kHz */
+
+#define DETECT_SIZE 200
+
 typedef struct {
    float angle[240];
    float d_angle[240];
@@ -55,9 +61,23 @@ typedef struct {
    int last_transition;
    int count;
    int opus_bandwidth;
+   opus_val32   subframe_mem[3];
+   int analysis_offset;
+   float pspeech[DETECT_SIZE];
+   float pmusic[DETECT_SIZE];
+   int write_pos;
+   int read_pos;
+   int read_subframe;
+   AnalysisInfo info[DETECT_SIZE];
 } TonalityAnalysisState;
 
 void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info,
-     CELTEncoder *celt_enc, const opus_val16 *x, int len, int C, int lsb_depth);
+     const CELTMode *celt_mode, const void *x, int len, int offset, int C, int lsb_depth, downmix_func downmix);
+
+void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int len);
+
+int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *pcm,
+                        const void *analysis_pcm, int frame_size, int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
+                        int delay_compensation, int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info);
 
 #endif
