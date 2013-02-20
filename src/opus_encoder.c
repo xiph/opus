@@ -776,7 +776,7 @@ opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_
       new_size = IMAX(3*Fs/50, (Fs/400)<<(variable_duration-OPUS_FRAMESIZE_2_5_MS));
    else
       return -1;
-   if (new_size<frame_size)
+   if (new_size>frame_size)
       return -1;
    if (400*new_size!=Fs && 200*new_size!=Fs && 100*new_size!=Fs &&
             50*new_size!=Fs && 25*new_size!=Fs && 50*new_size!=3*Fs)
