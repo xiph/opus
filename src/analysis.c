@@ -141,7 +141,6 @@ static inline float fast_atan2f(float y, float x) {
 
 void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int len)
 {
-#if 1
    int pos;
    int curr_lookahead;
    float psum;
@@ -184,31 +183,6 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    /*printf("%f %f\n", psum, info_out->music_prob);*/
 
    info_out->music_prob = psum;
-#else
-   /* If data not available, return invalid */
-   if (tonal->read_pos==tonal->write_pos)
-   {
-      info_out->valid=0;
-      return;
-   }
-
-   OPUS_COPY(info_out, &tonal->info[tonal->read_pos], 1);
-   tonal->read_subframe += len/480;
-   while (tonal->read_subframe>=4)
-   {
-      tonal->read_subframe -= 4;
-      tonal->read_pos++;
-   }
-   if (tonal->read_pos>=DETECT_SIZE)
-      tonal->read_pos-=DETECT_SIZE;
-   if (tonal->read_pos == tonal->write_pos)
-   {
-      tonal->read_pos = tonal->write_pos-1;
-      if (tonal->read_pos<0)
-         tonal->read_pos=DETECT_SIZE-1;
-      tonal->read_subframe = 3;
-   }
-#endif
 }
 
 void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, const CELTMode *celt_mode, const void *x, int len, int offset, int C, int lsb_depth, downmix_func downmix)
@@ -234,7 +208,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     float slope=0;
     float frame_stationarity;
     float relativeE;
-    float frame_prob;
+    float frame_probs[2];
     float alpha, alphaE, alphaE2;
     float frame_loudness;
     float bandwidth_mask;
@@ -494,32 +468,34 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     features[24] = tonal->lowECount;
 
 #ifndef FIXED_POINT
-    mlp_process(&net, features, &frame_prob);
-    frame_prob = .5f*(frame_prob+1);
+    mlp_process(&net, features, frame_probs);
+    frame_probs[0] = .5f*(frame_probs[0]+1);
     /* Curve fitting between the MLP probability and the actual probability */
-    frame_prob = .01f + 1.21f*frame_prob*frame_prob - .23f*(float)pow(frame_prob, 10);
+    frame_probs[0] = .01f + 1.21f*frame_probs[0]*frame_probs[0] - .23f*(float)pow(frame_probs[0], 10);
+    frame_probs[1] = .5*frame_probs[1]+.5;
+    frame_probs[0] = frame_probs[1]*frame_probs[0] + (1-frame_probs[1])*.5;
 
-    /*printf("%f\n", frame_prob);*/
+    /*printf("%f %f ", frame_probs[0], frame_probs[1]);*/
     {
        float tau, beta;
        float p0, p1;
        float max_certainty;
        /* One transition every 3 minutes */
-       tau = .00005f;
-       beta = .1f;
+       tau = .00005f*frame_probs[1];
+       beta = .05f;
        max_certainty = .01f+1.f/(20.f+.5f*tonal->last_transition);
        max_certainty = 0;
        p0 = (1-tonal->music_prob)*(1-tau) +    tonal->music_prob *tau;
        p1 =    tonal->music_prob *(1-tau) + (1-tonal->music_prob)*tau;
-       p0 *= (float)pow(1-frame_prob, beta);
-       p1 *= (float)pow(frame_prob, beta);
+       p0 *= (float)pow(1-frame_probs[0], beta);
+       p1 *= (float)pow(frame_probs[0], beta);
        tonal->music_prob = MAX16(max_certainty, MIN16(1-max_certainty, p1/(p0+p1)));
        info->music_prob = tonal->music_prob;
-       info->music_prob = frame_prob;
+       info->music_prob = frame_probs[0];
 
        float psum=1e-20;
-       float speech0 = (float)pow(1-frame_prob, beta);
-       float music0  = (float)pow(frame_prob, beta);
+       float speech0 = (float)pow(1-frame_probs[0], beta);
+       float music0  = (float)pow(frame_probs[0], beta);
        if (tonal->count==1)
        {
           tonal->pspeech[0]=.5;
@@ -550,7 +526,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        for (i=1;i<DETECT_SIZE;i++)
           psum += tonal->pspeech[i];
 
-       /*printf("%f %f %f\n", frame_prob, info->music_prob, psum);*/
+       /*printf("%f\n", psum);*/
     }
     if (tonal->last_music != (tonal->music_prob>.5f))
        tonal->last_transition=0;

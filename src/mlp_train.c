@@ -106,6 +106,7 @@ MLPTrain * mlp_init(int *topo, int nbLayers, float *inputs, float *outputs, int 
 }
 
 #define MAX_NEURONS 100
+#define MAX_OUT 10
 
 double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamples, double *W0_grad, double *W1_grad, double *error_rate)
 {
@@ -120,7 +121,8 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
 	double netOut[MAX_NEURONS];
 	double error[MAX_NEURONS];
 
-        *error_rate = 0;
+	for (i=0;i<outDim;i++)
+	   error_rate[i] = 0;
 	topo = net->topo;
 	inDim = net->topo[0];
 	hiddenDim = net->topo[1];
@@ -153,7 +155,7 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
 			netOut[i] = tansig_approx(sum);
 			error[i] = out[i] - netOut[i];
 			rms += error[i]*error[i];
-			*error_rate += fabs(error[i])>1;
+			error_rate[i] += fabs(error[i])>1;
 			/*error[i] = error[i]/(1+fabs(error[i]));*/
 		}
 		/* Back-propagate error */
@@ -194,7 +196,7 @@ struct GradientArg {
 	double *W0_grad;
 	double *W1_grad;
 	double rms;
-	double error_rate;
+	double error_rate[MAX_OUT];
 };
 
 void *gradient_thread_process(void *_arg)
@@ -213,7 +215,7 @@ void *gradient_thread_process(void *_arg)
 		sem_wait(&sem_begin[arg->id]);
 		if (arg->done)
 			break;
-		arg->rms = compute_gradient(arg->net, arg->inputs, arg->outputs, arg->nbSamples, arg->W0_grad, arg->W1_grad, &arg->error_rate);
+		arg->rms = compute_gradient(arg->net, arg->inputs, arg->outputs, arg->nbSamples, arg->W0_grad, arg->W1_grad, arg->error_rate);
 		sem_post(&sem_end[arg->id]);
 	}
 	fprintf(stderr, "done\n");
@@ -295,7 +297,7 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 	for (e=0;e<nbEpoch;e++)
 	{
 		double rms=0;
-                double error_rate = 0;
+		double error_rate[2] = {0,0};
 		for (i=0;i<NB_THREADS;i++)
 		{
 			sem_post(&sem_begin[i]);
@@ -306,7 +308,8 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 		{
 			sem_wait(&sem_end[i]);
 			rms += args[i].rms;
-			error_rate += args[i].error_rate;
+			error_rate[0] += args[i].error_rate[0];
+            error_rate[1] += args[i].error_rate[1];
 			for (j=0;j<W0_size;j++)
 				W0_grad[j] += args[i].W0_grad[j];
 			for (j=0;j<W1_size;j++)
@@ -315,8 +318,9 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 
 		float mean_rate = 0, min_rate = 1e10;
 		rms = (rms/(outDim*nbSamples));
-		error_rate = (error_rate/(outDim*nbSamples));
-		fprintf (stderr, "%f (%f %f) ", error_rate, rms, best_rms);
+		error_rate[0] = (error_rate[0]/(nbSamples));
+        error_rate[1] = (error_rate[1]/(nbSamples));
+		fprintf (stderr, "%f %f (%f %f) ", error_rate[0], error_rate[1], rms, best_rms);
 		if (rms < best_rms)
 		{
 			best_rms = rms;
@@ -445,6 +449,7 @@ int main(int argc, char **argv)
 	outputs = malloc(nbOutputs*nbSamples*sizeof(*outputs));
 	
 	seed = time(NULL);
+    /*seed = 1361480659;*/
 	fprintf (stderr, "Seed is %u\n", seed);
 	srand(seed);
 	build_tansig_table();
