@@ -230,8 +230,8 @@ int test_decoder_code0(int no_fuzz)
      /*We only test a subset of the modes here simply because the longer
        durations end up taking a long time.*/
       static const int cmodes[4]={16,20,24,28};
-      static const opus_uint32 cres[4]={116290185,2172123586,2172123586,2172123586};
-      static const opus_uint32 lres[3]={3285687739,1481572662,694350475};
+      static const opus_uint32 cres[4]={116290185,2172123586u,2172123586u,2172123586u};
+      static const opus_uint32 lres[3]={3285687739u,1481572662,694350475};
       static const int lmodes[3]={0,4,8};
       int mode=fast_rand()%4;
 
