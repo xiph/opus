@@ -180,6 +180,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       psum += tonal->pmusic[i];
    for (;i<DETECT_SIZE;i++)
       psum += tonal->pspeech[i];
+   psum = psum*tonal->music_confidence + (1-psum)*tonal->speech_confidence;
    /*printf("%f %f\n", psum, info_out->music_prob);*/
 
    info_out->music_prob = psum;
@@ -479,19 +480,22 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     {
        float tau, beta;
        float p0, p1;
-       float max_certainty;
        /* One transition every 3 minutes */
        tau = .00005f*frame_probs[1];
        beta = .05f;
-       max_certainty = .01f+1.f/(20.f+.5f*tonal->last_transition);
-       max_certainty = 0;
+       if (1) {
+          /* Adapt beta based on how "unexpected" the new prob is */
+          float p, q;
+          p = MAX16(.05f,MIN16(.95f,frame_probs[0]));
+          q = MAX16(.05f,MIN16(.95f,tonal->music_prob));
+          beta = .01+.05*ABS16(p-q)/(p*(1-q)+q*(1-p));
+       }
        p0 = (1-tonal->music_prob)*(1-tau) +    tonal->music_prob *tau;
        p1 =    tonal->music_prob *(1-tau) + (1-tonal->music_prob)*tau;
        p0 *= (float)pow(1-frame_probs[0], beta);
        p1 *= (float)pow(frame_probs[0], beta);
-       tonal->music_prob = MAX16(max_certainty, MIN16(1-max_certainty, p1/(p0+p1)));
+       tonal->music_prob = p1/(p0+p1);
        info->music_prob = tonal->music_prob;
-       info->music_prob = frame_probs[0];
 
        float psum=1e-20;
        float speech0 = (float)pow(1-frame_probs[0], beta);
@@ -526,7 +530,30 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        for (i=1;i<DETECT_SIZE;i++)
           psum += tonal->pspeech[i];
 
-       /*printf("%f\n", psum);*/
+       /* Estimate our confidence in the speech/music decisions */
+       if (frame_probs[1]>.75)
+       {
+          if (tonal->music_prob>.9)
+          {
+             float adapt;
+             adapt = 1.f/(++tonal->music_confidence_count);
+             tonal->music_confidence_count = IMIN(tonal->music_confidence_count, 500);
+             tonal->music_confidence += adapt*MAX16(-.2f,frame_probs[0]-tonal->music_confidence);
+          }
+          if (tonal->music_prob<.1)
+          {
+             float adapt;
+             adapt = 1.f/(++tonal->speech_confidence_count);
+             tonal->speech_confidence_count = IMIN(tonal->speech_confidence_count, 500);
+             tonal->speech_confidence += adapt*MIN16(.2f,frame_probs[0]-tonal->speech_confidence);
+          }
+       } else {
+          if (tonal->music_confidence_count==0)
+             tonal->music_confidence = .9;
+          if (tonal->speech_confidence_count==0)
+             tonal->speech_confidence = .1;
+       }
+       psum = MAX16(tonal->speech_confidence, MIN16(tonal->music_confidence, psum));
     }
     if (tonal->last_music != (tonal->music_prob>.5f))
        tonal->last_transition=0;

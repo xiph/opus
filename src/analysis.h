@@ -65,6 +65,10 @@ typedef struct {
    int analysis_offset;
    float pspeech[DETECT_SIZE];
    float pmusic[DETECT_SIZE];
+   float speech_confidence;
+   float music_confidence;
+   int speech_confidence_count;
+   int music_confidence_count;
    int write_pos;
    int read_pos;
    int read_subframe;
