@@ -88,7 +88,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
       unsigned char *data, opus_int32 out_data_bytes, int lsb_depth);
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
-      opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited, int *packet_offset);
+      opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited,
+      int *packet_offset, int soft_clip);
 
 /* Make sure everything's aligned to sizeof(void *) bytes */
 static inline int align(int i)

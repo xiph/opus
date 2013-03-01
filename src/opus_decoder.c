@@ -65,6 +65,9 @@ struct OpusDecoder {
    int          frame_size;
    int          prev_redundancy;
    int          last_packet_duration;
+#ifndef FIXED_POINT
+   opus_val16   softclip_mem[2];
+#endif
 
    opus_uint32  rangeFinal;
 };
@@ -732,7 +735,7 @@ int opus_packet_parse(const unsigned char *data, opus_int32 len,
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec,
-      int self_delimited, int *packet_offset)
+      int self_delimited, int *packet_offset, int soft_clip)
 {
    int i, nb_samples;
    int count, offset;
@@ -779,10 +782,10 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       int ret;
       /* If no FEC can be present, run the PLC (recursive call) */
       if (frame_size <= packet_frame_size || packet_mode == MODE_CELT_ONLY || st->mode == MODE_CELT_ONLY)
-         return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL);
+         return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL, soft_clip);
       /* Otherwise, run the PLC on everything except the size for which we might have FEC */
       duration_copy = st->last_packet_duration;
-      ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL);
+      ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL, soft_clip);
       if (ret<0)
       {
          st->last_packet_duration = duration_copy;
@@ -837,6 +840,12 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    st->last_packet_duration = nb_samples;
    if (OPUS_CHECK_ARRAY(pcm, nb_samples*st->channels))
       OPUS_PRINT_INT(nb_samples);
+#ifndef FIXED_POINT
+   if (soft_clip)
+      opus_pcm_soft_clip(pcm, nb_samples, st->channels, st->softclip_mem);
+   else
+      st->softclip_mem[0]=st->softclip_mem[1]=0;
+#endif
    return nb_samples;
 }
 
@@ -845,7 +854,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 int opus_decode(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec)
 {
-   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL);
+   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0);
 }
 
 #ifndef DISABLE_FLOAT_API
@@ -858,7 +867,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 
    ALLOC(out, frame_size*st->channels, opus_int16);
 
-   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL);
+   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0);
    if (ret > 0)
    {
       for (i=0;i<ret*st->channels;i++)
@@ -886,7 +895,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
    ALLOC(out, frame_size*st->channels, float);
 
-   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL);
+   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 1);
    if (ret > 0)
    {
       for (i=0;i<ret*st->channels;i++)
@@ -899,7 +908,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 int opus_decode_float(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec)
 {
-   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL);
+   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0);
 }
 
 #endif

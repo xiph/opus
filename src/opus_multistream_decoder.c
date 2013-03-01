@@ -159,7 +159,8 @@ static int opus_multistream_decode_native(
       void *pcm,
       opus_copy_channel_out_func copy_channel_out,
       int frame_size,
-      int decode_fec
+      int decode_fec,
+      int soft_clip
 )
 {
    opus_int32 Fs;
@@ -199,7 +200,7 @@ static int opus_multistream_decode_native(
          return OPUS_INVALID_PACKET;
       }
       packet_offset = 0;
-      ret = opus_decode_native(dec, data, len, buf, frame_size, decode_fec, s!=st->layout.nb_streams-1, &packet_offset);
+      ret = opus_decode_native(dec, data, len, buf, frame_size, decode_fec, s!=st->layout.nb_streams-1, &packet_offset, soft_clip);
       data += packet_offset;
       len -= packet_offset;
       if (ret > frame_size)
@@ -333,7 +334,7 @@ int opus_multistream_decode(
 )
 {
    return opus_multistream_decode_native(st, data, len,
-       pcm, opus_copy_channel_out_short, frame_size, decode_fec);
+       pcm, opus_copy_channel_out_short, frame_size, decode_fec, 0);
 }
 
 #ifndef DISABLE_FLOAT_API
@@ -341,7 +342,7 @@ int opus_multistream_decode_float(OpusMSDecoder *st, const unsigned char *data,
       opus_int32 len, float *pcm, int frame_size, int decode_fec)
 {
    return opus_multistream_decode_native(st, data, len,
-       pcm, opus_copy_channel_out_float, frame_size, decode_fec);
+       pcm, opus_copy_channel_out_float, frame_size, decode_fec, 0);
 }
 #endif
 
@@ -351,7 +352,7 @@ int opus_multistream_decode(OpusMSDecoder *st, const unsigned char *data,
       opus_int32 len, opus_int16 *pcm, int frame_size, int decode_fec)
 {
    return opus_multistream_decode_native(st, data, len,
-       pcm, opus_copy_channel_out_short, frame_size, decode_fec);
+       pcm, opus_copy_channel_out_short, frame_size, decode_fec, 1);
 }
 
 int opus_multistream_decode_float(
@@ -364,7 +365,7 @@ int opus_multistream_decode_float(
 )
 {
    return opus_multistream_decode_native(st, data, len,
-       pcm, opus_copy_channel_out_float, frame_size, decode_fec);
+       pcm, opus_copy_channel_out_float, frame_size, decode_fec, 0);
 }
 #endif
 

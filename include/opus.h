@@ -592,6 +592,20 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_get_nb_samples(const unsigne
   * @retval OPUS_INVALID_PACKET The compressed data passed is corrupted or of an unsupported type
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], opus_int32 len) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(2);
+
+/** Applies soft-clipping to bring a float signal within the [-1,1] range. If
+  * the signal is already in that range, nothing is done. If there are values
+  * outside of [-1,1], then the signal is clipped as smoothly as possible to
+  * both fit in the range and avoid creating excessive distortion in the
+  * process.
+  * @param [in,out] pcm <tt>float*</tt>: Input PCM and modified PCM
+  * @param [in] frame_size <tt>int</tt> Number of samples per channel to process
+  * @param [in] channels <tt>int</tt>: Number of channels
+  * @param [in,out] softclip_mem <tt>float*</tt>: State memory for the soft clipping process
+  */
+OPUS_EXPORT void opus_soft_clip(float *pcm, int frame_size, int channels, float *softclip_mem);
+
+
 /**@}*/
 
 /** @defgroup opus_repacketizer Repacketizer
