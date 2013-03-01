@@ -603,7 +603,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_nb_samples(const OpusDe
   * @param [in] channels <tt>int</tt>: Number of channels
   * @param [in,out] softclip_mem <tt>float*</tt>: State memory for the soft clipping process
   */
-OPUS_EXPORT void opus_soft_clip(float *pcm, int frame_size, int channels, float *softclip_mem);
+OPUS_EXPORT void opus_pcm_soft_clip(float *pcm, int frame_size, int channels, float *softclip_mem);
 
 
 /**@}*/
