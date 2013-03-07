@@ -39,7 +39,7 @@
 /** Compute the amplitude (sqrt energy) in each of the bands
  * @param m Mode data
  * @param X Spectrum
- * @param bands Square root of the energy for each band (returned)
+ * @param bandE Square root of the energy for each band (returned)
  */
 void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bandE, int end, int C, int M);
 
@@ -49,14 +49,14 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
     equal to 1
  * @param m Mode data
  * @param X Spectrum (returned normalised)
- * @param bands Square root of the energy for each band
+ * @param bandE Square root of the energy for each band
  */
 void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, celt_norm * OPUS_RESTRICT X, const celt_ener *bandE, int end, int C, int M);
 
 /** Denormalise each band of X to restore full amplitude
  * @param m Mode data
  * @param X Spectrum (returned de-normalised)
- * @param bands Square root of the energy for each band
+ * @param bandE Square root of the energy for each band
  */
 void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       celt_sig * OPUS_RESTRICT freq, const celt_ener *bandE, int start, int end, int C, int M);
@@ -77,14 +77,30 @@ void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, floa
 void haar1(celt_norm *X, int N0, int stride);
 
 /** Quantisation/encoding of the residual spectrum
+ * @param encode flag that indicates whether we're encoding (1) or decoding (0)
  * @param m Mode data
+ * @param start First band to process
+ * @param end Last band to process + 1
  * @param X Residual (normalised)
+ * @param Y Residual (normalised) for second channel (or NULL for mono)
+ * @param collapse_masks Anti-collapse tracking mask
+ * @param bandE Square root of the energy for each band
+ * @param pulses Bit allocation (per band) for PVQ
+ * @param shortBlocks Zero for long blocks, non-zero for short blocks
+ * @param spread Amount of spreading to use
+ * @param dual_stereo Zero for MS stereo, non-zero for dual stereo
+ * @param intensity First band to use intensity stereo
+ * @param tf_res Time-frequency resolution change
  * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
- * @param enc Entropy encoder
+ * @param balance Number of unallocated bits
+ * @param en Entropy coder state
+ * @param LM log2() of the number of 2.5 subframes in the frame
+ * @param codedBands Last band to receive bits + 1
+ * @param seed Random generator seed
  */
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm * X, celt_norm * Y, unsigned char *collapse_masks, const celt_ener *bandE, int *pulses,
-      int time_domain, int fold, int dual_stereo, int intensity, int *tf_res,
+      int shortBlocks, int spread, int dual_stereo, int intensity, int *tf_res,
       opus_int32 total_bits, opus_int32 balance, ec_ctx *ec, int M, int codedBands, opus_uint32 *seed);
 
 void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_masks, int LM, int C, int size,

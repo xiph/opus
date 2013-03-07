@@ -40,11 +40,9 @@
 /** Algebraic pulse-vector quantiser. The signal x is replaced by the sum of
   * the pitch and a combination of pulses such that its norm is still equal
   * to 1. This is the function that will typically require the most CPU.
- * @param x Residual signal to quantise/encode (returns quantised version)
- * @param W Perceptual weight to use when optimising (currently unused)
+ * @param X Residual signal to quantise/encode (returns quantised version)
  * @param N Number of samples to encode
  * @param K Number of pulses to use
- * @param p Pitch vector (it is assumed that p+x is a unit vector)
  * @param enc Entropy encoder state
  * @ret A mask indicating which blocks in the band received pulses
 */
@@ -56,10 +54,9 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
       );
 
 /** Algebraic pulse decoder
- * @param x Decoded normalised spectrum (returned)
+ * @param X Decoded normalised spectrum (returned)
  * @param N Number of samples to decode
  * @param K Number of pulses to use
- * @param p Pitch vector (automatically added to x)
  * @param dec Entropy decoder state
  * @ret A mask indicating which blocks in the band received pulses
  */
