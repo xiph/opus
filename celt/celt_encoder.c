@@ -1329,7 +1329,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
       prefilter_tapset = st->tapset_decision;
       pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes);
-      if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && st->analysis.tonality > .3
+      if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && (!st->analysis.valid || st->analysis.tonality > .3)
             && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
          pitch_change = 1;
       if (pf_on==0)
@@ -1353,15 +1353,17 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    isTransient = 0;
    shortBlocks = 0;
+   if (st->complexity >= 1)
+   {
+      isTransient = transient_analysis(in, N+st->overlap, CC,
+            &tf_estimate, &tf_chan);
+   }
    if (LM>0 && ec_tell(enc)+3<=total_bits)
    {
-      if (st->complexity >= 1)
-      {
-         isTransient = transient_analysis(in, N+st->overlap, CC,
-                  &tf_estimate, &tf_chan);
-         if (isTransient)
-            shortBlocks = M;
-      }
+      if (isTransient)
+         shortBlocks = M;
+   } else {
+      isTransient = 0;
    }
 
    ALLOC(freq, CC*N, celt_sig); /**< Interleaved signal MDCTs */

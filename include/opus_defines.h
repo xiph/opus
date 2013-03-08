@@ -148,8 +148,9 @@ extern "C" {
 #define OPUS_GET_GAIN_REQUEST                4045 /* Should have been 4035 */
 #define OPUS_SET_LSB_DEPTH_REQUEST           4036
 #define OPUS_GET_LSB_DEPTH_REQUEST           4037
-
 #define OPUS_GET_LAST_PACKET_DURATION_REQUEST 4039
+#define OPUS_SET_EXPERT_FRAME_DURATION_REQUEST 4040
+#define OPUS_GET_EXPERT_FRAME_DURATION_REQUEST 4041
 
 /* Don't use 4045, it's already taken by OPUS_GET_GAIN_REQUEST */
 
@@ -184,6 +185,15 @@ extern "C" {
 #define OPUS_BANDWIDTH_WIDEBAND              1103 /**< 8 kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_SUPERWIDEBAND         1104 /**<12 kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_FULLBAND              1105 /**<20 kHz bandpass @hideinitializer*/
+
+#define OPUS_FRAMESIZE_ARG                   5000 /**< Select frame size from the argument (default) */
+#define OPUS_FRAMESIZE_2_5_MS                5001 /**< Use 2.5 ms frames */
+#define OPUS_FRAMESIZE_5_MS                  5002 /**< Use 5 ms frames */
+#define OPUS_FRAMESIZE_10_MS                 5003 /**< Use 10 ms frames */
+#define OPUS_FRAMESIZE_20_MS                 5004 /**< Use 20 ms frames */
+#define OPUS_FRAMESIZE_40_MS                 5005 /**< Use 40 ms frames */
+#define OPUS_FRAMESIZE_60_MS                 5006 /**< Use 60 ms frames */
+#define OPUS_FRAMESIZE_VARIABLE              5010 /**< Optimize the frame size dynamically */
 
 /**@}*/
 
@@ -525,6 +535,32 @@ extern "C" {
   * @param[out] x <tt>opus_int32 *</tt>: Number of samples (at current sampling rate).
   * @hideinitializer */
 #define OPUS_GET_LAST_PACKET_DURATION(x) OPUS_GET_LAST_PACKET_DURATION_REQUEST, __opus_check_int_ptr(x)
+
+/** Configures the encoder's use of variable duration frames.
+  * When enabled, the encoder is free to use a shorter frame size than the one
+  * requested in the opus_encode*() call. It is then the user's responsibility
+  * to verify how much audio was encoded by checking the ToC byte of the encoded
+  * packet. The part of the audio that was not encoded needs to be resent to the
+  * encoder for the next call. Do not use this option unless you <b>really</b>
+  * know what you are doing.
+  * @see OPUS_GET_EXPERT_VARIABLE_DURATION
+  * @param[in] x <tt>opus_int32</tt>: Allowed values:
+  * <dl>
+  * <dt>0</dt><dd>Disable variable duration (default).</dd>
+  * <dt>1</dt><dd>Enable variable duration.</dd>
+  * </dl>
+  * @hideinitializer */
+#define OPUS_SET_EXPERT_FRAME_DURATION(x) OPUS_SET_EXPERT_FRAME_DURATION_REQUEST, __opus_check_int(x)
+/** Gets the encoder's configured use of variable duration frames.
+  * @see OPUS_SET_EXPERT_VARIABLE_DURATION
+  * @param[out] x <tt>opus_int32 *</tt>: Returns one of the following values:
+  * <dl>
+  * <dt>0</dt><dd>variable duration disabled (default).</dd>
+  * <dt>1</dt><dd>variable duration enabled.</dd>
+  * </dl>
+  * @hideinitializer */
+#define OPUS_GET_EXPERT_FRAME_DURATION(x) OPUS_GET_EXPERT_FRAME_DURATION_REQUEST, __opus_check_int_ptr(x)
+
 /**@}*/
 
 /** @defgroup opus_genericctls Generic CTLs
