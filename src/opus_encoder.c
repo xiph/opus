@@ -1806,7 +1806,6 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
    frame_size = frame_size_select(frame_size, st->variable_duration, st->Fs);
    if(frame_size<0)
    {
-      RESTORE_STACK;
       return OPUS_BAD_ARG;
    }
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 16);
@@ -1880,7 +1879,6 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
    }
    if(frame_size<0)
    {
-      RESTORE_STACK;
       return OPUS_BAD_ARG;
    }
 
