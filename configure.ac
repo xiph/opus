@@ -224,12 +224,13 @@ AC_SUBST(SYMBOL_VISIBILITY)
 
 CFLAGS="$CFLAGS -W"
 
+warn_CFLAGS="-Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wdeclaration-after-statement"
 saved_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes"
-AC_MSG_CHECKING([if ${CC} supports -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes])
+CFLAGS="$CFLAGS $warn_CFLAGS"
+AC_MSG_CHECKING([if ${CC} supports ${warn_CFLAGS}])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
       [ AC_MSG_RESULT([yes])
-        EXTRA_WARNS="-Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes" ],
+        EXTRA_WARNS=$warn_CFLAGS ],
         AC_MSG_RESULT([no]))
 CFLAGS="$saved_CFLAGS $EXTRA_WARNS"
 
