@@ -51,6 +51,12 @@
 
 #define MAX_ENCODER_BUFFER 480
 
+typedef struct {
+   opus_val32 XX, XY, YY;
+   opus_val16 smoothed_width;
+   opus_val16 max_follower;
+} StereoWidthState;
+
 struct OpusEncoder {
     int          celt_enc_offset;
     int          silk_enc_offset;
@@ -87,6 +93,7 @@ struct OpusEncoder {
     int          silk_bw_switch;
     /* Sampling rate (at the API level) */
     int          first;
+    StereoWidthState width_mem;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef FIXED_POINT
     TonalityAnalysisState analysis;
@@ -130,8 +137,8 @@ static const opus_int32 stereo_music_threshold = 31000;
 /* Threshold bit-rate for switching between SILK/hybrid and CELT-only */
 static const opus_int32 mode_thresholds[2][2] = {
       /* voice */ /* music */
-      {  48000,      24000}, /* mono */
-      {  48000,      24000}, /* stereo */
+      {  64000,      20000}, /* mono */
+      {  36000,      20000}, /* stereo */
 };
 
 int opus_encoder_get_size(int channels)
@@ -784,6 +791,83 @@ opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_
    return new_size;
 }
 
+opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int32 Fs, StereoWidthState *mem)
+{
+   opus_val16 corr;
+   opus_val16 ldiff;
+   opus_val16 width;
+   opus_val32 xx, xy, yy;
+   opus_val16 sqrt_xx, sqrt_yy;
+   opus_val16 qrrt_xx, qrrt_yy;
+   int frame_rate;
+   int i;
+   opus_val16 short_alpha;
+
+   frame_rate = Fs/frame_size;
+   short_alpha = Q15ONE - 25*Q15ONE/IMAX(50,frame_rate);
+   xx=xy=yy=0;
+   for (i=0;i<frame_size;i+=4)
+   {
+      opus_val32 pxx=0;
+      opus_val32 pxy=0;
+      opus_val32 pyy=0;
+      opus_val16 x, y;
+      x = pcm[2*i];
+      y = pcm[2*i+1];
+      pxx = SHR32(MULT16_16(x,x),2);
+      pxy = SHR32(MULT16_16(x,y),2);
+      pyy = SHR32(MULT16_16(y,y),2);
+      x = pcm[2*i+2];
+      y = pcm[2*i+3];
+      pxx += SHR32(MULT16_16(x,x),2);
+      pxy += SHR32(MULT16_16(x,y),2);
+      pyy += SHR32(MULT16_16(y,y),2);
+      x = pcm[2*i+4];
+      y = pcm[2*i+5];
+      pxx += SHR32(MULT16_16(x,x),2);
+      pxy += SHR32(MULT16_16(x,y),2);
+      pyy += SHR32(MULT16_16(y,y),2);
+      x = pcm[2*i+6];
+      y = pcm[2*i+7];
+      pxx += SHR32(MULT16_16(x,x),2);
+      pxy += SHR32(MULT16_16(x,y),2);
+      pyy += SHR32(MULT16_16(y,y),2);
+
+      xx += SHR32(pxx, 10);
+      xy += SHR32(pxy, 10);
+      yy += SHR32(pyy, 10);
+   }
+   mem->XX += MULT16_32_Q15(short_alpha, xx-mem->XX);
+   mem->XY += MULT16_32_Q15(short_alpha, xy-mem->XY);
+   mem->YY += MULT16_32_Q15(short_alpha, yy-mem->YY);
+   mem->XX = MAX32(0, mem->XX);
+   mem->XY = MAX32(0, mem->XY);
+   mem->YY = MAX32(0, mem->YY);
+   if (MAX32(mem->XX, mem->YY)>QCONST16(8e-4f, 18))
+   {
+      sqrt_xx = celt_sqrt(mem->XX);
+      sqrt_yy = celt_sqrt(mem->YY);
+      qrrt_xx = celt_sqrt(sqrt_xx);
+      qrrt_yy = celt_sqrt(sqrt_yy);
+      /* Inter-channel correlation */
+      mem->XY = MIN32(mem->XY, sqrt_xx*sqrt_yy);
+      corr = SHR32(frac_div32(mem->XY,EPSILON+MULT16_16(sqrt_xx,sqrt_yy)),16);
+      /* Approximate loudness difference */
+      ldiff = Q15ONE*ABS16(qrrt_xx-qrrt_yy)/(EPSILON+qrrt_xx+qrrt_yy);
+      width = MULT16_16_Q15(celt_sqrt(QCONST32(1.f,30)-MULT16_16(corr,corr)), ldiff);
+      /* Smoothing over one second */
+      mem->smoothed_width += (width-mem->smoothed_width)/frame_rate;
+      /* Peak follower */
+      mem->max_follower = MAX16(mem->max_follower-QCONST16(.02f,15)/frame_rate, mem->smoothed_width);
+   } else {
+      width = 0;
+      corr=Q15ONE;
+      ldiff=0;
+   }
+   /*printf("%f %f %f %f %f ", corr/(float)Q15ONE, ldiff/(float)Q15ONE, width/(float)Q15ONE, mem->smoothed_width/(float)Q15ONE, mem->max_follower/(float)Q15ONE);*/
+   return EXTRACT16(MIN32(Q15ONE,20*mem->max_follower));
+}
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth
 #ifndef FIXED_POINT
@@ -817,6 +901,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     opus_val16 HB_gain;
     opus_int32 max_data_bytes; /* Max number of bytes we're allowed to use */
     int total_buffer;
+    opus_val16 stereo_width;
     VARDECL(opus_val16, tmp_prefill);
 
     ALLOC_STACK;
@@ -854,6 +939,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
 #endif
 
+    if (st->channels==2 && st->force_channels!=1)
+       stereo_width = compute_stereo_width(pcm, frame_size, st->Fs, &st->width_mem);
+    else
+       stereo_width = 0;
     total_buffer = delay_compensation;
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
 
@@ -897,8 +986,12 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     else if (st->signal_type == OPUS_SIGNAL_MUSIC)
        voice_est = 0;
     else if (st->voice_ratio >= 0)
+    {
        voice_est = st->voice_ratio*327>>8;
-    else if (st->application == OPUS_APPLICATION_VOIP)
+       /* For AUDIO, never be more than 90% confident of having speech */
+       if (st->application == OPUS_APPLICATION_AUDIO)
+          voice_est = IMIN(voice_est, 115);
+    } else if (st->application == OPUS_APPLICATION_VOIP)
        voice_est = 115;
     else
        voice_est = 48;
@@ -918,9 +1011,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           opus_int32 stereo_threshold;
           stereo_threshold = stereo_music_threshold + ((voice_est*voice_est*(stereo_voice_threshold-stereo_music_threshold))>>14);
           if (st->stream_channels == 2)
-             stereo_threshold -= 4000;
+             stereo_threshold -= 1000;
           else
-             stereo_threshold += 4000;
+             stereo_threshold += 1000;
           st->stream_channels = (equiv_rate > stereo_threshold) ? 2 : 1;
        } else {
           st->stream_channels = st->channels;
@@ -949,20 +1042,24 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
              st->mode = MODE_SILK_ONLY;
        }
 #else
-       int chan;
        opus_int32 mode_voice, mode_music;
        opus_int32 threshold;
 
-       chan = (st->channels==2) && st->force_channels!=1;
-       mode_voice = mode_thresholds[chan][0];
-       mode_music = mode_thresholds[chan][1];
+       /* Interpolate based on stereo width */
+       mode_voice = MULT16_32_Q15(Q15ONE-stereo_width,mode_thresholds[0][0]) + MULT16_32_Q15(stereo_width,mode_thresholds[1][0]);
+       mode_music = MULT16_32_Q15(Q15ONE-stereo_width,mode_thresholds[1][1]) + MULT16_32_Q15(stereo_width,mode_thresholds[1][1]);
+       /* Interpolate based on speech/music probability */
        threshold = mode_music + ((voice_est*voice_est*(mode_voice-mode_music))>>14);
+       /* Bias towards SILK for VoIP because of some useful features */
+       if (st->application == OPUS_APPLICATION_VOIP)
+          threshold += 8000;
 
+       /*printf("%f %d\n", stereo_width/(float)Q15ONE, threshold);*/
        /* Hysteresis */
        if (st->prev_mode == MODE_CELT_ONLY)
-           threshold -= 1000;
+           threshold -= 4000;
        else if (st->prev_mode>0)
-           threshold += 1000;
+           threshold += 4000;
 
        st->mode = (equiv_rate >= threshold) ? MODE_CELT_ONLY: MODE_SILK_ONLY;
 
