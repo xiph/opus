@@ -580,8 +580,6 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_EXPERT_FRAME_DURATION_REQUEST:
    {
        opus_int32 value = va_arg(ap, opus_int32);
-       if (value<0 || value>1)
-          goto bad_arg;
        st->variable_duration = value;
    }
    break;
