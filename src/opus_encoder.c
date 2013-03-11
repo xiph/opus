@@ -1364,8 +1364,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             }
             /* Increasingly attenuate high band when it gets allocated fewer bits */
             celt_rate = total_bitRate - st->silk_mode.bitRate;
-            HB_gain_ref = (curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND) ? 2000 : 2400;
-            HB_gain = SHL32((opus_val32)celt_rate, 9) / SHR32((opus_val32)celt_rate + st->stream_channels*HB_gain_ref, 6);
+            HB_gain_ref = (curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND) ? 3000 : 3600;
+            HB_gain = SHL32((opus_val32)celt_rate, 9) / SHR32((opus_val32)celt_rate + st->stream_channels * HB_gain_ref, 6);
+            HB_gain = HB_gain < Q15ONE*6/7 ? HB_gain + Q15ONE/7 : Q15ONE;
         } else {
             /* SILK gets all bits */
             st->silk_mode.bitRate = total_bitRate;
