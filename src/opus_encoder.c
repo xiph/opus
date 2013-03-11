@@ -658,6 +658,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
        redundancy = 1;
        celt_to_silk = 1;
        st->silk_bw_switch = 0;
+       prefill=1;
     }
 
     if (redundancy)
