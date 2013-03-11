@@ -480,6 +480,11 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     {
        float tau, beta;
        float p0, p1;
+       float s0, m0;
+       float psum;
+       float speech0;
+       float music0;
+
        /* One transition every 3 minutes */
        tau = .00005f*frame_probs[1];
        beta = .05f;
@@ -497,15 +502,14 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        tonal->music_prob = p1/(p0+p1);
        info->music_prob = tonal->music_prob;
 
-       float psum=1e-20;
-       float speech0 = (float)pow(1-frame_probs[0], beta);
-       float music0  = (float)pow(frame_probs[0], beta);
+       psum=1e-20;
+       speech0 = (float)pow(1-frame_probs[0], beta);
+       music0  = (float)pow(frame_probs[0], beta);
        if (tonal->count==1)
        {
           tonal->pspeech[0]=.5;
           tonal->pmusic [0]=.5;
        }
-       float s0, m0;
        s0 = tonal->pspeech[0] + tonal->pspeech[1];
        m0 = tonal->pmusic [0] + tonal->pmusic [1];
        tonal->pspeech[0] = s0*(1-tau)*speech0;
@@ -607,7 +611,7 @@ int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, con
    if (variable_duration == OPUS_FRAMESIZE_VARIABLE && frame_size >= Fs/200)
    {
       int LM = 3;
-      LM = optimize_framesize(pcm, frame_size, C, Fs, bitrate_bps,
+      LM = optimize_framesize((const opus_val16*)pcm, frame_size, C, Fs, bitrate_bps,
             analysis->prev_tonality, analysis->subframe_mem, delay_compensation, downmix);
       while ((Fs/400<<LM)>frame_size)
          LM--;
