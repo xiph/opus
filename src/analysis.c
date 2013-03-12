@@ -376,8 +376,8 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        float E=0;
        int band_start, band_end;
        /* Keep a margin of 300 Hz for aliasing */
-       band_start = extra_bands[b]+3;
-       band_end = extra_bands[b+1]+3;
+       band_start = extra_bands[b];
+       band_end = extra_bands[b+1];
        for (i=band_start;i<band_end;i++)
        {
           float binE = out[i].r*out[i].r + out[N-i].r*out[N-i].r
@@ -569,11 +569,11 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        printf("%f ", features[i]);
     printf("\n");*/
 
-    if (bandwidth<=12 || (bandwidth==13 && tonal->opus_bandwidth == OPUS_BANDWIDTH_NARROWBAND))
+    if (bandwidth<=12)
        tonal->opus_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
-    else if (bandwidth<=14 || (bandwidth==15 && tonal->opus_bandwidth == OPUS_BANDWIDTH_MEDIUMBAND))
+    else if (bandwidth<=14)
        tonal->opus_bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
-    else if (bandwidth<=16 || (bandwidth==17 && tonal->opus_bandwidth == OPUS_BANDWIDTH_WIDEBAND))
+    else if (bandwidth<=16)
        tonal->opus_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
     else if (bandwidth<=18)
        tonal->opus_bandwidth = OPUS_BANDWIDTH_SUPERWIDEBAND;

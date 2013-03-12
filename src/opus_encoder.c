@@ -695,6 +695,8 @@ void downmix_int(const void *_x, float *sub, int subframe, int offset, int C)
    for (c=1;c<C;c++)
       for (j=0;j<subframe;j++)
          sub[j] += x[(j+offset)*C+c];
+   for (j=0;j<subframe;j++)
+      sub[j] *= (1.f/32768);
 }
 
 int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
