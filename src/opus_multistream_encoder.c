@@ -356,7 +356,7 @@ static void opus_copy_channel_in_float(
 )
 {
    const float *float_src;
-   int i;
+   opus_int32 i;
    float_src = (const float *)src;
    for (i=0;i<frame_size;i++)
 #if defined(FIXED_POINT)
@@ -377,7 +377,7 @@ static void opus_copy_channel_in_short(
 )
 {
    const opus_int16 *short_src;
-   int i;
+   opus_int32 i;
    short_src = (const opus_int16 *)src;
    for (i=0;i<frame_size;i++)
 #if defined(FIXED_POINT)

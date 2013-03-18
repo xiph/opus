@@ -274,7 +274,7 @@ static void opus_copy_channel_out_float(
 )
 {
    float *float_dst;
-   int i;
+   opus_int32 i;
    float_dst = (float*)dst;
    if (src != NULL)
    {
@@ -303,7 +303,7 @@ static void opus_copy_channel_out_short(
 )
 {
    opus_int16 *short_dst;
-   int i;
+   opus_int32 i;
    short_dst = (opus_int16*)dst;
    if (src != NULL)
    {
