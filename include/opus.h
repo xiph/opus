@@ -601,7 +601,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decoder_get_nb_samples(const OpusDe
   * @param [in,out] pcm <tt>float*</tt>: Input PCM and modified PCM
   * @param [in] frame_size <tt>int</tt> Number of samples per channel to process
   * @param [in] channels <tt>int</tt>: Number of channels
-  * @param [in,out] softclip_mem <tt>float*</tt>: State memory for the soft clipping process
+  * @param [in,out] softclip_mem <tt>float*</tt>: State memory for the soft clipping process (one float per channel, initialized to zero)
   */
 OPUS_EXPORT void opus_pcm_soft_clip(float *pcm, int frame_size, int channels, float *softclip_mem);
 
