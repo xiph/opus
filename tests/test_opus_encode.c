@@ -1,4 +1,4 @@
-/* Copyright (c) 2011 Xiph.Org Foundation
+/* Copyright (c) 2011-2013 Xiph.Org Foundation
    Written by Gregory Maxwell */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -247,7 +247,11 @@ int run_test1(int no_fuzz)
          do {
             int bw,len,out_samples,frame_size;
             frame_size=frame[j];
-            if(fast_rand()%50==0)opus_encoder_ctl(enc, OPUS_RESET_STATE);
+            if(fast_rand()%100==0)opus_encoder_ctl(enc, OPUS_RESET_STATE);
+            if(fast_rand()%10==0){
+               int complex=fast_rand()%11;
+               if(opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complex))!=OPUS_OK)test_failed();
+            }
             if(fast_rand()%50==0)opus_decoder_ctl(dec, OPUS_RESET_STATE);
             if(opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(rc==0))!=OPUS_OK)test_failed();
             if(opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY+modes[j]))!=OPUS_OK)test_failed();
