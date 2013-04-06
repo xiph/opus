@@ -8,7 +8,7 @@ this list of conditions and the following disclaimer.
 - Redistributions in binary form must reproduce the above copyright
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Internet Society, IETF or IETF Trust, nor the 
+- Neither the name of Internet Society, IETF or IETF Trust, nor the
 names of specific contributors, may be used to endorse or promote
 products derived from this software without specific prior written
 permission.
@@ -421,7 +421,7 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
     }
 
     /* Output normalized correlation */
-    *LTPCorr_Q15 = (opus_int)silk_LSHIFT( silk_DIV32_16( CCmax, nb_subfr ), 2 ); 
+    *LTPCorr_Q15 = (opus_int)silk_LSHIFT( silk_DIV32_16( CCmax, nb_subfr ), 2 );
     silk_assert( *LTPCorr_Q15 >= 0 );
 
     if( Fs_kHz > 8 ) {

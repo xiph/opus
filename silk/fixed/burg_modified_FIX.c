@@ -265,5 +265,5 @@ void silk_burg_modified(
         }
         *res_nrg = silk_SMLAWW( nrg, silk_SMMUL( SILK_FIX_CONST( FIND_LPC_COND_FAC, 32 ), C0 ), -tmp1 );/* Q( -rshifts ) */
         *res_nrg_Q = -rshifts;
-    }   
+    }
 }
