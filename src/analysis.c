@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include "analysis.h"
 #include "mlp.h"
+#include "stack_alloc.h"
 
 extern const MLP net;
 
@@ -190,17 +191,18 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
 {
     int i, b;
     const kiss_fft_state *kfft;
-    kiss_fft_cpx in[480], out[480];
+    VARDECL(kiss_fft_cpx, in);
+    VARDECL(kiss_fft_cpx, out);
     int N = 480, N2=240;
     float * OPUS_RESTRICT A = tonal->angle;
     float * OPUS_RESTRICT dA = tonal->d_angle;
     float * OPUS_RESTRICT d2A = tonal->d2_angle;
-    float tonality[240];
-    float noisiness[240];
+    VARDECL(float, tonality);
+    VARDECL(float, noisiness);
     float band_tonality[NB_TBANDS];
     float logE[NB_TBANDS];
     float BFCC[8];
-    float features[100];
+    float features[25];
     float frame_tonality;
     float max_frame_tonality;
     /*float tw_sum=0;*/
@@ -218,6 +220,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     float noise_floor;
     int remaining;
     AnalysisInfo *info;
+    SAVE_STACK;
 
     tonal->last_transition++;
     alpha = 1.f/IMIN(20, 1+tonal->count);
@@ -234,12 +237,17 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     {
        tonal->mem_fill += len;
        /* Don't have enough to update the analysis */
+       RESTORE_STACK;
        return;
     }
     info = &tonal->info[tonal->write_pos++];
     if (tonal->write_pos>=DETECT_SIZE)
        tonal->write_pos-=DETECT_SIZE;
 
+    ALLOC(in, 480, kiss_fft_cpx);
+    ALLOC(out, 480, kiss_fft_cpx);
+    ALLOC(tonality, 240, float);
+    ALLOC(noisiness, 240, float);
     for (i=0;i<N2;i++)
     {
        float w = analysis_window[i];
@@ -587,6 +595,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     info->valid = 1;
     if (info_out!=NULL)
        OPUS_COPY(info_out, info, 1);
+    RESTORE_STACK;
 }
 
 int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *pcm,
