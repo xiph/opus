@@ -101,7 +101,7 @@ static const int tbands[NB_TBANDS+1] = {
 };
 
 static const int extra_bands[NB_TOT_BANDS+1] = {
-      0, 2,  4,  6,  8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120, 160, 200
+      1, 2,  4,  6,  8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120, 160, 200
 };
 
 /*static const float tweight[NB_TBANDS+1] = {
