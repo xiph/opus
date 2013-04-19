@@ -73,6 +73,7 @@ struct OpusCustomEncoder {
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
    int loss_rate;
    int lsb_depth;
+   int variable_duration;
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
@@ -1162,6 +1163,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    const opus_int16 *eBands;
    int secondMdct;
    int signalBandwidth;
+   int transient_got_disabled;
    ALLOC_STACK;
 
    mode = st->mode;
@@ -1325,7 +1327,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    {
       int enabled;
       int qg;
-      enabled = nbAvailableBytes>12*C && st->start==0 && !silence && !st->disable_pf && st->complexity >= 5;
+      enabled = nbAvailableBytes>12*C && st->start==0 && !silence && !st->disable_pf
+            && st->complexity >= 5 && !(st->consec_transient && LM!=3 && st->variable_duration);
 
       prefilter_tapset = st->tapset_decision;
       pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes);
@@ -1364,6 +1367,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          shortBlocks = M;
    } else {
       isTransient = 0;
+      transient_got_disabled=1;
    }
 
    ALLOC(freq, CC*N, celt_sig); /**< Interleaved signal MDCTs */
@@ -1874,7 +1878,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       }
    } while (++c<CC);
 
-   if (isTransient)
+   if (isTransient || transient_got_disabled)
       st->consec_transient++;
    else
       st->consec_transient=0;
@@ -2056,6 +2060,12 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
       {
           opus_int32 *value = va_arg(ap, opus_int32*);
           *value=st->lsb_depth;
+      }
+      break;
+      case OPUS_SET_EXPERT_FRAME_DURATION_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          st->variable_duration = value;
       }
       break;
       case OPUS_RESET_STATE:

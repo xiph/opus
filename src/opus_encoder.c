@@ -597,11 +597,17 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
    int states[MAX_DYNAMIC_FRAMESIZE][16];
    float best_cost;
    int best_state;
-
+   float factor;
+   /* Take into account that we damp VBR in the 32 kb/s to 64 kb/s range. */
+   if (rate<80)
+      factor=0;
+   else if (rate>160)
+      factor=1;
+   else
+      factor = (rate-80.f)/80.f;
    /* Makes variable framesize less aggressive at lower bitrates, but I can't
-      find any valid theretical justification for this (other than it seems
+      find any valid theoretical justification for this (other than it seems
       to help) */
-   frame_cost *= 720/rate;
    for (i=0;i<16;i++)
    {
       /* Impossible state */
@@ -610,7 +616,7 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
    }
    for (i=0;i<4;i++)
    {
-      cost[0][1<<i] = frame_cost + rate*(1<<i)*transient_boost(E, E_1, i, N+1);
+      cost[0][1<<i] = (frame_cost + rate*(1<<i))*(1+factor*transient_boost(E, E_1, i, N+1));
       states[0][1<<i] = i;
    }
    for (i=1;i<N;i++)
@@ -641,7 +647,7 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
                min_cost = tmp;
             }
          }
-         curr_cost = frame_cost+rate*(1<<j)*transient_boost(E+i, E_1+i, j, N-i+1);
+         curr_cost = (frame_cost + rate*(1<<j))*(1+factor*transient_boost(E+i, E_1+i, j, N-i+1));
          cost[i][1<<j] = min_cost;
          /* If part of the frame is outside the analysis window, only count part of the cost */
          if (N-i < (1<<j))
@@ -760,7 +766,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
    e[i+pos] = e[i+pos-1];
    if (buffering)
       N=IMIN(MAX_DYNAMIC_FRAMESIZE, N+2);
-   bestLM = transient_viterbi(e, e_1, N, (1.f+.5*tonality)*(40*C+40), bitrate/400);
+   bestLM = transient_viterbi(e, e_1, N, (1.f+.5*tonality)*(60*C+40), bitrate/400);
    mem[0] = e[1<<bestLM];
    if (buffering)
    {
@@ -1548,7 +1554,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifndef FIXED_POINT
                 if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != st->Fs/50)
                 {
-                   bonus = (40*st->stream_channels+40)*(st->Fs/frame_size-50);
+                   bonus = (60*st->stream_channels+40)*(st->Fs/frame_size-50);
                    if (analysis_info->valid)
                       bonus = bonus*(1.f+.5*analysis_info->tonality);
                 }
@@ -2159,6 +2165,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             opus_int32 value = va_arg(ap, opus_int32);
             st->variable_duration = value;
+            celt_encoder_ctl(celt_enc, OPUS_SET_EXPERT_FRAME_DURATION(value));
         }
         break;
         case OPUS_GET_EXPERT_FRAME_DURATION_REQUEST:
