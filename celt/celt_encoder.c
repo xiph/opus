@@ -1163,7 +1163,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    const opus_int16 *eBands;
    int secondMdct;
    int signalBandwidth;
-   int transient_got_disabled;
+   int transient_got_disabled=0;
    ALLOC_STACK;
 
    mode = st->mode;
@@ -1576,6 +1576,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      opus_int32 min_allowed;
      int coded_bins;
      int coded_bands;
+     int tf_calibration;
      int lm_diff = mode->maxLM - LM;
      coded_bands = st->lastCodedBands ? st->lastCodedBands : nbEBands;
      coded_bins = eBands[coded_bands]<<LM;
@@ -1613,7 +1614,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
      target += tot_boost-(16<<LM);
      /* Apply transient boost, compensating for average boost. */
-     target += (opus_int32)SHL32(MULT16_32_Q15(tf_estimate-QCONST16(0.04f,14), target),1);
+     tf_calibration = st->variable_duration ? QCONST16(0.02f,14) : QCONST16(0.04f,14);
+     target += (opus_int32)SHL32(MULT16_32_Q15(tf_estimate-tf_calibration, target),1);
 
 #ifndef FIXED_POINT
      /* Apply tonality boost */
