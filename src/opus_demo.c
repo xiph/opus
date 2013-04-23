@@ -693,9 +693,11 @@ int main(int argc, char *argv[])
                 if( use_inbandfec  ) {
                     if( lost_prev ) {
                         /* attempt to decode with in-band FEC from next packet */
+                        opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                         output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, output_samples, 1);
                     } else {
                         /* regular decode */
+                        output_samples = max_frame_size;
                         output_samples = opus_decode(dec, data[1-toggle], len[1-toggle], out, output_samples, 0);
                     }
                 } else {
