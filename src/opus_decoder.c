@@ -781,17 +781,20 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       int duration_copy;
       int ret;
       /* If no FEC can be present, run the PLC (recursive call) */
-      if (frame_size <= packet_frame_size || packet_mode == MODE_CELT_ONLY || st->mode == MODE_CELT_ONLY)
+      if (frame_size < packet_frame_size || packet_mode == MODE_CELT_ONLY || st->mode == MODE_CELT_ONLY)
          return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL, soft_clip);
       /* Otherwise, run the PLC on everything except the size for which we might have FEC */
       duration_copy = st->last_packet_duration;
-      ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL, soft_clip);
-      if (ret<0)
+      if (frame_size-packet_frame_size!=0)
       {
-         st->last_packet_duration = duration_copy;
-         return ret;
+         ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL, soft_clip);
+         if (ret<0)
+         {
+            st->last_packet_duration = duration_copy;
+            return ret;
+         }
+         celt_assert(ret==frame_size-packet_frame_size);
       }
-      celt_assert(ret==frame_size-packet_frame_size);
       /* Complete with FEC */
       st->mode = packet_mode;
       st->bandwidth = packet_bandwidth;
