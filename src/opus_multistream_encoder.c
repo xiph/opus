@@ -329,7 +329,7 @@ static void surround_rate_allocation(
       int total = ((st->layout.nb_streams-st->layout.nb_coupled_streams-(st->lfe_stream!=-1))<<8) /* mono */
             + coupled_ratio*st->layout.nb_coupled_streams /* stereo */
             + (st->lfe_stream!=-1)*lfe_ratio;
-      channel_rate = 256*st->bitrate_bps/total;
+      channel_rate = 256*(st->bitrate_bps-2000)/total;
    }
 #ifndef FIXED_POINT
    if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != Fs/50)
@@ -347,7 +347,7 @@ static void surround_rate_allocation(
       else if (i!=st->lfe_stream)
          rate[i] = channel_rate;
       else
-         rate[i] = channel_rate*lfe_ratio>>8;
+         rate[i] = 2000+(channel_rate*lfe_ratio>>8);
    }
 
 

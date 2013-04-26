@@ -74,6 +74,7 @@ struct OpusCustomEncoder {
    int loss_rate;
    int lsb_depth;
    int variable_duration;
+   int lfe;
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
@@ -869,7 +870,7 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
 static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
-      int effectiveBytes, opus_int32 *tot_boost_)
+      int effectiveBytes, opus_int32 *tot_boost_, int lfe)
 {
    int i, c;
    opus_int32 tot_boost=0;
@@ -897,7 +898,7 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
          maxDepth = MAX16(maxDepth, bandLogE[c*nbEBands+i]-noise_floor[i]);
    } while (++c<C);
    /* Make sure that dynamic allocation can't make us bust the budget */
-   if (effectiveBytes > 50 && LM>=1)
+   if (effectiveBytes > 50 && LM>=1 && !lfe)
    {
       int last=0;
       c=0;do
@@ -1356,7 +1357,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    isTransient = 0;
    shortBlocks = 0;
-   if (st->complexity >= 1)
+   if (st->complexity >= 1 && !st->lfe)
    {
       isTransient = transient_analysis(in, N+st->overlap, CC,
             &tf_estimate, &tf_chan);
@@ -1429,7 +1430,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
-   if (effectiveBytes>=15*C && st->start==0 && st->complexity>=2)
+   if (effectiveBytes>=15*C && st->start==0 && st->complexity>=2 && !st->lfe)
    {
       int lambda;
       if (effectiveBytes<40)
@@ -1455,7 +1456,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    quant_coarse_energy(mode, st->start, st->end, effEnd, bandLogE,
          oldBandE, total_bits, error, enc,
          C, LM, nbAvailableBytes, st->force_intra,
-         &st->delayedIntra, st->complexity >= 4, st->loss_rate);
+         &st->delayedIntra, st->complexity >= 4, st->loss_rate, st->lfe);
 
    tf_encode(st->start, st->end, isTransient, tf_res, LM, tf_select, enc);
 
@@ -1494,7 +1495,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, st->start, st->end, C, offsets,
          st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
-         eBands, LM, effectiveBytes, &tot_boost);
+         eBands, LM, effectiveBytes, &tot_boost, st->lfe);
+   /* For LFE, everything interesting is in the first band */
+   if (st->lfe)
+      offsets[0] = IMIN(8, effectiveBytes/3);
    ALLOC(cap, nbEBands, int);
    init_caps(mode,cap,LM,C);
 
@@ -1560,7 +1564,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    alloc_trim = 5;
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
-      alloc_trim = alloc_trim_analysis(mode, X, bandLogE,
+      if (st->lfe)
+         alloc_trim = 5;
+      else
+         alloc_trim = alloc_trim_analysis(mode, X, bandLogE,
             st->end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate, st->intensity);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
@@ -1738,6 +1745,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if (st->analysis.valid)
       signalBandwidth = st->analysis.bandwidth;
 #endif
+   if (st->lfe)
+      signalBandwidth = 1;
    codedBands = compute_allocation(mode, st->start, st->end, offsets, cap,
          alloc_trim, &st->intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands, signalBandwidth);
@@ -2125,6 +2134,12 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
          if (value==0)
             goto bad_arg;
          *value=st->rng;
+      }
+      break;
+      case OPUS_SET_LFE_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          st->lfe = value;
       }
       break;
       default:
