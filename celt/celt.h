@@ -107,6 +107,8 @@ typedef struct {
 #define CELT_SET_ANALYSIS_REQUEST    10022
 #define CELT_SET_ANALYSIS(x) CELT_SET_ANALYSIS_REQUEST, __celt_check_analysis_ptr(x)
 
+#define OPUS_SET_LFE_REQUEST    10022
+#define OPUS_SET_LFE(x) OPUS_SET_LFE_REQUEST, __opus_check_int(x)
 
 /* Encoder stuff */
 

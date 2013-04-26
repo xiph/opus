@@ -41,6 +41,7 @@
 struct OpusMSEncoder {
    TonalityAnalysisState analysis;
    ChannelLayout layout;
+   int lfe_stream;
    int variable_duration;
    opus_int32 bitrate_bps;
    opus_val32 subframe_mem[3];
@@ -81,16 +82,38 @@ opus_int32 opus_multistream_encoder_get_size(int nb_streams, int nb_coupled_stre
         + (nb_streams-nb_coupled_streams) * align(mono_size);
 }
 
+opus_int32 opus_multistream_surround_encoder_get_size(int channels, int mapping_family)
+{
+   int nb_streams;
+   int nb_coupled_streams;
+
+   if (channels==1 && mapping_family<=1)
+   {
+      nb_streams = 1;
+      nb_coupled_streams=0;
+   } else if (channels==2 && mapping_family<=1)
+   {
+      nb_streams = 1;
+      nb_coupled_streams=1;
+   } else if (channels==6 && mapping_family==1)
+   {
+      nb_streams = 4;
+      nb_coupled_streams=2;
+   } else
+      return 0;
+   return opus_multistream_encoder_get_size(nb_streams, nb_coupled_streams);
+}
 
 
-int opus_multistream_encoder_init(
+static int opus_multistream_encoder_init_impl(
       OpusMSEncoder *st,
       opus_int32 Fs,
       int channels,
       int streams,
       int coupled_streams,
       const unsigned char *mapping,
-      int application
+      int application,
+      int surround
 )
 {
    int coupled_size;
@@ -107,7 +130,8 @@ int opus_multistream_encoder_init(
    st->layout.nb_coupled_streams = coupled_streams;
    st->subframe_mem[0]=st->subframe_mem[1]=st->subframe_mem[2]=0;
    OPUS_CLEAR(&st->analysis,1);
-
+   if (!surround)
+      st->lfe_stream = -1;
    st->bitrate_bps = OPUS_AUTO;
    st->variable_duration = OPUS_FRAMESIZE_ARG;
    for (i=0;i<st->layout.nb_channels;i++)
@@ -121,15 +145,72 @@ int opus_multistream_encoder_init(
    for (i=0;i<st->layout.nb_coupled_streams;i++)
    {
       ret = opus_encoder_init((OpusEncoder*)ptr, Fs, 2, application);
+      if (i==st->lfe_stream)
+         opus_encoder_ctl((OpusEncoder*)ptr, OPUS_SET_LFE(1));
       if(ret!=OPUS_OK)return ret;
       ptr += align(coupled_size);
    }
    for (;i<st->layout.nb_streams;i++)
    {
       ret = opus_encoder_init((OpusEncoder*)ptr, Fs, 1, application);
+      if (i==st->lfe_stream)
+         opus_encoder_ctl((OpusEncoder*)ptr, OPUS_SET_LFE(1));
       if(ret!=OPUS_OK)return ret;
       ptr += align(mono_size);
    }
+   return OPUS_OK;
+}
+
+int opus_multistream_encoder_init(
+      OpusMSEncoder *st,
+      opus_int32 Fs,
+      int channels,
+      int streams,
+      int coupled_streams,
+      const unsigned char *mapping,
+      int application
+)
+{
+   return opus_multistream_encoder_init_impl(st, Fs, channels, streams, coupled_streams, mapping, application, 0);
+}
+
+int opus_multistream_surround_encoder_init(
+      OpusMSEncoder *st,
+      opus_int32 Fs,
+      int channels,
+      int mapping_family,
+      int *streams,
+      int *coupled_streams,
+      unsigned char *mapping,
+      int application
+)
+{
+   st->lfe_stream = -1;
+   if (channels==1 && mapping_family<=1)
+   {
+      *streams=1;
+      *coupled_streams=0;
+      mapping[0]=0;
+   } else if (channels==2 && mapping_family<=1)
+   {
+      *streams=1;
+      *coupled_streams=1;
+      mapping[0]=0;
+      mapping[1]=1;
+   } else if (channels==6 && mapping_family==1)
+   {
+      *streams=4;
+      *coupled_streams=2;
+      mapping[0]=0;
+      mapping[1]=4;
+      mapping[2]=1;
+      mapping[3]=2;
+      mapping[4]=3;
+      mapping[5]=5;
+      st->lfe_stream = 3;
+   } else
+      return OPUS_BAD_ARG;
+   opus_multistream_encoder_init_impl(st, Fs, channels, *streams, *coupled_streams, mapping, application, 1);
    return OPUS_OK;
 }
 
@@ -170,6 +251,43 @@ OpusMSEncoder *opus_multistream_encoder_create(
    return st;
 }
 
+OpusMSEncoder *opus_multistream_surround_encoder_create(
+      opus_int32 Fs,
+      int channels,
+      int mapping_family,
+      int *streams,
+      int *coupled_streams,
+      unsigned char *mapping,
+      int application,
+      int *error
+)
+{
+   int ret;
+   OpusMSEncoder *st;
+   if ((channels>255) || (channels<1))
+   {
+      if (error)
+         *error = OPUS_BAD_ARG;
+      return NULL;
+   }
+   st = (OpusMSEncoder *)opus_alloc(opus_multistream_surround_encoder_get_size(channels, mapping_family));
+   if (st==NULL)
+   {
+      if (error)
+         *error = OPUS_ALLOC_FAIL;
+      return NULL;
+   }
+   ret = opus_multistream_surround_encoder_init(st, Fs, channels, mapping_family, streams, coupled_streams, mapping, application);
+   if (ret != OPUS_OK)
+   {
+      opus_free(st);
+      st = NULL;
+   }
+   if (error)
+      *error = ret;
+   return st;
+}
+
 typedef void (*opus_copy_channel_in_func)(
   opus_val16 *dst,
   int dst_stride,
@@ -178,6 +296,62 @@ typedef void (*opus_copy_channel_in_func)(
   int src_channel,
   int frame_size
 );
+
+static void surround_rate_allocation(
+      OpusMSEncoder *st,
+      opus_int32 *rate,
+      int frame_size
+      )
+{
+   int i;
+   opus_int32 channel_rate;
+   opus_int32 Fs;
+   char *ptr;
+   int coupled_ratio; /* Q8 */
+   int lfe_ratio;     /* Q8 */
+
+   ptr = (char*)st + align(sizeof(OpusMSEncoder));
+   opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
+
+   /* Should depend on the bitrate, for now we assume coupled streams get 60% more bits than mono */
+   coupled_ratio = 410;
+   /* Should depend on the bitrate, for now we assume LFE gets 1/12 the bits of mono */
+   lfe_ratio = 32;
+
+   /* Compute bitrate allocation between streams */
+   if (st->bitrate_bps==OPUS_AUTO)
+   {
+      channel_rate = Fs+60*Fs/frame_size;
+   } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
+   {
+      channel_rate = 300000;
+   } else {
+      int total = ((st->layout.nb_streams-st->layout.nb_coupled_streams-(st->lfe_stream!=-1))<<8) /* mono */
+            + coupled_ratio*st->layout.nb_coupled_streams /* stereo */
+            + (st->lfe_stream!=-1)*lfe_ratio;
+      channel_rate = 256*st->bitrate_bps/total;
+   }
+#ifndef FIXED_POINT
+   if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != Fs/50)
+   {
+      opus_int32 bonus;
+      bonus = 60*(Fs/frame_size-50);
+      channel_rate += bonus;
+   }
+#endif
+
+   for (i=0;i<st->layout.nb_streams;i++)
+   {
+      if (i<st->layout.nb_coupled_streams)
+         rate[i] = channel_rate*coupled_ratio>>8;
+      else if (i!=st->lfe_stream)
+         rate[i] = channel_rate;
+      else
+         rate[i] = channel_rate*lfe_ratio>>8;
+   }
+
+
+}
 
 /* Max size in case the encoder decides to return three frames */
 #define MS_FRAME_TMP (3*1275+7)
@@ -205,12 +379,10 @@ static int opus_multistream_encode_native
    VARDECL(opus_val16, buf);
    unsigned char tmp_data[MS_FRAME_TMP];
    OpusRepacketizer rp;
-   int orig_frame_size;
-   int coded_channels;
-   opus_int32 channel_rate;
    opus_int32 complexity;
    AnalysisInfo analysis_info;
    const CELTMode *celt_mode;
+   opus_int32 bitrates[256];
    ALLOC_STACK;
 
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
@@ -223,7 +395,6 @@ static int opus_multistream_encode_native
       RESTORE_STACK;
       return OPUS_BAD_ARG;
    }
-   orig_frame_size = IMIN(frame_size,Fs/50);
 #ifndef FIXED_POINT
    analysis_info.valid = 0;
    if (complexity >= 7 && Fs==48000)
@@ -262,24 +433,8 @@ static int opus_multistream_encode_native
    }
 
    /* Compute bitrate allocation between streams (this could be a lot better) */
-   coded_channels = st->layout.nb_streams + st->layout.nb_coupled_streams;
-   if (st->bitrate_bps==OPUS_AUTO)
-   {
-      channel_rate = Fs+60*Fs/orig_frame_size;
-   } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
-   {
-      channel_rate = 300000;
-   } else {
-      channel_rate = st->bitrate_bps/coded_channels;
-   }
-#ifndef FIXED_POINT
-   if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != Fs/50)
-   {
-      opus_int32 bonus;
-      bonus = 60*(Fs/frame_size-50);
-      channel_rate += bonus;
-   }
-#endif
+   surround_rate_allocation(st, bitrates, frame_size);
+
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    for (s=0;s<st->layout.nb_streams;s++)
    {
@@ -289,7 +444,7 @@ static int opus_multistream_encode_native
          ptr += align(coupled_size);
       else
          ptr += align(mono_size);
-      opus_encoder_ctl(enc, OPUS_SET_BITRATE(channel_rate * (s < st->layout.nb_coupled_streams ? 2 : 1)));
+      opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrates[s]));
    }
 
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
