@@ -1328,7 +1328,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    {
       int enabled;
       int qg;
-      enabled = nbAvailableBytes>12*C && st->start==0 && !silence && !st->disable_pf
+      enabled = (st->lfe || nbAvailableBytes>12*C) && st->start==0 && !silence && !st->disable_pf
             && st->complexity >= 5 && !(st->consec_transient && LM!=3 && st->variable_duration);
 
       prefilter_tapset = st->tapset_decision;
@@ -1391,6 +1391,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tf_chan = 0;
    compute_band_energies(mode, freq, bandE, effEnd, C, M);
 
+   if (st->lfe)
+   {
+      for (i=2;i<st->end;i++)
+         bandE[i] = IMIN(bandE[i], MULT16_32_Q15(QCONST16(1e-4f,15),bandE[0]));
+   }
    amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
    /*for (i=0;i<21;i++)
       printf("%f ", bandLogE[i]);
@@ -1404,7 +1409,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    /* Last chance to catch any transient we might have missed in the
       time-domain analysis */
-   if (LM>0 && ec_tell(enc)+3<=total_bits && !isTransient && st->complexity>=5)
+   if (LM>0 && ec_tell(enc)+3<=total_bits && !isTransient && st->complexity>=5 && !st->lfe)
    {
       if (patch_transient_decision(bandLogE, oldBandE, nbEBands, st->end, C))
       {
@@ -1462,7 +1467,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    if (ec_tell(enc)+4<=total_bits)
    {
-      if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C || st->start != 0)
+      if (st->lfe)
+      {
+         st->tapset_decision = 0;
+         st->spread_decision = SPREAD_NORMAL;
+      } else if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C || st->start != 0)
       {
          if (st->complexity == 0)
             st->spread_decision = SPREAD_NONE;
