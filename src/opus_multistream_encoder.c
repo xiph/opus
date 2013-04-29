@@ -38,6 +38,24 @@
 #include "os_support.h"
 #include "analysis.h"
 
+typedef struct {
+   int nb_streams;
+   int nb_coupled_streams;
+   unsigned char mapping[8];
+} VorbisLayout;
+
+/* Index is nb_channel-1*/
+static const VorbisLayout vorbis_mappings[8] = {
+      {1, 0, {0}},                      /* 1: mono */
+      {1, 1, {0, 1}},                   /* 2: stereo */
+      {2, 1, {0, 2, 1}},                /* 3: 1-d surround */
+      {2, 2, {0, 1, 2, 3}},             /* 4: quadraphonic surround */
+      {3, 2, {0, 4, 1, 2, 3}},          /* 5: 5-channel surround */
+      {4, 2, {0, 4, 1, 2, 3, 5}},       /* 6: 5.1 surround */
+      {4, 3, {0, 4, 1, 2, 3, 5, 6}},    /* 7: 6.1 surround */
+      {5, 3, {0, 6, 1, 2, 3, 4, 5, 7}}, /* 8: 7.1 surround */
+};
+
 struct OpusMSEncoder {
    TonalityAnalysisState analysis;
    ChannelLayout layout;
@@ -87,18 +105,26 @@ opus_int32 opus_multistream_surround_encoder_get_size(int channels, int mapping_
    int nb_streams;
    int nb_coupled_streams;
 
-   if (channels==1 && mapping_family<=1)
+   if (mapping_family==0)
    {
-      nb_streams = 1;
+      if (channels==1)
+      {
+         nb_streams=1;
+         nb_coupled_streams=0;
+      } else if (channels==2)
+      {
+         nb_streams=1;
+         nb_coupled_streams=1;
+      } else
+         return 0;
+   } else if (mapping_family==1 && channels<=8 && channels>=1)
+   {
+      nb_streams=vorbis_mappings[channels-1].nb_streams;
+      nb_coupled_streams=vorbis_mappings[channels-1].nb_coupled_streams;
+   } else if (mapping_family==255)
+   {
+      nb_streams=channels;
       nb_coupled_streams=0;
-   } else if (channels==2 && mapping_family<=1)
-   {
-      nb_streams = 1;
-      nb_coupled_streams=1;
-   } else if (channels==6 && mapping_family==1)
-   {
-      nb_streams = 4;
-      nb_coupled_streams=2;
    } else
       return 0;
    return opus_multistream_encoder_get_size(nb_streams, nb_coupled_streams);
@@ -186,30 +212,39 @@ int opus_multistream_surround_encoder_init(
 )
 {
    st->lfe_stream = -1;
-   if (channels==1 && mapping_family<=1)
+   if (mapping_family==0)
    {
-      *streams=1;
+      if (channels==1)
+      {
+         *streams=1;
+         *coupled_streams=0;
+         mapping[0]=0;
+      } else if (channels==2)
+      {
+         *streams=1;
+         *coupled_streams=1;
+         mapping[0]=0;
+         mapping[1]=1;
+      } else
+         return OPUS_UNIMPLEMENTED;
+   } else if (mapping_family==1 && channels<=8 && channels>=1)
+   {
+      int i;
+      *streams=vorbis_mappings[channels-1].nb_streams;
+      *coupled_streams=vorbis_mappings[channels-1].nb_coupled_streams;
+      for (i=0;i<channels;i++)
+         mapping[i] = vorbis_mappings[channels-1].mapping[i];
+      if (channels>=6)
+         st->lfe_stream = *streams-1;
+   } else if (mapping_family==255)
+   {
+      int i;
+      *streams=channels;
       *coupled_streams=0;
-      mapping[0]=0;
-   } else if (channels==2 && mapping_family<=1)
-   {
-      *streams=1;
-      *coupled_streams=1;
-      mapping[0]=0;
-      mapping[1]=1;
-   } else if (channels==6 && mapping_family==1)
-   {
-      *streams=4;
-      *coupled_streams=2;
-      mapping[0]=0;
-      mapping[1]=4;
-      mapping[2]=1;
-      mapping[3]=2;
-      mapping[4]=3;
-      mapping[5]=5;
-      st->lfe_stream = 3;
+      for(i=0;i<channels;i++)
+         mapping[i] = i;
    } else
-      return OPUS_BAD_ARG;
+      return OPUS_UNIMPLEMENTED;
    opus_multistream_encoder_init_impl(st, Fs, channels, *streams, *coupled_streams, mapping, application, 1);
    return OPUS_OK;
 }
