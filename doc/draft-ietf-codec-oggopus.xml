@@ -1198,8 +1198,8 @@ Multichannel support was added in Firefox 17, in production release
  starting November 20, 2012.
 Metadata support was added in Firefox 18, in production release starting
  January 8, 2013.
-Chained files (as streams only, with seeking disabled) will be supported in
- Firefox 20, scheduled to enter production release in early April, 2013.
+Chained file support (as streams only, with seeking disabled) was added in
+ Firefox 20, in production release starting April 2, 2013.
 This implementation is open source.
 </t>
 <t><list style="symbols">
