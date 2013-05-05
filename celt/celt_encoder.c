@@ -109,6 +109,8 @@ struct OpusCustomEncoder {
    opus_val16 overlap_max;
    opus_val16 stereo_saving;
    int intensity;
+   opus_val16 *energy_save;
+   opus_val16 *energy_mask;
 
 #ifdef RESYNTH
    /* +MAX_PERIOD/2 to make space for overlap */
@@ -1165,6 +1167,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    int secondMdct;
    int signalBandwidth;
    int transient_got_disabled=0;
+   opus_val16 surround_masking=0;
    ALLOC_STACK;
 
    mode = st->mode;
@@ -1397,6 +1400,27 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          bandE[i] = IMIN(bandE[i], MULT16_32_Q15(QCONST16(1e-4f,15),bandE[0]));
    }
    amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
+   if (st->energy_save)
+   {
+      opus_val16 offset = shortBlocks?HALF16(SHL16(LM, DB_SHIFT)):0;
+#ifdef FIXED_POINT
+      /* Compensate for the 1/8 gain we apply in the fixed-point downshift to avoid overflows. */
+      offset -= QCONST16(3.0f, DB_SHIFT);
+#endif
+      for(i=0;i<C*nbEBands;i++)
+         st->energy_save[i]=bandLogE[i]-offset;
+      st->energy_save=NULL;
+   }
+   if (st->energy_mask&&!st->lfe)
+   {
+      opus_val32 mask_avg=0;
+      opus_val16 offset = shortBlocks?HALF16(SHL16(LM, DB_SHIFT)):0;
+      for (c=0;c<C;c++)
+         for(i=0;i<st->end;i++)
+            mask_avg += bandLogE[nbEBands*c+i]-offset-st->energy_mask[nbEBands*c+i];
+      surround_masking = DIV32_16(mask_avg,C*st->end) + QCONST16(.0f, DB_SHIFT);
+      surround_masking = MIN16(MAX16(surround_masking,-QCONST16(1.5f, DB_SHIFT)), 0);
+   }
    /*for (i=0;i<21;i++)
       printf("%f ", bandLogE[i]);
    printf("\n");*/
@@ -1625,7 +1649,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         max_frac = DIV32_16(MULT16_16(QCONST16(0.8f, 15), coded_stereo_dof), coded_bins);
         /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
         target -= (opus_int32)MIN32(MULT16_32_Q15(max_frac,target),
-                        SHR16(MULT16_16(st->stereo_saving-QCONST16(0.1f,8),(coded_stereo_dof<<BITRES)),8));
+                        SHR32(MULT16_16(st->stereo_saving-QCONST16(0.1f,8),(coded_stereo_dof<<BITRES)),8));
      }
      /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
      target += tot_boost-(16<<LM);
@@ -1649,6 +1673,13 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      }
 #endif
 
+     if (st->energy_mask&&!st->lfe)
+     {
+        opus_int32 surround_target = target + SHR32(MULT16_16(surround_masking,coded_bins<<BITRES), DB_SHIFT);
+        /*printf("%f %d %d %d %d %d %d ", surround_masking, coded_bins, st->end, st->intensity, surround_target, target, st->bitrate);*/
+        target = IMAX(target/4, surround_target);
+     }
+
      {
         opus_int32 floor_depth;
         int bins;
@@ -1660,7 +1691,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         /*printf("%f %d\n", maxDepth, floor_depth);*/
      }
 
-     if (st->constrained_vbr || st->bitrate<64000)
+     if ((!st->energy_mask||st->lfe) && (st->constrained_vbr || st->bitrate<64000))
      {
         opus_val16 rate_factor;
 #ifdef FIXED_POINT
@@ -1759,7 +1790,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    codedBands = compute_allocation(mode, st->start, st->end, offsets, cap,
          alloc_trim, &st->intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands, signalBandwidth);
-   st->lastCodedBands = codedBands;
+   if (st->lastCodedBands)
+      st->lastCodedBands = IMIN(st->lastCodedBands+1,IMAX(st->lastCodedBands-1,codedBands));
+   else
+      st->lastCodedBands = codedBands;
 
    quant_fine_energy(mode, st->start, st->end, oldBandE, error, fine_quant, enc, C);
 
@@ -2149,6 +2183,18 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
       {
           opus_int32 value = va_arg(ap, opus_int32);
           st->lfe = value;
+      }
+      break;
+      case OPUS_SET_ENERGY_SAVE_REQUEST:
+      {
+          opus_val16 *value = va_arg(ap, opus_val16*);
+          st->energy_save=value;
+      }
+      break;
+      case OPUS_SET_ENERGY_MASK_REQUEST:
+      {
+          opus_val16 *value = va_arg(ap, opus_val16*);
+          st->energy_mask = value;
       }
       break;
       default:

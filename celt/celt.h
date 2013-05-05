@@ -110,6 +110,12 @@ typedef struct {
 #define OPUS_SET_LFE_REQUEST    10024
 #define OPUS_SET_LFE(x) OPUS_SET_LFE_REQUEST, __opus_check_int(x)
 
+#define OPUS_SET_ENERGY_SAVE_REQUEST    10026
+#define OPUS_SET_ENERGY_SAVE(x) OPUS_SET_ENERGY_SAVE_REQUEST, __opus_check_val16_ptr(x)
+
+#define OPUS_SET_ENERGY_MASK_REQUEST    10028
+#define OPUS_SET_ENERGY_MASK(x) OPUS_SET_ENERGY_MASK_REQUEST, __opus_check_val16_ptr(x)
+
 /* Encoder stuff */
 
 int celt_encoder_get_size(int channels);

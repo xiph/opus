@@ -94,6 +94,7 @@ struct OpusEncoder {
     int          silk_bw_switch;
     /* Sampling rate (at the API level) */
     int          first;
+    int          energy_masking;
     StereoWidthState width_mem;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef FIXED_POINT
@@ -1602,7 +1603,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     st->prev_HB_gain = HB_gain;
     if (st->mode != MODE_HYBRID || st->stream_channels==1)
        st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),IMAX(0,st->bitrate_bps-32000));
-    if( st->channels == 2 ) {
+    if( !st->energy_masking && st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
             opus_val16 g1, g2;
@@ -2214,6 +2215,19 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             opus_int32 value = va_arg(ap, opus_int32);
             st->lfe = value;
             celt_encoder_ctl(celt_enc, OPUS_SET_LFE(value));
+        }
+        break;
+        case OPUS_SET_ENERGY_SAVE_REQUEST:
+        {
+            opus_val16 *value = va_arg(ap, opus_val16*);
+            celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_SAVE(value));
+        }
+        break;
+        case OPUS_SET_ENERGY_MASK_REQUEST:
+        {
+            opus_val16 *value = va_arg(ap, opus_val16*);
+            st->energy_masking = (value!=NULL);
+            celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_MASK(value));
         }
         break;
 
