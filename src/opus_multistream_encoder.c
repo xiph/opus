@@ -105,6 +105,8 @@ int opus_multistream_encoder_init(
    st->layout.nb_channels = channels;
    st->layout.nb_streams = streams;
    st->layout.nb_coupled_streams = coupled_streams;
+   st->subframe_mem[0]=st->subframe_mem[1]=st->subframe_mem[2]=0;
+   OPUS_CLEAR(&st->analysis,1);
 
    st->bitrate_bps = OPUS_AUTO;
    st->variable_duration = OPUS_FRAMESIZE_ARG;
