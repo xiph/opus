@@ -1411,13 +1411,23 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          st->energy_save[i]=bandLogE[i]-offset;
       st->energy_save=NULL;
    }
+   /* This computes how much masking takes place between surround channels */
    if (st->energy_mask&&!st->lfe)
    {
       opus_val32 mask_avg=0;
       opus_val16 offset = shortBlocks?HALF16(SHL16(LM, DB_SHIFT)):0;
       for (c=0;c<C;c++)
+      {
+         opus_val16 followE, followMask;
+         followE = followMask = -QCONST16(14.f, DB_SHIFT);
          for(i=0;i<st->end;i++)
-            mask_avg += bandLogE[nbEBands*c+i]-offset-st->energy_mask[nbEBands*c+i];
+         {
+            /* We use a simple follower to approximate the masking spreading function. */
+            followE = MAX16(followE-QCONST16(1.f, DB_SHIFT), bandLogE[nbEBands*c+i]-offset);
+            followMask = MAX16(followMask-QCONST16(1.f, DB_SHIFT), st->energy_mask[nbEBands*c+i]);
+            mask_avg += followE-followMask;
+         }
+      }
       surround_masking = DIV32_16(mask_avg,C*st->end) + QCONST16(.0f, DB_SHIFT);
       surround_masking = MIN16(MAX16(surround_masking,-QCONST16(1.5f, DB_SHIFT)), 0);
    }
