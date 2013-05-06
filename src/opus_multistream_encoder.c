@@ -362,15 +362,22 @@ static void surround_rate_allocation(
    opus_int32 channel_rate;
    opus_int32 Fs;
    char *ptr;
+   int stream_offset;
+   int lfe_offset;
    int coupled_ratio; /* Q8 */
    int lfe_ratio;     /* Q8 */
 
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
 
-   /* Should depend on the bitrate, for now we assume coupled streams get 60% more bits than mono */
-   coupled_ratio = 410;
-   /* Should depend on the bitrate, for now we assume LFE gets 1/12 the bits of mono */
+   /* We start by giving each stream (coupled or uncoupled) the same bitrate.
+      This models the main saving of coupled channels over uncoupled. */
+   stream_offset = 20000;
+   /* The LFE stream is an exception to the above and gets fewer bits. */
+   lfe_offset = 3500;
+   /* Coupled streams get twice the mono rate after the first 20 kb/s. */
+   coupled_ratio = 512;
+   /* Should depend on the bitrate, for now we assume LFE gets 1/8 the bits of mono */
    lfe_ratio = 32;
 
    /* Compute bitrate allocation between streams */
@@ -381,10 +388,17 @@ static void surround_rate_allocation(
    {
       channel_rate = 300000;
    } else {
-      int total = ((st->layout.nb_streams-st->layout.nb_coupled_streams-(st->lfe_stream!=-1))<<8) /* mono */
-            + coupled_ratio*st->layout.nb_coupled_streams /* stereo */
-            + (st->lfe_stream!=-1)*lfe_ratio;
-      channel_rate = 256*(st->bitrate_bps-2000)/total;
+      int nb_lfe;
+      int nb_uncoupled;
+      int nb_coupled;
+      int total;
+      nb_lfe = (st->lfe_stream!=-1);
+      nb_coupled = st->layout.nb_coupled_streams;
+      nb_uncoupled = st->layout.nb_streams-nb_coupled-nb_lfe;
+      total = (nb_uncoupled<<8)         /* mono */
+            + coupled_ratio*nb_coupled /* stereo */
+            + nb_lfe*lfe_ratio;
+      channel_rate = 256*(st->bitrate_bps-lfe_offset*nb_lfe-stream_offset*(nb_coupled+nb_uncoupled))/total;
    }
 #ifndef FIXED_POINT
    if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != Fs/50)
@@ -398,14 +412,12 @@ static void surround_rate_allocation(
    for (i=0;i<st->layout.nb_streams;i++)
    {
       if (i<st->layout.nb_coupled_streams)
-         rate[i] = channel_rate*coupled_ratio>>8;
+         rate[i] = stream_offset+(channel_rate*coupled_ratio>>8);
       else if (i!=st->lfe_stream)
-         rate[i] = channel_rate;
+         rate[i] = stream_offset+channel_rate;
       else
-         rate[i] = 2000+(channel_rate*lfe_ratio>>8);
+         rate[i] = lfe_offset+(channel_rate*lfe_ratio>>8);
    }
-
-
 }
 
 /* Max size in case the encoder decides to return three frames */
