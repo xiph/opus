@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main_FIX.h"
+#include "stack_alloc.h"
 #include "tuning_parameters.h"
 
 /* Finds LPC vector from correlations, and converts to NLSF */
@@ -51,7 +52,7 @@ void silk_find_LPC_FIX(
     opus_int     res_nrg_interp_Q, res_nrg_Q, res_tmp_nrg_Q;
     opus_int16   a_tmp_Q12[ MAX_LPC_ORDER ];
     opus_int16   NLSF0_Q15[ MAX_LPC_ORDER ];
-    opus_int16   LPC_res[ MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ];
+    SAVE_STACK;
 
     subfr_length = psEncC->subfr_length + psEncC->predictLPCOrder;
 
@@ -62,6 +63,8 @@ void silk_find_LPC_FIX(
     silk_burg_modified( &res_nrg, &res_nrg_Q, a_Q16, x, minInvGain_Q30, subfr_length, psEncC->nb_subfr, psEncC->predictLPCOrder );
 
     if( psEncC->useInterpolatedNLSFs && !psEncC->first_frame_after_reset && psEncC->nb_subfr == MAX_NB_SUBFR ) {
+        VARDECL( opus_int16, LPC_res );
+
         /* Optimal solution for last 10 ms */
         silk_burg_modified( &res_tmp_nrg, &res_tmp_nrg_Q, a_tmp_Q16, x + 2 * subfr_length, minInvGain_Q30, subfr_length, 2, psEncC->predictLPCOrder );
 
@@ -80,6 +83,8 @@ void silk_find_LPC_FIX(
 
         /* Convert to NLSFs */
         silk_A2NLSF( NLSF_Q15, a_tmp_Q16, psEncC->predictLPCOrder );
+
+        ALLOC( LPC_res, 2 * subfr_length, opus_int16 );
 
         /* Search over interpolation indices to find the one with lowest residual energy */
         for( k = 3; k >= 0; k-- ) {
@@ -142,4 +147,5 @@ void silk_find_LPC_FIX(
     }
 
     silk_assert( psEncC->indices.NLSFInterpCoef_Q2 == 4 || ( psEncC->useInterpolatedNLSFs && !psEncC->first_frame_after_reset && psEncC->nb_subfr == MAX_NB_SUBFR ) );
+    RESTORE_STACK;
 }

@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main.h"
+#include "stack_alloc.h"
 
 /* Silk VAD noise level estimation */
 static inline void silk_VAD_GetNoiseLevels(
@@ -82,15 +83,19 @@ opus_int silk_VAD_GetSA_Q8(                                     /* O    Return v
 )
 {
     opus_int   SA_Q15, pSNR_dB_Q7, input_tilt;
-    opus_int   decimated_framelength, dec_subframe_length, dec_subframe_offset, SNR_Q7, i, b, s;
+    opus_int   decimated_framelength1, decimated_framelength2;
+    opus_int   decimated_framelength;
+    opus_int   dec_subframe_length, dec_subframe_offset, SNR_Q7, i, b, s;
     opus_int32 sumSquared, smooth_coef_Q16;
     opus_int16 HPstateTmp;
-    opus_int16 X[ VAD_N_BANDS ][ MAX_FRAME_LENGTH / 2 ];
+    VARDECL( opus_int16, X );
     opus_int32 Xnrg[ VAD_N_BANDS ];
     opus_int32 NrgToNoiseRatio_Q8[ VAD_N_BANDS ];
     opus_int32 speech_nrg, x_tmp;
+    opus_int   X_offset[ VAD_N_BANDS ];
     opus_int   ret = 0;
     silk_VAD_state *psSilk_VAD = &psEncC->sVAD;
+    SAVE_STACK;
 
     /* Safety checks */
     silk_assert( VAD_N_BANDS == 4 );
@@ -101,26 +106,46 @@ opus_int silk_VAD_GetSA_Q8(                                     /* O    Return v
     /***********************/
     /* Filter and Decimate */
     /***********************/
+    decimated_framelength1 = silk_RSHIFT( psEncC->frame_length, 1 );
+    decimated_framelength2 = silk_RSHIFT( psEncC->frame_length, 2 );
+    decimated_framelength = silk_RSHIFT( psEncC->frame_length, 3 );
+    /* Decimate into 4 bands:
+       0       L      3L       L              3L                             5L
+               -      --       -              --                             --
+               8       8       2               4                              4
+
+       [0-1 kHz| temp. |1-2 kHz|    2-4 kHz    |            4-8 kHz           |
+
+       They're arranged to allow the minimal ( frame_length / 4 ) extra
+       scratch space during the downsampling process */
+    X_offset[ 0 ] = 0;
+    X_offset[ 1 ] = decimated_framelength + decimated_framelength2;
+    X_offset[ 2 ] = X_offset[ 1 ] + decimated_framelength;
+    X_offset[ 3 ] = X_offset[ 2 ] + decimated_framelength2;
+    ALLOC( X, X_offset[ 3 ] + decimated_framelength1, opus_int16 );
+
     /* 0-8 kHz to 0-4 kHz and 4-8 kHz */
-    silk_ana_filt_bank_1( pIn,          &psSilk_VAD->AnaState[  0 ], &X[ 0 ][ 0 ], &X[ 3 ][ 0 ], psEncC->frame_length );
+    silk_ana_filt_bank_1( pIn, &psSilk_VAD->AnaState[  0 ],
+        X, &X[ X_offset[ 3 ] ], psEncC->frame_length );
 
     /* 0-4 kHz to 0-2 kHz and 2-4 kHz */
-    silk_ana_filt_bank_1( &X[ 0 ][ 0 ], &psSilk_VAD->AnaState1[ 0 ], &X[ 0 ][ 0 ], &X[ 2 ][ 0 ], silk_RSHIFT( psEncC->frame_length, 1 ) );
+    silk_ana_filt_bank_1( X, &psSilk_VAD->AnaState1[ 0 ],
+        X, &X[ X_offset[ 2 ] ], decimated_framelength1 );
 
     /* 0-2 kHz to 0-1 kHz and 1-2 kHz */
-    silk_ana_filt_bank_1( &X[ 0 ][ 0 ], &psSilk_VAD->AnaState2[ 0 ], &X[ 0 ][ 0 ], &X[ 1 ][ 0 ], silk_RSHIFT( psEncC->frame_length, 2 ) );
+    silk_ana_filt_bank_1( X, &psSilk_VAD->AnaState2[ 0 ],
+        X, &X[ X_offset[ 1 ] ], decimated_framelength2 );
 
     /*********************************************/
     /* HP filter on lowest band (differentiator) */
     /*********************************************/
-    decimated_framelength = silk_RSHIFT( psEncC->frame_length, 3 );
-    X[ 0 ][ decimated_framelength - 1 ] = silk_RSHIFT( X[ 0 ][ decimated_framelength - 1 ], 1 );
-    HPstateTmp = X[ 0 ][ decimated_framelength - 1 ];
+    X[ decimated_framelength - 1 ] = silk_RSHIFT( X[ decimated_framelength - 1 ], 1 );
+    HPstateTmp = X[ decimated_framelength - 1 ];
     for( i = decimated_framelength - 1; i > 0; i-- ) {
-        X[ 0 ][ i - 1 ]  = silk_RSHIFT( X[ 0 ][ i - 1 ], 1 );
-        X[ 0 ][ i ]     -= X[ 0 ][ i - 1 ];
+        X[ i - 1 ]  = silk_RSHIFT( X[ i - 1 ], 1 );
+        X[ i ]     -= X[ i - 1 ];
     }
-    X[ 0 ][ 0 ] -= psSilk_VAD->HPstate;
+    X[ 0 ] -= psSilk_VAD->HPstate;
     psSilk_VAD->HPstate = HPstateTmp;
 
     /*************************************/
@@ -142,7 +167,8 @@ opus_int silk_VAD_GetSA_Q8(                                     /* O    Return v
             for( i = 0; i < dec_subframe_length; i++ ) {
                 /* The energy will be less than dec_subframe_length * ( silk_int16_MIN / 8 ) ^ 2.            */
                 /* Therefore we can accumulate with no risk of overflow (unless dec_subframe_length > 128)  */
-                x_tmp = silk_RSHIFT( X[ b ][ i + dec_subframe_offset ], 3 );
+                x_tmp = silk_RSHIFT(
+                    X[ X_offset[ b ] + i + dec_subframe_offset ], 3 );
                 sumSquared = silk_SMLABB( sumSquared, x_tmp, x_tmp );
 
                 /* Safety check */
@@ -264,6 +290,7 @@ opus_int silk_VAD_GetSA_Q8(                                     /* O    Return v
     }
 
     return( ret );
+    RESTORE_STACK;
 }
 
 /**************************/

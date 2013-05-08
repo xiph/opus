@@ -1241,7 +1241,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        VARDECL(unsigned char, tmp_data);
        int nb_frames;
        int bak_mode, bak_bandwidth, bak_channels, bak_to_mono;
-       OpusRepacketizer rp;
+       VARDECL(OpusRepacketizer, rp);
        opus_int32 bytes_per_frame;
 
 
@@ -1250,7 +1250,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
        ALLOC(tmp_data, nb_frames*bytes_per_frame, unsigned char);
 
-       opus_repacketizer_init(&rp);
+       ALLOC(rp, 1, OpusRepacketizer);
+       opus_repacketizer_init(rp);
 
        bak_mode = st->user_forced_mode;
        bak_bandwidth = st->user_bandwidth;
@@ -1282,14 +1283,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
              RESTORE_STACK;
              return OPUS_INTERNAL_ERROR;
           }
-          ret = opus_repacketizer_cat(&rp, tmp_data+i*bytes_per_frame, tmp_len);
+          ret = opus_repacketizer_cat(rp, tmp_data+i*bytes_per_frame, tmp_len);
           if (ret<0)
           {
              RESTORE_STACK;
              return OPUS_INTERNAL_ERROR;
           }
        }
-       ret = opus_repacketizer_out(&rp, data, out_data_bytes);
+       ret = opus_repacketizer_out(rp, data, out_data_bytes);
        if (ret<0)
        {
           RESTORE_STACK;

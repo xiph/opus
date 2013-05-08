@@ -35,8 +35,8 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Downsample by a factor 2 */
 void silk_resampler_down2(
     opus_int32                  *S,                 /* I/O  State vector [ 2 ]                                          */
-    opus_int16                  *out,               /* O    Output signal [ len ]                                       */
-    const opus_int16            *in,                /* I    Input signal [ floor(len/2) ]                               */
+    opus_int16                  *out,               /* O    Output signal [ floor(len/2) ]                              */
+    const opus_int16            *in,                /* I    Input signal [ len ]                                        */
     opus_int32                  inLen               /* I    Number of input samples                                     */
 )
 {

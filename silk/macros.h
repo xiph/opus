@@ -123,12 +123,15 @@ static inline opus_int32 silk_CLZ32(opus_int32 in32)
 }
 
 /* Row based */
-#define matrix_ptr(Matrix_base_adr, row, column, N)         *(Matrix_base_adr + ((row)*(N)+(column)))
-#define matrix_adr(Matrix_base_adr, row, column, N)          (Matrix_base_adr + ((row)*(N)+(column)))
+#define matrix_ptr(Matrix_base_adr, row, column, N) \
+    (*((Matrix_base_adr) + ((row)*(N)+(column))))
+#define matrix_adr(Matrix_base_adr, row, column, N) \
+      ((Matrix_base_adr) + ((row)*(N)+(column)))
 
 /* Column based */
 #ifndef matrix_c_ptr
-#   define matrix_c_ptr(Matrix_base_adr, row, column, M)    *(Matrix_base_adr + ((row)+(M)*(column)))
+#   define matrix_c_ptr(Matrix_base_adr, row, column, M) \
+    (*((Matrix_base_adr) + ((row)+(M)*(column))))
 #endif
 
 #endif /* SILK_MACROS_H */

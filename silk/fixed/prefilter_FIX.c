@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main_FIX.h"
+#include "stack_alloc.h"
 #include "tuning_parameters.h"
 
 /* Prefilter for finding Quantizer input signal */
@@ -101,14 +102,17 @@ void silk_prefilter_FIX(
     opus_int32 *pxw_Q3;
     opus_int   HarmShapeGain_Q12, Tilt_Q14;
     opus_int32 HarmShapeFIRPacked_Q12, LF_shp_Q14;
-    opus_int32 x_filt_Q12[ MAX_SUB_FRAME_LENGTH ];
-    opus_int32 st_res_Q2[ MAX_SUB_FRAME_LENGTH + MAX_LPC_ORDER ];
+    VARDECL( opus_int32, x_filt_Q12 );
+    VARDECL( opus_int32, st_res_Q2 );
     opus_int16 B_Q10[ 2 ];
+    SAVE_STACK;
 
     /* Set up pointers */
     px  = x;
     pxw_Q3 = xw_Q3;
     lag = P->lagPrev;
+    ALLOC( x_filt_Q12, psEnc->sCmn.subfr_length, opus_int32 );
+    ALLOC( st_res_Q2, psEnc->sCmn.subfr_length, opus_int32 );
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         /* Update Variables that change per sub frame */
         if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
@@ -148,6 +152,7 @@ void silk_prefilter_FIX(
     }
 
     P->lagPrev = psEncCtrl->pitchL[ psEnc->sCmn.nb_subfr - 1 ];
+    RESTORE_STACK;
 }
 
 /* Prefilter for finding Quantizer input signal */

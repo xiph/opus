@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "API.h"
 #include "control.h"
 #include "typedef.h"
+#include "stack_alloc.h"
 #include "structs.h"
 #include "tuning_parameters.h"
 #ifdef FIXED_POINT
@@ -146,18 +147,21 @@ opus_int silk_Encode(                                   /* O    Returns error co
 )
 {
     opus_int   n, i, nBits, flags, tmp_payloadSize_ms = 0, tmp_complexity = 0, ret = 0;
-    opus_int   nSamplesToBuffer, nBlocksOf10ms, nSamplesFromInput = 0;
+    opus_int   nSamplesToBuffer, nSamplesToBufferMax, nBlocksOf10ms;
+    opus_int   nSamplesFromInput = 0, nSamplesFromInputMax;
     opus_int   speech_act_thr_for_switch_Q8;
     opus_int32 TargetRate_bps, MStargetRates_bps[ 2 ], channelRate_bps, LBRR_symbol, sum;
     silk_encoder *psEnc = ( silk_encoder * )encState;
-    opus_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
+    VARDECL( opus_int16, buf );
     opus_int transition, curr_block, tot_blocks;
+    SAVE_STACK;
 
     psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded = psEnc->state_Fxx[ 1 ].sCmn.nFramesEncoded = 0;
 
     /* Check values in encoder control structure */
     if( ( ret = check_control_input( encControl ) != 0 ) ) {
         silk_assert( 0 );
+        RESTORE_STACK;
         return ret;
     }
 
@@ -192,6 +196,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
         /* Only accept input length of 10 ms */
         if( nBlocksOf10ms != 1 ) {
             silk_assert( 0 );
+            RESTORE_STACK;
             return SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
         }
         /* Reset Encoder */
@@ -212,11 +217,13 @@ opus_int silk_Encode(                                   /* O    Returns error co
         /* Only accept input lengths that are a multiple of 10 ms */
         if( nBlocksOf10ms * encControl->API_sampleRate != 100 * nSamplesIn || nSamplesIn < 0 ) {
             silk_assert( 0 );
+            RESTORE_STACK;
             return SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
         }
         /* Make sure no more than one packet can be produced */
         if( 1000 * (opus_int32)nSamplesIn > encControl->payloadSize_ms * encControl->API_sampleRate ) {
             silk_assert( 0 );
+            RESTORE_STACK;
             return SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
         }
     }
@@ -227,6 +234,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
         opus_int force_fs_kHz = (n==1) ? psEnc->state_Fxx[0].sCmn.fs_kHz : 0;
         if( ( ret = silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch, n, force_fs_kHz ) ) != 0 ) {
             silk_assert( 0 );
+            RESTORE_STACK;
             return ret;
         }
         if( psEnc->state_Fxx[n].sCmn.first_frame_after_reset || transition ) {
@@ -239,9 +247,16 @@ opus_int silk_Encode(                                   /* O    Returns error co
     silk_assert( encControl->nChannelsInternal == 1 || psEnc->state_Fxx[ 0 ].sCmn.fs_kHz == psEnc->state_Fxx[ 1 ].sCmn.fs_kHz );
 
     /* Input buffering/resampling and encoding */
+    nSamplesToBufferMax =
+        10 * nBlocksOf10ms * psEnc->state_Fxx[ 0 ].sCmn.fs_kHz;
+    nSamplesFromInputMax =
+        silk_DIV32_16( nSamplesToBufferMax *
+                           psEnc->state_Fxx[ 0 ].sCmn.API_fs_Hz,
+                       psEnc->state_Fxx[ 0 ].sCmn.fs_kHz * 1000 );
+    ALLOC( buf, nSamplesFromInputMax, opus_int16 );
     while( 1 ) {
         nSamplesToBuffer  = psEnc->state_Fxx[ 0 ].sCmn.frame_length - psEnc->state_Fxx[ 0 ].sCmn.inputBufIx;
-        nSamplesToBuffer  = silk_min( nSamplesToBuffer, 10 * nBlocksOf10ms * psEnc->state_Fxx[ 0 ].sCmn.fs_kHz );
+        nSamplesToBuffer  = silk_min( nSamplesToBuffer, nSamplesToBufferMax );
         nSamplesFromInput = silk_DIV32_16( nSamplesToBuffer * psEnc->state_Fxx[ 0 ].sCmn.API_fs_Hz, psEnc->state_Fxx[ 0 ].sCmn.fs_kHz * 1000 );
         /* Resample and write to buffer */
         if( encControl->nChannelsAPI == 2 && encControl->nChannelsInternal == 2 ) {
@@ -530,6 +545,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
         }
     }
 
+    RESTORE_STACK;
     return ret;
 }
 

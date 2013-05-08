@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main_FIX.h"
+#include "stack_alloc.h"
 
 /* Calculates residual energies of input subframes where all subframes have LPC_order   */
 /* of preceding samples                                                                 */
@@ -45,14 +46,18 @@ void silk_residual_energy_FIX(
 )
 {
     opus_int         offset, i, j, rshift, lz1, lz2;
-    opus_int16       *LPC_res_ptr, LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
+    opus_int16       *LPC_res_ptr;
+    VARDECL( opus_int16, LPC_res );
     const opus_int16 *x_ptr;
     opus_int32       tmp32;
+    SAVE_STACK;
 
     x_ptr  = x;
     offset = LPC_order + subfr_length;
 
     /* Filter input to create the LPC residual for each frame half, and measure subframe energies */
+    ALLOC( LPC_res, ( MAX_NB_SUBFR >> 1 ) * offset, opus_int16 );
+    silk_assert( ( nb_subfr >> 1 ) * ( MAX_NB_SUBFR >> 1 ) == nb_subfr );
     for( i = 0; i < nb_subfr >> 1; i++ ) {
         /* Calculate half frame LPC residual signal including preceding samples */
         silk_LPC_analysis_filter( LPC_res, x_ptr, a_Q12[ i ], ( MAX_NB_SUBFR >> 1 ) * offset, LPC_order );
@@ -88,4 +93,5 @@ void silk_residual_energy_FIX(
         nrgs[ i ] = silk_SMMUL( tmp32, silk_LSHIFT32( nrgs[ i ], lz1 ) ); /* Q( nrgsQ[ i ] + lz1 + 2 * lz2 - 32 - 32 )*/
         nrgsQ[ i ] += lz1 + 2 * lz2 - 32 - 32;
     }
+    RESTORE_STACK;
 }

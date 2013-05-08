@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main.h"
+#include "stack_alloc.h"
 
 static inline void silk_nsq_scale_states(
     const silk_encoder_state *psEncC,           /* I    Encoder State                   */
@@ -88,11 +89,12 @@ void silk_NSQ(
     opus_int            k, lag, start_idx, LSF_interpolation_flag;
     const opus_int16    *A_Q12, *B_Q14, *AR_shp_Q13;
     opus_int16          *pxq;
-    opus_int32          sLTP_Q15[ 2 * MAX_FRAME_LENGTH ];
-    opus_int16          sLTP[     2 * MAX_FRAME_LENGTH ];
+    VARDECL( opus_int32, sLTP_Q15 );
+    VARDECL( opus_int16, sLTP );
     opus_int32          HarmShapeFIRPacked_Q14;
     opus_int            offset_Q10;
-    opus_int32          x_sc_Q10[ MAX_SUB_FRAME_LENGTH ];
+    VARDECL( opus_int32, x_sc_Q10 );
+    SAVE_STACK;
 
     NSQ->rand_seed = psIndices->Seed;
 
@@ -109,6 +111,10 @@ void silk_NSQ(
         LSF_interpolation_flag = 1;
     }
 
+    ALLOC( sLTP_Q15,
+           psEncC->ltp_mem_length + psEncC->frame_length, opus_int32 );
+    ALLOC( sLTP, psEncC->ltp_mem_length + psEncC->frame_length, opus_int16 );
+    ALLOC( x_sc_Q10, psEncC->subfr_length, opus_int32 );
     /* Set up pointers to start of sub frame */
     NSQ->sLTP_shp_buf_idx = psEncC->ltp_mem_length;
     NSQ->sLTP_buf_idx     = psEncC->ltp_mem_length;
@@ -160,6 +166,7 @@ void silk_NSQ(
     /* DEBUG_STORE_DATA( enc.pcm, &NSQ->xq[ psEncC->ltp_mem_length ], psEncC->frame_length * sizeof( opus_int16 ) ) */
     silk_memmove( NSQ->xq,           &NSQ->xq[           psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int16 ) );
     silk_memmove( NSQ->sLTP_shp_Q14, &NSQ->sLTP_shp_Q14[ psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int32 ) );
+    RESTORE_STACK;
 }
 
 /***********************************/

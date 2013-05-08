@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main_FIX.h"
+#include "stack_alloc.h"
 #include "tuning_parameters.h"
 
 /* Find pitch lags */
@@ -43,11 +44,13 @@ void silk_find_pitch_lags_FIX(
     opus_int   buf_len, i, scale;
     opus_int32 thrhld_Q13, res_nrg;
     const opus_int16 *x_buf, *x_buf_ptr;
-    opus_int16 Wsig[      FIND_PITCH_LPC_WIN_MAX ], *Wsig_ptr;
+    VARDECL( opus_int16, Wsig );
+    opus_int16 *Wsig_ptr;
     opus_int32 auto_corr[ MAX_FIND_PITCH_LPC_ORDER + 1 ];
     opus_int16 rc_Q15[    MAX_FIND_PITCH_LPC_ORDER ];
     opus_int32 A_Q24[     MAX_FIND_PITCH_LPC_ORDER ];
     opus_int16 A_Q12[     MAX_FIND_PITCH_LPC_ORDER ];
+    SAVE_STACK;
 
     /******************************************/
     /* Set up buffer lengths etc based on Fs  */
@@ -64,6 +67,8 @@ void silk_find_pitch_lags_FIX(
     /*************************************/
 
     /* Calculate windowed signal */
+
+    ALLOC( Wsig, psEnc->sCmn.pitch_LPC_win_length, opus_int16 );
 
     /* First LA_LTP samples */
     x_buf_ptr = x_buf + buf_len - psEnc->sCmn.pitch_LPC_win_length;
@@ -134,4 +139,5 @@ void silk_find_pitch_lags_FIX(
         psEnc->sCmn.indices.contourIndex = 0;
         psEnc->LTPCorr_Q15 = 0;
     }
+    RESTORE_STACK;
 }

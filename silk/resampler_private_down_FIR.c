@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "SigProc_FIX.h"
 #include "resampler_private.h"
+#include "stack_alloc.h"
 
 static inline opus_int16 *silk_resampler_private_down_FIR_INTERPOL(
     opus_int16          *out,
@@ -151,8 +152,11 @@ void silk_resampler_private_down_FIR(
     silk_resampler_state_struct *S = (silk_resampler_state_struct *)SS;
     opus_int32 nSamplesIn;
     opus_int32 max_index_Q16, index_increment_Q16;
-    opus_int32 buf[ RESAMPLER_MAX_BATCH_SIZE_IN + SILK_RESAMPLER_MAX_FIR_ORDER ];
+    VARDECL( opus_int32, buf );
     const opus_int16 *FIR_Coefs;
+    SAVE_STACK;
+
+    ALLOC( buf, S->batchSize + S->FIR_Order, opus_int32 );
 
     /* Copy buffered samples to start of buffer */
     silk_memcpy( buf, S->sFIR.i32, S->FIR_Order * sizeof( opus_int32 ) );
@@ -186,4 +190,5 @@ void silk_resampler_private_down_FIR(
 
     /* Copy last part of filtered signal to the state for the next call */
     silk_memcpy( S->sFIR.i32, &buf[ nSamplesIn ], S->FIR_Order * sizeof( opus_int32 ) );
+    RESTORE_STACK;
 }

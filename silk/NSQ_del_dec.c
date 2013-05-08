@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main.h"
+#include "stack_alloc.h"
 
 typedef struct {
     opus_int32 sLPC_Q14[ MAX_SUB_FRAME_LENGTH + NSQ_LPC_BUF_LENGTH ];
@@ -53,6 +54,8 @@ typedef struct {
     opus_int32 sLTP_shp_Q14;
     opus_int32 LPC_exc_Q14;
 } NSQ_sample_struct;
+
+typedef NSQ_sample_struct  NSQ_sample_pair[ 2 ];
 
 static inline void silk_nsq_del_dec_scale_states(
     const silk_encoder_state *psEncC,               /* I    Encoder State                       */
@@ -123,17 +126,18 @@ void silk_NSQ_del_dec(
 {
     opus_int            i, k, lag, start_idx, LSF_interpolation_flag, Winner_ind, subfr;
     opus_int            last_smple_idx, smpl_buf_idx, decisionDelay;
-    const opus_int16 	*A_Q12, *B_Q14, *AR_shp_Q13;
+    const opus_int16    *A_Q12, *B_Q14, *AR_shp_Q13;
     opus_int16          *pxq;
-    opus_int32          sLTP_Q15[ 2 * MAX_FRAME_LENGTH ];
-    opus_int16          sLTP[     2 * MAX_FRAME_LENGTH ];
+    VARDECL( opus_int32, sLTP_Q15 );
+    VARDECL( opus_int16, sLTP );
     opus_int32          HarmShapeFIRPacked_Q14;
     opus_int            offset_Q10;
     opus_int32          RDmin_Q10, Gain_Q10;
-    opus_int32          x_sc_Q10[ MAX_SUB_FRAME_LENGTH ];
-    opus_int32          delayedGain_Q10[  DECISION_DELAY ];
-    NSQ_del_dec_struct  psDelDec[ MAX_DEL_DEC_STATES ];
+    VARDECL( opus_int32, x_sc_Q10 );
+    VARDECL( opus_int32, delayedGain_Q10 );
+    VARDECL( NSQ_del_dec_struct, psDelDec );
     NSQ_del_dec_struct  *psDD;
+    SAVE_STACK;
 
     /* Set unvoiced lag to the previous one, overwrite later for voiced */
     lag = NSQ->lagPrev;
@@ -141,6 +145,7 @@ void silk_NSQ_del_dec(
     silk_assert( NSQ->prev_gain_Q16 != 0 );
 
     /* Initialize delayed decision states */
+    ALLOC( psDelDec, psEncC->nStatesDelayedDecision, NSQ_del_dec_struct );
     silk_memset( psDelDec, 0, psEncC->nStatesDelayedDecision * sizeof( NSQ_del_dec_struct ) );
     for( k = 0; k < psEncC->nStatesDelayedDecision; k++ ) {
         psDD                 = &psDelDec[ k ];
@@ -175,6 +180,11 @@ void silk_NSQ_del_dec(
         LSF_interpolation_flag = 1;
     }
 
+    ALLOC( sLTP_Q15,
+           psEncC->ltp_mem_length + psEncC->frame_length, opus_int32 );
+    ALLOC( sLTP, psEncC->ltp_mem_length + psEncC->frame_length, opus_int16 );
+    ALLOC( x_sc_Q10, psEncC->subfr_length, opus_int32 );
+    ALLOC( delayedGain_Q10, DECISION_DELAY, opus_int32 );
     /* Set up pointers to start of sub frame */
     pxq                   = &NSQ->xq[ psEncC->ltp_mem_length ];
     NSQ->sLTP_shp_buf_idx = psEncC->ltp_mem_length;
@@ -287,6 +297,7 @@ void silk_NSQ_del_dec(
     /* DEBUG_STORE_DATA( enc.pcm, &NSQ->xq[psEncC->ltp_mem_length], psEncC->frame_length * sizeof( opus_int16 ) ) */
     silk_memmove( NSQ->xq,           &NSQ->xq[           psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int16 ) );
     silk_memmove( NSQ->sLTP_shp_Q14, &NSQ->sLTP_shp_Q14[ psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int32 ) );
+    RESTORE_STACK;
 }
 
 /******************************************/
@@ -328,11 +339,13 @@ static inline void silk_noise_shape_quantizer_del_dec(
     opus_int32   q1_Q0, q1_Q10, q2_Q10, exc_Q14, LPC_exc_Q14, xq_Q14, Gain_Q10;
     opus_int32   tmp1, tmp2, sLF_AR_shp_Q14;
     opus_int32   *pred_lag_ptr, *shp_lag_ptr, *psLPC_Q14;
-    NSQ_sample_struct  psSampleState[ MAX_DEL_DEC_STATES ][ 2 ];
+    VARDECL( NSQ_sample_pair, psSampleState );
     NSQ_del_dec_struct *psDD;
     NSQ_sample_struct  *psSS;
+    SAVE_STACK;
 
     silk_assert( nStatesDelayedDecision > 0 );
+    ALLOC( psSampleState, nStatesDelayedDecision, NSQ_sample_pair );
 
     shp_lag_ptr  = &NSQ->sLTP_shp_Q14[ NSQ->sLTP_shp_buf_idx - lag + HARM_SHAPE_FIR_TAPS / 2 ];
     pred_lag_ptr = &sLTP_Q15[ NSQ->sLTP_buf_idx - lag + LTP_ORDER / 2 ];
@@ -614,6 +627,7 @@ static inline void silk_noise_shape_quantizer_del_dec(
         psDD = &psDelDec[ k ];
         silk_memcpy( psDD->sLPC_Q14, &psDD->sLPC_Q14[ length ], NSQ_LPC_BUF_LENGTH * sizeof( opus_int32 ) );
     }
+    RESTORE_STACK;
 }
 
 static inline void silk_nsq_del_dec_scale_states(

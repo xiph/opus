@@ -424,10 +424,12 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       opus_val16 fade = Q15ONE;
       int pitch_index;
       VARDECL(opus_val32, etmp);
+      VARDECL(opus_val16, exc);
 
       if (loss_count == 0)
       {
-         opus_val16 lp_pitch_buf[DECODE_BUFFER_SIZE>>1];
+         VARDECL( opus_val16, lp_pitch_buf );
+         ALLOC( lp_pitch_buf, DECODE_BUFFER_SIZE>>1, opus_val16 );
          pitch_downsample(decode_mem, lp_pitch_buf, DECODE_BUFFER_SIZE, C);
          pitch_search(lp_pitch_buf+(PLC_PITCH_LAG_MAX>>1), lp_pitch_buf,
                DECODE_BUFFER_SIZE-PLC_PITCH_LAG_MAX,
@@ -440,14 +442,12 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       }
 
       ALLOC(etmp, overlap, opus_val32);
+      ALLOC(exc, MAX_PERIOD, opus_val16);
       window = mode->window;
       c=0; do {
-         opus_val16 exc[MAX_PERIOD];
-         opus_val32 ac[LPC_ORDER+1];
          opus_val16 decay;
          opus_val16 attenuation;
          opus_val32 S1=0;
-         opus_val16 lpc_mem[LPC_ORDER];
          celt_sig *buf;
          int extrapolation_offset;
          int extrapolation_len;
@@ -461,6 +461,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
 
          if (loss_count == 0)
          {
+            opus_val32 ac[LPC_ORDER+1];
             /* Compute LPC coefficients for the last MAX_PERIOD samples before
                the first loss so we can work in the excitation-filter domain. */
             _celt_autocorr(exc, ac, window, overlap, LPC_ORDER, MAX_PERIOD);
@@ -487,14 +488,17 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          exc_length = IMIN(2*pitch_index, MAX_PERIOD);
          /* Initialize the LPC history with the samples just before the start
             of the region for which we're computing the excitation. */
-         for (i=0;i<LPC_ORDER;i++)
          {
-            lpc_mem[i] =
-                  ROUND16(buf[DECODE_BUFFER_SIZE-exc_length-1-i], SIG_SHIFT);
+            opus_val16 lpc_mem[LPC_ORDER];
+            for (i=0;i<LPC_ORDER;i++)
+            {
+               lpc_mem[i] =
+                     ROUND16(buf[DECODE_BUFFER_SIZE-exc_length-1-i], SIG_SHIFT);
+            }
+            /* Compute the excitation for exc_length samples before the loss. */
+            celt_fir(exc+MAX_PERIOD-exc_length, lpc+c*LPC_ORDER,
+                  exc+MAX_PERIOD-exc_length, exc_length, LPC_ORDER, lpc_mem);
          }
-         /* Compute the excitation for exc_length samples before the loss. */
-         celt_fir(exc+MAX_PERIOD-exc_length, lpc+c*LPC_ORDER,
-               exc+MAX_PERIOD-exc_length, exc_length, LPC_ORDER, lpc_mem);
 
          /* Check if the waveform is decaying, and if so how fast.
             We do this to avoid adding energy when concealing in a segment
@@ -547,14 +551,18 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             S1 += SHR32(MULT16_16(tmp, tmp), 8);
          }
 
-         /* Copy the last decoded samples (prior to the overlap region) to
-            synthesis filter memory so we can have a continuous signal. */
-         for (i=0;i<LPC_ORDER;i++)
-            lpc_mem[i] = ROUND16(buf[DECODE_BUFFER_SIZE-N-1-i], SIG_SHIFT);
-         /* Apply the synthesis filter to convert the excitation back into the
-            signal domain. */
-         celt_iir(buf+DECODE_BUFFER_SIZE-N, lpc+c*LPC_ORDER,
-               buf+DECODE_BUFFER_SIZE-N, extrapolation_len, LPC_ORDER, lpc_mem);
+         {
+            opus_val16 lpc_mem[LPC_ORDER];
+            /* Copy the last decoded samples (prior to the overlap region) to
+               synthesis filter memory so we can have a continuous signal. */
+            for (i=0;i<LPC_ORDER;i++)
+               lpc_mem[i] = ROUND16(buf[DECODE_BUFFER_SIZE-N-1-i], SIG_SHIFT);
+            /* Apply the synthesis filter to convert the excitation back into
+               the signal domain. */
+            celt_iir(buf+DECODE_BUFFER_SIZE-N, lpc+c*LPC_ORDER,
+                  buf+DECODE_BUFFER_SIZE-N, extrapolation_len, LPC_ORDER,
+                  lpc_mem);
+         }
 
          /* Check if the synthesis energy is higher than expected, which can
             happen with the signal changes during our window. If so,

@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main.h"
+#include "stack_alloc.h"
 
 /* Generates excitation for CNG LPC synthesis */
 static inline void silk_CNG_exc(
@@ -86,8 +87,8 @@ void silk_CNG(
     opus_int   i, subfr;
     opus_int32 sum_Q6, max_Gain_Q16;
     opus_int16 A_Q12[ MAX_LPC_ORDER ];
-    opus_int32 CNG_sig_Q10[ MAX_FRAME_LENGTH + MAX_LPC_ORDER ];
     silk_CNG_struct *psCNG = &psDec->sCNG;
+    SAVE_STACK;
 
     if( psDec->fs_kHz != psCNG->fs_kHz ) {
         /* Reset state */
@@ -123,6 +124,9 @@ void silk_CNG(
 
     /* Add CNG when packet is lost or during DTX */
     if( psDec->lossCnt ) {
+        VARDECL( opus_int32, CNG_sig_Q10 );
+
+        ALLOC( CNG_sig_Q10, length + MAX_LPC_ORDER, opus_int32 );
 
         /* Generate CNG excitation */
         silk_CNG_exc( CNG_sig_Q10 + MAX_LPC_ORDER, psCNG->CNG_exc_buf_Q14, psCNG->CNG_smth_Gain_Q16, length, &psCNG->rand_seed );
@@ -164,4 +168,5 @@ void silk_CNG(
     } else {
         silk_memset( psCNG->CNG_synth_state, 0, psDec->LPC_order *  sizeof( opus_int32 ) );
     }
+    RESTORE_STACK;
 }

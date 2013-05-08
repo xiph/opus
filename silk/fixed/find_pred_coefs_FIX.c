@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main_FIX.h"
+#include "stack_alloc.h"
 
 void silk_find_pred_coefs_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  encoder state                                                               */
@@ -40,13 +41,14 @@ void silk_find_pred_coefs_FIX(
 )
 {
     opus_int         i;
-    opus_int32       WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
     opus_int32       invGains_Q16[ MAX_NB_SUBFR ], local_gains[ MAX_NB_SUBFR ], Wght_Q15[ MAX_NB_SUBFR ];
     opus_int16       NLSF_Q15[ MAX_LPC_ORDER ];
     const opus_int16 *x_ptr;
-    opus_int16       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
+    opus_int16       *x_pre_ptr;
+    VARDECL( opus_int16, LPC_in_pre );
     opus_int32       tmp, min_gain_Q16, minInvGain_Q30;
     opus_int         LTP_corrs_rshift[ MAX_NB_SUBFR ];
+    SAVE_STACK;
 
     /* weighting for weighted least squares */
     min_gain_Q16 = silk_int32_MAX >> 6;
@@ -71,11 +73,18 @@ void silk_find_pred_coefs_FIX(
         local_gains[ i ] = silk_DIV32( ( (opus_int32)1 << 16 ), invGains_Q16[ i ] );
     }
 
+    ALLOC( LPC_in_pre,
+           psEnc->sCmn.nb_subfr * psEnc->sCmn.predictLPCOrder
+               + psEnc->sCmn.frame_length, opus_int16 );
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
+        VARDECL( opus_int32, WLTP );
+
         /**********/
         /* VOICED */
         /**********/
         silk_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
+
+        ALLOC( WLTP, psEnc->sCmn.nb_subfr * LTP_ORDER * LTP_ORDER, opus_int32 );
 
         /* LTP analysis */
         silk_find_LTP_FIX( psEncCtrl->LTPCoef_Q14, WLTP, &psEncCtrl->LTPredCodGain_Q7,
@@ -133,4 +142,5 @@ void silk_find_pred_coefs_FIX(
 
     /* Copy to prediction struct for use in next frame for interpolation */
     silk_memcpy( psEnc->sCmn.prev_NLSFq_Q15, NLSF_Q15, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );
+    RESTORE_STACK;
 }
