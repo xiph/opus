@@ -56,6 +56,11 @@ opus_int32 silk_schur64(                            /* O    returns residual ene
     }
 
     for( k = 0; k < order; k++ ) {
+        /* Check that we won't be getting an unstable rc, otherwise stop here. */
+        if (silk_abs_int32(C[ k + 1 ][ 0 ]) >= C[ 0 ][ 1 ]) {
+           break;
+        }
+
         /* Get reflection coefficient: divide two Q30 values and get result in Q31 */
         rc_tmp_Q31 = silk_DIV32_varQ( -C[ k + 1 ][ 0 ], C[ 0 ][ 1 ], 31 );
 
@@ -73,5 +78,9 @@ opus_int32 silk_schur64(                            /* O    returns residual ene
         }
     }
 
-    return( C[ 0 ][ 1 ] );
+    for(; k < order; k++ ) {
+       rc_Q16[ k ] = 0;
+    }
+
+    return silk_max_32( 1, C[ 0 ][ 1 ] );
 }
