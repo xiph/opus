@@ -68,6 +68,10 @@ opus_int32 silk_schur(                              /* O    Returns residual ene
     }
 
     for( k = 0; k < order; k++ ) {
+        /* Check that we won't be getting an unstable rc, otherwise stop here. */
+        if (silk_abs_int32(C[ k + 1 ][ 0 ]) >= C[ 0 ][ 1 ]) {
+           break;
+        }
 
         /* Get reflection coefficient */
         rc_tmp_Q15 = -silk_DIV32_16( C[ k + 1 ][ 0 ], silk_max_32( silk_RSHIFT( C[ 0 ][ 1 ], 15 ), 1 ) );
@@ -87,6 +91,10 @@ opus_int32 silk_schur(                              /* O    Returns residual ene
         }
     }
 
+    for(; k < order; k++ ) {
+       rc_Q15[ k ] = 0;
+    }
+
     /* return residual energy */
-    return C[ 0 ][ 1 ];
+    return silk_max_32( 1, C[ 0 ][ 1 ] );
 }
