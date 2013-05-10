@@ -20,8 +20,8 @@ CFLAGS := -Drestrict= $(CFLAGS)
 
 ###################### END OF OPTIONS ######################
 
-include version.mk
-CFLAGS += -DOPUS_VERSION='$(OPUS_VERSION)'
+-include package_version
+
 include silk_sources.mk
 include celt_sources.mk
 include opus_sources.mk
@@ -123,6 +123,14 @@ opus_demo$(EXESUFFIX): $(OPUSDEMO_OBJS) $(TARGET)
 
 opus_compare$(EXESUFFIX): $(OPUSCOMPARE_OBJS)
 	$(LINK.o.cmdline)
+
+celt/celt.o: CFLAGS += -DPACKAGE_VERSION='$(PACKAGE_VERSION)'
+celt/celt.o: package_version
+
+package_version: force
+	@./update_version || true
+
+force:
 
 clean:
 	rm -f opus_demo$(EXESUFFIX) opus_compare$(EXESUFFIX) $(TARGET) $(OBJS) $(OPUSDEMO_OBJS)

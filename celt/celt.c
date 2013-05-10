@@ -50,6 +50,10 @@
 #include "celt_lpc.h"
 #include "vq.h"
 
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "unknown"
+#endif
+
 
 int resampling_factor(opus_int32 rate)
 {
@@ -193,7 +197,7 @@ const char *opus_strerror(int error)
 
 const char *opus_get_version_string(void)
 {
-    return "libopus " OPUS_VERSION
+    return "libopus " PACKAGE_VERSION
 #ifdef FIXED_POINT
           "-fixed"
 #endif

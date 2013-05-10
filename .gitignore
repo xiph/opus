@@ -51,6 +51,7 @@ celt/tests/test_unit_types
 *.vcxproj.user
 opus.sdf
 opus.suo
+package_version
 version.h
 celt/Debug
 celt/Release

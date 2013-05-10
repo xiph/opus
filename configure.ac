@@ -1,55 +1,23 @@
 dnl Process this file with autoconf to produce a configure script. -*-m4-*-
 
-AC_INIT(src/opus_encoder.c)
+dnl The package_version file will be automatically synced to the git revision
+dnl by the update_version script when configured in the repository, but will
+dnl remain constant in tarball releases unless it is manually edited.
+m4_define([CURRENT_VERSION],
+          m4_esyscmd_s([ if test -e package_version || ./update_version; then
+                             . ./package_version
+                             printf "$PACKAGE_VERSION"
+                         else
+                             printf "unknown"
+                         fi ]))
 
-AC_CONFIG_HEADERS([config.h])
+AC_INIT([opus],[CURRENT_VERSION],[opus@xiph.org])
+
+AC_CONFIG_SRCDIR(src/opus_encoder.c)
 
 dnl enable silent rules on automake 1.11 and later
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-# Read our default version string from version.mk.
-# Please update this file for releases.
-AC_MSG_CHECKING([version.mk])
-MK_VERSION=$(awk 'BEGIN { FS = "=" }
-                  /OPUS_VERSION/ { ver = $2}
-                  END {
-                        gsub(/"/, "", ver);
-                        gsub(/^ /, "", ver);
-                        gsub(/ $/, "", ver);
-                        print ver;
-                  }' $srcdir/version.mk)
-if test -z "$MK_VERSION"; then
-  AC_MSG_RESULT([no])
-else
-  AC_MSG_RESULT([$MK_VERSION])
-  OPUS_VERSION="$MK_VERSION"
-fi
-
-# Override with the git version, if available.
-AC_MSG_CHECKING([git revision])
-GIT_VERSION=$(git describe --tags --match 'v*' 2>/dev/null | sed 's/^v//')
-if test -z "$GIT_VERSION"; then
-  AC_MSG_RESULT([no])
-else
-  AC_MSG_RESULT([$GIT_VERSION])
-  OPUS_VERSION="$GIT_VERSION"
-fi
-
-# Use 'unknown' if all else fails.
-if test -z "$OPUS_VERSION"; then
-  OPUS_VERSION="unknown"
-fi
-
-# For automake.
-PACKAGE=opus
-VERSION=$OPUS_VERSION
-
-# For autoconf
-AC_SUBST(OPUS_VERSION)
-
-# For config.h.
-AC_DEFINE_UNQUOTED([OPUS_VERSION], ["$OPUS_VERSION"],
-                   [Opus library version string])
 
 # For libtool.
 dnl Please update these for releases.
@@ -61,7 +29,7 @@ AC_SUBST(OPUS_LT_CURRENT)
 AC_SUBST(OPUS_LT_REVISION)
 AC_SUBST(OPUS_LT_AGE)
 
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
+AM_INIT_AUTOMAKE([no-define])
 AM_MAINTAINER_MODE([enable])
 
 AC_CANONICAL_HOST
@@ -294,13 +262,14 @@ AC_SUBST([PC_LIBM])
 
 AC_CONFIG_FILES([Makefile opus.pc opus-uninstalled.pc
                  doc/Makefile doc/Doxyfile])
+AC_CONFIG_HEADERS([config.h])
 
 AC_OUTPUT
 
 AC_MSG_RESULT([
 ------------------------------------------------------------------------
-  $PACKAGE $VERSION:  Automatic configuration OK.
-  
+  $PACKAGE_NAME $PACKAGE_VERSION:  Automatic configuration OK.
+
     Compiler support:
 
       C99 var arrays: ................ ${has_var_arrays}

@@ -131,10 +131,6 @@ int celt_decode_with_ec(OpusCustomDecoder * OPUS_RESTRICT st, const unsigned cha
 #define celt_decoder_ctl opus_custom_decoder_ctl
 
 
-#ifndef OPUS_VERSION
-#define OPUS_VERSION "unknown"
-#endif
-
 #ifdef CUSTOM_MODES
 #define OPUS_CUSTOM_NOSTATIC
 #else
