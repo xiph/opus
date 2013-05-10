@@ -35,6 +35,7 @@ celt/dump_modes/dump_modes
 *.vcxproj.user
 opus.sdf
 opus.suo
+package_version
 version.h
 celt/Debug
 celt/Release

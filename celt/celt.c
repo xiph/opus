@@ -50,8 +50,8 @@
 #include "celt_lpc.h"
 #include "vq.h"
 
-#ifndef OPUS_VERSION
-#define OPUS_VERSION "unknown"
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "unknown"
 #endif
 
 #ifdef CUSTOM_MODES
@@ -2895,7 +2895,7 @@ const char *opus_strerror(int error)
 
 const char *opus_get_version_string(void)
 {
-    return "libopus " OPUS_VERSION
+    return "libopus " PACKAGE_VERSION
 #ifdef FIXED_POINT
           "-fixed"
 #endif
