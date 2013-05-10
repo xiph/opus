@@ -19,6 +19,7 @@ install-sh
 .deps
 .libs
 .dirstamp
+*.a
 *.la
 testcelt
 libtool
@@ -28,7 +29,7 @@ opus_compare
 opus_demo
 repacketizer_demo
 stamp-h1
-*.sw
+*.sw*
 *.o
 *.lo
 *.pc
@@ -37,8 +38,7 @@ tests/*test
 tests/test_opus_api
 tests/test_opus_decode
 tests/test_opus_encode
-celt.pc
-celt.spec
+tests/test_opus_padding
 celt/dump_modes/dump_modes
 celt/tests/test_unit_cwrs32
 celt/tests/test_unit_dft
@@ -48,6 +48,10 @@ celt/tests/test_unit_mathops
 celt/tests/test_unit_mdct
 celt/tests/test_unit_rotation
 celt/tests/test_unit_types
+doc/doxygen-build.stamp
+doc/html
+doc/latex
+doc/man
 *.vcxproj.user
 opus.sdf
 opus.suo
