@@ -167,6 +167,9 @@ $(top_srcdir)/configure.ac: force
 	    dist-* | dist | distcheck | distclean) _arg=release ;; \
 	esac; \
 	if ! $(top_srcdir)/update_version $$_arg 2> /dev/null; then \
+	    if [ ! -e $(top_srcdir)/package_version ]; then \
+		echo 'PACKAGE_VERSION="unknown"' > $(top_srcdir)/package_version; \
+	    fi; \
 	    . $(top_srcdir)/package_version || exit 1; \
 	    [ "$(PACKAGE_VERSION)" != "$$PACKAGE_VERSION" ] || exit 0; \
 	fi; \

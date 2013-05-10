@@ -115,7 +115,11 @@ celt/celt.o: CFLAGS += -DPACKAGE_VERSION='$(PACKAGE_VERSION)'
 celt/celt.o: package_version
 
 package_version: force
-	@./update_version || true
+	@if [ -x ./update_version ]; then \
+		./update_version || true; \
+	elif [ ! -e ./package_version ]; then \
+		echo 'PACKAGE_VERSION="unknown"' > ./package_version; \
+	fi
 
 force:
 
