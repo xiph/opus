@@ -21,8 +21,8 @@ doxygen-build.stamp: Doxyfile $(DOCINPUTS)
 	touch $@
 
 install-data-local:
+	$(INSTALL) -d $(DESTDIR)$(docdir)/html/search
 	for f in `find html -type f \! -name "installdox"`; do	\
-		$(INSTALL) -d $(DESTDIR)$(docdir)/html/search;	\
 		$(INSTALL_DATA) $$f $(DESTDIR)$(docdir)/$$f;	\
 	done
 
