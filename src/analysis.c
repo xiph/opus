@@ -225,7 +225,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     tonal->last_transition++;
     alpha = 1.f/IMIN(20, 1+tonal->count);
     alphaE = 1.f/IMIN(50, 1+tonal->count);
-    alphaE2 = 1.f/IMIN(6000, 1+tonal->count);
+    alphaE2 = 1.f/IMIN(1000, 1+tonal->count);
 
     if (tonal->count<4)
        tonal->music_prob = .5;
@@ -375,8 +375,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
 
     bandwidth_mask = 0;
     bandwidth = 0;
-    for (b=0;b<NB_TOT_BANDS;b++)
-       maxE = MAX32(maxE, tonal->meanE[b]);
+    maxE = 0;
     noise_floor = 5.7e-4f/(1<<(IMAX(0,lsb_depth-8)));
     noise_floor *= noise_floor;
     for (b=0;b<NB_TOT_BANDS;b++)
@@ -392,19 +391,18 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
                      + out[i].i*out[i].i + out[N-i].i*out[N-i].i;
           E += binE;
        }
-       E /= (band_end-band_start);
        maxE = MAX32(maxE, E);
-       if (tonal->count>2)
-       {
-          tonal->meanE[b] = (1-alphaE2)*tonal->meanE[b] + alphaE2*E;
-       } else {
-          tonal->meanE[b] = E;
-       }
+       tonal->meanE[b] = MAX32((1-alphaE2)*tonal->meanE[b], E);
        E = MAX32(E, tonal->meanE[b]);
-       /* 13 dB slope for spreading function */
+       /* Use a simple follower with 13 dB/Bark slope for spreading function */
        bandwidth_mask = MAX32(.05f*bandwidth_mask, E);
-       /* Checks if band looks like stationary noise or if it's below a (trivial) masking curve */
-       if (E>.1*bandwidth_mask && E*1e10f > maxE && E > noise_floor)
+       /* Consider the band "active" only if all these conditions are met:
+          1) less than 10 dB below the simple follower
+          2) less than 90 dB below the peak band (maximal masking possible considering
+             both the ATH and the loudness-dependent slope of the spreading function)
+          3) above the PCM quantization noise floor
+       */
+       if (E>.1*bandwidth_mask && E*1e9f > maxE && E > noise_floor*(band_end-band_start))
           bandwidth = b;
     }
     if (tonal->count<=2)
