@@ -1736,7 +1736,20 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    signalBandwidth = st->end-1;
 #ifndef FIXED_POINT
    if (st->analysis.valid)
-      signalBandwidth = st->analysis.bandwidth;
+   {
+      int min_bandwidth;
+      if (st->bitrate < (opus_int32)32000*C)
+         min_bandwidth = 13;
+      else if (st->bitrate < (opus_int32)48000*C)
+         min_bandwidth = 16;
+      else if (st->bitrate < (opus_int32)60000*C)
+         min_bandwidth = 18;
+      else  if (st->bitrate < (opus_int32)80000*C)
+         min_bandwidth = 19;
+      else
+         min_bandwidth = 20;
+      signalBandwidth = IMAX(st->analysis.bandwidth, min_bandwidth);
+   }
 #endif
    codedBands = compute_allocation(mode, st->start, st->end, offsets, cap,
          alloc_trim, &st->intensity, &dual_stereo, bits, &balance, pulses,
