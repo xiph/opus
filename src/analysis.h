@@ -60,7 +60,6 @@ typedef struct {
    int last_music;
    int last_transition;
    int count;
-   int opus_bandwidth;
    opus_val32   subframe_mem[3];
    int analysis_offset;
    float pspeech[DETECT_SIZE];

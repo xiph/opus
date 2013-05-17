@@ -941,9 +941,21 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     st->detected_bandwidth = 0;
     if (analysis_info->valid)
     {
+       int analysis_bandwidth;
        if (st->signal_type == OPUS_AUTO)
           st->voice_ratio = (int)floor(.5+100*(1-analysis_info->music_prob));
-       st->detected_bandwidth = analysis_info->opus_bandwidth;
+
+       analysis_bandwidth = analysis_info->bandwidth;
+       if (analysis_bandwidth<=12)
+          st->detected_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
+       else if (analysis_bandwidth<=14)
+          st->detected_bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
+       else if (analysis_bandwidth<=16)
+          st->detected_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+       else if (analysis_bandwidth<=18)
+          st->detected_bandwidth = OPUS_BANDWIDTH_SUPERWIDEBAND;
+       else
+          st->detected_bandwidth = OPUS_BANDWIDTH_FULLBAND;
     }
 #endif
 
@@ -1217,12 +1229,24 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     /* Use detected bandwidth to reduce the encoded bandwidth. */
     if (st->detected_bandwidth && st->user_bandwidth == OPUS_AUTO)
     {
-       /* When operating in SILK/hybrid mode, we don't go below wideband to avoid
-          more complicated switches that require redundancy */
-       if (st->mode == MODE_CELT_ONLY)
-          st->bandwidth = IMIN(st->bandwidth, st->detected_bandwidth);
+       int min_detected_bandwidth;
+       /* Makes bandwidth detection more conservative just in case the detector
+          gets it wrong when we could have coded a high bandwidth transparently.
+          When operating in SILK/hybrid mode, we don't go below wideband to avoid
+          more complicated switches that require redundancy. */
+       if (st->bitrate_bps <= 18000*st->stream_channels && st->mode == MODE_CELT_ONLY)
+          min_detected_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
+       else if (st->bitrate_bps <= 24000*st->stream_channels && st->mode == MODE_CELT_ONLY)
+          min_detected_bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
+       else if (st->bitrate_bps <= 30000*st->stream_channels)
+          min_detected_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+       else if (st->bitrate_bps <= 44000*st->stream_channels)
+          min_detected_bandwidth = OPUS_BANDWIDTH_SUPERWIDEBAND;
        else
-          st->bandwidth = IMIN(st->bandwidth, IMAX(OPUS_BANDWIDTH_WIDEBAND, st->detected_bandwidth));
+          min_detected_bandwidth = OPUS_BANDWIDTH_FULLBAND;
+
+       st->detected_bandwidth = IMAX(st->detected_bandwidth, min_detected_bandwidth);
+       st->bandwidth = IMIN(st->bandwidth, st->detected_bandwidth);
     }
 #endif
     celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(lsb_depth));

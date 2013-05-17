@@ -575,19 +575,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        printf("%f ", features[i]);
     printf("\n");*/
 
-    if (bandwidth<=12)
-       tonal->opus_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
-    else if (bandwidth<=14)
-       tonal->opus_bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
-    else if (bandwidth<=16)
-       tonal->opus_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
-    else if (bandwidth<=18)
-       tonal->opus_bandwidth = OPUS_BANDWIDTH_SUPERWIDEBAND;
-    else
-       tonal->opus_bandwidth = OPUS_BANDWIDTH_FULLBAND;
-
     info->bandwidth = bandwidth;
-    info->opus_bandwidth = tonal->opus_bandwidth;
     /*printf("%d %d\n", info->bandwidth, info->opus_bandwidth);*/
     info->noisiness = frame_noisiness;
     info->valid = 1;
