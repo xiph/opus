@@ -58,6 +58,12 @@ opus_int32 silk_schur64(                            /* O    returns residual ene
     for( k = 0; k < order; k++ ) {
         /* Check that we won't be getting an unstable rc, otherwise stop here. */
         if (silk_abs_int32(C[ k + 1 ][ 0 ]) >= C[ 0 ][ 1 ]) {
+           if ( C[ k + 1 ][ 0 ] > 0 ) {
+              rc_Q16[ k ] = -SILK_FIX_CONST( .99f, 16 );
+           } else {
+              rc_Q16[ k ] = SILK_FIX_CONST( .99f, 16 );
+           }
+           k++;
            break;
         }
 
