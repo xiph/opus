@@ -205,6 +205,12 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_multistream_encoder_get_size
       int coupled_streams
 );
 
+OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_multistream_surround_encoder_get_size(
+      int channels,
+      int mapping_family
+);
+
+
 /** Allocates and initializes a multistream encoder state.
   * Call opus_multistream_encoder_destroy() to release
   * this object when finished.
@@ -254,6 +260,17 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusMSEncoder *opus_multistream_encoder_crea
       int streams,
       int coupled_streams,
       const unsigned char *mapping,
+      int application,
+      int *error
+) OPUS_ARG_NONNULL(5);
+
+OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusMSEncoder *opus_multistream_surround_encoder_create(
+      opus_int32 Fs,
+      int channels,
+      int mapping_family,
+      int *streams,
+      int *coupled_streams,
+      unsigned char *mapping,
       int application,
       int *error
 ) OPUS_ARG_NONNULL(5);
@@ -313,6 +330,17 @@ OPUS_EXPORT int opus_multistream_encoder_init(
       int streams,
       int coupled_streams,
       const unsigned char *mapping,
+      int application
+) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(6);
+
+OPUS_EXPORT int opus_multistream_surround_encoder_init(
+      OpusMSEncoder *st,
+      opus_int32 Fs,
+      int channels,
+      int mapping_family,
+      int *streams,
+      int *coupled_streams,
+      unsigned char *mapping,
       int application
 ) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(6);
 

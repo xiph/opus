@@ -78,6 +78,7 @@ struct OpusEncoder {
     opus_int32   user_bitrate_bps;
     int          lsb_depth;
     int          encoder_buffer;
+    int          lfe;
 
 #define OPUS_ENCODER_RESET_START stream_channels
     int          stream_channels;
@@ -93,6 +94,7 @@ struct OpusEncoder {
     int          silk_bw_switch;
     /* Sampling rate (at the API level) */
     int          first;
+    int          energy_masking;
     StereoWidthState width_mem;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef FIXED_POINT
@@ -1258,6 +1260,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     /* CELT mode doesn't support mediumband, use wideband instead */
     if (st->mode == MODE_CELT_ONLY && st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
         st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+    if (st->lfe)
+    {
+       st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
+       st->mode = MODE_CELT_ONLY;
+    }
 
     /* Can't support higher than wideband for >20 ms frames */
     if (frame_size > st->Fs/50 && (st->mode == MODE_CELT_ONLY || st->bandwidth > OPUS_BANDWIDTH_WIDEBAND))
@@ -1621,7 +1628,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     st->prev_HB_gain = HB_gain;
     if (st->mode != MODE_HYBRID || st->stream_channels==1)
        st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),IMAX(0,st->bitrate_bps-32000));
-    if( st->channels == 2 ) {
+    if( !st->energy_masking && st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
             opus_val16 g1, g2;
@@ -2226,6 +2233,26 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             if ((value < MODE_SILK_ONLY || value > MODE_CELT_ONLY) && value != OPUS_AUTO)
                goto bad_arg;
             st->user_forced_mode = value;
+        }
+        break;
+        case OPUS_SET_LFE_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            st->lfe = value;
+            celt_encoder_ctl(celt_enc, OPUS_SET_LFE(value));
+        }
+        break;
+        case OPUS_SET_ENERGY_SAVE_REQUEST:
+        {
+            opus_val16 *value = va_arg(ap, opus_val16*);
+            celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_SAVE(value));
+        }
+        break;
+        case OPUS_SET_ENERGY_MASK_REQUEST:
+        {
+            opus_val16 *value = va_arg(ap, opus_val16*);
+            st->energy_masking = (value!=NULL);
+            celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_MASK(value));
         }
         break;
 
