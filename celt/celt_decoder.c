@@ -506,14 +506,17 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          {
             opus_val32 E1=1, E2=1;
             int decay_length;
+#ifdef FIXED_POINT
+            int shift = IMAX(0,2*celt_zlog2(celt_maxabs16(&exc[MAX_PERIOD-exc_length], exc_length))-20);
+#endif
             decay_length = exc_length>>1;
             for (i=0;i<decay_length;i++)
             {
                opus_val16 e;
                e = exc[MAX_PERIOD-decay_length+i];
-               E1 += SHR32(MULT16_16(e, e), 8);
+               E1 += SHR32(MULT16_16(e, e), shift);
                e = exc[MAX_PERIOD-2*decay_length+i];
-               E2 += SHR32(MULT16_16(e, e), 8);
+               E2 += SHR32(MULT16_16(e, e), shift);
             }
             E1 = MIN32(E1, E2);
             decay = celt_sqrt(frac_div32(SHR32(E1, 1), E2));
