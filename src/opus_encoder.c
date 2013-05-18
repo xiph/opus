@@ -1691,6 +1691,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        ec_enc_shrink(&enc, nb_compr_bytes);
     }
 
+#ifndef FIXED_POINT
+    if (redundancy || st->mode != MODE_SILK_ONLY)
+       celt_encoder_ctl(celt_enc, CELT_SET_ANALYSIS(analysis_info));
+#endif
 
     /* 5 ms redundant frame for CELT->SILK */
     if (redundancy && celt_to_silk)
@@ -1724,9 +1728,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         /* If false, we already busted the budget and we'll end up with a "PLC packet" */
         if (ec_tell(&enc) <= 8*nb_compr_bytes)
         {
-#ifndef FIXED_POINT
-           celt_encoder_ctl(celt_enc, CELT_SET_ANALYSIS(analysis_info));
-#endif
            ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
            if (ret < 0)
            {
