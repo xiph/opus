@@ -98,7 +98,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
 {
    int i, count;
    opus_int32 tot_size;
-   short *len;
+   opus_int16 *len;
    const unsigned char **frames;
 
    if (begin<0 || begin>=end || end>rp->nb_frames)

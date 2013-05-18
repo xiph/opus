@@ -36,7 +36,7 @@ struct OpusRepacketizer {
    unsigned char toc;
    int nb_frames;
    const unsigned char *frames[48];
-   short len[48];
+   opus_int16 len[48];
    int framesize;
 };
 
