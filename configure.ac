@@ -4,12 +4,12 @@ dnl The package_version file will be automatically synced to the git revision
 dnl by the update_version script when configured in the repository, but will
 dnl remain constant in tarball releases unless it is manually edited.
 m4_define([CURRENT_VERSION],
-          m4_esyscmd_s([ if test -e package_version || ./update_version; then
-                             . ./package_version
-                             printf "$PACKAGE_VERSION"
-                         else
-                             printf "unknown"
-                         fi ]))
+          m4_esyscmd([ if test -e package_version || ./update_version; then
+                           . ./package_version
+                           printf "$PACKAGE_VERSION"
+                       else
+                           printf "unknown"
+                       fi ]))
 
 AC_INIT([opus],[CURRENT_VERSION],[opus@xiph.org])
 
