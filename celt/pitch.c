@@ -180,7 +180,7 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
    VARDECL(opus_val32, xcorr);
 #ifdef FIXED_POINT
    opus_val32 maxcorr=1;
-   opus_val16 xmax, ymax;
+   opus_val32 xmax, ymax;
    int shift=0;
 #endif
    int offset;
@@ -204,7 +204,7 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
 #ifdef FIXED_POINT
    xmax = celt_maxabs16(x_lp4, len>>2);
    ymax = celt_maxabs16(y_lp4, lag>>2);
-   shift = celt_ilog2(MAX16(1, MAX16(xmax, ymax)))-11;
+   shift = celt_ilog2(MAX32(1, MAX32(xmax, ymax)))-11;
    if (shift>0)
    {
       for (j=0;j<len>>2;j++)

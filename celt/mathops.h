@@ -118,13 +118,17 @@ static inline opus_int16 celt_ilog2(opus_int32 x)
 #endif
 
 #ifndef OVERRIDE_CELT_MAXABS16
-static inline opus_val16 celt_maxabs16(opus_val16 *x, int len)
+static inline opus_val32 celt_maxabs16(const opus_val16 *x, int len)
 {
    int i;
    opus_val16 maxval = 0;
+   opus_val16 minval = 0;
    for (i=0;i<len;i++)
-      maxval = MAX16(maxval, ABS16(x[i]));
-   return maxval;
+   {
+      maxval = MAX16(maxval, x[i]);
+      minval = MIN16(minval, x[i]);
+   }
+   return MAX32(EXTEND32(maxval),-EXTEND32(minval));
 }
 #endif
 

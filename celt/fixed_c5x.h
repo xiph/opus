@@ -73,7 +73,7 @@ static inline long IMUL32(long i, long j)
 #define celt_ilog2(x) (30 - _lnorm(x))
 #define OVERRIDE_CELT_ILOG2
 
-#define celt_maxabs16(x, len) MAX16(maxval((DATA *)x, len),-minval((DATA *)x, len))
+#define celt_maxabs16(x, len) MAX32(EXTEND32(maxval((DATA *)x, len)),-EXTEND32(minval((DATA *)x, len)))
 #define OVERRIDE_CELT_MAXABS16
 
 #endif /* FIXED_C5X_H */
