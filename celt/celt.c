@@ -2221,14 +2221,21 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
          {
             opus_val32 E1=1, E2=1;
             int period;
+#ifdef FIXED_POINT
+            int shift;
+#endif
+
             if (pitch_index <= MAX_PERIOD/2)
                period = pitch_index;
             else
                period = MAX_PERIOD/2;
+#ifdef FIXED_POINT
+            shift = IMAX(0,2*celt_zlog2(celt_maxabs16(&exc[MAX_PERIOD-2*period], 2*period))-20);
+#endif
             for (i=0;i<period;i++)
             {
-               E1 += SHR32(MULT16_16(exc[MAX_PERIOD-period+i],exc[MAX_PERIOD-period+i]),8);
-               E2 += SHR32(MULT16_16(exc[MAX_PERIOD-2*period+i],exc[MAX_PERIOD-2*period+i]),8);
+               E1 += SHR32(MULT16_16(exc[MAX_PERIOD-period+i],exc[MAX_PERIOD-period+i]),shift);
+               E2 += SHR32(MULT16_16(exc[MAX_PERIOD-2*period+i],exc[MAX_PERIOD-2*period+i]),shift);
             }
             if (E1 > E2)
                E1 = E2;
