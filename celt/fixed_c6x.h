@@ -64,7 +64,7 @@
 #undef MULT16_16_Q15
 #define MULT16_16_Q15(a,b) (_smpy(a,b))
 
-#define celt_maxabs16(x, len) MAX16(maxval((DATA *)x, len),-minval((DATA *)x, len))
+#define celt_maxabs16(x, len) MAX32(EXTEND32(maxval((DATA *)x, len)),-EXTEND32(minval((DATA *)x, len)))
 #define OVERRIDE_CELT_MAXABS16
 
 #endif /* FIXED_C6X_H */

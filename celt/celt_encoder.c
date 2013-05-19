@@ -106,7 +106,7 @@ struct OpusCustomEncoder {
    opus_int32 vbr_drift;
    opus_int32 vbr_offset;
    opus_int32 vbr_count;
-   opus_val16 overlap_max;
+   opus_val32 overlap_max;
    opus_val16 stereo_saving;
    int intensity;
    opus_val16 *energy_save;
@@ -1158,7 +1158,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_val16 tf_estimate;
    int pitch_change=0;
    opus_int32 tot_boost;
-   opus_val16 sample_max;
+   opus_val32 sample_max;
    opus_val16 maxDepth;
    const OpusCustomMode *mode;
    int nbEBands;
@@ -1289,9 +1289,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(in, CC*(N+st->overlap), celt_sig);
 
-   sample_max=MAX16(st->overlap_max, celt_maxabs16(pcm, C*(N-overlap)/st->upsample));
+   sample_max=MAX32(st->overlap_max, celt_maxabs16(pcm, C*(N-overlap)/st->upsample));
    st->overlap_max=celt_maxabs16(pcm+C*(N-overlap)/st->upsample, C*overlap/st->upsample);
-   sample_max=MAX16(sample_max, st->overlap_max);
+   sample_max=MAX32(sample_max, st->overlap_max);
 #ifdef FIXED_POINT
    silence = (sample_max==0);
 #else

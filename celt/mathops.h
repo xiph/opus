@@ -44,7 +44,7 @@
 unsigned isqrt32(opus_uint32 _val);
 
 #ifndef OVERRIDE_CELT_MAXABS16
-static inline opus_val16 celt_maxabs16(const opus_val16 *x, int len)
+static inline opus_val32 celt_maxabs16(const opus_val16 *x, int len)
 {
    int i;
    opus_val16 maxval = 0;
@@ -54,7 +54,7 @@ static inline opus_val16 celt_maxabs16(const opus_val16 *x, int len)
       maxval = MAX16(maxval, x[i]);
       minval = MIN16(minval, x[i]);
    }
-   return MAX16(maxval,-minval);
+   return MAX32(EXTEND32(maxval),-EXTEND32(minval));
 }
 #endif
 
