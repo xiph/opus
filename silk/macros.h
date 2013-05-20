@@ -85,7 +85,7 @@ static inline opus_int32 silk_CLZ16(opus_int16 in16)
 
 static inline opus_int32 silk_CLZ32(opus_int32 in32)
 {
-    return in32 ? 32 - EC_ILOG(in32) : 0;
+    return in32 ? 32 - EC_ILOG(in32) : 32;
 }
 
 /* Row based */
