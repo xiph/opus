@@ -110,7 +110,7 @@
             "smull %[tt], %[mi], r1, %[br]\n\t" \
             "smlal %[tt], %[mi], r0, %[bi]\n\t" \
             "rsb %[bi], %[bi], #0\n\t" \
-            "smull r0, %[mr], r0, %[br]\n\t" \
+            "smull r0, %[mr], %[br], r0\n\t" \
             "mov %[tt], %[tt], lsr #15\n\t" \
             "smlal r0, %[mr], r1, %[bi]\n\t" \
             "orr %[mi], %[tt], %[mi], lsl #17\n\t" \
@@ -138,7 +138,7 @@
             "smull %[tt], %[mi], r1, %[br]\n\t" \
             "smlal %[tt], %[mi], r0, %[bi]\n\t" \
             "rsb %[bi], %[bi], #0\n\t" \
-            "smull r0, %[mr], r0, %[br]\n\t" \
+            "smull r0, %[mr], %[br], r0\n\t" \
             "mov %[tt], %[tt], lsr #17\n\t" \
             "smlal r0, %[mr], r1, %[bi]\n\t" \
             "orr %[mi], %[tt], %[mi], lsl #15\n\t" \
@@ -166,7 +166,7 @@
             "smull %[tt], %[mr], r0, %[br]\n\t" \
             "smlal %[tt], %[mr], r1, %[bi]\n\t" \
             "rsb %[bi], %[bi], #0\n\t" \
-            "smull r1, %[mi], r1, %[br]\n\t" \
+            "smull r1, %[mi], %[br], r1\n\t" \
             "mov %[tt], %[tt], lsr #15\n\t" \
             "smlal r1, %[mi], r0, %[bi]\n\t" \
             "orr %[mr], %[tt], %[mr], lsl #17\n\t" \

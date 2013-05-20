@@ -52,26 +52,14 @@ static inline opus_val32 MULT16_32_Q16_armv5e(opus_val16 a, opus_val32 b)
 #undef MULT16_32_Q15
 static inline opus_val32 MULT16_32_Q15_armv5e(opus_val16 a, opus_val32 b)
 {
-#if 0
-  unsigned rd_lo;
-  int rd_hi;
-  __asm__(
-      "#MULT16_32_Q15\n\t"
-      "smull %0, %1, %2, %3\n\t"
-      : "=r"(rd_lo), "=r"(rd_hi)
-      : "%r"(b), "r"(a<<16)
-  );
-  return (rd_lo>>31)|(rd_hi<<1);
-#else
   int res;
   __asm__(
       "#MULT16_32_Q15\n\t"
       "smulwb %0, %1, %2\n\t"
       : "=r"(res)
-      : "%r"(b), "r"(a)
+      : "r"(b), "r"(a)
   );
   return res<<1;
-#endif
 }
 #define MULT16_32_Q15(a, b) (MULT16_32_Q15_armv5e(a, b))
 

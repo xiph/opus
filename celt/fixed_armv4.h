@@ -36,8 +36,8 @@ static inline opus_val32 MULT16_32_Q16_armv4(opus_val16 a, opus_val32 b)
   __asm__(
       "#MULT16_32_Q16\n\t"
       "smull %0, %1, %2, %3\n\t"
-      : "=r"(rd_lo), "=r"(rd_hi)
-      : "r"(b),"r"(a<<16)
+      : "=&r"(rd_lo), "=&r"(rd_hi)
+      : "%r"(b),"r"(a<<16)
   );
   return rd_hi;
 }
@@ -53,7 +53,7 @@ static inline opus_val32 MULT16_32_Q15_armv4(opus_val16 a, opus_val32 b)
   __asm__(
       "#MULT16_32_Q15\n\t"
       "smull %0, %1, %2, %3\n\t"
-      : "=r"(rd_lo), "=r"(rd_hi)
+      : "=&r"(rd_lo), "=&r"(rd_hi)
       : "%r"(b), "r"(a<<16)
   );
   /*We intentionally don't OR in the high bit of rd_lo for speed.*/

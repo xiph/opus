@@ -203,7 +203,7 @@ static inline opus_int32 silk_CLZ32_armv5(opus_int32 in32)
   __asm__(
       "#silk_CLZ32\n\t"
       "clz %0, %1\n\t"
-      : "=&r"(res)
+      : "=r"(res)
       : "r"(in32)
   );
   return res;

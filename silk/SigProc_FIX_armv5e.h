@@ -37,7 +37,7 @@ static inline opus_int32 silk_SMULTT_armv5e(opus_int32 a, opus_int32 b)
       "#silk_SMULTT\n\t"
       "smultt %0, %1, %2\n\t"
       : "=r"(res)
-      : "r"(a), "r"(b)
+      : "%r"(a), "r"(b)
   );
   return res;
 }
@@ -52,7 +52,7 @@ static inline opus_int32 silk_SMLATT_armv5e(opus_int32 a, opus_int32 b,
       "#silk_SMLATT\n\t"
       "smlatt %0, %1, %2, %3\n\t"
       : "=r"(res)
-      : "r"(b), "r"(c), "r"(a)
+      : "%r"(b), "r"(c), "r"(a)
   );
   return res;
 }
