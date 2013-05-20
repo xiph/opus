@@ -14,6 +14,7 @@ m4_define([CURRENT_VERSION],
 AC_INIT([opus],[CURRENT_VERSION],[opus@xiph.org])
 
 AC_CONFIG_SRCDIR(src/opus_encoder.c)
+AC_CONFIG_MACRO_DIR([m4])
 
 dnl enable silent rules on automake 1.11 and later
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
