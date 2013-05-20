@@ -576,6 +576,14 @@ static inline opus_int64 silk_max_64(opus_int64 a, opus_int64 b)
 #include "MacroCount.h"
 #include "MacroDebug.h"
 
+#ifdef ARMv4_ASM
+#include "SigProc_FIX_armv4.h"
+#endif
+
+#ifdef ARMv5E_ASM
+#include "SigProc_FIX_armv5e.h"
+#endif
+
 #ifdef  __cplusplus
 }
 #endif

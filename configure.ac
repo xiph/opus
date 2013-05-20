@@ -18,7 +18,6 @@ AC_CONFIG_SRCDIR(src/opus_encoder.c)
 dnl enable silent rules on automake 1.11 and later
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-
 # For libtool.
 dnl Please update these for releases.
 OPUS_LT_CURRENT=4
@@ -155,6 +154,36 @@ if test "x${float_approx}" = "xyes"; then
     AC_DEFINE([FLOAT_APPROX], , [Float approximations])
 fi
 
+cpu_arm=no
+AC_ARG_ENABLE(asm,
+    AS_HELP_STRING([--disable-asm], [Disable assembly optimizations]),
+    [ ac_enable_asm=$enableval ], [ ac_enable_asm=yes] )
+if test "x${ac_enable_asm}" = xyes ; then
+    asm_optimization="no asm for your platform, please send patches"
+    case $host_cpu in
+    arm*)
+        cpu_arm=yes
+        AS_GCC_INLINE_ASSEMBLY([asm_optimization="ARM"],
+            [asm_optimization="disabled"])
+        if test "x${asm_optimization}" = "xARM" ; then
+            AC_DEFINE([ARMv4_ASM], [], [Use generic ARMv4 asm optimizations])
+            AS_ASM_ARM_EDSP([ARMv5E_ASM=1],[ARMv5E_ASM=0])
+            if test "x${ARMv5E_ASM}" = "x1" ; then
+                AC_DEFINE(ARMv5E_ASM, 1, [Use ARMv5E asm optimizations])
+                asm_optimization="${asm_optimization} (EDSP)"
+            fi
+            AS_ASM_ARM_MEDIA([ARMv6_ASM=1],[ARMv6_ASM=0])
+            if test "x${ARMv6_ASM}" = "x1" ; then
+                AC_DEFINE(ARMv6_ASM, 1, [Use ARMv6 asm optimizations])
+                asm_optimization="${asm_optimization} (Media)"
+            fi
+        fi
+        ;;
+    esac
+else
+    asm_optimization="disabled"
+fi
+
 ac_enable_assertions="no"
 AC_ARG_ENABLE(assertions, [  --enable-assertions        enable additional software error checking],
 [if test "$enableval" = yes; then
@@ -281,6 +310,7 @@ AC_MSG_RESULT([
       Floating point support: ........ ${ac_enable_float}
       Fast float approximations: ..... ${float_approx}
       Fixed point debugging: ......... ${ac_enable_fixed_debug}
+      Assembly optimization: ......... ${asm_optimization}
       Custom modes: .................. ${ac_enable_custom_modes}
       Assertion checking: ............ ${ac_enable_assertions}
       Fuzzing: ....................... ${ac_enable_fuzzing}

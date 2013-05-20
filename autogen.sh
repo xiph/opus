@@ -135,6 +135,7 @@ fi
 
 echo "Generating configuration files for $package, please wait...."
 
+ACLOCAL_FLAGS="-I m4"
 echo "  $ACLOCAL $ACLOCAL_FLAGS"
 $ACLOCAL $ACLOCAL_FLAGS || exit 1
 echo "  autoheader"

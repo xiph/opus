@@ -134,5 +134,13 @@ static inline opus_int32 silk_CLZ32(opus_int32 in32)
     (*((Matrix_base_adr) + ((row)+(M)*(column))))
 #endif
 
+#ifdef ARMv4_ASM
+#include "macros_armv4.h"
+#endif
+
+#ifdef ARMv5E_ASM
+#include "macros_armv5e.h"
+#endif
+
 #endif /* SILK_MACROS_H */
 
