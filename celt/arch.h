@@ -113,9 +113,9 @@ typedef opus_val32 celt_ener;
 #include "fixed_generic.h"
 
 #ifdef ARMv5E_ASM
-#include "fixed_armv5e.h"
+#include "arm/fixed_armv5e.h"
 #elif defined (ARMv4_ASM)
-#include "fixed_armv4.h"
+#include "arm/fixed_armv4.h"
 #elif defined (BFIN_ASM)
 #include "fixed_bfin.h"
 #elif defined (TI_C5X_ASM)
