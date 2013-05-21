@@ -19,6 +19,10 @@ silk/resampler_private.h \
 silk/resampler_rom.h \
 silk/resampler_structs.h \
 silk/SigProc_FIX.h \
+silk/arm/macros_armv4.h \
+silk/arm/macros_armv5e.h \
+silk/arm/SigProc_FIX_armv4.h \
+silk/arm/SigProc_FIX_armv5e.h \
 silk/fixed/main_FIX.h \
 silk/fixed/structs_FIX.h \
 silk/float/main_FLP.h \
