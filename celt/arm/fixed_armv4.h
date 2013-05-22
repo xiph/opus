@@ -68,4 +68,9 @@ static inline opus_val32 MULT16_32_Q15_armv4(opus_val16 a, opus_val32 b)
 #undef MAC16_32_Q15
 #define MAC16_32_Q15(c, a, b) ADD32(c, MULT16_32_Q15(a, b))
 
+
+/** 32x32 multiplication, followed by a 31-bit shift right. Results fits in 32 bits */
+#undef MULT32_32_Q31
+#define MULT32_32_Q31(a,b) (opus_val32)((((opus_int64)(a)) * ((opus_int64)(b)))>>31)
+
 #endif
