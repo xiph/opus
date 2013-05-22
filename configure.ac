@@ -167,7 +167,7 @@ if test "x${ac_enable_asm}" = xyes ; then
         AS_GCC_INLINE_ASSEMBLY([asm_optimization="ARM"],
             [asm_optimization="disabled"])
         if test "x${asm_optimization}" = "xARM" ; then
-            AC_DEFINE([ARMv4_ASM], [], [Use generic ARMv4 asm optimizations])
+            AC_DEFINE([ARMv4_ASM], 1, [Use generic ARMv4 asm optimizations])
             AS_ASM_ARM_EDSP([ARMv5E_ASM=1],[ARMv5E_ASM=0])
             if test "x${ARMv5E_ASM}" = "x1" ; then
                 AC_DEFINE(ARMv5E_ASM, 1, [Use ARMv5E asm optimizations])
