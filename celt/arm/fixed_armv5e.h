@@ -84,7 +84,8 @@ static inline opus_val32 MAC16_32_Q15_armv5e(opus_val32 c, opus_val16 a,
 
 /** 16x16 multiply-add where the result fits in 32 bits */
 #undef MAC16_16
-static inline opus_val32 MAC16_16(opus_val32 c, opus_val16 a, opus_val16 b)
+static inline opus_val32 MAC16_16_armv5e(opus_val32 c, opus_val16 a,
+ opus_val16 b)
 {
   int res;
   __asm__(
@@ -95,11 +96,11 @@ static inline opus_val32 MAC16_16(opus_val32 c, opus_val16 a, opus_val16 b)
   );
   return res;
 }
-#define MAC16_16(c, a, b) (MAC16_16(c, a, b))
+#define MAC16_16(c, a, b) (MAC16_16_armv5e(c, a, b))
 
 /** 16x16 multiplication where the result fits in 32 bits */
 #undef MULT16_16
-static inline opus_val32 MULT16_16(opus_val16 a, opus_val16 b)
+static inline opus_val32 MULT16_16_armv5e(opus_val16 a, opus_val16 b)
 {
   int res;
   __asm__(
@@ -110,6 +111,6 @@ static inline opus_val32 MULT16_16(opus_val16 a, opus_val16 b)
   );
   return res;
 }
-#define MULT16_16(a, b) (MULT16_16(a, b))
+#define MULT16_16(a, b) (MULT16_16_armv5e(a, b))
 
 #endif

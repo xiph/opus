@@ -108,7 +108,9 @@
 
 /** 16x16 multiply-add where the result fits in 32 bits */
 #define MAC16_16(c,a,b) (ADD32((c),MULT16_16((a),(b))))
-/** 16x32 multiply-add, followed by a 15-bit shift right. Results fits in 32 bits */
+/** 16x32 multiply, followed by a 15-bit shift right and 32-bit add.
+    b must fit in 31 bits.
+    Result fits in 32 bits. */
 #define MAC16_32_Q15(c,a,b) ADD32(c,ADD32(MULT16_16((a),SHR((b),15)), SHR(MULT16_16((a),((b)&0x00007fff)),15)))
 
 #define MULT16_16_Q11_32(a,b) (SHR(MULT16_16((a),(b)),11))
