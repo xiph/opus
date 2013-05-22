@@ -96,18 +96,18 @@
        int tt__; \
         __asm__ __volatile__( \
             "#C_MULC\n\t" \
-            "ldm %[ap], {r0,r1}\n\t" \
             "ldrsh %[br], [%[bp], #0]\n\t" \
+            "ldm %[ap], {r0,r1}\n\t" \
             "ldrsh %[bi], [%[bp], #2]\n\t" \
             "smull %[tt], %[mr], r0, %[br]\n\t" \
             "smlal %[tt], %[mr], r1, %[bi]\n\t" \
             "rsb %[bi], %[bi], #0\n\t" \
-            "smull r1, %[mi], %[br], r1\n\t" \
+            "smull %[br], %[mi], r1, %[br]\n\t" \
             "mov %[tt], %[tt], lsr #15\n\t" \
-            "smlal r1, %[mi], r0, %[bi]\n\t" \
+            "smlal %[br], %[mi], r0, %[bi]\n\t" \
             "orr %[mr], %[tt], %[mr], lsl #17\n\t" \
-            "mov r1, r1, lsr #15\n\t" \
-            "orr %[mi], r1, %[mi], lsl #17\n\t" \
+            "mov %[br], %[br], lsr #15\n\t" \
+            "orr %[mi], %[br], %[mi], lsl #17\n\t" \
             : [mr]"=r"((m).r), [mi]"=r"((m).i), \
               [br]"=&r"(br__), [bi]"=r"(bi__), [tt]"=r"(tt__) \
             : [ap]"r"(&(a)), [bp]"r"(&(b)) \
