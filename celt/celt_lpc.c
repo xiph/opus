@@ -101,7 +101,7 @@ void celt_fir(const opus_val16 *x,
       opus_val32 sum = SHL32(EXTEND32(x[i]), SIG_SHIFT);
       for (j=0;j<ord;j++)
       {
-         sum += MULT16_16(num[j],mem[j]);
+         sum = MAC16_16(sum,num[j],mem[j]);
       }
       for (j=ord-1;j>=1;j--)
       {
@@ -161,11 +161,16 @@ void _celt_autocorr(
    }
 #ifdef FIXED_POINT
    {
-      opus_val32 ac0=0;
+      opus_val32 ac0;
       int shift;
-      for(i=0;i<n;i++)
+      int n2;
+      ac0 = 1+n;
+      if (n&1) ac0 += SHR32(MULT16_16(xx[0],xx[0]),9);
+      for(i=(n&1);i<n;i+=2)
+      {
          ac0 += SHR32(MULT16_16(xx[i],xx[i]),9);
-      ac0 += 1+n;
+         ac0 += SHR32(MULT16_16(xx[i+1],xx[i+1]),9);
+      }
 
       shift = celt_ilog2(ac0)-30+10;
       shift = (shift+1)/2;
@@ -176,7 +181,7 @@ void _celt_autocorr(
    while (lag>=0)
    {
       for (i = lag, d = 0; i < n; i++)
-         d += xx[i] * xx[i-lag];
+         d = MAC16_16(d, xx[i], xx[i-lag]);
       ac[lag] = d;
       /*printf ("%f ", ac[lag]);*/
       lag--;
