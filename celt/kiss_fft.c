@@ -40,7 +40,6 @@
 #include "os_support.h"
 #include "mathops.h"
 #include "stack_alloc.h"
-#include "os_support.h"
 
 /* The guts header contains all the multiplication and addition macros that are defined for
    complex numbers.  It also delares the kf_ internal functions.
@@ -142,8 +141,6 @@ static void kf_bfly4(
          C_ADDTO(*Fout, scratch[1]);
          C_ADD( scratch[3] , scratch[0] , scratch[2] );
          C_SUB( scratch[4] , scratch[0] , scratch[2] );
-         Fout[m2].r = PSHR32(Fout[m2].r, 2);
-         Fout[m2].i = PSHR32(Fout[m2].i, 2);
          C_SUB( Fout[m2], *Fout, scratch[3] );
          tw1 += fstride;
          tw2 += fstride*2;
