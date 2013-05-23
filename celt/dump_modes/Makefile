@@ -1,5 +1,5 @@
 CFLAGS=-O2 -Wall -Wextra -DHAVE_CONFIG_H
-INCLUDES=-I../ -I../../
+INCLUDES=-I../ -I../.. -I../../include
 
 all: dump_modes
 
