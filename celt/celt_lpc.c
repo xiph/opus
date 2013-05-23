@@ -163,7 +163,6 @@ void _celt_autocorr(
    {
       opus_val32 ac0;
       int shift;
-      int n2;
       ac0 = 1+n;
       if (n&1) ac0 += SHR32(MULT16_16(xx[0],xx[0]),9);
       for(i=(n&1);i<n;i+=2)
