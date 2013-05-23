@@ -289,8 +289,8 @@ opus_int silk_VAD_GetSA_Q8(                                     /* O    Return v
         psEncC->input_quality_bands_Q15[ b ] = silk_sigm_Q15( silk_RSHIFT( SNR_Q7 - 16 * 128, 4 ) );
     }
 
-    return( ret );
     RESTORE_STACK;
+    return( ret );
 }
 
 /**************************/
