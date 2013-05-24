@@ -1168,9 +1168,13 @@ When extending the end of the signal, order-N (typically with N ranging from 8
  to 40) LPC analysis is performed on a window near the end of the signal.
 The last N samples are used as memory to an infinite impulse response (IIR)
  filter.
+</t>
+<figure align="center">
+<preamble>
 The filter is then applied on a zero input to extrapolate the end of the signal.
 Let a(k) be the kth LPC coefficient and x(n) be the nth sample of the signal,
  each new sample past the end of the signal is computed as:
+</preamble>
 <artwork align="center"><![CDATA[
         N
        ---
@@ -1179,6 +1183,8 @@ x(n) = \   a(k)*x(n-k)
        ---
        k=1
 ]]></artwork>
+</figure>
+<t>
 The process is repeated independently for each channel.
 It is possible to extend the beginning of the signal by applying the same
  process backward in time.
@@ -1211,6 +1217,8 @@ De-emphasis is allowed.</t>
  the encoder.</t>
 </list>
 </t>
+</section>
+
 </section>
 
 <section anchor="implementation" title="Implementation Status">
