@@ -102,13 +102,57 @@ static void find_best_pitch(opus_val32 *xcorr, opus_val16 *y, int len,
    }
 }
 
+static void celt_fir5(const opus_val16 *x,
+         const opus_val16 *num,
+         opus_val16 *y,
+         int N,
+         opus_val16 *mem)
+{
+   int i;
+   opus_val16 num0, num1, num2, num3, num4;
+   opus_val32 mem0, mem1, mem2, mem3, mem4;
+   num0=num[0];
+   num1=num[1];
+   num2=num[2];
+   num3=num[3];
+   num4=num[4];
+   mem0=mem[0];
+   mem1=mem[1];
+   mem2=mem[2];
+   mem3=mem[3];
+   mem4=mem[4];
+   for (i=0;i<N;i++)
+   {
+      opus_val32 sum = SHL32(EXTEND32(x[i]), SIG_SHIFT);
+      sum = MAC16_16(sum,num0,mem0);
+      sum = MAC16_16(sum,num1,mem1);
+      sum = MAC16_16(sum,num2,mem2);
+      sum = MAC16_16(sum,num3,mem3);
+      sum = MAC16_16(sum,num4,mem4);
+      mem4 = mem3;
+      mem3 = mem2;
+      mem2 = mem1;
+      mem1 = mem0;
+      mem0 = x[i];
+      y[i] = ROUND16(sum, SIG_SHIFT);
+   }
+   mem[0]=mem0;
+   mem[1]=mem1;
+   mem[2]=mem2;
+   mem[3]=mem3;
+   mem[4]=mem4;
+}
+
+
 void pitch_downsample(celt_sig * OPUS_RESTRICT x[], opus_val16 * OPUS_RESTRICT x_lp,
       int len, int C)
 {
    int i;
    opus_val32 ac[5];
    opus_val16 tmp=Q15ONE;
-   opus_val16 lpc[4], mem[4]={0,0,0,0};
+   opus_val16 lpc[4], mem[5]={0,0,0,0,0};
+   opus_val16 lpc2[5];
+   opus_val16 c1 = QCONST16(.8f,15);
 #ifdef FIXED_POINT
    int shift;
    opus_val32 maxabs = celt_maxabs32(x[0], len);
@@ -161,12 +205,13 @@ void pitch_downsample(celt_sig * OPUS_RESTRICT x[], opus_val16 * OPUS_RESTRICT x
       tmp = MULT16_16_Q15(QCONST16(.9f,15), tmp);
       lpc[i] = MULT16_16_Q15(lpc[i], tmp);
    }
-   celt_fir(x_lp, lpc, x_lp, len>>1, 4, mem);
-
-   mem[0]=0;
-   lpc[0]=QCONST16(.8f,12);
-   celt_fir(x_lp, lpc, x_lp, len>>1, 1, mem);
-
+   /* Add a zero */
+   lpc2[0] = lpc[0] + QCONST16(.8f,SIG_SHIFT);
+   lpc2[1] = lpc[1] + MULT16_16_Q15(c1,lpc[0]);
+   lpc2[2] = lpc[2] + MULT16_16_Q15(c1,lpc[1]);
+   lpc2[3] = lpc[3] + MULT16_16_Q15(c1,lpc[2]);
+   lpc2[4] = MULT16_16_Q15(c1,lpc[3]);
+   celt_fir5(x_lp, lpc2, x_lp, len>>1, mem);
 }
 
 #if 0 /* This is a simple version of the pitch correlation that should work
