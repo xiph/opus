@@ -209,7 +209,9 @@ static void pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int l
 #ifdef FIXED_POINT
    opus_val32 maxcorr=1;
 #endif
-   for (i=0;i<max_pitch;i+=4)
+   /* Truncate slightly if len is not a multiple of 4. */
+   len -= len&3;
+   for (i=0;i<max_pitch-3;i+=4)
    {
       /* Compute correlation*/
       /*corr[nb_pitch-1-i]=inner_prod(x, _y+i, len);*/
@@ -261,6 +263,17 @@ static void pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int l
       sum3 = MAX32(sum3, sum4);
       sum1 = MAX32(sum1, sum3);
       maxcorr = MAX32(maxcorr, sum1);
+#endif
+   }
+   /* In case max_pitch isn't a multiple of 4, do non-unrolled version. */
+   for (;i<max_pitch;i++)
+   {
+      opus_val32 sum = 0;
+      for (j=0;j<len;j++)
+         sum = MAC16_16(sum, _x[j],_y[i+j]);
+      xcorr[i] = MAX32(-1, sum);
+#ifdef FIXED_POINT
+      maxcorr = MAX32(maxcorr, sum);
 #endif
    }
 #ifdef FIXED_POINT
