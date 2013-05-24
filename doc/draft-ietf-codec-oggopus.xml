@@ -1383,12 +1383,11 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <reference anchor="hanning"
  target="http://en.wikipedia.org/wiki/Hamming_function#Hann_.28Hanning.29_window">
   <front>
-    <title>Hann window</title>
+    <title>"Hann window</title>
     <author fullname="Wikipedia"/>
     <date month="May" year="2013"/>
   </front>
 </reference>
-
 
 <reference anchor="replay-gain"
  target="http://wiki.xiph.org/VorbisComment#Replay_Gain">
