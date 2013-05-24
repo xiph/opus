@@ -131,6 +131,6 @@ opus_int32 silk_NLSF_encode(                                    /* O    Returns 
     /* Decode */
     silk_NLSF_decode( pNLSF_Q15, NLSFIndices, psNLSF_CB );
 
-    return RD_Q25[ 0 ];
     RESTORE_STACK;
+    return RD_Q25[ 0 ];
 }
