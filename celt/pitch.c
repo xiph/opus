@@ -180,7 +180,7 @@ static void pitch_xcorr(opus_val16 *x, opus_val16 *y, opus_val32 *xcorr, int len
 {
    int i, j;
 #ifdef FIXED_POINT
-   opus_val32 maxcorr=-1;
+   opus_val32 maxcorr=1;
 #endif
    for (i=0;i<max_pitch;i++)
    {
@@ -207,7 +207,7 @@ static void pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int l
 {
    int i,j;
 #ifdef FIXED_POINT
-   opus_val32 maxcorr=-1;
+   opus_val32 maxcorr=1;
 #endif
    for (i=0;i<max_pitch;i+=4)
    {
