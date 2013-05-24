@@ -1142,11 +1142,17 @@ An implementation could reasonably choose any of these numbers for its internal
 <t>
 When encoding Opus files, Ogg encoders should take into account the
  algorithmic delay of the Opus encoder.
+</t>
+<figure align="center">
+<preamble>
 In encoders derived from the reference implementation, the number of
  samples can be queried with:
-
- opus_encoder_ctl(encoder_state, OPUS_GET_LOOKAHEAD, &amp;samples_delay);
-
+</preamble>
+<artwork align="center"><![CDATA[
+ opus_encoder_ctl(encoder_state, OPUS_GET_LOOKAHEAD, &samples_delay);
+]]></artwork>
+</figure>
+<t>
 To achieve good quality in the very first samples of a stream, the Ogg encoder
  MAY use LPC extrapolation to generate at least 120 extra samples
  (extra_samples) at the beginning to avoid the Opus encoder having to encode
