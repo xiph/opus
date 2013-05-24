@@ -1190,6 +1190,7 @@ It is possible to extend the beginning of the signal by applying the same
  process backward in time.
 When extending the beginning of the signal, it is best to apply a "fade in" to
  the extrapolated signal, e.g. by multiplying it by a half-Hanning window.
+ <xref target="hanning"/>
 </t>
 
 </section>
@@ -1372,6 +1373,16 @@ The authors agree to grant third parties the irrevocable right to copy, use,
     <date month="January" year="2008"/>
   </front>
 </reference>
+
+<reference anchor="hanning"
+ target="http://en.wikipedia.org/wiki/Hamming_function#Hann_.28Hanning.29_window">
+  <front>
+    <title>Hann window</title>
+    <author fullname="Wikipedia"/>
+    <date month="May" year="2013"/>
+  </front>
+</reference>
+
 
 <reference anchor="replay-gain"
  target="http://wiki.xiph.org/VorbisComment#Replay_Gain">
