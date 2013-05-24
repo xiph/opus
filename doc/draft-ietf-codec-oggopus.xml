@@ -1138,6 +1138,81 @@ An implementation could reasonably choose any of these numbers for its internal
 </t>
 </section>
 
+<section anchor="encoder" title="Encoder Guidelines">
+<t>
+When encoding Opus files, Ogg encoders should take into account the
+ algorithmic delay of the Opus encoder.
+In encoders derived from the reference implementation, the number of
+ samples can be queried with:
+
+ opus_encoder_ctl(encoder_state, OPUS_GET_LOOKAHEAD, &amp;samples_delay);
+
+To achieve good quality in the very first samples of a stream, the Ogg encoder
+ MAY use LPC extrapolation to generate at least 120 extra samples
+ (extra_samples) at the beginning to avoid the Opus encoder having to encode
+ a discontinuous signal.
+For an input file containing length samples, the Ogg encoder, SHOULD set the
+ preskip header flag to samples_delay+extra_samples, encode at least
+ length+samples_delay+extra_samples samples, and set the granulepos of the last
+ page to length+samples_delay+extra_samples.
+This ensures that the encoded file has the same duration as the original, with
+ no time offset. The best way to pad the end of the stream is to also use LPC
+ extrapolation, but zero-padding is also acceptable.
+</t>
+
+<section anchor="lpc" title="LPC Extrapolation">
+<t>
+The first step in LPC extrapolation is to compute linear prediction
+ coefficients.
+When extending the end of the signal, order-N (typically with N ranging from 8
+ to 40) LPC analysis is performed on a window near the end of the signal.
+The last N samples are used as memory to an infinite impulse response (IIR)
+ filter.
+The filter is then applied on a zero input to extrapolate the end of the signal.
+Let a(k) be the kth LPC coefficient and x(n) be the nth sample of the signal,
+ each new sample past the end of the signal is computed as:
+<artwork align="center"><![CDATA[
+        N
+       ---
+x(n) = \   a(k)*x(n-k)
+       /
+       ---
+       k=1
+]]></artwork>
+The process is repeated independently for each channel.
+It is possible to extend the beginning of the signal by applying the same
+ process backward in time.
+When extending the beginning of the signal, it is best to apply a "fade in" to
+ the extrapolated signal, e.g. by multiplying it by a half-Hanning window.
+</t>
+
+</section>
+
+<section anchor="continuous_chaining" title="Continuous Chaining">
+<t>
+In some applications, such as Internet radio, it is desirable to cut a long
+ streams into smaller chains, e.g. so the comment header can be updated.
+This can be done simply by separating the input streams into segments and
+ encoding each segment independently.
+The drawback of this approach is that it creates a small discontinuity
+ at the boundary due to the lossy nature of Opus.
+An encoder MAY avoid this discontinuity by using the following procedure:
+<list style="numbers">
+<t>Encode the last frame of the first segment as an independent frame by
+ turning off all forms of inter-frame prediction.
+De-emphasis is allowed.</t>
+<t>Set the granulepos of the last page to a point near the end of the last
+ frame.</t>
+<t>Begin the second segment with a copy of the last frame of the first
+ segment.</t>
+<t>Set the preskip flag of the second stream in such a way as to properly
+ join the two streams.</t>
+<t>Continue the encoding process normally from there, without any reset to
+ the encoder.</t>
+</list>
+</t>
+</section>
+
 <section anchor="implementation" title="Implementation Status">
 <t>
 A brief summary of major implementations of this draft is available
