@@ -1347,16 +1347,6 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </front>
 </reference>
 
-<reference anchor="vorbis-mapping"
- target="http://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-800004.3.9">
-<front>
-<title>The Vorbis I Specification, Section 4.3.9 Output Channel Order</title>
-<author initials="C." surname="Montgomery"
- fullname="Christopher &quot;Monty&quot; Montgomery"/>
-<date month="January" year="2010"/>
-</front>
-</reference>
-
 </references>
 
 <references title="Informative References">
@@ -1404,15 +1394,25 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </front>
 </reference>
 
-<reference anchor="vorbis-trim"
-  target="http://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
+<reference anchor="vorbis-mapping"
+ target="http://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-800004.3.9">
 <front>
-<title>The Vorbis I Specification, Appendix&nbsp;A: Embedding Vorbis into an
- Ogg stream</title>
+<title>The Vorbis I Specification, Section 4.3.9 Output Channel Order</title>
 <author initials="C." surname="Montgomery"
  fullname="Christopher &quot;Monty&quot; Montgomery"/>
-<date month="November" year="2008"/>
+<date month="January" year="2010"/>
 </front>
+</reference>
+
+<reference anchor="vorbis-trim"
+ target="http://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
+  <front>
+    <title>The Vorbis I Specification, Appendix&nbsp;A: Embedding Vorbis
+      into an Ogg stream</title>
+    <author initials="C." surname="Montgomery"
+     fullname="Christopher &quot;Monty&quot; Montgomery"/>
+    <date month="November" year="2008"/>
+  </front>
 </reference>
 
 <reference anchor="wave-multichannel"
