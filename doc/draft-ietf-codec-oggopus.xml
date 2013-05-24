@@ -756,7 +756,7 @@ Specific locations depend on the number of channels, and are given below
   <t>8 channels: 7.1 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE)</t>
 </list>
 This set of surround configurations and speaker location orderings is the same
- as the one used by the Vorbis codec. <xref target="vorbis-mapping"/>
+ as the one used by the Vorbis codec <xref target="vorbis-mapping"/>.
 The ordering is different from the one used by the
  WAVE <xref target="wave-multichannel"/> and
  FLAC <xref target="flac"/> formats,
@@ -1195,8 +1195,8 @@ The process is repeated independently for each channel.
 It is possible to extend the beginning of the signal by applying the same
  process backward in time.
 When extending the beginning of the signal, it is best to apply a "fade in" to
- the extrapolated signal, e.g. by multiplying it by a half-Hanning window.
- <xref target="hanning"/>
+ the extrapolated signal, e.g. by multiplying it by a half-Hanning window
+ <xref target="hanning"/>.
 </t>
 
 </section>
