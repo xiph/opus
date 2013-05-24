@@ -760,13 +760,14 @@ This set of surround configurations and speaker location orderings is the same
 The ordering is different from the one used by the
  WAVE <xref target="wave-multichannel"/> and
  FLAC <xref target="flac"/> formats,
- although the configurations match, so correct ordering requires permutation
- of the output channels when encoding from or decoding to those formats.
+ so correct ordering requires permutation of the output channels when encoding
+ from or decoding to those formats.
 'LFE' here refers to a Low Frequency Effects, often mapped to a subwoofer
  with no particular spacial position.
 Implementations SHOULD identify 'side' or 'rear' speaker locations with
  'surround' and 'back' as appropriate when interfacing with audio formats
  or systems which prefer that terminology.
+Speaker configurations other than those described here are not supported.
 </t>
 </section>
 
