@@ -1140,192 +1140,14 @@ An implementation could reasonably choose any of these numbers for its internal
 
 <section anchor="implementation" title="Implementation Status">
 <t>
-What follows is a brief summary of major implementations of this
- draft, and their status.
-Note that this section should be removed before final publication
- as an RFC as per <xref target="draft-sheffer-running-code"/>.
+A brief summary of major implementations of this draft is available
+ at <eref target="https://wiki.xiph.org/OggOpusImplementation"/>,
+  along with their status.
 </t>
-
-<section anchor="impl-opus-tools" title="opus-tools">
 <t>
-The initial development implementation of this draft was in the
- opusenc, opusdec, and opusinfo command-line utilties, part of the
- opus-tools package and repository.
-While still 'development' status (pre-1.0) these utilities are
- in active public use, and have shipped with some recent Linux
- distributions and in homebrew.
-Together they implement basic read, write and playback support of
- Ogg Opus files including metadata, multichannel, start and end
- trimming, the gain field, live streams, and chained files, but currently do
- not support seeking.
-This implementation is open source.
+[Note to RFC Editor: please remove this entire section before
+ final publication per <xref target="draft-sheffer-running-code"/>.]
 </t>
-<t><list style="symbols">
-  <t><eref target="https://git.xiph.org/?p=opus-tools.git"/></t>
-  <t><eref target="http://www.opus-codec.org/downloads/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-opusfile" title="opusfile">
-<t>
-The opusfile library is a separate implementation of this draft as a helper
- library for demuxing and decoding.
-Like opus-tools, it supports metadata, multichannel, start and end trimming,
- the gain field, live streams, and chained files.
-Its primary focus is efficient seeking, including over HTTP(S) and in chained
- streams.
-It currently does not create Ogg Opus files.
-This library is in early development and is not widely deployed, though several
- projects are currently using it, including xmms2, taglib, and cmus, and it is
- shipped in some Linux distributions and in homebrew.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="https://git.xiph.org/?p=opusfile.git"/></t>
-  <t><eref target="http://www.opus-codec.org/downloads/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-firefox" title="Firefox">
-<t>
-The Firefox web browser is a widely deployed implementation of
- this draft.
-Basic playback support with the HTML5 &lt;audio&gt; element, including start
- and end trimming, the gain field, live streams, multiplexing with other
- streams (for, e.g., the &lt;video&gt; tag), and seeking, was added in
- Firefox 15, in production release starting August 28, 2012.
-Multichannel support was added in Firefox 17, in production release
- starting November 20, 2012.
-Metadata support was added in Firefox 18, in production release starting
- January 8, 2013.
-Chained file support (as streams only, with seeking disabled) was added in
- Firefox 20, in production release starting April 2, 2013.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="https://mozilla.org/firefox/"/></t>
-  <t><eref target="https://hacks.mozilla.org/2012/08/opus-support-for-webrtc/"/></t>
-  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=674225"/></t>
-  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=748144"/></t>
-  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=778050"/></t>
-  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=455165"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-chrome" title="Chrome">
-<t>
-Google's Chrome web browser has support for this draft with the
- HTML5 &lt;audio&gt; element in M25 and M26, the dev and
- canary channels respectively as of January, 2013.
-This implementation currently does not support end trimming, the gain tag,
- chained files, or the .opus extension.
-Both M25 and M26 require passing --enable-opus-playback to the executable
- to enable support at the time of this writing.
-This implementation is based on open source code in
- Chromium and WebKit.
-</t>
-<t><list style="symbols">
-  <t><eref target="https://www.google.com/intl/en/chrome/browser/"/></t>
-  <t><eref target="https://www.google.com/intl/en/chrome/browser/canary.html"/></t>
-  <t><eref target="http://code.google.com/p/chromium/issues/detail?id=104241"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-gstreamer" title="GStreamer">
-<t>
-The GStreamer media framework includes an implementation of
- this draft.
-It supports metadata, multichannel, start and end trimming, the gain field,
- live streams, chained files, multiplexing with other streams (e.g., video),
- and seeking.
-Support was first added in early 2011, and is part of the 0.11 and 1.0.x
- releases.
-The code implementing this draft is in the gst-plugins-bad collection,
- which generally indicates unsupported and/or experimental code,
- despite its release status.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://gstreamer.net/"/></t>
-  <t><eref target="http://cgit.freedesktop.org/gstreamer/gst-plugins-bad/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-ffmpeg" title="FFmpeg">
-<t>
-The popular media framework and conversion tool FFmpeg implements
- some of this draft.
-End trimming is not implemented, so file durations are not exactly
- preserved.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://ffmpeg.org/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-libav" title="libav">
-<t>
-The development repository for libav implements this draft,
- similar to FFmpeg.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://libav.org/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-vlc" title="VLC">
-<t>
-VLC is another widely deployed implementation of demuxing, decoding, and
- playback support for this draft.
-It supports metadata, multichannel, start and end trimming, the gain field,
- live streams, seeking, chained files (though seeking does not work
- correctly with chained files), and multiplexing with other streams (e.g.,
- video).
-Opus support was added in version 2.0.4, released on October 18, 2012.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://www.videolan.org/vlc/"/></t>
-  <t><eref target="http://git.videolan.org/?p=vlc.git"/></t>
-  <t><eref target="http://trac.videolan.org/vlc/ticket/7185"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-foobar2k" title="foobar2000">
-<t>
-A popular Windows application, foobar2000 implements read, write, and playback
- support for this draft.
-It supports metadata, multichannel, start and end trimming, the gain field,
- live streams, chained files, and seeking.
-Opus support was added in version 1.1.14, released on August 17, 2012.
-Encoding support is implemented using opusenc from opus-tools.
-This implementation is closed source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://www.foobar2000.org/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-rockbox" title="Rockbox">
-<t>
-Rockbox is an established alternative firmware for portable music players
- (typically small, embedded devices) that implements demuxing, decoding, and
- playback support for this draft.
-It supports metadata, start and end trimming, the gain field, and seeking.
-It does not currently support multichannel or chained files.
-Opus is currently only supported in development builds, though it is scheduled
- to be included in the next stable release (3.13).
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://www.rockbox.org/"/></t>
-  <t><eref target="http://git.rockbox.org/?p=rockbox.git"/></t>
-  <t><eref target="http://gerrit.rockbox.org/r/#/c/300/"/></t>
-</list></t>
-</section>
-
 </section>
 
 <section anchor="security" title="Security Considerations">
@@ -1460,12 +1282,12 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  &rfc4732;
 
 <reference anchor="draft-sheffer-running-code"
-  target="https://tools.ietf.org/html/draft-sheffer-running-code-01#section-2">
+  target="https://tools.ietf.org/html/draft-sheffer-running-code-05#section-2">
  <front>
    <title>Improving "Rough Consensus" with Running Code</title>
    <author initials="Y." surname="Sheffer" fullname="Yaron Sheffer"/>
    <author initials="A." surname="Farrel" fullname="Adrian Farrel"/>
-   <date month="December" year="2012"/>
+   <date month="May" year="2013"/>
  </front>
 </reference>
 
