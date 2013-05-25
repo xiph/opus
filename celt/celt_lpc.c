@@ -32,6 +32,7 @@
 #include "celt_lpc.h"
 #include "stack_alloc.h"
 #include "mathops.h"
+#include "pitch.h"
 
 void _celt_lpc(
       opus_val16       *_lpc, /* out: [0...p-1] LPC coefficients      */
@@ -147,6 +148,7 @@ void _celt_autocorr(
 {
    opus_val32 d;
    int i;
+   int fastN=n-lag;
    VARDECL(opus_val16, xx);
    SAVE_STACK;
    ALLOC(xx, n, opus_val16);
@@ -177,11 +179,12 @@ void _celt_autocorr(
          xx[i] = VSHR32(xx[i], shift);
    }
 #endif
+   pitch_xcorr(xx, xx, ac, fastN, lag+1);
    while (lag>=0)
    {
-      for (i = lag, d = 0; i < n; i++)
+      for (i = lag+fastN, d = 0; i < n; i++)
          d = MAC16_16(d, xx[i], xx[i-lag]);
-      ac[lag] = d;
+      ac[lag] += d;
       /*printf ("%f ", ac[lag]);*/
       lag--;
    }

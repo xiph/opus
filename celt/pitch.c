@@ -217,11 +217,12 @@ void pitch_downsample(celt_sig * OPUS_RESTRICT x[], opus_val16 * OPUS_RESTRICT x
 #if 0 /* This is a simple version of the pitch correlation that should work
          well on DSPs like Blackfin and TI C5x/C6x */
 
-static void pitch_xcorr(opus_val16 *x, opus_val16 *y, opus_val32 *xcorr, int len, int max_pitch
 #ifdef FIXED_POINT
-      ,opus_val32 *maxval
+opus_val32
+#else
+void
 #endif
-      )
+pitch_xcorr(opus_val16 *x, opus_val16 *y, opus_val32 *xcorr, int len, int max_pitch)
 {
    int i, j;
 #ifdef FIXED_POINT
@@ -232,30 +233,29 @@ static void pitch_xcorr(opus_val16 *x, opus_val16 *y, opus_val32 *xcorr, int len
       opus_val32 sum = 0;
       for (j=0;j<len;j++)
          sum = MAC16_16(sum, x[j],y[i+j]);
-      xcorr[i] = MAX32(-1, sum);
+      xcorr[i] = sum;
 #ifdef FIXED_POINT
       maxcorr = MAX32(maxcorr, sum);
 #endif
    }
 #ifdef FIXED_POINT
-   *maxval = maxcorr;
+   return maxcorr;
 #endif
 }
 
 #else /* Unrolled version of the pitch correlation -- runs faster on x86 and ARM */
 
-static void pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int len, int max_pitch
 #ifdef FIXED_POINT
-      ,opus_val32 *maxval
+opus_val32
+#else
+void
 #endif
-      )
+pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int len, int max_pitch)
 {
    int i,j;
 #ifdef FIXED_POINT
    opus_val32 maxcorr=1;
 #endif
-   /* Truncate slightly if len is not a multiple of 4. */
-   len -= len&3;
    for (i=0;i<max_pitch-3;i+=4)
    {
       /* Compute correlation*/
@@ -271,7 +271,7 @@ static void pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int l
       y0=*y++;
       y1=*y++;
       y2=*y++;
-      for (j=0;j<len;j+=4)
+      for (j=0;j<len-3;j+=4)
       {
          opus_val16 tmp;
          tmp = *x++;
@@ -299,10 +299,37 @@ static void pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int l
          sum3 = MAC16_16(sum3,tmp,y1);
          sum4 = MAC16_16(sum4,tmp,y2);
       }
-      xcorr[i]=MAX32(-1, sum1);
-      xcorr[i+1]=MAX32(-1, sum2);
-      xcorr[i+2]=MAX32(-1, sum3);
-      xcorr[i+3]=MAX32(-1, sum4);
+      if (j++<len)
+      {
+         opus_val16 tmp = *x++;
+         y3=*y++;
+         sum1 = MAC16_16(sum1,tmp,y0);
+         sum2 = MAC16_16(sum2,tmp,y1);
+         sum3 = MAC16_16(sum3,tmp,y2);
+         sum4 = MAC16_16(sum4,tmp,y3);
+      }
+      if (j++<len)
+      {
+         opus_val16 tmp=*x++;
+         y0=*y++;
+         sum1 = MAC16_16(sum1,tmp,y1);
+         sum2 = MAC16_16(sum2,tmp,y2);
+         sum3 = MAC16_16(sum3,tmp,y3);
+         sum4 = MAC16_16(sum4,tmp,y0);
+      }
+      if (j<len)
+      {
+         opus_val16 tmp=*x++;
+         y1=*y++;
+         sum1 = MAC16_16(sum1,tmp,y2);
+         sum2 = MAC16_16(sum2,tmp,y3);
+         sum3 = MAC16_16(sum3,tmp,y0);
+         sum4 = MAC16_16(sum4,tmp,y1);
+      }
+      xcorr[i]=sum1;
+      xcorr[i+1]=sum2;
+      xcorr[i+2]=sum3;
+      xcorr[i+3]=sum4;
 #ifdef FIXED_POINT
       sum1 = MAX32(sum1, sum2);
       sum3 = MAX32(sum3, sum4);
@@ -316,13 +343,13 @@ static void pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int l
       opus_val32 sum = 0;
       for (j=0;j<len;j++)
          sum = MAC16_16(sum, _x[j],_y[i+j]);
-      xcorr[i] = MAX32(-1, sum);
+      xcorr[i] = sum;
 #ifdef FIXED_POINT
       maxcorr = MAX32(maxcorr, sum);
 #endif
    }
 #ifdef FIXED_POINT
-   *maxval = maxcorr;
+   return maxcorr;
 #endif
 }
 
@@ -378,11 +405,10 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
 
    /* Coarse search with 4x decimation */
 
-   pitch_xcorr(x_lp4, y_lp4, xcorr, len>>2, max_pitch>>2
 #ifdef FIXED_POINT
-         ,&maxcorr
+   maxcorr =
 #endif
-         );
+   pitch_xcorr(x_lp4, y_lp4, xcorr, len>>2, max_pitch>>2);
 
    find_best_pitch(xcorr, y_lp4, len>>2, max_pitch>>2, best_pitch
 #ifdef FIXED_POINT
