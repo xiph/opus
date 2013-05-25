@@ -266,65 +266,65 @@ pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int len, int max_
       opus_val32 sum4=0;
       const opus_val16 *y = _y+i;
       const opus_val16 *x = _x;
-      opus_val16 y0, y1, y2, y3;
-      /*y0=y[0];y1=y[1];y2=y[2];y3=y[3];*/
-      y0=*y++;
-      y1=*y++;
-      y2=*y++;
+      opus_val16 y_0, y_1, y_2, y_3;
+      y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
+      y_0=*y++;
+      y_1=*y++;
+      y_2=*y++;
       for (j=0;j<len-3;j+=4)
       {
          opus_val16 tmp;
          tmp = *x++;
-         y3=*y++;
-         sum1 = MAC16_16(sum1,tmp,y0);
-         sum2 = MAC16_16(sum2,tmp,y1);
-         sum3 = MAC16_16(sum3,tmp,y2);
-         sum4 = MAC16_16(sum4,tmp,y3);
+         y_3=*y++;
+         sum1 = MAC16_16(sum1,tmp,y_0);
+         sum2 = MAC16_16(sum2,tmp,y_1);
+         sum3 = MAC16_16(sum3,tmp,y_2);
+         sum4 = MAC16_16(sum4,tmp,y_3);
          tmp=*x++;
-         y0=*y++;
-         sum1 = MAC16_16(sum1,tmp,y1);
-         sum2 = MAC16_16(sum2,tmp,y2);
-         sum3 = MAC16_16(sum3,tmp,y3);
-         sum4 = MAC16_16(sum4,tmp,y0);
+         y_0=*y++;
+         sum1 = MAC16_16(sum1,tmp,y_1);
+         sum2 = MAC16_16(sum2,tmp,y_2);
+         sum3 = MAC16_16(sum3,tmp,y_3);
+         sum4 = MAC16_16(sum4,tmp,y_0);
          tmp=*x++;
-         y1=*y++;
-         sum1 = MAC16_16(sum1,tmp,y2);
-         sum2 = MAC16_16(sum2,tmp,y3);
-         sum3 = MAC16_16(sum3,tmp,y0);
-         sum4 = MAC16_16(sum4,tmp,y1);
+         y_1=*y++;
+         sum1 = MAC16_16(sum1,tmp,y_2);
+         sum2 = MAC16_16(sum2,tmp,y_3);
+         sum3 = MAC16_16(sum3,tmp,y_0);
+         sum4 = MAC16_16(sum4,tmp,y_1);
          tmp=*x++;
-         y2=*y++;
-         sum1 = MAC16_16(sum1,tmp,y3);
-         sum2 = MAC16_16(sum2,tmp,y0);
-         sum3 = MAC16_16(sum3,tmp,y1);
-         sum4 = MAC16_16(sum4,tmp,y2);
+         y_2=*y++;
+         sum1 = MAC16_16(sum1,tmp,y_3);
+         sum2 = MAC16_16(sum2,tmp,y_0);
+         sum3 = MAC16_16(sum3,tmp,y_1);
+         sum4 = MAC16_16(sum4,tmp,y_2);
       }
       if (j++<len)
       {
          opus_val16 tmp = *x++;
-         y3=*y++;
-         sum1 = MAC16_16(sum1,tmp,y0);
-         sum2 = MAC16_16(sum2,tmp,y1);
-         sum3 = MAC16_16(sum3,tmp,y2);
-         sum4 = MAC16_16(sum4,tmp,y3);
+         y_3=*y++;
+         sum1 = MAC16_16(sum1,tmp,y_0);
+         sum2 = MAC16_16(sum2,tmp,y_1);
+         sum3 = MAC16_16(sum3,tmp,y_2);
+         sum4 = MAC16_16(sum4,tmp,y_3);
       }
       if (j++<len)
       {
          opus_val16 tmp=*x++;
-         y0=*y++;
-         sum1 = MAC16_16(sum1,tmp,y1);
-         sum2 = MAC16_16(sum2,tmp,y2);
-         sum3 = MAC16_16(sum3,tmp,y3);
-         sum4 = MAC16_16(sum4,tmp,y0);
+         y_0=*y++;
+         sum1 = MAC16_16(sum1,tmp,y_1);
+         sum2 = MAC16_16(sum2,tmp,y_2);
+         sum3 = MAC16_16(sum3,tmp,y_3);
+         sum4 = MAC16_16(sum4,tmp,y_0);
       }
       if (j<len)
       {
          opus_val16 tmp=*x++;
-         y1=*y++;
-         sum1 = MAC16_16(sum1,tmp,y2);
-         sum2 = MAC16_16(sum2,tmp,y3);
-         sum3 = MAC16_16(sum3,tmp,y0);
-         sum4 = MAC16_16(sum4,tmp,y1);
+         y_1=*y++;
+         sum1 = MAC16_16(sum1,tmp,y_2);
+         sum2 = MAC16_16(sum2,tmp,y_3);
+         sum3 = MAC16_16(sum3,tmp,y_0);
+         sum4 = MAC16_16(sum4,tmp,y_1);
       }
       xcorr[i]=sum1;
       xcorr[i+1]=sum2;
