@@ -88,29 +88,94 @@ int          p
 #endif
 }
 
-void celt_fir(const opus_val16 *x,
+void celt_fir(const opus_val16 *_x,
          const opus_val16 *num,
-         opus_val16 *y,
+         opus_val16 *_y,
          int N,
          int ord,
          opus_val16 *mem)
 {
    int i,j;
+   VARDECL(opus_val16, rnum);
+   VARDECL(opus_val16, x);
+   SAVE_STACK;
 
+   ALLOC(rnum, ord, opus_val16);
+   ALLOC(x, N+ord, opus_val16);
+   for(i=0;i<ord;i++)
+      rnum[i] = num[ord-i-1];
+   for(i=0;i<ord;i++)
+      x[i] = mem[ord-i-1];
+   for (i=0;i<N;i++)
+      x[i+ord]=_x[i];
+   for(i=0;i<ord;i++)
+      mem[i] = _x[N-i-1];
+#ifdef SMALL_FOOTPRINT
    for (i=0;i<N;i++)
    {
-      opus_val32 sum = SHL32(EXTEND32(x[i]), SIG_SHIFT);
+      opus_val32 sum = SHL32(EXTEND32(_x[i]), SIG_SHIFT);
       for (j=0;j<ord;j++)
       {
-         sum = MAC16_16(sum,num[j],mem[j]);
+         sum = MAC16_16(sum,rnum[j],x[i+j]);
       }
-      for (j=ord-1;j>=1;j--)
-      {
-         mem[j]=mem[j-1];
-      }
-      mem[0] = x[i];
-      y[i] = ROUND16(sum, SIG_SHIFT);
+      _y[i] = ROUND16(sum, SIG_SHIFT);
    }
+#else
+   celt_assert((ord&3)==0);
+   for (i=0;i<N-3;i+=4)
+   {
+      opus_val32 sum1=0;
+      opus_val32 sum2=0;
+      opus_val32 sum3=0;
+      opus_val32 sum4=0;
+      const opus_val16 *xx = x+i;
+      const opus_val16 *z = rnum;
+      opus_val16 y_0, y_1, y_2, y_3;
+      y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
+      y_0=*xx++;
+      y_1=*xx++;
+      y_2=*xx++;
+      for (j=0;j<ord-3;j+=4)
+      {
+         opus_val16 tmp;
+         tmp = *z++;
+         y_3=*xx++;
+         sum1 = MAC16_16(sum1,tmp,y_0);
+         sum2 = MAC16_16(sum2,tmp,y_1);
+         sum3 = MAC16_16(sum3,tmp,y_2);
+         sum4 = MAC16_16(sum4,tmp,y_3);
+         tmp=*z++;
+         y_0=*xx++;
+         sum1 = MAC16_16(sum1,tmp,y_1);
+         sum2 = MAC16_16(sum2,tmp,y_2);
+         sum3 = MAC16_16(sum3,tmp,y_3);
+         sum4 = MAC16_16(sum4,tmp,y_0);
+         tmp=*z++;
+         y_1=*xx++;
+         sum1 = MAC16_16(sum1,tmp,y_2);
+         sum2 = MAC16_16(sum2,tmp,y_3);
+         sum3 = MAC16_16(sum3,tmp,y_0);
+         sum4 = MAC16_16(sum4,tmp,y_1);
+         tmp=*z++;
+         y_2=*xx++;
+         sum1 = MAC16_16(sum1,tmp,y_3);
+         sum2 = MAC16_16(sum2,tmp,y_0);
+         sum3 = MAC16_16(sum3,tmp,y_1);
+         sum4 = MAC16_16(sum4,tmp,y_2);
+      }
+      _y[i  ] = ADD16(_x[i  ], ROUND16(sum1, SIG_SHIFT));
+      _y[i+1] = ADD16(_x[i+1], ROUND16(sum2, SIG_SHIFT));
+      _y[i+2] = ADD16(_x[i+2], ROUND16(sum3, SIG_SHIFT));
+      _y[i+3] = ADD16(_x[i+3], ROUND16(sum4, SIG_SHIFT));
+   }
+   for (;i<N;i++)
+   {
+      opus_val32 sum = 0;
+      for (j=0;j<ord;j++)
+         sum = MAC16_16(sum,rnum[j],x[i+j]);
+      _y[i] = ADD16(_x[i  ], ROUND16(sum, SIG_SHIFT));
+   }
+#endif
 }
 
 void celt_iir(const opus_val32 *x,
