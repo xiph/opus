@@ -176,6 +176,7 @@ void celt_fir(const opus_val16 *_x,
       _y[i] = ADD16(_x[i  ], ROUND16(sum, SIG_SHIFT));
    }
 #endif
+   RESTORE_STACK;
 }
 
 void celt_iir(const opus_val32 *_x,
@@ -288,6 +289,7 @@ void celt_iir(const opus_val32 *_x,
    for(i=0;i<ord;i++)
       mem[i] = _y[N-i-1];
 #endif
+   RESTORE_STACK;
 }
 
 void _celt_autocorr(
