@@ -178,17 +178,18 @@ void celt_fir(const opus_val16 *_x,
 #endif
 }
 
-void celt_iir(const opus_val32 *x,
+void celt_iir(const opus_val32 *_x,
          const opus_val16 *den,
-         opus_val32 *y,
+         opus_val32 *_y,
          int N,
          int ord,
          opus_val16 *mem)
 {
+#ifdef SMALL_FOOTPRINT
    int i,j;
    for (i=0;i<N;i++)
    {
-      opus_val32 sum = x[i];
+      opus_val32 sum = _x[i];
       for (j=0;j<ord;j++)
       {
          sum -= MULT16_16(den[j],mem[j]);
@@ -198,8 +199,95 @@ void celt_iir(const opus_val32 *x,
          mem[j]=mem[j-1];
       }
       mem[0] = ROUND16(sum,SIG_SHIFT);
-      y[i] = sum;
+      _y[i] = sum;
    }
+#else
+   int i,j;
+   VARDECL(opus_val16, rden);
+   VARDECL(opus_val16, y);
+   SAVE_STACK;
+
+   celt_assert((ord&3)==0);
+   ALLOC(rden, ord, opus_val16);
+   ALLOC(y, N+ord, opus_val16);
+   for(i=0;i<ord;i++)
+      rden[i] = den[ord-i-1];
+   for(i=0;i<ord;i++)
+      y[i] = -mem[ord-i-1];
+   for(;i<N+ord;i++)
+      y[i]=0;
+   for (i=0;i<N-3;i+=4)
+   {
+      opus_val32 sum1=0;
+      opus_val32 sum2=0;
+      opus_val32 sum3=0;
+      opus_val32 sum4=0;
+      const opus_val16 *yy = y+i;
+      const opus_val16 *z = rden;
+      opus_val16 y_0, y_1, y_2, y_3;
+      sum1 = _x[i  ];
+      sum2 = _x[i+1];
+      sum3 = _x[i+2];
+      sum4 = _x[i+3];
+      y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
+      y_0=*yy++;
+      y_1=*yy++;
+      y_2=*yy++;
+      for (j=0;j<ord-3;j+=4)
+      {
+         opus_val16 tmp;
+         tmp = *z++;
+         y_3=*yy++;
+         sum1 = MAC16_16(sum1,tmp,y_0);
+         sum2 = MAC16_16(sum2,tmp,y_1);
+         sum3 = MAC16_16(sum3,tmp,y_2);
+         sum4 = MAC16_16(sum4,tmp,y_3);
+         tmp=*z++;
+         y_0=*yy++;
+         sum1 = MAC16_16(sum1,tmp,y_1);
+         sum2 = MAC16_16(sum2,tmp,y_2);
+         sum3 = MAC16_16(sum3,tmp,y_3);
+         sum4 = MAC16_16(sum4,tmp,y_0);
+         tmp=*z++;
+         y_1=*yy++;
+         sum1 = MAC16_16(sum1,tmp,y_2);
+         sum2 = MAC16_16(sum2,tmp,y_3);
+         sum3 = MAC16_16(sum3,tmp,y_0);
+         sum4 = MAC16_16(sum4,tmp,y_1);
+         tmp=*z++;
+         y_2=*yy++;
+         sum1 = MAC16_16(sum1,tmp,y_3);
+         sum2 = MAC16_16(sum2,tmp,y_0);
+         sum3 = MAC16_16(sum3,tmp,y_1);
+         sum4 = MAC16_16(sum4,tmp,y_2);
+      }
+      y[i+ord  ] = -ROUND16(sum1,SIG_SHIFT);
+      _y[i  ] = sum1;
+      sum2 = MAC16_16(sum2, y[i+ord  ], den[0]);
+      y[i+ord+1] = -ROUND16(sum2,SIG_SHIFT);
+      _y[i+1] = sum2;
+      sum3 = MAC16_16(sum3, y[i+ord+1], den[0]);
+      sum3 = MAC16_16(sum3, y[i+ord  ], den[1]);
+      y[i+ord+2] = -ROUND16(sum3,SIG_SHIFT);
+      _y[i+2] = sum3;
+
+      sum4 = MAC16_16(sum4, y[i+ord+2], den[0]);
+      sum4 = MAC16_16(sum4, y[i+ord+1], den[1]);
+      sum4 = MAC16_16(sum4, y[i+ord  ], den[2]);
+      y[i+ord+3] = -ROUND16(sum4,SIG_SHIFT);
+      _y[i+3] = sum4;
+   }
+   for (;i<N;i++)
+   {
+      opus_val32 sum = _x[i];
+      for (j=0;j<ord;j++)
+         sum -= MULT16_16(rden[j],y[i+j]);
+      y[i+ord] = ROUND16(sum,SIG_SHIFT);
+      _y[i] = sum;
+   }
+   for(i=0;i<ord;i++)
+      mem[i] = _y[N-i-1];
+#endif
 }
 
 void _celt_autocorr(
