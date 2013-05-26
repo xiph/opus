@@ -472,6 +472,9 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
    opus_val32 best_xy, best_yy;
    int offset;
    int minperiod0;
+   int max
+   VARDECL(opus_val32, yy_lookup);
+   SAVE_STACK;
 
    minperiod0 = minperiod;
    maxperiod /= 2;
@@ -484,13 +487,21 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       *T0_=maxperiod-1;
 
    T = T0 = *T0_;
-   xx=xy=yy=0;
+   ALLOC(yy_lookup, maxperiod+1, opus_val32);
+   xy=xx=0;
    for (i=0;i<N;i++)
    {
-      xy = MAC16_16(xy, x[i], x[i-T0]);
       xx = MAC16_16(xx, x[i], x[i]);
-      yy = MAC16_16(yy, x[i-T0],x[i-T0]);
+      xy = MAC16_16(xy, x[i], x[i-T0]);
    }
+   yy_lookup[0] = xx;
+   yy=xx;
+   for (i=1;i<=maxperiod;i++)
+   {
+      yy = yy+MULT16_16(x[-i],x[-i])-MULT16_16(x[N-i],x[N-i]);
+      yy_lookup[i] = MAX32(0, yy);
+   }
+   yy = yy_lookup[T0];
    best_xy = xy;
    best_yy = yy;
 #ifdef FIXED_POINT
@@ -526,15 +537,13 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       {
          T1b = (2*second_check[k]*T0+k)/(2*k);
       }
-      xy=yy=0;
+      xy=0;
       for (i=0;i<N;i++)
       {
          xy = MAC16_16(xy, x[i], x[i-T1]);
-         yy = MAC16_16(yy, x[i-T1], x[i-T1]);
-
          xy = MAC16_16(xy, x[i], x[i-T1b]);
-         yy = MAC16_16(yy, x[i-T1b], x[i-T1b]);
       }
+      yy = yy_lookup[T1] + yy_lookup[T1b];
 #ifdef FIXED_POINT
       {
          opus_val32 x2y2;
@@ -594,5 +603,6 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
 
    if (*T0_<minperiod0)
       *T0_=minperiod0;
+   RESTORE_STACK;
    return pg;
 }
