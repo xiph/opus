@@ -191,6 +191,7 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
 {
    int c;
    int Nd;
+   int apply_downsampling=0;
    opus_val16 coef0;
 
    coef0 = coef[0];
@@ -215,8 +216,10 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
             tmp = SHL32(MULT16_32_Q15(coef3, tmp), 2);
             scratch[j] = tmp;
          }
+         apply_downsampling=1;
       } else
 #endif
+      if (downsample>1)
       {
          /* Shortcut for the standard (non-custom modes) case */
          for (j=0;j<N;j++)
@@ -225,12 +228,24 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
             m = MULT16_32_Q15(coef0, tmp);
             scratch[j] = tmp;
          }
+         apply_downsampling=1;
+      } else {
+         /* Shortcut for the standard (non-custom modes) case */
+         for (j=0;j<N;j++)
+         {
+            celt_sig tmp = x[j] + m;
+            m = MULT16_32_Q15(coef0, tmp);
+            y[j*C] = SCALEOUT(SIG2WORD16(tmp));
+         }
       }
       mem[c] = m;
 
-      /* Perform down-sampling */
-      for (j=0;j<Nd;j++)
-         y[j*C] = SCALEOUT(SIG2WORD16(scratch[j*downsample]));
+      if (apply_downsampling)
+      {
+         /* Perform down-sampling */
+         for (j=0;j<Nd;j++)
+            y[j*C] = SCALEOUT(SIG2WORD16(scratch[j*downsample]));
+      }
    } while (++c<C);
 }
 
