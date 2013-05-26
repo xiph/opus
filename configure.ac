@@ -210,6 +210,14 @@ if test "$HAVE_DOXYGEN" != "yes" -o "$ac_enable_doc" != "yes"; then
 fi
 AM_CONDITIONAL(HAVE_DOXYGEN, [test $HAVE_DOXYGEN = yes])
 
+ac_enable_extra_programs="yes"
+AC_ARG_ENABLE([extra-programs],
+              AS_HELP_STRING([--disable-extra-programs], [Do not build extra programs (demo and tests)]),
+              [ac_enable_extra_programs=$enableval])
+if test "$ac_enable_extra_programs" != "yes"; then
+  ac_enable_extra_progs="no"
+fi
+
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden"
 AC_MSG_CHECKING([if ${CC} supports -fvisibility=hidden])
@@ -272,6 +280,7 @@ AC_SUBST(SIZE32)
 
 AM_CONDITIONAL([FIXED_POINT], [test x$ac_enable_fixed = xyes])
 AM_CONDITIONAL([CUSTOM_MODES], [test x$ac_enable_custom_modes = xyes])
+AM_CONDITIONAL([EXTRA_PROGRAMS], [test x$ac_enable_extra_programs = xyes])
 
 dnl subsitutions for the pkg-config files
 if test x$ac_enable_float = xyes; then
@@ -317,6 +326,7 @@ AC_MSG_RESULT([
       Fuzzing: ....................... ${ac_enable_fuzzing}
 
       API documentation: ............. ${ac_enable_doc}
+      Extra programs: ................ ${ac_enable_extra_programs}
 ------------------------------------------------------------------------
 ])
 

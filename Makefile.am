@@ -29,6 +29,7 @@ pkginclude_HEADERS = include/opus.h include/opus_multistream.h include/opus_type
 
 noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD)
 
+if EXTRA_PROGRAMS
 noinst_PROGRAMS = opus_demo repacketizer_demo opus_compare tests/test_opus_api tests/test_opus_encode tests/test_opus_decode tests/test_opus_padding celt/tests/test_unit_cwrs32 celt/tests/test_unit_dft celt/tests/test_unit_entropy celt/tests/test_unit_laplace celt/tests/test_unit_mathops celt/tests/test_unit_mdct celt/tests/test_unit_rotation celt/tests/test_unit_types
 
 TESTS = celt/tests/test_unit_types celt/tests/test_unit_mathops celt/tests/test_unit_entropy celt/tests/test_unit_laplace celt/tests/test_unit_dft celt/tests/test_unit_mdct celt/tests/test_unit_rotation celt/tests/test_unit_cwrs32 tests/test_opus_api tests/test_opus_decode tests/test_opus_encode tests/test_opus_padding
@@ -79,12 +80,15 @@ celt_tests_test_unit_rotation_LDADD = -lm
 
 celt_tests_test_unit_types_SOURCES = celt/tests/test_unit_types.c
 celt_tests_test_unit_types_LDADD = -lm
+endif
 
 if CUSTOM_MODES
 pkginclude_HEADERS += include/opus_custom.h
+if EXTRA_PROGRAMS
 noinst_PROGRAMS += opus_custom_demo
 opus_custom_demo_SOURCES = celt/opus_custom_demo.c
 opus_custom_demo_LDADD = libopus.la -lm
+endif
 endif
 
 EXTRA_DIST = version.mk \
