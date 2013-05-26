@@ -472,7 +472,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
    opus_val32 best_xy, best_yy;
    int offset;
    int minperiod0;
-   int max
+   int max;
    VARDECL(opus_val32, yy_lookup);
    SAVE_STACK;
 
