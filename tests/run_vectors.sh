@@ -57,6 +57,11 @@ else
     exit 0
 fi
 
+if [ ! -x $OPUS_COMPARE ]; then
+    echo ERROR: Compare program not found: $OPUS_COMPARE
+    exit 1
+fi
+
 if [ -x $OPUS_DEMO ]; then
     echo Decoding with $OPUS_DEMO
 else
