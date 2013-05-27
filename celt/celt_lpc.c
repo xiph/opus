@@ -183,7 +183,11 @@ void celt_iir(const opus_val32 *_x,
    for (i=0;i<N-3;i+=4)
    {
       /* Unroll by 4 as if it were an FIR filter */
-      opus_val32 sum[4]={_x[i],_x[i+1],_x[i+2],_x[i+3]};
+      opus_val32 sum[4];
+      sum[0]=_x[i];
+      sum[1]=_x[i+1];
+      sum[2]=_x[i+2];
+      sum[3]=_x[i+3];
       xcorr_kernel(rden, y+i, sum, ord);
 
       /* Patch up the result to compensate for the fact that this is an IIR */
