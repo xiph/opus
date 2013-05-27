@@ -45,6 +45,73 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
 opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       int N, int *T0, int prev_period, opus_val16 prev_gain);
 
+/* OPT: This is the kernel you really want to optimize. It gets used a lot
+   by the prefilter and by the PLC. */
+static inline void xcorr_kernel(const opus_val16 * x, const opus_val16 * y, opus_val32 sum[4], int len)
+{
+   int j;
+   opus_val16 y_0, y_1, y_2, y_3;
+   y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
+   y_0=*y++;
+   y_1=*y++;
+   y_2=*y++;
+   for (j=0;j<len-3;j+=4)
+   {
+      opus_val16 tmp;
+      tmp = *x++;
+      y_3=*y++;
+      sum[0] = MAC16_16(sum[0],tmp,y_0);
+      sum[1] = MAC16_16(sum[1],tmp,y_1);
+      sum[2] = MAC16_16(sum[2],tmp,y_2);
+      sum[3] = MAC16_16(sum[3],tmp,y_3);
+      tmp=*x++;
+      y_0=*y++;
+      sum[0] = MAC16_16(sum[0],tmp,y_1);
+      sum[1] = MAC16_16(sum[1],tmp,y_2);
+      sum[2] = MAC16_16(sum[2],tmp,y_3);
+      sum[3] = MAC16_16(sum[3],tmp,y_0);
+      tmp=*x++;
+      y_1=*y++;
+      sum[0] = MAC16_16(sum[0],tmp,y_2);
+      sum[1] = MAC16_16(sum[1],tmp,y_3);
+      sum[2] = MAC16_16(sum[2],tmp,y_0);
+      sum[3] = MAC16_16(sum[3],tmp,y_1);
+      tmp=*x++;
+      y_2=*y++;
+      sum[0] = MAC16_16(sum[0],tmp,y_3);
+      sum[1] = MAC16_16(sum[1],tmp,y_0);
+      sum[2] = MAC16_16(sum[2],tmp,y_1);
+      sum[3] = MAC16_16(sum[3],tmp,y_2);
+   }
+   if (j++<len)
+   {
+      opus_val16 tmp = *x++;
+      y_3=*y++;
+      sum[0] = MAC16_16(sum[0],tmp,y_0);
+      sum[1] = MAC16_16(sum[1],tmp,y_1);
+      sum[2] = MAC16_16(sum[2],tmp,y_2);
+      sum[3] = MAC16_16(sum[3],tmp,y_3);
+   }
+   if (j++<len)
+   {
+      opus_val16 tmp=*x++;
+      y_0=*y++;
+      sum[0] = MAC16_16(sum[0],tmp,y_1);
+      sum[1] = MAC16_16(sum[1],tmp,y_2);
+      sum[2] = MAC16_16(sum[2],tmp,y_3);
+      sum[3] = MAC16_16(sum[3],tmp,y_0);
+   }
+   if (j<len)
+   {
+      opus_val16 tmp=*x++;
+      y_1=*y++;
+      sum[0] = MAC16_16(sum[0],tmp,y_2);
+      sum[1] = MAC16_16(sum[1],tmp,y_3);
+      sum[2] = MAC16_16(sum[2],tmp,y_0);
+      sum[3] = MAC16_16(sum[3],tmp,y_1);
+   }
+}
+
 #ifdef FIXED_POINT
 opus_val32
 #else

@@ -258,83 +258,17 @@ pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int len, int max_
 #endif
    for (i=0;i<max_pitch-3;i+=4)
    {
-      /* Compute correlation*/
-      /*corr[nb_pitch-1-i]=inner_prod(x, _y+i, len);*/
-      opus_val32 sum1=0;
-      opus_val32 sum2=0;
-      opus_val32 sum3=0;
-      opus_val32 sum4=0;
-      const opus_val16 *y = _y+i;
-      const opus_val16 *x = _x;
-      opus_val16 y_0, y_1, y_2, y_3;
-      y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
-      y_0=*y++;
-      y_1=*y++;
-      y_2=*y++;
-      for (j=0;j<len-3;j+=4)
-      {
-         opus_val16 tmp;
-         tmp = *x++;
-         y_3=*y++;
-         sum1 = MAC16_16(sum1,tmp,y_0);
-         sum2 = MAC16_16(sum2,tmp,y_1);
-         sum3 = MAC16_16(sum3,tmp,y_2);
-         sum4 = MAC16_16(sum4,tmp,y_3);
-         tmp=*x++;
-         y_0=*y++;
-         sum1 = MAC16_16(sum1,tmp,y_1);
-         sum2 = MAC16_16(sum2,tmp,y_2);
-         sum3 = MAC16_16(sum3,tmp,y_3);
-         sum4 = MAC16_16(sum4,tmp,y_0);
-         tmp=*x++;
-         y_1=*y++;
-         sum1 = MAC16_16(sum1,tmp,y_2);
-         sum2 = MAC16_16(sum2,tmp,y_3);
-         sum3 = MAC16_16(sum3,tmp,y_0);
-         sum4 = MAC16_16(sum4,tmp,y_1);
-         tmp=*x++;
-         y_2=*y++;
-         sum1 = MAC16_16(sum1,tmp,y_3);
-         sum2 = MAC16_16(sum2,tmp,y_0);
-         sum3 = MAC16_16(sum3,tmp,y_1);
-         sum4 = MAC16_16(sum4,tmp,y_2);
-      }
-      if (j++<len)
-      {
-         opus_val16 tmp = *x++;
-         y_3=*y++;
-         sum1 = MAC16_16(sum1,tmp,y_0);
-         sum2 = MAC16_16(sum2,tmp,y_1);
-         sum3 = MAC16_16(sum3,tmp,y_2);
-         sum4 = MAC16_16(sum4,tmp,y_3);
-      }
-      if (j++<len)
-      {
-         opus_val16 tmp=*x++;
-         y_0=*y++;
-         sum1 = MAC16_16(sum1,tmp,y_1);
-         sum2 = MAC16_16(sum2,tmp,y_2);
-         sum3 = MAC16_16(sum3,tmp,y_3);
-         sum4 = MAC16_16(sum4,tmp,y_0);
-      }
-      if (j<len)
-      {
-         opus_val16 tmp=*x++;
-         y_1=*y++;
-         sum1 = MAC16_16(sum1,tmp,y_2);
-         sum2 = MAC16_16(sum2,tmp,y_3);
-         sum3 = MAC16_16(sum3,tmp,y_0);
-         sum4 = MAC16_16(sum4,tmp,y_1);
-      }
-      xcorr[i]=sum1;
-      xcorr[i+1]=sum2;
-      xcorr[i+2]=sum3;
-      xcorr[i+3]=sum4;
+      opus_val32 sum[4]={0,0,0,0};
+      xcorr_kernel(_x, _y+i, sum, len);
+      xcorr[i]=sum[0];
+      xcorr[i+1]=sum[1];
+      xcorr[i+2]=sum[2];
+      xcorr[i+3]=sum[3];
 #ifdef FIXED_POINT
-      sum1 = MAX32(sum1, sum2);
-      sum3 = MAX32(sum3, sum4);
-      sum1 = MAX32(sum1, sum3);
-      maxcorr = MAX32(maxcorr, sum1);
+      sum[0] = MAX32(sum[0], sum[1]);
+      sum[2] = MAX32(sum[2], sum[3]);
+      sum[0] = MAX32(sum[0], sum[2]);
+      maxcorr = MAX32(maxcorr, sum[0]);
 #endif
    }
    /* In case max_pitch isn't a multiple of 4, do non-unrolled version. */

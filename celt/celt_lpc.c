@@ -124,49 +124,12 @@ void celt_fir(const opus_val16 *_x,
    celt_assert((ord&3)==0);
    for (i=0;i<N-3;i+=4)
    {
-      opus_val32 sum1=0;
-      opus_val32 sum2=0;
-      opus_val32 sum3=0;
-      opus_val32 sum4=0;
-      const opus_val16 *xx = x+i;
-      const opus_val16 *z = rnum;
-      opus_val16 y_0, y_1, y_2, y_3;
-      y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
-      y_0=*xx++;
-      y_1=*xx++;
-      y_2=*xx++;
-      for (j=0;j<ord-3;j+=4)
-      {
-         opus_val16 tmp;
-         tmp = *z++;
-         y_3=*xx++;
-         sum1 = MAC16_16(sum1,tmp,y_0);
-         sum2 = MAC16_16(sum2,tmp,y_1);
-         sum3 = MAC16_16(sum3,tmp,y_2);
-         sum4 = MAC16_16(sum4,tmp,y_3);
-         tmp=*z++;
-         y_0=*xx++;
-         sum1 = MAC16_16(sum1,tmp,y_1);
-         sum2 = MAC16_16(sum2,tmp,y_2);
-         sum3 = MAC16_16(sum3,tmp,y_3);
-         sum4 = MAC16_16(sum4,tmp,y_0);
-         tmp=*z++;
-         y_1=*xx++;
-         sum1 = MAC16_16(sum1,tmp,y_2);
-         sum2 = MAC16_16(sum2,tmp,y_3);
-         sum3 = MAC16_16(sum3,tmp,y_0);
-         sum4 = MAC16_16(sum4,tmp,y_1);
-         tmp=*z++;
-         y_2=*xx++;
-         sum1 = MAC16_16(sum1,tmp,y_3);
-         sum2 = MAC16_16(sum2,tmp,y_0);
-         sum3 = MAC16_16(sum3,tmp,y_1);
-         sum4 = MAC16_16(sum4,tmp,y_2);
-      }
-      _y[i  ] = ADD16(_x[i  ], ROUND16(sum1, SIG_SHIFT));
-      _y[i+1] = ADD16(_x[i+1], ROUND16(sum2, SIG_SHIFT));
-      _y[i+2] = ADD16(_x[i+2], ROUND16(sum3, SIG_SHIFT));
-      _y[i+3] = ADD16(_x[i+3], ROUND16(sum4, SIG_SHIFT));
+      opus_val32 sum[4]={0,0,0,0};
+      xcorr_kernel(rnum, x+i, sum, ord);
+      _y[i  ] = ADD16(_x[i  ], ROUND16(sum[0], SIG_SHIFT));
+      _y[i+1] = ADD16(_x[i+1], ROUND16(sum[1], SIG_SHIFT));
+      _y[i+2] = ADD16(_x[i+2], ROUND16(sum[2], SIG_SHIFT));
+      _y[i+3] = ADD16(_x[i+3], ROUND16(sum[3], SIG_SHIFT));
    }
    for (;i<N;i++)
    {
@@ -219,64 +182,26 @@ void celt_iir(const opus_val32 *_x,
       y[i]=0;
    for (i=0;i<N-3;i+=4)
    {
-      opus_val32 sum1=0;
-      opus_val32 sum2=0;
-      opus_val32 sum3=0;
-      opus_val32 sum4=0;
-      const opus_val16 *yy = y+i;
-      const opus_val16 *z = rden;
-      opus_val16 y_0, y_1, y_2, y_3;
-      sum1 = _x[i  ];
-      sum2 = _x[i+1];
-      sum3 = _x[i+2];
-      sum4 = _x[i+3];
-      y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
-      y_0=*yy++;
-      y_1=*yy++;
-      y_2=*yy++;
-      for (j=0;j<ord-3;j+=4)
-      {
-         opus_val16 tmp;
-         tmp = *z++;
-         y_3=*yy++;
-         sum1 = MAC16_16(sum1,tmp,y_0);
-         sum2 = MAC16_16(sum2,tmp,y_1);
-         sum3 = MAC16_16(sum3,tmp,y_2);
-         sum4 = MAC16_16(sum4,tmp,y_3);
-         tmp=*z++;
-         y_0=*yy++;
-         sum1 = MAC16_16(sum1,tmp,y_1);
-         sum2 = MAC16_16(sum2,tmp,y_2);
-         sum3 = MAC16_16(sum3,tmp,y_3);
-         sum4 = MAC16_16(sum4,tmp,y_0);
-         tmp=*z++;
-         y_1=*yy++;
-         sum1 = MAC16_16(sum1,tmp,y_2);
-         sum2 = MAC16_16(sum2,tmp,y_3);
-         sum3 = MAC16_16(sum3,tmp,y_0);
-         sum4 = MAC16_16(sum4,tmp,y_1);
-         tmp=*z++;
-         y_2=*yy++;
-         sum1 = MAC16_16(sum1,tmp,y_3);
-         sum2 = MAC16_16(sum2,tmp,y_0);
-         sum3 = MAC16_16(sum3,tmp,y_1);
-         sum4 = MAC16_16(sum4,tmp,y_2);
-      }
-      y[i+ord  ] = -ROUND16(sum1,SIG_SHIFT);
-      _y[i  ] = sum1;
-      sum2 = MAC16_16(sum2, y[i+ord  ], den[0]);
-      y[i+ord+1] = -ROUND16(sum2,SIG_SHIFT);
-      _y[i+1] = sum2;
-      sum3 = MAC16_16(sum3, y[i+ord+1], den[0]);
-      sum3 = MAC16_16(sum3, y[i+ord  ], den[1]);
-      y[i+ord+2] = -ROUND16(sum3,SIG_SHIFT);
-      _y[i+2] = sum3;
+      /* Unroll by 4 as if it were an FIR filter */
+      opus_val32 sum[4]={_x[i],_x[i+1],_x[i+2],_x[i+3]};
+      xcorr_kernel(rden, y+i, sum, ord);
 
-      sum4 = MAC16_16(sum4, y[i+ord+2], den[0]);
-      sum4 = MAC16_16(sum4, y[i+ord+1], den[1]);
-      sum4 = MAC16_16(sum4, y[i+ord  ], den[2]);
-      y[i+ord+3] = -ROUND16(sum4,SIG_SHIFT);
-      _y[i+3] = sum4;
+      /* Patch up the result to compensate for the fact that this is an IIR */
+      y[i+ord  ] = -ROUND16(sum[0],SIG_SHIFT);
+      _y[i  ] = sum[0];
+      sum[1] = MAC16_16(sum[1], y[i+ord  ], den[0]);
+      y[i+ord+1] = -ROUND16(sum[1],SIG_SHIFT);
+      _y[i+1] = sum[1];
+      sum[2] = MAC16_16(sum[2], y[i+ord+1], den[0]);
+      sum[2] = MAC16_16(sum[2], y[i+ord  ], den[1]);
+      y[i+ord+2] = -ROUND16(sum[2],SIG_SHIFT);
+      _y[i+2] = sum[2];
+
+      sum[3] = MAC16_16(sum[3], y[i+ord+2], den[0]);
+      sum[3] = MAC16_16(sum[3], y[i+ord+1], den[1]);
+      sum[3] = MAC16_16(sum[3], y[i+ord  ], den[2]);
+      y[i+ord+3] = -ROUND16(sum[3],SIG_SHIFT);
+      _y[i+3] = sum[3];
    }
    for (;i<N;i++)
    {
