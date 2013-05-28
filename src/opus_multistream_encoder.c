@@ -189,7 +189,7 @@ static int opus_multistream_encoder_init_impl(
       if(ret!=OPUS_OK)return ret;
       ptr += align(mono_size);
    }
-   if (surround && st->layout.nb_channels>2)
+   if (surround)
    {
       OpusEncoder *downmix_enc;
       downmix_enc = (OpusEncoder*)ptr;
@@ -258,7 +258,8 @@ int opus_multistream_surround_encoder_init(
          mapping[i] = i;
    } else
       return OPUS_UNIMPLEMENTED;
-   opus_multistream_encoder_init_impl(st, Fs, channels, *streams, *coupled_streams, mapping, application, 1);
+   opus_multistream_encoder_init_impl(st, Fs, channels, *streams, *coupled_streams,
+         mapping, application, channels>2&&mapping_family==1);
    return OPUS_OK;
 }
 
@@ -496,7 +497,7 @@ static int opus_multistream_encode_native
    coupled_size = opus_encoder_get_size(2);
    mono_size = opus_encoder_get_size(1);
 
-   if (st->surround && st->layout.nb_channels>2)
+   if (st->surround)
    {
       int i;
       unsigned char dummy[512];
