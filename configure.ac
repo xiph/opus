@@ -155,6 +155,7 @@ if test "x${float_approx}" = "xyes"; then
     AC_DEFINE([FLOAT_APPROX], , [Float approximations])
 fi
 
+rtcd_support=no
 cpu_arm=no
 AC_ARG_ENABLE(asm,
     AS_HELP_STRING([--disable-asm], [Disable assembly optimizations]),
@@ -167,6 +168,7 @@ if test "x${ac_enable_asm}" = xyes ; then
         AS_GCC_INLINE_ASSEMBLY([asm_optimization="ARM"],
             [asm_optimization="disabled"])
         if test "x${asm_optimization}" = "xARM" ; then
+            rtcd_support=yes
             AC_DEFINE([ARMv4_ASM], 1, [Use generic ARMv4 asm optimizations])
             AS_ASM_ARM_EDSP([ARMv5E_ASM=1],[ARMv5E_ASM=0])
             if test "x${ARMv5E_ASM}" = "x1" ; then
@@ -178,11 +180,27 @@ if test "x${ac_enable_asm}" = xyes ; then
                 AC_DEFINE(ARMv6_ASM, 1, [Use ARMv6 asm optimizations])
                 asm_optimization="${asm_optimization} (Media)"
             fi
+            AS_ASM_ARM_NEON([ARM_HAVE_NEON=1],[ARM_HAVE_NEON=0])
+            if test "x${ARM_HAVE_NEON}" = "x1" ; then
+              AC_DEFINE([ARM_HAVE_NEON], 1, [Use ARM NEON optimizations])
+              asm_optimization="${asm_optimization} (NEON)"
+            fi
         fi
         ;;
     esac
 else
     asm_optimization="disabled"
+fi
+
+AC_ARG_ENABLE(rtcd,
+    AS_HELP_STRING([--disable-rtcd], [Disable run-time CPU capabilities detection]),
+    [ ac_enable_rtcd=$enableval ], [ ac_enable_rtcd=yes] )
+if test "x${ac_enable_rtcd}" = xyes -a "x${rtcd_support}" = xyes ; then
+    AC_DEFINE([OPUS_HAVE_RTCD], 1, [Use run-time CPU capabilities detection])
+elif test "x${rtcd_support}" = xno ; then
+    rtcd_support="no rtcd for your platform, please send patches"
+else
+    rtcd_support="no"
 fi
 
 ac_enable_assertions="no"
@@ -281,6 +299,7 @@ AC_SUBST(SIZE32)
 AM_CONDITIONAL([FIXED_POINT], [test x$ac_enable_fixed = xyes])
 AM_CONDITIONAL([CUSTOM_MODES], [test x$ac_enable_custom_modes = xyes])
 AM_CONDITIONAL([EXTRA_PROGRAMS], [test x$ac_enable_extra_programs = xyes])
+AM_CONDITIONAL([CPU_ARM], [test x$cpu_arm = xyes])
 
 dnl subsitutions for the pkg-config files
 if test x$ac_enable_float = xyes; then
@@ -321,6 +340,7 @@ AC_MSG_RESULT([
       Fast float approximations: ..... ${float_approx}
       Fixed point debugging: ......... ${ac_enable_fixed_debug}
       Assembly optimization: ......... ${asm_optimization}
+      Run-time CPU detection: ........ ${rtcd_support}
       Custom modes: .................. ${ac_enable_custom_modes}
       Assertion checking: ............ ${ac_enable_assertions}
       Fuzzing: ....................... ${ac_enable_fuzzing}

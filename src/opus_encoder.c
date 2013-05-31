@@ -40,6 +40,7 @@
 #include "arch.h"
 #include "opus_private.h"
 #include "os_support.h"
+#include "cpu_support.h"
 #include "analysis.h"
 #include "mathops.h"
 #include "tuning_parameters.h"
@@ -103,6 +104,7 @@ struct OpusEncoder {
     int          analysis_offset;
 #endif
     opus_uint32  rangeFinal;
+    int arch;
 };
 
 /* Transition tables for the voice and music. First column is the
@@ -183,6 +185,8 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->stream_channels = st->channels = channels;
 
     st->Fs = Fs;
+
+    st->arch = opus_select_arch();
 
     ret = silk_InitEncoder( silk_enc, &st->silk_mode );
     if(ret)return OPUS_INTERNAL_ERROR;

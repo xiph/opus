@@ -18,6 +18,10 @@ SILK_SOURCES += $(SILK_SOURCES_FLOAT)
 OPUS_SOURCES += $(OPUS_SOURCES_FLOAT)
 endif
 
+if CPU_ARM
+CELT_SOURCES += $(CELT_SOURCES_ARM)
+endif
+
 include celt_headers.mk
 include silk_headers.mk
 include opus_headers.mk

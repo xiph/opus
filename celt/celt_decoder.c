@@ -33,6 +33,7 @@
 
 #define CELT_DECODER_C
 
+#include "cpu_support.h"
 #include "os_support.h"
 #include "mdct.h"
 #include <math.h>
@@ -69,6 +70,7 @@ struct OpusCustomDecoder {
    int downsample;
    int start, end;
    int signalling;
+   int arch;
 
    /* Everything beyond this point gets cleared on a reset */
 #define DECODER_RESET_START rng
@@ -157,6 +159,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_init(CELTDecoder *st, const CELTMod
    st->start = 0;
    st->end = st->mode->effEBands;
    st->signalling = 1;
+   st->arch = opus_select_arch();
 
    st->loss_count = 0;
 

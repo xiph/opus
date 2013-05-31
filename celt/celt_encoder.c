@@ -33,6 +33,7 @@
 
 #define CELT_ENCODER_C
 
+#include "cpu_support.h"
 #include "os_support.h"
 #include "mdct.h"
 #include <math.h>
@@ -75,6 +76,7 @@ struct OpusCustomEncoder {
    int lsb_depth;
    int variable_duration;
    int lfe;
+   int arch;
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
@@ -187,6 +189,8 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMod
    st->start = 0;
    st->end = st->mode->effEBands;
    st->signalling = 1;
+
+   st->arch = opus_select_arch();
 
    st->constrained_vbr = 1;
    st->clip = 1;

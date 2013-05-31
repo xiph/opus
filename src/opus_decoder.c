@@ -46,6 +46,7 @@
 #include "structs.h"
 #include "define.h"
 #include "mathops.h"
+#include "cpu_support.h"
 
 struct OpusDecoder {
    int          celt_dec_offset;
@@ -70,6 +71,7 @@ struct OpusDecoder {
 #endif
 
    opus_uint32  rangeFinal;
+   int arch;
 };
 
 #ifdef FIXED_POINT
@@ -119,6 +121,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
    st->Fs = Fs;
    st->DecControl.API_sampleRate = st->Fs;
    st->DecControl.nChannelsAPI      = st->channels;
+   st->arch = opus_select_arch();
 
    /* Reset decoder */
    ret = silk_InitDecoder( silk_dec );

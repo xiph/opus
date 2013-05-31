@@ -16,3 +16,6 @@ celt/celt_lpc.c \
 celt/quant_bands.c \
 celt/rate.c \
 celt/vq.c
+
+CELT_SOURCES_ARM = \
+celt/arm/armcpu.c
