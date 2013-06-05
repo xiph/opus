@@ -36,6 +36,10 @@
 
 #include "modes.h"
 
+#ifdef __SSE__
+#include "x86/pitch_sse.h"
+#endif
+
 void pitch_downsample(celt_sig * OPUS_RESTRICT x[], opus_val16 * OPUS_RESTRICT x_lp,
       int len, int C);
 
@@ -47,6 +51,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
 
 /* OPT: This is the kernel you really want to optimize. It gets used a lot
    by the prefilter and by the PLC. */
+#ifndef OVERRIDE_XCORR_KERNEL
 static inline void xcorr_kernel(const opus_val16 * x, const opus_val16 * y, opus_val32 sum[4], int len)
 {
    int j;
@@ -111,6 +116,7 @@ static inline void xcorr_kernel(const opus_val16 * x, const opus_val16 * y, opus
       sum[3] = MAC16_16(sum[3],tmp,y_1);
    }
 }
+#endif /* OVERRIDE_XCORR_KERNEL */
 
 #ifdef FIXED_POINT
 opus_val32
