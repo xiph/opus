@@ -217,8 +217,8 @@ void celt_iir(const opus_val32 *_x,
    }
    for(i=0;i<ord;i++)
       mem[i] = _y[N-i-1];
-#endif
    RESTORE_STACK;
+#endif
 }
 
 void _celt_autocorr(

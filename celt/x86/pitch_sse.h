@@ -1,5 +1,4 @@
-/* Copyright (c) 2013 Xiph.Org Foundation
-   Written by Jean-Marc Valin */
+/* Copyright (c) 2013 Jean-Marc Valin and John Ridges */
 /**
    @file pitch_sse.h
    @brief Pitch analysis
@@ -37,61 +36,39 @@
 #include "arch.h"
 
 #define OVERRIDE_XCORR_KERNEL
-
-static inline void xcorr_kernel(const opus_val16 * _x, const opus_val16 * _y, opus_val32 _sum[4], int len)
+static inline void xcorr_kernel(const opus_val16 *x, const opus_val16 *y, opus_val32 sum[4], int len)
 {
    int j;
-   __m128 sum;
-   __m128 x;
-   __m128 y;
-   __m128 y2;
-   __m128 y1;
-   __m128 y3;
-   __m128 tmp;
-   sum = _mm_loadu_ps(_sum);
+   __m128 xsum1, xsum2;
+   xsum1 = _mm_loadu_ps(sum);
+   xsum2 = _mm_setzero_ps();
 
-   x = _mm_loadu_ps(_x);
-   y = _mm_loadu_ps(_y);
-   y1 = _mm_loadu_ps(_y+1);
-   for (j=0;j<len-3;j+=4)
+   for (j = 0; j < len-3; j += 4)
    {
-      _x+=4;
-      _y+=4;
-      y2 = _mm_loadu_ps(_y);
-      y3 = _mm_loadu_ps(_y+1);
-      tmp = _mm_shuffle_ps(x, x, 0x00);
-      sum = _mm_add_ps(sum, _mm_mul_ps(tmp, y));
-      tmp = _mm_shuffle_ps(x, x, 0x55);
-      sum = _mm_add_ps(sum, _mm_mul_ps(tmp, y1));
-      tmp = _mm_shuffle_ps(x, x, 0xaa);
-      y = _mm_shuffle_ps(y, y2, 0x4e);
-      sum = _mm_add_ps(sum, _mm_mul_ps(tmp, y));
-      tmp = _mm_shuffle_ps(x, x, 0xff);
-      y = _mm_shuffle_ps(y1, y3, 0x4e);
-      sum = _mm_add_ps(sum, _mm_mul_ps(tmp, y));
-      x = _mm_loadu_ps(_x);
-      y = y2;
-      y1 = y3;
+      __m128 x0 = _mm_loadu_ps(x+j);
+      __m128 y0 = _mm_loadu_ps(y+j);
+      __m128 y3 = _mm_loadu_ps(y+j+3);
+
+      xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(_mm_shuffle_ps(x0,x0,0x00),y0));
+      xsum2 = _mm_add_ps(xsum2,_mm_mul_ps(_mm_shuffle_ps(x0,x0,0x55),
+                                          _mm_shuffle_ps(y0,y3,0x49)));
+      xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(_mm_shuffle_ps(x0,x0,0xaa),
+                                          _mm_shuffle_ps(y0,y3,0x9e)));
+      xsum2 = _mm_add_ps(xsum2,_mm_mul_ps(_mm_shuffle_ps(x0,x0,0xff),y3));
    }
-   _y++;
-   if (j++<len)
+   if (j < len)
    {
-      tmp = _mm_shuffle_ps(x, x, 0x00);
-      sum = _mm_add_ps(sum, _mm_mul_ps(tmp, y));
+      xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(_mm_load1_ps(x+j),_mm_loadu_ps(y+j)));
+      if (++j < len)
+      {
+         xsum2 = _mm_add_ps(xsum2,_mm_mul_ps(_mm_load1_ps(x+j),_mm_loadu_ps(y+j)));
+         if (++j < len)
+         {
+            xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(_mm_load1_ps(x+j),_mm_loadu_ps(y+j)));
+         }
+      }
    }
-   if (j++<len)
-   {
-      tmp = _mm_shuffle_ps(x, x, 0x55);
-      y = _mm_loadu_ps(_y++);
-      sum = _mm_add_ps(sum, _mm_mul_ps(tmp, y));
-   }
-   if (j++<len)
-   {
-      tmp = _mm_shuffle_ps(x, x, 0xaa);
-      y = _mm_loadu_ps(_y++);
-      sum = _mm_add_ps(sum, _mm_mul_ps(tmp, y));
-   }
-   _mm_storeu_ps(_sum, sum);
+   _mm_storeu_ps(sum,_mm_add_ps(xsum1,xsum2));
 }
 
 #endif
