@@ -36,7 +36,7 @@
 
 #include "modes.h"
 
-#ifdef __SSE__
+#if defined(__SSE__) && !defined(FIXED_POINT)
 #include "x86/pitch_sse.h"
 #endif
 
