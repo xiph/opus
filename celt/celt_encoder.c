@@ -1210,9 +1210,11 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
 
    }
 
-   if (1) {
-      opus_val16 factor = temporal_shaping*.1;
-      factor = MAX16(-.5, MIN16(.5, factor));
+   if (tf_estimate < .2) {
+      opus_val16 amount;
+      opus_val16 factor;
+      amount = MAX16(0, MIN16(.25, .000006f*(68000-bitrate)));
+      factor = temporal_shaping*amount;
       target += factor*target;
    }
 
