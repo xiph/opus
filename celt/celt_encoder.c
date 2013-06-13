@@ -1121,7 +1121,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
    opus_int32 target;
    int coded_bins;
    int coded_bands;
-   int tf_calibration;
+   opus_val16 tf_calibration;
    int nbEBands;
    const opus_int16 *eBands;
 
@@ -1157,7 +1157,8 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
    /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
    target += tot_boost-(16<<LM);
    /* Apply transient boost, compensating for average boost. */
-   tf_calibration = variable_duration ? QCONST16(0.02f,14) : QCONST16(0.04f,14);
+   tf_calibration = variable_duration==OPUS_FRAMESIZE_VARIABLE ?
+                    QCONST16(0.02f,14) : QCONST16(0.04f,14);
    target += (opus_int32)SHL32(MULT16_32_Q15(tf_estimate-tf_calibration, target),1);
 
 #ifndef FIXED_POINT
@@ -1438,7 +1439,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       int enabled;
       int qg;
       enabled = (st->lfe || nbAvailableBytes>12*C) && st->start==0 && !silence && !st->disable_pf
-            && st->complexity >= 5 && !(st->consec_transient && LM!=3 && st->variable_duration);
+            && st->complexity >= 5 && !(st->consec_transient && LM!=3 && st->variable_duration==OPUS_FRAMESIZE_VARIABLE);
 
       prefilter_tapset = st->tapset_decision;
       pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes);
