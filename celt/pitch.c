@@ -394,6 +394,20 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
    RESTORE_STACK;
 }
 
+#ifndef OVERRIDE_DUAL_INNER_PROD
+static opus_val32 dual_inner_prod(opus_val16 *x, opus_val16 *y1, opus_val16 *y2, int N)
+{
+   int i;
+   opus_val32 xy=0;
+   for (i=0;i<N;i++)
+   {
+      xy = MAC16_16(xy, x[i], y1[i]);
+      xy = MAC16_16(xy, x[i], y2[i]);
+   }
+   return xy;
+}
+#endif
+
 static const int second_check[16] = {0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3, 2};
 opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       int N, int *T0_, int prev_period, opus_val16 prev_gain)
@@ -470,12 +484,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       {
          T1b = (2*second_check[k]*T0+k)/(2*k);
       }
-      xy=0;
-      for (i=0;i<N;i++)
-      {
-         xy = MAC16_16(xy, x[i], x[i-T1]);
-         xy = MAC16_16(xy, x[i], x[i-T1b]);
-      }
+      xy = dual_inner_prod(x, &x[-T1], &x[-T1b], N);
       yy = yy_lookup[T1] + yy_lookup[T1b];
 #ifdef FIXED_POINT
       {

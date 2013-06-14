@@ -71,4 +71,34 @@ static inline void xcorr_kernel(const opus_val16 *x, const opus_val16 *y, opus_v
    _mm_storeu_ps(sum,_mm_add_ps(xsum1,xsum2));
 }
 
+#define OVERRIDE_DUAL_INNER_PROD
+static inline opus_val32 dual_inner_prod(const opus_val16 *x, const opus_val16 *y1, const opus_val16 *y2, int N)
+{
+   int i;
+   __m128 xsum1, xsum2;
+   opus_val32 xy=0;
+   xsum1 = _mm_setzero_ps();
+   xsum2 = _mm_setzero_ps();
+   for (i=0;i<N-3;i+=4)
+   {
+      __m128 xi = _mm_loadu_ps(x+i);
+      __m128 y1i = _mm_loadu_ps(y1+i);
+      __m128 y2i = _mm_loadu_ps(y2+i);
+      xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(xi, y1i));
+      xsum2 = _mm_add_ps(xsum2,_mm_mul_ps(xi, y2i));
+   }
+   xsum1 = _mm_add_ps(xsum1,xsum2);
+   /* Horizontal sum */
+   xsum1 = _mm_add_ps(xsum1, _mm_movehl_ps(xsum1, xsum1));
+   xsum1 = _mm_add_ss(xsum1, _mm_shuffle_ps(xsum1, xsum1, 0x55));
+   _mm_store_ss(&xy, xsum1);
+   for (;i<N;i++)
+   {
+      xy = MAC16_16(xy, x[i], y1[i]);
+      xy = MAC16_16(xy, x[i], y2[i]);
+   }
+   return xy;
+}
+
+
 #endif
