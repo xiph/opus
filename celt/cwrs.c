@@ -473,7 +473,13 @@ static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y){
     _i-=p&s;
     /*Count how many pulses were placed in this dimension.*/
     k0=_k;
-    for(p=CELT_PVQ_U(_n,_k);p>_i;p=CELT_PVQ_U(_n,_k))_k--;
+    p=CELT_PVQ_U(_n,_k);
+    if(_k>_n){
+      const opus_uint32 *row;
+      row=CELT_PVQ_U_ROW[_n];
+      for(;p>_i&&_k>_n;p=row[_k])_k--;
+    }
+    for(;p>_i;p=CELT_PVQ_U_ROW[_k][_n])_k--;
     _i-=p;
     *_y++=(k0-_k+s)^s;
   }
