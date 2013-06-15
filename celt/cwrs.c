@@ -461,11 +461,11 @@ void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
 }
 
 static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y){
+  int s;
   celt_assert(_k>0);
-  celt_assert(_n>0);
+  celt_assert(_n>1);
   do{
     opus_uint32 p;
-    int         s;
     int         k0;
     /*Are the pulses in this dimension negative?*/
     p=CELT_PVQ_U(_n,_k+1);
@@ -476,14 +476,29 @@ static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y){
     p=CELT_PVQ_U(_n,_k);
     if(_k>_n){
       const opus_uint32 *row;
+      opus_uint32        q;
       row=CELT_PVQ_U_ROW[_n];
-      for(;p>_i&&_k>_n;p=row[_k])_k--;
+      q=row[_n];
+      if(q>_i){
+        celt_assert(p>q);
+        /*Setting p=q is unnecessary, but it helps the optimizer prove p>_i,
+           allowing it to jump straight past the initial test in the second
+           loop below.
+          Once it's removed that first comparison, a smart compiler should be
+           able to figure out that the result of this assignment isn't used and
+           optimize it away anyway.*/
+        p=q;
+        _k=_n;
+      }
+      else for(;p>_i;p=row[_k])_k--;
     }
     for(;p>_i;p=CELT_PVQ_U_ROW[_k][_n])_k--;
     _i-=p;
     *_y++=(k0-_k+s)^s;
   }
-  while(--_n>0);
+  while(--_n>1);
+  s=-(_i>=1);
+  *_y=(_k+s)^s;
 }
 
 void decode_pulses(int *_y,int _n,int _k,ec_dec *_dec){
