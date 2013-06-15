@@ -467,34 +467,49 @@ static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y){
   celt_assert(_k>0);
   celt_assert(_n>1);
   while(_n>2){
-    /*Are the pulses in this dimension negative?*/
-    p=CELT_PVQ_U(_n,_k+1);
-    s=-(_i>=p);
-    _i-=p&s;
-    /*Count how many pulses were placed in this dimension.*/
-    k0=_k;
-    p=CELT_PVQ_U(_n,_k);
-    if(_k>_n){
+    opus_uint32 q;
+    /*Lots of pulses case:*/
+    if(_k>=_n){
       const opus_uint32 *row;
-      opus_uint32        q;
       row=CELT_PVQ_U_ROW[_n];
+      /*Are the pulses in this dimension negative?*/
+      p=row[_k+1];
+      s=-(_i>=p);
+      _i-=p&s;
+      /*Count how many pulses were placed in this dimension.*/
+      k0=_k;
       q=row[_n];
       if(q>_i){
         celt_assert(p>q);
-        /*Setting p=q is unnecessary, but it helps the optimizer prove p>_i,
-           allowing it to jump straight past the initial test in the second
-           loop below.
-          Once it's removed that first comparison, a smart compiler should be
-           able to figure out that the result of this assignment isn't used and
-           optimize it away anyway.*/
-        p=q;
         _k=_n;
+        do p=CELT_PVQ_U_ROW[--_k][_n];
+        while(p>_i);
       }
-      else for(;p>_i;p=row[_k])_k--;
+      else for(p=row[_k];p>_i;p=row[_k])_k--;
+      _i-=p;
+      *_y++=(k0-_k+s)^s;
     }
-    for(;p>_i;p=CELT_PVQ_U_ROW[_k][_n])_k--;
-    _i-=p;
-    *_y++=(k0-_k+s)^s;
+    /*Lots of dimensions case:*/
+    else{
+      /*Are there any pulses in this dimension at all?*/
+      p=CELT_PVQ_U_ROW[_k][_n];
+      q=CELT_PVQ_U_ROW[_k+1][_n];
+      if(p<=_i&&_i<q){
+        _i-=p;
+        *_y++=0;
+      }
+      else{
+        /*Are the pulses in this dimension negative?*/
+        s=-(_i>=q);
+        _i-=q&s;
+        /*Count how many pulses were placed in this dimension.*/
+        k0=_k;
+        do p=CELT_PVQ_U_ROW[--_k][_n];
+        while(p>_i);
+        _i-=p;
+        *_y++=(k0-_k+s)^s;
+      }
+    }
     _n--;
   }
   /*_n==2*/
