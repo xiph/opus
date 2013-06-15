@@ -461,12 +461,12 @@ void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
 }
 
 static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y){
-  int s;
+  opus_uint32 p;
+  int         s;
+  int         k0;
   celt_assert(_k>0);
   celt_assert(_n>1);
-  do{
-    opus_uint32 p;
-    int         k0;
+  while(_n>2){
     /*Are the pulses in this dimension negative?*/
     p=CELT_PVQ_U(_n,_k+1);
     s=-(_i>=p);
@@ -495,9 +495,18 @@ static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y){
     for(;p>_i;p=CELT_PVQ_U_ROW[_k][_n])_k--;
     _i-=p;
     *_y++=(k0-_k+s)^s;
+    _n--;
   }
-  while(--_n>1);
-  s=-(_i>=1);
+  /*_n==2*/
+  p=2*_k+1;
+  s=-(_i>=p);
+  _i-=p&s;
+  k0=_k;
+  _k=(_i+1)>>1;
+  if(_k)_i-=2*_k-1;
+  *_y++=(k0-_k+s)^s;
+  /*_n==1*/
+  s=-_i;
   *_y=(_k+s)^s;
 }
 
