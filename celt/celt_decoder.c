@@ -916,19 +916,18 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    ALLOC(bandE, nbEBands*C, celt_ener);
 
    log2Amp(mode, st->start, st->end, bandE, oldBandE, C);
+   ALLOC(freq, IMAX(CC,C)*N, celt_sig); /**< Interleaved signal MDCTs */
 
    if (silence)
    {
       for (i=0;i<C*nbEBands;i++)
-      {
-         bandE[i] = 0;
          oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
-      }
+      for (i=0;i<C*N;i++)
+         freq[i] = 0;
+   } else {
+      /* Synthesis */
+      denormalise_bands(mode, X, freq, bandE, st->start, effEnd, C, M);
    }
-   ALLOC(freq, IMAX(CC,C)*N, celt_sig); /**< Interleaved signal MDCTs */
-   /* Synthesis */
-   denormalise_bands(mode, X, freq, bandE, st->start, effEnd, C, M);
-
    c=0; do {
       OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap/2);
    } while (++c<CC);

@@ -1887,24 +1887,24 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    {
       celt_sig *out_mem[2];
 
-      log2Amp(mode, st->start, st->end, bandE, oldBandE, C);
-      if (silence)
-      {
-         for (i=0;i<C*nbEBands;i++)
-            bandE[i] = 0;
-      }
-
-#ifdef MEASURE_NORM_MSE
-      measure_norm_mse(mode, X, X0, bandE, bandE0, M, N, C);
-#endif
       if (anti_collapse_on)
       {
          anti_collapse(mode, X, collapse_masks, LM, C, N,
                st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
       }
 
-      /* Synthesis */
-      denormalise_bands(mode, X, freq, bandE, st->start, effEnd, C, M);
+      log2Amp(mode, st->start, st->end, bandE, oldBandE, C);
+      if (silence)
+      {
+         for (i=0;i<C*N;i++)
+            freq[i] = 0;
+      } else {
+#ifdef MEASURE_NORM_MSE
+         measure_norm_mse(mode, X, X0, bandE, bandE0, M, N, C);
+#endif
+         /* Synthesis */
+         denormalise_bands(mode, X, freq, bandE, st->start, effEnd, C, M);
+      }
 
       c=0; do {
          OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, 2*MAX_PERIOD-N+overlap/2);
