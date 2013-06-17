@@ -41,6 +41,8 @@
 #include "entdec.c"
 #include "entcode.c"
 #include "bands.c"
+#include "quant_bands.c"
+#include "laplace.c"
 #include "vq.c"
 #include "cwrs.c"
 #include <stdio.h>

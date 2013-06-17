@@ -1849,17 +1849,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    quant_fine_energy(mode, st->start, st->end, oldBandE, error, fine_quant, enc, C);
 
-#ifdef MEASURE_NORM_MSE
-   float X0[3000];
-   float bandE0[60];
-   c=0; do
-      for (i=0;i<N;i++)
-         X0[i+c*N] = X[i+c*N];
-   while (++c<C);
-   for (i=0;i<C*nbEBands;i++)
-      bandE0[i] = bandE[i];
-#endif
-
    /* Residual quantisation */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
    quant_all_bands(1, mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
@@ -1893,17 +1882,13 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
                st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
       }
 
-      log2Amp(mode, st->start, st->end, bandE, oldBandE, C);
       if (silence)
       {
          for (i=0;i<C*N;i++)
             freq[i] = 0;
       } else {
-#ifdef MEASURE_NORM_MSE
-         measure_norm_mse(mode, X, X0, bandE, bandE0, M, N, C);
-#endif
          /* Synthesis */
-         denormalise_bands(mode, X, freq, bandE, st->start, effEnd, C, M);
+         denormalise_bands(mode, X, freq, oldBandE, st->start, effEnd, C, M);
       }
 
       c=0; do {

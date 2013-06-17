@@ -536,25 +536,6 @@ void unquant_energy_finalise(const CELTMode *m, int start, int end, opus_val16 *
    }
 }
 
-void log2Amp(const CELTMode *m, int start, int end,
-      celt_ener *eBands, const opus_val16 *oldEBands, int C)
-{
-   int c, i;
-   c=0;
-   do {
-      for (i=0;i<start;i++)
-         eBands[i+c*m->nbEBands] = 0;
-      for (;i<end;i++)
-      {
-         opus_val16 lg = ADD16(oldEBands[i+c*m->nbEBands],
-                         SHL16((opus_val16)eMeans[i],6));
-         eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(lg),4);
-      }
-      for (;i<m->nbEBands;i++)
-         eBands[i+c*m->nbEBands] = 0;
-   } while (++c < C);
-}
-
 void amp2Log2(const CELTMode *m, int effEnd, int end,
       celt_ener *bandE, opus_val16 *bandLogE, int C)
 {
