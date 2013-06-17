@@ -118,6 +118,23 @@ static inline void xcorr_kernel(const opus_val16 * x, const opus_val16 * y, opus
 }
 #endif /* OVERRIDE_XCORR_KERNEL */
 
+#ifndef OVERRIDE_DUAL_INNER_PROD
+static inline void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
+      int N, opus_val32 *xy1, opus_val32 *xy2)
+{
+   int i;
+   opus_val32 xy01=0;
+   opus_val32 xy02=0;
+   for (i=0;i<N;i++)
+   {
+      xy01 = MAC16_16(xy01, x[i], y01[i]);
+      xy02 = MAC16_16(xy02, x[i], y02[i]);
+   }
+   *xy1 = xy01;
+   *xy2 = xy02;
+}
+#endif
+
 #ifdef FIXED_POINT
 opus_val32
 #else

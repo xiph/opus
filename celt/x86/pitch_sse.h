@@ -72,11 +72,11 @@ static inline void xcorr_kernel(const opus_val16 *x, const opus_val16 *y, opus_v
 }
 
 #define OVERRIDE_DUAL_INNER_PROD
-static inline opus_val32 dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02, int N)
+static inline void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
+      int N, opus_val32 *xy1, opus_val32 *xy2)
 {
    int i;
    __m128 xsum1, xsum2;
-   opus_val32 xy=0;
    xsum1 = _mm_setzero_ps();
    xsum2 = _mm_setzero_ps();
    for (i=0;i<N-3;i+=4)
@@ -87,17 +87,18 @@ static inline opus_val32 dual_inner_prod(const opus_val16 *x, const opus_val16 *
       xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(xi, y1i));
       xsum2 = _mm_add_ps(xsum2,_mm_mul_ps(xi, y2i));
    }
-   xsum1 = _mm_add_ps(xsum1,xsum2);
    /* Horizontal sum */
    xsum1 = _mm_add_ps(xsum1, _mm_movehl_ps(xsum1, xsum1));
    xsum1 = _mm_add_ss(xsum1, _mm_shuffle_ps(xsum1, xsum1, 0x55));
-   _mm_store_ss(&xy, xsum1);
+   _mm_store_ss(xy1, xsum1);
+   xsum2 = _mm_add_ps(xsum2, _mm_movehl_ps(xsum2, xsum2));
+   xsum2 = _mm_add_ss(xsum2, _mm_shuffle_ps(xsum2, xsum2, 0x55));
+   _mm_store_ss(xy2, xsum2);
    for (;i<N;i++)
    {
-      xy = MAC16_16(xy, x[i], y01[i]);
-      xy = MAC16_16(xy, x[i], y02[i]);
+      *xy1 = MAC16_16(*xy1, x[i], y01[i]);
+      *xy2 = MAC16_16(*xy2, x[i], y02[i]);
    }
-   return xy;
 }
 
 #define OVERRIDE_COMB_FILTER_CONST

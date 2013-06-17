@@ -394,20 +394,6 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
    RESTORE_STACK;
 }
 
-#ifndef OVERRIDE_DUAL_INNER_PROD
-static opus_val32 dual_inner_prod(opus_val16 *x, opus_val16 *y01, opus_val16 *y02, int N)
-{
-   int i;
-   opus_val32 xy=0;
-   for (i=0;i<N;i++)
-   {
-      xy = MAC16_16(xy, x[i], y01[i]);
-      xy = MAC16_16(xy, x[i], y02[i]);
-   }
-   return xy;
-}
-#endif
-
 static const int second_check[16] = {0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3, 2};
 opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       int N, int *T0_, int prev_period, opus_val16 prev_gain)
@@ -415,7 +401,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
    int k, i, T, T0;
    opus_val16 g, g0;
    opus_val16 pg;
-   opus_val32 xy,xx,yy;
+   opus_val32 xy,xx,yy,xy2;
    opus_val32 xcorr[3];
    opus_val32 best_xy, best_yy;
    int offset;
@@ -435,12 +421,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
 
    T = T0 = *T0_;
    ALLOC(yy_lookup, maxperiod+1, opus_val32);
-   xy=xx=0;
-   for (i=0;i<N;i++)
-   {
-      xx = MAC16_16(xx, x[i], x[i]);
-      xy = MAC16_16(xy, x[i], x[i-T0]);
-   }
+   dual_inner_prod(x, x, x-T0, N, &xx, &xy);
    yy_lookup[0] = xx;
    yy=xx;
    for (i=1;i<=maxperiod;i++)
@@ -484,7 +465,8 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       {
          T1b = (2*second_check[k]*T0+k)/(2*k);
       }
-      xy = dual_inner_prod(x, &x[-T1], &x[-T1b], N);
+      dual_inner_prod(x, &x[-T1], &x[-T1b], N, &xy, &xy2);
+      xy += xy2;
       yy = yy_lookup[T1] + yy_lookup[T1b];
 #ifdef FIXED_POINT
       {

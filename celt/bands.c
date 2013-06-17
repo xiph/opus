@@ -41,6 +41,7 @@
 #include "mathops.h"
 #include "rate.h"
 #include "quant_bands.h"
+#include "pitch.h"
 
 int hysteresis_decision(opus_val16 val, const opus_val16 *thresholds, const opus_val16 *hysteresis, int N, int prev)
 {
@@ -383,11 +384,7 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, opus_val16 mid, int N)
    opus_val32 t, lgain, rgain;
 
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
-   for (j=0;j<N;j++)
-   {
-      xp = MAC16_16(xp, X[j], Y[j]);
-      side = MAC16_16(side, Y[j], Y[j]);
-   }
+   dual_inner_prod(Y, X, Y, N, &xp, &side);
    /* Compensating for the mid normalization */
    xp = MULT16_32_Q15(mid, xp);
    /* mid and side are in Q15, not Q14 like X and Y */
