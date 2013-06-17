@@ -141,6 +141,7 @@ static inline void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
       x0v=x4v;
       _mm_storeu_ps(y+i, yi);
    }
+#ifdef CUSTOM_MODES
    for (;i<N;i++)
    {
       y[i] = x[i]
@@ -148,6 +149,7 @@ static inline void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
                + MULT16_32_Q15(g11,ADD32(x[i-T+1],x[i-T-1]))
                + MULT16_32_Q15(g12,ADD32(x[i-T+2],x[i-T-2]));
    }
+#endif
 }
 
 #endif
