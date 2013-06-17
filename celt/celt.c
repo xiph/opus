@@ -85,6 +85,31 @@ int resampling_factor(opus_int32 rate)
    return ret;
 }
 
+#ifndef OVERRIDE_COMB_FILTER_CONST
+static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
+      opus_val16 g10, opus_val16 g11, opus_val16 g12)
+{
+   opus_val32 x0, x1, x2, x3, x4;
+   int i;
+   x4 = x[-T-2];
+   x3 = x[-T-1];
+   x2 = x[-T];
+   x1 = x[-T+1];
+   for (i=0;i<N;i++)
+   {
+      x0=x[i-T+2];
+      y[i] = x[i]
+               + MULT16_32_Q15(g10,x2)
+               + MULT16_32_Q15(g11,ADD32(x1,x3))
+               + MULT16_32_Q15(g12,ADD32(x0,x4));
+      x4=x3;
+      x3=x2;
+      x2=x1;
+      x1=x0;
+   }
+
+}
+#endif
 
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
@@ -141,19 +166,9 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
          OPUS_MOVE(y+overlap, x+overlap, N-overlap);
       return;
    }
-   /* OPT: For machines where the movs are costly, unroll by 5 */
-   for (;i<N;i++)
-   {
-      x0=x[i-T1+2];
-      y[i] = x[i]
-               + MULT16_32_Q15(g10,x2)
-               + MULT16_32_Q15(g11,ADD32(x1,x3))
-               + MULT16_32_Q15(g12,ADD32(x0,x4));
-      x4=x3;
-      x3=x2;
-      x2=x1;
-      x1=x0;
-   }
+
+   /* Compute the part with the constant filter. */
+   comb_filter_const(y+i, x+i, T1, N-i, g10, g11, g12);
 }
 
 const signed char tf_select_table[4][8] = {
