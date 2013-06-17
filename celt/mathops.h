@@ -190,6 +190,13 @@ static inline opus_val16 celt_log2(opus_val32 x)
 #define D1 22804
 #define D2 14819
 #define D3 10204
+
+static inline opus_val32 celt_exp2_frac(opus_val16 x)
+{
+   opus_val16 frac;
+   frac = SHL16(x, 4);
+   return ADD16(D0, MULT16_16_Q15(frac, ADD16(D1, MULT16_16_Q15(frac, ADD16(D2 , MULT16_16_Q15(D3,frac))))));
+}
 /** Base-2 exponential approximation (2^x). (Q10 input, Q16 output) */
 static inline opus_val32 celt_exp2(opus_val16 x)
 {
@@ -200,8 +207,7 @@ static inline opus_val32 celt_exp2(opus_val16 x)
       return 0x7f000000;
    else if (integer < -15)
       return 0;
-   frac = SHL16(x-SHL16(integer,10),4);
-   frac = ADD16(D0, MULT16_16_Q15(frac, ADD16(D1, MULT16_16_Q15(frac, ADD16(D2 , MULT16_16_Q15(D3,frac))))));
+   frac = celt_exp2_frac(x-SHL16(integer,10));
    return VSHR32(EXTEND32(frac), -integer-2);
 }
 

@@ -205,17 +205,30 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       for (i=start;i<end;i++)
       {
          int j, band_end;
-         celt_ener bandE;
-         opus_val32 g;
+         opus_val16 g;
          opus_val16 lg;
-         lg = ADD16(bandLogE[i+c*m->nbEBands], SHL16((opus_val16)eMeans[i],6));
-         bandE = PSHR32(celt_exp2(lg),4);
-         g = SHR32(bandE,1);
+#ifdef FIXED_POINT
+         int shift;
+#endif
          j=M*eBands[i];
          band_end = M*eBands[i+1];
+         lg = ADD16(bandLogE[i+c*m->nbEBands], SHL16((opus_val16)eMeans[i],6));
+#ifdef FIXED_POINT
+         /* Handle the integer part of the log energy */
+         shift = 16-(lg>>DB_SHIFT);
+         if (shift>31)
+         {
+            shift=0;
+            g=0;
+         } else {
+            /* Handle the fractional part. */
+            g = celt_exp2_frac(lg&((1<<DB_SHIFT)-1));
+         }
+#else
+         g = celt_exp2(lg);
+#endif
          do {
-            *f++ = SHL32(MULT16_32_Q15(*x, g),2);
-            x++;
+            *f++ = SHR32(MULT16_16(*x++, g), shift);
          } while (++j<band_end);
       }
       celt_assert(start <= end);
