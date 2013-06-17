@@ -263,7 +263,7 @@ void _celt_autocorr(
          xx[i] = VSHR32(xx[i], shift);
    }
 #endif
-   pitch_xcorr(xx, xx, ac, fastN, lag+1);
+   celt_pitch_xcorr(xx, xx, ac, fastN, lag+1);
    while (lag>=0)
    {
       for (i = lag+fastN, d = 0; i < n; i++)

@@ -72,7 +72,7 @@ static inline void xcorr_kernel(const opus_val16 *x, const opus_val16 *y, opus_v
 }
 
 #define OVERRIDE_DUAL_INNER_PROD
-static inline opus_val32 dual_inner_prod(const opus_val16 *x, const opus_val16 *y1, const opus_val16 *y2, int N)
+static inline opus_val32 dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02, int N)
 {
    int i;
    __m128 xsum1, xsum2;
@@ -82,8 +82,8 @@ static inline opus_val32 dual_inner_prod(const opus_val16 *x, const opus_val16 *
    for (i=0;i<N-3;i+=4)
    {
       __m128 xi = _mm_loadu_ps(x+i);
-      __m128 y1i = _mm_loadu_ps(y1+i);
-      __m128 y2i = _mm_loadu_ps(y2+i);
+      __m128 y1i = _mm_loadu_ps(y01+i);
+      __m128 y2i = _mm_loadu_ps(y02+i);
       xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(xi, y1i));
       xsum2 = _mm_add_ps(xsum2,_mm_mul_ps(xi, y2i));
    }
@@ -94,8 +94,8 @@ static inline opus_val32 dual_inner_prod(const opus_val16 *x, const opus_val16 *
    _mm_store_ss(&xy, xsum1);
    for (;i<N;i++)
    {
-      xy = MAC16_16(xy, x[i], y1[i]);
-      xy = MAC16_16(xy, x[i], y2[i]);
+      xy = MAC16_16(xy, x[i], y01[i]);
+      xy = MAC16_16(xy, x[i], y02[i]);
    }
    return xy;
 }

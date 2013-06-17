@@ -222,7 +222,7 @@ opus_val32
 #else
 void
 #endif
-pitch_xcorr(opus_val16 *x, opus_val16 *y, opus_val32 *xcorr, int len, int max_pitch)
+celt_pitch_xcorr(opus_val16 *x, opus_val16 *y, opus_val32 *xcorr, int len, int max_pitch)
 {
    int i, j;
 #ifdef FIXED_POINT
@@ -250,7 +250,7 @@ opus_val32
 #else
 void
 #endif
-pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int len, int max_pitch)
+celt_pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int len, int max_pitch)
 {
    int i,j;
 #ifdef FIXED_POINT
@@ -342,7 +342,7 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
 #ifdef FIXED_POINT
    maxcorr =
 #endif
-   pitch_xcorr(x_lp4, y_lp4, xcorr, len>>2, max_pitch>>2);
+   celt_pitch_xcorr(x_lp4, y_lp4, xcorr, len>>2, max_pitch>>2);
 
    find_best_pitch(xcorr, y_lp4, len>>2, max_pitch>>2, best_pitch
 #ifdef FIXED_POINT
@@ -395,14 +395,14 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
 }
 
 #ifndef OVERRIDE_DUAL_INNER_PROD
-static opus_val32 dual_inner_prod(opus_val16 *x, opus_val16 *y1, opus_val16 *y2, int N)
+static opus_val32 dual_inner_prod(opus_val16 *x, opus_val16 *y01, opus_val16 *y02, int N)
 {
    int i;
    opus_val32 xy=0;
    for (i=0;i<N;i++)
    {
-      xy = MAC16_16(xy, x[i], y1[i]);
-      xy = MAC16_16(xy, x[i], y2[i]);
+      xy = MAC16_16(xy, x[i], y01[i]);
+      xy = MAC16_16(xy, x[i], y02[i]);
    }
    return xy;
 }

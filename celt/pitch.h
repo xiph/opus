@@ -123,6 +123,6 @@ opus_val32
 #else
 void
 #endif
-pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int len, int max_pitch);
+celt_pitch_xcorr(opus_val16 *_x, opus_val16 *_y, opus_val32 *xcorr, int len, int max_pitch);
 
 #endif
