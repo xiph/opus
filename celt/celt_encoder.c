@@ -113,6 +113,7 @@ struct OpusCustomEncoder {
    int intensity;
    opus_val16 *energy_save;
    opus_val16 *energy_mask;
+   opus_val16 spec_avg;
 
 #ifdef RESYNTH
    /* +MAX_PERIOD/2 to make space for overlap */
@@ -1115,7 +1116,8 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       int LM, opus_int32 bitrate, int lastCodedBands, int C, int intensity,
       int constrained_vbr, opus_val16 stereo_saving, int tot_boost,
       opus_val16 tf_estimate, int pitch_change, opus_val16 maxDepth,
-      int variable_duration, int lfe, int has_surround_mask, opus_val16 surround_masking)
+      int variable_duration, int lfe, int has_surround_mask, opus_val16 surround_masking,
+      opus_val16 temporal_vbr)
 {
    /* The target rate in 8th bits per frame */
    opus_int32 target;
@@ -1208,6 +1210,16 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       target = base_target + (opus_int32)MULT16_32_Q15(rate_factor, target-base_target);
 
    }
+
+   if (tf_estimate < QCONST16(.2f, 14))
+   {
+      opus_val16 amount;
+      opus_val16 tvbr_factor;
+      amount = MULT16_16_Q15(QCONST16(.000006f, 30), IMAX(0, IMIN(42000, 68000-bitrate)));
+      tvbr_factor = SHR32(MULT16_16(temporal_vbr, amount), DB_SHIFT);
+      target += (opus_int32)MULT16_32_Q15(tvbr_factor, target);
+   }
+
    /* Don't allow more than doubling the rate */
    target = IMIN(2*base_target, target);
 
@@ -1275,6 +1287,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    int signalBandwidth;
    int transient_got_disabled=0;
    opus_val16 surround_masking=0;
+   opus_val16 temporal_vbr=0;
    ALLOC_STACK;
 
    mode = st->mode;
@@ -1538,6 +1551,22 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       surround_masking = DIV32_16(mask_avg,C*st->end) + QCONST16(.0f, DB_SHIFT);
       surround_masking = MIN16(MAX16(surround_masking,-QCONST16(1.5f, DB_SHIFT)), 0);
    }
+   {
+      opus_val16 follow=-QCONST16(10.0f,DB_SHIFT);
+      float frame_avg=0;
+      opus_val16 offset = shortBlocks?HALF16(SHL16(LM, DB_SHIFT)):0;
+      for(i=st->start;i<st->end;i++)
+      {
+         follow = MAX16(follow-QCONST16(1.f, DB_SHIFT), bandLogE[i]-offset);
+         if (C==2)
+            follow = MAX16(follow, bandLogE[i+nbEBands]-offset);
+         frame_avg += follow;
+      }
+      frame_avg /= (st->end-st->start);
+      temporal_vbr = SUB16(frame_avg,st->spec_avg);
+      temporal_vbr = MIN16(QCONST16(3.f, DB_SHIFT), MAX16(-QCONST16(1.5f, DB_SHIFT), temporal_vbr));
+      st->spec_avg += MULT16_16_Q15(QCONST16(.02f, 15), temporal_vbr);
+   }
    /*for (i=0;i<21;i++)
       printf("%f ", bandLogE[i]);
    printf("\n");*/
@@ -1744,7 +1773,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      target = compute_vbr(mode, &st->analysis, base_target, LM, st->bitrate,
            st->lastCodedBands, C, st->intensity, st->constrained_vbr,
            st->stereo_saving, tot_boost, tf_estimate, pitch_change, maxDepth,
-           st->variable_duration, st->lfe, st->energy_mask!=NULL, surround_masking);
+           st->variable_duration, st->lfe, st->energy_mask!=NULL, surround_masking,
+           temporal_vbr);
 
      /* The current offset is removed from the target and the space used
         so far is added*/
