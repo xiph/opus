@@ -15,83 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="corrMatrix_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="encode_frame_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="find_LPC_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="find_LTP_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="find_pitch_lags_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="find_pred_coefs_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LTP_analysis_filter_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LTP_scale_ctrl_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="noise_shape_analysis_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="prefilter_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="process_gains_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="regularize_correlations_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="residual_energy16_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="residual_energy_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="solve_LS_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="warped_autocorrelation_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="apply_sine_window_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="k2a_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="k2a_Q16_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="burg_modified_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="autocorr_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="pitch_analysis_core_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="vector_ops_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="schur_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="schur64_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -107,5 +30,82 @@
     <ClInclude Include="..\..\include\opus_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\silk\fixed\LTP_scale_ctrl_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\noise_shape_analysis_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\pitch_analysis_core_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\prefilter_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\process_gains_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\regularize_correlations_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\residual_energy_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\residual_energy16_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\schur_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\schur64_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\solve_LS_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\vector_ops_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\warped_autocorrelation_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\apply_sine_window_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\autocorr_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\burg_modified_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\corrMatrix_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\encode_frame_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\find_LPC_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\find_LTP_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\find_pitch_lags_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\find_pred_coefs_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\k2a_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\k2a_Q16_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\LTP_analysis_filter_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
