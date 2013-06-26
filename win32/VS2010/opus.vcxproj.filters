@@ -15,44 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="opus_decoder.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="opus_encoder.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="opus.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="repacketizer.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="opus_multistream.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="opus_multistream_decoder.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="opus_multistream_encoder.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="analysis.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="mlp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="mlp_data.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\win32\config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="opus_private.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\celt\arch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -86,14 +48,55 @@
     <ClInclude Include="..\include\opus_multistream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\win32\config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="analysis.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mlp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="opus_private.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="tansig_table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\opus.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\opus_compare.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\opus_decoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\opus_encoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\opus_multistream.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\opus_multistream_decoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\opus_multistream_encoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\repacketizer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\analysis.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mlp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mlp_data.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

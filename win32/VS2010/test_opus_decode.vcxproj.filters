@@ -7,7 +7,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test_opus_decode.c">
+    <ClCompile Include="..\..\tests\test_opus_decode.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
