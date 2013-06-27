@@ -101,25 +101,25 @@ EXTRA_DIST = version.mk \
              opus.m4 \
              Makefile.unix \
              tests/run_vectors.sh \
-             opus.sln \
-             celt/celt.vcxproj \
-             celt/celt.vcxproj.filters \
-             src/opus_demo.vcxproj \
-             src/opus.vcxproj \
-             src/opus.vcxproj.filters \
-             src/opus_demo.vcxproj.filters \
-             tests/test_opus_decode.vcxproj.filters \
-             tests/test_opus_decode.vcxproj \
-             tests/test_opus_encode.vcxproj.filters \
-             tests/test_opus_encode.vcxproj \
-             tests/test_opus_api.vcxproj.filters \
-             tests/test_opus_api.vcxproj \
-             silk/float/silk_float.vcxproj.filters \
-             silk/float/silk_float.vcxproj \
-             silk/fixed/silk_fixed.vcxproj.filters \
-             silk/fixed/silk_fixed.vcxproj \
-             silk/silk_common.vcxproj \
-             silk/silk_common.vcxproj.filters \
+             win32/VS2010/silk_float.vcxproj \
+             win32/VS2010/celt.vcxproj.filters \
+             win32/VS2010/opus.vcxproj \
+             win32/VS2010/silk_common.vcxproj.filters \
+             win32/VS2010/silk_float.vcxproj.filters \
+             win32/VS2010/test_opus_encode.vcxproj.filters \
+             win32/VS2010/silk_common.vcxproj \
+             win32/VS2010/test_opus_encode.vcxproj \
+             win32/VS2010/opus_demo.vcxproj \
+             win32/VS2010/test_opus_api.vcxproj.filters \
+             win32/VS2010/test_opus_api.vcxproj \
+             win32/VS2010/test_opus_decode.vcxproj.filters \
+             win32/VS2010/silk_fixed.vcxproj.filters \
+             win32/VS2010/opus_demo.vcxproj.filters \
+             win32/VS2010/silk_fixed.vcxproj \
+             win32/VS2010/opus.vcxproj.filters \
+             win32/VS2010/test_opus_decode.vcxproj \
+             win32/VS2010/celt.vcxproj \
+             win32/VS2010/opus.sln \
              win32/genversion.bat \
              win32/config.h
 
