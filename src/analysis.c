@@ -479,7 +479,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     frame_probs[0] = .5f*(frame_probs[0]+1);
     /* Curve fitting between the MLP probability and the actual probability */
     frame_probs[0] = .01f + 1.21f*frame_probs[0]*frame_probs[0] - .23f*(float)pow(frame_probs[0], 10);
-    frame_probs[1] = .5*frame_probs[1]+.5;
+    frame_probs[1] = .5f*frame_probs[1]+.5f;
     frame_probs[0] = frame_probs[1]*frame_probs[0] + (1-frame_probs[1])*.5f;
 
     /*printf("%f %f ", frame_probs[0], frame_probs[1]);*/
