@@ -1181,7 +1181,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
 
    if (has_surround_mask&&!lfe)
    {
-      opus_int32 surround_target = target + SHR32(MULT16_16(surround_masking,coded_bins<<BITRES), DB_SHIFT);
+      opus_int32 surround_target = target + (opus_int32)SHR32(MULT16_16(surround_masking,coded_bins<<BITRES), DB_SHIFT);
       /*printf("%f %d %d %d %d %d %d ", surround_masking, coded_bins, st->end, st->intensity, surround_target, target, st->bitrate);*/
       target = IMAX(target/4, surround_target);
    }
@@ -1591,7 +1591,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          /* Compensate for the scaling of short vs long mdcts */
          for (i=0;i<C*nbEBands;i++)
             bandLogE2[i] += HALF16(SHL16(LM, DB_SHIFT));
-         tf_estimate = QCONST16(.2,14);
+         tf_estimate = QCONST16(.2f,14);
       }
    }
 

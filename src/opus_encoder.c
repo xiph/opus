@@ -573,7 +573,7 @@ static float transient_boost(const float *E, const float *E_1, int LM, int maxM)
       printf("%f\n", metric);*/
    /*return metric>10 ? 1 : 0;*/
    /*return MAX16(0,1-exp(-.25*(metric-2.)));*/
-   return MIN16(1,sqrt(MAX16(0,.05*(metric-2))));
+   return MIN16(1,sqrt(MAX16(0,.05f*(metric-2))));
 }
 
 /* Viterbi decoding trying to find the best frame size combination using look-ahead
@@ -728,7 +728,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
    subframe = Fs/400;
    ALLOC(sub, subframe, opus_val16);
    e[0]=mem[0];
-   e_1[0]=1./(EPSILON+mem[0]);
+   e_1[0]=1.f/(EPSILON+mem[0]);
    if (buffering)
    {
       /* Consider the CELT delay when not in restricted-lowdelay */
@@ -738,9 +738,9 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
       x += C*offset;
       len -= offset;
       e[1]=mem[1];
-      e_1[1]=1./(EPSILON+mem[1]);
+      e_1[1]=1.f/(EPSILON+mem[1]);
       e[2]=mem[2];
-      e_1[2]=1./(EPSILON+mem[2]);
+      e_1[2]=1.f/(EPSILON+mem[2]);
       pos = 3;
    } else {
       pos=1;
@@ -772,7 +772,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
    e[i+pos] = e[i+pos-1];
    if (buffering)
       N=IMIN(MAX_DYNAMIC_FRAMESIZE, N+2);
-   bestLM = transient_viterbi(e, e_1, N, (1.f+.5*tonality)*(60*C+40), bitrate/400);
+   bestLM = transient_viterbi(e, e_1, N, (1.f+.5f*tonality)*(60*C+40), bitrate/400);
    mem[0] = e[1<<bestLM];
    if (buffering)
    {
@@ -1072,8 +1072,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        opus_int32 threshold;
 
        /* Interpolate based on stereo width */
-       mode_voice = MULT16_32_Q15(Q15ONE-stereo_width,mode_thresholds[0][0]) + MULT16_32_Q15(stereo_width,mode_thresholds[1][0]);
-       mode_music = MULT16_32_Q15(Q15ONE-stereo_width,mode_thresholds[1][1]) + MULT16_32_Q15(stereo_width,mode_thresholds[1][1]);
+       mode_voice = (opus_int32)(MULT16_32_Q15(Q15ONE-stereo_width,mode_thresholds[0][0])
+             + MULT16_32_Q15(stereo_width,mode_thresholds[1][0]));
+       mode_music = (opus_int32)(MULT16_32_Q15(Q15ONE-stereo_width,mode_thresholds[1][1])
+             + MULT16_32_Q15(stereo_width,mode_thresholds[1][1]));
        /* Interpolate based on speech/music probability */
        threshold = mode_music + ((voice_est*voice_est*(mode_voice-mode_music))>>14);
        /* Bias towards SILK for VoIP because of some useful features */
@@ -1592,7 +1594,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                 {
                    bonus = (60*st->stream_channels+40)*(st->Fs/frame_size-50);
                    if (analysis_info->valid)
-                      bonus = bonus*(1.f+.5*analysis_info->tonality);
+                      bonus = bonus*(1.f+.5f*analysis_info->tonality);
                 }
 #endif
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR(1));

@@ -480,7 +480,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     /* Curve fitting between the MLP probability and the actual probability */
     frame_probs[0] = .01f + 1.21f*frame_probs[0]*frame_probs[0] - .23f*(float)pow(frame_probs[0], 10);
     frame_probs[1] = .5*frame_probs[1]+.5;
-    frame_probs[0] = frame_probs[1]*frame_probs[0] + (1-frame_probs[1])*.5;
+    frame_probs[0] = frame_probs[1]*frame_probs[0] + (1-frame_probs[1])*.5f;
 
     /*printf("%f %f ", frame_probs[0], frame_probs[1]);*/
     {
@@ -499,7 +499,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
           float p, q;
           p = MAX16(.05f,MIN16(.95f,frame_probs[0]));
           q = MAX16(.05f,MIN16(.95f,tonal->music_prob));
-          beta = .01+.05*ABS16(p-q)/(p*(1-q)+q*(1-p));
+          beta = .01f+.05f*ABS16(p-q)/(p*(1-q)+q*(1-p));
        }
        p0 = (1-tonal->music_prob)*(1-tau) +    tonal->music_prob *tau;
        p1 =    tonal->music_prob *(1-tau) + (1-tonal->music_prob)*tau;
@@ -508,7 +508,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        tonal->music_prob = p1/(p0+p1);
        info->music_prob = tonal->music_prob;
 
-       psum=1e-20;
+       psum=1e-20f;
        speech0 = (float)pow(1-frame_probs[0], beta);
        music0  = (float)pow(frame_probs[0], beta);
        if (tonal->count==1)
@@ -559,9 +559,9 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
           }
        } else {
           if (tonal->music_confidence_count==0)
-             tonal->music_confidence = .9;
+             tonal->music_confidence = .9f;
           if (tonal->speech_confidence_count==0)
-             tonal->speech_confidence = .1;
+             tonal->speech_confidence = .1f;
        }
        psum = MAX16(tonal->speech_confidence, MIN16(tonal->music_confidence, psum));
     }
