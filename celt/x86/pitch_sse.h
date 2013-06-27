@@ -46,14 +46,14 @@ static inline void xcorr_kernel(const opus_val16 *x, const opus_val16 *y, opus_v
    for (j = 0; j < len-3; j += 4)
    {
       __m128 x0 = _mm_loadu_ps(x+j);
-      __m128 y0 = _mm_loadu_ps(y+j);
+      __m128 yj = _mm_loadu_ps(y+j);
       __m128 y3 = _mm_loadu_ps(y+j+3);
 
-      xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(_mm_shuffle_ps(x0,x0,0x00),y0));
+      xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(_mm_shuffle_ps(x0,x0,0x00),yj));
       xsum2 = _mm_add_ps(xsum2,_mm_mul_ps(_mm_shuffle_ps(x0,x0,0x55),
-                                          _mm_shuffle_ps(y0,y3,0x49)));
+                                          _mm_shuffle_ps(yj,y3,0x49)));
       xsum1 = _mm_add_ps(xsum1,_mm_mul_ps(_mm_shuffle_ps(x0,x0,0xaa),
-                                          _mm_shuffle_ps(y0,y3,0x9e)));
+                                          _mm_shuffle_ps(yj,y3,0x9e)));
       xsum2 = _mm_add_ps(xsum2,_mm_mul_ps(_mm_shuffle_ps(x0,x0,0xff),y3));
    }
    if (j < len)
