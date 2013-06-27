@@ -521,7 +521,7 @@ static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y){
   if(_k)_i-=2*_k-1;
   *_y++=(k0-_k+s)^s;
   /*_n==1*/
-  s=-_i;
+  s=-(int)_i;
   *_y=(_k+s)^s;
 }
 
