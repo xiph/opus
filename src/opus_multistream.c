@@ -416,11 +416,11 @@ static void surround_rate_allocation(
       This models the main saving of coupled channels over uncoupled. */
    stream_offset = 20000;
    /* The LFE stream is an exception to the above and gets fewer bits. */
-   lfe_offset = 3500;
+   lfe_offset = 7000;
    /* Coupled streams get twice the mono rate after the first 20 kb/s. */
    coupled_ratio = 512;
-   /* Should depend on the bitrate, for now we assume LFE gets 1/8 the bits of mono */
-   lfe_ratio = 32;
+   /* Should depend on the bitrate, for now we assume LFE gets 3/8 the bits of mono */
+   lfe_ratio = 96;
 
    /* Compute bitrate allocation between streams */
    if (st->bitrate_bps==OPUS_AUTO)
