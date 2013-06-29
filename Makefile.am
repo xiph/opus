@@ -1,3 +1,7 @@
+# Provide the full test output for failed tests when using the parallel
+# test suite (which is enabled by default with automake 1.13+).
+export VERBOSE = yes
+
 AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = -I m4
 
