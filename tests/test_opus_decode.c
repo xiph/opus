@@ -111,6 +111,10 @@ int test_decoder_code0(int no_fuzz)
          if(opus_decoder_ctl(dec[t], OPUS_GET_LAST_PACKET_DURATION(&dur))!=OPUS_OK)test_failed();
          if(dur!=120/factor)test_failed();
 
+         /*Test on a size which isn't a multiple of 2.5ms*/
+         out_samples = opus_decode(dec[t], 0, 0, outbuf, 120/factor+2, fec);
+         if(out_samples!=OPUS_BAD_ARG)test_failed();
+
          /*Test null pointer input*/
          out_samples = opus_decode(dec[t], 0, -1, outbuf, 120/factor, fec);
          if(out_samples!=120/factor)test_failed();

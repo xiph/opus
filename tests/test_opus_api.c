@@ -147,6 +147,8 @@ opus_int32 test_dec_api(void)
    fprintf(stdout,"    opus_decoder_create() ........................ OK.\n");
    fprintf(stdout,"    opus_decoder_init() .......................... OK.\n");
 
+   err=opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE((opus_uint32 *)NULL));
+   if(err != OPUS_BAD_ARG)test_failed();
    VG_UNDEF(&dec_final_range,sizeof(dec_final_range));
    err=opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range));
    if(err!=OPUS_OK)test_failed();
@@ -159,10 +161,20 @@ opus_int32 test_dec_api(void)
    fprintf(stdout,"    OPUS_UNIMPLEMENTED ........................... OK.\n");
    cfgs++;
 
+   err=opus_decoder_ctl(dec, OPUS_GET_BANDWIDTH((opus_int32 *)NULL));
+   if(err != OPUS_BAD_ARG)test_failed();
    VG_UNDEF(&i,sizeof(i));
    err=opus_decoder_ctl(dec, OPUS_GET_BANDWIDTH(&i));
    if(err != OPUS_OK || i!=0)test_failed();
    fprintf(stdout,"    OPUS_GET_BANDWIDTH ........................... OK.\n");
+   cfgs++;
+
+   err=opus_decoder_ctl(dec, OPUS_GET_SAMPLE_RATE((opus_int32 *)NULL));
+   if(err != OPUS_BAD_ARG)test_failed();
+   VG_UNDEF(&i,sizeof(i));
+   err=opus_decoder_ctl(dec, OPUS_GET_SAMPLE_RATE(&i));
+   if(err != OPUS_OK || i!=48000)test_failed();
+   fprintf(stdout,"    OPUS_GET_SAMPLE_RATE ......................... OK.\n");
    cfgs++;
 
    /*GET_PITCH has different execution paths depending on the previously decoded frame.*/
@@ -189,6 +201,14 @@ opus_int32 test_dec_api(void)
    if(err != OPUS_OK || i>0 || i<-1)test_failed();
    cfgs++;
    fprintf(stdout,"    OPUS_GET_PITCH ............................... OK.\n");
+
+   err=opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION((opus_int32 *)NULL));
+   if(err != OPUS_BAD_ARG)test_failed();
+   VG_UNDEF(&i,sizeof(i));
+   err=opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&i));
+   if(err != OPUS_OK || i!=960)test_failed();
+   cfgs++;
+   fprintf(stdout,"    OPUS_GET_LAST_PACKET_DURATION ................ OK.\n");
 
    VG_UNDEF(&i,sizeof(i));
    err=opus_decoder_ctl(dec, OPUS_GET_GAIN(&i));
