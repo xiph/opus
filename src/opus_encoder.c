@@ -1966,6 +1966,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_APPLICATION_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->application;
         }
         break;
@@ -1987,28 +1988,28 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_BITRATE_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = user_bitrate_to_bitrate(st, st->prev_framesize, 1276);
         }
         break;
         case OPUS_SET_FORCE_CHANNELS_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if((value<1 || value>st->channels) && value != OPUS_AUTO)
-                return OPUS_BAD_ARG;
+            if((value<1 || value>st->channels) && value != OPUS_AUTO) goto bad_arg;
             st->force_channels = value;
         }
         break;
         case OPUS_GET_FORCE_CHANNELS_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->force_channels;
         }
         break;
         case OPUS_SET_MAX_BANDWIDTH_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value < OPUS_BANDWIDTH_NARROWBAND || value > OPUS_BANDWIDTH_FULLBAND)
-                return OPUS_BAD_ARG;
+            if (value < OPUS_BANDWIDTH_NARROWBAND || value > OPUS_BANDWIDTH_FULLBAND) goto bad_arg;
             st->max_bandwidth = value;
             if (st->max_bandwidth == OPUS_BANDWIDTH_NARROWBAND) {
                 st->silk_mode.maxInternalSampleRate = 8000;
@@ -2022,14 +2023,14 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_MAX_BANDWIDTH_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->max_bandwidth;
         }
         break;
         case OPUS_SET_BANDWIDTH_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if ((value < OPUS_BANDWIDTH_NARROWBAND || value > OPUS_BANDWIDTH_FULLBAND) && value != OPUS_AUTO)
-                return OPUS_BAD_ARG;
+            if ((value < OPUS_BANDWIDTH_NARROWBAND || value > OPUS_BANDWIDTH_FULLBAND) && value != OPUS_AUTO) goto bad_arg;
             st->user_bandwidth = value;
             if (st->user_bandwidth == OPUS_BANDWIDTH_NARROWBAND) {
                 st->silk_mode.maxInternalSampleRate = 8000;
@@ -2043,28 +2044,28 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_BANDWIDTH_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->bandwidth;
         }
         break;
         case OPUS_SET_DTX_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if(value<0 || value>1)
-                return OPUS_BAD_ARG;
+            if(value<0 || value>1) goto bad_arg;
             st->silk_mode.useDTX = value;
         }
         break;
         case OPUS_GET_DTX_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->silk_mode.useDTX;
         }
         break;
         case OPUS_SET_COMPLEXITY_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if(value<0 || value>10)
-                return OPUS_BAD_ARG;
+            if(value<0 || value>10) goto bad_arg;
             st->silk_mode.complexity = value;
             celt_encoder_ctl(celt_enc, OPUS_SET_COMPLEXITY(value));
         }
@@ -2072,28 +2073,28 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_COMPLEXITY_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->silk_mode.complexity;
         }
         break;
         case OPUS_SET_INBAND_FEC_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if(value<0 || value>1)
-                return OPUS_BAD_ARG;
+            if(value<0 || value>1) goto bad_arg;
             st->silk_mode.useInBandFEC = value;
         }
         break;
         case OPUS_GET_INBAND_FEC_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->silk_mode.useInBandFEC;
         }
         break;
         case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value < 0 || value > 100)
-                return OPUS_BAD_ARG;
+            if (value < 0 || value > 100) goto bad_arg;
             st->silk_mode.packetLossPercentage = value;
             celt_encoder_ctl(celt_enc, OPUS_SET_PACKET_LOSS_PERC(value));
         }
@@ -2101,14 +2102,14 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_PACKET_LOSS_PERC_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->silk_mode.packetLossPercentage;
         }
         break;
         case OPUS_SET_VBR_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if(value<0 || value>1)
-                return OPUS_BAD_ARG;
+            if(value<0 || value>1) goto bad_arg;
             st->use_vbr = value;
             st->silk_mode.useCBR = 1-value;
         }
@@ -2116,54 +2117,56 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_VBR_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->use_vbr;
         }
         break;
         case OPUS_SET_VOICE_RATIO_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value>100 || value<-1)
-                goto bad_arg;
+            if (value<-1 || value>100) goto bad_arg;
             st->voice_ratio = value;
         }
         break;
         case OPUS_GET_VOICE_RATIO_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->voice_ratio;
         }
         break;
         case OPUS_SET_VBR_CONSTRAINT_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if(value<0 || value>1)
-                return OPUS_BAD_ARG;
+            if(value<0 || value>1) goto bad_arg;
             st->vbr_constraint = value;
         }
         break;
         case OPUS_GET_VBR_CONSTRAINT_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->vbr_constraint;
         }
         break;
         case OPUS_SET_SIGNAL_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if(value!=OPUS_AUTO && value!=OPUS_SIGNAL_VOICE && value!=OPUS_SIGNAL_MUSIC)
-                return OPUS_BAD_ARG;
+            if(value!=OPUS_AUTO && value!=OPUS_SIGNAL_VOICE && value!=OPUS_SIGNAL_MUSIC) goto bad_arg;
             st->signal_type = value;
         }
         break;
         case OPUS_GET_SIGNAL_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->signal_type;
         }
         break;
         case OPUS_GET_LOOKAHEAD_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->Fs/400;
             if (st->application != OPUS_APPLICATION_RESTRICTED_LOWDELAY)
                 *value += st->delay_compensation;
@@ -2172,37 +2175,40 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_SAMPLE_RATE_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
-            if (value==NULL)
-            {
-                ret = OPUS_BAD_ARG;
-                break;
-            }
+            if (!value) goto bad_arg;
             *value = st->Fs;
         }
         break;
         case OPUS_GET_FINAL_RANGE_REQUEST:
         {
             opus_uint32 *value = va_arg(ap, opus_uint32*);
+            if (!value) goto bad_arg;
             *value = st->rangeFinal;
         }
         break;
         case OPUS_SET_LSB_DEPTH_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value<8 || value>24)
-               goto bad_arg;
+            if (value<8 || value>24) goto bad_arg;
             st->lsb_depth=value;
         }
         break;
         case OPUS_GET_LSB_DEPTH_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->lsb_depth;
         }
         break;
         case OPUS_SET_EXPERT_FRAME_DURATION_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
+            if (value != OPUS_FRAMESIZE_ARG   && value != OPUS_FRAMESIZE_2_5_MS &&
+                value != OPUS_FRAMESIZE_5_MS  && value != OPUS_FRAMESIZE_10_MS  &&
+                value != OPUS_FRAMESIZE_20_MS && value != OPUS_FRAMESIZE_40_MS  &&
+                value != OPUS_FRAMESIZE_60_MS && value != OPUS_FRAMESIZE_VARIABLE) {
+              goto bad_arg;
+            }
             st->variable_duration = value;
             celt_encoder_ctl(celt_enc, OPUS_SET_EXPERT_FRAME_DURATION(value));
         }
@@ -2210,6 +2216,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_EXPERT_FRAME_DURATION_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value) goto bad_arg;
             *value = st->variable_duration;
         }
         break;
@@ -2237,8 +2244,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_FORCE_MODE_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if ((value < MODE_SILK_ONLY || value > MODE_CELT_ONLY) && value != OPUS_AUTO)
-               goto bad_arg;
+            if ((value < MODE_SILK_ONLY || value > MODE_CELT_ONLY) && value != OPUS_AUTO) goto bad_arg;
             st->user_forced_mode = value;
         }
         break;
@@ -2246,29 +2252,29 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             opus_int32 value = va_arg(ap, opus_int32);
             st->lfe = value;
-            celt_encoder_ctl(celt_enc, OPUS_SET_LFE(value));
+            ret = celt_encoder_ctl(celt_enc, OPUS_SET_LFE(value));
         }
         break;
         case OPUS_SET_ENERGY_SAVE_REQUEST:
         {
             opus_val16 *value = va_arg(ap, opus_val16*);
-            celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_SAVE(value));
+            if (!value) goto bad_arg;
+            ret = celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_SAVE(value));
         }
         break;
         case OPUS_SET_ENERGY_MASK_REQUEST:
         {
             opus_val16 *value = va_arg(ap, opus_val16*);
             st->energy_masking = (value!=NULL);
-            celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_MASK(value));
+            ret = celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_MASK(value));
         }
         break;
 
         case CELT_GET_MODE_REQUEST:
         {
            const CELTMode ** value = va_arg(ap, const CELTMode**);
-           if (value==0)
-              goto bad_arg;
-           celt_encoder_ctl(celt_enc, CELT_GET_MODE(value));
+           if (!value) goto bad_arg;
+           ret = celt_encoder_ctl(celt_enc, CELT_GET_MODE(value));
         }
         break;
         default:

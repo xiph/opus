@@ -400,6 +400,7 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
           int s;
           opus_uint32 *value = va_arg(ap, opus_uint32*);
           opus_uint32 tmp;
+          if (!value) goto bad_arg;
           *value = 0;
           for (s=0;s<st->layout.nb_streams;s++)
           {
@@ -442,6 +443,7 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
           if (stream_id<0 || stream_id >= st->layout.nb_streams)
              ret = OPUS_BAD_ARG;
           value = va_arg(ap, OpusDecoder**);
+          if (!value) goto bad_arg;
           for (s=0;s<stream_id;s++)
           {
              if (s < st->layout.nb_coupled_streams)
@@ -479,6 +481,9 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
 
    va_end(ap);
    return ret;
+bad_arg:
+   va_end(ap);
+   return OPUS_BAD_ARG;
 }
 
 

@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
     int curr_mode=0;
     int curr_mode_count=0;
     int mode_switch_time = 48000;
-    int nb_encoded;
+    int nb_encoded=0;
     int remaining=0;
     int variable_duration=OPUS_FRAMESIZE_ARG;
     int delayed_decision=0;

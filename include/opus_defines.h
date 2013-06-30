@@ -538,8 +538,9 @@ extern "C" {
 #define OPUS_GET_LAST_PACKET_DURATION(x) OPUS_GET_LAST_PACKET_DURATION_REQUEST, __opus_check_int_ptr(x)
 
 /** Configures the encoder's use of variable duration frames.
-  * When enabled, the encoder is free to use a shorter frame size than the one
-  * requested in the opus_encode*() call. It is then the user's responsibility
+  * When variable duration is enabled, the encoder is free to use a shorter frame
+  * size than the one requested in the opus_encode*() call.
+  * It is then the user's responsibility
   * to verify how much audio was encoded by checking the ToC byte of the encoded
   * packet. The part of the audio that was not encoded needs to be resent to the
   * encoder for the next call. Do not use this option unless you <b>really</b>
@@ -547,8 +548,14 @@ extern "C" {
   * @see OPUS_GET_EXPERT_VARIABLE_DURATION
   * @param[in] x <tt>opus_int32</tt>: Allowed values:
   * <dl>
-  * <dt>0</dt><dd>Disable variable duration (default).</dd>
-  * <dt>1</dt><dd>Enable variable duration.</dd>
+  * <dt>OPUS_FRAMESIZE_ARG</dt><dd>Select frame size from the argument (default).</dd>
+  * <dt>OPUS_FRAMESIZE_2_5_MS</dt><dd>Use 2.5 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_5_MS</dt><dd>Use 2.5 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_10_MS</dt><dd>Use 10 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_20_MS</dt><dd>Use 20 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_40_MS</dt><dd>Use 40 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_60_MS</dt><dd>Use 60 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_VARIABLE</dt><dd>Optimize the frame size dynamically.</dd>
   * </dl>
   * @hideinitializer */
 #define OPUS_SET_EXPERT_FRAME_DURATION(x) OPUS_SET_EXPERT_FRAME_DURATION_REQUEST, __opus_check_int(x)
@@ -556,8 +563,14 @@ extern "C" {
   * @see OPUS_SET_EXPERT_VARIABLE_DURATION
   * @param[out] x <tt>opus_int32 *</tt>: Returns one of the following values:
   * <dl>
-  * <dt>0</dt><dd>variable duration disabled (default).</dd>
-  * <dt>1</dt><dd>variable duration enabled.</dd>
+  * <dt>OPUS_FRAMESIZE_ARG</dt><dd>Select frame size from the argument (default).</dd>
+  * <dt>OPUS_FRAMESIZE_2_5_MS</dt><dd>Use 2.5 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_5_MS</dt><dd>Use 2.5 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_10_MS</dt><dd>Use 10 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_20_MS</dt><dd>Use 20 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_40_MS</dt><dd>Use 40 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_60_MS</dt><dd>Use 60 ms frames.</dd>
+  * <dt>OPUS_FRAMESIZE_VARIABLE</dt><dd>Optimize the frame size dynamically.</dd>
   * </dl>
   * @hideinitializer */
 #define OPUS_GET_EXPERT_FRAME_DURATION(x) OPUS_GET_EXPERT_FRAME_DURATION_REQUEST, __opus_check_int_ptr(x)
