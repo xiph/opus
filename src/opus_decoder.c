@@ -937,7 +937,8 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    case OPUS_GET_BANDWIDTH_REQUEST:
    {
       opus_int32 *value = va_arg(ap, opus_int32*);
-      if (!value) {
+      if (!value)
+      {
          goto bad_arg;
       }
       *value = st->bandwidth;
@@ -946,7 +947,8 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    case OPUS_GET_FINAL_RANGE_REQUEST:
    {
       opus_uint32 *value = va_arg(ap, opus_uint32*);
-      if (!value) {
+      if (!value)
+      {
          goto bad_arg;
       }
       *value = st->rangeFinal;
@@ -967,7 +969,8 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    case OPUS_GET_SAMPLE_RATE_REQUEST:
    {
       opus_int32 *value = va_arg(ap, opus_int32*);
-      if (!value) {
+      if (!value)
+      {
          goto bad_arg;
       }
       *value = st->Fs;
@@ -976,7 +979,8 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    case OPUS_GET_PITCH_REQUEST:
    {
       opus_int32 *value = va_arg(ap, opus_int32*);
-      if (!value) {
+      if (!value)
+      {
          goto bad_arg;
       }
       if (st->prev_mode == MODE_CELT_ONLY)
@@ -988,7 +992,8 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    case OPUS_GET_GAIN_REQUEST:
    {
       opus_int32 *value = va_arg(ap, opus_int32*);
-      if (!value) {
+      if (!value)
+      {
          goto bad_arg;
       }
       *value = st->decode_gain;
@@ -997,7 +1002,8 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    case OPUS_SET_GAIN_REQUEST:
    {
        opus_int32 value = va_arg(ap, opus_int32);
-       if (value<-32768 || value>32767) {
+       if (value<-32768 || value>32767)
+       {
           goto bad_arg;
        }
        st->decode_gain = value;
@@ -1006,7 +1012,8 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    case OPUS_GET_LAST_PACKET_DURATION_REQUEST:
    {
       opus_uint32 *value = va_arg(ap, opus_uint32*);
-      if (!value) {
+      if (!value)
+      {
          goto bad_arg;
       }
       *value = st->last_packet_duration;

@@ -852,7 +852,8 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_BITRATE_REQUEST:
    {
       opus_int32 value = va_arg(ap, opus_int32);
-      if (value<0 && value!=OPUS_AUTO && value!=OPUS_BITRATE_MAX) {
+      if (value<0 && value!=OPUS_AUTO && value!=OPUS_BITRATE_MAX)
+      {
          goto bad_arg;
       }
       st->bitrate_bps = value;
@@ -862,7 +863,8 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    {
       int s;
       opus_int32 *value = va_arg(ap, opus_int32*);
-      if (!value) {
+      if (!value)
+      {
          goto bad_arg;
       }
       *value = 0;
@@ -907,7 +909,8 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       int s;
       opus_uint32 *value = va_arg(ap, opus_uint32*);
       opus_uint32 tmp;
-      if (!value) {
+      if (!value)
+      {
          goto bad_arg;
       }
       *value=0;
@@ -965,7 +968,8 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       if (stream_id<0 || stream_id >= st->layout.nb_streams)
          ret = OPUS_BAD_ARG;
       value = va_arg(ap, OpusEncoder**);
-      if (!value) {
+      if (!value)
+      {
          goto bad_arg;
       }
       for (s=0;s<stream_id;s++)
@@ -987,7 +991,8 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_GET_EXPERT_FRAME_DURATION_REQUEST:
    {
        opus_int32 *value = va_arg(ap, opus_int32*);
-       if (!value) {
+       if (!value)
+       {
           goto bad_arg;
        }
        *value = st->variable_duration;
