@@ -12,5 +12,5 @@ Version: @VERSION@
 Requires:
 Conflicts:
 Libs: -L${libdir} -lopus
-Libs.private: @PC_LIBM@
+Libs.private: @LIBM@
 Cflags: -I${includedir}/opus

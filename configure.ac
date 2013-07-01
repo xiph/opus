@@ -125,7 +125,6 @@ AS_IF([test "$enable_fixed_point" = "yes"],[
 ],[
   enable_float="yes";
   PC_BUILD="floating-point"
-  PC_LIBM="$LIBM"
 ])
 
 AM_CONDITIONAL([FIXED_POINT], [test "$enable_fixed_point" = "yes"])
@@ -145,7 +144,6 @@ AC_ARG_ENABLE([custom-modes],
 AS_IF([test "$enable_custom_modes" = "yes"],[
   AC_DEFINE([CUSTOM_MODES], [1], [Custom modes])
   PC_BUILD="$PC_BUILD, custom modes"
-  PC_LIBM="$LIBM"
 ])
 
 AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes"])
@@ -289,7 +287,6 @@ LIBS="$saved_LIBS"
 AC_CHECK_FUNCS([__malloc_hook])
 
 AC_SUBST([PC_BUILD])
-AC_SUBST([PC_LIBM])
 
 
 AC_CONFIG_FILES([Makefile opus.pc opus-uninstalled.pc
