@@ -224,6 +224,8 @@ int opus_multistream_surround_encoder_init(
       int application
 )
 {
+   if ((channels>255) || (channels<1))
+      return OPUS_BAD_ARG;
    st->lfe_stream = -1;
    if (mapping_family==0)
    {
@@ -258,9 +260,8 @@ int opus_multistream_surround_encoder_init(
          mapping[i] = i;
    } else
       return OPUS_UNIMPLEMENTED;
-   opus_multistream_encoder_init_impl(st, Fs, channels, *streams, *coupled_streams,
+   return opus_multistream_encoder_init_impl(st, Fs, channels, *streams, *coupled_streams,
          mapping, application, channels>2&&mapping_family==1);
-   return OPUS_OK;
 }
 
 OpusMSEncoder *opus_multistream_encoder_create(
