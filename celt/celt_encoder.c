@@ -1215,7 +1215,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
    {
       opus_val16 amount;
       opus_val16 tvbr_factor;
-      amount = MULT16_16_Q15(QCONST16(.000006f, 30), IMAX(0, IMIN(42000, 68000-bitrate)));
+      amount = MULT16_16_Q15(QCONST16(.0000031f, 30), IMAX(0, IMIN(32000, 96000-bitrate)));
       tvbr_factor = SHR32(MULT16_16(temporal_vbr, amount), DB_SHIFT);
       target += (opus_int32)MULT16_32_Q15(tvbr_factor, target);
    }
