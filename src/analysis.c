@@ -484,8 +484,14 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
 
     /*printf("%f %f ", frame_probs[0], frame_probs[1]);*/
     {
-       float tau, beta;
+       /* Probability of state transition */
+       float tau;
+       /* Represents independence of the MLP probabilities, where
+          beta=1 means fully independent. */
+       float beta;
+       /* Denormalized probability of speech (p0) and music (p1) after update */
        float p0, p1;
+       /* Delayed decision variables */
        float s0, m0;
        float psum;
        float speech0;
@@ -501,13 +507,20 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
           q = MAX16(.05f,MIN16(.95f,tonal->music_prob));
           beta = .01f+.05f*ABS16(p-q)/(p*(1-q)+q*(1-p));
        }
+       /* p0 and p1 are the probabilities of speech and music at this frame
+          using only information from previous frame and applying the
+          state transition model */
        p0 = (1-tonal->music_prob)*(1-tau) +    tonal->music_prob *tau;
        p1 =    tonal->music_prob *(1-tau) + (1-tonal->music_prob)*tau;
+       /* We apply the current probability with exponent beta to work around
+          the fact that the probability estimates aren't independent. */
        p0 *= (float)pow(1-frame_probs[0], beta);
        p1 *= (float)pow(frame_probs[0], beta);
+       /* Normalise the probabilities to get the Marokv probability of music. */
        tonal->music_prob = p1/(p0+p1);
        info->music_prob = tonal->music_prob;
 
+       /* This chunk of code deals with delayed decision. */
        psum=1e-20f;
        speech0 = (float)pow(1-frame_probs[0], beta);
        music0  = (float)pow(frame_probs[0], beta);
