@@ -1551,6 +1551,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       surround_masking = DIV32_16(mask_avg,C*st->end) + QCONST16(.0f, DB_SHIFT);
       surround_masking = MIN16(MAX16(surround_masking,-QCONST16(1.5f, DB_SHIFT)), 0);
    }
+   /* Temporal VBR (but not for LFE) */
+   if (!st->lfe)
    {
       opus_val16 follow=-QCONST16(10.0f,DB_SHIFT);
       float frame_avg=0;
