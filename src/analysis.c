@@ -177,6 +177,8 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    curr_lookahead = IMAX(curr_lookahead-10, 0);
 
    psum=0;
+   /* Summing the probability of transition patterns that involve music at
+      time (DETECT_SIZE-curr_lookahead-1) */
    for (i=0;i<DETECT_SIZE-curr_lookahead;i++)
       psum += tonal->pmusic[i];
    for (;i<DETECT_SIZE;i++)
@@ -479,7 +481,9 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     frame_probs[0] = .5f*(frame_probs[0]+1);
     /* Curve fitting between the MLP probability and the actual probability */
     frame_probs[0] = .01f + 1.21f*frame_probs[0]*frame_probs[0] - .23f*(float)pow(frame_probs[0], 10);
+    /* Probability of active audio (as opposed to silence) */
     frame_probs[1] = .5f*frame_probs[1]+.5f;
+    /* Consider that silence has a 50-50 probability. */
     frame_probs[0] = frame_probs[1]*frame_probs[0] + (1-frame_probs[1])*.5f;
 
     /*printf("%f %f ", frame_probs[0], frame_probs[1]);*/
@@ -491,13 +495,15 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        float beta;
        /* Denormalized probability of speech (p0) and music (p1) after update */
        float p0, p1;
-       /* Delayed decision variables */
+       /* Probabilities for "all speech" and "all music" */
        float s0, m0;
+       /* Probability sum for renormalisation */
        float psum;
+       /* Instantaneous probability of speech and music, with beta pre-applied. */
        float speech0;
        float music0;
 
-       /* One transition every 3 minutes */
+       /* One transition every 3 minutes of active audio */
        tau = .00005f*frame_probs[1];
        beta = .05f;
        if (1) {
@@ -522,6 +528,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
 
        /* This chunk of code deals with delayed decision. */
        psum=1e-20f;
+       /* Instantaneous probability of speech and music, with beta pre-applied. */
        speech0 = (float)pow(1-frame_probs[0], beta);
        music0  = (float)pow(frame_probs[0], beta);
        if (tonal->count==1)
@@ -529,18 +536,25 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
           tonal->pspeech[0]=.5;
           tonal->pmusic [0]=.5;
        }
+       /* Updated probability of having only speech (s0) or only music (m0),
+          before considering the new observation. */
        s0 = tonal->pspeech[0] + tonal->pspeech[1];
        m0 = tonal->pmusic [0] + tonal->pmusic [1];
+       /* Updates s0 and m0 with instantaneous probability. */
        tonal->pspeech[0] = s0*(1-tau)*speech0;
        tonal->pmusic [0] = m0*(1-tau)*music0;
+       /* Propagate the transition probabilities */
        for (i=1;i<DETECT_SIZE-1;i++)
        {
           tonal->pspeech[i] = tonal->pspeech[i+1]*speech0;
           tonal->pmusic [i] = tonal->pmusic [i+1]*music0;
        }
+       /* Probability that the latest frame is speech, when all the previous ones were music. */
        tonal->pspeech[DETECT_SIZE-1] = m0*tau*speech0;
+       /* Probability that the latest frame is music, when all the previous ones were speech. */
        tonal->pmusic [DETECT_SIZE-1] = s0*tau*music0;
 
+       /* Renormalise probabilities to 1 */
        for (i=0;i<DETECT_SIZE;i++)
           psum += tonal->pspeech[i] + tonal->pmusic[i];
        psum = 1.f/psum;
