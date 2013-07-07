@@ -1165,7 +1165,8 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
 
 #ifndef FIXED_POINT
    /* Apply tonality boost */
-   if (analysis->valid) {
+   if (analysis->valid && !lfe)
+   {
       opus_int32 tonal_target;
       float tonal;
 
@@ -1211,7 +1212,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
 
    }
 
-   if (tf_estimate < QCONST16(.2f, 14))
+   if (!has_surround_mask && tf_estimate < QCONST16(.2f, 14))
    {
       opus_val16 amount;
       opus_val16 tvbr_factor;
@@ -1551,8 +1552,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
             mask_avg += followE-followMask;
          }
       }
-      surround_masking = DIV32_16(mask_avg,C*st->end) + QCONST16(.0f, DB_SHIFT);
-      surround_masking = MIN16(MAX16(surround_masking,-QCONST16(1.5f, DB_SHIFT)), 0);
+      surround_masking = DIV32_16(mask_avg,C*st->end) + QCONST16(.7f, DB_SHIFT);
+      surround_masking = MIN16(MAX16(surround_masking, -QCONST16(2.f, DB_SHIFT)), QCONST16(.2f, DB_SHIFT));
+      surround_masking -= HALF16(HALF16(surround_masking));
    }
    /* Temporal VBR (but not for LFE) */
    if (!st->lfe)
