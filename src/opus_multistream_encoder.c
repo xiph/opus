@@ -37,6 +37,7 @@
 #include "float_cast.h"
 #include "os_support.h"
 #include "analysis.h"
+#include "mathops.h"
 
 typedef struct {
    int nb_streams;
@@ -372,9 +373,12 @@ static void surround_rate_allocation(
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
 
+   if (st->bitrate_bps > st->layout.nb_channels*40000)
+      stream_offset = 20000;
+   else
+      stream_offset = st->bitrate_bps/st->layout.nb_channels/2;
    /* We start by giving each stream (coupled or uncoupled) the same bitrate.
       This models the main saving of coupled channels over uncoupled. */
-   stream_offset = 20000;
    /* The LFE stream is an exception to the above and gets fewer bits. */
    lfe_offset = 3500;
    /* Coupled streams get twice the mono rate after the first 20 kb/s. */
@@ -524,8 +528,16 @@ static int opus_multistream_encode_native
             , &analysis_info
 #endif
             );
+      /* Combines the left and right mask into a centre mask. We
+         use an approximation for the log of the sum of the energies. */
       for(i=0;i<21;i++)
-         bandLogE_mono[i] = MAX16(bandLogE[i], bandLogE[21+i]);
+      {
+         opus_val16 diff;
+         diff = ABS16(SUB16(bandLogE[i], bandLogE[21+i]));
+         diff = diff + HALF16(diff);
+         diff = SHR32(HALF32(celt_exp2(-diff)), 16-DB_SHIFT);
+         bandLogE_mono[i] = MAX16(bandLogE[i], bandLogE[21+i]) + diff;
+      }
    }
 
    if (max_data_bytes < 4*st->layout.nb_streams-1)
@@ -696,7 +708,7 @@ static void opus_surround_downmix_float(
 
    for (c=0;c<channels;c++)
    {
-      if (pos[c]==1||pos[c]==2)
+      if (pos[c]==1)
       {
          for (i=0;i<frame_size;i++)
 #if defined(FIXED_POINT)
@@ -704,8 +716,7 @@ static void opus_surround_downmix_float(
 #else
             dst[2*i] += float_src[i*channels+c];
 #endif
-      }
-      if (pos[c]==2||pos[c]==3)
+      } else if (pos[c]==3)
       {
          for (i=0;i<frame_size;i++)
 #if defined(FIXED_POINT)
@@ -713,6 +724,18 @@ static void opus_surround_downmix_float(
 #else
             dst[2*i+1] += float_src[i*channels+c];
 #endif
+      } else if (pos[c]==2)
+      {
+         for (i=0;i<frame_size;i++)
+         {
+#if defined(FIXED_POINT)
+            dst[2*i] += SHR32(MULT16_16(QCONST16(.70711f,15), FLOAT2INT16(float_src[i*channels+c])),3+15);
+            dst[2*i+1] += SHR32(MULT16_16(QCONST16(.70711f,15), FLOAT2INT16(float_src[i*channels+c])),3+15);
+#else
+            dst[2*i] += .707*float_src[i*channels+c];
+            dst[2*i+1] += .707*float_src[i*channels+c];
+#endif
+         }
       }
    }
 }
@@ -757,7 +780,7 @@ static void opus_surround_downmix_short(
 
    for (c=0;c<channels;c++)
    {
-      if (pos[c]==1||pos[c]==2)
+      if (pos[c]==1)
       {
          for (i=0;i<frame_size;i++)
 #if defined(FIXED_POINT)
@@ -765,8 +788,7 @@ static void opus_surround_downmix_short(
 #else
             dst[2*i] += (1/32768.f)*short_src[i*channels+c];
 #endif
-      }
-      if (pos[c]==2||pos[c]==3)
+      } else if (pos[c]==3)
       {
          for (i=0;i<frame_size;i++)
 #if defined(FIXED_POINT)
@@ -774,6 +796,18 @@ static void opus_surround_downmix_short(
 #else
             dst[2*i+1] += (1/32768.f)*short_src[i*channels+c];
 #endif
+      } else if (pos[c]==2)
+      {
+         for (i=0;i<frame_size;i++)
+         {
+#if defined(FIXED_POINT)
+            dst[2*i] += SHR32(MULT16_16(QCONST16(.70711f,15), short_src[i*channels+c]),3+15);
+            dst[2*i+1] += SHR32(MULT16_16(QCONST16(.70711f,15), short_src[i*channels+c]),3+15);
+#else
+            dst[2*i] += (.707f/32768.f)*short_src[i*channels+c];
+            dst[2*i+1] += (.707f/32768.f)*short_src[i*channels+c];
+#endif
+         }
       }
    }
 }
