@@ -789,7 +789,7 @@ int opus_multistream_encode(
 )
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_short,
-      pcm, frame_size, data, max_data_bytes, 16, opus_surround_downmix_float);
+      pcm, frame_size, data, max_data_bytes, 16, opus_surround_downmix_short);
 }
 
 #ifndef DISABLE_FLOAT_API
@@ -802,7 +802,7 @@ int opus_multistream_encode_float(
 )
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_float,
-      pcm, frame_size, data, max_data_bytes, 16, opus_surround_downmix_short);
+      pcm, frame_size, data, max_data_bytes, 16, opus_surround_downmix_float);
 }
 #endif
 
