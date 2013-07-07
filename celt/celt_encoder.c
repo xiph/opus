@@ -1517,7 +1517,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if (st->lfe)
    {
       for (i=2;i<st->end;i++)
+      {
          bandE[i] = IMIN(bandE[i], MULT16_32_Q15(QCONST16(1e-4f,15),bandE[0]));
+         bandE[i] = MAX32(bandE[i], EPSILON);
+      }
    }
    amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
    if (st->energy_save)
