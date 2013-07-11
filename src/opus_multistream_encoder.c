@@ -454,7 +454,9 @@ static int opus_multistream_encode_native
    unsigned char tmp_data[MS_FRAME_TMP];
    OpusRepacketizer rp;
    opus_int32 complexity;
+#ifndef FIXED_POINT
    AnalysisInfo analysis_info;
+#endif
    const CELTMode *celt_mode;
    opus_int32 bitrates[256];
    opus_val16 bandLogE[42];
@@ -629,27 +631,6 @@ static int opus_multistream_encode_native
 
 }
 
-#if !defined(DISABLE_FLOAT_API)
-static void opus_copy_channel_in_float(
-  opus_val16 *dst,
-  int dst_stride,
-  const void *src,
-  int src_stride,
-  int src_channel,
-  int frame_size
-)
-{
-   const float *float_src;
-   opus_int32 i;
-   float_src = (const float *)src;
-   for (i=0;i<frame_size;i++)
-#if defined(FIXED_POINT)
-      dst[i*dst_stride] = FLOAT2INT16(float_src[i*src_stride+src_channel]);
-#else
-      dst[i*dst_stride] = float_src[i*src_stride+src_channel];
-#endif
-}
-
 static void channel_pos(int channels, int pos[8])
 {
    /* Position in the mix: 0 don't mix, 1: left, 2: center, 3:right */
@@ -687,6 +668,27 @@ static void channel_pos(int channels, int pos[8])
       pos[6]=3;
       pos[7]=0;
    }
+}
+
+#if !defined(DISABLE_FLOAT_API)
+static void opus_copy_channel_in_float(
+  opus_val16 *dst,
+  int dst_stride,
+  const void *src,
+  int src_stride,
+  int src_channel,
+  int frame_size
+)
+{
+   const float *float_src;
+   opus_int32 i;
+   float_src = (const float *)src;
+   for (i=0;i<frame_size;i++)
+#if defined(FIXED_POINT)
+      dst[i*dst_stride] = FLOAT2INT16(float_src[i*src_stride+src_channel]);
+#else
+      dst[i*dst_stride] = float_src[i*src_stride+src_channel];
+#endif
 }
 
 static void opus_surround_downmix_float(
