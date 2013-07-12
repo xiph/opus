@@ -100,6 +100,7 @@ typedef opus_val32 celt_ener;
 #define DB_SHIFT 10
 
 #define EPSILON 1
+#define VERY_SMALL 0
 #define VERY_LARGE16 ((opus_val16)32767)
 #define Q15_ONE ((opus_val16)32767)
 
@@ -140,6 +141,7 @@ typedef float celt_ener;
 #define NORM_SCALING 1.f
 
 #define EPSILON 1e-15f
+#define VERY_SMALL 1e-30f
 #define VERY_LARGE16 1e15f
 #define Q15_ONE ((opus_val16)1.f)
 
