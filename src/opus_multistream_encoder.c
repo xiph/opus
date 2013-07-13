@@ -734,8 +734,8 @@ static void opus_surround_downmix_float(
             dst[2*i] += SHR32(MULT16_16(QCONST16(.70711f,15), FLOAT2INT16(float_src[i*channels+c])),3+15);
             dst[2*i+1] += SHR32(MULT16_16(QCONST16(.70711f,15), FLOAT2INT16(float_src[i*channels+c])),3+15);
 #else
-            dst[2*i] += .707*float_src[i*channels+c];
-            dst[2*i+1] += .707*float_src[i*channels+c];
+            dst[2*i] += .707f*float_src[i*channels+c];
+            dst[2*i+1] += .707f*float_src[i*channels+c];
 #endif
          }
       }
