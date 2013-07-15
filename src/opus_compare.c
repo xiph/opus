@@ -364,7 +364,7 @@ int main(int _argc,const char **_argv){
     err+=Ef*Ef;
   }
   err=pow(err/nframes,1.0/16);
-  Q=100*(1-0.5f*(float)log(1+err)/log(1.13f));
+  Q=100*(1-0.5f*(float)log(1+err)/(float)log(1.13f));
   if(Q<0){
     fprintf(stderr,"Test vector FAILS\n");
     fprintf(stderr,"Internal weighted error is %f\n",err);
