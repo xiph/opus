@@ -163,7 +163,7 @@ void silk_NLSF2A(
     }
 
     for( i = 0; i < MAX_LPC_STABILIZE_ITERATIONS; i++ ) {
-        if( silk_LPC_inverse_pred_gain( a_Q12, d ) < SILK_FIX_CONST( 1.0f / MAX_PREDICTION_POWER_GAIN, 30 ) ) {
+        if( silk_LPC_inverse_pred_gain( a_Q12, d ) < SILK_FIX_CONST( 1.0 / MAX_PREDICTION_POWER_GAIN, 30 ) ) {
             /* Prediction coefficients are (too close to) unstable; apply bandwidth expansion   */
             /* on the unscaled coefficients, convert to Q12 and measure again                   */
             silk_bwexpander_32( a32_QA1, d, 65536 - silk_LSHIFT( 2, i ) );
