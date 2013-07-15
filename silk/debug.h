@@ -69,7 +69,9 @@ unsigned long GetHighResolutionTime(void); /* O  time in usec*/
 
 #if (defined(_WIN32) || defined(_WINCE))
 #include <windows.h>    /* timer */
+#if defined(_MSC_VER)
 #pragma warning( disable : 4996 )       /* stop bitching about strcpy in TIC()*/
+#endif
 #else   /* Linux or Mac*/
 #include <sys/time.h>
 #endif
