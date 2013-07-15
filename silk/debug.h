@@ -28,10 +28,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef SILK_DEBUG_H
 #define SILK_DEBUG_H
 
-#ifdef _WIN32
-#define _CRT_SECURE_NO_DEPRECATE    1
-#endif
-
 #include "typedef.h"
 #include <stdio.h>      /* file writing */
 #include <string.h>     /* strcpy, strcmp */
@@ -69,9 +65,6 @@ unsigned long GetHighResolutionTime(void); /* O  time in usec*/
 
 #if (defined(_WIN32) || defined(_WINCE))
 #include <windows.h>    /* timer */
-#if defined(_MSC_VER)
-#pragma warning( disable : 4996 )       /* stop bitching about strcpy in TIC()*/
-#endif
 #else   /* Linux or Mac*/
 #include <sys/time.h>
 #endif
