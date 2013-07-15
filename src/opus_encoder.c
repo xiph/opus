@@ -949,7 +949,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     {
        int analysis_bandwidth;
        if (st->signal_type == OPUS_AUTO)
-          st->voice_ratio = (int)floor(.5+100*(1-analysis_info->music_prob));
+          st->voice_ratio = (int)floor(.5f+100*(1-analysis_info->music_prob));
 
        analysis_bandwidth = analysis_info->bandwidth;
        if (analysis_bandwidth<=12)

@@ -283,12 +283,12 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        d_angle2 = angle2 - angle;
        d2_angle2 = d_angle2 - d_angle;
 
-       mod1 = d2_angle - (float)floor(.5+d2_angle);
+       mod1 = d2_angle - (float)floor(.5f+d2_angle);
        noisiness[i] = ABS16(mod1);
        mod1 *= mod1;
        mod1 *= mod1;
 
-       mod2 = d2_angle2 - (float)floor(.5+d2_angle2);
+       mod2 = d2_angle2 - (float)floor(.5f+d2_angle2);
        noisiness[i] += ABS16(mod2);
        mod2 *= mod2;
        mod2 *= mod2;
@@ -404,7 +404,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
              both the ATH and the loudness-dependent slope of the spreading function)
           3) above the PCM quantization noise floor
        */
-       if (E>.1*bandwidth_mask && E*1e9f > maxE && E > noise_floor*(band_end-band_start))
+       if (E>.1f*bandwidth_mask && E*1e9f > maxE && E > noise_floor*(band_end-band_start))
           bandwidth = b;
     }
     if (tonal->count<=2)
@@ -568,16 +568,16 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
           psum += tonal->pspeech[i];
 
        /* Estimate our confidence in the speech/music decisions */
-       if (frame_probs[1]>.75)
+       if (frame_probs[1]>.75f)
        {
-          if (tonal->music_prob>.9)
+          if (tonal->music_prob>.9f)
           {
              float adapt;
              adapt = 1.f/(++tonal->music_confidence_count);
              tonal->music_confidence_count = IMIN(tonal->music_confidence_count, 500);
              tonal->music_confidence += adapt*MAX16(-.2f,frame_probs[0]-tonal->music_confidence);
           }
-          if (tonal->music_prob<.1)
+          if (tonal->music_prob<.1f)
           {
              float adapt;
              adapt = 1.f/(++tonal->speech_confidence_count);
