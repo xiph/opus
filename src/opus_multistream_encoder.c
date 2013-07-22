@@ -969,6 +969,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_COMPLEXITY_REQUEST:
    case OPUS_SET_VBR_REQUEST:
    case OPUS_SET_VBR_CONSTRAINT_REQUEST:
+   case OPUS_SET_MAX_BANDWIDTH_REQUEST:
    case OPUS_SET_BANDWIDTH_REQUEST:
    case OPUS_SET_SIGNAL_REQUEST:
    case OPUS_SET_APPLICATION_REQUEST:
