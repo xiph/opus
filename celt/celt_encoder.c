@@ -890,7 +890,7 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
    for (i=0;i<nbEBands;i++)
       offsets[i] = 0;
    /* Dynamic allocation code */
-   maxDepth=-QCONST16(32.f, DB_SHIFT);
+   maxDepth=-QCONST16(31.9f, DB_SHIFT);
    for (i=0;i<end;i++)
    {
       /* Noise floor must take into account eMeans, the depth, the width of the bands
