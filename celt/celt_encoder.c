@@ -974,7 +974,9 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
          if ((!vbr || (constrained_vbr&&!isTransient))
                && (tot_boost+boost_bits)>>BITRES>>3 > effectiveBytes/4)
          {
-            offsets[i] = 0;
+            opus_int32 cap = ((effectiveBytes/4)<<BITRES<<3);
+            offsets[i] = cap-tot_boost;
+            tot_boost = cap;
             break;
          } else {
             offsets[i] = boost;
