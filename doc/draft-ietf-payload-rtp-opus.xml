@@ -14,10 +14,10 @@
 <!ENTITY rfc5576 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5576.xml'>
 <!ENTITY rfc6562 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6562.xml'>
 <!ENTITY rfc6716 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6716.xml'>
-
+<!ENTITY nbsp "&#160;">
   ]>
 
-  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-00">
+  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-01">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -70,7 +70,7 @@
       </address>
     </author>
 
-    <date day='10' month='January' year='2013' />
+    <date day='2' month='August' year='2013' />
 
     <abstract>
       <t>
@@ -650,7 +650,7 @@
             media streaming.</t>
           </list></t>
 
-          <t>Person & email address to contact for further information:</t>
+          <t>Person &amp; email address to contact for further information:</t>
           <t><list style="hanging">
             <t>SILK Support silksupport@skype.net</t>
             <t>Jean-Marc Valin jmvalin@jmvalin.ca</t>
