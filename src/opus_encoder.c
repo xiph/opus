@@ -346,7 +346,7 @@ static void silk_biquad_float(
 
         S[ 0 ] = S[1] - vout*A[0] + B[1]*inval;
 
-        S[ 1 ] = - vout*A[1] + B[2]*inval;
+        S[ 1 ] = - vout*A[1] + B[2]*inval + VERY_SMALL;
 
         /* Scale back to Q0 and saturate */
         out[ k*stride ] = vout;
