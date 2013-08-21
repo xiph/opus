@@ -203,22 +203,22 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\celt\arch.h" />
-    <ClInclude Include="..\celt\celt.h" />
-    <ClInclude Include="..\celt\entdec.h" />
-    <ClInclude Include="..\celt\entenc.h" />
-    <ClInclude Include="..\celt\float_cast.h" />
-    <ClInclude Include="..\celt\os_support.h" />
-    <ClInclude Include="..\celt\stack_alloc.h" />
-    <ClInclude Include="..\include\opus.h" />
-    <ClInclude Include="..\include\opus_defines.h" />
-    <ClInclude Include="..\include\opus_types.h" />
-    <ClInclude Include="..\include\opus_multistream.h" />
-    <ClInclude Include="..\win32\config.h" />
-    <ClInclude Include="analysis.h" />
-    <ClInclude Include="mlp.h" />
-    <ClInclude Include="opus_private.h" />
-    <ClInclude Include="tansig_table.h" />
+    <ClInclude Include="..\..\celt\arch.h" />
+    <ClInclude Include="..\..\celt\celt.h" />
+    <ClInclude Include="..\..\celt\entdec.h" />
+    <ClInclude Include="..\..\celt\entenc.h" />
+    <ClInclude Include="..\..\celt\float_cast.h" />
+    <ClInclude Include="..\..\celt\os_support.h" />
+    <ClInclude Include="..\..\celt\stack_alloc.h" />
+    <ClInclude Include="..\..\include\opus.h" />
+    <ClInclude Include="..\..\include\opus_defines.h" />
+    <ClInclude Include="..\..\include\opus_types.h" />
+    <ClInclude Include="..\..\include\opus_multistream.h" />
+    <ClInclude Include="..\..\win32\config.h" />
+    <ClInclude Include="..\..\src\analysis.h" />
+    <ClInclude Include="..\..\src\mlp.h" />
+    <ClInclude Include="..\..\src\opus_private.h" />
+    <ClInclude Include="..\..\src\tansig_table.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\analysis.c" />

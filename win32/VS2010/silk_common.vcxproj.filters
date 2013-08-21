@@ -15,70 +15,70 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\opus_types.h">
+    <ClInclude Include="..\..\include\opus_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\win32\config.h">
+    <ClInclude Include="..\..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="control.h">
+    <ClInclude Include="..\..\silk\control.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="debug.h">
+    <ClInclude Include="..\..\silk\debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="define.h">
+    <ClInclude Include="..\..\silk\define.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="errors.h">
+    <ClInclude Include="..\..\silk\errors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Inlines.h">
+    <ClInclude Include="..\..\silk\Inlines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MacroCount.h">
+    <ClInclude Include="..\..\silk\MacroCount.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MacroDebug.h">
+    <ClInclude Include="..\..\silk\MacroDebug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="macros.h">
+    <ClInclude Include="..\..\silk\macros.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="main.h">
+    <ClInclude Include="..\..\silk\main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pitch_est_defines.h">
+    <ClInclude Include="..\..\silk\pitch_est_defines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PLC.h">
+    <ClInclude Include="..\..\silk\PLC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resampler_private.h">
+    <ClInclude Include="..\..\silk\resampler_private.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resampler_rom.h">
+    <ClInclude Include="..\..\silk\resampler_rom.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resampler_structs.h">
+    <ClInclude Include="..\..\silk\resampler_structs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="API.h">
+    <ClInclude Include="..\..\silk\API.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SigProc_FIX.h">
+    <ClInclude Include="..\..\silk\SigProc_FIX.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="structs.h">
+    <ClInclude Include="..\..\silk\structs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tables.h">
+    <ClInclude Include="..\..\silk\tables.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tuning_parameters.h">
+    <ClInclude Include="..\..\silk\tuning_parameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="typedef.h">
+    <ClInclude Include="..\..\silk\typedef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -211,8 +211,8 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\opus_types.h" />
-    <ClInclude Include="..\win32\config.h" />
+    <ClInclude Include="..\..\include\opus_types.h" />
+    <ClInclude Include="..\..\win32\config.h" />
     <ClInclude Include="..\..\silk\control.h" />
     <ClInclude Include="..\..\silk\debug.h" />
     <ClInclude Include="..\..\silk\define.h" />
