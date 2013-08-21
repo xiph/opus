@@ -210,9 +210,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\opus_types.h" />
     <ClInclude Include="..\..\win32\config.h" />
-    <ClInclude Include="main_FLP.h" />
-    <ClInclude Include="SigProc_FLP.h" />
-    <ClInclude Include="structs_FLP.h" />
+    <ClInclude Include="..\..\silk\float\main_FLP.h" />
+    <ClInclude Include="..\..\silk\float\SigProc_FLP.h" />
+    <ClInclude Include="..\..\silk\float\structs_FLP.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\silk\float\apply_sine_window_FLP.c" />

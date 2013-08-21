@@ -213,26 +213,26 @@
   <ItemGroup>
     <ClInclude Include="..\include\opus_types.h" />
     <ClInclude Include="..\win32\config.h" />
-    <ClInclude Include="control.h" />
-    <ClInclude Include="debug.h" />
-    <ClInclude Include="define.h" />
-    <ClInclude Include="errors.h" />
-    <ClInclude Include="Inlines.h" />
-    <ClInclude Include="MacroCount.h" />
-    <ClInclude Include="MacroDebug.h" />
-    <ClInclude Include="macros.h" />
-    <ClInclude Include="main.h" />
-    <ClInclude Include="pitch_est_defines.h" />
-    <ClInclude Include="PLC.h" />
-    <ClInclude Include="resampler_private.h" />
-    <ClInclude Include="resampler_rom.h" />
-    <ClInclude Include="resampler_structs.h" />
-    <ClInclude Include="API.h" />
-    <ClInclude Include="SigProc_FIX.h" />
-    <ClInclude Include="structs.h" />
-    <ClInclude Include="tables.h" />
-    <ClInclude Include="tuning_parameters.h" />
-    <ClInclude Include="typedef.h" />
+    <ClInclude Include="..\..\silk\control.h" />
+    <ClInclude Include="..\..\silk\debug.h" />
+    <ClInclude Include="..\..\silk\define.h" />
+    <ClInclude Include="..\..\silk\errors.h" />
+    <ClInclude Include="..\..\silk\Inlines.h" />
+    <ClInclude Include="..\..\silk\MacroCount.h" />
+    <ClInclude Include="..\..\silk\MacroDebug.h" />
+    <ClInclude Include="..\..\silk\macros.h" />
+    <ClInclude Include="..\..\silk\main.h" />
+    <ClInclude Include="..\..\silk\pitch_est_defines.h" />
+    <ClInclude Include="..\..\silk\PLC.h" />
+    <ClInclude Include="..\..\silk\resampler_private.h" />
+    <ClInclude Include="..\..\silk\resampler_rom.h" />
+    <ClInclude Include="..\..\silk\resampler_structs.h" />
+    <ClInclude Include="..\..\silk\API.h" />
+    <ClInclude Include="..\..\silk\SigProc_FIX.h" />
+    <ClInclude Include="..\..\silk\structs.h" />
+    <ClInclude Include="..\..\silk\tables.h" />
+    <ClInclude Include="..\..\silk\tuning_parameters.h" />
+    <ClInclude Include="..\..\silk\typedef.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\silk\A2NLSF.c" />

@@ -161,9 +161,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\opus_types.h" />
     <ClInclude Include="..\..\win32\config.h" />
-    <ClInclude Include="..\SigProc_FIX.h" />
-    <ClInclude Include="main_FIX.h" />
-    <ClInclude Include="structs_FIX.h" />
+    <ClInclude Include="..\..\silk\SigProc_FIX.h" />
+    <ClInclude Include="..\..\silk\fixed\main_FIX.h" />
+    <ClInclude Include="..\..\silk\fixed\structs_FIX.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\silk\fixed\apply_sine_window_FIX.c" />
