@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "SigProc_FLP.h"
 #include "SigProc_FIX.h"
 #include "pitch_est_defines.h"
+#include "pitch.h"
 
 #define SCRATCH_SIZE        22
 
@@ -84,6 +85,7 @@ opus_int silk_pitch_analysis_core_FLP(      /* O    Voicing estimate: 0 voiced, 
     opus_int32 filt_state[ 6 ];
     silk_float threshold, contour_bias;
     silk_float C[ PE_MAX_NB_SUBFR][ (PE_MAX_LAG >> 1) + 5 ];
+    opus_val32 xcorr[ PE_MAX_LAG_MS * 4 - PE_MIN_LAG_MS * 4 + 1 ];
     silk_float CC[ PE_NB_CBKS_STAGE2_EXT ];
     const silk_float *target_ptr, *basis_ptr;
     double    cross_corr, normalizer, energy, energy_tmp;
@@ -174,8 +176,10 @@ opus_int silk_pitch_analysis_core_FLP(      /* O    Voicing estimate: 0 voiced, 
         silk_assert( basis_ptr >= frame_4kHz );
         silk_assert( basis_ptr + sf_length_8kHz <= frame_4kHz + frame_length_4kHz );
 
+        celt_pitch_xcorr( target_ptr, target_ptr-max_lag_4kHz, xcorr, sf_length_8kHz, max_lag_4kHz - min_lag_4kHz + 1 );
+
         /* Calculate first vector products before loop */
-        cross_corr = silk_inner_product_FLP( target_ptr, basis_ptr, sf_length_8kHz );
+        cross_corr = xcorr[ max_lag_4kHz - min_lag_4kHz ];
         normalizer = silk_energy_FLP( target_ptr, sf_length_8kHz ) + 
                      silk_energy_FLP( basis_ptr,  sf_length_8kHz ) + 
                      sf_length_8kHz * 4000.0f;
@@ -190,7 +194,7 @@ opus_int silk_pitch_analysis_core_FLP(      /* O    Voicing estimate: 0 voiced, 
             silk_assert( basis_ptr >= frame_4kHz );
             silk_assert( basis_ptr + sf_length_8kHz <= frame_4kHz + frame_length_4kHz );
 
-            cross_corr = silk_inner_product_FLP(target_ptr, basis_ptr, sf_length_8kHz);
+            cross_corr = xcorr[ max_lag_4kHz - d ];
 
             /* Add contribution of new sample and remove contribution from oldest sample */
             normalizer +=
@@ -496,6 +500,7 @@ static void silk_P_Ana_calc_corr_st3(
     opus_int   i, j, k, lag_counter, lag_low, lag_high;
     opus_int   nb_cbk_search, delta, idx, cbk_size;
     silk_float scratch_mem[ SCRATCH_SIZE ];
+    opus_val32 xcorr[ SCRATCH_SIZE ];
     const opus_int8 *Lag_range_ptr, *Lag_CB_ptr;
 
     silk_assert( complexity >= SILK_PE_MIN_COMPLEX );
@@ -521,10 +526,12 @@ static void silk_P_Ana_calc_corr_st3(
         /* Calculate the correlations for each subframe */
         lag_low  = matrix_ptr( Lag_range_ptr, k, 0, 2 );
         lag_high = matrix_ptr( Lag_range_ptr, k, 1, 2 );
+        silk_assert(lag_high-lag_low+1 <= SCRATCH_SIZE);
+        celt_pitch_xcorr( target_ptr, target_ptr - start_lag - lag_high, xcorr, sf_length, lag_high - lag_low + 1 );
         for( j = lag_low; j <= lag_high; j++ ) {
             basis_ptr = target_ptr - ( start_lag + j );
             silk_assert( lag_counter < SCRATCH_SIZE );
-            scratch_mem[ lag_counter ] = (silk_float)silk_inner_product_FLP( target_ptr, basis_ptr, sf_length );
+            scratch_mem[ lag_counter ] = xcorr[ lag_high - j ];
             lag_counter++;
         }
 
