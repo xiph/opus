@@ -118,25 +118,24 @@ void celt_fir(const opus_val16 *_x,
       {
          sum = MAC16_16(sum,rnum[j],x[i+j]);
       }
-      _y[i] = ROUND16(sum, SIG_SHIFT);
+      _y[i] = SATURATE16(PSHR32(sum, SIG_SHIFT));
    }
 #else
-   celt_assert((ord&3)==0);
    for (i=0;i<N-3;i+=4)
    {
       opus_val32 sum[4]={0,0,0,0};
       xcorr_kernel(rnum, x+i, sum, ord);
-      _y[i  ] = ADD16(_x[i  ], ROUND16(sum[0], SIG_SHIFT));
-      _y[i+1] = ADD16(_x[i+1], ROUND16(sum[1], SIG_SHIFT));
-      _y[i+2] = ADD16(_x[i+2], ROUND16(sum[2], SIG_SHIFT));
-      _y[i+3] = ADD16(_x[i+3], ROUND16(sum[3], SIG_SHIFT));
+      _y[i  ] = SATURATE16(ADD32(EXTEND32(_x[i  ]), PSHR32(sum[0], SIG_SHIFT)));
+      _y[i+1] = SATURATE16(ADD32(EXTEND32(_x[i+1]), PSHR32(sum[1], SIG_SHIFT)));
+      _y[i+2] = SATURATE16(ADD32(EXTEND32(_x[i+2]), PSHR32(sum[2], SIG_SHIFT)));
+      _y[i+3] = SATURATE16(ADD32(EXTEND32(_x[i+3]), PSHR32(sum[3], SIG_SHIFT)));
    }
    for (;i<N;i++)
    {
       opus_val32 sum = 0;
       for (j=0;j<ord;j++)
          sum = MAC16_16(sum,rnum[j],x[i+j]);
-      _y[i] = ADD16(_x[i  ], ROUND16(sum, SIG_SHIFT));
+      _y[i] = SATURATE16(ADD32(EXTEND32(_x[i]), PSHR32(sum, SIG_SHIFT)));
    }
 #endif
    RESTORE_STACK;

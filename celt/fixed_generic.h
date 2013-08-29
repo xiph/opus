@@ -84,6 +84,8 @@
 #define PSHR(a,shift) (SHR((a)+((EXTEND32(1)<<((shift))>>1)),shift))
 #define SATURATE(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 
+#define SATURATE16(x) (EXTRACT16((x)>32767 ? 32767 : (x)<-32768 ? -32768 : (x)))
+
 /** Shift by a and round-to-neareast 32-bit value. Result is a 16-bit value */
 #define ROUND16(x,a) (EXTRACT16(PSHR32((x),(a))))
 /** Divide by two */

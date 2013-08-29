@@ -163,6 +163,7 @@ typedef float celt_ener;
 #define SHR(a,shift)    (a)
 #define SHL(a,shift)    (a)
 #define SATURATE(x,a)   (x)
+#define SATURATE16(x)   (x)
 
 #define ROUND16(a,shift)  (a)
 #define HALF16(x)       (.5f*(x))
