@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "SigProc_FIX.h"
 #include "define.h"
 #include "tuning_parameters.h"
+#include "pitch.h"
 
 #define MAX_FRAME_SIZE              384             /* subfr_length * nb_subfr = ( 0.005 * 16000 + 16 ) * 4 = 384 */
 
@@ -60,6 +61,7 @@ void silk_burg_modified(
     opus_int32       Af_QA[       SILK_MAX_ORDER_LPC ];
     opus_int32       CAf[ SILK_MAX_ORDER_LPC + 1 ];
     opus_int32       CAb[ SILK_MAX_ORDER_LPC + 1 ];
+    opus_int32       xcorr[ SILK_MAX_ORDER_LPC ];
 
     silk_assert( subfr_length * nb_subfr <= MAX_FRAME_SIZE );
 
@@ -93,10 +95,17 @@ void silk_burg_modified(
         }
     } else {
         for( s = 0; s < nb_subfr; s++ ) {
+            int i;
+            opus_int32 d;
             x_ptr = x + s * subfr_length;
+            celt_pitch_xcorr(x_ptr, x_ptr + 1, xcorr, subfr_length - D, D );
             for( n = 1; n < D + 1; n++ ) {
-                C_first_row[ n - 1 ] += silk_LSHIFT32(
-                    silk_inner_prod_aligned( x_ptr, x_ptr + n, subfr_length - n ), -rshifts );
+               for ( i = n + subfr_length - D, d = 0; i < subfr_length; i++ )
+                  d = MAC16_16( d, x_ptr[ i ], x_ptr[ i - n ] );
+               xcorr[ n - 1 ] += d;
+            }
+            for( n = 1; n < D + 1; n++ ) {
+                C_first_row[ n - 1 ] += silk_LSHIFT32( xcorr[ n - 1 ], -rshifts );
             }
         }
     }
