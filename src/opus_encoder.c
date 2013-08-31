@@ -2349,16 +2349,6 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             ret = celt_encoder_ctl(celt_enc, OPUS_SET_LFE(value));
         }
         break;
-        case OPUS_SET_ENERGY_SAVE_REQUEST:
-        {
-            opus_val16 *value = va_arg(ap, opus_val16*);
-            if (!value)
-            {
-               goto bad_arg;
-            }
-            ret = celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_SAVE(value));
-        }
-        break;
         case OPUS_SET_ENERGY_MASK_REQUEST:
         {
             opus_val16 *value = va_arg(ap, opus_val16*);

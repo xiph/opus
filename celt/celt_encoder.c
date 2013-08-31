@@ -111,7 +111,6 @@ struct OpusCustomEncoder {
    opus_val32 overlap_max;
    opus_val16 stereo_saving;
    int intensity;
-   opus_val16 *energy_save;
    opus_val16 *energy_mask;
    opus_val16 spec_avg;
 
@@ -452,7 +451,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS
 }
 
 
-static void preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
+void preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
                         int N, int CC, int upsample, const opus_val16 *coef, celt_sig *mem, int clip)
 {
    int i;
@@ -1526,35 +1525,18 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       }
    }
    amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
-   if (st->energy_save)
-   {
-      opus_val16 offset = shortBlocks?HALF16(SHL16(LM, DB_SHIFT)):0;
-#ifdef FIXED_POINT
-      /* Compensate for the 1/8 gain we apply in the fixed-point downshift to avoid overflows. */
-      offset -= QCONST16(3.0f, DB_SHIFT);
-#endif
-      for(i=0;i<C*nbEBands;i++)
-         st->energy_save[i]=bandLogE[i]-offset;
-      st->energy_save=NULL;
-   }
    /* This computes how much masking takes place between surround channels */
    if (st->energy_mask&&!st->lfe)
    {
       opus_val32 mask_avg=0;
-      opus_val16 offset = shortBlocks?HALF16(SHL16(LM, DB_SHIFT)):0;
       for (c=0;c<C;c++)
       {
-         opus_val16 followE, followMask;
-         followE = followMask = -QCONST16(14.f, DB_SHIFT);
          for(i=0;i<st->end;i++)
          {
-            /* We use a simple follower to approximate the masking spreading function. */
-            followE = MAX16(followE-QCONST16(1.f, DB_SHIFT), bandLogE[nbEBands*c+i]-offset);
-            followMask = MAX16(followMask-QCONST16(1.f, DB_SHIFT), st->energy_mask[nbEBands*c+i]);
-            mask_avg += followE-followMask;
+            mask_avg += st->energy_mask[nbEBands*c+i];
          }
       }
-      surround_masking = DIV32_16(mask_avg,C*st->end) + QCONST16(.7f, DB_SHIFT);
+      surround_masking = DIV32_16(mask_avg,C*st->end);
       surround_masking = MIN16(MAX16(surround_masking, -QCONST16(2.f, DB_SHIFT)), QCONST16(.2f, DB_SHIFT));
       surround_masking -= HALF16(HALF16(surround_masking));
    }
@@ -2259,12 +2241,6 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
       {
           opus_int32 value = va_arg(ap, opus_int32);
           st->lfe = value;
-      }
-      break;
-      case OPUS_SET_ENERGY_SAVE_REQUEST:
-      {
-          opus_val16 *value = va_arg(ap, opus_val16*);
-          st->energy_save=value;
       }
       break;
       case OPUS_SET_ENERGY_MASK_REQUEST:
