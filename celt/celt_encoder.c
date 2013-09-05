@@ -743,7 +743,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
       AnalysisInfo *analysis, opus_val16 *stereo_saving, opus_val16 tf_estimate,
-      int intensity)
+      int intensity, opus_val16 surround_trim)
 {
    int i;
    opus_val32 diff=0;
@@ -817,6 +817,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    if (diff < -QCONST16(10.f, DB_SHIFT))
       trim_index++;
    trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), SHR16(diff+QCONST16(1.f, DB_SHIFT),DB_SHIFT-8)/6 ));
+   trim -= SHR16(surround_trim, DB_SHIFT-8);
    trim -= 2*SHR16(tf_estimate, 14-8);
 #ifndef FIXED_POINT
    if (analysis->valid)
@@ -876,7 +877,7 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
 static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
-      int effectiveBytes, opus_int32 *tot_boost_, int lfe)
+      int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc)
 {
    int i, c;
    opus_int32 tot_boost=0;
@@ -939,6 +940,8 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
             follower[i] = MAX16(0, bandLogE[i]-follower[i]);
          }
       }
+      for (i=start;i<end;i++)
+         follower[i] = MAX16(follower[i], surround_dynalloc[i]);
       /* For non-transient CBR/CVBR frames, halve the dynalloc contribution */
       if ((!vbr || constrained_vbr)&&!isTransient)
       {
@@ -1290,6 +1293,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    int transient_got_disabled=0;
    opus_val16 surround_masking=0;
    opus_val16 temporal_vbr=0;
+   opus_val16 surround_trim = 0;
+   VARDECL(opus_val16, surround_dynalloc);
    ALLOC_STACK;
 
    mode = st->mode;
@@ -1525,20 +1530,46 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       }
    }
    amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
+
+   ALLOC(surround_dynalloc, C*nbEBands, opus_val16);
+   for(i=0;i<st->end;i++)
+      surround_dynalloc[i] = 0;
    /* This computes how much masking takes place between surround channels */
    if (st->energy_mask&&!st->lfe)
    {
       opus_val32 mask_avg=0;
+      opus_val32 diff=0;
       for (c=0;c<C;c++)
       {
          for(i=0;i<st->end;i++)
          {
             mask_avg += st->energy_mask[nbEBands*c+i];
+            diff += st->energy_mask[i+c*nbEBands]*(opus_int32)(1+2*i-st->end);
          }
       }
-      surround_masking = DIV32_16(mask_avg,C*st->end);
-      surround_masking = MIN16(MAX16(surround_masking, -QCONST16(2.f, DB_SHIFT)), QCONST16(.2f, DB_SHIFT));
-      surround_masking -= HALF16(HALF16(surround_masking));
+      mask_avg = DIV32_16(mask_avg,C*st->end);
+      mask_avg = MAX16(mask_avg, -QCONST16(2.f, DB_SHIFT));
+      diff = diff*6/(C*(st->end-1)*(st->end+1)*st->end);
+      diff = MAX32(MIN32(diff, QCONST32(.05f, DB_SHIFT)), -QCONST32(.05f, DB_SHIFT));
+      for(i=0;i<st->end;i++)
+      {
+         opus_val32 lin;
+         opus_val16 unmask;
+         lin = mask_avg + HALF32(diff*(1+2*i-st->end));
+         if (C==2)
+            unmask = MAX16(st->energy_mask[i], st->energy_mask[nbEBands+i]) - lin;
+         else
+            unmask = st->energy_mask[i] - lin;
+         if (unmask > QCONST16(.25f, DB_SHIFT))
+         {
+            surround_dynalloc[i] = unmask - QCONST16(.25f, DB_SHIFT);
+         }
+      }
+      /* Convert to 1/64th units used for the trim */
+      surround_trim = 64*diff;
+      /*printf("%d %d ", mask_avg, surround_trim);*/
+      surround_masking = mask_avg;
+      surround_masking = MIN16(MAX16(surround_masking, -QCONST16(2.f, DB_SHIFT)), QCONST16(.0f, DB_SHIFT));
    }
    /* Temporal VBR (but not for LFE) */
    if (!st->lfe)
@@ -1665,7 +1696,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, st->start, st->end, C, offsets,
          st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
-         eBands, LM, effectiveBytes, &tot_boost, st->lfe);
+         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc);
    /* For LFE, everything interesting is in the first band */
    if (st->lfe)
       offsets[0] = IMIN(8, effectiveBytes/3);
@@ -1738,7 +1769,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          alloc_trim = 5;
       else
          alloc_trim = alloc_trim_analysis(mode, X, bandLogE,
-            st->end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate, st->intensity);
+            st->end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate, st->intensity, surround_trim);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
