@@ -327,6 +327,10 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        {
           float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r
                      + out[i].i*(float)out[i].i + out[N-i].i*(float)out[N-i].i;
+#ifdef FIXED_POINT
+          /* FIXME: It's probably best to change the BFCC filter initial state instead */
+          binE *= 5.55e-17f;
+#endif
           E += binE;
           tE += binE*tonality[i];
           nE += binE*2.f*(.5f-noisiness[i]);
@@ -479,7 +483,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     features[23] = info->tonality_slope;
     features[24] = tonal->lowECount;
 
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
     mlp_process(&net, features, frame_probs);
     frame_probs[0] = .5f*(frame_probs[0]+1);
     /* Curve fitting between the MLP probability and the actual probability */
