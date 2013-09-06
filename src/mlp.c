@@ -43,9 +43,9 @@ static inline opus_val16 tansig_approx(opus_val32 _x) /* Q19 */
 	/*double x, y;*/
 	opus_val16 dy, yy; /* Q14 */
 	/*x = 1.9073e-06*_x;*/
-	if (_x>=QCONST32(10,19))
+	if (_x>=QCONST32(8,19))
 		return QCONST32(1.,14);
-	if (_x<=-QCONST32(10,19))
+	if (_x<=-QCONST32(8,19))
 		return -QCONST32(1.,14);
 	xx = EXTRACT16(SHR32(_x, 8));
 	/*i = lrint(25*x);*/

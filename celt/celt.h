@@ -52,11 +52,11 @@ extern "C" {
 
 typedef struct {
    int valid;
-   opus_val16 tonality;
-   opus_val16 tonality_slope;
-   opus_val16 noisiness;
-   opus_val16 activity;
-   opus_val16 music_prob;
+   float tonality;
+   float tonality_slope;
+   float noisiness;
+   float activity;
+   float music_prob;
    int        bandwidth;
 }AnalysisInfo;
 

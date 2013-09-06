@@ -42,7 +42,7 @@ typedef struct {
    float angle[240];
    float d_angle[240];
    float d2_angle[240];
-   float inmem[ANALYSIS_BUF_SIZE];
+   opus_val32 inmem[ANALYSIS_BUF_SIZE];
    int   mem_fill;                      /* number of usable samples in the buffer */
    float prev_band_tonality[NB_TBANDS];
    float prev_tonality;

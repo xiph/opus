@@ -253,10 +253,10 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     for (i=0;i<N2;i++)
     {
        float w = analysis_window[i];
-       in[i].r = MULT16_16(w, tonal->inmem[i]);
-       in[i].i = MULT16_16(w, tonal->inmem[N2+i]);
-       in[N-i-1].r = MULT16_16(w, tonal->inmem[N-i-1]);
-       in[N-i-1].i = MULT16_16(w, tonal->inmem[N+N2-i-1]);
+       in[i].r = w*tonal->inmem[i];
+       in[i].i = w*tonal->inmem[N2+i];
+       in[N-i-1].r = w*tonal->inmem[N-i-1];
+       in[N-i-1].i = w*tonal->inmem[N+N2-i-1];
     }
     OPUS_MOVE(tonal->inmem, tonal->inmem+ANALYSIS_BUF_SIZE-240, 240);
     remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
@@ -325,8 +325,8 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        float stationarity;
        for (i=tbands[b];i<tbands[b+1];i++)
        {
-          float binE = out[i].r*out[i].r + out[N-i].r*out[N-i].r
-                     + out[i].i*out[i].i + out[N-i].i*out[N-i].i;
+          float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r
+                     + out[i].i*(float)out[i].i + out[N-i].i*(float)out[N-i].i;
           E += binE;
           tE += binE*tonality[i];
           nE += binE*2.f*(.5f-noisiness[i]);
@@ -334,7 +334,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        tonal->E[tonal->E_count][b] = E;
        frame_noisiness += nE/(1e-15f+E);
 
-       frame_loudness += celt_sqrt(E+1e-10f);
+       frame_loudness += sqrt(E+1e-10f);
        logE[b] = (float)log(E+1e-10f);
        tonal->lowE[b] = MIN32(logE[b], tonal->lowE[b]+.01f);
        tonal->highE[b] = MAX32(logE[b], tonal->highE[b]-.1f);
@@ -348,11 +348,11 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        L1=L2=0;
        for (i=0;i<NB_FRAMES;i++)
        {
-          L1 += celt_sqrt(tonal->E[i][b]);
+          L1 += sqrt(tonal->E[i][b]);
           L2 += tonal->E[i][b];
        }
 
-       stationarity = MIN16(0.99f,L1/celt_sqrt(EPSILON+NB_FRAMES*L2));
+       stationarity = MIN16(0.99f,L1/sqrt(EPSILON+NB_FRAMES*L2));
        stationarity *= stationarity;
        stationarity *= stationarity;
        frame_stationarity += stationarity;
@@ -379,6 +379,9 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     bandwidth = 0;
     maxE = 0;
     noise_floor = 5.7e-4f/(1<<(IMAX(0,lsb_depth-8)));
+#ifdef FIXED_POINT
+    noise_floor *= 1<<(15+SIG_SHIFT);
+#endif
     noise_floor *= noise_floor;
     for (b=0;b<NB_TOT_BANDS;b++)
     {
@@ -389,8 +392,8 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        band_end = extra_bands[b+1];
        for (i=band_start;i<band_end;i++)
        {
-          float binE = out[i].r*out[i].r + out[N-i].r*out[N-i].r
-                     + out[i].i*out[i].i + out[N-i].i*out[N-i].i;
+          float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r
+                     + out[i].i*(float)out[i].i + out[N-i].i*(float)out[N-i].i;
           E += binE;
        }
        maxE = MAX32(maxE, E);
@@ -469,7 +472,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
        tonal->mem[i] = BFCC[i];
     }
     for (i=0;i<9;i++)
-       features[11+i] = celt_sqrt(tonal->std[i]);
+       features[11+i] = sqrt(tonal->std[i]);
     features[20] = info->tonality;
     features[21] = info->activity;
     features[22] = frame_stationarity;

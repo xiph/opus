@@ -98,7 +98,7 @@ struct OpusEncoder {
     int          energy_masking;
     StereoWidthState width_mem;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
     TonalityAnalysisState analysis;
     int          detected_bandwidth;
     int          analysis_offset;
@@ -551,7 +551,7 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
     return st->user_bitrate_bps;
 }
 
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
 /* Don't use more than 60 ms for the frame size analysis */
 #define MAX_DYNAMIC_FRAMESIZE 24
 /* Estimates how much the bitrate will be boosted based on the sub-frame energy */
@@ -697,10 +697,10 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
    int bestLM=0;
    int subframe;
    int pos;
-   VARDECL(opus_val16, sub);
+   VARDECL(opus_val32, sub);
 
    subframe = Fs/400;
-   ALLOC(sub, subframe, opus_val16);
+   ALLOC(sub, subframe, opus_val32);
    e[0]=mem[0];
    e_1[0]=1.f/(EPSILON+mem[0]);
    if (buffering)
@@ -759,30 +759,41 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
 #endif
 
 #ifndef DISABLE_FLOAT_API
-void downmix_float(const void *_x, float *sub, int subframe, int offset, int c1, int c2, int C)
+void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
    const float *x;
    int j;
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = x[(j+offset)*C+c1];
+      sub[j] = SCALEIN(x[(j+offset)*C+c1]);
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         sub[j] += x[(j+offset)*C+c2];
+         sub[j] += SCALEIN(x[(j+offset)*C+c2]);
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            sub[j] += x[(j+offset)*C+c];
+            sub[j] += SCALEIN(x[(j+offset)*C+c]);
       }
    }
+#ifdef FIXED_POINT
+   {
+      opus_val32 scale =(1<<SIG_SHIFT);
+      if (C==-2)
+         scale /= C;
+      else
+         scale /= 2;
+      for (j=0;j<subframe;j++)
+         sub[j] *= scale;
+   }
+#endif
 }
 #endif
 
-void downmix_int(const void *_x, float *sub, int subframe, int offset, int c1, int c2, int C)
+void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
    const opus_int16 *x;
    int j;
@@ -802,8 +813,20 @@ void downmix_int(const void *_x, float *sub, int subframe, int offset, int c1, i
             sub[j] += x[(j+offset)*C+c];
       }
    }
+#ifdef FIXED_POINT
+   {
+      opus_val32 scale =(1<<SIG_SHIFT);
+      if (C==-2)
+         scale /= C;
+      else
+         scale /= 2;
+      for (j=0;j<subframe;j++)
+         sub[j] *= scale;
+   }
+#else
    for (j=0;j<subframe;j++)
       sub[j] *= (1.f/32768);
+#endif
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
@@ -964,7 +987,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     analysis_info.valid = 0;
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
     if (st->silk_mode.complexity >= 7 && st->Fs==48000)
     {
        frame_size = run_analysis(&st->analysis, celt_mode, pcm, analysis_pcm,
@@ -982,7 +1005,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     st->voice_ratio = -1;
 
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
     st->detected_bandwidth = 0;
     if (analysis_info.valid)
     {
@@ -1624,7 +1647,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             if (st->use_vbr)
             {
                 opus_int32 bonus=0;
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
                 if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != st->Fs/50)
                 {
                    bonus = (60*st->stream_channels+40)*(st->Fs/frame_size-50);
@@ -1726,7 +1749,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        ec_enc_shrink(&enc, nb_compr_bytes);
     }
 
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
     if (redundancy || st->mode != MODE_SILK_ONLY)
        celt_encoder_ctl(celt_enc, CELT_SET_ANALYSIS(&analysis_info));
 #endif

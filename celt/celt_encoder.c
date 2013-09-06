@@ -819,7 +819,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), SHR16(diff+QCONST16(1.f, DB_SHIFT),DB_SHIFT-8)/6 ));
    trim -= SHR16(surround_trim, DB_SHIFT-8);
    trim -= 2*SHR16(tf_estimate, 14-8);
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
    if (analysis->valid)
    {
       trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), 2*(analysis->tonality_slope+.05f)));
@@ -1142,7 +1142,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
    target = base_target;
 
    /*printf("%f %f %f %f %d %d ", st->analysis.activity, st->analysis.tonality, tf_estimate, st->stereo_saving, tot_boost, coded_bands);*/
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
    if (analysis->valid && analysis->activity<.4)
       target -= (opus_int32)((coded_bins<<BITRES)*(.4f-analysis->activity));
 #endif
@@ -1167,7 +1167,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
                     QCONST16(0.02f,14) : QCONST16(0.04f,14);
    target += (opus_int32)SHL32(MULT16_32_Q15(tf_estimate-tf_calibration, target),1);
 
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
    /* Apply tonality boost */
    if (analysis->valid && !lfe)
    {
@@ -1872,7 +1872,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=((LM+2)<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    signalBandwidth = st->end-1;
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
    if (st->analysis.valid)
    {
       int min_bandwidth;
