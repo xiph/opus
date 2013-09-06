@@ -184,12 +184,12 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    for (;i<DETECT_SIZE;i++)
       psum += tonal->pspeech[i];
    psum = psum*tonal->music_confidence + (1-psum)*tonal->speech_confidence;
-   /*printf("%f %f\n", psum, info_out->music_prob);*/
+   /*printf("%f %f %f\n", psum, info_out->music_prob, info_out->tonality);*/
 
    info_out->music_prob = psum;
 }
 
-void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, const CELTMode *celt_mode, const void *x, int len, int offset, int C, int lsb_depth, downmix_func downmix)
+void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix)
 {
     int i, b;
     const kiss_fft_state *kfft;
@@ -234,7 +234,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     kfft = celt_mode->mdct.kfft[0];
     if (tonal->count==0)
        tonal->mem_fill = 240;
-    downmix(x, &tonal->inmem[tonal->mem_fill], IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, C);
+    downmix(x, &tonal->inmem[tonal->mem_fill], IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C);
     if (tonal->mem_fill+len < ANALYSIS_BUF_SIZE)
     {
        tonal->mem_fill += len;
@@ -260,7 +260,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     }
     OPUS_MOVE(tonal->inmem, tonal->inmem+ANALYSIS_BUF_SIZE-240, 240);
     remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
-    downmix(x, &tonal->inmem[240], remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, C);
+    downmix(x, &tonal->inmem[240], remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C);
     tonal->mem_fill = 240 + remaining;
     opus_fft(kfft, in, out);
 
@@ -611,8 +611,8 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     RESTORE_STACK;
 }
 
-int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *pcm,
-                        const void *analysis_pcm, int frame_size, int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
+int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const opus_val16 *pcm,
+                        const void *analysis_pcm, int frame_size, int variable_duration, int c1, int c2, int C, opus_int32 Fs, int bitrate_bps,
                         int delay_compensation, int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info)
 {
    int offset;
@@ -622,9 +622,9 @@ int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, con
    frame_size = IMIN((DETECT_SIZE-5)*Fs/100, frame_size);
 
    pcm_len = frame_size - analysis->analysis_offset;
-   offset = 0;
+   offset = analysis->analysis_offset;
    do {
-      tonality_analysis(analysis, NULL, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, C, lsb_depth, downmix);
+      tonality_analysis(analysis, NULL, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
       offset += 480;
       pcm_len -= 480;
    } while (pcm_len>0);
@@ -633,7 +633,7 @@ int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, con
    if (variable_duration == OPUS_FRAMESIZE_VARIABLE && frame_size >= Fs/200)
    {
       int LM = 3;
-      LM = optimize_framesize((const opus_val16*)pcm, frame_size, C, Fs, bitrate_bps,
+      LM = optimize_framesize(pcm, frame_size, C, Fs, bitrate_bps,
             analysis->prev_tonality, analysis->subframe_mem, delay_compensation, downmix);
       while ((Fs/400<<LM)>frame_size)
          LM--;
