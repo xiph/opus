@@ -1883,13 +1883,6 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
    VARDECL(opus_int16, in);
    ALLOC_STACK;
 
-   frame_size = frame_size_select(frame_size, st->variable_duration, st->Fs);
-   if(frame_size<0)
-   {
-      RESTORE_STACK;
-      return OPUS_BAD_ARG;
-   }
-
    ALLOC(in, frame_size*st->channels, opus_int16);
 
    for (i=0;i<frame_size*st->channels;i++)
@@ -1903,11 +1896,6 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
 opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes)
 {
-   frame_size = frame_size_select(frame_size, st->variable_duration, st->Fs);
-   if(frame_size<0)
-   {
-      return OPUS_BAD_ARG;
-   }
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 16, pcm, 0, -2, st->channels, downmix_int);
 }
 
