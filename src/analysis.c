@@ -347,7 +347,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
           tonal->highE[b]+=.5f;
           tonal->lowE[b]-=.5f;
        }
-       relativeE += (logE[b]-tonal->lowE[b])/(EPSILON+tonal->highE[b]-tonal->lowE[b]);
+       relativeE += (logE[b]-tonal->lowE[b])/(1e-15+tonal->highE[b]-tonal->lowE[b]);
 
        L1=L2=0;
        for (i=0;i<NB_FRAMES;i++)
@@ -356,12 +356,12 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
           L2 += tonal->E[i][b];
        }
 
-       stationarity = MIN16(0.99f,L1/sqrt(EPSILON+NB_FRAMES*L2));
+       stationarity = MIN16(0.99f,L1/sqrt(1e-15+NB_FRAMES*L2));
        stationarity *= stationarity;
        stationarity *= stationarity;
        frame_stationarity += stationarity;
        /*band_tonality[b] = tE/(1e-15+E)*/;
-       band_tonality[b] = MAX16(tE/(EPSILON+E), stationarity*tonal->prev_band_tonality[b]);
+       band_tonality[b] = MAX16(tE/(1e-15+E), stationarity*tonal->prev_band_tonality[b]);
 #if 0
        if (b>=NB_TONAL_SKIP_BANDS)
        {

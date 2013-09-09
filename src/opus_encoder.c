@@ -762,6 +762,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
 void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
    const float *x;
+   opus_val32 scale;
    int j;
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
@@ -780,22 +781,23 @@ void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, in
       }
    }
 #ifdef FIXED_POINT
-   {
-      opus_val32 scale =(1<<SIG_SHIFT);
-      if (C==-2)
-         scale /= C;
-      else
-         scale /= 2;
-      for (j=0;j<subframe;j++)
-         sub[j] *= scale;
-   }
+   scale = (1<<SIG_SHIFT);
+#else
+   scale = 1.f;
 #endif
+   if (C==-2)
+      scale /= C;
+   else
+      scale /= 2;
+   for (j=0;j<subframe;j++)
+      sub[j] *= scale;
 }
 #endif
 
 void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
    const opus_int16 *x;
+   opus_val32 scale;
    int j;
    x = (const opus_int16 *)_x;
    for (j=0;j<subframe;j++)
@@ -814,19 +816,16 @@ void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int 
       }
    }
 #ifdef FIXED_POINT
-   {
-      opus_val32 scale =(1<<SIG_SHIFT);
-      if (C==-2)
-         scale /= C;
-      else
-         scale /= 2;
-      for (j=0;j<subframe;j++)
-         sub[j] *= scale;
-   }
+   scale = (1<<SIG_SHIFT);
 #else
-   for (j=0;j<subframe;j++)
-      sub[j] *= (1.f/32768);
+   scale = 1.f/32768;
 #endif
+   if (C==-2)
+      scale /= C;
+   else
+      scale /= 2;
+   for (j=0;j<subframe;j++)
+      sub[j] *= scale;
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
