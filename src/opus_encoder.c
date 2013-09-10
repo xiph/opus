@@ -95,7 +95,7 @@ struct OpusEncoder {
     int          silk_bw_switch;
     /* Sampling rate (at the API level) */
     int          first;
-    int          energy_masking;
+    opus_val16 * energy_masking;
     StereoWidthState width_mem;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef DISABLE_FLOAT_API
@@ -1478,6 +1478,38 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             st->silk_mode.bitRate = total_bitRate;
         }
 
+        /* Surround masking for SILK */
+        if (st->energy_masking && st->use_vbr && !st->lfe)
+        {
+           opus_val32 mask_sum=0;
+           opus_val16 masking_depth;
+           opus_int32 rate_offset;
+           int c;
+           int end = 17;
+           opus_int16 srate = 16000;
+           if (st->bandwidth == OPUS_BANDWIDTH_NARROWBAND)
+           {
+              end = 13;
+              srate = 8000;
+           } else if (st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
+           {
+              end = 15;
+              srate = 12000;
+           }
+           for (c=0;c<st->channels;c++)
+           {
+              for(i=0;i<end;i++)
+                 mask_sum += st->energy_masking[21*c+i];
+           }
+           /* Conservative rate reduction, we cut the masking in half */
+           masking_depth = HALF16(mask_sum / end*st->channels);
+           masking_depth = MAX16(QCONST16(-2.f, DB_SHIFT), MIN16(masking_depth, QCONST16(0.f, DB_SHIFT)));
+           rate_offset = PSHR32(MULT16_16(srate, masking_depth), DB_SHIFT);
+           rate_offset = MAX32(rate_offset, -2*st->silk_mode.bitRate/3);
+           st->silk_mode.bitRate += rate_offset;
+           bytes_target += rate_offset * frame_size / (8 * st->Fs);
+        }
+
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
         st->silk_mode.nChannelsAPI = st->channels;
         st->silk_mode.nChannelsInternal = st->stream_channels;
@@ -2338,7 +2370,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_ENERGY_MASK_REQUEST:
         {
             opus_val16 *value = va_arg(ap, opus_val16*);
-            st->energy_masking = (value!=NULL);
+            st->energy_masking = value;
             ret = celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_MASK(value));
         }
         break;

@@ -741,10 +741,13 @@ static int opus_multistream_encode_native
       opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrates[s]));
       if (st->surround)
       {
-         opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_CELT_ONLY));
          opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_FULLBAND));
          if (s < st->layout.nb_coupled_streams)
+         {
+            /* To preserve the spatial image, force stereo CELT on coupled streams */
+            opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_CELT_ONLY));
             opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(2));
+         }
       }
    }
 
