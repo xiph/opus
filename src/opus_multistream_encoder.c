@@ -226,15 +226,20 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
    int LM=3;
    int pos[8] = {0};
    int upsample;
+   int frame_size;
    opus_val32 bandE[21];
    opus_val16 maskLogE[3][21];
    VARDECL(opus_val32, in);
    VARDECL(opus_val16, x);
    VARDECL(opus_val32, out);
    SAVE_STACK;
-   ALLOC(in, len+overlap, opus_val32);
+
+   upsample = resampling_factor(rate);
+   frame_size = len*upsample;
+
+   ALLOC(in, frame_size+overlap, opus_val32);
    ALLOC(x, len, opus_val16);
-   ALLOC(freq, len, opus_val32);
+   ALLOC(freq, frame_size, opus_val32);
 
    channel_pos(channels, pos);
 
@@ -242,20 +247,18 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
       for (i=0;i<21;i++)
          maskLogE[c][i] = -QCONST16(28.f, DB_SHIFT);
 
-   upsample = resampling_factor(rate);
    for (c=0;c<channels;c++)
    {
       OPUS_COPY(in, mem+c*overlap, overlap);
       (*copy_channel_in)(x, 1, pcm, channels, c, len);
-      /* FIXME: Handle upsampling properly wrt len */
-      preemphasis(x, in+overlap, len, 1, upsample, celt_mode->preemph, preemph_mem+c, 0);
+      preemphasis(x, in+overlap, frame_size, 1, upsample, celt_mode->preemph, preemph_mem+c, 0);
       clt_mdct_forward(&celt_mode->mdct, in, freq, celt_mode->window, overlap, celt_mode->maxLM-LM, 1);
       if (upsample != 1)
       {
-         int bound = len/upsample;
+         int bound = len;
          for (i=0;i<bound;i++)
             freq[i] *= upsample;
-         for (;i<len;i++)
+         for (;i<frame_size;i++)
             freq[i] = 0;
       }
 
@@ -291,7 +294,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
          sum += bandLogE[21*c+i];
       printf("%f ", sum/21);
 #endif
-      OPUS_COPY(mem+c*overlap, in+len, overlap);
+      OPUS_COPY(mem+c*overlap, in+frame_size, overlap);
    }
    for (i=0;i<21;i++)
       maskLogE[1][i] = MIN32(maskLogE[0][i],maskLogE[2][i]);
