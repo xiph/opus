@@ -222,8 +222,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
 {
    int c;
    int i;
-   /* FIXME: pass LM properly */
-   int LM=3;
+   int LM;
    int pos[8] = {0};
    int upsample;
    int frame_size;
@@ -236,6 +235,10 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
 
    upsample = resampling_factor(rate);
    frame_size = len*upsample;
+
+   for (LM=0;LM<=celt_mode->maxLM;LM++)
+      if (celt_mode->shortMdctSize<<LM==frame_size)
+         break;
 
    ALLOC(in, frame_size+overlap, opus_val32);
    ALLOC(x, len, opus_val16);
