@@ -1535,27 +1535,35 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    for(i=0;i<st->end;i++)
       surround_dynalloc[i] = 0;
    /* This computes how much masking takes place between surround channels */
-   if (st->energy_mask&&!st->lfe)
+   if (st->start==0&&st->energy_mask&&!st->lfe)
    {
+      int mask_end;
       opus_val32 mask_avg=0;
       opus_val32 diff=0;
+      int count=0;
+      mask_end = st->lastCodedBands;
       for (c=0;c<C;c++)
       {
-         for(i=0;i<st->end;i++)
+         for(i=0;i<mask_end;i++)
          {
-            mask_avg += st->energy_mask[nbEBands*c+i];
-            diff += st->energy_mask[i+c*nbEBands]*(opus_int32)(1+2*i-st->end);
+            mask_avg += st->energy_mask[nbEBands*c+i]*(eBands[i+1]-eBands[i]);
+            count += (eBands[i+1]-eBands[i]);
+            diff += st->energy_mask[i+c*nbEBands]*(opus_int32)(1+2*i-mask_end);
          }
       }
-      mask_avg = DIV32_16(mask_avg,C*st->end);
+      mask_avg = DIV32_16(mask_avg,count);
+      /* Just being conservative here */
+      mask_avg -= HALF32(HALF32(mask_avg));
       mask_avg = MAX16(mask_avg, -QCONST16(2.f, DB_SHIFT));
-      diff = diff*6/(C*(st->end-1)*(st->end+1)*st->end);
-      diff = MAX32(MIN32(diff, QCONST32(.05f, DB_SHIFT)), -QCONST32(.05f, DB_SHIFT));
-      for(i=0;i<st->end;i++)
+      diff = diff*6/(C*(mask_end-1)*(mask_end+1)*mask_end);
+      /* Again, being conservative */
+      diff = HALF32(diff);
+      diff = MAX32(MIN32(diff, QCONST32(.031f, DB_SHIFT)), -QCONST32(.031f, DB_SHIFT));
+      for(i=0;i<mask_end;i++)
       {
          opus_val32 lin;
          opus_val16 unmask;
-         lin = mask_avg + HALF32(diff*(1+2*i-st->end));
+         lin = mask_avg + HALF32(diff*(1+2*i-mask_end));
          if (C==2)
             unmask = MAX16(st->energy_mask[i], st->energy_mask[nbEBands+i]) - lin;
          else
