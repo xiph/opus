@@ -1499,7 +1499,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            for (c=0;c<st->channels;c++)
            {
               for(i=0;i<end;i++)
-                 mask_sum += st->energy_masking[21*c+i];
+              {
+                 opus_val16 mask;
+                 mask = MAX16(MIN16(st->energy_masking[21*c+i],
+                        QCONST16(.25f, DB_SHIFT)), -QCONST16(2.0f, DB_SHIFT));
+                 if (mask > 0)
+                    mask = HALF16(mask);
+                 mask_sum += mask;
+              }
            }
            /* Conservative rate reduction, we cut the masking in half */
            masking_depth = HALF16(mask_sum / end*st->channels);

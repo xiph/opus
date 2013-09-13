@@ -1538,6 +1538,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if (st->start==0&&st->energy_mask&&!st->lfe)
    {
       int mask_end;
+      int midband;
+      int count_dynalloc;
       opus_val32 mask_avg=0;
       opus_val32 diff=0;
       int count=0;
@@ -1546,38 +1548,63 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       {
          for(i=0;i<mask_end;i++)
          {
-            mask_avg += st->energy_mask[nbEBands*c+i]*(eBands[i+1]-eBands[i]);
-            count += (eBands[i+1]-eBands[i]);
-            diff += st->energy_mask[i+c*nbEBands]*(opus_int32)(1+2*i-mask_end);
+            opus_val16 mask;
+            mask = MAX16(MIN16(st->energy_mask[nbEBands*c+i],
+                   QCONST16(.25f, DB_SHIFT)), -QCONST16(2.0f, DB_SHIFT));
+            if (mask > 0)
+               mask = HALF16(mask);
+            mask_avg += MULT16_16(mask, eBands[i+1]-eBands[i]);
+            count += eBands[i+1]-eBands[i];
+            diff += MULT16_16(mask, 1+2*i-mask_end);
          }
       }
       mask_avg = DIV32_16(mask_avg,count);
-      /* Just being conservative here */
-      mask_avg -= HALF32(HALF32(mask_avg));
-      mask_avg = MAX16(mask_avg, -QCONST16(2.f, DB_SHIFT));
       diff = diff*6/(C*(mask_end-1)*(mask_end+1)*mask_end);
       /* Again, being conservative */
       diff = HALF32(diff);
       diff = MAX32(MIN32(diff, QCONST32(.031f, DB_SHIFT)), -QCONST32(.031f, DB_SHIFT));
+      /* Find the band that's in the middle of the coded spectrum */
+      for (midband=0;eBands[midband+1] < eBands[mask_end]/2;midband++);
+      count_dynalloc=0;
       for(i=0;i<mask_end;i++)
       {
          opus_val32 lin;
          opus_val16 unmask;
-         lin = mask_avg + HALF32(diff*(1+2*i-mask_end));
+         lin = mask_avg + diff*(i-midband);
          if (C==2)
-            unmask = MAX16(st->energy_mask[i], st->energy_mask[nbEBands+i]) - lin;
+            unmask = MAX16(st->energy_mask[i], st->energy_mask[nbEBands+i]);
          else
-            unmask = st->energy_mask[i] - lin;
+            unmask = st->energy_mask[i];
+         unmask = MIN16(unmask, QCONST16(.0f, DB_SHIFT));
+         unmask -= lin;
          if (unmask > QCONST16(.25f, DB_SHIFT))
          {
             surround_dynalloc[i] = unmask - QCONST16(.25f, DB_SHIFT);
+            count_dynalloc++;
+         }
+      }
+      if (count_dynalloc>=3)
+      {
+         /* If we need dynalloc in many bands, it's probably because our
+            initial masking rate was too low. */
+         mask_avg += QCONST16(.25f, DB_SHIFT);
+         if (mask_avg>0)
+         {
+            /* Something went really wrong in the original calculations,
+               disabling masking. */
+            mask_avg = 0;
+            diff = 0;
+            for(i=0;i<mask_end;i++)
+               surround_dynalloc[i] = 0;
+         } else {
+            for(i=0;i<mask_end;i++)
+               surround_dynalloc[i] = MAX16(0, surround_dynalloc[i]-QCONST16(.25f, DB_SHIFT));
          }
       }
       /* Convert to 1/64th units used for the trim */
       surround_trim = 64*diff;
       /*printf("%d %d ", mask_avg, surround_trim);*/
       surround_masking = mask_avg;
-      surround_masking = MIN16(MAX16(surround_masking, -QCONST16(2.f, DB_SHIFT)), QCONST16(.0f, DB_SHIFT));
    }
    /* Temporal VBR (but not for LFE) */
    if (!st->lfe)
