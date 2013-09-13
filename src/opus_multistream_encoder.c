@@ -747,7 +747,18 @@ static int opus_multistream_encode_native
       opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrates[s]));
       if (st->surround)
       {
-         opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_FULLBAND));
+         opus_int32 equiv_rate;
+         equiv_rate = st->bitrate_bps;
+         if (frame_size*50 < Fs)
+            equiv_rate -= 60*(Fs/frame_size - 50)*st->layout.nb_channels;
+         if (equiv_rate > 112000)
+            opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_FULLBAND));
+         else if (equiv_rate > 76000)
+            opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_SUPERWIDEBAND));
+         else if (equiv_rate > 48000)
+            opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_WIDEBAND));
+         else
+            opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_NARROWBAND));
          if (s < st->layout.nb_coupled_streams)
          {
             /* To preserve the spatial image, force stereo CELT on coupled streams */
