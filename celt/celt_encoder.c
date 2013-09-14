@@ -1559,6 +1559,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          }
       }
       mask_avg = DIV32_16(mask_avg,count);
+      mask_avg += QCONST16(.2f, DB_SHIFT);
       diff = diff*6/(C*(mask_end-1)*(mask_end+1)*mask_end);
       /* Again, being conservative */
       diff = HALF32(diff);
@@ -1601,6 +1602,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
                surround_dynalloc[i] = MAX16(0, surround_dynalloc[i]-QCONST16(.25f, DB_SHIFT));
          }
       }
+      mask_avg += QCONST16(.2f, DB_SHIFT);
       /* Convert to 1/64th units used for the trim */
       surround_trim = 64*diff;
       /*printf("%d %d ", mask_avg, surround_trim);*/
