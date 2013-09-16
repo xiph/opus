@@ -201,7 +201,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->silk_mode.payloadSize_ms            = 20;
     st->silk_mode.bitRate                   = 25000;
     st->silk_mode.packetLossPercentage      = 0;
-    st->silk_mode.complexity                = 10;
+    st->silk_mode.complexity                = 9;
     st->silk_mode.useInBandFEC              = 0;
     st->silk_mode.useDTX                    = 0;
     st->silk_mode.useCBR                    = 0;
@@ -212,7 +212,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     if(err!=OPUS_OK)return OPUS_INTERNAL_ERROR;
 
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
-    celt_encoder_ctl(celt_enc, OPUS_SET_COMPLEXITY(10));
+    celt_encoder_ctl(celt_enc, OPUS_SET_COMPLEXITY(st->silk_mode.complexity));
 
     st->use_vbr = 1;
     /* Makes constrained VBR the default (safer for real-time use) */
@@ -853,6 +853,7 @@ opus_int32 compute_frame_size(const void *analysis_pcm, int frame_size,
       int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
       int delay_compensation, downmix_func downmix, opus_val32 *subframe_mem)
 {
+#ifndef DISABLE_FLOAT_API
    if (variable_duration == OPUS_FRAMESIZE_VARIABLE && frame_size >= Fs/200)
    {
       int LM = 3;
@@ -861,7 +862,9 @@ opus_int32 compute_frame_size(const void *analysis_pcm, int frame_size,
       while ((Fs/400<<LM)>frame_size)
          LM--;
       frame_size = (Fs/400<<LM);
-   } else {
+   } else
+#endif
+   {
       frame_size = frame_size_select(frame_size, variable_duration, Fs);
    }
    if (frame_size<0)
@@ -1007,7 +1010,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     analysis_info.valid = 0;
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
 #ifndef DISABLE_FLOAT_API
+#ifdef FIXED_POINT
+    if (analysis_pcm != NULL && st->silk_mode.complexity >= 10 && st->Fs==48000)
+#else
     if (analysis_pcm != NULL && st->silk_mode.complexity >= 7 && st->Fs==48000)
+#endif
     {
        frame_size = run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
              c1, c2, analysis_channels, st->Fs,
