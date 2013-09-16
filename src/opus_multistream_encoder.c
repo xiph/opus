@@ -72,6 +72,7 @@ typedef void (*opus_copy_channel_in_func)(
 struct OpusMSEncoder {
    ChannelLayout layout;
    int lfe_stream;
+   int application;
    int variable_duration;
    int surround;
    opus_int32 bitrate_bps;
@@ -416,6 +417,7 @@ static int opus_multistream_encoder_init_impl(
    if (!surround)
       st->lfe_stream = -1;
    st->bitrate_bps = OPUS_AUTO;
+   st->application = application;
    st->variable_duration = OPUS_FRAMESIZE_ARG;
    for (i=0;i<st->layout.nb_channels;i++)
       st->layout.mapping[i] = mapping[i];
@@ -666,7 +668,7 @@ static int opus_multistream_encode_native
     OpusMSEncoder *st,
     opus_copy_channel_in_func copy_channel_in,
     const void *pcm,
-    int frame_size,
+    int analysis_frame_size,
     unsigned char *data,
     opus_int32 max_data_bytes,
     int lsb_depth,
@@ -689,6 +691,7 @@ static int opus_multistream_encode_native
    opus_val16 bandLogE[42];
    opus_val32 *mem = NULL;
    opus_val32 *preemph_mem=NULL;
+   int frame_size;
    ALLOC_STACK;
 
    if (st->surround)
@@ -701,6 +704,18 @@ static int opus_multistream_encode_native
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_COMPLEXITY(&complexity));
    opus_encoder_ctl((OpusEncoder*)ptr, CELT_GET_MODE(&celt_mode));
+
+   {
+      opus_int32 delay_compensation;
+      int channels;
+
+      channels = st->layout.nb_streams + st->layout.nb_coupled_streams;
+      opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_LOOKAHEAD(&delay_compensation));
+      delay_compensation -= Fs/400;
+      frame_size = compute_frame_size(pcm, analysis_frame_size,
+            st->variable_duration, channels, Fs, st->bitrate_bps,
+            delay_compensation, downmix, st->subframe_mem);
+   }
 
    if (400*frame_size < Fs)
    {
@@ -822,7 +837,8 @@ static int opus_multistream_encode_native
       /* Reserve three bytes for the last stream and four for the others */
       curr_max -= IMAX(0,4*(st->layout.nb_streams-s-1)-1);
       curr_max = IMIN(curr_max,MS_FRAME_TMP);
-      len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth, pcm, c1, c2, st->layout.nb_channels, downmix);
+      len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth,
+            pcm, analysis_frame_size, c1, c2, st->layout.nb_channels, downmix);
       if (len<0)
       {
          RESTORE_STACK;

@@ -849,6 +849,26 @@ opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_
    return new_size;
 }
 
+opus_int32 compute_frame_size(const void *analysis_pcm, int frame_size,
+      int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
+      int delay_compensation, downmix_func downmix, opus_val32 *subframe_mem)
+{
+   if (variable_duration == OPUS_FRAMESIZE_VARIABLE && frame_size >= Fs/200)
+   {
+      int LM = 3;
+      LM = optimize_framesize(analysis_pcm, frame_size, C, Fs, bitrate_bps,
+            0, subframe_mem, delay_compensation, downmix);
+      while ((Fs/400<<LM)>frame_size)
+         LM--;
+      frame_size = (Fs/400<<LM);
+   } else {
+      frame_size = frame_size_select(frame_size, variable_duration, Fs);
+   }
+   if (frame_size<0)
+      return -1;
+   return frame_size;
+}
+
 opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int32 Fs, StereoWidthState *mem)
 {
    opus_val16 corr;
@@ -928,7 +948,7 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
 
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
-                const void *analysis_pcm, int c1, int c2, int analysis_channels, downmix_func downmix)
+                const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2, int analysis_channels, downmix_func downmix)
 {
     void *silk_enc;
     CELTEncoder *celt_enc;
@@ -987,10 +1007,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     analysis_info.valid = 0;
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
 #ifndef DISABLE_FLOAT_API
-    if (st->silk_mode.complexity >= 7 && st->Fs==48000)
+    if (analysis_pcm != NULL && st->silk_mode.complexity >= 7 && st->Fs==48000)
     {
-       frame_size = run_analysis(&st->analysis, celt_mode, pcm, analysis_pcm,
-             frame_size, st->variable_duration, c1, c2, analysis_channels, st->Fs, st->bitrate_bps, delay_compensation, lsb_depth, downmix, &analysis_info);
+       frame_size = run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
+             c1, c2, analysis_channels, st->Fs,
+             lsb_depth, downmix, &analysis_info);
     } else
 #endif
     {
@@ -1373,7 +1394,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
              st->user_forced_mode = MODE_CELT_ONLY;
           tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50,
                 tmp_data+i*bytes_per_frame, bytes_per_frame, lsb_depth,
-                analysis_pcm, c1, c2, analysis_channels, downmix);
+                NULL, 0, c1, c2, analysis_channels, downmix);
           if (tmp_len<0)
           {
              RESTORE_STACK;
@@ -1915,49 +1936,88 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifdef FIXED_POINT
 
 #ifndef DISABLE_FLOAT_API
-opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
+opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_frame_size,
       unsigned char *data, opus_int32 max_data_bytes)
 {
    int i, ret;
+   int frame_size;
+   int delay_compensation;
    VARDECL(opus_int16, in);
    ALLOC_STACK;
+
+   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+      delay_compensation = 0;
+   else
+      delay_compensation = st->delay_compensation;
+   frame_size = compute_frame_size(pcm, analysis_frame_size,
+         st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
+         delay_compensation, downmix_float, st->analysis.subframe_mem);
 
    ALLOC(in, frame_size*st->channels, opus_int16);
 
    for (i=0;i<frame_size*st->channels;i++)
       in[i] = FLOAT2INT16(pcm[i]);
-   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16, pcm, 0, -2, st->channels, downmix_float);
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16, pcm, analysis_frame_size, 0, -2, st->channels, downmix_float);
    RESTORE_STACK;
    return ret;
 }
 #endif
 
-opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
+opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
                 unsigned char *data, opus_int32 out_data_bytes)
 {
-   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 16, pcm, 0, -2, st->channels, downmix_int);
+   int frame_size;
+   int delay_compensation;
+   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+      delay_compensation = 0;
+   else
+      delay_compensation = st->delay_compensation;
+   frame_size = compute_frame_size(pcm, analysis_frame_size,
+         st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
+         delay_compensation, downmix_float, st->analysis.subframe_mem);
+   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 16, pcm, analysis_frame_size, 0, -2, st->channels, downmix_int);
 }
 
 #else
-opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
+opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
       unsigned char *data, opus_int32 max_data_bytes)
 {
    int i, ret;
+   int frame_size;
+   int delay_compensation;
    VARDECL(float, in);
    ALLOC_STACK;
 
-   ALLOC(in, frame_size*st->channels, float);
+   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+      delay_compensation = 0;
+   else
+      delay_compensation = st->delay_compensation;
+   frame_size = compute_frame_size(pcm, analysis_frame_size,
+         st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
+         delay_compensation, downmix_float, st->analysis.subframe_mem);
 
-   for (i=0;i<frame_size*st->channels;i++)
+   ALLOC(in, analysis_frame_size*st->channels, float);
+
+   for (i=0;i<analysis_frame_size*st->channels;i++)
       in[i] = (1.0f/32768)*pcm[i];
-   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16, pcm, 0, -2, st->channels, downmix_int);
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16, pcm, analysis_frame_size, 0, -2, st->channels, downmix_int);
    RESTORE_STACK;
    return ret;
 }
-opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
+opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_frame_size,
                       unsigned char *data, opus_int32 out_data_bytes)
 {
-   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 24, pcm, 0, -2, st->channels, downmix_float);
+   int frame_size;
+   int delay_compensation;
+   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+      delay_compensation = 0;
+   else
+      delay_compensation = st->delay_compensation;
+   frame_size = compute_frame_size(pcm, analysis_frame_size,
+         st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
+         delay_compensation, downmix_float, st->analysis.subframe_mem);
+   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 24,
+                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_float);
 }
 #endif
 

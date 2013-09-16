@@ -618,38 +618,25 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     RESTORE_STACK;
 }
 
-int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const opus_val16 *pcm,
-                        const void *analysis_pcm, int frame_size, int variable_duration, int c1, int c2, int C, opus_int32 Fs, int bitrate_bps,
-                        int delay_compensation, int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info)
+int run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *analysis_pcm,
+                 int analysis_frame_size, int frame_size, int c1, int c2, int C, opus_int32 Fs,
+                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info)
 {
    int offset;
    int pcm_len;
 
    /* Avoid overflow/wrap-around of the analysis buffer */
-   frame_size = IMIN((DETECT_SIZE-5)*Fs/100, frame_size);
+   analysis_frame_size = IMIN((DETECT_SIZE-5)*Fs/100, analysis_frame_size);
 
-   pcm_len = frame_size - analysis->analysis_offset;
+   pcm_len = analysis_frame_size - analysis->analysis_offset;
    offset = analysis->analysis_offset;
    do {
       tonality_analysis(analysis, NULL, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
       offset += 480;
       pcm_len -= 480;
    } while (pcm_len>0);
-   analysis->analysis_offset = frame_size;
+   analysis->analysis_offset = analysis_frame_size;
 
-   if (variable_duration == OPUS_FRAMESIZE_VARIABLE && frame_size >= Fs/200)
-   {
-      int LM = 3;
-      LM = optimize_framesize(pcm, frame_size, C, Fs, bitrate_bps,
-            analysis->prev_tonality, analysis->subframe_mem, delay_compensation, downmix);
-      while ((Fs/400<<LM)>frame_size)
-         LM--;
-      frame_size = (Fs/400<<LM);
-   } else {
-      frame_size = frame_size_select(frame_size, variable_duration, Fs);
-   }
-   if (frame_size<0)
-      return -1;
    analysis->analysis_offset -= frame_size;
 
    /* Only perform analysis up to 20-ms frames. Longer ones will be split if
