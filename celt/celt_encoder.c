@@ -370,7 +370,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
 
 /* Looks for sudden increases of energy to decide whether we need to patch
    the transient decision */
-int patch_transient_decision(opus_val16 *new, opus_val16 *old, int nbEBands,
+int patch_transient_decision(opus_val16 *newE, opus_val16 *oldE, int nbEBands,
       int end, int C)
 {
    int i, c;
@@ -380,14 +380,14 @@ int patch_transient_decision(opus_val16 *new, opus_val16 *old, int nbEBands,
       avoid false detection caused by irrelevant bands */
    if (C==1)
    {
-      spread_old[0] = old[0];
+      spread_old[0] = oldE[0];
       for (i=1;i<end;i++)
-         spread_old[i] = MAX16(spread_old[i-1]-QCONST16(1.0f, DB_SHIFT), old[i]);
+         spread_old[i] = MAX16(spread_old[i-1]-QCONST16(1.0f, DB_SHIFT), oldE[i]);
    } else {
-      spread_old[0] = MAX16(old[0],old[nbEBands]);
+      spread_old[0] = MAX16(oldE[0],oldE[nbEBands]);
       for (i=1;i<end;i++)
          spread_old[i] = MAX16(spread_old[i-1]-QCONST16(1.0f, DB_SHIFT),
-                               MAX16(old[i],old[i+nbEBands]));
+                               MAX16(oldE[i],oldE[i+nbEBands]));
    }
    for (i=end-2;i>=0;i--)
       spread_old[i] = MAX16(spread_old[i], spread_old[i+1]-QCONST16(1.0f, DB_SHIFT));
@@ -396,7 +396,7 @@ int patch_transient_decision(opus_val16 *new, opus_val16 *old, int nbEBands,
       for (i=2;i<end-1;i++)
       {
          opus_val16 x1, x2;
-         x1 = MAX16(0, new[i]);
+         x1 = MAX16(0, newE[i]);
          x2 = MAX16(0, spread_old[i]);
          mean_diff = ADD32(mean_diff, EXTEND32(MAX16(0, SUB16(x1, x2))));
       }
