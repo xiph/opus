@@ -1016,19 +1016,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (analysis_pcm != NULL && st->silk_mode.complexity >= 7 && st->Fs==48000)
 #endif
     {
-       frame_size = run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
+       run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
              c1, c2, analysis_channels, st->Fs,
              lsb_depth, downmix, &analysis_info);
-    } else
+    }
 #endif
-    {
-       frame_size = frame_size_select(frame_size, st->variable_duration, st->Fs);
-    }
-    if(frame_size<0)
-    {
-       return OPUS_BAD_ARG;
-    }
-
 
     st->voice_ratio = -1;
 
