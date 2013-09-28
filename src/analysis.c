@@ -625,22 +625,23 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
    int offset;
    int pcm_len;
 
-   /* Avoid overflow/wrap-around of the analysis buffer */
-   analysis_frame_size = IMIN((DETECT_SIZE-5)*Fs/100, analysis_frame_size);
+   if (analysis_pcm != NULL)
+   {
+      /* Avoid overflow/wrap-around of the analysis buffer */
+      analysis_frame_size = IMIN((DETECT_SIZE-5)*Fs/100, analysis_frame_size);
 
-   pcm_len = analysis_frame_size - analysis->analysis_offset;
-   offset = analysis->analysis_offset;
-   do {
-      tonality_analysis(analysis, NULL, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
-      offset += 480;
-      pcm_len -= 480;
-   } while (pcm_len>0);
-   analysis->analysis_offset = analysis_frame_size;
+      pcm_len = analysis_frame_size - analysis->analysis_offset;
+      offset = analysis->analysis_offset;
+      do {
+         tonality_analysis(analysis, NULL, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
+         offset += 480;
+         pcm_len -= 480;
+      } while (pcm_len>0);
+      analysis->analysis_offset = analysis_frame_size;
 
-   analysis->analysis_offset -= frame_size;
+      analysis->analysis_offset -= frame_size;
+   }
 
-   /* Only perform analysis up to 20-ms frames. Longer ones will be split if
-      they're in CELT-only mode. */
    analysis_info->valid = 0;
    tonality_get_info(analysis, analysis_info, frame_size);
 }

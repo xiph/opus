@@ -982,6 +982,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     opus_val16 stereo_width;
     const CELTMode *celt_mode;
     AnalysisInfo analysis_info;
+    int analysis_read_pos_bak=-1;
+    int analysis_read_subframe_bak=-1;
     VARDECL(opus_val16, tmp_prefill);
 
     ALLOC_STACK;
@@ -1011,11 +1013,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
 #ifndef DISABLE_FLOAT_API
 #ifdef FIXED_POINT
-    if (analysis_pcm != NULL && st->silk_mode.complexity >= 10 && st->Fs==48000)
+    if (st->silk_mode.complexity >= 10 && st->Fs==48000)
 #else
-    if (analysis_pcm != NULL && st->silk_mode.complexity >= 7 && st->Fs==48000)
+    if (st->silk_mode.complexity >= 7 && st->Fs==48000)
 #endif
     {
+       analysis_read_pos_bak = st->analysis.read_pos;
+       analysis_read_subframe_bak = st->analysis.read_subframe;
        run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
              c1, c2, analysis_channels, st->Fs,
              lsb_depth, downmix, &analysis_info);
@@ -1362,6 +1366,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        VARDECL(OpusRepacketizer, rp);
        opus_int32 bytes_per_frame;
 
+       if (analysis_read_pos_bak!= -1)
+       {
+          st->analysis.read_pos = analysis_read_pos_bak;
+          st->analysis.read_subframe = analysis_read_subframe_bak;
+       }
 
        nb_frames = frame_size > st->Fs/25 ? 3 : 2;
        bytes_per_frame = IMIN(1276,(out_data_bytes-3)/nb_frames);
