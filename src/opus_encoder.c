@@ -2004,9 +2004,9 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
          st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
          delay_compensation, downmix_float, st->analysis.subframe_mem);
 
-   ALLOC(in, analysis_frame_size*st->channels, float);
+   ALLOC(in, frame_size*st->channels, float);
 
-   for (i=0;i<analysis_frame_size*st->channels;i++)
+   for (i=0;i<frame_size*st->channels;i++)
       in[i] = (1.0f/32768)*pcm[i];
    ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16, pcm, analysis_frame_size, 0, -2, st->channels, downmix_int);
    RESTORE_STACK;
