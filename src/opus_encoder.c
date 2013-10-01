@@ -759,6 +759,11 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
 #endif
 
 #ifndef DISABLE_FLOAT_API
+#ifdef FIXED_POINT
+#define PCM2VAL(x) FLOAT2INT16(x)
+#else
+#define PCM2VAL(x) SCALEIN(x)
+#endif
 void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
    const float *x;
@@ -766,18 +771,18 @@ void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, in
    int j;
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = SCALEIN(x[(j+offset)*C+c1]);
+      sub[j] = PCM2VAL(x[(j+offset)*C+c1]);
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         sub[j] += SCALEIN(x[(j+offset)*C+c2]);
+         sub[j] += PCM2VAL(x[(j+offset)*C+c2]);
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            sub[j] += SCALEIN(x[(j+offset)*C+c]);
+            sub[j] += PCM2VAL(x[(j+offset)*C+c]);
       }
    }
 #ifdef FIXED_POINT
