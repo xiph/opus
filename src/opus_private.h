@@ -82,9 +82,9 @@ int get_mono_channel(const ChannelLayout *layout, int stream_id, int prev);
 #define OPUS_SET_FORCE_MODE_REQUEST    11002
 #define OPUS_SET_FORCE_MODE(x) OPUS_SET_FORCE_MODE_REQUEST, __opus_check_int(x)
 
-typedef void (*downmix_func)(const void *, float *, int, int, int);
-void downmix_float(const void *_x, float *sub, int subframe, int offset, int C);
-void downmix_int(const void *_x, float *sub, int subframe, int offset, int C);
+typedef void (*downmix_func)(const void *, opus_val32 *, int, int, int, int, int);
+void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C);
+void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C);
 
 int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
                 int bitrate, opus_val16 tonality, opus_val32 *mem, int buffering,
@@ -94,12 +94,13 @@ int encode_size(int size, unsigned char *data);
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs);
 
+opus_int32 compute_frame_size(const void *analysis_pcm, int frame_size,
+      int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
+      int delay_compensation, downmix_func downmix, opus_val32 *subframe_mem);
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-      unsigned char *data, opus_int32 out_data_bytes, int lsb_depth
-#ifndef FIXED_POINT
-                , AnalysisInfo *analysis_info
-#endif
-      );
+      unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
+      const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2, int analysis_channels, downmix_func downmix);
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
       opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited,

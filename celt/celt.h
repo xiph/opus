@@ -52,11 +52,11 @@ extern "C" {
 
 typedef struct {
    int valid;
-   opus_val16 tonality;
-   opus_val16 tonality_slope;
-   opus_val16 noisiness;
-   opus_val16 activity;
-   opus_val16 music_prob;
+   float tonality;
+   float tonality_slope;
+   float noisiness;
+   float activity;
+   float music_prob;
    int        bandwidth;
 }AnalysisInfo;
 
@@ -109,10 +109,7 @@ typedef struct {
 #define OPUS_SET_LFE_REQUEST    10024
 #define OPUS_SET_LFE(x) OPUS_SET_LFE_REQUEST, __opus_check_int(x)
 
-#define OPUS_SET_ENERGY_SAVE_REQUEST    10026
-#define OPUS_SET_ENERGY_SAVE(x) OPUS_SET_ENERGY_SAVE_REQUEST, __opus_check_val16_ptr(x)
-
-#define OPUS_SET_ENERGY_MASK_REQUEST    10028
+#define OPUS_SET_ENERGY_MASK_REQUEST    10026
 #define OPUS_SET_ENERGY_MASK(x) OPUS_SET_ENERGY_MASK_REQUEST, __opus_check_val16_ptr(x)
 
 /* Encoder stuff */
@@ -192,6 +189,9 @@ static inline int fromOpus(unsigned char c)
 extern const signed char tf_select_table[4][8];
 
 int resampling_factor(opus_int32 rate);
+
+void preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
+                        int N, int CC, int upsample, const opus_val16 *coef, celt_sig *mem, int clip);
 
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
