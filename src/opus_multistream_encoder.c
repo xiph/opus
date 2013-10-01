@@ -232,6 +232,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
    VARDECL(opus_val32, in);
    VARDECL(opus_val16, x);
    VARDECL(opus_val32, out);
+   VARDECL(opus_val32, freq);
    SAVE_STACK;
 
    upsample = resampling_factor(rate);
