@@ -2,7 +2,7 @@
 
 setlocal enableextensions enabledelayedexpansion
 
-for /f %%v in ('git --git-dir="%~dp0..\.git" describe --tags --match "v*"') do set version=%%v
+for /f %%v in ('git --git-dir="%~dp0..\.git" describe --tags --match "v*" --always --dirty') do set version=%%v
 
 if not "%version%"=="" goto :gotversion
 
