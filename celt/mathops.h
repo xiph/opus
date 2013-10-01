@@ -165,6 +165,7 @@ opus_val32 celt_sqrt(opus_val32 x);
 
 opus_val16 celt_cos_norm(opus_val32 x);
 
+/** Base-2 logarithm approximation (log2(x)). (Q14 input, Q10 output) */
 static inline opus_val16 celt_log2(opus_val32 x)
 {
    int i;

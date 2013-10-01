@@ -227,6 +227,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
    int pos[8] = {0};
    int upsample;
    int frame_size;
+   opus_val16 channel_offset;
    opus_val32 bandE[21];
    opus_val16 maskLogE[3][21];
    VARDECL(opus_val32, in);
@@ -293,7 +294,6 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
 #if 0
       for (i=0;i<21;i++)
          printf("%f ", bandLogE[21*c+i]);
-//#else
       float sum=0;
       for (i=0;i<21;i++)
          sum += bandLogE[21*c+i];
@@ -303,9 +303,10 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
    }
    for (i=0;i<21;i++)
       maskLogE[1][i] = MIN32(maskLogE[0][i],maskLogE[2][i]);
+   channel_offset = HALF16(celt_log2(QCONST32(2.f,14)/(channels-1)));
    for (c=0;c<3;c++)
       for (i=0;i<21;i++)
-         maskLogE[c][i] += QCONST16(.5f, DB_SHIFT)*log2(2.f/(channels-1));
+         maskLogE[c][i] += channel_offset;
 #if 0
    for (c=0;c<3;c++)
    {
@@ -334,7 +335,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
       float sum=0;
       for (i=0;i<21;i++)
          sum += bandLogE[21*c+i];
-      printf("%f ", sum/21);
+      printf("%f ", sum/(float)QCONST32(21.f, DB_SHIFT));
       printf("\n");
 #endif
    }

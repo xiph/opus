@@ -1179,7 +1179,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       tonal_target = target + (opus_int32)((coded_bins<<BITRES)*1.2f*tonal);
       if (pitch_change)
          tonal_target +=  (opus_int32)((coded_bins<<BITRES)*.8f);
-      /*printf("%f %f ", st->analysis.tonality, tonal);*/
+      /*printf("%f %f ", analysis->tonality, tonal);*/
       target = tonal_target;
    }
 #endif
@@ -1543,7 +1543,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       opus_val32 mask_avg=0;
       opus_val32 diff=0;
       int count=0;
-      mask_end = st->lastCodedBands;
+      mask_end = IMAX(2,st->lastCodedBands);
       for (c=0;c<C;c++)
       {
          for(i=0;i<mask_end;i++)
