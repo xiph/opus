@@ -425,7 +425,6 @@ int main(int argc, char *argv[])
             use_dtx = 1;
             args++;
         } else if( strcmp( argv[ args ], "-loss" ) == 0 ) {
-            check_decoder_option(encode_only, "-loss");
             packet_loss_perc = atoi( argv[ args + 1 ] );
             args += 2;
         } else if( strcmp( argv[ args ], "-sweep" ) == 0 ) {
