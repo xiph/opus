@@ -496,7 +496,7 @@ static void silk_P_Ana_calc_corr_st3(
     opus_int            complexity          /* I Complexity setting                                             */
 )
 {
-    const silk_float *target_ptr, *basis_ptr;
+    const silk_float *target_ptr;
     opus_int   i, j, k, lag_counter, lag_low, lag_high;
     opus_int   nb_cbk_search, delta, idx, cbk_size;
     silk_float scratch_mem[ SCRATCH_SIZE ];
@@ -529,7 +529,6 @@ static void silk_P_Ana_calc_corr_st3(
         silk_assert(lag_high-lag_low+1 <= SCRATCH_SIZE);
         celt_pitch_xcorr( target_ptr, target_ptr - start_lag - lag_high, xcorr, sf_length, lag_high - lag_low + 1 );
         for( j = lag_low; j <= lag_high; j++ ) {
-            basis_ptr = target_ptr - ( start_lag + j );
             silk_assert( lag_counter < SCRATCH_SIZE );
             scratch_mem[ lag_counter ] = xcorr[ lag_high - j ];
             lag_counter++;
