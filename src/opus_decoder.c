@@ -257,23 +257,33 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       ec_dec_init(&dec,(unsigned char*)data,len);
    } else {
       audiosize = frame_size;
+      mode = st->prev_mode;
 
-      if (st->prev_mode == 0)
+      if (mode == 0)
       {
          /* If we haven't got any packet yet, all we can do is return zeros */
          for (i=0;i<audiosize*st->channels;i++)
             pcm[i] = 0;
          RESTORE_STACK;
          return audiosize;
-      } else {
-         mode = st->prev_mode;
+      }
+
+      if (mode != MODE_SILK_ONLY && audiosize > F20)
+      {
+         do {
+            int ret = opus_decode_frame(st, NULL, 0, pcm, IMIN(audiosize, F20), 0);
+            if (ret<0)
+            {
+               RESTORE_STACK;
+               return ret;
+            }
+            pcm += ret*st->channels;
+            audiosize -= ret;
+         } while (audiosize > 0);
+         RESTORE_STACK;
+         return frame_size;
       }
    }
-
-   /* For CELT/hybrid PLC of more than 20 ms, opus_decode_native() will do
-      multiple calls */
-   if (data==NULL  && mode != MODE_SILK_ONLY)
-      frame_size = IMIN(frame_size, F20);
 
    pcm_transition_silk_size = 0;
    pcm_transition_celt_size = 0;
