@@ -355,7 +355,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
                  pcm_ptr[i] = 0;
            } else {
              RESTORE_STACK;
-             return OPUS_INVALID_PACKET;
+             return OPUS_INTERNAL_ERROR;
            }
         }
         pcm_ptr += silk_frame_size * st->channels;
@@ -581,7 +581,7 @@ static int parse_size(const unsigned char *data, opus_int32 len, opus_int16 *siz
    }
 }
 
-static int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
+int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       int self_delimited, unsigned char *out_toc,
       const unsigned char *frames[48], opus_int16 size[48], int *payload_offset)
 {
@@ -710,6 +710,9 @@ static int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       size[count-1] = (opus_int16)last_size;
    }
 
+   if (payload_offset)
+      *payload_offset = (int)(data-data0);
+
    if (frames)
    {
       for (i=0;i<count;i++)
@@ -721,9 +724,6 @@ static int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
 
    if (out_toc)
       *out_toc = toc;
-
-   if (payload_offset)
-      *payload_offset = (int)(data-data0);
 
    return count;
 }
@@ -777,6 +777,9 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 
    count = opus_packet_parse_impl(data, len, self_delimited, &toc, NULL, size, &offset);
 
+   if (count<0)
+      return count;
+
    data += offset;
 
    if (decode_fec)
@@ -814,11 +817,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
          return frame_size;
       }
    }
-   tot_offset = 0;
-   if (count < 0)
-      return count;
-
-   tot_offset += offset;
+   tot_offset = offset;
 
    if (count*packet_frame_size > frame_size)
       return OPUS_BUFFER_TOO_SMALL;

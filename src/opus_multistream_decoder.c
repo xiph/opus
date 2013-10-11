@@ -152,6 +152,37 @@ typedef void (*opus_copy_channel_out_func)(
   int frame_size
 );
 
+static int opus_multistream_packet_validate(const unsigned char *data,
+      opus_int32 len, int nb_streams)
+{
+   int s;
+   int i;
+   int count;
+   unsigned char toc;
+   opus_int16 size[48];
+   int offset;
+   int samples=0;
+
+   for (s=0;s<nb_streams;s++)
+   {
+      int tmp_samples;
+      if (len<=0)
+         return OPUS_INVALID_PACKET;
+      count = opus_packet_parse_impl(data, len, s!=nb_streams-1, &toc, NULL, size, &offset);
+      if (count<0)
+         return count;
+      for (i=0;i<count;i++)
+         offset += size[i];
+      tmp_samples = opus_packet_get_nb_samples(data, offset, 48000);
+      if (s!=0 && samples != tmp_samples)
+         return OPUS_INVALID_PACKET;
+      samples = tmp_samples;
+      data += offset;
+      len -= offset;
+   }
+   return OPUS_OK;
+}
+
 static int opus_multistream_decode_native(
       OpusMSDecoder *st,
       const unsigned char *data,
@@ -183,9 +214,24 @@ static int opus_multistream_decode_native(
    if (len==0)
       do_plc = 1;
    if (len < 0)
+   {
+      RESTORE_STACK;
       return OPUS_BAD_ARG;
+   }
    if (!do_plc && len < 2*st->layout.nb_streams-1)
+   {
+      RESTORE_STACK;
       return OPUS_INVALID_PACKET;
+   }
+   if (!do_plc)
+   {
+      int ret = opus_multistream_packet_validate(data, len, st->layout.nb_coupled_streams);
+      if (ret < 0)
+      {
+         RESTORE_STACK;
+         return ret;
+      }
+   }
    for (s=0;s<st->layout.nb_streams;s++)
    {
       OpusDecoder *dec;
