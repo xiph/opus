@@ -724,6 +724,7 @@ opus_int32 test_parse(void)
    /*code 0*/
    for(i=0;i<64;i++)
    {
+      packet[0]=i<<2;
       UNDEFINE_FOR_PARSE
       ret=opus_packet_parse(packet,4,&toc,frames,size,&payload_offset);
       cfgs++;
