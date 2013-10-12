@@ -153,7 +153,7 @@ typedef void (*opus_copy_channel_out_func)(
 );
 
 static int opus_multistream_packet_validate(const unsigned char *data,
-      opus_int32 len, int nb_streams)
+      opus_int32 len, int nb_streams, opus_int32 Fs)
 {
    int s;
    int i;
@@ -173,14 +173,14 @@ static int opus_multistream_packet_validate(const unsigned char *data,
          return count;
       for (i=0;i<count;i++)
          offset += size[i];
-      tmp_samples = opus_packet_get_nb_samples(data, offset, 48000);
+      tmp_samples = opus_packet_get_nb_samples(data, offset, Fs);
       if (s!=0 && samples != tmp_samples)
          return OPUS_INVALID_PACKET;
       samples = tmp_samples;
       data += offset;
       len -= offset;
    }
-   return OPUS_OK;
+   return samples;
 }
 
 static int opus_multistream_decode_native(
@@ -225,11 +225,15 @@ static int opus_multistream_decode_native(
    }
    if (!do_plc)
    {
-      int ret = opus_multistream_packet_validate(data, len, st->layout.nb_coupled_streams);
+      int ret = opus_multistream_packet_validate(data, len, st->layout.nb_coupled_streams, Fs);
       if (ret < 0)
       {
          RESTORE_STACK;
          return ret;
+      } else if (ret > frame_size)
+      {
+         RESTORE_STACK;
+         return OPUS_BUFFER_TOO_SMALL;
       }
    }
    for (s=0;s<st->layout.nb_streams;s++)
@@ -243,22 +247,12 @@ static int opus_multistream_decode_native(
       if (!do_plc && len<=0)
       {
          RESTORE_STACK;
-         return OPUS_INVALID_PACKET;
+         return OPUS_INTERNAL_ERROR;
       }
       packet_offset = 0;
       ret = opus_decode_native(dec, data, len, buf, frame_size, decode_fec, s!=st->layout.nb_streams-1, &packet_offset, soft_clip);
       data += packet_offset;
       len -= packet_offset;
-      if (ret > frame_size)
-      {
-         RESTORE_STACK;
-         return OPUS_BUFFER_TOO_SMALL;
-      }
-      if (s>0 && ret != frame_size)
-      {
-         RESTORE_STACK;
-         return OPUS_INVALID_PACKET;
-      }
       if (ret <= 0)
       {
          RESTORE_STACK;
