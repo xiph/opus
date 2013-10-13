@@ -716,7 +716,7 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
             return OPUS_INVALID_PACKET;
          for (i=0;i<count-1;i++)
             size[i] = size[count-1];
-      } else if(size[count-1] > last_size)
+      } else if (bytes+size[count-1] > last_size)
          return OPUS_INVALID_PACKET;
    } else
    {
