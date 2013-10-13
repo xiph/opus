@@ -268,7 +268,9 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
          return audiosize;
       }
 
-      if (mode != MODE_SILK_ONLY && audiosize > F20)
+      /* Avoids trying to run the PLC on sizes other than 2.5 (CELT), 5 (CELT),
+         10, or 20 (e.g. 12.5 or 30 ms). */
+      if (audiosize > F20)
       {
          do {
             int ret = opus_decode_frame(st, NULL, 0, pcm, IMIN(audiosize, F20), 0);
@@ -282,6 +284,12 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
          } while (audiosize > 0);
          RESTORE_STACK;
          return frame_size;
+      } else if (audiosize < F20)
+      {
+         if (audiosize > F10)
+            audiosize = F10;
+         else if (mode != MODE_SILK_ONLY && audiosize > F5 && audiosize < F10)
+            audiosize = F5;
       }
    }
 
