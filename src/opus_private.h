@@ -119,4 +119,6 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
 
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen, int self_delimited);
 
+int pad_frame(unsigned char *data, opus_int32 len, opus_int32 new_len);
+
 #endif /* OPUS_PRIVATE_H */

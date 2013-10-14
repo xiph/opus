@@ -686,7 +686,7 @@ static int opus_multistream_encode_native
    VARDECL(opus_val16, bandSMR);
    unsigned char tmp_data[MS_FRAME_TMP];
    OpusRepacketizer rp;
-   opus_int32 complexity;
+   opus_int32 vbr;
    const CELTMode *celt_mode;
    opus_int32 bitrates[256];
    opus_val16 bandLogE[42];
@@ -703,7 +703,7 @@ static int opus_multistream_encode_native
 
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
-   opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_COMPLEXITY(&complexity));
+   opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_VBR(&vbr));
    opus_encoder_ctl((OpusEncoder*)ptr, CELT_GET_MODE(&celt_mode));
 
    {
@@ -750,6 +750,9 @@ static int opus_multistream_encode_native
 
    /* Compute bitrate allocation between streams (this could be a lot better) */
    surround_rate_allocation(st, bitrates, frame_size);
+
+   if (!vbr)
+      max_data_bytes = IMIN(max_data_bytes, st->bitrate_bps/(8*Fs/frame_size));
 
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    for (s=0;s<st->layout.nb_streams;s++)
@@ -850,6 +853,15 @@ static int opus_multistream_encode_native
          more than one frame at a time (e.g. 60 ms CELT-only) */
       opus_repacketizer_cat(&rp, tmp_data, len);
       len = opus_repacketizer_out_range_impl(&rp, 0, opus_repacketizer_get_nb_frames(&rp), data, max_data_bytes-tot_size, s != st->layout.nb_streams-1);
+      if (!vbr && s == st->layout.nb_streams-1 && curr_max > len)
+      {
+         if (pad_frame(data, len, curr_max))
+         {
+            RESTORE_STACK;
+            return OPUS_INTERNAL_ERROR;
+         }
+         len = curr_max;
+      }
       data += len;
       tot_size += len;
    }

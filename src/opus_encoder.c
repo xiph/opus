@@ -244,7 +244,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     return OPUS_OK;
 }
 
-static int pad_frame(unsigned char *data, opus_int32 len, opus_int32 new_len)
+int pad_frame(unsigned char *data, opus_int32 len, opus_int32 new_len)
 {
    if (len == new_len)
       return 0;
