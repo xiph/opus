@@ -156,29 +156,27 @@ static int opus_multistream_packet_validate(const unsigned char *data,
       opus_int32 len, int nb_streams, opus_int32 Fs)
 {
    int s;
-   int i;
    int count;
    unsigned char toc;
    opus_int16 size[48];
-   int offset;
    int samples=0;
+   opus_int32 packet_offset;
 
    for (s=0;s<nb_streams;s++)
    {
       int tmp_samples;
       if (len<=0)
          return OPUS_INVALID_PACKET;
-      count = opus_packet_parse_impl(data, len, s!=nb_streams-1, &toc, NULL, size, &offset);
+      count = opus_packet_parse_impl(data, len, s!=nb_streams-1, &toc, NULL,
+                                     size, NULL, &packet_offset);
       if (count<0)
          return count;
-      for (i=0;i<count;i++)
-         offset += size[i];
-      tmp_samples = opus_packet_get_nb_samples(data, offset, Fs);
+      tmp_samples = opus_packet_get_nb_samples(data, packet_offset, Fs);
       if (s!=0 && samples != tmp_samples)
          return OPUS_INVALID_PACKET;
       samples = tmp_samples;
-      data += offset;
-      len -= offset;
+      data += packet_offset;
+      len -= packet_offset;
    }
    return samples;
 }

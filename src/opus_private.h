@@ -114,7 +114,8 @@ static inline int align(int i)
 
 int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       int self_delimited, unsigned char *out_toc,
-      const unsigned char *frames[48], opus_int16 size[48], int *payload_offset);
+      const unsigned char *frames[48], opus_int16 size[48],
+      int *payload_offset, int *opus_int32);
 
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen, int self_delimited);
 

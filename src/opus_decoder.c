@@ -601,7 +601,8 @@ static int parse_size(const unsigned char *data, opus_int32 len, opus_int16 *siz
 
 int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       int self_delimited, unsigned char *out_toc,
-      const unsigned char *frames[48], opus_int16 size[48], int *payload_offset)
+      const unsigned char *frames[48], opus_int16 size[48],
+      int *payload_offset, opus_int32 *packet_offset)
 {
    int i, bytes;
    int count;
@@ -609,6 +610,7 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
    unsigned char ch, toc;
    int framesize;
    opus_int32 last_size;
+   opus_int32 pad = 0;
    const unsigned char *data0 = data;
 
    if (size==NULL)
@@ -664,11 +666,14 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       {
          int p;
          do {
+            int tmp;
             if (len<=0)
                return OPUS_INVALID_PACKET;
             p = *data++;
             len--;
-            len -= p==255 ? 254: p;
+            tmp = p==255 ? 254: p;
+            len -= tmp;
+            pad += tmp;
          } while (p==255);
       }
       if (len<0)
@@ -731,14 +736,15 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
    if (payload_offset)
       *payload_offset = (int)(data-data0);
 
-   if (frames)
+   for (i=0;i<count;i++)
    {
-      for (i=0;i<count;i++)
-      {
+      if (frames)
          frames[i] = data;
-         data += size[i];
-      }
+      data += size[i];
    }
+
+   if (packet_offset)
+      *packet_offset = pad+(opus_int32)(data-data0);
 
    if (out_toc)
       *out_toc = toc;
@@ -751,7 +757,7 @@ int opus_packet_parse(const unsigned char *data, opus_int32 len,
       opus_int16 size[48], int *payload_offset)
 {
    return opus_packet_parse_impl(data, len, 0, out_toc,
-                                 frames, size, payload_offset);
+                                 frames, size, payload_offset, NULL);
 }
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data,
@@ -761,7 +767,6 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    int i, nb_samples;
    int count, offset;
    unsigned char toc;
-   int tot_offset;
    int packet_frame_size, packet_bandwidth, packet_mode, packet_stream_channels;
    /* 48 x 2.5 ms = 120 ms */
    opus_int16 size[48];
@@ -793,8 +798,8 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    packet_frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
    packet_stream_channels = opus_packet_get_nb_channels(data);
 
-   count = opus_packet_parse_impl(data, len, self_delimited, &toc, NULL, size, &offset);
-
+   count = opus_packet_parse_impl(data, len, self_delimited, &toc, NULL,
+                                  size, &offset, packet_offset);
    if (count<0)
       return count;
 
@@ -835,7 +840,6 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
          return frame_size;
       }
    }
-   tot_offset = offset;
 
    if (count*packet_frame_size > frame_size)
       return OPUS_BUFFER_TOO_SMALL;
@@ -855,11 +859,8 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
          return ret;
       celt_assert(ret==packet_frame_size);
       data += size[i];
-      tot_offset += size[i];
       nb_samples += ret;
    }
-   if (packet_offset != NULL)
-      *packet_offset = tot_offset;
    st->last_packet_duration = nb_samples;
    if (OPUS_CHECK_ARRAY(pcm, nb_samples*st->channels))
       OPUS_PRINT_INT(nb_samples);
