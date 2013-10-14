@@ -238,7 +238,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
    upsample = resampling_factor(rate);
    frame_size = len*upsample;
 
-   for (LM=0;LM<=celt_mode->maxLM;LM++)
+   for (LM=0;LM<celt_mode->maxLM;LM++)
       if (celt_mode->shortMdctSize<<LM==frame_size)
          break;
 
@@ -841,6 +841,8 @@ static int opus_multistream_encode_native
       /* Reserve three bytes for the last stream and four for the others */
       curr_max -= IMAX(0,4*(st->layout.nb_streams-s-1)-1);
       curr_max = IMIN(curr_max,MS_FRAME_TMP);
+      if (!vbr && s == st->layout.nb_streams-1)
+         opus_encoder_ctl(enc, OPUS_SET_BITRATE(curr_max*(8*Fs/frame_size)));
       len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth,
             pcm, analysis_frame_size, c1, c2, st->layout.nb_channels, downmix);
       if (len<0)
@@ -855,12 +857,9 @@ static int opus_multistream_encode_native
       len = opus_repacketizer_out_range_impl(&rp, 0, opus_repacketizer_get_nb_frames(&rp), data, max_data_bytes-tot_size, s != st->layout.nb_streams-1);
       if (!vbr && s == st->layout.nb_streams-1 && curr_max > len)
       {
-         if (pad_frame(data, len, curr_max))
-         {
-            RESTORE_STACK;
-            return OPUS_INTERNAL_ERROR;
-         }
-         len = curr_max;
+         /* Can pad_frame() still fail here? */
+         if (!pad_frame(data, len, curr_max))
+            len = curr_max;
       }
       data += len;
       tot_size += len;
@@ -868,7 +867,6 @@ static int opus_multistream_encode_native
    /*printf("\n");*/
    RESTORE_STACK;
    return tot_size;
-
 }
 
 #if !defined(DISABLE_FLOAT_API)
