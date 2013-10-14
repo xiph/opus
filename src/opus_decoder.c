@@ -762,7 +762,7 @@ int opus_packet_parse(const unsigned char *data, opus_int32 len,
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec,
-      int self_delimited, int *packet_offset, int soft_clip)
+      int self_delimited, opus_int32 *packet_offset, int soft_clip)
 {
    int i, nb_samples;
    int count, offset;

@@ -104,7 +104,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
       opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited,
-      int *packet_offset, int soft_clip);
+      opus_int32 *packet_offset, int soft_clip);
 
 /* Make sure everything's aligned to sizeof(void *) bytes */
 static inline int align(int i)
@@ -115,7 +115,7 @@ static inline int align(int i)
 int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       int self_delimited, unsigned char *out_toc,
       const unsigned char *frames[48], opus_int16 size[48],
-      int *payload_offset, int *opus_int32);
+      int *payload_offset, opus_int32 *packet_offset);
 
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen, int self_delimited);
 
