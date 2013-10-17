@@ -32,6 +32,9 @@
 #ifndef STACK_ALLOC_H
 #define STACK_ALLOC_H
 
+#include "opus_types.h"
+#include "opus_defines.h"
+
 #if (!defined (VAR_ARRAYS) && !defined (USE_ALLOCA) && !defined (NONTHREADSAFE_PSEUDOSTACK))
 #error "Opus requires one of VAR_ARRAYS, USE_ALLOCA, or NONTHREADSAFE_PSEUDOSTACK be defined to select the temporary allocation mode."
 #endif
@@ -159,7 +162,7 @@ extern char *global_stack_top;
 
 #else
 
-static inline int _opus_false(void) {return 0;}
+static OPUS_INLINE int _opus_false(void) {return 0;}
 #define OPUS_CHECK_ARRAY(ptr, len) _opus_false()
 #define OPUS_CHECK_VALUE(value) _opus_false()
 #define OPUS_PRINT_INT(value) do{}while(0)

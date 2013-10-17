@@ -115,7 +115,7 @@ static const int extra_bands[NB_TOT_BANDS+1] = {
 #define cB 0.67848403f
 #define cC 0.08595542f
 #define cE ((float)M_PI/2)
-static inline float fast_atan2f(float y, float x) {
+static OPUS_INLINE float fast_atan2f(float y, float x) {
    float x2, y2;
    /* Should avoid underflow on the values we'll get */
    if (ABS16(x)+ABS16(y)<1e-9f)

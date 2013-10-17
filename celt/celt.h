@@ -138,7 +138,7 @@ int celt_decode_with_ec(OpusCustomDecoder * OPUS_RESTRICT st, const unsigned cha
 #ifdef CUSTOM_MODES
 #define OPUS_CUSTOM_NOSTATIC
 #else
-#define OPUS_CUSTOM_NOSTATIC static inline
+#define OPUS_CUSTOM_NOSTATIC static OPUS_INLINE
 #endif
 
 static const unsigned char trim_icdf[11] = {126, 124, 119, 109, 87, 41, 19, 9, 4, 2, 0};
@@ -163,7 +163,7 @@ static const unsigned char fromOpusTable[16] = {
       0x00, 0x08, 0x10, 0x18
 };
 
-static inline int toOpus(unsigned char c)
+static OPUS_INLINE int toOpus(unsigned char c)
 {
    int ret=0;
    if (c<0xA0)
@@ -174,7 +174,7 @@ static inline int toOpus(unsigned char c)
       return ret|(c&0x7);
 }
 
-static inline int fromOpus(unsigned char c)
+static OPUS_INLINE int fromOpus(unsigned char c)
 {
    if (c<0x80)
       return -1;

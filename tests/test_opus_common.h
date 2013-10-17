@@ -25,7 +25,7 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-static inline void deb2_impl(unsigned char *_t,unsigned char **_p,int _k,int _x,int _y)
+static OPUS_INLINE void deb2_impl(unsigned char *_t,unsigned char **_p,int _k,int _x,int _y)
 {
   int i;
   if(_x>2){
@@ -41,7 +41,7 @@ static inline void deb2_impl(unsigned char *_t,unsigned char **_p,int _k,int _x,
 }
 
 /*Generates a De Bruijn sequence (k,2) with length k^2*/
-static inline void debruijn2(int _k, unsigned char *_res)
+static OPUS_INLINE void debruijn2(int _k, unsigned char *_res)
 {
    unsigned char *p;
    unsigned char *t;
@@ -54,7 +54,7 @@ static inline void debruijn2(int _k, unsigned char *_res)
 
 /*MWC RNG of George Marsaglia*/
 static opus_uint32 Rz, Rw;
-static inline opus_uint32 fast_rand(void)
+static OPUS_INLINE opus_uint32 fast_rand(void)
 {
   Rz=36969*(Rz&65535)+(Rz>>16);
   Rw=18000*(Rw&65535)+(Rw>>16);
@@ -65,7 +65,7 @@ static opus_uint32 iseed;
 #ifdef __GNUC__
 __attribute__((noreturn))
 #endif
-static inline void _test_failed(const char *file, int line)
+static OPUS_INLINE void _test_failed(const char *file, int line)
 {
   fprintf(stderr,"\n ***************************************************\n");
   fprintf(stderr," ***         A fatal error was detected.         ***\n");

@@ -35,6 +35,7 @@
 #define ARCH_H
 
 #include "opus_types.h"
+#include "opus_defines.h"
 
 # if !defined(__GNUC_PREREQ)
 #  if defined(__GNUC__)&&defined(__GNUC_MINOR__)
@@ -54,7 +55,7 @@
 #ifdef __GNUC__
 __attribute__((noreturn))
 #endif
-static inline void _celt_fatal(const char *str, const char *file, int line)
+static OPUS_INLINE void _celt_fatal(const char *str, const char *file, int line)
 {
    fprintf (stderr, "Fatal (internal) error in %s, line %d: %s\n", file, line, str);
    abort();

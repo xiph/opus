@@ -75,7 +75,7 @@ struct OpusDecoder {
 };
 
 #ifdef FIXED_POINT
-static inline opus_int16 SAT16(opus_int32 x) {
+static OPUS_INLINE opus_int16 SAT16(opus_int32 x) {
    return x > 32767 ? 32767 : x < -32768 ? -32768 : (opus_int16)x;
 }
 #endif

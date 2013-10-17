@@ -93,7 +93,7 @@ static void int_to_char(opus_uint32 i, unsigned char ch[4])
     ch[3] = i&0xFF;
 }
 
-static inline void save_packet(unsigned char* p, int len, opus_uint32 rng)
+static OPUS_INLINE void save_packet(unsigned char* p, int len, opus_uint32 rng)
 {
    FILE *fout;
    unsigned char int_field[4];

@@ -47,7 +47,7 @@ extern "C" {
 #else
 # define OPUS_CUSTOM_EXPORT
 # ifdef OPUS_BUILD
-#  define OPUS_CUSTOM_EXPORT_STATIC static inline
+#  define OPUS_CUSTOM_EXPORT_STATIC static OPUS_INLINE
 # else
 #  define OPUS_CUSTOM_EXPORT_STATIC
 # endif

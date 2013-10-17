@@ -37,7 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /* non-warped frequency scale. (So that it can be implemented with a minimum-phase monic filter.) */
 /* Note: A monic filter is one with the first coefficient equal to 1.0. In Silk we omit the first */
 /* coefficient in an array of coefficients, for monic filters.                                    */
-static inline opus_int32 warped_gain( /* gain in Q16*/
+static OPUS_INLINE opus_int32 warped_gain( /* gain in Q16*/
     const opus_int32     *coefs_Q24,
     opus_int             lambda_Q16,
     opus_int             order
@@ -56,7 +56,7 @@ static inline opus_int32 warped_gain( /* gain in Q16*/
 
 /* Convert warped filter coefficients to monic pseudo-warped coefficients and limit maximum     */
 /* amplitude of monic warped coefficients by using bandwidth expansion on the true coefficients */
-static inline void limit_warped_coefs(
+static OPUS_INLINE void limit_warped_coefs(
     opus_int32           *coefs_syn_Q24,
     opus_int32           *coefs_ana_Q24,
     opus_int             lambda_Q16,

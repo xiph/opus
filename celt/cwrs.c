@@ -534,7 +534,7 @@ void decode_pulses(int *_y,int _n,int _k,ec_dec *_dec){
 /*Computes the next row/column of any recurrence that obeys the relation
    u[i][j]=u[i-1][j]+u[i][j-1]+u[i-1][j-1].
   _ui0 is the base case for the new row/column.*/
-static inline void unext(opus_uint32 *_ui,unsigned _len,opus_uint32 _ui0){
+static OPUS_INLINE void unext(opus_uint32 *_ui,unsigned _len,opus_uint32 _ui0){
   opus_uint32 ui1;
   unsigned      j;
   /*This do-while will overrun the array if we don't have storage for at least
@@ -550,7 +550,7 @@ static inline void unext(opus_uint32 *_ui,unsigned _len,opus_uint32 _ui0){
 /*Computes the previous row/column of any recurrence that obeys the relation
    u[i-1][j]=u[i][j]-u[i][j-1]-u[i-1][j-1].
   _ui0 is the base case for the new row/column.*/
-static inline void uprev(opus_uint32 *_ui,unsigned _n,opus_uint32 _ui0){
+static OPUS_INLINE void uprev(opus_uint32 *_ui,unsigned _n,opus_uint32 _ui0){
   opus_uint32 ui1;
   unsigned      j;
   /*This do-while will overrun the array if we don't have storage for at least
@@ -617,7 +617,7 @@ static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y,opus_uint32 *_u){
    of size 1 with associated sign bits.
   _y: The vector of pulses, whose sum of absolute values is K.
   _k: Returns K.*/
-static inline opus_uint32 icwrs1(const int *_y,int *_k){
+static OPUS_INLINE opus_uint32 icwrs1(const int *_y,int *_k){
   *_k=abs(_y[0]);
   return _y[0]<0;
 }
@@ -626,7 +626,7 @@ static inline opus_uint32 icwrs1(const int *_y,int *_k){
    of size _n with associated sign bits.
   _y:  The vector of pulses, whose sum of absolute values must be _k.
   _nc: Returns V(_n,_k).*/
-static inline opus_uint32 icwrs(int _n,int _k,opus_uint32 *_nc,const int *_y,
+static OPUS_INLINE opus_uint32 icwrs(int _n,int _k,opus_uint32 *_nc,const int *_y,
  opus_uint32 *_u){
   opus_uint32 i;
   int         j;

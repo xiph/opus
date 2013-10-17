@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 
 /* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
-static inline void silk_LBRR_encode_FIX(
+static OPUS_INLINE void silk_LBRR_encode_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
     silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Pointer to Silk FIX encoder control struct                                  */
     const opus_int32                xfw_Q3[],                               /* I    Input signal                                                                */
@@ -326,7 +326,7 @@ opus_int silk_encode_frame_FIX(
 }
 
 /* Low-Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode excitation at lower bitrate  */
-static inline void silk_LBRR_encode_FIX(
+static OPUS_INLINE void silk_LBRR_encode_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
     silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Pointer to Silk FIX encoder control struct                                  */
     const opus_int32                xfw_Q3[],                               /* I    Input signal                                                                */

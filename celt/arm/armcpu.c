@@ -49,10 +49,10 @@
 # define WIN32_EXTRA_LEAN
 # include <windows.h>
 
-static inline opus_uint32 opus_cpu_capabilities(void){
+static OPUS_INLINE opus_uint32 opus_cpu_capabilities(void){
   opus_uint32 flags;
   flags=0;
-  /* MSVC has no inline __asm support for ARM, but it does let you __emit
+  /* MSVC has no OPUS_INLINE __asm support for ARM, but it does let you __emit
    * instructions via their assembled hex code.
    * All of these instructions should be essentially nops. */
 # if defined(ARMv5E_ASM)

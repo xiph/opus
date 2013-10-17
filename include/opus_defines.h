@@ -98,6 +98,18 @@ extern "C" {
 # define OPUS_RESTRICT restrict
 #endif
 
+#if (!defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L) )
+# if OPUS_GNUC_PREREQ(2,7)
+#  define OPUS_INLINE __inline__
+# elif (defined(_MSC_VER))
+#  define OPUS_INLINE __inline
+# else
+#  define OPUS_INLINE
+# endif
+#else
+# define OPUS_INLINE inline
+#endif
+
 /**Warning attributes for opus functions
   * NONNULL is not used in OPUS_BUILD to avoid the compiler optimizing out
   * some paranoid null checks. */

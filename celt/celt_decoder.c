@@ -175,7 +175,7 @@ void opus_custom_decoder_destroy(CELTDecoder *st)
 }
 #endif /* CUSTOM_MODES */
 
-static inline opus_val16 SIG2WORD16(celt_sig x)
+static OPUS_INLINE opus_val16 SIG2WORD16(celt_sig x)
 {
 #ifdef FIXED_POINT
    x = PSHR32(x, SIG_SHIFT);
