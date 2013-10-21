@@ -67,9 +67,10 @@ static inline float tansig_approx(float x)
 	int i;
 	float y, dy;
 	float sign=1;
-    if (x>=8)
+	/* Tests are reversed to catch NaNs */
+    if (!(x<8))
         return 1;
-    if (x<=-8)
+    if (!(x>-8))
         return -1;
 	if (x<0)
 	{
