@@ -1131,6 +1131,29 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
        *value = st->variable_duration;
    }
    break;
+   case OPUS_RESET_STATE:
+   {
+      int s;
+      st->subframe_mem[0] = st->subframe_mem[1] = st->subframe_mem[2] = 0;
+      if (st->surround)
+      {
+         OPUS_CLEAR(ms_get_preemph_mem(st), st->layout.nb_channels);
+         OPUS_CLEAR(ms_get_window_mem(st), st->layout.nb_channels*120);
+      }
+      for (s=0;s<st->layout.nb_streams;s++)
+      {
+         OpusEncoder *enc;
+         enc = (OpusEncoder*)ptr;
+         if (s < st->layout.nb_coupled_streams)
+            ptr += align(coupled_size);
+         else
+            ptr += align(mono_size);
+         ret = opus_encoder_ctl(enc, OPUS_RESET_STATE);
+         if (ret != OPUS_OK)
+            break;
+      }
+   }
+   break;
    default:
       ret = OPUS_UNIMPLEMENTED;
       break;
