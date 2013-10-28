@@ -665,7 +665,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
    VARDECL(unsigned char, collapse_masks);
-   celt_sig *out_mem[2];
    celt_sig *decode_mem[2];
    celt_sig *out_syn[2];
    opus_val16 *lpc;
@@ -706,7 +705,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    c=0; do {
       decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+overlap);
-      out_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE-MAX_PERIOD;
    } while (++c<CC);
    lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+overlap)*CC);
    oldBandE = lpc+CC*LPC_ORDER;
@@ -936,7 +934,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    } while (++c<C);
 
    c=0; do {
-      out_syn[c] = out_mem[c]+MAX_PERIOD-N;
+      out_syn[c] = decode_mem[c]+DECODE_BUFFER_SIZE-N;
    } while (++c<CC);
 
    if (CC==2&&C==1)
