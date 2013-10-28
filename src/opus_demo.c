@@ -79,15 +79,6 @@ static opus_uint32 char_to_int(unsigned char ch[4])
          | ((opus_uint32)ch[2]<< 8) |  (opus_uint32)ch[3];
 }
 
-static void check_decoder_option(int encode_only, const char *opt)
-{
-   if (encode_only)
-   {
-      fprintf(stderr, "option %s is only for decoding\n", opt);
-      exit(EXIT_FAILURE);
-   }
-}
-
 static void check_encoder_option(int decode_only, const char *opt)
 {
    if (decode_only)
