@@ -1156,6 +1156,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       coded_stereo_dof = (eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
       /* Maximum fraction of the bits we can save if the signal is mono. */
       max_frac = DIV32_16(MULT16_16(QCONST16(0.8f, 15), coded_stereo_dof), coded_bins);
+      stereo_saving = MIN16(stereo_saving, QCONST16(1.f, 8));
       /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
       target -= (opus_int32)MIN32(MULT16_32_Q15(max_frac,target),
                       SHR32(MULT16_16(stereo_saving-QCONST16(0.1f,8),(coded_stereo_dof<<BITRES)),8));
