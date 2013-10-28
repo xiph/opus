@@ -26,11 +26,15 @@
 */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+# include "config.h"
 #endif
 
 #ifndef OPUS_BUILD
-#error "OPUS_BUILD _MUST_ be defined to build Opus. This probably means you need other defines as well, as in a config.h. See the included build files for details."
+# error "OPUS_BUILD _MUST_ be defined to build Opus. This probably means you need other defines as well, as in a config.h. See the included build files for details."
+#endif
+
+#if defined(__GNUC__) && (__GNUC__ >= 2) && !defined(__OPTIMIZE__)
+# pragma message "You appear to be compiling without optimization, if so opus will be very slow."
 #endif
 
 #include <stdarg.h>
