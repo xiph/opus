@@ -715,7 +715,11 @@ static int opus_multistream_encode_native
       delay_compensation -= Fs/400;
       frame_size = compute_frame_size(pcm, analysis_frame_size,
             st->variable_duration, channels, Fs, st->bitrate_bps,
-            delay_compensation, downmix, st->subframe_mem);
+            delay_compensation, downmix
+#ifndef DISABLE_FLOAT_API
+            , st->subframe_mem
+#endif
+            );
    }
 
    if (400*frame_size < Fs)
