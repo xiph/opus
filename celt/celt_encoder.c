@@ -1613,7 +1613,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if (!st->lfe)
    {
       opus_val16 follow=-QCONST16(10.0f,DB_SHIFT);
-      float frame_avg=0;
+      opus_val32 frame_avg=0;
       opus_val16 offset = shortBlocks?HALF16(SHL16(LM, DB_SHIFT)):0;
       for(i=st->start;i<st->end;i++)
       {
