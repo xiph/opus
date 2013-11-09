@@ -774,11 +774,11 @@ static int opus_multistream_encode_native
          equiv_rate = st->bitrate_bps;
          if (frame_size*50 < Fs)
             equiv_rate -= 60*(Fs/frame_size - 50)*st->layout.nb_channels;
-         if (equiv_rate > 112000)
+         if (equiv_rate > 16000*st->layout.nb_channels)
             opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_FULLBAND));
-         else if (equiv_rate > 76000)
+         else if (equiv_rate > 12000*st->layout.nb_channels)
             opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_SUPERWIDEBAND));
-         else if (equiv_rate > 48000)
+         else if (equiv_rate > 8000*st->layout.nb_channels)
             opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_WIDEBAND));
          else
             opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_NARROWBAND));
