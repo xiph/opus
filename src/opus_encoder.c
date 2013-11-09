@@ -1099,7 +1099,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     max_rate = frame_rate*max_data_bytes*8;
 
     /* Equivalent 20-ms rate for mode/channel/bandwidth decisions */
-    equiv_rate = st->bitrate_bps - 60*(st->Fs/frame_size - 50);
+    equiv_rate = st->bitrate_bps - (40*st->channels+20)*(st->Fs/frame_size - 50);
 
     if (st->signal_type == OPUS_SIGNAL_VOICE)
        voice_est = 127;
@@ -1140,6 +1140,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        }
 #endif
     }
+    equiv_rate = st->bitrate_bps - (40*st->stream_channels+20)*(st->Fs/frame_size - 50);
 
     /* Mode selection depending on application and signal type */
     if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
@@ -1329,7 +1330,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         st->bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
     if (st->Fs <= 8000 && st->bandwidth > OPUS_BANDWIDTH_NARROWBAND)
         st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
-#ifndef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
     /* Use detected bandwidth to reduce the encoded bandwidth. */
     if (st->detected_bandwidth && st->user_bandwidth == OPUS_AUTO)
     {
@@ -1338,13 +1339,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           gets it wrong when we could have coded a high bandwidth transparently.
           When operating in SILK/hybrid mode, we don't go below wideband to avoid
           more complicated switches that require redundancy. */
-       if (st->bitrate_bps <= 18000*st->stream_channels && st->mode == MODE_CELT_ONLY)
+       if (equiv_rate <= 18000*st->stream_channels && st->mode == MODE_CELT_ONLY)
           min_detected_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
-       else if (st->bitrate_bps <= 24000*st->stream_channels && st->mode == MODE_CELT_ONLY)
+       else if (equiv_rate <= 24000*st->stream_channels && st->mode == MODE_CELT_ONLY)
           min_detected_bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
-       else if (st->bitrate_bps <= 30000*st->stream_channels)
+       else if (equiv_rate <= 30000*st->stream_channels)
           min_detected_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
-       else if (st->bitrate_bps <= 44000*st->stream_channels)
+       else if (equiv_rate <= 44000*st->stream_channels)
           min_detected_bandwidth = OPUS_BANDWIDTH_SUPERWIDEBAND;
        else
           min_detected_bandwidth = OPUS_BANDWIDTH_FULLBAND;
@@ -1765,7 +1766,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     st->prev_HB_gain = HB_gain;
     if (st->mode != MODE_HYBRID || st->stream_channels==1)
-       st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),IMAX(0,st->bitrate_bps-32000));
+       st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),IMAX(0,equiv_rate-32000));
     if( !st->energy_masking && st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {

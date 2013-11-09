@@ -1295,6 +1295,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_val16 surround_masking=0;
    opus_val16 temporal_vbr=0;
    opus_val16 surround_trim = 0;
+   opus_int32 equiv_rate = 510000;
    VARDECL(opus_val16, surround_dynalloc);
    ALLOC_STACK;
 
@@ -1376,6 +1377,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
                (tmp+4*mode->Fs)/(8*mode->Fs)-!!st->signalling));
       effectiveBytes = nbCompressedBytes;
    }
+   if (st->bitrate != OPUS_BITRATE_MAX)
+      equiv_rate = st->bitrate - (40*C+20)*((400>>LM) - 50);
 
    if (enc==NULL)
    {
@@ -1830,7 +1833,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      if (st->constrained_vbr)
         base_target += (st->vbr_offset>>lm_diff);
 
-     target = compute_vbr(mode, &st->analysis, base_target, LM, st->bitrate,
+     target = compute_vbr(mode, &st->analysis, base_target, LM, equiv_rate,
            st->lastCodedBands, C, st->intensity, st->constrained_vbr,
            st->stereo_saving, tot_boost, tf_estimate, pitch_change, maxDepth,
            st->variable_duration, st->lfe, st->energy_mask!=NULL, surround_masking,
@@ -1914,13 +1917,13 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if (st->analysis.valid)
    {
       int min_bandwidth;
-      if (st->bitrate < (opus_int32)32000*C)
+      if (equiv_rate < (opus_int32)32000*C)
          min_bandwidth = 13;
-      else if (st->bitrate < (opus_int32)48000*C)
+      else if (equiv_rate < (opus_int32)48000*C)
          min_bandwidth = 16;
-      else if (st->bitrate < (opus_int32)60000*C)
+      else if (equiv_rate < (opus_int32)60000*C)
          min_bandwidth = 18;
-      else  if (st->bitrate < (opus_int32)80000*C)
+      else  if (equiv_rate < (opus_int32)80000*C)
          min_bandwidth = 19;
       else
          min_bandwidth = 20;
