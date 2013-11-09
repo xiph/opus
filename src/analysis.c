@@ -317,7 +317,6 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
     }
     relativeE = 0;
     frame_loudness = 0;
-    bandwidth_mask = 0;
     for (b=0;b<NB_TBANDS;b++)
     {
        float E=0, tE=0, nE=0;
@@ -597,7 +596,6 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info_out, con
           if (tonal->speech_confidence_count==0)
              tonal->speech_confidence = .1f;
        }
-       psum = MAX16(tonal->speech_confidence, MIN16(tonal->music_confidence, psum));
     }
     if (tonal->last_music != (tonal->music_prob>.5f))
        tonal->last_transition=0;

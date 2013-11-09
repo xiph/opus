@@ -492,7 +492,7 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
          *tapset_decision=0;
    }
    /*printf("%d %d %d\n", hf_sum, *hf_average, *tapset_decision);*/
-   celt_assert(nbBands>0); /*M*(eBands[end]-eBands[end-1]) <= 8 assures this*/
+   celt_assert(nbBands>0); /* end has to be non-zero */
    sum /= nbBands;
    /* Recursive averaging */
    sum = (sum+*average)>>1;
@@ -869,7 +869,6 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
    int q;
    int curr_bits;
    int imid=0, iside=0;
-   int N_B=N;
    int B0=B;
    opus_val16 mid=0, side=0;
    unsigned cm=0;
@@ -890,8 +889,6 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
    i = ctx->i;
    spread = ctx->spread;
    ec = ctx->ec;
-
-   N_B /= B;
 
    /* If we need 1.5 more bit than we can produce, split the band in two. */
    cache = m->cache.bits + m->cache.index[(LM+1)*m->nbEBands+i];
@@ -1072,7 +1069,6 @@ static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
    longBlocks = B0==1;
 
    N_B /= B;
-   N_B0 = N_B;
 
    /* Special case for one sample */
    if (N==1)

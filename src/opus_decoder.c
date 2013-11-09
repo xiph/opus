@@ -297,8 +297,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       }
    }
 
-   pcm_transition_silk_size = 0;
-   pcm_transition_celt_size = 0;
+   pcm_transition_silk_size = ALLOC_NONE;
+   pcm_transition_celt_size = ALLOC_NONE;
    if (data!=NULL && st->prev_mode > 0 && (
        (mode == MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY && !st->prev_redundancy)
     || (mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY) )
@@ -327,7 +327,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    }
 
    /* Don't allocate any memory when in CELT-only mode */
-   pcm_silk_size = (mode != MODE_CELT_ONLY) ? IMAX(F10, frame_size)*st->channels : 0;
+   pcm_silk_size = (mode != MODE_CELT_ONLY) ? IMAX(F10, frame_size)*st->channels : ALLOC_NONE;
    ALLOC(pcm_silk, pcm_silk_size, opus_int16);
 
    /* SILK processing */

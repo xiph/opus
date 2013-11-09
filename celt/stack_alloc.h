@@ -95,6 +95,8 @@
 #define SAVE_STACK
 #define RESTORE_STACK
 #define ALLOC_STACK
+/* C99 does not allow VLAs of size zero */
+#define ALLOC_NONE 1
 
 #elif defined(USE_ALLOCA)
 
@@ -109,6 +111,7 @@
 #define SAVE_STACK
 #define RESTORE_STACK
 #define ALLOC_STACK
+#define ALLOC_NONE 0
 
 #else
 
@@ -146,6 +149,7 @@ extern char *global_stack_top;
 #define VARDECL(type, var) type *var
 #define ALLOC(var, size, type) var = PUSH(global_stack, size, type)
 #define SAVE_STACK char *_saved_stack = global_stack;
+#define ALLOC_NONE 0
 
 #endif /* VAR_ARRAYS */
 

@@ -240,7 +240,6 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    ALLOC(tmp, len, opus_val16);
 
    len2=len/2;
-   tf_max = 0;
    for (c=0;c<C;c++)
    {
       opus_val32 mean;
