@@ -121,8 +121,6 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
 	double netOut[MAX_NEURONS];
 	double error[MAX_NEURONS];
 
-	for (i=0;i<outDim;i++)
-	   error_rate[i] = 0;
 	topo = net->topo;
 	inDim = net->topo[0];
 	hiddenDim = net->topo[1];
@@ -135,6 +133,8 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
 	memset(W1_grad, 0, W1_size*sizeof(double));
 	for (i=0;i<outDim;i++)
 		netOut[i] = outputs[i];
+	for (i=0;i<outDim;i++)
+	   error_rate[i] = 0;
 	for (s=0;s<nbSamples;s++)
 	{
 		float *in, *out;
