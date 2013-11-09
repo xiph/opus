@@ -1374,7 +1374,7 @@ opus_int32 test_enc_api(void)
    if(err!=OPUS_OK)test_failed();
    cfgs++;
    CHECK_SETGET(OPUS_SET_EXPERT_FRAME_DURATION(i),OPUS_GET_EXPERT_FRAME_DURATION(&i),0,-1,
-     OPUS_FRAMESIZE_VARIABLE,OPUS_FRAMESIZE_ARG,
+         OPUS_FRAMESIZE_60_MS,OPUS_FRAMESIZE_ARG,
      "    OPUS_SET_EXPERT_FRAME_DURATION ............... OK.\n",
      "    OPUS_GET_EXPERT_FRAME_DURATION ............... OK.\n")
 
