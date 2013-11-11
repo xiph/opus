@@ -444,7 +444,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    if (redundancy)
    {
       transition = 0;
-      pcm_transition_silk_size=0;
+      pcm_transition_silk_size=ALLOC_NONE;
    }
 
    ALLOC(pcm_transition_silk, pcm_transition_silk_size, opus_val16);
@@ -456,7 +456,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    }
 
    /* Only allocation memory for redundancy if/when needed */
-   redundant_audio_size = redundancy ? F5*st->channels : 0;
+   redundant_audio_size = redundancy ? F5*st->channels : ALLOC_NONE;
    ALLOC(redundant_audio, redundant_audio_size, opus_val16);
 
    /* 5 ms redundant frame for CELT->SILK*/
@@ -701,6 +701,11 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 int opus_decode(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec)
 {
+   if(frame_size<=0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0);
 }
 
@@ -712,6 +717,11 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
    int ret, i;
    ALLOC_STACK;
 
+   if(frame_size<=0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    ALLOC(out, frame_size*st->channels, opus_int16);
 
    ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0);
@@ -734,7 +744,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
    int ret, i;
    ALLOC_STACK;
 
-   if(frame_size<0)
+   if(frame_size<=0)
    {
       RESTORE_STACK;
       return OPUS_BAD_ARG;
@@ -755,6 +765,11 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 int opus_decode_float(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec)
 {
+   if(frame_size<=0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0);
 }
 

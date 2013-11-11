@@ -465,7 +465,7 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
         /***************************************************************************/
         /* find scaling as max scaling for each subframe */
         silk_sum_sqr_shift( &energy, &shift, frame, frame_length );
-        ALLOC( scratch_mem, shift > 0 ? frame_length : 0, opus_int16 );
+        ALLOC( scratch_mem, shift > 0 ? frame_length : ALLOC_NONE, opus_int16 );
         if( shift > 0 ) {
             /* Move signal to scratch mem because the input signal should be unchanged */
             shift = silk_RSHIFT( shift, 1 );
