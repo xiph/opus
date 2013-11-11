@@ -323,7 +323,9 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       nstart_bytes = ec_range_bytes(&enc_start_state);
       nintra_bytes = ec_range_bytes(&enc_intra_state);
       intra_buf = ec_get_buffer(&enc_intra_state) + nstart_bytes;
-      save_bytes = IMAX(ALLOC_NONE, nintra_bytes-nstart_bytes);
+      save_bytes = nintra_bytes-nstart_bytes;
+      if (save_bytes == 0)
+         save_bytes = ALLOC_NONE;
       ALLOC(intra_bits, save_bytes, unsigned char);
       /* Copy bits from intra bit-stream */
       OPUS_COPY(intra_bits, intra_buf, nintra_bytes - nstart_bytes);
