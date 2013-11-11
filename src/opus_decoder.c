@@ -702,10 +702,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec)
 {
    if(frame_size<=0)
-   {
-      RESTORE_STACK;
       return OPUS_BAD_ARG;
-   }
    return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0);
 }
 
@@ -766,10 +763,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec)
 {
    if(frame_size<=0)
-   {
-      RESTORE_STACK;
       return OPUS_BAD_ARG;
-   }
    return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0);
 }
 
