@@ -294,16 +294,16 @@ opus_int silk_encode_frame_FLP(
     silk_memmove( psEnc->x_buf, &psEnc->x_buf[ psEnc->sCmn.frame_length ],
         ( psEnc->sCmn.ltp_mem_length + LA_SHAPE_MS * psEnc->sCmn.fs_kHz ) * sizeof( silk_float ) );
 
-    /* Parameters needed for next frame */
-    psEnc->sCmn.prevLag        = sEncCtrl.pitchL[ psEnc->sCmn.nb_subfr - 1 ];
-    psEnc->sCmn.prevSignalType = psEnc->sCmn.indices.signalType;
-
     /* Exit without entropy coding */
     if( psEnc->sCmn.prefillFlag ) {
         /* No payload */
         *pnBytesOut = 0;
         return ret;
     }
+
+    /* Parameters needed for next frame */
+    psEnc->sCmn.prevLag        = sEncCtrl.pitchL[ psEnc->sCmn.nb_subfr - 1 ];
+    psEnc->sCmn.prevSignalType = psEnc->sCmn.indices.signalType;
 
     /****************************************/
     /* Finalize payload                     */
