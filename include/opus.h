@@ -911,6 +911,8 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_repacketizer_get_nb_frames(OpusRepa
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, opus_int32 maxlen) OPUS_ARG_NONNULL(1);
 
+OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_pad(unsigned char *data, opus_int32 len, opus_int32 new_len);
+
 /**@}*/
 
 #ifdef __cplusplus

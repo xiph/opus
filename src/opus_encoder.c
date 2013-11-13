@@ -244,44 +244,6 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     return OPUS_OK;
 }
 
-int pad_frame(unsigned char *data, opus_int32 len, opus_int32 new_len)
-{
-   if (len == new_len)
-      return 0;
-   if (len > new_len)
-      return 1;
-
-   if ((data[0]&0x3)==0)
-   {
-      int i;
-      int padding, nb_255s;
-
-      padding = new_len - len;
-      if (padding >= 2)
-      {
-         nb_255s = (padding-2)/255;
-
-         for (i=len-1;i>=1;i--)
-            data[i+nb_255s+2] = data[i];
-         data[0] |= 0x3;
-         data[1] = 0x41;
-         for (i=0;i<nb_255s;i++)
-            data[i+2] = 255;
-         data[nb_255s+2] = padding-255*nb_255s-2;
-         for (i=len+3+nb_255s;i<new_len;i++)
-            data[i] = 0;
-      } else {
-         for (i=len-1;i>=1;i--)
-            data[i+1] = data[i];
-         data[0] |= 0x3;
-         data[1] = 1;
-      }
-      return 0;
-   } else {
-      return 1;
-   }
-}
-
 static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channels)
 {
    int period;
@@ -1375,6 +1337,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        int bak_mode, bak_bandwidth, bak_channels, bak_to_mono;
        VARDECL(OpusRepacketizer, rp);
        opus_int32 bytes_per_frame;
+       opus_int32 repacketize_len;
 
 #ifndef DISABLE_FLOAT_API
        if (analysis_read_pos_bak!= -1)
@@ -1427,7 +1390,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
              return OPUS_INTERNAL_ERROR;
           }
        }
-       ret = opus_repacketizer_out(rp, data, out_data_bytes);
+       if (st->use_vbr)
+          repacketize_len = out_data_bytes;
+       else
+          repacketize_len = IMIN(3*st->bitrate_bps/(3*8*50/nb_frames), out_data_bytes);
+       ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr);
        if (ret<0)
        {
           RESTORE_STACK;
@@ -1942,7 +1909,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     ret += 1+redundancy_bytes;
     if (!st->use_vbr && ret >= 3)
     {
-       if (pad_frame(data, ret, max_data_bytes))
+       if (opus_packet_pad(data, ret, max_data_bytes) != OPUS_OK)
+
        {
           RESTORE_STACK;
           return OPUS_INTERNAL_ERROR;

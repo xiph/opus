@@ -757,7 +757,7 @@ static int opus_multistream_encode_native
    surround_rate_allocation(st, bitrates, frame_size);
 
    if (!vbr)
-      max_data_bytes = IMIN(max_data_bytes, st->bitrate_bps/(8*Fs/frame_size));
+      max_data_bytes = IMIN(max_data_bytes, 3*st->bitrate_bps/(3*8*Fs/frame_size));
 
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    for (s=0;s<st->layout.nb_streams;s++)
@@ -859,13 +859,8 @@ static int opus_multistream_encode_native
          while taking into account the fact that the encoder can now return
          more than one frame at a time (e.g. 60 ms CELT-only) */
       opus_repacketizer_cat(&rp, tmp_data, len);
-      len = opus_repacketizer_out_range_impl(&rp, 0, opus_repacketizer_get_nb_frames(&rp), data, max_data_bytes-tot_size, s != st->layout.nb_streams-1);
-      if (!vbr && s == st->layout.nb_streams-1 && curr_max > len)
-      {
-         /* Can pad_frame() still fail here? */
-         if (!pad_frame(data, len, curr_max))
-            len = curr_max;
-      }
+      len = opus_repacketizer_out_range_impl(&rp, 0, opus_repacketizer_get_nb_frames(&rp),
+            data, max_data_bytes-tot_size, s != st->layout.nb_streams-1, !vbr && s == st->layout.nb_streams-1);
       data += len;
       tot_size += len;
    }
