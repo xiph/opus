@@ -1797,7 +1797,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             int max_redundancy;
             ec_enc_bit_logp(&enc, celt_to_silk, 1);
             if (st->mode == MODE_HYBRID)
-               max_redundancy = (max_data_bytes-1)-nb_compr_bytes-1;
+               max_redundancy = (max_data_bytes-1)-nb_compr_bytes;
             else
                max_redundancy = (max_data_bytes-1)-((ec_tell(&enc)+7)>>3);
             /* Target the same bit-rate for redundancy as for the rest,
