@@ -686,14 +686,14 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
 }
 
 int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
-                int bitrate, opus_val16 tonality, opus_val32 *mem, int buffering,
+                int bitrate, opus_val16 tonality, float *mem, int buffering,
                 downmix_func downmix)
 {
    int N;
    int i;
    float e[MAX_DYNAMIC_FRAMESIZE+4];
    float e_1[MAX_DYNAMIC_FRAMESIZE+3];
-   float memx;
+   opus_val32 memx;
    int bestLM=0;
    int subframe;
    int pos;
@@ -720,11 +720,12 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
       pos=1;
    }
    N=IMIN(len/subframe, MAX_DYNAMIC_FRAMESIZE);
-   memx = x[0];
+   /* Just silencing a warning, it's really initialized later */
+   memx = 0;
    for (i=0;i<N;i++)
    {
       float tmp;
-      float tmpx;
+      opus_val32 tmpx;
       int j;
       tmp=EPSILON;
 
@@ -734,7 +735,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
       for (j=0;j<subframe;j++)
       {
          tmpx = sub[j];
-         tmp += (tmpx-memx)*(tmpx-memx);
+         tmp += (tmpx-memx)*(float)(tmpx-memx);
          memx = tmpx;
       }
       e[i+pos] = tmp;
@@ -858,7 +859,7 @@ opus_int32 compute_frame_size(const void *analysis_pcm, int frame_size,
       int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
       int delay_compensation, downmix_func downmix
 #ifndef DISABLE_FLOAT_API
-      , opus_val32 *subframe_mem
+      , float *subframe_mem
 #endif
       )
 {
@@ -1993,7 +1994,7 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
       delay_compensation = st->delay_compensation;
    frame_size = compute_frame_size(pcm, analysis_frame_size,
          st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
-         delay_compensation, downmix_float
+         delay_compensation, downmix_int
 #ifndef DISABLE_FLOAT_API
          , st->analysis.subframe_mem
 #endif
@@ -2017,7 +2018,7 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
       delay_compensation = st->delay_compensation;
    frame_size = compute_frame_size(pcm, analysis_frame_size,
          st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
-         delay_compensation, downmix_float, st->analysis.subframe_mem);
+         delay_compensation, downmix_int, st->analysis.subframe_mem);
 
    ALLOC(in, frame_size*st->channels, float);
 

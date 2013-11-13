@@ -60,7 +60,7 @@ typedef struct {
    int last_music;
    int last_transition;
    int count;
-   opus_val32   subframe_mem[3];
+   float subframe_mem[3];
    int analysis_offset;
    /** Probability of having speech for time i to DETECT_SIZE-1 (and music before).
        pspeech[0] is the probability that all frames in the window are speech. */

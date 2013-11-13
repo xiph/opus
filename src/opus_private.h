@@ -87,7 +87,7 @@ void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, in
 void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C);
 
 int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
-                int bitrate, opus_val16 tonality, opus_val32 *mem, int buffering,
+                int bitrate, opus_val16 tonality, float *mem, int buffering,
                 downmix_func downmix);
 
 int encode_size(int size, unsigned char *data);
@@ -98,7 +98,7 @@ opus_int32 compute_frame_size(const void *analysis_pcm, int frame_size,
       int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
       int delay_compensation, downmix_func downmix
 #ifndef DISABLE_FLOAT_API
-      , opus_val32 *subframe_mem
+      , float *subframe_mem
 #endif
       );
 
