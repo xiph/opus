@@ -205,7 +205,7 @@ static opus_val16 logSum(opus_val16 a, opus_val16 b)
    low = SHR32(diff, DB_SHIFT-1);
    frac = SHL16(diff - SHL16(low, DB_SHIFT-1), 16-DB_SHIFT);
 #else
-   low = floor(2*diff);
+   low = (int)floor(2*diff);
    frac = 2*diff - low;
 #endif
    return max + diff_table[low] + MULT16_16_Q15(frac, SUB16(diff_table[low+1], diff_table[low]));

@@ -821,7 +821,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
 #ifndef DISABLE_FLOAT_API
    if (analysis->valid)
    {
-      trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), QCONST16(2.f, 8)*(analysis->tonality_slope+.05f)));
+      trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8),
+            (opus_val16)(QCONST16(2.f, 8)*(analysis->tonality_slope+.05f))));
    }
 #endif
 
