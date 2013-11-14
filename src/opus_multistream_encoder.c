@@ -256,7 +256,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
    {
       OPUS_COPY(in, mem+c*overlap, overlap);
       (*copy_channel_in)(x, 1, pcm, channels, c, len);
-      preemphasis(x, in+overlap, frame_size, 1, upsample, celt_mode->preemph, preemph_mem+c, 0);
+      celt_preemphasis(x, in+overlap, frame_size, 1, upsample, celt_mode->preemph, preemph_mem+c, 0);
       clt_mdct_forward(&celt_mode->mdct, in, freq, celt_mode->window, overlap, celt_mode->maxLM-LM, 1);
       if (upsample != 1)
       {

@@ -194,7 +194,7 @@ extern const signed char tf_select_table[4][8];
 
 int resampling_factor(opus_int32 rate);
 
-void preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
+void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
                         int N, int CC, int upsample, const opus_val16 *coef, celt_sig *mem, int clip);
 
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
