@@ -223,7 +223,7 @@ static int opus_multistream_decode_native(
    }
    if (!do_plc)
    {
-      int ret = opus_multistream_packet_validate(data, len, st->layout.nb_coupled_streams, Fs);
+      int ret = opus_multistream_packet_validate(data, len, st->layout.nb_streams, Fs);
       if (ret < 0)
       {
          RESTORE_STACK;
