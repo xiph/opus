@@ -76,7 +76,7 @@ struct OpusMSEncoder {
    int variable_duration;
    int surround;
    opus_int32 bitrate_bps;
-   opus_val32 subframe_mem[3];
+   float subframe_mem[3];
    /* Encoder states go here */
    /* then opus_val32 window_mem[channels*120]; */
    /* then opus_val32 preemph_mem[channels]; */

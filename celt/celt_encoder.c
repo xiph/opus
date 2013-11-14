@@ -1714,7 +1714,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          /* Disable new spreading+tapset estimator until we can show it works
             better than the old one. So far it seems like spreading_decision()
             works best. */
-         if (0&&st->analysis.valid)
+#if 0
+         if (st->analysis.valid)
          {
             static const opus_val16 spread_thresholds[3] = {-QCONST16(.6f, 15), -QCONST16(.2f, 15), -QCONST16(.07f, 15)};
             static const opus_val16 spread_histeresis[3] = {QCONST16(.15f, 15), QCONST16(.07f, 15), QCONST16(.02f, 15)};
@@ -1722,7 +1723,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
             static const opus_val16 tapset_histeresis[2] = {QCONST16(.1f, 15), QCONST16(.05f, 15)};
             st->spread_decision = hysteresis_decision(-st->analysis.tonality, spread_thresholds, spread_histeresis, 3, st->spread_decision);
             st->tapset_decision = hysteresis_decision(st->analysis.tonality_slope, tapset_thresholds, tapset_histeresis, 2, st->tapset_decision);
-         } else {
+         } else
+#endif
+         {
             st->spread_decision = spreading_decision(mode, X,
                   &st->tonal_average, st->spread_decision, &st->hf_average,
                   &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M);
