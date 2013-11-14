@@ -613,10 +613,11 @@ static void surround_rate_allocation(
       stream_offset = 20000;
    else
       stream_offset = st->bitrate_bps/st->layout.nb_channels/2;
+   stream_offset += 60*(Fs/frame_size-50);
    /* We start by giving each stream (coupled or uncoupled) the same bitrate.
       This models the main saving of coupled channels over uncoupled. */
    /* The LFE stream is an exception to the above and gets fewer bits. */
-   lfe_offset = 3500;
+   lfe_offset = 3500 + 60*(Fs/frame_size-50);
    /* Coupled streams get twice the mono rate after the first 20 kb/s. */
    coupled_ratio = 512;
    /* Should depend on the bitrate, for now we assume LFE gets 1/8 the bits of mono */
