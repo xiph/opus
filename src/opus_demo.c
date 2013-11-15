@@ -727,6 +727,18 @@ int main(int argc, char *argv[])
             }
         }
 
+#if 0 /* This is for testing the padding code, do not enable by default */
+        if (len[toggle]<1275)
+        {
+           int new_len = len[toggle]+rand()%(max_payload_bytes-len[toggle]);
+           if ((err = opus_packet_pad(data[toggle], len[toggle], new_len)) != OPUS_OK)
+           {
+              fprintf(stderr, "padding failed: %s\n", opus_strerror(err));
+              return EXIT_FAILURE;
+           }
+           len[toggle] = new_len;
+        }
+#endif
         if (encode_only)
         {
             unsigned char int_field[4];
