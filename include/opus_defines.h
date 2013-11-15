@@ -163,6 +163,8 @@ extern "C" {
 #define OPUS_GET_LAST_PACKET_DURATION_REQUEST 4039
 #define OPUS_SET_EXPERT_FRAME_DURATION_REQUEST 4040
 #define OPUS_GET_EXPERT_FRAME_DURATION_REQUEST 4041
+#define OPUS_SET_PREDICTION_DISABLED_REQUEST 4042
+#define OPUS_GET_PREDICTION_DISABLED_REQUEST 4043
 
 /* Don't use 4045, it's already taken by OPUS_GET_GAIN_REQUEST */
 
@@ -585,6 +587,14 @@ extern "C" {
   * </dl>
   * @hideinitializer */
 #define OPUS_GET_EXPERT_FRAME_DURATION(x) OPUS_GET_EXPERT_FRAME_DURATION_REQUEST, __opus_check_int_ptr(x)
+
+/** If set to 1, disables almost all use of prediction, making frames almost
+    completely independent. This reduces quality. (default : 0)
+  * @hideinitializer */
+#define OPUS_SET_PREDICTION_DISABLED(x) OPUS_SET_PREDICTION_DISABLED_REQUEST, __opus_check_int(x)
+/** Gets the encoder's configured prediction status.
+  * @hideinitializer */
+#define OPUS_GET_PREDICTION_DISABLED(x) OPUS_GET_PREDICTION_DISABLED_REQUEST, __opus_check_int_ptr(x)
 
 /**@}*/
 

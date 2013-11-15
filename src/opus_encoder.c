@@ -205,6 +205,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->silk_mode.useInBandFEC              = 0;
     st->silk_mode.useDTX                    = 0;
     st->silk_mode.useCBR                    = 0;
+    st->silk_mode.reducedDependency         = 0;
 
     /* Create CELT encoder */
     /* Initialize CELT encoder */
@@ -1671,9 +1672,12 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(OPUS_BITRATE_MAX));
     if (st->mode != MODE_SILK_ONLY)
     {
+        opus_val32 celt_pred=2;
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(0));
-        /* Allow prediction unless we decide to disable it later */
-        celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(2));
+        /* We may still decide to disable prediction later */
+        if (st->silk_mode.reducedDependency)
+           celt_pred = 0;
+        celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(celt_pred));
 
         if (st->mode == MODE_HYBRID)
         {
@@ -2385,6 +2389,22 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                goto bad_arg;
             }
             *value = st->variable_duration;
+        }
+        break;
+        case OPUS_SET_PREDICTION_DISABLED_REQUEST:
+        {
+           opus_int32 value = va_arg(ap, opus_int32);
+           if (value > 1 || value < 0)
+              goto bad_arg;
+           st->silk_mode.reducedDependency = value;
+        }
+        break;
+        case OPUS_GET_PREDICTION_DISABLED_REQUEST:
+        {
+           opus_int32 *value = va_arg(ap, opus_int32*);
+           if (!value)
+              goto bad_arg;
+           *value = st->silk_mode.reducedDependency;
         }
         break;
         case OPUS_RESET_STATE:

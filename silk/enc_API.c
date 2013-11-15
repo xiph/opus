@@ -156,6 +156,11 @@ opus_int silk_Encode(                                   /* O    Returns error co
     opus_int transition, curr_block, tot_blocks;
     SAVE_STACK;
 
+    if (encControl->reducedDependency)
+    {
+       psEnc->state_Fxx[0].sCmn.first_frame_after_reset = 1;
+       psEnc->state_Fxx[1].sCmn.first_frame_after_reset = 1;
+    }
     psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded = psEnc->state_Fxx[ 1 ].sCmn.nFramesEncoded = 0;
 
     /* Check values in encoder control structure */
