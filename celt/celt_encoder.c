@@ -1305,14 +1305,20 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    eBands = mode->eBands;
    tf_estimate = 0;
    if (nbCompressedBytes<2 || pcm==NULL)
-     return OPUS_BAD_ARG;
+   {
+      RESTORE_STACK
+      return OPUS_BAD_ARG;
+   }
 
    frame_size *= st->upsample;
    for (LM=0;LM<=mode->maxLM;LM++)
       if (mode->shortMdctSize<<LM==frame_size)
          break;
    if (LM>mode->maxLM)
+   {
+      RESTORE_STACK
       return OPUS_BAD_ARG;
+   }
    M=1<<LM;
    N = M*mode->shortMdctSize;
 
@@ -1343,7 +1349,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       {
          int c0 = toOpus(compressed[0]);
          if (c0<0)
+         {
+            RESTORE_STACK
             return OPUS_BAD_ARG;
+         }
          compressed[0] = c0;
       }
       compressed++;
