@@ -1165,6 +1165,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        st->mode = MODE_CELT_ONLY;
     if (st->lfe)
        st->mode = MODE_CELT_ONLY;
+    /* If max_data_bytes represents less than 8 kb/s, switch to CELT-only mode */
+    if (max_data_bytes < (frame_rate > 50 ? 12000 : 8000)*frame_size / (st->Fs * 8))
+       st->mode = MODE_CELT_ONLY;
 
     if (st->stream_channels == 1 && st->prev_channels ==2 && st->silk_mode.toMono==0
           && st->mode != MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY)
@@ -1318,10 +1321,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
 #endif
     celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(lsb_depth));
-
-    /* If max_data_bytes represents less than 8 kb/s, switch to CELT-only mode */
-    if (max_data_bytes < (frame_rate > 50 ? 12000 : 8000)*frame_size / (st->Fs * 8))
-       st->mode = MODE_CELT_ONLY;
 
     /* CELT mode doesn't support mediumband, use wideband instead */
     if (st->mode == MODE_CELT_ONLY && st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
