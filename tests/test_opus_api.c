@@ -1352,6 +1352,16 @@ opus_int32 test_enc_api(void)
      "    OPUS_SET_LSB_DEPTH ........................... OK.\n",
      "    OPUS_GET_LSB_DEPTH ........................... OK.\n")
 
+   err=opus_encoder_ctl(enc,OPUS_GET_PREDICTION_DISABLED(&i));
+   if(i!=0)test_failed();
+   cfgs++;
+   err=opus_encoder_ctl(enc,OPUS_GET_PREDICTION_DISABLED((opus_int32 *)NULL));
+   if(err!=OPUS_BAD_ARG)test_failed();
+   cfgs++;
+   CHECK_SETGET(OPUS_SET_PREDICTION_DISABLED(i),OPUS_GET_PREDICTION_DISABLED(&i),-1,2,1,0,
+     "    OPUS_SET_PREDICTION_DISABLED ................. OK.\n",
+     "    OPUS_GET_PREDICTION_DISABLED ................. OK.\n")
+
    err=opus_encoder_ctl(enc,OPUS_GET_EXPERT_FRAME_DURATION((opus_int32 *)NULL));
    if(err!=OPUS_BAD_ARG)test_failed();
    cfgs++;
