@@ -207,7 +207,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    for (i=0;i<count;i++)
    {
       /* Using OPUS_MOVE() instead of OPUS_COPY() in case we're doing in-place
-         padding from opus_packet_pad or opus_packet_strip(). */
+         padding from opus_packet_pad or opus_packet_unpad(). */
       OPUS_MOVE(ptr, frames[i], len[i]);
       ptr += len[i];
    }
@@ -286,7 +286,7 @@ int opus_multistream_packet_pad(unsigned char *data, opus_int32 len, opus_int32 
    {
       if (len<=0)
          return OPUS_INVALID_PACKET;
-      count = opus_packet_parse_impl(data, len, 0, &toc, NULL,
+      count = opus_packet_parse_impl(data, len, 1, &toc, NULL,
                                      size, NULL, &packet_offset);
       if (count<0)
          return count;
