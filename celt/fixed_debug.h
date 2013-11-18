@@ -507,6 +507,16 @@ static OPUS_INLINE int SATURATE(int a, int b)
    return a;
 }
 
+static OPUS_INLINE opus_int16 SATURATE16(opus_int32 a)
+{
+   celt_mips+=3;
+   if (a>32767)
+      return 32767;
+   else if (a<-32768)
+      return -32768;
+   else return a;
+}
+
 static OPUS_INLINE int MULT16_16_Q11_32(int a, int b)
 {
    opus_int64 res;
