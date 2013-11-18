@@ -310,7 +310,7 @@ int run_test1(int no_fuzz)
          do {
             int pred,len,out_samples,frame_size,loss;
             if(opus_multistream_encoder_ctl(MSenc, OPUS_GET_PREDICTION_DISABLED(&pred))!=OPUS_OK)test_failed();
-            if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_PREDICTION_DISABLED((fast_rand()&15)<(pred?11:4)))!=OPUS_OK)test_failed();
+            if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_PREDICTION_DISABLED((int)(fast_rand()&15)<(pred?11:4)))!=OPUS_OK)test_failed();
             frame_size=frame[j];
             if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_COMPLEXITY((count>>2)%11))!=OPUS_OK)test_failed();
             if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_PACKET_LOSS_PERC((fast_rand()&15)&(fast_rand()%15)))!=OPUS_OK)test_failed();
