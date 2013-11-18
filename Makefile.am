@@ -34,7 +34,7 @@ if OPUS_ARM_EXTERNAL_ASM
 CELT_SOURCES += $(CELT_SOURCES_ARM_ASM:.s=-gnu.S)
 BUILT_SOURCES = $(CELT_SOURCES_ARM_ASM:.s=-gnu.S) \
  $(CELT_AM_SOURCES_ARM_ASM:.s.in=.s) \
- $(CELT_AM_SOURCES_ARM_ASM.s.in=-gnu.S)
+ $(CELT_AM_SOURCES_ARM_ASM:.s.in=-gnu.S)
 endif
 endif
 
