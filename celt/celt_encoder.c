@@ -161,17 +161,8 @@ CELTEncoder *opus_custom_encoder_create(const CELTMode *mode, int channels, int 
 }
 #endif /* CUSTOM_MODES */
 
-int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels)
-{
-   int ret;
-   ret = opus_custom_encoder_init(st, opus_custom_mode_create(48000, 960, NULL), channels);
-   if (ret != OPUS_OK)
-      return ret;
-   st->upsample = resampling_factor(sampling_rate);
-   return OPUS_OK;
-}
-
-OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
+static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
+                                         int channels, int arch)
 {
    if (channels < 0 || channels > 2)
       return OPUS_BAD_ARG;
@@ -190,7 +181,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMod
    st->end = st->mode->effEBands;
    st->signalling = 1;
 
-   st->arch = opus_select_arch();
+   st->arch = arch;
 
    st->constrained_vbr = 1;
    st->clip = 1;
@@ -203,6 +194,23 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMod
 
    opus_custom_encoder_ctl(st, OPUS_RESET_STATE);
 
+   return OPUS_OK;
+}
+
+OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
+{
+   return opus_custom_encoder_init_arch(st, mode, channels, opus_select_arch());
+}
+
+int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels,
+                      int arch)
+{
+   int ret;
+   ret = opus_custom_encoder_init_arch(st,
+           opus_custom_mode_create(48000, 960, NULL), channels, arch);
+   if (ret != OPUS_OK)
+      return ret;
+   st->upsample = resampling_factor(sampling_rate);
    return OPUS_OK;
 }
 
@@ -1023,11 +1031,12 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       VARDECL(opus_val16, pitch_buf);
       ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, opus_val16);
 
-      pitch_downsample(pre, pitch_buf, COMBFILTER_MAXPERIOD+N, CC);
+      pitch_downsample(pre, pitch_buf, COMBFILTER_MAXPERIOD+N, CC, st->arch);
       /* Don't search for the fir last 1.5 octave of the range because
          there's too many false-positives due to short-term correlation */
       pitch_search(pitch_buf+(COMBFILTER_MAXPERIOD>>1), pitch_buf, N,
-            COMBFILTER_MAXPERIOD-3*COMBFILTER_MINPERIOD, &pitch_index);
+            COMBFILTER_MAXPERIOD-3*COMBFILTER_MINPERIOD, &pitch_index,
+            st->arch);
       pitch_index = COMBFILTER_MAXPERIOD-pitch_index;
 
       gain1 = remove_doubling(pitch_buf, COMBFILTER_MAXPERIOD, COMBFILTER_MINPERIOD,

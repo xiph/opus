@@ -129,7 +129,7 @@ opus_int silk_encode_frame_FLP(
         /*****************************************/
         /* Find pitch lags, initial LPC analysis */
         /*****************************************/
-        silk_find_pitch_lags_FLP( psEnc, &sEncCtrl, res_pitch, x_frame );
+        silk_find_pitch_lags_FLP( psEnc, &sEncCtrl, res_pitch, x_frame, psEnc->sCmn.arch );
 
         /************************/
         /* Noise shape analysis */

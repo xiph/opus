@@ -42,6 +42,8 @@ AC_PROG_CC_C99
 AC_C_CONST
 AC_C_INLINE
 
+AM_PROG_AS
+
 AC_DEFINE([OPUS_BUILD], [], [This is a build of OPUS])
 
 #Use a hacked up version of autoconf's AC_C_RESTRICT because it's not
@@ -54,13 +56,13 @@ AC_CACHE_CHECK([for C/C++ restrict keyword], ac_cv_c_restrict,
    for ac_kw in __restrict __restrict__ _Restrict restrict; do
      AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
       [[typedef int * int_ptr;
-	int foo (int_ptr $ac_kw ip, int * $ac_kw baz[]) {
-	return ip[0];
+        int foo (int_ptr $ac_kw ip, int * $ac_kw baz[]) {
+        return ip[0];
        }]],
       [[int s[1];
-	int * $ac_kw t = s;
-	t[0] = 0;
-	return foo(t, (void *)0)]])],
+        int * $ac_kw t = s;
+        t[0] = 0;
+        return foo(t, (void *)0)]])],
       [ac_cv_c_restrict=$ac_kw])
      test "$ac_cv_c_restrict" != no && break
    done
@@ -165,7 +167,7 @@ has_float_approx=no
 #i[[3456]]86 | x86_64 | powerpc64 | powerpc32 | ia64)
 #  has_float_approx=yes
 #  ;;
-#esac    
+#esac
 
 AC_ARG_ENABLE([float-approx],
     [AS_HELP_STRING([--enable-float-approx], [enable fast approximations for floating point])],
@@ -183,55 +185,167 @@ AC_ARG_ENABLE([asm],
     [AS_HELP_STRING([--disable-asm], [Disable assembly optimizations])],,
     [enable_asm=yes])
 
-rtcd_support=no
-cpu_arm=no
-
-AS_IF([test "$enable_asm" = "yes"],[
-    asm_optimization="no asm for your platform, please send patches"
-    case $host_cpu in
-    arm*)
-        cpu_arm=yes
-        AS_GCC_INLINE_ASSEMBLY([asm_optimization="ARM"],
-            [asm_optimization="disabled"])
-        if test "$asm_optimization" = "ARM" ; then
-            rtcd_support=yes
-            AC_DEFINE([ARMv4_ASM], 1, [Use generic ARMv4 asm optimizations])
-            AS_ASM_ARM_EDSP([ARMv5E_ASM=1],[ARMv5E_ASM=0])
-            if test "$ARMv5E_ASM" = "1" ; then
-                AC_DEFINE([ARMv5E_ASM], [1], [Use ARMv5E asm optimizations])
-                asm_optimization="$asm_optimization (EDSP)"
-            fi
-            AS_ASM_ARM_MEDIA([ARMv6_ASM=1],[ARMv6_ASM=0])
-            if test "$ARMv6_ASM" = "1" ; then
-                AC_DEFINE([ARMv6_ASM], [1], [Use ARMv6 asm optimizations])
-                asm_optimization="$asm_optimization (Media)"
-            fi
-            AS_ASM_ARM_NEON([ARM_HAVE_NEON=1],[ARM_HAVE_NEON=0])
-            if test "$ARM_HAVE_NEON" = "1" ; then
-              AC_DEFINE([ARM_HAVE_NEON], 1, [Use ARM NEON optimizations])
-              asm_optimization="$asm_optimization (NEON)"
-            fi
-        fi
-        ;;
-    esac
-],[
-    asm_optimization="disabled"
-])
-
-AM_CONDITIONAL([CPU_ARM], [test "$cpu_arm" = "yes"])
-
 AC_ARG_ENABLE([rtcd],
     [AS_HELP_STRING([--disable-rtcd], [Disable run-time CPU capabilities detection])],,
     [enable_rtcd=yes])
 
-AS_IF([test "$enable_rtcd" = "yes"],[
-    AS_IF([test "$rtcd_support" = "yes"],[
-        AC_DEFINE([OPUS_HAVE_RTCD], [1], [Use run-time CPU capabilities detection])
-    ],[
-        rtcd_support="no rtcd for your platform, please send patches"
+rtcd_support=no
+cpu_arm=no
+
+AS_IF([test x"${enable_asm}" = x"yes"],[
+    inline_optimization="No ASM for your platform, please send patches"
+    case $host_cpu in
+      arm*)
+        dnl Currently we only have asm for fixed-point
+        AS_IF([test "$enable_float" != "yes"],[
+            cpu_arm=yes
+            AC_DEFINE([OPUS_ARM_ASM], [],  [Make use of ARM asm optimization])
+            AS_GCC_INLINE_ASSEMBLY(
+                [inline_optimization="ARM"],
+                [inline_optimization="disabled"]
+            )
+            AS_ASM_ARM_EDSP([OPUS_ARM_INLINE_EDSP=1],[OPUS_ARM_INLINE_EDSP=0])
+            AS_ASM_ARM_MEDIA([OPUS_ARM_INLINE_MEDIA=1],
+                [OPUS_ARM_INLINE_MEDIA=0])
+            AS_ASM_ARM_NEON([OPUS_ARM_INLINE_NEON=1],[OPUS_ARM_INLINE_NEON=0])
+            AS_IF([test x"$inline_optimization" = x"ARM"],[
+                AM_CONDITIONAL([OPUS_ARM_INLINE_ASM],[true])
+                AC_DEFINE([OPUS_ARM_INLINE_ASM], 1,
+                    [Use generic ARMv4 inline asm optimizations])
+                AS_IF([test x"$OPUS_ARM_INLINE_EDSP" = x"1"],[
+                    AC_DEFINE([OPUS_ARM_INLINE_EDSP], [1],
+                        [Use ARMv5E inline asm optimizations])
+                    inline_optimization="$inline_optimization (EDSP)"
+                ])
+                AS_IF([test x"$OPUS_ARM_INLINE_MEDIA" = x"1"],[
+                    AC_DEFINE([OPUS_ARM_INLINE_MEDIA], [1],
+                        [Use ARMv6 inline asm optimizations])
+                    inline_optimization="$inline_optimization (Media)"
+                ])
+                AS_IF([test x"$OPUS_ARM_INLINE_NEON" = x"1"],[
+                    AC_DEFINE([OPUS_ARM_INLINE_NEON], 1,
+                        [Use ARM NEON inline asm optimizations])
+                    inline_optimization="$inline_optimization (NEON)"
+                ])
+            ])
+            dnl We need Perl to translate RVCT-syntax asm to gas syntax.
+            AC_CHECK_PROG([HAVE_PERL], perl, yes, no)
+            AS_IF([test x"$HAVE_PERL" = x"yes"],[
+                AM_CONDITIONAL([OPUS_ARM_EXTERNAL_ASM],[true])
+                asm_optimization="ARM"
+                AS_IF([test x"$OPUS_ARM_INLINE_EDSP" = x"1"], [
+                    OPUS_ARM_PRESUME_EDSP=1
+                    OPUS_ARM_MAY_HAVE_EDSP=1
+                ],
+                [
+                    OPUS_ARM_PRESUME_EDSP=0
+                    OPUS_ARM_MAY_HAVE_EDSP=0
+                ])
+                AS_IF([test x"$OPUS_ARM_INLINE_MEDIA" = x"1"], [
+                    OPUS_ARM_PRESUME_MEDIA=1
+                    OPUS_ARM_MAY_HAVE_MEDIA=1
+                ],
+                [
+                    OPUS_ARM_PRESUME_MEDIA=0
+                    OPUS_ARM_MAY_HAVE_MEDIA=0
+                ])
+                AS_IF([test x"$OPUS_ARM_INLINE_NEON" = x"1"], [
+                    OPUS_ARM_PRESUME_NEON=1
+                    OPUS_ARM_MAY_HAVE_NEON=1
+                ],
+                [
+                    OPUS_ARM_PRESUME_NEON=0
+                    OPUS_ARM_MAY_HAVE_NEON=0
+                ])
+                AS_IF([test x"$enable_rtcd" = x"yes"],[
+                    AS_IF([test x"$OPUS_ARM_MAY_HAVE_EDSP" != x"1"],[
+                        AC_MSG_NOTICE(
+                          [Trying to force-enable armv5e EDSP instructions...])
+                        AS_ASM_ARM_EDSP_FORCE([OPUS_ARM_MAY_HAVE_EDSP=1])
+                    ])
+                    AS_IF([test x"$OPUS_ARM_MAY_HAVE_MEDIA" != x"1"],[
+                        AC_MSG_NOTICE(
+                          [Trying to force-enable ARMv6 media instructions...])
+                        AS_ASM_ARM_MEDIA_FORCE([OPUS_ARM_MAY_HAVE_MEDIA=1])
+                    ])
+                    AS_IF([test x"$OPUS_ARM_MAY_HAVE_NEON" != x"1"],[
+                        AC_MSG_NOTICE(
+                          [Trying to force-enable NEON instructions...])
+                        AS_ASM_ARM_NEON_FORCE([OPUS_ARM_MAY_HAVE_NEON=1])
+                    ])
+                ])
+                rtcd_support=
+                AS_IF([test x"$OPUS_ARM_MAY_HAVE_EDSP" = x"1"],[
+                    AC_DEFINE(OPUS_ARM_MAY_HAVE_EDSP, 1,
+                        [Define if assembler supports EDSP instructions])
+                    AS_IF([test x"$OPUS_ARM_PRESUME_EDSP" = x"1"],[
+                        AC_DEFINE(OPUS_ARM_PRESUME_EDSP, 1,
+                          [Define if binary requires EDSP instruction support])
+                        asm_optimization="$asm_optimization (EDSP)"
+                    ],
+                        [rtcd_support="$rtcd_support (EDSP)"]
+                    )
+                ])
+                AC_SUBST(OPUS_ARM_MAY_HAVE_EDSP)
+                AS_IF([test x"$OPUS_ARM_MAY_HAVE_MEDIA" = x"1"],[
+                    AC_DEFINE(OPUS_ARM_MAY_HAVE_MEDIA, 1,
+                      [Define if assembler supports ARMv6 media instructions])
+                    AS_IF([test x"$OPUS_ARM_PRESUME_MEDIA" = x"1"],[
+                        AC_DEFINE(OPUS_ARM_PRESUME_MEDIA, 1,
+                          [Define if binary requires ARMv6 media instruction support])
+                        asm_optimization="$asm_optimization (Media)"
+                    ],
+                        [rtcd_support="$rtcd_support (Media)"]
+                    )
+                ])
+                AC_SUBST(OPUS_ARM_MAY_HAVE_MEDIA)
+                AS_IF([test x"$OPUS_ARM_MAY_HAVE_NEON" = x"1"],[
+                    AC_DEFINE(OPUS_ARM_MAY_HAVE_NEON, 1,
+                      [Define if compiler supports NEON instructions])
+                    AS_IF([test x"$OPUS_ARM_PRESUME_NEON" = x"1"], [
+                        AC_DEFINE(OPUS_ARM_PRESUME_NEON, 1,
+                          [Define if binary requires NEON instruction support])
+                        asm_optimization="$asm_optimization (NEON)"
+                    ],
+                        [rtcd_support="$rtcd_support (NEON)"]
+                    )
+                ])
+                AC_SUBST(OPUS_ARM_MAY_HAVE_NEON)
+                dnl Make sure turning on RTCD gets us at least one
+                dnl instruction set.
+                AS_IF([test x"$rtcd_support" != x""],
+                    [rtcd_support=ARM"$rtcd_support"],
+                    [rtcd_support="no"]
+                )
+            ],
+            [
+                AC_MSG_WARN(
+                  [*** ARM assembly requires perl -- disabling optimizations])
+                asm_optimization="(missing perl dependency for ARM)"
+            ])
+        ])
+        ;;
+    esac
+],[
+   inline_optimization="disabled"
+   asm_optimization="disabled"
+])
+
+AM_CONDITIONAL([CPU_ARM], [test "$cpu_arm" = "yes"])
+AM_CONDITIONAL([OPUS_ARM_INLINE_ASM],
+    [test x"${inline_optimization:0:3}" = x"ARM"])
+AM_CONDITIONAL([OPUS_ARM_EXTERNAL_ASM],
+    [test x"${asm_optimization:0:3}" = x"ARM"])
+
+AS_IF([test x"$enable_rtcd" = x"yes"],[
+    AS_IF([test x"$rtcd_support" != x"no"],[
+        AC_DEFINE([OPUS_HAVE_RTCD], [1],
+            [Use run-time CPU capabilities detection])
+        OPUS_HAVE_RTCD=1
+        AC_SUBST(OPUS_HAVE_RTCD)
     ])
 ],[
-    rtcd_support="no"
+    rtcd_support="disabled"
 ])
 
 AC_ARG_ENABLE([assertions],
@@ -300,9 +414,14 @@ AC_CHECK_FUNCS([__malloc_hook])
 
 AC_SUBST([PC_BUILD])
 
-
-AC_CONFIG_FILES([Makefile opus.pc opus-uninstalled.pc
-                 doc/Makefile doc/Doxyfile])
+AC_CONFIG_FILES([
+    Makefile
+    opus.pc
+    opus-uninstalled.pc
+    celt/arm/armopts.s
+    doc/Makefile
+    doc/Doxyfile
+])
 AC_CONFIG_HEADERS([config.h])
 
 AC_OUTPUT
@@ -316,13 +435,14 @@ AC_MSG_NOTICE([
       C99 var arrays: ................ ${has_var_arrays}
       C99 lrintf: .................... ${ac_cv_func_lrintf}
       Use alloca: .................... ${use_alloca}
-    
+
     General configuration:
-    
+
       Floating point support: ........ ${enable_float}
       Fast float approximations: ..... ${enable_float_approx}
       Fixed point debugging: ......... ${enable_fixed_point_debug}
-      Assembly optimization: ......... ${asm_optimization}
+      Inline Assembly Optimizations: . ${inline_optimization}
+      External Assembly Optimizations: ${asm_optimization}
       Run-time CPU detection: ........ ${rtcd_support}
       Custom modes: .................. ${enable_custom_modes}
       Assertion checking: ............ ${enable_assertions}

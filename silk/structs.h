@@ -191,6 +191,8 @@ typedef struct {
     SideInfoIndices              indices;
     opus_int8                    pulses[ MAX_FRAME_LENGTH ];
 
+    int                          arch;
+
     /* Input/output buffering */
     opus_int16                   inputBuf[ MAX_FRAME_LENGTH + 2 ];  /* Buffer containing input signal                                   */
     opus_int                     inputBufIx;

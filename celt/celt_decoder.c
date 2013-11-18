@@ -447,10 +447,11 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       {
          VARDECL( opus_val16, lp_pitch_buf );
          ALLOC( lp_pitch_buf, DECODE_BUFFER_SIZE>>1, opus_val16 );
-         pitch_downsample(decode_mem, lp_pitch_buf, DECODE_BUFFER_SIZE, C);
+         pitch_downsample(decode_mem, lp_pitch_buf,
+               DECODE_BUFFER_SIZE, C, st->arch);
          pitch_search(lp_pitch_buf+(PLC_PITCH_LAG_MAX>>1), lp_pitch_buf,
                DECODE_BUFFER_SIZE-PLC_PITCH_LAG_MAX,
-               PLC_PITCH_LAG_MAX-PLC_PITCH_LAG_MIN, &pitch_index);
+               PLC_PITCH_LAG_MAX-PLC_PITCH_LAG_MIN, &pitch_index, st->arch);
          pitch_index = PLC_PITCH_LAG_MAX-pitch_index;
          st->last_pitch_index = pitch_index;
       } else {
@@ -481,7 +482,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
             opus_val32 ac[LPC_ORDER+1];
             /* Compute LPC coefficients for the last MAX_PERIOD samples before
                the first loss so we can work in the excitation-filter domain. */
-            _celt_autocorr(exc, ac, window, overlap, LPC_ORDER, MAX_PERIOD);
+            _celt_autocorr(exc, ac, window, overlap,
+                   LPC_ORDER, MAX_PERIOD, st->arch);
             /* Add a noise floor of -40 dB. */
 #ifdef FIXED_POINT
             ac[0] += SHR32(ac[0],13);

@@ -25,47 +25,33 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#if !defined(ARMCPU_H)
-# define ARMCPU_H
+#if !defined(PITCH_ARM_H)
+# define PITCH_ARM_H
 
-# if defined(OPUS_ARM_MAY_HAVE_EDSP)
-#  define MAY_HAVE_EDSP(name) name ## _edsp
-# else
-#  define MAY_HAVE_EDSP(name) name ## _c
-# endif
+# include "armcpu.h"
 
-# if defined(OPUS_ARM_MAY_HAVE_MEDIA)
-#  define MAY_HAVE_MEDIA(name) name ## _media
-# else
-#  define MAY_HAVE_MEDIA(name) MAY_HAVE_EDSP(name)
-# endif
+# if defined(FIXED_POINT)
 
-# if defined(OPUS_ARM_MAY_HAVE_NEON)
-#  define MAY_HAVE_NEON(name) name ## _neon
-# else
-#  define MAY_HAVE_NEON(name) MAY_HAVE_MEDIA(name)
-# endif
+#  if defined(OPUS_ARM_MAY_HAVE_NEON)
+opus_val32 celt_pitch_xcorr_neon(const opus_val16 *_x, const opus_val16 *_y,
+    opus_val32 *xcorr, int len, int max_pitch);
+#  endif
 
-# if defined(OPUS_ARM_PRESUME_EDSP)
-#  define PRESUME_EDSP(name) name ## _edsp
-# else
-#  define PRESUME_EDSP(name) name ## _c
-# endif
+#  if defined(OPUS_ARM_MAY_HAVE_MEDIA)
+#   define celt_pitch_xcorr_media MAY_HAVE_EDSP(celt_pitch_xcorr)
+#  endif
 
-# if defined(OPUS_ARM_PRESUME_MEDIA)
-#  define PRESUME_MEDIA(name) name ## _media
-# else
-#  define PRESUME_MEDIA(name) PRESUME_EDSP(name)
-# endif
+#  if defined(OPUS_ARM_MAY_HAVE_EDSP)
+opus_val32 celt_pitch_xcorr_edsp(const opus_val16 *_x, const opus_val16 *_y,
+    opus_val32 *xcorr, int len, int max_pitch);
+#  endif
 
-# if defined(OPUS_ARM_PRESUME_NEON)
-#  define PRESUME_NEON(name) name ## _neon
-# else
-#  define PRESUME_NEON(name) PRESUME_MEDIA(name)
-# endif
+#  if !defined(OPUS_HAVE_RTCD)
+#   define OVERRIDE_PITCH_XCORR (1)
+#   define celt_pitch_xcorr(_x, _y, xcorr, len, max_pitch, arch) \
+  ((void)(arch),PRESUME_NEON(celt_pitch_xcorr)(_x, _y, xcorr, len, max_pitch))
+#  endif
 
-# if defined(OPUS_HAVE_RTCD)
-int opus_select_arch(void);
 # endif
 
 #endif

@@ -145,7 +145,8 @@ void silk_noise_shape_analysis_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state FIX                                                           */
     silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Encoder control FIX                                                         */
     const opus_int16                *pitch_res,                             /* I    LPC residual from pitch analysis                                            */
-    const opus_int16                *x                                      /* I    Input signal [ frame_length + la_shape ]                                    */
+    const opus_int16                *x,                                     /* I    Input signal [ frame_length + la_shape ]                                    */
+    int                              arch                                   /* I    Run-time architecture                                                       */
 )
 {
     silk_shape_state_FIX *psShapeSt = &psEnc->sShape;
@@ -281,7 +282,7 @@ void silk_noise_shape_analysis_FIX(
             silk_warped_autocorrelation_FIX( auto_corr, &scale, x_windowed, warping_Q16, psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder );
         } else {
             /* Calculate regular auto correlation */
-            silk_autocorr( auto_corr, &scale, x_windowed, psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder + 1 );
+            silk_autocorr( auto_corr, &scale, x_windowed, psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder + 1, arch );
         }
 
         /* Add white noise, as a fraction of energy */

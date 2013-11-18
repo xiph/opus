@@ -227,7 +227,8 @@ void silk_autocorr(
     opus_int                    *scale,             /* O    Scaling of the correlation vector                           */
     const opus_int16            *inputData,         /* I    Input data to correlate                                     */
     const opus_int              inputDataSize,      /* I    Length of input                                             */
-    const opus_int              correlationCount    /* I    Number of correlation taps to compute                       */
+    const opus_int              correlationCount,   /* I    Number of correlation taps to compute                       */
+    int                         arch                /* I    Run-time architecture                                       */
 );
 
 void silk_decode_pitch(
@@ -249,7 +250,8 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
     const opus_int              search_thres2_Q13,  /* I    Final threshold for lag candidates 0 - 1                    */
     const opus_int              Fs_kHz,             /* I    Sample frequency (kHz)                                      */
     const opus_int              complexity,         /* I    Complexity setting, 0-2, where 2 is highest                 */
-    const opus_int              nb_subfr            /* I    number of 5 ms subframes                                    */
+    const opus_int              nb_subfr,           /* I    number of 5 ms subframes                                    */
+    int                         arch                /* I    Run-time architecture                                       */
 );
 
 /* Compute Normalized Line Spectral Frequencies (NLSFs) from whitening filter coefficients      */
@@ -309,7 +311,8 @@ void silk_burg_modified(
     const opus_int32            minInvGain_Q30,     /* I    Inverse of max prediction gain                              */
     const opus_int              subfr_length,       /* I    Input signal subframe length (incl. D preceding samples)    */
     const opus_int              nb_subfr,           /* I    Number of subframes stacked in x                            */
-    const opus_int              D                   /* I    Order                                                       */
+    const opus_int              D,                  /* I    Order                                                       */
+    int                         arch                /* I    Run-time architecture                                       */
 );
 
 /* Copy and multiply a vector by a constant */
@@ -576,11 +579,11 @@ static OPUS_INLINE opus_int64 silk_max_64(opus_int64 a, opus_int64 b)
 #include "MacroCount.h"
 #include "MacroDebug.h"
 
-#ifdef ARMv4_ASM
+#ifdef OPUS_ARM_INLINE_ASM
 #include "arm/SigProc_FIX_armv4.h"
 #endif
 
-#ifdef ARMv5E_ASM
+#ifdef OPUS_ARM_INLINE_EDSP
 #include "arm/SigProc_FIX_armv5e.h"
 #endif
 

@@ -35,4 +35,5 @@ celt/arm/fixed_armv4.h \
 celt/arm/fixed_armv5e.h \
 celt/arm/kiss_fft_armv4.h \
 celt/arm/kiss_fft_armv5e.h \
+celt/arm/pitch_arm.h \
 celt/x86/pitch_sse.h

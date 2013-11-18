@@ -42,6 +42,16 @@ AC_DEFUN([AS_ASM_ARM_NEON],
                      $2])
 ])
 
+AC_DEFUN([AS_ASM_ARM_NEON_FORCE],
+[
+  AC_MSG_CHECKING([if assembler supports NEON instructions on ARM])
+
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[__asm__(".arch armv7-a\n.fpu neon\n.object_arch armv4t\nvorr d0,d0,d0")])],
+                    [AC_MSG_RESULT([yes])
+                     $1],
+                    [AC_MSG_RESULT([no])
+                     $2])
+])
 
 AC_DEFUN([AS_ASM_ARM_MEDIA],
 [
@@ -54,12 +64,33 @@ AC_DEFUN([AS_ASM_ARM_MEDIA],
                      $2])
 ])
 
+AC_DEFUN([AS_ASM_ARM_MEDIA_FORCE],
+[
+  AC_MSG_CHECKING([if assembler supports ARMv6 media instructions on ARM])
+
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[__asm__(".arch armv6\n.object_arch armv4t\nshadd8 r3,r3,r3")])],
+                    [AC_MSG_RESULT([yes])
+                     $1],
+                    [AC_MSG_RESULT([no])
+                     $2])
+])
 
 AC_DEFUN([AS_ASM_ARM_EDSP],
 [
   AC_MSG_CHECKING([if assembler supports EDSP instructions on ARM])
 
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[__asm__("qadd r3,r3,r3")])],
+                    [AC_MSG_RESULT([yes])
+                     $1],
+                    [AC_MSG_RESULT([no])
+                     $2])
+])
+
+AC_DEFUN([AS_ASM_ARM_EDSP_FORCE],
+[
+  AC_MSG_CHECKING([if assembler supports EDSP instructions on ARM])
+
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[__asm__(".arch armv5te\n.object_arch armv4t\nqadd r3,r3,r3")])],
                     [AC_MSG_RESULT([yes])
                      $1],
                     [AC_MSG_RESULT([no])

@@ -25,47 +25,25 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#if !defined(ARMCPU_H)
-# define ARMCPU_H
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-# if defined(OPUS_ARM_MAY_HAVE_EDSP)
-#  define MAY_HAVE_EDSP(name) name ## _edsp
+#include "pitch.h"
+
+#if defined(OPUS_HAVE_RTCD)
+
+# if defined(FIXED_POINT)
+opus_val32 (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
+    const opus_val16 *, opus_val32 *, int , int) = {
+  celt_pitch_xcorr_c,               /* ARMv4 */
+  MAY_HAVE_EDSP(celt_pitch_xcorr),  /* EDSP */
+  MAY_HAVE_MEDIA(celt_pitch_xcorr), /* Media */
+  MAY_HAVE_NEON(celt_pitch_xcorr)   /* NEON */
+};
 # else
-#  define MAY_HAVE_EDSP(name) name ## _c
-# endif
-
-# if defined(OPUS_ARM_MAY_HAVE_MEDIA)
-#  define MAY_HAVE_MEDIA(name) name ## _media
-# else
-#  define MAY_HAVE_MEDIA(name) MAY_HAVE_EDSP(name)
-# endif
-
-# if defined(OPUS_ARM_MAY_HAVE_NEON)
-#  define MAY_HAVE_NEON(name) name ## _neon
-# else
-#  define MAY_HAVE_NEON(name) MAY_HAVE_MEDIA(name)
-# endif
-
-# if defined(OPUS_ARM_PRESUME_EDSP)
-#  define PRESUME_EDSP(name) name ## _edsp
-# else
-#  define PRESUME_EDSP(name) name ## _c
-# endif
-
-# if defined(OPUS_ARM_PRESUME_MEDIA)
-#  define PRESUME_MEDIA(name) name ## _media
-# else
-#  define PRESUME_MEDIA(name) PRESUME_EDSP(name)
-# endif
-
-# if defined(OPUS_ARM_PRESUME_NEON)
-#  define PRESUME_NEON(name) name ## _neon
-# else
-#  define PRESUME_NEON(name) PRESUME_MEDIA(name)
-# endif
-
-# if defined(OPUS_HAVE_RTCD)
-int opus_select_arch(void);
+#  error "Floating-point implementation is not supported by ARM asm yet." \
+ "Reconfigure with --disable-rtcd or send patches."
 # endif
 
 #endif

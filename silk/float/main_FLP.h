@@ -71,7 +71,8 @@ opus_int silk_encode_frame_FLP(
 
 /* Initializes the Silk encoder state */
 opus_int silk_init_encoder(
-    silk_encoder_state_FLP          *psEnc                              /* I/O  Encoder state FLP                           */
+    silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
+    int                              arch                               /* I    Run-tim architecture                        */
 );
 
 /* Control the Silk encoder */
@@ -129,7 +130,8 @@ void silk_find_pitch_lags_FLP(
     silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
     silk_encoder_control_FLP        *psEncCtrl,                         /* I/O  Encoder control FLP                         */
     silk_float                      res[],                              /* O    Residual                                    */
-    const silk_float                x[]                                 /* I    Speech signal                               */
+    const silk_float                x[],                                /* I    Speech signal                               */
+    int                             arch                                /* I    Run-time architecture                       */
 );
 
 /* Find LPC and LTP coefficients */

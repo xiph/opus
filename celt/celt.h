@@ -122,7 +122,8 @@ int celt_encoder_get_size(int channels);
 
 int celt_encode_with_ec(OpusCustomEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
 
-int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels);
+int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels,
+                      int arch);
 
 
 

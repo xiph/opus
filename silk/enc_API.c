@@ -69,6 +69,7 @@ opus_int silk_Get_Encoder_Size(                         /* O    Returns error co
 /*************************/
 opus_int silk_InitEncoder(                              /* O    Returns error code                              */
     void                            *encState,          /* I/O  State                                           */
+    int                              arch,              /* I    Run-time architecture                           */
     silk_EncControlStruct           *encStatus          /* O    Encoder Status                                  */
 )
 {
@@ -80,7 +81,7 @@ opus_int silk_InitEncoder(                              /* O    Returns error co
     /* Reset encoder */
     silk_memset( psEnc, 0, sizeof( silk_encoder ) );
     for( n = 0; n < ENCODER_NUM_CHANNELS; n++ ) {
-        if( ret += silk_init_encoder( &psEnc->state_Fxx[ n ] ) ) {
+        if( ret += silk_init_encoder( &psEnc->state_Fxx[ n ], arch ) ) {
             silk_assert( 0 );
         }
     }
@@ -174,7 +175,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
 
     if( encControl->nChannelsInternal > psEnc->nChannelsInternal ) {
         /* Mono -> Stereo transition: init state of second channel and stereo state */
-        ret += silk_init_encoder( &psEnc->state_Fxx[ 1 ] );
+        ret += silk_init_encoder( &psEnc->state_Fxx[ 1 ], psEnc->state_Fxx[ 0 ].sCmn.arch );
         silk_memset( psEnc->sStereo.pred_prev_Q13, 0, sizeof( psEnc->sStereo.pred_prev_Q13 ) );
         silk_memset( psEnc->sStereo.sSide, 0, sizeof( psEnc->sStereo.sSide ) );
         psEnc->sStereo.mid_side_amp_Q0[ 0 ] = 0;
@@ -206,9 +207,8 @@ opus_int silk_Encode(                                   /* O    Returns error co
         }
         /* Reset Encoder */
         for( n = 0; n < encControl->nChannelsInternal; n++ ) {
-            if( (ret = silk_init_encoder( &psEnc->state_Fxx[ n ] ) ) != 0 ) {
-                silk_assert( 0 );
-            }
+            ret = silk_init_encoder( &psEnc->state_Fxx[ n ], psEnc->state_Fxx[ n ].sCmn.arch );
+            silk_assert( !ret );
         }
         tmp_payloadSize_ms = encControl->payloadSize_ms;
         encControl->payloadSize_ms = 10;

@@ -104,7 +104,7 @@ struct OpusEncoder {
     int          analysis_offset;
 #endif
     opus_uint32  rangeFinal;
-    int arch;
+    int          arch;
 };
 
 /* Transition tables for the voice and music. First column is the
@@ -188,7 +188,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
 
     st->arch = opus_select_arch();
 
-    ret = silk_InitEncoder( silk_enc, &st->silk_mode );
+    ret = silk_InitEncoder( silk_enc, st->arch, &st->silk_mode );
     if(ret)return OPUS_INTERNAL_ERROR;
 
     /* default SILK parameters */
@@ -209,7 +209,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
 
     /* Create CELT encoder */
     /* Initialize CELT encoder */
-    err = celt_encoder_init(celt_enc, Fs, channels);
+    err = celt_encoder_init(celt_enc, Fs, channels, st->arch);
     if(err!=OPUS_OK)return OPUS_INTERNAL_ERROR;
 
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
@@ -1219,7 +1219,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY)
     {
         silk_EncControlStruct dummy;
-        silk_InitEncoder( silk_enc, &dummy);
+        silk_InitEncoder( silk_enc, st->arch, &dummy);
         prefill=1;
     }
 
@@ -2418,7 +2418,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                  ((char*)&st->OPUS_ENCODER_RESET_START - (char*)st));
 
            celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
-           silk_InitEncoder( silk_enc, &dummy );
+           silk_InitEncoder( silk_enc, st->arch, &dummy );
            st->stream_channels = st->channels;
            st->hybrid_stereo_width_Q14 = 1 << 14;
            st->prev_HB_gain = Q15ONE;
