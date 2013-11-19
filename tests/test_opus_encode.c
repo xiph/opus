@@ -130,7 +130,7 @@ int run_test1(int no_fuzz)
    short *outbuf;
    short *out2buf;
    opus_int32 bitrate_bps;
-   unsigned char packet[MAX_PACKET];
+   unsigned char packet[MAX_PACKET+257];
    opus_uint32 enc_final_range;
    opus_uint32 dec_final_range;
    int fswitch;
@@ -268,6 +268,21 @@ int run_test1(int no_fuzz)
             len = opus_encode(enc, &inbuf[i<<1], frame_size, packet, MAX_PACKET);
             if(len<0 || len>MAX_PACKET)test_failed();
             if(opus_encoder_ctl(enc, OPUS_GET_FINAL_RANGE(&enc_final_range))!=OPUS_OK)test_failed();
+            if((fast_rand()&3)==0)
+            {
+               if(opus_packet_pad(packet,len,len+1)!=OPUS_OK)test_failed();
+               len++;
+            }
+            if((fast_rand()&7)==0)
+            {
+               if(opus_packet_pad(packet,len,len+256)!=OPUS_OK)test_failed();
+               len+=256;
+            }
+            if((fast_rand()&3)==0)
+            {
+               len=opus_packet_unpad(packet,len);
+               if(len<1)test_failed();
+            }
             out_samples = opus_decode(dec, packet, len, &outbuf[i<<1], MAX_FRAME_SAMP, 0);
             if(out_samples!=frame_size)test_failed();
             if(opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range))!=OPUS_OK)test_failed();
@@ -317,6 +332,21 @@ int run_test1(int no_fuzz)
             len = opus_multistream_encode(MSenc, &inbuf[i<<1], frame_size, packet, MAX_PACKET);
             if(len<0 || len>MAX_PACKET)test_failed();
             if(opus_multistream_encoder_ctl(MSenc, OPUS_GET_FINAL_RANGE(&enc_final_range))!=OPUS_OK)test_failed();
+            if((fast_rand()&3)==0)
+            {
+               if(opus_multistream_packet_pad(packet,len,len+1,2)!=OPUS_OK)test_failed();
+               len++;
+            }
+            if((fast_rand()&7)==0)
+            {
+               if(opus_multistream_packet_pad(packet,len,len+256,2)!=OPUS_OK)test_failed();
+               len+=256;
+            }
+            if((fast_rand()&3)==0)
+            {
+               len=opus_multistream_packet_unpad(packet,len,2);
+               if(len<1)test_failed();
+            }
             out_samples = opus_multistream_decode(MSdec, packet, len, out2buf, MAX_FRAME_SAMP, 0);
             if(out_samples!=frame_size*6)test_failed();
             if(opus_multistream_decoder_ctl(MSdec, OPUS_GET_FINAL_RANGE(&dec_final_range))!=OPUS_OK)test_failed();
