@@ -38,6 +38,9 @@ BUILT_SOURCES = $(CELT_SOURCES_ARM_ASM:.s=-gnu.S) \
 endif
 endif
 
+CLEANFILES = $(CELT_SOURCES_ARM_ASM:.s=-gnu.S) \
+ $(CELT_AM_SOURCES_ARM_ASM:.s.in=-gnu.S)
+
 include celt_headers.mk
 include silk_headers.mk
 include opus_headers.mk
