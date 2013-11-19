@@ -208,6 +208,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    {
       /* Using OPUS_MOVE() instead of OPUS_COPY() in case we're doing in-place
          padding from opus_packet_pad or opus_packet_unpad(). */
+      celt_assert(frames[i] + len[i] <= data || ptr <= frames[i]);
       OPUS_MOVE(ptr, frames[i], len[i]);
       ptr += len[i];
    }
@@ -261,7 +262,7 @@ opus_int32 opus_packet_unpad(unsigned char *data, opus_int32 len)
    if (ret < 0)
       return ret;
    ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, data, len, 0, 0);
-   celt_assert(ret > 0);
+   celt_assert(ret > 0 && ret <= len);
    return ret;
 }
 
