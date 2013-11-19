@@ -58,7 +58,7 @@ void opus_repacketizer_destroy(OpusRepacketizer *rp)
    opus_free(rp);
 }
 
-int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len)
+static int opus_repacketizer_cat_impl(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len, int self_delimited)
 {
    unsigned char tmp_toc;
    int curr_nb_frames,ret;
@@ -82,11 +82,16 @@ int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_
       return OPUS_INVALID_PACKET;
    }
 
-   ret=opus_packet_parse(data, len, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL);
+   ret=opus_packet_parse_impl(data, len, self_delimited, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL, NULL);
    if(ret<1)return ret;
 
    rp->nb_frames += curr_nb_frames;
    return OPUS_OK;
+}
+
+int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len)
+{
+   return opus_repacketizer_cat_impl(rp, data, len, 0);
 }
 
 int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp)
@@ -311,7 +316,7 @@ opus_int32 opus_multistream_packet_unpad(unsigned char *data, opus_int32 len, in
       return OPUS_BAD_ARG;
    dst = data;
    dst_len = 0;
-   /* Seek to last stream */
+   /* Unpad all frames */
    for (s=0;s<nb_streams;s++)
    {
       opus_int32 ret;
@@ -323,7 +328,7 @@ opus_int32 opus_multistream_packet_unpad(unsigned char *data, opus_int32 len, in
                                      size, NULL, &packet_offset);
       if (ret<0)
          return ret;
-      ret = opus_repacketizer_cat(&rp, data, packet_offset);
+      ret = opus_repacketizer_cat_impl(&rp, data, packet_offset, self_delimited);
       if (ret < 0)
          return ret;
       ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, dst, len, self_delimited, 0);
