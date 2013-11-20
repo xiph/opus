@@ -60,6 +60,10 @@ void silk_quant_LTP_gains(
     min_rate_dist_Q14 = silk_int32_MAX;
     best_sum_log_gain_Q7 = 0;
     for( k = 0; k < 3; k++ ) {
+        /* Safety margin for pitch gain control, to take into account factors
+           such as state rescaling/rewhitening. */
+        opus_int32 gain_safety = SILK_FIX_CONST( 0.4, 7 );
+
         cl_ptr_Q5  = silk_LTP_gain_BITS_Q5_ptrs[ k ];
         cbk_ptr_Q7 = silk_LTP_vq_ptrs_Q7[        k ];
         cbk_gain_ptr_Q7 = silk_LTP_vq_gain_ptrs_Q7[ k ];
@@ -73,7 +77,7 @@ void silk_quant_LTP_gains(
 		sum_log_gain_tmp_Q7 = *sum_log_gain_Q7;
         for( j = 0; j < nb_subfr; j++ ) {
 			max_gain_Q7 = silk_log2lin( ( SILK_FIX_CONST( MAX_SUM_LOG_GAIN_DB / 6.0, 7 ) - sum_log_gain_tmp_Q7 ) 
-										+ SILK_FIX_CONST( 7, 7 ) ) - SILK_FIX_CONST( 0.5, 7 );
+										+ SILK_FIX_CONST( 7, 7 ) ) - gain_safety;
 
             silk_VQ_WMat_EC(
                 &temp_idx[ j ],         /* O    index of best codebook vector                           */
@@ -90,7 +94,8 @@ void silk_quant_LTP_gains(
             );
 
             rate_dist_Q14 = silk_ADD_POS_SAT32( rate_dist_Q14, rate_dist_Q14_subfr );
-			sum_log_gain_tmp_Q7 += silk_lin2log( SILK_FIX_CONST( 0.5, 7 ) + gain_Q7 ) - SILK_FIX_CONST( 7, 7 );
+            sum_log_gain_tmp_Q7 = silk_max(0, sum_log_gain_tmp_Q7
+                                + silk_lin2log( gain_safety + gain_Q7 ) - SILK_FIX_CONST( 7, 7 ));
 
             b_Q14_ptr += LTP_ORDER;
             W_Q18_ptr += LTP_ORDER * LTP_ORDER;
