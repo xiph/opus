@@ -219,6 +219,7 @@ void silk_VQ_WMat_EC(
     const opus_int16            *in_Q14,                        /* I    input vector to be quantized                */
     const opus_int32            *W_Q18,                         /* I    weighting matrix                            */
     const opus_int8             *cb_Q7,                         /* I    codebook                                    */
+    const opus_uint8            *cb_gain_Q7,                    /* I    codebook effective gain                     */
     const opus_uint8            *cl_Q5,                         /* I    code length for each codebook vector        */
     const opus_int              mu_Q9,                          /* I    tradeoff betw. weighted error and rate      */
     const opus_int32            max_gain_Q7,                    /* I    maximum sum of absolute LTP coefficients    */

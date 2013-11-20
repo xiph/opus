@@ -39,6 +39,7 @@ void silk_VQ_WMat_EC(
     const opus_int16            *in_Q14,                        /* I    input vector to be quantized                */
     const opus_int32            *W_Q18,                         /* I    weighting matrix                            */
     const opus_int8             *cb_Q7,                         /* I    codebook                                    */
+    const opus_uint8            *cb_gain_Q7,                    /* I    codebook effective gain                     */
     const opus_uint8            *cl_Q5,                         /* I    code length for each codebook vector        */
     const opus_int              mu_Q9,                          /* I    tradeoff betw. weighted error and rate      */
     const opus_int32            max_gain_Q7,                    /* I    maximum sum of absolute LTP coefficients    */
@@ -54,11 +55,7 @@ void silk_VQ_WMat_EC(
     *rate_dist_Q14 = silk_int32_MAX;
     cb_row_Q7 = cb_Q7;
     for( k = 0; k < L; k++ ) {
-		gain_tmp_Q7 = silk_abs( cb_row_Q7[ 0 ] ) + 
-			          silk_abs( cb_row_Q7[ 1 ] ) + 
-				      silk_abs( cb_row_Q7[ 2 ] ) + 
-				      silk_abs( cb_row_Q7[ 3 ] ) + 
-				      silk_abs( cb_row_Q7[ 4 ] );
+	    gain_tmp_Q7 = cb_gain_Q7[k];
 
         diff_Q14[ 0 ] = in_Q14[ 0 ] - silk_LSHIFT( cb_row_Q7[ 0 ], 7 );
         diff_Q14[ 1 ] = in_Q14[ 1 ] - silk_LSHIFT( cb_row_Q7[ 1 ], 7 );

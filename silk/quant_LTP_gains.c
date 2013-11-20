@@ -47,6 +47,7 @@ void silk_quant_LTP_gains(
     opus_int8            temp_idx[ MAX_NB_SUBFR ];
     const opus_uint8     *cl_ptr_Q5;
     const opus_int8      *cbk_ptr_Q7;
+    const opus_uint8     *cbk_gain_ptr_Q7;
     const opus_int16     *b_Q14_ptr;
     const opus_int32     *W_Q18_ptr;
     opus_int32           rate_dist_Q14_subfr, rate_dist_Q14, min_rate_dist_Q14;
@@ -61,6 +62,7 @@ void silk_quant_LTP_gains(
     for( k = 0; k < 3; k++ ) {
         cl_ptr_Q5  = silk_LTP_gain_BITS_Q5_ptrs[ k ];
         cbk_ptr_Q7 = silk_LTP_vq_ptrs_Q7[        k ];
+        cbk_gain_ptr_Q7 = silk_LTP_vq_gain_ptrs_Q7[ k ];
         cbk_size   = silk_LTP_vq_sizes[          k ];
 
         /* Set up pointer to first subframe */
@@ -80,6 +82,7 @@ void silk_quant_LTP_gains(
                 b_Q14_ptr,              /* I    input vector to be quantized                            */
                 W_Q18_ptr,              /* I    weighting matrix                                        */
                 cbk_ptr_Q7,             /* I    codebook                                                */
+                cbk_gain_ptr_Q7,        /* I    codebook effective gains                                */
                 cl_ptr_Q5,              /* I    code length for each codebook vector                    */
                 mu_Q9,                  /* I    tradeoff between weighted error and rate                */
 				max_gain_Q7,            /* I    maximum sum of absolute LTP coefficients                */
