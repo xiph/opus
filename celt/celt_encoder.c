@@ -197,10 +197,12 @@ static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
    return OPUS_OK;
 }
 
-OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
+#ifdef CUSTOM_MODES
+int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
 {
    return opus_custom_encoder_init_arch(st, mode, channels, opus_select_arch());
 }
+#endif
 
 int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels,
                       int arch)
