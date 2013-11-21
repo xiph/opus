@@ -9,7 +9,8 @@ DOCINPUTS = $(top_srcdir)/include/opus.h \
             $(top_srcdir)/doc/footer.html \
             $(top_srcdir)/doc/customdoxygen.css
 
-EXTRA_DIST = customdoxygen.css Doxyfile.in footer.html header.html opus_logo.svg
+EXTRA_DIST = customdoxygen.css Doxyfile.in footer.html header.html \
+             opus_logo.svg trivial_example.c
 
 
 if HAVE_DOXYGEN
