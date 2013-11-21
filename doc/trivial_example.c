@@ -35,7 +35,7 @@
 #include <opus.h>
 #include <stdio.h>
 
-/*The frame size in hardcoded for this sample code but it doesn't have to be*/
+/*The frame size is hardcoded for this sample code but it doesn't have to be*/
 #define FRAME_SIZE 960
 #define SAMPLE_RATE 48000
 #define CHANNELS 2

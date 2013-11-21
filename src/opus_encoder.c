@@ -1913,7 +1913,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     /* Count ToC and redundancy */
     ret += 1+redundancy_bytes;
-    if (!st->use_vbr && ret >= 3)
+    if (!st->use_vbr)
     {
        if (opus_packet_pad(data, ret, max_data_bytes) != OPUS_OK)
 
