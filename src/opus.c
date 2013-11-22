@@ -39,6 +39,8 @@ OPUS_EXPORT void opus_pcm_soft_clip(float *_x, int N, int C, float *declip_mem)
    int i;
    float *x;
 
+   if (C<1 || N<1 || !_x || !declip_mem) return;
+
    /* First thing: saturate everything to +/- 2 which is the highest level our
       non-linearity can handle. At the point where the signal reaches +/-2,
       the derivative will be zero anyway, so this doesn't introduce any
