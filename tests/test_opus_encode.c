@@ -247,7 +247,19 @@ int run_test1(int no_fuzz)
          do {
             int bw,len,out_samples,frame_size;
             frame_size=frame[j];
-            if(fast_rand()%100==0)opus_encoder_ctl(enc, OPUS_RESET_STATE);
+            if((fast_rand()&255)==0)
+            {
+               if(opus_encoder_ctl(enc, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
+               if(opus_decoder_ctl(dec, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
+               if((fast_rand()&1)!=0)
+               {
+                  if(opus_decoder_ctl(dec_err[fast_rand()&1], OPUS_RESET_STATE)!=OPUS_OK)test_failed();
+               }
+            }
+            if((fast_rand()&127)==0)
+            {
+               if(opus_decoder_ctl(dec_err[fast_rand()&1], OPUS_RESET_STATE)!=OPUS_OK)test_failed();
+            }
             if(fast_rand()%10==0){
                int complex=fast_rand()%11;
                if(opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complex))!=OPUS_OK)test_failed();
@@ -329,6 +341,19 @@ int run_test1(int no_fuzz)
             frame_size=frame[j];
             if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_COMPLEXITY((count>>2)%11))!=OPUS_OK)test_failed();
             if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_PACKET_LOSS_PERC((fast_rand()&15)&(fast_rand()%15)))!=OPUS_OK)test_failed();
+            if((fast_rand()&255)==0)
+            {
+               if(opus_multistream_encoder_ctl(MSenc, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
+               if(opus_multistream_decoder_ctl(MSdec, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
+               if((fast_rand()&3)!=0)
+               {
+                  if(opus_multistream_decoder_ctl(MSdec_err, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
+               }
+            }
+            if((fast_rand()&255)==0)
+            {
+               if(opus_multistream_decoder_ctl(MSdec_err, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
+            }
             len = opus_multistream_encode(MSenc, &inbuf[i<<1], frame_size, packet, MAX_PACKET);
             if(len<0 || len>MAX_PACKET)test_failed();
             if(opus_multistream_encoder_ctl(MSenc, OPUS_GET_FINAL_RANGE(&enc_final_range))!=OPUS_OK)test_failed();
@@ -429,9 +454,13 @@ int run_test1(int no_fuzz)
    }while(i<SAMPLES*4);
    fprintf(stdout,"    All framesize pairs switching encode, %d frames OK.\n",count);
 
+   if(opus_encoder_ctl(enc, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
    opus_encoder_destroy(enc);
+   if(opus_multistream_encoder_ctl(MSenc, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
    opus_multistream_encoder_destroy(MSenc);
+   if(opus_decoder_ctl(dec, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
    opus_decoder_destroy(dec);
+   if(opus_multistream_decoder_ctl(MSdec, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
    opus_multistream_decoder_destroy(MSdec);
    opus_multistream_decoder_destroy(MSdec_err);
    for(i=0;i<10;i++)opus_decoder_destroy(dec_err[i]);
