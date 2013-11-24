@@ -384,7 +384,7 @@ void test_soft_clip(void)
    {
       for (j=0;j<1024;j++)
       {
-        x[j]=(i&511)*(1/128.f)-2.f;
+        x[j]=(i&255)*(1/32.f)-4.f;
       }
       opus_pcm_soft_clip(&x[i],1024-i,1,s);
       for (j=i;j<1024;j++)
@@ -397,7 +397,7 @@ void test_soft_clip(void)
    {
       for (j=0;j<1024;j++)
       {
-        x[j]=(i&511)*(1/128.f)-2.f;
+        x[j]=(i&255)*(1/32.f)-4.f;
       }
       opus_pcm_soft_clip(x,1024/i,i,s);
       for (j=0;j<(1024/i)*i;j++)
