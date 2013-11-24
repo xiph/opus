@@ -1521,7 +1521,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            }
            /* Conservative rate reduction, we cut the masking in half */
            masking_depth = HALF16(mask_sum / end*st->channels);
-           masking_depth += QCONST16(.4f, DB_SHIFT);
+           masking_depth += QCONST16(.1f, DB_SHIFT);
            rate_offset = (opus_int32)PSHR32(MULT16_16(srate, masking_depth), DB_SHIFT);
            rate_offset = MAX32(rate_offset, -2*st->silk_mode.bitRate/3);
            st->silk_mode.bitRate += rate_offset;
