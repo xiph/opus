@@ -1513,18 +1513,22 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
               {
                  opus_val16 mask;
                  mask = MAX16(MIN16(st->energy_masking[21*c+i],
-                        QCONST16(.25f, DB_SHIFT)), -QCONST16(2.0f, DB_SHIFT));
+                        QCONST16(.5f, DB_SHIFT)), -QCONST16(2.0f, DB_SHIFT));
                  if (mask > 0)
                     mask = HALF16(mask);
                  mask_sum += mask;
               }
            }
            /* Conservative rate reduction, we cut the masking in half */
-           masking_depth = HALF16(mask_sum / end*st->channels);
-           masking_depth += QCONST16(.1f, DB_SHIFT);
+           masking_depth = mask_sum / end*st->channels;
+           masking_depth += QCONST16(.2f, DB_SHIFT);
            rate_offset = (opus_int32)PSHR32(MULT16_16(srate, masking_depth), DB_SHIFT);
            rate_offset = MAX32(rate_offset, -2*st->silk_mode.bitRate/3);
-           st->silk_mode.bitRate += rate_offset;
+           /* Split the rate change between the SILK and CELT part for hybrid. */
+           if (st->bandwidth==OPUS_BANDWIDTH_SUPERWIDEBAND || st->bandwidth==OPUS_BANDWIDTH_FULLBAND)
+              st->silk_mode.bitRate += 3*rate_offset/5;
+           else
+              st->silk_mode.bitRate += rate_offset;
            bytes_target += rate_offset * frame_size / (8 * st->Fs);
         }
 
