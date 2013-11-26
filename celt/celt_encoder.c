@@ -497,6 +497,8 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
       for (i=0;i<Nu;i++)
          inp[i*upsample] = MAX32(-65536.f, MIN32(65536.f,inp[i*upsample]));
    }
+#else
+   (void)clip; /* Avoids a warning about clip being unused. */
 #endif
    m = *mem;
 #ifdef CUSTOM_MODES
