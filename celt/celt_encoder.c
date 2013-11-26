@@ -1804,11 +1804,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    if (C==2)
    {
-      int surround;
-      static const opus_val16 intensity_thresholds[2][21]=
+      static const opus_val16 intensity_thresholds[21]=
       /* 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19  20  off*/
-       {{  1, 2, 3, 4, 5, 6, 7,20,26,30,36,44,50,56,62,67,72,79,88,106,134},
-        {  1, 2, 3, 4, 5, 6, 7,12,16,18,24,30,36,42,48,54,60,66,80, 98,120}};
+        {  1, 2, 3, 4, 5, 6, 7, 8,16,24,36,44,50,56,62,67,72,79,88,106,134};
       static const opus_val16 intensity_histeresis[21]=
         {  1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 5, 6,  8, 8};
 
@@ -1816,9 +1814,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       if (LM!=0)
          dual_stereo = stereo_analysis(mode, X, LM, N);
 
-      surround = st->energy_mask!=NULL;
       st->intensity = hysteresis_decision((opus_val16)equiv_rate/1000,
-            intensity_thresholds[surround], intensity_histeresis, 21, st->intensity);
+            intensity_thresholds, intensity_histeresis, 21, st->intensity);
       st->intensity = IMIN(st->end,IMAX(st->start, st->intensity));
    }
 
