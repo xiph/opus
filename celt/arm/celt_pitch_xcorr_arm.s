@@ -371,20 +371,19 @@ celt_pitch_xcorr_edsp PROC
   LDRH         r8, [r5], #2
   BLE celt_pitch_xcorr_edsp_process1u_loop4_done
   LDR          r6, [r4], #4
-  LDR          r9, [r5], #4
-  LDR          r7, [r4], #4
+  MOV          r8, r8, LSL #16
 celt_pitch_xcorr_edsp_process1u_loop4
-  SMLABB       r14, r6, r8, r14     ; sum = MAC16_16(sum, x_0, y_0)
-  SUBS         r12, r12, #4         ; j-=4
+  LDR          r9, [r5], #4
+  SMLABT       r14, r6, r8, r14     ; sum = MAC16_16(sum, x_0, y_0)
+  LDR          r7, [r4], #4
   SMLATB       r14, r6, r9, r14     ; sum = MAC16_16(sum, x_1, y_1)
-  LDR          r10, [r5], #4
+  LDR          r8, [r5], #4
   SMLABT       r14, r7, r9, r14     ; sum = MAC16_16(sum, x_2, y_2)
+  SUBS         r12, r12, #4         ; j-=4
+  SMLATB       r14, r7, r8, r14     ; sum = MAC16_16(sum, x_3, y_3)
   LDRGT        r6, [r4], #4
-  SMLATB       r14, r7, r10, r14    ; sum = MAC16_16(sum, x_3, y_3)
-  LDRGT        r9, [r5], #4
-  MOV          r8, r10, LSR #16
-  LDRGT        r7, [r4], #4
   BGT celt_pitch_xcorr_edsp_process1u_loop4
+  MOV          r8, r8, LSR #16
 celt_pitch_xcorr_edsp_process1u_loop4_done
   ADDS         r12, r12, #4
 celt_pitch_xcorr_edsp_process1u_loop1
@@ -530,6 +529,7 @@ celt_pitch_xcorr_edsp_process1a_loop_done
   ADDS         r12, r12, #1
   LDRGEH       r6, [r4], #2
   LDRGEH       r8, [r5], #2
+  ; Stall
   SMLABBGE     r14, r6, r8, r14     ; sum = MAC16_16(sum, *x, *y)
   ; maxcorr = max(maxcorr, sum)
   CMP          r0, r14
