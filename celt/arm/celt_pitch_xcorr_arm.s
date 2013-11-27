@@ -40,368 +40,215 @@ ENDIF
 
 IF OPUS_ARM_MAY_HAVE_NEON
 
-;; Compute sum[k]=sum(x[j]*y[j+k],j=0...len-1), k=0...3
-;xcorr_kernel_neon PROC
-;  ; input:
-;  ;   r3     = int         len
-;  ;   r4     = opus_val16 *x
-;  ;   r5     = opus_val16 *y
-;  ;   q0     = opus_val32  sum[4]
-;  ; output:
-;  ;   q0     = opus_val32  sum[4]
-;  ; preserved: r0-r3, r6-r11, d2, q4-q7, q9-q15
-;  ; internal usage:
-;  ;   r12 = int j
-;  ;   d3  = y_3|y_2|y_1|y_0
-;  ;   q2  = y_B|y_A|y_9|y_8|y_7|y_6|y_5|y_4
-;  ;   q3  = x_7|x_6|x_5|x_4|x_3|x_2|x_1|x_0
-;  ;   q8  = scratch
-;  ;
-;  ; Load y[0...3]
-;  ; This requires len>0 to always be valid (which we assert in the C code).
-;  VLD1.16      {d5}, [r5]!
-;  SUBS         r12, r3, #8
-;  BLE xcorr_kernel_neon_process4
-;; Process 8 samples at a time.
-;; This loop loads one y value more than we actually need. Therefore we have to
-;; stop as soon as there are 8 or fewer samples left (instead of 7), to avoid
-;; reading past the end of the array.
-;xcorr_kernel_neon_process8
-;  ; This loop has 19 total instructions (10 cycles to issue, minimum), with
-;  ; - 2 cycles of ARM insrtuctions,
-;  ; - 10 cycles of load/store/byte permute instructions, and
-;  ; - 9 cycles of data processing instructions.
-;  ; On a Cortex A8, we dual-issue the maximum amount (9 cycles) between the
-;  ; latter two categories, meaning the whole loop should run in 10 cycles per
-;  ; iteration, barring cache misses.
-;  ;
-;  ; Load x[0...7]
-;  VLD1.16      {d6, d7}, [r4]!
-;  ; Unlike VMOV, VAND is a data processsing instruction (and doesn't get
-;  ; assembled to VMOV, like VORR would), so it dual-issues with the prior VLD1.
-;  VAND         d3, d5, d5
-;  SUBS         r12, r12, #8
-;  ; Load y[4...11]
-;  VLD1.16      {d4, d5}, [r5]!
-;  VMLAL.S16    q0, d3, d6[0]
-;  VEXT.16      d16, d3, d4, #1
-;  VMLAL.S16    q0, d4, d7[0]
-;  VEXT.16      d17, d4, d5, #1
-;  VMLAL.S16    q0, d16, d6[1]
-;  VEXT.16      d16, d3, d4, #2
-;  VMLAL.S16    q0, d17, d7[1]
-;  VEXT.16      d17, d4, d5, #2
-;  VMLAL.S16    q0, d16, d6[2]
-;  VEXT.16      d16, d3, d4, #3
-;  VMLAL.S16    q0, d17, d7[2]
-;  VEXT.16      d17, d4, d5, #3
-;  VMLAL.S16    q0, d16, d6[3]
-;  VMLAL.S16    q0, d17, d7[3]
-;  BGT xcorr_kernel_neon_process8
-;; Process 4 samples here if we have > 4 left (still reading one extra y value).
-;xcorr_kernel_neon_process4
-;  ADDS         r12, r12, #4
-;  BLE xcorr_kernel_neon_process2
-;  ; Load x[0...3]
-;  VLD1.16      d6, [r4]!
-;  ; Use VAND since it's a data processing instruction again.
-;  VAND         d4, d5, d5
-;  SUB          r12, r12, #4
-;  ; Load y[4...7]
-;  VLD1.16      d5, [r5]!
-;  VMLAL.S16    q0, d4, d6[0]
-;  VEXT.16      d16, d4, d5, #1
-;  VMLAL.S16    q0, d16, d6[1]
-;  VEXT.16      d16, d4, d5, #2
-;  VMLAL.S16    q0, d16, d6[2]
-;  VEXT.16      d16, d4, d5, #3
-;  VMLAL.S16    q0, d16, d6[3]
-;; Process 2 samples here if we have > 2 left (still reading one extra y value).
-;xcorr_kernel_neon_process2
-;  ADDS         r12, r12, #2
-;  BLE xcorr_kernel_neon_process1
-;  ; Load x[0...1]
-;  VLD2.16      {d6[],d7[]}, [r4]!
-;  ; Use VAND since it's a data processing instruction again.
-;  VAND         d4, d5, d5
-;  SUB          r12, r12, #2
-;  ; Load y[4...5]
-;  VLD1.32      {d5[]}, [r5]!
-;  VMLAL.S16    q0, d4, d6
-;  VEXT.16      d16, d4, d5, #1
-;  ; Replace bottom copy of {y5,y4} in d5 with {y3,y2} from d4, using VSRI
-;  ; instead of VEXT, since it's a data-processing instruction.
-;  VSRI.64      d5, d4, #32
-;  VMLAL.S16    q0, d16, d7
-;; Process 1 sample using the extra y value we loaded above.
-;xcorr_kernel_neon_process1
-;  ; Load next *x
-;  VLD1.16      {d6[]}, [r4]!
-;  ADDS         r12, r12, #1
-;  ; y[0...3] are left in d5 from prior iteration(s) (if any)
-;  VMLAL.S16    q0, d5, d6
-;  MOVLE        pc, lr
-;; Now process 1 last sample, not reading ahead.
-;  ; Load last *y
-;  VLD1.16      {d4[]}, [r5]!
-;  VSRI.64      d4, d5, #16
-;  ; Load last *x
-;  VLD1.16      {d6[]}, [r4]!
-;  VMLAL.S16    q0, d4, d6
-;  MOV          pc, lr
-;  ENDP
-
-;; opus_val32 celt_pitch_xcorr_neon(opus_val16 *_x, opus_val16 *_y,
-;;  opus_val32 *xcorr, int len, int max_pitch)
-;celt_pitch_xcorr_neon PROC
-;  ; input:
-;  ;   r0  = opus_val16 *_x
-;  ;   r1  = opus_val16 *_y
-;  ;   r2  = opus_val32 *xcorr
-;  ;   r3  = int         len
-;  ; output:
-;  ;   r0  = int         maxcorr
-;  ; internal usage:
-;  ;   r4  = opus_val16 *x (for xcorr_kernel_neon())
-;  ;   r5  = opus_val16 *y (for xcorr_kernel_neon())
-;  ;   r6  = int         max_pitch
-;  ;   r12 = int         j
-;  ;   q15 = int         maxcorr[4] (q15 is not used by xcorr_kernel_neon())
-;  STMFD        sp!, {r4-r6, lr}
-;  LDR          r6, [sp, #16]
-;  VMOV.S32     q15, #1
-;  ; if (max_pitch < 4) goto celt_pitch_xcorr_neon_process4_done
-;  SUBS         r6, r6, #4
-;  BLT celt_pitch_xcorr_neon_process4_done
-;celt_pitch_xcorr_neon_process4
-;  ; xcorr_kernel_neon parameters:
-;  ; r3 = len, r4 = _x, r5 = _y, q0 = {0, 0, 0, 0}
-;  MOV          r4, r0
-;  MOV          r5, r1
-;  VEOR         q0, q0, q0
-;  ; xcorr_kernel_neon only modifies r4, r5, r12, and q0...q3.
-;  ; So we don't save/restore any other registers.
-;  BL xcorr_kernel_neon
-;  SUBS         r6, r6, #4
-;  VST1.32      {q0}, [r2]!
-;  ; _y += 4
-;  ADD          r1, r1, #8
-;  VMAX.S32     q15, q15, q0
-;  ; if (max_pitch < 4) goto celt_pitch_xcorr_neon_process4_done
-;  BGE celt_pitch_xcorr_neon_process4
-;; We have less than 4 sums left to compute.
-;celt_pitch_xcorr_neon_process4_done
-;  ADDS         r6, r6, #4
-;  ; Reduce maxcorr to a single value
-;  VMAX.S32     d30, d30, d31
-;  VPMAX.S32    d30, d30, d30
-;  ; if (max_pitch <= 0) goto celt_pitch_xcorr_neon_done
-;  BLE celt_pitch_xcorr_neon_done
-;; Now compute each remaining sum one at a time.
-;celt_pitch_xcorr_neon_process_remaining
-;  MOV          r4, r0
-;  MOV          r5, r1
-;  VMOV.I32     q0, #0
-;  SUBS         r12, r3, #8
-;  BLT celt_pitch_xcorr_neon_process_remaining4
-;; Sum terms 8 at a time.
-;celt_pitch_xcorr_neon_process_remaining_loop8
-;  ; Load x[0...7]
-;  VLD1.16      {q1}, [r4]!
-;  ; Load y[0...7]
-;  VLD1.16      {q2}, [r5]!
-;  SUBS         r12, r12, #8
-;  VMLAL.S16    q0, d4, d2
-;  VMLAL.S16    q0, d5, d3
-;  BGE celt_pitch_xcorr_neon_process_remaining_loop8
-;; Sum terms 4 at a time.
-;celt_pitch_xcorr_neon_process_remaining4
-;  ADDS         r12, r12, #4
-;  BLT celt_pitch_xcorr_neon_process_remaining4_done
-;  ; Load x[0...3]
-;  VLD1.16      {d2}, [r4]!
-;  ; Load y[0...3]
-;  VLD1.16      {d3}, [r5]!
-;  SUB          r12, r12, #4
-;  VMLAL.S16    q0, d3, d2
-;  ; Reduce the sum to a single value.
-;  VADD.S32     d0, d0, d1
-;  VPADDL.S32   d0, d0
-;celt_pitch_xcorr_neon_process_remaining4_done
-;  ADDS         r12, r12, #4
-;  BLE celt_pitch_xcorr_neon_process_remaining_loop_done
-;; Sum terms 1 at a time.
-;celt_pitch_xcorr_neon_process_remaining_loop1
-;  VLD1.16      {d2[]}, [r4]!
-;  VLD1.16      {d3[]}, [r5]!
-;  SUBS         r12, r12, #1
-;  VMLAL.S16    q0, d2, d3
-;  BGT celt_pitch_xcorr_neon_process_remaining_loop1
-;celt_pitch_xcorr_neon_process_remaining_loop_done
-;  VST1.32      {d0[0]}, [r2]!
-;  VMAX.S32     d30, d30, d0
-;  SUBS         r6, r6, #1
-;  ; _y++
-;  ADD          r1, r1, #2
-;  ; if (--max_pitch > 0) goto celt_pitch_xcorr_neon_process_remaining
-;  BGT celt_pitch_xcorr_neon_process_remaining
-;celt_pitch_xcorr_neon_done
-;  VMOV.32      r0, d30[0]
-;  LDMFD        sp!, {r4-r6, pc}
-;  ENDP
-
+; Compute sum[k]=sum(x[j]*y[j+k],j=0...len-1), k=0...3
 xcorr_kernel_neon PROC
   ; input:
-  ; r0 = opus_val16 *x
-  ; r1 = opus_val16 *y
-  ; r2 = int        len
-  ; q0 = opus_val32 sum (sum[3] | sum[2] | sum[1] | sum[0])
-
+  ;   r3     = int         len
+  ;   r4     = opus_val16 *x
+  ;   r5     = opus_val16 *y
+  ;   q0     = opus_val32  sum[4]
   ; output:
-  ; q0 = sum
-
+  ;   q0     = opus_val32  sum[4]
+  ; preserved: r0-r3, r6-r11, d2, q4-q7, q9-q15
   ; internal usage:
-  ; r3 = j
-  ; d2 = x_3|x_2|x_1|x_0  d3 = y_3|y_2|y_1|y_0
-  ; d4 = y_7|y_6|y_5|y_4  d5 = y_4|y_3|y_2|y_1
-  ; d6 = y_5|y_4|y_3|y_2  d7 = y_6|y_5|y_4|y_3
-  ; We will build d5, d6 and d7 vector from d3 and d4
-
-
-  VLD1.16   {d3}, [r1]!      ; Load y[3] downto y[0] to d3 lane (yy0)
-  SUB       r3, r2, #1
-  MOVS      r3, r3, lsr #2   ; j=(len-1)>>2
-  BEQ       xcorr_kernel_neon_process4_done
-
-  ; Process 4 x samples at a time
-  ; For this, we will need 4 y vectors
+  ;   r12 = int j
+  ;   d3  = y_3|y_2|y_1|y_0
+  ;   q2  = y_B|y_A|y_9|y_8|y_7|y_6|y_5|y_4
+  ;   q3  = x_7|x_6|x_5|x_4|x_3|x_2|x_1|x_0
+  ;   q8  = scratch
+  ;
+  ; Load y[0...3]
+  ; This requires len>0 to always be valid (which we assert in the C code).
+  VLD1.16      {d5}, [r5]!
+  SUBS         r12, r3, #8
+  BLE xcorr_kernel_neon_process4
+; Process 8 samples at a time.
+; This loop loads one y value more than we actually need. Therefore we have to
+; stop as soon as there are 8 or fewer samples left (instead of 7), to avoid
+; reading past the end of the array.
+xcorr_kernel_neon_process8
+  ; This loop has 19 total instructions (10 cycles to issue, minimum), with
+  ; - 2 cycles of ARM insrtuctions,
+  ; - 10 cycles of load/store/byte permute instructions, and
+  ; - 9 cycles of data processing instructions.
+  ; On a Cortex A8, we dual-issue the maximum amount (9 cycles) between the
+  ; latter two categories, meaning the whole loop should run in 10 cycles per
+  ; iteration, barring cache misses.
+  ;
+  ; Load x[0...7]
+  VLD1.16      {d6, d7}, [r4]!
+  ; Unlike VMOV, VAND is a data processsing instruction (and doesn't get
+  ; assembled to VMOV, like VORR would), so it dual-issues with the prior VLD1.
+  VAND         d3, d5, d5
+  SUBS         r12, r12, #8
+  ; Load y[4...11]
+  VLD1.16      {d4, d5}, [r5]!
+  VMLAL.S16    q0, d3, d6[0]
+  VEXT.16      d16, d3, d4, #1
+  VMLAL.S16    q0, d4, d7[0]
+  VEXT.16      d17, d4, d5, #1
+  VMLAL.S16    q0, d16, d6[1]
+  VEXT.16      d16, d3, d4, #2
+  VMLAL.S16    q0, d17, d7[1]
+  VEXT.16      d17, d4, d5, #2
+  VMLAL.S16    q0, d16, d6[2]
+  VEXT.16      d16, d3, d4, #3
+  VMLAL.S16    q0, d17, d7[2]
+  VEXT.16      d17, d4, d5, #3
+  VMLAL.S16    q0, d16, d6[3]
+  VMLAL.S16    q0, d17, d7[3]
+  BGT xcorr_kernel_neon_process8
+; Process 4 samples here if we have > 4 left (still reading one extra y value).
 xcorr_kernel_neon_process4
-  SUBS      r3, r3, #1       ; j--
-  VLD1.16   d4, [r1]!        ; Load y[7] downto y[4] to d4 lane
-  VLD1.16   d2, [r0]!        ; Load x[3] downto x[0] to d2 lane
-  VEXT.16   d5, d3, d4, #1   ; Build y[4] downto y[1] vector (yy1)
-  VEXT.16   d6, d3, d4, #2   ; Build y[5] downto y[2] vector (yy2)
-  VEXT.16   d7, d3, d4, #3   ; Build y[6] downto y[3] vector (yy3)
-
-  VMLAL.S16 q0, d3, d2[0]    ; MAC16_16(sum, x[0], yy0)
-  VMLAL.S16 q0, d5, d2[1]    ; MAC16_16(sum, x[1], yy1)
-  VMLAL.S16 q0, d6, d2[2]    ; MAC16_16(sum, x[2], yy2)
-  VMLAL.S16 q0, d7, d2[3]    ; MAC16_16(sum, x[3], yy3)
-
-  VMOV.S16  d3, d4           ; Next y vector should be in d3 (yy0)
-
-  BNE xcorr_kernel_neon_process4
-
-xcorr_kernel_neon_process4_done
-  ;Process len-1 to len
-  VLD1.16   {d2[]}, [r0]!    ; Load *x and duplicate to d2 lane
-
-  SUB       r3, r2, #1
-  ANDS      r3, r3, #3       ; j=(len-1)&3
-  VMLAL.S16 q0, d3, d2       ; MAC16_16(sum, *x, yy0)
-  BEQ xcorr_kernel_neon_done
-
-xcorr_kernel_neon_process_remaining
-  SUBS      r3, r3, #1       ; j--
-  VLD1.16   {d4[]}, [r1]!    ; Load y value and duplicate to d4 lane
-  VLD1.16   {d2[]}, [r0]!    ; Load *x and duplicate to d2 lane
-  VEXT.16   d3, d3, d4, #1   ; Build y vector from previous and d4
-  VMLAL.S16 q0, d3, d2       ; MAC16_16(sum, *x, yy0)
-  BNE xcorr_kernel_neon_process_remaining
-
-xcorr_kernel_neon_done
-  MOV       pc, lr
+  ADDS         r12, r12, #4
+  BLE xcorr_kernel_neon_process2
+  ; Load x[0...3]
+  VLD1.16      d6, [r4]!
+  ; Use VAND since it's a data processing instruction again.
+  VAND         d4, d5, d5
+  SUB          r12, r12, #4
+  ; Load y[4...7]
+  VLD1.16      d5, [r5]!
+  VMLAL.S16    q0, d4, d6[0]
+  VEXT.16      d16, d4, d5, #1
+  VMLAL.S16    q0, d16, d6[1]
+  VEXT.16      d16, d4, d5, #2
+  VMLAL.S16    q0, d16, d6[2]
+  VEXT.16      d16, d4, d5, #3
+  VMLAL.S16    q0, d16, d6[3]
+; Process 2 samples here if we have > 2 left (still reading one extra y value).
+xcorr_kernel_neon_process2
+  ADDS         r12, r12, #2
+  BLE xcorr_kernel_neon_process1
+  ; Load x[0...1]
+  VLD2.16      {d6[],d7[]}, [r4]!
+  ; Use VAND since it's a data processing instruction again.
+  VAND         d4, d5, d5
+  SUB          r12, r12, #2
+  ; Load y[4...5]
+  VLD1.32      {d5[]}, [r5]!
+  VMLAL.S16    q0, d4, d6
+  VEXT.16      d16, d4, d5, #1
+  ; Replace bottom copy of {y5,y4} in d5 with {y3,y2} from d4, using VSRI
+  ; instead of VEXT, since it's a data-processing instruction.
+  VSRI.64      d5, d4, #32
+  VMLAL.S16    q0, d16, d7
+; Process 1 sample using the extra y value we loaded above.
+xcorr_kernel_neon_process1
+  ; Load next *x
+  VLD1.16      {d6[]}, [r4]!
+  ADDS         r12, r12, #1
+  ; y[0...3] are left in d5 from prior iteration(s) (if any)
+  VMLAL.S16    q0, d5, d6
+  MOVLE        pc, lr
+; Now process 1 last sample, not reading ahead.
+  ; Load last *y
+  VLD1.16      {d4[]}, [r5]!
+  VSRI.64      d4, d5, #16
+  ; Load last *x
+  VLD1.16      {d6[]}, [r4]!
+  VMLAL.S16    q0, d4, d6
+  MOV          pc, lr
   ENDP
 
+; opus_val32 celt_pitch_xcorr_neon(opus_val16 *_x, opus_val16 *_y,
+;  opus_val32 *xcorr, int len, int max_pitch)
 celt_pitch_xcorr_neon PROC
   ; input:
-  ; r0 = opus_val16 *_x
-  ; r1 = opus_val16 *_y
-  ; r2 = opus_val32 *xcorr
-  ; r3 = int        len
-
+  ;   r0  = opus_val16 *_x
+  ;   r1  = opus_val16 *_y
+  ;   r2  = opus_val32 *xcorr
+  ;   r3  = int         len
   ; output:
-  ; r0 = maxcorr
-
-  STMFD     sp!, {r4-r9, lr}
-
-  LDR       r4, [sp, #28]        ; r4 = int max_pitch
-  MOV       r5, r0               ; r5 = _x
-  MOV       r6, r1               ; r6 = _y
-  MOV       r7, r2               ; r7 = xcorr
-  MOV       r2, r3               ; r2 = len
-
-  VMOV.S32  d16, #1              ; d16 = {1, 1}  (not used by xcorr_kernel_neon)
-  MOV       r8, #0               ; r8 = i = 0
-  CMP       r4, #3               ; max_pitch-3 <= 0  ---> pitch_xcorr_neon_process4_done
-  BLE       celt_pitch_xcorr_neon_process4_done
-
-  SUB       r9, r4, #3           ; r9 = max_pitch-3
-
+  ;   r0  = int         maxcorr
+  ; internal usage:
+  ;   r4  = opus_val16 *x (for xcorr_kernel_neon())
+  ;   r5  = opus_val16 *y (for xcorr_kernel_neon())
+  ;   r6  = int         max_pitch
+  ;   r12 = int         j
+  ;   q15 = int         maxcorr[4] (q15 is not used by xcorr_kernel_neon())
+  STMFD        sp!, {r4-r6, lr}
+  LDR          r6, [sp, #16]
+  VMOV.S32     q15, #1
+  ; if (max_pitch < 4) goto celt_pitch_xcorr_neon_process4_done
+  SUBS         r6, r6, #4
+  BLT celt_pitch_xcorr_neon_process4_done
 celt_pitch_xcorr_neon_process4
-  MOV       r0, r5               ; r0 = _x
-  ADD       r1, r6 ,r8, LSL #1   ; r1 = _y + i
-  VMOV.I32  q0, #0               ; q0 = opus_val32 sum[4] = {0, 0, 0, 0}
-
-                                 ; xcorr_kernel_neon don't touch r2 (len)
-                                 ; So we don't store it
-  BL xcorr_kernel_neon           ; xcorr_kernel_neon(_x, _y+i, sum, len)
-
-  VST1.32   {q0}, [r7]!          ; Store sum to xcorr
-  VPMAX.S32 d0, d0, d1           ; d0 = max(sum[3], sum[2]) | max(sum[1], sum[0])
-  ADD       r8, r8, #4           ; i+=4
-  VPMAX.S32 d0, d0, d0           ; d0 = max(sum[3], sum[2], sum[1], sum[0])
-  CMP       r8, r9               ; i < max_pitch-3 ----> pitch_xcorr_neon_process4
-  VMAX.S32  d16, d16, d0         ; d16 = maxcorr = max(maxcorr, sum)
-
-  BLT       celt_pitch_xcorr_neon_process4
-
+  ; xcorr_kernel_neon parameters:
+  ; r3 = len, r4 = _x, r5 = _y, q0 = {0, 0, 0, 0}
+  MOV          r4, r0
+  MOV          r5, r1
+  VEOR         q0, q0, q0
+  ; xcorr_kernel_neon only modifies r4, r5, r12, and q0...q3.
+  ; So we don't save/restore any other registers.
+  BL xcorr_kernel_neon
+  SUBS         r6, r6, #4
+  VST1.32      {q0}, [r2]!
+  ; _y += 4
+  ADD          r1, r1, #8
+  VMAX.S32     q15, q15, q0
+  ; if (max_pitch < 4) goto celt_pitch_xcorr_neon_process4_done
+  BGE celt_pitch_xcorr_neon_process4
+; We have less than 4 sums left to compute.
 celt_pitch_xcorr_neon_process4_done
-  CMP       r8, r4;
-  BGE       celt_pitch_xcorr_neon_done
-
+  ADDS         r6, r6, #4
+  ; Reduce maxcorr to a single value
+  VMAX.S32     d30, d30, d31
+  VPMAX.S32    d30, d30, d30
+  ; if (max_pitch <= 0) goto celt_pitch_xcorr_neon_done
+  BLE celt_pitch_xcorr_neon_done
+; Now compute each remaining sum one at a time.
 celt_pitch_xcorr_neon_process_remaining
-  MOV       r0, r5               ; r0 = _x
-  ADD       r1, r6, r8, LSL #1   ; r1 = _y + i
-  VMOV.I32  q0, #0
-  MOVS      r3, r2, LSR #2       ; r3 = j = len
-  BEQ       inner_loop_neon_process4_done
-
-inner_loop_neon_process4
-  VLD1.16   {d2}, [r0]!          ; Load x
-  VLD1.16   {d3}, [r1]!          ; Load y
-  SUBS      r3, r3, #1
-  VMLAL.S16 q0, d2, d3
-  BNE       inner_loop_neon_process4
-
-  VPADD.S32 d0, d0, d1          ; Reduce sum
-  VPADD.S32 d0, d0, d0
-
-inner_loop_neon_process4_done
-  ANDS      r3, r2, #3
-  BEQ       inner_loop_neon_done
-
-inner_loop_neon_process_remaining
-  VLD1.16   {d2[]}, [r0]!
-  VLD1.16   {d3[]}, [r1]!
-  SUBS      r3, r3, #1
-  VMLAL.S16 q0, d2, d3
-  BNE       inner_loop_neon_process_remaining
-
-inner_loop_neon_done
-  VST1.32   {d0[0]}, [r7]!
-  VMAX.S32  d16, d16, d0
-
-  ADD       r8, r8, #1
-  CMP       r8, r4
-  BCC       celt_pitch_xcorr_neon_process_remaining
-
+  MOV          r4, r0
+  MOV          r5, r1
+  VMOV.I32     q0, #0
+  SUBS         r12, r3, #8
+  BLT celt_pitch_xcorr_neon_process_remaining4
+; Sum terms 8 at a time.
+celt_pitch_xcorr_neon_process_remaining_loop8
+  ; Load x[0...7]
+  VLD1.16      {q1}, [r4]!
+  ; Load y[0...7]
+  VLD1.16      {q2}, [r5]!
+  SUBS         r12, r12, #8
+  VMLAL.S16    q0, d4, d2
+  VMLAL.S16    q0, d5, d3
+  BGE celt_pitch_xcorr_neon_process_remaining_loop8
+; Sum terms 4 at a time.
+celt_pitch_xcorr_neon_process_remaining4
+  ADDS         r12, r12, #4
+  BLT celt_pitch_xcorr_neon_process_remaining4_done
+  ; Load x[0...3]
+  VLD1.16      {d2}, [r4]!
+  ; Load y[0...3]
+  VLD1.16      {d3}, [r5]!
+  SUB          r12, r12, #4
+  VMLAL.S16    q0, d3, d2
+celt_pitch_xcorr_neon_process_remaining4_done
+  ; Reduce the sum to a single value.
+  VADD.S32     d0, d0, d1
+  VPADDL.S32   d0, d0
+  ADDS         r12, r12, #4
+  BLE celt_pitch_xcorr_neon_process_remaining_loop_done
+; Sum terms 1 at a time.
+celt_pitch_xcorr_neon_process_remaining_loop1
+  VLD1.16      {d2[]}, [r4]!
+  VLD1.16      {d3[]}, [r5]!
+  SUBS         r12, r12, #1
+  VMLAL.S16    q0, d2, d3
+  BGT celt_pitch_xcorr_neon_process_remaining_loop1
+celt_pitch_xcorr_neon_process_remaining_loop_done
+  VST1.32      {d0[0]}, [r2]!
+  VMAX.S32     d30, d30, d0
+  SUBS         r6, r6, #1
+  ; _y++
+  ADD          r1, r1, #2
+  ; if (--max_pitch > 0) goto celt_pitch_xcorr_neon_process_remaining
+  BGT celt_pitch_xcorr_neon_process_remaining
 celt_pitch_xcorr_neon_done
-  VMOV      d0, d16
-  VMOV.32   r0, d0[0]
-  LDMFD     sp!, {r4-r9, pc}
+  VMOV.32      r0, d30[0]
+  LDMFD        sp!, {r4-r6, pc}
   ENDP
-
 
 ENDIF
 
