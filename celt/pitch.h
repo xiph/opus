@@ -170,29 +170,4 @@ void
 # endif
 #endif
 
-/*#include "os_support.h"
-
-static inline opus_val32 real_celt_pitch_xcorr(const opus_val16 *_x,
- const opus_val16 *_y,opus_val32 *xcorr,int len,int max_pitch,int arch){
-  opus_val32 *xcorr_tmp;
-  opus_val32  ret_tmp;
-  opus_val32  ret;
-  int         i;
-  xcorr_tmp=(opus_val32 *)opus_alloc(max_pitch*sizeof(*xcorr));
-  ret_tmp=celt_pitch_xcorr_c(_x,_y,xcorr_tmp,len,max_pitch);
-  ret=celt_pitch_xcorr(_x,_y,xcorr,len,max_pitch,arch);
-  for(i=0;i<max_pitch;i++)if(xcorr[i]!=xcorr_tmp[i]){
-    fprintf(stderr,"xcorr[%i] (0x%08X) != xcorr_tmp[%i] (0x%08X)\n",
-     i,xcorr[i],i,xcorr_tmp[i]);
-  }
-  if(ret!=ret_tmp){
-    fprintf(stderr,"ret (0x%08X) != ret_tmp (0x%08X)\n",ret,ret_tmp);
-  }
-  opus_free(xcorr_tmp);
-  return ret_tmp;
-}
-
-#undef celt_pitch_xcorr
-#define celt_pitch_xcorr real_celt_pitch_xcorr*/
-
 #endif
