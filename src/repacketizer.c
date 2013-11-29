@@ -58,7 +58,7 @@ void opus_repacketizer_destroy(OpusRepacketizer *rp)
    opus_free(rp);
 }
 
-int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len)
+static int opus_repacketizer_cat_impl(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len, int self_delimited)
 {
    unsigned char tmp_toc;
    int curr_nb_frames,ret;
@@ -82,11 +82,16 @@ int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_
       return OPUS_INVALID_PACKET;
    }
 
-   ret=opus_packet_parse(data, len, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL);
+   ret=opus_packet_parse_impl(data, len, self_delimited, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL, NULL);
    if(ret<1)return ret;
 
    rp->nb_frames += curr_nb_frames;
    return OPUS_OK;
+}
+
+int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len)
+{
+   return opus_repacketizer_cat_impl(rp, data, len, 0);
 }
 
 int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp)
@@ -207,7 +212,8 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    for (i=0;i<count;i++)
    {
       /* Using OPUS_MOVE() instead of OPUS_COPY() in case we're doing in-place
-         padding from opus_packet_pad */
+         padding from opus_packet_pad or opus_packet_unpad(). */
+      celt_assert(frames[i] + len[i] <= data || ptr <= frames[i]);
       OPUS_MOVE(ptr, frames[i], len[i]);
       ptr += len[i];
    }
@@ -233,6 +239,8 @@ int opus_packet_pad(unsigned char *data, opus_int32 len, opus_int32 new_len)
 {
    OpusRepacketizer rp;
    opus_int32 ret;
+   if (len < 1)
+      return OPUS_BAD_ARG;
    if (len==new_len)
       return OPUS_OK;
    else if (len > new_len)
@@ -247,3 +255,91 @@ int opus_packet_pad(unsigned char *data, opus_int32 len, opus_int32 new_len)
    else
       return ret;
 }
+
+opus_int32 opus_packet_unpad(unsigned char *data, opus_int32 len)
+{
+   OpusRepacketizer rp;
+   opus_int32 ret;
+   if (len < 1)
+      return OPUS_BAD_ARG;
+   opus_repacketizer_init(&rp);
+   ret = opus_repacketizer_cat(&rp, data, len);
+   if (ret < 0)
+      return ret;
+   ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, data, len, 0, 0);
+   celt_assert(ret > 0 && ret <= len);
+   return ret;
+}
+
+int opus_multistream_packet_pad(unsigned char *data, opus_int32 len, opus_int32 new_len, int nb_streams)
+{
+   int s;
+   int count;
+   unsigned char toc;
+   opus_int16 size[48];
+   opus_int32 packet_offset;
+   opus_int32 amount;
+
+   if (len < 1)
+      return OPUS_BAD_ARG;
+   if (len==new_len)
+      return OPUS_OK;
+   else if (len > new_len)
+      return OPUS_BAD_ARG;
+   amount = new_len - len;
+   /* Seek to last stream */
+   for (s=0;s<nb_streams-1;s++)
+   {
+      if (len<=0)
+         return OPUS_INVALID_PACKET;
+      count = opus_packet_parse_impl(data, len, 1, &toc, NULL,
+                                     size, NULL, &packet_offset);
+      if (count<0)
+         return count;
+      data += packet_offset;
+      len -= packet_offset;
+   }
+   return opus_packet_pad(data, len, len+amount);
+}
+
+opus_int32 opus_multistream_packet_unpad(unsigned char *data, opus_int32 len, int nb_streams)
+{
+   int s;
+   unsigned char toc;
+   opus_int16 size[48];
+   opus_int32 packet_offset;
+   OpusRepacketizer rp;
+   unsigned char *dst;
+   opus_int32 dst_len;
+
+   if (len < 1)
+      return OPUS_BAD_ARG;
+   dst = data;
+   dst_len = 0;
+   /* Unpad all frames */
+   for (s=0;s<nb_streams;s++)
+   {
+      opus_int32 ret;
+      int self_delimited = s!=nb_streams-1;
+      if (len<=0)
+         return OPUS_INVALID_PACKET;
+      opus_repacketizer_init(&rp);
+      ret = opus_packet_parse_impl(data, len, self_delimited, &toc, NULL,
+                                     size, NULL, &packet_offset);
+      if (ret<0)
+         return ret;
+      ret = opus_repacketizer_cat_impl(&rp, data, packet_offset, self_delimited);
+      if (ret < 0)
+         return ret;
+      ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, dst, len, self_delimited, 0);
+      if (ret < 0)
+         return ret;
+      else
+         dst_len += ret;
+      dst += ret;
+      data += packet_offset;
+      len -= packet_offset;
+   }
+   return dst_len;
+}
+

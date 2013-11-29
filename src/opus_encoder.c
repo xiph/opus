@@ -114,35 +114,35 @@ static const opus_int32 mono_voice_bandwidth_thresholds[8] = {
         11000, 1000, /* NB<->MB */
         14000, 1000, /* MB<->WB */
         17000, 1000, /* WB<->SWB */
-        20000, 1000, /* SWB<->FB */
+        21000, 2000, /* SWB<->FB */
 };
 static const opus_int32 mono_music_bandwidth_thresholds[8] = {
-        14000, 1000, /* MB not allowed */
-        18000, 2000, /* MB<->WB */
-        24000, 2000, /* WB<->SWB */
-        33000, 2000, /* SWB<->FB */
+        12000, 1000, /* NB<->MB */
+        15000, 1000, /* MB<->WB */
+        18000, 2000, /* WB<->SWB */
+        22000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
         11000, 1000, /* NB<->MB */
         14000, 1000, /* MB<->WB */
         21000, 2000, /* WB<->SWB */
-        32000, 2000, /* SWB<->FB */
+        28000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
-        14000, 1000, /* MB not allowed */
+        12000, 1000, /* NB<->MB */
         18000, 2000, /* MB<->WB */
-        24000, 2000, /* WB<->SWB */
-        48000, 2000, /* SWB<->FB */
+        21000, 2000, /* WB<->SWB */
+        30000, 2000, /* SWB<->FB */
 };
 /* Threshold bit-rates for switching between mono and stereo */
-static const opus_int32 stereo_voice_threshold = 31000;
-static const opus_int32 stereo_music_threshold = 31000;
+static const opus_int32 stereo_voice_threshold = 30000;
+static const opus_int32 stereo_music_threshold = 30000;
 
 /* Threshold bit-rate for switching between SILK/hybrid and CELT-only */
 static const opus_int32 mode_thresholds[2][2] = {
       /* voice */ /* music */
-      {  64000,      20000}, /* mono */
-      {  36000,      20000}, /* stereo */
+      {  64000,      16000}, /* mono */
+      {  36000,      16000}, /* stereo */
 };
 
 int opus_encoder_get_size(int channels)
@@ -1476,11 +1476,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             if( st->silk_mode.bitRate > total_bitRate * 4/5 ) {
                 st->silk_mode.bitRate = total_bitRate * 4/5;
             }
-            /* Increasingly attenuate high band when it gets allocated fewer bits */
-            celt_rate = total_bitRate - st->silk_mode.bitRate;
-            HB_gain_ref = (curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND) ? 3000 : 3600;
-            HB_gain = SHL32((opus_val32)celt_rate, 9) / SHR32((opus_val32)celt_rate + st->stream_channels * HB_gain_ref, 6);
-            HB_gain = HB_gain < Q15ONE*6/7 ? HB_gain + Q15ONE/7 : Q15ONE;
+            if (!st->energy_masking)
+            {
+               /* Increasingly attenuate high band when it gets allocated fewer bits */
+               celt_rate = total_bitRate - st->silk_mode.bitRate;
+               HB_gain_ref = (curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND) ? 3000 : 3600;
+               HB_gain = SHL32((opus_val32)celt_rate, 9) / SHR32((opus_val32)celt_rate + st->stream_channels * HB_gain_ref, 6);
+               HB_gain = HB_gain < Q15ONE*6/7 ? HB_gain + Q15ONE/7 : Q15ONE;
+            }
         } else {
             /* SILK gets all bits */
             st->silk_mode.bitRate = total_bitRate;
@@ -1510,18 +1513,22 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
               {
                  opus_val16 mask;
                  mask = MAX16(MIN16(st->energy_masking[21*c+i],
-                        QCONST16(.25f, DB_SHIFT)), -QCONST16(2.0f, DB_SHIFT));
+                        QCONST16(.5f, DB_SHIFT)), -QCONST16(2.0f, DB_SHIFT));
                  if (mask > 0)
                     mask = HALF16(mask);
                  mask_sum += mask;
               }
            }
            /* Conservative rate reduction, we cut the masking in half */
-           masking_depth = HALF16(mask_sum / end*st->channels);
-           masking_depth += QCONST16(.4f, DB_SHIFT);
+           masking_depth = mask_sum / end*st->channels;
+           masking_depth += QCONST16(.2f, DB_SHIFT);
            rate_offset = (opus_int32)PSHR32(MULT16_16(srate, masking_depth), DB_SHIFT);
            rate_offset = MAX32(rate_offset, -2*st->silk_mode.bitRate/3);
-           st->silk_mode.bitRate += rate_offset;
+           /* Split the rate change between the SILK and CELT part for hybrid. */
+           if (st->bandwidth==OPUS_BANDWIDTH_SUPERWIDEBAND || st->bandwidth==OPUS_BANDWIDTH_FULLBAND)
+              st->silk_mode.bitRate += 3*rate_offset/5;
+           else
+              st->silk_mode.bitRate += rate_offset;
            bytes_target += rate_offset * frame_size / (8 * st->Fs);
         }
 
@@ -1737,7 +1744,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     st->prev_HB_gain = HB_gain;
     if (st->mode != MODE_HYBRID || st->stream_channels==1)
-       st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),IMAX(0,equiv_rate-32000));
+       st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),2*IMAX(0,equiv_rate-30000));
     if( !st->energy_masking && st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
@@ -1910,7 +1917,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     /* Count ToC and redundancy */
     ret += 1+redundancy_bytes;
-    if (!st->use_vbr && ret >= 3)
+    if (!st->use_vbr)
     {
        if (opus_packet_pad(data, ret, max_data_bytes) != OPUS_OK)
 

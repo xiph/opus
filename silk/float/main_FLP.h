@@ -201,6 +201,7 @@ void silk_quant_LTP_gains_FLP(
     silk_float                      B[ MAX_NB_SUBFR * LTP_ORDER ],      /* I/O  (Un-)quantized LTP gains                    */
     opus_int8                       cbk_index[ MAX_NB_SUBFR ],          /* O    Codebook index                              */
     opus_int8                       *periodicity_index,                 /* O    Periodicity index                           */
+    opus_int32                      *sum_log_gain_Q7,                   /* I/O  Cumulative max prediction gain  */
     const silk_float                W[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* I    Error weights                        */
     const opus_int                  mu_Q10,                             /* I    Mu value (R/D tradeoff)                     */
     const opus_int                  lowComplexity,                      /* I    Flag for low complexity                     */

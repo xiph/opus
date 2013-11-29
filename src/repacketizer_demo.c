@@ -81,6 +81,11 @@ int main(int argc, char *argv[])
             fprintf(stderr, "-merge parameter must be at least 1.\n");
             return EXIT_FAILURE;
          }
+         if(merge>48)
+         {
+            fprintf(stderr, "-merge parameter must be less than 48.\n");
+            return EXIT_FAILURE;
+         }
          i++;
       } else if (strcmp(argv[i], "-split")==0)
          split = 1;

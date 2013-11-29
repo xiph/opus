@@ -197,10 +197,12 @@ static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
    return OPUS_OK;
 }
 
-OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
+#ifdef CUSTOM_MODES
+int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
 {
    return opus_custom_encoder_init_arch(st, mode, channels, opus_select_arch());
 }
+#endif
 
 int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels,
                       int arch)
@@ -495,6 +497,8 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
       for (i=0;i<Nu;i++)
          inp[i*upsample] = MAX32(-65536.f, MIN32(65536.f,inp[i*upsample]));
    }
+#else
+   (void)clip; /* Avoids a warning about clip being unused. */
 #endif
    m = *mem;
 #ifdef CUSTOM_MODES
@@ -1802,25 +1806,18 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    if (C==2)
    {
-      int effectiveRate;
-
       static const opus_val16 intensity_thresholds[21]=
       /* 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19  20  off*/
-        { 16,21,23,25,27,29,31,33,35,38,42,46,50,54,58,63,68,75,84,102,130};
+        {  1, 2, 3, 4, 5, 6, 7, 8,16,24,36,44,50,56,62,67,72,79,88,106,134};
       static const opus_val16 intensity_histeresis[21]=
-        {  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6,  8, 12};
+        {  1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 5, 6,  8, 8};
 
       /* Always use MS for 2.5 ms frames until we can do a better analysis */
       if (LM!=0)
          dual_stereo = stereo_analysis(mode, X, LM, N);
 
-      /* Account for coarse energy */
-      effectiveRate = (8*effectiveBytes - 80)>>LM;
-
-      /* effectiveRate in kb/s */
-      effectiveRate = 2*effectiveRate/5;
-
-      st->intensity = hysteresis_decision((opus_val16)effectiveRate, intensity_thresholds, intensity_histeresis, 21, st->intensity);
+      st->intensity = hysteresis_decision((opus_val16)equiv_rate/1000,
+            intensity_thresholds, intensity_histeresis, 21, st->intensity);
       st->intensity = IMIN(st->end,IMAX(st->start, st->intensity));
    }
 

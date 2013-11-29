@@ -308,13 +308,6 @@ int main(int argc, char *argv[])
     }
     sampling_rate = (opus_int32)atol(argv[args]);
     args++;
-    channels = atoi(argv[args]);
-    args++;
-    if (!decode_only)
-    {
-       bitrate_bps = (opus_int32)atol(argv[args]);
-       args++;
-    }
 
     if (sampling_rate != 8000 && sampling_rate != 12000
      && sampling_rate != 16000 && sampling_rate != 24000
@@ -325,6 +318,21 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
     frame_size = sampling_rate/50;
+
+    channels = atoi(argv[args]);
+    args++;
+
+    if (channels < 1 || channels > 2)
+    {
+        fprintf(stderr, "Opus_demo supports only 1 or 2 channels.\n");
+        return EXIT_FAILURE;
+    }
+
+    if (!decode_only)
+    {
+       bitrate_bps = (opus_int32)atol(argv[args]);
+       args++;
+    }
 
     /* defaults: */
     use_vbr = 1;

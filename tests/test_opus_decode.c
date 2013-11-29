@@ -1,4 +1,4 @@
-/* Copyright (c) 2011 Xiph.Org Foundation
+/* Copyright (c) 2011-2013 Xiph.Org Foundation
    Written by Gregory Maxwell */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -373,6 +373,49 @@ int test_decoder_code0(int no_fuzz)
    return 0;
 }
 
+#ifndef DISABLE_FLOAT_API
+void test_soft_clip(void)
+{
+   int i,j;
+   float x[1024];
+   float s[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+   fprintf(stdout,"  Testing opus_pcm_soft_clip... ");
+   for(i=0;i<1024;i++)
+   {
+      for (j=0;j<1024;j++)
+      {
+        x[j]=(i&255)*(1/32.f)-4.f;
+      }
+      opus_pcm_soft_clip(&x[i],1024-i,1,s);
+      for (j=i;j<1024;j++)
+      {
+        if(x[i]>1.f)test_failed();
+        if(x[i]<-1.f)test_failed();
+      }
+   }
+   for(i=1;i<9;i++)
+   {
+      for (j=0;j<1024;j++)
+      {
+        x[j]=(i&255)*(1/32.f)-4.f;
+      }
+      opus_pcm_soft_clip(x,1024/i,i,s);
+      for (j=0;j<(1024/i)*i;j++)
+      {
+        if(x[i]>1.f)test_failed();
+        if(x[i]<-1.f)test_failed();
+      }
+   }
+   opus_pcm_soft_clip(x,0,1,s);
+   opus_pcm_soft_clip(x,1,0,s);
+   opus_pcm_soft_clip(x,1,1,0);
+   opus_pcm_soft_clip(x,1,-1,s);
+   opus_pcm_soft_clip(x,-1,1,s);
+   opus_pcm_soft_clip(0,1,1,s);
+   printf("OK.\n");
+}
+#endif
+
 int main(int _argc, char **_argv)
 {
    const char * oversion;
@@ -405,6 +448,9 @@ int main(int _argc, char **_argv)
      into the decoders. This is helpful because garbage data
      may cause the decoders to clip, which angers CLANG IOC.*/
    test_decoder_code0(getenv("TEST_OPUS_NOFUZZ")!=NULL);
+#ifndef DISABLE_FLOAT_API
+   test_soft_clip();
+#endif
 
    return 0;
 }
