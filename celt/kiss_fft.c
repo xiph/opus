@@ -41,6 +41,95 @@
 #include "mathops.h"
 #include "stack_alloc.h"
 
+#ifdef FIXED_POINT
+
+#define S_MUL_ADD(a, b, c, d) (S_MUL(a,b)+S_MUL(c,d))
+#define S_MUL_SUB(a, b, c, d) (S_MUL(a,b)-S_MUL(c,d))
+
+#undef S_MUL_ADD
+static inline int S_MUL_ADD(int a, int b, int c, int d) {
+    int m;
+    long long ac1 = ((long long)a * (long long)b);
+    long long ac2 = ((long long)c * (long long)d);
+    ac1 += ac2;
+    ac1 = ac1>>15;
+    m = (int )(ac1);
+    return m;
+}
+
+
+#undef S_MUL_SUB
+static inline int S_MUL_SUB(int a, int b, int c, int d) {
+    int m;
+    long long ac1 = ((long long)a * (long long)b);
+    long long ac2 = ((long long)c * (long long)d);
+    ac1 -= ac2;
+    ac1 = ac1>>15;
+    m = (int )(ac1);
+    return m;
+}
+
+
+#undef C_MUL
+#   define C_MUL(m,a,b) (m=C_MUL_fun(a,b))
+static inline kiss_fft_cpx C_MUL_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
+    kiss_fft_cpx m;
+    long long ac1 = ((long long)a.r * (long long)b.r);
+    long long ac2 = ((long long)a.i * (long long)b.i);
+    ac1 = ac1 - ac2;
+    ac1 = ac1 >> 15;
+    m.r  = ac1;
+
+    ac1 = ((long long)a.r * (long long)b.i);
+    ac2 = ((long long)a.i * (long long)b.r);
+    ac1 = ac1 + ac2;
+    ac1 = ac1 >> 15;
+    m.i = ac1;
+
+    return m;
+}
+
+
+#undef C_MUL4
+#   define C_MUL4(m,a,b) (m=C_MUL4_fun(a,b))
+static inline kiss_fft_cpx C_MUL4_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
+    kiss_fft_cpx m;
+    long long ac1 = ((long long)a.r * (long long)b.r);
+    long long ac2 = ((long long)a.i * (long long)b.i);
+    ac1 = ac1 - ac2;
+    ac1 = ac1 >> 17;
+    m.r  = ac1;
+
+    ac1 = ((long long)a.r * (long long)b.i);
+    ac2 = ((long long)a.i * (long long)b.r);
+    ac1 = ac1 + ac2;
+    ac1 = ac1 >> 17;
+    m.i = ac1;
+
+    return m;
+}
+
+
+#undef C_MULC
+#   define C_MULC(m,a,b) (m=C_MULC_fun(a,b))
+static inline kiss_fft_cpx C_MULC_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
+    kiss_fft_cpx m;
+
+    long long ac1 = ((long long)a.r * (long long)b.r);
+    long long ac2 = ((long long)a.i * (long long)b.i);
+    ac1 = ac1 + ac2;
+    ac1 = ac1 >> 15;
+    m.r = ac1;
+
+    ac1 = ((long long)a.i * (long long)b.r);
+    ac2 = ((long long)a.r * (long long)b.i);
+    ac1 = ac1 - ac2;
+    ac1 = ac1 >> 15;
+    m.i = ac1;
+
+    return m;
+}
+#endif /* FIXED_POINT */
 /* The guts header contains all the multiplication and addition macros that are defined for
    complex numbers.  It also delares the kf_ internal functions.
 */
@@ -352,19 +441,20 @@ static void kf_bfly5(
          Fout0->r += scratch[7].r + scratch[8].r;
          Fout0->i += scratch[7].i + scratch[8].i;
 
-         scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
-         scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
+         scratch[5].r = scratch[0].r + S_MUL_ADD(scratch[7].r,ya.r,scratch[8].r,yb.r);
+         scratch[5].i = scratch[0].i + S_MUL_ADD(scratch[7].i,ya.r,scratch[8].i,yb.r);
 
-         scratch[6].r =  S_MUL(scratch[10].i,ya.i) + S_MUL(scratch[9].i,yb.i);
-         scratch[6].i = -S_MUL(scratch[10].r,ya.i) - S_MUL(scratch[9].r,yb.i);
+         scratch[6].r =  S_MUL_ADD(scratch[10].i,ya.i,scratch[9].i,yb.i);
+         scratch[6].i =  -S_MUL_ADD(scratch[10].r,ya.i,scratch[9].r,yb.i);
 
          C_SUB(*Fout1,scratch[5],scratch[6]);
          C_ADD(*Fout4,scratch[5],scratch[6]);
 
-         scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
-         scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
-         scratch[12].r = - S_MUL(scratch[10].i,yb.i) + S_MUL(scratch[9].i,ya.i);
-         scratch[12].i = S_MUL(scratch[10].r,yb.i) - S_MUL(scratch[9].r,ya.i);
+         scratch[11].r = scratch[0].r + S_MUL_ADD(scratch[7].r,yb.r,scratch[8].r,ya.r);
+         scratch[11].i = scratch[0].i + S_MUL_ADD(scratch[7].i,yb.r,scratch[8].i,ya.r);
+
+         scratch[12].r =  S_MUL_SUB(scratch[9].i,ya.i,scratch[10].i,yb.i);
+         scratch[12].i =  S_MUL_SUB(scratch[10].r,yb.i,scratch[9].r,ya.i);
 
          C_ADD(*Fout2,scratch[11],scratch[12]);
          C_SUB(*Fout3,scratch[11],scratch[12]);
@@ -420,19 +510,20 @@ static void ki_bfly5(
          Fout0->r += scratch[7].r + scratch[8].r;
          Fout0->i += scratch[7].i + scratch[8].i;
 
-         scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
-         scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
+         scratch[5].r = scratch[0].r + S_MUL_ADD(scratch[7].r,ya.r,scratch[8].r,yb.r);
+         scratch[5].i = scratch[0].i + S_MUL_ADD(scratch[7].i,ya.r,scratch[8].i,yb.r);
 
-         scratch[6].r = -S_MUL(scratch[10].i,ya.i) - S_MUL(scratch[9].i,yb.i);
-         scratch[6].i =  S_MUL(scratch[10].r,ya.i) + S_MUL(scratch[9].r,yb.i);
+         scratch[6].r = -S_MUL_ADD(scratch[10].i,ya.i,scratch[9].i,yb.i);
+         scratch[6].i =  S_MUL_ADD(scratch[10].r,ya.i,scratch[9].r,yb.i);
 
          C_SUB(*Fout1,scratch[5],scratch[6]);
          C_ADD(*Fout4,scratch[5],scratch[6]);
 
-         scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
-         scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
-         scratch[12].r =  S_MUL(scratch[10].i,yb.i) - S_MUL(scratch[9].i,ya.i);
-         scratch[12].i = -S_MUL(scratch[10].r,yb.i) + S_MUL(scratch[9].r,ya.i);
+         scratch[11].r = scratch[0].r + S_MUL_ADD(scratch[7].r,yb.r,scratch[8].r,ya.r);
+         scratch[11].i = scratch[0].i + S_MUL_ADD(scratch[7].i,yb.r,scratch[8].i,ya.r);
+
+         scratch[12].r =  S_MUL_SUB(scratch[10].i,yb.i,scratch[9].i,ya.i);
+         scratch[12].i =  S_MUL_SUB(scratch[9].r,ya.i,scratch[10].r,yb.i);
 
          C_ADD(*Fout2,scratch[11],scratch[12]);
          C_SUB(*Fout3,scratch[11],scratch[12]);

@@ -46,19 +46,21 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
    for (i=0;i<len-stride;i++)
    {
       celt_norm x1, x2;
+
       x1 = Xptr[0];
       x2 = Xptr[stride];
-      Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1), 15));
-      *Xptr++      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2), 15));
+      Xptr[stride] = EXTRACT16(MULT16_16_Q15_ADD(c,x2,s,x1));
+      *Xptr++      = EXTRACT16(MULT16_16_Q15_SUB(c,x1,s,x2));
    }
    Xptr = &X[len-2*stride-1];
    for (i=len-2*stride-1;i>=0;i--)
    {
       celt_norm x1, x2;
+
       x1 = Xptr[0];
       x2 = Xptr[stride];
-      Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1), 15));
-      *Xptr--      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2), 15));
+      Xptr[stride] = EXTRACT16(MULT16_16_Q15_ADD(c,x2,s,x1));
+      *Xptr--      = EXTRACT16(MULT16_16_Q15_SUB(c,x1,s,x2));
    }
 }
 
@@ -324,6 +326,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
 {
    int i;
    opus_val32 Ryy;
+   int X0;
    unsigned collapse_mask;
    VARDECL(int, iy);
    SAVE_STACK;
@@ -334,9 +337,14 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    decode_pulses(iy, N, K, dec);
    Ryy = 0;
    i=0;
+   {
+   long long ac1 = 0;
    do {
-      Ryy = MAC16_16(Ryy, iy[i], iy[i]);
+        X0 = (int)iy[i];
+        ac1 += ( ((long long)X0) * ((long long)X0) );
    } while (++i < N);
+   Ryy = ac1;
+   }
    normalise_residual(iy, X, N, Ryy, gain);
    exp_rotation(X, N, -1, B, K, spread);
    collapse_mask = extract_collapse_mask(iy, N, B);
@@ -354,11 +362,23 @@ void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
    opus_val16 g;
    opus_val32 t;
    celt_norm *xptr = X;
-   for (i=0;i<N;i++)
+
+   int X0, X2, X3, X1;
    {
-      E = MAC16_16(E, *xptr, *xptr);
-      xptr++;
+   long long ac1 = ((long long)E);
+   /*if(N %4)
+       printf("error");*/
+   for (i=0;i<N;i+=2)
+   {
+      X0 = (int)*xptr++;
+      ac1 += ( ((long long)X0) * ((long long)X0) );
+
+      X1 = (int)*xptr++;
+      ac1 += ( ((long long)X1) * ((long long)X1) );
    }
+     E = ac1;
+   }
+
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
 #endif

@@ -33,20 +33,68 @@
 #ifndef FIXED_GENERIC_H
 #define FIXED_GENERIC_H
 
+static inline int MULT16_16_Q15_ADD(int a, int b, int c, int d) {
+    int m;
+    long long ac1 = ((long long)a * (long long)b);
+    long long ac2 = ((long long)c * (long long)d);
+    ac1 += ac2;
+    ac1 = ac1>>15;
+    m = (int )(ac1);
+    return m;
+}
+
+static inline int MULT16_16_Q15_SUB(int a, int b, int c, int d) {
+    int m;
+    long long ac1 = ((long long)a * (long long)b);
+    long long ac2 = ((long long)c * (long long)d);
+    ac1 -= ac2;
+    ac1 = ac1>>15;
+    m = (int )(ac1);
+    return m;
+}
+
 /** Multiply a 16-bit signed value by a 16-bit unsigned value. The result is a 32-bit signed value */
 #define MULT16_16SU(a,b) ((opus_val32)(opus_val16)(a)*(opus_val32)(opus_uint16)(b))
 
 /** 16x32 multiplication, followed by a 16-bit shift right. Results fits in 32 bits */
-#define MULT16_32_Q16(a,b) ADD32(MULT16_16((a),SHR((b),16)), SHR(MULT16_16SU((a),((b)&0x0000ffff)),16))
+static inline int MULT16_32_Q16(int a, int b)
+{
+    int c;
+    long long ac1 = ((long long)a * (long long)b);
+    ac1 = ac1>>16;
+    c =(int)(ac1);
+    return c;
+}
 
 /** 16x32 multiplication, followed by a 16-bit shift right (round-to-nearest). Results fits in 32 bits */
-#define MULT16_32_P16(a,b) ADD32(MULT16_16((a),SHR((b),16)), PSHR(MULT16_16((a),((b)&0x0000ffff)),16))
+static inline int MULT16_32_P16(int a, int b)
+{
+    int c;
+    long long ac1 = ((long long)a * (long long)b);
+    ac1 = ac1>>16;
+    c =(int)(ac1);
+    return c;
+}
 
 /** 16x32 multiplication, followed by a 15-bit shift right. Results fits in 32 bits */
-#define MULT16_32_Q15(a,b) ADD32(SHL(MULT16_16((a),SHR((b),16)),1), SHR(MULT16_16SU((a),((b)&0x0000ffff)),15))
+static inline int MULT16_32_Q15(int a, int b)
+{
+    int c;
+    long long ac1 = ((long long)a * (long long)b);
+    ac1 = ac1>>15;
+    c =(int)(ac1);
+    return c;
+}
 
 /** 32x32 multiplication, followed by a 31-bit shift right. Results fits in 32 bits */
-#define MULT32_32_Q31(a,b) ADD32(ADD32(SHL(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),15)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),15))
+static inline int MULT32_32_Q31(int a, int b)
+{
+    int c;
+    long long ac1 = ((long long)a * (long long)b);
+    ac1 = ac1>>31;
+    c =(int)(ac1);
+    return c;
+}
 
 /** Compile-time conversion of float constant to 16-bit value */
 #define QCONST16(x,bits) ((opus_val16)(.5+(x)*(((opus_val32)1)<<(bits))))
@@ -123,7 +171,15 @@
 
 #define MULT16_16_P13(a,b) (SHR(ADD32(4096,MULT16_16((a),(b))),13))
 #define MULT16_16_P14(a,b) (SHR(ADD32(8192,MULT16_16((a),(b))),14))
-#define MULT16_16_P15(a,b) (SHR(ADD32(16384,MULT16_16((a),(b))),15))
+static inline int MULT16_16_P15(int a, int b)
+{
+    int r;
+    int ac1 = a*b;
+    ac1 += 16384;
+    ac1 = ac1 >> 15;
+    r = (int)(ac1);
+    return r;
+}
 
 /** Divide a 32-bit value by a 16-bit value. Result fits in 16 bits */
 #define DIV32_16(a,b) ((opus_val16)(((opus_val32)(a))/((opus_val16)(b))))

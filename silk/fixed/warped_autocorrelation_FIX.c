@@ -45,43 +45,126 @@ void silk_warped_autocorrelation_FIX(
 )
 {
     opus_int   n, i, lsh;
-    opus_int32 tmp1_QS, tmp2_QS;
+    opus_int32 tmp1_QS, tmp2_QS, tmp3_QS, tmp4_QS, tmp5_QS, tmp6_QS, tmp7_QS, tmp8_QS,start_1, start_2, start_3;
     opus_int32 state_QS[ MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
     opus_int64 corr_QC[  MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
+    opus_int64 temp64;
+    long long temp2_64=0;
+
+    opus_int32 val;
+    val = 2 * QS - QC;
+
 
     /* Order must be even */
     silk_assert( ( order & 1 ) == 0 );
     silk_assert( 2 * QS - QC >= 0 );
 
     /* Loop over samples */
-    for( n = 0; n < length; n++ ) {
+    for( n = 0; n < length; n=n+4 ) {
+
+        tmp1_QS = silk_LSHIFT32( (opus_int32)input[ n ], QS );
+        start_1 = tmp1_QS;
+        tmp3_QS = silk_LSHIFT32( (opus_int32)input[ n+1], QS );
+        start_2 = tmp3_QS;        
+        tmp5_QS = silk_LSHIFT32( (opus_int32)input[ n+2], QS );
+        start_3 = tmp5_QS;        
+        tmp7_QS = silk_LSHIFT32( (opus_int32)input[ n+3], QS );
+
+
+        /* Loop over allpass sections */
+        for( i = 0; i < order; i += 2 ) {
+
+            /* Output of allpass section */
+            tmp2_QS = silk_SMLAWB( state_QS[ i ], state_QS[ i + 1 ] - tmp1_QS, warping_Q16 );
+            corr_QC[  i ] += ( ((long long)tmp1_QS) * ((long long)start_1) );
+            tmp4_QS = silk_SMLAWB( tmp1_QS, tmp2_QS - tmp3_QS, warping_Q16 );
+            corr_QC[  i ] += ( ((long long)tmp3_QS) * ((long long)start_2) );
+
+            tmp6_QS = silk_SMLAWB( tmp3_QS, tmp4_QS - tmp5_QS, warping_Q16 );
+            corr_QC[  i ] += ( ((long long)tmp5_QS) * ((long long)start_3) );
+
+            tmp8_QS = silk_SMLAWB( tmp5_QS, tmp6_QS - tmp7_QS, warping_Q16 );
+            state_QS[ i ]  = tmp7_QS;
+            corr_QC[  i ] += ( ((long long)tmp7_QS) * ((long long)state_QS[0]) );
+
+            /* Output of allpass section */
+            tmp1_QS = silk_SMLAWB( state_QS[ i + 1 ], state_QS[ i + 2 ] - tmp2_QS, warping_Q16 );
+            corr_QC[  i+1 ] += ( ((long long)tmp2_QS) * ((long long)start_1) );
+
+            tmp3_QS = silk_SMLAWB( tmp2_QS, tmp1_QS - tmp4_QS, warping_Q16 );
+            corr_QC[  i+1 ] += ( ((long long)tmp4_QS) * ((long long)start_2) );
+
+            tmp5_QS = silk_SMLAWB( tmp4_QS, tmp3_QS - tmp6_QS, warping_Q16 );
+            corr_QC[  i+1 ] += ( ((long long)tmp6_QS) * ((long long)start_3) );
+
+            tmp7_QS = silk_SMLAWB( tmp6_QS, tmp5_QS - tmp8_QS, warping_Q16 );
+            state_QS[ i + 1 ]  = tmp8_QS;
+            corr_QC[  i+1 ] += ( ((long long)tmp8_QS) * ((long long)state_QS[ 0 ]) );
+
+        }
+        state_QS[ order ] = tmp7_QS;
+        corr_QC[ order ] += ( ((long long)tmp1_QS) * ((long long)start_1) );
+        corr_QC[ order ] += ( ((long long)tmp3_QS) * ((long long)start_2) );
+        corr_QC[ order ] += ( ((long long)tmp5_QS) * ((long long)start_3) );
+        corr_QC[ order ] += ( ((long long)tmp7_QS) * ((long long)state_QS[ 0 ]) );
+    }
+
+    for(;n< length; n++ ) {
         tmp1_QS = silk_LSHIFT32( (opus_int32)input[ n ], QS );
         /* Loop over allpass sections */
         for( i = 0; i < order; i += 2 ) {
             /* Output of allpass section */
             tmp2_QS = silk_SMLAWB( state_QS[ i ], state_QS[ i + 1 ] - tmp1_QS, warping_Q16 );
-            state_QS[ i ]  = tmp1_QS;
-            corr_QC[  i ] += silk_RSHIFT64( silk_SMULL( tmp1_QS, state_QS[ 0 ] ), 2 * QS - QC );
+            state_QS[ i ] = tmp1_QS;
+            corr_QC[ i ] += ( ((long long)tmp1_QS) * ((long long)state_QS[ 0 ]) );
+
             /* Output of allpass section */
             tmp1_QS = silk_SMLAWB( state_QS[ i + 1 ], state_QS[ i + 2 ] - tmp2_QS, warping_Q16 );
             state_QS[ i + 1 ]  = tmp2_QS;
-            corr_QC[  i + 1 ] += silk_RSHIFT64( silk_SMULL( tmp2_QS, state_QS[ 0 ] ), 2 * QS - QC );
+            corr_QC[ i+1 ] += ( ((long long)tmp2_QS) * ((long long)state_QS[ 0 ]) );
         }
         state_QS[ order ] = tmp1_QS;
-        corr_QC[  order ] += silk_RSHIFT64( silk_SMULL( tmp1_QS, state_QS[ 0 ] ), 2 * QS - QC );
+        corr_QC[ order ] += ( ((long long)tmp1_QS) * ((long long)state_QS[ 0 ]) );
     }
 
-    lsh = silk_CLZ64( corr_QC[ 0 ] ) - 35;
+    temp64 =  corr_QC[ 0 ];
+    if(val >= 0)
+        temp64 = temp64 >> val;
+    else
+        temp64 = temp64 << (-val);
+
+    lsh = silk_CLZ64( temp64 ) - 35;
     lsh = silk_LIMIT( lsh, -12 - QC, 30 - QC );
     *scale = -( QC + lsh );
     silk_assert( *scale >= -30 && *scale <= 12 );
     if( lsh >= 0 ) {
         for( i = 0; i < order + 1; i++ ) {
-            corr[ i ] = (opus_int32)silk_CHECK_FIT32( silk_LSHIFT64( corr_QC[ i ], lsh ) );
+            temp64 = corr_QC[ i ];
+            if(val >= 0)
+                temp64 = temp64 >> val;
+            else
+                temp64 = temp64 << (-val);
+
+            if( (-lsh) >= 0)
+                temp2_64 = temp64 >> (-lsh);
+            else
+                temp2_64 = temp64 << (lsh);
+
+            corr[ i ] = (opus_int32)silk_CHECK_FIT32( temp2_64 );
         }
     } else {
         for( i = 0; i < order + 1; i++ ) {
-            corr[ i ] = (opus_int32)silk_CHECK_FIT32( silk_RSHIFT64( corr_QC[ i ], -lsh ) );
+            temp64 = corr_QC[ i ];
+            if(val >= 0)
+                temp64 = temp64 >> val;
+            else
+                temp64 = temp64 << (-val);
+
+            if( (-lsh) >= 0)
+                temp2_64 = temp64 >> (-lsh);
+            else
+                temp2_64 = temp64 << (lsh);
+            corr[ i ] = (opus_int32)silk_CHECK_FIT32( temp2_64 );
         }
     }
     silk_assert( corr_QC[ 0 ] >= 0 ); /* If breaking, decrease QC*/

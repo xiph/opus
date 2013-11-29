@@ -136,8 +136,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       for(i=0;i<((overlap+3)>>2);i++)
       {
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-         *yp++ = MULT16_32_Q15(*wp2, xp1[N2]) + MULT16_32_Q15(*wp1,*xp2);
-         *yp++ = MULT16_32_Q15(*wp1, *xp1)    - MULT16_32_Q15(*wp2, xp2[-N2]);
+         *yp++ = S_MUL_ADD(*wp2, xp1[N2],*wp1,*xp2);
+         *yp++ = S_MUL_SUB(*wp1, *xp1,*wp2, xp2[-N2]);
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -156,8 +156,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       for(;i<N4;i++)
       {
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         *yp++ =  -MULT16_32_Q15(*wp1, xp1[-N2]) + MULT16_32_Q15(*wp2, *xp2);
-         *yp++ = MULT16_32_Q15(*wp2, *xp1)     + MULT16_32_Q15(*wp1, xp2[N2]);
+         *yp++ =  S_MUL_SUB(*wp2, *xp2, *wp1, xp1[-N2]);
+         *yp++ = S_MUL_ADD(*wp2, *xp1, *wp1, xp2[N2]);
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -173,8 +173,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
          kiss_fft_scalar re, im, yr, yi;
          re = yp[0];
          im = yp[1];
-         yr = -S_MUL(re,t[i<<shift])  -  S_MUL(im,t[(N4-i)<<shift]);
-         yi = -S_MUL(im,t[i<<shift])  +  S_MUL(re,t[(N4-i)<<shift]);
+         yr = -S_MUL_ADD(re,t[i<<shift],im,t[(N4-i)<<shift]);
+         yi =  S_MUL_SUB(re,t[(N4-i)<<shift],im,t[i<<shift]);
          /* works because the cos is nearly one */
          *yp++ = yr + S_MUL(yi,sine);
          *yp++ = yi - S_MUL(yr,sine);
@@ -195,8 +195,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       for(i=0;i<N4;i++)
       {
          kiss_fft_scalar yr, yi;
-         yr = S_MUL(fp[1],t[(N4-i)<<shift]) + S_MUL(fp[0],t[i<<shift]);
-         yi = S_MUL(fp[0],t[(N4-i)<<shift]) - S_MUL(fp[1],t[i<<shift]);
+         yr = S_MUL_ADD(fp[1],t[(N4-i)<<shift],fp[0],t[i<<shift]);
+         yi = S_MUL_SUB(fp[0],t[(N4-i)<<shift],fp[1],t[i<<shift]);
          /* works because the cos is nearly one */
          *yp1 = yr - S_MUL(yi,sine);
          *yp2 = yi + S_MUL(yr,sine);;
@@ -238,8 +238,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
       for(i=0;i<N4;i++)
       {
          kiss_fft_scalar yr, yi;
-         yr = -S_MUL(*xp2, t[i<<shift]) + S_MUL(*xp1,t[(N4-i)<<shift]);
-         yi =  -S_MUL(*xp2, t[(N4-i)<<shift]) - S_MUL(*xp1,t[i<<shift]);
+         yr = S_MUL_SUB(*xp1,t[(N4-i)<<shift],*xp2, t[i<<shift]);
+         yi =  -S_MUL_ADD(*xp2, t[(N4-i)<<shift],*xp1,t[i<<shift]);
          /* works because the cos is nearly one */
          *yp++ = yr - S_MUL(yi,sine);
          *yp++ = yi + S_MUL(yr,sine);
@@ -268,8 +268,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          t0 = t[i<<shift];
          t1 = t[(N4-i)<<shift];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
-         yr = S_MUL(re,t0) - S_MUL(im,t1);
-         yi = S_MUL(im,t0) + S_MUL(re,t1);
+         yr = S_MUL_SUB(re,t0,im,t1);
+         yi = S_MUL_ADD(im,t0,re,t1);
          re = yp1[0];
          im = yp1[1];
          /* works because the cos is nearly one */
@@ -279,8 +279,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          t0 = t[(N4-i-1)<<shift];
          t1 = t[(i+1)<<shift];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
-         yr = S_MUL(re,t0) - S_MUL(im,t1);
-         yi = S_MUL(im,t0) + S_MUL(re,t1);
+         yr = S_MUL_SUB(re,t0,im,t1);
+         yi = S_MUL_ADD(im,t0,re,t1);
          /* works because the cos is nearly one */
          yp1[0] = -(yr - S_MUL(yi,sine));
          yp0[1] = yi + S_MUL(yr,sine);
