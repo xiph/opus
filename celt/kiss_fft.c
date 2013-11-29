@@ -43,9 +43,6 @@
 
 #ifdef FIXED_POINT
 
-#define S_MUL_ADD(a, b, c, d) (S_MUL(a,b)+S_MUL(c,d))
-#define S_MUL_SUB(a, b, c, d) (S_MUL(a,b)-S_MUL(c,d))
-
 #undef S_MUL_ADD
 static inline int S_MUL_ADD(int a, int b, int c, int d) {
     int m;

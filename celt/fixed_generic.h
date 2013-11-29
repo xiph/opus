@@ -33,6 +33,9 @@
 #ifndef FIXED_GENERIC_H
 #define FIXED_GENERIC_H
 
+#define S_MUL_ADD(a, b, c, d) (S_MUL(a,b)+S_MUL(c,d))
+#define S_MUL_SUB(a, b, c, d) (S_MUL(a,b)-S_MUL(c,d))
+
 static inline int MULT16_16_Q15_ADD(int a, int b, int c, int d) {
     int m;
     long long ac1 = ((long long)a * (long long)b);
