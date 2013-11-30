@@ -394,9 +394,9 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec(
             temp64 += ( ((long long)pred_lag_ptr[ -2 ]) * ((long long)b_Q14_2) );
             temp64 += ( ((long long)pred_lag_ptr[ -3 ]) * ((long long)b_Q14_3) );
             temp64 += ( ((long long)pred_lag_ptr[ -4 ]) * ((long long)b_Q14_4) );
+            temp64 += 32768;
             temp64 = temp64 >> 16;
             LTP_pred_Q14 = temp64;
-            LTP_pred_Q14 += 2;
             LTP_pred_Q14 = silk_LSHIFT( LTP_pred_Q14, 1 );                          /* Q13 -> Q14 */
             pred_lag_ptr++;
         } else {
@@ -446,10 +446,10 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec(
                 temp64 += ( ((long long)psLPC_Q14[ -14 ]) * ((long long)a_Q12_14) );
                 temp64 += ( ((long long)psLPC_Q14[ -15 ]) * ((long long)a_Q12_15) );
             }
+            temp64 += 32768;
             temp64 = temp64 >> 16;
             LPC_pred_Q14 = temp64;
 
-            LPC_pred_Q14 = LPC_pred_Q14 + silk_RSHIFT( predictLPCOrder, 1 );
             LPC_pred_Q14 = silk_LSHIFT( LPC_pred_Q14, 4 );                              /* Q10 -> Q14 */
 
             /* Noise shape feedback */
@@ -480,10 +480,10 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec(
             }
             psDD->sAR2_Q14[ shapingLPCOrder - 1 ] = tmp1;
             temp64 += ( ((long long)tmp1) * ((long long)AR_shp_Q13[ shapingLPCOrder - 1 ]) );
+            temp64 += 32768;
             temp64 = temp64 >> 16;
             n_AR_Q14 = temp64;
 
-            n_AR_Q14 += silk_RSHIFT( shapingLPCOrder, 1 );
             n_AR_Q14 = silk_LSHIFT( n_AR_Q14, 1 );                                      /* Q11 -> Q12 */
             n_AR_Q14 = silk_SMLAWB( n_AR_Q14, psDD->LF_AR_Q14, Tilt_Q14 );              /* Q12 */
             n_AR_Q14 = silk_LSHIFT( n_AR_Q14, 2 );                                      /* Q12 -> Q14 */
