@@ -182,8 +182,8 @@ AS_IF([test "$enable_float_approx" = "yes"],[
 ])
 
 AC_ARG_ENABLE([asm],
-    [AS_HELP_STRING([--disable-asm], [Disable assembly optimizations])],,
-    [enable_asm=yes])
+    [AS_HELP_STRING([--enable-asm], [Enable assembly optimizations])],,
+    [enable_asm=no])
 
 AC_ARG_ENABLE([rtcd],
     [AS_HELP_STRING([--disable-rtcd], [Disable run-time CPU capabilities detection])],,
