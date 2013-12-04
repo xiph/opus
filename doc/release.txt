@@ -1,6 +1,6 @@
 = Release checklist =
 
-Source release:
+== Source release ==
 
 - Update OPUS_LT_* API versioning in configure.ac.
 - Check for uncommitted changes to master.
@@ -29,5 +29,14 @@ to https://ftp.mozilla.org/pub/mozilla.org/opus/
 Website updates are committed to https://svn.xiph.org/websites/opus-codec.org/
 which propagates to http://opus-codec.org/
 
+== Binary release ==
+
+We usually build opus-tools binaries for MacOS and Windows.
+
 Binary releases are copied manually to
 ftp.mozilla.org:/pub/mozilla.org/opus/win32/
+
+== Website updates ==
+
+For major releases, recreate the files on http://opus-codec.org/examples/
+with the next encoder.
