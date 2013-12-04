@@ -1,0 +1,33 @@
+= Release checklist =
+
+Source release:
+
+- Update OPUS_LT_* API versioning in configure.ac.
+- Check for uncommitted changes to master.
+- Tag the release commit with 'git tag -s vN.M'.
+ - Include release notes in the tag annotation.
+- Verify 'make distcheck' produces a tarball with
+  the desired name.
+- Push tag to public repo.
+- Upload source package 'opus-${version}.tar.gz' 
+ - Add to https://svn.xiph.org/releases/opus/
+ - Update checksum files
+ - svn commit
+ - Copy to ftp.mozilla.org:/pub/mozilla.org/opus/
+   and verify file permissions.
+- Upload source packge 'opus-${version}.tar.gz'
+  to website and verify file permissions.
+- Add release notes to https://svn.xiph.org/websites/opus-codec.org/
+- Update links and checksums on the downloads page.
+- Add a copy of the documentation to <http://www.opus-codec.org/docs/>
+  and update the links.
+
+Releases are commited to https://svn.xiph.org/releases/opus/
+which propagates to downloads.xiph.org, and copied manually
+to https://ftp.mozilla.org/pub/mozilla.org/opus/
+
+Website updates are committed to https://svn.xiph.org/websites/opus-codec.org/
+which propagates to http://opus-codec.org/
+
+Binary releases are copied manually to
+ftp.mozilla.org:/pub/mozilla.org/opus/win32/
