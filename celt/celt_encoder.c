@@ -469,7 +469,24 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
    int Nu;
 
    coef0 = coef[0];
+   m = *mem;
 
+#ifdef FIXED_POINT
+   /* Fast path for fixed-point in the normal 48kHz case */
+   if (coef[1] == 0 && upsample == 1)
+   {
+      for (i=0;i<N;i++)
+      {
+         opus_val16 x;
+         x = SCALEIN(pcmp[CC*i]);
+         /* Apply pre-emphasis */
+         inp[i] = SHL32(x, SIG_SHIFT) - m;
+         m = SHR32(MULT16_16(coef0, x), 15-SIG_SHIFT);
+      }
+      *mem = m;
+      return;
+   }
+#endif
 
    Nu = N/upsample;
    if (upsample!=1)
@@ -500,7 +517,6 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
 #else
    (void)clip; /* Avoids a warning about clip being unused. */
 #endif
-   m = *mem;
 #ifdef CUSTOM_MODES
    if (coef[1] != 0)
    {
