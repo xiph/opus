@@ -520,11 +520,11 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
    {
       for (i=0;i<N;i++)
       {
-         celt_sig x;
-         x = SHL32(inp[i], SIG_SHIFT);
+         opus_val16 x;
+         x = inp[i];
          /* Apply pre-emphasis */
-         inp[i] = x + m;
-         m = - MULT16_32_Q15(coef0, x);
+         inp[i] = SHL32(x, SIG_SHIFT) - m;
+         m = SHR32(MULT16_16(coef0, x), 15-SIG_SHIFT);
       }
    }
    *mem = m;
