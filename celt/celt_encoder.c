@@ -471,9 +471,8 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
    coef0 = coef[0];
    m = *mem;
 
-#ifdef FIXED_POINT
-   /* Fast path for fixed-point in the normal 48kHz case */
-   if (coef[1] == 0 && upsample == 1)
+   /* Fast path for the normal 48kHz case and no clipping */
+   if (coef[1] == 0 && upsample == 1 && !clip)
    {
       for (i=0;i<N;i++)
       {
@@ -486,7 +485,6 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
       *mem = m;
       return;
    }
-#endif
 
    Nu = N/upsample;
    if (upsample!=1)
@@ -495,17 +493,7 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
          inp[i] = 0;
    }
    for (i=0;i<Nu;i++)
-   {
-      celt_sig x;
-
-      x = SCALEIN(pcmp[CC*i]);
-#ifndef FIXED_POINT
-      /* Replace NaNs with zeros */
-      if (!(x==x))
-         x = 0;
-#endif
-      inp[i*upsample] = x;
-   }
+      inp[i*upsample] = SCALEIN(pcmp[CC*i]);
 
 #ifndef FIXED_POINT
    if (clip)
@@ -1490,8 +1478,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       enc->nbits_total+=tell-ec_tell(enc);
    }
    c=0; do {
+      int need_clip=0;
+#ifndef FIXED_POINT
+      need_clip = st->clip && sample_max>65536.f;
+#endif
       celt_preemphasis(pcm+c, in+c*(N+st->overlap)+st->overlap, N, CC, st->upsample,
-                  mode->preemph, st->preemph_memE+c, st->clip);
+                  mode->preemph, st->preemph_memE+c, need_clip);
    } while (++c<CC);
 
 
