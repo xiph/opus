@@ -333,9 +333,9 @@ AS_IF([test x"${enable_asm}" = x"yes"],[
 
 AM_CONDITIONAL([CPU_ARM], [test "$cpu_arm" = "yes"])
 AM_CONDITIONAL([OPUS_ARM_INLINE_ASM],
-    [test x"${inline_optimization:0:3}" = x"ARM"])
+    [test x"${inline_optimization%% *}" = x"ARM"])
 AM_CONDITIONAL([OPUS_ARM_EXTERNAL_ASM],
-    [test x"${asm_optimization:0:3}" = x"ARM"])
+    [test x"${asm_optimization%% *}" = x"ARM"])
 
 AS_IF([test x"$enable_rtcd" = x"yes"],[
     AS_IF([test x"$rtcd_support" != x"no"],[
