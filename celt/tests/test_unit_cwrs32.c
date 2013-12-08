@@ -127,7 +127,7 @@ int main(void){
         cwrsi(n,k,i,y);
 #endif
         sy=0;
-        for(j=0;j<n;j++)sy+=ABS(y[j]);
+        for(j=0;j<n;j++)sy+=abs(y[j]);
         if(sy!=k){
           fprintf(stderr,"N=%d Pulse count mismatch in cwrsi (%d!=%d).\n",
            n,sy,k);
