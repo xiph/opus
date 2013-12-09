@@ -276,8 +276,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       }
       /*printf("\n");*/
       /* First few samples are bad because we don't propagate the memory */
-      for (i=0;i<12;i++)
-         tmp[i] = 0;
+      OPUS_CLEAR(tmp, 12);
 
 #ifdef FIXED_POINT
       /* Normalize tmp to max range */
@@ -453,8 +452,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS
          int bound = B*N/upsample;
          for (i=0;i<bound;i++)
             out[c*B*N+i] *= upsample;
-         for (;i<B*N;i++)
-            out[c*B*N+i] = 0;
+         OPUS_CLEAR(&out[c*B*N+bound], B*N-bound);
       } while (++c<C);
    }
 }
@@ -489,8 +487,7 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
    Nu = N/upsample;
    if (upsample!=1)
    {
-      for (i=0;i<N;i++)
-         inp[i] = 0;
+      OPUS_CLEAR(inp, N);
    }
    for (i=0;i<Nu;i++)
       inp[i*upsample] = SCALEIN(pcmp[CC*i]);
@@ -586,8 +583,7 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
       N = (m->eBands[i+1]-m->eBands[i])<<LM;
       /* band is too narrow to be split down to LM=-1 */
       narrow = (m->eBands[i+1]-m->eBands[i])==1;
-      for (j=0;j<N;j++)
-         tmp[j] = X[tf_chan*N0 + j+(m->eBands[i]<<LM)];
+      OPUS_COPY(tmp, &X[tf_chan*N0 + (m->eBands[i]<<LM)], N);
       /* Just add the right channel if we're in stereo */
       /*if (C==2)
          for (j=0;j<N;j++)
@@ -597,8 +593,7 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
       /* Check the -1 case for transients */
       if (isTransient && !narrow)
       {
-         for (j=0;j<N;j++)
-            tmp_1[j] = tmp[j];
+         OPUS_COPY(tmp_1, tmp, N);
          haar1(tmp_1, N>>LM, 1<<LM);
          L1 = l1_metric(tmp_1, N, LM+1, bias);
          if (L1<best_L1)
@@ -903,8 +898,7 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
    SAVE_STACK;
    ALLOC(follower, C*nbEBands, opus_val16);
    ALLOC(noise_floor, C*nbEBands, opus_val16);
-   for (i=0;i<nbEBands;i++)
-      offsets[i] = 0;
+   OPUS_CLEAR(offsets, nbEBands);
    /* Dynamic allocation code */
    maxDepth=-QCONST16(31.9f, DB_SHIFT);
    for (i=0;i<end;i++)
@@ -1566,8 +1560,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    amp2Log2(mode, effEnd, st->end, bandE, bandLogE, C);
 
    ALLOC(surround_dynalloc, C*nbEBands, opus_val16);
-   for(i=0;i<st->end;i++)
-      surround_dynalloc[i] = 0;
+   OPUS_CLEAR(surround_dynalloc, st->end);
    /* This computes how much masking takes place between surround channels */
    if (st->start==0&&st->energy_mask&&!st->lfe)
    {
@@ -1629,8 +1622,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
                disabling masking. */
             mask_avg = 0;
             diff = 0;
-            for(i=0;i<mask_end;i++)
-               surround_dynalloc[i] = 0;
+            OPUS_CLEAR(surround_dynalloc, mask_end);
          } else {
             for(i=0;i<mask_end;i++)
                surround_dynalloc[i] = MAX16(0, surround_dynalloc[i]-QCONST16(.25f, DB_SHIFT));
@@ -1666,8 +1658,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    if (!secondMdct)
    {
-      for (i=0;i<C*nbEBands;i++)
-         bandLogE2[i] = bandLogE[i];
+      OPUS_COPY(bandLogE2, bandLogE, C*nbEBands);
    }
 
    /* Last chance to catch any transient we might have missed in the
@@ -2059,16 +2050,13 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 #endif
 
    if (CC==2&&C==1) {
-      for (i=0;i<nbEBands;i++)
-         oldBandE[nbEBands+i]=oldBandE[i];
+      OPUS_COPY(&oldBandE[nbEBands], oldBandE, nbEBands);
    }
 
    if (!isTransient)
    {
-      for (i=0;i<CC*nbEBands;i++)
-         oldLogE2[i] = oldLogE[i];
-      for (i=0;i<CC*nbEBands;i++)
-         oldLogE[i] = oldBandE[i];
+      OPUS_COPY(oldLogE2, oldLogE, CC*nbEBands);
+      OPUS_COPY(oldLogE, oldBandE, CC*nbEBands);
    } else {
       for (i=0;i<CC*nbEBands;i++)
          oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);

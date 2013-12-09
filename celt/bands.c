@@ -249,8 +249,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
          } while (++j<band_end);
       }
       celt_assert(start <= end);
-      for (i=M*eBands[end];i<N;i++)
-         *f++ = 0;
+      OPUS_CLEAR(&freq[c*N+M*eBands[end]], N-M*eBands[end]);
    } while (++c<C);
 }
 
@@ -409,8 +408,7 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, opus_val16 mid, int N)
    Er = MULT16_16(mid2, mid2) + side + 2*xp;
    if (Er < QCONST32(6e-4f, 28) || El < QCONST32(6e-4f, 28))
    {
-      for (j=0;j<N;j++)
-         Y[j] = X[j];
+      OPUS_COPY(Y, X, N);
       return;
    }
 
@@ -567,8 +565,7 @@ static void deinterleave_hadamard(celt_norm *X, int N0, int stride, int hadamard
          for (j=0;j<N0;j++)
             tmp[i*N0+j] = X[j*stride+i];
    }
-   for (j=0;j<N;j++)
-      X[j] = tmp[j];
+   OPUS_COPY(X, tmp, N);
    RESTORE_STACK;
 }
 
@@ -591,8 +588,7 @@ static void interleave_hadamard(celt_norm *X, int N0, int stride, int hadamard)
          for (j=0;j<N0;j++)
             tmp[j*stride+i] = X[i*N0+j];
    }
-   for (j=0;j<N;j++)
-      X[j] = tmp[j];
+   OPUS_COPY(X, tmp, N);
    RESTORE_STACK;
 }
 
@@ -1021,8 +1017,7 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
             fill &= cm_mask;
             if (!fill)
             {
-               for (j=0;j<N;j++)
-                  X[j] = 0;
+               OPUS_CLEAR(X, N);
             } else {
                if (lowband == NULL)
                {
@@ -1098,9 +1093,7 @@ static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
 
    if (lowband_scratch && lowband && (recombine || ((N_B&1) == 0 && tf_change<0) || B0>1))
    {
-      int j;
-      for (j=0;j<N;j++)
-         lowband_scratch[j] = lowband[j];
+      OPUS_COPY(lowband_scratch, lowband, N);
       lowband = lowband_scratch;
    }
 
