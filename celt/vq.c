@@ -37,6 +37,7 @@
 #include "os_support.h"
 #include "bands.h"
 #include "rate.h"
+#include "pitch.h"
 
 static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_val16 s)
 {
@@ -350,15 +351,11 @@ void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
 #ifdef FIXED_POINT
    int k;
 #endif
-   opus_val32 E = EPSILON;
+   opus_val32 E;
    opus_val16 g;
    opus_val32 t;
-   celt_norm *xptr = X;
-   for (i=0;i<N;i++)
-   {
-      E = MAC16_16(E, *xptr, *xptr);
-      xptr++;
-   }
+   celt_norm *xptr;
+   E = EPSILON + celt_inner_prod(X, X, N);
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
 #endif
@@ -393,14 +390,8 @@ int stereo_itheta(celt_norm *X, celt_norm *Y, int stereo, int N)
          Eside = MAC16_16(Eside, s, s);
       }
    } else {
-      for (i=0;i<N;i++)
-      {
-         celt_norm m, s;
-         m = X[i];
-         s = Y[i];
-         Emid = MAC16_16(Emid, m, m);
-         Eside = MAC16_16(Eside, s, s);
-      }
+      Emid += celt_inner_prod(X, X, N);
+      Eside += celt_inner_prod(Y, Y, N);
    }
    mid = celt_sqrt(Emid);
    side = celt_sqrt(Eside);
