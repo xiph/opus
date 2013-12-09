@@ -158,10 +158,8 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
    c=0; do {
       for (i=0;i<end;i++)
       {
-         int j;
-         opus_val32 sum = 1e-27f;
-         for (j=M*eBands[i];j<M*eBands[i+1];j++)
-            sum += X[j+c*N]*X[j+c*N];
+         opus_val32 sum;
+         sum = 1e-27f + celt_inner_prod(&X[c*N+M*eBands[i]], &X[c*N+M*eBands[i]], M*(eBands[i+1]-eBands[i]));
          bandE[i+c*m->nbEBands] = celt_sqrt(sum);
          /*printf ("%f ", bandE[i+c*m->nbEBands]);*/
       }
