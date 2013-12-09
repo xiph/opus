@@ -1425,8 +1425,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     ec_enc_init(&enc, data, max_data_bytes-1);
 
     ALLOC(pcm_buf, (total_buffer+frame_size)*st->channels, opus_val16);
-    for (i=0;i<total_buffer*st->channels;i++)
-       pcm_buf[i] = st->delay_buffer[(st->encoder_buffer-total_buffer)*st->channels+i];
+    OPUS_COPY(pcm_buf, &st->delay_buffer[(st->encoder_buffer-total_buffer)*st->channels], total_buffer*st->channels);
 
     if (st->mode == MODE_CELT_ONLY)
        hp_freq_smth1 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
@@ -1611,8 +1610,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             prefill_offset = st->channels*(st->encoder_buffer-st->delay_compensation-st->Fs/400);
             gain_fade(st->delay_buffer+prefill_offset, st->delay_buffer+prefill_offset,
                   0, Q15ONE, celt_mode->overlap, st->Fs/400, st->channels, celt_mode->window, st->Fs);
-            for(i=0;i<prefill_offset;i++)
-               st->delay_buffer[i]=0;
+            OPUS_CLEAR(st->delay_buffer, prefill_offset);
 #ifdef FIXED_POINT
             pcm_silk = st->delay_buffer;
 #else
@@ -1739,15 +1737,18 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     ALLOC(tmp_prefill, st->channels*st->Fs/400, opus_val16);
     if (st->mode != MODE_SILK_ONLY && st->mode != st->prev_mode && st->prev_mode > 0)
     {
-       for (i=0;i<st->channels*st->Fs/400;i++)
-          tmp_prefill[i] = st->delay_buffer[(st->encoder_buffer-total_buffer-st->Fs/400)*st->channels + i];
+       OPUS_COPY(tmp_prefill, &st->delay_buffer[(st->encoder_buffer-total_buffer-st->Fs/400)*st->channels], st->channels*st->Fs/400);
     }
 
-    for (i=0;i<st->channels*(st->encoder_buffer-(frame_size+total_buffer));i++)
-        st->delay_buffer[i] = st->delay_buffer[i+st->channels*frame_size];
-    for (;i<st->encoder_buffer*st->channels;i++)
-        st->delay_buffer[i] = pcm_buf[(frame_size+total_buffer-st->encoder_buffer)*st->channels+i];
-
+    if (st->channels*(st->encoder_buffer-(frame_size+total_buffer)) > 0)
+    {
+       OPUS_MOVE(st->delay_buffer, &st->delay_buffer[st->channels*frame_size], st->channels*(st->encoder_buffer-frame_size-total_buffer));
+       OPUS_COPY(&st->delay_buffer[st->channels*(st->encoder_buffer-frame_size-total_buffer)],
+             &pcm_buf[0],
+             (frame_size+total_buffer)*st->channels);
+    } else {
+       OPUS_COPY(st->delay_buffer, &pcm_buf[(frame_size+total_buffer-st->encoder_buffer)*st->channels], st->encoder_buffer*st->channels);
+    }
     /* gain_fade() and stereo_fade() need to be after the buffer copying
        because we don't want any of this to affect the SILK part */
     if( st->prev_HB_gain < Q15ONE || HB_gain < Q15ONE ) {
