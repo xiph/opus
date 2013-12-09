@@ -38,6 +38,7 @@
 #include "float_cast.h"
 #include "opus.h"
 #include "arch.h"
+#include "pitch.h"
 #include "opus_private.h"
 #include "os_support.h"
 #include "cpu_support.h"
@@ -1447,9 +1448,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifndef FIXED_POINT
     if (float_api)
     {
-       opus_val32 sum=0;
-       for (i=0;i<frame_size*st->channels;i++)
-          sum += pcm_buf[total_buffer*st->channels+i]*pcm_buf[total_buffer*st->channels+i];
+       opus_val32 sum;
+       sum = celt_inner_prod(&pcm_buf[total_buffer*st->channels], &pcm_buf[total_buffer*st->channels], frame_size*st->channels);
        /* This should filter out both NaNs and ridiculous signals that could
           cause NaNs further down. */
        if (!(sum < 1e9))
