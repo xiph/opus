@@ -365,7 +365,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    /* Arbitrary metric for VBR boost */
    tf_max = MAX16(0,celt_sqrt(27*mask_metric)-42);
    /* *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20); */
-   *tf_estimate = celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0069,14),MIN16(163,tf_max)),14)-QCONST32(0.139,28)));
+   *tf_estimate = celt_sqrt(MAX32(0, SHL32(MULT16_16(QCONST16(0.0069,14),MIN16(163,tf_max)),14)-QCONST32(0.139,28)));
    /*printf("%d %f\n", tf_max, mask_metric);*/
    RESTORE_STACK;
 #ifdef FUZZING
