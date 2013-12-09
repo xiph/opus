@@ -252,7 +252,7 @@ void
 #endif
 celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y, opus_val32 *xcorr, int len, int max_pitch)
 {
-   int i,j;
+   int i;
    /*The EDSP version requires that max_pitch is at least 1, and that _x is
       32-bit aligned.
      Since it's hard to put asserts in assembly, put them here.*/
@@ -279,9 +279,8 @@ celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y, opus_val32 *xcorr
    /* In case max_pitch isn't a multiple of 4, do non-unrolled version. */
    for (;i<max_pitch;i++)
    {
-      opus_val32 sum = 0;
-      for (j=0;j<len;j++)
-         sum = MAC16_16(sum, _x[j],_y[i+j]);
+      opus_val32 sum;
+      sum = celt_inner_prod(_x, _y+i, len);
       xcorr[i] = sum;
 #ifdef FIXED_POINT
       maxcorr = MAX32(maxcorr, sum);
@@ -361,12 +360,17 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
 #endif
    for (i=0;i<max_pitch>>1;i++)
    {
-      opus_val32 sum=0;
+      opus_val32 sum;
       xcorr[i] = 0;
       if (abs(i-2*best_pitch[0])>2 && abs(i-2*best_pitch[1])>2)
          continue;
+#ifdef FIXED_POINT
+      sum = 0;
       for (j=0;j<len>>1;j++)
          sum += SHR32(MULT16_16(x_lp[j],y[i+j]), shift);
+#else
+      sum = celt_inner_prod(x_lp, y+i, len>>1);
+#endif
       xcorr[i] = MAX32(-1, sum);
 #ifdef FIXED_POINT
       maxcorr = MAX32(maxcorr, sum);
@@ -513,13 +517,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       pg = SHR32(frac_div32(best_xy,best_yy+1),16);
 
    for (k=0;k<3;k++)
-   {
-      int T1 = T+k-1;
-      xy = 0;
-      for (i=0;i<N;i++)
-         xy = MAC16_16(xy, x[i], x[i-T1]);
-      xcorr[k] = xy;
-   }
+      xcorr[k] = celt_inner_prod(x, x-(T+k-1), N);
    if ((xcorr[2]-xcorr[0]) > MULT16_32_Q15(QCONST16(.7f,15),xcorr[1]-xcorr[0]))
       offset = 1;
    else if ((xcorr[0]-xcorr[2]) > MULT16_32_Q15(QCONST16(.7f,15),xcorr[1]-xcorr[2]))

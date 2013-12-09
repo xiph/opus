@@ -101,6 +101,32 @@ static OPUS_INLINE void dual_inner_prod(const opus_val16 *x, const opus_val16 *y
    }
 }
 
+#define OVERRIDE_CELT_INNER_PROD
+static OPUS_INLINE opus_val32 celt_inner_prod(const opus_val16 *x, const opus_val16 *y,
+      int N)
+{
+   int i;
+   float xy;
+   __m128 sum;
+   sum = _mm_setzero_ps();
+   /* FIXME: We should probably go 8-way and use 2 sums. */
+   for (i=0;i<N-3;i+=4)
+   {
+      __m128 xi = _mm_loadu_ps(x+i);
+      __m128 yi = _mm_loadu_ps(y+i);
+      sum = _mm_add_ps(sum,_mm_mul_ps(xi, yi));
+   }
+   /* Horizontal sum */
+   sum = _mm_add_ps(sum, _mm_movehl_ps(sum, sum));
+   sum = _mm_add_ss(sum, _mm_shuffle_ps(sum, sum, 0x55));
+   _mm_store_ss(&xy, sum);
+   for (;i<N;i++)
+   {
+      xy = MAC16_16(xy, x[i], y[i]);
+   }
+   return xy;
+}
+
 #define OVERRIDE_COMB_FILTER_CONST
 static OPUS_INLINE void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
       opus_val16 g10, opus_val16 g11, opus_val16 g12)

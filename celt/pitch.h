@@ -141,6 +141,18 @@ static OPUS_INLINE void dual_inner_prod(const opus_val16 *x, const opus_val16 *y
 }
 #endif
 
+#ifndef OVERRIDE_CELT_INNER_PROD
+static OPUS_INLINE opus_val32 celt_inner_prod(const opus_val16 *x, const opus_val16 *y,
+      int N)
+{
+   int i;
+   opus_val32 xy=0;
+   for (i=0;i<N;i++)
+      xy = MAC16_16(xy, x[i], y[i]);
+   return xy;
+}
+#endif
+
 #ifdef FIXED_POINT
 opus_val32
 #else

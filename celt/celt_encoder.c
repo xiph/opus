@@ -576,7 +576,7 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
    *tf_sum = 0;
    for (i=0;i<len;i++)
    {
-      int j, k, N;
+      int k, N;
       int narrow;
       opus_val32 L1, best_L1;
       int best_level=0;
@@ -768,10 +768,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       /* Compute inter-channel correlation for low frequencies */
       for (i=0;i<8;i++)
       {
-         int j;
-         opus_val32 partial = 0;
-         for (j=m->eBands[i]<<LM;j<m->eBands[i+1]<<LM;j++)
-            partial = MAC16_16(partial, X[j], X[N0+j]);
+         opus_val32 partial;
+         partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)], (m->eBands[i+1]-m->eBands[i])<<LM);
          sum = ADD16(sum, EXTRACT16(SHR32(partial, 18)));
       }
       sum = MULT16_16_Q15(QCONST16(1.f/8, 15), sum);
@@ -779,10 +777,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       minXC = sum;
       for (i=8;i<intensity;i++)
       {
-         int j;
-         opus_val32 partial = 0;
-         for (j=m->eBands[i]<<LM;j<m->eBands[i+1]<<LM;j++)
-            partial = MAC16_16(partial, X[j], X[N0+j]);
+         opus_val32 partial;
+         partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)], (m->eBands[i+1]-m->eBands[i])<<LM);
          minXC = MIN16(minXC, ABS16(EXTRACT16(SHR32(partial, 18))));
       }
       minXC = MIN16(QCONST16(1.f, 10), ABS16(minXC));
