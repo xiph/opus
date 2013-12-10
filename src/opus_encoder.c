@@ -1452,7 +1452,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        sum = celt_inner_prod(&pcm_buf[total_buffer*st->channels], &pcm_buf[total_buffer*st->channels], frame_size*st->channels);
        /* This should filter out both NaNs and ridiculous signals that could
           cause NaNs further down. */
-       if (!(sum < 1e9))
+       if (!(sum < 1e9) || celt_isnan(sum))
           OPUS_CLEAR(&pcm_buf[total_buffer*st->channels], frame_size*st->channels);
     }
 #endif
