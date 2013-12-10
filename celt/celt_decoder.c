@@ -931,8 +931,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       int bound = M*eBands[effEnd];
       if (st->downsample!=1)
          bound = IMIN(bound, N/st->downsample);
-      for (i=bound;i<N;i++)
-         freq[c*N+i] = 0;
+      OPUS_CLEAR(&freq[c*N+bound], N-bound);
    } while (++c<C);
 
    c=0; do {
@@ -940,10 +939,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    } while (++c<CC);
 
    if (CC==2&&C==1)
-   {
-      for (i=0;i<N;i++)
-         freq[N+i] = freq[i];
-   }
+      OPUS_COPY(freq+N, freq, N);
    if (CC==1&&C==2)
    {
       for (i=0;i<N;i++)
@@ -978,18 +974,14 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       st->postfilter_tapset_old = st->postfilter_tapset;
    }
 
-   if (C==1) {
-      for (i=0;i<nbEBands;i++)
-         oldBandE[nbEBands+i]=oldBandE[i];
-   }
+   if (C==1)
+      OPUS_COPY(&oldBandE[nbEBands], oldBandE, nbEBands);
 
    /* In case start or end were to change */
    if (!isTransient)
    {
-      for (i=0;i<2*nbEBands;i++)
-         oldLogE2[i] = oldLogE[i];
-      for (i=0;i<2*nbEBands;i++)
-         oldLogE[i] = oldBandE[i];
+      OPUS_COPY(oldLogE2, oldLogE, 2*nbEBands);
+      OPUS_COPY(oldLogE, oldBandE, 2*nbEBands);
       for (i=0;i<2*nbEBands;i++)
          backgroundLogE[i] = MIN16(backgroundLogE[i] + M*QCONST16(0.001f,DB_SHIFT), oldBandE[i]);
    } else {
