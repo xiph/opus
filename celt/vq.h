@@ -65,6 +65,6 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
 
 void renormalise_vector(celt_norm *X, int N, opus_val16 gain);
 
-int stereo_itheta(celt_norm *X, celt_norm *Y, int stereo, int N);
+int stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N);
 
 #endif /* VQ_H */

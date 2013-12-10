@@ -253,8 +253,8 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
 
 /* This prevents energy collapse for transients with multiple short MDCTs */
 void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_masks, int LM, int C, int size,
-      int start, int end, opus_val16 *logE, opus_val16 *prev1logE,
-      opus_val16 *prev2logE, int *pulses, opus_uint32 seed)
+      int start, int end, const opus_val16 *logE, const opus_val16 *prev1logE,
+      const opus_val16 *prev2logE, const int *pulses, opus_uint32 seed)
 {
    int c, i, j, k;
    for (i=start;i<end;i++)
@@ -347,7 +347,7 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
    }
 }
 
-static void intensity_stereo(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bandE, int bandID, int N)
+static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, const celt_norm * OPUS_RESTRICT Y, const celt_ener *bandE, int bandID, int N)
 {
    int i = bandID;
    int j;
@@ -372,7 +372,7 @@ static void intensity_stereo(const CELTMode *m, celt_norm *X, celt_norm *Y, cons
    }
 }
 
-static void stereo_split(celt_norm *X, celt_norm *Y, int N)
+static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, int N)
 {
    int j;
    for (j=0;j<N;j++)
@@ -385,7 +385,7 @@ static void stereo_split(celt_norm *X, celt_norm *Y, int N)
    }
 }
 
-static void stereo_merge(celt_norm *X, celt_norm *Y, opus_val16 mid, int N)
+static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, opus_val16 mid, int N)
 {
    int j;
    opus_val32 xp=0, side=0;
@@ -438,7 +438,7 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, opus_val16 mid, int N)
 }
 
 /* Decide whether we should spread the pulses in the current frame */
-int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
+int spreading_decision(const CELTMode *m, const celt_norm *X, int *average,
       int last_decision, int *hf_average, int *tapset_decision, int update_hf,
       int end, int C, int M)
 {
@@ -459,7 +459,7 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
       {
          int j, N, tmp=0;
          int tcount[3] = {0,0,0};
-         celt_norm * OPUS_RESTRICT x = X+M*eBands[i]+c*N0;
+         const celt_norm * OPUS_RESTRICT x = X+M*eBands[i]+c*N0;
          N = M*(eBands[i+1]-eBands[i]);
          if (N<=8)
             continue;
