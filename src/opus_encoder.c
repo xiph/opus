@@ -649,7 +649,7 @@ static int transient_viterbi(const float *E, const float *E_1, int N, int frame_
    return best_state;
 }
 
-int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
+static int optimize_framesize(const void *x, int len, int C, opus_int32 Fs,
                 int bitrate, opus_val16 tonality, float *mem, int buffering,
                 downmix_func downmix)
 {
@@ -661,6 +661,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
    int bestLM=0;
    int subframe;
    int pos;
+   int offset;
    VARDECL(opus_val32, sub);
 
    subframe = Fs/400;
@@ -671,9 +672,8 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
    {
       /* Consider the CELT delay when not in restricted-lowdelay */
       /* We assume the buffering is between 2.5 and 5 ms */
-      int offset = 2*subframe - buffering;
+      offset = 2*subframe - buffering;
       celt_assert(offset>=0 && offset <= subframe);
-      x += C*offset;
       len -= offset;
       e[1]=mem[1];
       e_1[1]=1.f/(EPSILON+mem[1]);
@@ -682,6 +682,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
       pos = 3;
    } else {
       pos=1;
+      offset=0;
    }
    N=IMIN(len/subframe, MAX_DYNAMIC_FRAMESIZE);
    /* Just silencing a warning, it's really initialized later */
@@ -693,7 +694,7 @@ int optimize_framesize(const opus_val16 *x, int len, int C, opus_int32 Fs,
       int j;
       tmp=EPSILON;
 
-      downmix(x, sub, subframe, i*subframe, 0, -2, C);
+      downmix(x, sub, subframe, i*subframe+offset, 0, -2, C);
       if (i==0)
          memx = sub[0];
       for (j=0;j<subframe;j++)
