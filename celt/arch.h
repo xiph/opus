@@ -140,7 +140,7 @@ typedef float celt_ener;
 #ifdef FLOAT_APPROX
 /* This code should reliably detect NaN/inf even when -ffast-math is used.
    Assumes IEEE 754 format. */
-static inline int celt_isnan(float x)
+static OPUS_INLINE int celt_isnan(float x)
 {
    union {float f; opus_uint32 i;} in;
    in.f = x;
