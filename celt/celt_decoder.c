@@ -677,6 +677,8 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    int intra_ener;
    const int CC = st->channels;
    int LM, M;
+   int start;
+   int end;
    int effEnd;
    int codedBands;
    int alloc_trim;
@@ -703,6 +705,8 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    nbEBands = mode->nbEBands;
    overlap = mode->overlap;
    eBands = mode->eBands;
+   start = st->start;
+   end = st->end;
    frame_size *= st->downsample;
 
    c=0; do {
@@ -725,7 +729,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
          if (data0<0)
             return OPUS_INVALID_PACKET;
       }
-      st->end = IMAX(1, mode->effEBands-2*(data0>>5));
+      st->end = end = IMAX(1, mode->effEBands-2*(data0>>5));
       LM = (data0>>3)&0x3;
       C = 1 + ((data0>>2)&0x1);
       data++;
@@ -753,7 +757,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    N = M*mode->shortMdctSize;
 
-   effEnd = st->end;
+   effEnd = end;
    if (effEnd > mode->effEBands)
       effEnd = mode->effEBands;
 
@@ -795,7 +799,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    postfilter_gain = 0;
    postfilter_pitch = 0;
    postfilter_tapset = 0;
-   if (st->start==0 && tell+16 <= total_bits)
+   if (start==0 && tell+16 <= total_bits)
    {
       if(ec_dec_bit_logp(dec, 1))
       {
@@ -826,11 +830,11 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    /* Decode the global flags (first symbols in the stream) */
    intra_ener = tell+3<=total_bits ? ec_dec_bit_logp(dec, 3) : 0;
    /* Get band energies */
-   unquant_coarse_energy(mode, st->start, st->end, oldBandE,
+   unquant_coarse_energy(mode, start, end, oldBandE,
          intra_ener, dec, C, LM);
 
    ALLOC(tf_res, nbEBands, int);
-   tf_decode(st->start, st->end, isTransient, tf_res, LM, dec);
+   tf_decode(start, end, isTransient, tf_res, LM, dec);
 
    tell = ec_tell(dec);
    spread_decision = SPREAD_NORMAL;
@@ -846,7 +850,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    dynalloc_logp = 6;
    total_bits<<=BITRES;
    tell = ec_tell_frac(dec);
-   for (i=st->start;i<st->end;i++)
+   for (i=start;i<end;i++)
    {
       int width, quanta;
       int dynalloc_loop_logp;
@@ -885,17 +889,17 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    ALLOC(pulses, nbEBands, int);
    ALLOC(fine_priority, nbEBands, int);
 
-   codedBands = compute_allocation(mode, st->start, st->end, offsets, cap,
+   codedBands = compute_allocation(mode, start, end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, dec, 0, 0, 0);
 
-   unquant_fine_energy(mode, st->start, st->end, oldBandE, fine_quant, dec, C);
+   unquant_fine_energy(mode, start, end, oldBandE, fine_quant, dec, C);
 
    /* Decode fixed codebook */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
 
-   quant_all_bands(0, mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
+   quant_all_bands(0, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
          len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng);
 
@@ -904,12 +908,12 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       anti_collapse_on = ec_dec_bits(dec, 1);
    }
 
-   unquant_energy_finalise(mode, st->start, st->end, oldBandE,
+   unquant_energy_finalise(mode, start, end, oldBandE,
          fine_quant, fine_priority, len*8-ec_tell(dec), dec, C);
 
    if (anti_collapse_on)
       anti_collapse(mode, X, collapse_masks, LM, C, N,
-            st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
+            start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
 
    ALLOC(freq, IMAX(CC,C)*N, celt_sig); /**< Interleaved signal MDCTs */
 
@@ -921,7 +925,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
          freq[i] = 0;
    } else {
       /* Synthesis */
-      denormalise_bands(mode, X, freq, oldBandE, st->start, effEnd, C, M);
+      denormalise_bands(mode, X, freq, oldBandE, start, effEnd, C, M);
    }
    c=0; do {
       OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap/2);
@@ -990,12 +994,12 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    }
    c=0; do
    {
-      for (i=0;i<st->start;i++)
+      for (i=0;i<start;i++)
       {
          oldBandE[c*nbEBands+i]=0;
          oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=-QCONST16(28.f,DB_SHIFT);
       }
-      for (i=st->end;i<nbEBands;i++)
+      for (i=end;i<nbEBands;i++)
       {
          oldBandE[c*nbEBands+i]=0;
          oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=-QCONST16(28.f,DB_SHIFT);
