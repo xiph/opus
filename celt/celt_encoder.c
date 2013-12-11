@@ -756,7 +756,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    int i;
    opus_val32 diff=0;
    int c;
-   int trim_index = 5;
+   int trim_index;
    opus_val16 trim = QCONST16(5.f, 8);
    opus_val16 logXC, logXC2;
    if (C==2)
@@ -781,14 +781,6 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       }
       minXC = MIN16(QCONST16(1.f, 10), ABS16(minXC));
       /*printf ("%f\n", sum);*/
-      if (sum > QCONST16(.995f,10))
-         trim_index-=4;
-      else if (sum > QCONST16(.92f,10))
-         trim_index-=3;
-      else if (sum > QCONST16(.85f,10))
-         trim_index-=2;
-      else if (sum > QCONST16(.8f,10))
-         trim_index-=1;
       /* mid-side savings estimations based on the LF average*/
       logXC = celt_log2(QCONST32(1.001f, 20)-MULT16_16(sum, sum));
       /* mid-side savings estimations based on min correlation */
@@ -812,14 +804,6 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    } while (++c<C);
    diff /= C*(end-1);
    /*printf("%f\n", diff);*/
-   if (diff > QCONST16(2.f, DB_SHIFT))
-      trim_index--;
-   if (diff > QCONST16(8.f, DB_SHIFT))
-      trim_index--;
-   if (diff < -QCONST16(4.f, DB_SHIFT))
-      trim_index++;
-   if (diff < -QCONST16(10.f, DB_SHIFT))
-      trim_index++;
    trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), SHR16(diff+QCONST16(1.f, DB_SHIFT),DB_SHIFT-8)/6 ));
    trim -= SHR16(surround_trim, DB_SHIFT-8);
    trim -= 2*SHR16(tf_estimate, 14-8);
@@ -836,10 +820,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
 #else
    trim_index = (int)floor(.5f+trim);
 #endif
-   if (trim_index<0)
-      trim_index = 0;
-   if (trim_index>10)
-      trim_index = 10;
+   trim_index = IMAX(0, IMIN(10, trim_index));
    /*printf("%d\n", trim_index);*/
 #ifdef FUZZING
    trim_index = rand()%11;
