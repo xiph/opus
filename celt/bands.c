@@ -367,7 +367,7 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
       celt_norm r, l;
       l = X[j];
       r = Y[j];
-      X[j] = MULT16_16_Q14(a1,l) + MULT16_16_Q14(a2,r);
+      X[j] = EXTRACT16(SHR32(MAC16_16(MULT16_16(a1, l), a2, r), 14));
       /* Side is not encoded, no need to calculate */
    }
 }
@@ -377,11 +377,11 @@ static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    int j;
    for (j=0;j<N;j++)
    {
-      celt_norm r, l;
-      l = MULT16_16_Q15(QCONST16(.70710678f,15), X[j]);
-      r = MULT16_16_Q15(QCONST16(.70710678f,15), Y[j]);
-      X[j] = l+r;
-      Y[j] = r-l;
+      opus_val32 r, l;
+      l = MULT16_16(QCONST16(.70710678f, 15), X[j]);
+      r = MULT16_16(QCONST16(.70710678f, 15), Y[j]);
+      X[j] = EXTRACT16(SHR32(ADD32(l, r), 15));
+      Y[j] = EXTRACT16(SHR32(SUB32(r, l), 15));
    }
 }
 
@@ -597,11 +597,11 @@ void haar1(celt_norm *X, int N0, int stride)
    for (i=0;i<stride;i++)
       for (j=0;j<N0;j++)
       {
-         celt_norm tmp1, tmp2;
-         tmp1 = MULT16_16_Q15(QCONST16(.70710678f,15), X[stride*2*j+i]);
-         tmp2 = MULT16_16_Q15(QCONST16(.70710678f,15), X[stride*(2*j+1)+i]);
-         X[stride*2*j+i] = tmp1 + tmp2;
-         X[stride*(2*j+1)+i] = tmp1 - tmp2;
+         opus_val32 tmp1, tmp2;
+         tmp1 = MULT16_16(QCONST16(.70710678f,15), X[stride*2*j+i]);
+         tmp2 = MULT16_16(QCONST16(.70710678f,15), X[stride*(2*j+1)+i]);
+         X[stride*2*j+i] = EXTRACT16(SHR32(ADD32(tmp1, tmp2), 15));
+         X[stride*(2*j+1)+i] = EXTRACT16(SHR32(SUB32(tmp1, tmp2), 15));
       }
 }
 
