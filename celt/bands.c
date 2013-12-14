@@ -430,7 +430,7 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    {
       celt_norm r, l;
       /* Apply mid scaling (side is already scaled) */
-      l = MULT16_16_Q15(mid, X[j]);
+      l = MULT16_16_P15(mid, X[j]);
       r = Y[j];
       X[j] = EXTRACT16(PSHR32(MULT16_16(lgain, SUB16(l,r)), kl+1));
       Y[j] = EXTRACT16(PSHR32(MULT16_16(rgain, ADD16(l,r)), kr+1));
@@ -600,8 +600,8 @@ void haar1(celt_norm *X, int N0, int stride)
          opus_val32 tmp1, tmp2;
          tmp1 = MULT16_16(QCONST16(.70710678f,15), X[stride*2*j+i]);
          tmp2 = MULT16_16(QCONST16(.70710678f,15), X[stride*(2*j+1)+i]);
-         X[stride*2*j+i] = EXTRACT16(SHR32(ADD32(tmp1, tmp2), 15));
-         X[stride*(2*j+1)+i] = EXTRACT16(SHR32(SUB32(tmp1, tmp2), 15));
+         X[stride*2*j+i] = EXTRACT16(PSHR32(ADD32(tmp1, tmp2), 15));
+         X[stride*(2*j+1)+i] = EXTRACT16(PSHR32(SUB32(tmp1, tmp2), 15));
       }
 }
 
