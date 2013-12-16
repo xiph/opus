@@ -92,11 +92,11 @@ static int bitexact_log2tan(int isin,int icos)
 
 #ifdef FIXED_POINT
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bandE, int end, int C, int M)
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bandE, int end, int C, int LM)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
-   N = M*m->shortMdctSize;
+   N = m->shortMdctSize<<LM;
    c=0; do {
       for (i=0;i<end;i++)
       {
@@ -104,18 +104,23 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
          opus_val32 maxval=0;
          opus_val32 sum = 0;
 
-         j=M*eBands[i]; do {
-            maxval = MAX32(maxval, X[j+c*N]);
-            maxval = MAX32(maxval, -X[j+c*N]);
-         } while (++j<M*eBands[i+1]);
-
+         maxval = celt_maxabs32(&X[c*N+(eBands[i]<<LM)], (eBands[i+1]-eBands[i])<<LM);
          if (maxval > 0)
          {
-            int shift = celt_ilog2(maxval)-10;
-            j=M*eBands[i]; do {
-               sum = MAC16_16(sum, EXTRACT16(VSHR32(X[j+c*N],shift)),
-                                   EXTRACT16(VSHR32(X[j+c*N],shift)));
-            } while (++j<M*eBands[i+1]);
+            int shift = celt_ilog2(maxval) - 14 + (((m->logN[i]>>BITRES)+LM+1)>>1);
+            j=eBands[i]<<LM;
+            if (shift>0)
+            {
+               do {
+                  sum = MAC16_16(sum, EXTRACT16(SHR32(X[j+c*N],shift)),
+                        EXTRACT16(SHR32(X[j+c*N],shift)));
+               } while (++j<eBands[i+1]<<LM);
+            } else {
+               do {
+                  sum = MAC16_16(sum, EXTRACT16(SHL32(X[j+c*N],-shift)),
+                        EXTRACT16(SHL32(X[j+c*N],-shift)));
+               } while (++j<eBands[i+1]<<LM);
+            }
             /* We're adding one here to ensure the normalized band isn't larger than unity norm */
             bandE[i+c*m->nbEBands] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
          } else {
@@ -150,16 +155,16 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
 
 #else /* FIXED_POINT */
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bandE, int end, int C, int M)
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bandE, int end, int C, int LM)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
-   N = M*m->shortMdctSize;
+   N = m->shortMdctSize<<LM;
    c=0; do {
       for (i=0;i<end;i++)
       {
          opus_val32 sum;
-         sum = 1e-27f + celt_inner_prod(&X[c*N+M*eBands[i]], &X[c*N+M*eBands[i]], M*(eBands[i+1]-eBands[i]));
+         sum = 1e-27f + celt_inner_prod(&X[c*N+(eBands[i]<<LM)], &X[c*N+(eBands[i]<<LM)], (eBands[i+1]-eBands[i])<<LM);
          bandE[i+c*m->nbEBands] = celt_sqrt(sum);
          /*printf ("%f ", bandE[i+c*m->nbEBands]);*/
       }
