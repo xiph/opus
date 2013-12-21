@@ -262,9 +262,10 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          kiss_fft_cpx yc;
          yr = -S_MUL(*xp2, t[i<<shift]) + S_MUL(*xp1,t[(N4-i)<<shift]);
          yi =  -S_MUL(*xp2, t[(N4-i)<<shift]) - S_MUL(*xp1,t[i<<shift]);
-         /* works because the cos is nearly one */
-         yc.r = yr - S_MUL(yi,sine);
-         yc.i = yi + S_MUL(yr,sine);
+         /* Works because the cos is nearly one. We swap real and imag because we
+            use an FFT instead of an IFFT. */
+         yc.i = yr - S_MUL(yi,sine);
+         yc.r = yi + S_MUL(yr,sine);
          /* Storing the pre-rotation directly in the bitrev order. */
          yp[*bitrev++] = yc;
          xp1+=2*stride;
@@ -272,7 +273,7 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
       }
    }
 
-   opus_ifft_impl(l->kfft[shift], f2);
+   opus_fft_impl(l->kfft[shift], f2);
 
    /* Post-rotate and de-shuffle from both ends of the buffer at once to make
       it in-place. */
@@ -286,15 +287,17 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
       {
          kiss_fft_scalar re, im, yr, yi;
          kiss_twiddle_scalar t0, t1;
-         re = f2[i].r;
-         im = f2[i].i;
+         /* We swap real and imag because we're using an FFT instead of an IFFT. */
+         re = f2[i].i;
+         im = f2[i].r;
          t0 = t[i<<shift];
          t1 = t[(N4-i)<<shift];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
          yr = S_MUL(re,t0) - S_MUL(im,t1);
          yi = S_MUL(im,t0) + S_MUL(re,t1);
-         re = f2[N4-i-1].r;
-         im = f2[N4-i-1].i;
+         /* We swap real and imag because we're using an FFT instead of an IFFT. */
+         re = f2[N4-i-1].i;
+         im = f2[N4-i-1].r;
          /* works because the cos is nearly one */
          yp0[0] = -(yr - S_MUL(yi,sine));
          yp1[1] = yi + S_MUL(yr,sine);
