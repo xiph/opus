@@ -66,8 +66,6 @@ static void kf_bfly2(
       for(j=0;j<m;j++)
       {
          kiss_fft_cpx t;
-         Fout->r = SHR32(Fout->r, 1);Fout->i = SHR32(Fout->i, 1);
-         Fout2->r = SHR32(Fout2->r, 1);Fout2->i = SHR32(Fout2->i, 1);
          C_MUL (t,  *Fout2 , *tw1);
          tw1 += fstride;
          C_SUB( *Fout2 ,  *Fout , t );
@@ -131,12 +129,10 @@ static void kf_bfly4(
       tw3 = tw2 = tw1 = st->twiddles;
       for (j=0;j<m;j++)
       {
-         C_MUL4(scratch[0],Fout[m] , *tw1 );
-         C_MUL4(scratch[1],Fout[m2] , *tw2 );
-         C_MUL4(scratch[2],Fout[m3] , *tw3 );
+         C_MUL(scratch[0],Fout[m] , *tw1 );
+         C_MUL(scratch[1],Fout[m2] , *tw2 );
+         C_MUL(scratch[2],Fout[m3] , *tw3 );
 
-         Fout->r = PSHR32(Fout->r, 2);
-         Fout->i = PSHR32(Fout->i, 2);
          C_SUB( scratch[5] , *Fout, scratch[1] );
          C_ADDTO(*Fout, scratch[1]);
          C_ADD( scratch[3] , scratch[0] , scratch[2] );
@@ -227,7 +223,6 @@ static void kf_bfly3(
       tw1=tw2=st->twiddles;
       k=m;
       do {
-         C_FIXDIV(*Fout,3); C_FIXDIV(Fout[m],3); C_FIXDIV(Fout[m2],3);
 
          C_MUL(scratch[1],Fout[m] , *tw1);
          C_MUL(scratch[2],Fout[m2] , *tw2);
@@ -336,7 +331,6 @@ static void kf_bfly5(
       Fout4=Fout0+4*m;
 
       for ( u=0; u<m; ++u ) {
-         C_FIXDIV( *Fout0,5); C_FIXDIV( *Fout1,5); C_FIXDIV( *Fout2,5); C_FIXDIV( *Fout3,5); C_FIXDIV( *Fout4,5);
          scratch[0] = *Fout0;
 
          C_MUL(scratch[1] ,*Fout1, tw[u*fstride]);
@@ -614,6 +608,16 @@ void opus_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fou
     int fstride[MAXFACTORS];
     int i;
     int shift;
+#ifdef FIXED_POINT
+    /* FIXME: This should eventually just go in the state. */
+    opus_val16 scale;
+    int scale_shift;
+    scale_shift = celt_ilog2(st->nfft);
+    if (st->nfft == 1<<scale_shift)
+       scale = Q15ONE;
+    else
+       scale = (1073741824+st->nfft/2)/st->nfft>>(15-scale_shift);
+#endif
 
     /* st->shift can be -1 */
     shift = st->shift>0 ? st->shift : 0;
@@ -622,10 +626,13 @@ void opus_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fou
     /* Bit-reverse the input */
     for (i=0;i<st->nfft;i++)
     {
-       fout[st->bitrev[i]] = fin[i];
-#ifndef FIXED_POINT
-       fout[st->bitrev[i]].r *= st->scale;
-       fout[st->bitrev[i]].i *= st->scale;
+       kiss_fft_cpx x = fin[i];
+#ifdef FIXED_POINT
+       fout[st->bitrev[i]].r = SHR32(MULT16_32_Q15(scale, x.r), scale_shift);
+       fout[st->bitrev[i]].i = SHR32(MULT16_32_Q15(scale, x.i), scale_shift);
+#else
+       fout[st->bitrev[i]].r = st->scale*x.r;
+       fout[st->bitrev[i]].i = st->scale*x.i;
 #endif
     }
 
