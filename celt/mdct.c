@@ -214,13 +214,13 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    int i;
    int N, N2, N4;
    kiss_twiddle_scalar sine;
-   VARDECL(kiss_fft_scalar, f2);
+   VARDECL(kiss_fft_cpx, f2);
    SAVE_STACK;
    N = l->n;
    N >>= shift;
    N2 = N>>1;
    N4 = N>>2;
-   ALLOC(f2, N2, kiss_fft_scalar);
+   ALLOC(f2, N4, kiss_fft_cpx);
    /* sin(x) ~= x here */
 #ifdef FIXED_POINT
    sine = TRIG_UPSCALE*(QCONST16(0.7853981f, 15)+N2)/N;
@@ -233,23 +233,26 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
       /* Temp pointers to make it really clear to the compiler what we're doing */
       const kiss_fft_scalar * OPUS_RESTRICT xp1 = in;
       const kiss_fft_scalar * OPUS_RESTRICT xp2 = in+stride*(N2-1);
-      kiss_fft_scalar * OPUS_RESTRICT yp = f2;
-      const kiss_twiddle_scalar *t = &l->trig[0];
+      kiss_fft_cpx * OPUS_RESTRICT yp = f2;
+      const kiss_twiddle_scalar * OPUS_RESTRICT t = &l->trig[0];
+      const opus_int16 * OPUS_RESTRICT bitrev = l->kfft[shift]->bitrev;
       for(i=0;i<N4;i++)
       {
          kiss_fft_scalar yr, yi;
+         kiss_fft_cpx yc;
          yr = -S_MUL(*xp2, t[i<<shift]) + S_MUL(*xp1,t[(N4-i)<<shift]);
          yi =  -S_MUL(*xp2, t[(N4-i)<<shift]) - S_MUL(*xp1,t[i<<shift]);
          /* works because the cos is nearly one */
-         *yp++ = yr - S_MUL(yi,sine);
-         *yp++ = yi + S_MUL(yr,sine);
+         yc.r = yr - S_MUL(yi,sine);
+         yc.i = yi + S_MUL(yr,sine);
+         /* Storing the pre-rotation directly in the bitrev order. */
+         yp[*bitrev++] = yc;
          xp1+=2*stride;
          xp2-=2*stride;
       }
    }
 
-   /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
-   opus_ifft(l->kfft[shift], (kiss_fft_cpx *)f2, (kiss_fft_cpx *)(out+(overlap>>1)));
+   opus_ifft_impl(l->kfft[shift], f2);
 
    /* Post-rotate and de-shuffle from both ends of the buffer at once to make
       it in-place. */
@@ -263,15 +266,15 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
       {
          kiss_fft_scalar re, im, yr, yi;
          kiss_twiddle_scalar t0, t1;
-         re = yp0[0];
-         im = yp0[1];
+         re = f2[i].r;
+         im = f2[i].i;
          t0 = t[i<<shift];
          t1 = t[(N4-i)<<shift];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
          yr = S_MUL(re,t0) - S_MUL(im,t1);
          yi = S_MUL(im,t0) + S_MUL(re,t1);
-         re = yp1[0];
-         im = yp1[1];
+         re = f2[N4-i-1].r;
+         im = f2[N4-i-1].i;
          /* works because the cos is nearly one */
          yp0[0] = -(yr - S_MUL(yi,sine));
          yp1[1] = yi + S_MUL(yr,sine);

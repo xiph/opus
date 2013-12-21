@@ -665,7 +665,7 @@ void opus_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fou
     }
 }
 
-void opus_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void opus_ifft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout)
 {
    int m2, m;
    int p;
@@ -676,11 +676,6 @@ void opus_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fo
 
    /* st->shift can be -1 */
    shift = st->shift>0 ? st->shift : 0;
-   celt_assert2 (fin != fout, "In-place FFT not supported");
-   /* Bit-reverse the input */
-   for (i=0;i<st->nfft;i++)
-      fout[st->bitrev[i]] = fin[i];
-
    fstride[0] = 1;
    L=0;
    do {
@@ -717,3 +712,14 @@ void opus_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fo
    }
 }
 
+#ifdef TEST_UNIT_DFT_C
+void opus_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+{
+   int i;
+   celt_assert2 (fin != fout, "In-place FFT not supported");
+   /* Bit-reverse the input */
+   for (i=0;i<st->nfft;i++)
+      fout[st->bitrev[i]] = fin[i];
+   opus_ifft_impl(st, fout);
+}
+#endif

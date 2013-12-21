@@ -38,6 +38,7 @@
 #include <stdio.h>
 
 #define CELT_C
+#define TEST_UNIT_DFT_C
 #include "stack_alloc.h"
 #include "kiss_fft.h"
 #include "kiss_fft.c"

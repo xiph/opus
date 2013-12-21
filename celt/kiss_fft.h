@@ -130,6 +130,8 @@ kiss_fft_state *opus_fft_alloc(int nfft,void * mem,size_t * lenmem);
 void opus_fft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
 void opus_ifft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
 
+void opus_ifft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout);
+
 void opus_fft_free(const kiss_fft_state *cfg);
 
 #ifdef __cplusplus
