@@ -182,20 +182,27 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       for(i=0;i<N4;i++)
       {
          kiss_fft_cpx yc;
+         kiss_twiddle_scalar t0, t1;
          kiss_fft_scalar re, im, yr, yi;
+         t0 = t[i<<shift];
+         t1 = t[(N4-i)<<shift];
+#ifdef FIXED_POINT
+         t0 = MULT16_16_P15(t0, scale);
+         t1 = MULT16_16_P15(t1, scale);
+#else
+         t0 *= st->scale;
+         t1 *= st->scale;
+#endif
          re = *yp++;
          im = *yp++;
-         yr = -S_MUL(re,t[i<<shift])  -  S_MUL(im,t[(N4-i)<<shift]);
-         yi = -S_MUL(im,t[i<<shift])  +  S_MUL(re,t[(N4-i)<<shift]);
+         yr = -S_MUL(re,t0)  -  S_MUL(im,t1);
+         yi = -S_MUL(im,t0)  +  S_MUL(re,t1);
          /* works because the cos is nearly one */
          yc.r = yr + S_MUL(yi,sine);
          yc.i = yi - S_MUL(yr,sine);
 #ifdef FIXED_POINT
-         yc.r = SHR32(MULT16_32_Q15(scale, yc.r), scale_shift);
-         yc.i = SHR32(MULT16_32_Q15(scale, yc.i), scale_shift);
-#else
-         yc.r *= st->scale;
-         yc.i *= st->scale;
+         yc.r = SHR32(yc.r, scale_shift);
+         yc.i = SHR32(yc.i, scale_shift);
 #endif
          f2[st->bitrev[i]] = yc;
       }
