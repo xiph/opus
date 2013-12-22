@@ -85,38 +85,61 @@ static void kf_bfly4(
                      int mm
                     )
 {
-   const kiss_twiddle_cpx *tw1,*tw2,*tw3;
-   kiss_fft_cpx scratch[6];
-   const size_t m2=2*m;
-   const size_t m3=3*m;
-   int i, j;
+   int i;
 
-   kiss_fft_cpx * Fout_beg = Fout;
-   for (i=0;i<N;i++)
+   if (m==1)
    {
-      Fout = Fout_beg + i*mm;
-      tw3 = tw2 = tw1 = st->twiddles;
-      for (j=0;j<m;j++)
+      /* Degenerate case where all the twiddles are 1. */
+      for (i=0;i<N;i++)
       {
-         C_MUL(scratch[0],Fout[m] , *tw1 );
-         C_MUL(scratch[1],Fout[m2] , *tw2 );
-         C_MUL(scratch[2],Fout[m3] , *tw3 );
+         kiss_fft_cpx scratch0, scratch1;
 
-         C_SUB( scratch[5] , *Fout, scratch[1] );
-         C_ADDTO(*Fout, scratch[1]);
-         C_ADD( scratch[3] , scratch[0] , scratch[2] );
-         C_SUB( scratch[4] , scratch[0] , scratch[2] );
-         C_SUB( Fout[m2], *Fout, scratch[3] );
-         tw1 += fstride;
-         tw2 += fstride*2;
-         tw3 += fstride*3;
-         C_ADDTO( *Fout , scratch[3] );
+         C_SUB( scratch0 , *Fout, Fout[2] );
+         C_ADDTO(*Fout, Fout[2]);
+         C_ADD( scratch1 , Fout[1] , Fout[3] );
+         C_SUB( Fout[2], *Fout, scratch1 );
+         C_ADDTO( *Fout , scratch1 );
+         C_SUB( scratch1 , Fout[1] , Fout[3] );
 
-         Fout[m].r = scratch[5].r + scratch[4].i;
-         Fout[m].i = scratch[5].i - scratch[4].r;
-         Fout[m3].r = scratch[5].r - scratch[4].i;
-         Fout[m3].i = scratch[5].i + scratch[4].r;
-         ++Fout;
+         Fout[1].r = scratch0.r + scratch1.i;
+         Fout[1].i = scratch0.i - scratch1.r;
+         Fout[3].r = scratch0.r - scratch1.i;
+         Fout[3].i = scratch0.i + scratch1.r;
+         Fout+=4;
+      }
+   } else {
+      int j;
+      kiss_fft_cpx scratch[6];
+      const kiss_twiddle_cpx *tw1,*tw2,*tw3;
+      const int m2=2*m;
+      const int m3=3*m;
+      kiss_fft_cpx * Fout_beg = Fout;
+      for (i=0;i<N;i++)
+      {
+         Fout = Fout_beg + i*mm;
+         tw3 = tw2 = tw1 = st->twiddles;
+         for (j=0;j<m;j++)
+         {
+            C_MUL(scratch[0],Fout[m] , *tw1 );
+            C_MUL(scratch[1],Fout[m2] , *tw2 );
+            C_MUL(scratch[2],Fout[m3] , *tw3 );
+
+            C_SUB( scratch[5] , *Fout, scratch[1] );
+            C_ADDTO(*Fout, scratch[1]);
+            C_ADD( scratch[3] , scratch[0] , scratch[2] );
+            C_SUB( scratch[4] , scratch[0] , scratch[2] );
+            C_SUB( Fout[m2], *Fout, scratch[3] );
+            tw1 += fstride;
+            tw2 += fstride*2;
+            tw3 += fstride*3;
+            C_ADDTO( *Fout , scratch[3] );
+
+            Fout[m].r = scratch[5].r + scratch[4].i;
+            Fout[m].i = scratch[5].i - scratch[4].r;
+            Fout[m3].r = scratch[5].r - scratch[4].i;
+            Fout[m3].i = scratch[5].i + scratch[4].r;
+            ++Fout;
+         }
       }
    }
 }
@@ -291,6 +314,9 @@ static
 int kf_factor(int n,opus_int16 * facbuf)
 {
     int p=4;
+    int i;
+    int stages=0;
+    int nbak = n;
 
     /*factor out powers of 4, powers of 2, then any remaining primes */
     do {
@@ -312,9 +338,25 @@ int kf_factor(int n,opus_int16 * facbuf)
         {
            return 0;
         }
-        *facbuf++ = p;
-        *facbuf++ = n;
+        facbuf[2*stages] = p;
+        stages++;
     } while (n > 1);
+    n = nbak;
+    /* Reverse the order to get the radix 4 at the end, so we can use the
+       fast degenerate case. It turns out that reversing the order also
+       improves the noise behaviour. */
+    for (i=0;i<stages/2;i++)
+    {
+       int tmp;
+       tmp = facbuf[2*i];
+       facbuf[2*i] = facbuf[2*(stages-i-1)];
+       facbuf[2*(stages-i-1)] = tmp;
+    }
+    for (i=0;i<stages;i++)
+    {
+        n /= facbuf[2*i];
+        facbuf[2*i+1] = n;
+    }
     return 1;
 }
 
