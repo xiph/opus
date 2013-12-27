@@ -142,7 +142,7 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    N4 = N>>2;
 
    ALLOC(f, N2, kiss_fft_scalar);
-   ALLOC(f2, N2, kiss_fft_cpx);
+   ALLOC(f2, N4, kiss_fft_cpx);
 
    /* Consider the input to be composed of four blocks: [a, b, c, d] */
    /* Window, shuffle, fold */
