@@ -63,6 +63,7 @@ static void kf_bfly2(
       Fout = Fout_beg + i*mm;
       Fout2 = Fout + m;
       tw1 = st->twiddles;
+      /* For non-custom modes, m is guaranteed to be a multiple of 4. */
       for(j=0;j<m;j++)
       {
          kiss_fft_cpx t;
@@ -118,6 +119,8 @@ static void kf_bfly4(
       {
          Fout = Fout_beg + i*mm;
          tw3 = tw2 = tw1 = st->twiddles;
+         /* For non-custom modes, m=4, otherwise m is guaranteed to be a
+            multiple of 4. */
          for (j=0;j<m;j++)
          {
             C_MUL(scratch[0],Fout[m] , *tw1 );
@@ -169,6 +172,7 @@ static void kf_bfly3(
    {
       Fout = Fout_beg + i*mm;
       tw1=tw2=st->twiddles;
+      /* For non-custom modes, m is guaranteed to be a multiple of 4. */
       k=m;
       do {
 
@@ -229,6 +233,7 @@ static void kf_bfly5(
       Fout3=Fout0+3*m;
       Fout4=Fout0+4*m;
 
+      /* For non-custom modes, m is guaranteed to be a multiple of 4. */
       for ( u=0; u<m; ++u ) {
          scratch[0] = *Fout0;
 

@@ -202,8 +202,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
          t1 = t[N4+i];
          re = *yp++;
          im = *yp++;
-         yr = -S_MUL(re,t0)  +  S_MUL(im,t1);
-         yi = -S_MUL(im,t0)  -  S_MUL(re,t1);
+         yr = S_MUL(re,t0)  -  S_MUL(im,t1);
+         yi = S_MUL(im,t0)  +  S_MUL(re,t1);
          yc.r = yr;
          yc.i = yi;
          yc.r = PSHR32(MULT16_32_Q16(scale, yc.r), scale_shift);
@@ -226,8 +226,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       for(i=0;i<N4;i++)
       {
          kiss_fft_scalar yr, yi;
-         yr = -S_MUL(fp->i,t[N4+i]) + S_MUL(fp->r,t[i]);
-         yi = -S_MUL(fp->r,t[N4+i]) - S_MUL(fp->i,t[i]);
+         yr = S_MUL(fp->i,t[N4+i]) - S_MUL(fp->r,t[i]);
+         yi = S_MUL(fp->r,t[N4+i]) + S_MUL(fp->i,t[i]);
          *yp1 = yr;
          *yp2 = yi;
          fp++;
@@ -268,8 +268,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          int rev;
          kiss_fft_scalar yr, yi;
          rev = *bitrev++;
-         yr = -S_MUL(*xp2, t[i]) - S_MUL(*xp1,t[N4+i]);
-         yi =  S_MUL(*xp2, t[N4+i]) - S_MUL(*xp1,t[i]);
+         yr = S_MUL(*xp2, t[i]) + S_MUL(*xp1, t[N4+i]);
+         yi = S_MUL(*xp1, t[i]) - S_MUL(*xp2, t[N4+i]);
          /* We swap real and imag because we use an FFT instead of an IFFT. */
          yp[2*rev+1] = yr;
          yp[2*rev] = yi;
@@ -300,19 +300,19 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          t1 = t[N4+i];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
          yr = S_MUL(re,t0) + S_MUL(im,t1);
-         yi = S_MUL(im,t0) - S_MUL(re,t1);
+         yi = S_MUL(re,t1) - S_MUL(im,t0);
          /* We swap real and imag because we're using an FFT instead of an IFFT. */
          re = yp1[1];
          im = yp1[0];
-         yp0[0] = -yr;
+         yp0[0] = yr;
          yp1[1] = yi;
 
          t0 = t[(N4-i-1)];
          t1 = t[(N2-i-1)];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
          yr = S_MUL(re,t0) + S_MUL(im,t1);
-         yi = S_MUL(im,t0) - S_MUL(re,t1);
-         yp1[0] = -yr;
+         yi = S_MUL(re,t1) - S_MUL(im,t0);
+         yp1[0] = yr;
          yp0[1] = yi;
          yp0 += 2;
          yp1 -= 2;
