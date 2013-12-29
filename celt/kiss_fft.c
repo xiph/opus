@@ -519,7 +519,6 @@ void opus_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fou
       MULT16_32_Q15() on ARM. */
    int scale_shift = st->scale_shift-1;
 #endif
-   SAVE_STACK;
    scale = st->scale;
 
    celt_assert2 (fin != fout, "In-place FFT not supported");
