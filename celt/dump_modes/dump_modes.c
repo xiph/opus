@@ -172,8 +172,9 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          fprintf (file, "static const kiss_fft_state fft_state%d_%d_%d = {\n",
                mode->Fs, mdctSize, k);
          fprintf (file, "%d,\t/* nfft */\n", mode->mdct.kfft[k]->nfft);
-#ifndef FIXED_POINT
-         fprintf (file, "%0.9ff,\t/* scale */\n", mode->mdct.kfft[k]->scale);
+         fprintf (file, WORD16 ",\t/* scale */\n", mode->mdct.kfft[k]->scale);
+#ifdef FIXED_POINT
+         fprintf (file, "%d,\t/* scale_shift */\n", mode->mdct.kfft[k]->scale_shift);
 #endif
          fprintf (file, "%d,\t/* shift */\n", mode->mdct.kfft[k]->shift);
          fprintf (file, "{");

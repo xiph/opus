@@ -79,8 +79,9 @@ typedef struct {
 
 typedef struct kiss_fft_state{
     int nfft;
-#ifndef FIXED_POINT
-    kiss_fft_scalar scale;
+    opus_val16 scale;
+#ifdef FIXED_POINT
+    int scale_shift;
 #endif
     int shift;
     opus_int16 factors[2*MAXFACTORS];

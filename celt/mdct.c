@@ -121,22 +121,12 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    const kiss_twiddle_scalar *trig;
    opus_val16 scale;
 #ifdef FIXED_POINT
-   int scale_shift;
-#endif
-   SAVE_STACK;
-#ifdef FIXED_POINT
-   /* FIXME: This should eventually just go in the state. */
-   scale_shift = celt_ilog2(st->nfft);
-   if (st->nfft == 1<<scale_shift)
-      scale = Q15ONE;
-   else
-      scale = (1073741824+st->nfft/2)/st->nfft>>(15-scale_shift);
    /* Allows us to scale with MULT16_32_Q16(), which is faster than
       MULT16_32_Q15() on ARM. */
-   scale_shift--;
-#else
-   scale = st->scale;
+   int scale_shift = st->scale_shift-1;
 #endif
+   SAVE_STACK;
+   scale = st->scale;
 
    N = l->n;
    trig = l->trig;

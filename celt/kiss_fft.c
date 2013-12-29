@@ -405,7 +405,13 @@ kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
         kiss_twiddle_cpx *twiddles;
 
         st->nfft=nfft;
-#ifndef FIXED_POINT
+#ifdef FIXED_POINT
+        st->scale_shift = celt_ilog2(st->nfft);
+        if (st->nfft == 1<<st->scale_shift)
+           st->scale = Q15ONE;
+        else
+           st->scale = (1073741824+st->nfft/2)/st->nfft>>(15-st->scale_shift);
+#else
         st->scale = 1.f/nfft;
 #endif
         if (base != NULL)
@@ -507,29 +513,22 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout)
 void opus_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
    int i;
-#ifdef FIXED_POINT
-   /* FIXME: This should eventually just go in the state. */
    opus_val16 scale;
-   int scale_shift;
-   scale_shift = celt_ilog2(st->nfft);
-   if (st->nfft == 1<<scale_shift)
-      scale = Q15ONE;
-   else
-      scale = (1073741824+st->nfft/2)/st->nfft>>(15-scale_shift);
+#ifdef FIXED_POINT
+   /* Allows us to scale with MULT16_32_Q16(), which is faster than
+      MULT16_32_Q15() on ARM. */
+   int scale_shift = st->scale_shift-1;
 #endif
+   SAVE_STACK;
+   scale = st->scale;
 
    celt_assert2 (fin != fout, "In-place FFT not supported");
    /* Bit-reverse the input */
    for (i=0;i<st->nfft;i++)
    {
       kiss_fft_cpx x = fin[i];
-#ifdef FIXED_POINT
-      fout[st->bitrev[i]].r = SHR32(MULT16_32_Q15(scale, x.r), scale_shift);
-      fout[st->bitrev[i]].i = SHR32(MULT16_32_Q15(scale, x.i), scale_shift);
-#else
-      fout[st->bitrev[i]].r = st->scale*x.r;
-      fout[st->bitrev[i]].i = st->scale*x.i;
-#endif
+      fout[st->bitrev[i]].r = SHR32(MULT16_32_Q16(scale, x.r), scale_shift);
+      fout[st->bitrev[i]].i = SHR32(MULT16_32_Q16(scale, x.i), scale_shift);
    }
    opus_fft_impl(st, fout);
 }
