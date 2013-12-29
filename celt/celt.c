@@ -131,12 +131,12 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
          OPUS_MOVE(y, x, N);
       return;
    }
-   g00 = MULT16_16_Q15(g0, gains[tapset0][0]);
-   g01 = MULT16_16_Q15(g0, gains[tapset0][1]);
-   g02 = MULT16_16_Q15(g0, gains[tapset0][2]);
-   g10 = MULT16_16_Q15(g1, gains[tapset1][0]);
-   g11 = MULT16_16_Q15(g1, gains[tapset1][1]);
-   g12 = MULT16_16_Q15(g1, gains[tapset1][2]);
+   g00 = MULT16_16_P15(g0, gains[tapset0][0]);
+   g01 = MULT16_16_P15(g0, gains[tapset0][1]);
+   g02 = MULT16_16_P15(g0, gains[tapset0][2]);
+   g10 = MULT16_16_P15(g1, gains[tapset1][0]);
+   g11 = MULT16_16_P15(g1, gains[tapset1][1]);
+   g12 = MULT16_16_P15(g1, gains[tapset1][2]);
    x1 = x[-T1+1];
    x2 = x[-T1  ];
    x3 = x[-T1-1];
