@@ -121,8 +121,11 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    const kiss_twiddle_scalar *trig;
    opus_val16 scale;
 #ifdef FIXED_POINT
-   /* FIXME: This should eventually just go in the state. */
    int scale_shift;
+#endif
+   SAVE_STACK;
+#ifdef FIXED_POINT
+   /* FIXME: This should eventually just go in the state. */
    scale_shift = celt_ilog2(st->nfft);
    if (st->nfft == 1<<scale_shift)
       scale = Q15ONE;
@@ -134,7 +137,6 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
 #else
    scale = st->scale;
 #endif
-   SAVE_STACK;
 
    N = l->n;
    trig = l->trig;
