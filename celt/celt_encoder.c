@@ -416,7 +416,7 @@ int patch_transient_decision(opus_val16 *newE, opus_val16 *oldE, int nbEBands,
 static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS_RESTRICT in,
                           celt_sig * OPUS_RESTRICT out, int C, int CC, int LM, int upsample)
 {
-   const int overlap = OVERLAP(mode);
+   const int overlap = mode->overlap;
    int N;
    int B;
    int shift;

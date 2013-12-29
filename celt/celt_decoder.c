@@ -264,7 +264,7 @@ void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X,
    int B;
    int N;
    int shift;
-   const int overlap = OVERLAP(mode);
+   const int overlap = mode->overlap;
 
    if (shortBlocks)
    {
