@@ -167,7 +167,12 @@ static void kf_bfly3(
    kiss_twiddle_cpx epi3;
 
    kiss_fft_cpx * Fout_beg = Fout;
+#ifdef FIXED_POINT
+   epi3.r = -16384;
+   epi3.i = -28378;
+#else
    epi3 = st->twiddles[fstride*m];
+#endif
    for (i=0;i<N;i++)
    {
       Fout = Fout_beg + i*mm;
@@ -215,13 +220,19 @@ static void kf_bfly5(
    kiss_fft_cpx *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
    int i, u;
    kiss_fft_cpx scratch[13];
-   const kiss_twiddle_cpx * twiddles = st->twiddles;
    const kiss_twiddle_cpx *tw;
    kiss_twiddle_cpx ya,yb;
    kiss_fft_cpx * Fout_beg = Fout;
 
-   ya = twiddles[fstride*m];
-   yb = twiddles[fstride*2*m];
+#ifdef FIXED_POINT
+   ya.r = 10126;
+   ya.i = -31164;
+   yb.r = -26510;
+   yb.i = -19261;
+#else
+   ya = st->twiddles[fstride*m];
+   yb = st->twiddles[fstride*2*m];
+#endif
    tw=st->twiddles;
 
    for (i=0;i<N;i++)
