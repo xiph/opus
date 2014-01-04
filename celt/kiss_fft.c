@@ -47,32 +47,55 @@
 
 static void kf_bfly2(
                      kiss_fft_cpx * Fout,
-                     const size_t fstride,
-                     const kiss_fft_state *st,
                      int m,
-                     int N,
-                     int mm
+                     int N
                     )
 {
    kiss_fft_cpx * Fout2;
-   const kiss_twiddle_cpx * tw1;
-   int i,j;
-   kiss_fft_cpx * Fout_beg = Fout;
-   for (i=0;i<N;i++)
+   int i;
+#ifdef CUSTOM_MODES
+   if (m==1)
    {
-      Fout = Fout_beg + i*mm;
-      Fout2 = Fout + m;
-      tw1 = st->twiddles;
-      /* For non-custom modes, m is guaranteed to be a multiple of 4. */
-      for(j=0;j<m;j++)
+      celt_assert(m==1);
+      for (i=0;i<N;i++)
       {
          kiss_fft_cpx t;
-         C_MUL (t,  *Fout2 , *tw1);
-         tw1 += fstride;
+         Fout2 = Fout + 1;
+         t = *Fout2;
          C_SUB( *Fout2 ,  *Fout , t );
          C_ADDTO( *Fout ,  t );
-         ++Fout2;
-         ++Fout;
+         Fout += 2;
+      }
+   } else
+#endif
+   {
+      opus_val16 tw;
+      tw = QCONST16(0.7071067812f, 15);
+      /* We know that m==4 here because the radix-2 is just after a radix-4 */
+      celt_assert(m==4);
+      for (i=0;i<N;i++)
+      {
+         kiss_fft_cpx t;
+         Fout2 = Fout + 4;
+         t = Fout2[0];
+         C_SUB( Fout2[0] ,  Fout[0] , t );
+         C_ADDTO( Fout[0] ,  t );
+
+         t.r = S_MUL(Fout2[1].r+Fout2[1].i, tw);
+         t.i = S_MUL(Fout2[1].i-Fout2[1].r, tw);
+         C_SUB( Fout2[1] ,  Fout[1] , t );
+         C_ADDTO( Fout[1] ,  t );
+
+         t.r = Fout2[2].i;
+         t.i = -Fout2[2].r;
+         C_SUB( Fout2[2] ,  Fout[2] , t );
+         C_ADDTO( Fout[2] ,  t );
+
+         t.r = S_MUL(Fout2[3].i-Fout2[3].r, tw);
+         t.i = S_MUL(-Fout2[3].i-Fout2[3].r, tw);
+         C_SUB( Fout2[3] ,  Fout[3] , t );
+         C_ADDTO( Fout[3] ,  t );
+         Fout += 8;
       }
    }
 }
@@ -119,8 +142,7 @@ static void kf_bfly4(
       {
          Fout = Fout_beg + i*mm;
          tw3 = tw2 = tw1 = st->twiddles;
-         /* For non-custom modes, m=4, otherwise m is guaranteed to be a
-            multiple of 4. */
+         /* m is guaranteed to be a multiple of 4. */
          for (j=0;j<m;j++)
          {
             C_MUL(scratch[0],Fout[m] , *tw1 );
@@ -355,6 +377,11 @@ int kf_factor(int n,opus_int16 * facbuf)
            return 0;
         }
         facbuf[2*stages] = p;
+        if (p==2 && stages > 1)
+        {
+           facbuf[2*stages] = 4;
+           facbuf[2] = 2;
+        }
         stages++;
     } while (n > 1);
     n = nbak;
@@ -503,7 +530,7 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout)
        switch (st->factors[2*i])
        {
        case 2:
-          kf_bfly2(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+          kf_bfly2(fout, m, fstride[i]);
           break;
        case 4:
           kf_bfly4(fout,fstride[i]<<shift,st,m, fstride[i], m2);
