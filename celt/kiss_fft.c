@@ -53,6 +53,7 @@ static void kf_bfly2(
 {
    kiss_fft_cpx * Fout2;
    int i;
+   (void)m;
 #ifdef CUSTOM_MODES
    if (m==1)
    {
