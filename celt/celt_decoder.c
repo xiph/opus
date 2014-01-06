@@ -257,35 +257,6 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
    RESTORE_STACK;
 }
 
-/** Compute the IMDCT and apply window for all sub-frames and
-    all channels in a frame */
-#ifndef RESYNTH
-static
-#endif
-void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X,
-      celt_sig * OPUS_RESTRICT out_mem, int LM)
-{
-   int b;
-   int B;
-   int N;
-   int shift;
-   const int overlap = mode->overlap;
-
-   if (shortBlocks)
-   {
-      B = shortBlocks;
-      N = mode->shortMdctSize;
-      shift = mode->maxLM;
-   } else {
-      B = 1;
-      N = mode->shortMdctSize<<LM;
-      shift = mode->maxLM-LM;
-   }
-   /* IMDCT on the interleaved the sub-frames, overlap-add is performed by the IMDCT */
-   for (b=0;b<B;b++)
-      clt_mdct_backward(&mode->mdct, &X[b], out_mem+N*b, mode->window, overlap, shift, B);
-}
-
 #ifndef RESYNTH
 static
 #endif
@@ -294,9 +265,12 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       int LM, int downsample, int silence)
 {
    int c, i;
-   int M, N;
+   int M;
+   int b;
+   int B;
+   int N, NB;
+   int shift;
    int nbEBands;
-   int shortBlocks;
    int overlap;
    VARDECL(celt_sig, freq);
    SAVE_STACK;
@@ -306,7 +280,17 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
    N = mode->shortMdctSize<<LM;
    ALLOC(freq, N, celt_sig); /**< Interleaved signal MDCTs */
    M = 1<<LM;
-   shortBlocks = isTransient ? M : 0;
+
+   if (isTransient)
+   {
+      B = M;
+      NB = mode->shortMdctSize;
+      shift = mode->maxLM;
+   } else {
+      B = 1;
+      NB = mode->shortMdctSize<<LM;
+      shift = mode->maxLM-LM;
+   }
 
    if (CC==2&&C==1)
    {
@@ -317,8 +301,10 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       /* Store a temporary copy in the output buffer because the IMDCT destroys its input. */
       freq2 = out_syn[1]+overlap/2;
       OPUS_COPY(freq2, freq, N);
-      compute_inv_mdcts(mode, shortBlocks, freq2, out_syn[0], LM);
-      compute_inv_mdcts(mode, shortBlocks, freq, out_syn[1], LM);
+      for (b=0;b<B;b++)
+         clt_mdct_backward(&mode->mdct, &freq2[b], out_syn[0]+NB*b, mode->window, overlap, shift, B);
+      for (b=0;b<B;b++)
+         clt_mdct_backward(&mode->mdct, &freq[b], out_syn[1]+NB*b, mode->window, overlap, shift, B);
    } else if (CC==1&&C==2)
    {
       /* Downmixing a stereo stream to mono */
@@ -331,14 +317,15 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
             downsample, silence);
       for (i=0;i<N;i++)
          freq[i] = HALF32(ADD32(freq[i],freq2[i]));
-      /* Compute inverse MDCTs */
-      compute_inv_mdcts(mode, shortBlocks, freq, out_syn[0], LM);
+      for (b=0;b<B;b++)
+         clt_mdct_backward(&mode->mdct, &freq[b], out_syn[0]+NB*b, mode->window, overlap, shift, B);
    } else {
       /* Normal case (mono or stereo) */
       c=0; do {
          denormalise_bands(mode, X+c*N, freq, oldBandE+c*nbEBands, start, effEnd, M,
                downsample, silence);
-         compute_inv_mdcts(mode, shortBlocks, freq, out_syn[c], LM);
+         for (b=0;b<B;b++)
+            clt_mdct_backward(&mode->mdct, &freq[b], out_syn[c]+NB*b, mode->window, overlap, shift, B);
       } while (++c<CC);
    }
    RESTORE_STACK;
