@@ -108,6 +108,10 @@ typedef opus_val32 celt_ener;
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))
 #define ABS32(x) ((x) < 0 ? (-(x)) : (x))
 
+static OPUS_INLINE opus_int16 SAT16(opus_int32 x) {
+   return x > 32767 ? 32767 : x < -32768 ? -32768 : (opus_int16)x;
+}
+
 #ifdef FIXED_DEBUG
 #include "fixed_debug.h"
 #else

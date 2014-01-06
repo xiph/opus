@@ -191,7 +191,7 @@ static OPUS_INLINE opus_val16 SIG2WORD16(celt_sig x)
 static
 #endif
 void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, const opus_val16 *coef,
-      celt_sig *mem)
+      celt_sig *mem, int accum)
 {
    int c;
    int Nd;
@@ -199,7 +199,10 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
    opus_val16 coef0;
    VARDECL(celt_sig, scratch);
    SAVE_STACK;
-
+#ifndef FIXED_POINT
+   (void)accum;
+   celt_assert(accum==0);
+#endif
    ALLOC(scratch, N, celt_sig);
    coef0 = coef[0];
    Nd = N/downsample;
@@ -238,11 +241,24 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
          apply_downsampling=1;
       } else {
          /* Shortcut for the standard (non-custom modes) case */
-         for (j=0;j<N;j++)
+#ifdef FIXED_POINT
+         if (accum)
          {
-            celt_sig tmp = x[j] + m + VERY_SMALL;
-            m = MULT16_32_Q15(coef0, tmp);
-            y[j*C] = SCALEOUT(SIG2WORD16(tmp));
+            for (j=0;j<N;j++)
+            {
+               celt_sig tmp = x[j] + m + VERY_SMALL;
+               m = MULT16_32_Q15(coef0, tmp);
+               y[j*C] = SAT16(ADD32(y[j*C], SCALEOUT(SIG2WORD16(tmp))));
+            }
+         } else
+#endif
+         {
+            for (j=0;j<N;j++)
+            {
+               celt_sig tmp = x[j] + m + VERY_SMALL;
+               m = MULT16_32_Q15(coef0, tmp);
+               y[j*C] = SCALEOUT(SIG2WORD16(tmp));
+            }
          }
       }
       mem[c] = m;
@@ -250,8 +266,17 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
       if (apply_downsampling)
       {
          /* Perform down-sampling */
-         for (j=0;j<Nd;j++)
-            y[j*C] = SCALEOUT(SIG2WORD16(scratch[j*downsample]));
+#ifdef FIXED_POINT
+         if (accum)
+         {
+            for (j=0;j<Nd;j++)
+               y[j*C] = SAT16(ADD32(y[j*C], SCALEOUT(SIG2WORD16(scratch[j*downsample]))));
+         } else
+#endif
+         {
+            for (j=0;j<Nd;j++)
+               y[j*C] = SCALEOUT(SIG2WORD16(scratch[j*downsample]));
+         }
       }
    } while (++c<C);
    RESTORE_STACK;
@@ -378,7 +403,8 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
    pitch of 480 Hz. */
 #define PLC_PITCH_LAG_MIN (100)
 
-static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_RESTRICT pcm, int N, int LM)
+static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_RESTRICT pcm,
+      int N, int LM, int accum)
 {
    int c;
    int i;
@@ -680,15 +706,15 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       } while (++c<C);
    }
 
-   deemphasis(out_syn, pcm, N, C, downsample,
-         mode->preemph, st->preemph_memD);
+   deemphasis(out_syn, pcm, N, C, downsample, mode->preemph, st->preemph_memD, accum);
 
    st->loss_count = loss_count+1;
 
    RESTORE_STACK;
 }
 
-int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec)
+int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data,
+      int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum)
 {
    int c, i, N;
    int spread_decision;
@@ -803,7 +829,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    if (data == NULL || len<=1)
    {
-      celt_decode_lost(st, pcm, N, LM);
+      celt_decode_lost(st, pcm, N, LM, accum);
       RESTORE_STACK;
       return frame_size/st->downsample;
    }
@@ -1030,7 +1056,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    st->rng = dec->rng;
 
    /* We reuse freq[] as scratch space for the de-emphasis */
-   deemphasis(out_syn, pcm, N, CC, st->downsample, mode->preemph, st->preemph_memD);
+   deemphasis(out_syn, pcm, N, CC, st->downsample, mode->preemph, st->preemph_memD, accum);
    st->loss_count = 0;
    RESTORE_STACK;
    if (ec_tell(dec) > 8*len)
@@ -1046,7 +1072,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 #ifdef FIXED_POINT
 int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int16 * OPUS_RESTRICT pcm, int frame_size)
 {
-   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL);
+   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
 }
 
 #ifndef DISABLE_FLOAT_API
@@ -1063,7 +1089,7 @@ int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    N = frame_size;
 
    ALLOC(out, C*N, opus_int16);
-   ret=celt_decode_with_ec(st, data, len, out, frame_size, NULL);
+   ret=celt_decode_with_ec(st, data, len, out, frame_size, NULL, 0);
    if (ret>0)
       for (j=0;j<C*ret;j++)
          pcm[j]=out[j]*(1.f/32768.f);
@@ -1077,7 +1103,7 @@ int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 
 int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, float * OPUS_RESTRICT pcm, int frame_size)
 {
-   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL);
+   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
 }
 
 int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int16 * OPUS_RESTRICT pcm, int frame_size)
@@ -1093,7 +1119,7 @@ int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data
    N = frame_size;
    ALLOC(out, C*N, celt_sig);
 
-   ret=celt_decode_with_ec(st, data, len, out, frame_size, NULL);
+   ret=celt_decode_with_ec(st, data, len, out, frame_size, NULL, 0);
 
    if (ret>0)
       for (j=0;j<C*ret;j++)
