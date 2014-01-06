@@ -421,15 +421,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       }
       st->rng = seed;
 
-      denormalise_bands(mode, X, freq, plcLogE, start, effEnd, C, 1<<LM);
+      denormalise_bands(mode, X, freq, plcLogE, start, effEnd, C, 1<<LM,
+            downsample, 0);
 
-      c=0; do {
-         int bound = eBands[effEnd]<<LM;
-         if (downsample!=1)
-            bound = IMIN(bound, N/downsample);
-         for (i=bound;i<N;i++)
-            freq[c*N+i] = 0;
-      } while (++c<C);
       c=0; do {
          OPUS_MOVE(decode_mem[c], decode_mem[c]+N,
                DECODE_BUFFER_SIZE-N+(overlap>>1));
@@ -921,22 +915,15 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    {
       for (i=0;i<C*nbEBands;i++)
          oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
-      for (i=0;i<C*N;i++)
-         freq[i] = 0;
-   } else {
-      /* Synthesis */
-      denormalise_bands(mode, X, freq, oldBandE, start, effEnd, C, M);
    }
+
+   /* Synthesis */
+   denormalise_bands(mode, X, freq, oldBandE, start, effEnd, C, M,
+         st->downsample, silence);
+
    c=0; do {
       OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap/2);
    } while (++c<CC);
-
-   c=0; do {
-      int bound = M*eBands[effEnd];
-      if (st->downsample!=1)
-         bound = IMIN(bound, N/st->downsample);
-      OPUS_CLEAR(&freq[c*N+bound], N-bound);
-   } while (++c<C);
 
    c=0; do {
       out_syn[c] = decode_mem[c]+DECODE_BUFFER_SIZE-N;

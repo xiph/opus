@@ -1973,14 +1973,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
                start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
       }
 
-      if (silence)
-      {
-         for (i=0;i<C*N;i++)
-            freq[i] = 0;
-      } else {
-         /* Synthesis */
-         denormalise_bands(mode, X, freq, oldBandE, start, effEnd, C, M);
-      }
+      /* Synthesis */
+      denormalise_bands(mode, X, freq, oldBandE, start, effEnd, C, M,
+            st->upsample, silence);
 
       c=0; do {
          OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, 2*MAX_PERIOD-N+overlap/2);

@@ -193,12 +193,22 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
-      celt_sig * OPUS_RESTRICT freq, const opus_val16 *bandLogE, int start, int end, int C, int M)
+      celt_sig * OPUS_RESTRICT freq, const opus_val16 *bandLogE, int start,
+      int end, int C, int M, int downsample, int silence)
 {
    int i, c, N;
+   int bound;
    const opus_int16 *eBands = m->eBands;
    N = M*m->shortMdctSize;
+   bound = M*eBands[end];
+   if (downsample!=1)
+      bound = IMIN(bound, N/downsample);
    celt_assert2(C<=2, "denormalise_bands() not implemented for >2 channels");
+   if (silence)
+   {
+      bound = 0;
+      start = end = 0;
+   }
    c=0; do {
       celt_sig * OPUS_RESTRICT f;
       const celt_norm * OPUS_RESTRICT x;
@@ -252,7 +262,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
          } while (++j<band_end);
       }
       celt_assert(start <= end);
-      OPUS_CLEAR(&freq[c*N+M*eBands[end]], N-M*eBands[end]);
+      OPUS_CLEAR(&freq[c*N+bound], N-bound);
    } while (++c<C);
 }
 
