@@ -708,7 +708,11 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    opus_int32 bits;
    ec_dec _dec;
    VARDECL(celt_sig, freq);
+#ifdef SMALL_FOOTPRINT
+   celt_norm *X;
+#else
    VARDECL(celt_norm, X);
+#endif
    VARDECL(int, fine_quant);
    VARDECL(int, pulses);
    VARDECL(int, cap);
@@ -944,9 +948,21 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    unquant_fine_energy(mode, start, end, oldBandE, fine_quant, dec, C);
 
+   c=0; do {
+      OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap/2);
+      out_syn[c] = decode_mem[c]+DECODE_BUFFER_SIZE-N;
+   } while (++c<CC);
+
    /* Decode fixed codebook */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
+
+#ifdef SMALL_FOOTPRINT
+   /* This is an ugly hack that breaks aliasing rules and would be easily broken,
+      but it saves almost 4kB of stack. */
+   X = (celt_norm*)(out_syn[CC-1]+overlap/2);
+#else
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
+#endif
 
    quant_all_bands(0, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
@@ -969,14 +985,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       for (i=0;i<C*nbEBands;i++)
          oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
    }
-
-   c=0; do {
-      OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap/2);
-   } while (++c<CC);
-
-   c=0; do {
-      out_syn[c] = decode_mem[c]+DECODE_BUFFER_SIZE-N;
-   } while (++c<CC);
 
    celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, CC, isTransient, LM, st->downsample, silence);
 
