@@ -720,7 +720,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    int spread_decision;
    opus_int32 bits;
    ec_dec _dec;
-   VARDECL(celt_sig, freq);
 #ifdef SMALL_FOOTPRINT
    celt_norm *X;
 #else
@@ -1055,7 +1054,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    } while (++c<2);
    st->rng = dec->rng;
 
-   /* We reuse freq[] as scratch space for the de-emphasis */
    deemphasis(out_syn, pcm, N, CC, st->downsample, mode->preemph, st->preemph_memD, accum);
    st->loss_count = 0;
    RESTORE_STACK;
