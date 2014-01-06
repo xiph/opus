@@ -1973,25 +1973,15 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
                start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
       }
 
-      /* Synthesis */
-      denormalise_bands(mode, X, freq, oldBandE, start, effEnd, C, M,
-            st->upsample, silence);
-
       c=0; do {
          OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, 2*MAX_PERIOD-N+overlap/2);
       } while (++c<CC);
-
-      if (CC==2&&C==1)
-      {
-         for (i=0;i<N;i++)
-            freq[N+i] = freq[i];
-      }
 
       c=0; do {
          out_mem[c] = st->syn_mem[c]+2*MAX_PERIOD-N;
       } while (++c<CC);
 
-      compute_inv_mdcts(mode, shortBlocks, freq, out_mem, CC, LM);
+      celt_synthesis(mode, X, out_mem, oldBandE, start, effEnd, C, CC, isTransient, LM, st->upsample, silence);
 
       c=0; do {
          st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
@@ -2006,7 +1996,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       } while (++c<CC);
 
       /* We reuse freq[] as scratch space for the de-emphasis */
-      deemphasis(out_mem, (opus_val16*)pcm, N, CC, st->upsample, mode->preemph, st->preemph_memD, freq);
+      deemphasis(out_mem, (opus_val16*)pcm, N, CC, st->upsample, mode->preemph, st->preemph_memD);
       st->prefilter_period_old = st->prefilter_period;
       st->prefilter_gain_old = st->prefilter_gain;
       st->prefilter_tapset_old = st->prefilter_tapset;

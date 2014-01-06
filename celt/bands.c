@@ -194,76 +194,73 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       celt_sig * OPUS_RESTRICT freq, const opus_val16 *bandLogE, int start,
-      int end, int C, int M, int downsample, int silence)
+      int end, int M, int downsample, int silence)
 {
-   int i, c, N;
+   int i, N;
    int bound;
+   celt_sig * OPUS_RESTRICT f;
+   const celt_norm * OPUS_RESTRICT x;
    const opus_int16 *eBands = m->eBands;
    N = M*m->shortMdctSize;
    bound = M*eBands[end];
    if (downsample!=1)
       bound = IMIN(bound, N/downsample);
-   celt_assert2(C<=2, "denormalise_bands() not implemented for >2 channels");
    if (silence)
    {
       bound = 0;
       start = end = 0;
    }
-   c=0; do {
-      celt_sig * OPUS_RESTRICT f;
-      const celt_norm * OPUS_RESTRICT x;
-      f = freq+c*N;
-      x = X+c*N+M*eBands[start];
-      for (i=0;i<M*eBands[start];i++)
-         *f++ = 0;
-      for (i=start;i<end;i++)
-      {
-         int j, band_end;
-         opus_val16 g;
-         opus_val16 lg;
+   f = freq;
+   x = X+M*eBands[start];
+   for (i=0;i<M*eBands[start];i++)
+      *f++ = 0;
+   for (i=start;i<end;i++)
+   {
+      int j, band_end;
+      opus_val16 g;
+      opus_val16 lg;
 #ifdef FIXED_POINT
-         int shift;
+      int shift;
 #endif
-         j=M*eBands[i];
-         band_end = M*eBands[i+1];
-         lg = ADD16(bandLogE[i+c*m->nbEBands], SHL16((opus_val16)eMeans[i],6));
+      j=M*eBands[i];
+      band_end = M*eBands[i+1];
+      lg = ADD16(bandLogE[i], SHL16((opus_val16)eMeans[i],6));
 #ifndef FIXED_POINT
-         g = celt_exp2(lg);
+      g = celt_exp2(lg);
 #else
-         /* Handle the integer part of the log energy */
-         shift = 16-(lg>>DB_SHIFT);
-         if (shift>31)
-         {
-            shift=0;
-            g=0;
-         } else {
-            /* Handle the fractional part. */
-            g = celt_exp2_frac(lg&((1<<DB_SHIFT)-1));
-         }
-         /* Handle extreme gains with negative shift. */
-         if (shift<0)
-         {
-            /* For shift < -2 we'd be likely to overflow, so we're capping
+      /* Handle the integer part of the log energy */
+      shift = 16-(lg>>DB_SHIFT);
+      if (shift>31)
+      {
+         shift=0;
+         g=0;
+      } else {
+         /* Handle the fractional part. */
+         g = celt_exp2_frac(lg&((1<<DB_SHIFT)-1));
+      }
+      /* Handle extreme gains with negative shift. */
+      if (shift<0)
+      {
+         /* For shift < -2 we'd be likely to overflow, so we're capping
                the gain here. This shouldn't happen unless the bitstream is
                already corrupted. */
-            if (shift < -2)
-            {
-               g = 32767;
-               shift = -2;
-            }
-            do {
-               *f++ = SHL32(MULT16_16(*x++, g), -shift);
-            } while (++j<band_end);
-         } else
+         if (shift < -2)
+         {
+            g = 32767;
+            shift = -2;
+         }
+         do {
+            *f++ = SHL32(MULT16_16(*x++, g), -shift);
+         } while (++j<band_end);
+      } else
 #endif
          /* Be careful of the fixed-point "else" just above when changing this code */
          do {
             *f++ = SHR32(MULT16_16(*x++, g), shift);
          } while (++j<band_end);
-      }
-      celt_assert(start <= end);
-      OPUS_CLEAR(&freq[c*N+bound], N-bound);
-   } while (++c<C);
+   }
+   celt_assert(start <= end);
+   OPUS_CLEAR(&freq[bound], N-bound);
 }
 
 /* This prevents energy collapse for transients with multiple short MDCTs */

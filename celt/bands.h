@@ -60,7 +60,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
  */
 void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       celt_sig * OPUS_RESTRICT freq, const opus_val16 *bandE, int start,
-      int end, int C, int M, int downsample, int silence);
+      int end, int M, int downsample, int silence);
 
 #define SPREAD_NONE       (0)
 #define SPREAD_LIGHT      (1)
