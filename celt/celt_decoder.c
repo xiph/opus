@@ -442,7 +442,11 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
    if (noise_based)
    {
       /* Noise-based PLC/CNG */
+#ifdef SMALL_FOOTPRINT
+      celt_norm *X;
+#else
       VARDECL(celt_norm, X);
+#endif
       opus_uint32 seed;
       opus_val16 *plcLogE;
       int end;
@@ -451,9 +455,13 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
       end = st->end;
       effEnd = IMAX(start, IMIN(end, mode->effEBands));
 
-      /* Share the interleaved signal MDCT coefficient buffer with the
-         deemphasis scratch buffer. */
+#ifdef SMALL_FOOTPRINT
+      /* This is an ugly hack that breaks aliasing rules and would be easily broken,
+         but it saves almost 4kB of stack. */
+      X = (celt_norm*)(out_syn[C-1]+overlap/2);
+#else
       ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
+#endif
 
       if (loss_count >= 5)
          plcLogE = backgroundLogE;
