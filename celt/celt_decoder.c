@@ -406,8 +406,8 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
 static int celt_plc_pitch_search(celt_sig *decode_mem[2], int C, int arch)
 {
    int pitch_index;
-   SAVE_STACK;
    VARDECL( opus_val16, lp_pitch_buf );
+   SAVE_STACK;
    ALLOC( lp_pitch_buf, DECODE_BUFFER_SIZE>>1, opus_val16 );
    pitch_downsample(decode_mem, lp_pitch_buf,
          DECODE_BUFFER_SIZE, C, arch);

@@ -47,13 +47,10 @@ opus_int silk_decode_frame(
 {
     VARDECL( silk_decoder_control, psDecCtrl );
     opus_int         L, mv_len, ret = 0;
-    VARDECL( opus_int16, pulses );
     SAVE_STACK;
 
     L = psDec->frame_length;
     ALLOC( psDecCtrl, 1, silk_decoder_control );
-    ALLOC( pulses, (L + SHELL_CODEC_FRAME_LENGTH - 1) &
-                   ~(SHELL_CODEC_FRAME_LENGTH - 1), opus_int16 );
     psDecCtrl->LTP_scale_Q14 = 0;
 
     /* Safety checks */
@@ -62,6 +59,9 @@ opus_int silk_decode_frame(
     if(   lostFlag == FLAG_DECODE_NORMAL ||
         ( lostFlag == FLAG_DECODE_LBRR && psDec->LBRR_flags[ psDec->nFramesDecoded ] == 1 ) )
     {
+        VARDECL( opus_int16, pulses );
+        ALLOC( pulses, (L + SHELL_CODEC_FRAME_LENGTH - 1) &
+                       ~(SHELL_CODEC_FRAME_LENGTH - 1), opus_int16 );
         /*********************************************/
         /* Decode quantization indices of side info  */
         /*********************************************/
