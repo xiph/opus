@@ -181,15 +181,24 @@ static OPUS_INLINE void silk_PLC_conceal(
     opus_int32 *sLPC_Q14_ptr;
     VARDECL( opus_int16, exc_buf );
     opus_int16 A_Q12[ MAX_LPC_ORDER ];
+#ifdef SMALL_FOOTPRINT
+    opus_int16 *sLTP;
+#else
     VARDECL( opus_int16, sLTP );
+#endif
     VARDECL( opus_int32, sLTP_Q14 );
     silk_PLC_struct *psPLC = &psDec->sPLC;
     opus_int32 prevGain_Q10[2];
     SAVE_STACK;
 
     ALLOC( exc_buf, 2*psPLC->subfr_length, opus_int16 );
-    ALLOC( sLTP, psDec->ltp_mem_length, opus_int16 );
     ALLOC( sLTP_Q14, psDec->ltp_mem_length + psDec->frame_length, opus_int32 );
+#ifdef SMALL_FOOTPRINT
+    /* Ugly hack that breaks aliasing rules to save stack: put sLTP at the very end of sLTP_Q14. */
+    sLTP = ((opus_int16*)&sLTP_Q14[psDec->ltp_mem_length + psDec->frame_length])-psDec->ltp_mem_length;
+#else
+    ALLOC( sLTP, psDec->ltp_mem_length, opus_int16 );
+#endif
 
     prevGain_Q10[0] = silk_RSHIFT( psPLC->prevGain_Q16[ 0 ], 6);
     prevGain_Q10[1] = silk_RSHIFT( psPLC->prevGain_Q16[ 1 ], 6);
