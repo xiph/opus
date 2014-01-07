@@ -403,8 +403,7 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
    pitch of 480 Hz. */
 #define PLC_PITCH_LAG_MIN (100)
 
-static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_RESTRICT pcm,
-      int N, int LM, int accum)
+static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
 {
    int c;
    int i;
@@ -417,7 +416,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
    int nbEBands;
    int overlap;
    int start;
-   int downsample;
    int loss_count;
    int noise_based;
    const opus_int16 *eBands;
@@ -440,7 +438,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
 
    loss_count = st->loss_count;
    start = st->start;
-   downsample = st->downsample;
    noise_based = loss_count >= 5 || start != 0;
    if (noise_based)
    {
@@ -706,8 +703,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, opus_val16 * OPUS_R
       } while (++c<C);
    }
 
-   deemphasis(out_syn, pcm, N, C, downsample, mode->preemph, st->preemph_memD, accum);
-
    st->loss_count = loss_count+1;
 
    RESTORE_STACK;
@@ -774,9 +769,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    end = st->end;
    frame_size *= st->downsample;
 
-   c=0; do {
-      decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+overlap);
-   } while (++c<CC);
    lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+overlap)*CC);
    oldBandE = lpc+CC*LPC_ORDER;
    oldLogE = oldBandE + 2*nbEBands;
@@ -821,6 +813,10 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       return OPUS_BAD_ARG;
 
    N = M*mode->shortMdctSize;
+   c=0; do {
+      decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+overlap);
+      out_syn[c] = decode_mem[c]+DECODE_BUFFER_SIZE-N;
+   } while (++c<CC);
 
    effEnd = end;
    if (effEnd > mode->effEBands)
@@ -828,7 +824,8 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    if (data == NULL || len<=1)
    {
-      celt_decode_lost(st, pcm, N, LM, accum);
+      celt_decode_lost(st, N, LM);
+      deemphasis(out_syn, pcm, N, CC, st->downsample, mode->preemph, st->preemph_memD, accum);
       RESTORE_STACK;
       return frame_size/st->downsample;
    }
@@ -962,7 +959,6 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    c=0; do {
       OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap/2);
-      out_syn[c] = decode_mem[c]+DECODE_BUFFER_SIZE-N;
    } while (++c<CC);
 
    /* Decode fixed codebook */
