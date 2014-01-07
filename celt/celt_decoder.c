@@ -403,6 +403,22 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
    pitch of 480 Hz. */
 #define PLC_PITCH_LAG_MIN (100)
 
+static int celt_plc_pitch_search(celt_sig *decode_mem[2], int C, int arch)
+{
+   int pitch_index;
+   SAVE_STACK;
+   VARDECL( opus_val16, lp_pitch_buf );
+   ALLOC( lp_pitch_buf, DECODE_BUFFER_SIZE>>1, opus_val16 );
+   pitch_downsample(decode_mem, lp_pitch_buf,
+         DECODE_BUFFER_SIZE, C, arch);
+   pitch_search(lp_pitch_buf+(PLC_PITCH_LAG_MAX>>1), lp_pitch_buf,
+         DECODE_BUFFER_SIZE-PLC_PITCH_LAG_MAX,
+         PLC_PITCH_LAG_MAX-PLC_PITCH_LAG_MIN, &pitch_index, arch);
+   pitch_index = PLC_PITCH_LAG_MAX-pitch_index;
+   RESTORE_STACK;
+   return pitch_index;
+}
+
 static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
 {
    int c;
@@ -512,15 +528,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
 
       if (loss_count == 0)
       {
-         VARDECL( opus_val16, lp_pitch_buf );
-         ALLOC( lp_pitch_buf, DECODE_BUFFER_SIZE>>1, opus_val16 );
-         pitch_downsample(decode_mem, lp_pitch_buf,
-               DECODE_BUFFER_SIZE, C, st->arch);
-         pitch_search(lp_pitch_buf+(PLC_PITCH_LAG_MAX>>1), lp_pitch_buf,
-               DECODE_BUFFER_SIZE-PLC_PITCH_LAG_MAX,
-               PLC_PITCH_LAG_MAX-PLC_PITCH_LAG_MIN, &pitch_index, st->arch);
-         pitch_index = PLC_PITCH_LAG_MAX-pitch_index;
-         st->last_pitch_index = pitch_index;
+         st->last_pitch_index = pitch_index = celt_plc_pitch_search(decode_mem, C, st->arch);
       } else {
          pitch_index = st->last_pitch_index;
          fade = QCONST16(.8f,15);
