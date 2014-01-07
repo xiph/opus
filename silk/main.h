@@ -116,7 +116,7 @@ void silk_encode_signs(
 /* Decodes signs of excitation */
 void silk_decode_signs(
     ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                   */
-    opus_int                    pulses[],                           /* I/O  pulse signal                                */
+    opus_int16                  pulses[],                           /* I/O  pulse signal                                */
     opus_int                    length,                             /* I    length of input                             */
     const opus_int              signalType,                         /* I    Signal type                                 */
     const opus_int              quantOffsetType,                    /* I    Quantization offset type                    */
@@ -161,7 +161,7 @@ void silk_shell_encoder(
 
 /* Shell decoder, operates on one shell code frame of 16 pulses */
 void silk_shell_decoder(
-    opus_int                    *pulses0,                       /* O    data: nonnegative pulse amplitudes          */
+    opus_int16                  *pulses0,                       /* O    data: nonnegative pulse amplitudes          */
     ec_dec                      *psRangeDec,                    /* I/O  Compressor data structure                   */
     const opus_int              pulses4                         /* I    number of pulses per pulse-subframe         */
 );
@@ -397,13 +397,13 @@ void silk_decode_core(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
     opus_int16                  xq[],                           /* O    Decoded speech                              */
-    const opus_int              pulses[ MAX_FRAME_LENGTH ]      /* I    Pulse signal                                */
+    const opus_int16            pulses[ MAX_FRAME_LENGTH ]      /* I    Pulse signal                                */
 );
 
 /* Decode quantization indices of excitation (Shell coding) */
 void silk_decode_pulses(
     ec_dec                      *psRangeDec,                    /* I/O  Compressor data structure                   */
-    opus_int                    pulses[],                       /* O    Excitation signal                           */
+    opus_int16                  pulses[],                       /* O    Excitation signal                           */
     const opus_int              signalType,                     /* I    Sigtype                                     */
     const opus_int              quantOffsetType,                /* I    quantOffsetType                             */
     const opus_int              frame_length                    /* I    Frame length                                */

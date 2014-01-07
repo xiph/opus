@@ -39,7 +39,7 @@ void silk_decode_core(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
     opus_int16                  xq[],                           /* O    Decoded speech                              */
-    const opus_int              pulses[ MAX_FRAME_LENGTH ]      /* I    Pulse signal                                */
+    const opus_int16            pulses[ MAX_FRAME_LENGTH ]      /* I    Pulse signal                                */
 )
 {
     opus_int   i, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;

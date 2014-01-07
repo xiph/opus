@@ -196,7 +196,7 @@ opus_int silk_Decode(                                   /* O    Returns error co
             for( i = 0; i < channel_state[ 0 ].nFramesPerPacket; i++ ) {
                 for( n = 0; n < decControl->nChannelsInternal; n++ ) {
                     if( channel_state[ n ].LBRR_flags[ i ] ) {
-                        opus_int pulses[ MAX_FRAME_LENGTH ];
+                        opus_int16 pulses[ MAX_FRAME_LENGTH ];
                         opus_int condCoding;
 
                         if( decControl->nChannelsInternal == 2 && n == 0 ) {
