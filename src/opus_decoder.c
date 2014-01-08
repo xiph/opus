@@ -722,12 +722,21 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 {
    VARDECL(opus_int16, out);
    int ret, i;
+   int nb_samples;
    ALLOC_STACK;
 
    if(frame_size<=0)
    {
       RESTORE_STACK;
       return OPUS_BAD_ARG;
+   }
+   if (data != NULL && len > 0)
+   {
+      nb_samples = opus_decoder_get_nb_samples(st, data, len);
+      if (nb_samples>0)
+         frame_size = IMIN(frame_size, nb_samples);
+      else
+         return OPUS_INVALID_PACKET;
    }
    ALLOC(out, frame_size*st->channels, opus_int16);
 
@@ -749,6 +758,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 {
    VARDECL(float, out);
    int ret, i;
+   int nb_samples;
    ALLOC_STACK;
 
    if(frame_size<=0)
@@ -757,6 +767,14 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
       return OPUS_BAD_ARG;
    }
 
+   if (data != NULL && len > 0)
+   {
+      nb_samples = opus_decoder_get_nb_samples(st, data, len);
+      if (nb_samples>0)
+         frame_size = IMIN(frame_size, nb_samples);
+      else
+         return OPUS_INVALID_PACKET;
+   }
    ALLOC(out, frame_size*st->channels, float);
 
    ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 1);
