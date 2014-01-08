@@ -730,7 +730,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
       RESTORE_STACK;
       return OPUS_BAD_ARG;
    }
-   if (data != NULL && len > 0)
+   if (data != NULL && len > 0 && !decode_fec)
    {
       nb_samples = opus_decoder_get_nb_samples(st, data, len);
       if (nb_samples>0)
@@ -767,7 +767,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
       return OPUS_BAD_ARG;
    }
 
-   if (data != NULL && len > 0)
+   if (data != NULL && len > 0 && !decode_fec)
    {
       nb_samples = opus_decoder_get_nb_samples(st, data, len);
       if (nb_samples>0)
