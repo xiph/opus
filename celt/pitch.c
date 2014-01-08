@@ -256,11 +256,11 @@ celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y, opus_val32 *xcorr
    /*The EDSP version requires that max_pitch is at least 1, and that _x is
       32-bit aligned.
      Since it's hard to put asserts in assembly, put them here.*/
-   celt_assert(max_pitch>0);
-   celt_assert((((unsigned char *)_x-(unsigned char *)NULL)&3)==0);
 #ifdef FIXED_POINT
    opus_val32 maxcorr=1;
 #endif
+   celt_assert(max_pitch>0);
+   celt_assert((((unsigned char *)_x-(unsigned char *)NULL)&3)==0);
    for (i=0;i<max_pitch-3;i+=4)
    {
       opus_val32 sum[4]={0,0,0,0};
