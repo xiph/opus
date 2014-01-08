@@ -165,6 +165,30 @@ static OPUS_INLINE void silk_PLC_update(
     psPLC->nb_subfr = psDec->nb_subfr;
 }
 
+static OPUS_INLINE void silk_PLC_energy(opus_int32 *energy1, opus_int *shift1, opus_int32 *energy2, opus_int *shift2,
+      const opus_int32 *exc_Q14, const opus_int32 *prevGain_Q10, int subfr_length, int nb_subfr)
+{
+    int i, k;
+    VARDECL( opus_int16, exc_buf );
+    opus_int16 *exc_buf_ptr;
+    SAVE_STACK;
+    ALLOC( exc_buf, 2*subfr_length, opus_int16 );
+    /* Find random noise component */
+    /* Scale previous excitation signal */
+    exc_buf_ptr = exc_buf;
+    for( k = 0; k < 2; k++ ) {
+        for( i = 0; i < subfr_length; i++ ) {
+            exc_buf_ptr[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT(
+                silk_SMULWW( exc_Q14[ i + ( k + nb_subfr - 2 ) * subfr_length ], prevGain_Q10[ k ] ), 8 ) );
+        }
+        exc_buf_ptr += subfr_length;
+    }
+    /* Find the subframe with lowest energy of the last two and use that as random noise generator */
+    silk_sum_sqr_shift( energy1, shift1, exc_buf,                  subfr_length );
+    silk_sum_sqr_shift( energy2, shift2, &exc_buf[ subfr_length ], subfr_length );
+    RESTORE_STACK;
+}
+
 static OPUS_INLINE void silk_PLC_conceal(
     silk_decoder_state                  *psDec,             /* I/O Decoder state        */
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
@@ -177,9 +201,8 @@ static OPUS_INLINE void silk_PLC_conceal(
     opus_int32 energy1, energy2, *rand_ptr, *pred_lag_ptr;
     opus_int32 LPC_pred_Q10, LTP_pred_Q12;
     opus_int16 rand_scale_Q14;
-    opus_int16 *B_Q14, *exc_buf_ptr;
+    opus_int16 *B_Q14;
     opus_int32 *sLPC_Q14_ptr;
-    VARDECL( opus_int16, exc_buf );
     opus_int16 A_Q12[ MAX_LPC_ORDER ];
 #ifdef SMALL_FOOTPRINT
     opus_int16 *sLTP;
@@ -191,7 +214,6 @@ static OPUS_INLINE void silk_PLC_conceal(
     opus_int32 prevGain_Q10[2];
     SAVE_STACK;
 
-    ALLOC( exc_buf, 2*psPLC->subfr_length, opus_int16 );
     ALLOC( sLTP_Q14, psDec->ltp_mem_length + psDec->frame_length, opus_int32 );
 #ifdef SMALL_FOOTPRINT
     /* Ugly hack that breaks aliasing rules to save stack: put sLTP at the very end of sLTP_Q14. */
@@ -207,19 +229,7 @@ static OPUS_INLINE void silk_PLC_conceal(
        silk_memset( psPLC->prevLPC_Q12, 0, sizeof( psPLC->prevLPC_Q12 ) );
     }
 
-    /* Find random noise component */
-    /* Scale previous excitation signal */
-    exc_buf_ptr = exc_buf;
-    for( k = 0; k < 2; k++ ) {
-        for( i = 0; i < psPLC->subfr_length; i++ ) {
-            exc_buf_ptr[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT(
-                silk_SMULWW( psDec->exc_Q14[ i + ( k + psPLC->nb_subfr - 2 ) * psPLC->subfr_length ], prevGain_Q10[ k ] ), 8 ) );
-        }
-        exc_buf_ptr += psPLC->subfr_length;
-    }
-    /* Find the subframe with lowest energy of the last two and use that as random noise generator */
-    silk_sum_sqr_shift( &energy1, &shift1, exc_buf,                         psPLC->subfr_length );
-    silk_sum_sqr_shift( &energy2, &shift2, &exc_buf[ psPLC->subfr_length ], psPLC->subfr_length );
+    silk_PLC_energy(&energy1, &shift1, &energy2, &shift2, psDec->exc_Q14, prevGain_Q10, psDec->subfr_length, psDec->nb_subfr);
 
     if( silk_RSHIFT( energy1, shift2 ) < silk_RSHIFT( energy2, shift1 ) ) {
         /* First sub-frame has lowest energy */
