@@ -10,7 +10,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-valin-codec-opus-update-00"
+<rfc category="std" docName="draft-ietf-codec-opus-update-00"
      ipr="trust200902">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
@@ -30,39 +30,24 @@
 </address>
 </author>
 
-<author initials="T." surname="Terriberry" fullname="Timothy B. Terriberry">
-<organization>Mozilla Corporation</organization>
-<address>
-<postal>
-<street>650 Castro Street</street>
-<city>Mountain View</city>
-<region>CA</region>
-<code>94041</code>
-<country>USA</country>
-</postal>
-<phone>+1 650 903-0800</phone>
-<email>tterriberry@mozilla.com</email>
-</address>
-</author>
-
 <author initials="K." surname="Vos" fullname="Koen Vos">
-<organization>Skype Technologies S.A.</organization>
+<organization>vocTone</organization>
 <address>
 <postal>
-<street>Soder Malarstrand 43</street>
-<city>Stockholm</city>
+<street></street>
+<city></city>
 <region></region>
-<code>11825</code>
-<country>SE</country>
+<code></code>
+<country></country>
 </postal>
-<phone>+46 73 085 7619</phone>
-<email>koen.vos@skype.net</email>
+<phone></phone>
+<email>koenvos74@gmail.com</email>
 </address>
 </author>
 
 
 
-    <date day="12" month="July" year="2013" />
+    <date day="13" month="January" year="2014" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
