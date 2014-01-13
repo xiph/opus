@@ -57,7 +57,7 @@
 
   <middle>
     <section title="Introduction">
-      <t>This document address minor issues that were discovered in the reference
+      <t>This document addresses minor issues that were discovered in the reference
       implementation of the Opus codec that serves as the specification in 
       <xref target="RFC6716">RFC 6716</xref>. Only issues affecting the decoder are
       listed here. An up-to-date implementation of the Opus encoder can be found at
