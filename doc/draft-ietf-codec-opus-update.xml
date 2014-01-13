@@ -142,10 +142,10 @@
     <t>The calls to memcpy() were using sizeof(opus_int32), but the type of the
         local buffer was opus_int16.</t>
     <t>Because the size was wrong, this potentially allowed the source
-        and destination regions of the memcpy overlap.
+        and destination regions of the memcpy() to overlap.
           We <spanx style="emph">believe</spanx> that nSamplesIn is at least fs_in_khZ,
           which is at least 8.
-       Since RESAMPLER_ORDER_FIR_12 is only 8,that should not be a problem once
+       Since RESAMPLER_ORDER_FIR_12 is only 8, that should not be a problem once
        the type size is fixed.</t>
           <t>The size of the buffer used RESAMPLER_MAX_BATCH_SIZE_IN, but the
         data stored in it was actually _twice_ the input batch size
@@ -157,7 +157,7 @@
      the batch sizes are reasonable enough that none of the issues above
      was ever a problem. However, proving that is non-obvious.
     </t>
-    <t>The code can be fixed by applying the following changes to like 70 of silk/resampler_private_IIR_FIR.c:
+    <t>The code can be fixed by applying the following changes to line 70 of silk/resampler_private_IIR_FIR.c:
 <figure>
 <artwork><![CDATA[
      opus_int16                      out[],          /* O    Output signal               */
@@ -208,8 +208,8 @@
     
     <section title="Downmix to Mono">
       <t>The last issue is not strictly a bug, but it is an issue that has been reported
-      when downmixing Opus decoded stream to mono, whether this is done inside the decoder
-      or as a post-processing on the stereo decoder output. Opus intensity stereo allows
+      when downmixing an Opus decoded stream to mono, whether this is done inside the decoder
+      or as a post-processing step on the stereo decoder output. Opus intensity stereo allows
       optionally coding the two channels 180-degrees out of phase on a per-band basis. 
       This provides better stereo quality than forcing the two channels to be in phase,
       but when the output is downmixed to mono, the energy in the affected bands is cancelled
