@@ -245,12 +245,80 @@ All other pages with completed packets after the first MUST have a granule
 This guarantees that a demuxer can assign individual packets the same granule
  position when working forwards as when working backwards.
 For this to work, there cannot be any gaps.
-In order to support capturing a stream that uses discontinuous transmission
- (DTX), an encoder SHOULD emit packets that explicitly request the use of
- Packet Loss Concealment (PLC) (i.e., with a frame length of 0, as defined in
- Section 3.2.1 of <xref target="RFC6716"/>) in place of the packets that were
- not transmitted.
 </t>
+
+<section anchor="gap-repair" title="Repairing Gaps in Real-time Streams">
+<t>
+In order to support capturing a real-time stream that has lost packets, or that
+ uses discontinuous transmission (DTX), a muxer SHOULD emit packets that
+ explicitly request the use of Packet Loss Concealment (PLC) in place of the
+ packets that were not transmitted.
+Only gaps that are a multiple of 2.5&nbsp;ms are repairable, as these are the
+ only durations that can be created by packet loss or DTX.
+Muxers need not handle other gap sizes.
+Creating the necessary packets involves synthesizing a TOC byte (defined in
+ Section&nbsp;3.1 of&nbsp;<xref target="RFC6716"/>)---and whatever additional
+ internal framing is needed---to indicate the packet duration for each stream.
+The actual length of each missing Opus frame inside the packet is zero bytes,
+ as defined in Section&nbsp;3.2.1 of&nbsp;<xref target="RFC6716"/>.
+</t>
+
+<t>
+<xref target="RFC6716"/> does not impose any requirements on the PLC, but this
+ section outlines choices that are expected to have a positive influence on
+ most PLC implementations, including the reference implementation.
+When possible, creating the TOC byte using the same mode, audio bandwidth,
+ channel count, and frame size as the previous packet (if any) covers all
+ losses that do not include a configuration switch, as defined in
+ Section&nbsp;4.5 of&nbsp;<xref target="RFC6716"/>.
+This is the simplest and usually the most well-tested case for the PLC to
+ handle.
+If there is no previous packet, reasonable decoders will not emit anything
+ other than silence regardless of the mode.
+Using the CELT-only mode for this case (with any audio bandwidth) allows
+ maximum flexibility, since a single packet can represent any duration up to
+ 120&nbsp;ms that is a multiple of 2.5&nbsp;ms using at most two bytes.
+</t>
+
+<t>
+When a previous packet is available, keeping the audio bandwidth and channel
+ count the same allows the PLC to provide maximum continuity in the concealment
+ data it generates.
+However, if the size of the gap is not a multiple of the most recent frame
+ size, then the frame size will have to change for at least some frames.
+Delaying such changes as long as possible to simplifies things for PLC
+ implementations.
+A 95&nbsp;ms gap could be encoded as 19 5&nbsp;ms frames in two bytes
+ with a single CBR code&nbsp;3 packet.
+If the previous frame size was 20&nbsp;ms, using four 80&nbsp;ms frames,
+ followed by three 5&nbsp;ms frames requires 4&nbsp;bytes (plus an extra byte
+ of Ogg lacing overhead), but allows the PLC to use its well-tested steady
+ state behavior for as long as possible.
+The total bitrate of the latter approach, including Ogg overhead, is about
+ 0.4&nbsp;kbps, so the impact on file size is minimal.
+</t>
+
+<t>
+Changing modes is discouraged, since this causes some decoder implementations
+ to reset their PLC state.
+However, SILK and Hybrid modes cannot fill gaps that are not a multiple of
+ 10&nbsp;ms.
+If switching to CELT mode is needed to match the gap size, doing so at the end
+ of the gap allows the PLC to function for as long as possible.
+Since CELT does not support medium-band audio, using wideband when switching
+ from medium-band SILK ensures that any PLC implementation that does try to
+ migrate state between the modes will not be forced to artificially reduce the
+ bandwidth.
+</t>
+
+<t>
+The synthetic TOC byte MAY use any of codes&nbsp;0, 1, 2, or&nbsp;3 to pack the
+ frame(s) into a packet.
+If the TOC configuration matches, the muxer MAY combine the empty frames with
+ previous or subsequent non-zero-length frames (using code&nbsp;2 or
+ VBR code&nbsp;3).
+</t>
+</section>
 
 <section anchor="preskip" title="Pre-skip">
 <t>
