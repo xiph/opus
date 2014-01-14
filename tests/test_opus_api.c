@@ -1753,7 +1753,7 @@ int test_repacketizer_api(void)
 #endif
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-typedef void *(*mhook)(size_t __size, __const __malloc_ptr_t);
+typedef void *(*mhook)(size_t __size, __const void *);
 #endif
 
 int test_malloc_fail(void)
