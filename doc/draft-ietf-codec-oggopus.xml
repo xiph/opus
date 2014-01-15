@@ -249,16 +249,17 @@ For this to work, there cannot be any gaps.
 
 <section anchor="gap-repair" title="Repairing Gaps in Real-time Streams">
 <t>
-In order to support capturing a real-time stream that has lost packets, or that
- uses discontinuous transmission (DTX), a muxer SHOULD emit packets that
- explicitly request the use of Packet Loss Concealment (PLC) in place of the
- packets that were not transmitted.
+In order to support capturing a real-time stream that has lost or not
+ transmitted packets, a muxer SHOULD emit packets that explicitly request the
+ use of Packet Loss Concealment (PLC) in place of the missing packets.
 Only gaps that are a multiple of 2.5&nbsp;ms are repairable, as these are the
- only durations that can be created by packet loss or DTX.
+ only durations that can be created by packet loss or discontinuous
+ transmission.
 Muxers need not handle other gap sizes.
 Creating the necessary packets involves synthesizing a TOC byte (defined in
- Section&nbsp;3.1 of&nbsp;<xref target="RFC6716"/>)---and whatever additional
- internal framing is needed---to indicate the packet duration for each stream.
+Section&nbsp;3.1 of&nbsp;<xref target="RFC6716"/>)&mdash;and whatever
+ additional internal framing is needed&mdash;to indicate the packet duration
+ for each stream.
 The actual length of each missing Opus frame inside the packet is zero bytes,
  as defined in Section&nbsp;3.2.1 of&nbsp;<xref target="RFC6716"/>.
 </t>
@@ -267,17 +268,11 @@ The actual length of each missing Opus frame inside the packet is zero bytes,
 <xref target="RFC6716"/> does not impose any requirements on the PLC, but this
  section outlines choices that are expected to have a positive influence on
  most PLC implementations, including the reference implementation.
-When possible, creating the TOC byte using the same mode, audio bandwidth,
- channel count, and frame size as the previous packet (if any) covers all
- losses that do not include a configuration switch, as defined in
- Section&nbsp;4.5 of&nbsp;<xref target="RFC6716"/>.
+Where possible, synthesized TOC bytes MAY use the same mode, audio bandwidth,
+ channel count, and frame size as the previous packet (if any).
 This is the simplest and usually the most well-tested case for the PLC to
- handle.
-If there is no previous packet, reasonable decoders will not emit anything
- other than silence regardless of the mode.
-Using the CELT-only mode for this case (with any audio bandwidth) allows
- maximum flexibility, since a single packet can represent any duration up to
- 120&nbsp;ms that is a multiple of 2.5&nbsp;ms using at most two bytes.
+ handle and it covers all losses that do not include a configuration switch,
+ as defined in Section&nbsp;4.5 of&nbsp;<xref target="RFC6716"/>.
 </t>
 
 <t>
@@ -286,11 +281,14 @@ When a previous packet is available, keeping the audio bandwidth and channel
  data it generates.
 However, if the size of the gap is not a multiple of the most recent frame
  size, then the frame size will have to change for at least some frames.
-Delaying such changes as long as possible to simplifies things for PLC
+Delaying such changes as long as possible simplifies things for PLC
  implementations.
-A 95&nbsp;ms gap could be encoded as 19 5&nbsp;ms frames in two bytes
- with a single CBR code&nbsp;3 packet.
-If the previous frame size was 20&nbsp;ms, using four 80&nbsp;ms frames,
+</t>
+
+<t>
+As an example, a 95&nbsp;ms gap could be encoded as nineteen 5&nbsp;ms frames
+ in two bytes with a single CBR code&nbsp;3 packet.
+If the previous frame size was 20&nbsp;ms, using four 20&nbsp;ms frames
  followed by three 5&nbsp;ms frames requires 4&nbsp;bytes (plus an extra byte
  of Ogg lacing overhead), but allows the PLC to use its well-tested steady
  state behavior for as long as possible.
@@ -305,6 +303,19 @@ However, SILK and Hybrid modes cannot fill gaps that are not a multiple of
  10&nbsp;ms.
 If switching to CELT mode is needed to match the gap size, doing so at the end
  of the gap allows the PLC to function for as long as possible.
+Thus in the above example, if the previous frame was a 20&nbsp;ms SILK mode
+ frame, a better solution would be to synthesize a packet describing four
+ 20&nbsp;ms SILK frames, followed by a packet with a single 10&nbsp;ms SILK
+ frame, and finally a packet with a 5&nbsp;ms CELT frame, to fill the 95&nbsp;ms
+ gap.
+This also requires four bytes to describe the synthesized packet data (two
+ bytes for a CBR code 3 and one byte each for two code 0 packets) but requires
+ three bytes of Ogg lacing overhead to mark the packet boundaries.
+At 0.6 kbps this is still a minimal bitrate impact over a naive, low quality
+ solution.
+</t>
+
+<t>
 Since CELT does not support medium-band audio, using wideband when switching
  from medium-band SILK ensures that any PLC implementation that does try to
  migrate state between the modes will not be forced to artificially reduce the
