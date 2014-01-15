@@ -1044,7 +1044,8 @@ The coeffients are in the same order as in <xref target="channel_mapping_1" />,
 <t>
 The comment header consists of a 64-bit magic signature, followed by data in
  the same format as the <xref target="vorbis-comment"/> header used in Ogg
- Vorbis (without the final "framing bit"), Ogg Theora, and Speex.
+ Vorbis, except (like Ogg Theora and Speex) the final "framing bit" is not
+ used for Ogg Opus.
 <list style="numbers">
 <t><spanx style="strong">Magic Signature</spanx>:
 <vspace blankLines="1"/>
