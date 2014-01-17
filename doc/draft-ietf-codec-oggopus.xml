@@ -268,7 +268,7 @@ The actual length of each missing Opus frame inside the packet is zero bytes,
 <xref target="RFC6716"/> does not impose any requirements on the PLC, but this
  section outlines choices that are expected to have a positive influence on
  most PLC implementations, including the reference implementation.
-Where possible, synthesized TOC bytes MAY use the same mode, audio bandwidth,
+Synthesized TOC bytes SHOULD maintain the same mode, audio bandwidth,
  channel count, and frame size as the previous packet (if any).
 This is the simplest and usually the most well-tested case for the PLC to
  handle and it covers all losses that do not include a configuration switch,
@@ -281,8 +281,8 @@ When a previous packet is available, keeping the audio bandwidth and channel
  data it generates.
 However, if the size of the gap is not a multiple of the most recent frame
  size, then the frame size will have to change for at least some frames.
-Delaying such changes as long as possible simplifies things for PLC
- implementations.
+Such changes SHOULD be delayed as long as possible to simplify
+ things for PLC implementations.
 </t>
 
 <t>
@@ -299,35 +299,38 @@ The total bitrate of the latter approach, including Ogg overhead, is about
 <t>
 Changing modes is discouraged, since this causes some decoder implementations
  to reset their PLC state.
-However, SILK and Hybrid modes cannot fill gaps that are not a multiple of
- 10&nbsp;ms.
-If switching to CELT mode is needed to match the gap size, doing so at the end
- of the gap allows the PLC to function for as long as possible.
-Thus in the above example, if the previous frame was a 20&nbsp;ms SILK mode
- frame, a better solution would be to synthesize a packet describing four
- 20&nbsp;ms SILK frames, followed by a packet with a single 10&nbsp;ms SILK
+However, SILK and Hybrid mode frames cannot fill gaps that are not a multiple
+ of 10&nbsp;ms.
+If switching to CELT mode is needed to match the gap size, a muxer SHOULD do
+ so at the end of the gap to allow the PLC to function for as long as possible.
+</t>
+
+<t>
+In the example above, if the previous frame was a 20&nbsp;ms SILK mode frame,
+ the better solution is to synthesize a packet describing four 20&nbsp;ms SILK
+ frames, followed by a packet with a single 10&nbsp;ms SILK
  frame, and finally a packet with a 5&nbsp;ms CELT frame, to fill the 95&nbsp;ms
  gap.
 This also requires four bytes to describe the synthesized packet data (two
- bytes for a CBR code 3 and one byte each for two code 0 packets) but requires
- three bytes of Ogg lacing overhead to mark the packet boundaries.
-At 0.6 kbps this is still a minimal bitrate impact over a naive, low quality
+ bytes for a CBR code 3 and one byte each for two code 0 packets) but three
+ bytes of Ogg lacing overhead are required to mark the packet boundaries.
+At 0.6 kbps, this is still a minimal bitrate impact over a naive, low quality
  solution.
 </t>
 
 <t>
-Since CELT does not support medium-band audio, using wideband when switching
- from medium-band SILK ensures that any PLC implementation that does try to
- migrate state between the modes will not be forced to artificially reduce the
- bandwidth.
+Since CELT does not support medium-band audio, wideband frames SHOULD be
+ generated when switching from medium-band SILK to ensure that any PLC
+ implementation that does try to migrate state between the modes will not be
+ forced to artificially reduce the audio bandwidth.
 </t>
 
 <t>
-The synthetic TOC byte MAY use any of codes&nbsp;0, 1, 2, or&nbsp;3 to pack the
- frame(s) into a packet.
-If the TOC configuration matches, the muxer MAY combine the empty frames with
- previous or subsequent non-zero-length frames (using code&nbsp;2 or
- VBR code&nbsp;3).
+Matching synthetic TOC byte(s) MAY be packed into packets using any of
+ codes&nbsp;0, 1, 2, or&nbsp;3.
+If the TOC configuration matches, the muxer MAY further combine the empty
+frames with previous or subsequent non-zero-length frames (using code&nbsp;2
+ or VBR code&nbsp;3).
 </t>
 </section>
 
