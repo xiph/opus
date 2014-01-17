@@ -1235,18 +1235,19 @@ In encoders derived from the reference implementation, the number of
  samples can be queried with:
 </preamble>
 <artwork align="center"><![CDATA[
- opus_encoder_ctl(encoder_state, OPUS_GET_LOOKAHEAD, &samples_delay);
+ opus_encoder_ctl(encoder_state, OPUS_GET_LOOKAHEAD, &delay_samples);
 ]]></artwork>
 </figure>
 <t>
 To achieve good quality in the very first samples of a stream, the Ogg encoder
- MAY use LPC extrapolation to generate at least 120 extra samples
- (extra_samples) at the beginning to avoid the Opus encoder having to encode
- a discontinuous signal.
-For an input file containing length samples, the Ogg encoder SHOULD set the
- preskip header flag to samples_delay+extra_samples, encode at least
- length+samples_delay+extra_samples samples, and set the granulepos of the last
- page to length+samples_delay+extra_samples.
+ MAY use linear predictive coding (LPC) extrapolation
+ <xref target="linear-prediction"/> to generate at least 120 extra samples at
+ the beginning to avoid the Opus encoder having to encode a discontinuous
+ signal.
+For an input file containing 'length' samples, the Ogg encoder SHOULD set the
+ preskip header flag to delay_samples+extra_samples, encode at least
+ length+delay_samples+extra_samples samples, and set the granulepos of the last
+ page to length+delay_samples+extra_samples.
 This ensures that the encoded file has the same duration as the original, with
  no time offset. The best way to pad the end of the stream is to also use LPC
  extrapolation, but zero-padding is also acceptable.
@@ -1467,11 +1468,20 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </reference>
 
 <reference anchor="hanning"
- target="http://en.wikipedia.org/wiki/Hamming_function#Hann_.28Hanning.29_window">
+ target="https://en.wikipedia.org/wiki/Hamming_function#Hann_.28Hanning.29_window">
   <front>
     <title>"Hann window</title>
     <author fullname="Wikipedia"/>
     <date month="May" year="2013"/>
+  </front>
+</reference>
+
+<reference anchor="linear-prediction"
+ target="https://en.wikipedia.org/wiki/Linear_predictive_coding">
+  <front>
+    <title>"Linear Predictive Coding</title>
+    <author fullname="Wikipedia"/>
+    <date month="January" year="2014"/>
   </front>
 </reference>
 
