@@ -319,17 +319,17 @@ At 0.6 kbps, this is still a minimal bitrate impact over a naive, low quality
 </t>
 
 <t>
-Since medium-band audio is only supported in the LP mode, wideband frames SHOULD
- be generated if switching from it to the MDCT mode, to ensure that any PLC
- implementation that does try to migrate state between the modes will be able to
- preserve all of the available audio bandwidth.
+Since medium-band audio is only supported in the SILK modes, wideband frames
+ SHOULD be generated if switching from it to CELT modes, to ensure that
+ any PLC implementation that does try to migrate state between the modes
+ will be able to preserve all of the available audio bandwidth.
 </t>
 
 <t>
 Matching synthetic TOC byte(s) MAY be packed into packets using any of
  codes&nbsp;0, 1, 2, or&nbsp;3.
 If the TOC configuration matches, the muxer MAY further combine the empty
-frames with previous or subsequent non-zero-length frames (using code&nbsp;2
+ frames with previous or subsequent non-zero-length frames (using code&nbsp;2
  or VBR code&nbsp;3).
 </t>
 </section>
@@ -337,7 +337,7 @@ frames with previous or subsequent non-zero-length frames (using code&nbsp;2
 <section anchor="preskip" title="Pre-skip">
 <t>
 There is some amount of latency introduced during the decoding process, to
- allow for overlap in the MDCT modes, stereo mixing in the LP modes, and
+ allow for overlap in the CELT modes, stereo mixing in the SILK modes, and
  resampling, and the encoder will introduce even more latency (though the exact
  amount is not specified).
 Therefore, the first few samples produced by the decoder do not correspond to
@@ -1204,11 +1204,11 @@ Even in such a packet, most of the data will be zeros as 2.5&nbsp;ms frames
 The largest packet consisting of entirely useful data is
  (15,326*N&nbsp;-&nbsp;2) octets, or about 15&nbsp;kB per stream.
 This corresponds to 120&nbsp;ms of audio encoded as 10&nbsp;ms frames in either
- LP or Hybrid mode, but at a data rate of over 1&nbsp;Mbps, which makes little
+ SILK or Hybrid mode, but at a data rate of over 1&nbsp;Mbps, which makes little
  sense for the quality achieved.
 A more reasonable limit is (7,664*N&nbsp;-&nbsp;2) octets, or about 7.5&nbsp;kB
  per stream.
-This corresponds to 120&nbsp;ms of audio encoded as 20&nbsp;ms stereo MDCT mode
+This corresponds to 120&nbsp;ms of audio encoded as 20&nbsp;ms stereo CELT mode
  frames, with a total bitrate just under 511&nbsp;kbps (not counting the Ogg
  encapsulation overhead).
 With N=8, the maximum number of channels currently defined by mapping
