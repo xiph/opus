@@ -1256,7 +1256,7 @@ This ensures that the encoded file has the same duration as the original, with
 <section anchor="lpc" title="LPC Extrapolation">
 <t>
 The first step in LPC extrapolation is to compute linear prediction
- coefficients.
+ coefficients. <xref target="lpc-sample"/>
 When extending the end of the signal, order-N (typically with N ranging from 8
  to 40) LPC analysis is performed on a window near the end of the signal.
 The last N samples are used as memory to an infinite impulse response (IIR)
@@ -1484,6 +1484,18 @@ The authors agree to grant third parties the irrevocable right to copy, use,
     <date month="January" year="2014"/>
   </front>
 </reference>
+
+<reference anchor="lpc-sample"
+  target="https://svn.xiph.org/trunk/vorbis/lib/lpc.c">
+<front>
+  <title>Autocorrelation LPC coeff generation algorithm
+    (vorbis source code)</title>
+<author initials="J." surname="Degener" fullname="Jutta Degener"/>
+<author initials="C." surname="Bormann" fullname="Carsten Bormann"/>
+<date month="November" year="1994"/>
+</front>
+</reference>
+
 
 <reference anchor="replay-gain"
  target="http://wiki.xiph.org/VorbisComment#Replay_Gain">
