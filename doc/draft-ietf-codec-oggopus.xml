@@ -1470,8 +1470,8 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <reference anchor="hanning"
  target="https://en.wikipedia.org/wiki/Hamming_function#Hann_.28Hanning.29_window">
   <front>
-    <title>"Hann window</title>
-    <author fullname="Wikipedia"/>
+    <title>Hann window</title>
+    <author surname="Wikipedia" fullname="Wikipedia"/>
     <date month="May" year="2013"/>
   </front>
 </reference>
@@ -1479,8 +1479,8 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <reference anchor="linear-prediction"
  target="https://en.wikipedia.org/wiki/Linear_predictive_coding">
   <front>
-    <title>"Linear Predictive Coding</title>
-    <author fullname="Wikipedia"/>
+    <title>Linear Predictive Coding</title>
+    <author surname="Wikipedia" fullname="Wikipedia"/>
     <date month="January" year="2014"/>
   </front>
 </reference>
