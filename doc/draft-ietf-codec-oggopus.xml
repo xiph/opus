@@ -319,10 +319,10 @@ At 0.6 kbps, this is still a minimal bitrate impact over a naive, low quality
 </t>
 
 <t>
-Since CELT does not support medium-band audio, wideband frames SHOULD be
- generated when switching from medium-band SILK to ensure that any PLC
- implementation that does try to migrate state between the modes will not be
- forced to artificially reduce the audio bandwidth.
+Since medium-band audio is only supported in the LP mode, wideband frames SHOULD
+ be generated if switching from it to the MDCT mode, to ensure that any PLC
+ implementation that does try to migrate state between the modes will be able to
+ preserve all of the available audio bandwidth.
 </t>
 
 <t>
