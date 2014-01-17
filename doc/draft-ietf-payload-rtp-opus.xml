@@ -43,14 +43,14 @@
     </author>
 
     <author initials='K.' surname='Vos' fullname='Koen Vos'>
-      <organization>Skype Technologies S.A.</organization>
+      <organization>vocTone</organization>
       <address>
         <postal>
-          <street>3210 Porter Drive</street>
-          <code>94304</code>
-          <city>Palo Alto</city>
-          <region>CA</region>
-          <country>USA</country>
+          <street></street>
+          <code></code>
+          <city></city>
+          <region></region>
+          <country></country>
         </postal>
         <email>koenvos74@gmail.com</email>
       </address>
@@ -70,7 +70,7 @@
       </address>
     </author>
 
-    <date day='2' month='August' year='2013' />
+    <date day='14' month='January' year='2014' />
 
     <abstract>
       <t>
