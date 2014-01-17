@@ -849,7 +849,6 @@ The ordering is different from the one used by the
 Implementations SHOULD identify 'side' or 'rear' speaker locations with
  'surround' and 'back' as appropriate when interfacing with audio formats
  or systems which prefer that terminology.
-Speaker configurations other than those described here are not supported.
 </t>
 </section>
 
