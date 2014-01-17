@@ -1208,7 +1208,7 @@ This corresponds to 120&nbsp;ms of audio encoded as 10&nbsp;ms frames in either
  sense for the quality achieved.
 A more reasonable limit is (7,664*N&nbsp;-&nbsp;2) octets, or about 7.5&nbsp;kB
  per stream.
-This corresponds to 120&nbsp;ms of audio encoded as 20&nbsp;ms stereo MDCT-mode
+This corresponds to 120&nbsp;ms of audio encoded as 20&nbsp;ms stereo MDCT mode
  frames, with a total bitrate just under 511&nbsp;kbps (not counting the Ogg
  encapsulation overhead).
 With N=8, the maximum number of channels currently defined by mapping
