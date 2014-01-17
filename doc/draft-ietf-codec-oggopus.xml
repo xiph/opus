@@ -265,6 +265,16 @@ The actual length of each missing Opus frame inside the packet is zero bytes,
 </t>
 
 <t>
+Zero-byte frames MAY be packed into packets using any of codes&nbsp;0, 1,
+ 2, or&nbsp;3.
+When successive frames have the same configuration, the higher code packings
+ reduce overhead.
+Likewise, if the TOC configuration matches, the muxer MAY further combine the
+ empty frames with previous or subsequent non-zero-length frames (using
+ code&nbsp;2 or VBR code&nbsp;3).
+</t>
+
+<t>
 <xref target="RFC6716"/> does not impose any requirements on the PLC, but this
  section outlines choices that are expected to have a positive influence on
  most PLC implementations, including the reference implementation.
@@ -325,13 +335,6 @@ Since medium-band audio is only supported in the SILK modes, wideband frames
  will be able to preserve all of the available audio bandwidth.
 </t>
 
-<t>
-Matching synthetic TOC byte(s) MAY be packed into packets using any of
- codes&nbsp;0, 1, 2, or&nbsp;3.
-If the TOC configuration matches, the muxer MAY further combine the empty
- frames with previous or subsequent non-zero-length frames (using code&nbsp;2
- or VBR code&nbsp;3).
-</t>
 </section>
 
 <section anchor="preskip" title="Pre-skip">
