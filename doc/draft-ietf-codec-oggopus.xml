@@ -1299,16 +1299,8 @@ The drawback of this approach is that it creates a small discontinuity
 An encoder MAY avoid this discontinuity by using the following procedure:
 <list style="numbers">
 <t>Encode the last frame of the first segment as an independent frame by
- turning off all forms of inter-frame prediction.</t>
-<figure align="center">
-<preamble>
-In encoders derived from the reference implementation, this can be done with:
-</preamble>
-<artwork align="center"><![CDATA[
- opus_encoder_ctl(encoder_state, OPUS_SET_PREDICTION_DISABLED, 1);
-]]></artwork>
-</figure>
-<t>De-emphasis is allowed.</t>
+ turning off all forms of inter-frame prediction.
+De-emphasis is allowed.</t>
 <t>Set the granulepos of the last page to a point near the end of the last
  frame.</t>
 <t>Begin the second segment with a copy of the last frame of the first
@@ -1319,6 +1311,20 @@ In encoders derived from the reference implementation, this can be done with:
  the encoder.</t>
 </list>
 </t>
+<figure align="center">
+<preamble>
+In encoders derived from the reference implementation, inter-frame prediction
+ can be turned off by calling:
+</preamble>
+<artwork align="center"><![CDATA[
+ opus_encoder_ctl(encoder_state, OPUS_SET_PREDICTION_DISABLED, 1);
+]]></artwork>
+<postamble>
+Prediction should be enabled again before resuming normal encoding, even
+ after a reset.
+</postamble>
+</figure>
+
 </section>
 
 </section>
