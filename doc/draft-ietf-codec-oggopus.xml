@@ -1557,7 +1557,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  target="http://msdn.microsoft.com/en-us/windows/hardware/gg463006.aspx">
   <front>
     <title>Multiple Channel Audio Data and WAVE Files</title>
-    <author fullname="Microsoft Corporation"/>
+    <author surname="Microsoft" fullname="Microsoft Corporation"/>
     <date month="March" year="2007"/>
   </front>
 </reference>
