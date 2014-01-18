@@ -1305,7 +1305,7 @@ De-emphasis is allowed.</t>
  frame.</t>
 <t>Begin the second segment with a copy of the last frame of the first
  segment.</t>
-<t>Set the preskip flag of the second stream in such a way as to properly
+<t>Set the preskip value of the second stream in such a way as to properly
  join the two streams.</t>
 <t>Continue the encoding process normally from there, without any reset to
  the encoder.</t>
