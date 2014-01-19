@@ -860,6 +860,66 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
          > MULT16_32_Q15(m->eBands[13]<<(LM+1), sumLR);
 }
 
+#define MSWAP(a,b) do {opus_val16 tmp = a;a=b;b=tmp;} while(0)
+static opus_val16 median_of_5(const opus_val16 *x)
+{
+   opus_val16 t0, t1, t2, t3, t4;
+   t2 = x[2];
+   if (x[0] > x[1])
+   {
+      t0 = x[1];
+      t1 = x[0];
+   } else {
+      t0 = x[0];
+      t1 = x[1];
+   }
+   if (x[3] > x[4])
+   {
+      t3 = x[4];
+      t4 = x[3];
+   } else {
+      t3 = x[3];
+      t4 = x[4];
+   }
+   if (t0 > t3)
+   {
+      MSWAP(t0, t3);
+      MSWAP(t1, t4);
+   }
+   if (t2 > t1)
+   {
+      if (t1 < t3)
+         return MIN16(t2, t3);
+      else
+         return MIN16(t4, t1);
+   } else {
+      if (t2 < t3)
+         return MIN16(t1, t3);
+      else
+         return MIN16(t2, t4);
+   }
+}
+
+static opus_val16 median_of_3(const opus_val16 *x)
+{
+   opus_val16 t0, t1, t2;
+   if (x[0] > x[1])
+   {
+      t0 = x[1];
+      t1 = x[0];
+   } else {
+      t0 = x[0];
+      t1 = x[1];
+   }
+   t2 = x[2];
+   if (t1 < t2)
+      return t1;
+   else if (t0 < t2)
+      return t2;
+   else
+      return t0;
+}
+
 static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
@@ -895,6 +955,8 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       int last=0;
       c=0;do
       {
+         opus_val16 offset;
+         opus_val16 tmp;
          follower[c*nbEBands] = bandLogE2[c*nbEBands];
          for (i=1;i<end;i++)
          {
@@ -907,6 +969,20 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
          }
          for (i=last-1;i>=0;i--)
             follower[c*nbEBands+i] = MIN16(follower[c*nbEBands+i], MIN16(follower[c*nbEBands+i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*nbEBands+i]));
+
+         /* Combine with a median filter to avoid dynalloc triggering unnecessarily.
+            The "offset" value controls how conservative we are -- a higher offset
+            reduces the impact of the median filter and makes dynalloc use more bits. */
+         offset = QCONST16(1.f, DB_SHIFT);
+         for (i=2;i<end-2;i++)
+            follower[c*nbEBands+i] = MAX16(follower[c*nbEBands+i], median_of_5(&bandLogE2[c*nbEBands+i-2])-offset);
+         tmp = median_of_3(&bandLogE2[c*nbEBands])-offset;
+         follower[c*nbEBands] = MAX16(follower[c*nbEBands], tmp);
+         follower[c*nbEBands+1] = MAX16(follower[c*nbEBands+1], tmp);
+         tmp = median_of_3(&bandLogE2[c*nbEBands+nbEBands-3])-offset;
+         follower[c*nbEBands+nbEBands-2] = MAX16(follower[c*nbEBands+nbEBands-2], tmp);
+         follower[c*nbEBands+nbEBands-1] = MAX16(follower[c*nbEBands+nbEBands-1], tmp);
+
          for (i=0;i<end;i++)
             follower[c*nbEBands+i] = MAX16(follower[c*nbEBands+i], noise_floor[i]);
       } while (++c<C);
