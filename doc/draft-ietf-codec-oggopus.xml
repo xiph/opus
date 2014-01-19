@@ -179,11 +179,17 @@ The remaining Opus packet is packed at the end of the Ogg packet using the
  regular, undelimited framing from Section&nbsp;3 of <xref target="RFC6716"/>.
 All of the Opus packets in a single Ogg packet MUST be constrained to have the
  same duration.
-The duration and coding modes of each Opus packet are contained in the
- TOC (table of contents) sequence in the first few bytes.
 A decoder SHOULD treat any Opus packet whose duration is different from that of
  the first Opus packet in an Ogg packet as if it were an Opus packet with an
  illegal TOC sequence.
+</t>
+<t>
+The coding mode (SILK, Hybrid, or CELT), audio bandwidth, channel count,
+ duration (frame size), and number of frames per packet, are indicated in the
+ TOC (table of contents) in the first byte of each Opus packet, as described
+ in Section&nbsp;3.1 of&nbsp;<xref target="RFC3533"/>.
+The combination of mode, audio bandwidth, and frame size, is referred to as
+ the configuration of an Opus packet.
 </t>
 <t>
 The first audio data page SHOULD NOT have the 'continued packet' flag set
@@ -329,7 +335,7 @@ At 0.6 kbps, this is still a minimal bitrate impact over a naive, low quality
 </t>
 
 <t>
-Since medium-band audio is only supported in the SILK mode, wideband frames
+Since medium-band audio is an option only in the SILK mode, wideband frames
  SHOULD be generated if switching from it to CELT mode, to ensure that
  any PLC implementation that does try to migrate state between the modes
  will be able to preserve all of the available audio bandwidth.
@@ -340,9 +346,10 @@ Since medium-band audio is only supported in the SILK mode, wideband frames
 <section anchor="preskip" title="Pre-skip">
 <t>
 There is some amount of latency introduced during the decoding process, to
- allow for overlap in the CELT modes, stereo mixing in the SILK modes, and
- resampling, and the encoder will introduce even more latency (though the exact
- amount is not specified).
+ allow for overlap in the CELT mode, stereo mixing in the SILK mode, and
+ resampling.
+The encoder will also introduce latency (though the exact amount is not
+ specified).
 Therefore, the first few samples produced by the decoder do not correspond to
  real input audio, but are instead composed of padding inserted by the encoder
  to compensate for this latency.
@@ -603,8 +610,8 @@ When cropping the beginning of existing Ogg Opus streams, a pre-skip of at
 This field is <spanx style="emph">not</spanx> the sample rate to use for
  playback of the encoded data.
 <vspace blankLines="1"/>
-Opus has a handful of coding modes, with internal audio bandwidths of 4, 6, 8,
- 12, and 20&nbsp;kHz.
+Opus can switch between internal audio bandwidths of 4, 6, 8, 12, and
+ 20&nbsp;kHz.
 Each packet in the stream may have a different audio bandwidth.
 Regardless of the audio bandwidth, the reference decoder supports decoding any
  stream at a sample rate of 8, 12, 16, 24, or 48&nbsp;kHz.
@@ -760,8 +767,8 @@ Regardless of the internal channel count, any Opus stream can be decoded as
  mono (a single channel) or stereo (two channels) by appropriate initialization
  of the decoder.
 The 'coupled stream count' field indicates that the first M Opus decoders are
- to be initialized in stereo mode, and the remaining N-M decoders are to be
- initialized in mono mode.
+ to be initialized for stereo output, and the remaining N-M decoders are to be
+ initialized for mono only.
 The total number of decoded channels, (M+N), MUST be no larger than 255, as
  there is no way to index more channels than that in the channel mapping.
 <vspace blankLines="1"/>
@@ -827,7 +834,7 @@ Vorbis channel order.
 </t>
 <t>
 Each channel is assigned to a speaker location in a conventional surround
- configuration.
+ arrangement.
 Specific locations depend on the number of channels, and are given below
  in order of the corresponding channel indicies.
 <list style="symbols">
@@ -840,8 +847,8 @@ Specific locations depend on the number of channels, and are given below
   <t>7 channels: 6.1 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;center, LFE).</t>
   <t>8 channels: 7.1 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE)</t>
 </list>
-This set of surround configurations and speaker location orderings is the same
- as the one used by the Vorbis codec <xref target="vorbis-mapping"/>.
+This set of surround options and speaker location orderings is the same
+ as those used by the Vorbis codec <xref target="vorbis-mapping"/>.
 The ordering is different from the one used by the
  WAVE <xref target="wave-multichannel"/> and
  FLAC <xref target="flac"/> formats,
