@@ -1291,7 +1291,7 @@ When extending the beginning of the signal, it is best to apply a "fade in" to
 <section anchor="continuous_chaining" title="Continuous Chaining">
 <t>
 In some applications, such as Internet radio, it is desirable to cut a long
- streams into smaller chains, e.g. so the comment header can be updated.
+ stream into smaller chains, e.g. so the comment header can be updated.
 This can be done simply by separating the input streams into segments and
  encoding each segment independently.
 The drawback of this approach is that it creates a small discontinuity
