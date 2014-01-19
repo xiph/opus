@@ -957,7 +957,9 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       {
          opus_val16 offset;
          opus_val16 tmp;
-         follower[c*nbEBands] = bandLogE2[c*nbEBands];
+         opus_val16 *f;
+         f = &follower[c*nbEBands];
+         f[0] = bandLogE2[c*nbEBands];
          for (i=1;i<end;i++)
          {
             /* The last band to be at least 3 dB higher than the previous one
@@ -965,26 +967,26 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
                bandlimited signals. */
             if (bandLogE2[c*nbEBands+i] > bandLogE2[c*nbEBands+i-1]+QCONST16(.5f,DB_SHIFT))
                last=i;
-            follower[c*nbEBands+i] = MIN16(follower[c*nbEBands+i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE2[c*nbEBands+i]);
+            f[i] = MIN16(f[i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE2[c*nbEBands+i]);
          }
          for (i=last-1;i>=0;i--)
-            follower[c*nbEBands+i] = MIN16(follower[c*nbEBands+i], MIN16(follower[c*nbEBands+i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*nbEBands+i]));
+            f[i] = MIN16(f[i], MIN16(f[i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*nbEBands+i]));
 
          /* Combine with a median filter to avoid dynalloc triggering unnecessarily.
             The "offset" value controls how conservative we are -- a higher offset
             reduces the impact of the median filter and makes dynalloc use more bits. */
          offset = QCONST16(1.f, DB_SHIFT);
          for (i=2;i<end-2;i++)
-            follower[c*nbEBands+i] = MAX16(follower[c*nbEBands+i], median_of_5(&bandLogE2[c*nbEBands+i-2])-offset);
+            f[i] = MAX16(f[i], median_of_5(&bandLogE2[c*nbEBands+i-2])-offset);
          tmp = median_of_3(&bandLogE2[c*nbEBands])-offset;
-         follower[c*nbEBands] = MAX16(follower[c*nbEBands], tmp);
-         follower[c*nbEBands+1] = MAX16(follower[c*nbEBands+1], tmp);
+         f[0] = MAX16(f[0], tmp);
+         f[1] = MAX16(f[1], tmp);
          tmp = median_of_3(&bandLogE2[c*nbEBands+nbEBands-3])-offset;
-         follower[c*nbEBands+nbEBands-2] = MAX16(follower[c*nbEBands+nbEBands-2], tmp);
-         follower[c*nbEBands+nbEBands-1] = MAX16(follower[c*nbEBands+nbEBands-1], tmp);
+         f[nbEBands-2] = MAX16(f[nbEBands-2], tmp);
+         f[nbEBands-1] = MAX16(f[nbEBands-1], tmp);
 
          for (i=0;i<end;i++)
-            follower[c*nbEBands+i] = MAX16(follower[c*nbEBands+i], noise_floor[i]);
+            f[i] = MAX16(f[i], noise_floor[i]);
       } while (++c<C);
       if (C==2)
       {
