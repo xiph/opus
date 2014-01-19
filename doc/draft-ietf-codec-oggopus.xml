@@ -187,7 +187,7 @@ A decoder SHOULD treat any Opus packet whose duration is different from that of
 The coding mode (SILK, Hybrid, or CELT), audio bandwidth, channel count,
  duration (frame size), and number of frames per packet, are indicated in the
  TOC (table of contents) in the first byte of each Opus packet, as described
- in Section&nbsp;3.1 of&nbsp;<xref target="RFC3533"/>.
+ in Section&nbsp;3.1 of&nbsp;<xref target="RFC6716"/>.
 The combination of mode, audio bandwidth, and frame size, is referred to as
  the configuration of an Opus packet.
 </t>
