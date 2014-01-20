@@ -1516,7 +1516,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
   target="https://svn.xiph.org/trunk/vorbis/lib/lpc.c">
 <front>
   <title>Autocorrelation LPC coeff generation algorithm
-    (vorbis source code)</title>
+    (Vorbis source code)</title>
 <author initials="J." surname="Degener" fullname="Jutta Degener"/>
 <author initials="C." surname="Bormann" fullname="Carsten Bormann"/>
 <date month="November" year="1994"/>
