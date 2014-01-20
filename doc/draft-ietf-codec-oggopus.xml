@@ -919,8 +919,8 @@ Rear channels are mixed more diffusely or attenuated to maintain focus
  title="Stereo downmix matrix for the linear surround channel mapping"
  align="center">
 <artwork align="center"><![CDATA[
- Left output = ( 0.585786 * left + 0.414214 * center                    )
-Right output = (                   0.414214 * center + 0.585786 * right )
+L output = ( 0.585786 * left + 0.414214 * center                    )
+R output = (                   0.414214 * center + 0.585786 * right )
 ]]></artwork>
 <postamble>
 Exact coefficient values are 1 and 1/sqrt(2), multiplied by
