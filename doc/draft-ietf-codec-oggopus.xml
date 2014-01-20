@@ -1445,9 +1445,11 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 
 <reference anchor="EBU-R128" target="http://tech.ebu.ch/loudness">
 <front>
-<title>"Loudness Recommendation EBU R128</title>
-<author fullname="EBU Technical Committee"/>
-<date month="August" year="2011"/>
+  <title>Loudness Recommendation EBU R128</title>
+  <author>
+    <organization>EBU Technical Committee</organization>
+  </author>
+  <date month="August" year="2011"/>
 </front>
 </reference>
 
@@ -1492,7 +1494,9 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  target="https://en.wikipedia.org/wiki/Hamming_function#Hann_.28Hanning.29_window">
   <front>
     <title>Hann window</title>
-    <author surname="Wikipedia" fullname="Wikipedia"/>
+    <author>
+      <organization>Wikipedia</organization>
+    </author>
     <date month="May" year="2013"/>
   </front>
 </reference>
@@ -1501,7 +1505,9 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  target="https://en.wikipedia.org/wiki/Linear_predictive_coding">
   <front>
     <title>Linear Predictive Coding</title>
-    <author surname="Wikipedia" fullname="Wikipedia"/>
+    <author>
+      <organization>Wikipedia</organization>
+    </author>
     <date month="January" year="2014"/>
   </front>
 </reference>
@@ -1564,7 +1570,9 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  target="http://msdn.microsoft.com/en-us/windows/hardware/gg463006.aspx">
   <front>
     <title>Multiple Channel Audio Data and WAVE Files</title>
-    <author surname="Microsoft" fullname="Microsoft Corporation"/>
+    <author>
+      <organization>Microsoft Corporation</organization>
+    </author>
     <date month="March" year="2007"/>
   </front>
 </reference>
