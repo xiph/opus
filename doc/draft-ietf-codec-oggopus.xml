@@ -1444,7 +1444,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  &rfc6381;
  &rfc6716;
 
-<reference anchor="EBU-R128" target="http://tech.ebu.ch/loudness">
+<reference anchor="EBU-R128" target="https://tech.ebu.ch/loudness">
 <front>
   <title>Loudness Recommendation EBU R128</title>
   <author>
@@ -1455,7 +1455,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </reference>
 
 <reference anchor="vorbis-comment"
- target="http://www.xiph.org/vorbis/doc/v-comment.html">
+ target="https://www.xiph.org/vorbis/doc/v-comment.html">
 <front>
 <title>Ogg Vorbis I Format Specification: Comment Field and Header
  Specification</title>
@@ -1517,7 +1517,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 
 
 <reference anchor="replay-gain"
- target="http://wiki.xiph.org/VorbisComment#Replay_Gain">
+ target="https://wiki.xiph.org/VorbisComment#Replay_Gain">
 <front>
 <title>VorbisComment: Replay Gain</title>
 <author initials="C." surname="Parker" fullname="Conrad Parker"/>
@@ -1527,7 +1527,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </reference>
 
 <reference anchor="seeking"
- target="http://wiki.xiph.org/Seeking">
+ target="https://wiki.xiph.org/Seeking">
 <front>
 <title>Granulepos Encoding and How Seeking Really Works</title>
 <author initials="S." surname="Pfeiffer" fullname="Silvia Pfeiffer"/>
@@ -1538,7 +1538,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </reference>
 
 <reference anchor="vorbis-mapping"
- target="http://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-800004.3.9">
+ target="https://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-800004.3.9">
 <front>
 <title>The Vorbis I Specification, Section 4.3.9 Output Channel Order</title>
 <author initials="C." surname="Montgomery"
@@ -1548,7 +1548,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </reference>
 
 <reference anchor="vorbis-trim"
- target="http://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
+ target="https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
   <front>
     <title>The Vorbis I Specification, Appendix&nbsp;A: Embedding Vorbis
       into an Ogg stream</title>
