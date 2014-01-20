@@ -122,8 +122,8 @@ Readers unfamiliar with the basic concepts mentioned above are encouraged to
 <section anchor="terminology" title="Terminology">
 <t>
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
- "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
- interpreted as described in <xref target="RFC2119"/>.
+ "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this
+ document are to be interpreted as described in <xref target="RFC2119"/>.
 </t>
 
 <t>
