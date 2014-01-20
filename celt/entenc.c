@@ -127,7 +127,7 @@ void ec_enc_init(ec_enc *_this,unsigned char *_buf,opus_uint32 _size){
 
 void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   opus_uint32 r;
-  r=_this->rng/_ft;
+  r=celt_udiv(_this->rng,_ft);
   if(_fl>0){
     _this->val+=_this->rng-IMUL32(r,(_ft-_fl));
     _this->rng=IMUL32(r,(_fh-_fl));
