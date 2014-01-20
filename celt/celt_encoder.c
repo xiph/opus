@@ -981,9 +981,9 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
          tmp = median_of_3(&bandLogE2[c*nbEBands])-offset;
          f[0] = MAX16(f[0], tmp);
          f[1] = MAX16(f[1], tmp);
-         tmp = median_of_3(&bandLogE2[c*nbEBands+nbEBands-3])-offset;
-         f[nbEBands-2] = MAX16(f[nbEBands-2], tmp);
-         f[nbEBands-1] = MAX16(f[nbEBands-1], tmp);
+         tmp = median_of_3(&bandLogE2[c*nbEBands+end-3])-offset;
+         f[end-2] = MAX16(f[end-2], tmp);
+         f[end-1] = MAX16(f[end-1], tmp);
 
          for (i=0;i<end;i++)
             f[i] = MAX16(f[i], noise_floor[i]);
