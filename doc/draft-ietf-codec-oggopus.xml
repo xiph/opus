@@ -7,6 +7,7 @@
 <!ENTITY rfc5334 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5334.xml'>
 <!ENTITY rfc6381 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6381.xml'>
 <!ENTITY rfc6716 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6716.xml'>
+<!ENTITY rfc6982 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6982.xml'>
 ]>
 <?rfc toc="yes" symrefs="yes" ?>
 
@@ -1344,7 +1345,7 @@ A brief summary of major implementations of this draft is available
 </t>
 <t>
 [Note to RFC Editor: please remove this entire section before
- final publication per <xref target="draft-sheffer-running-code"/>.]
+ final publication per <xref target="RFC6982"/>.]
 </t>
 </section>
 
@@ -1470,16 +1471,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 
 <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml"?-->
  &rfc4732;
-
-<reference anchor="draft-sheffer-running-code"
-  target="https://tools.ietf.org/html/draft-sheffer-running-code-05#section-2">
- <front>
-   <title>Improving "Rough Consensus" with Running Code</title>
-   <author initials="Y." surname="Sheffer" fullname="Yaron Sheffer"/>
-   <author initials="A." surname="Farrel" fullname="Adrian Farrel"/>
-   <date month="May" year="2013"/>
- </front>
-</reference>
+ &rfc6982;
 
 <reference anchor="flac"
  target="https://xiph.org/flac/format.html">
