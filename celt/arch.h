@@ -208,6 +208,7 @@ static OPUS_INLINE int celt_isnan(float x)
 #define MULT32_32_Q31(a,b)     ((a)*(b))
 
 #define MAC16_32_Q15(c,a,b)     ((c)+(a)*(b))
+#define MAC16_32_Q16(c,a,b)     ((c)+(a)*(b))
 
 #define MULT16_16_Q11_32(a,b)     ((a)*(b))
 #define MULT16_16_Q11(a,b)     ((a)*(b))

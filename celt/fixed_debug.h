@@ -496,6 +496,7 @@ static OPUS_INLINE int MULT16_32_PX_(int a, opus_int64 b, int Q, char *file, int
 
 #define MULT16_32_Q15(a,b) MULT16_32_QX(a,b,15)
 #define MAC16_32_Q15(c,a,b) (celt_mips-=2,ADD32((c),MULT16_32_Q15((a),(b))))
+#define MAC16_32_Q16(c,a,b) (celt_mips-=2,ADD32((c),MULT16_32_Q16((a),(b))))
 
 static OPUS_INLINE int SATURATE(int a, int b)
 {

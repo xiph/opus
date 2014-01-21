@@ -86,6 +86,33 @@ int resampling_factor(opus_int32 rate)
 }
 
 #ifndef OVERRIDE_COMB_FILTER_CONST
+/* This version should be faster on ARM */
+#ifdef OPUS_ARM_ASM
+static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
+      opus_val16 g10, opus_val16 g11, opus_val16 g12)
+{
+   opus_val32 x0, x1, x2, x3, x4;
+   int i;
+   x4 = SHL32(x[-T-2], 1);
+   x3 = SHL32(x[-T-1], 1);
+   x2 = SHL32(x[-T], 1);
+   x1 = SHL32(x[-T+1], 1);
+   for (i=0;i<N;i++)
+   {
+      opus_val32 t;
+      x0=SHL32(x[i-T+2],1);
+      t = MAC16_32_Q16(x[i], g10, x2);
+      t = MAC16_32_Q16(t, g11, ADD32(x1,x3));
+      t = MAC16_32_Q16(t, g12, ADD32(x0,x4));
+      y[i] = t;
+      x4=x3;
+      x3=x2;
+      x2=x1;
+      x1=x0;
+   }
+
+}
+#else
 static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
       opus_val16 g10, opus_val16 g11, opus_val16 g12)
 {
@@ -109,6 +136,7 @@ static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
    }
 
 }
+#endif
 #endif
 
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,

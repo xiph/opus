@@ -82,6 +82,23 @@ static OPUS_INLINE opus_val32 MAC16_32_Q15_armv5e(opus_val32 c, opus_val16 a,
 }
 #define MAC16_32_Q15(c, a, b) (MAC16_32_Q15_armv5e(c, a, b))
 
+/** 16x32 multiply, followed by a 16-bit shift right and 32-bit add.
+    Result fits in 32 bits. */
+#undef MAC16_32_Q16
+static OPUS_INLINE opus_val32 MAC16_32_Q16_armv5e(opus_val32 c, opus_val16 a,
+ opus_val32 b)
+{
+  int res;
+  __asm__(
+      "#MAC16_32_Q16\n\t"
+      "smlawb %0, %1, %2, %3;\n"
+      : "=r"(res)
+      : "r"(b), "r"(a), "r"(c)
+  );
+  return res;
+}
+#define MAC16_32_Q16(c, a, b) (MAC16_32_Q16_armv5e(c, a, b))
+
 /** 16x16 multiply-add where the result fits in 32 bits */
 #undef MAC16_16
 static OPUS_INLINE opus_val32 MAC16_16_armv5e(opus_val32 c, opus_val16 a,
