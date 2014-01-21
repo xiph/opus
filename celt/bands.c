@@ -281,7 +281,8 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
 
       N0 = m->eBands[i+1]-m->eBands[i];
       /* depth in 1/8 bits */
-      depth = (1+pulses[i])/((m->eBands[i+1]-m->eBands[i])<<LM);
+      celt_assert(pulses[i]>=0);
+      depth = celt_udiv(1+pulses[i], (m->eBands[i+1]-m->eBands[i])<<LM);
 
 #ifdef FIXED_POINT
       thresh32 = SHR32(celt_exp2(-SHL16(depth, 10-BITRES)),1);
@@ -491,7 +492,7 @@ int spreading_decision(const CELTMode *m, const celt_norm *X, int *average,
 
          /* Only include four last bands (8 kHz and up) */
          if (i>m->nbEBands-4)
-            hf_sum += 32*(tcount[1]+tcount[0])/N;
+            hf_sum += celt_udiv(32*(tcount[1]+tcount[0]), N);
          tmp = (2*tcount[2] >= N) + (2*tcount[1] >= N) + (2*tcount[0] >= N);
          sum += tmp*256;
          nbBands++;
@@ -501,7 +502,7 @@ int spreading_decision(const CELTMode *m, const celt_norm *X, int *average,
    if (update_hf)
    {
       if (hf_sum)
-         hf_sum /= C*(4-m->nbEBands+end);
+         hf_sum = celt_udiv(hf_sum, C*(4-m->nbEBands+end));
       *hf_average = (*hf_average+hf_sum)>>1;
       hf_sum = *hf_average;
       if (*tapset_decision==2)
@@ -517,7 +518,8 @@ int spreading_decision(const CELTMode *m, const celt_norm *X, int *average,
    }
    /*printf("%d %d %d\n", hf_sum, *hf_average, *tapset_decision);*/
    celt_assert(nbBands>0); /* end has to be non-zero */
-   sum /= nbBands;
+   celt_assert(sum>=0);
+   sum = celt_udiv(sum, nbBands);
    /* Recursive averaging */
    sum = (sum+*average)>>1;
    *average = sum;
@@ -775,7 +777,8 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
             ec_dec_update(ec, fl, fl+fs, ft);
          }
       }
-      itheta = (opus_int32)itheta*16384/qn;
+      celt_assert(itheta>=0);
+      itheta = celt_udiv((opus_int32)itheta*16384, qn);
       if (encode && stereo)
       {
          if (itheta==0)
@@ -1089,7 +1092,7 @@ static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
 
    longBlocks = B0==1;
 
-   N_B /= B;
+   N_B = celt_udiv(N_B, B);
 
    /* Special case for one sample */
    if (N==1)

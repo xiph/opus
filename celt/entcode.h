@@ -122,6 +122,7 @@ opus_uint32 ec_tell_frac(ec_ctx *_this);
 
 /* Tested exhaustively for all n and for 1<=d<=256 */
 static OPUS_INLINE opus_uint32 celt_udiv(opus_uint32 n, opus_uint32 d) {
+   celt_assert(d>0);
 #ifdef USE_SMALL_DIV_TABLE
    if (d>256)
       return n/d;

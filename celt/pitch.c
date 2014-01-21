@@ -460,7 +460,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       opus_val16 g1;
       opus_val16 cont=0;
       opus_val16 thresh;
-      T1 = (2*T0+k)/(2*k);
+      T1 = celt_udiv(2*T0+k, 2*k);
       if (T1 < minperiod)
          break;
       /* Look for another strong correlation at T1b */
@@ -472,7 +472,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
             T1b = T0+T1;
       } else
       {
-         T1b = (2*second_check[k]*T0+k)/(2*k);
+         T1b = celt_udiv(2*second_check[k]*T0+k, 2*k);
       }
       dual_inner_prod(x, &x[-T1], &x[-T1b], N, &xy, &xy2);
       xy += xy2;
