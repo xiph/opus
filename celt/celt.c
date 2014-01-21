@@ -97,7 +97,37 @@ static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
    x3 = SHL32(x[-T-1], 1);
    x2 = SHL32(x[-T], 1);
    x1 = SHL32(x[-T+1], 1);
-   for (i=0;i<N;i++)
+   for (i=0;i<N-4;i+=5)
+   {
+      opus_val32 t;
+      x0=SHL32(x[i-T+2],1);
+      t = MAC16_32_Q16(x[i], g10, x2);
+      t = MAC16_32_Q16(t, g11, ADD32(x1,x3));
+      t = MAC16_32_Q16(t, g12, ADD32(x0,x4));
+      y[i] = t;
+      x4=SHL32(x[i-T+3],1);
+      t = MAC16_32_Q16(x[i+1], g10, x1);
+      t = MAC16_32_Q16(t, g11, ADD32(x0,x2));
+      t = MAC16_32_Q16(t, g12, ADD32(x4,x3));
+      y[i+1] = t;
+      x3=SHL32(x[i-T+4],1);
+      t = MAC16_32_Q16(x[i+2], g10, x0);
+      t = MAC16_32_Q16(t, g11, ADD32(x4,x1));
+      t = MAC16_32_Q16(t, g12, ADD32(x3,x2));
+      y[i+2] = t;
+      x2=SHL32(x[i-T+5],1);
+      t = MAC16_32_Q16(x[i+3], g10, x4);
+      t = MAC16_32_Q16(t, g11, ADD32(x3,x0));
+      t = MAC16_32_Q16(t, g12, ADD32(x2,x1));
+      y[i+3] = t;
+      x1=SHL32(x[i-T+6],1);
+      t = MAC16_32_Q16(x[i+4], g10, x3);
+      t = MAC16_32_Q16(t, g11, ADD32(x2,x4));
+      t = MAC16_32_Q16(t, g12, ADD32(x1,x0));
+      y[i+4] = t;
+   }
+#ifdef CUSTOM_MODES
+   for (;i<N;i++)
    {
       opus_val32 t;
       x0=SHL32(x[i-T+2],1);
@@ -110,7 +140,7 @@ static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
       x2=x1;
       x1=x0;
    }
-
+#endif
 }
 #else
 static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
