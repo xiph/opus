@@ -130,4 +130,22 @@ static OPUS_INLINE opus_val32 MULT16_16_armv5e(opus_val16 a, opus_val16 b)
 }
 #define MULT16_16(a, b) (MULT16_16_armv5e(a, b))
 
+#ifdef OPUS_ARM_INLINE_MEDIA
+
+#undef SIG2WORD16
+static OPUS_INLINE opus_val16 SIG2WORD16_armv6(opus_val32 x)
+{
+   celt_sig res;
+   __asm__(
+       "#SIG2WORD16\n\t"
+       "ssat %0, #16, %1, ASR #12\n\t"
+       : "=r"(res)
+       : "r"(x+2048)
+   );
+   return EXTRACT16(res);
+}
+#define SIG2WORD16(x) (SIG2WORD16_armv6(x))
+
+#endif /* OPUS_ARM_INLINE_MEDIA */
+
 #endif

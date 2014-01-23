@@ -226,6 +226,8 @@ static OPUS_INLINE int celt_isnan(float x)
 #define SCALEIN(a)      ((a)*CELT_SIG_SCALE)
 #define SCALEOUT(a)     ((a)*(1/CELT_SIG_SCALE))
 
+#define SIG2WORD16(x) (x)
+
 #endif /* !FIXED_POINT */
 
 #ifndef GLOBAL_STACK_SIZE

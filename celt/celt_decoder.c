@@ -178,17 +178,6 @@ void opus_custom_decoder_destroy(CELTDecoder *st)
 }
 #endif /* CUSTOM_MODES */
 
-static OPUS_INLINE opus_val16 SIG2WORD16(celt_sig x)
-{
-#ifdef FIXED_POINT
-   x = PSHR32(x, SIG_SHIFT);
-   x = MAX32(x, -32768);
-   x = MIN32(x, 32767);
-   return EXTRACT16(x);
-#else
-   return (opus_val16)x;
-#endif
-}
 
 #ifndef RESYNTH
 static

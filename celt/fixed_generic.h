@@ -135,4 +135,13 @@
 /** Divide a 32-bit value by a 32-bit value. Result fits in 32 bits */
 #define DIV32(a,b) (((opus_val32)(a))/((opus_val32)(b)))
 
+static OPUS_INLINE opus_val16 SIG2WORD16_generic(celt_sig x)
+{
+   x = PSHR32(x, SIG_SHIFT);
+   x = MAX32(x, -32768);
+   x = MIN32(x, 32767);
+   return EXTRACT16(x);
+}
+#define SIG2WORD16(x) (SIG2WORD16_generic(x))
+
 #endif
