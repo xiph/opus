@@ -147,9 +147,11 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    collapse_mask = 0;
    i=0; do {
       int j;
+      unsigned tmp=0;
       j=0; do {
-         collapse_mask |= (iy[i*N0+j]!=0)<<i;
+         tmp |= iy[i*N0+j];
       } while (++j<N0);
+      collapse_mask |= (tmp!=0)<<i;
    } while (++i<B);
    return collapse_mask;
 }
