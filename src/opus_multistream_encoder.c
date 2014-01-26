@@ -267,7 +267,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
             freq[i] = 0;
       }
 
-      compute_band_energies(celt_mode, freq, bandE, 21, 1, 1<<LM);
+      compute_band_energies(celt_mode, freq, bandE, 21, 1, LM);
       amp2Log2(celt_mode, 21, 21, bandE, bandLogE+21*c, 1);
       /* Apply spreading function with -6 dB/band going up and -12 dB/band going down. */
       for (i=1;i<21;i++)
