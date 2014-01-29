@@ -62,6 +62,27 @@ int ec_ilog(opus_uint32 _v){
 }
 #endif
 
+#if 1
+/* This is a faster version of ec_tell_frac() that takes advantage
+   of the low (1/8 bit) resolution to use just a linear function
+   followed by a lookup to determine the exact transition thresholds. */
+opus_uint32 ec_tell_frac(ec_ctx *_this){
+  static const unsigned correction[8] =
+    {35733, 38967, 42495, 46340,
+     50535, 55109, 60097, 65535};
+  opus_uint32 nbits;
+  opus_uint32 r;
+  int         l;
+  unsigned    b;
+  nbits=_this->nbits_total<<BITRES;
+  l=EC_ILOG(_this->rng);
+  r=_this->rng>>(l-16);
+  b = (r>>12)-8;
+  b += r>correction[b];
+  l = (l<<3)+b;
+  return nbits-l;
+}
+#else
 opus_uint32 ec_tell_frac(ec_ctx *_this){
   opus_uint32 nbits;
   opus_uint32 r;
@@ -91,6 +112,7 @@ opus_uint32 ec_tell_frac(ec_ctx *_this){
   }
   return nbits-l;
 }
+#endif
 
 #ifdef USE_SMALL_DIV_TABLE
 /* Result of 2^32/(2*i+1), except for i=0. */
