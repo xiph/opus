@@ -934,27 +934,6 @@ int opus_packet_get_bandwidth(const unsigned char *data)
    return bandwidth;
 }
 
-int opus_packet_get_samples_per_frame(const unsigned char *data,
-      opus_int32 Fs)
-{
-   int audiosize;
-   if (data[0]&0x80)
-   {
-      audiosize = ((data[0]>>3)&0x3);
-      audiosize = (Fs<<audiosize)/400;
-   } else if ((data[0]&0x60) == 0x60)
-   {
-      audiosize = (data[0]&0x08) ? Fs/50 : Fs/100;
-   } else {
-      audiosize = ((data[0]>>3)&0x3);
-      if (audiosize == 3)
-         audiosize = Fs*60/1000;
-      else
-         audiosize = (Fs<<audiosize)/100;
-   }
-   return audiosize;
-}
-
 int opus_packet_get_nb_channels(const unsigned char *data)
 {
    return (data[0]&0x4) ? 2 : 1;
