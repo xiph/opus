@@ -137,4 +137,16 @@ static OPUS_INLINE opus_uint32 celt_udiv(opus_uint32 n, opus_uint32 d) {
 #endif
 }
 
+static OPUS_INLINE opus_int32 celt_sudiv(opus_int32 n, opus_int32 d) {
+   celt_assert(d>0);
+#ifdef USE_SMALL_DIV_TABLE
+   if (n<0)
+      return -(opus_int32)celt_udiv(-n, d);
+   else
+      return celt_udiv(n, d);
+#else
+   return n/d;
+#endif
+}
+
 #endif

@@ -630,7 +630,8 @@ static int compute_qn(int N, int b, int offset, int pulse_cap, int stereo)
    /* The upper limit ensures that in a stereo split with itheta==16384, we'll
        always have enough bits left over to code at least one pulse in the
        side; otherwise it would collapse, since it doesn't get folded. */
-   qb = IMIN(b-pulse_cap-(4<<BITRES), (b+N2*offset)/N2);
+   qb = celt_sudiv(b+N2*offset, N2);
+   qb = IMIN(b-pulse_cap-(4<<BITRES), qb);
 
    qb = IMIN(8<<BITRES, qb);
 
@@ -1434,7 +1435,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       ctx.remaining_bits = remaining_bits;
       if (i <= codedBands-1)
       {
-         curr_balance = balance / IMIN(3, codedBands-i);
+         curr_balance = celt_sudiv(balance, IMIN(3, codedBands-i));
          b = IMAX(0, IMIN(16383, IMIN(remaining_bits+1,pulses[i]+curr_balance)));
       } else {
          b = 0;
