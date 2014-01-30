@@ -282,7 +282,7 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
       N0 = m->eBands[i+1]-m->eBands[i];
       /* depth in 1/8 bits */
       celt_assert(pulses[i]>=0);
-      depth = celt_udiv(1+pulses[i], (m->eBands[i+1]-m->eBands[i])<<LM);
+      depth = celt_udiv(1+pulses[i], (m->eBands[i+1]-m->eBands[i]))>>LM;
 
 #ifdef FIXED_POINT
       thresh32 = SHR32(celt_exp2(-SHL16(depth, 10-BITRES)),1);

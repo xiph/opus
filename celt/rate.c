@@ -466,7 +466,7 @@ static OPUS_INLINE int interp_bits2pulses(const CELTMode *m, int start, int end,
 
          /* Divide with rounding */
          ebits[j] = IMAX(0, (bits[j] + offset + (den<<(BITRES-1))));
-         ebits[j] = celt_udiv(ebits[j], den<<BITRES);
+         ebits[j] = celt_udiv(ebits[j], den)>>BITRES;
 
          /* Make sure not to bust */
          if (C*ebits[j] > (bits[j]>>BITRES))
