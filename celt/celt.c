@@ -199,6 +199,9 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
    x2 = x[-T1  ];
    x3 = x[-T1-1];
    x4 = x[-T1-2];
+   /* If the filter didn't change, we don't need the overlap */
+   if (g0==g1 && T0==T1 && tapset0==tapset1)
+      overlap=0;
    for (i=0;i<overlap;i++)
    {
       opus_val16 f;
