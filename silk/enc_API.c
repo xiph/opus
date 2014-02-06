@@ -165,7 +165,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
     psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded = psEnc->state_Fxx[ 1 ].sCmn.nFramesEncoded = 0;
 
     /* Check values in encoder control structure */
-    if( ( ret = check_control_input( encControl ) != 0 ) ) {
+    if( ( ret = check_control_input( encControl ) ) != 0 ) {
         silk_assert( 0 );
         RESTORE_STACK;
         return ret;
