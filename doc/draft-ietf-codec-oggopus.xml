@@ -11,7 +11,7 @@
 ]>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-02">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-03">
 
 <front>
 <title abbrev="Ogg Opus">Ogg Encapsulation for the Opus Audio Codec</title>
@@ -60,7 +60,7 @@
 </address>
 </author>
 
-<date day="17" month="January" year="2014"/>
+<date day="7" month="February" year="2014"/>
 <area>RAI</area>
 <workgroup>codec</workgroup>
 
@@ -167,7 +167,7 @@ All subsequent pages are audio data pages, and the Ogg packets they contain are
  audio data packets.
 Each audio data packet contains one Opus packet for each of N different
  streams, where N is typically one for mono or stereo, but may be greater than
- one for, e.g., multichannel audio.
+ one for multichannel audio.
 The value N is specified in the ID header (see
  <xref target="channel_mapping"/>), and is fixed over the entire length of the
  logical Ogg bitstream.
@@ -189,7 +189,7 @@ The coding mode (SILK, Hybrid, or CELT), audio bandwidth, channel count,
  duration (frame size), and number of frames per packet, are indicated in the
  TOC (table of contents) in the first byte of each Opus packet, as described
  in Section&nbsp;3.1 of&nbsp;<xref target="RFC6716"/>.
-The combination of mode, audio bandwidth, and frame size, is referred to as
+The combination of mode, audio bandwidth, and frame size is referred to as
  the configuration of an Opus packet.
 </t>
 <t>
@@ -375,9 +375,11 @@ This amount need not be a multiple of 2.5&nbsp;ms, may be smaller than a single
 
 <section anchor="pcm_sample_position" title="PCM Sample Position">
 <t>
+<figure align="center">
+<preamble>
 The PCM sample position is determined from the granule position using the
  formula
-<figure align="center">
+</preamble>
 <artwork align="center"><![CDATA[
 'PCM sample position' = 'granule position' - 'pre-skip' .
 ]]></artwork>
@@ -388,8 +390,10 @@ The PCM sample position is determined from the granule position using the
 For example, if the granule position of the first audio data page is 59,971,
  and the pre-skip is 11,971, then the PCM sample position of the last decoded
  sample from that page is 48,000.
-This can be converted into a playback time using the formula
 <figure align="center">
+<preamble>
+This can be converted into a playback time using the formula
+</preamble>
 <artwork align="center"><![CDATA[
                   'PCM sample position'
 'playback time' = --------------------- .
@@ -626,7 +630,8 @@ An Ogg Opus player SHOULD select the playback sample rate according to the
 <t>Otherwise, if the hardware's highest available sample rate is a supported
  rate, decode at this sample rate.</t>
 <t>Otherwise, if the hardware's highest available sample rate is less than
- 48&nbsp;kHz, decode at the highest supported rate above this and resample.</t>
+ 48&nbsp;kHz, decode at the next highest supported rate above this and
+ resample.</t>
 <t>Otherwise, decode at 48&nbsp;kHz and resample.</t>
 </list>
 However, the 'Input Sample Rate' field allows the encoder to pass the sample
@@ -652,13 +657,17 @@ This is a gain to be applied by the decoder.
 It is 20*log10 of the factor to scale the decoder output by to achieve the
  desired playback volume, stored in a 16-bit, signed, two's complement
  fixed-point value with 8 fractional bits (i.e., Q7.8).
-To apply the gain, a decoder could use
 <figure align="center">
+<preamble>
+To apply the gain, a decoder could use
+</preamble>
 <artwork align="center"><![CDATA[
 sample *= pow(10, output_gain/(20.0*256)) ,
 ]]></artwork>
-</figure>
+<postamble>
  where output_gain is the raw 16-bit value from the header.
+</postamble>
+</figure>
 <vspace blankLines="1"/>
 Virtually all players and media frameworks should apply it by default.
 If a player chooses to apply any volume adjustment or gain modification, such
@@ -848,15 +857,17 @@ Specific locations depend on the number of channels, and are given below
   <t>7 channels: 6.1 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;center, LFE).</t>
   <t>8 channels: 7.1 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE)</t>
 </list>
+</t>
+<t>
 This set of surround options and speaker location orderings is the same
  as those used by the Vorbis codec <xref target="vorbis-mapping"/>.
 The ordering is different from the one used by the
  WAVE <xref target="wave-multichannel"/> and
  FLAC <xref target="flac"/> formats,
- so correct ordering requires permutation of the output channels when encoding
- from or decoding to those formats.
+ so correct ordering requires permutation of the output channels when decoding
+ to or encoding from those formats.
 'LFE' here refers to a Low Frequency Effects, often mapped to a subwoofer
- with no particular spacial position.
+ with no particular spatial position.
 Implementations SHOULD identify 'side' or 'rear' speaker locations with
  'surround' and 'back' as appropriate when interfacing with audio formats
  or systems which prefer that terminology.
@@ -903,7 +914,7 @@ Implementations MAY use the following matricies to implement downmixing from
  Family 1</xref>, which are known to give acceptable results for stereo.
 Matricies for 3 and 4 channels are normalized so each coefficent row sums
  to 1 to avoid clipping.
-For 5 or more channels they are normalized to 2 as a compromize between
+For 5 or more channels they are normalized to 2 as a compromise between
  clipping and dynamic range reduction.
 </t>
 <t>
@@ -1134,7 +1145,7 @@ The vendor string length and user comment list length are REQUIRED, and
  for these fields, or that do not contain enough data for the corresponding
  vendor string or user comments they describe.
 Making this check before allocating the associated memory to contain the data
- may help prevent a possible Denial-of-Service (DoS) attack from small comment
+ helps prevent a possible Denial-of-Service (DoS) attack from small comment
  headers that claim to contain strings longer than the entire packet or more
  user comments than than could possibly fit in the packet.
 </t>
@@ -1142,15 +1153,19 @@ Making this check before allocating the associated memory to contain the data
 <t>
 The user comment strings follow the NAME=value format described by
  <xref target="vorbis-comment"/> with the same recommended tag names.
-One new comment tag is introduced for Ogg Opus:
+</t>
 <figure align="center">
+  <preamble>One new comment tag is introduced for Ogg Opus:</preamble>
 <artwork align="left"><![CDATA[
 R128_TRACK_GAIN=-573
 ]]></artwork>
-</figure>
+<postamble>
 representing the volume shift needed to normalize the track's volume.
 The gain is a Q7.8 fixed point number in dB, as in the ID header's 'output
  gain' field.
+</postamble>
+</figure>
+<t>
 This tag is similar to the REPLAYGAIN_TRACK_GAIN tag in
  Vorbis&nbsp;<xref target="replay-gain"/>, except that the normal volume
  reference is the <xref target="EBU-R128"/> standard.
