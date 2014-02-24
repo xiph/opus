@@ -454,14 +454,6 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_GET_APPLICATION(x) OPUS_GET_APPLICATION_REQUEST, __opus_check_int_ptr(x)
 
-/** Gets the sampling rate the encoder or decoder was initialized with.
-  * This simply returns the <code>Fs</code> value passed to opus_encoder_init()
-  * or opus_decoder_init().
-  * @param[out] x <tt>opus_int32 *</tt>: Sampling rate of encoder or decoder.
-  * @hideinitializer
-  */
-#define OPUS_GET_SAMPLE_RATE(x) OPUS_GET_SAMPLE_RATE_REQUEST, __opus_check_int_ptr(x)
-
 /** Gets the total samples of delay added by the entire codec.
   * This can be queried by the encoder and then the provided number of samples can be
   * skipped on from the start of the decoder's output to provide time aligned input
@@ -544,11 +536,6 @@ extern "C" {
   *                                      24 (default: 24).
   * @hideinitializer */
 #define OPUS_GET_LSB_DEPTH(x) OPUS_GET_LSB_DEPTH_REQUEST, __opus_check_int_ptr(x)
-
-/** Gets the duration (in samples) of the last packet successfully decoded or concealed.
-  * @param[out] x <tt>opus_int32 *</tt>: Number of samples (at current sampling rate).
-  * @hideinitializer */
-#define OPUS_GET_LAST_PACKET_DURATION(x) OPUS_GET_LAST_PACKET_DURATION_REQUEST, __opus_check_int_ptr(x)
 
 /** Configures the encoder's use of variable duration frames.
   * When variable duration is enabled, the encoder is free to use a shorter frame
@@ -649,18 +636,6 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_GET_FINAL_RANGE(x) OPUS_GET_FINAL_RANGE_REQUEST, __opus_check_uint_ptr(x)
 
-/** Gets the pitch of the last decoded frame, if available.
-  * This can be used for any post-processing algorithm requiring the use of pitch,
-  * e.g. time stretching/shortening. If the last frame was not voiced, or if the
-  * pitch was not coded in the frame, then zero is returned.
-  *
-  * This CTL is only implemented for decoder instances.
-  *
-  * @param[out] x <tt>opus_int32 *</tt>: pitch period at 48 kHz (or 0 if not available)
-  *
-  * @hideinitializer */
-#define OPUS_GET_PITCH(x) OPUS_GET_PITCH_REQUEST, __opus_check_int_ptr(x)
-
 /** Gets the encoder's configured bandpass or the decoder's last bandpass.
   * @see OPUS_SET_BANDWIDTH
   * @param[out] x <tt>opus_int32 *</tt>: Returns one of the following values:
@@ -674,6 +649,14 @@ extern "C" {
   * </dl>
   * @hideinitializer */
 #define OPUS_GET_BANDWIDTH(x) OPUS_GET_BANDWIDTH_REQUEST, __opus_check_int_ptr(x)
+
+/** Gets the sampling rate the encoder or decoder was initialized with.
+  * This simply returns the <code>Fs</code> value passed to opus_encoder_init()
+  * or opus_decoder_init().
+  * @param[out] x <tt>opus_int32 *</tt>: Sampling rate of encoder or decoder.
+  * @hideinitializer
+  */
+#define OPUS_GET_SAMPLE_RATE(x) OPUS_GET_SAMPLE_RATE_REQUEST, __opus_check_int_ptr(x)
 
 /**@}*/
 
@@ -698,6 +681,23 @@ extern "C" {
   * @param[out] x <tt>opus_int32 *</tt>: Amount to scale PCM signal by in Q8 dB units.
   * @hideinitializer */
 #define OPUS_GET_GAIN(x) OPUS_GET_GAIN_REQUEST, __opus_check_int_ptr(x)
+
+/** Gets the duration (in samples) of the last packet successfully decoded or concealed.
+  * @param[out] x <tt>opus_int32 *</tt>: Number of samples (at current sampling rate).
+  * @hideinitializer */
+#define OPUS_GET_LAST_PACKET_DURATION(x) OPUS_GET_LAST_PACKET_DURATION_REQUEST, __opus_check_int_ptr(x)
+
+/** Gets the pitch of the last decoded frame, if available.
+  * This can be used for any post-processing algorithm requiring the use of pitch,
+  * e.g. time stretching/shortening. If the last frame was not voiced, or if the
+  * pitch was not coded in the frame, then zero is returned.
+  *
+  * This CTL is only implemented for decoder instances.
+  *
+  * @param[out] x <tt>opus_int32 *</tt>: pitch period at 48 kHz (or 0 if not available)
+  *
+  * @hideinitializer */
+#define OPUS_GET_PITCH(x) OPUS_GET_PITCH_REQUEST, __opus_check_int_ptr(x)
 
 /**@}*/
 
