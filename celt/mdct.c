@@ -276,8 +276,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    /* Post-rotate and de-shuffle from both ends of the buffer at once to make
       it in-place. */
    {
-      kiss_fft_scalar * OPUS_RESTRICT yp0 = out+(overlap>>1);
-      kiss_fft_scalar * OPUS_RESTRICT yp1 = out+(overlap>>1)+N2-2;
+      kiss_fft_scalar * yp0 = out+(overlap>>1);
+      kiss_fft_scalar * yp1 = out+(overlap>>1)+N2-2;
       const kiss_twiddle_scalar *t = &trig[0];
       /* Loop to (N4+1)>>1 to handle odd N4. When N4 is odd, the
          middle pair will be computed twice. */
