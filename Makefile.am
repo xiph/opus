@@ -225,7 +225,7 @@ $(CELT_SOURCES_ARM_ASM:%.s=%-gnu.S): $(top_srcdir)/celt/arm/arm2gnu.pl
 
 # convert ARM asm to GNU as format
 %-gnu.S: $(top_srcdir)/%.s
-	$(top_srcdir)/celt/arm/arm2gnu.pl < $< > $@
+	$(top_srcdir)/celt/arm/arm2gnu.pl @ARM2GNU_PARAMS@ < $< > $@
 # For autoconf-modified sources (e.g., armopts.s)
 %-gnu.S: %.s
 	$(top_srcdir)/celt/arm/arm2gnu.pl < $< > $@

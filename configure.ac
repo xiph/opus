@@ -317,6 +317,14 @@ AS_IF([test x"${enable_asm}" = x"yes"],[
                     [rtcd_support=ARM"$rtcd_support"],
                     [rtcd_support="no"]
                 )
+                AC_MSG_CHECKING([for apple style tools])
+                AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
+#ifndef __APPLE__
+#error 1
+#endif],[])],
+                    [AC_MSG_RESULT([yes]); ARM2GNU_PARAMS="--apple"],
+                    [AC_MSG_RESULT([no]); ARM2GNU_PARAMS=""])
+                AC_SUBST(ARM2GNU_PARAMS)
             ],
             [
                 AC_MSG_WARN(
