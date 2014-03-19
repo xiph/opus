@@ -42,6 +42,7 @@ IF OPUS_ARM_MAY_HAVE_NEON
 
 ; Compute sum[k]=sum(x[j]*y[j+k],j=0...len-1), k=0...3
 xcorr_kernel_neon PROC
+xcorr_kernel_neon_start
   ; input:
   ;   r3     = int         len
   ;   r4     = opus_val16 *x
@@ -181,7 +182,7 @@ celt_pitch_xcorr_neon_process4
   VEOR         q0, q0, q0
   ; xcorr_kernel_neon only modifies r4, r5, r12, and q0...q3.
   ; So we don't save/restore any other registers.
-  BL xcorr_kernel_neon
+  BL xcorr_kernel_neon_start
   SUBS         r6, r6, #4
   VST1.32      {q0}, [r2]!
   ; _y += 4
@@ -257,6 +258,7 @@ IF OPUS_ARM_MAY_HAVE_EDSP
 ; This will get used on ARMv7 devices without NEON, so it has been optimized
 ; to take advantage of dual-issuing where possible.
 xcorr_kernel_edsp PROC
+xcorr_kernel_edsp_start
   ; input:
   ;   r3      = int         len
   ;   r4      = opus_val16 *_x (must be 32-bit aligned)
@@ -416,7 +418,7 @@ celt_pitch_xcorr_edsp_process4
   MOV          r7, #0
   MOV          r8, #0
   MOV          r9, #0
-  BL xcorr_kernel_edsp  ; xcorr_kernel_edsp(_x, _y+i, xcorr+i, len)
+  BL xcorr_kernel_edsp_start  ; xcorr_kernel_edsp(_x, _y+i, xcorr+i, len)
   ; maxcorr = max(maxcorr, sum0, sum1, sum2, sum3)
   CMP          r0, r6
   ; _y+=4
