@@ -36,12 +36,12 @@ eval 'exec /usr/local/bin/perl -S $0 ${1+"$@"}'
 
 while ($ARGV[0] =~ /^-/) {
     $_ = shift;
-  last if /^--/;
-    if (/^-n/) {
+  last if /^--$/;
+    if (/^-n$/) {
     $nflag++;
     next;
     }
-    if (/^--apple/) {
+    if (/^--apple$/) {
         $apple = 1;
         $symprefix = "_";
         next;
