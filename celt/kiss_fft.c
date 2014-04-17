@@ -457,7 +457,7 @@ kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
         {
            st->twiddles = base->twiddles;
            st->shift = 0;
-           while (nfft<<st->shift != base->nfft && st->shift < 32)
+           while (st->shift < 32 && nfft<<st->shift != base->nfft)
               st->shift++;
            if (st->shift>=32)
               goto fail;

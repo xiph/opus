@@ -1644,6 +1644,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
             diff += MULT16_16(mask, 1+2*i-mask_end);
          }
       }
+      celt_assert(count>0);
       mask_avg = DIV32_16(mask_avg,count);
       mask_avg += QCONST16(.2f, DB_SHIFT);
       diff = diff*6/(C*(mask_end-1)*(mask_end+1)*mask_end);
