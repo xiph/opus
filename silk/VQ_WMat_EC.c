@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 /* Entropy constrained matrix-weighted VQ, hard-coded to 5-element vectors, for a single input data vector */
-void silk_VQ_WMat_EC(
+void silk_VQ_WMat_EC_c(
     opus_int8                   *ind,                           /* O    index of best codebook vector               */
     opus_int32                  *rate_dist_Q14,                 /* O    best weighted quant error + mu * rate       */
     opus_int                    *gain_Q7,                       /* O    sum of absolute LTP coefficients            */

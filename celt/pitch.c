@@ -250,7 +250,8 @@ opus_val32
 #else
 void
 #endif
-celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y, opus_val32 *xcorr, int len, int max_pitch)
+celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y,
+      opus_val32 *xcorr, int len, int max_pitch, int arch)
 {
    int i;
    /*The EDSP version requires that max_pitch is at least 1, and that _x is
@@ -264,7 +265,7 @@ celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y, opus_val32 *xcorr
    for (i=0;i<max_pitch-3;i+=4)
    {
       opus_val32 sum[4]={0,0,0,0};
-      xcorr_kernel(_x, _y+i, sum, len);
+      xcorr_kernel(_x, _y+i, sum, len, arch);
       xcorr[i]=sum[0];
       xcorr[i+1]=sum[1];
       xcorr[i+2]=sum[2];
@@ -280,7 +281,7 @@ celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y, opus_val32 *xcorr
    for (;i<max_pitch;i++)
    {
       opus_val32 sum;
-      sum = celt_inner_prod(_x, _y+i, len);
+      sum = celt_inner_prod(_x, _y+i, len, arch);
       xcorr[i] = sum;
 #ifdef FIXED_POINT
       maxcorr = MAX32(maxcorr, sum);
@@ -369,7 +370,7 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
       for (j=0;j<len>>1;j++)
          sum += SHR32(MULT16_16(x_lp[j],y[i+j]), shift);
 #else
-      sum = celt_inner_prod(x_lp, y+i, len>>1);
+      sum = celt_inner_prod_c(x_lp, y+i, len>>1);
 #endif
       xcorr[i] = MAX32(-1, sum);
 #ifdef FIXED_POINT
@@ -405,7 +406,7 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
 
 static const int second_check[16] = {0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3, 2};
 opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
-      int N, int *T0_, int prev_period, opus_val16 prev_gain)
+      int N, int *T0_, int prev_period, opus_val16 prev_gain, int arch)
 {
    int k, i, T, T0;
    opus_val16 g, g0;
@@ -517,7 +518,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       pg = SHR32(frac_div32(best_xy,best_yy+1),16);
 
    for (k=0;k<3;k++)
-      xcorr[k] = celt_inner_prod(x, x-(T+k-1), N);
+      xcorr[k] = celt_inner_prod(x, x-(T+k-1), N, arch);
    if ((xcorr[2]-xcorr[0]) > MULT16_32_Q15(QCONST16(.7f,15),xcorr[1]-xcorr[0]))
       offset = 1;
    else if ((xcorr[0]-xcorr[2]) > MULT16_32_Q15(QCONST16(.7f,15),xcorr[1]-xcorr[2]))

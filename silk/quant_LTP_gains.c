@@ -40,7 +40,8 @@ void silk_quant_LTP_gains(
     const opus_int32            W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],  /* I    Error Weights in Q18            */
     opus_int                    mu_Q9,                                      /* I    Mu value (R/D tradeoff)         */
     opus_int                    lowComplexity,                              /* I    Flag for low complexity         */
-    const opus_int              nb_subfr                                    /* I    number of subframes             */
+    const opus_int              nb_subfr,                                   /* I    number of subframes             */
+    int                         arch                                        /* I    Run-time architecture           */
 )
 {
     opus_int             j, k, cbk_size;
@@ -90,7 +91,8 @@ void silk_quant_LTP_gains(
                 cl_ptr_Q5,              /* I    code length for each codebook vector                    */
                 mu_Q9,                  /* I    tradeoff between weighted error and rate                */
 				max_gain_Q7,            /* I    maximum sum of absolute LTP coefficients                */
-                cbk_size                /* I    number of vectors in codebook                           */
+                cbk_size,               /* I    number of vectors in codebook                           */
+                arch                    /* I    Run-time architecture                                   */
             );
 
             rate_dist_Q14 = silk_ADD_POS_SAT32( rate_dist_Q14, rate_dist_Q14_subfr );

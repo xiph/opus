@@ -751,7 +751,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
       AnalysisInfo *analysis, opus_val16 *stereo_saving, opus_val16 tf_estimate,
-      int intensity, opus_val16 surround_trim)
+      int intensity, opus_val16 surround_trim, int arch)
 {
    int i;
    opus_val32 diff=0;
@@ -767,7 +767,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       for (i=0;i<8;i++)
       {
          opus_val32 partial;
-         partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)], (m->eBands[i+1]-m->eBands[i])<<LM);
+         partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
+               (m->eBands[i+1]-m->eBands[i])<<LM, arch);
          sum = ADD16(sum, EXTRACT16(SHR32(partial, 18)));
       }
       sum = MULT16_16_Q15(QCONST16(1.f/8, 15), sum);
@@ -776,7 +777,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       for (i=8;i<intensity;i++)
       {
          opus_val32 partial;
-         partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)], (m->eBands[i+1]-m->eBands[i])<<LM);
+         partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
+               (m->eBands[i+1]-m->eBands[i])<<LM, arch);
          minXC = MIN16(minXC, ABS16(EXTRACT16(SHR32(partial, 18))));
       }
       minXC = MIN16(QCONST16(1.f, 10), ABS16(minXC));
@@ -1097,7 +1099,7 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       pitch_index = COMBFILTER_MAXPERIOD-pitch_index;
 
       gain1 = remove_doubling(pitch_buf, COMBFILTER_MAXPERIOD, COMBFILTER_MINPERIOD,
-            N, &pitch_index, st->prefilter_period, st->prefilter_gain);
+            N, &pitch_index, st->prefilter_period, st->prefilter_gain, st->arch);
       if (pitch_index > COMBFILTER_MAXPERIOD-2)
          pitch_index = COMBFILTER_MAXPERIOD-2;
       gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
@@ -1887,7 +1889,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          alloc_trim = 5;
       else
          alloc_trim = alloc_trim_analysis(mode, X, bandLogE,
-            end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate, st->intensity, surround_trim);
+            end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate,
+            st->intensity, surround_trim, st->arch);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
@@ -2022,8 +2025,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    /* Residual quantisation */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
    quant_all_bands(1, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
-         bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, st->intensity, tf_res,
-         nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv, balance, enc, LM, codedBands, &st->rng);
+         bandE, pulses, shortBlocks, st->spread_decision,
+         dual_stereo, st->intensity, tf_res, nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv,
+         balance, enc, LM, codedBands, &st->rng, st->arch);
 
    if (anti_collapse_rsv > 0)
    {

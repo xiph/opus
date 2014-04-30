@@ -73,7 +73,11 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
 }
 
 #define OVERRIDE_renormalise_vector
-void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
+
+#define renormalise_vector(X, N, gain, arch) \
+ ((void)(arch), renormalize_vector_mips(x, N, gain))
+
+void renormalise_vector_mips(celt_norm *X, int N, opus_val16 gain)
 {
    int i;
 #ifdef FIXED_POINT

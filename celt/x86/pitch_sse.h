@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Jean-Marc Valin and John Ridges */
+/* Copyright (c) 2013 Jean-Marc Valin and John Ridges
+   Copyright (c) 2014, Cisco Systems, INC MingXiang WeiZhou MinPeng YanWang*/
 /**
    @file pitch_sse.h
    @brief Pitch analysis
@@ -32,11 +33,55 @@
 #ifndef PITCH_SSE_H
 #define PITCH_SSE_H
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
+#if defined(OPUS_X86_MAY_HAVE_SSE4_1) || defined(OPUS_X86_MAY_HAVE_SSE2)
+#if defined(OPUS_X86_MAY_HAVE_SSE4_1)
+void xcorr_kernel_sse4_1(
+                    const opus_int16 *x,
+                    const opus_int16 *y,
+                    opus_val32       sum[4],
+                    int              len );
+
+extern void (*const XCORR_KERNEL_IMPL[OPUS_ARCHMASK + 1])(
+                    const opus_int16 *x,
+                    const opus_int16 *y,
+                    opus_val32       sum[4],
+                    int              len );
+
+#define xcorr_kernel(x, y, sum, len, arch) \
+    ((*XCORR_KERNEL_IMPL[(arch) & OPUS_ARCHMASK])(x, y, sum, len))
+
+opus_val32 celt_inner_prod_sse4_1(
+    const opus_int16 *x,
+    const opus_int16 *y,
+    int               N);
+#endif
+
+#if defined(OPUS_X86_MAY_HAVE_SSE2)
+opus_val32 celt_inner_prod_sse2(
+    const opus_int16 *x,
+    const opus_int16 *y,
+    int               N);
+#endif
+
+extern opus_val32 (*const CELT_INNER_PROD_IMPL[OPUS_ARCHMASK + 1])(
+                    const opus_int16 *x,
+                    const opus_int16 *y,
+                    int               N);
+
+#define OVERRIDE_CELT_INNER_PROD
+#define celt_inner_prod(x, y, N, arch) \
+    ((*CELT_INNER_PROD_IMPL[(arch) & OPUS_ARCHMASK])(x, y, N))
+#else
+
 #include <xmmintrin.h>
 #include "arch.h"
 
 #define OVERRIDE_XCORR_KERNEL
-static OPUS_INLINE void xcorr_kernel(const opus_val16 *x, const opus_val16 *y, opus_val32 sum[4], int len)
+static OPUS_INLINE void xcorr_kernel_sse(const opus_val16 *x, const opus_val16 *y, opus_val32 sum[4], int len)
 {
    int j;
    __m128 xsum1, xsum2;
@@ -71,6 +116,9 @@ static OPUS_INLINE void xcorr_kernel(const opus_val16 *x, const opus_val16 *y, o
    _mm_storeu_ps(sum,_mm_add_ps(xsum1,xsum2));
 }
 
+#define xcorr_kernel(_x, _y, _z, len, arch) \
+    ((void)(arch),xcorr_kernel_sse(_x, _y, _z, len))
+
 #define OVERRIDE_DUAL_INNER_PROD
 static OPUS_INLINE void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
       int N, opus_val32 *xy1, opus_val32 *xy2)
@@ -102,7 +150,7 @@ static OPUS_INLINE void dual_inner_prod(const opus_val16 *x, const opus_val16 *y
 }
 
 #define OVERRIDE_CELT_INNER_PROD
-static OPUS_INLINE opus_val32 celt_inner_prod(const opus_val16 *x, const opus_val16 *y,
+static OPUS_INLINE opus_val32 celt_inner_prod_sse(const opus_val16 *x, const opus_val16 *y,
       int N)
 {
    int i;
@@ -126,6 +174,9 @@ static OPUS_INLINE opus_val32 celt_inner_prod(const opus_val16 *x, const opus_va
    }
    return xy;
 }
+
+#  define celt_inner_prod(_x, _y, len, arch) \
+    ((void)(arch),celt_inner_prod_sse(_x, _y, len))
 
 #define OVERRIDE_COMB_FILTER_CONST
 static OPUS_INLINE void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
@@ -179,4 +230,5 @@ static OPUS_INLINE void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, i
 #endif
 }
 
+#endif
 #endif

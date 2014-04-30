@@ -50,8 +50,7 @@ static OPUS_INLINE void silk_prefilt_FIX(
     opus_int                    length                      /* I    Length of signals                   */
 );
 
-#ifndef OVERRIDE_silk_warped_LPC_analysis_filter_FIX
-void silk_warped_LPC_analysis_filter_FIX(
+void silk_warped_LPC_analysis_filter_FIX_c(
           opus_int32            state[],                    /* I/O  State [order + 1]                   */
           opus_int32            res_Q2[],                   /* O    Residual signal [length]            */
     const opus_int16            coef_Q13[],                 /* I    Coefficients [order]                */
@@ -92,7 +91,6 @@ void silk_warped_LPC_analysis_filter_FIX(
         res_Q2[ n ] = silk_LSHIFT( (opus_int32)input[ n ], 2 ) - silk_RSHIFT_ROUND( acc_Q11, 9 );
     }
 }
-#endif /* OVERRIDE_silk_warped_LPC_analysis_filter_FIX */
 
 void silk_prefilter_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state                                                               */
@@ -137,7 +135,7 @@ void silk_prefilter_FIX(
 
         /* Short term FIR filtering*/
         silk_warped_LPC_analysis_filter_FIX( P->sAR_shp, st_res_Q2, AR1_shp_Q13, px,
-            psEnc->sCmn.warping_Q16, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
+            psEnc->sCmn.warping_Q16, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder, psEnc->sCmn.arch );
 
         /* Reduce (mainly) low frequencies during harmonic emphasis */
         B_Q10[ 0 ] = silk_RSHIFT_ROUND( psEncCtrl->GainsPre_Q14[ k ], 4 );

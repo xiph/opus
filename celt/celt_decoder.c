@@ -499,7 +499,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
                seed = celt_lcg_rand(seed);
                X[boffs+j] = (celt_norm)((opus_int32)seed>>20);
             }
-            renormalise_vector(X+boffs, blen, Q15ONE);
+            renormalise_vector(X+boffs, blen, Q15ONE, st->arch);
          }
       }
       st->rng = seed;
@@ -583,7 +583,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
             }
             /* Compute the excitation for exc_length samples before the loss. */
             celt_fir(exc+MAX_PERIOD-exc_length, lpc+c*LPC_ORDER,
-                  exc+MAX_PERIOD-exc_length, exc_length, LPC_ORDER, lpc_mem);
+                  exc+MAX_PERIOD-exc_length, exc_length, LPC_ORDER, lpc_mem, st->arch);
          }
 
          /* Check if the waveform is decaying, and if so how fast.
@@ -650,7 +650,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
                the signal domain. */
             celt_iir(buf+DECODE_BUFFER_SIZE-N, lpc+c*LPC_ORDER,
                   buf+DECODE_BUFFER_SIZE-N, extrapolation_len, LPC_ORDER,
-                  lpc_mem);
+                  lpc_mem, st->arch);
          }
 
          /* Check if the synthesis energy is higher than expected, which can
@@ -982,7 +982,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    quant_all_bands(0, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
-         len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng);
+         len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng, st->arch);
 
    if (anti_collapse_rsv > 0)
    {
@@ -994,7 +994,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    if (anti_collapse_on)
       anti_collapse(mode, X, collapse_masks, LM, C, N,
-            start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
+            start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng, st->arch);
 
    if (silence)
    {

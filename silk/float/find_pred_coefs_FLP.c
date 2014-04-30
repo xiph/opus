@@ -67,7 +67,8 @@ void silk_find_pred_coefs_FLP(
 
         /* Quantize LTP gain parameters */
         silk_quant_LTP_gains_FLP( psEncCtrl->LTPCoef, psEnc->sCmn.indices.LTPIndex, &psEnc->sCmn.indices.PERIndex,
-            &psEnc->sCmn.sum_log_gain_Q7, WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr );
+            &psEnc->sCmn.sum_log_gain_Q7, WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr,
+            psEnc->sCmn.arch );
 
         /* Control LTP scaling */
         silk_LTP_scale_ctrl_FLP( psEnc, psEncCtrl, condCoding );

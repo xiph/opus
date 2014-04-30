@@ -44,7 +44,18 @@
 #include "entdec.c"
 #include "mathops.c"
 #include "bands.h"
+#include "pitch.c"
+#include "celt_lpc.c"
 #include <math.h>
+
+#if defined(OPUS_X86_MAY_HAVE_SSE4_1) || defined(OPUS_X86_MAY_HAVE_SSE2)
+#include "x86/pitch_sse.c"
+#if defined(OPUS_X86_MAY_HAVE_SSE4_1)
+#include "x86/celt_lpc_sse.c"
+#endif
+#include "x86/x86_celt_map.c"
+#endif
+
 #define MAX_SIZE 100
 
 int ret=0;

@@ -85,7 +85,8 @@ opus_int silk_Decode(                                   /* O    Returns error co
     opus_int                        newPacketFlag,      /* I    Indicates first decoder call for this packet    */
     ec_dec                          *psRangeDec,        /* I/O  Compressor data structure                       */
     opus_int16                      *samplesOut,        /* O    Decoded output speech vector                    */
-    opus_int32                      *nSamplesOut        /* O    Number of samples decoded                       */
+    opus_int32                      *nSamplesOut,       /* O    Number of samples decoded                       */
+    int                             arch                /* I    Run-time architecture                           */
 )
 {
     opus_int   i, n, decode_only_middle = 0, ret = SILK_NO_ERROR;
@@ -296,7 +297,7 @@ opus_int silk_Decode(                                   /* O    Returns error co
             } else {
                 condCoding = CODE_CONDITIONALLY;
             }
-            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding);
+            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding, arch);
         } else {
             silk_memset( &samplesOut1_tmp[ n ][ 2 ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
         }

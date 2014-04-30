@@ -166,7 +166,8 @@ void silk_find_LTP_FIX(
     const opus_int                  subfr_length,                           /* I    subframe length                                                             */
     const opus_int                  nb_subfr,                               /* I    number of subframes                                                         */
     const opus_int                  mem_offset,                             /* I    number of samples in LTP memory                                             */
-    opus_int                        corr_rshifts[ MAX_NB_SUBFR ]            /* O    right shifts applied to correlations                                        */
+    opus_int                        corr_rshifts[ MAX_NB_SUBFR ],           /* O    right shifts applied to correlations                                        */
+    int                             arch                                    /* I    Run-time architecture                                                       */
 );
 
 void silk_LTP_analysis_filter_FIX(
@@ -190,7 +191,8 @@ void silk_residual_energy_FIX(
     const opus_int32                gains[ MAX_NB_SUBFR ],                  /* I    Quantization gains                                                          */
     const opus_int                  subfr_length,                           /* I    Subframe length                                                             */
     const opus_int                  nb_subfr,                               /* I    Number of subframes                                                         */
-    const opus_int                  LPC_order                               /* I    LPC order                                                                   */
+    const opus_int                  LPC_order,                              /* I    LPC order                                                                   */
+    int                             arch                                    /* I    Run-time architecture                                                       */
 );
 
 /* Residual energy: nrg = wxx - 2 * wXx * c + c' * wXX * c */
@@ -220,7 +222,8 @@ void silk_corrMatrix_FIX(
     const opus_int                  order,                                  /* I    Max lag for correlation                                                     */
     const opus_int                  head_room,                              /* I    Desired headroom                                                            */
     opus_int32                      *XX,                                    /* O    Pointer to X'*X correlation matrix [ order x order ]                        */
-    opus_int                        *rshifts                                /* I/O  Right shifts of correlations                                                */
+    opus_int                        *rshifts,                               /* I/O  Right shifts of correlations                                                */
+    int                              arch                                   /* I    Run-time architecture                                                       */
 );
 
 /* Calculates correlation vector X'*t */
@@ -230,7 +233,8 @@ void silk_corrVector_FIX(
     const opus_int                  L,                                      /* I    Length of vectors                                                           */
     const opus_int                  order,                                  /* I    Max lag for correlation                                                     */
     opus_int32                      *Xt,                                    /* O    Pointer to X'*t correlation vector [order]                                  */
-    const opus_int                  rshifts                                 /* I    Right shifts of correlations                                                */
+    const opus_int                  rshifts,                                /* I    Right shifts of correlations                                                */
+    int                             arch                                    /* I    Run-time architecture                                                       */
 );
 
 /* Add noise to matrix diagonal */

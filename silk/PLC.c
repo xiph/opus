@@ -46,7 +46,8 @@ static OPUS_INLINE void silk_PLC_update(
 static OPUS_INLINE void silk_PLC_conceal(
     silk_decoder_state                  *psDec,             /* I/O Decoder state        */
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
-    opus_int16                          frame[]             /* O LPC residual signal    */
+    opus_int16                          frame[],            /* O LPC residual signal    */
+    int                                 arch                /* I  Run-time architecture */
 );
 
 
@@ -65,7 +66,8 @@ void silk_PLC(
     silk_decoder_state                  *psDec,             /* I/O Decoder state        */
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
     opus_int16                          frame[],            /* I/O  signal              */
-    opus_int                            lost                /* I Loss flag              */
+    opus_int                            lost,               /* I Loss flag              */
+    int                                 arch                /* I Run-time architecture  */
 )
 {
     /* PLC control function */
@@ -78,7 +80,7 @@ void silk_PLC(
         /****************************/
         /* Generate Signal          */
         /****************************/
-        silk_PLC_conceal( psDec, psDecCtrl, frame );
+        silk_PLC_conceal( psDec, psDecCtrl, frame, arch );
 
         psDec->lossCnt++;
     } else {
@@ -192,7 +194,8 @@ static OPUS_INLINE void silk_PLC_energy(opus_int32 *energy1, opus_int *shift1, o
 static OPUS_INLINE void silk_PLC_conceal(
     silk_decoder_state                  *psDec,             /* I/O Decoder state        */
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
-    opus_int16                          frame[]             /* O LPC residual signal    */
+    opus_int16                          frame[],            /* O LPC residual signal    */
+    int                                 arch                /* I Run-time architecture  */
 )
 {
     opus_int   i, j, k;
@@ -289,7 +292,7 @@ static OPUS_INLINE void silk_PLC_conceal(
     /* Rewhiten LTP state */
     idx = psDec->ltp_mem_length - lag - psDec->LPC_order - LTP_ORDER / 2;
     silk_assert( idx > 0 );
-    silk_LPC_analysis_filter( &sLTP[ idx ], &psDec->outBuf[ idx ], A_Q12, psDec->ltp_mem_length - idx, psDec->LPC_order );
+    silk_LPC_analysis_filter( &sLTP[ idx ], &psDec->outBuf[ idx ], A_Q12, psDec->ltp_mem_length - idx, psDec->LPC_order, arch );
     /* Scale LTP state */
     inv_gain_Q30 = silk_INVERSE32_varQ( psPLC->prevGain_Q16[ 1 ], 46 );
     inv_gain_Q30 = silk_min( inv_gain_Q30, silk_int32_MAX >> 1 );

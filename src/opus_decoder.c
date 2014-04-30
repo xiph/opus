@@ -75,6 +75,7 @@ struct OpusDecoder {
 #endif
 
    opus_uint32  rangeFinal;
+   int          arch;
 };
 
 
@@ -131,6 +132,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
 
    st->prev_mode = 0;
    st->frame_size = Fs/400;
+   st->arch = opus_select_arch();
    return OPUS_OK;
 }
 
@@ -375,7 +377,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         /* Call SILK decoder */
         int first_frame = decoded_samples == 0;
         silk_ret = silk_Decode( silk_dec, &st->DecControl,
-                                lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size );
+                                lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size, st->arch );
         if( silk_ret ) {
            if (lost_flag) {
               /* PLC failure should not be fatal */

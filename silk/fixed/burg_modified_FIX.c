@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define MAX_RSHIFTS                 (32 - QA)
 
 /* Compute reflection coefficients from input signal */
-void silk_burg_modified(
+void silk_burg_modified_c(
     opus_int32                  *res_nrg,           /* O    Residual energy                                             */
     opus_int                    *res_nrg_Q,         /* O    Residual energy Q value                                     */
     opus_int32                  A_Q16[],            /* O    Prediction coefficients (length order)                      */
@@ -68,7 +68,7 @@ void silk_burg_modified(
     silk_assert( subfr_length * nb_subfr <= MAX_FRAME_SIZE );
 
     /* Compute autocorrelations, added over subframes */
-    C0_64 = silk_inner_prod16_aligned_64( x, x, subfr_length*nb_subfr );
+    C0_64 = silk_inner_prod16_aligned_64( x, x, subfr_length*nb_subfr, arch );
     lz = silk_CLZ64(C0_64);
     rshifts = 32 + 1 + N_BITS_HEAD_ROOM - lz;
     if (rshifts > MAX_RSHIFTS) rshifts = MAX_RSHIFTS;
@@ -87,7 +87,7 @@ void silk_burg_modified(
             x_ptr = x + s * subfr_length;
             for( n = 1; n < D + 1; n++ ) {
                 C_first_row[ n - 1 ] += (opus_int32)silk_RSHIFT64(
-                    silk_inner_prod16_aligned_64( x_ptr, x_ptr + n, subfr_length - n ), rshifts );
+                    silk_inner_prod16_aligned_64( x_ptr, x_ptr + n, subfr_length - n, arch ), rshifts );
             }
         }
     } else {
@@ -248,12 +248,12 @@ void silk_burg_modified(
         if( rshifts > 0 ) {
             for( s = 0; s < nb_subfr; s++ ) {
                 x_ptr = x + s * subfr_length;
-                C0 -= (opus_int32)silk_RSHIFT64( silk_inner_prod16_aligned_64( x_ptr, x_ptr, D ), rshifts );
+                C0 -= (opus_int32)silk_RSHIFT64( silk_inner_prod16_aligned_64( x_ptr, x_ptr, D, arch ), rshifts );
             }
         } else {
             for( s = 0; s < nb_subfr; s++ ) {
                 x_ptr = x + s * subfr_length;
-                C0 -= silk_LSHIFT32( silk_inner_prod_aligned( x_ptr, x_ptr, D ), -rshifts );
+                C0 -= silk_LSHIFT32( silk_inner_prod_aligned( x_ptr, x_ptr, D, arch), -rshifts);
             }
         }
         /* Approximate residual energy */

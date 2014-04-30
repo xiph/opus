@@ -350,7 +350,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
 }
 
 #ifndef OVERRIDE_renormalise_vector
-void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
+void renormalise_vector(celt_norm *X, int N, opus_val16 gain, int arch)
 {
    int i;
 #ifdef FIXED_POINT
@@ -360,7 +360,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
    opus_val16 g;
    opus_val32 t;
    celt_norm *xptr;
-   E = EPSILON + celt_inner_prod(X, X, N);
+   E = EPSILON + celt_inner_prod(X, X, N, arch);
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
 #endif
@@ -377,7 +377,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
 }
 #endif /* OVERRIDE_renormalise_vector */
 
-int stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N)
+int stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N, int arch)
 {
    int i;
    int itheta;
@@ -396,8 +396,8 @@ int stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N)
          Eside = MAC16_16(Eside, s, s);
       }
    } else {
-      Emid += celt_inner_prod(X, X, N);
-      Eside += celt_inner_prod(Y, Y, N);
+      Emid += celt_inner_prod(X, X, N, arch);
+      Eside += celt_inner_prod(Y, Y, N, arch);
    }
    mid = celt_sqrt(Emid);
    side = celt_sqrt(Eside);

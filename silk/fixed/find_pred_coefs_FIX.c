@@ -89,11 +89,12 @@ void silk_find_pred_coefs_FIX(
         /* LTP analysis */
         silk_find_LTP_FIX( psEncCtrl->LTPCoef_Q14, WLTP, &psEncCtrl->LTPredCodGain_Q7,
             res_pitch, psEncCtrl->pitchL, Wght_Q15, psEnc->sCmn.subfr_length,
-            psEnc->sCmn.nb_subfr, psEnc->sCmn.ltp_mem_length, LTP_corrs_rshift );
+            psEnc->sCmn.nb_subfr, psEnc->sCmn.ltp_mem_length, LTP_corrs_rshift, psEnc->sCmn.arch );
 
         /* Quantize LTP gain parameters */
         silk_quant_LTP_gains( psEncCtrl->LTPCoef_Q14, psEnc->sCmn.indices.LTPIndex, &psEnc->sCmn.indices.PERIndex,
-            &psEnc->sCmn.sum_log_gain_Q7, WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr);
+            &psEnc->sCmn.sum_log_gain_Q7, WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr,
+            psEnc->sCmn.arch);
 
         /* Control LTP scaling */
         silk_LTP_scale_ctrl_FIX( psEnc, psEncCtrl, condCoding );
@@ -139,7 +140,7 @@ void silk_find_pred_coefs_FIX(
 
     /* Calculate residual energy using quantized LPC coefficients */
     silk_residual_energy_FIX( psEncCtrl->ResNrg, psEncCtrl->ResNrgQ, LPC_in_pre, psEncCtrl->PredCoef_Q12, local_gains,
-        psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
+        psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder, psEnc->sCmn.arch );
 
     /* Copy to prediction struct for use in next frame for interpolation */
     silk_memcpy( psEnc->sCmn.prev_NLSFq_Q15, NLSF_Q15, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );

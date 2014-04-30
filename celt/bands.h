@@ -98,15 +98,20 @@ void haar1(celt_norm *X, int N0, int stride);
  * @param LM log2() of the number of 2.5 subframes in the frame
  * @param codedBands Last band to receive bits + 1
  * @param seed Random generator seed
+ * @param arch Run-time architecture (see opus_select_arch())
  */
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
-      celt_norm * X, celt_norm * Y, unsigned char *collapse_masks, const celt_ener *bandE, int *pulses,
-      int shortBlocks, int spread, int dual_stereo, int intensity, int *tf_res,
-      opus_int32 total_bits, opus_int32 balance, ec_ctx *ec, int M, int codedBands, opus_uint32 *seed);
+      celt_norm * X, celt_norm * Y, unsigned char *collapse_masks,
+      const celt_ener *bandE, int *pulses, int shortBlocks, int spread,
+      int dual_stereo, int intensity, int *tf_res, opus_int32 total_bits,
+      opus_int32 balance, ec_ctx *ec, int M, int codedBands, opus_uint32 *seed,
+      int arch);
 
-void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_masks, int LM, int C, int size,
-      int start, int end, const opus_val16 *logE, const opus_val16 *prev1logE,
-      const opus_val16 *prev2logE, const int *pulses, opus_uint32 seed);
+void anti_collapse(const CELTMode *m, celt_norm *X_,
+      unsigned char *collapse_masks, int LM, int C, int size, int start,
+      int end, const opus_val16 *logE, const opus_val16 *prev1logE,
+      const opus_val16 *prev2logE, const int *pulses, opus_uint32 seed,
+      int arch);
 
 opus_uint32 celt_lcg_rand(opus_uint32 seed);
 

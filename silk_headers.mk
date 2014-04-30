@@ -6,6 +6,7 @@ silk/API.h \
 silk/typedef.h \
 silk/define.h \
 silk/main.h \
+silk/x86/main_sse.h \
 silk/PLC.h \
 silk/structs.h \
 silk/tables.h \
@@ -19,6 +20,7 @@ silk/resampler_private.h \
 silk/resampler_rom.h \
 silk/resampler_structs.h \
 silk/SigProc_FIX.h \
+silk/x86/SigProc_FIX_sse.h \
 silk/arm/macros_armv4.h \
 silk/arm/macros_armv5e.h \
 silk/arm/SigProc_FIX_armv4.h \
