@@ -637,7 +637,7 @@ int main(int argc, char *argv[])
             case 4: newsize=sampling_rate/25; break;
             case 5: newsize=3*sampling_rate/50; break;
             }
-            while (newsize < sampling_rate/25 && bitrate_bps-fabs(sweep_bps) <= 3*12*sampling_rate/newsize)
+            while (newsize < sampling_rate/25 && bitrate_bps-abs(sweep_bps) <= 3*12*sampling_rate/newsize)
                newsize*=2;
             if (newsize < sampling_rate/100 && frame_size >= sampling_rate/100)
             {
