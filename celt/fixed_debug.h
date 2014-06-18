@@ -768,6 +768,16 @@ static OPUS_INLINE int DIV32_(opus_int64 a, opus_int64 b, char *file, int line)
    return res;
 }
 
+static OPUS_INLINE opus_val16 SIG2WORD16_generic(celt_sig x)
+{
+   x = PSHR32(x, SIG_SHIFT);
+   x = MAX32(x, -32768);
+   x = MIN32(x, 32767);
+   return EXTRACT16(x);
+}
+#define SIG2WORD16(x) (SIG2WORD16_generic(x))
+
+
 #undef PRINT_MIPS
 #define PRINT_MIPS(file) do {fprintf (file, "total complexity = %llu MIPS\n", celt_mips);} while (0);
 
