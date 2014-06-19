@@ -41,6 +41,10 @@
 #include "x86/pitch_sse.h"
 #endif
 
+#if defined(MIPSr1_ASM)
+#include "mips/pitch_mipsr1.h"
+#endif
+
 #if defined(OPUS_ARM_ASM) && defined(FIXED_POINT)
 # include "arm/pitch_arm.h"
 #endif

@@ -54,6 +54,10 @@
 #define PACKAGE_VERSION "unknown"
 #endif
 
+#if defined(MIPSr1_ASM)
+#include "mips/celt_mipsr1.h"
+#endif
+
 
 int resampling_factor(opus_int32 rate)
 {
@@ -169,6 +173,7 @@ static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
 #endif
 #endif
 
+#ifndef OVERRIDE_comb_filter
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
       const opus_val16 *window, int overlap)
@@ -231,6 +236,7 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
    /* Compute the part with the constant filter. */
    comb_filter_const(y+i, x+i, T1, N-i, g10, g11, g12);
 }
+#endif /* OVERRIDE_comb_filter */
 
 const signed char tf_select_table[4][8] = {
       {0, -1, 0, -1,    0,-1, 0,-1},

@@ -39,6 +39,11 @@
 #include "rate.h"
 #include "pitch.h"
 
+#if defined(MIPSr1_ASM)
+#include "mips/vq_mipsr1.h"
+#endif
+
+#ifndef OVERRIDE_vq_exp_rotation1
 static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_val16 s)
 {
    int i;
@@ -64,6 +69,7 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
       *Xptr--      = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x1), ms, x2), 15));
    }
 }
+#endif /* OVERRIDE_vq_exp_rotation1 */
 
 static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
 {
@@ -343,6 +349,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    return collapse_mask;
 }
 
+#ifndef OVERRIDE_renormalise_vector
 void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
 {
    int i;
@@ -368,6 +375,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
    }
    /*return celt_sqrt(E);*/
 }
+#endif /* OVERRIDE_renormalise_vector */
 
 int stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N)
 {

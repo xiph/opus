@@ -25,127 +25,12 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "main_FIX.h"
-#include "stack_alloc.h"
-#include "tuning_parameters.h"
-
-/* Compute gain to make warped filter coefficients have a zero mean log frequency response on a   */
-/* non-warped frequency scale. (So that it can be implemented with a minimum-phase monic filter.) */
-/* Note: A monic filter is one with the first coefficient equal to 1.0. In Silk we omit the first */
-/* coefficient in an array of coefficients, for monic filters.                                    */
-static OPUS_INLINE opus_int32 warped_gain( /* gain in Q16*/
-    const opus_int32     *coefs_Q24,
-    opus_int             lambda_Q16,
-    opus_int             order
-) {
-    opus_int   i;
-    opus_int32 gain_Q24;
-
-    lambda_Q16 = -lambda_Q16;
-    gain_Q24 = coefs_Q24[ order - 1 ];
-    for( i = order - 2; i >= 0; i-- ) {
-        gain_Q24 = silk_SMLAWB( coefs_Q24[ i ], gain_Q24, lambda_Q16 );
-    }
-    gain_Q24  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 24 ), gain_Q24, -lambda_Q16 );
-    return silk_INVERSE32_varQ( gain_Q24, 40 );
-}
-
-/* Convert warped filter coefficients to monic pseudo-warped coefficients and limit maximum     */
-/* amplitude of monic warped coefficients by using bandwidth expansion on the true coefficients */
-static OPUS_INLINE void limit_warped_coefs(
-    opus_int32           *coefs_syn_Q24,
-    opus_int32           *coefs_ana_Q24,
-    opus_int             lambda_Q16,
-    opus_int32           limit_Q24,
-    opus_int             order
-) {
-    opus_int   i, iter, ind = 0;
-    opus_int32 tmp, maxabs_Q24, chirp_Q16, gain_syn_Q16, gain_ana_Q16;
-    opus_int32 nom_Q16, den_Q24;
-
-    /* Convert to monic coefficients */
-    lambda_Q16 = -lambda_Q16;
-    for( i = order - 1; i > 0; i-- ) {
-        coefs_syn_Q24[ i - 1 ] = silk_SMLAWB( coefs_syn_Q24[ i - 1 ], coefs_syn_Q24[ i ], lambda_Q16 );
-        coefs_ana_Q24[ i - 1 ] = silk_SMLAWB( coefs_ana_Q24[ i - 1 ], coefs_ana_Q24[ i ], lambda_Q16 );
-    }
-    lambda_Q16 = -lambda_Q16;
-    nom_Q16  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 16 ), -(opus_int32)lambda_Q16,        lambda_Q16 );
-    den_Q24  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 24 ), coefs_syn_Q24[ 0 ], lambda_Q16 );
-    gain_syn_Q16 = silk_DIV32_varQ( nom_Q16, den_Q24, 24 );
-    den_Q24  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 24 ), coefs_ana_Q24[ 0 ], lambda_Q16 );
-    gain_ana_Q16 = silk_DIV32_varQ( nom_Q16, den_Q24, 24 );
-    for( i = 0; i < order; i++ ) {
-        coefs_syn_Q24[ i ] = silk_SMULWW( gain_syn_Q16, coefs_syn_Q24[ i ] );
-        coefs_ana_Q24[ i ] = silk_SMULWW( gain_ana_Q16, coefs_ana_Q24[ i ] );
-    }
-
-    for( iter = 0; iter < 10; iter++ ) {
-        /* Find maximum absolute value */
-        maxabs_Q24 = -1;
-        for( i = 0; i < order; i++ ) {
-            tmp = silk_max( silk_abs_int32( coefs_syn_Q24[ i ] ), silk_abs_int32( coefs_ana_Q24[ i ] ) );
-            if( tmp > maxabs_Q24 ) {
-                maxabs_Q24 = tmp;
-                ind = i;
-            }
-        }
-        if( maxabs_Q24 <= limit_Q24 ) {
-            /* Coefficients are within range - done */
-            return;
-        }
-
-        /* Convert back to true warped coefficients */
-        for( i = 1; i < order; i++ ) {
-            coefs_syn_Q24[ i - 1 ] = silk_SMLAWB( coefs_syn_Q24[ i - 1 ], coefs_syn_Q24[ i ], lambda_Q16 );
-            coefs_ana_Q24[ i - 1 ] = silk_SMLAWB( coefs_ana_Q24[ i - 1 ], coefs_ana_Q24[ i ], lambda_Q16 );
-        }
-        gain_syn_Q16 = silk_INVERSE32_varQ( gain_syn_Q16, 32 );
-        gain_ana_Q16 = silk_INVERSE32_varQ( gain_ana_Q16, 32 );
-        for( i = 0; i < order; i++ ) {
-            coefs_syn_Q24[ i ] = silk_SMULWW( gain_syn_Q16, coefs_syn_Q24[ i ] );
-            coefs_ana_Q24[ i ] = silk_SMULWW( gain_ana_Q16, coefs_ana_Q24[ i ] );
-        }
-
-        /* Apply bandwidth expansion */
-        chirp_Q16 = SILK_FIX_CONST( 0.99, 16 ) - silk_DIV32_varQ(
-            silk_SMULWB( maxabs_Q24 - limit_Q24, silk_SMLABB( SILK_FIX_CONST( 0.8, 10 ), SILK_FIX_CONST( 0.1, 10 ), iter ) ),
-            silk_MUL( maxabs_Q24, ind + 1 ), 22 );
-        silk_bwexpander_32( coefs_syn_Q24, order, chirp_Q16 );
-        silk_bwexpander_32( coefs_ana_Q24, order, chirp_Q16 );
-
-        /* Convert to monic warped coefficients */
-        lambda_Q16 = -lambda_Q16;
-        for( i = order - 1; i > 0; i-- ) {
-            coefs_syn_Q24[ i - 1 ] = silk_SMLAWB( coefs_syn_Q24[ i - 1 ], coefs_syn_Q24[ i ], lambda_Q16 );
-            coefs_ana_Q24[ i - 1 ] = silk_SMLAWB( coefs_ana_Q24[ i - 1 ], coefs_ana_Q24[ i ], lambda_Q16 );
-        }
-        lambda_Q16 = -lambda_Q16;
-        nom_Q16  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 16 ), -(opus_int32)lambda_Q16,        lambda_Q16 );
-        den_Q24  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 24 ), coefs_syn_Q24[ 0 ], lambda_Q16 );
-        gain_syn_Q16 = silk_DIV32_varQ( nom_Q16, den_Q24, 24 );
-        den_Q24  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 24 ), coefs_ana_Q24[ 0 ], lambda_Q16 );
-        gain_ana_Q16 = silk_DIV32_varQ( nom_Q16, den_Q24, 24 );
-        for( i = 0; i < order; i++ ) {
-            coefs_syn_Q24[ i ] = silk_SMULWW( gain_syn_Q16, coefs_syn_Q24[ i ] );
-            coefs_ana_Q24[ i ] = silk_SMULWW( gain_ana_Q16, coefs_ana_Q24[ i ] );
-        }
-    }
-    silk_assert( 0 );
-}
-
-#if defined(MIPSr1_ASM)
-#include "mips/noise_shape_analysis_FIX_mipsr1.h"
-#endif
 
 /**************************************************************/
 /* Compute noise shaping coefficients and initial gain values */
 /**************************************************************/
-#ifndef OVERRIDE_silk_noise_shape_analysis_FIX
+#define OVERRIDE_silk_noise_shape_analysis_FIX
+
 void silk_noise_shape_analysis_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state FIX                                                           */
     silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Encoder control FIX                                                         */
@@ -314,7 +199,8 @@ void silk_noise_shape_analysis_FIX(
         tmp32 = silk_SQRT_APPROX( nrg );
         Qnrg >>= 1;             /* range: -6...15*/
 
-        psEncCtrl->Gains_Q16[ k ] = silk_LSHIFT_SAT32( tmp32, 16 - Qnrg );
+        psEncCtrl->Gains_Q16[ k ] = (silk_LSHIFT32( silk_LIMIT( (tmp32), silk_RSHIFT32( silk_int32_MIN, (16 - Qnrg) ), \
+                            silk_RSHIFT32( silk_int32_MAX, (16 - Qnrg) ) ), (16 - Qnrg) ));
 
         if( psEnc->sCmn.warping_Q16 > 0 ) {
             /* Adjust gain for warping */
@@ -448,5 +334,4 @@ void silk_noise_shape_analysis_FIX(
     }
     RESTORE_STACK;
 }
-#endif /* OVERRIDE_silk_noise_shape_analysis_FIX */
 
