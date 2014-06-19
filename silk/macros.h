@@ -40,8 +40,25 @@ POSSIBILITY OF SUCH DAMAGE.
 /* (a32 * (opus_int32)((opus_int16)(b32))) >> 16 output have to be 32bit int */
 #define silk_SMULWB(a32, b32)            ((((a32) >> 16) * (opus_int32)((opus_int16)(b32))) + ((((a32) & 0x0000FFFF) * (opus_int32)((opus_int16)(b32))) >> 16))
 
+#undef silk_SMULWB
+static inline int silk_SMULWB(int a, int b) 
+{
+    long long ac;
+    int c;
+
+    ac = ((long long) a * (long long)(opus_int16)b);
+    ac = ac >> 16;
+    c = ac;
+
+    return c;
+}
+
+
 /* a32 + (b32 * (opus_int32)((opus_int16)(c32))) >> 16 output have to be 32bit int */
 #define silk_SMLAWB(a32, b32, c32)       ((a32) + ((((b32) >> 16) * (opus_int32)((opus_int16)(c32))) + ((((b32) & 0x0000FFFF) * (opus_int32)((opus_int16)(c32))) >> 16)))
+
+#undef silk_SMLAWB
+#define silk_SMLAWB(a32, b32, c32)       ((a32) + silk_SMULWB(b32, c32))
 
 /* (a32 * (b32 >> 16)) >> 16 */
 #define silk_SMULWT(a32, b32)            (((a32) >> 16) * ((b32) >> 16) + ((((a32) & 0x0000FFFF) * ((b32) >> 16)) >> 16))
@@ -67,8 +84,37 @@ POSSIBILITY OF SUCH DAMAGE.
 /* (a32 * b32) >> 16 */
 #define silk_SMULWW(a32, b32)            silk_MLA(silk_SMULWB((a32), (b32)), (a32), silk_RSHIFT_ROUND((b32), 16))
 
+
+#undef silk_SMULWW
+static inline int silk_SMULWW(int a, int b) 
+{
+    long long ac;
+    int c;
+
+    ac = ((long long) a * (long long)b);
+    ac = ac >> 16;
+    c = ac;
+
+    return c;
+}
+
 /* a32 + ((b32 * c32) >> 16) */
 #define silk_SMLAWW(a32, b32, c32)       silk_MLA(silk_SMLAWB((a32), (b32), (c32)), (b32), silk_RSHIFT_ROUND((c32), 16))
+
+#undef silk_SMLAWW
+static inline int silk_SMLAWW(int a, int b, int c) 
+{
+    long long ac;
+    int res;
+
+    ac = ((long long)b * (long long)c);
+    ac = ac >> 16;
+    res = ac;
+    res += a;
+
+    return res;
+}
+
 
 /* add/subtract with output saturated */
 #define silk_ADD_SAT32(a, b)             ((((opus_uint32)(a) + (opus_uint32)(b)) & 0x80000000) == 0 ?                              \

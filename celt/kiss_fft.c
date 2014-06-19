@@ -283,20 +283,20 @@ static void kf_bfly5(
 
          Fout0->r += scratch[7].r + scratch[8].r;
          Fout0->i += scratch[7].i + scratch[8].i;
+         scratch[5].r = scratch[0].r + S_MUL_ADD(scratch[7].r,ya.r,scratch[8].r,yb.r);
+         scratch[5].i = scratch[0].i + S_MUL_ADD(scratch[7].i,ya.r,scratch[8].i,yb.r);
 
-         scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
-         scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
-
-         scratch[6].r =  S_MUL(scratch[10].i,ya.i) + S_MUL(scratch[9].i,yb.i);
-         scratch[6].i = -S_MUL(scratch[10].r,ya.i) - S_MUL(scratch[9].r,yb.i);
+         scratch[6].r =  S_MUL_ADD(scratch[10].i,ya.i,scratch[9].i,yb.i);
+         scratch[6].i =  -S_MUL_ADD(scratch[10].r,ya.i,scratch[9].r,yb.i);
 
          C_SUB(*Fout1,scratch[5],scratch[6]);
          C_ADD(*Fout4,scratch[5],scratch[6]);
 
-         scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
-         scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
-         scratch[12].r = - S_MUL(scratch[10].i,yb.i) + S_MUL(scratch[9].i,ya.i);
-         scratch[12].i = S_MUL(scratch[10].r,yb.i) - S_MUL(scratch[9].r,ya.i);
+         scratch[11].r = scratch[0].r + S_MUL_ADD(scratch[7].r,yb.r,scratch[8].r,ya.r);
+         scratch[11].i = scratch[0].i + S_MUL_ADD(scratch[7].i,yb.r,scratch[8].i,ya.r);
+
+         scratch[12].r =  S_MUL_SUB(scratch[9].i,ya.i,scratch[10].i,yb.i);
+         scratch[12].i =  S_MUL_SUB(scratch[10].r,yb.i,scratch[9].r,ya.i);
 
          C_ADD(*Fout2,scratch[11],scratch[12]);
          C_SUB(*Fout3,scratch[11],scratch[12]);

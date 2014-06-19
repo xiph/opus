@@ -1,7 +1,7 @@
 #################### COMPILE OPTIONS #######################
 
 # Uncomment this for fixed-point build
-#FIXED_POINT=1
+FIXED_POINT=1
 
 # It is strongly recommended to uncomment one of these
 # VAR_ARRAYS: Use C99 variable-length arrays for stack allocation
@@ -45,7 +45,9 @@ ldflags-from-ldlibdirs  = $(addprefix -L,$(1))
 ldlibs-from-libs        = $(addprefix -l,$(1))
 
 WARNINGS = -Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow
-CFLAGS  += -O2 -g $(WARNINGS) -DOPUS_BUILD
+
+CFLAGS  += -mips32r2 -mno-mips16 -std=gnu99 -O2 -g $(WARNINGS) -DENABLE_ASSERTIONS -DOPUS_BUILD -mdspr2 -march=74kc -mtune=74kc -mmt -mgp32
+
 CINCLUDES = include silk celt
 
 ifdef FIXED_POINT

@@ -61,10 +61,50 @@
       do{ (m).r = SUB32(S_MUL((a).r,(b).r) , S_MUL((a).i,(b).i)); \
           (m).i = ADD32(S_MUL((a).r,(b).i) , S_MUL((a).i,(b).r)); }while(0)
 
+
+#undef C_MUL
+#   define C_MUL(m,a,b) (m=C_MUL_fun(a,b))
+static inline kiss_fft_cpx C_MUL_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
+    kiss_fft_cpx m;
+    long long ac1 = ((long long)a.r * (long long)b.r);
+    long long ac2 = ((long long)a.i * (long long)b.i);
+    ac1 = ac1 - ac2;
+    ac1 = ac1 >> 15;
+    m.r  = ac1;
+
+    ac1 = ((long long)a.r * (long long)b.i);
+    ac2 = ((long long)a.i * (long long)b.r);
+    ac1 = ac1 + ac2;
+    ac1 = ac1 >> 15;
+    m.i = ac1;
+
+    return m;
+}
+
 #   define C_MULC(m,a,b) \
       do{ (m).r = ADD32(S_MUL((a).r,(b).r) , S_MUL((a).i,(b).i)); \
           (m).i = SUB32(S_MUL((a).i,(b).r) , S_MUL((a).r,(b).i)); }while(0)
 
+
+#undef C_MULC
+#   define C_MULC(m,a,b) (m=C_MULC_fun(a,b))
+static inline kiss_fft_cpx C_MULC_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
+    kiss_fft_cpx m;
+
+    long long ac1 = ((long long)a.r * (long long)b.r);
+    long long ac2 = ((long long)a.i * (long long)b.i);
+    ac1 = ac1 + ac2;
+    ac1 = ac1 >> 15;
+    m.r = ac1;
+
+    ac1 = ((long long)a.i * (long long)b.r);
+    ac2 = ((long long)a.r * (long long)b.i);
+    ac1 = ac1 - ac2;
+    ac1 = ac1 >> 15;
+    m.i = ac1;
+
+    return m;
+}
 #   define C_MULBYSCALAR( c, s ) \
       do{ (c).r =  S_MUL( (c).r , s ) ;\
           (c).i =  S_MUL( (c).i , s ) ; }while(0)

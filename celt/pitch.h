@@ -61,66 +61,91 @@ static OPUS_INLINE void xcorr_kernel(const opus_val16 * x, const opus_val16 * y,
 {
    int j;
    opus_val16 y_0, y_1, y_2, y_3;
-   celt_assert(len>=3);
-   y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
-   y_0=*y++;
-   y_1=*y++;
-   y_2=*y++;
-   for (j=0;j<len-3;j+=4)
-   {
-      opus_val16 tmp;
-      tmp = *x++;
-      y_3=*y++;
-      sum[0] = MAC16_16(sum[0],tmp,y_0);
-      sum[1] = MAC16_16(sum[1],tmp,y_1);
-      sum[2] = MAC16_16(sum[2],tmp,y_2);
-      sum[3] = MAC16_16(sum[3],tmp,y_3);
-      tmp=*x++;
-      y_0=*y++;
-      sum[0] = MAC16_16(sum[0],tmp,y_1);
-      sum[1] = MAC16_16(sum[1],tmp,y_2);
-      sum[2] = MAC16_16(sum[2],tmp,y_3);
-      sum[3] = MAC16_16(sum[3],tmp,y_0);
-      tmp=*x++;
-      y_1=*y++;
-      sum[0] = MAC16_16(sum[0],tmp,y_2);
-      sum[1] = MAC16_16(sum[1],tmp,y_3);
-      sum[2] = MAC16_16(sum[2],tmp,y_0);
-      sum[3] = MAC16_16(sum[3],tmp,y_1);
+
+    opus_int64 sum_0, sum_1, sum_2, sum_3;
+    sum_0 =  (opus_int64)sum[0];
+    sum_1 =  (opus_int64)sum[1];
+    sum_2 =  (opus_int64)sum[2];
+    sum_3 =  (opus_int64)sum[3];
+
+    y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
+    y_0=*y++;
+    y_1=*y++;
+    y_2=*y++;
+    for (j=0;j<len-3;j+=4)
+    {
+        opus_val16 tmp;
+        tmp = *x++;
+        y_3=*y++;
+
+        sum_0 += ( ((long long)tmp) * ((long long)y_0) );
+        sum_1 += ( ((long long)tmp) * ((long long)y_1) );
+        sum_2 += ( ((long long)tmp) * ((long long)y_2) );
+        sum_3 += ( ((long long)tmp) * ((long long)y_3) );
+
+        tmp=*x++;
+        y_0=*y++;
+
+        sum_0 += ( ((long long)tmp) * ((long long)y_1) );
+        sum_1 += ( ((long long)tmp) * ((long long)y_2) );
+        sum_2 += ( ((long long)tmp) * ((long long)y_3) );
+        sum_3 += ( ((long long)tmp) * ((long long)y_0) );
+
+       tmp=*x++;
+       y_1=*y++;
+
+        sum_0 += ( ((long long)tmp) * ((long long)y_2) );
+        sum_1 += ( ((long long)tmp) * ((long long)y_3) );
+        sum_2 += ( ((long long)tmp) * ((long long)y_0) );
+        sum_3 += ( ((long long)tmp) * ((long long)y_1) );
+
+
       tmp=*x++;
       y_2=*y++;
-      sum[0] = MAC16_16(sum[0],tmp,y_3);
-      sum[1] = MAC16_16(sum[1],tmp,y_0);
-      sum[2] = MAC16_16(sum[2],tmp,y_1);
-      sum[3] = MAC16_16(sum[3],tmp,y_2);
+
+        sum_0 += ( ((long long)tmp) * ((long long)y_3) );
+        sum_1 += ( ((long long)tmp) * ((long long)y_0) );
+        sum_2 += ( ((long long)tmp) * ((long long)y_1) );
+        sum_3 += ( ((long long)tmp) * ((long long)y_2) );
+
    }
    if (j++<len)
    {
       opus_val16 tmp = *x++;
       y_3=*y++;
-      sum[0] = MAC16_16(sum[0],tmp,y_0);
-      sum[1] = MAC16_16(sum[1],tmp,y_1);
-      sum[2] = MAC16_16(sum[2],tmp,y_2);
-      sum[3] = MAC16_16(sum[3],tmp,y_3);
+
+        sum_0 += ( ((long long)tmp) * ((long long)y_0) );
+        sum_1 += ( ((long long)tmp) * ((long long)y_1) );
+        sum_2 += ( ((long long)tmp) * ((long long)y_2) );
+        sum_3 += ( ((long long)tmp) * ((long long)y_3) );
    }
+
    if (j++<len)
    {
       opus_val16 tmp=*x++;
       y_0=*y++;
-      sum[0] = MAC16_16(sum[0],tmp,y_1);
-      sum[1] = MAC16_16(sum[1],tmp,y_2);
-      sum[2] = MAC16_16(sum[2],tmp,y_3);
-      sum[3] = MAC16_16(sum[3],tmp,y_0);
+
+        sum_0 += ( ((long long)tmp) * ((long long)y_1) );
+        sum_1 += ( ((long long)tmp) * ((long long)y_2) );
+        sum_2 += ( ((long long)tmp) * ((long long)y_3) );
+        sum_3 += ( ((long long)tmp) * ((long long)y_0) );
    }
+
    if (j<len)
    {
       opus_val16 tmp=*x++;
       y_1=*y++;
-      sum[0] = MAC16_16(sum[0],tmp,y_2);
-      sum[1] = MAC16_16(sum[1],tmp,y_3);
-      sum[2] = MAC16_16(sum[2],tmp,y_0);
-      sum[3] = MAC16_16(sum[3],tmp,y_1);
+
+        sum_0 += ( ((long long)tmp) * ((long long)y_2) );
+        sum_1 += ( ((long long)tmp) * ((long long)y_3) );
+        sum_2 += ( ((long long)tmp) * ((long long)y_0) );
+        sum_3 += ( ((long long)tmp) * ((long long)y_1) );
    }
+
+   sum[0] = (opus_val32)sum_0;
+   sum[1] = (opus_val32)sum_1;
+   sum[2] = (opus_val32)sum_2;
+   sum[3] = (opus_val32)sum_3;
 }
 #endif /* OVERRIDE_XCORR_KERNEL */
 
@@ -128,14 +153,23 @@ static OPUS_INLINE void xcorr_kernel(const opus_val16 * x, const opus_val16 * y,
 static OPUS_INLINE void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
       int N, opus_val32 *xy1, opus_val32 *xy2)
 {
-   int i;
+   int j;
    opus_val32 xy01=0;
    opus_val32 xy02=0;
-   for (i=0;i<N;i++)
+   long long ac1 = 0;
+   long long ac2 = 0;
+
+   /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
+   for (j=0;j<N;j++)
    {
-      xy01 = MAC16_16(xy01, x[i], y01[i]);
-      xy02 = MAC16_16(xy02, x[i], y02[i]);
+        ac1 += ( ((long long)x[j]) * ((long long)y01[j]) );
+        ac2 += ( ((long long)x[j]) * ((long long)y02[j]) );
+        ++j;
+        ac1 += ( ((long long)x[j]) * ((long long)y01[j]) );
+        ac2 += ( ((long long)x[j]) * ((long long)y02[j]) );
    }
+   xy01 = ac1;
+   xy02 = ac2;
    *xy1 = xy01;
    *xy2 = xy02;
 }

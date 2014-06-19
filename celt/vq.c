@@ -349,11 +349,32 @@ void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
 #ifdef FIXED_POINT
    int k;
 #endif
-   opus_val32 E;
+   opus_val32 E = EPSILON;
    opus_val16 g;
    opus_val32 t;
-   celt_norm *xptr;
-   E = EPSILON + celt_inner_prod(X, X, N);
+   celt_norm *xptr = X;
+
+   int X0, X2, X3, X1;
+   {
+   long long ac1 = ((long long)E);
+   /*if(N %4)
+       printf("error");*/
+   for (i=0;i<N-2;i+=2)
+   {
+      X0 = (int)*xptr++;
+      ac1 += ( ((long long)X0) * ((long long)X0) );
+
+      X1 = (int)*xptr++;
+      ac1 += ( ((long long)X1) * ((long long)X1) );
+   }
+   for (;i<N;i++)
+   {
+      X0 = (int)*xptr++;
+      ac1 += ( ((long long)X0) * ((long long)X0) );
+   }  
+   E = ac1;
+   }
+
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
 #endif

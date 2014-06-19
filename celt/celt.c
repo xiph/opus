@@ -205,22 +205,38 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
    for (i=0;i<overlap;i++)
    {
       opus_val16 f;
-      x0=x[i-T1+2];
+      opus_val32 res;
       f = MULT16_16_Q15(window[i],window[i]);
-      y[i] = x[i]
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g00),x[i-T0])
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g01),ADD32(x[i-T0+1],x[i-T0-1]))
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g02),ADD32(x[i-T0+2],x[i-T0-2]))
-               + MULT16_32_Q15(MULT16_16_Q15(f,g10),x2)
-               + MULT16_32_Q15(MULT16_16_Q15(f,g11),ADD32(x1,x3))
-               + MULT16_32_Q15(MULT16_16_Q15(f,g12),ADD32(x0,x4));
+      x0= x[i-T1+2];
+
+      {
+      long long ac1 = 0;
+      ac1 =  ((long long)MULT16_16_Q15((Q15ONE-f),g00)) * ((long long )x[i-T0]);
+      ac1 += ( ((long long)MULT16_16_Q15((Q15ONE-f),g01)) * ((long long)ADD32(x[i-T0-1],x[i-T0+1])) );
+      ac1 += ( ((long long)MULT16_16_Q15((Q15ONE-f),g02)) * ((long long)ADD32(x[i-T0-2],x[i-T0+2])) );
+      ac1 += ( ((long long)MULT16_16_Q15(f,g10)) * ((long long)x2) );
+      ac1 += ( ((long long)MULT16_16_Q15(f,g11)) * ((long long)ADD32(x3,x1)) );
+      ac1 += ( ((long long)MULT16_16_Q15(f,g12)) * ((long long)ADD32(x4,x0)) );
+
+      ac1 = ac1 >> 15;
+      res = ac1;
+      }
+
+      y[i] = x[i] + res;
+
       x4=x3;
       x3=x2;
       x2=x1;
       x1=x0;
-
    }
-   if (g1==0)
+
+
+   x4 = x[i-T1-2];
+   x3 = x[i-T1-1];
+   x2 = x[i-T1];
+   x1 = x[i-T1+1];
+
+    if (g1==0)
    {
       /* OPT: Happens to work without the OPUS_MOVE(), but only because the current encoder already copies x to y */
       if (x!=y)
@@ -228,8 +244,25 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       return;
    }
 
-   /* Compute the part with the constant filter. */
-   comb_filter_const(y+i, x+i, T1, N-i, g10, g11, g12);
+    for (i=overlap;i<N;i++) {
+
+       opus_val32 res;
+       x0=x[i-T1+2];
+       {
+       long long ac1 = 0;
+       ac1 =  ( ((long long)g10) * ((long long)x2) );
+       ac1 += ( ((long long)g11) * ((long long)ADD32(x3,x1)) );
+       ac1 += ( ((long long)g12) * ((long long)ADD32(x4,x0)));
+       ac1 = ac1 >> 15;
+       res = ac1;
+       }
+
+       y[i] = x[i] + res;
+       x4=x3;
+       x3=x2;
+       x2=x1;
+       x1=x0;
+    }
 }
 
 const signed char tf_select_table[4][8] = {

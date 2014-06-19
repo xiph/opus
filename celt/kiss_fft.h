@@ -114,6 +114,34 @@ typedef struct kiss_fft_state{
  *      buffer size in *lenmem.
  * */
 
+
+#define S_MUL_ADD(a, b, c, d) (S_MUL(a,b)+S_MUL(c,d))
+#define S_MUL_SUB(a, b, c, d) (S_MUL(a,b)-S_MUL(c,d))
+
+#undef S_MUL_ADD
+static inline int S_MUL_ADD(int a, int b, int c, int d) {
+    int m;
+    long long ac1 = ((long long)a * (long long)b);
+    long long ac2 = ((long long)c * (long long)d);
+    ac1 += ac2;
+    ac1 = ac1>>15;
+    m = (int )(ac1);
+    return m;
+}
+
+
+#undef S_MUL_SUB
+static inline int S_MUL_SUB(int a, int b, int c, int d) {
+    int m;
+    long long ac1 = ((long long)a * (long long)b);
+    long long ac2 = ((long long)c * (long long)d);
+    ac1 -= ac2;
+    ac1 = ac1>>15;
+    m = (int )(ac1);
+    return m;
+}
+
+
 kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem, const kiss_fft_state *base);
 
 kiss_fft_state *opus_fft_alloc(int nfft,void * mem,size_t * lenmem);

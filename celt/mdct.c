@@ -153,8 +153,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       for(i=0;i<((overlap+3)>>2);i++)
       {
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-         *yp++ = MULT16_32_Q15(*wp2, xp1[N2]) + MULT16_32_Q15(*wp1,*xp2);
-         *yp++ = MULT16_32_Q15(*wp1, *xp1)    - MULT16_32_Q15(*wp2, xp2[-N2]);
+          *yp++ = S_MUL_ADD(*wp2, xp1[N2],*wp1,*xp2);
+          *yp++ = S_MUL_SUB(*wp1, *xp1,*wp2, xp2[-N2]);
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -173,8 +173,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       for(;i<N4;i++)
       {
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         *yp++ =  -MULT16_32_Q15(*wp1, xp1[-N2]) + MULT16_32_Q15(*wp2, *xp2);
-         *yp++ = MULT16_32_Q15(*wp2, *xp1)     + MULT16_32_Q15(*wp1, xp2[N2]);
+          *yp++ =  S_MUL_SUB(*wp2, *xp2, *wp1, xp1[-N2]);
+          *yp++ = S_MUL_ADD(*wp2, *xp1, *wp1, xp2[N2]);
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -194,8 +194,10 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
          t1 = t[N4+i];
          re = *yp++;
          im = *yp++;
-         yr = S_MUL(re,t0)  -  S_MUL(im,t1);
-         yi = S_MUL(im,t0)  +  S_MUL(re,t1);
+
+         yr = S_MUL_SUB(re,t0,im,t1);
+         yi = S_MUL_ADD(im,t0,re,t1);
+
          yc.r = yr;
          yc.i = yi;
          yc.r = PSHR32(MULT16_32_Q16(scale, yc.r), scale_shift);
@@ -218,8 +220,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       for(i=0;i<N4;i++)
       {
          kiss_fft_scalar yr, yi;
-         yr = S_MUL(fp->i,t[N4+i]) - S_MUL(fp->r,t[i]);
-         yi = S_MUL(fp->r,t[N4+i]) + S_MUL(fp->i,t[i]);
+         yr = S_MUL_SUB(fp->i,t[N4+i] , fp->r,t[i]);
+         yi = S_MUL_ADD(fp->r,t[N4+i] ,fp->i,t[i]);
          *yp1 = yr;
          *yp2 = yi;
          fp++;
@@ -260,8 +262,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          int rev;
          kiss_fft_scalar yr, yi;
          rev = *bitrev++;
-         yr = S_MUL(*xp2, t[i]) + S_MUL(*xp1, t[N4+i]);
-         yi = S_MUL(*xp1, t[i]) - S_MUL(*xp2, t[N4+i]);
+         yr = S_MUL_ADD(*xp2, t[i] , *xp1, t[N4+i]);
+         yi = S_MUL_SUB(*xp1, t[i] , *xp2, t[N4+i]);
          /* We swap real and imag because we use an FFT instead of an IFFT. */
          yp[2*rev+1] = yr;
          yp[2*rev] = yi;
@@ -291,8 +293,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          t0 = t[i];
          t1 = t[N4+i];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
-         yr = S_MUL(re,t0) + S_MUL(im,t1);
-         yi = S_MUL(re,t1) - S_MUL(im,t0);
+         yr = S_MUL_ADD(re,t0 , im,t1);
+         yi = S_MUL_SUB(re,t1 , im,t0);
          /* We swap real and imag because we're using an FFT instead of an IFFT. */
          re = yp1[1];
          im = yp1[0];
@@ -302,8 +304,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          t0 = t[(N4-i-1)];
          t1 = t[(N2-i-1)];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
-         yr = S_MUL(re,t0) + S_MUL(im,t1);
-         yi = S_MUL(re,t1) - S_MUL(im,t0);
+         yr = S_MUL_ADD(re,t0,im,t1);
+         yi = S_MUL_SUB(re,t1,im,t0);
          yp1[0] = yr;
          yp0[1] = yi;
          yp0 += 2;
