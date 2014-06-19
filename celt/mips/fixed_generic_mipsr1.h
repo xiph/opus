@@ -124,4 +124,3 @@ static inline int MULT16_16_P15(int a, int b)
 }
 
 #endif /* CELT_FIXED_GENERIC_MIPSR1_H */
-

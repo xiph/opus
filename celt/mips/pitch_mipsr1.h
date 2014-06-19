@@ -152,4 +152,3 @@ static inline void xcorr_kernel(const opus_val16 * x, const opus_val16 * y, opus
 }
 
 #endif /* PITCH_MIPSR1_H */
-

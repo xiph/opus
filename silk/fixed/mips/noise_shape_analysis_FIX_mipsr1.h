@@ -334,4 +334,3 @@ void silk_noise_shape_analysis_FIX(
     }
     RESTORE_STACK;
 }
-

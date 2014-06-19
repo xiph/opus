@@ -449,4 +449,3 @@ void silk_noise_shape_analysis_FIX(
     RESTORE_STACK;
 }
 #endif /* OVERRIDE_silk_noise_shape_analysis_FIX */
-

@@ -216,4 +216,3 @@ static OPUS_INLINE void silk_prefilt_FIX(
     P->sLTP_shp_buf_idx = LTP_shp_buf_idx;
 }
 #endif /* OVERRIDE_silk_prefilt_FIX */
-

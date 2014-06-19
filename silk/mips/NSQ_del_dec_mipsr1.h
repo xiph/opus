@@ -403,4 +403,3 @@ static inline void silk_noise_shape_quantizer_del_dec(
 }
 
 #endif /* __NSQ_DEL_DEC_MIPSR1_H__ */
-

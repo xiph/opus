@@ -63,4 +63,3 @@ static inline int silk_RSHIFT_ROUND(int a, int shift)
 }
 
 #endif /* SILK_SIGPROC_FIX_MIPSR1_H */
-

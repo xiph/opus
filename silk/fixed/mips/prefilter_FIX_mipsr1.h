@@ -134,7 +134,6 @@ static inline void silk_prefilt_FIX(
 
     if( lag > 0 ) {
         for( i = 0; i < length; i++ ) {
-        
             /* unrolled loop */
             silk_assert( HARM_SHAPE_FIR_TAPS == 3 );
             idx = lag + LTP_shp_buf_idx;

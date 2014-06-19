@@ -60,7 +60,6 @@ void silk_warped_autocorrelation_FIX(
     opus_int32 val;
     val = 2 * QS - QC;
 
-
     /* Order must be even */
     silk_assert( ( order & 1 ) == 0 );
     silk_assert( 2 * QS - QC >= 0 );
@@ -71,14 +70,13 @@ void silk_warped_autocorrelation_FIX(
         tmp1_QS = silk_LSHIFT32( (opus_int32)input[ n ], QS );
         start_1 = tmp1_QS;
         tmp3_QS = silk_LSHIFT32( (opus_int32)input[ n+1], QS );
-        start_2 = tmp3_QS;        
+        start_2 = tmp3_QS;
         tmp5_QS = silk_LSHIFT32( (opus_int32)input[ n+2], QS );
-        start_3 = tmp5_QS;        
+        start_3 = tmp5_QS;
         tmp7_QS = silk_LSHIFT32( (opus_int32)input[ n+3], QS );
 
         /* Loop over allpass sections */
         for( i = 0; i < order; i += 2 ) {
-
             /* Output of allpass section */
             tmp2_QS = silk_SMLAWB( state_QS[ i ], state_QS[ i + 1 ] - tmp1_QS, warping_Q16 );
             corr_QC[  i ] = __builtin_mips_madd( corr_QC[  i ], tmp1_QS,  start_1);
@@ -165,4 +163,3 @@ void silk_warped_autocorrelation_FIX(
      silk_assert( corr_QC[ 0 ] >= 0 ); /* If breaking, decrease QC*/
 }
 #endif /* __WARPED_AUTOCORRELATION_FIX_MIPSR1_H__ */
-

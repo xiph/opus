@@ -8,7 +8,7 @@ this list of conditions and the following disclaimer.
 - Redistributions in binary form must reproduce the above copyright
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Internet Society, IETF or IETF Trust, nor the 
+- Neither the name of Internet Society, IETF or IETF Trust, nor the
 names of specific contributors, may be used to endorse or promote
 products derived from this software without specific prior written
 permission.
@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define mips_clz(x) __builtin_clz(x)
 
 #undef silk_SMULWB
-static inline int silk_SMULWB(int a, int b) 
+static inline int silk_SMULWB(int a, int b)
 {
     long long ac;
     int c;
@@ -47,7 +47,7 @@ static inline int silk_SMULWB(int a, int b)
 #define silk_SMLAWB(a32, b32, c32)       ((a32) + silk_SMULWB(b32, c32))
 
 #undef silk_SMULWW
-static inline int silk_SMULWW(int a, int b) 
+static inline int silk_SMULWW(int a, int b)
 {
     long long ac;
     int c;
@@ -59,7 +59,7 @@ static inline int silk_SMULWW(int a, int b)
 }
 
 #undef silk_SMLAWW
-static inline int silk_SMLAWW(int a, int b, int c) 
+static inline int silk_SMLAWW(int a, int b, int c)
 {
     long long ac;
     int res;
@@ -90,4 +90,3 @@ static inline opus_int32 silk_CLZ32(opus_int32 in32)
 }
 
 #endif /* __SILK_MACROS_MIPSR1_H__ */
-

@@ -104,7 +104,7 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       asm volatile("MADD $ac1, %0, %1" : : "r" ((int)MULT16_16_Q15(f,g10)), "r" ((int)x2));
       asm volatile("MADD $ac1, %0, %1" : : "r" ((int)MULT16_16_Q15(f,g11)), "r" ((int)ADD32(x3,x1)));
       asm volatile("MADD $ac1, %0, %1" : : "r" ((int)MULT16_16_Q15(f,g12)), "r" ((int)ADD32(x4,x0)));
-       
+
       asm volatile("EXTR.W %0,$ac1, %1" : "=r" (res): "i" (15));
 
       y[i] = x[i] + res;
