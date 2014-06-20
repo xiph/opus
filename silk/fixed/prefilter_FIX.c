@@ -33,6 +33,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "stack_alloc.h"
 #include "tuning_parameters.h"
 
+#if defined(MIPSr1_ASM)
+#include "mips/prefilter_FIX_mipsr1.h"
+#endif
+
+
 /* Prefilter for finding Quantizer input signal */
 static OPUS_INLINE void silk_prefilt_FIX(
     silk_prefilter_state_FIX    *P,                         /* I/O  state                               */
@@ -45,6 +50,7 @@ static OPUS_INLINE void silk_prefilt_FIX(
     opus_int                    length                      /* I    Length of signals                   */
 );
 
+#ifndef OVERRIDE_silk_warped_LPC_analysis_filter_FIX
 void silk_warped_LPC_analysis_filter_FIX(
           opus_int32            state[],                    /* I/O  State [order + 1]                   */
           opus_int32            res_Q2[],                   /* O    Residual signal [length]            */
@@ -86,6 +92,7 @@ void silk_warped_LPC_analysis_filter_FIX(
         res_Q2[ n ] = silk_LSHIFT( (opus_int32)input[ n ], 2 ) - silk_RSHIFT_ROUND( acc_Q11, 9 );
     }
 }
+#endif /* OVERRIDE_silk_warped_LPC_analysis_filter_FIX */
 
 void silk_prefilter_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state                                                               */
@@ -155,6 +162,7 @@ void silk_prefilter_FIX(
     RESTORE_STACK;
 }
 
+#ifndef OVERRIDE_silk_prefilt_FIX
 /* Prefilter for finding Quantizer input signal */
 static OPUS_INLINE void silk_prefilt_FIX(
     silk_prefilter_state_FIX    *P,                         /* I/O  state                               */
@@ -207,3 +215,4 @@ static OPUS_INLINE void silk_prefilt_FIX(
     P->sLF_MA_shp_Q12   = sLF_MA_shp_Q12;
     P->sLTP_shp_buf_idx = LTP_shp_buf_idx;
 }
+#endif /* OVERRIDE_silk_prefilt_FIX */

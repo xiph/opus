@@ -231,6 +231,7 @@ static void kf_bfly3(
 }
 
 
+#ifndef OVERRIDE_kf_bfly5
 static void kf_bfly5(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
@@ -305,6 +306,7 @@ static void kf_bfly5(
       }
    }
 }
+#endif /* OVERRIDE_kf_bfly5 */
 
 
 #endif
