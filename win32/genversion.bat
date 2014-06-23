@@ -23,10 +23,10 @@ set version=!version: =!
 
 :gotversion
 
-set version_out=#define %2 "%version%"
-set version_mk=%2 = "%version%"
+set version_out=#define %~2 "%version%"
+set version_mk=%~2 = "%version%"
 
-echo %version_out%> "%1_temp"
+echo %version_out%> "%~1_temp"
 
 if %version%==unknown goto :skipgenerate
 
@@ -35,12 +35,12 @@ echo %version_mk%>> "%~dp0..\version.mk"
 
 :skipgenerate
 
-echo n | comp "%1_temp" "%1" > NUL 2> NUL
+echo n | comp "%~1_temp" "%~1" > NUL 2> NUL
 
 if not errorlevel 1 goto exit
 
-copy /y "%1_temp" "%1"
+copy /y "%~1_temp" "%~1"
 
 :exit
 
-del "%1_temp"
+del "%~1_temp"
