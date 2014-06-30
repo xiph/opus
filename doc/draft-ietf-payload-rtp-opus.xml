@@ -746,7 +746,7 @@
         <t>Example 2: 16000 Hz clock rate, maximum packet size of 40 ms,
         recommended packet size of 40 ms, maximum average bitrate of 20000 bps,
         prefers to receive stereo but only plans to send mono, FEC is allowed,
-        DTX is not allowed</t>
+        DTX is not desired</t>
 
         <figure>
           <artwork>
