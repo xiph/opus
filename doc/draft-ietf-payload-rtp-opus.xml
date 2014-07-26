@@ -220,7 +220,7 @@
 
           <t>
             The bitrate can be adjusted at any point in time. To avoid congestion,
-            the average bitrate SHOULD be adjusted to the available
+            the average bitrate SHOULD NOT exceed the available
             network capacity. If no target bitrate is specified, the bitrates specified in
             <xref target='bitrate_by_bandwidth'/> are RECOMMENDED.
           </t>
@@ -299,9 +299,10 @@
           On the receiving side, the decoder can take advantage of this
           additional information when it loses a packet and the next packet
           is available.  In order to use the FEC data, the jitter buffer needs
-          to provide access to payloads with the FEC data.  The decoder API function
-          has a flag to indicate that a FEC frame rather than a regular frame should
-          be decoded.  If no FEC data is available for the current frame, the decoder
+          to provide access to payloads with the FEC data.  The receiver can
+          then configure its decoder to decode the FEC data from the packet
+          rather than the regular audio data.
+          If no FEC data is available for the current frame, the decoder
           will consider the frame lost and invoke frame loss concealment.
         </t>
 
@@ -388,9 +389,10 @@
           The Opus encoder can output encoded frames representing 2.5, 5, 10, 20,
           40, or 60&nbsp;ms of speech or audio data. Further, an arbitrary number of frames can be
           combined into a packet, up to a maximum packet duration representing
-          120&nbsp;ms of speech or audio data. The packetization of encoded data
-          is purely done by the Opus encoder, and therefore an RTP payload MUST
-          contain exactly one packet output from the Opus encoder.
+          120&nbsp;ms of speech or audio data. The grouping of one or more Opus
+          frames into a single Opus packet is defined in Section&nbsp;3 of
+          <xref target="RFC6716"/>. An RTP payload MUST contain exactly one
+          Opus packet as defined by that document.
         </t>
 
         <t><xref target='payload-structure'/> shows the structure combined with the RTP header.</t>
@@ -807,9 +809,14 @@
 
             <t>
               The "maxplaybackrate" parameter is a unidirectional receive-only
-              parameter that reflects limitations of the local receiver. The sender
-              of the other side SHOULD NOT send with an audio bandwidth higher than
-              "maxplaybackrate" as this would lead to inefficient use of network resources.
+              parameter that reflects limitations of the local receiver. When
+              sending to a single destination, a sender MUST NOT use an audio
+              bandwidth higher than necessary to represent audio sampled at
+              a sampling rate of "maxplaybackrate". Gateways or senders that
+              are sending the same encoded audio to multiple destinations
+              SHOULD NOT use an audio bandwidth higher than necessary to
+              represent audio sampled at "maxplaybackrate", as this would lead
+              to inefficient use of network resources.
               The "maxplaybackrate" parameter does not
               affect interoperability. Also, this parameter SHOULD NOT be used
               to adjust the audio bandwidth as a function of the bitrate, as this
@@ -837,7 +844,12 @@
 
             <t>
               The "stereo" parameter is a unidirectional receive-only
-              parameter.
+              parameter. When sending to a single destination, a sender MUST
+              NOT use stereo when "stereo" is 0. Gateways or senders that are
+              sending the same encoded audio to multiple destinations SHOULD
+              NOT use stereo when "stereo" is 0, as this would lead to
+              inefficient use of network resources. The "stereo" parameter does
+              not affect interoperability.
             </t>
 
             <t>
