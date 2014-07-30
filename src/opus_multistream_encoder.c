@@ -591,7 +591,7 @@ OpusMSEncoder *opus_multistream_surround_encoder_create(
    return st;
 }
 
-static void surround_rate_allocation(
+static opus_int32 surround_rate_allocation(
       OpusMSEncoder *st,
       opus_int32 *rate,
       int frame_size
@@ -605,6 +605,7 @@ static void surround_rate_allocation(
    int lfe_offset;
    int coupled_ratio; /* Q8 */
    int lfe_ratio;     /* Q8 */
+   opus_int32 rate_sum=0;
 
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
@@ -660,7 +661,10 @@ static void surround_rate_allocation(
          rate[i] = stream_offset+channel_rate;
       else
          rate[i] = lfe_offset+(channel_rate*lfe_ratio>>8);
+      rate[i] = IMAX(rate[i], 500);
+      rate_sum += rate[i];
    }
+   return rate_sum;
 }
 
 /* Max size in case the encoder decides to return three frames */
@@ -695,6 +699,8 @@ static int opus_multistream_encode_native
    opus_val32 *mem = NULL;
    opus_val32 *preemph_mem=NULL;
    int frame_size;
+   opus_int32 rate_sum;
+   opus_int32 smallest_packet;
    ALLOC_STACK;
 
    if (st->surround)
@@ -738,6 +744,18 @@ static int opus_multistream_encode_native
       RESTORE_STACK;
       return OPUS_BAD_ARG;
    }
+   /* Estimate (slightly overestimating) of the smallest packet the encoder can produce. */
+   if (50*frame_size <= Fs)
+   {
+      smallest_packet = st->layout.nb_streams*4;
+   } else {
+      smallest_packet = st->layout.nb_streams*4*50*frame_size/Fs;
+   }
+   if (max_data_bytes < smallest_packet)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    ALLOC(buf, 2*frame_size, opus_val16);
    coupled_size = opus_encoder_get_size(2);
    mono_size = opus_encoder_get_size(1);
@@ -755,11 +773,19 @@ static int opus_multistream_encode_native
    }
 
    /* Compute bitrate allocation between streams (this could be a lot better) */
-   surround_rate_allocation(st, bitrates, frame_size);
+   rate_sum = surround_rate_allocation(st, bitrates, frame_size);
 
    if (!vbr)
-      max_data_bytes = IMIN(max_data_bytes, 3*st->bitrate_bps/(3*8*Fs/frame_size));
-
+   {
+      if (st->bitrate_bps == OPUS_AUTO)
+      {
+         max_data_bytes = IMIN(max_data_bytes, 3*rate_sum/(3*8*Fs/frame_size));
+      } else if (st->bitrate_bps != OPUS_BITRATE_MAX)
+      {
+         max_data_bytes = IMIN(max_data_bytes, IMAX(smallest_packet,
+                          3*st->bitrate_bps/(3*8*Fs/frame_size)));
+      }
+   }
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    for (s=0;s<st->layout.nb_streams;s++)
    {

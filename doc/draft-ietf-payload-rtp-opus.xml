@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
 <!ENTITY rfc2119 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml'>
+<!ENTITY rfc3389 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3389.xml'>
 <!ENTITY rfc3550 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml'>
 <!ENTITY rfc3711 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3711.xml'>
 <!ENTITY rfc3551 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3551.xml'>
@@ -17,7 +18,7 @@
 <!ENTITY nbsp "&#160;">
   ]>
 
-  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-01">
+  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-03">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -60,7 +61,7 @@
       <organization>Mozilla</organization>
       <address>
         <postal>
-          <street>650 Castro Street</street>
+          <street>331 E. Evelyn Avenue</street>
           <city>Mountain View</city>
           <region>CA</region>
           <code>94041</code>
@@ -70,7 +71,7 @@
       </address>
     </author>
 
-    <date day='14' month='January' year='2014' />
+    <date day='30' month='July' year='2014' />
 
     <abstract>
       <t>
@@ -247,14 +248,22 @@
             the Opus encoder can use discontinuous
             transmission (DTX), where parts of the encoded signal that
             correspond to periods of silence in the input speech or audio signal
-            are not transmitted to the receiver.
+            are not transmitted to the receiver. A receiver can distinguish
+            between DTX and packet loss by looking for gaps in the sequence
+            number, as described by Section 4.1
+            of&nbsp;<xref target="RFC3551"/>.
           </t>
 
           <t>
             On the receiving side, the non-transmitted parts will be handled by a
             frame loss concealment unit in the Opus decoder which generates a
             comfort noise signal to replace the non transmitted parts of the
-            speech or audio signal.
+            speech or audio signal. Use of <xref target="RFC3389"/> Comfort
+            Noise (CN) with Opus is discouraged.
+            The transmitter MUST drop whole frames only,
+            based on the size of the last transmitted frame,
+            to ensure successive RTP timestamps differ by a multiple of 120 and
+            to allow the receiver to use whole frames for concealment.
           </t>
 
           <t>
@@ -347,8 +356,9 @@
         therefore no padding is necessary. The payload MAY be padded by an
         integer number of octets according to <xref target="RFC3550"/>.</t>
 
-        <t>The marker bit (M) of the RTP header is used in accordance with
-        Section 4.1 of <xref target="RFC3551"/>.</t>
+        <t>The timestamp, sequence number, and marker bit (M) of the RTP header
+        are used in accordance with Section 4.1
+        of&nbsp;<xref target="RFC3551"/>.</t>
 
         <t>The RTP payload type for Opus has not been assigned statically and is
         expected to be assigned dynamically.</t>
@@ -738,8 +748,8 @@
 
         <t>Example 2: 16000 Hz clock rate, maximum packet size of 40 ms,
         recommended packet size of 40 ms, maximum average bitrate of 20000 bps,
-        prefers to receive stereo but only plans to send mono, FEC is allowed,
-        DTX is not allowed</t>
+        prefers to receive stereo but only plans to send mono, FEC is desired,
+        DTX is not desired</t>
 
         <figure>
           <artwork>
@@ -926,6 +936,7 @@
   <back>
     <references title="Normative References">
       &rfc2119;
+      &rfc3389;
       &rfc3550;
       &rfc3711;
       &rfc3551;
