@@ -364,7 +364,7 @@
         expected to be assigned dynamically.</t>
 
         <t>The receiving side MUST be prepared to receive duplicate RTP
-        packets. The receiver MUST provide only one of those payloads to the
+        packets. The receiver MUST provide at most one of those payloads to the
         Opus decoder for decoding, and MUST discard the others.</t>
 
         <t>Opus supports 5 different audio bandwidths, which can be adjusted during
@@ -821,7 +821,7 @@
               The "maxplaybackrate" parameter is a unidirectional receive-only
               parameter that reflects limitations of the local receiver. When
               sending to a single destination, a sender MUST NOT use an audio
-              bandwidth higher than necessary to represent audio sampled at
+              bandwidth higher than necessary to make full use of audio sampled at
               a sampling rate of "maxplaybackrate". Gateways or senders that
               are sending the same encoded audio to multiple destinations
               SHOULD NOT use an audio bandwidth higher than necessary to
