@@ -688,9 +688,9 @@ sample *= pow(10, output_gain/(20.0*256)) ,
 <vspace blankLines="1"/>
 Virtually all players and media frameworks should apply it by default.
 If a player chooses to apply any volume adjustment or gain modification, such
- as the R128_TRACK_GAIN (see <xref target="comment_header"/>) or a user-facing
- volume knob, the adjustment MUST be applied in addition to this output gain in
- order to achieve playback at the desired volume.
+ as the R128_TRACK_GAIN, R128_ALBUM_GAIN (see <xref target="comment_header"/>)
+ or a user-facing volume knob, the adjustment MUST be applied in addition
+ to this output gain in order to achieve playback at the desired volume.
 <vspace blankLines="1"/>
 An encoder SHOULD set this field to zero, and instead apply any gain prior to
  encoding, when this is possible and does not conflict with the user's wishes.
@@ -1166,17 +1166,24 @@ Making this check before allocating the associated memory to contain the data
  user comments than than could possibly fit in the packet.
 </t>
 
+<section anchor="comment_format" title="Tag Definitions">
 <t>
 The user comment strings follow the NAME=value format described by
- <xref target="vorbis-comment"/> with the same recommended tag names.
+ <xref target="vorbis-comment"/> with the same recommended tag names:
+ ARTIST, TITLE, DATE, ALBUM, and so on.
 </t>
+<t>
+Two new comment tags are introduced for Ogg Opus:
+</t>
+
 <figure align="center">
-  <preamble>Two new comment tags are introduced for Ogg Opus:</preamble>
+  <preamble>An optional gain for track nomalization</preamble>
 <artwork align="left"><![CDATA[
 R128_TRACK_GAIN=-573
 ]]></artwork>
 <postamble>
-representing the volume shift needed to normalize the track's volume.
+representing the volume shift needed to normalize the track's volume
+ during isolated playback, in random shuffle, and so on.
 The gain is a Q7.8 fixed point number in dB, as in the ID header's 'output
  gain' field.
 </postamble>
@@ -1186,41 +1193,53 @@ This tag is similar to the REPLAYGAIN_TRACK_GAIN tag in
  Vorbis&nbsp;<xref target="replay-gain"/>, except that the normal volume
  reference is the <xref target="EBU-R128"/> standard.
 </t>
+<figure align="center">
+  <preamble>An optional gain for album nomalization</preamble>
 <artwork align="left"><![CDATA[
 R128_ALBUM_GAIN=111
 ]]></artwork>
 <postamble>
-representing the volume shift needed to normalize the volume of a collection
- of tracks.
-The gain is a Q7.8 fixed point number in dB, as in the ID header's 'output
- gain' field.
+representing the volume shift needed to normalize the overall volume when
+ played as part of a collection of tracks.
+The gain is also a Q7.8 fixed point number in dB, as in the ID header's
+ 'output gain' field.
 </postamble>
 </figure>
 <t>
-An Ogg Opus file MUST NOT have more than one of each tags, and if present
- their values MUST be an integer from -32768 to 32767, inclusive, represented in
- ASCII with no whitespace.
-If present, R128_TRACK_GAIN MUST correctly represent the R128
- normalization gain relative to the 'output gain' field specified in the ID header.
+An Ogg Opus file MUST NOT have more than one of each tag, and if present
+ their values MUST be an integer from -32768 to 32767, inclusive,
+ represented in ASCII with no whitespace.
+If present, R128_TRACK_GAIN and R128_ALBUM_GAIN MUST correctly represent
+ the R128 normalization gain relative to the 'output gain' field specified
+ in the ID header.
 If a player chooses to make use of the R128_TRACK_GAIN tag or the
- R128_ALBUM_GAIN, it MUST be applied <spanx style="emph">in addition</spanx> to
- the 'output gain' value.
+ R128_ALBUM_GAIN tag, it MUST apply those gains
+ <spanx style="emph">in addition</spanx> to the 'output gain' value.
+</t>
+<t>
 If an encoder wishes to use R128 normalization, and the output gain is not
  otherwise constrained or specified, the encoder SHOULD write the R128 gain
  into the 'output gain' field and store a tag containing "R128_TRACK_GAIN=0".
 That is, it should assume that by default tools will respect the 'output gain'
  field, and not the comment tag.
 If a tool modifies the ID header's 'output gain' field, it MUST also update or
- remove the R128_TRACK_GAIN and R128_ALBUM_GAIN comment tags.
+ remove the R128_TRACK_GAIN and R128_ALBUM_GAIN comment tags if present.
 </t>
 <t>
 To avoid confusion with multiple normalization schemes, an Opus comment header
  SHOULD NOT contain any of the REPLAYGAIN_TRACK_GAIN, REPLAYGAIN_TRACK_PEAK,
  REPLAYGAIN_ALBUM_GAIN, or REPLAYGAIN_ALBUM_PEAK tags.
+The <xref target="EBU-R128"/> normalization is preferred to the earlier
+ REPLAYGAIN schemes because of its clear definition and adoption by industry.
+PEAK normalizations are difficult to calculate reliably because of variation
+ in excursion heights due to decoder differences.
+In the authors' investigations they were not applied consistently or broadly
+ enough to merit inclusion here.
 </t>
-</section>
+</section> <!-- end comment_format -->
+</section> <!-- end comment_header -->
 
-</section>
+</section> <!-- end headers -->
 
 <section anchor="packet_size_limits" title="Packet Size Limits">
 <t>
