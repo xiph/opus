@@ -1171,7 +1171,7 @@ The user comment strings follow the NAME=value format described by
  <xref target="vorbis-comment"/> with the same recommended tag names.
 </t>
 <figure align="center">
-  <preamble>One new comment tag is introduced for Ogg Opus:</preamble>
+  <preamble>Two new comment tags are introduced for Ogg Opus:</preamble>
 <artwork align="left"><![CDATA[
 R128_TRACK_GAIN=-573
 ]]></artwork>
@@ -1186,31 +1186,37 @@ This tag is similar to the REPLAYGAIN_TRACK_GAIN tag in
  Vorbis&nbsp;<xref target="replay-gain"/>, except that the normal volume
  reference is the <xref target="EBU-R128"/> standard.
 </t>
+<artwork align="left"><![CDATA[
+R128_ALBUM_GAIN=111
+]]></artwork>
+<postamble>
+representing the volume shift needed to normalize the volume of a collection
+ of tracks.
+The gain is a Q7.8 fixed point number in dB, as in the ID header's 'output
+ gain' field.
+</postamble>
+</figure>
 <t>
-An Ogg Opus file MUST NOT have more than one such tag, and if present its
- value MUST be an integer from -32768 to 32767, inclusive, represented in
+An Ogg Opus file MUST NOT have more than one of each tags, and if present
+ their values MUST be an integer from -32768 to 32767, inclusive, represented in
  ASCII with no whitespace.
-If present, it MUST correctly represent the R128 normalization gain relative
- to the 'output gain' field specified in the ID header.
-If a player chooses to make use of the R128_TRACK_GAIN tag, it MUST be
- applied <spanx style="emph">in addition</spanx> to the 'output gain' value.
+If present, REPLAYGAIN_TRACK_GAIN MUST correctly represent the R128
+ normalization gain relative to the 'output gain' field specified in the ID header.
+If a player chooses to make use of the R128_TRACK_GAIN tag or the
+ R128_ALBUM_GAIN, it MUST be applied <spanx style="emph">in addition</spanx> to
+ the 'output gain' value.
 If an encoder wishes to use R128 normalization, and the output gain is not
  otherwise constrained or specified, the encoder SHOULD write the R128 gain
  into the 'output gain' field and store a tag containing "R128_TRACK_GAIN=0".
 That is, it should assume that by default tools will respect the 'output gain'
  field, and not the comment tag.
 If a tool modifies the ID header's 'output gain' field, it MUST also update or
- remove the R128_TRACK_GAIN comment tag.
+ remove the R128_TRACK_GAIN and R128_ALBUM_GAIN comment tags.
 </t>
 <t>
 To avoid confusion with multiple normalization schemes, an Opus comment header
  SHOULD NOT contain any of the REPLAYGAIN_TRACK_GAIN, REPLAYGAIN_TRACK_PEAK,
  REPLAYGAIN_ALBUM_GAIN, or REPLAYGAIN_ALBUM_PEAK tags.
-</t>
-<t>
-There is no Opus comment tag corresponding to REPLAYGAIN_ALBUM_GAIN.
-That information should instead be stored in the ID header's 'output gain'
- field.
 </t>
 </section>
 
