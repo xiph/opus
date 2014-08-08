@@ -1200,7 +1200,7 @@ The gain is a Q7.8 fixed point number in dB, as in the ID header's 'output
 An Ogg Opus file MUST NOT have more than one of each tags, and if present
  their values MUST be an integer from -32768 to 32767, inclusive, represented in
  ASCII with no whitespace.
-If present, REPLAYGAIN_TRACK_GAIN MUST correctly represent the R128
+If present, R128_TRACK_GAIN MUST correctly represent the R128
  normalization gain relative to the 'output gain' field specified in the ID header.
 If a player chooses to make use of the R128_TRACK_GAIN tag or the
  R128_ALBUM_GAIN, it MUST be applied <spanx style="emph">in addition</spanx> to
