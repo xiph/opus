@@ -349,8 +349,8 @@ Since medium-band audio is an option only in the SILK mode, wideband frames
 There is some amount of latency introduced during the decoding process, to
  allow for overlap in the CELT mode, stereo mixing in the SILK mode, and
  resampling.
-The encoder will also introduce latency (though the exact amount is not
- specified).
+The encoder may introduce additional latency through its own resampling
+ and analysis (though the exact amount is not specified).
 Therefore, the first few samples produced by the decoder do not correspond to
  real input audio, but are instead composed of padding inserted by the encoder
  to compensate for this latency.
@@ -364,13 +364,30 @@ However, a decoder will want to skip these samples after decoding them.
 A 'pre-skip' field in the ID header (see <xref target="id_header"/>) signals
  the number of samples which SHOULD be skipped (decoded but discarded) at the
  beginning of the stream.
-This provides sufficient history to the decoder so that it has already
- converged before the stream's output begins.
-It may also be used to perform sample-accurate cropping of existing encoded
- streams.
-This amount need not be a multiple of 2.5&nbsp;ms, may be smaller than a single
- packet, or may span the contents of several packets.
+This amount MAY not be a multiple of 2.5&nbsp;ms, MAY be smaller than a single
+ packet, or MAT span the contents of several packets.
+These samples are not valid audio, and should not be played.
 </t>
+
+<t>
+For example, if the first Opus frame uses the CELT mode, it will always
+ produce 120 samples of windowed overlap-add data.
+However, the overlap data is initially all zeros (since there is no prior
+ frame), meaning this cannot, in general, accurately represent the original
+ audio.
+The SILK mode requires additional delay to account for its analysis and
+ resampling latency.
+The encoder delays the original audio to avoid this problem.
+</t>
+
+<t>
+The pre-skip field MAY also be used to perform sample-accurate cropping of
+ already encoded streams.
+In this case, a value of at least 3840&nbsp;samples (80&nbsp;ms) provides
+ sufficient history to the decoder that it will have converged
+ before the stream's output begins.
+</t>
+
 </section>
 
 <section anchor="pcm_sample_position" title="PCM Sample Position">
@@ -692,8 +709,7 @@ The large range serves in part to ensure that gain can always be losslessly
 <t><spanx style="strong">Channel Mapping Family</spanx> (8 bits,
  unsigned):
 <vspace blankLines="1"/>
-This octet indicates the order and semantic meaning of the various channels
- encoded in each Ogg packet.
+This octet indicates the order and semantic meaning of the output channels.
 <vspace blankLines="1"/>
 Each possible value of this octet indicates a mapping family, which defines a
  set of allowed channel counts, and the ordered set of channel names for each
@@ -794,8 +810,8 @@ This value MUST either be smaller than (M+N), or be the special value 255.
 If 'index' is less than 2*M, the output MUST be taken from decoding stream
  ('index'/2) as stereo and selecting the left channel if 'index' is even, and
  the right channel if 'index' is odd.
-If 'index' is 2*M or larger, the output MUST be taken from decoding stream
- ('index'-M) as mono.
+If 'index' is 2*M or larger, but less than 255, the output MUST be taken from
+ decoding stream ('index'-M) as mono.
 If 'index' is 255, the corresponding output channel MUST contain pure silence.
 <vspace blankLines="1"/>
 The number of output channels, C, is not constrained to match the number of
