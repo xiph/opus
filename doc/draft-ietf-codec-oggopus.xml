@@ -11,7 +11,7 @@
 ]>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-03">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-04">
 
 <front>
 <title abbrev="Ogg Opus">Ogg Encapsulation for the Opus Audio Codec</title>
@@ -60,7 +60,7 @@
 </address>
 </author>
 
-<date day="7" month="February" year="2014"/>
+<date day="9" month="August" year="2014"/>
 <area>RAI</area>
 <workgroup>codec</workgroup>
 
@@ -365,7 +365,7 @@ A 'pre-skip' field in the ID header (see <xref target="id_header"/>) signals
  the number of samples which SHOULD be skipped (decoded but discarded) at the
  beginning of the stream.
 This amount MAY not be a multiple of 2.5&nbsp;ms, MAY be smaller than a single
- packet, or MAT span the contents of several packets.
+ packet, or MAY span the contents of several packets.
 These samples are not valid audio, and should not be played.
 </t>
 
@@ -702,7 +702,7 @@ Although the output gain has enormous range (+/- 128 dB, enough to amplify
  inaudible sounds to the threshold of physical pain), most applications can
  only reasonably use a small portion of this range around zero.
 The large range serves in part to ensure that gain can always be losslessly
- transferred between OpusHead and R128_TRACK_GAIN (see below) without
+ transferred between OpusHead and R128 gain tags (see below) without
  saturating.
 <vspace blankLines="1"/>
 </t>
@@ -1173,7 +1173,7 @@ The user comment strings follow the NAME=value format described by
  ARTIST, TITLE, DATE, ALBUM, and so on.
 </t>
 <t>
-Two new comment tags are introduced for Ogg Opus:
+Two new comment tags are introduced here:
 </t>
 
 <figure align="center">
@@ -1200,7 +1200,7 @@ R128_ALBUM_GAIN=111
 ]]></artwork>
 <postamble>
 representing the volume shift needed to normalize the overall volume when
- played as part of a collection of tracks.
+ played as part of a particular collection of tracks.
 The gain is also a Q7.8 fixed point number in dB, as in the ID header's
  'output gain' field.
 </postamble>
@@ -1229,10 +1229,10 @@ If a tool modifies the ID header's 'output gain' field, it MUST also update or
 To avoid confusion with multiple normalization schemes, an Opus comment header
  SHOULD NOT contain any of the REPLAYGAIN_TRACK_GAIN, REPLAYGAIN_TRACK_PEAK,
  REPLAYGAIN_ALBUM_GAIN, or REPLAYGAIN_ALBUM_PEAK tags.
-The <xref target="EBU-R128"/> normalization is preferred to the earlier
+<xref target="EBU-R128"/> normalization is preferred to the earlier
  REPLAYGAIN schemes because of its clear definition and adoption by industry.
-PEAK normalizations are difficult to calculate reliably because of variation
- in excursion heights due to decoder differences.
+PEAK normalizations are difficult to calculate reliably for lossy codecs
+ because of variation in excursion heights due to decoder differences.
 In the authors' investigations they were not applied consistently or broadly
  enough to merit inclusion here.
 </t>
@@ -1243,7 +1243,7 @@ In the authors' investigations they were not applied consistently or broadly
 
 <section anchor="packet_size_limits" title="Packet Size Limits">
 <t>
-Technically valid Opus packets can be arbitrarily large due to the padding
+Technically, valid Opus packets can be arbitrarily large due to the padding
  format, although the amount of non-padding data they can contain is bounded.
 These packets might be spread over a similarly enormous number of Ogg pages.
 Encoders SHOULD use no more padding than required to make a variable bitrate
