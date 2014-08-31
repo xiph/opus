@@ -139,7 +139,7 @@ All other implementations are "unconditionally compliant".
 
 <section anchor="packet_organization" title="Packet Organization">
 <t>
-An Opus stream is organized as follows.
+An Ogg Opus stream is organized as follows.
 </t>
 <t>
 There are two mandatory header packets.
@@ -1206,7 +1206,7 @@ The gain is also a Q7.8 fixed point number in dB, as in the ID header's
 </postamble>
 </figure>
 <t>
-An Ogg Opus file MUST NOT have more than one of each tag, and if present
+An Ogg Opus stream MUST NOT have more than one of each tag, and if present
  their values MUST be an integer from -32768 to 32767, inclusive,
  represented in ASCII with no whitespace.
 If present, R128_TRACK_GAIN and R128_ALBUM_GAIN MUST correctly represent
@@ -1285,7 +1285,7 @@ An implementation could reasonably choose any of these numbers for its internal
 
 <section anchor="encoder" title="Encoder Guidelines">
 <t>
-When encoding Opus files, Ogg encoders should take into account the
+When encoding Opus streams, Ogg encoders should take into account the
  algorithmic delay of the Opus encoder.
 </t>
 <figure align="center">
@@ -1416,7 +1416,7 @@ Malicious audio streams must not cause the encoder to misbehave because this
 </t>
 
 <t>
-Like most other container formats, Ogg Opus files should not be used with
+Like most other container formats, Ogg Opus streams should not be used with
  insecure ciphers or cipher modes that are vulnerable to known-plaintext
  attacks.
 Elements such as the Ogg page capture pattern and the magic signatures in the
