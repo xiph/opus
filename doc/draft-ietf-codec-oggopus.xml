@@ -330,7 +330,7 @@ In the example above, if the previous frame was a 20&nbsp;ms SILK mode frame,
  gap.
 This also requires four bytes to describe the synthesized packet data (two
  bytes for a CBR code 3 and one byte each for two code 0 packets) but three
- bytes of Ogg lacing overhead are necessary to mark the packet boundaries.
+ bytes of Ogg lacing overhead are needed to mark the packet boundaries.
 At 0.6 kbps, this is still a minimal bitrate impact over a naive, low quality
  solution.
 </t>
@@ -349,7 +349,7 @@ Since medium-band audio is an option only in the SILK mode, wideband frames
 There is some amount of latency introduced during the decoding process, to
  allow for overlap in the CELT mode, stereo mixing in the SILK mode, and
  resampling.
-The encoder introduces additional latency through its own resampling
+The encoder might have introduced additional latency through its own resampling
  and analysis (though the exact amount is not specified).
 Therefore, the first few samples produced by the decoder do not correspond to
  real input audio, but are instead composed of padding inserted by the encoder
@@ -364,7 +364,7 @@ However, a decoder will want to skip these samples after decoding them.
 A 'pre-skip' field in the ID header (see <xref target="id_header"/>) signals
  the number of samples which SHOULD be skipped (decoded but discarded) at the
  beginning of the stream.
-This amount MAY not be a multiple of 2.5&nbsp;ms, MAY be smaller than a single
+This amount need not be a multiple of 2.5&nbsp;ms, MAY be smaller than a single
  packet, or MAY span the contents of several packets.
 These samples are not valid audio, and SHOULD NOT be played.
 </t>
@@ -804,7 +804,7 @@ For channel mapping family&nbsp;0, this value defaults to C-1 (i.e., 0 for mono
 </t>
 <t><spanx style="strong">Channel Mapping</spanx> (8*C bits):
 This contains one octet per output channel, indicating which decoded channel
- to be used for each one.
+ is to be used for each one.
 Let 'index' be the value of this octet for a particular output channel.
 This value MUST either be smaller than (M+N), or be the special value 255.
 If 'index' is less than 2*M, the output MUST be taken from decoding stream
