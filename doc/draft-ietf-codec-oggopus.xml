@@ -366,7 +366,7 @@ A 'pre-skip' field in the ID header (see <xref target="id_header"/>) signals
  beginning of the stream.
 This amount MAY not be a multiple of 2.5&nbsp;ms, MAY be smaller than a single
  packet, or MAY span the contents of several packets.
-These samples are not valid audio, and SHOULD not be played.
+These samples are not valid audio, and SHOULD NOT be played.
 </t>
 
 <t>
@@ -1416,7 +1416,7 @@ Malicious audio streams MUST NOT cause the encoder to misbehave because this
 </t>
 
 <t>
-Like most other container formats, Ogg Opus streams SHOULD not be used with
+Like most other container formats, Ogg Opus streams SHOULD NOT be used with
  insecure ciphers or cipher modes that are vulnerable to known-plaintext
  attacks.
 Elements such as the Ogg page capture pattern and the magic signatures in the
