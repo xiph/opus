@@ -10,7 +10,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-ietf-codec-opus-update-00"
+<rfc category="std" docName="draft-ietf-codec-opus-update-01"
      ipr="trust200902">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
@@ -19,7 +19,7 @@
 <organization>Mozilla Corporation</organization>
 <address>
 <postal>
-<street>650 Castro Street</street>
+<street>331 E. Evelyn Avenue</street>
 <city>Mountain View</city>
 <region>CA</region>
 <code>94041</code>
@@ -47,7 +47,7 @@
 
 
 
-    <date day="13" month="January" year="2014" />
+    <date day="4" month="September" year="2014" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
@@ -132,8 +132,8 @@
          by a compressed packet more than about 16 MB long, so it's not a problem
          for RTP. In theory, it <spanx style="emph">could</spanx> crash a file
          decoder (e.g. Opus in Ogg) if the memory just after the incoming packet
-         is out-of-range, but that could not be achieved when attempted in a production
-         application built using an affected version of the Opus decoder.</t>
+         is out-of-range, but our attempts to trigger such a crash in a production
+         application built using an affected version of the Opus decoder failed.</t>
     </section>
 
     <section anchor="resampler" title="Resampler buffer">
@@ -160,20 +160,22 @@
     <t>The code can be fixed by applying the following changes to line 70 of silk/resampler_private_IIR_FIR.c:
 <figure>
 <artwork><![CDATA[
-     opus_int16                      out[],          /* O    Output signal               */
-     const opus_int16                in[],           /* I    Input signal                */
-     opus_int32                      inLen           /* I    Number of input samples     */
  )
  {
-     silk_resampler_state_struct *S = (silk_resampler_state_struct *)SS;
+     silk_resampler_state_struct *S = \
+(silk_resampler_state_struct *)SS;
      opus_int32 nSamplesIn;
      opus_int32 max_index_Q16, index_increment_Q16;
--    opus_int16 buf[ RESAMPLER_MAX_BATCH_SIZE_IN + RESAMPLER_ORDER_FIR_12 ];
-+    opus_int16 buf[ 2*RESAMPLER_MAX_BATCH_SIZE_IN + RESAMPLER_ORDER_FIR_12 ];
+-    opus_int16 buf[ RESAMPLER_MAX_BATCH_SIZE_IN + \
+RESAMPLER_ORDER_FIR_12 ];
++    opus_int16 buf[ 2*RESAMPLER_MAX_BATCH_SIZE_IN + \
+RESAMPLER_ORDER_FIR_12 ];
  
      /* Copy buffered samples to start of buffer */
--    silk_memcpy( buf, S->sFIR, RESAMPLER_ORDER_FIR_12 * sizeof( opus_int32 ) );
-+    silk_memcpy( buf, S->sFIR, RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
+-    silk_memcpy( buf, S->sFIR, RESAMPLER_ORDER_FIR_12 \
+* sizeof( opus_int32 ) );
++    silk_memcpy( buf, S->sFIR, RESAMPLER_ORDER_FIR_12 \
+* sizeof( opus_int16 ) );
  
      /* Iterate over blocks of frameSizeIn input samples */
      index_increment_Q16 = S->invRatio_Q16;
@@ -181,28 +183,43 @@
          nSamplesIn = silk_min( inLen, S->batchSize );
  
          /* Upsample 2x */
-         silk_resampler_private_up2_HQ( S->sIIR, &buf[ RESAMPLER_ORDER_FIR_12 ], in, nSamplesIn );
+         silk_resampler_private_up2_HQ( S->sIIR, &buf[ \
+RESAMPLER_ORDER_FIR_12 ], in, nSamplesIn );
  
-         max_index_Q16 = silk_LSHIFT32( nSamplesIn, 16 + 1 );         /* + 1 because 2x upsampling */
-         out = silk_resampler_private_IIR_FIR_INTERPOL( out, buf, max_index_Q16, index_increment_Q16 );
+         max_index_Q16 = silk_LSHIFT32( nSamplesIn, 16 + 1 \
+);         /* + 1 because 2x upsampling */
+         out = silk_resampler_private_IIR_FIR_INTERPOL( out, \
+buf, max_index_Q16, index_increment_Q16 );
          in += nSamplesIn;
          inLen -= nSamplesIn;
  
          if( inLen > 0 ) {
-             /* More iterations to do; copy last part of filtered signal to beginning of buffer */
--            silk_memcpy( buf, &buf[ nSamplesIn << 1 ], RESAMPLER_ORDER_FIR_12 * sizeof( opus_int32 ) );
-+            silk_memmove( buf, &buf[ nSamplesIn << 1 ], RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
+             /* More iterations to do; copy last part of \
+filtered signal to beginning of buffer */
+-            silk_memcpy( buf, &buf[ nSamplesIn << 1 ], \
+RESAMPLER_ORDER_FIR_12 * sizeof( opus_int32 ) );
++            silk_memmove( buf, &buf[ nSamplesIn << 1 ], \
+RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
          } else {
              break;
          }
      }
  
-     /* Copy last part of filtered signal to the state for the next call */
--    silk_memcpy( S->sFIR, &buf[ nSamplesIn << 1 ], RESAMPLER_ORDER_FIR_12 * sizeof( opus_int32 ) );
-+    silk_memcpy( S->sFIR, &buf[ nSamplesIn << 1 ], RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
+     /* Copy last part of filtered signal to the state for \
+the next call */
+-    silk_memcpy( S->sFIR, &buf[ nSamplesIn << 1 ], \
+RESAMPLER_ORDER_FIR_12 * sizeof( opus_int32 ) );
++    silk_memcpy( S->sFIR, &buf[ nSamplesIn << 1 ], \
+RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
  }
 ]]></artwork>
 </figure>
+    Note: due to RFC formatting conventions, lines exceeding the column width
+    in the patch above are split using a backslash character. The backslashes
+    at the end of a line and the white space at the beginning
+    of the following line are not part of the patch. A properly formatted patch
+    including the three changes above is available at 
+    <eref target="http://jmvalin.ca/misc_stuff/opus_update.patch"/>.
     </t>
     </section>
     
@@ -215,8 +232,8 @@
       but when the output is downmixed to mono, the energy in the affected bands is cancelled
       sometimes resulting in audible artefacts.
       </t>
-      <t>A possible work-around for this issue would be to optionally allow the decoder to
-      not apply the 180-degree phase shift when the output is meant to be downmixed (inside or
+      <t>As a work-around for this issue, the decoder MAY choose not to apply the 180-degree
+      phase shift when the output is meant to be downmixed (inside or
       outside of the decoder).
       </t>
     </section>
