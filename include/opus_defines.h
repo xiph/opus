@@ -46,7 +46,7 @@ extern "C" {
 #define OPUS_OK                0
 /** One or more invalid/out of range arguments @hideinitializer*/
 #define OPUS_BAD_ARG          -1
-/** The mode struct passed is invalid @hideinitializer*/
+/** Not enough bytes allocated in the buffer @hideinitializer*/
 #define OPUS_BUFFER_TOO_SMALL -2
 /** An internal error was detected @hideinitializer*/
 #define OPUS_INTERNAL_ERROR   -3

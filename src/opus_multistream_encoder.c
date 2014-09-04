@@ -744,17 +744,13 @@ static int opus_multistream_encode_native
       RESTORE_STACK;
       return OPUS_BAD_ARG;
    }
-   /* Estimate (slightly overestimating) of the smallest packet the encoder can produce. */
-   if (50*frame_size <= Fs)
-   {
-      smallest_packet = st->layout.nb_streams*4;
-   } else {
-      smallest_packet = st->layout.nb_streams*4*50*frame_size/Fs;
-   }
+
+   /* Smallest packet the encoder can produce. */
+   smallest_packet = st->layout.nb_streams*2-1;
    if (max_data_bytes < smallest_packet)
    {
       RESTORE_STACK;
-      return OPUS_BAD_ARG;
+      return OPUS_BUFFER_TOO_SMALL;
    }
    ALLOC(buf, 2*frame_size, opus_val16);
    coupled_size = opus_encoder_get_size(2);
@@ -764,12 +760,6 @@ static int opus_multistream_encode_native
    if (st->surround)
    {
       surround_analysis(celt_mode, pcm, bandSMR, mem, preemph_mem, frame_size, 120, st->layout.nb_channels, Fs, copy_channel_in);
-   }
-
-   if (max_data_bytes < 4*st->layout.nb_streams-1)
-   {
-      RESTORE_STACK;
-      return OPUS_BUFFER_TOO_SMALL;
    }
 
    /* Compute bitrate allocation between streams (this could be a lot better) */
@@ -871,8 +861,10 @@ static int opus_multistream_encode_native
       /* number of bytes left (+Toc) */
       curr_max = max_data_bytes - tot_size;
       /* Reserve three bytes for the last stream and four for the others */
-      curr_max -= IMAX(0,4*(st->layout.nb_streams-s-1)-1);
+      curr_max -= IMAX(0,2*(st->layout.nb_streams-s-1)-1);
       curr_max = IMIN(curr_max,MS_FRAME_TMP);
+      /* Repacketizer will add one byte for self-delimited frames */
+      if (s != st->layout.nb_streams-1) curr_max--;
       if (!vbr && s == st->layout.nb_streams-1)
          opus_encoder_ctl(enc, OPUS_SET_BITRATE(curr_max*(8*Fs/frame_size)));
       len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth,
