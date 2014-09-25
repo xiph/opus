@@ -1,0 +1,699 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="../style.css"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>Encapsulation of Opus in ISO Base Media File Format</title>
+    </head>
+    <body bgcolor="0x333333" text="#60B0C0">
+        <b><u>Encapsulation of Opus in ISO Base Media File Format</u></b><br>
+        <font size="2">last updated: September 26, 2014</font><br>
+        <br>
+        <div class="normal_link pre frame_box">
+<center>Encapsulation of Opus in ISO Base Media File Format</center>
+<center>Version 0.1.4 (incomplete)</center>
+
+Table of Contents
+<a href="#1">1</a> Scope
+<a href="#2">2</a> Normative References
+<a href="#3">3</a> Terms and Definitions
+<a href="#4">4</a> Design Rules of Encapsulation
+    <a href="#4.1">4.1</a> File Type Indentification
+    <a href="#4.2">4.2</a> Basic Structure
+        <a href="#4.2.1">4.2.1</a> Initial Movie
+        <a href="#4.2.2">4.2.2</a> Movie Fragments
+    <a href="#4.3">4.3</a> Byte Order
+    <a href="#4.4">4.4</a> Definition of Opus sample
+        <a href="#4.4.1">4.4.1</a> Opus sample
+        <a href="#4.4.2">4.4.2</a> Duration of Opus sample
+    <a href="#4.5">4.5</a> Random Access
+        <a href="#4.5.1">4.5.1</a> Random Access Point
+        <a href="#4.5.2">4.5.2</a> Pre-roll
+    <a href="#4.6">4.6</a> Trimming of Actual Duration
+    <a href="#4.7">4.7</a> Additional Requirements, Restrictions, Recommendations and Definitions for Boxes
+        <a href="#4.7.1">4.7.1</a> File Type Box
+        <a href="#4.7.2">4.7.2</a> Segment Type Box
+        <a href="#4.7.3">4.7.3</a> Movie Header Box
+        <a href="#4.7.4">4.7.4</a> Track Header Box
+        <a href="#4.7.5">4.7.5</a> Edit Box
+        <a href="#4.7.6">4.7.6</a> Edit List Box
+        <a href="#4.7.7">4.7.7</a> Media Header Box
+        <a href="#4.7.8">4.7.8</a> Handler Reference Box
+        <a href="#4.7.9">4.7.9</a> Sound Media Header Box
+        <a href="#4.7.10">4.7.10</a> Sample Table Box
+        <a href="#4.7.11">4.7.11</a> OpusSampleEntry
+        <a href="#4.7.12">4.7.12</a> Opus Specific Box
+        <a href="#4.7.13">4.7.13</a> Sample Group Description Box
+        <a href="#4.7.14">4.7.14</a> Sample to Group Box
+        <a href="#4.7.15">4.7.15</a> Track Extends Box
+        <a href="#4.7.16">4.7.16</a> Track Fragment Box
+        <a href="#4.7.17">4.7.17</a> Track Fragment Header Box
+        <a href="#4.7.18">4.7.18</a> Track Fragment Run Box
+    <a href="#4.8">4.8</a> Example of Encapsulation
+<a href="#5">5</a> Author's Address
+
+<a name="1"></a>
+1 Scope
+    This specification specifies the fundamental way of the encapsulation of Opus coded bitstreams in ISO Base Media
+    file formats and its derivatives.
+
+<a name="2"></a>
+2 Normative References
+    [1] ISO/IEC 14496-12:2012 Corrected version
+        Information technology — Coding of audio-visual objects — Part 12: ISO base media file format
+
+    [2] ISO/IEC 14496-12:2012/Amd.1:2013
+        Information technology — Coding of audio-visual objects — Part 12: ISO base media file format
+        AMENDMENT 1: Various enhancements including support for large metadata
+
+    [3] RFC 6716
+        Definition of the Opus Audio Codec
+
+    [4] draft-ietf-codec-oggopus-04
+        Ogg Encapsulation for the Opus Audio Codec
+
+<a name="3"></a>
+3 Terms and Definitions
+    3.1 actual duration
+        duration constructed from valid samples
+
+    3.2 edit
+        entry in the Edit List Box
+
+    3.3 padded samples
+        PCM samples after decoding Opus sample(s) which are not valid samples
+
+    3.4 priming samples
+        extra PCM samples after decoding Opus sample(s) at the beginning of the Opus bitstream
+
+    3.5 sample-accurate
+        for any PCM sample, a timestamp exactly matching its sampling timestamp is present in the media timeline.
+
+    3.6 valid samples
+        PCM samples after decoding Opus sample(s) corresponding to input PCM samples
+
+<a name="4"></a>
+4 Design Rules of Encapsulation
+    4.1 File Type Indentification<a name="4.1"></a>
+        This specification does not define brands to declare files are conformant to this specification.
+        TODO: Should we define such brands, e.g. 'Opus'. If we define the brand(s), we can utilize files conformant to
+              this specification for the storage of Opus coded bitstream without other derived file formats.
+<a name="4.2"></a>
+    4.2 Basic Structure
+        4.2.1 Initial Movie<a name="4.2.1"></a>
+            This subclause specifies a basic structure of the Movie Box as follows:
+
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |moov|    |    |    |    |    |    |    | Movie Box                    |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |mvhd|    |    |    |    |    |    | Movie Header Box             |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |trak|    |    |    |    |    |    | Track Box                    |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |tkhd|    |    |    |    |    | Track Header Box             |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |edts|    |    |    |    |    | Edit Box                     |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |elst|    |    |    |    | Edit List Box                |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |mdia|    |    |    |    |    | Media Box                    |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |mdhd|    |    |    |    | Media Header Box             |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |hdlr|    |    |    |    | Handler Reference Box        |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |minf|    |    |    |    | Media Information Box        |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |smhd|    |    |    | Sound Media Information Box  |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |dinf|    |    |    | Data Information Box         |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |dref|    |    | Data Reference Box           |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |    |url |    | DataEntryUrlBox              |
+            +----+----+----+----+----+----+ or +----+------------------------------+
+            |    |    |    |    |    |    |urn |    | DataEntryUrnBox              |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |stbl|    |    |    | Sample Table                 |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |stsd|    |    | Sample Description Box       |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |    |Opus|    | OpusSampleEntry              |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |    |    |dOps| Opus Specific Box            |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |stts|    |    | Decoding Time to Sample Box  |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |stsc|    |    | Sample To Chunk Box          |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |stsz|    |    | Sample Size Box              |
+            +----+----+----+----+----+ or +----+----+------------------------------+
+            |    |    |    |    |    |stz2|    |    | Compact Sample Size Box      |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |stco|    |    | Chunk Offset Box             |
+            +----+----+----+----+----+ or +----+----+------------------------------+
+            |    |    |    |    |    |co64|    |    | Chunk Large Offset Box       |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |sgpd|    |    | Sample Group Description Box |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |    |    |    |sbgp|    |    | Sample to Group Box          |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |mvex|*   |    |    |    |    |    | Movie Extends Box            |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |trex|*   |    |    |    |    | Track Extends Box            |
+            +----+----+----+----+----+----+----+----+------------------------------+
+
+            It is strongly recommended that the order of boxes should follow the above structure.
+            Boxes marked with an asterisk (*) may be present.
+            For some boxes listed above, the additional requirements, restrictions, recommendations and definitions
+            are specified in 4.7 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes in
+            this specification.
+            For the others, the definition is as is defined in ISO/IEC 14496-12 [1].
+
+        4.2.2 Movie Fragments<a name="4.2.2"></a>
+            This subclause specifies a basic structure of the Movie Fragment Box as follows:
+
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |moof|    |    |    |    |    |    |    | Movie Fragment Box           |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |mfhd|    |    |    |    |    |    | Movie Fragment Header Box    |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |traf|    |    |    |    |    |    | Track Fragment Box           |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |tfhd|    |    |    |    |    | Track Fragment Header Box    |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |trun|    |    |    |    |    | Track Fragment Run Box       |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |sgpd|*   |    |    |    |    | Sample Group Description Box |
+            +----+----+----+----+----+----+----+----+------------------------------+
+            |    |    |sbgp|*   |    |    |    |    | Sample to Group Box          |
+            +----+----+----+----+----+----+----+----+------------------------------+
+
+            It is strongly recommended that the Movie Fragment Header Box and the Track Fragment Header Box be
+            placed first in their container.
+            Boxes marked with an asterisk (*) may be present.
+            For some boxes listed above, the additional requirements, restrictions, recommendations and definitions
+            are specified in 4.7 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes in
+            this specification.
+            For the others, the definition is as is defined in ISO/IEC 14496-12 [1].
+<a name="4.3"></a>
+    4.3 Byte Order
+        The fields in the boxes are stored as big-endian format.
+        TODO: What about bytes in Opus samples?
+<a name="4.4"></a>
+    4.4 Definition of Opus sample
+        4.4.1 Opus sample<a name="4.4.1"></a>
+            An Opus sample is exactly one Opus packet.
+            In this specification, 'sample' means 'Opus sample' except for 'padded samples', 'priming samples', 'valid
+            sample' and 'sample-accurate', i.e. 'sample' is 'sample' in the term defined in ISO/IEC 14496-12 [1].
+            TODO: If an Opus packet consists of multiple Opus streams, it can be splitted into individual streams and
+                  reconstructed into new Opus packets as long as every Opus stream has the same total duration in each
+                  Opus packet. This requires additional channel mapping at outside of the existing Opus Specific Box.
+                  The solution may be achieved by using track references and new channel mapping/layout indications.
+                  Or should we forbid splitting into multiple tracks to avoid more complex implementations?
+                  Or just use channel mapping other than what the existing Opus Specific Box does, such as bit masks?
+
+        4.4.2 Duration of Opus sample<a name="4.4.2"></a>
+            The duration of Opus sample is given by multiplying the least common multiple of the frame size in seconds
+            of all frames inside Opus packet by the value of the timescale field in the Media Header Box.
+
+            To indicate the valid samples excluding the padded samples at the end of Opus bitstream, the duration of
+            the last Opus sample of an Opus bitstream is given by multiplying the number of the valid samples by the
+            value produced by dividing the value of the timescale field in the Media Header Box by 48000.
+<a name="4.5"></a>
+    4.5 Random Access
+        4.5.1 Random Access Point<a name="4.5.1"></a>
+            All Opus packets can be independently decoded i.e. every Opus sample is a sync sample.
+            Therefore, the Sync Sample Box shall not be present.
+
+        4.5.2 Pre-roll<a name="4.5.2"></a>
+            Opus requires at least 80 milli-second pre-roll after each random access.
+            Pre-roll is indicated by the roll_distance field in AudioRollRecoveryEntry. AudioPreRollEntry shall not be
+            used since every Opus sample is a sync sample in Opus bitstream.
+            Note that roll_distance is expressed in sample units in a term of ISO Base Media File Format, and always
+            takes negative values.
+
+            For the requirement of AudioRollRecoveryEntry, the compatible_brands field in the File Type Box and/or
+            the Segment Type Box shall contain at least one brand which requires support for roll groups.
+            See also 4.7.1 File Type Box and 4.7.2 Segment Type Box.
+<a name="4.6"></a>
+    4.6 Trimming of Actual Duration
+        Due to the priming samples (or the padding at the beginning) derived from the pre-roll for the startup and the
+        padding at the end, we need trim from media to get the actual duration before encoded.
+        An edit in the Edit List Box can achieve this demand.
+        For sample-accurate trimming, proper timescale should be set to the timescale field in the Movie Header Box
+        and the Media Header Box inside Track Box(es) for Opus bitstream.
+
+        The Edit List Box is applied to whole movie including all movie fragments. Therefore, it is impossible to tell
+        the actual duration in the case producing movie fragments on the fly such as live-streaming. In such cases,
+        the duration of the last Opus sample may be helpful.
+        TODO: Should we define a new box which indicates the last Opus samples?
+              Since this specification allows multiple sample descriptions, i.e. allows concatenation of multiple Opus
+              bitstreams in a track, each Opus bitstream contains some padded samples.
+              Without such a box, we cannot know in container level whether an Opus sample is the last Opus sample in
+              an Opus bitstream or not. Is this preferable?
+
+        See also 4.7.6 Edit List Box.
+<a name="4.7"></a>
+    4.7 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes
+        4.7.1 File Type Box<a name="4.7.1"></a>
+            For any track containing Opus bitstreams, the following requirements are applied.
+            + compatible_brands:
+                The compatible_brands fields shall contain at least one brand which requires support for roll groups
+                (e.g. the 'iso2' brand).
+                When enabling movie fragments and placing at least one Sample Group Description Box in Movie Fragments,
+                the compatible_brands fields shall also contain at least one brand which requires support of Sample
+                Group Description Boxes in Movie Fragments (e.g. the 'iso6' brand).
+
+        4.7.2 Segment Type Box<a name="4.7.2"></a>
+            For any track containing Opus bitstreams, the following requirements are applied.
+            + compatible_brands:
+                The same requirements as specified at 4.7.1 File Type Box are applied.
+
+        4.7.3 Movie Header Box<a name="4.7.3"></a>
+            If any track containing Opus bitstreams, the following recommendations are applied.
+            + timescale:
+                The timescale field should be set to the same value of the timescale field in the Media Header Box
+                inside Track Box(es) for Opus bitstream if no tracks for bitstreams other than Opus bitstream is present.
+
+        4.7.4 Track Header Box<a name="4.7.4"></a>
+            For any track containing Opus bitstreams, the following requirements are applied.
+            + layer:
+                The layer field shall be set to 0.
+            + matrix:
+                The matrix field shall be set to { 0x00010000,0,0,0,0x00010000,0,0,0,0x40000000 }.
+            + width:
+                The width field shall be set to 0.
+            + height:
+                The height field shall be set to 0.
+
+        4.7.5 Edit Box<a name="4.7.5"></a>
+            For any track containing Opus bitstreams, exactly one Edit Box shall be present.
+
+        4.7.6 Edit List Box<a name="4.7.6"></a>
+            For any track containing Opus bitstreams, exactly one Edit List Box shall be present. In addition, for
+            non-empty edits, the following recommendations are applied.
+            + segment_duration:
+                The segment_duration field is used to indicate the actual duration of Opus bitstream.
+                When the value of the timescale field in the Movie Header Box is equal to 48000, the segment_duration
+                should be set to the number of the actual samples before encoded.
+                When enabling movie fragments, the segment_duration field may be set to 0. The value 0 represents
+                implicit duration equal to the sum of the duration of all samples. This would be helpful for excluding
+                padded samples from the presentation timeline when producing movie fragments on the fly.
+            + media_time:
+                The media_time field is used to remove the priming samples of Opus bitstream.
+                When the value of the timescale field in the Media Header Box is equal to 48000, the media_time shall
+                be set to the number of priming samples to remove the priming samples for the first non-empty edit.
+
+        4.7.7 Media Header Box<a name="4.7.7"></a>
+            For any track containing Opus bitstreams, the following recommendation is applied.
+            + timescale:
+                The timescale field should be set to 48000 to access sample-accurately.
+
+        4.7.8 Handler Reference Box<a name="4.7.8"></a>
+            For any track containing Opus bitstreams, the following requirement is applied.
+            + handler_type:
+                The handler_type field shall be set to 'soun'.
+
+        4.7.9 Sound Media Header Box<a name="4.7.9"></a>
+            For any track containing Opus bitstreams, the Sound Media Header Box shall be present.
+
+        4.7.10 Sample Table Box<a name="4.7.10"></a>
+            For any track containing Opus bitstreams, at least one Sample Group Description Boxes and at least one
+            Sample to Group Boxes shall be present and the Sync Sample Box shall not be present.
+
+        4.7.11 OpusSampleEntry<a name="4.7.11"></a>
+            For any track containing Opus bitstreams, at least one OpusSampleEntry shall be present.
+
+            The syntax and semantics of the OpusSampleEntry is shown as follows.
+
+            class OpusSampleEntry() extends AudioSampleEntry ('Opus'){
+                OpusSpecificBox();
+            }
+
+            + channelcount:
+                The channelcount field shall be set to the sum of the total number of Opus bitstreams and the number
+                of Opus bitstreams producing two channels. This value is indentical with (M+N), where M is the value of
+                the *Coupled Stream Count* field and N is the value of the *Stream Count* field in the *Channel Mapping
+                Table* in the identification header defined in Ogg Opus [4].
+            + samplesize:
+                The samplesize field shall be set to 16.
+            + samplerate:
+                The samplerate field shall be set to 48000&lt&lt16.
+
+        4.7.12 Opus Specific Box<a name="4.7.12"></a>
+            Exactly one Opus Specific Box shall be present in each OpusSampleEntry.
+
+            The syntax and semantics of the Opus Specific Box is shown as follows.
+
+            aligned(8) class OpusSpecificBox extends FullBox('dOps', version, dflags){
+                if (flags & 0x000001) {
+                    unsigned int(16) PreSkip;
+                }
+                unsigned int(32) InputSampleRate;
+                signed int(16)   OutputGain;
+                unsigned int(8)  OutputChannelCount;
+                unsigned int(8)  ChannelMappingFamily;
+                if (ChannelMappingFamily != 0) {
+                    unsigned int(8 * (2 + OutputChannelCount)) ChannelMappingTable;
+                }
+            }
+
+            + version:
+                The version field shall be set to 0.
+            + flags:
+                The following flags are defined in the dflags:
+                    0x000001 pre-skip-present:
+                        This flag indicates the presence of the PreSkip field.
+            + PreSkip:
+                The PreSkip field shall be set to the same value as the *Pre-skip* field in the identification header
+                defined in Ogg Opus [4]. Note that the value is stored as big-endian format.
+                This field can be absent after removing Opus samples containing the number of PCM samples more than the
+                number of the priming samples.
+                This field is not used for removing the priming samples at playback.
+            + InputSampleRate:
+                The InputSampleRate field shall be set to the same value as the *Input Sample Rate* field in the
+                identification header defined in Ogg Opus [4]. Note that the value is stored as big-endian format.
+            + OutputGain:
+                The OutputGain field shall be set to the same value as the *Output Gain* field in the identification
+                header define in Ogg Opus [4]. Note that the value is stored as big-endian format.
+            + OutputChannelCount:
+                The OutputChannelCount field shall be set to the same value as the *Output Channel Count* field in the
+                identification header defined in Ogg Opus [4].
+            + ChannelMappingFamily:
+                The ChannelMappingFamily field shall be set to the same value as the *Channel Mapping Family* field in
+                the identification header defined in Ogg Opus [4].
+            + ChannelMappingTable:
+                The ChannelMappingTable field shall be set to the same octet string as *Channel Mapping Table* field in
+                the identification header defined in Ogg Opus [4].
+
+        4.7.13 Sample Group Description Box<a name="4.7.13"></a>
+            For any track containing Opus bitstreams, at least one Sample Group Description Box shall be present and have
+            the grouping_type field set to 'roll'. See also 4.5.2 Pre-roll.
+
+        4.7.14 Sample to Group Box<a name="4.7.14"></a>
+            For any track containing Opus bitstreams, at least one Sample to Group Box shall be present and have the
+            grouping_type field set to 'roll'. In addition, the following requirement is applied.
+            + group_description_index:
+                The group_description_index fields shall not be set to 0 if the grouping_type field set to 'roll'.
+
+        4.7.15 Track Extends Box<a name="4.7.15"></a>
+            For any track containing Opus bitstreams, the following requirement is applied.
+            + default_sample_flags:
+                The sample_is_non_sync_sample field shall be set to 0.
+
+        4.7.16 Track Fragment Box<a name="4.7.16"></a>
+            For any track containing Opus bitstreams, if any sample is contained in track fragment, the Sample to
+            Group Box with the grouping_type field set to 'roll' shall be present for that track fragment.
+
+        4.7.17 Track Fragment Header Box<a name="4.7.17"></a>
+            For any track containing Opus bitstreams, the following requirement is applied.
+            + default_sample_flags:
+                The sample_is_non_sync_sample field shall be set to 0.
+
+        4.7.18 Track Fragment Run Box<a name="4.7.18"></a>
+            For any track containing Opus bitstreams, the following requirements are applied.
+            + first_sample_flags:
+                The sample_is_non_sync_sample field shall be set to 0.
+            + sample_flags:
+                The sample_is_non_sync_sample field shall be set to 0.
+<a name="4.8"></a>
+    4.8 Example of Encapsulation
+        [File]
+            size = 10349
+            [ftyp: File Type Box]
+                position = 0
+                size = 24
+                major_brand = mp42 : MP4 version 2
+                minor_version = 0
+                compatible_brands
+                    brand[0] = mp42 : MP4 version 2
+                    brand[1] = iso2 : ISO Base Media file format version 2
+            [free: Free Space Box]
+                position = 24
+                size = 8
+            [mdat: Media Data Box]
+                position = 32
+                size = 9551
+            [moov: Movie Box]
+                position = 9583
+                size = 766
+                [mvhd: Movie Header Box]
+                    position = 9591
+                    size = 108
+                    version = 0
+                    flags = 0x000000
+                    creation_time = UTC 2014/09/23, 15:23:21
+                    modification_time = UTC 2014/09/23, 15:23:21
+                    timescale = 48000
+                    duration = 33600 (00:00:07.000)
+                    rate = 1.000000
+                    volume = 1.000000
+                    reserved = 0x0000
+                    reserved = 0x00000000
+                    reserved = 0x00000000
+                    transformation matrix
+                        | a, b, u |   | 1.000000, 0.000000, 0.000000 |
+                        | c, d, v | = | 0.000000, 1.000000, 0.000000 |
+                        | x, y, w |   | 0.000000, 0.000000, 1.000000 |
+                    pre_defined = 0x00000000
+                    pre_defined = 0x00000000
+                    pre_defined = 0x00000000
+                    pre_defined = 0x00000000
+                    pre_defined = 0x00000000
+                    pre_defined = 0x00000000
+                    next_track_ID = 2
+                [iods: Object Descriptor Box]
+                    position = 9699
+                    size = 33
+                    version = 0
+                    flags = 0x000000
+                    [tag = 0x10: MP4_IOD]
+                        expandableClassSize = 16
+                        ObjectDescriptorID = 1
+                        URL_Flag = 0
+                        includeInlineProfileLevelFlag = 0
+                        reserved = 0xf
+                        ODProfileLevelIndication = 0xff
+                        sceneProfileLevelIndication = 0xff
+                        audioProfileLevelIndication = 0xfe
+                        visualProfileLevelIndication = 0xff
+                        graphicsProfileLevelIndication = 0xff
+                        [tag = 0x0e: ES_ID_Inc]
+                            expandableClassSize = 4
+                            Track_ID = 1
+                [trak: Track Box]
+                    position = 9732
+                    size = 617
+                    [tkhd: Track Header Box]
+                        position = 9740
+                        size = 92
+                        version = 0
+                        flags = 0x000007
+                            Track enabled
+                            Track in movie
+                            Track in preview
+                        creation_time = UTC 2014/09/23, 15:23:21
+                        modification_time = UTC 2014/09/23, 15:23:21
+                        track_ID = 1
+                        reserved = 0x00000000
+                        duration = 33600 (00:00:07.000)
+                        reserved = 0x00000000
+                        reserved = 0x00000000
+                        layer = 0
+                        alternate_group = 0
+                        volume = 1.000000
+                        reserved = 0x0000
+                        transformation matrix
+                            | a, b, u |   | 1.000000, 0.000000, 0.000000 |
+                            | c, d, v | = | 0.000000, 1.000000, 0.000000 |
+                            | x, y, w |   | 0.000000, 0.000000, 1.000000 |
+                        width = 0.000000
+                        height = 0.000000
+                    [edts: Edit Box]
+                        position = 9832
+                        size = 36
+                        [elst: Edit List Box]
+                            position = 9840
+                            size = 28
+                            version = 0
+                            flags = 0x000000
+                            entry_count = 1
+                            entry[0]
+                                segment_duration = 33600
+                                media_time = 3840
+                                media_rate = 1.000000
+                    [mdia: Media Box]
+                        position = 9868
+                        size = 481
+                        [mdhd: Media Header Box]
+                            position = 9876
+                            size = 32
+                            version = 0
+                            flags = 0x000000
+                            creation_time = UTC 2014/09/23, 15:23:21
+                            modification_time = UTC 2014/09/23, 15:23:21
+                            timescale = 48000
+                            duration = 38400 (00:00:08.000)
+                            language = und
+                            pre_defined = 0x0000
+                        [hdlr: Handler Reference Box]
+                            position = 9908
+                            size = 51
+                            version = 0
+                            flags = 0x000000
+                            pre_defined = 0x00000000
+                            handler_type = soun
+                            reserved = 0x00000000
+                            reserved = 0x00000000
+                            reserved = 0x00000000
+                            name = Xiph Audio Handler
+                        [minf: Media Information Box]
+                            position = 9959
+                            size = 390
+                            [smhd: Sound Media Header Box]
+                                position = 9967
+                                size = 16
+                                version = 0
+                                flags = 0x000000
+                                balance = 0.000000
+                                reserved = 0x0000
+                            [dinf: Data Information Box]
+                                position = 9983
+                                size = 36
+                                [dref: Data Reference Box]
+                                    position = 9991
+                                    size = 28
+                                    version = 0
+                                    flags = 0x000000
+                                    entry_count = 1
+                                    [url : Data Entry Url Box]
+                                        position = 10007
+                                        size = 12
+                                        version = 0
+                                        flags = 0x000001
+                                        location = in the same file
+                            [stbl: Sample Table Box]
+                                position = 10019
+                                size = 330
+                                [stsd: Sample Description Box]
+                                    position = 10027
+                                    size = 72
+                                    version = 0
+                                    flags = 0x000000
+                                    entry_count = 1
+                                    [Opus: Audio Description]
+                                        position = 10043
+                                        size = 56
+                                        reserved = 0x000000000000
+                                        data_reference_index = 1
+                                        reserved = 0x0000
+                                        reserved = 0x0000
+                                        reserved = 0x00000000
+                                        channelcount = 2
+                                        samplesize = 16
+                                        pre_defined = 0
+                                        reserved = 0
+                                        samplerate = 48000.000000
+                                        [dOps: Opus Specific Box]
+                                            position = 10071
+                                            size = 20
+                                            version = 0
+                                            flags = 0x000000
+                                            InputSampleRate = 44100
+                                            OutputGain = 0.000000
+                                            OutputChannelCount = 2
+                                            ChannelMappingFamily = 0
+                                [stts: Decoding Time to Sample Box]
+                                    position = 10099
+                                    size = 24
+                                    version = 0
+                                    flags = 0x000000
+                                    entry_count = 1
+                                    entry[0]
+                                        sample_count = 10
+                                        sample_delta = 3840
+                                [stsc: Sample To Chunk Box]
+                                    position = 10123
+                                    size = 40
+                                    version = 0
+                                    flags = 0x000000
+                                    entry_count = 2
+                                    entry[0]
+                                        first_chunk = 1
+                                        samples_per_chunk = 4
+                                        sample_description_index = 1
+                                    entry[1]
+                                        first_chunk = 3
+                                        samples_per_chunk = 2
+                                        sample_description_index = 1
+                                [stsz: Sample Size Box]
+                                    position = 10163
+                                    size = 60
+                                    version = 0
+                                    flags = 0x000000
+                                    sample_size = 0 (variable)
+                                    sample_count = 10
+                                    entry_size[0] = 780
+                                    entry_size[1] = 920
+                                    entry_size[2] = 963
+                                    entry_size[3] = 988
+                                    entry_size[4] = 1024
+                                    entry_size[5] = 951
+                                    entry_size[6] = 933
+                                    entry_size[7] = 1017
+                                    entry_size[8] = 992
+                                    entry_size[9] = 975
+                                [stco: Chunk Offset Box]
+                                    position = 10223
+                                    size = 28
+                                    version = 0
+                                    flags = 0x000000
+                                    entry_count = 3
+                                    chunk_offset[0] = 40
+                                    chunk_offset[1] = 3691
+                                    chunk_offset[2] = 7616
+                                [sgpd: Sample Group Description Box]
+                                    position = 10251
+                                    size = 30
+                                    version = 1
+                                    flags = 0x000000
+                                    grouping_type = roll
+                                    default_length = 2 (constant)
+                                    entry_count = 3
+                                    roll_distance[0] = -1
+                                    roll_distance[1] = -2
+                                    roll_distance[2] = -3
+                                [sbgp: Sample to Group Box]
+                                    position = 10281
+                                    size = 68
+                                    version = 0
+                                    flags = 0x000000
+                                    grouping_type = roll
+                                    entry_count = 6
+                                    entry[0]
+                                        sample_count = 2
+                                        group_description_index = 1
+                                    entry[1]
+                                        sample_count = 1
+                                        group_description_index = 2
+                                    entry[2]
+                                        sample_count = 1
+                                        group_description_index = 3
+                                    entry[3]
+                                        sample_count = 1
+                                        group_description_index = 2
+                                    entry[4]
+                                        sample_count = 3
+                                        group_description_index = 3
+                                    entry[5]
+                                        sample_count = 2
+                                        group_description_index = 1
+
+<a name="5"></a>
+5 Authors' Address
+    Yusuke Nakamura
+        Email: muken.the.vfrmaniac |at| gmail.com
+        </div>
+    </body>
+</html>
