@@ -1166,6 +1166,15 @@ Making this check before allocating the associated memory to contain the data
  user comments than than could possibly fit in the packet.
 </t>
 
+<t>
+Immediately following the user comment list, the comment header MAY
+ contain zero-padding or other binary data which is not specified here.
+If the least-significant bit of the first byte of this data is 1, then editors
+ SHOULD attempt to preserve the contents of this data when updating the tags,
+ but if this bit is 0, all such data MAY be treated as padding, and truncated
+ or discarded as desired.
+</t>
+
 <section anchor="comment_format" title="Tag Definitions">
 <t>
 The user comment strings follow the NAME=value format described by
