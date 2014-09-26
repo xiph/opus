@@ -1218,6 +1218,10 @@ The gain is also a Q7.8 fixed point number in dB, as in the ID header's
 An Ogg Opus stream MUST NOT have more than one of each tag, and if present
  their values MUST be an integer from -32768 to 32767, inclusive,
  represented in ASCII with no whitespace.
+A leading '+' or '-' character is valid.
+Other non-digit characters MUST NOT be present.
+</t>
+<t>
 If present, R128_TRACK_GAIN and R128_ALBUM_GAIN MUST correctly represent
  the R128 normalization gain relative to the 'output gain' field specified
  in the ID header.
