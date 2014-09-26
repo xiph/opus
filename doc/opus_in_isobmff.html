@@ -11,7 +11,7 @@
         <br>
         <div class="normal_link pre frame_box">
 <center>Encapsulation of Opus in ISO Base Media File Format</center>
-<center>Version 0.1.4 (incomplete)</center>
+<center>Version 0.1.7 (incomplete)</center>
 
 Table of Contents
 <a href="#1">1</a> Scope
@@ -95,9 +95,13 @@ Table of Contents
 <a name="4"></a>
 4 Design Rules of Encapsulation
     4.1 File Type Indentification<a name="4.1"></a>
-        This specification does not define brands to declare files are conformant to this specification.
-        TODO: Should we define such brands, e.g. 'Opus'. If we define the brand(s), we can utilize files conformant to
-              this specification for the storage of Opus coded bitstream without other derived file formats.
+        This specification does not define any brand to declare files are conformant to this specification.
+        TODO: Should we define such brands, e.g. 'Opus'? If we define the brand(s), we can utilize files conformant to
+              this specification for the storage of Opus coded bitstreams without other derived file formats.
+              It is not preferable that encapsulation of Opus bitstreams with only the brands of the ISO Base Media File
+              Format, though files conformant to this specification are compatible with certain versions of the ISO
+              Base Media File Format. See ISO/IEC 14496-12 [3] E.1 Introduction.
+              If you desire that this file format is an alternative file format to the Ogg Opus, I recommend you define.
 <a name="4.2"></a>
     4.2 Basic Structure
         4.2.1 Initial Movie<a name="4.2.1"></a>
@@ -199,23 +203,25 @@ Table of Contents
 <a name="4.3"></a>
     4.3 Byte Order
         The fields in the boxes are stored as big-endian format.
-        TODO: What about bytes in Opus samples?
+        All Opus samples are processed byte-by-byte. Therefore, the endianness has nothing to do with any Opus sample.
 <a name="4.4"></a>
     4.4 Definition of Opus sample
         4.4.1 Opus sample<a name="4.4.1"></a>
-            An Opus sample is exactly one Opus packet.
+            An Opus sample is exactly one Opus packet for each of different Opus bitstreams. Due to support more than
+            two channels, an Opus sample can contain frames from multiple Opus bitstreams but all Opus packets shall
+            share with the total of frame sizes in a single Opus sample.
             In this specification, 'sample' means 'Opus sample' except for 'padded samples', 'priming samples', 'valid
             sample' and 'sample-accurate', i.e. 'sample' is 'sample' in the term defined in ISO/IEC 14496-12 [1].
-            TODO: If an Opus packet consists of multiple Opus streams, it can be splitted into individual streams and
-                  reconstructed into new Opus packets as long as every Opus stream has the same total duration in each
-                  Opus packet. This requires additional channel mapping at outside of the existing Opus Specific Box.
+            TODO: If an Opus sample consists of multiple Opus streams, it can be splitted into individual streams and
+                  reconstructed into new Opus samples as long as every Opus stream has the same total duration in each
+                  Opus sample. This requires additional channel mapping at outside of the existing Opus Specific Box.
                   The solution may be achieved by using track references and new channel mapping/layout indications.
                   Or should we forbid splitting into multiple tracks to avoid more complex implementations?
                   Or just use channel mapping other than what the existing Opus Specific Box does, such as bit masks?
 
         4.4.2 Duration of Opus sample<a name="4.4.2"></a>
             The duration of Opus sample is given by multiplying the least common multiple of the frame size in seconds
-            of all frames inside Opus packet by the value of the timescale field in the Media Header Box.
+            of all frames inside Opus sample by the value of the timescale field in the Media Header Box.
 
             To indicate the valid samples excluding the padded samples at the end of Opus bitstream, the duration of
             the last Opus sample of an Opus bitstream is given by multiplying the number of the valid samples by the
@@ -223,7 +229,7 @@ Table of Contents
 <a name="4.5"></a>
     4.5 Random Access
         4.5.1 Random Access Point<a name="4.5.1"></a>
-            All Opus packets can be independently decoded i.e. every Opus sample is a sync sample.
+            All Opus samples can be independently decoded i.e. every Opus sample is a sync sample.
             Therefore, the Sync Sample Box shall not be present.
 
         4.5.2 Pre-roll<a name="4.5.2"></a>
@@ -343,6 +349,9 @@ Table of Contents
 
         4.7.12 Opus Specific Box<a name="4.7.12"></a>
             Exactly one Opus Specific Box shall be present in each OpusSampleEntry.
+            The Opus Specific Box contains the version field and this specification defines version 0 of this box.
+            If incompatible changes occured in the fields after the version field within the OpusSpecificBox in the
+            future versions of this specification, another version will be defined.
 
             The syntax and semantics of the Opus Specific Box is shown as follows.
 
@@ -361,6 +370,8 @@ Table of Contents
 
             + version:
                 The version field shall be set to 0.
+                In the future versions of this specification, this field may be set to other values. And without support
+                of those values, the reader shall not read the fields after this within the OpusSpecificBox.
             + flags:
                 The following flags are defined in the dflags:
                     0x000001 pre-skip-present:
@@ -389,7 +400,15 @@ Table of Contents
 
         4.7.13 Sample Group Description Box<a name="4.7.13"></a>
             For any track containing Opus bitstreams, at least one Sample Group Description Box shall be present and have
-            the grouping_type field set to 'roll'. See also 4.5.2 Pre-roll.
+            the grouping_type field set to 'roll'. In addition, the following requirements and restriction are applied.
+            + version:
+                The version field shall be set to 1 if the grouping_type field set to 'roll'.
+            + default_length
+                The default_length field shall be set to 2 if the grouping_type field set to 'roll'.
+            + roll_distance:
+                The roll_distance field in any AudioRollRecoveryEntry shall not be set to positive values.
+
+            See also 4.5.2 Pre-roll.
 
         4.7.14 Sample to Group Box<a name="4.7.14"></a>
             For any track containing Opus bitstreams, at least one Sample to Group Box shall be present and have the
