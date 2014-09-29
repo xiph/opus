@@ -7,11 +7,12 @@
     </head>
     <body bgcolor="0x333333" text="#60B0C0">
         <b><u>Encapsulation of Opus in ISO Base Media File Format</u></b><br>
-        <font size="2">last updated: September 26, 2014</font><br>
+        <font size="2">last updated: September 27, 2014</font><br>
         <br>
         <div class="normal_link pre frame_box">
+
 <center>Encapsulation of Opus in ISO Base Media File Format</center>
-<center>Version 0.1.7 (incomplete)</center>
+<center>Version 0.4.8 (incomplete)</center>
 
 Table of Contents
 <a href="#1">1</a> Scope
@@ -30,26 +31,27 @@ Table of Contents
         <a href="#4.5.1">4.5.1</a> Random Access Point
         <a href="#4.5.2">4.5.2</a> Pre-roll
     <a href="#4.6">4.6</a> Trimming of Actual Duration
-    <a href="#4.7">4.7</a> Additional Requirements, Restrictions, Recommendations and Definitions for Boxes
-        <a href="#4.7.1">4.7.1</a> File Type Box
-        <a href="#4.7.2">4.7.2</a> Segment Type Box
-        <a href="#4.7.3">4.7.3</a> Movie Header Box
-        <a href="#4.7.4">4.7.4</a> Track Header Box
-        <a href="#4.7.5">4.7.5</a> Edit Box
-        <a href="#4.7.6">4.7.6</a> Edit List Box
-        <a href="#4.7.7">4.7.7</a> Media Header Box
-        <a href="#4.7.8">4.7.8</a> Handler Reference Box
-        <a href="#4.7.9">4.7.9</a> Sound Media Header Box
-        <a href="#4.7.10">4.7.10</a> Sample Table Box
-        <a href="#4.7.11">4.7.11</a> OpusSampleEntry
-        <a href="#4.7.12">4.7.12</a> Opus Specific Box
-        <a href="#4.7.13">4.7.13</a> Sample Group Description Box
-        <a href="#4.7.14">4.7.14</a> Sample to Group Box
-        <a href="#4.7.15">4.7.15</a> Track Extends Box
-        <a href="#4.7.16">4.7.16</a> Track Fragment Box
-        <a href="#4.7.17">4.7.17</a> Track Fragment Header Box
-        <a href="#4.7.18">4.7.18</a> Track Fragment Run Box
-    <a href="#4.8">4.8</a> Example of Encapsulation
+    <a href="#4.7">4.7</a> Channel Layout
+    <a href="#4.8">4.8</a> Additional Requirements, Restrictions, Recommendations and Definitions for Boxes
+        <a href="#4.8.1">4.8.1</a> File Type Box
+        <a href="#4.8.2">4.8.2</a> Segment Type Box
+        <a href="#4.8.3">4.8.3</a> Movie Header Box
+        <a href="#4.8.4">4.8.4</a> Track Header Box
+        <a href="#4.8.5">4.8.5</a> Edit Box
+        <a href="#4.8.6">4.8.6</a> Edit List Box
+        <a href="#4.8.7">4.8.7</a> Media Header Box
+        <a href="#4.8.8">4.8.8</a> Handler Reference Box
+        <a href="#4.8.9">4.8.9</a> Sound Media Header Box
+        <a href="#4.8.10">4.8.10</a> Sample Table Box
+        <a href="#4.8.11">4.8.11</a> OpusSampleEntry
+        <a href="#4.8.12">4.8.12</a> Opus Specific Box
+        <a href="#4.8.13">4.8.13</a> Sample Group Description Box
+        <a href="#4.8.14">4.8.14</a> Sample to Group Box
+        <a href="#4.8.15">4.8.15</a> Track Extends Box
+        <a href="#4.8.16">4.8.16</a> Track Fragment Box
+        <a href="#4.8.17">4.8.17</a> Track Fragment Header Box
+        <a href="#4.8.18">4.8.18</a> Track Fragment Run Box
+    <a href="#4.9">4.9</a> Example of Encapsulation
 <a href="#5">5</a> Author's Address
 
 <a name="1"></a>
@@ -74,22 +76,32 @@ Table of Contents
 
 <a name="3"></a>
 3 Terms and Definitions
-    3.1 actual duration
+    3.1 active track
+        enabled track from the non-alternate group or selected track from alternate group
+        TODO: For alternate group, how about handling of disabled tracks?
+              Some implementations treat disabled tracks in alternate group as a non-default track.
+              Under the such implementations, the selected track behaves as an enabled track.
+              Should we define the implementation in this specification?
+              Or leave it as implementation-defined?
+
+    3.2 actual duration
         duration constructed from valid samples
 
-    3.2 edit
+    3.3 edit
         entry in the Edit List Box
 
-    3.3 padded samples
+    3.4 padded samples
         PCM samples after decoding Opus sample(s) which are not valid samples
+        An Opus bitstream always contains them partially at the beginning and may contain them in part at the end, as
+        long as not physically removed yet at the beginning and/or the end.
 
-    3.4 priming samples
-        extra PCM samples after decoding Opus sample(s) at the beginning of the Opus bitstream
+    3.5 priming samples
+        padded samples at the beginning of the Opus bitstream
 
-    3.5 sample-accurate
+    3.6 sample-accurate
         for any PCM sample, a timestamp exactly matching its sampling timestamp is present in the media timeline.
 
-    3.6 valid samples
+    3.7 valid samples
         PCM samples after decoding Opus sample(s) corresponding to input PCM samples
 
 <a name="4"></a>
@@ -170,7 +182,7 @@ Table of Contents
             It is strongly recommended that the order of boxes should follow the above structure.
             Boxes marked with an asterisk (*) may be present.
             For some boxes listed above, the additional requirements, restrictions, recommendations and definitions
-            are specified in 4.7 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes in
+            are specified in 4.8 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes in
             this specification.
             For the others, the definition is as is defined in ISO/IEC 14496-12 [1].
 
@@ -197,7 +209,7 @@ Table of Contents
             placed first in their container.
             Boxes marked with an asterisk (*) may be present.
             For some boxes listed above, the additional requirements, restrictions, recommendations and definitions
-            are specified in 4.7 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes in
+            are specified in 4.8 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes in
             this specification.
             For the others, the definition is as is defined in ISO/IEC 14496-12 [1].
 <a name="4.3"></a>
@@ -212,16 +224,15 @@ Table of Contents
             share with the total of frame sizes in a single Opus sample.
             In this specification, 'sample' means 'Opus sample' except for 'padded samples', 'priming samples', 'valid
             sample' and 'sample-accurate', i.e. 'sample' is 'sample' in the term defined in ISO/IEC 14496-12 [1].
-            TODO: If an Opus sample consists of multiple Opus streams, it can be splitted into individual streams and
-                  reconstructed into new Opus samples as long as every Opus stream has the same total duration in each
-                  Opus sample. This requires additional channel mapping at outside of the existing Opus Specific Box.
-                  The solution may be achieved by using track references and new channel mapping/layout indications.
-                  Or should we forbid splitting into multiple tracks to avoid more complex implementations?
-                  Or just use channel mapping other than what the existing Opus Specific Box does, such as bit masks?
 
         4.4.2 Duration of Opus sample<a name="4.4.2"></a>
-            The duration of Opus sample is given by multiplying the least common multiple of the frame size in seconds
-            of all frames inside Opus sample by the value of the timescale field in the Media Header Box.
+            The duration of Opus sample is given by multiplying the total of frame sizes for a single Opus bitstream
+            expressed in seconds by the value of the timescale field in the Media Header Box.
+            Let's say an Opus sample consists of two Opus bitstreams, where the frame size of one bitstream is 40 milli-
+            seconds and the frame size of another is 60 milliseconds, and the timescale field in the Media Header Box
+            is set to 48000, then the duration of that Opus sample shall be 120 milliseconds since three 40 millisecond
+            frame and two 60 millisecond frames shall be contained because of the maximum duration of Opus packet, 120
+            milliseconds, and 5760 in the timescale indicated in the Media Header Box.
 
             To indicate the valid samples excluding the padded samples at the end of Opus bitstream, the duration of
             the last Opus sample of an Opus bitstream is given by multiplying the number of the valid samples by the
@@ -230,10 +241,11 @@ Table of Contents
     4.5 Random Access
         4.5.1 Random Access Point<a name="4.5.1"></a>
             All Opus samples can be independently decoded i.e. every Opus sample is a sync sample.
-            Therefore, the Sync Sample Box shall not be present.
+            Therefore, the Sync Sample Box shall not be present as long as there are no samples other than Opus samples
+            in the same track.
 
         4.5.2 Pre-roll<a name="4.5.2"></a>
-            Opus requires at least 80 milli-second pre-roll after each random access.
+            Opus requires at least 80 millisecond pre-roll after each random access.
             Pre-roll is indicated by the roll_distance field in AudioRollRecoveryEntry. AudioPreRollEntry shall not be
             used since every Opus sample is a sync sample in Opus bitstream.
             Note that roll_distance is expressed in sample units in a term of ISO Base Media File Format, and always
@@ -241,12 +253,12 @@ Table of Contents
 
             For the requirement of AudioRollRecoveryEntry, the compatible_brands field in the File Type Box and/or
             the Segment Type Box shall contain at least one brand which requires support for roll groups.
-            See also 4.7.1 File Type Box and 4.7.2 Segment Type Box.
+            See also 4.8.1 File Type Box and 4.8.2 Segment Type Box.
 <a name="4.6"></a>
     4.6 Trimming of Actual Duration
         Due to the priming samples (or the padding at the beginning) derived from the pre-roll for the startup and the
-        padding at the end, we need trim from media to get the actual duration before encoded.
-        An edit in the Edit List Box can achieve this demand.
+        padded samples at the end, we need trim from media to get the actual duration. An edit in the Edit List Box can
+        achieve this demand.
         For sample-accurate trimming, proper timescale should be set to the timescale field in the Movie Header Box
         and the Media Header Box inside Track Box(es) for Opus bitstream.
 
@@ -255,14 +267,49 @@ Table of Contents
         the duration of the last Opus sample may be helpful.
         TODO: Should we define a new box which indicates the last Opus samples?
               Since this specification allows multiple sample descriptions, i.e. allows concatenation of multiple Opus
-              bitstreams in a track, each Opus bitstream contains some padded samples.
+              bitstreams in a track, each Opus bitstream may contain some padded samples.
               Without such a box, we cannot know in container level whether an Opus sample is the last Opus sample in
               an Opus bitstream or not. Is this preferable?
 
-        See also 4.7.6 Edit List Box.
+        See also 4.8.6 Edit List Box.
 <a name="4.7"></a>
-    4.7 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes
-        4.7.1 File Type Box<a name="4.7.1"></a>
+    4.7 Channel Layout
+        By the application of alternate_group in the Track Header Box, whole audio channels in all active tracks from
+        non-alternate group and/or different alternate group from each other are composited into the presentation. If
+        an Opus sample consists of multiple Opus bitstreams, it can be splitted into individual Opus bitstreams and
+        reconstructed into new Opus samples as long as every Opus bitstream has the same total duration in each Opus
+        sample. This nature can be utilized to encapsulate a single Opus bitstream in each track without breaking the
+        original channel layout.
+
+        As an example, let's say there is a following track:
+            StreamCount        = 4;
+            CoupledCount       = 2;
+            OutputChannelCount = 6;
+            ChannelMapping     = {0, 1, 2, 3, 4, 5}; // front left, front center, front right, rear left, rear right, LFE
+        You extract the four Opus bitstreams from this track and you encapsulate two of the four into a track and the
+        others into another track. The former track is as follows.
+            StreamCount        = 2;
+            CoupledCount       = 2;
+            OutputChannelCount = 5;
+            ChannelMapping     = {0, 255, 1, 2, 3}; // front left, silent, front right, rear left, rear right
+        And the latter track is as follows.
+            StreamCount        = 2;
+            CoupledCount       = 0;
+            OutputChannelCount = 6;
+            ChannelMapping     = {255, 0, 255, 255, 255, 1}; // silent, front center, silent, silent, silent, LFE
+        In addition, the value of the alternate_group field in the both tracks is set to 0. As the result, the player
+        may play as if channels with 255 are not present, and play the presentation constructed from the both tracks
+        in the same channel layout as the one of the original track. Keep in mind that the way of the composition, i.e.
+        the mixing for playback, is not defined here, and maybe different results could occur except for the channel
+        layout of the original, depending on an implementation or the definition of a derived file format.
+
+        Note that some derived file formats may specify the restriction to ignore alternate grouping. In the context of
+        such file formats, this application is not available. This unavailability does not mean incompatibilities among
+        file formats unless the restriction to the value of the alternate_group field is specified and brings about
+        any conflict among their definitions.
+<a name="4.8"></a>
+    4.8 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes
+        4.8.1 File Type Box<a name="4.8.1"></a>
             For any track containing Opus bitstreams, the following requirements are applied.
             + compatible_brands:
                 The compatible_brands fields shall contain at least one brand which requires support for roll groups
@@ -271,18 +318,18 @@ Table of Contents
                 the compatible_brands fields shall also contain at least one brand which requires support of Sample
                 Group Description Boxes in Movie Fragments (e.g. the 'iso6' brand).
 
-        4.7.2 Segment Type Box<a name="4.7.2"></a>
+        4.8.2 Segment Type Box<a name="4.8.2"></a>
             For any track containing Opus bitstreams, the following requirements are applied.
             + compatible_brands:
-                The same requirements as specified at 4.7.1 File Type Box are applied.
+                The same requirements as specified at 4.8.1 File Type Box are applied.
 
-        4.7.3 Movie Header Box<a name="4.7.3"></a>
+        4.8.3 Movie Header Box<a name="4.8.3"></a>
             If any track containing Opus bitstreams, the following recommendations are applied.
             + timescale:
                 The timescale field should be set to the same value of the timescale field in the Media Header Box
                 inside Track Box(es) for Opus bitstream if no tracks for bitstreams other than Opus bitstream is present.
 
-        4.7.4 Track Header Box<a name="4.7.4"></a>
+        4.8.4 Track Header Box<a name="4.8.4"></a>
             For any track containing Opus bitstreams, the following requirements are applied.
             + layer:
                 The layer field shall be set to 0.
@@ -293,42 +340,46 @@ Table of Contents
             + height:
                 The height field shall be set to 0.
 
-        4.7.5 Edit Box<a name="4.7.5"></a>
+        4.8.5 Edit Box<a name="4.8.5"></a>
             For any track containing Opus bitstreams, exactly one Edit Box shall be present.
 
-        4.7.6 Edit List Box<a name="4.7.6"></a>
+        4.8.6 Edit List Box<a name="4.8.6"></a>
             For any track containing Opus bitstreams, exactly one Edit List Box shall be present. In addition, for
             non-empty edits, the following recommendations are applied.
             + segment_duration:
-                The segment_duration field is used to indicate the actual duration of Opus bitstream.
+                The segment_duration field can be used to indicate the actual duration of Opus bitstream.
                 When the value of the timescale field in the Movie Header Box is equal to 48000, the segment_duration
-                should be set to the number of the actual samples before encoded.
+                field shall be set to the number of the valid samples to indicate the actual duration.
                 When enabling movie fragments, the segment_duration field may be set to 0. The value 0 represents
                 implicit duration equal to the sum of the duration of all samples. This would be helpful for excluding
-                padded samples from the presentation timeline when producing movie fragments on the fly.
+                the padded samples from the presentation timeline when producing movie fragments on the fly.
             + media_time:
-                The media_time field is used to remove the priming samples of Opus bitstream.
-                When the value of the timescale field in the Media Header Box is equal to 48000, the media_time shall
-                be set to the number of priming samples to remove the priming samples for the first non-empty edit.
+                The media_time field can be used to remove the priming samples of Opus bitstreams.
+                When the value of the timescale field in the Media Header Box is equal to 48000, the media_time field
+                shall be set to the number of the priming samples to remove the priming samples.
+            + media_rate:
+                If the segment_duration field is used to indicate the actual duration, the media_rate field shall be
+                set to 1.
 
-        4.7.7 Media Header Box<a name="4.7.7"></a>
+        4.8.7 Media Header Box<a name="4.8.7"></a>
             For any track containing Opus bitstreams, the following recommendation is applied.
             + timescale:
                 The timescale field should be set to 48000 to access sample-accurately.
 
-        4.7.8 Handler Reference Box<a name="4.7.8"></a>
+        4.8.8 Handler Reference Box<a name="4.8.8"></a>
             For any track containing Opus bitstreams, the following requirement is applied.
             + handler_type:
                 The handler_type field shall be set to 'soun'.
 
-        4.7.9 Sound Media Header Box<a name="4.7.9"></a>
+        4.8.9 Sound Media Header Box<a name="4.8.9"></a>
             For any track containing Opus bitstreams, the Sound Media Header Box shall be present.
 
-        4.7.10 Sample Table Box<a name="4.7.10"></a>
+        4.8.10 Sample Table Box<a name="4.8.10"></a>
             For any track containing Opus bitstreams, at least one Sample Group Description Boxes and at least one
-            Sample to Group Boxes shall be present and the Sync Sample Box shall not be present.
+            Sample to Group Boxes shall be present, and the Sync Sample Box shall not be present as long as there are
+            no samples other than Opus samples in the same track.
 
-        4.7.11 OpusSampleEntry<a name="4.7.11"></a>
+        4.8.11 OpusSampleEntry<a name="4.8.11"></a>
             For any track containing Opus bitstreams, at least one OpusSampleEntry shall be present.
 
             The syntax and semantics of the OpusSampleEntry is shown as follows.
@@ -347,7 +398,7 @@ Table of Contents
             + samplerate:
                 The samplerate field shall be set to 48000&lt&lt16.
 
-        4.7.12 Opus Specific Box<a name="4.7.12"></a>
+        4.8.12 Opus Specific Box<a name="4.8.12"></a>
             Exactly one Opus Specific Box shall be present in each OpusSampleEntry.
             The Opus Specific Box contains the version field and this specification defines version 0 of this box.
             If incompatible changes occured in the fields after the version field within the OpusSpecificBox in the
@@ -356,13 +407,17 @@ Table of Contents
             The syntax and semantics of the Opus Specific Box is shown as follows.
 
             aligned(8) class OpusSpecificBox extends FullBox('dOps', version, dflags){
-                if (flags & 0x000001) {
+                unsigned int(8) OutputChannelCount;
+                if (dflags & 0x000001) {
                     unsigned int(16) PreSkip;
                 }
-                unsigned int(32) InputSampleRate;
-                signed int(16)   OutputGain;
-                unsigned int(8)  OutputChannelCount;
-                unsigned int(8)  ChannelMappingFamily;
+                if (dflags & 0x000002) {
+                    unsigned int(32) InputSampleRate;
+                }
+                if (dflags & 0x000004) {
+                    signed int(16) OutputGain;
+                }
+                unsigned int(8) ChannelMappingFamily;
                 if (ChannelMappingFamily != 0) {
                     unsigned int(8 * (2 + OutputChannelCount)) ChannelMappingTable;
                 }
@@ -376,21 +431,28 @@ Table of Contents
                 The following flags are defined in the dflags:
                     0x000001 pre-skip-present:
                         This flag indicates the presence of the PreSkip field.
-            + PreSkip:
-                The PreSkip field shall be set to the same value as the *Pre-skip* field in the identification header
-                defined in Ogg Opus [4]. Note that the value is stored as big-endian format.
-                This field can be absent after removing Opus samples containing the number of PCM samples more than the
-                number of the priming samples.
-                This field is not used for removing the priming samples at playback.
-            + InputSampleRate:
-                The InputSampleRate field shall be set to the same value as the *Input Sample Rate* field in the
-                identification header defined in Ogg Opus [4]. Note that the value is stored as big-endian format.
-            + OutputGain:
-                The OutputGain field shall be set to the same value as the *Output Gain* field in the identification
-                header define in Ogg Opus [4]. Note that the value is stored as big-endian format.
+                    0x000002 input-sample-rate-present:
+                        This flag indicates the presence of the InputSampleRate field.
+                    0x000004 output-gain-present:
+                        This flag indicates the presence of the OutputGain field.
             + OutputChannelCount:
                 The OutputChannelCount field shall be set to the same value as the *Output Channel Count* field in the
                 identification header defined in Ogg Opus [4].
+            + PreSkip:
+                The PreSkip field shall be set to the same value as the *Pre-skip* field in the identification header
+                defined in Ogg Opus [4]. Note that the value is stored as big-endian format.
+                The PreSkip field can be absent after removing Opus samples containing the number of PCM samples more
+                than of the priming samples.
+                The PreSkip field is not used for removing the priming samples at the whole playback at all since it is
+                informative only, and that task falls on the Edit List Box.
+            + InputSampleRate:
+                The InputSampleRate field shall be set to the same value as the *Input Sample Rate* field in the
+                identification header defined in Ogg Opus [4]. Note that the value is stored as big-endian format.
+                If the InputSampleRate field is absent, process as if it is set to 0, which indicates "unspecified".
+            + OutputGain:
+                The OutputGain field shall be set to the same value as the *Output Gain* field in the identification
+                header define in Ogg Opus [4]. Note that the value is stored as 8.8 fixed-point and big-endian format.
+                If the OutputGain field is absent, process as if it is set to 0.
             + ChannelMappingFamily:
                 The ChannelMappingFamily field shall be set to the same value as the *Channel Mapping Family* field in
                 the identification header defined in Ogg Opus [4].
@@ -398,7 +460,7 @@ Table of Contents
                 The ChannelMappingTable field shall be set to the same octet string as *Channel Mapping Table* field in
                 the identification header defined in Ogg Opus [4].
 
-        4.7.13 Sample Group Description Box<a name="4.7.13"></a>
+        4.8.13 Sample Group Description Box<a name="4.8.13"></a>
             For any track containing Opus bitstreams, at least one Sample Group Description Box shall be present and have
             the grouping_type field set to 'roll'. In addition, the following requirements and restriction are applied.
             + version:
@@ -406,38 +468,39 @@ Table of Contents
             + default_length
                 The default_length field shall be set to 2 if the grouping_type field set to 'roll'.
             + roll_distance:
-                The roll_distance field in any AudioRollRecoveryEntry shall not be set to positive values.
+                The roll_distance field in any AudioRollRecoveryEntry shall not be set to zero and positive values for
+                any Opus sample.
 
             See also 4.5.2 Pre-roll.
 
-        4.7.14 Sample to Group Box<a name="4.7.14"></a>
+        4.8.14 Sample to Group Box<a name="4.8.14"></a>
             For any track containing Opus bitstreams, at least one Sample to Group Box shall be present and have the
             grouping_type field set to 'roll'. In addition, the following requirement is applied.
             + group_description_index:
                 The group_description_index fields shall not be set to 0 if the grouping_type field set to 'roll'.
 
-        4.7.15 Track Extends Box<a name="4.7.15"></a>
+        4.8.15 Track Extends Box<a name="4.8.15"></a>
             For any track containing Opus bitstreams, the following requirement is applied.
             + default_sample_flags:
                 The sample_is_non_sync_sample field shall be set to 0.
 
-        4.7.16 Track Fragment Box<a name="4.7.16"></a>
+        4.8.16 Track Fragment Box<a name="4.8.16"></a>
             For any track containing Opus bitstreams, if any sample is contained in track fragment, the Sample to
             Group Box with the grouping_type field set to 'roll' shall be present for that track fragment.
 
-        4.7.17 Track Fragment Header Box<a name="4.7.17"></a>
+        4.8.17 Track Fragment Header Box<a name="4.8.17"></a>
             For any track containing Opus bitstreams, the following requirement is applied.
             + default_sample_flags:
                 The sample_is_non_sync_sample field shall be set to 0.
 
-        4.7.18 Track Fragment Run Box<a name="4.7.18"></a>
+        4.8.18 Track Fragment Run Box<a name="4.8.18"></a>
             For any track containing Opus bitstreams, the following requirements are applied.
             + first_sample_flags:
                 The sample_is_non_sync_sample field shall be set to 0.
             + sample_flags:
                 The sample_is_non_sync_sample field shall be set to 0.
-<a name="4.8"></a>
-    4.8 Example of Encapsulation
+<a name="4.9"></a>
+    4.9 Example of Encapsulation
         [File]
             size = 10349
             [ftyp: File Type Box]
@@ -465,7 +528,7 @@ Table of Contents
                     creation_time = UTC 2014/09/23, 15:23:21
                     modification_time = UTC 2014/09/23, 15:23:21
                     timescale = 48000
-                    duration = 33600 (00:00:07.000)
+                    duration = 33600 (00:00:00.700)
                     rate = 1.000000
                     volume = 1.000000
                     reserved = 0x0000
@@ -516,7 +579,7 @@ Table of Contents
                         modification_time = UTC 2014/09/23, 15:23:21
                         track_ID = 1
                         reserved = 0x00000000
-                        duration = 33600 (00:00:07.000)
+                        duration = 33600 (00:00:00.700)
                         reserved = 0x00000000
                         reserved = 0x00000000
                         layer = 0
@@ -553,7 +616,7 @@ Table of Contents
                             creation_time = UTC 2014/09/23, 15:23:21
                             modification_time = UTC 2014/09/23, 15:23:21
                             timescale = 48000
-                            duration = 38400 (00:00:08.000)
+                            duration = 38400 (00:00:00.800)
                             language = und
                             pre_defined = 0x0000
                         [hdlr: Handler Reference Box]
@@ -618,10 +681,10 @@ Table of Contents
                                             position = 10071
                                             size = 20
                                             version = 0
-                                            flags = 0x000000
+                                            flags = 0x000006
+                                            OutputChannelCount = 2
                                             InputSampleRate = 44100
                                             OutputGain = 0.000000
-                                            OutputChannelCount = 2
                                             ChannelMappingFamily = 0
                                 [stts: Decoding Time to Sample Box]
                                     position = 10099
