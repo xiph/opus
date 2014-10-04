@@ -208,7 +208,7 @@ void silk_quant_LTP_gains(
     opus_int16                  B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],          /* I/O  (un)quantized LTP gains         */
     opus_int8                   cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook Index                  */
     opus_int8                   *periodicity_index,                         /* O    Periodicity Index               */
-	opus_int32					*sum_gain_dB_Q7,							/* I/O  Cumulative max prediction gain  */
+    opus_int32                  *sum_gain_dB_Q7,                            /* I/O  Cumulative max prediction gain  */
     const opus_int32            W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],  /* I    Error Weights in Q18            */
     opus_int                    mu_Q9,                                      /* I    Mu value (R/D tradeoff)         */
     opus_int                    lowComplexity,                              /* I    Flag for low complexity         */

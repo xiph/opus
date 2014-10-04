@@ -73,13 +73,13 @@ void silk_burg_modified_c(
     rshifts = 32 + 1 + N_BITS_HEAD_ROOM - lz;
     if (rshifts > MAX_RSHIFTS) rshifts = MAX_RSHIFTS;
     if (rshifts < MIN_RSHIFTS) rshifts = MIN_RSHIFTS;
-    
+
     if (rshifts > 0) {
-        C0 = (opus_int32)silk_RSHIFT64(C0_64, rshifts );        
+        C0 = (opus_int32)silk_RSHIFT64(C0_64, rshifts );
     } else {
         C0 = silk_LSHIFT32((opus_int32)C0_64, -rshifts );
     }
-    
+
     CAb[ 0 ] = CAf[ 0 ] = C0 + silk_SMMUL( SILK_FIX_CONST( FIND_LPC_COND_FAC, 32 ), C0 ) + 1;                                /* Q(-rshifts) */
     silk_memset( C_first_row, 0, SILK_MAX_ORDER_LPC * sizeof( opus_int32 ) );
     if( rshifts > 0 ) {

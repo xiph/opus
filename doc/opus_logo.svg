@@ -59,11 +59,11 @@
    y1="95.107399"
    x2="194.53169"
    y2="9.9475983e-14">
-	<stop
+        <stop
    offset="0.0056"
    style="stop-color:#8E8E8E"
    id="stop7" />
-	<stop
+        <stop
    offset="1"
    style="stop-color:#B5B5B5"
    id="stop9" />
@@ -76,11 +76,11 @@
    y1="116.208"
    x2="229.61819"
    y2="164.46291">
-	<stop
+        <stop
    offset="0.0056"
    style="stop-color:#494748"
    id="stop14" />
-	<stop
+        <stop
    offset="1"
    style="stop-color:#000000"
    id="stop16" />
@@ -93,11 +93,11 @@
    y1="115.4395"
    x2="43.9897"
    y2="165.2314">
-	<stop
+        <stop
    offset="0.0056"
    style="stop-color:#494748"
    id="stop21" />
-	<stop
+        <stop
    offset="1"
    style="stop-color:#000000"
    id="stop23" />
@@ -110,11 +110,11 @@
    y1="115.7188"
    x2="311.2847"
    y2="165.2822">
-	<stop
+        <stop
    offset="0.0056"
    style="stop-color:#494748"
    id="stop28" />
-	<stop
+        <stop
    offset="1"
    style="stop-color:#000000"
    id="stop30" />
@@ -127,11 +127,11 @@
    y1="115.5791"
    x2="129.1987"
    y2="204.4863">
-	<stop
+        <stop
    offset="0.0056"
    style="stop-color:#494748"
    id="stop35" />
-	<stop
+        <stop
    offset="1"
    style="stop-color:#000000"
    id="stop37" />

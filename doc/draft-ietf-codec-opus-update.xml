@@ -58,7 +58,7 @@
   <middle>
     <section title="Introduction">
       <t>This document addresses minor issues that were discovered in the reference
-      implementation of the Opus codec that serves as the specification in 
+      implementation of the Opus codec that serves as the specification in
       <xref target="RFC6716">RFC 6716</xref>. Only issues affecting the decoder are
       listed here. An up-to-date implementation of the Opus encoder can be found at
       http://opus-codec.org/. The updated specification remains fully compatible with
@@ -84,7 +84,7 @@
      for( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
          ret  = silk_init_decoder( &channel_state[ n ] );
      }
-+    silk_memset(&((silk_decoder *)decState)->sStereo, 0, 
++    silk_memset(&((silk_decoder *)decState)->sStereo, 0,
 +                sizeof(((silk_decoder *)decState)->sStereo));
 +    /* Not strictly needed, but it's cleaner that way */
 +    ((silk_decoder *)decState)->prev_decode_only_middle = 0;
@@ -218,16 +218,16 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
     in the patch above are split using a backslash character. The backslashes
     at the end of a line and the white space at the beginning
     of the following line are not part of the patch. A properly formatted patch
-    including the three changes above is available at 
+    including the three changes above is available at
     <eref target="http://jmvalin.ca/misc_stuff/opus_update.patch"/>.
     </t>
     </section>
-    
+
     <section title="Downmix to Mono">
       <t>The last issue is not strictly a bug, but it is an issue that has been reported
       when downmixing an Opus decoded stream to mono, whether this is done inside the decoder
       or as a post-processing step on the stereo decoder output. Opus intensity stereo allows
-      optionally coding the two channels 180-degrees out of phase on a per-band basis. 
+      optionally coding the two channels 180-degrees out of phase on a per-band basis.
       This provides better stereo quality than forcing the two channels to be in phase,
       but when the output is downmixed to mono, the energy in the affected bands is cancelled
       sometimes resulting in audible artefacts.

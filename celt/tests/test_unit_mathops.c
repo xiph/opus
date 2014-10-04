@@ -224,7 +224,7 @@ void testexp2(void)
       float error2 = fabs(exp(0.6931471805599453094*x/1024.0)-celt_exp2(x)/65536.0);
       if (error1>0.0002&&error2>0.00004)
       {
-    	 fprintf (stderr, "celt_exp2 failed: x = "WORD", error1 = %f, error2 = %f\n", x,error1,error2);
+         fprintf (stderr, "celt_exp2 failed: x = "WORD", error1 = %f, error2 = %f\n", x,error1,error2);
          ret = 1;
       }
    }

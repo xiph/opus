@@ -32,31 +32,31 @@
 #include <stdlib.h>
 
 double tansig_table[501];
-static inline double tansig_double(double x) 
+static inline double tansig_double(double x)
 {
-	return 2./(1.+exp(-2.*x)) - 1.;
+    return 2./(1.+exp(-2.*x)) - 1.;
 }
 static inline void build_tansig_table()
 {
-	int i;
-	for (i=0;i<501;i++)
-		tansig_table[i] = tansig_double(.04*(i-250));
+    int i;
+    for (i=0;i<501;i++)
+        tansig_table[i] = tansig_double(.04*(i-250));
 }
 
 static inline double tansig_approx(double x)
 {
-	int i;
-	double y, dy;
-	if (x>=10)
-		return 1;
-	if (x<=-10)
-		return -1;
-	i = lrint(25*x);
-	x -= .04*i;
-	y = tansig_table[250+i];
-	dy = 1-y*y;
-	y = y + x*dy*(1 - y*x);
-	return y;
+    int i;
+    double y, dy;
+    if (x>=10)
+        return 1;
+    if (x<=-10)
+        return -1;
+    i = lrint(25*x);
+    x -= .04*i;
+    y = tansig_table[250+i];
+    dy = 1-y*y;
+    y = y + x*dy*(1 - y*x);
+    return y;
 }
 
 inline float randn(float sd)
@@ -75,11 +75,11 @@ inline float randn(float sd)
 
 
 typedef struct {
-	int layers;
-	int *topo;
-	double **weights;
-	double **best_weights;
-	double *in_rate;
+    int layers;
+    int *topo;
+    double **weights;
+    double **best_weights;
+    double *in_rate;
 } MLPTrain;
 
 

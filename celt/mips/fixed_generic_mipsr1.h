@@ -35,38 +35,38 @@
 
 #undef MULT16_32_Q15_ADD
 static inline int MULT16_32_Q15_ADD(int a, int b, int c, int d) {
-	int m;
-	asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
-	asm volatile("madd $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
-	asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
-	return m;
+    int m;
+    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
+    asm volatile("madd $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
+    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
+    return m;
 }
 
 #undef MULT16_32_Q15_SUB
 static inline int MULT16_32_Q15_SUB(int a, int b, int c, int d) {
-	int m;
-	asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
-	asm volatile("msub $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
-	asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
-	return m;
+    int m;
+    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
+    asm volatile("msub $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
+    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
+    return m;
 }
 
 #undef MULT16_16_Q15_ADD
 static inline int MULT16_16_Q15_ADD(int a, int b, int c, int d) {
-	int m;
-	asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
-	asm volatile("madd $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
-	asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
-	return m;
+    int m;
+    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
+    asm volatile("madd $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
+    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
+    return m;
 }
 
 #undef MULT16_16_Q15_SUB
 static inline int MULT16_16_Q15_SUB(int a, int b, int c, int d) {
-	int m;
-	asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
-	asm volatile("msub $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
-	asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
-	return m;
+    int m;
+    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
+    asm volatile("msub $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
+    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
+    return m;
 }
 
 

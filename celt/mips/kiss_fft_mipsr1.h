@@ -37,20 +37,20 @@
 
 #undef S_MUL_ADD
 static inline int S_MUL_ADD(int a, int b, int c, int d) {
-	int m;
-	asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
-	asm volatile("madd $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
-	asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
-	return m;
+    int m;
+    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
+    asm volatile("madd $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
+    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
+    return m;
 }
 
 #undef S_MUL_SUB
 static inline int S_MUL_SUB(int a, int b, int c, int d) {
-	int m;
-	asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
-	asm volatile("msub $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
-	asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
-	return m;
+    int m;
+    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
+    asm volatile("msub $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
+    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
+    return m;
 }
 
 #undef C_MUL

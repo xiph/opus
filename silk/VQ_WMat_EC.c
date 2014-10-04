@@ -55,7 +55,7 @@ void silk_VQ_WMat_EC_c(
     *rate_dist_Q14 = silk_int32_MAX;
     cb_row_Q7 = cb_Q7;
     for( k = 0; k < L; k++ ) {
-	    gain_tmp_Q7 = cb_gain_Q7[k];
+        gain_tmp_Q7 = cb_gain_Q7[k];
 
         diff_Q14[ 0 ] = in_Q14[ 0 ] - silk_LSHIFT( cb_row_Q7[ 0 ], 7 );
         diff_Q14[ 1 ] = in_Q14[ 1 ] - silk_LSHIFT( cb_row_Q7[ 1 ], 7 );
@@ -66,8 +66,8 @@ void silk_VQ_WMat_EC_c(
         /* Weighted rate */
         sum1_Q14 = silk_SMULBB( mu_Q9, cl_Q5[ k ] );
 
-		/* Penalty for too large gain */
-		sum1_Q14 = silk_ADD_LSHIFT32( sum1_Q14, silk_max( silk_SUB32( gain_tmp_Q7, max_gain_Q7 ), 0 ), 10 );
+        /* Penalty for too large gain */
+        sum1_Q14 = silk_ADD_LSHIFT32( sum1_Q14, silk_max( silk_SUB32( gain_tmp_Q7, max_gain_Q7 ), 0 ), 10 );
 
         silk_assert( sum1_Q14 >= 0 );
 
@@ -111,7 +111,7 @@ void silk_VQ_WMat_EC_c(
         if( sum1_Q14 < *rate_dist_Q14 ) {
             *rate_dist_Q14 = sum1_Q14;
             *ind = (opus_int8)k;
-			*gain_Q7 = gain_tmp_Q7;
+            *gain_Q7 = gain_tmp_Q7;
         }
 
         /* Go to next cbk vector */

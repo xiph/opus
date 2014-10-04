@@ -440,7 +440,7 @@ static const kiss_fft_state fft_state48000_960_1 = {
 240,    /* nfft */
 0.004166667f,   /* scale */
 1,      /* shift */
-{5, 48, 3, 16, 4, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, },	/* factors */
+{5, 48, 3, 16, 4, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, },    /* factors */
 fft_bitrev240,  /* bitrev */
 fft_twiddles48000_960,  /* bitrev */
 };
@@ -452,7 +452,7 @@ static const kiss_fft_state fft_state48000_960_2 = {
 120,    /* nfft */
 0.008333333f,   /* scale */
 2,      /* shift */
-{5, 24, 3, 8, 2, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, },	/* factors */
+{5, 24, 3, 8, 2, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, },    /* factors */
 fft_bitrev120,  /* bitrev */
 fft_twiddles48000_960,  /* bitrev */
 };
@@ -464,7 +464,7 @@ static const kiss_fft_state fft_state48000_960_3 = {
 60,     /* nfft */
 0.016666667f,   /* scale */
 3,      /* shift */
-{5, 12, 3, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },	/* factors */
+{5, 12, 3, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },    /* factors */
 fft_bitrev60,   /* bitrev */
 fft_twiddles48000_960,  /* bitrev */
 };

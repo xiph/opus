@@ -9,12 +9,12 @@ in the Makefile.
 An up-to-date implementation conforming to this standard is available in a
 Git repository at git://git.xiph.org/opus.git or on a website at:
 http://opus-codec.org/
-However, although that implementation is expected to remain conformant 
-with the standard, it is the code in this RFC that shall remain normative. 
+However, although that implementation is expected to remain conformant
+with the standard, it is the code in this RFC that shall remain normative.
 To build from the git repository instead of using this RFC, follow these
 steps:
 
-1) Clone the repository (latest implementation of this standard at the time 
+1) Clone the repository (latest implementation of this standard at the time
 of publication)
 
 % git clone git://git.opus-codec.org/opus.git

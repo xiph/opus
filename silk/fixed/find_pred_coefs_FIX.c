@@ -119,16 +119,16 @@ void silk_find_pred_coefs_FIX(
 
         silk_memset( psEncCtrl->LTPCoef_Q14, 0, psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( opus_int16 ) );
         psEncCtrl->LTPredCodGain_Q7 = 0;
-		psEnc->sCmn.sum_log_gain_Q7 = 0;
+        psEnc->sCmn.sum_log_gain_Q7 = 0;
     }
 
     /* Limit on total predictive coding gain */
     if( psEnc->sCmn.first_frame_after_reset ) {
         minInvGain_Q30 = SILK_FIX_CONST( 1.0f / MAX_PREDICTION_POWER_GAIN_AFTER_RESET, 30 );
-    } else {        
+    } else {
         minInvGain_Q30 = silk_log2lin( silk_SMLAWB( 16 << 7, (opus_int32)psEncCtrl->LTPredCodGain_Q7, SILK_FIX_CONST( 1.0 / 3, 16 ) ) );      /* Q16 */
-        minInvGain_Q30 = silk_DIV32_varQ( minInvGain_Q30, 
-            silk_SMULWW( SILK_FIX_CONST( MAX_PREDICTION_POWER_GAIN, 0 ), 
+        minInvGain_Q30 = silk_DIV32_varQ( minInvGain_Q30,
+            silk_SMULWW( SILK_FIX_CONST( MAX_PREDICTION_POWER_GAIN, 0 ),
                 silk_SMLAWB( SILK_FIX_CONST( 0.25, 18 ), SILK_FIX_CONST( 0.75, 18 ), psEncCtrl->coding_quality_Q14 ) ), 14 );
     }
 

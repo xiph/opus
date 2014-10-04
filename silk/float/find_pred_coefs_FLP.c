@@ -91,13 +91,13 @@ void silk_find_pred_coefs_FLP(
         }
         silk_memset( psEncCtrl->LTPCoef, 0, psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( silk_float ) );
         psEncCtrl->LTPredCodGain = 0.0f;
-		psEnc->sCmn.sum_log_gain_Q7 = 0;
+        psEnc->sCmn.sum_log_gain_Q7 = 0;
     }
 
     /* Limit on total predictive coding gain */
     if( psEnc->sCmn.first_frame_after_reset ) {
         minInvGain = 1.0f / MAX_PREDICTION_POWER_GAIN_AFTER_RESET;
-    } else {        
+    } else {
         minInvGain = (silk_float)pow( 2, psEncCtrl->LTPredCodGain / 3 ) /  MAX_PREDICTION_POWER_GAIN;
         minInvGain /= 0.25f + 0.75f * psEncCtrl->coding_quality;
     }

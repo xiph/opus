@@ -419,7 +419,7 @@
         </figure>
 
         <t>
-          <xref target='opus-packetization'/> shows supported frame sizes in 
+          <xref target='opus-packetization'/> shows supported frame sizes in
           milliseconds of encoded speech or audio data for the speech and audio modes
           (Mode) and sampling rates (fs) of Opus and shows how the timestamp is
           incremented for packetization (ts incr). If the Opus encoder
@@ -427,7 +427,7 @@
           increment is the sum of the increments for the individual frames.
         </t>
 
-        <texttable anchor='opus-packetization' title="Supported Opus frame 
+        <texttable anchor='opus-packetization' title="Supported Opus frame
          sizes and timestamp increments">
             <ttcol align='center'>Mode</ttcol>
             <ttcol align='center'>fs</ttcol>
@@ -517,7 +517,7 @@
               usage and encoding complexity, so an encoder SHOULD NOT encode
               frequencies above the audio bandwidth specified by maxplaybackrate.
               This parameter can take any value between 8000 and 48000, although
-              commonly the value will match one of the Opus bandwidths 
+              commonly the value will match one of the Opus bandwidths
               (<xref target="bandwidth_definitions"/>).
               By default, the receiver is assumed to have no limitations, i.e. 48000.
               <vspace blankLines='1'/>
@@ -531,7 +531,7 @@
               This parameter is useful to avoid wasting receiver resources by operating the audio
               processing pipeline (e.g. echo cancellation) at a higher rate than necessary.
               This parameter can take any value between 8000 and 48000, although
-              commonly the value will match one of the Opus bandwidths 
+              commonly the value will match one of the Opus bandwidths
               (<xref target="bandwidth_definitions"/>).
               By default, the sender is assumed to have no limitations, i.e. 48000.
               <vspace blankLines='1'/>
@@ -708,9 +708,9 @@
             mapped to "a=ptime" and "a=maxptime" attributes, respectively, in the
             SDP.</t>
 
-            <t>The OPTIONAL media type parameters "maxaveragebitrate", 
-            "maxplaybackrate", "minptime", "stereo", "cbr", "useinbandfec", and 
-            "usedtx", when present, MUST be included in the "a=fmtp" attribute 
+            <t>The OPTIONAL media type parameters "maxaveragebitrate",
+            "maxplaybackrate", "minptime", "stereo", "cbr", "useinbandfec", and
+            "usedtx", when present, MUST be included in the "a=fmtp" attribute
             in the SDP, expressed as a media type string in the form of a
             semicolon-separated list of parameter=value pairs (e.g.,
             maxaveragebitrate=20000). They MUST NOT be specified in an
@@ -838,7 +838,7 @@
             of the other side MUST NOT send with an average bitrate higher than
             "maxaveragebitrate" as it might overload the network and/or
             receiver. The "maxaveragebitrate" parameter typically will not
-            compromise interoperability; however, some values might cause 
+            compromise interoperability; however, some values might cause
             application performance to suffer, and ought to be set with
             care.</t>
 

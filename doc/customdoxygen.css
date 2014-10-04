@@ -1,62 +1,62 @@
 /* The standard CSS for doxygen */
 
 body, table, div, p, dl {
-	font-family: Lucida Grande, Verdana, Geneva, Arial, sans-serif;
-	font-size: 13px;
-	line-height: 1.3;
+        font-family: Lucida Grande, Verdana, Geneva, Arial, sans-serif;
+        font-size: 13px;
+        line-height: 1.3;
 }
 
 /* @group Heading Levels */
 
 h1 {
-	font-size: 150%;
+        font-size: 150%;
 }
 
 .title {
-	font-size: 150%;
-	font-weight: bold;
-	margin: 10px 2px;
+        font-size: 150%;
+        font-weight: bold;
+        margin: 10px 2px;
 }
 
 h2 {
-	font-size: 120%;
+        font-size: 120%;
 }
 
 h3 {
-	font-size: 100%;
+        font-size: 100%;
 }
 
 dt {
-	font-weight: bold;
+        font-weight: bold;
 }
 
 div.multicol {
-	-moz-column-gap: 1em;
-	-webkit-column-gap: 1em;
-	-moz-column-count: 3;
-	-webkit-column-count: 3;
+        -moz-column-gap: 1em;
+        -webkit-column-gap: 1em;
+        -moz-column-count: 3;
+        -webkit-column-count: 3;
 }
 
 p.startli, p.startdd, p.starttd {
-	margin-top: 2px;
+        margin-top: 2px;
 }
 
 p.endli {
-	margin-bottom: 0px;
+        margin-bottom: 0px;
 }
 
 p.enddd {
-	margin-bottom: 4px;
+        margin-bottom: 4px;
 }
 
 p.endtd {
-	margin-bottom: 2px;
+        margin-bottom: 2px;
 }
 
 /* @end */
 
 caption {
-	font-weight: bold;
+        font-weight: bold;
 }
 
 span.legend {
@@ -70,45 +70,45 @@ h3.version {
 }
 
 div.qindex, div.navtab{
-	background-color: #F1F1F1;
-	border: 1px solid #BDBDBD;
-	text-align: center;
+        background-color: #F1F1F1;
+        border: 1px solid #BDBDBD;
+        text-align: center;
 }
 
 div.qindex, div.navpath {
-	width: 100%;
-	line-height: 140%;
+        width: 100%;
+        line-height: 140%;
 }
 
 div.navtab {
-	margin-right: 15px;
+        margin-right: 15px;
 }
 
 /* @group Link Styling */
 
 a {
-	color: #646464;
-	font-weight: normal;
-	text-decoration: none;
+        color: #646464;
+        font-weight: normal;
+        text-decoration: none;
 }
 
 .contents a:visited {
-	color: #747474;
+        color: #747474;
 }
 
 a:hover {
-	text-decoration: underline;
+        text-decoration: underline;
 }
 
 a.qindex {
-	font-weight: bold;
+        font-weight: bold;
 }
 
 a.qindexHL {
-	font-weight: bold;
-	background-color: #B8B8B8;
-	color: #ffffff;
-	border: 1px double #A8A8A8;
+        font-weight: bold;
+        background-color: #B8B8B8;
+        color: #ffffff;
+        border: 1px double #A8A8A8;
 }
 
 .contents a.qindexHL:visited {
@@ -116,181 +116,181 @@ a.qindexHL {
 }
 
 a.el {
-	font-weight: bold;
+        font-weight: bold;
 }
 
 a.elRef {
 }
 
 a.code, a.code:visited {
-	color: #4665A2; 
+        color: #4665A2;
 }
 
 a.codeRef, a.codeRef:visited {
-	color: #4665A2; 
+        color: #4665A2;
 }
 
 /* @end */
 
 dl.el {
-	margin-left: -1cm;
+        margin-left: -1cm;
 }
 
 .fragment {
-	font-family: monospace, fixed;
-	font-size: 105%;
+        font-family: monospace, fixed;
+        font-size: 105%;
 }
 
 pre.fragment {
-	border: 1px solid #D5D5D5;
-	background-color: #FCFCFC;
-	padding: 4px 6px;
-	margin: 4px 8px 4px 2px;
-	overflow: auto;
-	word-wrap: break-word;
-	font-size:  9pt;
-	line-height: 125%;
+        border: 1px solid #D5D5D5;
+        background-color: #FCFCFC;
+        padding: 4px 6px;
+        margin: 4px 8px 4px 2px;
+        overflow: auto;
+        word-wrap: break-word;
+        font-size:  9pt;
+        line-height: 125%;
 }
 
 div.ah {
-	background-color: black;
-	font-weight: bold;
-	color: #ffffff;
-	margin-bottom: 3px;
-	margin-top: 3px;
-	padding: 0.2em;
-	border: solid thin #333;
-	border-radius: 0.5em;
-	-webkit-border-radius: .5em;
-	-moz-border-radius: .5em;
-	box-shadow: 2px 2px 3px #999;
-	-webkit-box-shadow: 2px 2px 3px #999;
-	-moz-box-shadow: rgba(0, 0, 0, 0.15) 2px 2px 2px;
-	background-image: -webkit-gradient(linear, left top, left bottom, from(#eee), to(#000),color-stop(0.3, #444));
-	background-image: -moz-linear-gradient(center top, #eee 0%, #444 40%, #000);
+        background-color: black;
+        font-weight: bold;
+        color: #ffffff;
+        margin-bottom: 3px;
+        margin-top: 3px;
+        padding: 0.2em;
+        border: solid thin #333;
+        border-radius: 0.5em;
+        -webkit-border-radius: .5em;
+        -moz-border-radius: .5em;
+        box-shadow: 2px 2px 3px #999;
+        -webkit-box-shadow: 2px 2px 3px #999;
+        -moz-box-shadow: rgba(0, 0, 0, 0.15) 2px 2px 2px;
+        background-image: -webkit-gradient(linear, left top, left bottom, from(#eee), to(#000),color-stop(0.3, #444));
+        background-image: -moz-linear-gradient(center top, #eee 0%, #444 40%, #000);
 }
 
 div.groupHeader {
-	margin-left: 16px;
-	margin-top: 12px;
-	font-weight: bold;
+        margin-left: 16px;
+        margin-top: 12px;
+        font-weight: bold;
 }
 
 div.groupText {
-	margin-left: 16px;
-	font-style: italic;
+        margin-left: 16px;
+        font-style: italic;
 }
 
 body {
-	background-color: white;
-	color: black;
+        background-color: white;
+        color: black;
         margin: 0;
 }
 
 div.contents {
-	margin-top: 10px;
-	margin-left: 8px;
-	margin-right: 8px;
+        margin-top: 10px;
+        margin-left: 8px;
+        margin-right: 8px;
 }
 
 td.indexkey {
-	background-color: #F1F1F1;
-	font-weight: bold;
-	border: 1px solid #D5D5D5;
-	margin: 2px 0px 2px 0;
-	padding: 2px 10px;
+        background-color: #F1F1F1;
+        font-weight: bold;
+        border: 1px solid #D5D5D5;
+        margin: 2px 0px 2px 0;
+        padding: 2px 10px;
         white-space: nowrap;
         vertical-align: top;
 }
 
 td.indexvalue {
-	background-color: #F1F1F1;
-	border: 1px solid #D5D5D5;
-	padding: 2px 10px;
-	margin: 2px 0px;
+        background-color: #F1F1F1;
+        border: 1px solid #D5D5D5;
+        padding: 2px 10px;
+        margin: 2px 0px;
 }
 
 tr.memlist {
-	background-color: #F2F2F2;
+        background-color: #F2F2F2;
 }
 
 p.formulaDsp {
-	text-align: center;
+        text-align: center;
 }
 
 img.formulaDsp {
-	
+
 }
 
 img.formulaInl {
-	vertical-align: middle;
+        vertical-align: middle;
 }
 
 div.center {
-	text-align: center;
+        text-align: center;
         margin-top: 0px;
         margin-bottom: 0px;
         padding: 0px;
 }
 
 div.center img {
-	border: 0px;
+        border: 0px;
 }
 
 address.footer {
-	text-align: right;
-	padding-right: 12px;
+        text-align: right;
+        padding-right: 12px;
 }
 
 img.footer {
-	border: 0px;
-	vertical-align: middle;
+        border: 0px;
+        vertical-align: middle;
 }
 
 /* @group Code Colorization */
 
 span.keyword {
-	color: #008000
+        color: #008000
 }
 
 span.keywordtype {
-	color: #604020
+        color: #604020
 }
 
 span.keywordflow {
-	color: #e08000
+        color: #e08000
 }
 
 span.comment {
-	color: #800000
+        color: #800000
 }
 
 span.preprocessor {
-	color: #806020
+        color: #806020
 }
 
 span.stringliteral {
-	color: #002080
+        color: #002080
 }
 
 span.charliteral {
-	color: #008080
+        color: #008080
 }
 
-span.vhdldigit { 
-	color: #ff00ff 
+span.vhdldigit {
+        color: #ff00ff
 }
 
-span.vhdlchar { 
-	color: #000000 
+span.vhdlchar {
+        color: #000000
 }
 
-span.vhdlkeyword { 
-	color: #700070 
+span.vhdlkeyword {
+        color: #700070
 }
 
-span.vhdllogic { 
-	color: #ff0000 
+span.vhdllogic {
+        color: #ff0000
 }
 
 blockquote {
@@ -304,71 +304,71 @@ blockquote {
 
 /*
 .search {
-	color: #003399;
-	font-weight: bold;
+        color: #003399;
+        font-weight: bold;
 }
 
 form.search {
-	margin-bottom: 0px;
-	margin-top: 0px;
+        margin-bottom: 0px;
+        margin-top: 0px;
 }
 
 input.search {
-	font-size: 75%;
-	color: #000080;
-	font-weight: normal;
-	background-color: #e8eef2;
+        font-size: 75%;
+        color: #000080;
+        font-weight: normal;
+        background-color: #e8eef2;
 }
 */
 
 td.tiny {
-	font-size: 75%;
+        font-size: 75%;
 }
 
 .dirtab {
-	padding: 4px;
-	border-collapse: collapse;
-	border: 1px solid #BDBDBD;
+        padding: 4px;
+        border-collapse: collapse;
+        border: 1px solid #BDBDBD;
 }
 
 th.dirtab {
-	background: #F1F1F1;
-	font-weight: bold;
+        background: #F1F1F1;
+        font-weight: bold;
 }
 
 hr {
-	height: 0px;
-	border: none;
-	border-top: 1px solid #7A7A7A;
+        height: 0px;
+        border: none;
+        border-top: 1px solid #7A7A7A;
 }
 
 hr.footer {
-	height: 1px;
+        height: 1px;
 }
 
 /* @group Member Descriptions */
 
 table.memberdecls {
-	border-spacing: 0px;
-	padding: 0px;
+        border-spacing: 0px;
+        padding: 0px;
 }
 
 .mdescLeft, .mdescRight,
 .memItemLeft, .memItemRight,
 .memTemplItemLeft, .memTemplItemRight, .memTemplParams {
-	background-color: #FAFAFA;
-	border: none;
-	margin: 4px;
-	padding: 1px 0 0 8px;
+        background-color: #FAFAFA;
+        border: none;
+        margin: 4px;
+        padding: 1px 0 0 8px;
 }
 
 .mdescLeft, .mdescRight {
-	padding: 0px 8px 4px 8px;
-	color: #555;
+        padding: 0px 8px 4px 8px;
+        color: #555;
 }
 
 .memItemLeft, .memItemRight, .memTemplParams {
-	border-top: 1px solid #D5D5D5;
+        border-top: 1px solid #D5D5D5;
 }
 
 .memItemLeft, .memTemplItemLeft {
@@ -376,11 +376,11 @@ table.memberdecls {
 }
 
 .memItemRight {
-	width: 100%;
+        width: 100%;
 }
 
 .memTemplParams {
-	color: #747474;
+        color: #747474;
         white-space: nowrap;
 }
 
@@ -391,29 +391,29 @@ table.memberdecls {
 /* Styles for detailed member documentation */
 
 .memtemplate {
-	font-size: 80%;
-	color: #747474;
-	font-weight: normal;
-	margin-left: 9px;
+        font-size: 80%;
+        color: #747474;
+        font-weight: normal;
+        margin-left: 9px;
 }
 
 .memnav {
-	background-color: #F1F1F1;
-	border: 1px solid #BDBDBD;
-	text-align: center;
-	margin: 2px;
-	margin-right: 15px;
-	padding: 2px;
+        background-color: #F1F1F1;
+        border: 1px solid #BDBDBD;
+        text-align: center;
+        margin: 2px;
+        margin-right: 15px;
+        padding: 2px;
 }
 
 .mempage {
-	width: 100%;
+        width: 100%;
 }
 
 .memitem {
-	padding: 0;
-	margin-bottom: 10px;
-	margin-right: 5px;
+        padding: 0;
+        margin-bottom: 10px;
+        margin-right: 5px;
 }
 
 .memname {
@@ -449,9 +449,9 @@ table.memberdecls {
 }
 
 .memdoc, dl.reflist dd {
-        border-bottom: 1px solid #C0C0C0;      
-        border-left: 1px solid #C0C0C0;      
-        border-right: 1px solid #C0C0C0; 
+        border-bottom: 1px solid #C0C0C0;
+        border-left: 1px solid #C0C0C0;
+        border-right: 1px solid #C0C0C0;
         padding: 2px 5px;
         background-color: #FCFCFC;
         border-top-width: 0;
@@ -481,35 +481,35 @@ dl.reflist dd {
 }
 
 .paramkey {
-	text-align: right;
+        text-align: right;
 }
 
 .paramtype {
-	white-space: nowrap;
+        white-space: nowrap;
 }
 
 .paramname {
-	color: #602020;
-	white-space: nowrap;
+        color: #602020;
+        white-space: nowrap;
 }
 .paramname em {
-	font-style: normal;
+        font-style: normal;
 }
 
 .params, .retval, .exception, .tparams {
         border-spacing: 6px 2px;
-}       
+}
 
 .params .paramname, .retval .paramname {
         font-weight: bold;
         vertical-align: top;
 }
-        
+
 .params .paramtype {
         font-style: italic;
         vertical-align: top;
-}       
-        
+}
+
 .params .paramdir {
         font-family: "courier new",courier,monospace;
         vertical-align: top;
@@ -525,22 +525,22 @@ dl.reflist dd {
 /* for the tree view */
 
 .ftvtree {
-	font-family: sans-serif;
-	margin: 0px;
+        font-family: sans-serif;
+        margin: 0px;
 }
 
 /* these are for tree view when used as main index */
 
 .directory {
-	font-size: 9pt;
-	font-weight: bold;
-	margin: 5px;
+        font-size: 9pt;
+        font-weight: bold;
+        margin: 5px;
 }
 
 .directory h3 {
-	margin: 0px;
-	margin-top: 1em;
-	font-size: 11pt;
+        margin: 0px;
+        margin-top: 1em;
+        font-size: 11pt;
 }
 
 /*
@@ -552,62 +552,62 @@ proper pixel height of your image.
 
 /*
 .directory h3.swap {
-	height: 61px;
-	background-repeat: no-repeat;
-	background-image: url("yourimage.gif");
+        height: 61px;
+        background-repeat: no-repeat;
+        background-image: url("yourimage.gif");
 }
 .directory h3.swap span {
-	display: none;
+        display: none;
 }
 */
 
 .directory > h3 {
-	margin-top: 0;
+        margin-top: 0;
 }
 
 .directory p {
-	margin: 0px;
-	white-space: nowrap;
+        margin: 0px;
+        white-space: nowrap;
 }
 
 .directory div {
-	display: none;
-	margin: 0px;
+        display: none;
+        margin: 0px;
 }
 
 .directory img {
-	vertical-align: -30%;
+        vertical-align: -30%;
 }
 
 /* these are for tree view when not used as main index */
 
 .directory-alt {
-	font-size: 100%;
-	font-weight: bold;
+        font-size: 100%;
+        font-weight: bold;
 }
 
 .directory-alt h3 {
-	margin: 0px;
-	margin-top: 1em;
-	font-size: 11pt;
+        margin: 0px;
+        margin-top: 1em;
+        font-size: 11pt;
 }
 
 .directory-alt > h3 {
-	margin-top: 0;
+        margin-top: 0;
 }
 
 .directory-alt p {
-	margin: 0px;
-	white-space: nowrap;
+        margin: 0px;
+        white-space: nowrap;
 }
 
 .directory-alt div {
-	display: none;
-	margin: 0px;
+        display: none;
+        margin: 0px;
 }
 
 .directory-alt img {
-	vertical-align: -30%;
+        vertical-align: -30%;
 }
 
 /* @end */
@@ -617,27 +617,27 @@ div.dynheader {
 }
 
 address {
-	font-style: normal;
-	color: #464646;
+        font-style: normal;
+        color: #464646;
 }
 
 table.doxtable {
-	border-collapse:collapse;
+        border-collapse:collapse;
         margin-top: 4px;
         margin-bottom: 4px;
 }
 
 table.doxtable td, table.doxtable th {
-	border: 1px solid #4A4A4A;
-	padding: 3px 7px 2px;
+        border: 1px solid #4A4A4A;
+        padding: 3px 7px 2px;
 }
 
 table.doxtable th {
-	background-color: #5B5B5B;
-	color: #FFFFFF;
-	font-size: 110%;
-	padding-bottom: 4px;
-	padding-top: 5px;
+        background-color: #5B5B5B;
+        color: #FFFFFF;
+        font-size: 110%;
+        padding-bottom: 4px;
+        padding-top: 5px;
 }
 
 table.fieldtable {
@@ -693,52 +693,52 @@ table.fieldtable {
 
 
 .tabsearch {
-	top: 0px;
-	left: 10px;
-	height: 36px;
-	background-image: url('tab_b.png');
-	z-index: 101;
-	overflow: hidden;
-	font-size: 13px;
+        top: 0px;
+        left: 10px;
+        height: 36px;
+        background-image: url('tab_b.png');
+        z-index: 101;
+        overflow: hidden;
+        font-size: 13px;
 }
 
 .navpath ul
 {
-	font-size: 11px;
-	background-image:url('tab_b.png');
-	background-repeat:repeat-x;
-	height:30px;
-	line-height:30px;
-	color:#ABABAB;
-	border:solid 1px #D3D3D3;
-	overflow:hidden;
-	margin:0px;
-	padding:0px;
+        font-size: 11px;
+        background-image:url('tab_b.png');
+        background-repeat:repeat-x;
+        height:30px;
+        line-height:30px;
+        color:#ABABAB;
+        border:solid 1px #D3D3D3;
+        overflow:hidden;
+        margin:0px;
+        padding:0px;
 }
 
 .navpath li
 {
-	list-style-type:none;
-	float:left;
-	padding-left:10px;
-	padding-right:15px;
-	background-image:url('bc_s.png');
-	background-repeat:no-repeat;
-	background-position:right;
-	color:#595959;
+        list-style-type:none;
+        float:left;
+        padding-left:10px;
+        padding-right:15px;
+        background-image:url('bc_s.png');
+        background-repeat:no-repeat;
+        background-position:right;
+        color:#595959;
 }
 
 .navpath li.navelem a
 {
-	height:32px;
-	display:block;
-	text-decoration: none;
-	outline: none;
+        height:32px;
+        display:block;
+        text-decoration: none;
+        outline: none;
 }
 
 .navpath li.navelem a:hover
 {
-	color:#929292;
+        color:#929292;
 }
 
 .navpath li.footer
@@ -757,44 +757,44 @@ table.fieldtable {
 
 div.summary
 {
-	float: right;
-	font-size: 8pt;
-	padding-right: 5px;
-	width: 50%;
-	text-align: right;
-}       
+        float: right;
+        font-size: 8pt;
+        padding-right: 5px;
+        width: 50%;
+        text-align: right;
+}
 
 div.summary a
 {
-	white-space: nowrap;
+        white-space: nowrap;
 }
 
 div.ingroups
 {
-	margin-left: 5px;
-	font-size: 8pt;
-	padding-left: 5px;
-	width: 50%;
-	text-align: left;
+        margin-left: 5px;
+        font-size: 8pt;
+        padding-left: 5px;
+        width: 50%;
+        text-align: left;
 }
 
 div.ingroups a
 {
-	white-space: nowrap;
+        white-space: nowrap;
 }
 
 div.header
 {
         background-image:url('nav_h.png');
         background-repeat:repeat-x;
-	background-color: #FAFAFA;
-	margin:  0px;
-	border-bottom: 1px solid #D5D5D5;
+        background-color: #FAFAFA;
+        margin:  0px;
+        border-bottom: 1px solid #D5D5D5;
 }
 
 div.headertitle
 {
-	padding: 5px 5px 5px 7px;
+        padding: 5px 5px 5px 7px;
 }
 
 dl
@@ -845,49 +845,49 @@ dl.bug
 }
 
 dl.section dd {
-	margin-bottom: 6px;
+        margin-bottom: 6px;
 }
 
 
 #projectlogo
 {
-	text-align: center;
-	vertical-align: bottom;
-	border-collapse: separate;
+        text-align: center;
+        vertical-align: bottom;
+        border-collapse: separate;
 }
- 
+
 #projectlogo img
-{ 
-	border: 0px none;
+{
+        border: 0px none;
 }
- 
+
 #projectname
 {
-	font: 300% Tahoma, Arial,sans-serif;
-	margin: 0px;
-	padding: 2px 0px;
+        font: 300% Tahoma, Arial,sans-serif;
+        margin: 0px;
+        padding: 2px 0px;
 }
-    
+
 #projectbrief
 {
-	font: 120% Tahoma, Arial,sans-serif;
-	margin: 0px;
-	padding: 0px;
+        font: 120% Tahoma, Arial,sans-serif;
+        margin: 0px;
+        padding: 0px;
 }
 
 #projectnumber
 {
-	font: 100% Tahoma, Arial,sans-serif;
-	margin: 0px;
-	padding: 0px;
+        font: 100% Tahoma, Arial,sans-serif;
+        margin: 0px;
+        padding: 0px;
 }
 
 #titlearea
 {
-	padding: 0px;
-	margin: 0px;
-	width: 100%;
-	border-bottom: 1px solid #848484;
+        padding: 0px;
+        margin: 0px;
+        width: 100%;
+        border-bottom: 1px solid #848484;
 }
 
 .image
@@ -907,12 +907,12 @@ dl.section dd {
 
 .caption
 {
-	font-weight: bold;
+        font-weight: bold;
 }
 
 div.zoom
 {
-	border: 1px solid #AFAFAF;
+        border: 1px solid #AFAFAF;
 }
 
 dl.citelist {
@@ -953,7 +953,7 @@ div.toc li {
 
 div.toc h3 {
         font: bold 12px/1.2 Arial,FreeSans,sans-serif;
-	color: #747474;
+        color: #747474;
         border-bottom: 0 none;
         margin: 0;
 }
@@ -962,7 +962,7 @@ div.toc ul {
         list-style: none outside none;
         border: medium none;
         padding: 0px;
-}       
+}
 
 div.toc li.level1 {
         margin-left: 0px;
@@ -1009,4 +1009,3 @@ div.toc li.level4 {
     word-wrap: break-word; /* IE 5.5+ */
   }
 }
-

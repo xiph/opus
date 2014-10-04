@@ -10,7 +10,7 @@
 - Verify 'make distcheck' produces a tarball with
   the desired name.
 - Push tag to public repo.
-- Upload source package 'opus-${version}.tar.gz' 
+- Upload source package 'opus-${version}.tar.gz'
  - Add to https://svn.xiph.org/releases/opus/
  - Update checksum files
  - svn commit

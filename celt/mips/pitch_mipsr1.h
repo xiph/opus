@@ -46,11 +46,11 @@ static inline void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, c
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
    for (j=0;j<N;j++)
    {
-	  asm volatile("MADD $ac1, %0, %1" : : "r" ((int)x[j]), "r" ((int)y01[j]));
-	  asm volatile("MADD $ac2, %0, %1" : : "r" ((int)x[j]), "r" ((int)y02[j]));
-	  ++j;
-	  asm volatile("MADD $ac1, %0, %1" : : "r" ((int)x[j]), "r" ((int)y01[j]));
-	  asm volatile("MADD $ac2, %0, %1" : : "r" ((int)x[j]), "r" ((int)y02[j]));
+      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)x[j]), "r" ((int)y01[j]));
+      asm volatile("MADD $ac2, %0, %1" : : "r" ((int)x[j]), "r" ((int)y02[j]));
+      ++j;
+      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)x[j]), "r" ((int)y01[j]));
+      asm volatile("MADD $ac2, %0, %1" : : "r" ((int)x[j]), "r" ((int)y02[j]));
    }
    asm volatile ("mflo %0, $ac1": "=r"(xy01));
    asm volatile ("mflo %0, $ac2": "=r"(xy02));

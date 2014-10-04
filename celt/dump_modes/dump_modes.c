@@ -171,18 +171,18 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          fprintf(file, "#define FFT_STATE%d_%d_%d\n", mode->Fs, mdctSize, k);
          fprintf (file, "static const kiss_fft_state fft_state%d_%d_%d = {\n",
                mode->Fs, mdctSize, k);
-         fprintf (file, "%d,\t/* nfft */\n", mode->mdct.kfft[k]->nfft);
-         fprintf (file, WORD16 ",\t/* scale */\n", mode->mdct.kfft[k]->scale);
+         fprintf (file, "%d,    /* nfft */\n", mode->mdct.kfft[k]->nfft);
+         fprintf (file, WORD16 ",    /* scale */\n", mode->mdct.kfft[k]->scale);
 #ifdef FIXED_POINT
-         fprintf (file, "%d,\t/* scale_shift */\n", mode->mdct.kfft[k]->scale_shift);
+         fprintf (file, "%d,    /* scale_shift */\n", mode->mdct.kfft[k]->scale_shift);
 #endif
-         fprintf (file, "%d,\t/* shift */\n", mode->mdct.kfft[k]->shift);
+         fprintf (file, "%d,    /* shift */\n", mode->mdct.kfft[k]->shift);
          fprintf (file, "{");
          for (j=0;j<2*MAXFACTORS;j++)
             fprintf (file, "%d, ", mode->mdct.kfft[k]->factors[j]);
-         fprintf (file, "},\t/* factors */\n");
-         fprintf (file, "fft_bitrev%d,\t/* bitrev */\n", mode->mdct.kfft[k]->nfft);
-         fprintf (file, "fft_twiddles%d_%d,\t/* bitrev */\n", mode->Fs, mdctSize);
+         fprintf (file, "},    /* factors */\n");
+         fprintf (file, "fft_bitrev%d,    /* bitrev */\n", mode->mdct.kfft[k]->nfft);
+         fprintf (file, "fft_twiddles%d_%d,    /* bitrev */\n", mode->Fs, mdctSize);
          fprintf (file, "};\n");
 
          fprintf(file, "#endif\n");
@@ -208,37 +208,37 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
 
       /* Print the actual mode data */
       fprintf(file, "static const CELTMode mode%d_%d_%d = {\n", mode->Fs, mdctSize, mode->overlap);
-      fprintf(file, INT32 ",\t/* Fs */\n", mode->Fs);
-      fprintf(file, "%d,\t/* overlap */\n", mode->overlap);
-      fprintf(file, "%d,\t/* nbEBands */\n", mode->nbEBands);
-      fprintf(file, "%d,\t/* effEBands */\n", mode->effEBands);
+      fprintf(file, INT32 ",    /* Fs */\n", mode->Fs);
+      fprintf(file, "%d,    /* overlap */\n", mode->overlap);
+      fprintf(file, "%d,    /* nbEBands */\n", mode->nbEBands);
+      fprintf(file, "%d,    /* effEBands */\n", mode->effEBands);
       fprintf(file, "{");
       for (j=0;j<4;j++)
          fprintf(file, WORD16 ", ", mode->preemph[j]);
-      fprintf(file, "},\t/* preemph */\n");
+      fprintf(file, "},    /* preemph */\n");
       if (standard)
-         fprintf(file, "eband5ms,\t/* eBands */\n");
+         fprintf(file, "eband5ms,    /* eBands */\n");
       else
-         fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mdctSize);
+         fprintf(file, "eBands%d_%d,    /* eBands */\n", mode->Fs, mdctSize);
 
-      fprintf(file, "%d,\t/* maxLM */\n", mode->maxLM);
-      fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
-      fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
+      fprintf(file, "%d,    /* maxLM */\n", mode->maxLM);
+      fprintf(file, "%d,    /* nbShortMdcts */\n", mode->nbShortMdcts);
+      fprintf(file, "%d,    /* shortMdctSize */\n", mode->shortMdctSize);
 
-      fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
+      fprintf(file, "%d,    /* nbAllocVectors */\n", mode->nbAllocVectors);
       if (standard)
-         fprintf(file, "band_allocation,\t/* allocVectors */\n");
+         fprintf(file, "band_allocation,    /* allocVectors */\n");
       else
-         fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mdctSize);
+         fprintf(file, "allocVectors%d_%d,    /* allocVectors */\n", mode->Fs, mdctSize);
 
-      fprintf(file, "logN%d,\t/* logN */\n", framerate);
-      fprintf(file, "window%d,\t/* window */\n", mode->overlap);
+      fprintf(file, "logN%d,    /* logN */\n", framerate);
+      fprintf(file, "window%d,    /* window */\n", mode->overlap);
       fprintf(file, "{%d, %d, {", mode->mdct.n, mode->mdct.maxshift);
       for (k=0;k<=mode->mdct.maxshift;k++)
          fprintf(file, "&fft_state%d_%d_%d, ", mode->Fs, mdctSize, k);
-      fprintf (file, "}, mdct_twiddles%d},\t/* mdct */\n", mdctSize);
+      fprintf (file, "}, mdct_twiddles%d},    /* mdct */\n", mdctSize);
 
-      fprintf(file, "{%d, cache_index%d, cache_bits%d, cache_caps%d},\t/* cache */\n",
+      fprintf(file, "{%d, cache_index%d, cache_bits%d, cache_caps%d},    /* cache */\n",
             mode->cache.size, mode->Fs/mdctSize, mode->Fs/mdctSize, mode->Fs/mdctSize);
       fprintf(file, "};\n");
    }

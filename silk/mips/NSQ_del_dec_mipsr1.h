@@ -127,7 +127,7 @@ static inline void silk_noise_shape_quantizer_del_dec(
             temp64 = __builtin_mips_madd( temp64, pred_lag_ptr[ -2 ], b_Q14_2 );
             temp64 = __builtin_mips_madd( temp64, pred_lag_ptr[ -3 ], b_Q14_3 );
             temp64 = __builtin_mips_madd( temp64, pred_lag_ptr[ -4 ], b_Q14_4 );
-			temp64 += 32768;
+            temp64 += 32768;
             LTP_pred_Q14 = __builtin_mips_extr_w(temp64, 16);
             LTP_pred_Q14 = silk_LSHIFT( LTP_pred_Q14, 1 );                          /* Q13 -> Q14 */
             pred_lag_ptr++;
