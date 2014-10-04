@@ -114,6 +114,7 @@ void celt_fir_c(
    for(i=0;i<ord;i++)
       mem[i] = _x[N-i-1];
 #ifdef SMALL_FOOTPRINT
+   (void)arch;
    for (i=0;i<N;i++)
    {
       opus_val32 sum = SHL32(EXTEND32(_x[i]), SIG_SHIFT);
@@ -154,6 +155,7 @@ void celt_iir(const opus_val32 *_x,
 {
 #ifdef SMALL_FOOTPRINT
    int i,j;
+   (void)arch;
    for (i=0;i<N;i++)
    {
       opus_val32 sum = _x[i];

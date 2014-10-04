@@ -193,7 +193,7 @@ void
 
 #  define celt_pitch_xcorr(_x, _y, xcorr, len, max_pitch, arch) \
   ((*CELT_PITCH_XCORR_IMPL[(arch)&OPUS_ARCHMASK])(_x, _y, \
-        xcorr, len, max_pitch, arch))
+        xcorr, len, max_pitch))
 # else
 #  define celt_pitch_xcorr(_x, _y, xcorr, len, max_pitch, arch) \
   ((void)(arch),celt_pitch_xcorr_c(_x, _y, xcorr, len, max_pitch, arch))
