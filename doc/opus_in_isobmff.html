@@ -7,12 +7,13 @@
     </head>
     <body bgcolor="0x333333" text="#60B0C0">
         <b><u>Encapsulation of Opus in ISO Base Media File Format</u></b><br>
-        <font size="2">last updated: September 27, 2014</font><br>
+        <font size="2">last updated: October 1, 2014</font><br>
         <br>
         <div class="normal_link pre frame_box">
 
-<center>Encapsulation of Opus in ISO Base Media File Format</center>
-<center>Version 0.4.8 (incomplete)</center>
+                                Encapsulation of Opus in ISO Base Media File Format
+                                        Version 0.5.3 (incomplete)
+
 
 Table of Contents
 <a href="#1">1</a> Scope
@@ -27,6 +28,7 @@ Table of Contents
     <a href="#4.4">4.4</a> Definition of Opus sample
         <a href="#4.4.1">4.4.1</a> Opus sample
         <a href="#4.4.2">4.4.2</a> Duration of Opus sample
+        <a href="#4.4.3">4.4.3</a> Sub-sample
     <a href="#4.5">4.5</a> Random Access
         <a href="#4.5.1">4.5.1</a> Random Access Point
         <a href="#4.5.2">4.5.2</a> Pre-roll
@@ -179,12 +181,13 @@ Table of Contents
             |    |    |trex|*   |    |    |    |    | Track Extends Box            |
             +----+----+----+----+----+----+----+----+------------------------------+
 
+                    Figure 1 - Basic structure of Movie Box
+
             It is strongly recommended that the order of boxes should follow the above structure.
             Boxes marked with an asterisk (*) may be present.
             For some boxes listed above, the additional requirements, restrictions, recommendations and definitions
             are specified in 4.8 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes in
-            this specification.
-            For the others, the definition is as is defined in ISO/IEC 14496-12 [1].
+            this specification. For the others, the definition is as is defined in ISO/IEC 14496-12 [1].
 
         4.2.2 Movie Fragments<a name="4.2.2"></a>
             This subclause specifies a basic structure of the Movie Fragment Box as follows:
@@ -205,13 +208,14 @@ Table of Contents
             |    |    |sbgp|*   |    |    |    |    | Sample to Group Box          |
             +----+----+----+----+----+----+----+----+------------------------------+
 
+                    Figure 2 - Basic structure of Movie Fragment Box
+
             It is strongly recommended that the Movie Fragment Header Box and the Track Fragment Header Box be
             placed first in their container.
             Boxes marked with an asterisk (*) may be present.
             For some boxes listed above, the additional requirements, restrictions, recommendations and definitions
             are specified in 4.8 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes in
-            this specification.
-            For the others, the definition is as is defined in ISO/IEC 14496-12 [1].
+            this specification. For the others, the definition is as is defined in ISO/IEC 14496-12 [1].
 <a name="4.3"></a>
     4.3 Byte Order
         The fields in the boxes are stored as big-endian format.
@@ -221,9 +225,17 @@ Table of Contents
         4.4.1 Opus sample<a name="4.4.1"></a>
             An Opus sample is exactly one Opus packet for each of different Opus bitstreams. Due to support more than
             two channels, an Opus sample can contain frames from multiple Opus bitstreams but all Opus packets shall
-            share with the total of frame sizes in a single Opus sample.
+            share with the total of frame sizes in a single Opus sample. The way of how to pack an Opus packet from
+            each of Opus bitstreams into a single Opus sample follows Appendix B. in RFC 6716 [3].
             In this specification, 'sample' means 'Opus sample' except for 'padded samples', 'priming samples', 'valid
             sample' and 'sample-accurate', i.e. 'sample' is 'sample' in the term defined in ISO/IEC 14496-12 [1].
+
+                +-----------------------------------------+-------------------------------------+
+                | Opus packet 0 (self-delimiting framing) | Opus packet 1 (undelimited framing) |
+                +-----------------------------------------+-------------------------------------+
+                |<---------------------------- the size of Opus sample ------------------------>|
+
+                    Figure 3 - Example structure of an Opus sample containing two Opus bitstreams
 
         4.4.2 Duration of Opus sample<a name="4.4.2"></a>
             The duration of Opus sample is given by multiplying the total of frame sizes for a single Opus bitstream
@@ -237,23 +249,26 @@ Table of Contents
             To indicate the valid samples excluding the padded samples at the end of Opus bitstream, the duration of
             the last Opus sample of an Opus bitstream is given by multiplying the number of the valid samples by the
             value produced by dividing the value of the timescale field in the Media Header Box by 48000.
+
+        4.4.3 Sub-sample<a name="4.4.3"></a>
+            The structure of the last Opus packet in an Opus sample is different from the others in the same Opus sample,
+            and the others are invalid Opus packets as an Opus sample because of self-delimiting framing. To avoid
+            complexities, sub-sample is not defined for Opus sample in this specification.
 <a name="4.5"></a>
     4.5 Random Access
         4.5.1 Random Access Point<a name="4.5.1"></a>
-            All Opus samples can be independently decoded i.e. every Opus sample is a sync sample.
-            Therefore, the Sync Sample Box shall not be present as long as there are no samples other than Opus samples
-            in the same track.
+            All Opus samples can be independently decoded i.e. every Opus sample is a sync sample. Therefore, the Sync
+            Sample Box shall not be present as long as there are no samples other than Opus samples in the same track.
 
         4.5.2 Pre-roll<a name="4.5.2"></a>
             Opus requires at least 80 millisecond pre-roll after each random access.
             Pre-roll is indicated by the roll_distance field in AudioRollRecoveryEntry. AudioPreRollEntry shall not be
-            used since every Opus sample is a sync sample in Opus bitstream.
-            Note that roll_distance is expressed in sample units in a term of ISO Base Media File Format, and always
-            takes negative values.
+            used since every Opus sample is a sync sample in Opus bitstream. Note that roll_distance is expressed in
+            sample units in a term of ISO Base Media File Format, and always takes negative values.
 
             For the requirement of AudioRollRecoveryEntry, the compatible_brands field in the File Type Box and/or
-            the Segment Type Box shall contain at least one brand which requires support for roll groups.
-            See also 4.8.1 File Type Box and 4.8.2 Segment Type Box.
+            the Segment Type Box shall contain at least one brand which requires support for roll groups. See also
+            4.8.1 File Type Box and 4.8.2 Segment Type Box in this specification.
 <a name="4.6"></a>
     4.6 Trimming of Actual Duration
         Due to the priming samples (or the padding at the beginning) derived from the pre-roll for the startup and the
@@ -271,7 +286,7 @@ Table of Contents
               Without such a box, we cannot know in container level whether an Opus sample is the last Opus sample in
               an Opus bitstream or not. Is this preferable?
 
-        See also 4.8.6 Edit List Box.
+        See also 4.8.6 Edit List Box in this specification.
 <a name="4.7"></a>
     4.7 Channel Layout
         By the application of alternate_group in the Track Header Box, whole audio channels in all active tracks from
@@ -282,21 +297,21 @@ Table of Contents
         original channel layout.
 
         As an example, let's say there is a following track:
+            OutputChannelCount = 6;
             StreamCount        = 4;
             CoupledCount       = 2;
-            OutputChannelCount = 6;
             ChannelMapping     = {0, 1, 2, 3, 4, 5}; // front left, front center, front right, rear left, rear right, LFE
         You extract the four Opus bitstreams from this track and you encapsulate two of the four into a track and the
         others into another track. The former track is as follows.
+            OutputChannelCount = 6;
             StreamCount        = 2;
             CoupledCount       = 2;
-            OutputChannelCount = 5;
-            ChannelMapping     = {0, 255, 1, 2, 3}; // front left, silent, front right, rear left, rear right
+            ChannelMapping     = {0, 255, 1, 2, 3, 255}; // front left, front center, front right, rear left, rear right, LFE
         And the latter track is as follows.
+            OutputChannelCount = 6;
             StreamCount        = 2;
             CoupledCount       = 0;
-            OutputChannelCount = 6;
-            ChannelMapping     = {255, 0, 255, 255, 255, 1}; // silent, front center, silent, silent, silent, LFE
+            ChannelMapping     = {255, 0, 255, 255, 255, 1}; // front left, front center, front right, rear left, rear right, LFE
         In addition, the value of the alternate_group field in the both tracks is set to 0. As the result, the player
         may play as if channels with 255 are not present, and play the presentation constructed from the both tracks
         in the same channel layout as the one of the original track. Keep in mind that the way of the composition, i.e.
@@ -307,21 +322,25 @@ Table of Contents
         such file formats, this application is not available. This unavailability does not mean incompatibilities among
         file formats unless the restriction to the value of the alternate_group field is specified and brings about
         any conflict among their definitions.
+
+        TODO: The future amendments of ISO/IEC 14496-12 [1] will add further supports of channel layouts and it may be
+              able to exclude certain channels from the already mapped channels to remove pure silent channels. The
+              channel mapping defined in the Opus Specific Box should be designed as processed before the extensions,
+              and the extensions should be placed after the Opus Specific Box.
 <a name="4.8"></a>
     4.8 Additional Requirements, Restrictions, Recommendations and Definitions for Boxes
         4.8.1 File Type Box<a name="4.8.1"></a>
             For any track containing Opus bitstreams, the following requirements are applied.
             + compatible_brands:
-                The compatible_brands fields shall contain at least one brand which requires support for roll groups
-                (e.g. the 'iso2' brand).
-                When enabling movie fragments and placing at least one Sample Group Description Box in Movie Fragments,
-                the compatible_brands fields shall also contain at least one brand which requires support of Sample
-                Group Description Boxes in Movie Fragments (e.g. the 'iso6' brand).
+                The compatible_brands fields shall contain at least one brand which requires support for the structural
+                boxes listed at 4.2 Basic Structure, and the additional requirements, restrictions, recommendations and
+                definitions specified in 4.8 Additional Requirements, Restrictions, Recommendations and Definitions for
+                Boxes in this specification.
+                As an example, the minimal support of the encapsulation of Opus bitstreams in ISO Base Media file format
+                requires the 'iso2' brand since support of roll groups is required.
 
         4.8.2 Segment Type Box<a name="4.8.2"></a>
-            For any track containing Opus bitstreams, the following requirements are applied.
-            + compatible_brands:
-                The same requirements as specified at 4.8.1 File Type Box are applied.
+            The same requirements are applied as specified at 4.8.1 File Type Box in this specification.
 
         4.8.3 Movie Header Box<a name="4.8.3"></a>
             If any track containing Opus bitstreams, the following recommendations are applied.
@@ -406,6 +425,12 @@ Table of Contents
 
             The syntax and semantics of the Opus Specific Box is shown as follows.
 
+            class ChannelMappingTable (unsigned int(8) OutputChannelCount){
+                unsigned int(8) StreamCount;
+                unsigned int(8) CoupledCount;
+                unsigned int(8 * OutputChannelCount) ChannelMapping;
+            }
+
             aligned(8) class OpusSpecificBox extends FullBox('dOps', version, dflags){
                 unsigned int(8) OutputChannelCount;
                 if (dflags & 0x000001) {
@@ -419,7 +444,7 @@ Table of Contents
                 }
                 unsigned int(8) ChannelMappingFamily;
                 if (ChannelMappingFamily != 0) {
-                    unsigned int(8 * (2 + OutputChannelCount)) ChannelMappingTable;
+                    ChannelMappingTable(OutputChannelCount);
                 }
             }
 
@@ -456,9 +481,15 @@ Table of Contents
             + ChannelMappingFamily:
                 The ChannelMappingFamily field shall be set to the same value as the *Channel Mapping Family* field in
                 the identification header defined in Ogg Opus [4].
-            + ChannelMappingTable:
-                The ChannelMappingTable field shall be set to the same octet string as *Channel Mapping Table* field in
-                the identification header defined in Ogg Opus [4].
+            + StreamCount:
+                The StreamCount field shall be set to the same value as the *Stream Count* field in the identification
+                header defined in Ogg Opus [4].
+            + CoupledCount:
+                The CoupledCount field shall be set to the same value as the *Coupled Count* field in the identification
+                header defined in Ogg Opus [4].
+            + ChannelMapping:
+                The ChannelMapping field shall be set to the same octet string as *Channel Mapping* field in the identi-
+                fication header defined in Ogg Opus [4].
 
         4.8.13 Sample Group Description Box<a name="4.8.13"></a>
             For any track containing Opus bitstreams, at least one Sample Group Description Box shall be present and have
