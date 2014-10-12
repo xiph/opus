@@ -106,12 +106,22 @@ celt_tests_test_unit_laplace_LDADD = $(LIBM)
 
 celt_tests_test_unit_mathops_SOURCES = celt/tests/test_unit_mathops.c
 celt_tests_test_unit_mathops_LDADD = $(LIBM)
+if CPU_ARM
+if OPUS_ARM_EXTERNAL_ASM
+celt_tests_test_unit_mathops_LDADD += libopus.la
+endif
+endif
 
 celt_tests_test_unit_mdct_SOURCES = celt/tests/test_unit_mdct.c
 celt_tests_test_unit_mdct_LDADD = $(LIBM)
 
 celt_tests_test_unit_rotation_SOURCES = celt/tests/test_unit_rotation.c
 celt_tests_test_unit_rotation_LDADD = $(LIBM)
+if CPU_ARM
+if OPUS_ARM_EXTERNAL_ASM
+celt_tests_test_unit_rotation_LDADD += libopus.la
+endif
+endif
 
 celt_tests_test_unit_types_SOURCES = celt/tests/test_unit_types.c
 celt_tests_test_unit_types_LDADD = $(LIBM)

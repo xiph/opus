@@ -56,6 +56,8 @@
 #include "x86/celt_lpc_sse.c"
 #endif
 #include "x86/x86_celt_map.c"
+#elif defined(OPUS_ARM_ASM) && defined(FIXED_POINT)
+#include "arm/arm_celt_map.c"
 #endif
 
 #ifdef FIXED_POINT
