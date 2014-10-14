@@ -1217,8 +1217,10 @@ The gain is also a Q7.8 fixed point number in dB, as in the ID header's
 <t>
 An Ogg Opus stream MUST NOT have more than one of each tag, and if present
  their values MUST be an integer from -32768 to 32767, inclusive,
- represented in ASCII with no whitespace.
+ represented in ASCII as a base 10 number with no whitespace.
 A leading '+' or '-' character is valid.
+Leading zeros are also permitted, but the value MUST be represented in
+ no more than 6 characters.
 Other non-digit characters MUST NOT be present.
 </t>
 <t>
