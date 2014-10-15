@@ -1309,7 +1309,7 @@ In encoders derived from the reference implementation, the number of
  samples can be queried with:
 </preamble>
 <artwork align="center"><![CDATA[
- opus_encoder_ctl(encoder_state, OPUS_GET_LOOKAHEAD, &delay_samples);
+ opus_encoder_ctl(encoder_state, OPUS_GET_LOOKAHEAD(&delay_samples));
 ]]></artwork>
 </figure>
 <t>
@@ -1391,7 +1391,7 @@ In encoders derived from the reference implementation, inter-frame prediction
  can be turned off by calling:
 </preamble>
 <artwork align="center"><![CDATA[
- opus_encoder_ctl(encoder_state, OPUS_SET_PREDICTION_DISABLED, 1);
+ opus_encoder_ctl(encoder_state, OPUS_SET_PREDICTION_DISABLED(1));
 ]]></artwork>
 <postamble>
 For best results, this implementation requires that prediction be explicitly
