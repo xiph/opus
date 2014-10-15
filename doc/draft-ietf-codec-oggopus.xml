@@ -60,7 +60,7 @@
 </address>
 </author>
 
-<date day="14" month="October" year="2014"/>
+<date day="15" month="October" year="2014"/>
 <area>RAI</area>
 <workgroup>codec</workgroup>
 
@@ -1219,7 +1219,7 @@ An Ogg Opus stream MUST NOT have more than one of each tag, and if present
  their values MUST be an integer from -32768 to 32767, inclusive,
  represented in ASCII as a base 10 number with no whitespace.
 A leading '+' or '-' character is valid.
-Leading zeros are also permitted, but the value MUST be represented in
+Leading zeros are also permitted, but the value MUST be represented by
  no more than 6 characters.
 Other non-digit characters MUST NOT be present.
 </t>
@@ -1241,7 +1241,7 @@ To avoid confusion with multiple normalization schemes, an Opus comment header
  REPLAYGAIN_ALBUM_GAIN, or REPLAYGAIN_ALBUM_PEAK tags.
 <xref target="EBU-R128"/> normalization is preferred to the earlier
  REPLAYGAIN schemes because of its clear definition and adoption by industry.
-PEAK normalizations are difficult to calculate reliably for lossy codecs
+Peak normalizations are difficult to calculate reliably for lossy codecs
  because of variation in excursion heights due to decoder differences.
 In the authors' investigations they were not applied consistently or broadly
  enough to merit inclusion here.
