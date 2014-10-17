@@ -1300,7 +1300,7 @@ An implementation could reasonably choose any of these numbers for its internal
 
 <section anchor="encoder" title="Encoder Guidelines">
 <t>
-When encoding Opus streams, Ogg encoders SHOULD take into account the
+When encoding Opus streams, Ogg muxers SHOULD take into account the
  algorithmic delay of the Opus encoder.
 </t>
 <figure align="center">
