@@ -198,8 +198,10 @@ The first audio data page SHOULD NOT have the 'continued packet' flag set
  page).
 Packets MUST be placed into Ogg pages in order until the end of stream.
 Audio packets MAY span page boundaries.
-A decoder MUST treat a zero-octet audio data packet as if it were an Opus
- packet with an invalid TOC sequence.
+A decoder MUST treat a zero-octet audio data packet as if it were a malformed
+ Opus packet as described in Section&nbsp;3.4 of&nbsp;<xref target="RFC6716"/>.
+</t>
+<t>
 The last page SHOULD have the 'end of stream' flag set, but implementations
  need to be prepared to deal with truncated streams that do not have a page
  marked 'end of stream'.
@@ -285,7 +287,7 @@ Likewise, if the TOC configuration matches, the muxer MAY further combine the
 <xref target="RFC6716"/> does not impose any requirements on the PLC, but this
  section outlines choices that are expected to have a positive influence on
  most PLC implementations, including the reference implementation.
-Synthesized TOC bytes SHOULD maintain the same mode, audio bandwidth,
+Synthesized TOC sequences SHOULD maintain the same mode, audio bandwidth,
  channel count, and frame size as the previous packet (if any).
 This is the simplest and usually the most well-tested case for the PLC to
  handle and it covers all losses that do not include a configuration switch,
