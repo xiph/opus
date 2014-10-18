@@ -181,8 +181,8 @@ The remaining Opus packet is packed at the end of the Ogg packet using the
 All of the Opus packets in a single Ogg packet MUST be constrained to have the
  same duration.
 A decoder SHOULD treat any Opus packet whose duration is different from that of
- the first Opus packet in an Ogg packet as if it were an Opus packet with an
- invalid TOC sequence.
+ the first Opus packet in an Ogg packet as if it were a malformed Opus packet
+ with an invalid TOC sequence.
 </t>
 <t>
 The coding mode (SILK, Hybrid, or CELT), audio bandwidth, channel count,
