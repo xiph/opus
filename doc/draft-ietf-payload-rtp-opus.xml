@@ -5,7 +5,7 @@
 <!ENTITY rfc3550 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml'>
 <!ENTITY rfc3711 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3711.xml'>
 <!ENTITY rfc3551 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3551.xml'>
-<!ENTITY rfc4288 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4288.xml'>
+<!ENTITY rfc6838 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6838.xml'>
 <!ENTITY rfc4855 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4855.xml'>
 <!ENTITY rfc4566 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4566.xml'>
 <!ENTITY rfc3264 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3264.xml'>
@@ -18,7 +18,7 @@
 <!ENTITY nbsp "&#160;">
   ]>
 
-  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-03">
+  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-04">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -71,7 +71,7 @@
       </address>
     </author>
 
-    <date day='30' month='July' year='2014' />
+    <date day='13' month='November' year='2014' />
 
     <abstract>
       <t>
@@ -488,7 +488,7 @@
 
       <section title='Opus Media Type Registration'>
         <t>Media type registration is done according to <xref
-        target="RFC4288"/> and <xref target="RFC4855"/>.<vspace
+        target="RFC6838"/> and <xref target="RFC4855"/>.<vspace
         blankLines='1'/></t>
 
           <t>Type name: audio<vspace blankLines='1'/></t>
@@ -644,7 +644,7 @@
           <t>Encoding considerations:<vspace blankLines='1'/></t>
           <t><list style="hanging">
             <t>The Opus media type is framed and consists of binary data according
-            to Section&nbsp;4.8 in <xref target="RFC4288"/>.</t>
+            to Section&nbsp;4.8 in <xref target="RFC6838"/>.</t>
           </list></t>
 
           <t>Security considerations: </t>
@@ -940,15 +940,18 @@
       &rfc3550;
       &rfc3711;
       &rfc3551;
-      &rfc4288;
+      &rfc6838;
       &rfc4855;
       &rfc4566;
       &rfc3264;
-      &rfc2974;
       &rfc2326;
       &rfc5576;
       &rfc6562;
       &rfc6716;
+    </references>
+
+    <references title="Informative References">
+      &rfc2974;
     </references>
 
   </back>
