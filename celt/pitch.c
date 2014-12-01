@@ -214,25 +214,35 @@ void pitch_downsample(celt_sig * OPUS_RESTRICT x[], opus_val16 * OPUS_RESTRICT x
    celt_fir5(x_lp, lpc2, x_lp, len>>1, mem);
 }
 
-#if 0 /* This is a simple version of the pitch correlation that should work
-         well on DSPs like Blackfin and TI C5x/C6x */
-
+/* Pure C implementation. */
 #ifdef FIXED_POINT
 opus_val32
 #else
 void
 #endif
-celt_pitch_xcorr(opus_val16 *x, opus_val16 *y, opus_val32 *xcorr, int len, int max_pitch)
+#if defined(OVERRIDE_PITCH_XCORR)
+celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y,
+      opus_val32 *xcorr, int len, int max_pitch)
+#else
+celt_pitch_xcorr(const opus_val16 *_x, const opus_val16 *_y,
+      opus_val32 *xcorr, int len, int max_pitch, int arch)
+#endif
 {
+
+#if 0 /* This is a simple version of the pitch correlation that should work
+         well on DSPs like Blackfin and TI C5x/C6x */
    int i, j;
 #ifdef FIXED_POINT
    opus_val32 maxcorr=1;
+#endif
+#if !defined(OVERRIDE_PITCH_XCORR)
+   (void)arch;
 #endif
    for (i=0;i<max_pitch;i++)
    {
       opus_val32 sum = 0;
       for (j=0;j<len;j++)
-         sum = MAC16_16(sum, x[j],y[i+j]);
+         sum = MAC16_16(sum, _x[j], _y[i+j]);
       xcorr[i] = sum;
 #ifdef FIXED_POINT
       maxcorr = MAX32(maxcorr, sum);
@@ -241,18 +251,8 @@ celt_pitch_xcorr(opus_val16 *x, opus_val16 *y, opus_val32 *xcorr, int len, int m
 #ifdef FIXED_POINT
    return maxcorr;
 #endif
-}
 
 #else /* Unrolled version of the pitch correlation -- runs faster on x86 and ARM */
-
-#ifdef FIXED_POINT
-opus_val32
-#else
-void
-#endif
-celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y,
-      opus_val32 *xcorr, int len, int max_pitch, int arch)
-{
    int i;
    /*The EDSP version requires that max_pitch is at least 1, and that _x is
       32-bit aligned.
@@ -265,7 +265,11 @@ celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y,
    for (i=0;i<max_pitch-3;i+=4)
    {
       opus_val32 sum[4]={0,0,0,0};
+#if defined(OVERRIDE_PITCH_XCORR)
+      xcorr_kernel_c(_x, _y+i, sum, len);
+#else
       xcorr_kernel(_x, _y+i, sum, len, arch);
+#endif
       xcorr[i]=sum[0];
       xcorr[i+1]=sum[1];
       xcorr[i+2]=sum[2];
@@ -281,7 +285,11 @@ celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y,
    for (;i<max_pitch;i++)
    {
       opus_val32 sum;
+#if defined(OVERRIDE_PITCH_XCORR)
+      sum = celt_inner_prod_c(_x, _y+i, len);
+#else
       sum = celt_inner_prod(_x, _y+i, len, arch);
+#endif
       xcorr[i] = sum;
 #ifdef FIXED_POINT
       maxcorr = MAX32(maxcorr, sum);
@@ -290,9 +298,9 @@ celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y,
 #ifdef FIXED_POINT
    return maxcorr;
 #endif
+#endif
 }
 
-#endif
 void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTRICT y,
                   int len, int max_pitch, int *pitch, int arch)
 {

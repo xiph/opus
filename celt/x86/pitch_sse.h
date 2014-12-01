@@ -43,14 +43,15 @@ void xcorr_kernel_sse4_1(
                     const opus_int16 *x,
                     const opus_int16 *y,
                     opus_val32       sum[4],
-                    int              len );
+                    int              len);
 
 extern void (*const XCORR_KERNEL_IMPL[OPUS_ARCHMASK + 1])(
                     const opus_int16 *x,
                     const opus_int16 *y,
                     opus_val32       sum[4],
-                    int              len );
+                    int              len);
 
+#define OVERRIDE_XCORR_KERNEL
 #define xcorr_kernel(x, y, sum, len, arch) \
     ((*XCORR_KERNEL_IMPL[(arch) & OPUS_ARCHMASK])(x, y, sum, len))
 
