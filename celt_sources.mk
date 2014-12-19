@@ -32,3 +32,6 @@ celt/arm/celt_pitch_xcorr_arm.s
 
 CELT_AM_SOURCES_ARM_ASM = \
 celt/arm/armopts.s.in
+
+CELT_SOURCES_ARM_NEON_INTR = \
+celt/arm/celt_neon_intr.c

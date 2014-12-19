@@ -31,7 +31,8 @@
 #include "opus_types.h"
 #include "opus_defines.h"
 
-#if defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_ASM)
+#if defined(OPUS_HAVE_RTCD) && \
+  (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_NEON_INTR))
 #include "arm/armcpu.h"
 
 /* We currently support 4 ARM variants:

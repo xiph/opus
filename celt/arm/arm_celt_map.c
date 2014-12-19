@@ -41,9 +41,16 @@ opus_val32 (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
   MAY_HAVE_MEDIA(celt_pitch_xcorr), /* Media */
   MAY_HAVE_NEON(celt_pitch_xcorr)   /* NEON */
 };
-# else
-#  error "Floating-point implementation is not supported by ARM asm yet." \
- "Reconfigure with --disable-rtcd or send patches."
+# else /* !FIXED_POINT */
+#  if defined(OPUS_ARM_NEON_INTR)
+void (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
+    const opus_val16 *, opus_val32 *, int, int) = {
+  celt_pitch_xcorr_c,              /* ARMv4 */
+  celt_pitch_xcorr_c,              /* EDSP */
+  celt_pitch_xcorr_c,              /* Media */
+  celt_pitch_xcorr_float_neon      /* Neon */
+};
+#  endif
 # endif
 
 #endif
