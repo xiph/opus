@@ -357,9 +357,9 @@ AS_IF([test x"$enable_float" = x"no"],
     AS_IF([test x"$enable_rtcd" = x"yes"],[
             get_cpuid_by_asm="no"
             AC_MSG_CHECKING([Get CPU Info])
-            AC_LINK_IFELSE(AC_LANG_PROGRAM([
+            AC_LINK_IFELSE([AC_LANG_PROGRAM([[
                  #include <stdio.h>
-            ],[
+            ]],[[
                  unsigned int CPUInfo0;
                  unsigned int CPUInfo1;
                  unsigned int CPUInfo2;
@@ -373,19 +373,19 @@ AS_IF([test x"$enable_float" = x"no"],
                  "=d" (CPUInfo3) :
                  "a" (InfoType), "c" (0)
                 );
-            ]),
+            ]])],
             [get_cpuid_by_asm="yes"
              AC_MSG_RESULT([Inline Assembly])],
-             [AC_LINK_IFELSE(AC_LANG_PROGRAM([
+             [AC_LINK_IFELSE([AC_LANG_PROGRAM([[
                  #include <cpuid.h>
-            ],[
+            ]],[[
                  unsigned int CPUInfo0;
                  unsigned int CPUInfo1;
                  unsigned int CPUInfo2;
                  unsigned int CPUInfo3;
                  unsigned int InfoType;
                  __get_cpuid(InfoType, &CPUInfo0, &CPUInfo1, &CPUInfo2, &CPUInfo3);
-            ]),
+            ]])],
             [AC_MSG_RESULT([C method])],
             [AC_MSG_ERROR([not support Get CPU Info, please disable intrinsics ])])])
 
@@ -405,14 +405,14 @@ AS_IF([test x"$enable_float" = x"no"],
                  #endif
             ])
 
-            AC_LINK_IFELSE(AC_LANG_PROGRAM([
+            AC_LINK_IFELSE([AC_LANG_PROGRAM([[
                  #include <xmmintrin.h>
                  #include <emmintrin.h>
                  #include <smmintrin.h>
-            ],[
+            ]],[[
                  __m128i mtest = _mm_setzero_si128();
                  mtest = _mm_cmpeq_epi64(mtest, mtest);
-            ]),
+            ]])],
             [AC_MSG_RESULT([yes])], [AC_MSG_ERROR([Compiler & linker failure for sse4.1, please disable intrinsics])])
 
             CFLAGS="$TMP_CFLAGS"
@@ -432,12 +432,12 @@ AS_IF([test x"$enable_float" = x"no"],
                    AC_CHECK_HEADER(xmmintrin.h, [], [AC_MSG_ERROR([Couldn't find xmmintrin.h])])
                    AC_CHECK_HEADER(emmintrin.h, [], [AC_MSG_ERROR([Couldn't find emmintrin.h])])
 
-                   AC_LINK_IFELSE(AC_LANG_PROGRAM([
+                   AC_LINK_IFELSE([AC_LANG_PROGRAM([[
                         #include <xmmintrin.h>
                         #include <emmintrin.h>
-                   ],[
+                   ]],[[
                         __m128i mtest = _mm_setzero_si128();
-                   ]),
+                   ]])],
                    [AC_MSG_RESULT([yes])], [AC_MSG_ERROR([Compiler & linker failure for sse2, please disable intrinsics])])
 
                   CFLAGS="$TMP_CFLAGS"
