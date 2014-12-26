@@ -838,6 +838,12 @@ opus_int32 compute_frame_size(const void *analysis_pcm, int frame_size,
          LM--;
       frame_size = (Fs/400<<LM);
    } else
+#else
+   (void)analysis_pcm;
+   (void)C;
+   (void)bitrate_bps;
+   (void)delay_compensation;
+   (void)downmix;
 #endif
    {
       frame_size = frame_size_select(frame_size, variable_duration, Fs);
@@ -957,9 +963,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     int total_buffer;
     opus_val16 stereo_width;
     const CELTMode *celt_mode;
+#ifndef DISABLE_FLOAT_API
     AnalysisInfo analysis_info;
     int analysis_read_pos_bak=-1;
     int analysis_read_subframe_bak=-1;
+#endif
     VARDECL(opus_val16, tmp_prefill);
 
     ALLOC_STACK;
@@ -985,9 +993,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     lsb_depth = IMIN(lsb_depth, st->lsb_depth);
 
-    analysis_info.valid = 0;
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
 #ifndef DISABLE_FLOAT_API
+    analysis_info.valid = 0;
 #ifdef FIXED_POINT
     if (st->silk_mode.complexity >= 10 && st->Fs==48000)
 #else
@@ -1000,6 +1008,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
              c1, c2, analysis_channels, st->Fs,
              lsb_depth, downmix, &analysis_info);
     }
+#else
+    (void)analysis_pcm;
+    (void)analysis_size;
 #endif
 
     st->voice_ratio = -1;

@@ -815,6 +815,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8),
             (opus_val16)(QCONST16(2.f, 8)*(analysis->tonality_slope+.05f))));
    }
+#else
+   (void)analysis;
 #endif
 
 #ifdef FIXED_POINT
@@ -1251,6 +1253,9 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       /*printf("%f %f ", analysis->tonality, tonal);*/
       target = tonal_target;
    }
+#else
+   (void)analysis;
+   (void)pitch_change;
 #endif
 
    if (has_surround_mask&&!lfe)
