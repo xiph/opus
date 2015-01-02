@@ -65,7 +65,7 @@ void silk_VQ_WMat_EC_sse4_1(
         diff_Q14[ 0 ] = in_Q14[ 0 ] - silk_LSHIFT( cb_row_Q7[ 0 ], 7 );
 
         C_tmp1 = OP_CVTEPI16_EPI32_M64( &in_Q14[ 1 ] );
-        C_tmp2 = OP_CVTEPI16_EPI32_M64( &cb_row_Q7[ 1 ] );
+        C_tmp2 = OP_CVTEPI8_EPI32_M32( &cb_row_Q7[ 1 ] );
         C_tmp2 = _mm_slli_epi32( C_tmp2, 7 );
         C_tmp1 = _mm_sub_epi32( C_tmp1, C_tmp2 );
 

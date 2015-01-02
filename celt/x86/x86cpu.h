@@ -44,18 +44,26 @@
 int opus_select_arch(void);
 # endif
 
-/*gcc appears to emit MOVDQA's to load the argument of an _mm_cvtepi16_epi32()
-  when optimizations are disabled, even though the actual PMOVSXWD instruction
-  takes an m64. Unlike a normal m64 reference, these require 16-byte alignment
-  and load 16 bytes instead of 8, possibly reading out of bounds.
+/*gcc appears to emit MOVDQA's to load the argument of an _mm_cvtepi8_epi32()
+  or _mm_cvtepi16_epi32() when optimizations are disabled, even though the
+  actual PMOVSXWD instruction takes an m32 or m64. Unlike a normal memory
+  reference, these require 16-byte alignment and load a full 16 bytes (instead
+  of 4 or 8), possibly reading out of bounds.
 
-  We can insert an explicit MOVQ using _mm_loadl_epi64(), which should have the
-  same semantics as an m64 reference in the PMOVSXWD instruction itself, but
-  gcc is not smart enough to optimize this out when optimizations ARE enabled.*/
+  We can insert an explicit MOVD or MOVQ using _mm_cvtsi32_si128() or
+  _mm_loadl_epi64(), which should have the same semantics as an m32 or m64
+  reference in the PMOVSXWD instruction itself, but gcc is not smart enough to
+  optimize this out when optimizations ARE enabled.*/
 # if !defined(__OPTIMIZE__)
+#  define OP_CVTEPI8_EPI32_M32(x) \
+ (_mm_cvtepi8_epi32(_mm_cvtsi32_si128(*(int *)(x))))
+
 #  define OP_CVTEPI16_EPI32_M64(x) \
  (_mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i *)(x))))
 # else
+#  define OP_CVTEPI8_EPI32_M32(x) \
+ (_mm_cvtepi8_epi32(*(__m128i *)(x)))
+
 #  define OP_CVTEPI16_EPI32_M64(x) \
  (_mm_cvtepi16_epi32(*(__m128i *)(x)))
 # endif
