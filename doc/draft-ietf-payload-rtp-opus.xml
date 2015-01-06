@@ -18,7 +18,7 @@
 <!ENTITY nbsp "&#160;">
   ]>
 
-  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-05">
+  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-06">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -71,7 +71,7 @@
       </address>
     </author>
 
-    <date day='7' month='December' year='2014' />
+    <date day='6' month='January' year='2015' />
 
     <abstract>
       <t>
@@ -544,6 +544,17 @@
               specified, the default is 20. 
               <vspace blankLines='1'/></t>
 
+            <t hangText="maxaveragebitrate:"> specifies the maximum average
+            receive bitrate of a session in bits per second (b/s). The actual
+            value of the bitrate can vary, as it is dependent on the
+            characteristics of the media in a packet. Note that the maximum
+            average bitrate MAY be modified dynamically during a session. Any
+            positive integer is allowed, but values outside the range
+            6000 to 510000 SHOULD be ignored. If no value is specified, the
+            maximum value specified in <xref target='bitrate_by_bandwidth'/>
+            for the corresponding mode of Opus and corresponding maxplaybackrate
+            is the default.<vspace blankLines='1'/></t>
+
             <t hangText="stereo:">
               specifies whether the decoder prefers receiving stereo or mono signals.
               Possible values are 1 and 0 where 1 specifies that stereo signals are preferred,
@@ -657,7 +668,7 @@
             mapped to "a=ptime" and "a=maxptime" attributes, respectively, in the
             SDP.</t>
 
-            <t>The OPTIONAL media type parameters
+            <t>The OPTIONAL media type parameters "maxaveragebitrate",
             "maxplaybackrate", "stereo", "cbr", "useinbandfec", and
             "usedtx", when present, MUST be included in the "a=fmtp" attribute
             in the SDP, expressed as a media type string in the form of a
@@ -706,7 +717,7 @@
     m=audio 54312 RTP/AVP 101
     a=rtpmap:101 opus/48000/2
     a=fmtp:101 maxplaybackrate=16000; sprop-maxcapturerate=16000;
-    b=AS:20; stereo=1; useinbandfec=1; usedtx=0
+    maxaveragebitrate=20000; stereo=1; useinbandfec=1; usedtx=0
     a=ptime:40
     a=maxptime:40
             ]]>
@@ -775,6 +786,15 @@
               is the responsibility of the Opus encoder implementation.
             </t>
 
+            <t>The "maxaveragebitrate" parameter is a unidirectional receive-only
+            parameter that reflects limitations of the local receiver. The sender
+            of the other side MUST NOT send with an average bitrate higher than
+            "maxaveragebitrate" as it might overload the network and/or
+            receiver. The "maxaveragebitrate" parameter typically will not
+            compromise interoperability; however, some values might cause
+            application performance to suffer, and ought to be set with
+            care.</t>
+
             <t>The "sprop-maxcapturerate" and "sprop-stereo" parameters are
             unidirectional sender-only parameters that reflect limitations of
             the sender side.
@@ -821,7 +841,7 @@
         <t><list style="symbols">
 
           <t>The values for "maxptime", "ptime", "maxplaybackrate", and
-          ought to be selected carefully to ensure that a
+          "maxaveragebitrate" ought to be selected carefully to ensure that a
           reasonable performance can be achieved for the participants of a session.</t>
 
           <t>
