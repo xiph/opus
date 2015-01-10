@@ -7,12 +7,12 @@
     </head>
     <body bgcolor="0x333333" text="#60B0C0">
         <b><u>Encapsulation of Opus in ISO Base Media File Format</u></b><br>
-        <font size="2">last updated: December 13, 2014</font><br>
+        <font size="2">last updated: January 12, 2015</font><br>
         <br>
         <div class="normal_link pre frame_box">
 
                                 Encapsulation of Opus in ISO Base Media File Format
-                                        Version 0.6.2 (incomplete)
+                                        Version 0.6.6 (incomplete)
 
 
 Table of Contents
@@ -42,7 +42,8 @@ Table of Contents
 <a name="1"></a>
 1 Scope
     This specification specifies the fundamental way of the encapsulation of Opus coded bitstreams in ISO Base Media
-    file formats and its derivatives.
+    file format and its derivatives. The encapsulation of Opus coded bitstreams in QuickTime file format is outside
+    the scope of this specification.
 
 <a name="2"></a>
 2 Normative References
@@ -63,11 +64,6 @@ Table of Contents
 3 Terms and Definitions
     3.1 active track
         enabled track from the non-alternate group or selected track from alternate group
-        TODO: For alternate group, how about handling of disabled tracks?
-              Some implementations treat disabled tracks in alternate group as a non-default track.
-              Under the such implementations, the selected track behaves as an enabled track.
-              Should we define the implementation in this specification?
-              Or leave it as implementation-defined?
 
     3.2 actual duration
         duration constructed from valid samples
@@ -97,12 +93,6 @@ Table of Contents
         requirements described in this clause without contradiction, in the compatible brands list of the File Type Box.
         As an example, the minimal support of the encapsulation of Opus bitstreams in ISO Base Media file format requires
         the 'iso2' brand in the compatible brands list since support of roll groups is required.
-        TODO: Should we define specific brands, e.g. 'Opus'? If we define the brand(s), we can utilize files conformant to
-              this specification for the storage of Opus coded bitstreams without other derived file formats.
-              It is not preferable that encapsulation of Opus bitstreams with only the brands of the ISO Base Media File
-              Format, though files conformant to this specification are compatible with certain versions of the ISO
-              Base Media File Format. See ISO/IEC 14496-12 [3] E.1 Introduction.
-              If you desire that this file format is an alternative file format to the Ogg Opus, I recommend you define.
 <a name="4.2"></a>
     4.2 Overview of Track Structure
         This clause summarizes requirements of the encapsulation of Opus coded bitstream as media data in audio tracks
@@ -111,6 +101,8 @@ Table of Contents
             + The handler_type field in the Handler Reference Box shall be set to 'soun'.
             + The Media Information Box shall contain the Sound Media Header Box.
             + The codingname of the sample entry is 'Opus'.
+                This specification does not define any encapsulation using MP4AudioSampleEntry with objectTypeIndication
+                specified by the MPEG-4 Registration Authority (http://www.mp4ra.org/).
                 See 4.3.1 Sample entry format to get the details about the sample entry.
             + The 'dOps' box is added to the sample entry to convey initializing information for the decoder.
                 See 4.3.2 Opus Specific Box to get the details.
@@ -218,7 +210,7 @@ Table of Contents
                 +-----------------------------------------+-------------------------------------+
                 |<---------------------------- the size of Opus sample ------------------------>|
 
-                    Figure 3 - Example structure of an Opus sample containing two Opus bitstreams
+                    Figure 1 - Example structure of an Opus sample containing two Opus bitstreams
 
         4.3.4 Duration of Opus sample<a name="4.3.4"></a>
             The duration of Opus sample is given by multiplying the total of frame sizes for a single Opus bitstream
@@ -281,11 +273,6 @@ Table of Contents
         the actual duration in the case producing movie fragments on the fly such as live-streaming. In such cases,
         the duration of the last Opus sample may be helpful by setting zero to the segment_duration field since the
         value 0 represents implicit duration equal to the sum of the duration of all samples.
-        TODO: Should we define a new box which indicates the last Opus samples?
-              Since this specification allows multiple sample descriptions, i.e. allows concatenation of multiple Opus
-              bitstreams in a track, each Opus bitstream may contain some padded samples.
-              Without such a box, we cannot know in container level whether an Opus sample is the last Opus sample in
-              an Opus bitstream or not. Is this preferable?
 <a name="4.5"></a>
     4.5 Channel Layout (informative)
         By the application of alternate_group in the Track Header Box, whole audio channels in all active tracks from
@@ -323,11 +310,6 @@ Table of Contents
         such file formats, this application is not available. This unavailability does not mean incompatibilities among
         file formats unless the restriction to the value of the alternate_group field is specified and brings about
         any conflict among their definitions.
-
-        TODO: The future amendments of ISO/IEC 14496-12 [1] will add further supports of channel layouts and it may be
-              able to exclude certain channels from the already mapped channels to remove pure silent channels. The
-              channel mapping defined in the Opus Specific Box should be designed as processed before the extensions,
-              and the extensions should be placed after the Opus Specific Box.
 <a name="4.6"></a>
     4.6 Basic Structure (informative)
         4.6.1 Initial Movie<a name="4.6.1"></a>
@@ -393,7 +375,7 @@ Table of Contents
             |    |    |trex|*   |    |    |    |    | Track Extends Box            |
             +----+----+----+----+----+----+----+----+------------------------------+
 
-                    Figure 1 - Basic structure of Movie Box
+                    Figure 2 - Basic structure of Movie Box
 
             It is strongly recommended that the order of boxes should follow the above structure.
             Boxes marked with an asterisk (*) may be present.
@@ -420,7 +402,7 @@ Table of Contents
             |    |    |sbgp|*   |    |    |    |    | Sample to Group Box          |
             +----+----+----+----+----+----+----+----+------------------------------+
 
-                    Figure 2 - Basic structure of Movie Fragment Box
+                    Figure 3 - Basic structure of Movie Fragment Box
 
             It is strongly recommended that the Movie Fragment Header Box and the Track Fragment Header Box be
             placed first in their container.
