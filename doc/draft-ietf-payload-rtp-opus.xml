@@ -18,7 +18,7 @@
 <!ENTITY nbsp "&#160;">
   ]>
 
-  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-07">
+  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-08">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -33,8 +33,8 @@
 <?rfc iprnotified="yes" ?>
 
   <front>
-    <title abbrev="RTP Payload Format for Opus Codec">
-      RTP Payload Format for Opus Speech and Audio Codec
+    <title abbrev="RTP Payload Format for Opus">
+      RTP Payload Format for the Opus Speech and Audio Codec
     </title>
 
     <author fullname="Julian Spittka" initials="J." surname="Spittka">
@@ -71,7 +71,7 @@
       </address>
     </author>
 
-    <date day='13' month='January' year='2015' />
+    <date day='6' month='February' year='2015' />
 
     <abstract>
       <t>
@@ -87,7 +87,7 @@
   <middle>
     <section title='Introduction'>
       <t>
-        The Opus codec is a speech and audio codec developed within the
+        Opus <xref target="RFC6716"/> is a speech and audio codec developed within the
         IETF Internet Wideband Audio Codec working group. The codec
         has a very low algorithmic delay and it
         is highly scalable in terms of audio bandwidth, bitrate, and
@@ -99,10 +99,9 @@
         This document defines the Real-time Transport Protocol (RTP)
         <xref target="RFC3550"/> payload format for packetization
         of Opus encoded speech and audio data necessary to
-        integrate the Opus codec in the
+        integrate Opus in the
         most compatible way. Further, it describes media type registrations for
-        the RTP payload format. More information on the Opus
-        codec can be obtained from <xref target="RFC6716"/>.
+        the RTP payload format.
       </t>
     </section>
 
@@ -164,7 +163,7 @@
 
     <section title='Opus Codec'>
       <t>
-        The Opus <xref target="RFC6716"/> codec encodes speech
+        Opus encodes speech
         signals as well as general audio signals. Two different modes can be
         chosen, a voice mode or an audio mode, to allow the most efficient coding
         depending on the type of the input signal, the sampling frequency of the
@@ -178,7 +177,7 @@
       </t>
 
       <t>
-        The Opus speech and audio codec is highly scalable in terms of audio
+        Opus is highly scalable in terms of audio
         bandwidth, bitrate, and complexity. Further, Opus allows
         transmitting stereo signals.
       </t>
@@ -189,7 +188,7 @@
             The bitrate can be changed dynamically within that range.
             All
             other parameters being
-            equal, higher bitrates result in higher quality.
+            equal, higher bitrates result in higher audio quality.
           </t>
           <section title='Recommended Bitrate' anchor='bitrate_by_bandwidth'>
           <t>
@@ -208,7 +207,7 @@
       </section>
         <section title='Variable versus Constant Bitrate'  anchor='variable-vs-constant-bitrate'>
           <t>
-            For the same average bitrate, variable bitrate (VBR) can achieve higher quality
+            For the same average bitrate, variable bitrate (VBR) can achieve higher audio quality
             than constant bitrate (CBR). For the majority of voice transmission applications, VBR
             is the best choice. One reason for choosing CBR is the potential
             information leak that <spanx style='emph'>might</spanx> occur when encrypting the
@@ -230,13 +229,13 @@
         <section title='Discontinuous Transmission (DTX)'>
 
           <t>
-            The Opus codec can, as described in <xref target='variable-vs-constant-bitrate'/>,
+            Opus can, as described in <xref target='variable-vs-constant-bitrate'/>,
             be operated with a variable bitrate. In that case, the encoder will
             automatically reduce the bitrate for certain input signals, like periods
             of silence. When using continuous transmission, it will reduce the
             bitrate when the characteristics of the input signal permit, but
             will never interrupt the transmission to the receiver. Therefore, the
-            received signal will maintain the same high level of quality over the
+            received signal will maintain the same high level of audio quality over the
             full duration of a transmission while minimizing the average bit
             rate over time.
           </t>
@@ -652,12 +651,13 @@
 
           <t> Change controller: IETF Payload Working Group delegated from the IESG</t>
       </section>
-
-      <section title='Mapping to SDP Parameters'>
+    </section>
+    
+    <section title='SDP Considerations'>
         <t>The information described in the media type specification has a
         specific mapping to fields in the Session Description Protocol (SDP)
         <xref target="RFC4566"/>, which is commonly used to describe RTP
-        sessions. When SDP is used to specify sessions employing the Opus codec,
+        sessions. When SDP is used to specify sessions employing Opus,
         the mapping is as follows:</t>
 
         <t>
@@ -741,7 +741,7 @@
         </figure>
 
 
-      <section title='Offer-Answer Model Considerations for Opus'>
+      <section title='SDP Offer/Answer Considerations'>
 
           <t>When using the offer-answer procedure described in <xref
           target="RFC3264"/> to negotiate the use of Opus, the following
@@ -834,6 +834,12 @@
             and MUST be removed from the answer.</t>
 
           </list></t>
+      
+        <t>
+	  The Opus parameters in an SDP Offer/Answer exchange are completely
+          orthogonal, and there is no relationship between the SDP Offer and
+          the Answer.
+        </t>
       </section>
 
       <section title='Declarative SDP Considerations for Opus'>
@@ -861,7 +867,6 @@
           ought to be kept small.</t>
         </list></t>
       </section>
-    </section>
   </section>
 
     <section title='Security Considerations' anchor='security-considerations'>
