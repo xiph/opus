@@ -146,6 +146,7 @@ EXTRA_DIST = version.mk \
              opus.pc.in \
              opus-uninstalled.pc.in \
              opus.m4 \
+             Makefile.mips \
              Makefile.unix \
              tests/run_vectors.sh \
              celt/arm/arm2gnu.pl \
