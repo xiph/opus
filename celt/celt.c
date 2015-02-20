@@ -280,6 +280,9 @@ const char *opus_strerror(int error)
 const char *opus_get_version_string(void)
 {
     return "libopus " PACKAGE_VERSION
+    /* Applications may rely on the presence of this substring in the version
+       string to determine if they have a fixed-point or floating-point build
+       at runtime. */
 #ifdef FIXED_POINT
           "-fixed"
 #endif
