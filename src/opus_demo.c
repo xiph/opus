@@ -245,14 +245,14 @@ int main(int argc, char *argv[])
     double bits=0.0, bits_max=0.0, bits_act=0.0, bits2=0.0, nrg;
     double tot_samples=0;
     opus_uint64 tot_in, tot_out;
-    int bandwidth=-1;
+    int bandwidth=OPUS_AUTO;
     const char *bandwidth_string;
     int lost = 0, lost_prev = 1;
     int toggle = 0;
     opus_uint32 enc_final_range[2];
     opus_uint32 dec_final_range;
     int encode_only=0, decode_only=0;
-    int max_frame_size = 960*6;
+    int max_frame_size = 48000*2;
     int curr_read=0;
     int sweep_bps = 0;
     int random_framesize=0, newsize=0, delayed_celt=0;
@@ -336,15 +336,12 @@ int main(int argc, char *argv[])
 
     /* defaults: */
     use_vbr = 1;
-    bandwidth = OPUS_AUTO;
     max_payload_bytes = MAX_PACKET;
     complexity = 10;
     use_inbandfec = 0;
     forcechannels = OPUS_AUTO;
     use_dtx = 0;
     packet_loss_perc = 0;
-    max_frame_size = 2*48000;
-    curr_read=0;
 
     while( args < argc - 2 ) {
         /* process command line options */
