@@ -53,8 +53,14 @@ int opus_select_arch(void);
   We can insert an explicit MOVD or MOVQ using _mm_cvtsi32_si128() or
   _mm_loadl_epi64(), which should have the same semantics as an m32 or m64
   reference in the PMOVSXWD instruction itself, but gcc is not smart enough to
-  optimize this out when optimizations ARE enabled.*/
-# if !defined(__OPTIMIZE__)
+  optimize this out when optimizations ARE enabled.
+
+  It appears clang requires us to do this always (which is fair, since
+  technically the compiler is always allowed to do the dereference before
+  invoking the function implementing the intrinsic). I have not investiaged
+  whether it is any smarter than gcc when it comes to eliminating the extra
+  load instruction.*/
+# if defined(__clang__) || !defined(__OPTIMIZE__)
 #  define OP_CVTEPI8_EPI32_M32(x) \
  (_mm_cvtepi8_epi32(_mm_cvtsi32_si128(*(int *)(x))))
 
