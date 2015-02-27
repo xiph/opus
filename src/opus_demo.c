@@ -48,7 +48,7 @@ void print_usage( char* argv[] )
         "<bits per second>  [options] <input> <output>\n", argv[0]);
     fprintf(stderr, "       %s -d <sampling rate (Hz)> <channels (1/2)> "
         "[options] <input> <output>\n\n", argv[0]);
-    fprintf(stderr, "mode: voip | audio | restricted-lowdelay\n" );
+    fprintf(stderr, "application: voip | audio | restricted-lowdelay\n" );
     fprintf(stderr, "options:\n" );
     fprintf(stderr, "-e                   : only runs the encoder (output the bit-stream)\n" );
     fprintf(stderr, "-d                   : only runs the decoder (reads the bit-stream as input)\n" );
@@ -573,7 +573,7 @@ int main(int argc, char *argv[])
          bandwidth_string = "fullband";
          break;
     case OPUS_AUTO:
-         bandwidth_string = "auto";
+         bandwidth_string = "auto bandwidth";
          break;
     default:
          bandwidth_string = "unknown";
@@ -585,7 +585,7 @@ int main(int argc, char *argv[])
                        (long)sampling_rate, channels);
     else
        fprintf(stderr, "Encoding %ld Hz input at %.3f kb/s "
-                       "in %s mode with %d-sample frames.\n",
+                       "in %s with %d-sample frames.\n",
                        (long)sampling_rate, bitrate_bps*0.001,
                        bandwidth_string, frame_size);
 
