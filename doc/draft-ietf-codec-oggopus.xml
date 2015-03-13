@@ -101,7 +101,7 @@ Each page is associated with a particular logical stream and contains a capture
  stream, to aid seeking.
 A single page can contain up to 65,025 octets of packet data from up to 255
  different packets.
-Packets MAY be split arbitrarily across pages, and continued from one page to
+Packets can be split arbitrarily across pages, and continued from one page to
  the next (allowing packets much larger than would fit on a single page).
 Each page contains 'lacing values' that indicate how the data is partitioned
  into packets, allowing a demuxer to recover the packet boundaries without
@@ -667,6 +667,10 @@ Encoders SHOULD write the actual input sample rate or zero, but decoder
  implementations which do something with this field SHOULD take care to behave
  sanely if given crazy values (e.g., do not actually upsample the output to
  10 MHz if requested).
+Input sample rates between 8&nbsp;kHz and 192&nbsp;kHz (inclusive) SHOULD be
+ supported.
+Rates outside this range MAY be ignored by falling back to the default rate of
+ 48&nbsp;kHz instead.
 <vspace blankLines="1"/>
 </t>
 <t><spanx style="strong">Output Gain</spanx> (16 bits, signed, little
@@ -1262,10 +1266,10 @@ Encoders SHOULD use no more padding than is necessary to make a variable
  bitrate (VBR) stream constant bitrate (CBR).
 Decoders SHOULD avoid attempting to allocate excessive amounts of memory when
  presented with a very large packet.
+Decoders SHOULD reject packets larger than 60&nbsp;kB per channel, and display
+ a warning message, and MAY reject packets larger than 7.5&nbsp;kB per channel.
 The presence of an extremely large packet in the stream could indicate a
  memory exhaustion attack or stream corruption.
-Decoders SHOULD reject a packet that is too large to process, and display a
- warning message.
 </t>
 <t>
 In an Ogg Opus stream, the largest possible valid packet that does not use
