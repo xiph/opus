@@ -8,17 +8,20 @@
 <!ENTITY rfc6838 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6838.xml'>
 <!ENTITY rfc4855 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4855.xml'>
 <!ENTITY rfc4566 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4566.xml'>
+<!ENTITY rfc4585 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4585.xml'>
 <!ENTITY rfc3264 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3264.xml'>
 <!ENTITY rfc2974 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2974.xml'>
 <!ENTITY rfc2326 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2326.xml'>
 <!ENTITY rfc3555 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3555.xml'>
+<!ENTITY rfc5124 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5124.xml'>
 <!ENTITY rfc5576 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5576.xml'>
 <!ENTITY rfc6562 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6562.xml'>
 <!ENTITY rfc6716 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6716.xml'>
+<!ENTITY rfc7202 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.7202.xml'>
 <!ENTITY nbsp "&#160;">
   ]>
 
-  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-08">
+  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-09">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -71,14 +74,15 @@
       </address>
     </author>
 
-    <date day='6' month='February' year='2015' />
+    <date day='10' month='April' year='2015' />
 
     <abstract>
       <t>
         This document defines the Real-time Transport Protocol (RTP) payload
         format for packetization of Opus encoded
         speech and audio data necessary to integrate the codec in the
-        most compatible way. Further, it describes media type registrations
+        most compatible way. It also provides an applicability statement
+        for the use of Opus over RTP. Further, it describes media type registrations
         for the RTP payload format.
       </t>
     </abstract>
@@ -100,7 +104,9 @@
         <xref target="RFC3550"/> payload format for packetization
         of Opus encoded speech and audio data necessary to
         integrate Opus in the
-        most compatible way. Further, it describes media type registrations for
+        most compatible way. It also provides an applicability statement
+        for the use of Opus over RTP.
+        Further, it describes media type registrations for
         the RTP payload format.
       </t>
     </section>
@@ -179,7 +185,7 @@
       <t>
         Opus is highly scalable in terms of audio
         bandwidth, bitrate, and complexity. Further, Opus allows
-        transmitting stereo signals.
+        transmitting stereo signals with in-band signaling in the bit-stream.
       </t>
 
       <section title='Network Bandwidth'>
@@ -268,7 +274,7 @@
             DTX can be used with both variable and constant bitrate.
             It will have a slightly lower speech or audio
             quality than continuous transmission. Therefore, using continuous
-            transmission is RECOMMENDED unless restraints on available network bandwidth
+            transmission is RECOMMENDED unless constraints on available network bandwidth
             are severe.
           </t>
 
@@ -327,7 +333,7 @@
 
         <t>
           Opus allows for transmission of stereo audio signals. This operation
-          is signaled in-band in the Opus payload and no special arrangement
+          is signaled in-band in the Opus bit-stream and no special arrangement
           is needed in the payload format. An
           Opus decoder is capable of handling a stereo encoding, but an
           application might only be capable of consuming a single audio
@@ -368,7 +374,7 @@
         Opus decoder for decoding, and MUST discard the others.</t>
 
         <t>Opus supports 5 different audio bandwidths, which can be adjusted during
-        a call.
+        a stream.
         The RTP timestamp is incremented with a 48000 Hz clock rate
         for all modes of Opus and all sampling rates.
         The unit
@@ -463,8 +469,14 @@
       time increases latency and loss sensitivity, so it ought to be used with
       care.</t>
 
-      <t>It is RECOMMENDED that senders of Opus encoded data apply congestion
-      control.</t>
+      <t>Since UDP does not provide congestion control, applications that use
+      RTP over UDP SHOULD implement their own congestion control above the
+      UDP layer. <xref target="draft-ietf-rmcat-app-interaction-01"/> describes the
+      interactions and conceptual interfaces necessary between the application
+      components that relate to congestion control, including the RTP layer,
+      the higher-level media codec control layer, and the lower-level
+      transport interface, as well as components dedicated to congestion
+      control functions.</t>
     </section>
 
     <section title='IANA Considerations'>
@@ -876,6 +888,26 @@
       specification <xref target="RFC3550"/> and any profile from,
       e.g., <xref target="RFC3711"/> or <xref target="RFC3551"/>.</t>
 
+      <t>Use of variable bitrate (VBR) is subject to the security considerations in
+      <xref target="RFC6562"/>.</t>
+
+      <t>RTP packets using the payload format defined in this specification
+      are subject to the security considerations discussed in the RTP
+      specification <xref target="RFC3550"/>, and in any applicable RTP profile such as
+      RTP/AVP <xref target="RFC3551"/>, RTP/AVPF <xref target="RFC4585"/>,
+      RTP/SAVP <xref target="RFC3711"/> or RTP/SAVPF <xref target="RFC5124"/>.
+      However, as "Securing the RTP Protocol Framework:
+      Why RTP Does Not Mandate a Single Media Security Solution"
+      <xref target="RFC7202"/> discusses it is not an RTP payload
+      formats responsibility to discuss or mandate what solutions are used
+      to meet the basic security goals like confidentiality, integrity and
+      source authenticity for RTP in general.  This responsibility lays on
+      anyone using RTP in an application.  They can find guidance on
+      available security mechanisms and important considerations in Options
+      for Securing RTP Sessions [I-D.ietf-avtcore-rtp-security-options].
+      Applications SHOULD use one or more appropriate strong security
+      mechanisms.</t>
+
       <t>This payload format transports Opus encoded speech or audio data.
       Hence, security issues include confidentiality, integrity protection, and
       authentication of the speech or audio itself. Opus does not provide
@@ -915,6 +947,30 @@
 
     <references title="Informative References">
       &rfc2974;
+      &rfc4585;
+      &rfc5124;
+      &rfc7202;
+      
+      <reference anchor='draft-ietf-rmcat-app-interaction-01' target='http://tools.ietf.org/html/draft-ietf-rmcat-app-interaction-01'>
+        <front>
+          <title>RTP Application Interaction with Congestion Control</title>
+          <author initials='M.' surname='Zanaty' fullname='M. Zanaty'>
+          <organization /></author>
+          <author initials='V.' surname='Singh' fullname='V. Singh'>
+          <organization /></author>
+          <author initials='S.' surname='Nandakumar' fullname='S. Nandakumar'>
+          <organization /></author>
+          <author initials='Z.' surname='Sarker' fullname='Z. Sarker'>
+          <organization /></author>
+          <date year='2014' month='October' />
+          <abstract>
+            <t></t>
+          </abstract></front>
+        <seriesInfo name='Internet-Draft' value='draft-ietf-rmcat-app-interaction-01' />
+        <format type='TXT' target='http://tools.ietf.org/html/draft-ietf-rmcat-app-interaction-01' />
+      </reference>
+
+
     </references>
 
   </back>
