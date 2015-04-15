@@ -21,7 +21,7 @@
 <!ENTITY nbsp "&#160;">
   ]>
 
-  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-09">
+  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-10">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -883,11 +883,6 @@
 
     <section title='Security Considerations' anchor='security-considerations'>
 
-      <t>All RTP packets using the payload format defined in this specification
-      are subject to the general security considerations discussed in the RTP
-      specification <xref target="RFC3550"/> and any profile from,
-      e.g., <xref target="RFC3711"/> or <xref target="RFC3551"/>.</t>
-
       <t>Use of variable bitrate (VBR) is subject to the security considerations in
       <xref target="RFC6562"/>.</t>
 
@@ -898,8 +893,8 @@
       RTP/SAVP <xref target="RFC3711"/> or RTP/SAVPF <xref target="RFC5124"/>.
       However, as "Securing the RTP Protocol Framework:
       Why RTP Does Not Mandate a Single Media Security Solution"
-      <xref target="RFC7202"/> discusses it is not an RTP payload
-      formats responsibility to discuss or mandate what solutions are used
+      <xref target="RFC7202"/> discusses, it is not an RTP payload
+      format's responsibility to discuss or mandate what solutions are used
       to meet the basic security goals like confidentiality, integrity and
       source authenticity for RTP in general.  This responsibility lays on
       anyone using RTP in an application.  They can find guidance on
@@ -907,12 +902,6 @@
       for Securing RTP Sessions [I-D.ietf-avtcore-rtp-security-options].
       Applications SHOULD use one or more appropriate strong security
       mechanisms.</t>
-
-      <t>This payload format transports Opus encoded speech or audio data.
-      Hence, security issues include confidentiality, integrity protection, and
-      authentication of the speech or audio itself. Opus does not provide
-      any confidentiality or integrity protection. Any suitable external
-      mechanisms, such as SRTP <xref target="RFC3711"/>, MAY be used.</t>
 
       <t>This payload format and the Opus encoding do not exhibit any
       significant non-uniformity in the receiver-end computational load and thus
