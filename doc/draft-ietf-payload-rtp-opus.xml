@@ -14,6 +14,7 @@
 <!ENTITY rfc2326 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2326.xml'>
 <!ENTITY rfc3555 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3555.xml'>
 <!ENTITY rfc5124 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5124.xml'>
+<!ENTITY rfc5405 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5405.xml'>
 <!ENTITY rfc5576 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5576.xml'>
 <!ENTITY rfc6562 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6562.xml'>
 <!ENTITY rfc6716 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6716.xml'>
@@ -21,7 +22,7 @@
 <!ENTITY nbsp "&#160;">
   ]>
 
-  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-10">
+  <rfc category="std" ipr="trust200902" docName="draft-ietf-payload-rtp-opus-11">
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
 <?rfc strict="yes" ?>
@@ -74,7 +75,7 @@
       </address>
     </author>
 
-    <date day='10' month='April' year='2015' />
+    <date day='14' month='April' year='2015' />
 
     <abstract>
       <t>
@@ -471,7 +472,8 @@
 
       <t>Since UDP does not provide congestion control, applications that use
       RTP over UDP SHOULD implement their own congestion control above the
-      UDP layer. <xref target="draft-ietf-rmcat-app-interaction-01"/> describes the
+      UDP layer <xref target="RFC5405"/>. Work in the rmcat working group
+      <xref target="rmcat"/> describes the
       interactions and conceptual interfaces necessary between the application
       components that relate to congestion control, including the RTP layer,
       the higher-level media codec control layer, and the lower-level
@@ -938,25 +940,17 @@
       &rfc2974;
       &rfc4585;
       &rfc5124;
+      &rfc5405;
       &rfc7202;
       
-      <reference anchor='draft-ietf-rmcat-app-interaction-01' target='http://tools.ietf.org/html/draft-ietf-rmcat-app-interaction-01'>
+      <reference anchor='rmcat' target='https://datatracker.ietf.org/wg/rmcat/documents/'>
         <front>
-          <title>RTP Application Interaction with Congestion Control</title>
-          <author initials='M.' surname='Zanaty' fullname='M. Zanaty'>
-          <organization /></author>
-          <author initials='V.' surname='Singh' fullname='V. Singh'>
-          <organization /></author>
-          <author initials='S.' surname='Nandakumar' fullname='S. Nandakumar'>
-          <organization /></author>
-          <author initials='Z.' surname='Sarker' fullname='Z. Sarker'>
-          <organization /></author>
-          <date year='2014' month='October' />
+          <title>rmcat documents</title>
+          <author/>
+          <date/>
           <abstract>
             <t></t>
           </abstract></front>
-        <seriesInfo name='Internet-Draft' value='draft-ietf-rmcat-app-interaction-01' />
-        <format type='TXT' target='http://tools.ietf.org/html/draft-ietf-rmcat-app-interaction-01' />
       </reference>
 
 
