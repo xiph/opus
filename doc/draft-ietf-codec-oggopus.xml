@@ -11,7 +11,7 @@
 ]>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-06">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-07">
 
 <front>
 <title abbrev="Ogg Opus">Ogg Encapsulation for the Opus Audio Codec</title>
@@ -60,7 +60,7 @@
 </address>
 </author>
 
-<date day="18" month="October" year="2014"/>
+<date day="28" month="April" year="2015"/>
 <area>RAI</area>
 <workgroup>codec</workgroup>
 
