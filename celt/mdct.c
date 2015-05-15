@@ -239,12 +239,13 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
 #endif /* OVERRIDE_clt_mdct_forward */
 
 #ifndef OVERRIDE_clt_mdct_backward
-void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
-      const opus_val16 * OPUS_RESTRICT window, int overlap, int shift, int stride)
+void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
+      const opus_val16 * OPUS_RESTRICT window, int overlap, int shift, int stride, int arch)
 {
    int i;
    int N, N2, N4;
    const kiss_twiddle_scalar *trig;
+   (void) arch;
 
    N = l->n;
    trig = l->trig;

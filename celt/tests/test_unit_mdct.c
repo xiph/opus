@@ -167,7 +167,7 @@ void test1d(int nfft,int isinverse,int arch)
     {
        for (k=0;k<nfft;++k)
           out[k] = 0;
-       clt_mdct_backward(&cfg,in,out, window, nfft/2, 0, 1);
+       clt_mdct_backward(&cfg,in,out, window, nfft/2, 0, 1, arch);
        /* apply TDAC because clt_mdct_backward() no longer does that */
        for (k=0;k<nfft/4;++k)
           out[nfft-k-1] = out[nfft/2+k];

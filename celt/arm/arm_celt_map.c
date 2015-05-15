@@ -79,6 +79,15 @@ void (*const OPUS_FFT[OPUS_ARCHMASK+1])(const kiss_fft_state *cfg,
    opus_fft_float_neon           /* Neon with NE10 */
 };
 
+void (*const OPUS_IFFT[OPUS_ARCHMASK+1])(const kiss_fft_state *cfg,
+                                         const kiss_fft_cpx *fin,
+                                         kiss_fft_cpx *fout) = {
+   opus_ifft_c,                   /* ARMv4 */
+   opus_ifft_c,                   /* EDSP */
+   opus_ifft_c,                   /* Media */
+   opus_ifft_float_neon           /* Neon with NE10 */
+};
+
 void (*const CLT_MDCT_FORWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
                                                      kiss_fft_scalar *in,
                                                      kiss_fft_scalar * OPUS_RESTRICT out,
@@ -90,6 +99,19 @@ void (*const CLT_MDCT_FORWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
    clt_mdct_forward_c,           /* Media */
    clt_mdct_forward_float_neon   /* Neon with NE10 */
 };
+
+void (*const CLT_MDCT_BACKWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
+                                                      kiss_fft_scalar *in,
+                                                      kiss_fft_scalar * OPUS_RESTRICT out,
+                                                      const opus_val16 *window,
+                                                      int overlap, int shift,
+                                                      int stride, int arch) = {
+   clt_mdct_backward_c,           /* ARMv4 */
+   clt_mdct_backward_c,           /* EDSP */
+   clt_mdct_backward_c,           /* Media */
+   clt_mdct_backward_float_neon   /* Neon with NE10 */
+};
+
 #   endif /* HAVE_ARM_NE10 */
 #  endif /* OPUS_ARM_MAY_HAVE_NEON_INTR */
 # endif /* FIXED_POINT */
