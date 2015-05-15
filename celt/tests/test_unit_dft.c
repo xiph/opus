@@ -140,7 +140,7 @@ void test1d(int nfft,int isinverse,int arch)
     /*for (k=0;k<nfft;++k) printf("%d %d ", in[k].r, in[k].i);printf("\n");*/
 
     if (isinverse)
-       opus_ifft(cfg,in,out);
+       opus_ifft(cfg,in,out, arch);
     else
        opus_fft(cfg,in,out, arch);
 

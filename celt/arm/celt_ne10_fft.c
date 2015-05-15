@@ -118,4 +118,30 @@ void opus_fft_float_neon(const kiss_fft_state *st,
    }
    RESTORE_STACK;
 }
+
+void opus_ifft_float_neon(const kiss_fft_state *st,
+                          const kiss_fft_cpx *fin,
+                          kiss_fft_cpx *fout)
+{
+   ne10_fft_state_float32_t state;
+   ne10_fft_cfg_float32_t cfg = &state;
+   VARDECL(ne10_fft_cpx_float32_t, buffer);
+   SAVE_STACK;
+   ALLOC(buffer, st->nfft, ne10_fft_cpx_float32_t);
+
+   if (!st->arch_fft->is_supported) {
+      /* This nfft length (scaled fft) not supported in NE10 */
+      opus_ifft_c(st, fin, fout);
+   }
+   else {
+      memcpy((void *)cfg, st->arch_fft->priv, sizeof(ne10_fft_state_float32_t));
+      state.buffer = (ne10_fft_cpx_float32_t *)&buffer[0];
+      state.is_backward_scaled = 0;
+
+      ne10_fft_c2c_1d_float32_neon((ne10_fft_cpx_float32_t *)fout,
+                                   (ne10_fft_cpx_float32_t *)fin,
+                                   cfg, 1);
+   }
+   RESTORE_STACK;
+}
 #endif /* !defined(FIXED_POINT) */

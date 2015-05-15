@@ -2072,7 +2072,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          out_mem[c] = st->syn_mem[c]+2*MAX_PERIOD-N;
       } while (++c<CC);
 
-      celt_synthesis(mode, X, out_mem, oldBandE, start, effEnd, C, CC, isTransient, LM, st->upsample, silence);
+      celt_synthesis(mode, X, out_mem, oldBandE, start, effEnd,
+                     C, CC, isTransient, LM, st->upsample, silence, st->arch);
 
       c=0; do {
          st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);

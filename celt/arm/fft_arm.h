@@ -46,6 +46,11 @@ void opus_fft_free_arm_float_neon(kiss_fft_state *st);
 void opus_fft_float_neon(const kiss_fft_state *st,
                          const kiss_fft_cpx *fin,
                          kiss_fft_cpx *fout);
+
+void opus_ifft_float_neon(const kiss_fft_state *st,
+                         const kiss_fft_cpx *fin,
+                         kiss_fft_cpx *fout);
+
 #if !defined(OPUS_HAVE_RTCD)
 #define OVERRIDE_OPUS_FFT (1)
 
@@ -57,6 +62,9 @@ void opus_fft_float_neon(const kiss_fft_state *st,
 
 #define opus_fft(_st, _fin, _fout, arch) \
    ((void)(arch), opus_fft_float_neon(_st, _fin, _fout))
+
+#define opus_ifft(_st, _fin, _fout, arch) \
+   ((void)(arch), opus_ifft_float_neon(_st, _fin, _fout))
 
 #endif /* OPUS_HAVE_RTCD */
 

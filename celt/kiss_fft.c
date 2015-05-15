@@ -589,8 +589,7 @@ void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *f
 }
 
 
-#ifdef TEST_UNIT_DFT_C
-void opus_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void opus_ifft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
    int i;
    celt_assert2 (fin != fout, "In-place FFT not supported");
@@ -603,4 +602,3 @@ void opus_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fo
    for (i=0;i<st->nfft;i++)
       fout[i].i = -fout[i].i;
 }
-#endif
