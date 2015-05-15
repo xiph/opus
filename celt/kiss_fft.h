@@ -93,12 +93,10 @@ typedef struct kiss_fft_state{
     opus_int16 factors[2*MAXFACTORS];
     const opus_int16 *bitrev;
     const kiss_twiddle_cpx *twiddles;
-#ifndef FIXED_POINT
     arch_fft_state *arch_fft;
-#endif
 } kiss_fft_state;
 
-#if !defined(FIXED_POINT) && defined(HAVE_ARM_NE10)
+#if defined(HAVE_ARM_NE10)
 #include "arm/fft_arm.h"
 #endif
 
