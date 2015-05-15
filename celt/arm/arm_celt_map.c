@@ -91,7 +91,6 @@ void (*const OPUS_IFFT[OPUS_ARCHMASK+1])(const kiss_fft_state *cfg,
    opus_ifft_neon                 /* Neon with NE10 */
 };
 
-#   if !defined(FIXED_POINT)
 void (*const CLT_MDCT_FORWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
                                                      kiss_fft_scalar *in,
                                                      kiss_fft_scalar * OPUS_RESTRICT out,
@@ -101,7 +100,7 @@ void (*const CLT_MDCT_FORWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
    clt_mdct_forward_c,           /* ARMv4 */
    clt_mdct_forward_c,           /* EDSP */
    clt_mdct_forward_c,           /* Media */
-   clt_mdct_forward_float_neon   /* Neon with NE10 */
+   clt_mdct_forward_neon         /* Neon with NE10 */
 };
 
 void (*const CLT_MDCT_BACKWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
@@ -113,10 +112,9 @@ void (*const CLT_MDCT_BACKWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
    clt_mdct_backward_c,           /* ARMv4 */
    clt_mdct_backward_c,           /* EDSP */
    clt_mdct_backward_c,           /* Media */
-   clt_mdct_backward_float_neon   /* Neon with NE10 */
+   clt_mdct_backward_neon         /* Neon with NE10 */
 };
 
-#   endif /* !FIXED_POINT */
 #  endif /* HAVE_ARM_NE10 */
 # endif /* OPUS_ARM_MAY_HAVE_NEON_INTR */
 
