@@ -176,8 +176,14 @@ int main(int argc,char ** argv)
         test1d(36,1,arch);
         test1d(50,0,arch);
         test1d(50,1,arch);
+        test1d(60,0,arch);
+        test1d(60,1,arch);
         test1d(120,0,arch);
         test1d(120,1,arch);
+        test1d(240,0,arch);
+        test1d(240,1,arch);
+        test1d(480,0,arch);
+        test1d(480,1,arch);
 #endif
     }
     return ret;
