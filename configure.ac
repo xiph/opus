@@ -477,43 +477,36 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
           ]
       )
 
-      #Currently we only have intrinsic optimizations for floating point
-      AS_IF([test x"$enable_float" = x"yes"],
+      AS_IF([test x"$OPUS_ARM_MAY_HAVE_NEON_INTR" = x"1"],
       [
-         AS_IF([test x"$OPUS_ARM_MAY_HAVE_NEON_INTR" = x"1"],
+         AC_DEFINE([OPUS_ARM_MAY_HAVE_NEON_INTR], 1, [Compiler supports ARMv7 Neon Intrinsics])
+         intrinsics_support="$intrinsics_support (Neon_Intrinsics)"
+
+         AS_IF([test x"enable_rtcd" != x"" && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
+            [rtcd_support="$rtcd_support (ARMv7_Neon_Intrinsics)"],[])
+
+         AS_IF([test x"$OPUS_ARM_PRESUME_NEON_INTR" = x"1"],
+            [AC_DEFINE([OPUS_ARM_PRESUME_NEON_INTR], 1, [Define if binary requires NEON intrinsics support])])
+
+         OPUS_PATH_NE10()
+         AS_IF([test x"$NE10_LIBS" != x""],
          [
-            AC_DEFINE([OPUS_ARM_MAY_HAVE_NEON_INTR], 1, [Compiler supports ARMv7 Neon Intrinsics])
-            intrinsics_support="$intrinsics_support (Neon_Intrinsics)"
-
-            AS_IF([test x"enable_rtcd" != x"" && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
-               [rtcd_support="$rtcd_support (ARMv7_Neon_Intrinsics)"],[])
-
-            AS_IF([test x"$OPUS_ARM_PRESUME_NEON_INTR" = x"1"],
-               [AC_DEFINE([OPUS_ARM_PRESUME_NEON_INTR], 1, [Define if binary requires NEON intrinsics support])])
-
-            OPUS_PATH_NE10()
-            AS_IF([test x"$NE10_LIBS" != x""],
-            [
-                 intrinsics_support="$intrinsics_support (NE10)"
-                 AS_IF([test x"enable_rtcd" != x"" \
-                  && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
-                    [rtcd_support="$rtcd_support (NE10)"],[])
-            ])
-
-            AS_IF([test x"$rtcd_support" = x""],
-               [rtcd_support=no])
-
-            AS_IF([test x"$intrinsics_support" = x""],
-               [intrinsics_support=no],
-			   [intrinsics_support="arm$intrinsics_support"])
-         ],
-         [
-            AC_MSG_WARN([Compiler does not support ARM intrinsics])
-            intrinsics_support=no
+              intrinsics_support="$intrinsics_support (NE10)"
+              AS_IF([test x"enable_rtcd" != x"" \
+               && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
+                 [rtcd_support="$rtcd_support (NE10)"],[])
          ])
-      ], [
-            AC_MSG_WARN([Currently only have ARM intrinsics for float])
-            intrinsics_support=no
+
+         AS_IF([test x"$rtcd_support" = x""],
+            [rtcd_support=no])
+
+         AS_IF([test x"$intrinsics_support" = x""],
+            [intrinsics_support=no],
+            [intrinsics_support="arm$intrinsics_support"])
+      ],
+      [
+         AC_MSG_WARN([Compiler does not support ARM intrinsics])
+         intrinsics_support=no
       ])
    ],
    [i?86|x86_64],

@@ -55,7 +55,7 @@
 # include "celt_lpc.c"
 # if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
 #  include "arm/celt_neon_intr.c"
-#  if !defined(FIXED_POINT) && defined(HAVE_ARM_NE10)
+#  if defined(HAVE_ARM_NE10)
 #   include "arm/celt_ne10_fft.c"
 #   include "arm/celt_ne10_mdct.c"
 #  endif

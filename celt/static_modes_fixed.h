@@ -4,6 +4,11 @@
 #include "modes.h"
 #include "rate.h"
 
+#ifdef HAVE_ARM_NE10
+#define OVERRIDE_FFT 1
+#include "static_modes_fixed_arm_ne10.h"
+#endif
+
 #ifndef DEF_WINDOW120
 #define DEF_WINDOW120
 static const opus_val16 window120[120] = {
@@ -432,6 +437,11 @@ static const kiss_fft_state fft_state48000_960_0 = {
 {5, 96, 3, 32, 4, 8, 2, 4, 4, 1, 0, 0, 0, 0, 0, 0, },    /* factors */
 fft_bitrev480,  /* bitrev */
 fft_twiddles48000_960,  /* bitrev */
+#ifdef OVERRIDE_FFT
+(arch_fft_state *)&cfg_arch_480,
+#else
+NULL,
+#endif
 };
 #endif
 
@@ -445,6 +455,11 @@ static const kiss_fft_state fft_state48000_960_1 = {
 {5, 48, 3, 16, 4, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, },    /* factors */
 fft_bitrev240,  /* bitrev */
 fft_twiddles48000_960,  /* bitrev */
+#ifdef OVERRIDE_FFT
+(arch_fft_state *)&cfg_arch_240,
+#else
+NULL,
+#endif
 };
 #endif
 
@@ -458,6 +473,11 @@ static const kiss_fft_state fft_state48000_960_2 = {
 {5, 24, 3, 8, 2, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, },    /* factors */
 fft_bitrev120,  /* bitrev */
 fft_twiddles48000_960,  /* bitrev */
+#ifdef OVERRIDE_FFT
+(arch_fft_state *)&cfg_arch_120,
+#else
+NULL,
+#endif
 };
 #endif
 
@@ -471,6 +491,11 @@ static const kiss_fft_state fft_state48000_960_3 = {
 {5, 12, 3, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },    /* factors */
 fft_bitrev60,   /* bitrev */
 fft_twiddles48000_960,  /* bitrev */
+#ifdef OVERRIDE_FFT
+(arch_fft_state *)&cfg_arch_60,
+#else
+NULL,
+#endif
 };
 #endif
 
