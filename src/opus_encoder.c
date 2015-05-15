@@ -1006,7 +1006,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        analysis_read_subframe_bak = st->analysis.read_subframe;
        run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
              c1, c2, analysis_channels, st->Fs,
-             lsb_depth, downmix, &analysis_info);
+             lsb_depth, downmix, &analysis_info, st->arch);
     }
 #else
     (void)analysis_pcm;

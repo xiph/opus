@@ -45,6 +45,23 @@
 #include "mathops.c"
 #include "entcode.c"
 
+#if defined(OPUS_X86_MAY_HAVE_SSE2) || defined(OPUS_X86_MAY_HAVE_SSE4_1)
+# include "x86/x86cpu.c"
+#elif defined(OPUS_HAVE_RTCD) && \
+         (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_NEON_INTR))
+# include "arm/armcpu.c"
+# include "celt_lpc.c"
+# include "pitch.c"
+# if defined(OPUS_ARM_NEON_INTR)
+#  include "arm/celt_neon_intr.c"
+#  if !defined(FIXED_POINT) && defined(HAVE_ARM_NE10)
+#   include "mdct.c"
+#   include "arm/celt_ne10_fft.c"
+#   include "arm/celt_ne10_mdct.c"
+#  endif
+# endif
+# include "arm/arm_celt_map.c"
+#endif
 
 #ifndef M_PI
 #define M_PI 3.141592653
@@ -93,13 +110,13 @@ void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)
     }
 }
 
-void test1d(int nfft,int isinverse)
+void test1d(int nfft,int isinverse,int arch)
 {
     size_t buflen = sizeof(kiss_fft_cpx)*nfft;
 
     kiss_fft_cpx  * in = (kiss_fft_cpx*)malloc(buflen);
     kiss_fft_cpx  * out= (kiss_fft_cpx*)malloc(buflen);
-    kiss_fft_state *cfg = opus_fft_alloc(nfft,0,0);
+    kiss_fft_state *cfg = opus_fft_alloc(nfft,0,0,arch);
     int k;
 
     for (k=0;k<nfft;++k) {
@@ -125,7 +142,7 @@ void test1d(int nfft,int isinverse)
     if (isinverse)
        opus_ifft(cfg,in,out);
     else
-       opus_fft(cfg,in,out);
+       opus_fft(cfg,in,out, arch);
 
     /*for (k=0;k<nfft;++k) printf("%d %d ", out[k].r, out[k].i);printf("\n");*/
 
@@ -139,26 +156,28 @@ void test1d(int nfft,int isinverse)
 int main(int argc,char ** argv)
 {
     ALLOC_STACK;
+    int arch = opus_select_arch();
+
     if (argc>1) {
         int k;
         for (k=1;k<argc;++k) {
-            test1d(atoi(argv[k]),0);
-            test1d(atoi(argv[k]),1);
+            test1d(atoi(argv[k]),0,arch);
+            test1d(atoi(argv[k]),1,arch);
         }
     }else{
-        test1d(32,0);
-        test1d(32,1);
-        test1d(128,0);
-        test1d(128,1);
-        test1d(256,0);
-        test1d(256,1);
+        test1d(32,0,arch);
+        test1d(32,1,arch);
+        test1d(128,0,arch);
+        test1d(128,1,arch);
+        test1d(256,0,arch);
+        test1d(256,1,arch);
 #ifndef RADIX_TWO_ONLY
-        test1d(36,0);
-        test1d(36,1);
-        test1d(50,0);
-        test1d(50,1);
-        test1d(120,0);
-        test1d(120,1);
+        test1d(36,0,arch);
+        test1d(36,1,arch);
+        test1d(50,0,arch);
+        test1d(50,1,arch);
+        test1d(120,0,arch);
+        test1d(120,1,arch);
 #endif
     }
     return ret;
