@@ -414,7 +414,8 @@ int patch_transient_decision(opus_val16 *newE, opus_val16 *oldE, int nbEBands,
 /** Apply window and compute the MDCT for all sub-frames and
     all channels in a frame */
 static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS_RESTRICT in,
-                          celt_sig * OPUS_RESTRICT out, int C, int CC, int LM, int upsample)
+                          celt_sig * OPUS_RESTRICT out, int C, int CC, int LM, int upsample,
+                          int arch)
 {
    const int overlap = mode->overlap;
    int N;
@@ -435,7 +436,9 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS
       for (b=0;b<B;b++)
       {
          /* Interleaving the sub-frames while doing the MDCTs */
-         clt_mdct_forward(&mode->mdct, in+c*(B*N+overlap)+b*N, &out[b+c*N*B], mode->window, overlap, shift, B);
+         clt_mdct_forward(&mode->mdct, in+c*(B*N+overlap)+b*N,
+                          &out[b+c*N*B], mode->window, overlap, shift, B,
+                          arch);
       }
    } while (++c<CC);
    if (CC==2&&C==1)
@@ -1603,14 +1606,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    ALLOC(bandLogE2, C*nbEBands, opus_val16);
    if (secondMdct)
    {
-      compute_mdcts(mode, 0, in, freq, C, CC, LM, st->upsample);
+      compute_mdcts(mode, 0, in, freq, C, CC, LM, st->upsample, st->arch);
       compute_band_energies(mode, freq, bandE, effEnd, C, LM);
       amp2Log2(mode, effEnd, end, bandE, bandLogE2, C);
       for (i=0;i<C*nbEBands;i++)
          bandLogE2[i] += HALF16(SHL16(LM, DB_SHIFT));
    }
 
-   compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample);
+   compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample, st->arch);
    if (CC==2&&C==1)
       tf_chan = 0;
    compute_band_energies(mode, freq, bandE, effEnd, C, LM);
@@ -1736,7 +1739,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       {
          isTransient = 1;
          shortBlocks = M;
-         compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample);
+         compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample, st->arch);
          compute_band_energies(mode, freq, bandE, effEnd, C, LM);
          amp2Log2(mode, effEnd, end, bandE, bandLogE, C);
          /* Compensate for the scaling of short vs long mdcts */

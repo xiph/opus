@@ -35,6 +35,7 @@
 #include "modes.h"
 #include "celt.h"
 #include "rate.h"
+#include "dump_modes_arch.h"
 
 #define INT16 "%d"
 #define INT32 "%d"
@@ -62,6 +63,10 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
    fprintf(file, "\n   It contains static definitions for some pre-defined modes. */\n");
    fprintf(file, "#include \"modes.h\"\n");
    fprintf(file, "#include \"rate.h\"\n");
+   fprintf(file, "\n#ifdef HAVE_ARM_NE10\n");
+   fprintf(file, "#define OVERRIDE_FFT 1\n");
+   fprintf(file, "#include \"%s\"\n", ARM_NE10_ARCH_FILE_NAME);
+   fprintf(file, "#endif\n");
 
    fprintf(file, "\n");
 
@@ -149,6 +154,9 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          fprintf (file, "{" WORD16 ", " WORD16 "},%c", mode->mdct.kfft[0]->twiddles[j].r, mode->mdct.kfft[0]->twiddles[j].i,(j+3)%2==0?'\n':' ');
       fprintf (file, "};\n");
 
+#ifdef OVERRIDE_FFT
+      dump_mode_arch(mode);
+#endif
       /* FFT Bitrev tables */
       for (k=0;k<=mode->mdct.maxshift;k++)
       {
@@ -183,6 +191,13 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          fprintf (file, "},    /* factors */\n");
          fprintf (file, "fft_bitrev%d,    /* bitrev */\n", mode->mdct.kfft[k]->nfft);
          fprintf (file, "fft_twiddles%d_%d,    /* bitrev */\n", mode->Fs, mdctSize);
+
+         fprintf (file, "#ifdef OVERRIDE_FFT\n");
+         fprintf (file, "(arch_fft_state *)&cfg_arch_%d,\n", mode->mdct.kfft[k]->nfft);
+         fprintf (file, "#else\n");
+         fprintf (file, "NULL,\n");
+         fprintf(file, "#endif\n");
+
          fprintf (file, "};\n");
 
          fprintf(file, "#endif\n");
@@ -323,8 +338,14 @@ int main(int argc, char **argv)
       }
    }
    file = fopen(BASENAME ".h", "w");
+#ifdef OVERRIDE_FFT
+   dump_modes_arch_init(m, nb);
+#endif
    dump_modes(file, m, nb);
    fclose(file);
+#ifdef OVERRIDE_FFT
+   dump_modes_arch_finalize();
+#endif
    for (i=0;i<nb;i++)
       opus_custom_mode_destroy(m[i]);
    free(m);

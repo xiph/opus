@@ -31,12 +31,15 @@ celt/stack_alloc.h \
 celt/vq.h \
 celt/static_modes_float.h \
 celt/static_modes_fixed.h \
+celt/static_modes_float_arm_ne10.h \
 celt/arm/armcpu.h \
 celt/arm/fixed_armv4.h \
 celt/arm/fixed_armv5e.h \
 celt/arm/kiss_fft_armv4.h \
 celt/arm/kiss_fft_armv5e.h \
 celt/arm/pitch_arm.h \
+celt/arm/fft_arm.h \
+celt/arm/mdct_arm.h \
 celt/mips/celt_mipsr1.h \
 celt/mips/fixed_generic_mipsr1.h \
 celt/mips/kiss_fft_mipsr1.h \

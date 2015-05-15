@@ -53,18 +53,45 @@ typedef struct {
    const kiss_twiddle_scalar * OPUS_RESTRICT trig;
 } mdct_lookup;
 
-int clt_mdct_init(mdct_lookup *l,int N, int maxshift);
-void clt_mdct_clear(mdct_lookup *l);
+#if !defined(FIXED_POINT) && defined(HAVE_ARM_NE10)
+#include "arm/mdct_arm.h"
+#endif
+
+
+int clt_mdct_init(mdct_lookup *l,int N, int maxshift, int arch);
+void clt_mdct_clear(mdct_lookup *l, int arch);
 
 /** Compute a forward MDCT and scale by 4/N, trashes the input array */
-void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in,
-      kiss_fft_scalar * OPUS_RESTRICT out,
-      const opus_val16 *window, int overlap, int shift, int stride);
+void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in,
+                        kiss_fft_scalar * OPUS_RESTRICT out,
+                        const opus_val16 *window, int overlap,
+                        int shift, int stride, int arch);
 
 /** Compute a backward MDCT (no scaling) and performs weighted overlap-add
     (scales implicitly by 1/2) */
 void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in,
       kiss_fft_scalar * OPUS_RESTRICT out,
       const opus_val16 * OPUS_RESTRICT window, int overlap, int shift, int stride);
+
+#if !defined(OVERRIDE_OPUS_MDCT)
+/* Is run-time CPU detection enabled on this platform? */
+#if defined(OPUS_HAVE_RTCD) && (defined(HAVE_ARM_NE10))
+
+extern void (*const CLT_MDCT_FORWARD_IMPL[OPUS_ARCHMASK+1])(
+      const mdct_lookup *l, kiss_fft_scalar *in,
+      kiss_fft_scalar * OPUS_RESTRICT out, const opus_val16 *window,
+      int overlap, int shift, int stride, int arch);
+
+#define clt_mdct_forward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
+   ((*CLT_MDCT_FORWARD_IMPL[(arch)&OPUS_ARCHMASK])(_l, _in, _out, \
+                                                   _window, _overlap, _shift, \
+                                                   _stride, _arch))
+#else /* else for if defined(OPUS_HAVE_RTCD) && (defined(HAVE_ARM_NE10)) */
+
+#define clt_mdct_forward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
+   clt_mdct_forward_c(_l, _in, _out, _window, _overlap, _shift, _stride, _arch)
+
+#endif /* end if defined(OPUS_HAVE_RTCD) && (defined(HAVE_ARM_NE10)) */
+#endif /* end if !defined(OVERRIDE_OPUS_MDCT) */
 
 #endif

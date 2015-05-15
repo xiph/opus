@@ -60,7 +60,7 @@
 
 #ifdef CUSTOM_MODES
 
-int clt_mdct_init(mdct_lookup *l,int N, int maxshift)
+int clt_mdct_init(mdct_lookup *l,int N, int maxshift, int arch)
 {
    int i;
    kiss_twiddle_scalar *trig;
@@ -71,9 +71,9 @@ int clt_mdct_init(mdct_lookup *l,int N, int maxshift)
    for (i=0;i<=maxshift;i++)
    {
       if (i==0)
-         l->kfft[i] = opus_fft_alloc(N>>2>>i, 0, 0);
+         l->kfft[i] = opus_fft_alloc(N>>2>>i, 0, 0, arch);
       else
-         l->kfft[i] = opus_fft_alloc_twiddles(N>>2>>i, 0, 0, l->kfft[0]);
+         l->kfft[i] = opus_fft_alloc_twiddles(N>>2>>i, 0, 0, l->kfft[0], arch);
 #ifndef ENABLE_TI_DSPLIB55
       if (l->kfft[i]==NULL)
          return 0;
@@ -104,11 +104,11 @@ int clt_mdct_init(mdct_lookup *l,int N, int maxshift)
    return 1;
 }
 
-void clt_mdct_clear(mdct_lookup *l)
+void clt_mdct_clear(mdct_lookup *l, int arch)
 {
    int i;
    for (i=0;i<=l->maxshift;i++)
-      opus_fft_free(l->kfft[i]);
+      opus_fft_free(l->kfft[i], arch);
    opus_free((kiss_twiddle_scalar*)l->trig);
 }
 
@@ -116,8 +116,8 @@ void clt_mdct_clear(mdct_lookup *l)
 
 /* Forward MDCT trashes the input array */
 #ifndef OVERRIDE_clt_mdct_forward
-void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
-      const opus_val16 *window, int overlap, int shift, int stride)
+void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
+      const opus_val16 *window, int overlap, int shift, int stride, int arch)
 {
    int i;
    int N, N2, N4;
@@ -132,6 +132,7 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    int scale_shift = st->scale_shift-1;
 #endif
    SAVE_STACK;
+   (void)arch;
    scale = st->scale;
 
    N = l->n;

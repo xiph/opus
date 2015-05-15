@@ -423,13 +423,19 @@ static void compute_twiddles(kiss_twiddle_cpx *twiddles, int nfft)
 #endif
 }
 
+int opus_fft_alloc_arch_c(kiss_fft_state *st) {
+   (void)st;
+   return 0;
+}
+
 /*
  *
  * Allocates all necessary storage space for the fft and ifft.
  * The return value is a contiguous block of memory.  As such,
  * It can be freed with free().
  * */
-kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  const kiss_fft_state *base)
+kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,
+                                        const kiss_fft_state *base, int arch)
 {
     kiss_fft_state *st=NULL;
     size_t memneeded = sizeof(struct kiss_fft_state); /* twiddle factors*/
@@ -478,22 +484,31 @@ kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
         if (st->bitrev==NULL)
             goto fail;
         compute_bitrev_table(0, bitrev, 1,1, st->factors,st);
+
+        /* Initialize architecture specific fft parameters */
+        if (opus_fft_alloc_arch(st, arch))
+            goto fail;
     }
     return st;
 fail:
-    opus_fft_free(st);
+    opus_fft_free(st, arch);
     return NULL;
 }
 
-kiss_fft_state *opus_fft_alloc(int nfft,void * mem,size_t * lenmem )
+kiss_fft_state *opus_fft_alloc(int nfft,void * mem,size_t * lenmem, int arch)
 {
-   return opus_fft_alloc_twiddles(nfft, mem, lenmem, NULL);
+   return opus_fft_alloc_twiddles(nfft, mem, lenmem, NULL, arch);
 }
 
-void opus_fft_free(const kiss_fft_state *cfg)
+void opus_fft_free_arch_c(kiss_fft_state *st) {
+   (void)st;
+}
+
+void opus_fft_free(const kiss_fft_state *cfg, int arch)
 {
    if (cfg)
    {
+      opus_fft_free_arch((kiss_fft_state *)cfg, arch);
       opus_free((opus_int16*)cfg->bitrev);
       if (cfg->shift < 0)
          opus_free((kiss_twiddle_cpx*)cfg->twiddles);
@@ -551,7 +566,7 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout)
     }
 }
 
-void opus_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
    int i;
    opus_val16 scale;

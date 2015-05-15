@@ -187,7 +187,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    info_out->music_prob = psum;
 }
 
-static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix)
+static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix, int arch)
 {
     int i, b;
     const kiss_fft_state *kfft;
@@ -260,7 +260,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
     downmix(x, &tonal->inmem[240], remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C);
     tonal->mem_fill = 240 + remaining;
-    opus_fft(kfft, in, out);
+    opus_fft(kfft, in, out, arch);
 #ifndef FIXED_POINT
     /* If there's any NaN on the input, the entire output will be NaN, so we only need to check one value. */
     if (celt_isnan(out[0].r))
@@ -633,7 +633,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 
 void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *analysis_pcm,
                  int analysis_frame_size, int frame_size, int c1, int c2, int C, opus_int32 Fs,
-                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info)
+                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info, int arch)
 {
    int offset;
    int pcm_len;
@@ -646,7 +646,7 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
       pcm_len = analysis_frame_size - analysis->analysis_offset;
       offset = analysis->analysis_offset;
       do {
-         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
+         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, c1, c2, C, lsb_depth, downmix, arch);
          offset += 480;
          pcm_len -= 480;
       } while (pcm_len>0);

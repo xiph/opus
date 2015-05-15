@@ -72,6 +72,7 @@ typedef void (*opus_copy_channel_in_func)(
 
 struct OpusMSEncoder {
    ChannelLayout layout;
+   int arch;
    int lfe_stream;
    int application;
    int variable_duration;
@@ -221,7 +222,7 @@ opus_val16 logSum(opus_val16 a, opus_val16 b)
 #endif
 
 void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *bandLogE, opus_val32 *mem, opus_val32 *preemph_mem,
-      int len, int overlap, int channels, int rate, opus_copy_channel_in_func copy_channel_in
+      int len, int overlap, int channels, int rate, opus_copy_channel_in_func copy_channel_in, int arch
 )
 {
    int c;
@@ -273,7 +274,8 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
          }
       }
 #endif
-      clt_mdct_forward(&celt_mode->mdct, in, freq, celt_mode->window, overlap, celt_mode->maxLM-LM, 1);
+      clt_mdct_forward(&celt_mode->mdct, in, freq, celt_mode->window,
+            overlap, celt_mode->maxLM-LM, 1, arch);
       if (upsample != 1)
       {
          int bound = len;
@@ -427,6 +429,7 @@ static int opus_multistream_encoder_init_impl(
        (streams<1) || (coupled_streams<0) || (streams>255-coupled_streams))
       return OPUS_BAD_ARG;
 
+   st->arch = opus_select_arch();
    st->layout.nb_channels = channels;
    st->layout.nb_streams = streams;
    st->layout.nb_coupled_streams = coupled_streams;
@@ -783,7 +786,7 @@ static int opus_multistream_encode_native
    ALLOC(bandSMR, 21*st->layout.nb_channels, opus_val16);
    if (st->surround)
    {
-      surround_analysis(celt_mode, pcm, bandSMR, mem, preemph_mem, frame_size, 120, st->layout.nb_channels, Fs, copy_channel_in);
+      surround_analysis(celt_mode, pcm, bandSMR, mem, preemph_mem, frame_size, 120, st->layout.nb_channels, Fs, copy_channel_in, st->arch);
    }
 
    /* Compute bitrate allocation between streams (this could be a lot better) */
