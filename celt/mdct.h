@@ -53,7 +53,7 @@ typedef struct {
    const kiss_twiddle_scalar * OPUS_RESTRICT trig;
 } mdct_lookup;
 
-#if !defined(FIXED_POINT) && defined(HAVE_ARM_NE10)
+#if defined(HAVE_ARM_NE10)
 #include "arm/mdct_arm.h"
 #endif
 
@@ -76,7 +76,7 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in,
 
 #if !defined(OVERRIDE_OPUS_MDCT)
 /* Is run-time CPU detection enabled on this platform? */
-#if defined(OPUS_HAVE_RTCD) && defined(HAVE_ARM_NE10) && !defined(FIXED_POINT)
+#if defined(OPUS_HAVE_RTCD) && defined(HAVE_ARM_NE10)
 
 void (*const CLT_MDCT_FORWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
                                                      kiss_fft_scalar *in,
@@ -109,7 +109,7 @@ void (*const CLT_MDCT_BACKWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
 #define clt_mdct_backward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
    clt_mdct_backward_c(_l, _in, _out, _window, _overlap, _shift, _stride, _arch)
 
-#endif /* defined(OPUS_HAVE_RTCD) && defined(HAVE_ARM_NE10) && !defined(FIXED_POINT) */
+#endif /* defined(OPUS_HAVE_RTCD) && defined(HAVE_ARM_NE10) */
 #endif /* end if !defined(OVERRIDE_OPUS_MDCT) */
 
 #endif
