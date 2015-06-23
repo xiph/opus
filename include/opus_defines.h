@@ -525,6 +525,9 @@ extern "C" {
 #define OPUS_GET_DTX(x) OPUS_GET_DTX_REQUEST, __opus_check_int_ptr(x)
 /** Configures the depth of signal being encoded.
   * This is a hint which helps the encoder identify silence and near-silence.
+  * When using opus_encode() * instead of opus_encode_float(), or when libopus
+  * is compiled for fixed-point, the encoder uses the minimum of the value
+  * set here and the value 16.
   * @see OPUS_GET_LSB_DEPTH
   * @param[in] x <tt>opus_int32</tt>: Input precision in bits, between 8 and 24
   *                                   (default: 24).
