@@ -11,7 +11,7 @@
 ]>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-07">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-08">
 
 <front>
 <title abbrev="Ogg Opus">Ogg Encapsulation for the Opus Audio Codec</title>
@@ -60,7 +60,7 @@
 </address>
 </author>
 
-<date day="28" month="April" year="2015"/>
+<date day="6" month="July" year="2015"/>
 <area>RAI</area>
 <workgroup>codec</workgroup>
 
@@ -923,9 +923,9 @@ A decoder encountering a reserved channel mapping family value SHOULD act as
 
 <section anchor="downmix" title="Downmixing">
 <t>
-An Ogg Opus player MUST play any Ogg Opus stream with a channel mapping family
- of 0 or 1, even if the number of channels does not match the physically
- connected audio hardware.
+An Ogg Opus player MUST support any valid channel mapping with a channel
+ mapping family of 0 or 1, even if the number of channels does not match the
+ physically connected audio hardware.
 Players SHOULD perform channel mixing to increase or reduce the number of
  channels as needed.
 </t>
@@ -1181,6 +1181,16 @@ If the least-significant bit of the first byte of this data is 1, then editors
  as desired.
 </t>
 
+<t>
+The comment header can be arbitrarily large and might be spread over a large
+ number of Ogg pages.
+Decoders SHOULD avoid attempting to allocate excessive amounts of memory when
+ presented with a very large comment header.
+To accomplish this, decoders MAY reject a comment header larger than
+ 125,829,120&nbsp;octets, and MAY ignore individual comments that are not fully
+ contained within the first 61,440 octets of the comment header.
+</t>
+
 <section anchor="comment_format" title="Tag Definitions">
 <t>
 The user comment strings follow the NAME=value format described by
@@ -1262,20 +1272,26 @@ In the authors' investigations they were not applied consistently or broadly
 Technically, valid Opus packets can be arbitrarily large due to the padding
  format, although the amount of non-padding data they can contain is bounded.
 These packets might be spread over a similarly enormous number of Ogg pages.
-Encoders SHOULD use no more padding than is necessary to make a variable
- bitrate (VBR) stream constant bitrate (CBR).
+Encoders SHOULD limit the use of padding in audio data packets to no more than
+ is necessary to make a variable bitrate (VBR) stream constant bitrate (CBR).
+Decoders SHOULD reject audio data packets larger than 61,440 octets per Opus
+ stream.
+Such packets necessarily contain more padding than needed for this purpose.
 Decoders SHOULD avoid attempting to allocate excessive amounts of memory when
  presented with a very large packet.
-Decoders SHOULD reject packets larger than 60&nbsp;kB per channel, and display
- a warning message, and MAY reject packets larger than 7.5&nbsp;kB per channel.
+Decoders MAY reject or partially process audio data packets larger than
+ 61,440&nbsp;octets in an Ogg Opus stream with channel mapping families&nbsp;0
+ or&nbsp;1.
+Decoders MAY reject or partially process audio data packets in any Ogg Opus
+ stream if the packet is larger than 61,440&nbsp;octets and also larger than
+ 7,680&nbsp;octets per Opus stream.
 The presence of an extremely large packet in the stream could indicate a
  memory exhaustion attack or stream corruption.
 </t>
 <t>
 In an Ogg Opus stream, the largest possible valid packet that does not use
- padding has a size of (61,298*N&nbsp;-&nbsp;2) octets, or about 60&nbsp;kB per
- Opus stream.
-With 255&nbsp;streams, this is 15,630,988&nbsp;octets (14.9&nbsp;MB) and can
+ padding has a size of (61,298*N&nbsp;-&nbsp;2) octets.
+With 255&nbsp;streams, this is 15,630,988&nbsp;octets and can
  span up to 61,298&nbsp;Ogg pages, all but one of which will have a granule
  position of -1.
 This is of course a very extreme packet, consisting of 255&nbsp;streams, each
@@ -1284,23 +1300,25 @@ This is of course a very extreme packet, consisting of 255&nbsp;streams, each
  efficient manner allowed (a VBR code&nbsp;3 Opus packet).
 Even in such a packet, most of the data will be zeros as 2.5&nbsp;ms frames
  cannot actually use all 1275&nbsp;octets.
+</t>
+<t>
 The largest packet consisting of entirely useful data is
- (15,326*N&nbsp;-&nbsp;2) octets, or about 15&nbsp;kB per stream.
+ (15,326*N&nbsp;-&nbsp;2) octets.
 This corresponds to 120&nbsp;ms of audio encoded as 10&nbsp;ms frames in either
  SILK or Hybrid mode, but at a data rate of over 1&nbsp;Mbps, which makes little
  sense for the quality achieved.
-A more reasonable limit is (7,664*N&nbsp;-&nbsp;2) octets, or about 7.5&nbsp;kB
- per stream.
+</t>
+<t>
+A more reasonable limit is (7,664*N&nbsp;-&nbsp;2) octets.
 This corresponds to 120&nbsp;ms of audio encoded as 20&nbsp;ms stereo CELT mode
  frames, with a total bitrate just under 511&nbsp;kbps (not counting the Ogg
  encapsulation overhead).
-With N=8, the maximum number of channels currently defined by mapping
- family&nbsp;1, this gives a maximum packet size of 61,310&nbsp;octets, or just
- under 60&nbsp;kB.
-This is still quite conservative, as it assumes each output channel is taken
- from one decoded channel of a stereo packet.
-An implementation could reasonably choose any of these numbers for its internal
- limits.
+For channel mapping family 1, N=8 provides a reasonable upper bound, as it
+ allows for each of the 8 possible output channels to be decoded from a
+ separate stereo Opus stream.
+This gives a size of 61,310&nbsp;octets, which is rounded up to a multiple of
+ 1,024&nbsp;octets to yield the audio data packet size of 61,440&nbsp;octets
+ that any implementation is expected to be able to process successfully.
 </t>
 </section>
 
@@ -1489,9 +1507,9 @@ This document has no actions for IANA.
 
 <section anchor="Acknowledgments" title="Acknowledgments">
 <t>
-Thanks to Greg Maxwell, Christopher "Monty" Montgomery, and Jean-Marc Valin for
- their valuable contributions to this document.
-Additional thanks to Andrew D'Addesio, Greg Maxwell, and Vincent Penqeurc'h for
+Thanks to Mark Harris, Greg Maxwell, Christopher "Monty" Montgomery, and
+ Jean-Marc Valin for their valuable contributions to this document.
+Additional thanks to Andrew D'Addesio, Greg Maxwell, and Vincent Penquerc'h for
  their feedback based on early implementations.
 </t>
 </section>
@@ -1610,7 +1628,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </reference>
 
 <reference anchor="vorbis-mapping"
- target="https://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-800004.3.9">
+ target="https://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-810004.3.9">
 <front>
 <title>The Vorbis I Specification, Section 4.3.9 Output Channel Order</title>
 <author initials="C." surname="Montgomery"
@@ -1620,7 +1638,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </reference>
 
 <reference anchor="vorbis-trim"
- target="https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
+ target="https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-132000A.2">
   <front>
     <title>The Vorbis I Specification, Appendix&nbsp;A: Embedding Vorbis
       into an Ogg stream</title>
