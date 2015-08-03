@@ -69,6 +69,24 @@
     <ClCompile Include="..\..\celt\celt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\celt\x86\celt_lpc_sse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\celt\x86\pitch_sse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\celt\x86\pitch_sse2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\celt\x86\pitch_sse4_1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\celt\x86\x86_celt_map.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\celt\x86\x86cpu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\celt\cwrs.h">
@@ -156,6 +174,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\celt\celt_lpc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\celt\x86\celt_lpc_sse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\celt\x86\pitch_sse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\celt\x86\x86cpu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

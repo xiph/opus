@@ -88,7 +88,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../silk/fixed;../../silk/float;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../..;../../silk/fixed;../../silk/float;../../silk;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -118,7 +118,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;WIN64;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../silk/fixed;../../silk/float;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../..;../../silk/fixed;../../silk/float;../../silk;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -149,7 +149,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../silk/fixed;../../silk/float;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../..;../../silk/fixed;../../silk/float;../../silk;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
@@ -184,7 +184,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;WIN64;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../silk/fixed;../../silk/float;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../..;../../silk/fixed;../../silk/float;../../silk;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
@@ -212,6 +212,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\opus_types.h" />
+    <ClInclude Include="..\..\silk\x86\main_sse.h" />
+    <ClInclude Include="..\..\silk\x86\SigProc_FIX_sse.h" />
     <ClInclude Include="..\..\win32\config.h" />
     <ClInclude Include="..\..\silk\control.h" />
     <ClInclude Include="..\..\silk\debug.h" />
@@ -311,6 +313,11 @@
     <ClCompile Include="..\..\silk\table_LSF_cos.c" />
     <ClCompile Include="..\..\silk\VAD.c" />
     <ClCompile Include="..\..\silk\VQ_WMat_EC.c" />
+    <ClCompile Include="..\..\silk\x86\NSQ_del_dec_sse.c" />
+    <ClCompile Include="..\..\silk\x86\NSQ_sse.c" />
+    <ClCompile Include="..\..\silk\x86\VAD_sse.c" />
+    <ClCompile Include="..\..\silk\x86\VQ_WMat_EC_sse.c" />
+    <ClCompile Include="..\..\silk\x86\x86_silk_map.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

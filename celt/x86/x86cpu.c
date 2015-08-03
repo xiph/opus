@@ -43,7 +43,11 @@
 #if defined(_MSC_VER)
 
 #include <intrin.h>
-#define cpuid(info,x) __cpuid(info,x)
+static _inline void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
+{
+	__cpuid((int*)CPUInfo, InfoType);
+}
+
 #else
 
 #if defined(CPU_INFO_BY_C)

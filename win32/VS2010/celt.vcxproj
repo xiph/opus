@@ -37,6 +37,12 @@
     <ClCompile Include="..\..\celt\quant_bands.c" />
     <ClCompile Include="..\..\celt\rate.c" />
     <ClCompile Include="..\..\celt\vq.c" />
+    <ClCompile Include="..\..\celt\x86\celt_lpc_sse.c" />
+    <ClCompile Include="..\..\celt\x86\pitch_sse.c" />
+    <ClCompile Include="..\..\celt\x86\pitch_sse2.c" />
+    <ClCompile Include="..\..\celt\x86\pitch_sse4_1.c" />
+    <ClCompile Include="..\..\celt\x86\x86cpu.c" />
+    <ClCompile Include="..\..\celt\x86\x86_celt_map.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\celt\arch.h" />
@@ -67,6 +73,9 @@
     <ClInclude Include="..\..\celt\static_modes_fixed.h" />
     <ClInclude Include="..\..\celt\static_modes_float.h" />
     <ClInclude Include="..\..\celt\vq.h" />
+    <ClInclude Include="..\..\celt\x86\celt_lpc_sse.h" />
+    <ClInclude Include="..\..\celt\x86\pitch_sse.h" />
+    <ClInclude Include="..\..\celt\x86\x86cpu.h" />
     <ClInclude Include="..\..\celt\_kiss_fft_guts.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -141,7 +150,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\;..\..\include;..\..\celt;..\..\silk;..\..\silk\float;..\..\silk\fixed;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -168,7 +177,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;WIN64;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\;..\..\include;..\..\celt;..\..\silk;..\..\silk\float;..\..\silk\fixed;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -196,7 +205,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\;..\..\include;..\..\celt;..\..\silk;..\..\silk\float;..\..\silk\fixed;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -227,7 +236,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;WIN64;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\;..\..\include;..\..\celt;..\..\silk;..\..\silk\float;..\..\silk\fixed;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>

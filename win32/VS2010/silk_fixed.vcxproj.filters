@@ -18,16 +18,16 @@
     <ClInclude Include="..\..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="main_FIX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SigProc_FIX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="structs_FIX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\opus_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\silk\SigProc_FIX.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\silk\fixed\main_FIX.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\silk\fixed\structs_FIX.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -105,6 +105,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\fixed\LTP_analysis_filter_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\x86\burg_modified_FIX_sse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\x86\prefilter_FIX_sse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\silk\fixed\x86\vector_ops_FIX_sse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
