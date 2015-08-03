@@ -48,14 +48,28 @@
 static void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
 {
 #if defined(CPU_INFO_BY_ASM)
+#if defined(__i386__) && defined(__PIC__)
+/* %ebx is PIC register in 32-bit, so mustn't clobber it. */
+    __asm__ __volatile__ (
+        "xchg %%ebx, %1\n"
+        "cpuid\n"
+        "xchg %%ebx, %1\n":
+        "=a" (CPUInfo[0]),
+        "=r" (CPUInfo[1]),
+        "=c" (CPUInfo[2]),
+        "=d" (CPUInfo[3]) :
+        "0" (InfoType)
+    );
+#else
     __asm__ __volatile__ (
         "cpuid":
         "=a" (CPUInfo[0]),
         "=b" (CPUInfo[1]),
         "=c" (CPUInfo[2]),
         "=d" (CPUInfo[3]) :
-        "a" (InfoType), "c" (0)
+        "0" (InfoType)
     );
+#endif
 #elif defined(CPU_INFO_BY_C)
     __get_cpuid(InfoType, &(CPUInfo[0]), &(CPUInfo[1]), &(CPUInfo[2]), &(CPUInfo[3]));
 #endif
