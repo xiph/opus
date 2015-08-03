@@ -491,9 +491,6 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
           ]
       )
 
-      #Currently we only have intrinsic optimizations for floating point
-      AS_IF([test x"$enable_float" = x"no"],
-      [
          AS_IF([test x"$rtcd_support" = x"no"], [rtcd_support=""])
          AS_IF([test x"$OPUS_X86_MAY_HAVE_SSE" = x"1"],
          [
@@ -541,11 +538,6 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
             [rtcd_support=no],
             [rtcd_support="x86$rtcd_support"],
         )
-      ], [
-            AC_MSG_WARN([Currently only have X86 intrinsics for fixed-point])
-            intrinsics_support=no
-      ]
-    )
 
     AS_IF([test x"$enable_rtcd" = x"yes" && test x"$rtcd_support" != x""],[
             get_cpuid_by_asm="no"

@@ -398,7 +398,7 @@ static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    }
 }
 
-static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, opus_val16 mid, int N)
+static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, opus_val16 mid, int N, int arch)
 {
    int j;
    opus_val32 xp=0, side=0;
@@ -410,7 +410,7 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    opus_val32 t, lgain, rgain;
 
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
-   dual_inner_prod(Y, X, Y, N, &xp, &side);
+   dual_inner_prod(Y, X, Y, N, &xp, &side, arch);
    /* Compensating for the mid normalization */
    xp = MULT16_32_Q15(mid, xp);
    /* mid and side are in Q15, not Q14 like X and Y */
@@ -1348,7 +1348,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
    if (resynth)
    {
       if (N!=2)
-         stereo_merge(X, Y, mid, N);
+         stereo_merge(X, Y, mid, N, ctx->arch);
       if (inv)
       {
          int j;

@@ -698,7 +698,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          comb_filter(etmp, buf+DECODE_BUFFER_SIZE,
               st->postfilter_period, st->postfilter_period, overlap,
               -st->postfilter_gain, -st->postfilter_gain,
-              st->postfilter_tapset, st->postfilter_tapset, NULL, 0);
+              st->postfilter_tapset, st->postfilter_tapset, NULL, 0, st->arch);
 
          /* Simulate TDAC on the concealed audio so that it blends with the
             MDCT of the next frame. */
@@ -1009,11 +1009,11 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       st->postfilter_period_old=IMAX(st->postfilter_period_old, COMBFILTER_MINPERIOD);
       comb_filter(out_syn[c], out_syn[c], st->postfilter_period_old, st->postfilter_period, mode->shortMdctSize,
             st->postfilter_gain_old, st->postfilter_gain, st->postfilter_tapset_old, st->postfilter_tapset,
-            mode->window, overlap);
+            mode->window, overlap, st->arch);
       if (LM!=0)
          comb_filter(out_syn[c]+mode->shortMdctSize, out_syn[c]+mode->shortMdctSize, st->postfilter_period, postfilter_pitch, N-mode->shortMdctSize,
                st->postfilter_gain, postfilter_gain, st->postfilter_tapset, postfilter_tapset,
-               mode->window, overlap);
+               mode->window, overlap, st->arch);
 
    } while (++c<CC);
    st->postfilter_period_old = st->postfilter_period;

@@ -28,6 +28,12 @@
 #if !defined(X86CPU_H)
 # define X86CPU_H
 
+# if defined(OPUS_X86_MAY_HAVE_SSE)
+#  define MAY_HAVE_SSE(name) name ## _sse
+# else
+#  define MAY_HAVE_SSE(name) name ## _c
+# endif
+
 # if defined(OPUS_X86_MAY_HAVE_SSE2)
 #  define MAY_HAVE_SSE2(name) name ## _sse2
 # else

@@ -37,8 +37,8 @@
 #include "modes.h"
 #include "cpu_support.h"
 
-#if defined(__SSE__) && !defined(FIXED_POINT) \
- || defined(OPUS_X86_MAY_HAVE_SSE4_1) || defined(OPUS_X86_MAY_HAVE_SSE2)
+#if (defined(OPUS_X86_MAY_HAVE_SSE) && !defined(FIXED_POINT)) \
+  || ((defined(OPUS_X86_MAY_HAVE_SSE4_1) || defined(OPUS_X86_MAY_HAVE_SSE2)) && defined(FIXED_POINT))
 #include "x86/pitch_sse.h"
 #endif
 
@@ -135,8 +135,7 @@ static OPUS_INLINE void xcorr_kernel_c(const opus_val16 * x, const opus_val16 * 
 #endif /* OVERRIDE_XCORR_KERNEL */
 
 
-#ifndef OVERRIDE_DUAL_INNER_PROD
-static OPUS_INLINE void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
+static OPUS_INLINE void dual_inner_prod_c(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
       int N, opus_val32 *xy1, opus_val32 *xy2)
 {
    int i;
@@ -150,6 +149,10 @@ static OPUS_INLINE void dual_inner_prod(const opus_val16 *x, const opus_val16 *y
    *xy1 = xy01;
    *xy2 = xy02;
 }
+
+#ifndef OVERRIDE_DUAL_INNER_PROD
+# define dual_inner_prod(x, y01, y02, N, xy1, xy2, arch) \
+    ((void)(arch),dual_inner_prod_c(x, y01, y02, N, xy1, xy2))
 #endif
 
 /*We make sure a C version is always available for cases where the overhead of
@@ -168,6 +171,12 @@ static OPUS_INLINE opus_val32 celt_inner_prod_c(const opus_val16 *x,
 # define celt_inner_prod(x, y, N, arch) \
     ((void)(arch),celt_inner_prod_c(x, y, N))
 #endif
+
+#ifdef NON_STATIC_COMB_FILTER_CONST_C
+void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
+     opus_val16 g10, opus_val16 g11, opus_val16 g12);
+#endif
+
 
 #ifdef FIXED_POINT
 opus_val32

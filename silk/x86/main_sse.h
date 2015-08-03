@@ -50,6 +50,15 @@ void silk_VQ_WMat_EC_sse4_1(
     opus_int                    L                               /* I    number of vectors in codebook               */
 );
 
+#if defined OPUS_X86_PRESUME_SSE4_1
+
+#define silk_VQ_WMat_EC(ind, rate_dist_Q14, gain_Q7, in_Q14, W_Q18, cb_Q7, cb_gain_Q7, cl_Q5, \
+                          mu_Q9, max_gain_Q7, L, arch) \
+    ((void)(arch),silk_VQ_WMat_EC_sse4_1(ind, rate_dist_Q14, gain_Q7, in_Q14, W_Q18, cb_Q7, cb_gain_Q7, cl_Q5, \
+                          mu_Q9, max_gain_Q7, L))
+
+#else
+
 extern void (*const SILK_VQ_WMAT_EC_IMPL[OPUS_ARCHMASK + 1])(
     opus_int8                   *ind,                           /* O    index of best codebook vector               */
     opus_int32                  *rate_dist_Q14,                 /* O    best weighted quant error + mu * rate       */
@@ -68,6 +77,8 @@ extern void (*const SILK_VQ_WMAT_EC_IMPL[OPUS_ARCHMASK + 1])(
                           mu_Q9, max_gain_Q7, L, arch) \
     ((*SILK_VQ_WMAT_EC_IMPL[(arch) & OPUS_ARCHMASK])(ind, rate_dist_Q14, gain_Q7, in_Q14, W_Q18, cb_Q7, cb_gain_Q7, cl_Q5, \
                           mu_Q9, max_gain_Q7, L))
+
+#endif
 
 #  define OVERRIDE_silk_NSQ
 
@@ -88,6 +99,15 @@ void silk_NSQ_sse4_1(
     const opus_int              Lambda_Q10,                                 /* I    Rate/distortion tradeoff        */
     const opus_int              LTP_scale_Q14                               /* I    LTP state scaling               */
 );
+
+#if defined OPUS_X86_PRESUME_SSE4_1
+
+#define silk_NSQ(psEncC, NSQ, psIndices, x_Q3, pulses, PredCoef_Q12, LTPCoef_Q14, AR2_Q13, \
+                   HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, pitchL, Lambda_Q10, LTP_scale_Q14, arch) \
+    ((void)(arch),silk_NSQ_sse4_1(psEncC, NSQ, psIndices, x_Q3, pulses, PredCoef_Q12, LTPCoef_Q14, AR2_Q13, \
+                   HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, pitchL, Lambda_Q10, LTP_scale_Q14))
+
+#else
 
 extern void (*const SILK_NSQ_IMPL[OPUS_ARCHMASK + 1])(
     const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
@@ -112,6 +132,8 @@ extern void (*const SILK_NSQ_IMPL[OPUS_ARCHMASK + 1])(
     ((*SILK_NSQ_IMPL[(arch) & OPUS_ARCHMASK])(psEncC, NSQ, psIndices, x_Q3, pulses, PredCoef_Q12, LTPCoef_Q14, AR2_Q13, \
                    HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, pitchL, Lambda_Q10, LTP_scale_Q14))
 
+#endif
+
 #  define OVERRIDE_silk_NSQ_del_dec
 
 void silk_NSQ_del_dec_sse4_1(
@@ -131,6 +153,15 @@ void silk_NSQ_del_dec_sse4_1(
     const opus_int              Lambda_Q10,                                 /* I    Rate/distortion tradeoff        */
     const opus_int              LTP_scale_Q14                               /* I    LTP state scaling               */
 );
+
+#if defined OPUS_X86_PRESUME_SSE4_1
+
+#define silk_NSQ_del_dec(psEncC, NSQ, psIndices, x_Q3, pulses, PredCoef_Q12, LTPCoef_Q14, AR2_Q13, \
+                           HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, pitchL, Lambda_Q10, LTP_scale_Q14, arch) \
+    ((void)(arch),silk_NSQ_del_dec_sse4_1(psEncC, NSQ, psIndices, x_Q3, pulses, PredCoef_Q12, LTPCoef_Q14, AR2_Q13, \
+                           HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, pitchL, Lambda_Q10, LTP_scale_Q14))
+
+#else
 
 extern void (*const SILK_NSQ_DEL_DEC_IMPL[OPUS_ARCHMASK + 1])(
     const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
@@ -154,6 +185,8 @@ extern void (*const SILK_NSQ_DEL_DEC_IMPL[OPUS_ARCHMASK + 1])(
                            HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, pitchL, Lambda_Q10, LTP_scale_Q14, arch) \
     ((*SILK_NSQ_DEL_DEC_IMPL[(arch) & OPUS_ARCHMASK])(psEncC, NSQ, psIndices, x_Q3, pulses, PredCoef_Q12, LTPCoef_Q14, AR2_Q13, \
                            HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, pitchL, Lambda_Q10, LTP_scale_Q14))
+
+#endif
 
 void silk_noise_shape_quantizer(
     silk_nsq_state      *NSQ,                   /* I/O  NSQ state                       */
@@ -192,6 +225,11 @@ opus_int silk_VAD_GetSA_Q8_sse4_1(
     const opus_int16   pIn[]
 );
 
+#if defined(OPUS_X86_PRESUME_SSE4_1)
+#define silk_VAD_GetSA_Q8(psEnC, pIn, arch) ((void)(arch),silk_VAD_GetSA_Q8_sse4_1(psEnC, pIn))
+
+#else
+
 #  define silk_VAD_GetSA_Q8(psEnC, pIn, arch) \
      ((*SILK_VAD_GETSA_Q8_IMPL[(arch) & OPUS_ARCHMASK])(psEnC, pIn))
 
@@ -200,6 +238,8 @@ extern opus_int (*const SILK_VAD_GETSA_Q8_IMPL[OPUS_ARCHMASK + 1])(
      const opus_int16   pIn[]);
 
 #  define OVERRIDE_silk_warped_LPC_analysis_filter_FIX
+
+#endif
 
 void silk_warped_LPC_analysis_filter_FIX_sse4_1(
           opus_int32            state[],                    /* I/O  State [order + 1]                   */
@@ -210,6 +250,12 @@ void silk_warped_LPC_analysis_filter_FIX_sse4_1(
     const opus_int              length,                     /* I    Length of input signal              */
     const opus_int              order                       /* I    Filter order (even)                 */
 );
+
+#if defined(OPUS_X86_PRESUME_SSE4_1)
+#define silk_warped_LPC_analysis_filter_FIX(state, res_Q2, coef_Q13, input, lambda_Q16, length, order, arch) \
+    ((void)(arch),silk_warped_LPC_analysis_filter_FIX_c(state, res_Q2, coef_Q13, input, lambda_Q16, length, order))
+
+#else
 
 extern void (*const SILK_WARPED_LPC_ANALYSIS_FILTER_FIX_IMPL[OPUS_ARCHMASK + 1])(
           opus_int32            state[],                    /* I/O  State [order + 1]                   */
@@ -223,6 +269,8 @@ extern void (*const SILK_WARPED_LPC_ANALYSIS_FILTER_FIX_IMPL[OPUS_ARCHMASK + 1])
 
 #  define silk_warped_LPC_analysis_filter_FIX(state, res_Q2, coef_Q13, input, lambda_Q16, length, order, arch) \
     ((*SILK_WARPED_LPC_ANALYSIS_FILTER_FIX_IMPL[(arch) & OPUS_ARCHMASK])(state, res_Q2, coef_Q13, input, lambda_Q16, length, order))
+
+#endif
 
 # endif
 #endif

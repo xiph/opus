@@ -1163,11 +1163,11 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       if (offset)
          comb_filter(in+c*(N+overlap)+overlap, pre[c]+COMBFILTER_MAXPERIOD,
                st->prefilter_period, st->prefilter_period, offset, -st->prefilter_gain, -st->prefilter_gain,
-               st->prefilter_tapset, st->prefilter_tapset, NULL, 0);
+               st->prefilter_tapset, st->prefilter_tapset, NULL, 0, st->arch);
 
       comb_filter(in+c*(N+overlap)+overlap+offset, pre[c]+COMBFILTER_MAXPERIOD+offset,
             st->prefilter_period, pitch_index, N-offset, -st->prefilter_gain, -gain1,
-            st->prefilter_tapset, prefilter_tapset, mode->window, overlap);
+            st->prefilter_tapset, prefilter_tapset, mode->window, overlap, st->arch);
       OPUS_COPY(st->in_mem+c*(overlap), in+c*(N+overlap)+N, overlap);
 
       if (N>COMBFILTER_MAXPERIOD)

@@ -201,7 +201,17 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
 
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
-      const opus_val16 *window, int overlap);
+      const opus_val16 *window, int overlap, int arch);
+
+#ifdef NON_STATIC_COMB_FILTER_CONST_C
+void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
+                         opus_val16 g10, opus_val16 g11, opus_val16 g12);
+#endif
+
+#ifndef OVERRIDE_COMB_FILTER_CONST
+# define comb_filter_const(y, x, T, N, g10, g11, g12, arch)		\
+    ((void)(arch),comb_filter_const_c(y, x, T, N, g10, g11, g12))
+#endif
 
 void init_caps(const CELTMode *m,int *cap,int LM,int C);
 

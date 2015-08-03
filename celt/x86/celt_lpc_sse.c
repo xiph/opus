@@ -38,6 +38,8 @@
 #include "pitch.h"
 #include "x86cpu.h"
 
+#if defined(FIXED_POINT)
+
 void celt_fir_sse4_1(const opus_val16 *_x,
          const opus_val16 *num,
          opus_val16 *_y,
@@ -126,3 +128,5 @@ void celt_fir_sse4_1(const opus_val16 *_x,
 #endif
    RESTORE_STACK;
 }
+
+#endif

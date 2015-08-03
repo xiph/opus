@@ -439,7 +439,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
 
    T = T0 = *T0_;
    ALLOC(yy_lookup, maxperiod+1, opus_val32);
-   dual_inner_prod(x, x, x-T0, N, &xx, &xy);
+   dual_inner_prod(x, x, x-T0, N, &xx, &xy, arch);
    yy_lookup[0] = xx;
    yy=xx;
    for (i=1;i<=maxperiod;i++)
@@ -483,7 +483,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       {
          T1b = celt_udiv(2*second_check[k]*T0+k, 2*k);
       }
-      dual_inner_prod(x, &x[-T1], &x[-T1b], N, &xy, &xy2);
+      dual_inner_prod(x, &x[-T1], &x[-T1b], N, &xy, &xy2, arch);
       xy += xy2;
       yy = yy_lookup[T1] + yy_lookup[T1b];
 #ifdef FIXED_POINT

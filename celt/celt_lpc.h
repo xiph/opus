@@ -48,7 +48,7 @@ void celt_fir_c(
          opus_val16 *mem,
          int arch);
 
-#if !defined(OPUS_X86_MAY_HAVE_SSE4_1)
+#if !defined(OVERRIDE_CELT_FIR)
 #define celt_fir(x, num, y, N, ord, mem, arch) \
     (celt_fir_c(x, num, y, N, ord, mem, arch))
 #endif

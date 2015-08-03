@@ -35,6 +35,10 @@
 #include "pitch.h"
 #include "main.h"
 
+#if !defined(OPUS_X86_PRESUME_SSE4_1)
+
+#if defined(FIXED_POINT)
+
 opus_int64 (*const SILK_INNER_PROD16_ALIGNED_64_IMPL[ OPUS_ARCHMASK + 1 ] )(
     const opus_int16 *inVec1,
     const opus_int16 *inVec2,
@@ -42,9 +46,11 @@ opus_int64 (*const SILK_INNER_PROD16_ALIGNED_64_IMPL[ OPUS_ARCHMASK + 1 ] )(
 ) = {
   silk_inner_prod16_aligned_64_c,                  /* non-sse */
   silk_inner_prod16_aligned_64_c,
+  silk_inner_prod16_aligned_64_c,
   MAY_HAVE_SSE4_1( silk_inner_prod16_aligned_64 ), /* sse4.1 */
-  NULL
 };
+
+#endif
 
 opus_int (*const SILK_VAD_GETSA_Q8_IMPL[ OPUS_ARCHMASK + 1 ] )(
     silk_encoder_state *psEncC,
@@ -52,8 +58,8 @@ opus_int (*const SILK_VAD_GETSA_Q8_IMPL[ OPUS_ARCHMASK + 1 ] )(
 ) = {
   silk_VAD_GetSA_Q8_c,                  /* non-sse */
   silk_VAD_GetSA_Q8_c,
+  silk_VAD_GetSA_Q8_c,
   MAY_HAVE_SSE4_1( silk_VAD_GetSA_Q8 ), /* sse4.1 */
-  NULL
 };
 
 void (*const SILK_NSQ_IMPL[ OPUS_ARCHMASK + 1 ] )(
@@ -75,8 +81,8 @@ void (*const SILK_NSQ_IMPL[ OPUS_ARCHMASK + 1 ] )(
 ) = {
   silk_NSQ_c,                  /* non-sse */
   silk_NSQ_c,
+  silk_NSQ_c,
   MAY_HAVE_SSE4_1( silk_NSQ ), /* sse4.1 */
-  NULL
 };
 
 void (*const SILK_VQ_WMAT_EC_IMPL[ OPUS_ARCHMASK + 1 ] )(
@@ -94,8 +100,8 @@ void (*const SILK_VQ_WMAT_EC_IMPL[ OPUS_ARCHMASK + 1 ] )(
 ) = {
   silk_VQ_WMat_EC_c,                  /* non-sse */
   silk_VQ_WMat_EC_c,
+  silk_VQ_WMat_EC_c,
   MAY_HAVE_SSE4_1( silk_VQ_WMat_EC ), /* sse4.1 */
-  NULL
 };
 
 void (*const SILK_NSQ_DEL_DEC_IMPL[ OPUS_ARCHMASK + 1 ] )(
@@ -117,9 +123,11 @@ void (*const SILK_NSQ_DEL_DEC_IMPL[ OPUS_ARCHMASK + 1 ] )(
 ) = {
   silk_NSQ_del_dec_c,                  /* non-sse */
   silk_NSQ_del_dec_c,
+  silk_NSQ_del_dec_c,
   MAY_HAVE_SSE4_1( silk_NSQ_del_dec ), /* sse4.1 */
-  NULL
 };
+
+#if defined(FIXED_POINT)
 
 void (*const SILK_WARPED_LPC_ANALYSIS_FILTER_FIX_IMPL[ OPUS_ARCHMASK + 1 ] )(
     opus_int32                  state[],                    /* I/O  State [order + 1]                   */
@@ -132,8 +140,8 @@ void (*const SILK_WARPED_LPC_ANALYSIS_FILTER_FIX_IMPL[ OPUS_ARCHMASK + 1 ] )(
 ) = {
   silk_warped_LPC_analysis_filter_FIX_c,                  /* non-sse */
   silk_warped_LPC_analysis_filter_FIX_c,
+  silk_warped_LPC_analysis_filter_FIX_c,
   MAY_HAVE_SSE4_1( silk_warped_LPC_analysis_filter_FIX ), /* sse4.1 */
-  NULL
 };
 
 void (*const SILK_BURG_MODIFIED_IMPL[ OPUS_ARCHMASK + 1 ] )(
@@ -149,6 +157,9 @@ void (*const SILK_BURG_MODIFIED_IMPL[ OPUS_ARCHMASK + 1 ] )(
 ) = {
   silk_burg_modified_c,                  /* non-sse */
   silk_burg_modified_c,
+  silk_burg_modified_c,
   MAY_HAVE_SSE4_1( silk_burg_modified ), /* sse4.1 */
-  NULL
 };
+
+#endif
+#endif

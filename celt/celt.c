@@ -89,10 +89,12 @@ int resampling_factor(opus_int32 rate)
    return ret;
 }
 
-#ifndef OVERRIDE_COMB_FILTER_CONST
 /* This version should be faster on ARM */
 #ifdef OPUS_ARM_ASM
-static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
+#ifndef NON_STATIC_COMB_FILTER_CONST_C
+static
+#endif
+void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
       opus_val16 g10, opus_val16 g11, opus_val16 g12)
 {
    opus_val32 x0, x1, x2, x3, x4;
@@ -147,7 +149,10 @@ static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
 #endif
 }
 #else
-static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
+#ifndef NON_STATIC_COMB_FILTER_CONST_C
+static
+#endif
+void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
       opus_val16 g10, opus_val16 g11, opus_val16 g12)
 {
    opus_val32 x0, x1, x2, x3, x4;
@@ -171,12 +176,11 @@ static void comb_filter_const(opus_val32 *y, opus_val32 *x, int T, int N,
 
 }
 #endif
-#endif
 
 #ifndef OVERRIDE_comb_filter
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
-      const opus_val16 *window, int overlap)
+      const opus_val16 *window, int overlap, int arch)
 {
    int i;
    /* printf ("%d %d %f %f\n", T0, T1, g0, g1); */
@@ -234,7 +238,7 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
    }
 
    /* Compute the part with the constant filter. */
-   comb_filter_const(y+i, x+i, T1, N-i, g10, g11, g12);
+   comb_filter_const(y+i, x+i, T1, N-i, g10, g11, g12, arch);
 }
 #endif /* OVERRIDE_comb_filter */
 
