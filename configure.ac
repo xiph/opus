@@ -348,9 +348,11 @@ AM_CONDITIONAL([OPUS_ARM_INLINE_ASM],
 AM_CONDITIONAL([OPUS_ARM_EXTERNAL_ASM],
     [test x"${asm_optimization%% *}" = x"ARM"])
 
+AM_CONDITIONAL([HAVE_SSE], [false])
 AM_CONDITIONAL([HAVE_SSE2], [false])
 AM_CONDITIONAL([HAVE_SSE4_1], [false])
 
+m4_define([DEFAULT_X86_SSE_CFLAGS], [-msse])
 m4_define([DEFAULT_X86_SSE2_CFLAGS], [-msse2])
 m4_define([DEFAULT_X86_SSE4_1_CFLAGS], [-msse4.1])
 m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
@@ -366,10 +368,12 @@ AS_CASE([$host],
 	[arm*eabi*], [AS_VAR_SET([RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS], "DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS")],
 	[AS_VAR_SET([RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS], "DEFAULT_ARM_NEON_INTR_CFLAGS")])
 
+AC_ARG_VAR([X86_SSE_CFLAGS], [C compiler flags to compile SSE intrinsics @<:@default=]DEFAULT_X86_SSE_CFLAGS[@:>@])
 AC_ARG_VAR([X86_SSE2_CFLAGS], [C compiler flags to compile SSE2 intrinsics @<:@default=]DEFAULT_X86_SSE2_CFLAGS[@:>@])
 AC_ARG_VAR([X86_SSE4_1_CFLAGS], [C compiler flags to compile SSE4.1 intrinsics @<:@default=]DEFAULT_X86_SSE4_1_CFLAGS[@:>@])
 AC_ARG_VAR([ARM_NEON_INTR_CFLAGS], [C compiler flags to compile ARM NEON intrinsics @<:@default=]DEFAULT_ARM_NEON_INTR_CFLAGS / DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS[@:>@])
 
+AS_VAR_SET_IF([X86_SSE_CFLAGS], [], [AS_VAR_SET([X86_SSE_CFLAGS], "DEFAULT_X86_SSE_CFLAGS")])
 AS_VAR_SET_IF([X86_SSE2_CFLAGS], [], [AS_VAR_SET([X86_SSE2_CFLAGS], "DEFAULT_X86_SSE2_CFLAGS")])
 AS_VAR_SET_IF([X86_SSE4_1_CFLAGS], [], [AS_VAR_SET([X86_SSE4_1_CFLAGS], "DEFAULT_X86_SSE4_1_CFLAGS")])
 AS_VAR_SET_IF([ARM_NEON_INTR_CFLAGS], [], [AS_VAR_SET([ARM_NEON_INTR_CFLAGS], ["$RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS"])])
@@ -432,6 +436,24 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
    [i?86|x86_64],
    [
       OPUS_CHECK_INTRINSICS(
+         [SSE],
+         [$X86_SSE_CFLAGS],
+         [OPUS_X86_MAY_HAVE_SSE],
+         [OPUS_X86_PRESUME_SSE],
+         [[#include <xmmintrin.h>
+         ]],
+         [[
+             static __m128 mtest;
+             mtest = _mm_setzero_ps();
+         ]]
+      )
+      AS_IF([test x"$OPUS_X86_MAY_HAVE_SSE" = x"1" && test x"$OPUS_X86_PRESUME_SSE" != x"1"],
+          [
+             OPUS_X86_SSE_CFLAGS="$X86_SSE_CFLAGS"
+             AC_SUBST([OPUS_X86_SSE_CFLAGS])
+          ]
+      )
+      OPUS_CHECK_INTRINSICS(
          [SSE2],
          [$X86_SSE2_CFLAGS],
          [OPUS_X86_MAY_HAVE_SSE2],
@@ -473,6 +495,19 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
       AS_IF([test x"$enable_float" = x"no"],
       [
          AS_IF([test x"$rtcd_support" = x"no"], [rtcd_support=""])
+         AS_IF([test x"$OPUS_X86_MAY_HAVE_SSE" = x"1"],
+         [
+            AC_DEFINE([OPUS_X86_MAY_HAVE_SSE], 1, [Compiler supports X86 SSE Intrinsics])
+            intrinsics_support="$intrinsics_support SSE"
+
+            AS_IF([test x"$OPUS_X86_PRESUME_SSE" = x"1"],
+               [AC_DEFINE([OPUS_X86_PRESUME_SSE], 1, [Define if binary requires SSE intrinsics support])],
+               [rtcd_support="$rtcd_support SSE"])
+         ],
+         [
+            AC_MSG_WARN([Compiler does not support SSE intrinsics])
+         ])
+
          AS_IF([test x"$OPUS_X86_MAY_HAVE_SSE2" = x"1"],
          [
             AC_DEFINE([OPUS_X86_MAY_HAVE_SSE2], 1, [Compiler supports X86 SSE2 Intrinsics])
@@ -561,6 +596,8 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
 AM_CONDITIONAL([CPU_ARM], [test "$cpu_arm" = "yes"])
 AM_CONDITIONAL([OPUS_ARM_NEON_INTR],
     [test x"$OPUS_ARM_MAY_HAVE_NEON_INTR" = x"1"])
+AM_CONDITIONAL([HAVE_SSE],
+    [test x"$OPUS_X86_MAY_HAVE_SSE" = x"1"])
 AM_CONDITIONAL([HAVE_SSE2],
     [test x"$OPUS_X86_MAY_HAVE_SSE2" = x"1"])
 AM_CONDITIONAL([HAVE_SSE4_1],

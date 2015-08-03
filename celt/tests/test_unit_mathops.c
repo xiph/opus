@@ -49,10 +49,17 @@
 #include "cwrs.c"
 #include "pitch.c"
 #include "celt_lpc.c"
+#include "celt.c"
 
-#if defined(OPUS_X86_MAY_HAVE_SSE4_1) || defined(OPUS_X86_MAY_HAVE_SSE2)
+#if defined(OPUS_X86_MAY_HAVE_SSE) || defined(OPUS_X86_MAY_HAVE_SSE2) || defined(OPUS_X86_MAY_HAVE_SSE4_1)
+#if defined(OPUS_X86_MAY_HAVE_SSE)
 #include "x86/pitch_sse.c"
+#endif
+#if defined(OPUS_X86_MAY_HAVE_SSE2)
+#include "x86/pitch_sse2.c"
+#endif
 #if defined(OPUS_X86_MAY_HAVE_SSE4_1)
+#include "x86/pitch_sse4_1.c"
 #include "x86/celt_lpc_sse.c"
 #endif
 #include "x86/x86_celt_map.c"

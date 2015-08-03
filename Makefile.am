@@ -30,12 +30,14 @@ else
 OPUS_SOURCES += $(OPUS_SOURCES_FLOAT)
 endif
 
-if HAVE_SSE4_1
-CELT_SOURCES += $(CELT_SOURCES_SSE) $(CELT_SOURCES_SSE4_1)
-else
-if HAVE_SSE2
+if HAVE_SSE
 CELT_SOURCES += $(CELT_SOURCES_SSE)
 endif
+if HAVE_SSE2
+CELT_SOURCES += $(CELT_SOURCES_SSE2)
+endif
+if HAVE_SSE4_1
+CELT_SOURCES += $(CELT_SOURCES_SSE4_1)
 endif
 
 if CPU_ARM
@@ -257,18 +259,29 @@ $(CELT_SOURCES_ARM_ASM:%.s=%-gnu.S): $(top_srcdir)/celt/arm/arm2gnu.pl
 %-gnu.S: %.s
 	$(top_srcdir)/celt/arm/arm2gnu.pl @ARM2GNU_PARAMS@ < $< > $@
 
-SSE_OBJ = %_sse.o %_sse.lo %test_unit_mathops.o %test_unit_rotation.o
+OPT_UNIT_TEST_OBJ = $(celt_tests_test_unit_mathops_SOURCES:.c=.o) \
+                    $(celt_tests_test_unit_rotation_SOURCES:.c=.o) \
+                    $(celt_tests_test_unit_mdct_SOURCES:.c=.o) \
+                    $(celt_tests_test_unit_dft_SOURCES:.c=.o)
+
+if HAVE_SSE
+SSE_OBJ = $(CELT_SOURCES_SSE:.c=.lo)
+$(SSE_OBJ) $(OPT_UNIT_TEST_OBJ): CFLAGS += $(OPUS_X86_SSE_CFLAGS)
+endif
+
+if HAVE_SSE2
+SSE2_OBJ = $(CELT_SOURCES_SSE2:.c=.lo)
+$(SSE2_OBJ) $(OPT_UNIT_TEST_OBJ): CFLAGS += $(OPUS_X86_SSE2_CFLAGS)
+endif
 
 if HAVE_SSE4_1
-$(SSE_OBJ): CFLAGS += $(OPUS_X86_SSE4_1_CFLAGS)
-else
-if HAVE_SSE2
-$(SSE_OBJ): CFLAGS += $(OPUS_X86_SSE2_CFLAGS)
-endif
+SSE4_1_OBJ = $(CELT_SOURCES_SSE4_1:.c=.lo) \
+             $(SILK_SOURCES_SSE4_1:.c=.lo) \
+             $(SILK_SOURCES_FIXED_SSE4_1:.c=.lo)
+$(SSE4_1_OBJ) $(OPT_UNIT_TEST_OBJ): CFLAGS += $(OPUS_X86_SSE4_1_CFLAGS)
 endif
 
 if OPUS_ARM_NEON_INTR
-CELT_ARM_NEON_INTR_OBJ = $(CELT_SOURCES_ARM_NEON_INTR:.c=.lo) \
-			%test_unit_rotation.o %test_unit_mathops.o
-$(CELT_ARM_NEON_INTR_OBJ): CFLAGS += $(OPUS_ARM_NEON_INTR_CFLAGS)
+CELT_ARM_NEON_INTR_OBJ = $(CELT_SOURCES_ARM_NEON_INTR:.c=.lo)
+$(CELT_ARM_NEON_INTR_OBJ) $(OPT_UNIT_TEST_OBJ): CFLAGS += $(OPUS_ARM_NEON_INTR_CFLAGS)
 endif
