@@ -524,7 +524,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
                  unsigned int CPUInfo3;
                  unsigned int InfoType;
                  __asm__ __volatile__ (
-                 "cpuid11":
+                 "cpuid":
                  "=a" (CPUInfo0),
                  "=b" (CPUInfo1),
                  "=c" (CPUInfo2),
