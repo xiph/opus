@@ -77,9 +77,6 @@ static void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
 
 #endif
 
-#include "SigProc_FIX.h"
-#include "celt_lpc.h"
-
 typedef struct CPU_Feature{
     /*  SIMD: 128-bit */
     int HW_SSE2;
