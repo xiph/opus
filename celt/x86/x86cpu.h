@@ -55,21 +55,25 @@ int opus_select_arch(void);
   reference in the PMOVSXWD instruction itself, but gcc is not smart enough to
   optimize this out when optimizations ARE enabled.
 
-  It appears clang requires us to do this always (which is fair, since
-  technically the compiler is always allowed to do the dereference before
-  invoking the function implementing the intrinsic). I have not investiaged
-  whether it is any smarter than gcc when it comes to eliminating the extra
-  load instruction.*/
+  Clang, in contrast, requires us to do this always for _mm_cvtepi8_epi32
+  (which is fair, since technically the compiler is always allowed to do the
+  dereference before invoking the function implementing the intrinsic).
+  However, it is smart enough to eliminate the extra MOVD instruction.
+  For _mm_cvtepi16_epi32, it does the right thing, though does *not* optimize out
+  the extra MOVQ if it's specified explicitly */
+
 # if defined(__clang__) || !defined(__OPTIMIZE__)
 #  define OP_CVTEPI8_EPI32_M32(x) \
  (_mm_cvtepi8_epi32(_mm_cvtsi32_si128(*(int *)(x))))
-
-#  define OP_CVTEPI16_EPI32_M64(x) \
- (_mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i *)(x))))
 # else
 #  define OP_CVTEPI8_EPI32_M32(x) \
  (_mm_cvtepi8_epi32(*(__m128i *)(x)))
+#endif
 
+# if !defined(__OPTIMIZE__)
+#  define OP_CVTEPI16_EPI32_M64(x) \
+ (_mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i *)(x))))
+# else
 #  define OP_CVTEPI16_EPI32_M64(x) \
  (_mm_cvtepi16_epi32(*(__m128i *)(x)))
 # endif
