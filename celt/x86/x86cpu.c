@@ -99,11 +99,15 @@ static void opus_cpu_feature_check(CPU_Feature *cpu_feature)
         cpu_feature->HW_SSE2 = (info[3] & (1 << 26)) != 0;
         cpu_feature->HW_SSE41 = (info[2] & (1 << 19)) != 0;
     }
+    else {
+        cpu_feature->HW_SSE2 = 0;
+        cpu_feature->HW_SSE41 = 0;
+    }
 }
 
 int opus_select_arch(void)
 {
-    CPU_Feature cpu_feature = {0};
+    CPU_Feature cpu_feature;
     int arch;
 
     opus_cpu_feature_check(&cpu_feature);
