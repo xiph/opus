@@ -180,7 +180,7 @@ celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y,
 #if !defined(OVERRIDE_PITCH_XCORR)
 /*Is run-time CPU detection enabled on this platform?*/
 # if defined(OPUS_HAVE_RTCD) && \
-  (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_NEON_INTR))
+  (defined(OPUS_ARM_ASM) || (defined(OPUS_ARM_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR)))
 extern
 #  if defined(FIXED_POINT)
 opus_val32

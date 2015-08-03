@@ -44,7 +44,6 @@ SILK_SOURCES += $(SILK_SOURCES_ARM)
 
 if OPUS_ARM_NEON_INTR
 CELT_SOURCES += $(CELT_SOURCES_ARM_NEON_INTR)
-OPUS_ARM_NEON_INTR_CPPFLAGS = -mfpu=neon
 endif
 
 if OPUS_ARM_EXTERNAL_ASM
@@ -261,15 +260,15 @@ $(CELT_SOURCES_ARM_ASM:%.s=%-gnu.S): $(top_srcdir)/celt/arm/arm2gnu.pl
 SSE_OBJ = %_sse.o %_sse.lo %test_unit_mathops.o %test_unit_rotation.o
 
 if HAVE_SSE4_1
-$(SSE_OBJ): CFLAGS += -msse4.1
+$(SSE_OBJ): CFLAGS += $(OPUS_X86_SSE4_1_CFLAGS)
 else
 if HAVE_SSE2
-$(SSE_OBJ): CFLAGS += -msse2
+$(SSE_OBJ): CFLAGS += $(OPUS_X86_SSE2_CFLAGS)
 endif
 endif
 
 if OPUS_ARM_NEON_INTR
 CELT_ARM_NEON_INTR_OBJ = $(CELT_SOURCES_ARM_NEON_INTR:.c=.lo) \
 			%test_unit_rotation.o %test_unit_mathops.o
-$(CELT_ARM_NEON_INTR_OBJ): CFLAGS += $(OPUS_ARM_NEON_INTR_CPPFLAGS)
+$(CELT_ARM_NEON_INTR_OBJ): CFLAGS += $(OPUS_ARM_NEON_INTR_CFLAGS)
 endif
