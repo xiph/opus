@@ -110,10 +110,15 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 le
 /* Make sure everything is properly aligned. */
 static OPUS_INLINE int align(int i)
 {
+    int size;
     /* Alignment is determined by the max size of void*, opus_int32 and opus_val32,
        rounded up to the nearest power of two. */
-    int size = 1 << EC_ILOG(((sizeof(opus_int32)-1)|(sizeof(opus_val32)-1)|(sizeof(void*)-1)));
-    return (i+(int)size-1)&-(int)size;
+    int tmp = (sizeof(opus_int32)-1)|(sizeof(opus_val32)-1)|(sizeof(void*)-1);
+    if (tmp == 0)
+       size = 1;
+    else
+       size = 1 << EC_ILOG(tmp);
+    return (i+size-1)&-size;
 }
 
 int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
