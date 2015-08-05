@@ -114,7 +114,7 @@ static OPUS_INLINE int align(int i)
 {
     struct foo {char c; union { void* p; opus_int32 i; opus_val32 v; } u;};
 
-    int alignment = offsetof(struct foo, u);
+    unsigned int alignment = offsetof(struct foo, u);
 
     /* Optimizing compilers should optimize div and multiply into and
        for all sensible alignment values. */
