@@ -98,7 +98,8 @@ static opus_val32 *ms_get_preemph_mem(OpusMSEncoder *st)
       else
          ptr += align(mono_size);
    }
-   return (opus_val32*)(ptr+st->layout.nb_channels*120*sizeof(opus_val32));
+   /* void* cast avoids clang -Wcast-align warning */
+   return (opus_val32*)(void*)(ptr+st->layout.nb_channels*120*sizeof(opus_val32));
 }
 
 static opus_val32 *ms_get_window_mem(OpusMSEncoder *st)
@@ -117,7 +118,8 @@ static opus_val32 *ms_get_window_mem(OpusMSEncoder *st)
       else
          ptr += align(mono_size);
    }
-   return (opus_val32*)ptr;
+   /* void* cast avoids clang -Wcast-align warning */
+   return (opus_val32*)(void*)ptr;
 }
 
 static int validate_encoder_layout(const ChannelLayout *layout)
