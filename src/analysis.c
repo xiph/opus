@@ -39,8 +39,6 @@
 #include "mlp.h"
 #include "stack_alloc.h"
 
-extern const MLP net;
-
 #ifndef M_PI
 #define M_PI 3.141592653
 #endif
