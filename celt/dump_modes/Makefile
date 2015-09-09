@@ -6,6 +6,7 @@ SOURCES = dump_modes.c \
           ../modes.c \
           ../cwrs.c \
           ../rate.c \
+          ../entcode.c \
           ../entenc.c \
           ../entdec.c \
           ../mathops.c \
