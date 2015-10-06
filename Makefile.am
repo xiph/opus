@@ -52,7 +52,8 @@ CELT_SOURCES += $(CELT_SOURCES_ARM_NEON_INTR)
 endif
 
 if OPUS_ARM_EXTERNAL_ASM
-nodist_libopus_la_SOURCES = $(CELT_SOURCES_ARM_ASM:.s=-gnu.S)
+noinst_LTLIBRARIES = libarmasm.la
+libarmasm_la_SOURCES = $(CELT_SOURCES_ARM_ASM:.s=-gnu.S)
 BUILT_SOURCES = $(CELT_SOURCES_ARM_ASM:.s=-gnu.S) \
  $(CELT_AM_SOURCES_ARM_ASM:.s.in=.s) \
  $(CELT_AM_SOURCES_ARM_ASM:.s.in=-gnu.S)
@@ -69,6 +70,9 @@ include opus_headers.mk
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(OPUS_SOURCES)
 libopus_la_LDFLAGS = -no-undefined -version-info @OPUS_LT_CURRENT@:@OPUS_LT_REVISION@:@OPUS_LT_AGE@
 libopus_la_LIBADD = $(LIBM)
+if OPUS_ARM_EXTERNAL_ASM
+libopus_la_LIBADD += libarmasm.la
+endif
 
 pkginclude_HEADERS = include/opus.h include/opus_multistream.h include/opus_types.h include/opus_defines.h
 
@@ -116,10 +120,8 @@ celt_tests_test_unit_laplace_LDADD = $(LIBM)
 
 celt_tests_test_unit_mathops_SOURCES = celt/tests/test_unit_mathops.c
 celt_tests_test_unit_mathops_LDADD = $(LIBM)
-if CPU_ARM
 if OPUS_ARM_EXTERNAL_ASM
-celt_tests_test_unit_mathops_LDADD += libopus.la
-endif
+celt_tests_test_unit_mathops_LDADD += libarmasm.la
 endif
 
 celt_tests_test_unit_mdct_SOURCES = celt/tests/test_unit_mdct.c
@@ -127,10 +129,8 @@ celt_tests_test_unit_mdct_LDADD = $(LIBM)
 
 celt_tests_test_unit_rotation_SOURCES = celt/tests/test_unit_rotation.c
 celt_tests_test_unit_rotation_LDADD = $(LIBM)
-if CPU_ARM
 if OPUS_ARM_EXTERNAL_ASM
-celt_tests_test_unit_rotation_LDADD += libopus.la
-endif
+celt_tests_test_unit_rotation_LDADD += libarmasm.la
 endif
 
 celt_tests_test_unit_types_SOURCES = celt/tests/test_unit_types.c
