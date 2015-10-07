@@ -1465,7 +1465,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        /* This should filter out both NaNs and ridiculous signals that could
           cause NaNs further down. */
        if (!(sum < 1e9f) || celt_isnan(sum))
+       {
           OPUS_CLEAR(&pcm_buf[total_buffer*st->channels], frame_size*st->channels);
+          st->hp_mem[0] = st->hp_mem[1] = st->hp_mem[2] = st->hp_mem[3] = 0;
+       }
     }
 #endif
 

@@ -41,6 +41,7 @@
 #include "modes.h"
 #include "bands.h"
 #include "quant_bands.h"
+#include "pitch.h"
 
 typedef struct {
    int nb_streams;
@@ -259,6 +260,19 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
       OPUS_COPY(in, mem+c*overlap, overlap);
       (*copy_channel_in)(x, 1, pcm, channels, c, len);
       celt_preemphasis(x, in+overlap, frame_size, 1, upsample, celt_mode->preemph, preemph_mem+c, 0);
+#ifndef FIXED_POINT
+      {
+         opus_val32 sum;
+         sum = celt_inner_prod(in, in, frame_size+overlap, 0);
+         /* This should filter out both NaNs and ridiculous signals that could
+            cause NaNs further down. */
+         if (!(sum < 1e9f) || celt_isnan(sum))
+         {
+            OPUS_CLEAR(in, frame_size+overlap);
+            preemph_mem[c] = 0;
+         }
+      }
+#endif
       clt_mdct_forward(&celt_mode->mdct, in, freq, celt_mode->window, overlap, celt_mode->maxLM-LM, 1);
       if (upsample != 1)
       {
