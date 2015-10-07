@@ -337,7 +337,7 @@ static const ne10_fft_cpx_float32_t ne10_twiddles_60[60] = {
 {-0.95105654f,-0.30901679f}, {-1.0000000f,8.7422777e-08f}, {-0.95105654f,0.30901697f},
 {-0.80901694f,0.58778536f}, {-0.58778507f,0.80901712f}, {-0.30901709f,0.95105648f},
 };
-static const ne10_fft_state_float32_t ne10_fft_state_float32_480 = {
+static const ne10_fft_state_float32_t ne10_fft_state_float32_t_480 = {
 120,
 (ne10_int32_t *)ne10_factors_480,
 (ne10_fft_cpx_float32_t *)ne10_twiddles_480,
@@ -350,10 +350,10 @@ NULL,
 };
 static const arch_fft_state cfg_arch_480 = {
 1,
-(void *)&ne10_fft_state_float32_480,
+(void *)&ne10_fft_state_float32_t_480,
 };
 
-static const ne10_fft_state_float32_t ne10_fft_state_float32_240 = {
+static const ne10_fft_state_float32_t ne10_fft_state_float32_t_240 = {
 60,
 (ne10_int32_t *)ne10_factors_240,
 (ne10_fft_cpx_float32_t *)ne10_twiddles_240,
@@ -366,10 +366,10 @@ NULL,
 };
 static const arch_fft_state cfg_arch_240 = {
 1,
-(void *)&ne10_fft_state_float32_240,
+(void *)&ne10_fft_state_float32_t_240,
 };
 
-static const ne10_fft_state_float32_t ne10_fft_state_float32_120 = {
+static const ne10_fft_state_float32_t ne10_fft_state_float32_t_120 = {
 30,
 (ne10_int32_t *)ne10_factors_120,
 (ne10_fft_cpx_float32_t *)ne10_twiddles_120,
@@ -382,10 +382,10 @@ NULL,
 };
 static const arch_fft_state cfg_arch_120 = {
 1,
-(void *)&ne10_fft_state_float32_120,
+(void *)&ne10_fft_state_float32_t_120,
 };
 
-static const ne10_fft_state_float32_t ne10_fft_state_float32_60 = {
+static const ne10_fft_state_float32_t ne10_fft_state_float32_t_60 = {
 15,
 (ne10_int32_t *)ne10_factors_60,
 (ne10_fft_cpx_float32_t *)ne10_twiddles_60,
@@ -398,7 +398,7 @@ NULL,
 };
 static const arch_fft_state cfg_arch_60 = {
 1,
-(void *)&ne10_fft_state_float32_60,
+(void *)&ne10_fft_state_float32_t_60,
 };
 
 #endif  /* end NE10_FFT_PARAMS48000_960 */

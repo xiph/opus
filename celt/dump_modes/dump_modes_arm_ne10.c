@@ -133,10 +133,12 @@ void dump_mode_arch(CELTMode *mode)
       fprintf(file, "NULL,\n");  /* buffer */
       fprintf(file, "(%s *)&ne10_twiddles_%d[%d],\n",
               NE10_FFT_CPX_TYPE_T_STR, mode->mdct.kfft[k]->nfft, cfg->nfft);
+#if !defined(FIXED_POINT)
       fprintf(file, "/* is_forward_scaled = true */\n");
       fprintf(file, "(ne10_int32_t) 1,\n");
       fprintf(file, "/* is_backward_scaled = false */\n");
       fprintf(file, "(ne10_int32_t) 0,\n");
+#endif
       fprintf(file, "};\n");
 
       fprintf(file, "static const arch_fft_state cfg_arch_%d = {\n",

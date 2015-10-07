@@ -343,10 +343,6 @@ static const ne10_fft_state_int32_t ne10_fft_state_int32_t_480 = {
 (ne10_fft_cpx_int32_t *)ne10_twiddles_480,
 NULL,
 (ne10_fft_cpx_int32_t *)&ne10_twiddles_480[120],
-/* is_forward_scaled = true */
-(ne10_int32_t) 1,
-/* is_backward_scaled = false */
-(ne10_int32_t) 0,
 };
 static const arch_fft_state cfg_arch_480 = {
 1,
@@ -359,10 +355,6 @@ static const ne10_fft_state_int32_t ne10_fft_state_int32_t_240 = {
 (ne10_fft_cpx_int32_t *)ne10_twiddles_240,
 NULL,
 (ne10_fft_cpx_int32_t *)&ne10_twiddles_240[60],
-/* is_forward_scaled = true */
-(ne10_int32_t) 1,
-/* is_backward_scaled = false */
-(ne10_int32_t) 0,
 };
 static const arch_fft_state cfg_arch_240 = {
 1,
@@ -375,10 +367,6 @@ static const ne10_fft_state_int32_t ne10_fft_state_int32_t_120 = {
 (ne10_fft_cpx_int32_t *)ne10_twiddles_120,
 NULL,
 (ne10_fft_cpx_int32_t *)&ne10_twiddles_120[30],
-/* is_forward_scaled = true */
-(ne10_int32_t) 1,
-/* is_backward_scaled = false */
-(ne10_int32_t) 0,
 };
 static const arch_fft_state cfg_arch_120 = {
 1,
@@ -391,10 +379,6 @@ static const ne10_fft_state_int32_t ne10_fft_state_int32_t_60 = {
 (ne10_fft_cpx_int32_t *)ne10_twiddles_60,
 NULL,
 (ne10_fft_cpx_int32_t *)&ne10_twiddles_60[15],
-/* is_forward_scaled = true */
-(ne10_int32_t) 1,
-/* is_backward_scaled = false */
-(ne10_int32_t) 0,
 };
 static const arch_fft_state cfg_arch_60 = {
 1,
