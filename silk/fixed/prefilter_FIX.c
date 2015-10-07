@@ -38,6 +38,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
+#if !defined(OVERRIDE_silk_warped_LPC_analysis_filter_FIX)
+#define silk_warped_LPC_analysis_filter_FIX(state, res_Q2, coef_Q13, input, lambda_Q16, length, order, arch) \
+    ((void)(arch),silk_warped_LPC_analysis_filter_FIX_c(state, res_Q2, coef_Q13, input, lambda_Q16, length, order))
+#endif
+
 /* Prefilter for finding Quantizer input signal */
 static OPUS_INLINE void silk_prefilt_FIX(
     silk_prefilter_state_FIX    *P,                         /* I/O  state                               */

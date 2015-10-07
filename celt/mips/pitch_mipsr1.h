@@ -36,11 +36,14 @@
 
 #define OVERRIDE_DUAL_INNER_PROD
 static inline void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
-      int N, opus_val32 *xy1, opus_val32 *xy2)
+      int N, opus_val32 *xy1, opus_val32 *xy2, int arch)
 {
    int j;
    opus_val32 xy01=0;
    opus_val32 xy02=0;
+
+   (void)arch;
+
    asm volatile("MULT $ac1, $0, $0");
    asm volatile("MULT $ac2, $0, $0");
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */

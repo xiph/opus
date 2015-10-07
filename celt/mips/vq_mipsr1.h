@@ -34,16 +34,12 @@
 #endif
 
 #include "mathops.h"
-#include "cwrs.h"
-#include "vq.h"
 #include "arch.h"
-#include "os_support.h"
-#include "bands.h"
-#include "rate.h"
 
 static unsigned extract_collapse_mask(int *iy, int N, int B);
 static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT X, int N, opus_val32 Ryy, opus_val16 gain);
 static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread);
+static void renormalise_vector_mips(celt_norm *X, int N, opus_val16 gain, int arch);
 
 #define OVERRIDE_vq_exp_rotation1
 static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_val16 s)
@@ -75,9 +71,9 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
 #define OVERRIDE_renormalise_vector
 
 #define renormalise_vector(X, N, gain, arch) \
- ((void)(arch), renormalize_vector_mips(x, N, gain))
+ (renormalise_vector_mips(X, N, gain, arch))
 
-void renormalise_vector_mips(celt_norm *X, int N, opus_val16 gain)
+void renormalise_vector_mips(celt_norm *X, int N, opus_val16 gain, int arch)
 {
    int i;
 #ifdef FIXED_POINT
@@ -87,8 +83,10 @@ void renormalise_vector_mips(celt_norm *X, int N, opus_val16 gain)
    opus_val16 g;
    opus_val32 t;
    celt_norm *xptr = X;
+   int X0, X1;
 
-   int X0, X2, X3, X1;
+   (void)arch;
+
    asm volatile("mult $ac1, $0, $0");
    asm volatile("MTLO %0, $ac1" : :"r" (E));
    /*if(N %4)

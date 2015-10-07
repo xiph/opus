@@ -468,23 +468,4 @@ void silk_encode_indices(
     opus_int                    condCoding                      /* I    The type of conditional coding to use       */
 );
 
-void silk_warped_LPC_analysis_filter_FIX_c(
-          opus_int32            state[],                    /* I/O  State [order + 1]                   */
-          opus_int32            res_Q2[],                   /* O    Residual signal [length]            */
-    const opus_int16            coef_Q13[],                 /* I    Coefficients [order]                */
-    const opus_int16            input[],                    /* I    Input signal [length]               */
-    const opus_int16            lambda_Q16,                 /* I    Warping factor                      */
-    const opus_int              length,                     /* I    Length of input signal              */
-    const opus_int              order                       /* I    Filter order (even)                 */
-);
-
-#if !defined(OVERRIDE_silk_warped_LPC_analysis_filter_FIX)
-#define silk_warped_LPC_analysis_filter_FIX(state, res_Q2, coef_Q13, input, lambda_Q16, length, order, arch) \
-    ((void)(arch),silk_warped_LPC_analysis_filter_FIX_c(state, res_Q2, coef_Q13, input, lambda_Q16, length, order))
-#endif
-
-#if !defined(OPUS_X86_MAY_HAVE_SSE4_1)
-
-#endif
-
 #endif

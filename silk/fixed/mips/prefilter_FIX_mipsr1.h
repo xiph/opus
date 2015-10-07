@@ -43,15 +43,18 @@ void silk_warped_LPC_analysis_filter_FIX(
     const opus_int16            input[],                    /* I    Input signal [length]               */
     const opus_int16            lambda_Q16,                 /* I    Warping factor                      */
     const opus_int              length,                     /* I    Length of input signal              */
-    const opus_int              order                       /* I    Filter order (even)                 */
+    const opus_int              order,                      /* I    Filter order (even)                 */
+               int              arch
 )
 {
     opus_int     n, i;
     opus_int32   acc_Q11, acc_Q22, tmp1, tmp2, tmp3, tmp4;
     opus_int32   state_cur, state_next;
 
+    (void)arch;
+
     /* Order must be even */
-    /*Length must be even */
+    /* Length must be even */
 
     silk_assert( ( order & 1 ) == 0 );
     silk_assert( ( length & 1 ) == 0 );
