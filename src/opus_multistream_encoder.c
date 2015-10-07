@@ -202,7 +202,7 @@ static opus_val16 logSum(opus_val16 a, opus_val16 b)
       max = b;
       diff = SUB32(EXTEND32(b),EXTEND32(a));
    }
-   if (diff >= QCONST16(8.f, DB_SHIFT))
+   if (!(diff < QCONST16(8.f, DB_SHIFT)))  /* inverted to catch NaNs */
       return max;
 #ifdef FIXED_POINT
    low = SHR32(diff, DB_SHIFT-1);
