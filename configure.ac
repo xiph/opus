@@ -447,7 +447,7 @@ AC_DEFUN([OPUS_PATH_NE10],
             AC_SUBST(HAVE_ARM_NE10)
             AC_SUBST(NE10_CFLAGS)
             AC_SUBST(NE10_LIBS)
-         ],[]
+         ]
       )
    ]
 )
@@ -483,7 +483,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
          intrinsics_support="$intrinsics_support (Neon_Intrinsics)"
 
          AS_IF([test x"enable_rtcd" != x"" && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
-            [rtcd_support="$rtcd_support (ARMv7_Neon_Intrinsics)"],[])
+            [rtcd_support="$rtcd_support (ARMv7_Neon_Intrinsics)"])
 
          AS_IF([test x"$OPUS_ARM_PRESUME_NEON_INTR" = x"1"],
             [AC_DEFINE([OPUS_ARM_PRESUME_NEON_INTR], 1, [Define if binary requires NEON intrinsics support])])
@@ -494,7 +494,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
               intrinsics_support="$intrinsics_support (NE10)"
               AS_IF([test x"enable_rtcd" != x"" \
                && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
-                 [rtcd_support="$rtcd_support (NE10)"],[])
+                 [rtcd_support="$rtcd_support (NE10)"])
          ])
 
          AS_IF([test x"$rtcd_support" = x""],
