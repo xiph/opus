@@ -13,14 +13,14 @@ soundtracks, portable music players, jukeboxes, and other applications that
 have historically used high latency formats such as MP3, AAC, or Vorbis.
 
                     Opus is specified by IETF RFC 6716:
-                    http://tools.ietf.org/html/rfc6716
+                    https://tools.ietf.org/html/rfc6716
 
   The Opus format and this implementation of it are subject to the royalty-
 free patent and copyright licenses specified in the file COPYING.
 
 This package implements a shared library for encoding and decoding raw Opus
 bitstreams. Raw Opus bitstreams should be used over RTP according to
- http://tools.ietf.org/html/draft-spittka-payload-rtp-opus
+ https://tools.ietf.org/html/rfc7587
 
 The package also includes a number of test  tools used for testing the
 correct operation of the library. The bitstreams read/written by these
@@ -29,7 +29,7 @@ additional debugging data and cannot support seeking.
 
 Opus stored in files should use the Ogg encapsulation for Opus which is
 described at:
- http://wiki.xiph.org/OggOpus
+ https://wiki.xiph.org/OggOpus
 
 An opus-tools package is available which provides encoding and decoding of
 Ogg encapsulated Opus files and includes a number of useful features.
@@ -37,7 +37,7 @@ Ogg encapsulated Opus files and includes a number of useful features.
 Opus-tools can be found at:
  https://git.xiph.org/?p=opus-tools.git
 or on the main Opus website:
- http://opus-codec.org/
+ https://opus-codec.org/
 
 == Compiling libopus ==
 
@@ -50,7 +50,7 @@ To build from the git repository, the following steps are necessary:
 
 1) Clone the repository:
 
-% git clone git://git.opus-codec.org/opus.git
+% git clone https://git.xiph.org/opus.git
 % cd opus
 
 2) Compiling the source
@@ -106,11 +106,11 @@ To run the integrated tests:
 
 There is also collection of standard test vectors which are not
 included in this package for size reasons but can be obtained from:
-http://opus-codec.org/testvectors/opus_testvectors.tar.gz
+https://opus-codec.org/testvectors/opus_testvectors.tar.gz
 
 To run compare the code to these test vectors:
 
-% curl -O http://opus-codec.org/testvectors/opus_testvectors.tar.gz
+% curl -O https://opus-codec.org/testvectors/opus_testvectors.tar.gz
 % tar -zxf opus_testvectors.tar.gz
 % ./tests/run_vectors.sh ./ opus_testvectors 48000
 
