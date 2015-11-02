@@ -47,8 +47,7 @@
 
 #if defined(OPUS_X86_MAY_HAVE_SSE2) || defined(OPUS_X86_MAY_HAVE_SSE4_1)
 # include "x86/x86cpu.c"
-#elif defined(OPUS_HAVE_RTCD) && \
-         (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
+#elif defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
 # include "arm/armcpu.c"
 # include "celt_lpc.c"
 # include "pitch.c"
