@@ -39,6 +39,8 @@
 
 #if defined(FIXED_POINT)
 
+#include "fixed/main_FIX.h"
+
 opus_int64 (*const SILK_INNER_PROD16_ALIGNED_64_IMPL[ OPUS_ARCHMASK + 1 ] )(
     const opus_int16 *inVec1,
     const opus_int16 *inVec2,
