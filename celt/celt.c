@@ -89,6 +89,7 @@ int resampling_factor(opus_int32 rate)
    return ret;
 }
 
+#if !defined(OVERRIDE_COMB_FILTER_CONST) || defined(NON_STATIC_COMB_FILTER_CONST_C)
 /* This version should be faster on ARM */
 #ifdef OPUS_ARM_ASM
 #ifndef NON_STATIC_COMB_FILTER_CONST_C
@@ -175,6 +176,7 @@ void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
    }
 
 }
+#endif
 #endif
 
 #ifndef OVERRIDE_comb_filter
