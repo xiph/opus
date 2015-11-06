@@ -78,3 +78,4 @@ silk/float/x64
 src/Debug
 src/Release
 src/x64
+*.opensdf
