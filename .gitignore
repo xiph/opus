@@ -79,3 +79,4 @@ src/Debug
 src/Release
 src/x64
 *.opensdf
+win32/
