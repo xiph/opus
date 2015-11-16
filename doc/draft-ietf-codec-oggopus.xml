@@ -143,7 +143,6 @@ An Ogg Opus stream is organized as follows.
 </t>
 <t>
 There are two mandatory header packets.
-The granule position of the pages on which these packets complete MUST be zero.
 </t>
 <t>
 The first packet in the logical Ogg bitstream MUST contain the identification
@@ -157,7 +156,7 @@ This page MUST have its 'beginning of stream' flag set.
 The second packet in the logical Ogg bitstream MUST contain the comment header,
  which contains user-supplied metadata.
 The format of this header is defined in <xref target="comment_header"/>.
-It MAY span one or more pages, beginning on the second page of the logical
+It MAY span multiple pages, beginning on the second page of the logical
  stream.
 However many pages it spans, the comment header packet MUST finish the page on
  which it completes.
@@ -214,9 +213,20 @@ There MUST NOT be any more pages in an Opus logical bitstream after a page
 
 <section anchor="granpos" title="Granule Position">
 <t>
+The granule position MUST be zero for the ID header page and the
+ page where the comment header completes.
+That is, the first page in the logical stream, and the last header
+ page before the first audio data page both have zero granulepos.
+</t>
+<t>
 The granule position of an audio data page encodes the total number of PCM
  samples in the stream up to and including the last fully-decodable sample from
  the last packet completed on that page.
+That granule position MAY be larger than zero as described in
+ <xref target="start_granpos_restrictions"/>.
+</t>
+
+<t>
 A page that is entirely spanned by a single packet (that completes on a
  subsequent page) has no granule position, and the granule position field MUST
  be set to the special value '-1' in two's complement.
