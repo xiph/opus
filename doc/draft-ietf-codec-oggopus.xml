@@ -359,7 +359,7 @@ Therefore, the first few samples produced by the decoder do not correspond to
 These samples need to be stored and decoded, as Opus is an asymptotically
  convergent predictive codec, meaning the decoded contents of each frame depend
  on the recent history of decoder inputs.
-However, a decoder will want to skip these samples after decoding them.
+However, a player will want to skip these samples after decoding them.
 </t>
 
 <t>
@@ -639,8 +639,8 @@ Opus can switch between internal audio bandwidths of 4, 6, 8, 12, and
 Each packet in the stream can have a different audio bandwidth.
 Regardless of the audio bandwidth, the reference decoder supports decoding any
  stream at a sample rate of 8, 12, 16, 24, or 48&nbsp;kHz.
-The original sample rate of the encoder input is not preserved by the lossy
- compression.
+The original sample rate of the audio passed to the encoder is not preserved
+ by the lossy compression.
 <vspace blankLines="1"/>
 An Ogg Opus player SHOULD select the playback sample rate according to the
  following procedure:
@@ -653,7 +653,7 @@ An Ogg Opus player SHOULD select the playback sample rate according to the
  resample.</t>
 <t>Otherwise, decode at 48&nbsp;kHz and resample.</t>
 </list>
-However, the 'Input Sample Rate' field allows the encoder to pass the sample
+However, the 'Input Sample Rate' field allows the muxer to pass the sample
  rate of the original input stream as metadata.
 This is useful when the user requires the output sample rate to match the
  input sample rate.
@@ -698,7 +698,7 @@ If a player chooses to apply any volume adjustment or gain modification, such
  MUST be applied in addition to this output gain in order to achieve playback
  at the normalized volume.
 <vspace blankLines="1"/>
-An encoder SHOULD set this field to zero, and instead apply any gain prior to
+A muxer SHOULD set this field to zero, and instead apply any gain prior to
  encoding, when this is possible and does not conflict with the user's wishes.
 A nonzero output gain indicates the gain was adjusted after encoding, or that
  a user wished to adjust the gain for playback while preserving the ability
@@ -792,8 +792,8 @@ Each packet in an Opus stream has an internal channel count of 1 or 2, which
  can change from packet to packet.
 This is selected by the encoder depending on the bitrate and the audio being
  encoded.
-The original channel count of the encoder input is not preserved by the lossy
- compression.
+The original channel count of the audio passed to the encoder is not preserved
+ by the lossy compression.
 <vspace blankLines="1"/>
 Regardless of the internal channel count, any Opus stream can be decoded as
  mono (a single channel) or stereo (two channels) by appropriate initialization
@@ -1248,7 +1248,7 @@ If a player chooses to make use of the R128_TRACK_GAIN tag or the
  <spanx style="emph">in addition</spanx> to the 'output gain' value.
 If a tool modifies the ID header's 'output gain' field, it MUST also update or
  remove the R128_TRACK_GAIN and R128_ALBUM_GAIN comment tags if present.
-An encoder SHOULD assume that by default tools will respect the 'output gain'
+An muxer SHOULD assume that by default tools will respect the 'output gain'
  field, and not the comment tag.
 </t>
 <t>
@@ -1394,7 +1394,7 @@ This can be done simply by separating the input streams into segments and
  encoding each segment independently.
 The drawback of this approach is that it creates a small discontinuity
  at the boundary due to the lossy nature of Opus.
-An encoder MAY avoid this discontinuity by using the following procedure:
+An muxer MAY avoid this discontinuity by using the following procedure:
 <list style="numbers">
 <t>Encode the last frame of the first segment as an independent frame by
  turning off all forms of inter-frame prediction.
