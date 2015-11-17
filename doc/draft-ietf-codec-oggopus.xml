@@ -1503,11 +1503,20 @@ Such streams are not strictly "Ogg Opus files" as described above,
  multiplexed segment, e.g. video or multiple audio tracks.
 In such cases the the '.opus' filename extension is NOT RECOMMENDED.
 </t>
+
+<t>
+In either case, this document updates <xref target="RFC5334"/>
+ to add 'opus' as a codecs parameter value with char[8]: 'OpusHead'
+ as Codec Identifier.
+</t>
 </section>
 
 <section title="IANA Considerations">
 <t>
-This document has no actions for IANA.
+This document updates the IANA Media Types registery to add .opus
+ as a file extension for "audio/ogg", and to add itself as a reference
+ alongside <xref target="RFC5334"/> for "audio/ogg", "video/ogg", and
+ "application/ogg" Media Types.
 </t>
 </section>
 
