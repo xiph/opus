@@ -550,7 +550,7 @@ If the point 80&nbsp;ms prior to the seek target comes before the initial PCM
 
 <section anchor="headers" title="Header Packets">
 <t>
-An Opus stream contains exactly two mandatory header packets:
+An Ogg Opus logical stream contains exactly two mandatory header packets:
  an identification header and a comment header.
 </t>
 
@@ -733,7 +733,8 @@ The details are described in <xref target="channel_mapping"/>.
 </t>
 <t>Channel Mapping Table:
 This table defines the mapping from encoded streams to output channels.
-It is omitted when the channel mapping family is 0, but REQUIRED otherwise.
+It MUST be omitted when the channel mapping family is 0, but is
+ REQUIRED otherwise.
 Its contents are specified in <xref target="channel_mapping"/>.
 </t>
 </list>
@@ -741,7 +742,8 @@ Its contents are specified in <xref target="channel_mapping"/>.
 
 <t>
 All fields in the ID headers are REQUIRED, except for the channel mapping
- table, which is omitted when the channel mapping family is 0.
+ table, which MUST be omitted when the channel mapping family is 0, but
+ is REQUIRED otherwise.
 Implementations SHOULD reject ID headers which do not contain enough data for
  these fields, even if they contain a valid Magic Signature.
 Future versions of this specification, even backwards-compatible versions,
@@ -898,8 +900,8 @@ The ordering is different from the one used by the
  FLAC <xref target="flac"/> formats,
  so correct ordering requires permutation of the output channels when decoding
  to or encoding from those formats.
-'LFE' here refers to a Low Frequency Effects, often mapped to a subwoofer
- with no particular spatial position.
+'LFE' here refers to a Low Frequency Effects channel, often mapped to a
+  subwoofer with no particular spatial position.
 Implementations SHOULD identify 'side' or 'rear' speaker locations with
  'surround' and 'back' as appropriate when interfacing with audio formats
  or systems which prefer that terminology.
@@ -1437,11 +1439,12 @@ For best results, this implementation requires that prediction be explicitly
 <t>
 A brief summary of major implementations of this draft is available
  at <eref target="https://wiki.xiph.org/OggOpusImplementation"/>,
-  along with their status.
+ along with their status.
 </t>
 <t>
 [Note to RFC Editor: please remove this entire section before
- final publication per <xref target="RFC6982"/>.]
+ final publication per <xref target="RFC6982"/>, along with
+ its references.]
 </t>
 </section>
 
@@ -1456,8 +1459,9 @@ Malicious payloads MUST NOT cause the decoder to overrun its allocated memory
  or to take an excessive amount of resources to decode.
 Although problems in encoders are typically rarer, the same applies to the
  encoder.
-Malicious audio streams MUST NOT cause the encoder to misbehave because this
- would allow an attacker to attack transcoding gateways.
+Malicious audio streams MUST NOT cause the encoder to overrun its allocated
+ memory or consume excessive resources because this would allow an attacker
+ to attack transcoding gateways.
 </t>
 
 <t>
@@ -1480,7 +1484,8 @@ The RECOMMENDED mime-type for Ogg Opus files is "audio/ogg".
 <figure>
 <preamble>
 If more specificity is desired, one MAY indicate the presence of Opus streams
- using the codecs parameter defined in <xref target="RFC6381"/>, e.g.,
+ using the codecs parameter defined in <xref target="RFC6381"/> and
+ <xref target="RFC5334"/>, e.g.,
 </preamble>
 <artwork align="center"><![CDATA[
     audio/ogg; codecs=opus
