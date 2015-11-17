@@ -580,7 +580,7 @@ An Opus stream contains exactly two mandatory header packets:
 <t>
 The fields in the identification (ID) header have the following meaning:
 <list style="numbers">
-<t><spanx style="strong">Magic Signature</spanx>:
+<t>Magic Signature:
 <vspace blankLines="1"/>
 This is an 8-octet (64-bit) field that allows codec identification and is
  human-readable.
@@ -599,7 +599,7 @@ Starting with "Op" helps distinguish it from audio data packets, as this is an
  invalid TOC sequence.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Version</spanx> (8 bits, unsigned):
+<t>Version (8 bits, unsigned):
 <vspace blankLines="1"/>
 The version number MUST always be '1' for this version of the encapsulation
  specification.
@@ -616,7 +616,7 @@ The initial version '1' was chosen to keep implementations from relying on this
  octet as a null terminator for the "OpusHead" string.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Output Channel Count</spanx> 'C' (8 bits, unsigned):
+<t>Output Channel Count 'C' (8 bits, unsigned):
 <vspace blankLines="1"/>
 This is the number of output channels.
 This might be different than the number of encoded channels, which can change
@@ -627,7 +627,7 @@ The maximum allowable value depends on the channel mapping family, and might be
 See <xref target="channel_mapping"/> for details.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Pre-skip</spanx> (16 bits, unsigned, little
+<t>Pre-skip (16 bits, unsigned, little
  endian):
 <vspace blankLines="1"/>
 This is the number of samples (at 48&nbsp;kHz) to discard from the decoder
@@ -638,7 +638,7 @@ When cropping the beginning of existing Ogg Opus streams, a pre-skip of at
  convergence in the decoder.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Input Sample Rate</spanx> (32 bits, unsigned, little
+<t>Input Sample Rate (32 bits, unsigned, little
  endian):
 <vspace blankLines="1"/>
 This field is <spanx style="emph">not</spanx> the sample rate to use for
@@ -683,8 +683,7 @@ Rates outside this range MAY be ignored by falling back to the default rate of
  48&nbsp;kHz instead.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Output Gain</spanx> (16 bits, signed, little
- endian):
+<t>Output Gain (16 bits, signed, little endian):
 <vspace blankLines="1"/>
 This is a gain to be applied by the decoder.
 It is 20*log10 of the factor to scale the decoder output by to achieve the
@@ -722,8 +721,7 @@ The large range serves in part to ensure that gain can always be losslessly
  saturating.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Channel Mapping Family</spanx> (8 bits,
- unsigned):
+<t>Channel Mapping Family (8 bits, unsigned):
 <vspace blankLines="1"/>
 This octet indicates the order and semantic meaning of the output channels.
 <vspace blankLines="1"/>
@@ -732,7 +730,7 @@ Each possible value of this octet indicates a mapping family, which defines a
  allowed channel count.
 The details are described in <xref target="channel_mapping"/>.
 </t>
-<t><spanx style="strong">Channel Mapping Table</spanx>:
+<t>Channel Mapping Table:
 This table defines the mapping from encoded streams to output channels.
 It is omitted when the channel mapping family is 0, but REQUIRED otherwise.
 Its contents are specified in <xref target="channel_mapping"/>.
@@ -782,7 +780,7 @@ The order and meaning of these channels are defined by a channel mapping,
 <t>
 The fields in the channel mapping table have the following meaning:
 <list style="numbers" counter="8">
-<t><spanx style="strong">Stream Count</spanx> 'N' (8 bits, unsigned):
+<t>Stream Count 'N' (8 bits, unsigned):
 <vspace blankLines="1"/>
 This is the total number of streams encoded in each Ogg packet.
 This value is necessary to correctly parse the packed Opus packets inside an
@@ -793,7 +791,7 @@ This value MUST NOT be zero, as without at least one Opus packet with a valid
 For channel mapping family&nbsp;0, this value defaults to 1, and is not coded.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Coupled Stream Count</spanx> 'M' (8 bits, unsigned):
+<t>Coupled Stream Count 'M' (8 bits, unsigned):
 This is the number of streams whose decoders are to be configured to produce
  two channels.
 This MUST be no larger than the total number of streams, N.
@@ -818,7 +816,7 @@ For channel mapping family&nbsp;0, this value defaults to C-1 (i.e., 0 for mono
  and 1 for stereo), and is not coded.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Channel Mapping</spanx> (8*C bits):
+<t>Channel Mapping (8*C bits):
 This contains one octet per output channel, indicating which decoded channel
  is to be used for each one.
 Let 'index' be the value of this octet for a particular output channel.
@@ -859,7 +857,7 @@ RTP mapping.
 <t>1 channel: monophonic (mono).</t>
 <t>2 channels: stereo (left, right).</t>
 </list>
-<spanx style="strong">Special mapping</spanx>: This channel mapping value also
+Special mapping: This channel mapping value also
  indicates that the contents consists of a single Opus stream that is stereo if
  and only if C==2, with stream index 0 mapped to output channel 0 (mono, or
  left channel) and stream index 1 mapped to output channel 1 (right channel)
@@ -1103,7 +1101,7 @@ The comment header consists of a 64-bit magic signature, followed by data in
  Vorbis, except (like Ogg Theora and Speex) the final "framing bit" specified
  in the Vorbis spec is not present.
 <list style="numbers">
-<t><spanx style="strong">Magic Signature</spanx>:
+<t>Magic Signature:
 <vspace blankLines="1"/>
 This is an 8-octet (64-bit) field that allows codec identification and is
  human-readable.
@@ -1122,15 +1120,14 @@ Starting with "Op" helps distinguish it from audio data packets, as this is an
  invalid TOC sequence.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Vendor String Length</spanx> (32 bits, unsigned,
- little endian):
+<t>Vendor String Length (32 bits, unsigned, little endian):
 <vspace blankLines="1"/>
 This field gives the length of the following vendor string, in octets.
 It MUST NOT indicate that the vendor string is longer than the rest of the
  packet.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">Vendor String</spanx> (variable length, UTF-8 vector):
+<t>Vendor String (variable length, UTF-8 vector):
 <vspace blankLines="1"/>
 This is a simple human-readable tag for vendor information, encoded as a UTF-8
  string&nbsp;<xref target="RFC3629"/>.
@@ -1142,8 +1139,7 @@ User-facing encoding applications can use the 'ENCODER' user comment tag
  to identify themselves.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">User Comment List Length</spanx> (32 bits, unsigned,
- little endian):
+<t>User Comment List Length (32 bits, unsigned, little endian):
 <vspace blankLines="1"/>
 This field indicates the number of user-supplied comments.
 It MAY indicate there are zero user-supplied comments, in which case there are
@@ -1152,8 +1148,7 @@ It MUST NOT indicate that there are so many comments that the comment string
  lengths would require more data than is available in the rest of the packet.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">User Comment #i String Length</spanx> (32 bits,
- unsigned, little endian):
+<t>User Comment #i String Length (32 bits, unsigned, little endian):
 <vspace blankLines="1"/>
 This field gives the length of the following user comment string, in octets.
 There is one for each user comment indicated by the 'user comment list length'
@@ -1161,8 +1156,7 @@ There is one for each user comment indicated by the 'user comment list length'
 It MUST NOT indicate that the string is longer than the rest of the packet.
 <vspace blankLines="1"/>
 </t>
-<t><spanx style="strong">User Comment #i String</spanx> (variable length, UTF-8
- vector):
+<t>User Comment #i String (variable length, UTF-8 vector):
 <vspace blankLines="1"/>
 This field contains a single user comment string.
 There is one for each user comment indicated by the 'user comment list length'
