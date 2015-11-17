@@ -8,6 +8,7 @@
 <!ENTITY rfc6381 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6381.xml'>
 <!ENTITY rfc6716 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6716.xml'>
 <!ENTITY rfc6982 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6982.xml'>
+<!ENTITY rfc7587 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.7587.xml'>
 ]>
 <?rfc toc="yes" symrefs="yes" ?>
 
@@ -851,6 +852,7 @@ There are three defined mapping families in this specification.
 <t>
 Allowed numbers of channels: 1 or 2.
 RTP mapping.
+This is the same channel interpretation as <xref target="RFC7587"/>.
 </t>
 <t>
 <list style="symbols">
@@ -1566,6 +1568,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml"?-->
  &rfc4732;
  &rfc6982;
+ &rfc7587;
 
 <reference anchor="flac"
  target="https://xiph.org/flac/format.html">
