@@ -61,7 +61,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 /* (a32 * (b32 >> 16)) >> 16 */
+#if OPUS_FAST_INT64
+#define silk_SMULWT(a32, b32)            ((opus_int32)(((a32) * (opus_int64)((b32) >> 16)) >> 16))
+#else
 #define silk_SMULWT(a32, b32)            (((a32) >> 16) * ((b32) >> 16) + ((((a32) & 0x0000FFFF) * ((b32) >> 16)) >> 16))
+#endif
 
 /* a32 + (b32 * (c32 >> 16)) >> 16 */
 #if OPUS_FAST_INT64
