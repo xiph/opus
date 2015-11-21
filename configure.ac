@@ -708,7 +708,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
 ])
 
 AM_CONDITIONAL([CPU_ARM], [test "$cpu_arm" = "yes"])
-AM_CONDITIONAL([OPUS_ARM_NEON_INTR],
+AM_CONDITIONAL([HAVE_ARM_NEON_INTR],
     [test x"$OPUS_ARM_MAY_HAVE_NEON_INTR" = x"1"])
 AM_CONDITIONAL([HAVE_ARM_NE10],
     [test x"$HAVE_ARM_NE10" = x"1"])
