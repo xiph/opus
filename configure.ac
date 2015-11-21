@@ -459,7 +459,7 @@ AC_DEFUN([OPUS_PATH_NE10],
 AS_IF([test x"$enable_intrinsics" = x"yes"],[
    intrinsics_support=""
    AS_CASE([$host_cpu],
-   [arm*],
+   [arm*|aarch64*],
    [
       cpu_arm=yes
       OPUS_CHECK_INTRINSICS(
