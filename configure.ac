@@ -485,10 +485,12 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
       AS_IF([test x"$OPUS_ARM_MAY_HAVE_NEON_INTR" = x"1"],
       [
          AC_DEFINE([OPUS_ARM_MAY_HAVE_NEON_INTR], 1, [Compiler supports ARMv7/Aarch64 Neon Intrinsics])
-         intrinsics_support="$intrinsics_support (Neon_Intrinsics)"
+         intrinsics_support="$intrinsics_support (NEON)"
 
-         AS_IF([test x"enable_rtcd" != x"" && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
-            [rtcd_support="$rtcd_support (Neon_Intrinsics)"])
+         AS_IF([test x"$enable_rtcd" != x"no" && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
+            [AS_IF([test x"$rtcd_support" = x"no"],
+               [rtcd_support="ARM (NEON Intrinsics)"],
+               [rtcd_support="$rtcd_support (NEON Intrinsics)"])])
 
          AS_IF([test x"$OPUS_ARM_PRESUME_NEON_INTR" = x"1"],
             [AC_DEFINE([OPUS_ARM_PRESUME_NEON_INTR], 1, [Define if binary requires NEON intrinsics support])])
@@ -502,12 +504,9 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
                  [rtcd_support="$rtcd_support (NE10)"])
          ])
 
-         AS_IF([test x"$rtcd_support" = x""],
-            [rtcd_support=no])
-
          AS_IF([test x"$intrinsics_support" = x""],
             [intrinsics_support=no],
-            [intrinsics_support="arm$intrinsics_support"])
+            [intrinsics_support="ARM$intrinsics_support"])
       ],
       [
          AC_MSG_WARN([Compiler does not support ARM intrinsics])
