@@ -504,6 +504,26 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
                  [rtcd_support="$rtcd_support (NE10)"])
          ])
 
+         OPUS_CHECK_INTRINSICS(
+            [Aarch64 Neon],
+            [$ARM_NEON_INTR_CFLAGS],
+            [OPUS_ARM_MAY_HAVE_AARCH64_NEON_INTR],
+            [OPUS_ARM_PRESUME_AARCH64_NEON_INTR],
+            [[#include <arm_neon.h>
+            ]],
+            [[
+               static int32_t IN;
+               static int16_t OUT;
+               OUT = vqmovns_s32(IN);
+            ]]
+         )
+
+         AS_IF([test x"$OPUS_ARM_PRESUME_AARCH64_NEON_INTR" = x"1"],
+         [
+            AC_DEFINE([OPUS_ARM_PRESUME_AARCH64_NEON_INTR], 1, [Define if binary requires Aarch64 Neon Intrinsics])
+            intrinsics_support="$intrinsics_support (NEON [Aarch64])"
+         ])
+
          AS_IF([test x"$intrinsics_support" = x""],
             [intrinsics_support=no],
             [intrinsics_support="ARM$intrinsics_support"])
