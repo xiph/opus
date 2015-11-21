@@ -190,8 +190,8 @@ AC_ARG_ENABLE([rtcd],
     [enable_rtcd=yes])
 
 AC_ARG_ENABLE([intrinsics],
-    [AS_HELP_STRING([--enable-intrinsics], [Enable intrinsics optimizations for ARM(float) X86(fixed)])],,
-    [enable_intrinsics=no])
+    [AS_HELP_STRING([--disable-intrinsics], [Disable intrinsics optimizations for ARM(float) X86(fixed)])],,
+    [enable_intrinsics=yes])
 
 rtcd_support=no
 cpu_arm=no
