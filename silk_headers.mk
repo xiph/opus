@@ -24,6 +24,7 @@ silk/SigProc_FIX.h \
 silk/x86/SigProc_FIX_sse.h \
 silk/arm/macros_armv4.h \
 silk/arm/macros_armv5e.h \
+silk/arm/macros_arm64.h \
 silk/arm/SigProc_FIX_armv4.h \
 silk/arm/SigProc_FIX_armv5e.h \
 silk/arm/NSQ_neon.h \

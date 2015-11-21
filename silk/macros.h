@@ -151,5 +151,9 @@ static OPUS_INLINE opus_int32 silk_CLZ32(opus_int32 in32)
 #include "arm/macros_armv5e.h"
 #endif
 
+#ifdef OPUS_ARM_PRESUME_AARCH64_NEON_INTR
+#include "arm/macros_arm64.h"
+#endif
+
 #endif /* SILK_MACROS_H */
 
