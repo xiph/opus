@@ -190,7 +190,7 @@ AC_ARG_ENABLE([rtcd],
     [enable_rtcd=yes])
 
 AC_ARG_ENABLE([intrinsics],
-    [AS_HELP_STRING([--disable-intrinsics], [Disable intrinsics optimizations for ARM(float) X86(fixed)])],,
+    [AS_HELP_STRING([--disable-intrinsics], [Disable intrinsics optimizations])],,
     [enable_intrinsics=yes])
 
 rtcd_support=no
@@ -484,11 +484,11 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
 
       AS_IF([test x"$OPUS_ARM_MAY_HAVE_NEON_INTR" = x"1"],
       [
-         AC_DEFINE([OPUS_ARM_MAY_HAVE_NEON_INTR], 1, [Compiler supports ARMv7 Neon Intrinsics])
+         AC_DEFINE([OPUS_ARM_MAY_HAVE_NEON_INTR], 1, [Compiler supports ARMv7/Aarch64 Neon Intrinsics])
          intrinsics_support="$intrinsics_support (Neon_Intrinsics)"
 
          AS_IF([test x"enable_rtcd" != x"" && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
-            [rtcd_support="$rtcd_support (ARMv7_Neon_Intrinsics)"])
+            [rtcd_support="$rtcd_support (Neon_Intrinsics)"])
 
          AS_IF([test x"$OPUS_ARM_PRESUME_NEON_INTR" = x"1"],
             [AC_DEFINE([OPUS_ARM_PRESUME_NEON_INTR], 1, [Define if binary requires NEON intrinsics support])])
