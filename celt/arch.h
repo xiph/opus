@@ -78,6 +78,15 @@ static OPUS_INLINE void _celt_fatal(const char *str, const char *file, int line)
 #define UADD32(a,b) ((a)+(b))
 #define USUB32(a,b) ((a)-(b))
 
+/* Set this if opus_int64 is a native type of the CPU. */
+/* Assume that all LP64 architectures have fast 64-bit types; also x86_64
+   (which can be ILP32 for x32) and Win64 (which is LLP64). */
+#if defined(__x86_64__) || defined(__LP64__) || defined(_WIN64)
+#define OPUS_FAST_INT64 1
+#else
+#define OPUS_FAST_INT64 0
+#endif
+
 #define PRINT_MIPS(file)
 
 #ifdef FIXED_POINT

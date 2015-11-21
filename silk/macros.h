@@ -34,6 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "opus_types.h"
 #include "opus_defines.h"
+#include "arch.h"
 
 #if OPUS_GNUC_PREREQ(3, 0)
 #define opus_likely(x)       (__builtin_expect(!!(x), 1))
@@ -41,13 +42,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #else
 #define opus_likely(x)       (!!(x))
 #define opus_unlikely(x)     (!!(x))
-#endif
-
-/* Set this if opus_int64 is a native type of the CPU. */
-#if defined(__x86_64__) || defined(__LP64__) || defined(_WIN64)
-#define OPUS_FAST_INT64 1
-#else
-#define OPUS_FAST_INT64 0
 #endif
 
 /* This is an OPUS_INLINE header file for general platform. */
