@@ -180,9 +180,9 @@ The remaining Opus packet is packed at the end of the Ogg packet using the
  regular, undelimited framing from Section&nbsp;3 of <xref target="RFC6716"/>.
 All of the Opus packets in a single Ogg packet MUST be constrained to have the
  same duration.
-A decoder SHOULD treat any Opus packet whose duration is different from that of
- the first Opus packet in an Ogg packet as if it were a malformed Opus packet
- with an invalid TOC sequence.
+An implementation of this specification SHOULD treat any Opus packet whose
+ duration is different from that of the first Opus packet in an Ogg packet as
+ if it were a malformed Opus packet with an invalid TOC sequence.
 </t>
 <t>
 The coding mode (SILK, Hybrid, or CELT), audio bandwidth, channel count,
@@ -198,8 +198,9 @@ The first audio data page SHOULD NOT have the 'continued packet' flag set
  page).
 Packets MUST be placed into Ogg pages in order until the end of stream.
 Audio packets MAY span page boundaries.
-A decoder MUST treat a zero-octet audio data packet as if it were a malformed
- Opus packet as described in Section&nbsp;3.4 of&nbsp;<xref target="RFC6716"/>.
+An implementation MUST treat a zero-octet audio data packet as if it were a
+ malformed Opus packet as described in
+ Section&nbsp;3.4 of&nbsp;<xref target="RFC6716"/>.
 </t>
 <t>
 The last page SHOULD have the 'end of stream' flag set, but implementations
@@ -217,7 +218,7 @@ There MUST NOT be any more pages in an Opus logical bitstream after a page
 The granule position MUST be zero for the ID header page and the
  page where the comment header completes.
 That is, the first page in the logical stream, and the last header
- page before the first audio data page both have zero granulepos.
+ page before the first audio data page both have a granule position of zero.
 </t>
 <t>
 The granule position of an audio data page encodes the total number of PCM
@@ -449,7 +450,7 @@ However, to do so, Vorbis requires that the first audio data page contains
  exactly two packets, in order to allow the decoder to perform PCM position
  adjustments before needing to return any PCM data.
 Opus uses the pre-skip mechanism for this purpose instead, since the encoder
- MAY introduce more than a single packet's worth of latency, and since very
+ might introduce more than a single packet's worth of latency, and since very
  large packets in streams with a very large number of channels might not fit
  on a single page.
 </t>
@@ -496,10 +497,10 @@ On the other hand, a granule position that is smaller than the number of
  decoded samples prevents a demuxer from working backwards to assign each
  packet or each individual sample a valid granule position, since granule
  positions are non-negative.
-A decoder MUST reject as invalid any stream where the granule position is
- smaller than the number of samples contained in packets that complete on the
- first audio data page with a completed packet, unless that page has the 'end
- of stream' flag set.
+An implementation MUST reject as invalid any stream where the granule position
+ is smaller than the number of samples contained in packets that complete on
+ the first audio data page with a completed packet, unless that page has the
+ 'end of stream' flag set.
 It MAY defer this action until it decodes the last packet completed on that
  page.
 </t>
@@ -532,15 +533,15 @@ See <xref target="seeking"/> for general implementation guidance.
 </t>
 
 <t>
-When seeking within an Ogg Opus stream, the decoder SHOULD start decoding (and
- discarding the output) at least 3840&nbsp;samples (80&nbsp;ms) prior to the
- seek target in order to ensure that the output audio is correct by the time it
- reaches the seek target.
+When seeking within an Ogg Opus stream, an implementation SHOULD start decoding
+ (and discarding the output) at least 3840&nbsp;samples (80&nbsp;ms) prior to
+ the seek target in order to ensure that the output audio is correct by the
+ time it reaches the seek target.
 This 'pre-roll' is separate from, and unrelated to, the 'pre-skip' used at the
  beginning of the stream.
 If the point 80&nbsp;ms prior to the seek target comes before the initial PCM
- sample position, the decoder SHOULD start decoding from the beginning of the
- stream, applying pre-skip as normal, regardless of whether the pre-skip is
+ sample position, an implementation SHOULD start decoding from the beginning of
+ the stream, applying pre-skip as normal, regardless of whether the pre-skip is
  larger or smaller than 80&nbsp;ms, and then continue to discard samples
  to reach the seek target (if any).
 </t>
@@ -610,7 +611,7 @@ Implementations SHOULD treat streams where the upper four bits of the version
 That is, the version number can be split into "major" and "minor" version
  sub-fields, with changes to the "minor" sub-field (in the lower four bits)
  signaling compatible changes.
-For example, a decoder implementing this specification SHOULD accept any stream
+For example, an implementation of this specification SHOULD accept any stream
  with a version number of '15' or less, and SHOULD assume any stream with a
  version number '16' or greater is incompatible.
 The initial version '1' was chosen to keep implementations from relying on this
@@ -668,31 +669,31 @@ However, the 'Input Sample Rate' field allows the muxer to pass the sample
  rate of the original input stream as metadata.
 This is useful when the user requires the output sample rate to match the
  input sample rate.
-For example, a non-player decoder writing PCM format samples to disk might
- choose to resample the output audio back to the original input sample rate to
- reduce surprise to the user, who might reasonably expect to get back a file
- with the same sample rate as the one they fed to the encoder.
+For example, when not playing the output, an implementation writing PCM format
+ samples to disk might choose to resample the audio back to the original input
+ sample rate to reduce surprise to the user, who might reasonably expect to get
+ back a file with the same sample rate.
 <vspace blankLines="1"/>
 A value of zero indicates 'unspecified'.
-Encoders SHOULD write the actual input sample rate or zero, but decoder
- implementations which do something with this field SHOULD take care to behave
- sanely if given crazy values (e.g., do not actually upsample the output to
- 10 MHz if requested).
-Input sample rates between 8&nbsp;kHz and 192&nbsp;kHz (inclusive) SHOULD be
- supported.
+Muxers SHOULD write the actual input sample rate or zero, but implementations
+ which do something with this field SHOULD take care to behave sanely if given
+ crazy values (e.g., do not actually upsample the output to 10 MHz if
+ requested).
+Implementations SHOULD support input sample rates between 8&nbsp;kHz and
+ 192&nbsp;kHz (inclusive).
 Rates outside this range MAY be ignored by falling back to the default rate of
  48&nbsp;kHz instead.
 <vspace blankLines="1"/>
 </t>
 <t>Output Gain (16 bits, signed, little endian):
 <vspace blankLines="1"/>
-This is a gain to be applied by the decoder.
-It is 20*log10 of the factor to scale the decoder output by to achieve the
- desired playback volume, stored in a 16-bit, signed, two's complement
+This is a gain to be applied when decoding.
+It is 20*log10 of the factor by which to scale the decoder output to achieve
+ the desired playback volume, stored in a 16-bit, signed, two's complement
  fixed-point value with 8 fractional bits (i.e., Q7.8).
 <figure align="center">
 <preamble>
-To apply the gain, a decoder could use
+To apply the gain, an implementation could use
 </preamble>
 <artwork align="center"><![CDATA[
 sample *= pow(10, output_gain/(20.0*256)) ,
@@ -810,13 +811,14 @@ Regardless of the internal channel count, any Opus stream can be decoded as
  mono (a single channel) or stereo (two channels) by appropriate initialization
  of the decoder.
 The 'coupled stream count' field indicates that the first M Opus decoders are
- to be initialized for stereo output, and the remaining N-M decoders are to be
- initialized for mono only.
-The total number of decoded channels, (M+N), MUST be no larger than 255, as
- there is no way to index more channels than that in the channel mapping.
+ to be initialized for stereo output, and the remaining (N&nbsp;-&nbsp;M)
+ decoders are to be initialized for mono only.
+The total number of decoded channels, (M&nbsp;+&nbsp;N), MUST be no larger than
+ 255, as there is no way to index more channels than that in the channel
+ mapping.
 <vspace blankLines="1"/>
-For channel mapping family&nbsp;0, this value defaults to C-1 (i.e., 0 for mono
- and 1 for stereo), and is not coded.
+For channel mapping family&nbsp;0, this value defaults to (C&nbsp;-&nbsp;1)
+ (i.e., 0 for mono and 1 for stereo), and is not coded.
 <vspace blankLines="1"/>
 </t>
 <t>Channel Mapping (8*C bits):
@@ -828,7 +830,7 @@ If 'index' is less than 2*M, the output MUST be taken from decoding stream
  ('index'/2) as stereo and selecting the left channel if 'index' is even, and
  the right channel if 'index' is odd.
 If 'index' is 2*M or larger, but less than 255, the output MUST be taken from
- decoding stream ('index'-M) as mono.
+ decoding stream ('index'&nbsp;-&nbsp;M) as mono.
 If 'index' is 255, the corresponding output channel MUST contain pure silence.
 <vspace blankLines="1"/>
 The number of output channels, C, is not constrained to match the number of
@@ -837,8 +839,8 @@ A single index value MAY appear multiple times, i.e., the same decoded channel
  might be mapped to multiple output channels.
 Some decoded channels might not be assigned to any output channel, as well.
 <vspace blankLines="1"/>
-For channel mapping family&nbsp;0, the first index defaults to 0, and if C==2,
- the second index defaults to 1.
+For channel mapping family&nbsp;0, the first index defaults to 0, and if
+ C&nbsp;==&nbsp;2, the second index defaults to 1.
 Neither index is coded.
 </t>
 </list>
@@ -863,9 +865,9 @@ This is the same channel interpretation as <xref target="RFC7587"/>.
 </list>
 Special mapping: This channel mapping value also
  indicates that the contents consists of a single Opus stream that is stereo if
- and only if C==2, with stream index 0 mapped to output channel 0 (mono, or
- left channel) and stream index 1 mapped to output channel 1 (right channel)
- if stereo.
+ and only if C&nbsp;==&nbsp;2, with stream index&nbsp;0 mapped to output
+ channel&nbsp;0 (mono, or left channel) and stream index&nbsp;1 mapped to
+ output channel&nbsp;1 (right channel) if stereo.
 When the 'channel mapping family' octet has this value, the channel mapping
  table MUST be omitted from the ID header packet.
 </t>
@@ -916,10 +918,11 @@ No defined channel meaning.
 </t>
 <t>
 Channels are unidentified.
-General-purpose players SHOULD NOT attempt to play these streams, and offline
- decoders MAY deinterleave the output into separate PCM files, one per channel.
-Decoders SHOULD NOT produce output for channels mapped to stream index 255
- (pure silence) unless they have no other way to indicate the index of
+General-purpose players SHOULD NOT attempt to play these streams.
+Offline implementations MAY deinterleave the output into separate PCM files,
+ one per channel.
+Implementations SHOULD NOT produce output for channels mapped to stream index
+ 255 (pure silence) unless they have no other way to indicate the index of
  non-silent channels.
 </t>
 </section>
@@ -928,8 +931,8 @@ Decoders SHOULD NOT produce output for channels mapped to stream index 255
  title="Undefined Channel Mappings">
 <t>
 The remaining channel mapping families (2...254) are reserved.
-A decoder encountering a reserved channel mapping family value SHOULD act as
- though the value is 255.
+An implementation encountering a reserved channel mapping family value SHOULD
+ act as though the value is 255.
 </t>
 </section>
 
@@ -1139,8 +1142,8 @@ No terminating null octet is necessary.
 <vspace blankLines="1"/>
 This tag is intended to identify the codec encoder and encapsulation
  implementations, for tracing differences in technical behavior.
-User-facing encoding applications can use the 'ENCODER' user comment tag
- to identify themselves.
+User-facing applications can use the 'ENCODER' user comment tag to identify
+ themselves.
 <vspace blankLines="1"/>
 </t>
 <t>User Comment List Length (32 bits, unsigned, little endian):
@@ -1192,9 +1195,9 @@ If the least-significant bit of the first byte of this data is 1, then editors
 <t>
 The comment header can be arbitrarily large and might be spread over a large
  number of Ogg pages.
-Decoders SHOULD avoid attempting to allocate excessive amounts of memory when
- presented with a very large comment header.
-To accomplish this, decoders MAY reject a comment header larger than
+Implementations SHOULD avoid attempting to allocate excessive amounts of memory
+ when presented with a very large comment header.
+To accomplish this, implementations MAY reject a comment header larger than
  125,829,120&nbsp;octets, and MAY ignore individual comments that are not fully
  contained within the first 61,440 octets of the comment header.
 </t>
@@ -1280,17 +1283,18 @@ In the authors' investigations they were not applied consistently or broadly
 Technically, valid Opus packets can be arbitrarily large due to the padding
  format, although the amount of non-padding data they can contain is bounded.
 These packets might be spread over a similarly enormous number of Ogg pages.
-Encoders SHOULD limit the use of padding in audio data packets to no more than
- is necessary to make a variable bitrate (VBR) stream constant bitrate (CBR).
-Decoders SHOULD reject audio data packets larger than 61,440 octets per Opus
- stream.
+When encoding, implementations SHOULD limit the use of padding in audio data
+ packets to no more than is necessary to make a variable bitrate (VBR) stream
+ constant bitrate (CBR).
+Demuxers SHOULD reject audio data packets larger than 61,440 octets per
+ Opus stream.
 Such packets necessarily contain more padding than needed for this purpose.
-Decoders SHOULD avoid attempting to allocate excessive amounts of memory when
+Demuxers SHOULD avoid attempting to allocate excessive amounts of memory when
  presented with a very large packet.
-Decoders MAY reject or partially process audio data packets larger than
+Demuxers MAY reject or partially process audio data packets larger than
  61,440&nbsp;octets in an Ogg Opus stream with channel mapping families&nbsp;0
  or&nbsp;1.
-Decoders MAY reject or partially process audio data packets in any Ogg Opus
+Demuxers MAY reject or partially process audio data packets in any Ogg Opus
  stream if the packet is larger than 61,440&nbsp;octets and also larger than
  7,680&nbsp;octets per Opus stream.
 The presence of an extremely large packet in the stream could indicate a
@@ -1345,15 +1349,16 @@ In encoders derived from the reference implementation, the number of
 ]]></artwork>
 </figure>
 <t>
-To achieve good quality in the very first samples of a stream, the Ogg encoder
+To achieve good quality in the very first samples of a stream, implementations
  MAY use linear predictive coding (LPC) extrapolation
  <xref target="linear-prediction"/> to generate at least 120 extra samples at
  the beginning to avoid the Opus encoder having to encode a discontinuous
  signal.
-For an input file containing 'length' samples, the Ogg encoder SHOULD set the
- pre-skip header value to delay_samples+extra_samples, encode at least
- length+delay_samples+extra_samples samples, and set the granulepos of the last
- page to length+delay_samples+extra_samples.
+For an input file containing 'length' samples, the implementation SHOULD set
+ the pre-skip header value to (delay_samples&nbsp;+&nbsp;extra_samples), encode
+ at least (length&nbsp;+&nbsp;delay_samples&nbsp;+&nbsp;extra_samples)
+ samples, and set the granule position of the last page to
+ (length&nbsp;+&nbsp;delay_samples&nbsp;+&nbsp;extra_samples).
 This ensures that the encoded file has the same duration as the original, with
  no time offset. The best way to pad the end of the stream is to also use LPC
  extrapolation, but zero-padding is also acceptable.
@@ -1407,8 +1412,8 @@ An muxer MAY avoid this discontinuity by using the following procedure:
 <t>Encode the last frame of the first segment as an independent frame by
  turning off all forms of inter-frame prediction.
 De-emphasis is allowed.</t>
-<t>Set the granulepos of the last page to a point near the end of the last
- frame.</t>
+<t>Set the granule position of the last page to a point near the end of the
+ last frame.</t>
 <t>Begin the second segment with a copy of the last frame of the first
  segment.</t>
 <t>Set the pre-skip value of the second stream in such a way as to properly
@@ -1453,15 +1458,14 @@ A brief summary of major implementations of this draft is available
 Implementations of the Opus codec need to take appropriate security
  considerations into account, as outlined in <xref target="RFC4732"/>.
 This is just as much a problem for the container as it is for the codec itself.
-It is extremely important for the decoder to be robust against malicious
- payloads.
-Malicious payloads MUST NOT cause the decoder to overrun its allocated memory
- or to take an excessive amount of resources to decode.
-Although problems in encoders are typically rarer, the same applies to the
- encoder.
-Malicious audio streams MUST NOT cause the encoder to overrun its allocated
- memory or consume excessive resources because this would allow an attacker
- to attack transcoding gateways.
+Robustness against malicious payloads is extremely important.
+Malicious payloads MUST NOT cause an implementation to overrun its allocated
+ memory or to take an excessive amount of resources to decode.
+Although problems in encoding applications are typically rarer, the same
+ applies to the muxer.
+Malicious audio input streams MUST NOT cause an implementation to overrun its
+ allocated memory or consume excessive resources because this would allow an
+ attacker to attack transcoding gateways.
 </t>
 
 <t>
