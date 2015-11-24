@@ -880,7 +880,7 @@ Vorbis channel order.
 Each channel is assigned to a speaker location in a conventional surround
  arrangement.
 Specific locations depend on the number of channels, and are given below
- in order of the corresponding channel indicies.
+ in order of the corresponding channel indices.
 <list style="symbols">
   <t>1 channel: monophonic (mono).</t>
   <t>2 channels: stereo (left, right).</t>
@@ -944,16 +944,16 @@ Players SHOULD perform channel mixing to increase or reduce the number of
 </t>
 
 <t>
-Implementations MAY use the following matricies to implement downmixing from
+Implementations MAY use the following matrices to implement downmixing from
  multichannel files using <xref target="channel_mapping_1">Channel Mapping
  Family 1</xref>, which are known to give acceptable results for stereo.
-Matricies for 3 and 4 channels are normalized so each coefficent row sums
+Matrices for 3 and 4 channels are normalized so each coefficient row sums
  to 1 to avoid clipping.
 For 5 or more channels they are normalized to 2 as a compromise between
  clipping and dynamic range reduction.
 </t>
 <t>
-In these matricies the front left and front right channels are generally
+In these matrices the front left and front right channels are generally
 passed through directly.
 When a surround channel is split between both the left and right stereo
  channels, coefficients are chosen so their squares sum to 1, which
@@ -1040,8 +1040,8 @@ Exact coefficient values are 1, 1/sqrt(2), sqrt(3)/2, 1/2 and
  sqrt(3)/2/sqrt(2), multiplied by
  2/(1&nbsp;+&nbsp;1/sqrt(2)&nbsp;+&nbsp;sqrt(3)/2&nbsp;+&nbsp;1/2 +
  sqrt(3)/2/sqrt(2) + 1/sqrt(2)) for normalization.
-The coeffients are in the same order as in <xref target="channel_mapping_1" />,
- and the matricies above.
+The coefficients are in the same order as in <xref target="channel_mapping_1" />,
+ and the matrices above.
 </postamble>
 </figure>
 
@@ -1057,8 +1057,8 @@ The coeffients are in the same order as in <xref target="channel_mapping_1" />,
 <postamble>
 Exact coefficient values are 1, 1/sqrt(2), sqrt(3)/2 and 1/2, multiplied by
  2/(2&nbsp;+&nbsp;2/sqrt(2)&nbsp;+&nbsp;sqrt(3)) for normalization.
-The coeffients are in the same order as in <xref target="channel_mapping_1" />,
- and the matricies above.
+The coefficients are in the same order as in <xref target="channel_mapping_1" />,
+ and the matrices above.
 </postamble>
 </figure>
 
@@ -1210,7 +1210,7 @@ The user comment strings follow the NAME=value format described by
 Two new comment tags are introduced here:
 </t>
 
-<t>First, an optional gain for track nomalization:</t>
+<t>First, an optional gain for track normalization:</t>
 <figure align="center">
 <artwork align="left"><![CDATA[
 R128_TRACK_GAIN=-573
@@ -1225,7 +1225,7 @@ This tag is similar to the REPLAYGAIN_TRACK_GAIN tag in
  Vorbis&nbsp;<xref target="replay-gain"/>, except that the normal volume
  reference is the <xref target="EBU-R128"/> standard.
 </t>
-<t>Second, an optional gain for album nomalization:</t>
+<t>Second, an optional gain for album normalization:</t>
 <figure align="center">
 <artwork align="left"><![CDATA[
 R128_ALBUM_GAIN=111
@@ -1255,7 +1255,7 @@ If a player chooses to make use of the R128_TRACK_GAIN tag or the
  <spanx style="emph">in addition</spanx> to the 'output gain' value.
 If a tool modifies the ID header's 'output gain' field, it MUST also update or
  remove the R128_TRACK_GAIN and R128_ALBUM_GAIN comment tags if present.
-An muxer SHOULD assume that by default tools will respect the 'output gain'
+A muxer SHOULD assume that by default tools will respect the 'output gain'
  field, and not the comment tag.
 </t>
 <t>
@@ -1403,7 +1403,7 @@ This can be done simply by separating the input streams into segments and
  encoding each segment independently.
 The drawback of this approach is that it creates a small discontinuity
  at the boundary due to the lossy nature of Opus.
-An muxer MAY avoid this discontinuity by using the following procedure:
+A muxer MAY avoid this discontinuity by using the following procedure:
 <list style="numbers">
 <t>Encode the last frame of the first segment as an independent frame by
  turning off all forms of inter-frame prediction.
@@ -1518,7 +1518,7 @@ In either case, this document updates <xref target="RFC5334"/>
 
 <section title="IANA Considerations">
 <t>
-This document updates the IANA Media Types registery to add .opus
+This document updates the IANA Media Types registry to add .opus
  as a file extension for "audio/ogg", and to add itself as a reference
  alongside <xref target="RFC5334"/> for "audio/ogg", "video/ogg", and
  "application/ogg" Media Types.
