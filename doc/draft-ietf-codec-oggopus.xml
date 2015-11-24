@@ -71,14 +71,6 @@ This document defines the Ogg encapsulation for the Opus interactive speech and
  audio codec.
 This allows data encoded in the Opus format to be stored in an Ogg logical
  bitstream.
-Ogg encapsulation provides Opus with a long-term storage format supporting
- all of the essential features, including metadata, fast and accurate seeking,
- corruption detection, recapture after errors, low overhead, and the ability to
- multiplex Opus with other codecs (including video) with minimal buffering.
-It also provides a live streamable format, capable of delivery over a reliable
- stream-oriented transport, without requiring all the data, or even the total
- length of the data, up-front, in a form that is identical to the on-disk
- storage format.
 </t>
 </abstract>
 </front>
@@ -91,6 +83,14 @@ The IETF Opus codec is a low-latency audio codec optimized for both voice and
 See <xref target="RFC6716"/> for technical details.
 This document defines the encapsulation of Opus in a continuous, logical Ogg
  bitstream&nbsp;<xref target="RFC3533"/>.
+Ogg encapsulation provides Opus with a long-term storage format supporting
+ all of the essential features, including metadata, fast and accurate seeking,
+ corruption detection, recapture after errors, low overhead, and the ability to
+ multiplex Opus with other codecs (including video) with minimal buffering.
+It also provides a live streamable format, capable of delivery over a reliable
+ stream-oriented transport, without requiring all the data, or even the total
+ length of the data, up-front, in a form that is identical to the on-disk
+ storage format.
 </t>
 <t>
 Ogg bitstreams are made up of a series of 'pages', each of which contains data
@@ -144,8 +144,6 @@ An Ogg Opus stream is organized as follows.
 </t>
 <t>
 There are two mandatory header packets.
-</t>
-<t>
 The first packet in the logical Ogg bitstream MUST contain the identification
  (ID) header, which uniquely identifies a stream as Opus audio.
 The format of this header is defined in <xref target="id_header"/>.
@@ -173,8 +171,8 @@ The value N is specified in the ID header (see
  logical Ogg bitstream.
 </t>
 <t>
-The first N-1 Opus packets, if any, are packed one after another into the Ogg
- packet, using the self-delimiting framing from Appendix&nbsp;B of
+The first (N&nbsp;-&nbsp;1) Opus packets, if any, are packed one after another
+ into the Ogg packet, using the self-delimiting framing from Appendix&nbsp;B of
  <xref target="RFC6716"/>.
 The remaining Opus packet is packed at the end of the Ogg packet using the
  regular, undelimited framing from Section&nbsp;3 of <xref target="RFC6716"/>.
@@ -224,8 +222,8 @@ That is, the first page in the logical stream, and the last header
 The granule position of an audio data page encodes the total number of PCM
  samples in the stream up to and including the last fully-decodable sample from
  the last packet completed on that page.
-That granule position MAY be larger than zero as described in
- <xref target="start_granpos_restrictions"/>.
+The granule position of the first audio data page MAY be larger than zero as
+ described in <xref target="start_granpos_restrictions"/>.
 </t>
 
 <t>
@@ -273,6 +271,11 @@ For this to work, there cannot be any gaps.
 In order to support capturing a real-time stream that has lost or not
  transmitted packets, a muxer SHOULD emit packets that explicitly request the
  use of Packet Loss Concealment (PLC) in place of the missing packets.
+Implementations that fail to do so still MUST NOT increment the granule
+ position for a page by anything other than the number of samples contained in
+ packets that actually complete on that page.
+</t>
+<t>
 Only gaps that are a multiple of 2.5&nbsp;ms are repairable, as these are the
  only durations that can be created by packet loss or discontinuous
  transmission.
@@ -406,32 +409,30 @@ In this case, a value of at least 3840&nbsp;samples (80&nbsp;ms) provides
 
 <section anchor="pcm_sample_position" title="PCM Sample Position">
 <t>
-<figure align="center">
-<preamble>
 The PCM sample position is determined from the granule position using the
  formula
-</preamble>
+</t>
+<figure align="center">
 <artwork align="center"><![CDATA[
 'PCM sample position' = 'granule position' - 'pre-skip' .
 ]]></artwork>
 </figure>
-</t>
 
 <t>
 For example, if the granule position of the first audio data page is 59,971,
  and the pre-skip is 11,971, then the PCM sample position of the last decoded
  sample from that page is 48,000.
-<figure align="center">
-<preamble>
+</t>
+<t>
 This can be converted into a playback time using the formula
-</preamble>
+</t>
+<figure align="center">
 <artwork align="center"><![CDATA[
                   'PCM sample position'
 'playback time' = --------------------- .
                          48000.0
 ]]></artwork>
 </figure>
-</t>
 
 <t>
 The initial PCM sample position before any samples are played is normally '0'.
@@ -691,17 +692,14 @@ This is a gain to be applied when decoding.
 It is 20*log10 of the factor by which to scale the decoder output to achieve
  the desired playback volume, stored in a 16-bit, signed, two's complement
  fixed-point value with 8 fractional bits (i.e., Q7.8).
-<figure align="center">
-<preamble>
+<vspace blankLines="1"/>
 To apply the gain, an implementation could use
-</preamble>
+<figure align="center">
 <artwork align="center"><![CDATA[
 sample *= pow(10, output_gain/(20.0*256)) ,
 ]]></artwork>
-<postamble>
- where output_gain is the raw 16-bit value from the header.
-</postamble>
 </figure>
+ where output_gain is the raw 16-bit value from the header.
 <vspace blankLines="1"/>
 Virtually all players and media frameworks SHOULD apply it by default.
 If a player chooses to apply any volume adjustment or gain modification, such
@@ -751,17 +749,16 @@ Future versions of this specification, even backwards-compatible versions,
  might include additional fields in the ID header.
 If an ID header has a compatible major version, but a larger minor version,
  an implementation MUST NOT reject it for containing additional data not
- specified here.
-However, implementations MAY reject streams in which the ID header does not
+ specified here, unless it contains so much additional data that it does not
  complete on the first page.
 </t>
 
 <section anchor="channel_mapping" title="Channel Mapping">
 <t>
 An Ogg Opus stream allows mapping one number of Opus streams (N) to a possibly
- larger number of decoded channels (M+N) to yet another number of output
- channels (C), which might be larger or smaller than the number of decoded
- channels.
+ larger number of decoded channels (M&nbsp;+&nbsp;N) to yet another number of
+ output channels (C), which might be larger or smaller than the number of
+ decoded channels.
 The order and meaning of these channels are defined by a channel mapping,
  which consists of the 'channel mapping family' octet and, for channel mapping
  families other than family&nbsp;0, a channel mapping table, as illustrated in
@@ -825,7 +822,8 @@ For channel mapping family&nbsp;0, this value defaults to (C&nbsp;-&nbsp;1)
 This contains one octet per output channel, indicating which decoded channel
  is to be used for each one.
 Let 'index' be the value of this octet for a particular output channel.
-This value MUST either be smaller than (M+N), or be the special value 255.
+This value MUST either be smaller than (M&nbsp;+&nbsp;N), or be the special
+ value 255.
 If 'index' is less than 2*M, the output MUST be taken from decoding stream
  ('index'/2) as stereo and selecting the left channel if 'index' is even, and
  the right channel if 'index' is odd.
@@ -834,7 +832,7 @@ If 'index' is 2*M or larger, but less than 255, the output MUST be taken from
 If 'index' is 255, the corresponding output channel MUST contain pure silence.
 <vspace blankLines="1"/>
 The number of output channels, C, is not constrained to match the number of
- decoded channels (M+N).
+ decoded channels (M&nbsp;+&nbsp;N).
 A single index value MAY appear multiple times, i.e., the same decoded channel
  might be mapped to multiple output channels.
 Some decoded channels might not be assigned to any output channel, as well.
@@ -973,7 +971,7 @@ R output = (                   0.414214 * center + 0.585786 * right )
 ]]></artwork>
 <postamble>
 Exact coefficient values are 1 and 1/sqrt(2), multiplied by
- 1/(1 + 1/sqrt(2)) for normalization.
+ 1/(1&nbsp;+&nbsp;1/sqrt(2)) for normalization.
 </postamble>
 </figure>
 
@@ -1212,35 +1210,33 @@ The user comment strings follow the NAME=value format described by
 Two new comment tags are introduced here:
 </t>
 
+<t>First, an optional gain for track nomalization:</t>
 <figure align="center">
-  <preamble>An optional gain for track nomalization</preamble>
 <artwork align="left"><![CDATA[
 R128_TRACK_GAIN=-573
 ]]></artwork>
-<postamble>
-representing the volume shift needed to normalize the track's volume
+</figure>
+<t>
+ representing the volume shift needed to normalize the track's volume
  during isolated playback, in random shuffle, and so on.
 The gain is a Q7.8 fixed point number in dB, as in the ID header's 'output
  gain' field.
-</postamble>
-</figure>
-<t>
 This tag is similar to the REPLAYGAIN_TRACK_GAIN tag in
  Vorbis&nbsp;<xref target="replay-gain"/>, except that the normal volume
  reference is the <xref target="EBU-R128"/> standard.
 </t>
+<t>Second, an optional gain for album nomalization:</t>
 <figure align="center">
-  <preamble>An optional gain for album nomalization</preamble>
 <artwork align="left"><![CDATA[
 R128_ALBUM_GAIN=111
 ]]></artwork>
-<postamble>
-representing the volume shift needed to normalize the overall volume when
+</figure>
+<t>
+ representing the volume shift needed to normalize the overall volume when
  played as part of a particular collection of tracks.
 The gain is also a Q7.8 fixed point number in dB, as in the ID header's
  'output gain' field.
-</postamble>
-</figure>
+</t>
 <t>
 An Ogg Opus stream MUST NOT have more than one of each tag, and if present
  their values MUST be an integer from -32768 to 32767, inclusive,
@@ -1339,11 +1335,11 @@ This gives a size of 61,310&nbsp;octets, which is rounded up to a multiple of
 When encoding Opus streams, Ogg muxers SHOULD take into account the
  algorithmic delay of the Opus encoder.
 </t>
-<figure align="center">
-<preamble>
+<t>
 In encoders derived from the reference implementation, the number of
  samples can be queried with:
-</preamble>
+</t>
+<figure align="center">
 <artwork align="center"><![CDATA[
  opus_encoder_ctl(encoder_state, OPUS_GET_LOOKAHEAD(&delay_samples));
 ]]></artwork>
@@ -1373,12 +1369,12 @@ When extending the end of the signal, order-N (typically with N ranging from 8
 The last N samples are used as memory to an infinite impulse response (IIR)
  filter.
 </t>
-<figure align="center">
-<preamble>
+<t>
 The filter is then applied on a zero input to extrapolate the end of the signal.
 Let a(k) be the kth LPC coefficient and x(n) be the nth sample of the signal,
  each new sample past the end of the signal is computed as:
-</preamble>
+</t>
+<figure align="center">
 <artwork align="center"><![CDATA[
         N
        ---
@@ -1422,19 +1418,19 @@ De-emphasis is allowed.</t>
  the encoder.</t>
 </list>
 </t>
-<figure align="center">
-<preamble>
+<t>
 In encoders derived from the reference implementation, inter-frame prediction
  can be turned off by calling:
-</preamble>
+</t>
+<figure align="center">
 <artwork align="center"><![CDATA[
  opus_encoder_ctl(encoder_state, OPUS_SET_PREDICTION_DISABLED(1));
 ]]></artwork>
-<postamble>
+</figure>
+<t>
 For best results, this implementation requires that prediction be explicitly
  enabled again before resuming normal encoding, even after a reset.
-</postamble>
-</figure>
+</t>
 
 </section>
 
@@ -1485,19 +1481,19 @@ An "Ogg Opus file" consists of one or more sequentially multiplexed segments,
 The RECOMMENDED mime-type for Ogg Opus files is "audio/ogg".
 </t>
 
-<figure>
-<preamble>
+<t>
 If more specificity is desired, one MAY indicate the presence of Opus streams
  using the codecs parameter defined in <xref target="RFC6381"/> and
  <xref target="RFC5334"/>, e.g.,
-</preamble>
+</t>
+<figure>
 <artwork align="center"><![CDATA[
     audio/ogg; codecs=opus
 ]]></artwork>
-<postamble>
- for an Ogg Opus file.
-</postamble>
 </figure>
+<t>
+ for an Ogg Opus file.
+</t>
 
 <t>
 The RECOMMENDED filename extension for Ogg Opus files is '.opus'.
