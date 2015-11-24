@@ -222,8 +222,8 @@ That is, the first page in the logical stream, and the last header
 The granule position of an audio data page encodes the total number of PCM
  samples in the stream up to and including the last fully-decodable sample from
  the last packet completed on that page.
-The granule position of the first audio data page MAY be larger than zero as
- described in <xref target="start_granpos_restrictions"/>.
+The granule position of the first audio data page will usually be larger than
+ zero, as described in <xref target="start_granpos_restrictions"/>.
 </t>
 
 <t>
@@ -749,8 +749,7 @@ Future versions of this specification, even backwards-compatible versions,
  might include additional fields in the ID header.
 If an ID header has a compatible major version, but a larger minor version,
  an implementation MUST NOT reject it for containing additional data not
- specified here, unless it contains so much additional data that it does not
- complete on the first page.
+ specified here, provided it still completes on the first page.
 </t>
 
 <section anchor="channel_mapping" title="Channel Mapping">
@@ -794,22 +793,23 @@ For channel mapping family&nbsp;0, this value defaults to 1, and is not coded.
 </t>
 <t>Coupled Stream Count 'M' (8 bits, unsigned):
 This is the number of streams whose decoders are to be configured to produce
- two channels.
+ two channels (stereo).
 This MUST be no larger than the total number of streams, N.
 <vspace blankLines="1"/>
 Each packet in an Opus stream has an internal channel count of 1 or 2, which
  can change from packet to packet.
 This is selected by the encoder depending on the bitrate and the audio being
  encoded.
-The original channel count of the audio passed to the encoder is not preserved
- by the lossy compression.
+The original channel count of the audio passed to the encoder is not
+ necessarily preserved by the lossy compression.
 <vspace blankLines="1"/>
 Regardless of the internal channel count, any Opus stream can be decoded as
  mono (a single channel) or stereo (two channels) by appropriate initialization
  of the decoder.
-The 'coupled stream count' field indicates that the first M Opus decoders are
- to be initialized for stereo output, and the remaining (N&nbsp;-&nbsp;M)
- decoders are to be initialized for mono only.
+The 'coupled stream count' field indicates that the decoders for the first M
+ Opus streams are to be initialized for stereo (two-channel) output, and the
+ remaining (N&nbsp;-&nbsp;M) decoders are to be initialized for mono (a single
+ channel) only.
 The total number of decoded channels, (M&nbsp;+&nbsp;N), MUST be no larger than
  255, as there is no way to index more channels than that in the channel
  mapping.
