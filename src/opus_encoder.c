@@ -133,12 +133,12 @@ static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
 static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
         12000, 1000, /* NB<->MB */
         18000, 2000, /* MB<->WB */
-        21000, 2000, /* WB<->SWB */
-        30000, 2000, /* SWB<->FB */
+        20000, 2000, /* WB<->SWB */
+        24000, 2000, /* SWB<->FB */
 };
 /* Threshold bit-rates for switching between mono and stereo */
-static const opus_int32 stereo_voice_threshold = 30000;
-static const opus_int32 stereo_music_threshold = 30000;
+static const opus_int32 stereo_voice_threshold = 24000;
+static const opus_int32 stereo_music_threshold = 24000;
 
 /* Threshold bit-rate for switching between SILK/hybrid and CELT-only */
 static const opus_int32 mode_thresholds[2][2] = {
@@ -1786,7 +1786,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     st->prev_HB_gain = HB_gain;
     if (st->mode != MODE_HYBRID || st->stream_channels==1)
-       st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),2*IMAX(0,equiv_rate-30000));
+       st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),2*IMAX(0,equiv_rate-24000));
     if( !st->energy_masking && st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
