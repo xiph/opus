@@ -481,7 +481,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          c=0; do
          {
             for (i=start;i<end;i++)
-               oldBandE[c*nbEBands+i] -= decay;
+               oldBandE[c*nbEBands+i] = MAX16(backgroundLogE[c*nbEBands+i], oldBandE[c*nbEBands+i] - decay);
          } while (++c<C);
          plcLogE = oldBandE;
       }
