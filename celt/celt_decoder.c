@@ -457,10 +457,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
       VARDECL(celt_norm, X);
 #endif
       opus_uint32 seed;
-      opus_val16 *plcLogE;
       int end;
       int effEnd;
-
+      opus_val16 decay;
       end = st->end;
       effEnd = IMAX(start, IMIN(end, mode->effEBands));
 
@@ -472,19 +471,13 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
       ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
 #endif
 
-      if (loss_count >= 5)
-         plcLogE = backgroundLogE;
-      else {
-         /* Energy decay */
-         opus_val16 decay = loss_count==0 ?
-               QCONST16(1.5f, DB_SHIFT) : QCONST16(.5f, DB_SHIFT);
-         c=0; do
-         {
-            for (i=start;i<end;i++)
-               oldBandE[c*nbEBands+i] -= decay;
-         } while (++c<C);
-         plcLogE = oldBandE;
-      }
+      /* Energy decay */
+      decay = loss_count==0 ? QCONST16(1.5f, DB_SHIFT) : QCONST16(.5f, DB_SHIFT);
+      c=0; do
+      {
+         for (i=start;i<end;i++)
+            oldBandE[c*nbEBands+i] = MAX16(backgroundLogE[c*nbEBands+i], oldBandE[c*nbEBands+i] - decay);
+      } while (++c<C);
       seed = st->rng;
       for (c=0;c<C;c++)
       {
@@ -510,7 +503,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
                DECODE_BUFFER_SIZE-N+(overlap>>1));
       } while (++c<C);
 
-      celt_synthesis(mode, X, out_syn, plcLogE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch);
+      celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch);
    } else {
       /* Pitch-based PLC */
       const opus_val16 *window;
