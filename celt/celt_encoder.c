@@ -343,9 +343,9 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       {
          int id;
 #ifdef FIXED_POINT
-         id = IMAX(0,IMIN(127,MULT16_32_Q15(tmp[i],norm))); /* Do not round to nearest */
+         id = MAX32(0,MIN32(127,MULT16_32_Q15(tmp[i]+EPSILON,norm))); /* Do not round to nearest */
 #else
-         id = IMAX(0,IMIN(127,(int)floor(64*norm*tmp[i]))); /* Do not round to nearest */
+         id = (int)MAX32(0,MIN32(127,floor(64*norm*(tmp[i]+EPSILON)))); /* Do not round to nearest */
 #endif
          unmask += inv_table[id];
       }
