@@ -1030,10 +1030,18 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    /* In case start or end were to change */
    if (!isTransient)
    {
+      opus_val16 max_background_increase;
       OPUS_COPY(oldLogE2, oldLogE, 2*nbEBands);
       OPUS_COPY(oldLogE, oldBandE, 2*nbEBands);
+      /* In normal circumstances, we only allow the noise floor to increase by
+         up to 2.4 dB/second, but when we're in DTX, we allow up to 6 dB
+         increase for each update.*/
+      if (st->loss_count < 10)
+         max_background_increase = M*QCONST16(0.001f,DB_SHIFT);
+      else
+         max_background_increase = QCONST16(1.f,DB_SHIFT);
       for (i=0;i<2*nbEBands;i++)
-         backgroundLogE[i] = MIN16(backgroundLogE[i] + M*QCONST16(0.001f,DB_SHIFT), oldBandE[i]);
+         backgroundLogE[i] = MIN16(backgroundLogE[i] + max_background_increase, oldBandE[i]);
    } else {
       for (i=0;i<2*nbEBands;i++)
          oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);
