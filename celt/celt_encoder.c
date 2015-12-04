@@ -375,8 +375,8 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
 
 /* Looks for sudden increases of energy to decide whether we need to patch
    the transient decision */
-int patch_transient_decision(opus_val16 *newE, opus_val16 *oldE, int nbEBands,
-      int end, int C)
+static int patch_transient_decision(opus_val16 *newE, opus_val16 *oldE, int nbEBands,
+      int start, int end, int C)
 {
    int i, c;
    opus_val32 mean_diff=0;
@@ -385,28 +385,28 @@ int patch_transient_decision(opus_val16 *newE, opus_val16 *oldE, int nbEBands,
       avoid false detection caused by irrelevant bands */
    if (C==1)
    {
-      spread_old[0] = oldE[0];
-      for (i=1;i<end;i++)
+      spread_old[start] = oldE[start];
+      for (i=start+1;i<end;i++)
          spread_old[i] = MAX16(spread_old[i-1]-QCONST16(1.0f, DB_SHIFT), oldE[i]);
    } else {
-      spread_old[0] = MAX16(oldE[0],oldE[nbEBands]);
-      for (i=1;i<end;i++)
+      spread_old[start] = MAX16(oldE[start],oldE[start+nbEBands]);
+      for (i=start+1;i<end;i++)
          spread_old[i] = MAX16(spread_old[i-1]-QCONST16(1.0f, DB_SHIFT),
                                MAX16(oldE[i],oldE[i+nbEBands]));
    }
-   for (i=end-2;i>=0;i--)
+   for (i=end-2;i>=start;i--)
       spread_old[i] = MAX16(spread_old[i], spread_old[i+1]-QCONST16(1.0f, DB_SHIFT));
    /* Compute mean increase */
    c=0; do {
-      for (i=2;i<end-1;i++)
+      for (i=IMAX(2,start);i<end-1;i++)
       {
          opus_val16 x1, x2;
-         x1 = MAX16(0, newE[i]);
+         x1 = MAX16(0, newE[i + c*nbEBands]);
          x2 = MAX16(0, spread_old[i]);
          mean_diff = ADD32(mean_diff, EXTEND32(MAX16(0, SUB16(x1, x2))));
       }
    } while (++c<C);
-   mean_diff = DIV32(mean_diff, C*(end-3));
+   mean_diff = DIV32(mean_diff, C*(end-1-IMAX(2,start)));
    /*printf("%f %f %d\n", mean_diff, max_diff, count);*/
    return mean_diff > QCONST16(1.f, DB_SHIFT);
 }
@@ -1728,7 +1728,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       time-domain analysis */
    if (LM>0 && ec_tell(enc)+3<=total_bits && !isTransient && st->complexity>=5 && !st->lfe)
    {
-      if (patch_transient_decision(bandLogE, oldBandE, nbEBands, end, C))
+      if (patch_transient_decision(bandLogE, oldBandE, nbEBands, start, end, C))
       {
          isTransient = 1;
          shortBlocks = M;
