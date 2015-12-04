@@ -149,7 +149,7 @@ void test1d(int nfft,int isinverse,int arch)
 
     free(in);
     free(out);
-    free(cfg);
+    opus_fft_free(cfg, arch);
 }
 
 int main(int argc,char ** argv)

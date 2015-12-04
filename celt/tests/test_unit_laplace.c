@@ -88,5 +88,6 @@ int main(void)
       }
    }
 
+   free(ptr);
    return ret;
 }

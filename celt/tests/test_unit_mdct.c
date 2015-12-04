@@ -179,7 +179,9 @@ void test1d(int nfft,int isinverse,int arch)
 
 
     free(in);
+    free(in_copy);
     free(out);
+    free(window);
     clt_mdct_clear(&cfg, arch);
 }
 
