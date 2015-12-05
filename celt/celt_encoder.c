@@ -1886,12 +1886,15 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    alloc_trim = 5;
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
-      if (st->lfe)
+      if (start > 0 || st->lfe)
+      {
+         st->stereo_saving = 0;
          alloc_trim = 5;
-      else
+      } else {
          alloc_trim = alloc_trim_analysis(mode, X, bandLogE,
             end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate,
             st->intensity, surround_trim, st->arch);
+      }
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
