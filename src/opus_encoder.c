@@ -1720,6 +1720,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                len += st->mode == MODE_HYBRID ? 3 : 1;
             if( st->use_vbr ) {
                 nb_compr_bytes = len + bytes_target - (st->silk_mode.bitRate * frame_size) / (8 * st->Fs);
+                celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps-st->silk_mode.bitRate));
+                nb_compr_bytes = max_data_bytes-1-redundancy_bytes;
+                celt_encoder_ctl(celt_enc, OPUS_SET_VBR(1));
+                celt_encoder_ctl(celt_enc, OPUS_SET_VBR_CONSTRAINT(0));
             } else {
                 /* check if SILK used up too much */
                 nb_compr_bytes = len > bytes_target ? len : bytes_target;
