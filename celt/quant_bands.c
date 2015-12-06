@@ -281,7 +281,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    tell = ec_tell(enc);
    if (tell+3 > budget)
       two_pass = intra = 0;
-
+   //printf("budget: %d %d\n", tell, budget);
    max_decay = QCONST16(16.f,DB_SHIFT);
    if (end-start>10)
    {

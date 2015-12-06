@@ -1345,6 +1345,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_int32 total_boost;
    opus_int32 balance;
    opus_int32 tell;
+   opus_int32 tell0;
    int prefilter_tapset=0;
    int pf_on;
    int anti_collapse_rsv;
@@ -1402,10 +1403,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    if (enc==NULL)
    {
-      tell=1;
+      tell0=tell=1;
       nbFilledBytes=0;
    } else {
-      tell=ec_tell(enc);
+      tell0=tell=ec_tell(enc);
       nbFilledBytes=(tell+4)>>3;
    }
 
@@ -1543,7 +1544,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    } while (++c<CC);
 
 
-
+   printf("%d ", ec_tell_frac(enc));
    /* Find pitch period and gain */
    {
       int enabled;
@@ -1774,13 +1775,16 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tf_select=0;
    }
 
+   printf("%d ", ec_tell_frac(enc));
    ALLOC(error, C*nbEBands, opus_val16);
    quant_coarse_energy(mode, start, end, effEnd, bandLogE,
          oldBandE, total_bits, error, enc,
          C, LM, nbAvailableBytes, st->force_intra,
          &st->delayedIntra, st->complexity >= 4, st->loss_rate, st->lfe);
+   printf("%d ", ec_tell_frac(enc));
 
    tf_encode(start, end, isTransient, tf_res, LM, tf_select, enc);
+   printf("%d ", ec_tell_frac(enc));
 
    if (ec_tell(enc)+4<=total_bits)
    {
@@ -1821,6 +1825,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    }
 
    ALLOC(offsets, nbEBands, int);
+   printf("%d ", ec_tell_frac(enc));
 
    maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, start, end, C, offsets,
          st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
@@ -1882,6 +1887,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
             intensity_thresholds, intensity_histeresis, 21, st->intensity);
       st->intensity = IMIN(end,IMAX(start, st->intensity));
    }
+   printf("%d ", ec_tell_frac(enc));
 
    alloc_trim = 5;
    if (tell+(6<<BITRES) <= total_bits - total_boost)
@@ -1899,6 +1905,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tell = ec_tell_frac(enc);
    }
 
+   printf("%d ", ec_tell_frac(enc));
    /* Variable bitrate */
    if (vbr_rate>0)
    {
@@ -1912,17 +1919,26 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      /* Don't attempt to use more than 510 kb/s, even for frames smaller than 20 ms.
         The CELT allocator will just not be able to use more than that anyway. */
      nbCompressedBytes = IMIN(nbCompressedBytes,1275>>(3-LM));
-     base_target = vbr_rate - ((40*C+20)<<BITRES);
+     if (start == 0)
+     {
+        base_target = vbr_rate - ((40*C+20)<<BITRES);
+     } else {
+        base_target = vbr_rate - (tell0<<BITRES) - ((10*C+5)<<BITRES);
+     }
 
      if (st->constrained_vbr)
         base_target += (st->vbr_offset>>lm_diff);
 
-     target = compute_vbr(mode, &st->analysis, base_target, LM, equiv_rate,
+     if (start == 0)
+     {
+        target = compute_vbr(mode, &st->analysis, base_target, LM, equiv_rate,
            st->lastCodedBands, C, st->intensity, st->constrained_vbr,
            st->stereo_saving, tot_boost, tf_estimate, pitch_change, maxDepth,
            st->variable_duration, st->lfe, st->energy_mask!=NULL, surround_masking,
            temporal_vbr);
-
+     } else {
+        target = base_target;
+     }
      /* The current offset is removed from the target and the space used
         so far is added*/
      target=target+tell;
@@ -2024,7 +2040,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    else
       st->lastCodedBands = codedBands;
 
+   printf("%d ", ec_tell_frac(enc));
    quant_fine_energy(mode, start, end, oldBandE, error, fine_quant, enc, C);
+   printf("%d ", ec_tell_frac(enc));
 
    /* Residual quantisation */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
@@ -2032,6 +2050,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          bandE, pulses, shortBlocks, st->spread_decision,
          dual_stereo, st->intensity, tf_res, nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv,
          balance, enc, LM, codedBands, &st->rng, st->arch);
+   printf("%d\n", ec_tell_frac(enc));
 
    if (anti_collapse_rsv > 0)
    {
