@@ -1345,6 +1345,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_int32 total_boost;
    opus_int32 balance;
    opus_int32 tell;
+   opus_int32 tell0_frac;
    int prefilter_tapset=0;
    int pf_on;
    int anti_collapse_rsv;
@@ -1367,6 +1368,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_val16 temporal_vbr=0;
    opus_val16 surround_trim = 0;
    opus_int32 equiv_rate = 510000;
+   int hybrid;
    VARDECL(opus_val16, surround_dynalloc);
    ALLOC_STACK;
 
@@ -1376,6 +1378,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    eBands = mode->eBands;
    start = st->start;
    end = st->end;
+   hybrid = start != 0;
    tf_estimate = 0;
    if (nbCompressedBytes<2 || pcm==NULL)
    {
@@ -1402,9 +1405,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    if (enc==NULL)
    {
-      tell=1;
+      tell0_frac=tell=1;
       nbFilledBytes=0;
    } else {
+      tell0_frac=tell=ec_tell_frac(enc);
       tell=ec_tell(enc);
       nbFilledBytes=(tell+4)>>3;
    }
@@ -1457,7 +1461,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       if (st->bitrate!=OPUS_BITRATE_MAX)
          nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
                (tmp+4*mode->Fs)/(8*mode->Fs)-!!st->signalling));
-      effectiveBytes = nbCompressedBytes;
+      effectiveBytes = nbCompressedBytes - nbFilledBytes;
    }
    if (st->bitrate != OPUS_BITRATE_MAX)
       equiv_rate = st->bitrate - (40*C+20)*((400>>LM) - 50);
@@ -1912,17 +1916,30 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      /* Don't attempt to use more than 510 kb/s, even for frames smaller than 20 ms.
         The CELT allocator will just not be able to use more than that anyway. */
      nbCompressedBytes = IMIN(nbCompressedBytes,1275>>(3-LM));
-     base_target = vbr_rate - ((40*C+20)<<BITRES);
+     if (!hybrid)
+     {
+        base_target = vbr_rate - ((40*C+20)<<BITRES);
+     } else {
+        base_target = IMAX(0, vbr_rate - ((9*C+4)<<BITRES));
+     }
 
      if (st->constrained_vbr)
         base_target += (st->vbr_offset>>lm_diff);
 
-     target = compute_vbr(mode, &st->analysis, base_target, LM, equiv_rate,
+     if (!hybrid)
+     {
+        target = compute_vbr(mode, &st->analysis, base_target, LM, equiv_rate,
            st->lastCodedBands, C, st->intensity, st->constrained_vbr,
            st->stereo_saving, tot_boost, tf_estimate, pitch_change, maxDepth,
            st->variable_duration, st->lfe, st->energy_mask!=NULL, surround_masking,
            temporal_vbr);
-
+     } else {
+        target = base_target;
+        /* If we have a strong transient, let's make sure it has enough bits to code
+           the first two bands, so that it can use folding rather than noise. */
+        if (tf_estimate > QCONST16(.7f,14))
+           target = IMAX(base_target, 50<<BITRES);
+     }
      /* The current offset is removed from the target and the space used
         so far is added*/
      target=target+tell;
@@ -1930,11 +1947,16 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          result in the encoder running out of bits.
         The margin of 2 bytes ensures that none of the bust-prevention logic
          in the decoder will have triggered so far. */
-     min_allowed = ((tell+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3)) + 2 - nbFilledBytes;
+     min_allowed = ((tell+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3)) + 2;
+     /* Take into account the 37 bits we need to have left in the packet to
+        signal a redundant frame in hybrid mode. Creating a shorter packet would
+        create an entropy coder desync. */
+     if (hybrid)
+        min_allowed = IMAX(min_allowed, (tell0_frac+(37<<BITRES)+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3));
 
      nbAvailableBytes = (target+(1<<(BITRES+2)))>>(BITRES+3);
      nbAvailableBytes = IMAX(min_allowed,nbAvailableBytes);
-     nbAvailableBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes) - nbFilledBytes;
+     nbAvailableBytes = IMIN(nbCompressedBytes,nbAvailableBytes);
 
      /* By how much did we "miss" the target on that frame */
      delta = target - vbr_rate;
@@ -1981,7 +2003,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         st->vbr_reservoir = 0;
         /*printf ("+%d\n", adjust);*/
      }
-     nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes);
+     nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes);
      /*printf("%d\n", nbCompressedBytes*50*8);*/
      /* This moves the raw bits to take into account the new compressed size */
      ec_enc_shrink(enc, nbCompressedBytes);
