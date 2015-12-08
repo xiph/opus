@@ -1503,7 +1503,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                 st->silk_mode.bitRate = total_bitRate * 9/10;
             }
             //printf("%d\n", st->silk_mode.bitRate);
-            st->silk_mode.bitRate = 11000;
+            st->silk_mode.bitRate = 14000;
             if (!st->energy_masking)
             {
                /* Increasingly attenuate high band when it gets allocated fewer bits */
@@ -1724,6 +1724,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                 nb_compr_bytes = len + bytes_target - (st->silk_mode.bitRate * frame_size) / (8 * st->Fs);
                 celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps));
                 nb_compr_bytes = max_data_bytes-1-redundancy_bytes;
+                printf("\ncompr = %d\n", nb_compr_bytes);
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR(1));
             } else {
                 /* check if SILK used up too much */
