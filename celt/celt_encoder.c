@@ -1368,6 +1368,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_val16 temporal_vbr=0;
    opus_val16 surround_trim = 0;
    opus_int32 equiv_rate = 510000;
+   int hybrid;
    VARDECL(opus_val16, surround_dynalloc);
    ALLOC_STACK;
 
@@ -1377,6 +1378,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    eBands = mode->eBands;
    start = st->start;
    end = st->end;
+   hybrid = start != 0;
    tf_estimate = 0;
    if (nbCompressedBytes<2 || pcm==NULL)
    {
@@ -1468,14 +1470,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       ec_enc_init(&_enc, compressed, nbCompressedBytes);
       enc = &_enc;
    }
-   printf("nbCompressedBytes0=%d\n", nbCompressedBytes);
+
    if (vbr_rate>0)
    {
       /* Computes the max bit-rate allowed in VBR mode to avoid violating the
           target rate and buffering.
          We must do this up front so that bust-prevention logic triggers
           correctly if we don't have enough bits. */
-      if (0&&st->constrained_vbr)
+      if (!hybrid && st->constrained_vbr)
       {
          opus_int32 vbr_bound;
          opus_int32 max_allowed;
@@ -1495,7 +1497,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          }
       }
    }
-   printf("nbCompressedBytes0b=%d\n", nbCompressedBytes);
    total_bits = nbCompressedBytes*8;
 
    effEnd = end;
@@ -1516,7 +1517,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if ((rand()&0x3F)==0)
       silence = 1;
 #endif
-   printf("nbCompressedBytes1=%d\n", nbCompressedBytes);
    if (tell==1)
       ec_enc_bit_logp(enc, silence, 15);
    else
@@ -1536,7 +1536,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tell = nbCompressedBytes*8;
       enc->nbits_total+=tell-ec_tell(enc);
    }
-   printf("nbCompressedBytes1b=%d\n", nbCompressedBytes);
    c=0; do {
       int need_clip=0;
 #ifndef FIXED_POINT
@@ -1547,7 +1546,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    } while (++c<CC);
 
 
-   printf("%d ", ec_tell_frac(enc));
+
    /* Find pitch period and gain */
    {
       int enabled;
@@ -1727,7 +1726,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    {
       OPUS_COPY(bandLogE2, bandLogE, C*nbEBands);
    }
-   printf("nbCompressedBytes2=%d\n", nbCompressedBytes);
 
    /* Last chance to catch any transient we might have missed in the
       time-domain analysis */
@@ -1779,16 +1777,13 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tf_select=0;
    }
 
-   printf("%d ", ec_tell_frac(enc));
    ALLOC(error, C*nbEBands, opus_val16);
    quant_coarse_energy(mode, start, end, effEnd, bandLogE,
          oldBandE, total_bits, error, enc,
          C, LM, nbAvailableBytes, st->force_intra,
          &st->delayedIntra, st->complexity >= 4, st->loss_rate, st->lfe);
-   printf("%d ", ec_tell_frac(enc));
 
    tf_encode(start, end, isTransient, tf_res, LM, tf_select, enc);
-   printf("%d ", ec_tell_frac(enc));
 
    if (ec_tell(enc)+4<=total_bits)
    {
@@ -1829,7 +1824,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    }
 
    ALLOC(offsets, nbEBands, int);
-   printf("%d ", ec_tell_frac(enc));
 
    maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, start, end, C, offsets,
          st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
@@ -1891,7 +1885,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
             intensity_thresholds, intensity_histeresis, 21, st->intensity);
       st->intensity = IMIN(end,IMAX(start, st->intensity));
    }
-   printf("%d ", ec_tell_frac(enc));
 
    alloc_trim = 5;
    if (tell+(6<<BITRES) <= total_bits - total_boost)
@@ -1908,9 +1901,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
-   tell = ec_tell_frac(enc);
 
-   printf("%d ", ec_tell_frac(enc));
    /* Variable bitrate */
    if (vbr_rate>0)
    {
@@ -1921,11 +1912,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      opus_int32 min_allowed;
      int lm_diff = mode->maxLM - LM;
 
-     printf("size: %d\n", nbCompressedBytes);
      /* Don't attempt to use more than 510 kb/s, even for frames smaller than 20 ms.
         The CELT allocator will just not be able to use more than that anyway. */
      nbCompressedBytes = IMIN(nbCompressedBytes,1275>>(3-LM));
-     if (start == 0)
+     if (!hybrid)
      {
         base_target = vbr_rate - ((40*C+20)<<BITRES);
      } else {
@@ -1935,7 +1925,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      if (st->constrained_vbr)
         base_target += (st->vbr_offset>>lm_diff);
 
-     if (start == 0)
+     if (!hybrid)
      {
         target = compute_vbr(mode, &st->analysis, base_target, LM, equiv_rate,
            st->lastCodedBands, C, st->intensity, st->constrained_vbr,
@@ -1962,14 +1952,13 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      delta = target - vbr_rate;
 
      target=nbAvailableBytes<<(BITRES+3);
-     printf("\nalloc: %d %d %d %d %d\n", vbr_rate, base_target, target, nbFilledBytes, min_allowed);
 
      /*If the frame is silent we don't adjust our drift, otherwise
        the encoder will shoot to very high rates after hitting a
        span of silence, but we do allow the bitres to refill.
        This means that we'll undershoot our target in CVBR/VBR modes
        on files with lots of silence. */
-     if(0&&silence)
+     if(silence)
      {
        nbAvailableBytes = 2;
        target = 2*8<<BITRES;
@@ -2005,8 +1994,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         /*printf ("+%d\n", adjust);*/
      }
      nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes);
-     printf("%d %d %d\n", nbAvailableBytes, nbFilledBytes, nbCompressedBytes);
-     printf("%d\n", nbCompressedBytes*50*8);
+     /*printf("%d\n", nbCompressedBytes*50*8);*/
      /* This moves the raw bits to take into account the new compressed size */
      ec_enc_shrink(enc, nbCompressedBytes);
    }
@@ -2048,9 +2036,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    else
       st->lastCodedBands = codedBands;
 
-   printf("%d ", ec_tell_frac(enc));
    quant_fine_energy(mode, start, end, oldBandE, error, fine_quant, enc, C);
-   printf("%d ", ec_tell_frac(enc));
 
    /* Residual quantisation */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
@@ -2058,7 +2044,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          bandE, pulses, shortBlocks, st->spread_decision,
          dual_stereo, st->intensity, tf_res, nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv,
          balance, enc, LM, codedBands, &st->rng, st->arch);
-   printf("%d\n", ec_tell_frac(enc));
 
    if (anti_collapse_rsv > 0)
    {

@@ -235,13 +235,11 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          {
             qi = IMAX(-1, IMIN(qi, 1));
             ec_enc_icdf(enc, 2*qi^-(qi<0), small_energy_icdf, 2);
-            printf("boo! %d %d\n", budget, tell);
          }
          else if(budget-tell >= 1)
          {
             qi = IMIN(0, qi);
             ec_enc_bit_logp(enc, -qi, 1);
-            printf("boo! %d %d\n", budget, tell);
          }
          else
             qi = -1;
@@ -283,7 +281,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    tell = ec_tell(enc);
    if (tell+3 > budget)
       two_pass = intra = 0;
-   //printf("budget: %d %d\n", tell, budget);
+
    max_decay = QCONST16(16.f,DB_SHIFT);
    if (end-start>10)
    {
