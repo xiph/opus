@@ -1502,7 +1502,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             if( st->silk_mode.bitRate > total_bitRate * 9/10 ) {
                 st->silk_mode.bitRate = total_bitRate * 9/10;
             }
-            //printf("%d\n", st->silk_mode.bitRate);
             st->silk_mode.bitRate = 14000;
             if (!st->energy_masking)
             {
@@ -1511,6 +1510,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                HB_gain_ref = (curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND) ? 3000 : 3600;
                HB_gain = SHL32((opus_val32)celt_rate, 9) / SHR32((opus_val32)celt_rate + st->stream_channels * HB_gain_ref, 6);
                HB_gain = HB_gain < Q15ONE*6/7 ? HB_gain + Q15ONE/7 : Q15ONE;
+               HB_gain = Q15ONE;
             }
         } else {
             /* SILK gets all bits */
@@ -1722,10 +1722,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                len += st->mode == MODE_HYBRID ? 3 : 1;
             if( st->use_vbr ) {
                 nb_compr_bytes = len + bytes_target - (st->silk_mode.bitRate * frame_size) / (8 * st->Fs);
-                celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps));
+                celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps-st->silk_mode.bitRate));
                 nb_compr_bytes = max_data_bytes-1-redundancy_bytes;
-                printf("\ncompr = %d\n", nb_compr_bytes);
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR(1));
+                celt_encoder_ctl(celt_enc, OPUS_SET_VBR_CONSTRAINT(0));
             } else {
                 /* check if SILK used up too much */
                 nb_compr_bytes = len > bytes_target ? len : bytes_target;

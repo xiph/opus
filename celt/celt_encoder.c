@@ -1478,7 +1478,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
           target rate and buffering.
          We must do this up front so that bust-prevention logic triggers
           correctly if we don't have enough bits. */
-      if (!hybrid && st->constrained_vbr)
+      if (st->constrained_vbr)
       {
          opus_int32 vbr_bound;
          opus_int32 max_allowed;
@@ -1920,7 +1920,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      {
         base_target = vbr_rate - ((40*C+20)<<BITRES);
      } else {
-        base_target = IMAX(0, 2000/50*8 - ((10*C+5)<<BITRES));
+        base_target = IMAX(0, vbr_rate - ((10*C+5)<<BITRES));
      }
 
      if (st->constrained_vbr)
