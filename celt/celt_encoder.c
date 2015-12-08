@@ -1345,7 +1345,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_int32 total_boost;
    opus_int32 balance;
    opus_int32 tell;
-   opus_int32 tell0;
+   opus_int32 tell0_frac;
    int prefilter_tapset=0;
    int pf_on;
    int anti_collapse_rsv;
@@ -1405,10 +1405,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    if (enc==NULL)
    {
-      tell0=tell=1;
+      tell0_frac=tell=1;
       nbFilledBytes=0;
    } else {
-      tell0=tell=ec_tell(enc);
+      tell0_frac=tell=ec_tell_frac(enc);
+      tell=ec_tell(enc);
       nbFilledBytes=(tell+4)>>3;
    }
 
@@ -1942,7 +1943,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          result in the encoder running out of bits.
         The margin of 2 bytes ensures that none of the bust-prevention logic
          in the decoder will have triggered so far. */
-     min_allowed = ((tell+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3)) + 4;
+     min_allowed = ((tell+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3)) + 2;
+     /* Take into account */
+     if (hybrid)
+        min_allowed = IMAX(min_allowed, (tell0_frac+(37<<BITRES)+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3));
 
      nbAvailableBytes = (target+(1<<(BITRES+2)))>>(BITRES+3);
      nbAvailableBytes = IMAX(min_allowed,nbAvailableBytes);
