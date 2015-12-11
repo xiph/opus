@@ -182,7 +182,7 @@ The TOC sequence at the beginning of each Opus packet indicates the coding
  frames per packet, as described in Section&nbsp;3.1
  of&nbsp;<xref target="RFC6716"/>.
 The coding mode is one of SILK, Hybrid, or Constrained Energy Lapped Transform
- (CELT),
+ (CELT).
 The combination of coding mode, audio bandwidth, and frame size is referred to
  as the configuration of an Opus packet.
 </t>
