@@ -925,8 +925,8 @@ Implementations SHOULD NOT produce output for channels mapped to stream index
  title="Undefined Channel Mappings">
 <t>
 The remaining channel mapping families (2...254) are reserved.
-An implementation encountering a reserved channel mapping family value MUST act
- as though the value is 255.
+A demuxer implementation encountering a reserved channel mapping family value
+ SHOULD act as though the value is 255.
 </t>
 </section>
 
