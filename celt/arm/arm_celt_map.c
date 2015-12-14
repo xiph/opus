@@ -36,6 +36,9 @@
 #if defined(OPUS_HAVE_RTCD)
 
 # if defined(FIXED_POINT)
+#  if ((defined(OPUS_ARM_MAY_HAVE_NEON) && !defined(OPUS_ARM_PRESUME_NEON)) || \
+    (defined(OPUS_ARM_MAY_HAVE_MEDIA) && !defined(OPUS_ARM_PRESUME_MEDIA)) || \
+    (defined(OPUS_ARM_MAY_HAVE_EDSP) && !defined(OPUS_ARM_PRESUME_EDSP)))
 opus_val32 (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
     const opus_val16 *, opus_val32 *, int , int) = {
   celt_pitch_xcorr_c,               /* ARMv4 */
@@ -43,8 +46,10 @@ opus_val32 (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
   MAY_HAVE_MEDIA(celt_pitch_xcorr), /* Media */
   MAY_HAVE_NEON(celt_pitch_xcorr)   /* NEON */
 };
+
+#  endif
 # else /* !FIXED_POINT */
-#  if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+#  if defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR)
 void (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
     const opus_val16 *, opus_val32 *, int, int) = {
   celt_pitch_xcorr_c,              /* ARMv4 */
