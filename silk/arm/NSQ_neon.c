@@ -67,3 +67,46 @@ opus_int32 silk_noise_shape_quantizer_short_prediction_neon(const opus_int32 *bu
 
     return out;
 }
+
+
+opus_int32 silk_NSQ_noise_shape_feedback_loop_neon(const opus_int32 *data0, opus_int32 *data1, const opus_int16 *coef, opus_int order)
+{
+    opus_int32 out;
+    if (order == 8)
+    {
+        int32x4_t a00 = vdupq_n_s32(data0[0]);
+        int32x4_t a01 = vld1q_s32(data1);  /* data1[0] ... [3] */
+
+        int32x4_t a0 = vextq_s32 (a00, a01, 3); /* data0[0] data1[0] ...[2] */
+        int32x4_t a1 = vld1q_s32(data1 + 3);  /* data1[3] ... [6] */
+
+        /*TODO: Convert these once in advance instead of once per sample, like
+          silk_noise_shape_quantizer_short_prediction_neon() does.*/
+        int16x8_t coef16 = vld1q_s16(coef);
+        int32x4_t coef0 = vmovl_s16(vget_low_s16(coef16));
+        int32x4_t coef1 = vmovl_s16(vget_high_s16(coef16));
+
+        /*This is not bit-exact with the C version, since we do not drop the
+          lower 16 bits of each multiply, but wait until the end to truncate
+          precision. This is an encoder-specific calculation (and unlike
+          silk_noise_shape_quantizer_short_prediction_neon(), is not meant to
+          simulate what the decoder will do). We still could use vqdmulhq_s32()
+          like silk_noise_shape_quantizer_short_prediction_neon() and save
+          half the multiplies, but the speed difference is not large, since we
+          then need two extra adds.*/
+        int64x2_t b0 = vmull_s32(vget_low_s32(a0), vget_low_s32(coef0));
+        int64x2_t b1 = vmlal_s32(b0, vget_high_s32(a0), vget_high_s32(coef0));
+        int64x2_t b2 = vmlal_s32(b1, vget_low_s32(a1), vget_low_s32(coef1));
+        int64x2_t b3 = vmlal_s32(b2, vget_high_s32(a1), vget_high_s32(coef1));
+
+        int64x1_t c = vadd_s64(vget_low_s64(b3), vget_high_s64(b3));
+        int64x1_t cS = vrshr_n_s64(c, 15);
+        int32x2_t d = vreinterpret_s32_s64(cS);
+
+        out = vget_lane_s32(d, 0);
+        vst1q_s32(data1, a0);
+        vst1q_s32(data1 + 4, a1);
+        return out;
+    }
+    return silk_NSQ_noise_shape_feedback_loop_c(data0, data1, coef, order);
+}

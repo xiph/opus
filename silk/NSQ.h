@@ -64,6 +64,35 @@ static OPUS_INLINE opus_int32 silk_noise_shape_quantizer_short_prediction_c(cons
 
 #define silk_noise_shape_quantizer_short_prediction(in, coef, coefRev, order, arch)  ((void)arch,silk_noise_shape_quantizer_short_prediction_c(in, coef, order))
 
+static OPUS_INLINE opus_int32 silk_NSQ_noise_shape_feedback_loop_c(const opus_int32 *data0, opus_int32 *data1, const opus_int16 *coef, opus_int order)
+{
+    opus_int32 out;
+    opus_int32 tmp1, tmp2;
+    opus_int j;
+
+    tmp2 = data0[0];
+    tmp1 = data1[0];
+    data1[0] = tmp2;
+
+    out = silk_RSHIFT(order, 1);
+    out = silk_SMLAWB(out, tmp2, coef[0]);
+
+    for (j = 2; j < order; j += 2) {
+        tmp2 = data1[j - 1];
+        data1[j - 1] = tmp1;
+        out = silk_SMLAWB(out, tmp1, coef[j - 1]);
+        tmp1 = data1[j + 0];
+        data1[j + 0] = tmp2;
+        out = silk_SMLAWB(out, tmp2, coef[j]);
+    }
+    data1[order - 1] = tmp1;
+    out = silk_SMLAWB(out, tmp1, coef[order - 1]);
+    /* Q11 -> Q12 */
+    out = silk_LSHIFT32( out, 1 );
+    return out;
+}
+
+#define silk_NSQ_noise_shape_feedback_loop(data0, data1, coef, order, arch)  ((void)arch,silk_NSQ_noise_shape_feedback_loop_c(data0, data1, coef, order))
 
 #if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
 #include "arm/NSQ_neon.h"

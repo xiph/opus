@@ -82,7 +82,9 @@ silk/x86/x86_silk_map.c \
 silk/x86/VAD_sse.c \
 silk/x86/VQ_WMat_EC_sse.c
 
-SILK_SOURCES_ARM_NEON_INTR = silk/arm/NSQ_neon.c
+SILK_SOURCES_ARM_NEON_INTR = \
+silk/arm/arm_silk_map.c \
+silk/arm/NSQ_neon.c
 
 SILK_SOURCES_FIXED = \
 silk/fixed/LTP_analysis_filter_FIX.c \

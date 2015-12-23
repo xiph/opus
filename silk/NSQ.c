@@ -205,7 +205,7 @@ void silk_noise_shape_quantizer(
     int                 arch                    /* I    Architecture                    */
 )
 {
-    opus_int     i, j;
+    opus_int     i;
     opus_int32   LTP_pred_Q13, LPC_pred_Q10, n_AR_Q12, n_LTP_Q13;
     opus_int32   n_LF_Q12, r_Q10, rr_Q10, q1_Q0, q1_Q10, q2_Q10, rd1_Q20, rd2_Q20;
     opus_int32   exc_Q14, LPC_exc_Q14, xq_Q14, Gain_Q10;
@@ -250,23 +250,8 @@ void silk_noise_shape_quantizer(
 
         /* Noise shape feedback */
         silk_assert( ( shapingLPCOrder & 1 ) == 0 );   /* check that order is even */
-        tmp2 = psLPC_Q14[ 0 ];
-        tmp1 = NSQ->sAR2_Q14[ 0 ];
-        NSQ->sAR2_Q14[ 0 ] = tmp2;
-        n_AR_Q12 = silk_RSHIFT( shapingLPCOrder, 1 );
-        n_AR_Q12 = silk_SMLAWB( n_AR_Q12, tmp2, AR_shp_Q13[ 0 ] );
-        for( j = 2; j < shapingLPCOrder; j += 2 ) {
-            tmp2 = NSQ->sAR2_Q14[ j - 1 ];
-            NSQ->sAR2_Q14[ j - 1 ] = tmp1;
-            n_AR_Q12 = silk_SMLAWB( n_AR_Q12, tmp1, AR_shp_Q13[ j - 1 ] );
-            tmp1 = NSQ->sAR2_Q14[ j + 0 ];
-            NSQ->sAR2_Q14[ j + 0 ] = tmp2;
-            n_AR_Q12 = silk_SMLAWB( n_AR_Q12, tmp2, AR_shp_Q13[ j ] );
-        }
-        NSQ->sAR2_Q14[ shapingLPCOrder - 1 ] = tmp1;
-        n_AR_Q12 = silk_SMLAWB( n_AR_Q12, tmp1, AR_shp_Q13[ shapingLPCOrder - 1 ] );
+        n_AR_Q12 = silk_NSQ_noise_shape_feedback_loop(psLPC_Q14, NSQ->sAR2_Q14, AR_shp_Q13, shapingLPCOrder, arch);
 
-        n_AR_Q12 = silk_LSHIFT32( n_AR_Q12, 1 );                                /* Q11 -> Q12 */
         n_AR_Q12 = silk_SMLAWB( n_AR_Q12, NSQ->sLF_AR_shp_Q14, Tilt_Q14 );
 
         n_LF_Q12 = silk_SMULWB( NSQ->sLTP_shp_Q14[ NSQ->sLTP_shp_buf_idx - 1 ], LF_shp_Q14 );
