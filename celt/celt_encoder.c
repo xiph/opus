@@ -1461,7 +1461,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       if (st->bitrate!=OPUS_BITRATE_MAX)
          nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
                (tmp+4*mode->Fs)/(8*mode->Fs)-!!st->signalling));
-      effectiveBytes = nbCompressedBytes;
+      effectiveBytes = nbCompressedBytes - nbFilledBytes;
    }
    if (st->bitrate != OPUS_BITRATE_MAX)
       equiv_rate = st->bitrate - (40*C+20)*((400>>LM) - 50);
@@ -1920,7 +1920,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      {
         base_target = vbr_rate - ((40*C+20)<<BITRES);
      } else {
-        base_target = IMAX(0, vbr_rate - ((10*C+5)<<BITRES));
+        base_target = IMAX(0, vbr_rate - ((9*C+4)<<BITRES));
      }
 
      if (st->constrained_vbr)
@@ -1935,6 +1935,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
            temporal_vbr);
      } else {
         target = base_target;
+        /* If we have a strong transient, let's make sure it has enough bits to code
+           the first two bands, so that it can use folding rather than noise. */
+        if (tf_estimate > QCONST16(.7f,14))
+           target = IMAX(base_target, 50<<BITRES);
      }
      /* The current offset is removed from the target and the space used
         so far is added*/
