@@ -64,6 +64,35 @@ extern opus_val32
 #   define OVERRIDE_PITCH_XCORR (1)
 #   define celt_pitch_xcorr(_x, _y, xcorr, len, max_pitch, arch) \
   ((void)(arch),PRESUME_NEON(celt_pitch_xcorr)(_x, _y, xcorr, len, max_pitch))
+
+#  endif
+
+#  if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+void xcorr_kernel_neon_fixed(
+                    const opus_val16 *x,
+                    const opus_val16 *y,
+                    opus_val32       sum[4],
+                    int              len);
+#  endif
+
+#  if defined(OPUS_HAVE_RTCD) && \
+    (defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR))
+
+extern void (*const XCORR_KERNEL_IMPL[OPUS_ARCHMASK + 1])(
+                    const opus_val16 *x,
+                    const opus_val16 *y,
+                    opus_val32       sum[4],
+                    int              len);
+
+#   define OVERRIDE_XCORR_KERNEL (1)
+#   define xcorr_kernel(x, y, sum, len, arch) \
+     ((*XCORR_KERNEL_IMPL[(arch) & OPUS_ARCHMASK])(x, y, sum, len))
+
+#  elif defined(OPUS_ARM_PRESUME_NEON_INTR)
+#   define OVERRIDE_XCORR_KERNEL (1)
+#   define xcorr_kernel(x, y, sum, len, arch) \
+      ((void)arch, xcorr_kernel_neon_fixed(x, y, sum, len))
+
 #  endif
 
 #else /* Start !FIXED_POINT */

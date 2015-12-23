@@ -60,6 +60,23 @@ void (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
 #  endif
 # endif /* FIXED_POINT */
 
+#if defined(FIXED_POINT) && defined(OPUS_HAVE_RTCD) && \
+ defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR)
+
+void (*const XCORR_KERNEL_IMPL[OPUS_ARCHMASK + 1])(
+         const opus_val16 *x,
+         const opus_val16 *y,
+         opus_val32       sum[4],
+         int              len
+) = {
+  xcorr_kernel_c,                /* ARMv4 */
+  xcorr_kernel_c,                /* EDSP */
+  xcorr_kernel_c,                /* Media */
+  xcorr_kernel_neon_fixed,       /* Neon */
+};
+
+#endif
+
 # if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
 #  if defined(HAVE_ARM_NE10)
 #   if defined(CUSTOM_MODES)
