@@ -37,11 +37,12 @@
 #include "cpu_support.h"
 #include "os_support.h"
 #include "opus_types.h"
+#include "arch.h"
 
-#define OPUS_CPU_ARM_V4    (1)
-#define OPUS_CPU_ARM_EDSP  (1<<1)
-#define OPUS_CPU_ARM_MEDIA (1<<2)
-#define OPUS_CPU_ARM_NEON  (1<<3)
+#define OPUS_CPU_ARM_V4_FLAG    (1<<OPUS_ARCH_ARM_V4)
+#define OPUS_CPU_ARM_EDSP_FLAG  (1<<OPUS_ARCH_ARM_EDSP)
+#define OPUS_CPU_ARM_MEDIA_FLAG (1<<OPUS_ARCH_ARM_MEDIA)
+#define OPUS_CPU_ARM_NEON_FLAG  (1<<OPUS_ARCH_ARM_NEON)
 
 #if defined(_MSC_VER)
 /*For GetExceptionCode() and EXCEPTION_ILLEGAL_INSTRUCTION.*/
@@ -59,7 +60,7 @@ static OPUS_INLINE opus_uint32 opus_cpu_capabilities(void){
   __try{
     /*PLD [r13]*/
     __emit(0xF5DDF000);
-    flags|=OPUS_CPU_ARM_EDSP;
+    flags|=OPUS_CPU_ARM_EDSP_FLAG;
   }
   __except(GetExceptionCode()==EXCEPTION_ILLEGAL_INSTRUCTION){
     /*Ignore exception.*/
@@ -68,7 +69,7 @@ static OPUS_INLINE opus_uint32 opus_cpu_capabilities(void){
   __try{
     /*SHADD8 r3,r3,r3*/
     __emit(0xE6333F93);
-    flags|=OPUS_CPU_ARM_MEDIA;
+    flags|=OPUS_CPU_ARM_MEDIA_FLAG;
   }
   __except(GetExceptionCode()==EXCEPTION_ILLEGAL_INSTRUCTION){
     /*Ignore exception.*/
@@ -77,7 +78,7 @@ static OPUS_INLINE opus_uint32 opus_cpu_capabilities(void){
   __try{
     /*VORR q0,q0,q0*/
     __emit(0xF2200150);
-    flags|=OPUS_CPU_ARM_NEON;
+    flags|=OPUS_CPU_ARM_NEON_FLAG;
   }
   __except(GetExceptionCode()==EXCEPTION_ILLEGAL_INSTRUCTION){
     /*Ignore exception.*/
@@ -115,13 +116,13 @@ opus_uint32 opus_cpu_capabilities(void)
 #  if defined(OPUS_ARM_MAY_HAVE_EDSP)
         p = strstr(buf, " edsp");
         if(p != NULL && (p[5] == ' ' || p[5] == '\n'))
-          flags |= OPUS_CPU_ARM_EDSP;
+          flags |= OPUS_CPU_ARM_EDSP_FLAG;
 #  endif
 
 #  if defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
         p = strstr(buf, " neon");
         if(p != NULL && (p[5] == ' ' || p[5] == '\n'))
-          flags |= OPUS_CPU_ARM_NEON;
+          flags |= OPUS_CPU_ARM_NEON_FLAG;
 #  endif
       }
 # endif
@@ -134,7 +135,7 @@ opus_uint32 opus_cpu_capabilities(void)
         version = atoi(buf+17);
 
         if(version >= 6)
-          flags |= OPUS_CPU_ARM_MEDIA;
+          flags |= OPUS_CPU_ARM_MEDIA_FLAG;
       }
 # endif
     }
@@ -156,18 +157,26 @@ int opus_select_arch(void)
   opus_uint32 flags = opus_cpu_capabilities();
   int arch = 0;
 
-  if(!(flags & OPUS_CPU_ARM_EDSP))
+  if(!(flags & OPUS_CPU_ARM_EDSP_FLAG)) {
+    /* Asserts ensure arch values are sequential */
+    celt_assert(arch == OPUS_ARCH_ARM_V4);
     return arch;
+  }
   arch++;
 
-  if(!(flags & OPUS_CPU_ARM_MEDIA))
+  if(!(flags & OPUS_CPU_ARM_MEDIA_FLAG)) {
+    celt_assert(arch == OPUS_ARCH_ARM_EDSP);
     return arch;
+  }
   arch++;
 
-  if(!(flags & OPUS_CPU_ARM_NEON))
+  if(!(flags & OPUS_CPU_ARM_NEON_FLAG)) {
+    celt_assert(arch == OPUS_ARCH_ARM_MEDIA);
     return arch;
+  }
   arch++;
 
+  celt_assert(arch == OPUS_ARCH_ARM_NEON);
   return arch;
 }
 
