@@ -15,6 +15,7 @@ silk/Inlines.h \
 silk/MacroCount.h \
 silk/MacroDebug.h \
 silk/macros.h \
+silk/NSQ.h \
 silk/pitch_est_defines.h \
 silk/resampler_private.h \
 silk/resampler_rom.h \
@@ -25,6 +26,7 @@ silk/arm/macros_armv4.h \
 silk/arm/macros_armv5e.h \
 silk/arm/SigProc_FIX_armv4.h \
 silk/arm/SigProc_FIX_armv5e.h \
+silk/arm/NSQ_neon.h \
 silk/fixed/main_FIX.h \
 silk/fixed/structs_FIX.h \
 silk/fixed/mips/noise_shape_analysis_FIX_mipsr1.h \
