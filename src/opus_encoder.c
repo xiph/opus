@@ -930,6 +930,49 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
    return EXTRACT16(MIN32(Q15ONE,20*mem->max_follower));
 }
 
+static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, int vbr) {
+   int entry;
+   int i;
+   int N;
+   int silk_rate;
+   static int rate_table[][5] = {
+  /*  |total| |-------- SILK------------|
+              SWB-10  FB-10 SWB-20  FB-20 */
+      {    0,     0,     0,     0,     0},
+      {12000, 10000, 10000, 10000, 10000},
+      {16000, 14000, 14000, 14000, 14000},
+      {20000, 16000, 16000, 16000, 16000},
+      {24000, 18000, 18000, 18000, 18000},
+      {32000, 22000, 22000, 22000, 22000},
+      {64000, 38000, 38000, 38000, 38000}
+   };
+   entry = 1 + 2*frame20ms + (bandwidth==OPUS_BANDWIDTH_FULLBAND);
+   N = sizeof(rate_table)/sizeof(rate_table[0]);
+   for (i=1;i<N;i++)
+   {
+      if (rate_table[i][0] > rate) break;
+   }
+   if (i == N)
+   {
+      silk_rate = rate_table[i-1][entry];
+      /* For now, just give 50% of the extra bits to SILK. */
+      silk_rate += (rate-rate_table[i-1][0])/2;
+   } else {
+      opus_int32 lo, hi, x0, x1;
+      lo = rate_table[i-1][entry];
+      hi = rate_table[i][entry];
+      x0 = rate_table[i-1][0];
+      x1 = rate_table[i][0];
+      silk_rate = (lo*(x1-rate) + hi*(rate-x0))/(x1-x0);
+   }
+   if (!vbr)
+   {
+      if (silk_rate > 8000)
+         silk_rate -= 1000;
+   }
+   return silk_rate;
+}
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
                 const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
@@ -1490,19 +1533,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         if( st->mode == MODE_HYBRID ) {
             int HB_gain_ref;
             /* Base rate for SILK */
-            st->silk_mode.bitRate = st->stream_channels * ( 5000 + 1000 * ( st->Fs == 100 * frame_size ) );
-            if( curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND ) {
-                /* SILK gets 2/3 of the remaining bits */
-                st->silk_mode.bitRate += ( total_bitRate - st->silk_mode.bitRate ) * 2 / 3;
-            } else { /* FULLBAND */
-                /* SILK gets 3/5 of the remaining bits */
-                st->silk_mode.bitRate += ( total_bitRate - st->silk_mode.bitRate ) * 3 / 5;
-            }
-            /* Don't let SILK use more than 80% */
-            if( st->silk_mode.bitRate > total_bitRate * 9/10 ) {
-                st->silk_mode.bitRate = total_bitRate * 9/10;
-            }
-            st->silk_mode.bitRate = 14000;
+            st->silk_mode.bitRate = compute_silk_rate_for_hybrid(total_bitRate,
+                  curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr);
             if (!st->energy_masking)
             {
                /* Increasingly attenuate high band when it gets allocated fewer bits */
