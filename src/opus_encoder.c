@@ -114,27 +114,27 @@ struct OpusEncoder {
    (difference with the middle) */
 static const opus_int32 mono_voice_bandwidth_thresholds[8] = {
         11000, 1000, /* NB<->MB */
-        14000, 1000, /* MB<->WB */
-        17000, 1000, /* WB<->SWB */
-        21000, 2000, /* SWB<->FB */
+        12500, 1000, /* MB<->WB */
+        14000, 1000, /* WB<->SWB */
+        15000, 2000, /* SWB<->FB */
 };
 static const opus_int32 mono_music_bandwidth_thresholds[8] = {
-        12000, 1000, /* NB<->MB */
-        15000, 1000, /* MB<->WB */
-        18000, 2000, /* WB<->SWB */
-        22000, 2000, /* SWB<->FB */
+        11000, 1000, /* NB<->MB */
+        12500, 1000, /* MB<->WB */
+        14000, 1000, /* WB<->SWB */
+        15000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
         11000, 1000, /* NB<->MB */
-        14000, 1000, /* MB<->WB */
-        21000, 2000, /* WB<->SWB */
-        28000, 2000, /* SWB<->FB */
+        12500, 1000, /* MB<->WB */
+        14000, 1000, /* WB<->SWB */
+        15000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
-        12000, 1000, /* NB<->MB */
-        18000, 2000, /* MB<->WB */
-        20000, 2000, /* WB<->SWB */
-        24000, 2000, /* SWB<->FB */
+        11000, 1000, /* NB<->MB */
+        12500, 1000, /* MB<->WB */
+        14000, 1000, /* WB<->SWB */
+        15000, 2000, /* SWB<->FB */
 };
 /* Threshold bit-rates for switching between mono and stereo */
 static const opus_int32 stereo_voice_threshold = 24000;
