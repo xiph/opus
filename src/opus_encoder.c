@@ -1556,6 +1556,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                HB_gain_ref = (curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND) ? 3000 : 3600;
                HB_gain = SHL32((opus_val32)celt_rate, 9) / SHR32((opus_val32)celt_rate + st->stream_channels * HB_gain_ref, 6);
                HB_gain = HB_gain < (opus_val32)Q15ONE*6/7 ? HB_gain + Q15ONE/7 : Q15ONE;
+               HB_gain = Q15ONE;
             }
         } else {
             /* SILK gets all bits */
