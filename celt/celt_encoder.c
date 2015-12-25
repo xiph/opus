@@ -1552,7 +1552,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    {
       int enabled;
       int qg;
-      enabled = ((st->lfe&&nbAvailableBytes>3) || nbAvailableBytes>12*C) && start==0 && !silence && !st->disable_pf
+      enabled = ((st->lfe&&nbAvailableBytes>3) || nbAvailableBytes>12*C) && !hybrid && !silence && !st->disable_pf
             && st->complexity >= 5 && !(st->consec_transient && LM!=3 && st->variable_duration==OPUS_FRAMESIZE_VARIABLE);
 
       prefilter_tapset = st->tapset_decision;
@@ -1562,7 +1562,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          pitch_change = 1;
       if (pf_on==0)
       {
-         if(start==0 && tell+16<=total_bits)
+         if(!hybrid && tell+16<=total_bits)
             ec_enc_bit_logp(enc, 0, 1);
       } else {
          /*This block is not gated by a total bits check only because
@@ -1628,7 +1628,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    ALLOC(surround_dynalloc, C*nbEBands, opus_val16);
    OPUS_CLEAR(surround_dynalloc, end);
    /* This computes how much masking takes place between surround channels */
-   if (start==0&&st->energy_mask&&!st->lfe)
+   if (!hybrid&&st->energy_mask&&!st->lfe)
    {
       int mask_end;
       int midband;
@@ -1756,7 +1756,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
-   if (effectiveBytes>=15*C && start==0 && st->complexity>=2 && !st->lfe)
+   if (effectiveBytes>=15*C && !hybrid && st->complexity>=2 && !st->lfe)
    {
       int lambda;
       if (effectiveBytes<40)
@@ -1792,7 +1792,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       {
          st->tapset_decision = 0;
          st->spread_decision = SPREAD_NORMAL;
-      } else if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C || start != 0)
+      } else if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C || hybrid)
       {
          if (st->complexity == 0)
             st->spread_decision = SPREAD_NONE;
