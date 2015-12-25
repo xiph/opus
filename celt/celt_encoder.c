@@ -1948,7 +1948,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         The margin of 2 bytes ensures that none of the bust-prevention logic
          in the decoder will have triggered so far. */
      min_allowed = ((tell+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3)) + 2;
-     /* Take into account */
+     /* Take into account the 37 bits we need to have left in the packet to
+        signal a redundant frame in hybrid mode. Creating a shorter packet would
+        create an entropy coder desync. */
      if (hybrid)
         min_allowed = IMAX(min_allowed, (tell0_frac+(37<<BITRES)+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3));
 
