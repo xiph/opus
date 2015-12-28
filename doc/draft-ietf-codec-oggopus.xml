@@ -4,6 +4,7 @@
 <!ENTITY rfc3533 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3533.xml'>
 <!ENTITY rfc3629 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3629.xml'>
 <!ENTITY rfc4732 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.4732.xml'>
+<!ENTITY rfc5226 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5226.xml'>
 <!ENTITY rfc5334 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.5334.xml'>
 <!ENTITY rfc6381 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6381.xml'>
 <!ENTITY rfc6716 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.6716.xml'>
@@ -140,9 +141,9 @@ There are two mandatory header packets.
 The first packet in the logical Ogg bitstream MUST contain the identification
  (ID) header, which uniquely identifies a stream as Opus audio.
 The format of this header is defined in <xref target="id_header"/>.
-It MUST be placed alone (without any other packet data) on the first page of
- the logical Ogg bitstream, and MUST complete on that page.
-This page MUST have its 'beginning of stream' flag set.
+It is placed alone (without any other packet data) on the first page of
+ the logical Ogg bitstream, and completes on that page.
+This page has its 'beginning of stream' flag set.
 </t>
 <t>
 The second packet in the logical Ogg bitstream MUST contain the comment header,
@@ -187,21 +188,36 @@ The combination of coding mode, audio bandwidth, and frame size is referred to
  as the configuration of an Opus packet.
 </t>
 <t>
-The first audio data page SHOULD NOT have the 'continued packet' flag set
- (which would indicate the first audio data packet is continued from a previous
- page).
-Packets MUST be placed into Ogg pages in order until the end of stream.
-Audio packets MAY span page boundaries.
+Packets are placed into Ogg pages in order until the end of stream.
+Audio data packets might span page boundaries.
+The first audio data page could have the 'continued packet' flag set
+ (indicating the first audio data packet is continued from a previous page) if,
+ for example, it was a live stream joined mid-broadcast, with the headers
+ pasted on the front.
+A demuxer SHOULD NOT attempt to decode the data for the first packet on a page
+ with the 'continued packet' flag set if the previous page with packet data
+ does not end in a continued packet (i.e., did not end with a lacing value of
+ 255) or if the page sequence numbers are not consecutive, unless the demuxer
+ has some special knowledge that would allow it to interpret this data
+ despite the missing pieces.
 An implementation MUST treat a zero-octet audio data packet as if it were a
  malformed Opus packet as described in
  Section&nbsp;3.4 of&nbsp;<xref target="RFC6716"/>.
 </t>
 <t>
-The last page SHOULD have the 'end of stream' flag set, but implementations
- need to be prepared to deal with truncated streams that do not have a page
- marked 'end of stream'.
-The final packet on the last page SHOULD NOT be a continued packet, i.e., the
- final lacing value SHOULD be less than 255.
+A logical stream ends with a page with the 'end of stream' flag set, but
+ implementations need to be prepared to deal with truncated streams that do not
+ have a page marked 'end of stream'.
+There is no reason for the final packet on the last page to be a continued
+ packet, i.e., for the final lacing value to be less than 255.
+However, demuxers might encounter such streams, possibly as the result of a
+ transfer that did not complete or of corruption.
+A demuxer SHOULD NOT attempt to decode the data from a packet that continues
+ onto a subsequent page (i.e., when the page ends with a lacing value of 255)
+ if the next page with packet data does not have the 'continued packet' flag
+ set or does not exist, or if the page sequence numbers are not consecutive,
+ unless the demuxer has some special knowledge that would allow it to interpret
+ this data despite the missing pieces.
 There MUST NOT be any more pages in an Opus logical bitstream after a page
  marked 'end of stream'.
 </t>
@@ -224,8 +240,8 @@ The granule position of the first audio data page will usually be larger than
 
 <t>
 A page that is entirely spanned by a single packet (that completes on a
- subsequent page) has no granule position, and the granule position field MUST
- be set to the special value '-1' in two's complement.
+ subsequent page) has no granule position, and the granule position field is
+ set to the special value '-1' in two's complement.
 </t>
 
 <t>
@@ -377,7 +393,8 @@ However, a player will want to skip these samples after decoding them.
 <t>
 A 'pre-skip' field in the ID header (see <xref target="id_header"/>) signals
  the number of samples that SHOULD be skipped (decoded but discarded) at the
- beginning of the stream.
+ beginning of the stream, though some specific applications might have a reason
+ for looking at that data.
 This amount need not be a multiple of 2.5&nbsp;ms, MAY be smaller than a single
  packet, or MAY span the contents of several packets.
 These samples are not valid audio.
@@ -525,9 +542,9 @@ Both of these will be greater than '0' in this case.
 Seeking in Ogg files is best performed using a bisection search for a page
  whose granule position corresponds to a PCM position at or before the seek
  target.
-With appropriately weighted bisection, accurate seeking can be performed with
- just three or four bisections even in multi-gigabyte files.
-See <xref target="seeking"/> for general implementation guidance.
+With appropriately weighted bisection, accurate seeking can be performed in
+ just one or two bisections on average, even in multi-gigabyte files.
+See <xref target="seeking"/> for an example of general implementation guidance.
 </t>
 
 <t>
@@ -660,8 +677,8 @@ An Ogg Opus player SHOULD select the playback sample rate according to the
 <t>Otherwise, if the hardware's highest available sample rate is a supported
  rate, decode at this sample rate.</t>
 <t>Otherwise, if the hardware's highest available sample rate is less than
- 48&nbsp;kHz, decode at the next highest supported rate above this and
- resample.</t>
+ 48&nbsp;kHz, decode at the next higher Opus supported rate above the highest
+ available hardware rate and resample.</t>
 <t>Otherwise, decode at 48&nbsp;kHz and resample.</t>
 </list>
 However, the 'Input Sample Rate' field allows the muxer to pass the sample
@@ -1184,6 +1201,8 @@ If the least-significant bit of the first byte of this data is 1, then editors
  SHOULD preserve the contents of this data when updating the tags, but if this
  bit is 0, all such data MAY be treated as padding, and truncated or discarded
  as desired.
+This allows informal experimentation with the format of this binary data until
+ it can be specified later.
 </t>
 
 <t>
@@ -1257,7 +1276,8 @@ A muxer SHOULD place the gain it wants other tools to use by default into the
 <t>
 To avoid confusion with multiple normalization schemes, an Opus comment header
  SHOULD NOT contain any of the REPLAYGAIN_TRACK_GAIN, REPLAYGAIN_TRACK_PEAK,
- REPLAYGAIN_ALBUM_GAIN, or REPLAYGAIN_ALBUM_PEAK tags.
+ REPLAYGAIN_ALBUM_GAIN, or REPLAYGAIN_ALBUM_PEAK tags, unless they are only
+ to be used in some context where there is guaranteed to be no such confusion.
 <xref target="EBU-R128"/> normalization is preferred to the earlier
  REPLAYGAIN schemes because of its clear definition and adoption by industry.
 Peak normalizations are difficult to calculate reliably for lossy codecs
@@ -1277,11 +1297,12 @@ Technically, valid Opus packets can be arbitrarily large due to the padding
 These packets might be spread over a similarly enormous number of Ogg pages.
 When encoding, implementations SHOULD limit the use of padding in audio data
  packets to no more than is necessary to make a variable bitrate (VBR) stream
- constant bitrate (CBR).
+ constant bitrate (CBR), unless they have no reasonable way to determine what
+ is necessary.
 Demuxers SHOULD reject audio data packets (treat them as if they were malformed
  Opus packets with an invalid TOC sequence) larger than 61,440 octets per
- Opus stream.
-Such packets necessarily contain more padding than needed for this purpose.
+ Opus stream, unless they have a specific reason for allowing extra padding.
+Such packets necessarily contain more padding than needed to make a stream CBR.
 Demuxers MUST avoid attempting to allocate excessive amounts of memory when
  presented with a very large packet.
 Demuxers MAY reject or partially process audio data packets larger than
@@ -1344,10 +1365,11 @@ In encoders derived from the reference
 </figure>
 <t>
 To achieve good quality in the very first samples of a stream, implementations
- MAY use linear predictive coding (LPC) extrapolation
- <xref target="linear-prediction"/> to generate at least 120 extra samples at
- the beginning to avoid the Opus encoder having to encode a discontinuous
- signal.
+ MAY use linear predictive coding (LPC) extrapolation to generate at least 120
+ extra samples at the beginning to avoid the Opus encoder having to encode a
+ discontinuous signal.
+For more information on linear prediction, see
+ <xref target="linear-prediction"/>.
 For an input file containing 'length' samples, the implementation SHOULD set
  the pre-skip header value to (delay_samples&nbsp;+&nbsp;extra_samples), encode
  at least (length&nbsp;+&nbsp;delay_samples&nbsp;+&nbsp;extra_samples)
@@ -1514,31 +1536,75 @@ In either case, this document updates <xref target="RFC5334"/>
 </t>
 </section>
 
-<section title="IANA Considerations">
+<section anchor="iana" title="IANA Considerations">
 <t>
 This document updates the IANA Media Types registry to add .opus
  as a file extension for "audio/ogg", and to add itself as a reference
  alongside <xref target="RFC5334"/> for "audio/ogg", "video/ogg", and
  "application/ogg" Media Types.
 </t>
+<t>
+This document defines a new registry "Opus Channel Mapping Families" to
+ indicate how the semantic meanings of the channels in a multi-channel Opus
+ stream are described.
+IANA SHALL create a new name space of "Opus Channel Mapping Families".
+All maintenance within and additions to the contents of this name space MUST be
+ according to the "Specification Requried with Expert Review" registration
+ policy as defined in <xref target="RFC5226"/>.
+Each registry entry consists of a Channel Mapping Family Number, which is
+ specified in decimal in the range 0 to 255, inclusive, and a Reference (or
+ list of references)
+Each Reference must point to sufficient documentation to describe what
+ information is coded in the Opus identification header for this channel
+ mapping family, how a demuxer determines the Stream Count ('N') and Coupled
+ Stream Count ('M') from this information, and how it determines the proper
+ interpretation of each of the decoded channels.
+</t>
+<t>
+This document defines three initial assignments for this registry.
+</t>
+<texttable>
+<ttcol>Value</ttcol><ttcol>Reference</ttcol>
+<c>0</c><c>[RFCXXXX] <xref target="channel_mapping_0"/></c>
+<c>1</c><c>[RFCXXXX] <xref target="channel_mapping_1"/></c>
+<c>255</c><c>[RFCXXXX] <xref target="channel_mapping_255"/></c>
+</texttable>
+<t>
+The designated expert will determine if the Reference points to a specification
+ that meets the requirements for permanence and ready availability laid out
+ in&nbsp;<xref target="RFC5226"/> and that it specifies the information
+ described above with sufficient clarity to allow interoperable
+ implementations.
+</t>
 </section>
 
 <section anchor="Acknowledgments" title="Acknowledgments">
 <t>
-Thanks to Mark Harris, Greg Maxwell, Christopher "Monty" Montgomery, and
- Jean-Marc Valin for their valuable contributions to this document.
+Thanks to Ben Campbell, Mark Harris, Greg Maxwell, Christopher "Monty"
+ Montgomery, Jean-Marc Valin, and Mo Zanaty for their valuable contributions to
+ this document.
 Additional thanks to Andrew D'Addesio, Greg Maxwell, and Vincent Penquerc'h for
  their feedback based on early implementations.
 </t>
 </section>
 
-<section title="Copying Conditions">
+<section title="RFC Editor Notes">
 <t>
-The authors agree to grant third parties the irrevocable right to copy, use,
- and distribute the work, with or without modification, in any medium, without
- royalty, provided that, unless separate permission is granted, redistributed
- modified works do not contain misleading author, version, name of work, or
- endorsement information.
+In&nbsp;<xref target="iana"/>, "RFCXXXX" is to be replaced with the RFC number
+ assigned to this draft.
+</t>
+<t>
+In the Copyright Notice at the start of the document, the following paragraph
+ is to be appended after the regular copyright notice text:
+</t>
+<t>
+"The licenses granted by the IETF Trust to this RFC under Section&nbsp;3.c of
+ the Trust Legal Provisions shall also include the right to extract text from
+ Sections&nbsp;1 through&nbsp;14 of this RFC and create derivative works from
+ these extracts, and to copy, publish, display, and distribute such derivative
+ works in any medium and for any purpose, provided that no such derivative work
+ shall be presented, displayed, or published in a manner that states or implies
+ that it is part of this RFC or any other IETF Document."
 </t>
 </section>
 
@@ -1549,6 +1615,7 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  &rfc3533;
  &rfc3629;
  &rfc4732;
+ &rfc5226;
  &rfc5334;
  &rfc6381;
  &rfc6716;
