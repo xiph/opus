@@ -153,4 +153,4 @@ clean:
 		$(OBJS) $(OPUSDEMO_OBJS) $(OPUSCOMPARE_OBJS) $(TESTOPUSAPI_OBJS) \
                 $(TESTOPUSDECODE_OBJS) $(TESTOPUSENCODE_OBJS) $(TESTOPUSPADDING_OBJS)
 
-.PHONY: all lib clean
+.PHONY: all lib clean force
