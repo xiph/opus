@@ -106,10 +106,15 @@ TESTOPUSPADDING_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(TESTOPUSPADDING_SRCS_C))
 OPUSCOMPARE_SRCS_C = src/opus_compare.c
 OPUSCOMPARE_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(OPUSCOMPARE_SRCS_C))
 
+TESTS := test_opus_api test_opus_decode test_opus_encode test_opus_padding
+
 # Rules
-all: lib opus_demo opus_compare test_opus_api test_opus_decode test_opus_encode test_opus_padding
+all: lib opus_demo opus_compare $(TESTS)
 
 lib: $(TARGET)
+
+check: all
+	for test in $(TESTS); do ./$$test; done
 
 $(TARGET): $(OBJS)
 	$(ARCHIVE.cmdline)
@@ -151,4 +156,4 @@ clean:
 		$(OBJS) $(OPUSDEMO_OBJS) $(OPUSCOMPARE_OBJS) $(TESTOPUSAPI_OBJS) \
                 $(TESTOPUSDECODE_OBJS) $(TESTOPUSENCODE_OBJS) $(TESTOPUSPADDING_OBJS)
 
-.PHONY: all lib clean force
+.PHONY: all lib clean force check
