@@ -103,7 +103,6 @@ struct OpusEncoder {
 #ifndef DISABLE_FLOAT_API
     TonalityAnalysisState analysis;
     int          detected_bandwidth;
-    int          analysis_offset;
 #endif
     opus_uint32  rangeFinal;
 };
