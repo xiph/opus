@@ -81,6 +81,7 @@ struct OpusEncoder {
     int          lsb_depth;
     int          encoder_buffer;
     int          lfe;
+    int          arch;
 
 #define OPUS_ENCODER_RESET_START stream_channels
     int          stream_channels;
@@ -105,7 +106,6 @@ struct OpusEncoder {
     int          analysis_offset;
 #endif
     opus_uint32  rangeFinal;
-    int          arch;
 };
 
 /* Transition tables for the voice and music. First column is the
