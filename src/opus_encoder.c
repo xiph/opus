@@ -242,6 +242,10 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->mode = MODE_HYBRID;
     st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
 
+#ifndef DISABLE_FLOAT_API
+    tonality_analysis_init(&st->analysis);
+#endif
+
     return OPUS_OK;
 }
 
@@ -1005,7 +1009,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        analysis_read_subframe_bak = st->analysis.read_subframe;
        run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
              c1, c2, analysis_channels, st->Fs,
-             lsb_depth, downmix, &analysis_info, st->arch);
+             lsb_depth, downmix, &analysis_info);
     }
 #else
     (void)analysis_pcm;
@@ -2463,6 +2467,9 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            st->mode = MODE_HYBRID;
            st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
            st->variable_HP_smth2_Q15 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
+#ifndef DISABLE_FLOAT_API
+           tonality_analysis_init(&st->analysis);
+#endif
         }
         break;
         case OPUS_SET_FORCE_MODE_REQUEST:
