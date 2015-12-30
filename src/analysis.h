@@ -39,6 +39,8 @@
 #define DETECT_SIZE 200
 
 typedef struct {
+   int arch;
+#define TONALITY_ANALYSIS_RESET_START angle
    float angle[240];
    float d_angle[240];
    float d2_angle[240];
@@ -76,7 +78,6 @@ typedef struct {
    int read_pos;
    int read_subframe;
    AnalysisInfo info[DETECT_SIZE];
-   int arch;
 } TonalityAnalysisState;
 
 /** Initialize a TonalityAnalysisState struct.
@@ -86,6 +87,12 @@ typedef struct {
  * by the state struct, so no cleanup call is required.
  */
 void tonality_analysis_init(TonalityAnalysisState *analysis);
+
+/** Reset a TonalityAnalysisState stuct.
+ *
+ * Call this when there's a discontinuity in the data.
+ */
+void tonality_analysis_reset(TonalityAnalysisState *analysis);
 
 void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int len);
 

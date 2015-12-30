@@ -142,7 +142,15 @@ void tonality_analysis_init(TonalityAnalysisState *tonal)
 {
   /* Initialize reusable fields. */
   tonal->arch = opus_select_arch();
-  /* Other fields will be overwritten in use. */
+  /* Clear remaining fields. */
+  tonality_analysis_reset(tonal);
+}
+
+void tonality_analysis_reset(TonalityAnalysisState *tonal)
+{
+  /* Clear non-reusable fields. */
+  char *start = (char*)&tonal->TONALITY_ANALYSIS_RESET_START;
+  OPUS_CLEAR(start, sizeof(TonalityAnalysisState) - (start - (char*)tonal));
 }
 
 void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int len)

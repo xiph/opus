@@ -82,6 +82,9 @@ struct OpusEncoder {
     int          encoder_buffer;
     int          lfe;
     int          arch;
+#ifndef DISABLE_FLOAT_API
+    TonalityAnalysisState analysis;
+#endif
 
 #define OPUS_ENCODER_RESET_START stream_channels
     int          stream_channels;
@@ -101,7 +104,6 @@ struct OpusEncoder {
     StereoWidthState width_mem;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef DISABLE_FLOAT_API
-    TonalityAnalysisState analysis;
     int          detected_bandwidth;
 #endif
     opus_uint32  rangeFinal;
@@ -2453,10 +2455,12 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            void *silk_enc;
            silk_EncControlStruct dummy;
            silk_enc = (char*)st+st->silk_enc_offset;
+#ifndef DISABLE_FLOAT_API
+           tonality_analysis_reset(&st->analysis);
+#endif
 
-           OPUS_CLEAR((char*)&st->OPUS_ENCODER_RESET_START,
-                 sizeof(OpusEncoder)-
-                 ((char*)&st->OPUS_ENCODER_RESET_START - (char*)st));
+           char *start = (char*)&st->OPUS_ENCODER_RESET_START;
+           OPUS_CLEAR(start, sizeof(OpusEncoder) - (start - (char*)st));
 
            celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
            silk_InitEncoder( silk_enc, st->arch, &dummy );
@@ -2467,9 +2471,6 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            st->mode = MODE_HYBRID;
            st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
            st->variable_HP_smth2_Q15 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
-#ifndef DISABLE_FLOAT_API
-           tonality_analysis_init(&st->analysis);
-#endif
         }
         break;
         case OPUS_SET_FORCE_MODE_REQUEST:
