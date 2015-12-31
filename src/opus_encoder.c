@@ -2455,11 +2455,12 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            void *silk_enc;
            silk_EncControlStruct dummy;
            silk_enc = (char*)st+st->silk_enc_offset;
+           char *start;
 #ifndef DISABLE_FLOAT_API
            tonality_analysis_reset(&st->analysis);
 #endif
 
-           char *start = (char*)&st->OPUS_ENCODER_RESET_START;
+           start = (char*)&st->OPUS_ENCODER_RESET_START;
            OPUS_CLEAR(start, sizeof(OpusEncoder) - (start - (char*)st));
 
            celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
