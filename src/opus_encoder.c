@@ -2454,8 +2454,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
            void *silk_enc;
            silk_EncControlStruct dummy;
-           silk_enc = (char*)st+st->silk_enc_offset;
            char *start;
+           silk_enc = (char*)st+st->silk_enc_offset;
 #ifndef DISABLE_FLOAT_API
            tonality_analysis_reset(&st->analysis);
 #endif
