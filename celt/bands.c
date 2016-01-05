@@ -658,6 +658,7 @@ struct band_ctx {
    const celt_ener *bandE;
    opus_uint32 seed;
    int arch;
+   int theta_round;
 };
 
 struct split_ctx {
@@ -715,8 +716,14 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
    if (qn!=1)
    {
       if (encode)
-         itheta = (itheta*(opus_int32)qn+8192)>>14;
-
+      {
+         if (!stereo || ctx->theta_round == 0)
+            itheta = (itheta*(opus_int32)qn+8192)>>14;
+         else if (ctx->theta_round < 0)
+            itheta = (itheta*(opus_int32)qn)>>14;
+         else
+            itheta = (itheta*(opus_int32)qn+16383)>>14;
+      }
       /* Entropy coding of the angle. We use a uniform pdf for the
          time split, a step for stereo, and a triangular one for the rest. */
       if (stereo && N>2)
@@ -1470,6 +1477,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       } else {
          if (Y!=NULL)
          {
+            ctx.theta_round = 0;
             x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                   effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                   last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, x_cm|y_cm);
