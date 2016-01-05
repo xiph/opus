@@ -647,6 +647,7 @@ static int compute_qn(int N, int b, int offset, int pulse_cap, int stereo)
 
 struct band_ctx {
    int encode;
+   int resynth;
    const CELTMode *m;
    int i;
    int intensity;
@@ -845,11 +846,6 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
 static unsigned quant_band_n1(struct band_ctx *ctx, celt_norm *X, celt_norm *Y, int b,
       celt_norm *lowband_out)
 {
-#ifdef RESYNTH
-   int resynth = 1;
-#else
-   int resynth = !ctx->encode;
-#endif
    int c;
    int stereo;
    celt_norm *x = X;
@@ -874,7 +870,7 @@ static unsigned quant_band_n1(struct band_ctx *ctx, celt_norm *X, celt_norm *Y, 
          ctx->remaining_bits -= 1<<BITRES;
          b-=1<<BITRES;
       }
-      if (resynth)
+      if (ctx->resynth)
          x[0] = sign ? -NORM_SCALING : NORM_SCALING;
       x = Y;
    } while (++c<1+stereo);
@@ -899,11 +895,6 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
    int B0=B;
    opus_val16 mid=0, side=0;
    unsigned cm=0;
-#ifdef RESYNTH
-   int resynth = 1;
-#else
-   int resynth = !ctx->encode;
-#endif
    celt_norm *Y=NULL;
    int encode;
    const CELTMode *m;
@@ -1007,18 +998,14 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
          /* Finally do the actual quantization */
          if (encode)
          {
-            cm = alg_quant(X, N, K, spread, B, ec
-#ifdef RESYNTH
-                 , gain
-#endif
-                 );
+            cm = alg_quant(X, N, K, spread, B, ec, gain, ctx->resynth);
          } else {
             cm = alg_unquant(X, N, K, spread, B, ec, gain);
          }
       } else {
          /* If there's no pulse, fill the band anyway */
          int j;
-         if (resynth)
+         if (ctx->resynth)
          {
             unsigned cm_mask;
             /* B can be as large as 16, so this shift might overflow an int on a
@@ -1075,11 +1062,6 @@ static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
    int recombine=0;
    int longBlocks;
    unsigned cm=0;
-#ifdef RESYNTH
-   int resynth = 1;
-#else
-   int resynth = !ctx->encode;
-#endif
    int k;
    int encode;
    int tf_change;
@@ -1149,7 +1131,7 @@ static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
    cm = quant_partition(ctx, X, N, b, B, lowband, LM, gain, fill);
 
    /* This code is used by the decoder and by the resynthesis-enabled encoder */
-   if (resynth)
+   if (ctx->resynth)
    {
       /* Undo the sample reorganization going from time order to frequency order */
       if (B0>1)
@@ -1202,11 +1184,6 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
    int inv = 0;
    opus_val16 mid=0, side=0;
    unsigned cm=0;
-#ifdef RESYNTH
-   int resynth = 1;
-#else
-   int resynth = !ctx->encode;
-#endif
    int mbits, sbits, delta;
    int itheta;
    int qalloc;
@@ -1280,7 +1257,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
          and there's no need to worry about mixing with the other channel. */
       y2[0] = -sign*x2[1];
       y2[1] = sign*x2[0];
-      if (resynth)
+      if (ctx->resynth)
       {
          celt_norm tmp;
          X[0] = MULT16_16_Q15(mid, X[0]);
@@ -1332,7 +1309,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
 
 
    /* This code is used by the decoder and by the resynthesis-enabled encoder */
-   if (resynth)
+   if (ctx->resynth)
    {
       if (N!=2)
          stereo_merge(X, Y, mid, N, ctx->arch);
@@ -1395,6 +1372,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    ctx.seed = *seed;
    ctx.spread = spread;
    ctx.arch = arch;
+   ctx.resynth = resynth;
    for (i=start;i<end;i++)
    {
       opus_int32 tell;
