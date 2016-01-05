@@ -51,12 +51,8 @@
  * @param enc Entropy encoder state
  * @ret A mask indicating which blocks in the band received pulses
 */
-unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
-      ec_enc *enc
-#ifdef RESYNTH
-      , opus_val16 gain
-#endif
-      );
+unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
+      opus_val16 gain, int resynth);
 
 /** Algebraic pulse decoder
  * @param X Decoded normalised spectrum (returned)
