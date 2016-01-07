@@ -202,6 +202,11 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    info_out->music_prob = psum;
 }
 
+static const float std_feature_bias[9] = {
+      5.684947, 3.475288, 1.770634, 1.599784, 3.773215,
+      2.163313, 1.260756, 1.116868, 1.918795
+};
+
 static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix)
 {
     int i, b;
@@ -507,24 +512,25 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        tonal->mem[i] = BFCC[i];
     }
     for (i=0;i<9;i++)
-       features[11+i] = (float)sqrt(tonal->std[i]);
-    features[20] = info->tonality;
-    features[21] = info->activity;
-    features[22] = frame_stationarity;
-    features[23] = info->tonality_slope;
-    features[24] = tonal->lowECount;
+       features[11+i] = (float)sqrt(tonal->std[i]) - std_feature_bias[i];
+    features[20] = info->tonality - 0.154723;
+    features[21] = info->activity - 0.724643;
+    features[22] = frame_stationarity - 0.743717;
+    features[23] = info->tonality_slope + 0.069216;
+    features[24] = tonal->lowECount - 0.067930;
 
 #ifndef DISABLE_FLOAT_API
     mlp_process(&net, features, frame_probs);
     frame_probs[0] = .5f*(frame_probs[0]+1);
     /* Curve fitting between the MLP probability and the actual probability */
-    frame_probs[0] = .01f + 1.21f*frame_probs[0]*frame_probs[0] - .23f*(float)pow(frame_probs[0], 10);
+    /*frame_probs[0] = .01f + 1.21f*frame_probs[0]*frame_probs[0] - .23f*(float)pow(frame_probs[0], 10);*/
     /* Probability of active audio (as opposed to silence) */
     frame_probs[1] = .5f*frame_probs[1]+.5f;
+    frame_probs[1] *= frame_probs[1];
     /* Consider that silence has a 50-50 probability. */
     frame_probs[0] = frame_probs[1]*frame_probs[0] + (1-frame_probs[1])*.5f;
 
-    /*printf("%f %f ", frame_probs[0], frame_probs[1]);*/
+    /*printf("%f %f\n", frame_probs[0], frame_probs[1]);*/
     {
        /* Probability of state transition */
        float tau;
