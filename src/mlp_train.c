@@ -154,8 +154,10 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
                 sum += W1[i*(hiddenDim+1)+j+1]*hidden[j];
             netOut[i] = tansig_approx(sum);
             error[i] = out[i] - netOut[i];
-            rms += error[i]*error[i];
+            if (out[i] == 0) error[i] *= .0;
             error_rate[i] += fabs(error[i])>1;
+            if (i==0) error[i] *= 3;
+            rms += error[i]*error[i];
             /*error[i] = error[i]/(1+fabs(error[i]));*/
         }
         /* Back-propagate error */
@@ -449,7 +451,7 @@ int main(int argc, char **argv)
     outputs = malloc(nbOutputs*nbSamples*sizeof(*outputs));
 
     seed = time(NULL);
-    /*seed = 1361480659;*/
+    /*seed = 1452209040;*/
     fprintf (stderr, "Seed is %u\n", seed);
     srand(seed);
     build_tansig_table();
