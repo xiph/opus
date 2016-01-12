@@ -13,7 +13,7 @@
 ]>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-09"
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-10"
  updates="5334">
 
 <front>
@@ -63,7 +63,7 @@
 </address>
 </author>
 
-<date day="23" month="November" year="2015"/>
+<date day="12" month="January" year="2016"/>
 <area>RAI</area>
 <workgroup>codec</workgroup>
 
