@@ -512,7 +512,7 @@ On the other hand, a granule position that is smaller than the number of
  decoded samples prevents a demuxer from working backwards to assign each
  packet or each individual sample a valid granule position, since granule
  positions are non-negative.
-An implementation MUST reject as invalid any stream where the granule position
+An implementation MUST treat any stream as invalid if the granule position
  is smaller than the number of samples contained in packets that complete on
  the first audio data page with a completed packet, unless that page has the
  'end of stream' flag set.
@@ -521,8 +521,8 @@ It MAY defer this action until it decodes the last packet completed on that
 </t>
 
 <t>
-If that page has the 'end of stream' flag set, a demuxer MUST reject as invalid
- any stream where its granule position is smaller than the 'pre-skip' amount.
+If that page has the 'end of stream' flag set, a demuxer MUST treat any stream
+ as invalid if its granule position is smaller than the 'pre-skip' amount.
 This would indicate that there are more samples to be skipped from the initial
  decoded output than exist in the stream.
 If the granule position is smaller than the number of decoded samples produced
@@ -756,13 +756,14 @@ Its contents are specified in <xref target="channel_mapping"/>.
 All fields in the ID headers are REQUIRED, except for the channel mapping
  table, which MUST be omitted when the channel mapping family is 0, but
  is REQUIRED otherwise.
-Implementations SHOULD reject streams with ID headers that do not contain
- enough data for these fields, even if they contain a valid Magic Signature.
+Implementations SHOULD treat a stream as invalid if it contains an ID header
+ that does not have enough data for these fields, even if it contain a valid
+ Magic Signature.
 Future versions of this specification, even backwards-compatible versions,
  might include additional fields in the ID header.
 If an ID header has a compatible major version, but a larger minor version,
- an implementation MUST NOT reject it for containing additional data not
- specified here, provided it still completes on the first page.
+ an implementation MUST NOT treat it as invalid for containing additional data
+ not specified here, provided it still completes on the first page.
 </t>
 
 <section anchor="channel_mapping" title="Channel Mapping">
@@ -1185,9 +1186,10 @@ There is one for each user comment indicated by the 'user comment list length'
 
 <t>
 The vendor string length and user comment list length are REQUIRED, and
- implementations SHOULD reject comment headers that do not contain enough data
- for these fields, or that do not contain enough data for the corresponding
- vendor string or user comments they describe.
+ implementations SHOULD treat a stream as invalid if it contains a comment
+ header that does not have enough data for these fields, or that does not
+ contain enough data for the corresponding vendor string or user comments they
+ describe.
 Making this check before allocating the associated memory to contain the data
  helps prevent a possible Denial-of-Service (DoS) attack from small comment
  headers that claim to contain strings longer than the entire packet or more
@@ -1210,9 +1212,10 @@ The comment header can be arbitrarily large and might be spread over a large
  number of Ogg pages.
 Implementations MUST avoid attempting to allocate excessive amounts of memory
  when presented with a very large comment header.
-To accomplish this, implementations MAY reject a comment header larger than
- 125,829,120&nbsp;octets, and MAY ignore individual comments that are not fully
- contained within the first 61,440 octets of the comment header.
+To accomplish this, implementations MAY treat a stream as invalid if it has a
+ comment header larger than 125,829,120&nbsp;octets, and MAY ignore individual
+ comments that are not fully contained within the first 61,440&nbsp;octets of
+ the comment header.
 </t>
 
 <section anchor="comment_format" title="Tag Definitions">
@@ -1299,18 +1302,19 @@ When encoding, implementations SHOULD limit the use of padding in audio data
  packets to no more than is necessary to make a variable bitrate (VBR) stream
  constant bitrate (CBR), unless they have no reasonable way to determine what
  is necessary.
-Demuxers SHOULD reject audio data packets (treat them as if they were malformed
- Opus packets with an invalid TOC sequence) larger than 61,440 octets per
- Opus stream, unless they have a specific reason for allowing extra padding.
+Demuxers SHOULD treat audio data packets as invalid (treat them as if they were
+ malformed Opus packets with an invalid TOC sequence) if they are larger than
+ 61,440&nbsp;octets per Opus stream, unless they have a specific reason for
+ allowing extra padding.
 Such packets necessarily contain more padding than needed to make a stream CBR.
 Demuxers MUST avoid attempting to allocate excessive amounts of memory when
  presented with a very large packet.
-Demuxers MAY reject or partially process audio data packets larger than
- 61,440&nbsp;octets in an Ogg Opus stream with channel mapping families&nbsp;0
- or&nbsp;1.
-Demuxers MAY reject or partially process audio data packets in any Ogg Opus
- stream if the packet is larger than 61,440&nbsp;octets and also larger than
- 7,680&nbsp;octets per Opus stream.
+Demuxers MAY treat audio data packets as invalid or partially process them if
+ they are larger than 61,440&nbsp;octets in an Ogg Opus stream with channel
+ mapping families&nbsp;0 or&nbsp;1.
+Demuxers MAY treat audio data packets as invalid or partially process them in
+ any Ogg Opus stream if the packet is larger than 61,440&nbsp;octets and also
+ larger than 7,680&nbsp;octets per Opus stream.
 The presence of an extremely large packet in the stream could indicate a
  memory exhaustion attack or stream corruption.
 </t>
