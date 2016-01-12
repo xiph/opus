@@ -1551,10 +1551,10 @@ This document updates the IANA Media Types registry to add .opus
 This document defines a new registry "Opus Channel Mapping Families" to
  indicate how the semantic meanings of the channels in a multi-channel Opus
  stream are described.
-IANA SHALL create a new name space of "Opus Channel Mapping Families".
-All maintenance within and additions to the contents of this name space MUST be
- according to the "Specification Requried with Expert Review" registration
- policy as defined in <xref target="RFC5226"/>.
+IANA is requested to create a new name space of "Opus Channel Mapping
+ Families".
+Modifications to this registry follow the "Specification Requried with Expert
+ Review" registration policy as defined in <xref target="RFC5226"/>.
 Each registry entry consists of a Channel Mapping Family Number, which is
  specified in decimal in the range 0 to 255, inclusive, and a Reference (or
  list of references)
