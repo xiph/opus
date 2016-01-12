@@ -1553,7 +1553,7 @@ This document defines a new registry "Opus Channel Mapping Families" to
  stream are described.
 IANA is requested to create a new name space of "Opus Channel Mapping
  Families".
-Modifications to this registry follow the "Specification Requried with Expert
+Modifications to this registry follow the "Specification Required with Expert
  Review" registration policy as defined in <xref target="RFC5226"/>.
 Each registry entry consists of a Channel Mapping Family Number, which is
  specified in decimal in the range 0 to 255, inclusive, and a Reference (or
