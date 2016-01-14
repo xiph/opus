@@ -22,6 +22,7 @@
 - Update links and checksums on the downloads page.
 - Add a copy of the documentation to <http://www.opus-codec.org/docs/>
   and update the links.
+- Update /topic in #opus IRC channel.
 
 Releases are commited to https://svn.xiph.org/releases/opus/
 which propagates to downloads.xiph.org, and copied manually
