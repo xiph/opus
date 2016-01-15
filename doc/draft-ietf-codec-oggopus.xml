@@ -209,7 +209,7 @@ A logical stream ends with a page with the 'end of stream' flag set, but
  implementations need to be prepared to deal with truncated streams that do not
  have a page marked 'end of stream'.
 There is no reason for the final packet on the last page to be a continued
- packet, i.e., for the final lacing value to be less than 255.
+ packet, i.e., for the final lacing value to be 255.
 However, demuxers might encounter such streams, possibly as the result of a
  transfer that did not complete or of corruption.
 A demuxer SHOULD NOT attempt to decode the data from a packet that continues
