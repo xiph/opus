@@ -248,14 +248,16 @@ A page that is entirely spanned by a single packet (that completes on a
 The granule position of an audio data page is in units of PCM audio samples at
  a fixed rate of 48&nbsp;kHz (per channel; a stereo stream's granule position
  does not increment at twice the speed of a mono stream).
-It is possible to run an Opus decoder at other sampling rates, but the value
- in the granule position field always counts samples assuming a 48&nbsp;kHz
- decoding rate, and the rest of this specification makes the same assumption.
+It is possible to run an Opus decoder at other sampling rates, but all of them
+ evenly divide 48&nbsp;kHz.
+Therefore, the value in the granule position field always counts samples
+ assuming a 48&nbsp;kHz decoding rate, and the rest of this specification makes
+ the same assumption.
 </t>
 
 <t>
-The duration of an Opus packet can be any multiple of 2.5&nbsp;ms, up to a
- maximum of 120&nbsp;ms.
+The duration of an Opus packet as defined in <xref target="RFC6716"/> can be
+ any multiple of 2.5&nbsp;ms, up to a maximum of 120&nbsp;ms.
 This duration is encoded in the TOC sequence at the beginning of each packet.
 The number of samples returned by a decoder corresponds to this duration
  exactly, even for the first few packets.
