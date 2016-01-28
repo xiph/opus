@@ -1555,6 +1555,8 @@ This document defines a new registry "Opus Channel Mapping Families" to
  stream are described.
 IANA is requested to create a new name space of "Opus Channel Mapping
  Families".
+This will be a new registry on the IANA Matrix, and not a subregistry of an
+ existing registry.
 Modifications to this registry follow the "Specification Required with Expert
  Review" registration policy as defined in <xref target="RFC5226"/>.
 Each registry entry consists of a Channel Mapping Family Number, which is
