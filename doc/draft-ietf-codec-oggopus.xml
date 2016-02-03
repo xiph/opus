@@ -1,4 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright (c) 2012-2016 Xiph.Org Foundation and contributors
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
+
+   - Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+   - Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+   OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd' [
 <!ENTITY rfc2119 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml'>
 <!ENTITY rfc3533 PUBLIC '' 'http://xml.resource.org/public/rfc/bibxml/reference.RFC.3533.xml'>
@@ -1600,19 +1626,6 @@ Additional thanks to Andrew D'Addesio, Greg Maxwell, and Vincent Penquerc'h for
 <t>
 In&nbsp;<xref target="iana"/>, "RFCXXXX" is to be replaced with the RFC number
  assigned to this draft.
-</t>
-<t>
-In the Copyright Notice at the start of the document, the following paragraph
- is to be appended after the regular copyright notice text:
-</t>
-<t>
-"The licenses granted by the IETF Trust to this RFC under Section&nbsp;3.c of
- the Trust Legal Provisions shall also include the right to extract text from
- Sections&nbsp;1 through&nbsp;14 of this RFC and create derivative works from
- these extracts, and to copy, publish, display, and distribute such derivative
- works in any medium and for any purpose, provided that no such derivative work
- shall be presented, displayed, or published in a manner that states or implies
- that it is part of this RFC or any other IETF Document."
 </t>
 </section>
 
