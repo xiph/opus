@@ -1614,9 +1614,9 @@ The designated expert will determine if the Reference points to a specification
 
 <section anchor="Acknowledgments" title="Acknowledgments">
 <t>
-Thanks to Ben Campbell, Mark Harris, Greg Maxwell, Christopher "Monty"
- Montgomery, Jean-Marc Valin, and Mo Zanaty for their valuable contributions to
- this document.
+Thanks to Ben Campbell, Joel M. Halpern, Mark Harris, Greg Maxwell,
+ Christopher "Monty" Montgomery, Jean-Marc Valin, Stephan Wenger, and Mo Zanaty
+ for their valuable contributions to this document.
 Additional thanks to Andrew D'Addesio, Greg Maxwell, and Vincent Penquerc'h for
  their feedback based on early implementations.
 </t>
