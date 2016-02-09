@@ -44,7 +44,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 /* Set this if opus_int64 is a native type of the CPU. */
-#define OPUS_FAST_INT64 (defined(__x86_64__) || defined(__LP64__) || defined(_WIN64))
+#if defined(__x86_64__) || defined(__LP64__) || defined(_WIN64)
+#define OPUS_FAST_INT64 1
+#else
+#define OPUS_FAST_INT64 0
+#endif
 
 /* This is an OPUS_INLINE header file for general platform. */
 
