@@ -164,8 +164,32 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 
 <section anchor="packet_organization" title="Packet Organization">
 <t>
-An Ogg Opus stream is organized as follows.
+An Ogg Opus stream is organized as follows (see
+ <xref target="packet-org-example"/> for an example).
 </t>
+
+<figure anchor="packet-org-example"
+ title="Example packet organization for a logical Ogg Opus stream"
+ align="center">
+<artwork align="center"><![CDATA[
+    Page 1         Pages 2 ... n        Pages (n+1) ...
+ +------------+ +---+ +---+ ... +---+ +-----------+ +---------+ +--
+ |            | |   | |   |     |   | |           | |         | |
+ |+----------+| |+-----------------+| |+-------------------+ +-----
+ |||ID Header|| ||  Comment Header || ||Audio Data Packet 1| | ...
+ |+----------+| |+-----------------+| |+-------------------+ +-----
+ |            | |   | |   |     |   | |           | |         | |
+ +------------+ +---+ +---+ ... +---+ +-----------+ +---------+ +--
+ ^      ^                           ^
+ |      |                           |
+ |      |                           Mandatory Page Break
+ |      |
+ |      ID header is contained on a single page
+ |
+ 'Beggining Of Stream'
+]]></artwork>
+</figure>
+
 <t>
 There are two mandatory header packets.
 The first packet in the logical Ogg bitstream MUST contain the identification
@@ -739,7 +763,8 @@ Rates outside this range MAY be ignored by falling back to the default rate of
 This is a gain to be applied when decoding.
 It is 20*log10 of the factor by which to scale the decoder output to achieve
  the desired playback volume, stored in a 16-bit, signed, two's complement
- fixed-point value with 8 fractional bits (i.e., Q7.8).
+ fixed-point value with 8 fractional bits (i.e.,
+ Q7.8&nbsp;<xref target="q-notation"/>).
 <vspace blankLines="1"/>
 To apply the gain, an implementation could use
 <figure align="center">
@@ -991,9 +1016,12 @@ Players SHOULD perform channel mixing to increase or reduce the number of
 </t>
 
 <t>
-Implementations MAY use the following matrices to implement downmixing from
- multichannel files using <xref target="channel_mapping_1">Channel Mapping
- Family 1</xref>, which are known to give acceptable results for stereo.
+Implementations MAY use the matrices in
+ Figures&nbsp;<xref target="downmix-matrix-3" format="counter"/>
+ through&nbsp;<xref target="downmix-matrix-8" format="counter"/> to implement
+ downmixing from multichannel files using
+ <xref target="channel_mapping_1">Channel Mapping Family 1</xref>, which are
+ known to give acceptable results for stereo.
 Matrices for 3 and 4 channels are normalized so each coefficient row sums
  to 1 to avoid clipping.
 For 5 or more channels they are normalized to 2 as a compromise between
@@ -1210,7 +1238,8 @@ It MUST NOT indicate that the string is longer than the rest of the packet.
 </t>
 <t>User Comment #i String (variable length, UTF-8 vector):
 <vspace blankLines="1"/>
-This field contains a single user comment string.
+This field contains a single user comment encoded as a UTF-8
+ string&nbsp;<xref target="RFC3629"/>.
 There is one for each user comment indicated by the 'user comment list length'
  field.
 </t>
@@ -1246,9 +1275,9 @@ The comment header can be arbitrarily large and might be spread over a large
 Implementations MUST avoid attempting to allocate excessive amounts of memory
  when presented with a very large comment header.
 To accomplish this, implementations MAY treat a stream as invalid if it has a
- comment header larger than 125,829,120&nbsp;octets, and MAY ignore individual
- comments that are not fully contained within the first 61,440&nbsp;octets of
- the comment header.
+ comment header larger than 125,829,120&nbsp;octets (120&nbsp;MB), and MAY
+ ignore individual comments that are not fully contained within the first
+ 61,440&nbsp;octets of the comment header.
 </t>
 
 <section anchor="comment_format" title="Tag Definitions">
@@ -1287,6 +1316,7 @@ R128_ALBUM_GAIN=111
  played as part of a particular collection of tracks.
 The gain is also a Q7.8 fixed point number in dB, as in the ID header's
  'output gain' field.
+The values '-573' and '111' given here are just examples.
 </t>
 <t>
 An Ogg Opus stream MUST NOT have more than one of each of these tags, and if
@@ -1522,6 +1552,56 @@ Malicious audio input streams MUST NOT cause an implementation to overrun its
 </t>
 
 <t>
+Header parsing code contains the most likely area for potential overruns.
+It is important for implementations to ensure their buffers contain enough
+ data for all of the required fields before attempting to read it (for example,
+ for all of the channel map data in the ID header).
+Implementations would do well to validate the indices of the channel map, also,
+ to ensure they meet all of the restrictions outlined in
+ <xref target="channel_mapping"/>, in order to avoid attempting to read data
+ from channels that do not exist.
+</t>
+
+<t>
+To avoid excessive resource usage, we advise implementations to be especially
+ wary of streams that might cause them to process far more data than was
+ actually transmitted.
+For example, a relatively small comment header may contain values for the
+ string lengths or user comment list length that imply that it is many
+ gigabytes in size.
+Even computing the size of the required buffer could overflow a 32-bit integer,
+ and actually attempting to allocate such a buffer before verifying it would be
+ a reasonable size is a bad idea.
+After reading the user comment list length, implementations might wish to
+ verify that the header contains at least the minimum amount of data for that
+ many comments (4&nbsp;additional octets per comment, to indicate each has a
+ length of zero) before proceeding any further, again taking care to avoid
+ overflow in these calculations.
+If allocating an array of pointers to point at these strings, the size of the
+ pointers may be larger than 4&nbsp;octets, potentially requiring a separate
+ overflow check.
+</t>
+
+<t>
+Another bug in this class we have observed more than once involves the handling
+ of invalid data at the end of a stream.
+Often, implementations will seek to the end of a stream to locate the last
+ timestamp in order to compute its total duration.
+If they do not find a valid capture pattern and Ogg page from the desired
+ logical stream, they will back up and try again.
+If care is not taken to avoid re-scanning data that was already scanned, this
+ search can quickly devolve into something with a complexity that is quadratic
+ in the amount of invalid data.
+</t>
+
+<t>
+In general when seeking, implementations will wish to be cautious about the
+ effects of invalid granule position values, and ensure all algorithms will
+ continue to make progress and eventually terminate, even if these are missing
+ or out-of-order.
+</t>
+
+<t>
 Like most other container formats, Ogg Opus streams SHOULD NOT be used with
  insecure ciphers or cipher modes that are vulnerable to known-plaintext
  attacks.
@@ -1717,6 +1797,14 @@ In&nbsp;<xref target="iana"/>, "RFCXXXX" is to be replaced with the RFC number
 </front>
 </reference>
 
+<reference anchor="q-notation"
+ target="https://en.wikipedia.org/w/index.php?title=Q_%28number_format%29&amp;oldid=697252615">
+<front>
+<title>Q (number format)</title>
+<author><organization>Wikipedia</organization></author>
+<date month="December" year="2015"/>
+</front>
+</reference>
 
 <reference anchor="replay-gain"
  target="https://wiki.xiph.org/VorbisComment#Replay_Gain">
