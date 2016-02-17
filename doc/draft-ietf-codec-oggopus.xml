@@ -186,7 +186,7 @@ An Ogg Opus stream is organized as follows (see
  |      |
  |      ID header is contained on a single page
  |
- 'Beggining Of Stream'
+ 'Beginning Of Stream'
 ]]></artwork>
 </figure>
 
