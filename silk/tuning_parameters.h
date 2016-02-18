@@ -54,17 +54,7 @@ extern "C"
 #define FIND_LPC_COND_FAC                               1e-5f
 
 /* LTP analysis defines */
-#define FIND_LTP_COND_FAC                               1e-5f
-#define LTP_DAMPING                                     0.05f
-#define LTP_SMOOTHING                                   0.1f
-
-/* LTP quantization settings */
-#define MU_LTP_QUANT_NB                                 0.03f
-#define MU_LTP_QUANT_MB                                 0.025f
-#define MU_LTP_QUANT_WB                                 0.02f
-
-/* Max cumulative LTP gain */
-#define MAX_SUM_LOG_GAIN_DB                             250.0f
+#define LTP_CORR_INV_MAX								0.02f
 
 /***********************/
 /* High pass filtering */
