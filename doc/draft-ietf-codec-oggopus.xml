@@ -248,12 +248,16 @@ The first audio data page could have the 'continued packet' flag set
  (indicating the first audio data packet is continued from a previous page) if,
  for example, it was a live stream joined mid-broadcast, with the headers
  pasted on the front.
-A demuxer SHOULD NOT attempt to decode the data for the first packet on a page
- with the 'continued packet' flag set if the previous page with packet data
- does not end in a continued packet (i.e., did not end with a lacing value of
- 255) or if the page sequence numbers are not consecutive, unless the demuxer
- has some special knowledge that would allow it to interpret this data
- despite the missing pieces.
+If a page has the 'continued packet' flag set and one of the following
+ conditions is also true:
+<list style="symbols">
+<t>the previous page with packet data does not end in a continued packet (does
+ not end with a lacing value of 255) OR</t>
+<t>the page sequence numbers are not consecutive,</t>
+</list>
+ then a demuxer MUST NOT attempt to decode the data for the first packet on the
+ page unless the demuxer has some special knowledge that would allow it to
+ interpret this data despite the missing pieces.
 An implementation MUST treat a zero-octet audio data packet as if it were a
  malformed Opus packet as described in
  Section&nbsp;3.4 of&nbsp;<xref target="RFC6716"/>.
@@ -266,12 +270,17 @@ There is no reason for the final packet on the last page to be a continued
  packet, i.e., for the final lacing value to be 255.
 However, demuxers might encounter such streams, possibly as the result of a
  transfer that did not complete or of corruption.
-A demuxer SHOULD NOT attempt to decode the data from a packet that continues
- onto a subsequent page (i.e., when the page ends with a lacing value of 255)
- if the next page with packet data does not have the 'continued packet' flag
- set or does not exist, or if the page sequence numbers are not consecutive,
- unless the demuxer has some special knowledge that would allow it to interpret
- this data despite the missing pieces.
+If a packet continues onto a subsequent page (i.e., when the page ends with a
+ lacing value of 255) and one of the following conditions is also true:
+<list style="symbols">
+<t>the next page with packet data does not have the 'continued packet' flag
+ set OR</t>
+<t>there is no next page with packet data OR</t>
+<t>the page sequence numbers are not consecutive,</t>
+</list>
+ then a demuxer MUST NOT attempt to decode the data from that packet unless the
+ demuxer has some special knowledge that would allow it to interpret this data
+ despite the missing pieces.
 There MUST NOT be any more pages in an Opus logical bitstream after a page
  marked 'end of stream'.
 </t>
@@ -1541,14 +1550,13 @@ A brief summary of major implementations of this draft is available
 Implementations of the Opus codec need to take appropriate security
  considerations into account, as outlined in <xref target="RFC4732"/>.
 This is just as much a problem for the container as it is for the codec itself.
-Robustness against malicious payloads is extremely important.
-Malicious payloads MUST NOT cause an implementation to overrun its allocated
- memory or to take an excessive amount of resources to decode.
-Although problems in encoding applications are typically rarer, the same
- applies to the muxer.
-Malicious audio input streams MUST NOT cause an implementation to overrun its
- allocated memory or consume excessive resources because this would allow an
- attacker to attack transcoding gateways.
+Malicious payloads and/or input streams can be used to attack codec
+ implementations.
+Implementations MUST NOT overrun their allocated memory nor consume excessive
+ resources when decoding payloads or processing input streams.
+Although problems in encoding applications are typically rarer, this still
+ applies to a muxer, as vulnerabilities would allow an attacker to attack
+ transcoding gateways.
 </t>
 
 <t>
@@ -1668,8 +1676,8 @@ IANA is requested to create a new name space of "Opus Channel Mapping
  Families".
 This will be a new registry on the IANA Matrix, and not a subregistry of an
  existing registry.
-Modifications to this registry follow the "Specification Required with Expert
- Review" registration policy as defined in <xref target="RFC5226"/>.
+Modifications to this registry follow the "Specification Required" registration
+ policy as defined in <xref target="RFC5226"/>.
 Each registry entry consists of a Channel Mapping Family Number, which is
  specified in decimal in the range 0 to 255, inclusive, and a Reference (or
  list of references)
