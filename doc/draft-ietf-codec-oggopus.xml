@@ -1765,24 +1765,24 @@ In&nbsp;<xref target="iana"/>, "RFCXXXX" is to be replaced with the RFC number
 </reference>
 
 <reference anchor="hanning"
- target="https://en.wikipedia.org/wiki/Hamming_function#Hann_.28Hanning.29_window">
+ target="https://en.wikipedia.org/w/index.php?title=Window_function&amp;oldid=703074467#Hann_.28Hanning.29_window">
   <front>
     <title>Hann window</title>
     <author>
       <organization>Wikipedia</organization>
     </author>
-    <date month="May" year="2013"/>
+    <date month="February" year="2016"/>
   </front>
 </reference>
 
 <reference anchor="linear-prediction"
- target="https://en.wikipedia.org/wiki/Linear_predictive_coding">
+ target="https://en.wikipedia.org/w/index.php?title=Linear_predictive_coding&amp;oldid=687498962">
   <front>
     <title>Linear Predictive Coding</title>
     <author>
       <organization>Wikipedia</organization>
     </author>
-    <date month="January" year="2014"/>
+    <date month="October" year="2015"/>
   </front>
 </reference>
 
