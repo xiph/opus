@@ -172,7 +172,7 @@ An Ogg Opus stream is organized as follows (see
  title="Example packet organization for a logical Ogg Opus stream"
  align="center">
 <artwork align="center"><![CDATA[
-    Page 1         Pages 2 ... n        Pages (n+1) ...
+    Page 0         Pages 1 ... n        Pages (n+1) ...
  +------------+ +---+ +---+ ... +---+ +-----------+ +---------+ +--
  |            | |   | |   |     |   | |           | |         | |
  |+----------+| |+-----------------+| |+-------------------+ +-----
