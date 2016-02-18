@@ -90,6 +90,7 @@ void (*const SILK_NSQ_IMPL[ OPUS_ARCHMASK + 1 ] )(
   MAY_HAVE_SSE4_1( silk_NSQ )  /* avx */
 };
 
+#if 0 /* FIXME: SSE disabled until silk_VQ_WMat_EC_sse4_1() gets updated. */
 void (*const SILK_VQ_WMAT_EC_IMPL[ OPUS_ARCHMASK + 1 ] )(
     opus_int8                   *ind,                           /* O    index of best codebook vector               */
     opus_int32                  *rate_dist_Q14,                 /* O    best weighted quant error + mu * rate       */
@@ -109,6 +110,7 @@ void (*const SILK_VQ_WMAT_EC_IMPL[ OPUS_ARCHMASK + 1 ] )(
   MAY_HAVE_SSE4_1( silk_VQ_WMat_EC ), /* sse4.1 */
   MAY_HAVE_SSE4_1( silk_VQ_WMat_EC )  /* avx */
 };
+#endif
 
 void (*const SILK_NSQ_DEL_DEC_IMPL[ OPUS_ARCHMASK + 1 ] )(
     const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
