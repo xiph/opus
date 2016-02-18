@@ -41,7 +41,8 @@ void silk_find_pred_coefs_FLP(
 )
 {
     opus_int         i;
-    silk_float       WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
+    silk_float       XXLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
+    silk_float       xXLTP[ MAX_NB_SUBFR * LTP_ORDER ];
     silk_float       invGains[ MAX_NB_SUBFR ], Wght[ MAX_NB_SUBFR ];
     opus_int16       NLSF_Q15[ MAX_LPC_ORDER ];
     const silk_float *x_ptr;
@@ -61,14 +62,13 @@ void silk_find_pred_coefs_FLP(
         /**********/
         silk_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
 
-        /* LTP analysis */
-        silk_find_LTP_FLP( psEncCtrl->LTPCoef, WLTP, &psEncCtrl->LTPredCodGain, res_pitch,
-            psEncCtrl->pitchL, Wght, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.ltp_mem_length );
+		/* LTP analysis */
+        silk_find_LTP_FLP( XXLTP, xXLTP, &res_pitch[ psEnc->sCmn.ltp_mem_length ],
+            psEncCtrl->pitchL, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr );
 
         /* Quantize LTP gain parameters */
         silk_quant_LTP_gains_FLP( psEncCtrl->LTPCoef, psEnc->sCmn.indices.LTPIndex, &psEnc->sCmn.indices.PERIndex,
-            &psEnc->sCmn.sum_log_gain_Q7, WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr,
-            psEnc->sCmn.arch );
+			&psEncCtrl->LTPredCodGain, XXLTP, xXLTP, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.arch );
 
         /* Control LTP scaling */
         silk_LTP_scale_ctrl_FLP( psEnc, psEncCtrl, condCoding );
@@ -91,7 +91,6 @@ void silk_find_pred_coefs_FLP(
         }
         silk_memset( psEncCtrl->LTPCoef, 0, psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( silk_float ) );
         psEncCtrl->LTPredCodGain = 0.0f;
-        psEnc->sCmn.sum_log_gain_Q7 = 0;
     }
 
     /* Limit on total predictive coding gain */

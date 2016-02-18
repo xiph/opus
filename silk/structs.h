@@ -171,7 +171,6 @@ typedef struct {
     opus_int                     pitchEstimationLPCOrder;           /* Whitening filter order for pitch estimator                       */
     opus_int32                   pitchEstimationThreshold_Q16;      /* Threshold for pitch estimator                                    */
     opus_int                     LTPQuantLowComplexity;             /* Flag for low complexity LTP quantization                         */
-    opus_int                     mu_LTP_Q9;                         /* Rate-distortion tradeoff in LTP quantization                     */
     opus_int32                   sum_log_gain_Q7;                   /* Cumulative max prediction gain                                   */
     opus_int                     NLSF_MSVQ_Survivors;               /* Number of survivors in NLSF MSVQ                                 */
     opus_int                     first_frame_after_reset;           /* Flag for deactivating NLSF interpolation, pitch prediction       */
