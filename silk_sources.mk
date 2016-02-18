@@ -97,7 +97,6 @@ silk/fixed/process_gains_FIX.c \
 silk/fixed/regularize_correlations_FIX.c \
 silk/fixed/residual_energy16_FIX.c \
 silk/fixed/residual_energy_FIX.c \
-silk/fixed/solve_LS_FIX.c \
 silk/fixed/warped_autocorrelation_FIX.c \
 silk/fixed/apply_sine_window_FIX.c \
 silk/fixed/autocorr_FIX.c \
@@ -129,7 +128,6 @@ silk/float/prefilter_FLP.c \
 silk/float/process_gains_FLP.c \
 silk/float/regularize_correlations_FLP.c \
 silk/float/residual_energy_FLP.c \
-silk/float/solve_LS_FLP.c \
 silk/float/warped_autocorrelation_FLP.c \
 silk/float/wrappers_FLP.c \
 silk/float/autocorrelation_FLP.c \
