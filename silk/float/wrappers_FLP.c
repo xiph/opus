@@ -172,31 +172,34 @@ void silk_NSQ_wrapper_FLP(
 /* Floating-point Silk LTP quantiation wrapper */
 /***********************************************/
 void silk_quant_LTP_gains_FLP(
-    silk_float                      B[ MAX_NB_SUBFR * LTP_ORDER ],      /* I/O  (Un-)quantized LTP gains                    */
+    silk_float                      B[ MAX_NB_SUBFR * LTP_ORDER ],      /* O    Quantized LTP gains							*/
     opus_int8                       cbk_index[ MAX_NB_SUBFR ],          /* O    Codebook index                              */
     opus_int8                       *periodicity_index,                 /* O    Periodicity index                           */
-    opus_int32                      *sum_log_gain_Q7,                   /* I/O  Cumulative max prediction gain  */
-    const silk_float                W[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* I    Error weights                        */
-    const opus_int                  mu_Q10,                             /* I    Mu value (R/D tradeoff)                     */
-    const opus_int                  lowComplexity,                      /* I    Flag for low complexity                     */
-    const opus_int                  nb_subfr,                           /* I    number of subframes                         */
+	silk_float                      *pred_gain_dB,						/* O	LTP prediction gain							*/
+    const silk_float                XX[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* I    Correlation matrix					*/
+    const silk_float                xX[ MAX_NB_SUBFR * LTP_ORDER ],		/* I    Correlation vector							*/
+    const opus_int					subfr_len,							/* I    Number of samples per subframe				*/
+    const opus_int					nb_subfr,                           /* I    Number of subframes							*/
     int                             arch                                /* I    Run-time architecture                       */
 )
 {
-    opus_int   i;
+    opus_int   i, pred_gain_dB_Q7;
     opus_int16 B_Q14[ MAX_NB_SUBFR * LTP_ORDER ];
-    opus_int32 W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ];
+    opus_int32 XX_Q17[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
+    opus_int32 xX_Q17[ MAX_NB_SUBFR * LTP_ORDER ];
 
-    for( i = 0; i < nb_subfr * LTP_ORDER; i++ ) {
-        B_Q14[ i ] = (opus_int16)silk_float2int( B[ i ] * 16384.0f );
-    }
     for( i = 0; i < nb_subfr * LTP_ORDER * LTP_ORDER; i++ ) {
-        W_Q18[ i ] = (opus_int32)silk_float2int( W[ i ] * 262144.0f );
+        XX_Q17[ i ] = (opus_int32)silk_float2int( XX[ i ] * 131072.0f );
+    }
+    for( i = 0; i < nb_subfr * LTP_ORDER; i++ ) {
+        xX_Q17[ i ] = (opus_int32)silk_float2int( xX[ i ] * 131072.0f );
     }
 
-    silk_quant_LTP_gains( B_Q14, cbk_index, periodicity_index, sum_log_gain_Q7, W_Q18, mu_Q10, lowComplexity, nb_subfr, arch );
+    silk_quant_LTP_gains( B_Q14, cbk_index, periodicity_index, &pred_gain_dB_Q7, XX_Q17, xX_Q17, subfr_len, nb_subfr, arch );
 
     for( i = 0; i < nb_subfr * LTP_ORDER; i++ ) {
         B[ i ] = (silk_float)B_Q14[ i ] * ( 1.0f / 16384.0f );
     }
+
+	*pred_gain_dB = (silk_float)pred_gain_dB_Q7 * ( 1.0f / 128.0f );
 }

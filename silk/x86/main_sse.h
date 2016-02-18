@@ -34,6 +34,7 @@
 
 # if defined(OPUS_X86_MAY_HAVE_SSE4_1)
 
+#if 0 /* FIXME: SSE disabled until silk_VQ_WMat_EC_sse4_1() gets updated. */
 #  define OVERRIDE_silk_VQ_WMat_EC
 
 void silk_VQ_WMat_EC_sse4_1(
@@ -78,6 +79,7 @@ extern void (*const SILK_VQ_WMAT_EC_IMPL[OPUS_ARCHMASK + 1])(
     ((*SILK_VQ_WMAT_EC_IMPL[(arch) & OPUS_ARCHMASK])(ind, rate_dist_Q14, gain_Q7, in_Q14, W_Q18, cb_Q7, cb_gain_Q7, cl_Q5, \
                           mu_Q9, max_gain_Q7, L))
 
+#endif
 #endif
 
 #  define OVERRIDE_silk_NSQ
