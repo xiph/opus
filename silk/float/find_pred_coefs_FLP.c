@@ -63,8 +63,7 @@ void silk_find_pred_coefs_FLP(
         silk_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
 
 		/* LTP analysis */
-        silk_find_LTP_FLP( XXLTP, xXLTP, &res_pitch[ psEnc->sCmn.ltp_mem_length ],
-            psEncCtrl->pitchL, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr );
+        silk_find_LTP_FLP( XXLTP, xXLTP, res_pitch, psEncCtrl->pitchL, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr );
 
         /* Quantize LTP gain parameters */
         silk_quant_LTP_gains_FLP( psEncCtrl->LTPCoef, psEnc->sCmn.indices.LTPIndex, &psEnc->sCmn.indices.PERIndex,
