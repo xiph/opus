@@ -103,7 +103,6 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
     VARDECL( opus_int16, C );
     VARDECL( opus_int32, xcorr32 );
     const opus_int16 *target_ptr, *basis_ptr;
-	opus_int16 tmp0, tmp1;
     opus_int32 cross_corr, normalizer, energy, shift, energy_basis, energy_target;
     opus_int   d_srch[ PE_D_SRCH_LENGTH ], Cmax, length_d_srch, length_d_comp;
     VARDECL( opus_int16, d_comp );
@@ -176,17 +175,15 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
 
     /* Low-pass filter */
 	silk_assert( frame_length_4kHz & 3 == 0 );
-	tmp0 = frame_4kHz[ frame_length_4kHz - 1 ];
-    for( i = frame_length_4kHz - 1; i > 0; i -= 4 ) {
-		tmp1 = frame_4kHz[ i - 1 ];
-        frame_4kHz[ i - 0 ] = silk_ADD_SAT16( tmp0, tmp1 );
-		tmp0 = frame_4kHz[ i - 2 ];
-        frame_4kHz[ i - 1 ] = silk_ADD_SAT16( tmp1, tmp0 );
-		tmp1 = frame_4kHz[ i - 3 ];
-        frame_4kHz[ i - 2 ] = silk_ADD_SAT16( tmp0, tmp1 );
-		tmp0 = frame_4kHz[ i - 4 ];
-        frame_4kHz[ i - 3 ] = silk_ADD_SAT16( tmp1, tmp0 );
+    for( i = frame_length_4kHz - 1; i > 4; i -= 4 ) {
+        frame_4kHz[ i - 0 ] = silk_ADD_SAT16( frame_4kHz[ i - 0 ], frame_4kHz[ i - 1 ] );
+        frame_4kHz[ i - 1 ] = silk_ADD_SAT16( frame_4kHz[ i - 1 ], frame_4kHz[ i - 2 ] );
+        frame_4kHz[ i - 2 ] = silk_ADD_SAT16( frame_4kHz[ i - 2 ], frame_4kHz[ i - 3 ] );
+        frame_4kHz[ i - 3 ] = silk_ADD_SAT16( frame_4kHz[ i - 3 ], frame_4kHz[ i - 4 ] );
     }
+    frame_4kHz[ i - 0 ] = silk_ADD_SAT16( frame_4kHz[ i - 0 ], frame_4kHz[ i - 1 ] );
+    frame_4kHz[ i - 1 ] = silk_ADD_SAT16( frame_4kHz[ i - 1 ], frame_4kHz[ i - 2 ] );
+    frame_4kHz[ i - 2 ] = silk_ADD_SAT16( frame_4kHz[ i - 2 ], frame_4kHz[ i - 3 ] );
 
     /******************************************************************************
     * FIRST STAGE, operating in 4 khz
