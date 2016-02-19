@@ -174,16 +174,10 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
     silk_resampler_down2( filt_state, frame_4kHz, frame_8kHz, frame_length_8kHz );
 
     /* Low-pass filter */
-	silk_assert( (frame_length_4kHz & 3) == 0 );
-    for( i = frame_length_4kHz - 1; i > 4; i -= 4 ) {
-        frame_4kHz[ i - 0 ] = silk_ADD_SAT16( frame_4kHz[ i - 0 ], frame_4kHz[ i - 1 ] );
-        frame_4kHz[ i - 1 ] = silk_ADD_SAT16( frame_4kHz[ i - 1 ], frame_4kHz[ i - 2 ] );
-        frame_4kHz[ i - 2 ] = silk_ADD_SAT16( frame_4kHz[ i - 2 ], frame_4kHz[ i - 3 ] );
-        frame_4kHz[ i - 3 ] = silk_ADD_SAT16( frame_4kHz[ i - 3 ], frame_4kHz[ i - 4 ] );
+    for( i = frame_length_4kHz - 1; i > 0; i-- ) {
+        frame_4kHz[ i ] = silk_ADD_SAT16( frame_4kHz[ i ], frame_4kHz[ i - 1 ] );
     }
-    frame_4kHz[ i - 0 ] = silk_ADD_SAT16( frame_4kHz[ i - 0 ], frame_4kHz[ i - 1 ] );
-    frame_4kHz[ i - 1 ] = silk_ADD_SAT16( frame_4kHz[ i - 1 ], frame_4kHz[ i - 2 ] );
-    frame_4kHz[ i - 2 ] = silk_ADD_SAT16( frame_4kHz[ i - 2 ], frame_4kHz[ i - 3 ] );
+
 
     /******************************************************************************
     * FIRST STAGE, operating in 4 khz

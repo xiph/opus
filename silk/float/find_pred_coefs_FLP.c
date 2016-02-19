@@ -43,7 +43,7 @@ void silk_find_pred_coefs_FLP(
     opus_int         i;
     silk_float       XXLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
     silk_float       xXLTP[ MAX_NB_SUBFR * LTP_ORDER ];
-    silk_float       invGains[ MAX_NB_SUBFR ], Wght[ MAX_NB_SUBFR ];
+    silk_float       invGains[ MAX_NB_SUBFR ];
     opus_int16       NLSF_Q15[ MAX_LPC_ORDER ];
     const silk_float *x_ptr;
     silk_float       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
@@ -53,7 +53,6 @@ void silk_find_pred_coefs_FLP(
     for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
         silk_assert( psEncCtrl->Gains[ i ] > 0.0f );
         invGains[ i ] = 1.0f / psEncCtrl->Gains[ i ];
-        Wght[ i ]     = invGains[ i ] * invGains[ i ];
     }
 
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
