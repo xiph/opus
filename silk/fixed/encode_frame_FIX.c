@@ -132,7 +132,7 @@ opus_int silk_encode_frame_FIX(
         /*****************************************/
         /* Find pitch lags, initial LPC analysis */
         /*****************************************/
-        silk_find_pitch_lags_FIX( psEnc, &sEncCtrl, res_pitch, x_frame, psEnc->sCmn.arch );
+        silk_find_pitch_lags_FIX( psEnc, &sEncCtrl, res_pitch, x_frame - psEnc->sCmn.ltp_mem_length, psEnc->sCmn.arch );
 
         /************************/
         /* Noise shape analysis */
@@ -142,7 +142,7 @@ opus_int silk_encode_frame_FIX(
         /***************************************************/
         /* Find linear prediction coefficients (LPC + LTP) */
         /***************************************************/
-        silk_find_pred_coefs_FIX( psEnc, &sEncCtrl, res_pitch, x_frame, condCoding );
+        silk_find_pred_coefs_FIX( psEnc, &sEncCtrl, res_pitch_frame, x_frame, condCoding );
 
         /****************************************/
         /* Process gains                        */
