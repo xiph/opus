@@ -139,7 +139,7 @@ opus_int silk_encode_frame_FLP(
         /***************************************************/
         /* Find linear prediction coefficients (LPC + LTP) */
         /***************************************************/
-        silk_find_pred_coefs_FLP( psEnc, &sEncCtrl, res_pitch, x_frame, condCoding );
+        silk_find_pred_coefs_FLP( psEnc, &sEncCtrl, res_pitch_frame, x_frame, condCoding );
 
         /****************************************/
         /* Process gains                        */
