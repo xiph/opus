@@ -73,10 +73,11 @@ void silk_sum_sqr_shift(
     }
 
     /* Make sure to have at least 10% headroom */
-    if( nrg > SILK_FIX_CONST( 0.9, 31 ) ) {
+    if( (opus_uint32)nrg > SILK_FIX_CONST( 0.9, 31 ) ) {
         nrg = silk_RSHIFT_uint( (opus_uint32)nrg, 1 );
         shft++;
     }
+	silk_assert( nrg >= 0 );
 
     /* Output arguments */
     *shift  = shft;
