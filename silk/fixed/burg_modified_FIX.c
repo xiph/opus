@@ -84,8 +84,7 @@ void silk_burg_modified_c(
         for( s = 0; s < nb_subfr; s++ ) {
             x_ptr = x + s * subfr_length;
             for( n = 1; n < D + 1; n++ ) {
-                c[ n ] += (opus_int32)silk_RSHIFT64(
-                    silk_inner_prod16_aligned_64( x_ptr, x_ptr + n, subfr_length - n, arch ), rshifts );
+                c[ n ] += silk_inner_prod_aligned_scale( x_ptr, x_ptr + n, rshifts, subfr_length - n );
             }
         }
     } else {
