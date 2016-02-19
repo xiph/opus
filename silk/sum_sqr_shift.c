@@ -45,38 +45,37 @@ void silk_sum_sqr_shift(
 
     nrg  = 0;
     shft = 0;
-    len--;
-    for( i = 0; i < len; i += 2 ) {
+    for( i = 0; i < len - 1; i += 2 ) {
         nrg = silk_SMLABB_ovflw( nrg, x[ i ], x[ i ] );
         nrg = silk_SMLABB_ovflw( nrg, x[ i + 1 ], x[ i + 1 ] );
         if( nrg < 0 ) {
             /* Scale down */
-            nrg = (opus_int32)silk_RSHIFT_uint( (opus_uint32)nrg, 2 );
-            shft = 2;
-			i += 2;
+            nrg = (opus_int32)silk_RSHIFT_uint( (opus_uint32)nrg, 1 );
+            shft = 1;
+            i += 2;
             break;
         }
     }
-    for( ; i < len; i += 2 ) {
+    for( ; i < len - 1; i += 2 ) {
         nrg_tmp = silk_SMULBB( x[ i ], x[ i ] );
         nrg_tmp = silk_SMLABB_ovflw( nrg_tmp, x[ i + 1 ], x[ i + 1 ] );
         nrg = (opus_int32)silk_ADD_RSHIFT_uint( nrg, (opus_uint32)nrg_tmp, shft );
         if( nrg < 0 ) {
             /* Scale down */
-            nrg = (opus_int32)silk_RSHIFT_uint( (opus_uint32)nrg, 2 );
-            shft += 2;
+            nrg = (opus_int32)silk_RSHIFT_uint( (opus_uint32)nrg, 1 );
+            shft++;
         }
     }
-    if( i == len ) {
+    if( i < len ) {
         /* One sample left to process */
         nrg_tmp = silk_SMULBB( x[ i ], x[ i ] );
         nrg = (opus_int32)silk_ADD_RSHIFT_uint( nrg, nrg_tmp, shft );
     }
 
-    /* Make sure to have at least one extra leading zero (two leading zeros in total) */
-    if( nrg & 0xC0000000 ) {
-        nrg = silk_RSHIFT_uint( (opus_uint32)nrg, 2 );
-        shft += 2;
+    /* Make sure to have at least 10% headroom */
+    if( nrg > SILK_FIX_CONST( 0.9, 31 ) ) {
+        nrg = silk_RSHIFT_uint( (opus_uint32)nrg, 1 );
+        shft++;
     }
 
     /* Output arguments */
