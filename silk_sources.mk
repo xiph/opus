@@ -74,7 +74,8 @@ silk/sum_sqr_shift.c \
 silk/stereo_decode_pred.c \
 silk/stereo_encode_pred.c \
 silk/stereo_find_predictor.c \
-silk/stereo_quant_pred.c
+silk/stereo_quant_pred.c \
+silk/LPC_fit.c
 
 SILK_SOURCES_SSE4_1 = silk/x86/NSQ_sse.c \
 silk/x86/NSQ_del_dec_sse.c \
