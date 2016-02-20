@@ -324,7 +324,6 @@ static opus_int silk_setup_complexity(
         psEncC->la_shape                        = 3 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 1;
         psEncC->useInterpolatedNLSFs            = 0;
-        psEncC->LTPQuantLowComplexity           = 1;
         psEncC->NLSF_MSVQ_Survivors             = 2;
         psEncC->warping_Q16                     = 0;
     } else if( Complexity < 4 ) {
@@ -335,7 +334,6 @@ static opus_int silk_setup_complexity(
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 1;
         psEncC->useInterpolatedNLSFs            = 0;
-        psEncC->LTPQuantLowComplexity           = 0;
         psEncC->NLSF_MSVQ_Survivors             = 4;
         psEncC->warping_Q16                     = 0;
     } else if( Complexity < 6 ) {
@@ -346,7 +344,6 @@ static opus_int silk_setup_complexity(
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 2;
         psEncC->useInterpolatedNLSFs            = 1;
-        psEncC->LTPQuantLowComplexity           = 0;
         psEncC->NLSF_MSVQ_Survivors             = 8;
         psEncC->warping_Q16                     = psEncC->fs_kHz * SILK_FIX_CONST( WARPING_MULTIPLIER, 16 );
     } else if( Complexity < 8 ) {
@@ -357,7 +354,6 @@ static opus_int silk_setup_complexity(
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 3;
         psEncC->useInterpolatedNLSFs            = 1;
-        psEncC->LTPQuantLowComplexity           = 0;
         psEncC->NLSF_MSVQ_Survivors             = 16;
         psEncC->warping_Q16                     = psEncC->fs_kHz * SILK_FIX_CONST( WARPING_MULTIPLIER, 16 );
     } else {
@@ -368,7 +364,6 @@ static opus_int silk_setup_complexity(
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = MAX_DEL_DEC_STATES;
         psEncC->useInterpolatedNLSFs            = 1;
-        psEncC->LTPQuantLowComplexity           = 0;
         psEncC->NLSF_MSVQ_Survivors             = 32;
         psEncC->warping_Q16                     = psEncC->fs_kHz * SILK_FIX_CONST( WARPING_MULTIPLIER, 16 );
     }
