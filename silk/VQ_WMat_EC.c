@@ -34,38 +34,38 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Entropy constrained matrix-weighted VQ, hard-coded to 5-element vectors, for a single input data vector */
 void silk_VQ_WMat_EC_c(
     opus_int8                   *ind,                           /* O    index of best codebook vector               */
-    opus_int32                  *res_nrg_Q15,					/* O    best residual energy						*/
-    opus_int32                  *rate_dist_Q8,                  /* O    best total bitrate							*/
-    const opus_int32            *XX_Q17,						/* I    correlation matrix                          */
-    const opus_int32            *xX_Q17,						/* I    correlation vector							*/
+    opus_int32                  *res_nrg_Q15,                    /* O    best residual energy                        */
+    opus_int32                  *rate_dist_Q8,                  /* O    best total bitrate                            */
+    const opus_int32            *XX_Q17,                        /* I    correlation matrix                          */
+    const opus_int32            *xX_Q17,                        /* I    correlation vector                            */
     const opus_int8             *cb_Q7,                         /* I    codebook                                    */
     const opus_uint8            *cl_Q5,                         /* I    code length for each codebook vector        */
-    const opus_int              subfr_len,						/* I    number of samples per subframe				*/
+    const opus_int              subfr_len,                        /* I    number of samples per subframe                */
     const opus_int              L                               /* I    number of vectors in codebook               */
 )
 {
     opus_int   k;
     const opus_int8 *cb_row_Q7;
-	opus_int32 neg_xX_Q24[ 5 ];
+    opus_int32 neg_xX_Q24[ 5 ];
     opus_int32 sum1_Q15, sum2_Q24, sum1_best_Q15;
-	opus_int32 bits_res_Q8, bits_tot_Q8;
+    opus_int32 bits_res_Q8, bits_tot_Q8;
 
-	/* Negate and convert to new Q domain */
-	neg_xX_Q24[ 0 ] = -silk_LSHIFT32( xX_Q17[ 0 ], 7 );
-	neg_xX_Q24[ 1 ] = -silk_LSHIFT32( xX_Q17[ 1 ], 7 );
-	neg_xX_Q24[ 2 ] = -silk_LSHIFT32( xX_Q17[ 2 ], 7 );
-	neg_xX_Q24[ 3 ] = -silk_LSHIFT32( xX_Q17[ 3 ], 7 );
-	neg_xX_Q24[ 4 ] = -silk_LSHIFT32( xX_Q17[ 4 ], 7 );
+    /* Negate and convert to new Q domain */
+    neg_xX_Q24[ 0 ] = -silk_LSHIFT32( xX_Q17[ 0 ], 7 );
+    neg_xX_Q24[ 1 ] = -silk_LSHIFT32( xX_Q17[ 1 ], 7 );
+    neg_xX_Q24[ 2 ] = -silk_LSHIFT32( xX_Q17[ 2 ], 7 );
+    neg_xX_Q24[ 3 ] = -silk_LSHIFT32( xX_Q17[ 3 ], 7 );
+    neg_xX_Q24[ 4 ] = -silk_LSHIFT32( xX_Q17[ 4 ], 7 );
 
     /* Loop over codebook */
     *rate_dist_Q8 = silk_int32_MAX;
-	*res_nrg_Q15 = silk_int32_MAX;
-	sum1_best_Q15 = silk_int32_MAX;
+    *res_nrg_Q15 = silk_int32_MAX;
+    sum1_best_Q15 = silk_int32_MAX;
     cb_row_Q7 = cb_Q7;
     for( k = 0; k < L; k++ ) {
         /* Weighted rate */
-		/* Quantization error: 1 - 2* xX * cb + cb' * XX * cb */
-		sum1_Q15 = SILK_FIX_CONST( 1.0001, 15 );
+        /* Quantization error: 1 - 2* xX * cb + cb' * XX * cb */
+        sum1_Q15 = SILK_FIX_CONST( 1.0001, 15 );
 
         /* first row of XX_Q17 */
         sum2_Q24 = silk_MLA( neg_xX_Q24[ 0 ], XX_Q17[  1 ], cb_row_Q7[ 1 ] );
@@ -98,25 +98,25 @@ void silk_VQ_WMat_EC_c(
         sum1_Q15 = silk_SMLAWB( sum1_Q15,        sum2_Q24,  cb_row_Q7[ 3 ] );
 
         /* last row of XX_Q17 */
-		sum2_Q24 = silk_LSHIFT32( neg_xX_Q24[ 4 ], 1 );
+        sum2_Q24 = silk_LSHIFT32( neg_xX_Q24[ 4 ], 1 );
         sum2_Q24 = silk_MLA( sum2_Q24,        XX_Q17[ 24 ], cb_row_Q7[ 4 ] );
         sum1_Q15 = silk_SMLAWB( sum1_Q15,        sum2_Q24,  cb_row_Q7[ 4 ] );
 
-		/* If ever the following assert triggers, increase LTP_CORR_INV_MAX */
+        /* If ever the following assert triggers, increase LTP_CORR_INV_MAX */
         silk_assert( sum1_Q15 >= 0 );
 
-		/* find best */
-		if( sum1_Q15 <= sum1_best_Q15 ) {
-			sum1_best_Q15 = sum1_Q15;
-			/* Translate residual energy to bits using high-rate assumption (6 dB ==> 1 bit/sample) */
-			bits_res_Q8 = silk_SMULBB( subfr_len, silk_lin2log( sum1_Q15 ) - (15 << 7) );
-			bits_tot_Q8 = silk_ADD_LSHIFT32( bits_res_Q8, cl_Q5[ k ], 2 );
-			if( bits_tot_Q8 <= *rate_dist_Q8 ) {
-				*rate_dist_Q8 = bits_tot_Q8;
-				*res_nrg_Q15 = sum1_Q15;
-				*ind = (opus_int8)k;
-			}
-		}
+        /* find best */
+        if( sum1_Q15 <= sum1_best_Q15 ) {
+            sum1_best_Q15 = sum1_Q15;
+            /* Translate residual energy to bits using high-rate assumption (6 dB ==> 1 bit/sample) */
+            bits_res_Q8 = silk_SMULBB( subfr_len, silk_lin2log( sum1_Q15 ) - (15 << 7) );
+            bits_tot_Q8 = silk_ADD_LSHIFT32( bits_res_Q8, cl_Q5[ k ], 2 );
+            if( bits_tot_Q8 <= *rate_dist_Q8 ) {
+                *rate_dist_Q8 = bits_tot_Q8;
+                *res_nrg_Q15 = sum1_Q15;
+                *ind = (opus_int8)k;
+            }
+        }
 
         /* Go to next cbk vector */
         cb_row_Q7 += LTP_ORDER;

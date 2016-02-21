@@ -48,8 +48,8 @@ silk_float silk_burg_modified_FLP(
     opus_int         k, n, s, reached_max_gain;
     double           invGain, num, nrg, rc, tmp1, tmp2, x1, x2, atmp;
     const silk_float *x_ptr;
-	double           c[ SILK_MAX_ORDER_LPC + 1 ];
-	double           g[ SILK_MAX_ORDER_LPC + 1 ];
+    double           c[ SILK_MAX_ORDER_LPC + 1 ];
+    double           g[ SILK_MAX_ORDER_LPC + 1 ];
     double           a[ SILK_MAX_ORDER_LPC ];
 
     /* Compute autocorrelations, added over subframes */
@@ -61,24 +61,24 @@ silk_float silk_burg_modified_FLP(
         }
     }
     for( n = 0; n < D + 1; n++ ) {
-		c[ n ] *= 2.0;
-	}
+        c[ n ] *= 2.0;
+    }
 
     /* Initialize */
-	c[ 0 ] += FIND_LPC_COND_FAC * c[ 0 ] + 1e-9f ;
+    c[ 0 ] += FIND_LPC_COND_FAC * c[ 0 ] + 1e-9f ;
     g[ 0 ] = c[ 0 ];
-	tmp1 = 0.0f;
+    tmp1 = 0.0f;
     for( s = 0; s < nb_subfr; s++ ) {
         x_ptr = x + s * subfr_length;
-		x1 = x_ptr[ 0 ];
-		x2 = x_ptr[ subfr_length - 1 ];
-		tmp1 += x1 * x1 + x2 * x2;
-	}
-	g[ 0 ] -= tmp1;
-	g[ 1 ] = c[ 1 ];
-	rc = - g[ 1 ] / g[ 0 ];
+        x1 = x_ptr[ 0 ];
+        x2 = x_ptr[ subfr_length - 1 ];
+        tmp1 += x1 * x1 + x2 * x2;
+    }
+    g[ 0 ] -= tmp1;
+    g[ 1 ] = c[ 1 ];
+    rc = - g[ 1 ] / g[ 0 ];
     silk_assert( rc > -1.0 && rc < 1.0 );
-	a[ 0 ] = rc;
+    a[ 0 ] = rc;
     invGain = ( 1.0 - rc * rc );
     reached_max_gain = 0;
     for( n = 1; n < D; n++ ) {
@@ -90,13 +90,13 @@ silk_float silk_burg_modified_FLP(
         }
         for( s = 0; s < nb_subfr; s++ ) {
             x_ptr = x + s * subfr_length;
-			x1 = x_ptr[ n ];
-			x2 = x_ptr[ subfr_length - n - 1 ];
+            x1 = x_ptr[ n ];
+            x2 = x_ptr[ subfr_length - n - 1 ];
             tmp1 = x1;
             tmp2 = x2;
             for( k = 0; k < n; k++ ) {
-				atmp = a[ k ];
-				c[ k + 1 ] -= x1 * x_ptr[ n - k - 1 ] + x2 * x_ptr[ subfr_length - n + k ];
+                atmp = a[ k ];
+                c[ k + 1 ] -= x1 * x_ptr[ n - k - 1 ] + x2 * x_ptr[ subfr_length - n + k ];
                 tmp1 += x_ptr[ n - k - 1 ] * atmp;
                 tmp2 += x_ptr[ subfr_length - n + k ] * atmp;
             }
@@ -106,17 +106,17 @@ silk_float silk_burg_modified_FLP(
         }
 
         /* Calculate nominator and denominator for the next order reflection (parcor) coefficient */
-		tmp1 = c[ n + 1 ];
+        tmp1 = c[ n + 1 ];
         num = 0.0f;
         nrg = g[ 0 ];
         for( k = 0; k < n; k++ ) {
-			atmp = a[ k ];
-			tmp1 += c[ n - k ] * atmp;
+            atmp = a[ k ];
+            tmp1 += c[ n - k ] * atmp;
             num  += g[ n - k ] * atmp;
             nrg  += g[ k + 1 ] * atmp;
         }
-		g[ n + 1] = tmp1;
-		num += tmp1;
+        g[ n + 1] = tmp1;
+        num += tmp1;
         silk_assert( nrg > 0.0 );
 
         /* Calculate the next order reflection (parcor) coefficient */
@@ -156,10 +156,10 @@ silk_float silk_burg_modified_FLP(
         }
     }
 
-	/* Convert to silk_float */
-	for( k = 0; k < D; k++ ) {
-		af[ k ] = (silk_float)( -a[ k ] );
-	}
+    /* Convert to silk_float */
+    for( k = 0; k < D; k++ ) {
+        af[ k ] = (silk_float)( -a[ k ] );
+    }
 
     nrg = c[ 0 ] * 0.5 * (1.0 - FIND_LPC_COND_FAC);
     /* Subtract energy of preceding samples from C0 */
