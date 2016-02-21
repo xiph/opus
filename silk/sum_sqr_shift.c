@@ -82,7 +82,7 @@ void silk_sum_sqr_shift(
         nrg = silk_RSHIFT_uint( (opus_uint32)nrg, 1 );
         shft++;
     }
-	silk_assert( nrg >= 0 );
+    silk_assert( nrg >= 0 );
 
     /* Output arguments */
     *shift  = shft;
