@@ -57,7 +57,7 @@ typedef struct {
     /* Buffer for find pitch and noise shape analysis */
     silk_DWORD_ALIGN opus_int16 x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis  */
     opus_int                    LTPCorr_Q15;                            /* Normalized correlation from pitch lag estimator      */
-	opus_int32					resNrgSmth;
+    opus_int32                    resNrgSmth;
 } silk_encoder_state_FIX;
 
 /************************/

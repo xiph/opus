@@ -172,14 +172,14 @@ void silk_NSQ_wrapper_FLP(
 /* Floating-point Silk LTP quantiation wrapper */
 /***********************************************/
 void silk_quant_LTP_gains_FLP(
-    silk_float                      B[ MAX_NB_SUBFR * LTP_ORDER ],      /* O    Quantized LTP gains							*/
+    silk_float                      B[ MAX_NB_SUBFR * LTP_ORDER ],      /* O    Quantized LTP gains                            */
     opus_int8                       cbk_index[ MAX_NB_SUBFR ],          /* O    Codebook index                              */
     opus_int8                       *periodicity_index,                 /* O    Periodicity index                           */
-	silk_float                      *pred_gain_dB,						/* O	LTP prediction gain							*/
-    const silk_float                XX[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* I    Correlation matrix					*/
-    const silk_float                xX[ MAX_NB_SUBFR * LTP_ORDER ],		/* I    Correlation vector							*/
-    const opus_int					subfr_len,							/* I    Number of samples per subframe				*/
-    const opus_int					nb_subfr,                           /* I    Number of subframes							*/
+    silk_float                      *pred_gain_dB,                        /* O    LTP prediction gain                            */
+    const silk_float                XX[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* I    Correlation matrix                    */
+    const silk_float                xX[ MAX_NB_SUBFR * LTP_ORDER ],        /* I    Correlation vector                            */
+    const opus_int                    subfr_len,                            /* I    Number of samples per subframe                */
+    const opus_int                    nb_subfr,                           /* I    Number of subframes                            */
     int                             arch                                /* I    Run-time architecture                       */
 )
 {
@@ -201,5 +201,5 @@ void silk_quant_LTP_gains_FLP(
         B[ i ] = (silk_float)B_Q14[ i ] * ( 1.0f / 16384.0f );
     }
 
-	*pred_gain_dB = (silk_float)pred_gain_dB_Q7 * ( 1.0f / 128.0f );
+    *pred_gain_dB = (silk_float)pred_gain_dB_Q7 * ( 1.0f / 128.0f );
 }
