@@ -372,11 +372,10 @@ void silk_NLSF_unpack(
 /***********************/
 /* NLSF vector decoder */
 /***********************/
-opus_int silk_NLSF_decode(                                      /* O    Number of bits (Q5), if signalType >= 0     */
+void silk_NLSF_decode(
           opus_int16            *pNLSF_Q15,                     /* O    Quantized NLSF vector [ LPC_ORDER ]         */
           opus_int8             *NLSFIndices,                   /* I    Codebook path vector [ LPC_ORDER + 1 ]      */
-    const silk_NLSF_CB_struct   *psNLSF_CB,                     /* I    Codebook object                             */
-    const opus_int              signalType                      /* I    SignalType, to determine number of bits     */
+    const silk_NLSF_CB_struct   *psNLSF_CB                      /* I    Codebook object                             */
 );
 
 /****************************************************/

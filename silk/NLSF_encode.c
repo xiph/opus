@@ -37,7 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /***********************/
 opus_int32 silk_NLSF_encode(                                    /* O    Returns RD value in Q25                     */
           opus_int8             *NLSFIndices,                   /* I    Codebook path vector [ LPC_ORDER + 1 ]      */
-          opus_int16            *pNLSF_Q15,                     /* I/O  Quantized NLSF vector [ LPC_ORDER ]         */
+          opus_int16            *pNLSF_Q15,                     /* I/O  (Un)quantized NLSF vector [ LPC_ORDER ]     */
     const silk_NLSF_CB_struct   *psNLSF_CB,                     /* I    Codebook object                             */
     const opus_int16            *pW_Q2,                         /* I    NLSF weight vector [ LPC_ORDER ]            */
     const opus_int              NLSF_mu_Q20,                    /* I    Rate weight for the RD optimization         */
@@ -117,7 +117,7 @@ opus_int32 silk_NLSF_encode(                                    /* O    Returns 
     silk_memcpy( &NLSFIndices[ 1 ], &tempIndices2[ bestIndex * MAX_LPC_ORDER ], psNLSF_CB->order * sizeof( opus_int8 ) );
 
     /* Decode */
-    silk_NLSF_decode( pNLSF_Q15, NLSFIndices, psNLSF_CB, -1 );
+    silk_NLSF_decode( pNLSF_Q15, NLSFIndices, psNLSF_CB );
 
     RESTORE_STACK;
     return RD_Q25[ 0 ];
