@@ -78,8 +78,8 @@ void silk_corrMatrix_FIX(
     const opus_int                  L,                                      /* I    Length of vectors                                                           */
     const opus_int                  order,                                  /* I    Max lag for correlation                                                     */
     opus_int32                      *XX,                                    /* O    Pointer to X'*X correlation matrix [ order x order ]                        */
-	opus_int32                      *nrg,									/* O	Energy of x vector															*/
-    opus_int                        *rshifts,                               /* O	Right shifts of correlations and energy                                     */
+    opus_int32                      *nrg,                                    /* O    Energy of x vector                                                            */
+    opus_int                        *rshifts,                               /* O    Right shifts of correlations and energy                                     */
     int                             arch                                    /* I    Run-time architecture                                                       */
 )
 {
@@ -89,9 +89,9 @@ void silk_corrMatrix_FIX(
 
     /* Calculate energy to find shift used to fit in 32 bits */
     silk_sum_sqr_shift( nrg, rshifts, x, L + order - 1 );
-	energy = *nrg;
+    energy = *nrg;
 
-	/* Calculate energy of first column (0) of X: X[:,0]'*X[:,0] */
+    /* Calculate energy of first column (0) of X: X[:,0]'*X[:,0] */
     /* Remove contribution of first order - 1 samples */
     for( i = 0; i < order - 1; i++ ) {
         energy -= silk_RSHIFT32( silk_SMULBB( x[ i ], x[ i ] ), *rshifts );
@@ -100,13 +100,13 @@ void silk_corrMatrix_FIX(
     /* Calculate energy of remaining columns of X: X[:,j]'*X[:,j] */
     /* Fill out the diagonal of the correlation matrix */
     matrix_ptr( XX, 0, 0, order ) = energy;
-	silk_assert( energy >= 0 );
+    silk_assert( energy >= 0 );
     ptr1 = &x[ order - 1 ]; /* First sample of column 0 of X */
     for( j = 1; j < order; j++ ) {
         energy = silk_SUB32( energy, silk_RSHIFT32( silk_SMULBB( ptr1[ L - j ], ptr1[ L - j ] ), *rshifts ) );
         energy = silk_ADD32( energy, silk_RSHIFT32( silk_SMULBB( ptr1[ -j ], ptr1[ -j ] ), *rshifts ) );
         matrix_ptr( XX, j, j, order ) = energy;
-		silk_assert( energy >= 0 );
+        silk_assert( energy >= 0 );
     }
 
     ptr2 = &x[ order - 2 ]; /* First sample of column 1 of X */
