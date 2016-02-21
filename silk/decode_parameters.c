@@ -49,7 +49,7 @@ void silk_decode_parameters(
     /****************/
     /* Decode NLSFs */
     /****************/
-    silk_NLSF_decode( pNLSF_Q15, psDec->indices.NLSFIndices, psDec->psNLSF_CB, -1 );
+    silk_NLSF_decode( pNLSF_Q15, psDec->indices.NLSFIndices, psDec->psNLSF_CB );
 
     /* Convert NLSF parameters to AR prediction filter coefficients */
     silk_NLSF2A( psDecCtrl->PredCoef_Q12[ 1 ], pNLSF_Q15, psDec->LPC_order );
