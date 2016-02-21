@@ -93,7 +93,6 @@ silk/fixed/find_LTP_FIX.c \
 silk/fixed/find_pitch_lags_FIX.c \
 silk/fixed/find_pred_coefs_FIX.c \
 silk/fixed/noise_shape_analysis_FIX.c \
-silk/fixed/prefilter_FIX.c \
 silk/fixed/process_gains_FIX.c \
 silk/fixed/regularize_correlations_FIX.c \
 silk/fixed/residual_energy16_FIX.c \
@@ -125,7 +124,6 @@ silk/float/LPC_analysis_filter_FLP.c \
 silk/float/LTP_analysis_filter_FLP.c \
 silk/float/LTP_scale_ctrl_FLP.c \
 silk/float/noise_shape_analysis_FLP.c \
-silk/float/prefilter_FLP.c \
 silk/float/process_gains_FLP.c \
 silk/float/regularize_correlations_FLP.c \
 silk/float/residual_energy_FLP.c \
@@ -137,7 +135,6 @@ silk/float/bwexpander_FLP.c \
 silk/float/energy_FLP.c \
 silk/float/inner_product_FLP.c \
 silk/float/k2a_FLP.c \
-silk/float/levinsondurbin_FLP.c \
 silk/float/LPC_inv_pred_gain_FLP.c \
 silk/float/pitch_analysis_core_FLP.c \
 silk/float/scale_copy_vector_FLP.c \
