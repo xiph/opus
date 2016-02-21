@@ -48,6 +48,7 @@ typedef struct {
     opus_int32                  sLPC_Q14[ MAX_SUB_FRAME_LENGTH + NSQ_LPC_BUF_LENGTH ];
     opus_int32                  sAR2_Q14[ MAX_SHAPE_LPC_ORDER ];
     opus_int32                  sLF_AR_shp_Q14;
+    opus_int32                  sDiff_shp_Q14;
     opus_int                    lagPrev;
     opus_int                    sLTP_buf_idx;
     opus_int                    sLTP_shp_buf_idx;
