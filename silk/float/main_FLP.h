@@ -85,16 +85,6 @@ opus_int silk_control_encoder(
     const opus_int                  force_fs_kHz
 );
 
-/****************/
-/* Prefiltering */
-/****************/
-void silk_prefilter_FLP(
-    silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
-    const silk_encoder_control_FLP  *psEncCtrl,                         /* I    Encoder control FLP                         */
-    silk_float                      xw[],                               /* O    Weighted signal                             */
-    const silk_float                x[]                                 /* I    Speech signal                               */
-);
-
 /**************************/
 /* Noise shaping analysis */
 /**************************/
