@@ -40,7 +40,7 @@ void silk_LPC_fit(
     const opus_int              d                   /* I    Filter order                                                */
 )
 {
-	opus_int	i, k, idx;
+	opus_int	i, k, idx = 0;
 	opus_int32	maxabs, absval, chirp_Q16;
 
     /* Limit the maximum absolute value of the prediction coefficients, so that they'll fit in int16 */
@@ -58,9 +58,9 @@ void silk_LPC_fit(
 
         if( maxabs > silk_int16_MAX ) {
             /* Reduce magnitude of prediction coefficients */
-			chirp_Q16 = SILK_FIX_CONST( 0.99, 16 ) - silk_DIV32_varQ(
-				silk_SMULWB( maxabs - silk_int16_MAX, silk_SMLABB( SILK_FIX_CONST( 0.8, 10 ), SILK_FIX_CONST( 0.1, 10 ), i ) ),
-				silk_MUL( maxabs, idx + 1 ), 22 );
+            maxabs = silk_min( maxabs, 163838 );  /* ( silk_int32_MAX >> 14 ) + silk_int16_MAX = 163838 */
+            chirp_Q16 = SILK_FIX_CONST( 0.999, 16 ) - silk_DIV32( silk_LSHIFT( maxabs - silk_int16_MAX, 14 ),
+                                        silk_RSHIFT32( silk_MUL( maxabs, idx + 1), 2 ) );
             silk_bwexpander_32( a_QIN, d, chirp_Q16 );
         } else {
             break;

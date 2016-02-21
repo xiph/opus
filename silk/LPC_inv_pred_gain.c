@@ -62,10 +62,6 @@ static opus_int32 LPC_inverse_pred_gain_QA(                 /* O   Returns inver
         silk_assert( rc_mult1_Q30 > ( 1 << 15 ) );                   /* reduce A_LIMIT if fails */
         silk_assert( rc_mult1_Q30 <= ( 1 << 30 ) );
 
-        /* rc_mult2 range: [ 2^30 : silk_int32_MAX ] */
-        mult2Q = 32 - silk_CLZ32( silk_abs( rc_mult1_Q30 ) );
-        rc_mult2 = silk_INVERSE32_varQ( rc_mult1_Q30, mult2Q + 30 );
-
         /* Update inverse gain */
         /* invGain_Q30 range: [ 0 : 2^30 ] */
         invGain_Q30 = silk_LSHIFT( silk_SMMUL( invGain_Q30, rc_mult1_Q30 ), 2 );
