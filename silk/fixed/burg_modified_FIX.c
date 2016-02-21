@@ -90,7 +90,7 @@ void silk_burg_modified_c(
     } else {
         for( s = 0; s < nb_subfr; s++ ) {
             int i;
-		    opus_int32 xcorr[ SILK_MAX_ORDER_LPC ];
+            opus_int32 xcorr[ SILK_MAX_ORDER_LPC ];
             opus_int32 d;
             x_ptr = x + s * subfr_length;
             celt_pitch_xcorr(x_ptr, x_ptr + 1, xcorr, subfr_length - D, D, arch );
@@ -105,43 +105,43 @@ void silk_burg_modified_c(
         }
     }
 
-	/* Multiply all correlations by 2 */
-	rshifts++;
+    /* Multiply all correlations by 2 */
+    rshifts++;
 
     /* Initialize */
-	c[ 0 ] = C0 + silk_SMMUL( SILK_FIX_CONST( FIND_LPC_COND_FAC, 32 ), C0 ) + 1;                        /* Q(-rshifts) */
-	g[ 0 ] = c[ 0 ];																					/* Q(-rshifts) */
-	tmp1 = 0;
+    c[ 0 ] = C0 + silk_SMMUL( SILK_FIX_CONST( FIND_LPC_COND_FAC, 32 ), C0 ) + 1;                        /* Q(-rshifts) */
+    g[ 0 ] = c[ 0 ];                                                                                    /* Q(-rshifts) */
+    tmp1 = 0;
     if( rshifts > -N_BITS_HEAD_ROOM ) {
-		for( s = 0; s < nb_subfr; s++ ) {
-			x_ptr = x + s * subfr_length;
-			x1 = x_ptr[ 0 ];
-			x2 = x_ptr[ subfr_length - 1 ];
-			tmp1 = silk_SMLAWB( tmp1, silk_LSHIFT32( x1, 16 - rshifts ), x1 );							/* Q(-rshifts) */
-			tmp1 = silk_SMLAWB( tmp1, silk_LSHIFT32( x2, 16 - rshifts ), x2 );							/* Q(-rshifts) */
-		}
-	} else {
-		for( s = 0; s < nb_subfr; s++ ) {
-			x_ptr = x + s * subfr_length;
-			x1 = x_ptr[ 0 ];
-			x2 = x_ptr[ subfr_length - 1 ];
-			tmp1 = silk_MLA( tmp1, silk_LSHIFT32( x1, -rshifts ), x1 );									/* Q(-rshifts) */
-			tmp1 = silk_MLA( tmp1, silk_LSHIFT32( x2, -rshifts ), x2 );									/* Q(-rshifts) */
-		}
-	}
-	g[ 0 ] -= tmp1;
-	g[ 1 ] = c[ 1 ];
-	silk_assert( g[ 1 ] < g[ 0 ] && g[ 1 ] > -g[ 0 ] );
+        for( s = 0; s < nb_subfr; s++ ) {
+            x_ptr = x + s * subfr_length;
+            x1 = x_ptr[ 0 ];
+            x2 = x_ptr[ subfr_length - 1 ];
+            tmp1 = silk_SMLAWB( tmp1, silk_LSHIFT32( x1, 16 - rshifts ), x1 );                          /* Q(-rshifts) */
+            tmp1 = silk_SMLAWB( tmp1, silk_LSHIFT32( x2, 16 - rshifts ), x2 );                          /* Q(-rshifts) */
+        }
+    } else {
+        for( s = 0; s < nb_subfr; s++ ) {
+            x_ptr = x + s * subfr_length;
+            x1 = x_ptr[ 0 ];
+            x2 = x_ptr[ subfr_length - 1 ];
+            tmp1 = silk_MLA( tmp1, silk_LSHIFT32( x1, -rshifts ), x1 );                                 /* Q(-rshifts) */
+            tmp1 = silk_MLA( tmp1, silk_LSHIFT32( x2, -rshifts ), x2 );                                 /* Q(-rshifts) */
+        }
+    }
+    g[ 0 ] -= tmp1;
+    g[ 1 ] = c[ 1 ];
+    silk_assert( g[ 1 ] < g[ 0 ] && g[ 1 ] > -g[ 0 ] );
     rc_Q31 = -silk_DIV32_varQ( g[ 1 ], g[ 0 ], 31 );
-	Af_QA[ 0 ] = silk_RSHIFT32( rc_Q31, 31 - QA );														/* QA */
+    Af_QA[ 0 ] = silk_RSHIFT32( rc_Q31, 31 - QA );                                                      /* QA */
     invGain_Q30 = SILK_FIX_CONST( 1, 30 ) - silk_SMMUL( rc_Q31, rc_Q31 );
     reached_max_gain = 0;
     for( n = 1; n < D; n++ ) {
         for( k = 0; k < (n >> 1) + 1; k++ ) {
             tmp1 = g[ k ];
             tmp2 = g[ n - k ];
-            g[ k ]     = silk_ADD_LSHIFT32( tmp1, silk_SMMUL( tmp2, rc_Q31 ), 1 );						/* Q(-rshifts) */
-            g[ n - k ] = silk_ADD_LSHIFT32( tmp2, silk_SMMUL( tmp1, rc_Q31 ), 1 );						/* Q(-rshifts) */
+            g[ k ]     = silk_ADD_LSHIFT32( tmp1, silk_SMMUL( tmp2, rc_Q31 ), 1 );                      /* Q(-rshifts) */
+            g[ n - k ] = silk_ADD_LSHIFT32( tmp2, silk_SMMUL( tmp1, rc_Q31 ), 1 );                      /* Q(-rshifts) */
         }
         if( rshifts > -N_BITS_HEAD_ROOM ) {
             for( s = 0; s < nb_subfr; s++ ) {
@@ -151,29 +151,29 @@ void silk_burg_modified_c(
                 tmp1 = silk_LSHIFT32( (opus_int32)x_ptr[ n ],                    QA - 16 );             /* Q(QA-16) */
                 tmp2 = silk_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], QA - 16 );             /* Q(QA-16) */
                 for( k = 0; k < n; k++ ) {
-                    c[ k + 1 ] = silk_SMLAWB( silk_SMLAWB( c[ k + 1 ], x1, x_ptr[ n - k - 1 ] ),		/* Q( -rshifts ) */
-														               x2, x_ptr[ subfr_length - n + k ] );
+                    c[ k + 1 ] = silk_SMLAWB( silk_SMLAWB( c[ k + 1 ], x1, x_ptr[ n - k - 1 ] ),        /* Q( -rshifts ) */
+                                                                       x2, x_ptr[ subfr_length - n + k ] );
                     Atmp_QA = Af_QA[ k ];
                     tmp1 = silk_SMLAWB( tmp1, Atmp_QA, x_ptr[ n - k - 1 ]            );                 /* Q(QA-16) */
                     tmp2 = silk_SMLAWB( tmp2, Atmp_QA, x_ptr[ subfr_length - n + k ] );                 /* Q(QA-16) */
                 }
-				tmp1 = silk_LSHIFT32( -tmp1, 32 - QA - rshifts );                                       /* Q(16-rshifts) */
+                tmp1 = silk_LSHIFT32( -tmp1, 32 - QA - rshifts );                                       /* Q(16-rshifts) */
                 tmp2 = silk_LSHIFT32( -tmp2, 32 - QA - rshifts );                                       /* Q(16-rshifts) */
                 for( k = 0; k <= n; k++ ) {
-                    g[ k ] = silk_SMLAWB( silk_SMLAWB( g[ k ], tmp1, x_ptr[ n - k ] ),					/* Q( -rshift ) */
+                    g[ k ] = silk_SMLAWB( silk_SMLAWB( g[ k ], tmp1, x_ptr[ n - k ] ),                  /* Q( -rshift ) */
                                                                tmp2, x_ptr[ subfr_length - n + k - 1 ] );
                 }
             }
         } else {
             for( s = 0; s < nb_subfr; s++ ) {
                 x_ptr = x + s * subfr_length;
-				x1  = -silk_LSHIFT32( (opus_int32)x_ptr[ n ],                    -rshifts );            /* Q( -rshifts ) */
+                x1  = -silk_LSHIFT32( (opus_int32)x_ptr[ n ],                    -rshifts );            /* Q( -rshifts ) */
                 x2  = -silk_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], -rshifts );            /* Q( -rshifts ) */
                 tmp1 = silk_LSHIFT32( (opus_int32)x_ptr[ n ],                    17 );                  /* Q17 */
                 tmp2 = silk_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], 17 );                  /* Q17 */
                 for( k = 0; k < n; k++ ) {
-                    c[ k + 1 ] = silk_MLA( silk_MLA( c[ k + 1 ], x1, x_ptr[ n - k - 1 ] ),				/* Q( -rshifts ) */
-																 x2, x_ptr[ subfr_length - n + k ] );
+                    c[ k + 1 ] = silk_MLA( silk_MLA( c[ k + 1 ], x1, x_ptr[ n - k - 1 ] ),              /* Q( -rshifts ) */
+                                                                 x2, x_ptr[ subfr_length - n + k ] );
                     Atmp1 = silk_RSHIFT_ROUND( Af_QA[ k ], QA - 17 );                                   /* Q17 */
                     tmp1 = silk_MLA( tmp1, x_ptr[ n - k - 1 ],            Atmp1 );                      /* Q17 */
                     tmp2 = silk_MLA( tmp2, x_ptr[ subfr_length - n + k ], Atmp1 );                      /* Q17 */
@@ -181,27 +181,27 @@ void silk_burg_modified_c(
                 tmp1 = -tmp1;                                                                           /* Q17 */
                 tmp2 = -tmp2;                                                                           /* Q17 */
                 for( k = 0; k <= n; k++ ) {
-                    g[ k ] = silk_SMLAWW( silk_SMLAWW( g[ k ],											/* Q( -rshift ) */
-								tmp1, silk_LSHIFT32( (opus_int32)x_ptr[ n - k ], -rshifts - 1 ) ),
-								tmp2, silk_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n + k - 1 ], -rshifts - 1 ) );
+                    g[ k ] = silk_SMLAWW( silk_SMLAWW( g[ k ],                                          /* Q( -rshift ) */
+                                tmp1, silk_LSHIFT32( (opus_int32)x_ptr[ n - k ], -rshifts - 1 ) ),
+                                tmp2, silk_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n + k - 1 ], -rshifts - 1 ) );
                 }
             }
         }
 
         /* Calculate nominator and denominator for the next order reflection (parcor) coefficient */
-        tmp1 = c[ n + 1 ];																				/* Q( -rshifts ) */
+        tmp1 = c[ n + 1 ];                                                                              /* Q( -rshifts ) */
         num  = 0;                                                                                       /* Q( -rshifts ) */
-        nrg  = g[ 0 ];																					/* Q( -rshifts ) */
+        nrg  = g[ 0 ];                                                                                  /* Q( -rshifts ) */
         for( k = 0; k < n; k++ ) {
             Atmp_QA = Af_QA[ k ];
             lz = silk_CLZ32( silk_abs( Atmp_QA ) ) - 1;
             lz = silk_min( 32 - QA, lz );
             Atmp1 = silk_LSHIFT32( Atmp_QA, lz );                                                       /* Q( QA + lz ) */
-            tmp1 = silk_ADD_LSHIFT32( tmp1, silk_SMMUL( c[ n - k ], Atmp1 ), 32 - QA - lz );			/* Q( -rshifts ) */
-            num  = silk_ADD_LSHIFT32( num,  silk_SMMUL( g[ n - k ], Atmp1 ), 32 - QA - lz );			/* Q( -rshifts ) */
-            nrg  = silk_ADD_LSHIFT32( nrg,  silk_SMMUL( g[ k + 1 ], Atmp1 ), 32 - QA - lz );			/* Q( -rshifts ) */
+            tmp1 = silk_ADD_LSHIFT32( tmp1, silk_SMMUL( c[ n - k ], Atmp1 ), 32 - QA - lz );            /* Q( -rshifts ) */
+            num  = silk_ADD_LSHIFT32( num,  silk_SMMUL( g[ n - k ], Atmp1 ), 32 - QA - lz );            /* Q( -rshifts ) */
+            nrg  = silk_ADD_LSHIFT32( nrg,  silk_SMMUL( g[ k + 1 ], Atmp1 ), 32 - QA - lz );            /* Q( -rshifts ) */
         }
-        g[ n + 1 ] = tmp1;																				/* Q( -rshifts ) */
+        g[ n + 1 ] = tmp1;                                                                              /* Q( -rshifts ) */
         num = silk_ADD32( num, tmp1 );                                                                  /* Q( -rshifts ) */
         silk_assert( nrg > 0 );
 
@@ -213,12 +213,12 @@ void silk_burg_modified_c(
         }
 
         /* Update inverse prediction gain */
-		tmp1 = SILK_FIX_CONST( 1, 30 ) - silk_SMMUL( rc_Q31, rc_Q31 );
+        tmp1 = SILK_FIX_CONST( 1, 30 ) - silk_SMMUL( rc_Q31, rc_Q31 );
         tmp1 = silk_LSHIFT( silk_SMMUL( invGain_Q30, tmp1 ), 2 );
         if( tmp1 <= minInvGain_Q30 ) {
             /* Max prediction gain exceeded; set reflection coefficient such that max prediction gain is exactly hit */
             tmp2 = SILK_FIX_CONST( 1, 30 ) - silk_DIV32_varQ( minInvGain_Q30, invGain_Q30, 30 );        /* Q30 */
-            rc_Q31 = silk_SQRT_APPROX( tmp2 );															/* Q15 */
+            rc_Q31 = silk_SQRT_APPROX( tmp2 );                                                          /* Q15 */
             if( rc_Q31 > 0 ) {
                 /* Newton-Raphson iteration */
                 rc_Q31 = silk_RSHIFT32( rc_Q31 + silk_DIV32( tmp2, rc_Q31 ), 1 );                       /* Q15 */
@@ -236,12 +236,12 @@ void silk_burg_modified_c(
 
         /* Update the AR coefficients */
         for( k = 0; k < (n + 1) >> 1; k++ ) {
-            tmp1 = Af_QA[ k ];																			/* QA */
-            tmp2 = Af_QA[ n - k - 1 ];																	/* QA */
-            Af_QA[ k ]         = silk_ADD_LSHIFT32( tmp1, silk_SMMUL( tmp2, rc_Q31 ), 1 );				/* QA */
-            Af_QA[ n - k - 1 ] = silk_ADD_LSHIFT32( tmp2, silk_SMMUL( tmp1, rc_Q31 ), 1 );				/* QA */
+            tmp1 = Af_QA[ k ];                                                                          /* QA */
+            tmp2 = Af_QA[ n - k - 1 ];                                                                  /* QA */
+            Af_QA[ k ]         = silk_ADD_LSHIFT32( tmp1, silk_SMMUL( tmp2, rc_Q31 ), 1 );              /* QA */
+            Af_QA[ n - k - 1 ] = silk_ADD_LSHIFT32( tmp2, silk_SMMUL( tmp1, rc_Q31 ), 1 );              /* QA */
         }
-        Af_QA[ n ] = silk_RSHIFT32( rc_Q31, 31 - QA );													/* QA */
+        Af_QA[ n ] = silk_RSHIFT32( rc_Q31, 31 - QA );                                                  /* QA */
 
         if( reached_max_gain ) {
             /* Reached max prediction gain; set remaining coefficients to zero and exit loop */
@@ -252,10 +252,10 @@ void silk_burg_modified_c(
         }
     }
 
-	for( k = 0; k < D; k++ ) {
-		/* Scale coefficients */
-		A_Q16[ k ] = -silk_RSHIFT_ROUND( Af_QA[ k ], QA - 16 );
-	}
+    for( k = 0; k < D; k++ ) {
+        /* Scale coefficients */
+        A_Q16[ k ] = -silk_RSHIFT_ROUND( Af_QA[ k ], QA - 16 );
+    }
 
     /* Subtract energy of preceding samples from C0 */
     rshifts--;  /* divide c0 by two */

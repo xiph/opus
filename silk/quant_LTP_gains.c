@@ -32,13 +32,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 void silk_quant_LTP_gains(
-    opus_int16                  B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],          /* O	Quantized LTP gains				*/
+    opus_int16                  B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    Quantized LTP gains                */
     opus_int8                   cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook Index                  */
     opus_int8                   *periodicity_index,                         /* O    Periodicity Index               */
-	opus_int	                *pred_gain_dB_Q7,							/* O	LTP prediction gain				*/
+    opus_int                    *pred_gain_dB_Q7,                            /* O    LTP prediction gain                */
     const opus_int32            XX_Q17[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ], /* I    Correlation matrix in Q18       */
     const opus_int32            xX_Q17[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ], /* I    Correlation vector in Q18       */
-    const opus_int              subfr_len,									/* I    Number of samples per subframe  */
+    const opus_int              subfr_len,                                    /* I    Number of samples per subframe  */
     const opus_int              nb_subfr,                                   /* I    Number of subframes             */
     int                         arch                                        /* I    Run-time architecture           */
 )
@@ -66,23 +66,23 @@ void silk_quant_LTP_gains(
         xX_Q17_ptr = xX_Q17;
         b_Q14_ptr  = B_Q14;
 
-		res_nrg_Q15 = 0;
+        res_nrg_Q15 = 0;
         rate_dist_Q7 = 0;
         for( j = 0; j < nb_subfr; j++ ) {
             silk_VQ_WMat_EC(
                 &temp_idx[ j ],         /* O    index of best codebook vector                           */
-				&res_nrg_Q15_subfr,		/* O	residual energy											*/
+                &res_nrg_Q15_subfr,        /* O    residual energy                                            */
                 &rate_dist_Q7_subfr,    /* O    best weighted quantization error + mu * rate            */
                 XX_Q17_ptr,             /* I    correlation matrix                                      */
-                xX_Q17_ptr,             /* I    correlation vector										*/
+                xX_Q17_ptr,             /* I    correlation vector                                        */
                 cbk_ptr_Q7,             /* I    codebook                                                */
                 cl_ptr_Q5,              /* I    code length for each codebook vector                    */
-                subfr_len,              /* I    number of samples per subframe			                */
+                subfr_len,              /* I    number of samples per subframe                            */
                 cbk_size,               /* I    number of vectors in codebook                           */
                 arch                    /* I    Run-time architecture                                   */
             );
 
-			res_nrg_Q15   = silk_ADD_POS_SAT32( res_nrg_Q15, res_nrg_Q15_subfr );
+            res_nrg_Q15   = silk_ADD_POS_SAT32( res_nrg_Q15, res_nrg_Q15_subfr );
             rate_dist_Q7 = silk_ADD_POS_SAT32( rate_dist_Q7, rate_dist_Q7_subfr );
 
             b_Q14_ptr  += LTP_ORDER;
@@ -104,12 +104,12 @@ void silk_quant_LTP_gains(
         }
     }
 
-	if( nb_subfr == 2 ) {
-		res_nrg_Q15 = silk_RSHIFT32( res_nrg_Q15, 1 );
-	} else {
-		res_nrg_Q15 = silk_RSHIFT32( res_nrg_Q15, 2 );
-	}
+    if( nb_subfr == 2 ) {
+        res_nrg_Q15 = silk_RSHIFT32( res_nrg_Q15, 1 );
+    } else {
+        res_nrg_Q15 = silk_RSHIFT32( res_nrg_Q15, 2 );
+    }
 
-	*pred_gain_dB_Q7 = (opus_int)silk_SMULBB( -3, silk_lin2log( res_nrg_Q15 ) - ( 15 << 7 ) );
+    *pred_gain_dB_Q7 = (opus_int)silk_SMULBB( -3, silk_lin2log( res_nrg_Q15 ) - ( 15 << 7 ) );
 }
 

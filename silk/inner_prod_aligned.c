@@ -41,16 +41,16 @@ opus_int32 silk_inner_prod_aligned_scale(
     opus_int   i;
     opus_int32 sum, bias;
 
-	/* The bias serves two purposes: */
-	/* - round to nearest (instead of rounding down) */
-	/* - enable two-fold unrolling without risk of wrap around when multiplying values of -32768 */
-	bias = silk_LSHIFT32( 1, scale - 1 ) - silk_LSHIFT32( 1, 15 );
-	sum = silk_LSHIFT32( ( len + 1 ) >> 1, 15 - scale );
+    /* The bias serves two purposes: */
+    /* - round to nearest (instead of rounding down) */
+    /* - enable two-fold unrolling without risk of wrap around when multiplying values of -32768 */
+    bias = silk_LSHIFT32( 1, scale - 1 ) - silk_LSHIFT32( 1, 15 );
+    sum = silk_LSHIFT32( ( len + 1 ) >> 1, 15 - scale );
     for( i = 0; i < len - 1; i += 2 ) {
         sum = silk_ADD_RSHIFT32( sum, silk_SMLABB( silk_SMLABB( bias, inVec1[ i ], inVec2[ i ] ), inVec1[ i + 1 ], inVec2[ i + 1 ] ), scale );
     }
-	if( i < len ) {
+    if( i < len ) {
         sum = silk_ADD_RSHIFT32( sum, silk_SMLABB( bias, inVec1[ i ], inVec2[ i ] ), scale );
-	}
+    }
     return sum;
 }
