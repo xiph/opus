@@ -1,7 +1,7 @@
 #################### COMPILE OPTIONS #######################
 
 # Uncomment this for fixed-point build
-FIXED_POINT=1
+#FIXED_POINT=1
 
 # It is strongly recommended to uncomment one of these
 # VAR_ARRAYS: Use C99 variable-length arrays for stack allocation
