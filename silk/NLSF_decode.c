@@ -60,11 +60,10 @@ static OPUS_INLINE void silk_NLSF_residual_dequant(          /* O    Returns RD 
 /***********************/
 /* NLSF vector decoder */
 /***********************/
-opus_int silk_NLSF_decode(                                      /* O    Number of bits (Q5), if signalType >= 0     */
+void silk_NLSF_decode(
           opus_int16            *pNLSF_Q15,                     /* O    Quantized NLSF vector [ LPC_ORDER ]         */
           opus_int8             *NLSFIndices,                   /* I    Codebook path vector [ LPC_ORDER + 1 ]      */
-    const silk_NLSF_CB_struct   *psNLSF_CB,                     /* I    Codebook object                             */
-    const opus_int              signalType                      /* I    SignalType, to determine number of bits     */
+    const silk_NLSF_CB_struct   *psNLSF_CB                      /* I    Codebook object                             */
 )
 {
     opus_int         i;
@@ -91,25 +90,4 @@ opus_int silk_NLSF_decode(                                      /* O    Number o
 
     /* NLSF stabilization */
     silk_NLSF_stabilize( pNLSF_Q15, psNLSF_CB->deltaMin_Q15, psNLSF_CB->order );
-
-    if( signalType >= 0 ) {
-        opus_int         prob_Q8, bits_Q5;
-        const opus_uint8 *iCDF_ptr;
-        bits_Q5 = 0;
-        iCDF_ptr = &psNLSF_CB->CB1_iCDF[ ( signalType >> 1 ) * psNLSF_CB->nVectors ];
-        if( NLSFIndices[ 0 ] == 0 ) {
-            prob_Q8 = 256 - iCDF_ptr[ NLSFIndices[ 0 ] ];
-        } else {
-            prob_Q8 = iCDF_ptr[ NLSFIndices[ 0 ] - 1 ] - iCDF_ptr[ NLSFIndices[ 0 ] ];
-        }
-        bits_Q5 = ( 8 << 5 ) - ( silk_lin2log( prob_Q8 ) >> 2 );
-        for( i = 0; i < psNLSF_CB->order; i++ ) {
-            const opus_uint8 *rates_Q5;
-            rates_Q5 = &psNLSF_CB->ec_Rates_Q5[ ec_ix[ i ] ];
-            bits_Q5 += rates_Q5[ NLSFIndices[ i + 1 ] + NLSF_QUANT_MAX_AMPLITUDE ];
-        }
-        return bits_Q5;
-    }
-
-    return 0;
 }
