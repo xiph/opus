@@ -60,25 +60,20 @@ static OPUS_INLINE void silk_NLSF_residual_dequant(               /* O    Return
 /***********************/
 /* NLSF vector decoder */
 /***********************/
-void silk_NLSF_decode(
+opus_int silk_NLSF_decode(                                      /* O    Number of bits (Q5), if signalType >= 0     */
           opus_int16            *pNLSF_Q15,                     /* O    Quantized NLSF vector [ LPC_ORDER ]         */
           opus_int8             *NLSFIndices,                   /* I    Codebook path vector [ LPC_ORDER + 1 ]      */
-    const silk_NLSF_CB_struct   *psNLSF_CB                      /* I    Codebook object                             */
+    const silk_NLSF_CB_struct   *psNLSF_CB,                     /* I    Codebook object                             */
+    const opus_int              signalType                      /* I    SignalType, to determine number of bits     */
 )
 {
     opus_int         i;
     opus_uint8       pred_Q8[  MAX_LPC_ORDER ];
     opus_int16       ec_ix[    MAX_LPC_ORDER ];
     opus_int16       res_Q10[  MAX_LPC_ORDER ];
-    opus_int16       W_tmp_QW[ MAX_LPC_ORDER ];
-    opus_int32       W_tmp_Q9, NLSF_Q15_tmp;
+    opus_int32       NLSF_Q15_tmp;
     const opus_uint8 *pCB_element;
-
-    /* Decode first stage */
-    pCB_element = &psNLSF_CB->CB1_NLSF_Q8[ NLSFIndices[ 0 ] * psNLSF_CB->order ];
-    for( i = 0; i < psNLSF_CB->order; i++ ) {
-        pNLSF_Q15[ i ] = silk_LSHIFT( (opus_int16)pCB_element[ i ], 7 );
-    }
+    const opus_int16 *pCB_Wght_Q9;
 
     /* Unpack entropy table indices and predictor for current CB1 index */
     silk_NLSF_unpack( ec_ix, pred_Q8, psNLSF_CB, NLSFIndices[ 0 ] );
@@ -86,16 +81,35 @@ void silk_NLSF_decode(
     /* Predictive residual dequantizer */
     silk_NLSF_residual_dequant( res_Q10, &NLSFIndices[ 1 ], pred_Q8, psNLSF_CB->quantStepSize_Q16, psNLSF_CB->order );
 
-    /* Weights from codebook vector */
-    silk_NLSF_VQ_weights_laroia( W_tmp_QW, pNLSF_Q15, psNLSF_CB->order );
-
-    /* Apply inverse square-rooted weights and add to output */
+    /* Apply inverse square-rooted weights to first stage and add to output */
+    pCB_element = &psNLSF_CB->CB1_NLSF_Q8[ NLSFIndices[ 0 ] * psNLSF_CB->order ];
+    pCB_Wght_Q9 = &psNLSF_CB->CB1_Wght_Q9[ NLSFIndices[ 0 ] * psNLSF_CB->order ];
     for( i = 0; i < psNLSF_CB->order; i++ ) {
-        W_tmp_Q9 = silk_SQRT_APPROX( silk_LSHIFT( (opus_int32)W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
-        NLSF_Q15_tmp = silk_ADD32( pNLSF_Q15[ i ], silk_DIV32_16( silk_LSHIFT( (opus_int32)res_Q10[ i ], 14 ), W_tmp_Q9 ) );
+        NLSF_Q15_tmp = silk_ADD_LSHIFT32( silk_DIV32_16( silk_LSHIFT( (opus_int32)res_Q10[ i ], 14 ), pCB_Wght_Q9[ i ] ), (opus_int16)pCB_element[ i ], 7 );
         pNLSF_Q15[ i ] = (opus_int16)silk_LIMIT( NLSF_Q15_tmp, 0, 32767 );
     }
 
     /* NLSF stabilization */
     silk_NLSF_stabilize( pNLSF_Q15, psNLSF_CB->deltaMin_Q15, psNLSF_CB->order );
+
+    if( signalType >= 0 ) {
+        opus_int         prob_Q8, bits_Q5;
+        const opus_uint8 *iCDF_ptr;
+        bits_Q5 = 0;
+        iCDF_ptr = &psNLSF_CB->CB1_iCDF[ ( signalType >> 1 ) * psNLSF_CB->nVectors ];
+        if( NLSFIndices[ 0 ] == 0 ) {
+            prob_Q8 = 256 - iCDF_ptr[ NLSFIndices[ 0 ] ];
+        } else {
+            prob_Q8 = iCDF_ptr[ NLSFIndices[ 0 ] - 1 ] - iCDF_ptr[ NLSFIndices[ 0 ] ];
+        }
+        bits_Q5 = ( 8 << 5 ) - ( silk_lin2log( prob_Q8 ) >> 2 );
+        for( i = 0; i < psNLSF_CB->order; i++ ) {
+            const opus_uint8 *rates_Q5;
+            rates_Q5 = &psNLSF_CB->ec_Rates_Q5[ ec_ix[ i ] ];
+            bits_Q5 += rates_Q5[ NLSFIndices[ i + 1 ] + NLSF_QUANT_MAX_AMPLITUDE ];
+        }
+        return bits_Q5;
+    }
+
+    return 0;
 }
