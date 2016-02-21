@@ -416,7 +416,6 @@ opus_int silk_Encode(                                   /* O    Returns error co
                     /* Reset side channel encoder memory for first frame with side coding */
                     if( psEnc->prev_decode_only_middle == 1 ) {
                         silk_memset( &psEnc->state_Fxx[ 1 ].sShape,               0, sizeof( psEnc->state_Fxx[ 1 ].sShape ) );
-                        silk_memset( &psEnc->state_Fxx[ 1 ].sPrefilt,             0, sizeof( psEnc->state_Fxx[ 1 ].sPrefilt ) );
                         silk_memset( &psEnc->state_Fxx[ 1 ].sCmn.sNSQ,            0, sizeof( psEnc->state_Fxx[ 1 ].sCmn.sNSQ ) );
                         silk_memset( psEnc->state_Fxx[ 1 ].sCmn.prev_NLSFq_Q15,   0, sizeof( psEnc->state_Fxx[ 1 ].sCmn.prev_NLSFq_Q15 ) );
                         silk_memset( &psEnc->state_Fxx[ 1 ].sCmn.sLP.In_LP_State, 0, sizeof( psEnc->state_Fxx[ 1 ].sCmn.sLP.In_LP_State ) );
