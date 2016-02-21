@@ -109,22 +109,22 @@ void silk_stereo_decode_mid_only(
 
 /* Encodes signs of excitation */
 void silk_encode_signs(
-    ec_enc                      *psRangeEnc,                        /* I/O  Compressor data structure                   */
-    const opus_int8             pulses[],                           /* I    pulse signal                                */
-    opus_int                    length,                             /* I    length of input                             */
-    const opus_int              signalType,                         /* I    Signal type                                 */
-    const opus_int              quantOffsetType,                    /* I    Quantization offset type                    */
-    const opus_int              sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
+    ec_enc                      *psRangeEnc,                        /* I/O  Compressor data structure               */
+    const opus_int8             pulses[],                           /* I    pulse signal                            */
+    opus_int                    length,                             /* I    length of input                         */
+    const opus_int              signalType,                         /* I    Signal type                             */
+    const opus_int              quantOffsetType,                    /* I    Quantization offset type                */
+    const opus_int              sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block        */
 );
 
 /* Decodes signs of excitation */
 void silk_decode_signs(
-    ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                   */
-    opus_int16                  pulses[],                           /* I/O  pulse signal                                */
-    opus_int                    length,                             /* I    length of input                             */
-    const opus_int              signalType,                         /* I    Signal type                                 */
-    const opus_int              quantOffsetType,                    /* I    Quantization offset type                    */
-    const opus_int              sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
+    ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure               */
+    opus_int16                  pulses[],                           /* I/O  pulse signal                            */
+    opus_int                    length,                             /* I    length of input                         */
+    const opus_int              signalType,                         /* I    Signal type                             */
+    const opus_int              quantOffsetType,                    /* I    Quantization offset type                */
+    const opus_int              sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block        */
 );
 
 /* Check encoder control struct */
@@ -205,13 +205,13 @@ void silk_interpolate(
 
 /* LTP tap quantizer */
 void silk_quant_LTP_gains(
-    opus_int16                  B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    Quantized LTP gains                */
+    opus_int16                  B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    Quantized LTP gains             */
     opus_int8                   cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook Index                  */
     opus_int8                   *periodicity_index,                         /* O    Periodicity Index               */
-    opus_int                    *pred_gain_dB_Q7,                            /* O    LTP prediction gain                */
+    opus_int                    *pred_gain_dB_Q7,                           /* O    LTP prediction gain             */
     const opus_int32            XX_Q17[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ], /* I    Correlation matrix in Q18       */
     const opus_int32            xX_Q17[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ], /* I    Correlation vector in Q18       */
-    const opus_int              subfr_len,                                    /* I    Number of samples per subframe  */
+    const opus_int              subfr_len,                                  /* I    Number of samples per subframe  */
     const opus_int              nb_subfr,                                   /* I    Number of subframes             */
     int                         arch                                        /* I    Run-time architecture           */
 );
@@ -219,13 +219,13 @@ void silk_quant_LTP_gains(
 /* Entropy constrained matrix-weighted VQ, for a single input data vector */
 void silk_VQ_WMat_EC_c(
     opus_int8                   *ind,                           /* O    index of best codebook vector               */
-    opus_int32                  *res_nrg_Q15,                    /* O    best residual energy                        */
-    opus_int32                  *rate_dist_Q8,                  /* O    best total bitrate                            */
+    opus_int32                  *res_nrg_Q15,                   /* O    best residual energy                        */
+    opus_int32                  *rate_dist_Q8,                  /* O    best total bitrate                          */
     const opus_int32            *XX_Q17,                        /* I    correlation matrix                          */
-    const opus_int32            *xX_Q17,                        /* I    correlation vector                            */
+    const opus_int32            *xX_Q17,                        /* I    correlation vector                          */
     const opus_int8             *cb_Q7,                         /* I    codebook                                    */
     const opus_uint8            *cl_Q5,                         /* I    code length for each codebook vector        */
-    const opus_int              subfr_len,                        /* I    number of samples per subframe                */
+    const opus_int              subfr_len,                      /* I    number of samples per subframe              */
     const opus_int              L                               /* I    number of vectors in codebook               */
 );
 
@@ -242,11 +242,11 @@ void silk_NSQ_c(
     const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
-    const opus_int16            x16[],                                        /* I    Input                           */
+    const opus_int16            x16[],                                      /* I    Input                           */
     opus_int8                   pulses[],                                   /* O    Quantized pulse signal          */
     const opus_int16            PredCoef_Q12[ 2 * MAX_LPC_ORDER ],          /* I    Short term prediction coefs     */
     const opus_int16            LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ],    /* I    Long term prediction coefs      */
-    const opus_int16            AR_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ], /* I Noise shaping coefs              */
+    const opus_int16            AR_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ], /* I  Noise shaping coefs             */
     const opus_int              HarmShapeGain_Q14[ MAX_NB_SUBFR ],          /* I    Long term shaping coefs         */
     const opus_int              Tilt_Q14[ MAX_NB_SUBFR ],                   /* I    Spectral tilt                   */
     const opus_int32            LF_shp_Q14[ MAX_NB_SUBFR ],                 /* I    Low frequency shaping coefs     */
@@ -268,11 +268,11 @@ void silk_NSQ_del_dec_c(
     const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
-    const opus_int16            x16[],                                        /* I    Input                           */
+    const opus_int16            x16[],                                      /* I    Input                           */
     opus_int8                   pulses[],                                   /* O    Quantized pulse signal          */
     const opus_int16            PredCoef_Q12[ 2 * MAX_LPC_ORDER ],          /* I    Short term prediction coefs     */
     const opus_int16            LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ],    /* I    Long term prediction coefs      */
-    const opus_int16            AR_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ], /* I Noise shaping coefs              */
+    const opus_int16            AR_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ], /* I  Noise shaping coefs             */
     const opus_int              HarmShapeGain_Q14[ MAX_NB_SUBFR ],          /* I    Long term shaping coefs         */
     const opus_int              Tilt_Q14[ MAX_NB_SUBFR ],                   /* I    Spectral tilt                   */
     const opus_int32            LF_shp_Q14[ MAX_NB_SUBFR ],                 /* I    Low frequency shaping coefs     */
