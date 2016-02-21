@@ -142,7 +142,7 @@ opus_int32 silk_LPC_inverse_pred_gain_Q24(          /* O    Returns inverse pred
 
     /* Increase Q domain of the AR coefficients */
     for( k = 0; k < order; k++ ) {
-        Atmp_QA[ k ] = silk_LSHIFT32( A_QQ[ k ], 24- QA );
+        Atmp_QA[ k ] = silk_LSHIFT32( A_Q24[ k ], 24- QA );
     }
 
     return LPC_inverse_pred_gain_QA( Atmp_QA, order );
