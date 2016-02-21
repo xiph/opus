@@ -78,7 +78,7 @@ void silk_NSQ_c
     const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
-    const opus_int16            x16[],										/* I    Input                           */
+    const opus_int16            x16[],                                        /* I    Input                           */
     opus_int8                   pulses[],                                   /* O    Quantized pulse signal          */
     const opus_int16            PredCoef_Q12[ 2 * MAX_LPC_ORDER ],          /* I    Short term prediction coefs     */
     const opus_int16            LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ],    /* I    Long term prediction coefs      */
@@ -436,7 +436,7 @@ static OPUS_INLINE void silk_nsq_scale_states(
             NSQ->sAR2_Q14[ i ] = silk_SMULWW( gain_adj_Q16, NSQ->sAR2_Q14[ i ] );
         }
 
-		/* Save inverse gain */
+        /* Save inverse gain */
         NSQ->prev_gain_Q16 = Gains_Q16[ subfr ];
     }
 }

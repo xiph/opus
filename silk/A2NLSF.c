@@ -245,7 +245,7 @@ void silk_A2NLSF(
                 }
 
                 /* Error: Apply progressively more bandwidth expansion and run again */
-				silk_bwexpander_32( a_Q16, d, 65536 - silk_LSHIFT( 1, i ) );
+                silk_bwexpander_32( a_Q16, d, 65536 - silk_LSHIFT( 1, i ) );
 
                 silk_A2NLSF_init( a_Q16, P, Q, dd );
                 p = P;                            /* Pointer to polynomial */

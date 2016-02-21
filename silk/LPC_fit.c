@@ -34,14 +34,14 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Convert int32 coefficients to int16 coefs and make sure there's no wrap-around */
 void silk_LPC_fit(
     opus_int16                  *a_QOUT,            /* O    Output signal                                               */
-    opus_int32			        *a_QIN,             /* I/O  Input signal                                                */
+    opus_int32                    *a_QIN,             /* I/O  Input signal                                                */
     const opus_int              QOUT,               /* I    Input Q domain                                              */
     const opus_int              QIN,                /* I    Input Q domain                                              */
     const opus_int              d                   /* I    Filter order                                                */
 )
 {
-	opus_int	i, k, idx = 0;
-	opus_int32	maxabs, absval, chirp_Q16;
+    opus_int    i, k, idx = 0;
+    opus_int32    maxabs, absval, chirp_Q16;
 
     /* Limit the maximum absolute value of the prediction coefficients, so that they'll fit in int16 */
     for( i = 0; i < 10; i++ ) {

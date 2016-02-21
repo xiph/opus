@@ -277,7 +277,7 @@ void silk_NLSF2A(
 /* Convert int32 coefficients to int16 coefs and make sure there's no wrap-around */
 void silk_LPC_fit(
     opus_int16                  *a_QOUT,            /* O    Output signal                                               */
-    opus_int32			        *a_QIN,             /* I/O  Input signal                                                */
+    opus_int32                    *a_QIN,             /* I/O  Input signal                                                */
     const opus_int              QOUT,               /* I    Input Q domain                                              */
     const opus_int              QIN,                /* I    Input Q domain                                              */
     const opus_int              d                   /* I    Filter order                                                */

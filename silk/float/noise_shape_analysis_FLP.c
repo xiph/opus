@@ -121,7 +121,7 @@ static OPUS_INLINE void limit_coefs(
     opus_int   i, iter, ind = 0;
     silk_float tmp, maxabs, chirp;
 
-	for( iter = 0; iter < 10; iter++ ) {
+    for( iter = 0; iter < 10; iter++ ) {
         /* Find maximum absolute value */
         maxabs = -1.0f;
         for( i = 0; i < order; i++ ) {
