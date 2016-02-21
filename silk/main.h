@@ -342,6 +342,7 @@ void silk_NLSF_VQ(
     opus_int32                  err_Q26[],                      /* O    Quantization errors [K]                     */
     const opus_int16            in_Q15[],                       /* I    Input vectors to be quantized [LPC_order]   */
     const opus_uint8            pCB_Q8[],                       /* I    Codebook vectors [K*LPC_order]              */
+    const opus_int16            pWght_Q9[],                     /* I    Codebook weights [K*LPC_order]              */
     const opus_int              K,                              /* I    Number of codebook vectors                  */
     const opus_int              LPC_order                       /* I    Number of LPCs                              */
 );
