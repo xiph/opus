@@ -87,7 +87,7 @@ void silk_find_pred_coefs_FIX(
 
         /* LTP analysis */
         silk_find_LTP_FIX( XXLTP_Q17, xXLTP_Q17, res_pitch, 
-			psEncCtrl->pitchL, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.arch );
+            psEncCtrl->pitchL, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.arch );
 
         /* Quantize LTP gain parameters */
         silk_quant_LTP_gains( psEncCtrl->LTPCoef_Q14, psEnc->sCmn.indices.LTPIndex, &psEnc->sCmn.indices.PERIndex,
