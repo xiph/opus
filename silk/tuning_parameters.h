@@ -54,7 +54,7 @@ extern "C"
 #define FIND_LPC_COND_FAC                               1e-5f
 
 /* LTP analysis defines */
-#define LTP_CORR_INV_MAX								0.02f
+#define LTP_CORR_INV_MAX                                0.02f
 
 /***********************/
 /* High pass filtering */

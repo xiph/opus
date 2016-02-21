@@ -147,9 +147,9 @@ void silk_find_LPC_FIX(
 
 /* LTP analysis */
 void silk_find_LTP_FIX(
-    opus_int32                      XXLTP_Q17[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Correlation matrix												*/
-    opus_int32                      xXLTP_Q17[ MAX_NB_SUBFR * LTP_ORDER ],	/* O    Correlation vector															*/
-    const opus_int16                r_lpc[],                                /* I    Residual signal after LPC								                    */
+    opus_int32                      XXLTP_Q17[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Correlation matrix                                                */
+    opus_int32                      xXLTP_Q17[ MAX_NB_SUBFR * LTP_ORDER ],    /* O    Correlation vector                                                            */
+    const opus_int16                r_lpc[],                                /* I    Residual signal after LPC                                                    */
     const opus_int                  lag[ MAX_NB_SUBFR ],                    /* I    LTP lags                                                                    */
     const opus_int                  subfr_length,                           /* I    Subframe length                                                             */
     const opus_int                  nb_subfr,                               /* I    Number of subframes                                                         */
@@ -207,7 +207,7 @@ void silk_corrMatrix_FIX(
     const opus_int                  L,                                      /* I    Length of vectors                                                           */
     const opus_int                  order,                                  /* I    Max lag for correlation                                                     */
     opus_int32                      *XX,                                    /* O    Pointer to X'*X correlation matrix [ order x order ]                        */
-	opus_int32                      *nrg,									/* O	Energy of x vector															*/
+    opus_int32                      *nrg,                                    /* O    Energy of x vector                                                            */
     opus_int                        *rshifts,                               /* O    Right shifts of correlations                                                */
     int                              arch                                   /* I    Run-time architecture                                                       */
 );
