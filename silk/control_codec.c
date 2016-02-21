@@ -244,7 +244,6 @@ static opus_int silk_setup_fs(
     if( psEnc->sCmn.fs_kHz != fs_kHz ) {
         /* reset part of the state */
         silk_memset( &psEnc->sShape,               0, sizeof( psEnc->sShape ) );
-        silk_memset( &psEnc->sPrefilt,             0, sizeof( psEnc->sPrefilt ) );
         silk_memset( &psEnc->sCmn.sNSQ,            0, sizeof( psEnc->sCmn.sNSQ ) );
         silk_memset( psEnc->sCmn.prev_NLSFq_Q15,   0, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );
         silk_memset( &psEnc->sCmn.sLP.In_LP_State, 0, sizeof( psEnc->sCmn.sLP.In_LP_State ) );
@@ -255,7 +254,6 @@ static opus_int silk_setup_fs(
         /* Initialize non-zero parameters */
         psEnc->sCmn.prevLag                     = 100;
         psEnc->sCmn.first_frame_after_reset     = 1;
-        psEnc->sPrefilt.lagPrev                 = 100;
         psEnc->sShape.LastGainIndex             = 10;
         psEnc->sCmn.sNSQ.lagPrev                = 100;
         psEnc->sCmn.sNSQ.prev_gain_Q16          = 65536;
