@@ -129,7 +129,7 @@ opus_int32 silk_NLSF_encode(                                    /* O    Returns 
     silk_memcpy( &NLSFIndices[ 1 ], &tempIndices2[ bestIndex * MAX_LPC_ORDER ], psNLSF_CB->order * sizeof( opus_int8 ) );
 
     /* Decode */
-    silk_NLSF_decode( pNLSF_Q15, NLSFIndices, psNLSF_CB );
+    silk_NLSF_decode( pNLSF_Q15, NLSFIndices, psNLSF_CB, -1 );
 
     RESTORE_STACK;
     return RD_Q25[ 0 ];
