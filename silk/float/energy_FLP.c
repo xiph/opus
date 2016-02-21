@@ -42,7 +42,7 @@ double silk_energy_FLP(
 
     /* 4x unrolled loop */
     result = 0.0;
-	for( i = 0; i < dataSize - 3; i += 4 ) {
+    for( i = 0; i < dataSize - 3; i += 4 ) {
         result += data[ i + 0 ] * (double)data[ i + 0 ] +
                   data[ i + 1 ] * (double)data[ i + 1 ] +
                   data[ i + 2 ] * (double)data[ i + 2 ] +
