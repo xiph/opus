@@ -70,7 +70,7 @@ opus_int32 silk_NLSF_encode(                                    /* O    Returns 
 
     /* First stage: VQ */
     ALLOC( err_Q26, psNLSF_CB->nVectors, opus_int32 );
-    silk_NLSF_VQ( err_Q26, pNLSF_Q15, psNLSF_CB->CB1_NLSF_Q8, psNLSF_CB->nVectors, psNLSF_CB->order );
+    silk_NLSF_VQ( err_Q26, pNLSF_Q15, psNLSF_CB->CB1_NLSF_Q8, psNLSF_CB->CB1_Wght_Q9, psNLSF_CB->nVectors, psNLSF_CB->order );
 
     /* Sort the quantization errors */
     ALLOC( tempIndices1, nSurvivors, opus_int );
