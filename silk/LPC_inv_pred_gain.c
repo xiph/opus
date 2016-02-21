@@ -79,7 +79,7 @@ static opus_int32 LPC_inverse_pred_gain_QA(                 /* O   Returns inver
         for( n = 0; n < (k + 1) >> 1; n++ ) {
             tmp1 = A_QA[ n ];
             tmp2 = A_QA[ k - n - 1 ];
-            A_QA[ n ] =			MUL32_FRAC_Q( tmp1 - MUL32_FRAC_Q( tmp2, rc_Q31, 31 ), rc_mult2, mult2Q );
+            A_QA[ n ] =            MUL32_FRAC_Q( tmp1 - MUL32_FRAC_Q( tmp2, rc_Q31, 31 ), rc_mult2, mult2Q );
             A_QA[ k - n - 1 ] = MUL32_FRAC_Q( tmp2 - MUL32_FRAC_Q( tmp1, rc_Q31, 31 ), rc_mult2, mult2Q );
         }
     }
