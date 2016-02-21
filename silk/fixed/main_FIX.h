@@ -87,27 +87,6 @@ opus_int silk_control_encoder(
     const opus_int                  force_fs_kHz
 );
 
-/****************/
-/* Prefiltering */
-/****************/
-void silk_prefilter_FIX(
-    silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state                                                               */
-    const silk_encoder_control_FIX  *psEncCtrl,                             /* I    Encoder control                                                             */
-    opus_int32                      xw_Q10[],                               /* O    Weighted signal                                                             */
-    const opus_int16                x[]                                     /* I    Speech signal                                                               */
-);
-
-void silk_warped_LPC_analysis_filter_FIX_c(
-          opus_int32            state[],                    /* I/O  State [order + 1]                   */
-          opus_int32            res_Q2[],                   /* O    Residual signal [length]            */
-    const opus_int16            coef_Q13[],                 /* I    Coefficients [order]                */
-    const opus_int16            input[],                    /* I    Input signal [length]               */
-    const opus_int16            lambda_Q16,                 /* I    Warping factor                      */
-    const opus_int              length,                     /* I    Length of input signal              */
-    const opus_int              order                       /* I    Filter order (even)                 */
-);
-
-
 /**************************/
 /* Noise shaping analysis */
 /**************************/
