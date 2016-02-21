@@ -96,7 +96,7 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
 {
     VARDECL( opus_int16, frame_8kHz_buf );
     VARDECL( opus_int16, frame_4kHz );
-	VARDECL( opus_int16, frame_scaled );
+    VARDECL( opus_int16, frame_scaled );
     opus_int32 filt_state[ 6 ];
     const opus_int16 *frame, *frame_8kHz;
     opus_int   i, k, d, j;
@@ -148,25 +148,25 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
         for( i = 0; i < frame_length; i++ ) {
             frame_scaled[ i ] = silk_RSHIFT( frame_unscaled[ i ], shift );
         }
-		frame = frame_scaled;
-	} else {
-		frame = frame_unscaled;
+        frame = frame_scaled;
+    } else {
+        frame = frame_unscaled;
     }
 
     /* Resample from input sampled at Fs_kHz to 8 kHz */
     if( Fs_kHz == 16 ) {
-	    ALLOC( frame_8kHz_buf, frame_length_8kHz, opus_int16 );
+        ALLOC( frame_8kHz_buf, frame_length_8kHz, opus_int16 );
         silk_memset( filt_state, 0, 2 * sizeof( opus_int32 ) );
         silk_resampler_down2( filt_state, frame_8kHz_buf, frame, frame_length );
-		frame_8kHz = frame_8kHz_buf;
+        frame_8kHz = frame_8kHz_buf;
     } else if( Fs_kHz == 12 ) {
-	    ALLOC( frame_8kHz_buf, frame_length_8kHz, opus_int16 );
+        ALLOC( frame_8kHz_buf, frame_length_8kHz, opus_int16 );
         silk_memset( filt_state, 0, 6 * sizeof( opus_int32 ) );
         silk_resampler_down2_3( filt_state, frame_8kHz_buf, frame, frame_length );
-		frame_8kHz = frame_8kHz_buf;
+        frame_8kHz = frame_8kHz_buf;
     } else {
         silk_assert( Fs_kHz == 8 );
-		frame_8kHz = frame;
+        frame_8kHz = frame;
     }
 
     /* Decimate again to 4 kHz */
