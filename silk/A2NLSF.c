@@ -130,7 +130,7 @@ void silk_A2NLSF(
     const opus_int              d                   /* I    Filter order (must be even)                                 */
 )
 {
-    opus_int      i, k, m, dd, root_ix, ffrac;
+    opus_int   i, k, m, dd, root_ix, ffrac;
     opus_int32 xlo, xhi, xmid;
     opus_int32 ylo, yhi, ymid, thr;
     opus_int32 nom, den;
