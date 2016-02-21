@@ -85,7 +85,6 @@ opus_int silk_encode_frame_FLP(
     silk_encoder_control_FLP sEncCtrl;
     opus_int     i, iter, maxIter, found_upper, found_lower, ret = 0;
     silk_float   *x_frame, *res_pitch_frame;
-    silk_float   xfw[ MAX_FRAME_LENGTH ];
     silk_float   res_pitch[ 2 * MAX_FRAME_LENGTH + LA_PITCH_MAX ];
     ec_enc       sRangeEnc_copy, sRangeEnc_copy2;
     silk_nsq_state sNSQ_copy, sNSQ_copy2;
@@ -146,15 +145,10 @@ opus_int silk_encode_frame_FLP(
         /****************************************/
         silk_process_gains_FLP( psEnc, &sEncCtrl, condCoding );
 
-        /*****************************************/
-        /* Prefiltering for noise shaper         */
-        /*****************************************/
-        silk_prefilter_FLP( psEnc, &sEncCtrl, xfw, x_frame );
-
         /****************************************/
         /* Low Bitrate Redundant Encoding       */
         /****************************************/
-        silk_LBRR_encode_FLP( psEnc, &sEncCtrl, xfw, condCoding );
+        silk_LBRR_encode_FLP( psEnc, &sEncCtrl, x_frame, condCoding );
 
         /* Loop over quantizer and entroy coding to control bitrate */
         maxIter = 6;
@@ -188,7 +182,7 @@ opus_int silk_encode_frame_FLP(
                 /*****************************************/
                 /* Noise shaping quantization            */
                 /*****************************************/
-                silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, &psEnc->sCmn.indices, &psEnc->sCmn.sNSQ, psEnc->sCmn.pulses, xfw );
+                silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, &psEnc->sCmn.indices, &psEnc->sCmn.sNSQ, psEnc->sCmn.pulses, x_frame );
 
                 /****************************************/
                 /* Encode Parameters                    */
