@@ -335,3 +335,6 @@ PREDEFINED             = OPUS_EXPORT= \
 # configure time.
 #
 HAVE_DOT               = @HAVE_DOT@
+
+# move docs to the correct place
+OUTPUT_DIRECTORY       = @top_builddir@/doc

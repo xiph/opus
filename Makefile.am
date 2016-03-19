@@ -224,6 +224,18 @@ EXTRA_DIST = opus.pc.in \
              cmake/OpusSources.cmake \
              cmake/config.h.cmake.in \
              cmake/vla.c \
+             meson/get-version.py \
+             meson/read-sources-list.py \
+             meson.build \
+             meson_options.txt \
+             include/meson.build \
+             celt/meson.build \
+             celt/tests/meson.build \
+             silk/meson.build \
+             silk/tests/meson.build \
+             src/meson.build \
+             tests/meson.build \
+             doc/meson.build \
              tests/run_vectors.sh \
              celt/arm/arm2gnu.pl \
              celt/arm/celt_pitch_xcorr_arm.s \
