@@ -714,7 +714,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
    if (qn!=1)
    {
       if (encode)
-         itheta = (itheta*qn+8192)>>14;
+         itheta = (itheta*(opus_int32)qn+8192)>>14;
 
       /* Entropy coding of the angle. We use a uniform pdf for the
          time split, a step for stereo, and a triangular one for the rest. */

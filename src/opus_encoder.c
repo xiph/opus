@@ -871,7 +871,7 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
    opus_val16 short_alpha;
 
    frame_rate = Fs/frame_size;
-   short_alpha = Q15ONE - 25*Q15ONE/IMAX(50,frame_rate);
+   short_alpha = Q15ONE - MULT16_16(25, Q15ONE)/IMAX(50,frame_rate);
    xx=xy=yy=0;
    for (i=0;i<frame_size;i+=4)
    {
@@ -920,7 +920,7 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
       mem->XY = MIN32(mem->XY, sqrt_xx*sqrt_yy);
       corr = SHR32(frac_div32(mem->XY,EPSILON+MULT16_16(sqrt_xx,sqrt_yy)),16);
       /* Approximate loudness difference */
-      ldiff = Q15ONE*ABS16(qrrt_xx-qrrt_yy)/(EPSILON+qrrt_xx+qrrt_yy);
+      ldiff = MULT16_16(Q15ONE, ABS16(qrrt_xx-qrrt_yy))/(EPSILON+qrrt_xx+qrrt_yy);
       width = MULT16_16_Q15(celt_sqrt(QCONST32(1.f,30)-MULT16_16(corr,corr)), ldiff);
       /* Smoothing over one second */
       mem->smoothed_width += (width-mem->smoothed_width)/frame_rate;
@@ -932,7 +932,7 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
       ldiff=0;
    }
    /*printf("%f %f %f %f %f ", corr/(float)Q15ONE, ldiff/(float)Q15ONE, width/(float)Q15ONE, mem->smoothed_width/(float)Q15ONE, mem->max_follower/(float)Q15ONE);*/
-   return EXTRACT16(MIN32(Q15ONE,20*mem->max_follower));
+   return EXTRACT16(MIN32(Q15ONE, MULT16_16(20, mem->max_follower)));
 }
 
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
@@ -1513,7 +1513,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                celt_rate = total_bitRate - st->silk_mode.bitRate;
                HB_gain_ref = (curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND) ? 3000 : 3600;
                HB_gain = SHL32((opus_val32)celt_rate, 9) / SHR32((opus_val32)celt_rate + st->stream_channels * HB_gain_ref, 6);
-               HB_gain = HB_gain < Q15ONE*6/7 ? HB_gain + Q15ONE/7 : Q15ONE;
+               HB_gain = HB_gain < (opus_int32)Q15ONE*6/7 ? HB_gain + Q15ONE/7 : Q15ONE;
             }
         } else {
             /* SILK gets all bits */
