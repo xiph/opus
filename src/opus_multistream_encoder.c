@@ -512,7 +512,8 @@ int opus_multistream_surround_encoder_init(
       int application
 )
 {
-   int mapping_type;
+   MappingType mapping_type;
+
    if ((channels>255) || (channels<1))
       return OPUS_BAD_ARG;
    st->lfe_stream = -1;
@@ -657,24 +658,19 @@ OpusMSEncoder *opus_multistream_surround_encoder_create(
    return st;
 }
 
-static opus_int32 surround_rate_allocation(
+static void surround_rate_allocation(
       OpusMSEncoder *st,
       opus_int32 *rate,
-      int frame_size
+      int frame_size,
+      opus_int32 Fs
       )
 {
    int i;
    opus_int32 channel_rate;
-   opus_int32 Fs;
-   char *ptr;
    int stream_offset;
    int lfe_offset;
    int coupled_ratio; /* Q8 */
    int lfe_ratio;     /* Q8 */
-   opus_int32 rate_sum=0;
-
-   ptr = (char*)st + align(sizeof(OpusMSEncoder));
-   opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
 
    if (st->bitrate_bps > st->layout.nb_channels*40000)
       stream_offset = 20000;
@@ -727,6 +723,88 @@ static opus_int32 surround_rate_allocation(
          rate[i] = stream_offset+channel_rate;
       else
          rate[i] = lfe_offset+(channel_rate*lfe_ratio>>8);
+   }
+}
+
+#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
+static void ambisonics_rate_allocation(
+      OpusMSEncoder *st,
+      opus_int32 *rate,
+      int frame_size,
+      opus_int32 Fs
+      )
+{
+   int i;
+   int non_mono_rate;
+   int total_rate;
+
+   /* The mono channel gets (rate_ratio_num / rate_ratio_den) times as many bits
+    * as all other channels */
+   const int rate_ratio_num = 4;
+   const int rate_ratio_den = 3;
+   const int num_channels = st->layout.nb_streams;
+
+   if (st->bitrate_bps==OPUS_AUTO)
+   {
+      total_rate = num_channels * (20000 + st->layout.nb_streams*(Fs+60*Fs/frame_size));
+   } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
+   {
+      total_rate = num_channels * 320000;
+   } else {
+      total_rate = st->bitrate_bps;
+   }
+
+   /* Let y be the non-mono rate and let p, q be integers such that the mono
+    * channel rate is (p/q) * y.
+    * Also let T be the total bitrate to allocate. Then
+    *   (n - 1) y + (p/q) y = T
+    *   y = (T q) / (qn - q + p)
+    */
+   non_mono_rate =
+         total_rate * rate_ratio_den
+         / (rate_ratio_den*num_channels + rate_ratio_num - rate_ratio_den);
+
+#ifndef FIXED_POINT
+   if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != Fs/50)
+   {
+      opus_int32 bonus = 60*(Fs/frame_size-50);
+      non_mono_rate += bonus;
+   }
+#endif
+
+   rate[0] = total_rate - (num_channels - 1) * non_mono_rate;
+   for (i=1;i<st->layout.nb_streams;i++)
+   {
+      rate[i] = non_mono_rate;
+   }
+}
+#endif /* ENABLE_EXPERIMENTAL_AMBISONICS */
+
+static opus_int32 rate_allocation(
+      OpusMSEncoder *st,
+      opus_int32 *rate,
+      int frame_size
+      )
+{
+   int i;
+   opus_int32 rate_sum=0;
+   opus_int32 Fs;
+   char *ptr;
+
+   ptr = (char*)st + align(sizeof(OpusMSEncoder));
+   opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
+
+#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
+   if (st->mapping_type == MAPPING_TYPE_AMBISONICS) {
+     ambisonics_rate_allocation(st, rate, frame_size, Fs);
+   } else
+#endif
+   {
+     surround_rate_allocation(st, rate, frame_size, Fs);
+   }
+
+   for (i=0;i<st->layout.nb_streams;i++)
+   {
       rate[i] = IMAX(rate[i], 500);
       rate_sum += rate[i];
    }
@@ -829,7 +907,7 @@ static int opus_multistream_encode_native
    }
 
    /* Compute bitrate allocation between streams (this could be a lot better) */
-   rate_sum = surround_rate_allocation(st, bitrates, frame_size);
+   rate_sum = rate_allocation(st, bitrates, frame_size);
 
    if (!vbr)
    {
@@ -873,6 +951,11 @@ static int opus_multistream_encode_native
             opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(2));
          }
       }
+#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
+      else if (st->mapping_type == MAPPING_TYPE_AMBISONICS) {
+        opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_CELT_ONLY));
+      }
+#endif
    }
 
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
