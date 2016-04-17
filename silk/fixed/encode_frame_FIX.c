@@ -118,6 +118,7 @@ opus_int silk_encode_frame_FIX(
     silk_memcpy( x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.inputBuf + 1, psEnc->sCmn.frame_length * sizeof( opus_int16 ) );
 
     if( !psEnc->sCmn.prefillFlag ) {
+        int res_offset = 0;
         VARDECL( opus_int32, xfw_Q3 );
         VARDECL( opus_int16, res_pitch );
         VARDECL( opus_uint8, ec_buf_copy );
@@ -193,6 +194,7 @@ opus_int silk_encode_frame_FIX(
                 /*****************************************/
                 /* Noise shaping quantization            */
                 /*****************************************/
+                psEnc->sCmn.sNSQ.res_offset = res_offset;
                 if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
                     silk_NSQ_del_dec( &psEnc->sCmn, &psEnc->sCmn.sNSQ, &psEnc->sCmn.indices, xfw_Q3, psEnc->sCmn.pulses,
                            sEncCtrl.PredCoef_Q12[ 0 ], sEncCtrl.LTPCoef_Q14, sEncCtrl.AR2_Q13, sEncCtrl.HarmShapeGain_Q14,
@@ -239,6 +241,11 @@ opus_int silk_encode_frame_FIX(
                 if( found_lower == 0 && iter >= 2 ) {
                     /* Adjust the quantizer's rate/distortion tradeoff and discard previous "upper" results */
                     sEncCtrl.Lambda_Q10 = silk_ADD_RSHIFT32( sEncCtrl.Lambda_Q10, sEncCtrl.Lambda_Q10, 1 );
+                    if (res_offset) {
+                        res_offset *= 2;
+                    } else {
+                        res_offset = 512;
+                    }
                     found_upper = 0;
                     gainsID_upper = -1;
                 } else {

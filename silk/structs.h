@@ -54,6 +54,7 @@ typedef struct {
     opus_int32                  rand_seed;
     opus_int32                  prev_gain_Q16;
     opus_int                    rewhite_flag;
+    opus_int16                  res_offset;
 } silk_nsq_state;
 
 /********************************/

@@ -126,6 +126,7 @@ opus_int silk_encode_frame_FLP(
     }
 
     if( !psEnc->sCmn.prefillFlag ) {
+        int res_offset = 0;
         /*****************************************/
         /* Find pitch lags, initial LPC analysis */
         /*****************************************/
@@ -188,6 +189,7 @@ opus_int silk_encode_frame_FLP(
                 /*****************************************/
                 /* Noise shaping quantization            */
                 /*****************************************/
+                psEnc->sCmn.sNSQ.res_offset = res_offset;
                 silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, &psEnc->sCmn.indices, &psEnc->sCmn.sNSQ, psEnc->sCmn.pulses, xfw );
 
                 /****************************************/
@@ -224,6 +226,11 @@ opus_int silk_encode_frame_FLP(
                 if( found_lower == 0 && iter >= 2 ) {
                     /* Adjust the quantizer's rate/distortion tradeoff and discard previous "upper" results */
                     sEncCtrl.Lambda *= 1.5f;
+                    if (res_offset) {
+                        res_offset *= 2;
+                    } else {
+                        res_offset = 512;
+                    }
                     found_upper = 0;
                     gainsID_upper = -1;
                 } else {

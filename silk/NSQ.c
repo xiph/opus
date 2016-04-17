@@ -310,6 +310,15 @@ void silk_noise_shape_quantizer(
 
         /* Find two quantization level candidates and measure their rate-distortion */
         q1_Q10 = silk_SUB32( r_Q10, offset_Q10 );
+        if (NSQ->res_offset) {
+            if (q1_Q10 > NSQ->res_offset) {
+                q1_Q10 -= NSQ->res_offset;
+            } else if (q1_Q10 < -NSQ->res_offset) {
+                q1_Q10 += NSQ->res_offset;
+            } else {
+                q1_Q10 = 0;
+            }
+        }
         q1_Q0 = silk_RSHIFT( q1_Q10, 10 );
         if( q1_Q0 > 0 ) {
             q1_Q10  = silk_SUB32( silk_LSHIFT( q1_Q0, 10 ), QUANT_LEVEL_ADJUST_Q10 );
