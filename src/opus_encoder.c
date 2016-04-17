@@ -1185,8 +1185,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        st->mode = MODE_CELT_ONLY;
     if (st->lfe)
        st->mode = MODE_CELT_ONLY;
-    /* If max_data_bytes represents less than 8 kb/s, switch to CELT-only mode */
-    if (max_data_bytes < (frame_rate > 50 ? 12000 : 8000)*frame_size / (st->Fs * 8))
+    /* If max_data_bytes represents less than 6 kb/s, switch to CELT-only mode */
+    if (max_data_bytes < (frame_rate > 50 ? 9000 : 6000)*frame_size / (st->Fs * 8))
        st->mode = MODE_CELT_ONLY;
 
     if (st->stream_channels == 1 && st->prev_channels ==2 && st->silk_mode.toMono==0
@@ -1581,24 +1581,22 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             st->silk_mode.minInternalSampleRate = 8000;
         }
 
+        st->silk_mode.maxInternalSampleRate = 16000;
         if (st->mode == MODE_SILK_ONLY)
         {
            opus_int32 effective_max_rate = max_rate;
-           st->silk_mode.maxInternalSampleRate = 16000;
            if (frame_rate > 50)
               effective_max_rate = effective_max_rate*2/3;
-           if (effective_max_rate < 13000)
+           if (effective_max_rate < 8000)
            {
               st->silk_mode.maxInternalSampleRate = 12000;
               st->silk_mode.desiredInternalSampleRate = IMIN(12000, st->silk_mode.desiredInternalSampleRate);
            }
-           if (effective_max_rate < 9600)
+           if (effective_max_rate < 7000)
            {
               st->silk_mode.maxInternalSampleRate = 8000;
               st->silk_mode.desiredInternalSampleRate = IMIN(8000, st->silk_mode.desiredInternalSampleRate);
            }
-        } else {
-           st->silk_mode.maxInternalSampleRate = 16000;
         }
 
         st->silk_mode.useCBR = !st->use_vbr;
