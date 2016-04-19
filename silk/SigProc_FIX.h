@@ -471,8 +471,7 @@ static OPUS_INLINE opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 /* Add with saturation for positive input values */
 #define silk_ADD_POS_SAT8(a, b)             ((((a)+(b)) & 0x80)                 ? silk_int8_MAX  : ((a)+(b)))
 #define silk_ADD_POS_SAT16(a, b)            ((((a)+(b)) & 0x8000)               ? silk_int16_MAX : ((a)+(b)))
-#define silk_ADD_POS_SAT32(a, b)            ((((a)+(b)) & 0x80000000)           ? silk_int32_MAX : ((a)+(b)))
-#define silk_ADD_POS_SAT64(a, b)            ((((a)+(b)) & 0x8000000000000000LL) ? silk_int64_MAX : ((a)+(b)))
+#define silk_ADD_POS_SAT32(a, b)            ((((opus_uint32)(a)+(opus_uint32)(b)) & 0x80000000) ? silk_int32_MAX : ((a)+(b)))
 
 #define silk_LSHIFT8(a, shift)              ((opus_int8)((opus_uint8)(a)<<(shift)))         /* shift >= 0, shift < 8  */
 #define silk_LSHIFT16(a, shift)             ((opus_int16)((opus_uint16)(a)<<(shift)))       /* shift >= 0, shift < 16 */
