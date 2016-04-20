@@ -899,6 +899,26 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       *value = st->last_packet_duration;
    }
    break;
+   case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:
+   {
+       opus_int32 value = va_arg(ap, opus_int32);
+       if(value<0 || value>1)
+       {
+          goto bad_arg;
+       }
+       celt_decoder_ctl(celt_dec, OPUS_SET_PHASE_INVERSION_DISABLED(value));
+   }
+   break;
+   case OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST:
+   {
+       opus_int32 *value = va_arg(ap, opus_int32*);
+       if (!value)
+       {
+          goto bad_arg;
+       }
+       celt_decoder_ctl(celt_dec, OPUS_GET_PHASE_INVERSION_DISABLED(value));
+   }
+   break;
    default:
       /*fprintf(stderr, "unknown opus_decoder_ctl() request: %d", request);*/
       ret = OPUS_UNIMPLEMENTED;

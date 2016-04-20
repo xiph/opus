@@ -683,6 +683,7 @@ struct band_ctx {
    opus_uint32 seed;
    int arch;
    int theta_round;
+   int disable_inv;
 };
 
 struct split_ctx {
@@ -832,7 +833,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
    } else if (stereo) {
       if (encode)
       {
-         inv = itheta > 8192;
+         inv = itheta > 8192 && !ctx->disable_inv;
          if (inv)
          {
             int j;
@@ -848,6 +849,9 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
          else
             inv = ec_dec_bit_logp(ec, 2);
       } else
+         inv = 0;
+      /* inv flag override to avoid problems with downmixing. */
+      if (ctx->disable_inv)
          inv = 0;
       itheta = 0;
    }
@@ -1379,7 +1383,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       const celt_ener *bandE, int *pulses, int shortBlocks, int spread,
       int dual_stereo, int intensity, int *tf_res, opus_int32 total_bits,
       opus_int32 balance, ec_ctx *ec, int LM, int codedBands,
-      opus_uint32 *seed, int complexity, int arch)
+      opus_uint32 *seed, int complexity, int arch, int disable_inv)
 {
    int i;
    opus_int32 remaining_bits;
@@ -1445,6 +1449,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    ctx.seed = *seed;
    ctx.spread = spread;
    ctx.arch = arch;
+   ctx.disable_inv = disable_inv;
    ctx.resynth = resynth;
    ctx.theta_round = 0;
    for (i=start;i<end;i++)
