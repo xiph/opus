@@ -356,6 +356,9 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec(
     NSQ_sample_struct  *psSS;
     SAVE_STACK;
 
+    /* We're getting desperate to hit the target -- pretend there's
+       no dithering to make hitting the target more likely. */
+    if (Lambda_Q10 > 3072) offset_Q10 = 0;
     silk_assert( nStatesDelayedDecision > 0 );
     ALLOC( psSampleState, nStatesDelayedDecision, NSQ_sample_pair );
 
@@ -462,6 +465,19 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec(
             /* Find two quantization level candidates and measure their rate-distortion */
             q1_Q10 = silk_SUB32( r_Q10, offset_Q10 );
             q1_Q0 = silk_RSHIFT( q1_Q10, 10 );
+            if (Lambda_Q10 > 2048) {
+                /* For aggressive RDO, the bias becomes more than one pulse. */
+                int rdo_offset = Lambda_Q10/2 - 512;
+                if (q1_Q10 > rdo_offset) {
+                    q1_Q0 = silk_RSHIFT( q1_Q10 - rdo_offset, 10 );
+                } else if (q1_Q10 < -rdo_offset) {
+                    q1_Q0 = silk_RSHIFT( q1_Q10 + rdo_offset, 10 );
+                } else if (q1_Q10 < 0) {
+                    q1_Q0 = -1;
+                } else {
+                    q1_Q0 = 0;
+                }
+            }
             if( q1_Q0 > 0 ) {
                 q1_Q10  = silk_SUB32( silk_LSHIFT( q1_Q0, 10 ), QUANT_LEVEL_ADJUST_Q10 );
                 q1_Q10  = silk_ADD32( q1_Q10, offset_Q10 );
