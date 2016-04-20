@@ -2728,6 +2728,26 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            *value = st->silk_mode.reducedDependency;
         }
         break;
+        case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if(value<0 || value>1)
+            {
+               goto bad_arg;
+            }
+            celt_encoder_ctl(celt_enc, OPUS_SET_PHASE_INVERSION_DISABLED(value));
+        }
+        break;
+        case OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST:
+        {
+            opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value)
+            {
+               goto bad_arg;
+            }
+            celt_encoder_ctl(celt_enc, OPUS_GET_PHASE_INVERSION_DISABLED(value));
+        }
+        break;
         case OPUS_RESET_STATE:
         {
            void *silk_enc;
