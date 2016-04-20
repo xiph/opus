@@ -75,6 +75,7 @@ struct OpusCustomEncoder {
    int lsb_depth;
    int variable_duration;
    int lfe;
+   int disable_inv;
    int arch;
 
    /* Everything beyond this point gets cleared on a reset */
@@ -179,7 +180,7 @@ static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
    st->start = 0;
    st->end = st->mode->effEBands;
    st->signalling = 1;
-
+   st->disable_inv = channels == 1;
    st->arch = arch;
 
    st->constrained_vbr = 1;
@@ -2063,7 +2064,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    quant_all_bands(1, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
          bandE, pulses, shortBlocks, st->spread_decision,
          dual_stereo, st->intensity, tf_res, nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv,
-         balance, enc, LM, codedBands, &st->rng, st->arch);
+         balance, enc, LM, codedBands, &st->rng, st->arch, st->disable_inv);
 
    if (anti_collapse_rsv > 0)
    {
@@ -2350,6 +2351,26 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
       {
           opus_int32 value = va_arg(ap, opus_int32);
           st->variable_duration = value;
+      }
+      break;
+      case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          if(value<0 || value>1)
+          {
+             goto bad_arg;
+          }
+          st->disable_inv = value;
+      }
+      break;
+      case OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST:
+      {
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          if (!value)
+          {
+             goto bad_arg;
+          }
+          *value = st->disable_inv;
       }
       break;
       case OPUS_RESET_STATE:
