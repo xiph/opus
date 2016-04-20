@@ -73,6 +73,7 @@ struct OpusCustomDecoder {
    int downsample;
    int start, end;
    int signalling;
+   int disable_inv;
    int arch;
 
    /* Everything beyond this point gets cleared on a reset */
@@ -163,6 +164,11 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_init(CELTDecoder *st, const CELTMod
    st->start = 0;
    st->end = st->mode->effEBands;
    st->signalling = 1;
+#ifdef ENABLE_UPDATE_DRAFT
+   st->disable_inv = channels == 1;
+#else
+   st->disable_inv = 0;
+#endif
    st->arch = opus_select_arch();
 
    opus_custom_decoder_ctl(st, OPUS_RESET_STATE);
@@ -1043,7 +1049,8 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    quant_all_bands(0, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
-         len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng, 0, st->arch);
+         len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng, 0,
+         st->arch, st->disable_inv);
 
    if (anti_collapse_rsv > 0)
    {
@@ -1296,6 +1303,26 @@ int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
          if (value==0)
             goto bad_arg;
          *value=st->rng;
+      }
+      break;
+      case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          if(value<0 || value>1)
+          {
+             goto bad_arg;
+          }
+          st->disable_inv = value;
+      }
+      break;
+      case OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST:
+      {
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          if (!value)
+          {
+             goto bad_arg;
+          }
+          *value = st->disable_inv;
       }
       break;
       default:

@@ -33,8 +33,8 @@
 #  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-rm logs_mono.txt
-rm logs_stereo.txt
+rm -f logs_mono.txt logs_mono2.txt
+rm -f logs_stereo.txt logs_stereo2.txt
 
 if [ "$#" -ne "3" ]; then
     echo "usage: run_vectors.sh <exec path> <vector path> <rate>"
@@ -87,9 +87,11 @@ do
         echo ERROR: decoding failed
         exit 1
     fi
-    $OPUS_COMPARE -r $RATE $VECTOR_PATH/testvector$file.dec tmp.out >> logs_mono.txt 2>&1
+    $OPUS_COMPARE -r $RATE $VECTOR_PATH/testvector${file}.dec tmp.out >> logs_mono.txt 2>&1
     float_ret=$?
-    if [ "$float_ret" -eq "0" ]; then
+    $OPUS_COMPARE -r $RATE $VECTOR_PATH/testvector${file}m.dec tmp.out >> logs_mono2.txt 2>&1
+    float_ret2=$?
+    if [ "$float_ret" -eq "0" ] || [ "$float_ret2" -eq "0" ]; then
         echo output matches reference
     else
         echo ERROR: output does not match reference
@@ -116,9 +118,11 @@ do
         echo ERROR: decoding failed
         exit 1
     fi
-    $OPUS_COMPARE -s -r $RATE $VECTOR_PATH/testvector$file.dec tmp.out >> logs_stereo.txt 2>&1
+    $OPUS_COMPARE -s -r $RATE $VECTOR_PATH/testvector${file}.dec tmp.out >> logs_stereo.txt 2>&1
     float_ret=$?
-    if [ "$float_ret" -eq "0" ]; then
+    $OPUS_COMPARE -s -r $RATE $VECTOR_PATH/testvector${file}m.dec tmp.out >> logs_stereo2.txt 2>&1
+    float_ret2=$?
+    if [ "$float_ret" -eq "0" ] || [ "$float_ret2" -eq "0" ]; then
         echo output matches reference
     else
         echo ERROR: output does not match reference
@@ -130,5 +134,10 @@ done
 
 
 echo All tests have passed successfully
-grep quality logs_mono.txt | awk '{sum+=$4}END{print "Average mono quality is", sum/NR, "%"}'
-grep quality logs_stereo.txt | awk '{sum+=$4}END{print "Average stereo quality is", sum/NR, "%"}'
+mono1=`grep quality logs_mono.txt | awk '{sum+=$4}END{if (NR == 12) sum /= 12; else sum = 0; print sum}'`
+mono2=`grep quality logs_mono2.txt | awk '{sum+=$4}END{if (NR == 12) sum /= 12; else sum = 0; print sum}'`
+echo $mono1 $mono2 | awk '{if ($2 > $1) $1 = $2; print "Average mono quality is", $1, "%"}'
+
+stereo1=`grep quality logs_stereo.txt | awk '{sum+=$4}END{if (NR == 12) sum /= 12; else sum = 0; print sum}'`
+stereo2=`grep quality logs_stereo2.txt | awk '{sum+=$4}END{if (NR == 12) sum /= 12; else sum = 0; print sum}'`
+echo $stereo1 $stereo2 | awk '{if ($2 > $1) $1 = $2; print "Average stereo quality is", $1, "%"}'
