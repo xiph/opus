@@ -1536,7 +1536,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         /* Distribute bits between SILK and CELT */
         total_bitRate = 8 * bytes_target * frame_rate;
         if( st->mode == MODE_HYBRID ) {
-            int HB_gain_ref;
             /* Base rate for SILK */
             st->silk_mode.bitRate = compute_silk_rate_for_hybrid(total_bitRate,
                   curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr);
@@ -1544,10 +1543,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             {
                /* Increasingly attenuate high band when it gets allocated fewer bits */
                celt_rate = total_bitRate - st->silk_mode.bitRate;
-               HB_gain_ref = (curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND) ? 3000 : 3600;
-               HB_gain = SHL32((opus_val32)celt_rate, 9) / SHR32((opus_val32)celt_rate + st->stream_channels * HB_gain_ref, 6);
-               HB_gain = HB_gain < (opus_val32)Q15ONE*6/7 ? HB_gain + Q15ONE/7 : Q15ONE;
-               HB_gain = Q15ONE;
+               HB_gain = Q15ONE - SHR32(celt_exp2(-celt_rate * QCONST16(1.f/1024, 10)), 1);
             }
         } else {
             /* SILK gets all bits */
