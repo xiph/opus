@@ -98,6 +98,7 @@ struct OpusCustomEncoder {
 #endif
    int consec_transient;
    AnalysisInfo analysis;
+   SILKInfo silk_info;
 
    opus_val32 preemph_memE[2];
    opus_val32 preemph_memD[2];
@@ -1935,6 +1936,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
            temporal_vbr);
      } else {
         target = base_target;
+        /* Tonal frames (offset<100) need more bits than noisy (offset>100) ones. */
+        if (st->silk_info.offset < 100) target += 12 << BITRES >> (3-LM);
+        if (st->silk_info.offset > 100) target -= 18 << BITRES >> (3-LM);
         /* If we have a strong transient, let's make sure it has enough bits to code
            the first two bands, so that it can use folding rather than noise. */
         if (tf_estimate > QCONST16(.7f,14))
@@ -2381,6 +2385,13 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
          AnalysisInfo *info = va_arg(ap, AnalysisInfo *);
          if (info)
             OPUS_COPY(&st->analysis, info, 1);
+      }
+      break;
+      case CELT_SET_SILK_INFO_REQUEST:
+      {
+         SILKInfo *info = va_arg(ap, SILKInfo *);
+         if (info)
+            OPUS_COPY(&st->silk_info, info, 1);
       }
       break;
       case CELT_GET_MODE_REQUEST:
