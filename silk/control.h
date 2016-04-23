@@ -110,6 +110,11 @@ typedef struct {
     /* O:   Tells the Opus encoder we're ready to switch                                    */
     opus_int switchReady;
 
+    /* O: SILK Signal type */
+    opus_int signalType;
+
+    /* O: SILK offset (dithering) */
+    opus_int offset;
 } silk_EncControlStruct;
 
 /**************************************************************************/
