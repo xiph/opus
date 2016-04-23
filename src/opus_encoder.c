@@ -1903,6 +1903,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (redundancy || st->mode != MODE_SILK_ONLY)
        celt_encoder_ctl(celt_enc, CELT_SET_ANALYSIS(&analysis_info));
 #endif
+    if (st->mode == MODE_HYBRID) {
+       SILKInfo info;
+       info.signalType = st->silk_mode.signalType;
+       info.offset = st->silk_mode.offset;
+       celt_encoder_ctl(celt_enc, CELT_SET_SILK_INFO(&info));
+    } else {
+       celt_encoder_ctl(celt_enc, CELT_SET_SILK_INFO((SILKInfo*)NULL));
+    }
 
     /* 5 ms redundant frame for CELT->SILK */
     if (redundancy && celt_to_silk)

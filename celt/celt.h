@@ -58,11 +58,18 @@ typedef struct {
    float activity;
    float music_prob;
    int        bandwidth;
-}AnalysisInfo;
+} AnalysisInfo;
+
+typedef struct {
+   int signalType;
+   int offset;
+} SILKInfo;
 
 #define __celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
 
 #define __celt_check_analysis_ptr(ptr) ((ptr) + ((ptr) - (const AnalysisInfo*)(ptr)))
+
+#define __celt_check_silkinfo_ptr(ptr) ((ptr) + ((ptr) - (const SILKInfo*)(ptr)))
 
 /* Encoder/decoder Requests */
 
@@ -115,6 +122,9 @@ typedef struct {
 
 #define OPUS_SET_ENERGY_MASK_REQUEST    10026
 #define OPUS_SET_ENERGY_MASK(x) OPUS_SET_ENERGY_MASK_REQUEST, __opus_check_val16_ptr(x)
+
+#define CELT_SET_SILK_INFO_REQUEST    10028
+#define CELT_SET_SILK_INFO(x) CELT_SET_SILK_INFO_REQUEST, __celt_check_silkinfo_ptr(x)
 
 /* Encoder stuff */
 
