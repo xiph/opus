@@ -981,6 +981,37 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
    return silk_rate;
 }
 
+/* Returns the equivalent bitrate corresponding to 20 ms frames,
+   complexity 10 VBR operation. */
+static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
+      int frame_rate, int vbr, int mode, int complexity)
+{
+   int equiv;
+   equiv = bitrate;
+   /* Take into account overhead from smaller frames. */
+   equiv -= (40*channels+20)*(frame_rate - 50);
+   /* CBR is about a 10% penalty for both SILK and CELT. */
+   if (!vbr)
+      equiv = equiv*9/10;
+   /* Complexity makes about 10% difference (from 0 to 10) in general. */
+   equiv = equiv * (90+complexity)/100;
+   if (mode == MODE_SILK_ONLY || mode == MODE_HYBRID)
+   {
+      /* SILK complexity 0-3 uses the non-delayed-decision NSQ, which
+         costs about 20%. */
+      if (complexity<4)
+         equiv = equiv*4/5;
+   } else if (mode == MODE_CELT_ONLY) {
+      /* CELT complexity 0-4 doesn't have the pitch filter, which costs
+         about 10%. */
+      if (complexity<5)
+         equiv = equiv*9/10;
+   } else {
+      /* Mode not known yet */
+   }
+   return equiv;
+}
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
                 const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
@@ -1128,7 +1159,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     max_rate = frame_rate*max_data_bytes*8;
 
     /* Equivalent 20-ms rate for mode/channel/bandwidth decisions */
-    equiv_rate = st->bitrate_bps - (40*st->channels+20)*(st->Fs/frame_size - 50);
+    equiv_rate = compute_equiv_rate(st->bitrate_bps, st->channels, st->Fs/frame_size,
+          st->use_vbr, 0, st->silk_mode.complexity);
 
     if (st->signal_type == OPUS_SIGNAL_VOICE)
        voice_est = 127;
@@ -1169,7 +1201,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        }
 #endif
     }
-    equiv_rate = st->bitrate_bps - (40*st->stream_channels+20)*(st->Fs/frame_size - 50);
+    /* Update equivalent rate for channels decision. */
+    equiv_rate = compute_equiv_rate(st->bitrate_bps, st->stream_channels, st->Fs/frame_size,
+          st->use_vbr, 0, st->silk_mode.complexity);
 
     /* Mode selection depending on application and signal type */
     if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
@@ -1263,6 +1297,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             }
         }
     }
+
+    /* Update equivalent rate with mode decision. */
+    equiv_rate = compute_equiv_rate(st->bitrate_bps, st->stream_channels, st->Fs/frame_size,
+          st->use_vbr, st->mode, st->silk_mode.complexity);
+
     /* For the first frame at a new SILK bandwidth */
     if (st->silk_bw_switch)
     {
@@ -1294,17 +1333,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         const opus_int32 *voice_bandwidth_thresholds, *music_bandwidth_thresholds;
         opus_int32 bandwidth_thresholds[8];
         int bandwidth = OPUS_BANDWIDTH_FULLBAND;
-        opus_int32 equiv_rate2;
 
-        equiv_rate2 = equiv_rate;
-        if (st->mode != MODE_CELT_ONLY)
-        {
-           /* Adjust the threshold +/- 10% depending on complexity */
-           equiv_rate2 = equiv_rate2 * (45+st->silk_mode.complexity)/50;
-           /* CBR is less efficient by ~1 kb/s */
-           if (!st->use_vbr)
-              equiv_rate2 -= 1000;
-        }
         if (st->channels==2 && st->force_channels!=1)
         {
            voice_bandwidth_thresholds = stereo_voice_bandwidth_thresholds;
@@ -1330,7 +1359,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                 else
                     threshold += hysteresis;
             }
-            if (equiv_rate2 >= threshold)
+            if (equiv_rate >= threshold)
                 break;
         } while (--bandwidth>OPUS_BANDWIDTH_NARROWBAND);
         st->bandwidth = bandwidth;
