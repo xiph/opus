@@ -736,6 +736,14 @@ AS_IF([test "$enable_fuzzing" = "yes"], [
   AC_DEFINE([FUZZING], [1], [Fuzzing])
 ])
 
+AC_ARG_ENABLE([ambisonics],
+    [AS_HELP_STRING([--enable-ambisonics],[enable experimental ambisonic encoding and decoding support])],,
+    [enable_ambisonics=no])
+
+AS_IF([test "$enable_ambisonics" = "yes"], [
+  AC_DEFINE([ENABLE_EXPERIMENTAL_AMBISONICS], [1], [Ambisonics Support])
+])
+
 AC_ARG_ENABLE([doc],
     [AS_HELP_STRING([--disable-doc], [Do not build API documentation])],,
     [enable_doc=yes])
@@ -820,6 +828,7 @@ AC_MSG_NOTICE([
       Custom modes: .................. ${enable_custom_modes}
       Assertion checking: ............ ${enable_assertions}
       Fuzzing: ....................... ${enable_fuzzing}
+      Ambisonics support: .............${enable_ambisonics}
 
       API documentation: ............. ${enable_doc}
       Extra programs: ................ ${enable_extra_programs}
