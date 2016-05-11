@@ -115,26 +115,20 @@ static const int extra_bands[NB_TOT_BANDS+1] = {
 #define cE ((float)M_PI/2)
 static OPUS_INLINE float fast_atan2f(float y, float x) {
    float x2, y2;
-   /* Should avoid underflow on the values we'll get */
-   if (ABS16(x)+ABS16(y)<1e-9f)
-   {
-      x*=1e12f;
-      y*=1e12f;
-   }
    x2 = x*x;
    y2 = y*y;
+   /* For very small values, we don't care about the answer, so
+      we can just return 0. */
+   if (x2 + y2 < 1e-18f)
+   {
+      return 0;
+   }
    if(x2<y2){
       float den = (y2 + cB*x2) * (y2 + cC*x2);
-      if (den!=0)
-         return -x*y*(y2 + cA*x2) / den + (y<0 ? -cE : cE);
-      else
-         return (y<0 ? -cE : cE);
+      return -x*y*(y2 + cA*x2) / den + (y<0 ? -cE : cE);
    }else{
       float den = (x2 + cB*y2) * (x2 + cC*y2);
-      if (den!=0)
-         return  x*y*(x2 + cA*y2) / den + (y<0 ? -cE : cE) - (x*y<0 ? -cE : cE);
-      else
-         return (y<0 ? -cE : cE) - (x*y<0 ? -cE : cE);
+      return  x*y*(x2 + cA*y2) / den + (y<0 ? -cE : cE) - (x*y<0 ? -cE : cE);
    }
 }
 
