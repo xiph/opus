@@ -53,6 +53,10 @@
 
 #define MAX_ENCODER_BUFFER 480
 
+#ifndef DISABLE_FLOAT_API
+#define PSEUDO_SNR_THRESHOLD 316.23f    /* 10^(25/10) */
+#endif
+
 typedef struct {
    opus_val32 XX, XY, YY;
    opus_val16 smoothed_width;
@@ -107,6 +111,7 @@ struct OpusEncoder {
 #ifndef DISABLE_FLOAT_API
     int          detected_bandwidth;
     int          nb_no_activity_frames;
+    opus_val32   peak_signal_energy;
 #endif
     opus_uint32  rangeFinal;
 };
@@ -1028,20 +1033,60 @@ static int is_digital_silence(const opus_val16* pcm, int frame_size, int lsb_dep
    return silence;
 }
 
+static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size)
+{
+   int i;
+#ifdef FIXED_POINT
+   opus_val32 sample_max;
+   int max_shift;
+   int shift;
+#endif
+   opus_val32 energy = 0;
+
+#ifdef FIXED_POINT
+   /* Max amplitude in the signal */
+   sample_max = celt_maxabs16(pcm, frame_size);
+
+   /* Compute the right shift required in the MAC to avoid an overflow */
+   max_shift = celt_ilog2(frame_size);
+   shift = IMAX(0, (celt_ilog2(sample_max) << 1) + max_shift - 28);
+#endif
+
+   /* Compute the energy */
+   for (i=0; i<frame_size; i++)
+      energy += SHR32(MULT16_16(pcm[i], pcm[i]), shift);
+
+   /* Normalize energy by the frame size and left-shift back to the original position */
+   energy /= frame_size;
+   energy = SHL32(energy, shift);
+
+   return energy;
+}
+
 /* Decides if DTX should be turned on (=1) or off (=0) */
 static int decide_dtx_mode(float activity_probability,    /* probability that current frame contains speech/music */
                            int *nb_no_activity_frames,    /* number of consecutive frames with no activity */
+                           opus_val32 peak_signal_energy, /* peak energy of desired signal detected so far */
+                           const opus_val16 *pcm,         /* input pcm signal */
+                           int frame_size,                /* frame size */
                            int is_silence                 /* only digital silence detected in this frame */
                           )
 {
-   int is_noise = 0;
+   int is_noise;
+   opus_val32 noise_energy;
+   int is_sufficiently_quiet;
 
    if (!is_silence)
    {
       is_noise = activity_probability < DTX_ACTIVITY_THRESHOLD;
+      if (is_noise)
+      {
+         noise_energy = compute_frame_energy(pcm, frame_size);
+         is_sufficiently_quiet = peak_signal_energy >= (PSEUDO_SNR_THRESHOLD * noise_energy);
+      }
    }
 
-   if (is_silence || is_noise)
+   if (is_silence || (is_noise && is_sufficiently_quiet))
    {
       /* The number of consecutive DTX frames should be within the allowed bounds */
       (*nb_no_activity_frames)++;
@@ -1145,6 +1190,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                 c1, c2, analysis_channels, st->Fs,
                 lsb_depth, downmix, &analysis_info);
        }
+
+       /* Track the peak signal energy */
+       if (!is_silence && analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD)
+          st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999, 15), st->peak_signal_energy), compute_frame_energy(pcm, frame_size));
     }
 #else
     (void)analysis_pcm;
@@ -2095,7 +2144,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifndef DISABLE_FLOAT_API
     if (st->use_dtx && (analysis_info.valid || is_silence))
     {
-       if (decide_dtx_mode(analysis_info.activity_probability, &st->nb_no_activity_frames, is_silence))
+       if (decide_dtx_mode(analysis_info.activity_probability, &st->nb_no_activity_frames, st->peak_signal_energy, pcm, frame_size, is_silence))
        {
           st->rangeFinal = 0;
           data[0] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
