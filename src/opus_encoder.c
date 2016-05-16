@@ -1012,6 +1012,26 @@ static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
    return equiv;
 }
 
+#ifndef DISABLE_FLOAT_API
+
+static int is_digital_silence(const opus_val16* pcm, int frame_size, int lsb_depth)
+{
+   int silence = 0;
+   opus_val32 sample_max = 0;
+
+   sample_max = celt_maxabs16(pcm, frame_size);
+
+#ifdef FIXED_POINT
+   silence = (sample_max == 0);
+#else
+   silence = (sample_max <= (opus_val16) 1 / (1 << lsb_depth));
+#endif
+
+   return silence;
+}
+
+#endif
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
                 const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
@@ -1049,6 +1069,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     AnalysisInfo analysis_info;
     int analysis_read_pos_bak=-1;
     int analysis_read_subframe_bak=-1;
+    int is_silence = 0;
 #endif
     VARDECL(opus_val16, tmp_prefill);
 
@@ -1084,20 +1105,28 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (st->silk_mode.complexity >= 7 && st->Fs==48000)
 #endif
     {
-       analysis_read_pos_bak = st->analysis.read_pos;
-       analysis_read_subframe_bak = st->analysis.read_subframe;
-       run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
-             c1, c2, analysis_channels, st->Fs,
-             lsb_depth, downmix, &analysis_info);
+       if (is_digital_silence(pcm, frame_size, lsb_depth))
+       {
+          is_silence = 1;
+       } else {
+          analysis_read_pos_bak = st->analysis.read_pos;
+          analysis_read_subframe_bak = st->analysis.read_subframe;
+          run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
+                c1, c2, analysis_channels, st->Fs,
+                lsb_depth, downmix, &analysis_info);
+       }
     }
 #else
     (void)analysis_pcm;
     (void)analysis_size;
 #endif
 
-    st->voice_ratio = -1;
-
 #ifndef DISABLE_FLOAT_API
+    /* Reset voice_ratio if this frame is not silent or if analysis is disabled.
+     * Otherwise, preserve voice_ratio from the last non-silent frame */
+    if (!is_silence)
+      st->voice_ratio = -1;
+
     st->detected_bandwidth = 0;
     if (analysis_info.valid)
     {
@@ -1117,6 +1146,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        else
           st->detected_bandwidth = OPUS_BANDWIDTH_FULLBAND;
     }
+#else
+    st->voice_ratio = -1;
 #endif
 
     if (st->channels==2 && st->force_channels!=1)
