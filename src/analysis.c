@@ -524,6 +524,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     /* Consider that silence has a 50-50 probability. */
     frame_probs[0] = frame_probs[1]*frame_probs[0] + (1-frame_probs[1])*.5f;
 
+    /* Probability of speech or music vs noise */
+    info->activity_probability = frame_probs[1];
+
     /*printf("%f %f\n", frame_probs[0], frame_probs[1]);*/
     {
        /* Probability of state transition */
