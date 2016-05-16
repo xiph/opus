@@ -57,7 +57,8 @@ typedef struct {
    float noisiness;
    float activity;
    float music_prob;
-   int        bandwidth;
+   int   bandwidth;
+   float activity_probability;
 } AnalysisInfo;
 
 typedef struct {
