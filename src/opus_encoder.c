@@ -84,6 +84,7 @@ struct OpusEncoder {
     int          arch;
 #ifndef DISABLE_FLOAT_API
     TonalityAnalysisState analysis;
+    int          use_dtx;                 /* general DTX for both SILK and CELT */
 #endif
 
 #define OPUS_ENCODER_RESET_START stream_channels
@@ -105,6 +106,7 @@ struct OpusEncoder {
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef DISABLE_FLOAT_API
     int          detected_bandwidth;
+    int          nb_no_activity_frames;
 #endif
     opus_uint32  rangeFinal;
 };
@@ -1027,6 +1029,38 @@ static int is_digital_silence(const opus_val16* pcm, int frame_size, int lsb_dep
    return silence;
 }
 
+/* Decides if DTX should be turned on (=1) or off (=0) */
+static int decide_dtx_mode(float activity_probability,    /* probability that current frame contains speech/music */
+                           int *nb_no_activity_frames,    /* number of consecutive frames with no activity */
+                           int is_silence                 /* only digital silence detected in this frame */
+                          )
+{
+   int is_noise = 0;
+
+   if (!is_silence)
+   {
+      is_noise = activity_probability < DTX_ACTIVITY_THRESHOLD;
+   }
+
+   if (is_silence || is_noise)
+   {
+      /* The number of consecutive DTX frames should be within the allowed bounds */
+      (*nb_no_activity_frames)++;
+
+      if (*nb_no_activity_frames > NB_SPEECH_FRAMES_BEFORE_DTX)
+      {
+         if (*nb_no_activity_frames <= (NB_SPEECH_FRAMES_BEFORE_DTX + MAX_CONSECUTIVE_DTX))
+            /* Valid frame for DTX! */
+            return 1;
+         else
+            (*nb_no_activity_frames) = NB_SPEECH_FRAMES_BEFORE_DTX;
+      }
+   } else
+      (*nb_no_activity_frames) = 0;
+
+   return 0;
+}
+
 #endif
 
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
@@ -1280,7 +1314,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        /* When FEC is enabled and there's enough packet loss, use SILK */
        if (st->silk_mode.useInBandFEC && st->silk_mode.packetLossPercentage > (128-voice_est)>>4)
           st->mode = MODE_SILK_ONLY;
-       /* When encoding voice and DTX is enabled, set the encoder to SILK mode (at least for now) */
+       /* When encoding voice and DTX is enabled but the generalized DTX cannot be used,
+          because of complexity and sampling frequency settings,
+          set the encoder to SILK mode so that the SILK DTX can be used */
+       st->silk_mode.useDTX = st->use_dtx && !(analysis_info.valid || is_silence);
        if (st->silk_mode.useDTX && voice_est > 100)
           st->mode = MODE_SILK_ONLY;
 #endif
@@ -2045,6 +2082,20 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     st->first = 0;
 
+    /* DTX decision */
+#ifndef DISABLE_FLOAT_API
+    if (st->use_dtx && (analysis_info.valid || is_silence))
+    {
+       if (decide_dtx_mode(analysis_info.activity_probability, &st->nb_no_activity_frames, is_silence))
+       {
+          st->rangeFinal = 0;
+          data[0] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
+          RESTORE_STACK;
+          return 1;
+       }
+    }
+#endif
+
     /* In the unlikely case that the SILK encoder busted its target, tell
        the decoder to call the PLC */
     if (ec_tell(&enc) > (max_data_bytes-1)*8)
@@ -2321,7 +2372,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             {
                goto bad_arg;
             }
-            st->silk_mode.useDTX = value;
+            st->use_dtx = value;
         }
         break;
         case OPUS_GET_DTX_REQUEST:
@@ -2331,7 +2382,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             {
                goto bad_arg;
             }
-            *value = st->silk_mode.useDTX;
+            *value = st->use_dtx;
         }
         break;
         case OPUS_SET_COMPLEXITY_REQUEST:
