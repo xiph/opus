@@ -55,6 +55,7 @@ celt/tests/test_unit_mathops
 celt/tests/test_unit_mdct
 celt/tests/test_unit_rotation
 celt/tests/test_unit_types
+doc/doxygen_sqlite3.db
 doc/doxygen-build.stamp
 doc/html
 doc/latex
