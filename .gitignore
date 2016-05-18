@@ -21,6 +21,7 @@ install-sh
 .libs
 .dirstamp
 *.a
+*.exe
 *.la
 testcelt
 libtool

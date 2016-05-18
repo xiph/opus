@@ -7,7 +7,6 @@
 [Rr]eleases/
 *.manifest
 *.lastbuildstate
-*.exe
 *.lib
 *.log
 *.idb
