@@ -23,6 +23,7 @@ install-sh
 *.a
 *.exe
 *.la
+*-gnu.S
 testcelt
 libtool
 ltmain.sh
@@ -36,16 +37,19 @@ opus_compare
 opus_demo
 repacketizer_demo
 stamp-h1
+test-driver
 *.sw*
 *.o
 *.lo
 *.pc
+*.tar.gz
 *~
 tests/*test
 tests/test_opus_api
 tests/test_opus_decode
 tests/test_opus_encode
 tests/test_opus_padding
+celt/arm/armopts.s
 celt/dump_modes/dump_modes
 celt/tests/test_unit_cwrs32
 celt/tests/test_unit_dft
