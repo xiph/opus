@@ -165,25 +165,25 @@ EXTRA_DIST = version.mk \
              tests/run_vectors.sh \
              celt/arm/arm2gnu.pl \
              celt/arm/celt_pitch_xcorr_arm.s \
-             win32/VS2010/silk_float.vcxproj \
-             win32/VS2010/celt.vcxproj.filters \
-             win32/VS2010/opus.vcxproj \
-             win32/VS2010/silk_common.vcxproj.filters \
-             win32/VS2010/silk_float.vcxproj.filters \
-             win32/VS2010/test_opus_encode.vcxproj.filters \
-             win32/VS2010/silk_common.vcxproj \
-             win32/VS2010/test_opus_encode.vcxproj \
-             win32/VS2010/opus_demo.vcxproj \
-             win32/VS2010/test_opus_api.vcxproj.filters \
-             win32/VS2010/test_opus_api.vcxproj \
-             win32/VS2010/test_opus_decode.vcxproj.filters \
-             win32/VS2010/silk_fixed.vcxproj.filters \
-             win32/VS2010/opus_demo.vcxproj.filters \
-             win32/VS2010/silk_fixed.vcxproj \
-             win32/VS2010/opus.vcxproj.filters \
-             win32/VS2010/test_opus_decode.vcxproj \
-             win32/VS2010/celt.vcxproj \
-             win32/VS2010/opus.sln \
+             win32/VS2015/silk_float.vcxproj \
+             win32/VS2015/celt.vcxproj.filters \
+             win32/VS2015/opus.vcxproj \
+             win32/VS2015/silk_common.vcxproj.filters \
+             win32/VS2015/silk_float.vcxproj.filters \
+             win32/VS2015/test_opus_encode.vcxproj.filters \
+             win32/VS2015/silk_common.vcxproj \
+             win32/VS2015/test_opus_encode.vcxproj \
+             win32/VS2015/opus_demo.vcxproj \
+             win32/VS2015/test_opus_api.vcxproj.filters \
+             win32/VS2015/test_opus_api.vcxproj \
+             win32/VS2015/test_opus_decode.vcxproj.filters \
+             win32/VS2015/silk_fixed.vcxproj.filters \
+             win32/VS2015/opus_demo.vcxproj.filters \
+             win32/VS2015/silk_fixed.vcxproj \
+             win32/VS2015/opus.vcxproj.filters \
+             win32/VS2015/test_opus_decode.vcxproj \
+             win32/VS2015/celt.vcxproj \
+             win32/VS2015/opus.sln \
              win32/genversion.bat \
              win32/config.h
 
