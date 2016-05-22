@@ -387,7 +387,6 @@ static opus_int silk_setup_complexity(
     silk_assert( psEncC->warping_Q16             <= 32767                    );
     silk_assert( psEncC->la_shape                <= LA_SHAPE_MAX             );
     silk_assert( psEncC->shapeWinLength          <= SHAPE_LPC_WIN_MAX        );
-    silk_assert( psEncC->NLSF_MSVQ_Survivors     <= NLSF_VQ_MAX_SURVIVORS    );
 
     return ret;
 }
