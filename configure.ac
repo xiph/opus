@@ -472,6 +472,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
          [[
             static float32x4_t A0, A1, SUMM;
             SUMM = vmlaq_f32(SUMM, A0, A1);
+            return (int)vgetq_lane_f32(SUMM, 0);
          ]]
       )
       AS_IF([test x"$OPUS_ARM_MAY_HAVE_NEON_INTR" = x"1" && test x"$OPUS_ARM_PRESUME_NEON_INTR" != x"1"],
@@ -521,10 +522,13 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
          [OPUS_X86_MAY_HAVE_SSE],
          [OPUS_X86_PRESUME_SSE],
          [[#include <xmmintrin.h>
+           #include <time.h>
          ]],
          [[
-             static __m128 mtest;
-             mtest = _mm_setzero_ps();
+             __m128 mtest;
+             mtest = _mm_set1_ps((float)time(NULL));
+             mtest = _mm_mul_ps(mtest, mtest);
+             return _mm_cvtss_si32(mtest);
          ]]
       )
       AS_IF([test x"$OPUS_X86_MAY_HAVE_SSE" = x"1" && test x"$OPUS_X86_PRESUME_SSE" != x"1"],
@@ -539,10 +543,13 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
          [OPUS_X86_MAY_HAVE_SSE2],
          [OPUS_X86_PRESUME_SSE2],
          [[#include <emmintrin.h>
+           #include <time.h>
          ]],
          [[
-             static __m128i mtest;
-             mtest = _mm_setzero_si128();
+            __m128i mtest;
+            mtest = _mm_set1_epi32((int)time(NULL));
+            mtest = _mm_mul_epu32(mtest, mtest);
+            return _mm_cvtsi128_si32(mtest);
          ]]
       )
       AS_IF([test x"$OPUS_X86_MAY_HAVE_SSE2" = x"1" && test x"$OPUS_X86_PRESUME_SSE2" != x"1"],
@@ -557,11 +564,13 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
          [OPUS_X86_MAY_HAVE_SSE4_1],
          [OPUS_X86_PRESUME_SSE4_1],
          [[#include <smmintrin.h>
+           #include <time.h>
          ]],
          [[
-            static __m128i mtest;
-            mtest = _mm_setzero_si128();
-            mtest = _mm_cmpeq_epi64(mtest, mtest);
+            __m128i mtest;
+            mtest = _mm_set1_epi32((int)time(NULL));
+            mtest = _mm_mul_epi32(mtest, mtest);
+            return _mm_cvtsi128_si32(mtest);
          ]]
       )
       AS_IF([test x"$OPUS_X86_MAY_HAVE_SSE4_1" = x"1" && test x"$OPUS_X86_PRESUME_SSE4_1" != x"1"],
@@ -576,10 +585,13 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
          [OPUS_X86_MAY_HAVE_AVX],
          [OPUS_X86_PRESUME_AVX],
          [[#include <immintrin.h>
+           #include <time.h>
          ]],
          [[
-            static __m256 mtest;
-            mtest = _mm256_setzero_ps();
+             __m256 mtest;
+             mtest = _mm256_set1_ps((float)time(NULL));
+             mtest = _mm256_addsub_ps(mtest, mtest);
+             return _mm_cvtss_si32(_mm256_extractf128_ps(mtest, 0));
          ]]
       )
       AS_IF([test x"$OPUS_X86_MAY_HAVE_AVX" = x"1" && test x"$OPUS_X86_PRESUME_AVX" != x"1"],
