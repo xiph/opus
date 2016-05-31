@@ -15,7 +15,7 @@ AC_DEFUN([OPUS_CHECK_INTRINSICS],
         $4=0
         AC_MSG_RESULT([no])
         AC_MSG_CHECKING([if compiler supports $1 intrinsics with $2])
-        save_CFLAGS="$CFLAGS"; CFLAGS="$2 $CFLAGS"
+        save_CFLAGS="$CFLAGS"; CFLAGS="$CFLAGS $2"
         AC_LINK_IFELSE([AC_LANG_PROGRAM($5, $6)],
         [
            AC_MSG_RESULT([yes])
