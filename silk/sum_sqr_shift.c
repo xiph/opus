@@ -70,6 +70,11 @@ void silk_sum_sqr_shift(
         /* One sample left to process */
         nrg_tmp = silk_SMULBB( x[ i ], x[ i ] );
         nrg = (opus_int32)silk_ADD_RSHIFT_uint( nrg, nrg_tmp, shft );
+        if( nrg < 0 ) {
+            /* Scale down */
+            nrg = (opus_int32)silk_RSHIFT_uint( (opus_uint32)nrg, 1 );
+            shft++;
+        }
     }
 
     /* Make sure to have at least 10% headroom */
