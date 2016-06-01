@@ -99,7 +99,7 @@ extern "C"
 #define WARPING_MULTIPLIER                              0.015f
 
 /* fraction added to first autocorrelation value */
-#define SHAPE_WHITE_NOISE_FRACTION                      5e-5f
+#define SHAPE_WHITE_NOISE_FRACTION                      3e-5f
 
 /* noise shaping filter chirp factor */
 #define BANDWIDTH_EXPANSION                             0.94f
