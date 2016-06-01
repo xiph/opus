@@ -102,6 +102,8 @@ struct OpusEncoder {
     int          prev_channels;
     int          prev_framesize;
     int          bandwidth;
+    /* Bandwidth determined automatically from the rate (before any other adjustment) */
+    int          auto_bandwidth;
     int          silk_bw_switch;
     /* Sampling rate (at the API level) */
     int          first;
@@ -1471,7 +1473,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             hysteresis = bandwidth_thresholds[2*(bandwidth-OPUS_BANDWIDTH_MEDIUMBAND)+1];
             if (!st->first)
             {
-                if (st->bandwidth >= bandwidth)
+                if (st->auto_bandwidth >= bandwidth)
                     threshold -= hysteresis;
                 else
                     threshold += hysteresis;
@@ -1479,7 +1481,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             if (equiv_rate >= threshold)
                 break;
         } while (--bandwidth>OPUS_BANDWIDTH_NARROWBAND);
-        st->bandwidth = bandwidth;
+        st->bandwidth = st->auto_bandwidth = bandwidth;
         /* Prevents any transition to SWB/FB until the SILK layer has fully
            switched to WB mode and turned the variable LP filter off */
         if (!st->first && st->mode != MODE_CELT_ONLY && !st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
