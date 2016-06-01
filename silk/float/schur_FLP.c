@@ -41,7 +41,7 @@ silk_float silk_schur_FLP(                  /* O    returns residual energy     
     double C[ SILK_MAX_ORDER_LPC + 1 ][ 2 ];
     double Ctmp1, Ctmp2, rc_tmp;
 
-    silk_assert( order==6||order==8||order==10||order==12||order==14||order==16 );
+    silk_assert( order <= SILK_MAX_ORDER_LPC );
 
     /* Copy correlations */
     for( k = 0; k < order+1; k++ ) {
@@ -67,4 +67,3 @@ silk_float silk_schur_FLP(                  /* O    returns residual energy     
     /* Return residual energy */
     return (silk_float)C[ 0 ][ 1 ];
 }
-
