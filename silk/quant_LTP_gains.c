@@ -50,6 +50,27 @@ void silk_quant_LTP_gains(
     const opus_int32     *XX_Q17_ptr, *xX_Q17_ptr;
     opus_int32           res_nrg_Q15_subfr, res_nrg_Q15, rate_dist_Q7_subfr, rate_dist_Q7, min_rate_dist_Q7;
 
+    opus_int32            XX_Q17_smth[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ];
+    opus_int32            xX_Q17_smth[ MAX_NB_SUBFR*LTP_ORDER ];
+    memcpy(XX_Q17_smth, XX_Q17, MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER*sizeof(opus_int32));
+    memcpy(xX_Q17_smth, xX_Q17, MAX_NB_SUBFR*LTP_ORDER*sizeof(opus_int32));
+    for( j = 1; j < nb_subfr; j++ ) {
+        for( k = 0; k < LTP_ORDER*LTP_ORDER; k++ ) {
+            XX_Q17_smth[j*LTP_ORDER*LTP_ORDER + k] += (XX_Q17_smth[(j-1)*LTP_ORDER*LTP_ORDER + k] - XX_Q17_smth[j*LTP_ORDER*LTP_ORDER + k]) >> 2;
+        }
+        for( k = 0; k < LTP_ORDER; k++ ) {
+            xX_Q17_smth[j*LTP_ORDER + k] += (xX_Q17_smth[(j-1)*LTP_ORDER + k] - xX_Q17_smth[j*LTP_ORDER + k]) >> 2;
+        }
+    }
+    for( j = 0; j < nb_subfr-1; j++ ) {
+        for( k = 0; k < LTP_ORDER*LTP_ORDER; k++ ) {
+            XX_Q17_smth[j*LTP_ORDER*LTP_ORDER + k] += (XX_Q17_smth[(j+1)*LTP_ORDER*LTP_ORDER + k] - XX_Q17_smth[j*LTP_ORDER*LTP_ORDER + k]) >> 2;
+        }
+        for( k = 0; k < LTP_ORDER; k++ ) {
+            xX_Q17_smth[j*LTP_ORDER + k] += (xX_Q17_smth[(j+1)*LTP_ORDER + k] - xX_Q17_smth[j*LTP_ORDER + k]) >> 2;
+        }
+    }
+
     /***************************************************/
     /* iterate over different codebooks with different */
     /* rates/distortions, and choose best */
@@ -61,8 +82,8 @@ void silk_quant_LTP_gains(
         cbk_size   = silk_LTP_vq_sizes[          k ];
 
         /* Set up pointers to first subframe */
-        XX_Q17_ptr = XX_Q17;
-        xX_Q17_ptr = xX_Q17;
+        XX_Q17_ptr = XX_Q17_smth;
+        xX_Q17_ptr = xX_Q17_smth;
 
         res_nrg_Q15 = 0;
         rate_dist_Q7 = 0;
