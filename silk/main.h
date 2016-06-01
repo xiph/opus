@@ -210,7 +210,7 @@ void silk_quant_LTP_gains(
     opus_int8                   *periodicity_index,                         /* O    Periodicity Index               */
     opus_int                    *pred_gain_dB_Q7,                           /* O    LTP prediction gain             */
     const opus_int32            XX_Q17[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ], /* I    Correlation matrix in Q18       */
-    const opus_int32            xX_Q17[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ], /* I    Correlation vector in Q18       */
+    const opus_int32            xX_Q17[ MAX_NB_SUBFR*LTP_ORDER ],           /* I    Correlation vector in Q18       */
     const opus_int              subfr_len,                                  /* I    Number of samples per subframe  */
     const opus_int              nb_subfr,                                   /* I    Number of subframes             */
     int                         arch                                        /* I    Run-time architecture           */
