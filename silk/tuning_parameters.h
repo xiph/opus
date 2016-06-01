@@ -53,9 +53,6 @@ extern "C"
 /* LPC analysis defines: regularization and bandwidth expansion */
 #define FIND_LPC_COND_FAC                               1e-5f
 
-/* LTP analysis defines */
-#define LTP_CORR_INV_MAX                                0.015f
-
 /***********************/
 /* High pass filtering */
 /***********************/
