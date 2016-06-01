@@ -34,13 +34,13 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Entropy constrained matrix-weighted VQ, hard-coded to 5-element vectors, for a single input data vector */
 void silk_VQ_WMat_EC_c(
     opus_int8                   *ind,                           /* O    index of best codebook vector               */
-    opus_int32                  *res_nrg_Q15,                    /* O    best residual energy                        */
-    opus_int32                  *rate_dist_Q8,                  /* O    best total bitrate                            */
+    opus_int32                  *res_nrg_Q15,                   /* O    best residual energy                        */
+    opus_int32                  *rate_dist_Q8,                  /* O    best total bitrate                          */
     const opus_int32            *XX_Q17,                        /* I    correlation matrix                          */
-    const opus_int32            *xX_Q17,                        /* I    correlation vector                            */
+    const opus_int32            *xX_Q17,                        /* I    correlation vector                          */
     const opus_int8             *cb_Q7,                         /* I    codebook                                    */
     const opus_uint8            *cl_Q5,                         /* I    code length for each codebook vector        */
-    const opus_int              subfr_len,                        /* I    number of samples per subframe                */
+    const opus_int              subfr_len,                      /* I    number of samples per subframe              */
     const opus_int              L                               /* I    number of vectors in codebook               */
 )
 {
@@ -62,10 +62,12 @@ void silk_VQ_WMat_EC_c(
     *res_nrg_Q15 = silk_int32_MAX;
     sum1_best_Q15 = silk_int32_MAX;
     cb_row_Q7 = cb_Q7;
+    /* In things go really bad, at least *ind is set to something safe. */
+    *ind = 0;
     for( k = 0; k < L; k++ ) {
         /* Weighted rate */
         /* Quantization error: 1 - 2* xX * cb + cb' * XX * cb */
-        sum1_Q15 = SILK_FIX_CONST( 1.0001, 15 );
+        sum1_Q15 = SILK_FIX_CONST( 1.001, 15 );
 
         /* first row of XX_Q17 */
         sum2_Q24 = silk_MLA( neg_xX_Q24[ 0 ], XX_Q17[  1 ], cb_row_Q7[ 1 ] );
@@ -102,11 +104,8 @@ void silk_VQ_WMat_EC_c(
         sum2_Q24 = silk_MLA( sum2_Q24,        XX_Q17[ 24 ], cb_row_Q7[ 4 ] );
         sum1_Q15 = silk_SMLAWB( sum1_Q15,        sum2_Q24,  cb_row_Q7[ 4 ] );
 
-        /* If ever the following assert triggers, increase LTP_CORR_INV_MAX */
-        silk_assert( sum1_Q15 >= 0 );
-
         /* find best */
-        if( sum1_Q15 <= sum1_best_Q15 ) {
+        if( sum1_Q15 <= sum1_best_Q15 && sum1_Q15 >= 0 ) {
             sum1_best_Q15 = sum1_Q15;
             /* Translate residual energy to bits using high-rate assumption (6 dB ==> 1 bit/sample) */
             bits_res_Q8 = silk_SMULBB( subfr_len, silk_lin2log( sum1_Q15 ) - (15 << 7) );

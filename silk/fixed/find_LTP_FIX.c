@@ -33,9 +33,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 
 void silk_find_LTP_FIX(
-    opus_int32                      XXLTP_Q17[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Correlation matrix                                                */
-    opus_int32                      xXLTP_Q17[ MAX_NB_SUBFR * LTP_ORDER ],    /* O    Correlation vector                                                            */
-    const opus_int16                r_ptr[],                                /* I    Residual signal after LPC                                                    */
+    opus_int32                      XXLTP_Q17[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Correlation matrix                                               */
+    opus_int32                      xXLTP_Q17[ MAX_NB_SUBFR * LTP_ORDER ],  /* O    Correlation vector                                                          */
+    const opus_int16                r_ptr[],                                /* I    Residual signal after LPC                                                   */
     const opus_int                  lag[ MAX_NB_SUBFR ],                    /* I    LTP lags                                                                    */
     const opus_int                  subfr_length,                           /* I    Subframe length                                                             */
     const opus_int                  nb_subfr,                               /* I    Number of subframes                                                         */
@@ -53,20 +53,20 @@ void silk_find_LTP_FIX(
     for( k = 0; k < nb_subfr; k++ ) {
         lag_ptr = r_ptr - ( lag[ k ] + LTP_ORDER / 2 );
 
-        silk_sum_sqr_shift( &xx, &xx_shifts, r_ptr, subfr_length );                                    /* xx in Q( -xx_shifts ) */
+        silk_sum_sqr_shift( &xx, &xx_shifts, r_ptr, subfr_length + LTP_ORDER );                            /* xx in Q( -xx_shifts ) */
         silk_corrMatrix_FIX( lag_ptr, subfr_length, LTP_ORDER, XXLTP_Q17_ptr, &nrg, &XX_shifts, arch );    /* XXLTP_Q17_ptr and nrg in Q( -XX_shifts ) */
         extra_shifts = xx_shifts - XX_shifts;
         if( extra_shifts > 0 ) {
             /* Shift XX */
             xX_shifts = xx_shifts;
             for( i = 0; i < LTP_ORDER * LTP_ORDER; i++ ) {
-                XXLTP_Q17_ptr[ i ] = silk_RSHIFT32( XXLTP_Q17_ptr[ i ], extra_shifts );                /* Q( -xX_shifts ) */
+                XXLTP_Q17_ptr[ i ] = silk_RSHIFT32( XXLTP_Q17_ptr[ i ], extra_shifts );              /* Q( -xX_shifts ) */
             }
             nrg = silk_RSHIFT32( nrg, extra_shifts );                                                /* Q( -xX_shifts ) */
-        } else if( extra_shifts < 0 ) { 
+        } else if( extra_shifts < 0 ) {
             /* Shift xx */
             xX_shifts = XX_shifts;
-            xx = silk_RSHIFT32( xx, -extra_shifts );                                                /* Q( -xX_shifts ) */
+            xx = silk_RSHIFT32( xx, -extra_shifts );                                                 /* Q( -xX_shifts ) */
         } else {
             xX_shifts = xx_shifts;
         }
