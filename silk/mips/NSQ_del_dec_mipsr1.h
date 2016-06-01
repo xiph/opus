@@ -323,8 +323,9 @@ static inline void silk_noise_shape_quantizer_del_dec(
             psSS[ 1 ].xq_Q14       = xq_Q14;
         }
 
-        *smpl_buf_idx  = ( *smpl_buf_idx - 1 ) & DECISION_DELAY_MASK;                   /* Index to newest samples              */
-        last_smple_idx = ( *smpl_buf_idx + decisionDelay ) & DECISION_DELAY_MASK;       /* Index to decisionDelay old samples   */
+        *smpl_buf_idx  = ( *smpl_buf_idx - 1 ) % DECISION_DELAY;
+        if( *smpl_buf_idx < 0 ) *smpl_buf_idx += DECISION_DELAY;
+        last_smple_idx = ( *smpl_buf_idx + decisionDelay ) % DECISION_DELAY;
 
         /* Find winner */
         RDmin_Q10 = psSampleState[ 0 ][ 0 ].RD_Q10;
