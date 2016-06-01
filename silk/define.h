@@ -157,8 +157,7 @@ extern "C"
 #define LTP_BUF_LENGTH                          512
 #define LTP_MASK                                ( LTP_BUF_LENGTH - 1 )
 
-#define DECISION_DELAY                          32
-#define DECISION_DELAY_MASK                     ( DECISION_DELAY - 1 )
+#define DECISION_DELAY                          40
 
 /* Number of subframes for excitation entropy coding */
 #define SHELL_CODEC_FRAME_LENGTH                16
