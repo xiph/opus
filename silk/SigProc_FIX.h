@@ -35,7 +35,7 @@ extern "C"
 
 /*#define silk_MACRO_COUNT */          /* Used to enable WMOPS counting */
 
-#define SILK_MAX_ORDER_LPC            16            /* max order of the LPC analysis in schur() and k2a() */
+#define SILK_MAX_ORDER_LPC            24            /* max order of the LPC analysis in schur() and k2a() */
 
 #include <string.h>                                 /* for memset(), memcpy(), memmove() */
 #include "typedef.h"

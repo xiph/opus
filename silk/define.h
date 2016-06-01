@@ -147,7 +147,7 @@ extern "C"
 #define USE_HARM_SHAPING                        1
 
 /* Max LPC order of noise shaping filters */
-#define MAX_SHAPE_LPC_ORDER                     16
+#define MAX_SHAPE_LPC_ORDER                     24
 
 #define HARM_SHAPE_FIR_TAPS                     3
 

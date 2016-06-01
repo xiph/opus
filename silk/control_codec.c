@@ -318,7 +318,7 @@ static opus_int silk_setup_complexity(
         psEncC->pitchEstimationComplexity       = SILK_PE_MIN_COMPLEX;
         psEncC->pitchEstimationThreshold_Q16    = SILK_FIX_CONST( 0.8, 16 );
         psEncC->pitchEstimationLPCOrder         = 6;
-        psEncC->shapingLPCOrder                 = 8;
+        psEncC->shapingLPCOrder                 = 12;
         psEncC->la_shape                        = 3 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 1;
         psEncC->useInterpolatedNLSFs            = 0;
@@ -328,7 +328,7 @@ static opus_int silk_setup_complexity(
         psEncC->pitchEstimationComplexity       = SILK_PE_MID_COMPLEX;
         psEncC->pitchEstimationThreshold_Q16    = SILK_FIX_CONST( 0.76, 16 );
         psEncC->pitchEstimationLPCOrder         = 8;
-        psEncC->shapingLPCOrder                 = 10;
+        psEncC->shapingLPCOrder                 = 14;
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 1;
         psEncC->useInterpolatedNLSFs            = 0;
@@ -338,7 +338,7 @@ static opus_int silk_setup_complexity(
         psEncC->pitchEstimationComplexity       = SILK_PE_MID_COMPLEX;
         psEncC->pitchEstimationThreshold_Q16    = SILK_FIX_CONST( 0.74, 16 );
         psEncC->pitchEstimationLPCOrder         = 10;
-        psEncC->shapingLPCOrder                 = 12;
+        psEncC->shapingLPCOrder                 = 16;
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 2;
         psEncC->useInterpolatedNLSFs            = 1;
@@ -348,7 +348,7 @@ static opus_int silk_setup_complexity(
         psEncC->pitchEstimationComplexity       = SILK_PE_MID_COMPLEX;
         psEncC->pitchEstimationThreshold_Q16    = SILK_FIX_CONST( 0.72, 16 );
         psEncC->pitchEstimationLPCOrder         = 12;
-        psEncC->shapingLPCOrder                 = 14;
+        psEncC->shapingLPCOrder                 = 20;
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 3;
         psEncC->useInterpolatedNLSFs            = 1;
@@ -358,7 +358,7 @@ static opus_int silk_setup_complexity(
         psEncC->pitchEstimationComplexity       = SILK_PE_MAX_COMPLEX;
         psEncC->pitchEstimationThreshold_Q16    = SILK_FIX_CONST( 0.7, 16 );
         psEncC->pitchEstimationLPCOrder         = 16;
-        psEncC->shapingLPCOrder                 = 16;
+        psEncC->shapingLPCOrder                 = 24;
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = MAX_DEL_DEC_STATES;
         psEncC->useInterpolatedNLSFs            = 1;
