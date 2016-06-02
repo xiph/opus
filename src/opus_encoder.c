@@ -1001,14 +1001,14 @@ static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
    equiv -= (40*channels+20)*(frame_rate - 50);
    /* CBR is about a 10% penalty for both SILK and CELT. */
    if (!vbr)
-      equiv = equiv*9/10;
-   /* Complexity makes about 10% difference (from 0 to 10) in general. */
+      equiv -= equiv/12;
+   /* Complexity makes about 8% difference (from 0 to 10) in general. */
    equiv = equiv * (90+complexity)/100;
    if (mode == MODE_SILK_ONLY || mode == MODE_HYBRID)
    {
-      /* SILK complexity 0-3 uses the non-delayed-decision NSQ, which
+      /* SILK complexity 0-1 uses the non-delayed-decision NSQ, which
          costs about 20%. */
-      if (complexity<4)
+      if (complexity<2)
          equiv = equiv*4/5;
    } else if (mode == MODE_CELT_ONLY) {
       /* CELT complexity 0-4 doesn't have the pitch filter, which costs
