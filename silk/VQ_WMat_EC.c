@@ -47,7 +47,7 @@ void silk_VQ_WMat_EC_c(
     opus_int   k;
     const opus_int8 *cb_row_Q7;
     opus_int32 neg_xX_Q24[ 5 ];
-    opus_int32 sum1_Q15, sum2_Q24, sum1_best_Q15;
+    opus_int32 sum1_Q15, sum2_Q24;
     opus_int32 bits_res_Q8, bits_tot_Q8;
 
     /* Negate and convert to new Q domain */
@@ -60,7 +60,6 @@ void silk_VQ_WMat_EC_c(
     /* Loop over codebook */
     *rate_dist_Q8 = silk_int32_MAX;
     *res_nrg_Q15 = silk_int32_MAX;
-    sum1_best_Q15 = silk_int32_MAX;
     cb_row_Q7 = cb_Q7;
     /* In things go really bad, at least *ind is set to something safe. */
     *ind = 0;
@@ -105,8 +104,7 @@ void silk_VQ_WMat_EC_c(
         sum1_Q15 = silk_SMLAWB( sum1_Q15,        sum2_Q24,  cb_row_Q7[ 4 ] );
 
         /* find best */
-        if( sum1_Q15 <= sum1_best_Q15 && sum1_Q15 >= 0 ) {
-            sum1_best_Q15 = sum1_Q15;
+        if( sum1_Q15 >= 0 ) {
             /* Translate residual energy to bits using high-rate assumption (6 dB ==> 1 bit/sample) */
             bits_res_Q8 = silk_SMULBB( subfr_len, silk_lin2log( sum1_Q15 ) - (15 << 7) );
             bits_tot_Q8 = silk_ADD_LSHIFT32( bits_res_Q8, cl_Q5[ k ], 2 );
