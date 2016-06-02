@@ -980,8 +980,8 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
    }
    if (!vbr)
    {
-      if (silk_rate > 8000)
-         silk_rate -= 1000;
+      /* Tiny boost to SILK for CBR. We should probably tune this better. */
+      silk_rate += 100;
    }
    return silk_rate;
 }
