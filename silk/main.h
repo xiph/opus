@@ -332,6 +332,7 @@ opus_int32 silk_NLSF_encode(                                    /* O    Returns 
           opus_int16            *pNLSF_Q15,                     /* I/O  Quantized NLSF vector [ LPC_ORDER ]         */
     const silk_NLSF_CB_struct   *psNLSF_CB,                     /* I    Codebook object                             */
     const opus_int16            *pW_QW,                         /* I    NLSF weight vector [ LPC_ORDER ]            */
+    const opus_int16            *pNLSF_Q15_prev,                /* I    Prevoius quantized NLSFs [ LPC_ORDER ]      */
     const opus_int              NLSF_mu_Q20,                    /* I    Rate weight for the RD optimization         */
     const opus_int              nSurvivors,                     /* I    Max survivors after first stage             */
     const opus_int              signalType                      /* I    Signal type: 0/1/2                          */
@@ -348,8 +349,9 @@ void silk_NLSF_VQ(
 );
 
 /* Delayed-decision quantizer for NLSF residuals */
-opus_int32 silk_NLSF_del_dec_quant(                             /* O    Returns RD value in Q25                     */
-    opus_int8                   indices[],                      /* O    Quantization indices [ order ]              */
+void silk_NLSF_del_dec_quant(
+    opus_int32                  RD_out_Q25[],                   /* O    RD value in Q25                             */
+    opus_int8                   indices[],                      /* O    Quantization indices                        */
     const opus_int16            x_Q10[],                        /* I    Input [ order ]                             */
     const opus_int16            w_Q5[],                         /* I    Weights [ order ]                           */
     const opus_uint8            pred_coef_Q8[],                 /* I    Backward predictor coefs [ order ]          */

@@ -32,8 +32,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 /* Delayed-decision quantizer for NLSF residuals */
-opus_int32 silk_NLSF_del_dec_quant(                             /* O    Returns RD value in Q25                     */
-    opus_int8                   indices[],                      /* O    Quantization indices [ order ]              */
+void silk_NLSF_del_dec_quant(
+    opus_int32                  RD_out_Q25[],                   /* O    RD value in Q25                             */
+    opus_int8                   indices[],                      /* O    Quantization indices                        */
     const opus_int16            x_Q10[],                        /* I    Input [ order ]                             */
     const opus_int16            w_Q5[],                         /* I    Weights [ order ]                           */
     const opus_uint8            pred_coef_Q8[],                 /* I    Backward predictor coefs [ order ]          */
@@ -47,7 +48,7 @@ opus_int32 silk_NLSF_del_dec_quant(                             /* O    Returns 
 {
     opus_int         i, j, nStates, ind_tmp, ind_min_max, ind_max_min, in_Q10, res_Q10;
     opus_int         pred_Q10, diff_Q10, out0_Q10, out1_Q10, rate0_Q5, rate1_Q5;
-    opus_int32       RD_tmp_Q25, min_Q25, min_max_Q25, max_min_Q25, pred_coef_Q16;
+    opus_int32       RD_tmp_Q25, min_max_Q25, max_min_Q25, pred_coef_Q16;
     opus_int         ind_sort[         NLSF_QUANT_DEL_DEC_STATES ];
     opus_int8        ind[              NLSF_QUANT_DEL_DEC_STATES ][ MAX_LPC_ORDER ];
     opus_int16       prev_out_Q10[ 2 * NLSF_QUANT_DEL_DEC_STATES ];
@@ -194,22 +195,7 @@ opus_int32 silk_NLSF_del_dec_quant(                             /* O    Returns 
         }
     }
 
-    /* last sample: find winner, copy indices and return RD value */
-    ind_tmp = 0;
-    min_Q25 = silk_int32_MAX;
-    for( j = 0; j < 2 * NLSF_QUANT_DEL_DEC_STATES; j++ ) {
-        if( min_Q25 > RD_Q25[ j ] ) {
-            min_Q25 = RD_Q25[ j ];
-            ind_tmp = j;
-        }
-    }
-    for( j = 0; j < order; j++ ) {
-        indices[ j ] = ind[ ind_tmp & ( NLSF_QUANT_DEL_DEC_STATES - 1 ) ][ j ];
-        silk_assert( indices[ j ] >= -NLSF_QUANT_MAX_AMPLITUDE_EXT );
-        silk_assert( indices[ j ] <=  NLSF_QUANT_MAX_AMPLITUDE_EXT );
-    }
-    indices[ 0 ] += silk_RSHIFT( ind_tmp, NLSF_QUANT_DEL_DEC_STATES_LOG2 );
-    silk_assert( indices[ 0 ] <= NLSF_QUANT_MAX_AMPLITUDE_EXT );
-    silk_assert( min_Q25 >= 0 );
-    return min_Q25;
+    /* copy indices and RD values */
+    silk_memcpy( indices, ind, NLSF_QUANT_DEL_DEC_STATES * MAX_LPC_ORDER * sizeof( opus_int8 ) );
+    silk_memcpy( RD_out_Q25, RD_Q25, NLSF_QUANT_DEL_DEC_STATES * sizeof( opus_int32 ) );
 }

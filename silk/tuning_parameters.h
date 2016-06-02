@@ -50,7 +50,7 @@ extern "C"
 /* Linear prediction */
 /*********************/
 
-/* LPC analysis defines: regularization and bandwidth expansion */
+/* LPC analysis regularization */
 #define FIND_LPC_COND_FAC                               1e-5f
 
 /***********************/
@@ -127,6 +127,9 @@ extern "C"
 
 /* subframe smoothing coefficient for HarmBoost, HarmShapeGain, Tilt (lower -> more smoothing) */
 #define SUBFR_SMTH_COEF                                 0.4f
+
+/* bias in LSF quantization towards previous quantized LSFs (0.0...1.0) */
+#define LSF_QUANT_BIAS_TO_PREVIOUS                      0.3f
 
 /* parameters defining the R/D tradeoff in the residual quantizer */
 #define LAMBDA_OFFSET                                   1.2f

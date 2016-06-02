@@ -84,7 +84,7 @@ void silk_process_NLSFs(
         }
     }
 
-    silk_NLSF_encode( psEncC->indices.NLSFIndices, pNLSF_Q15, psEncC->psNLSF_CB, pNLSFW_QW,
+    silk_NLSF_encode( psEncC->indices.NLSFIndices, pNLSF_Q15, psEncC->psNLSF_CB, pNLSFW_QW, prev_NLSFq_Q15,
         NLSF_mu_Q20, psEncC->NLSF_MSVQ_Survivors, psEncC->indices.signalType );
 
     /* Convert quantized NLSFs back to LPC coefficients */
