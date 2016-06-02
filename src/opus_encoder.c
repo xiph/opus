@@ -996,10 +996,10 @@ static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
    equiv = bitrate;
    /* Take into account overhead from smaller frames. */
    equiv -= (40*channels+20)*(frame_rate - 50);
-   /* CBR is about a 10% penalty for both SILK and CELT. */
+   /* CBR is about a 8% penalty for both SILK and CELT. */
    if (!vbr)
       equiv -= equiv/12;
-   /* Complexity makes about 8% difference (from 0 to 10) in general. */
+   /* Complexity makes about 10% difference (from 0 to 10) in general. */
    equiv = equiv * (90+complexity)/100;
    if (mode == MODE_SILK_ONLY || mode == MODE_HYBRID)
    {
