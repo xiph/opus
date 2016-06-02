@@ -7,12 +7,12 @@
     </head>
     <body bgcolor="0x333333" text="#60B0C0">
         <b><u>Encapsulation of Opus in ISO Base Media File Format</u></b><br>
-        <font size="2">last updated: January 12, 2015</font><br>
+        <font size="2">last updated: April 28, 2016</font><br>
         <br>
         <div class="normal_link pre frame_box">
 
                                 Encapsulation of Opus in ISO Base Media File Format
-                                        Version 0.6.6 (incomplete)
+                                        Version 0.6.8 (incomplete)
 
 
 Table of Contents
@@ -47,17 +47,13 @@ Table of Contents
 
 <a name="2"></a>
 2 Normative References
-    [1] ISO/IEC 14496-12:2012 Corrected version
+    [1] ISO/IEC 14496-12:2015 Corrected version
         Information technology — Coding of audio-visual objects — Part 12: ISO base media file format
 
-    [2] ISO/IEC 14496-12:2012/Amd.1:2013
-        Information technology — Coding of audio-visual objects — Part 12: ISO base media file format
-        AMENDMENT 1: Various enhancements including support for large metadata
-
-    [3] RFC 6716
+    [2] RFC 6716
         Definition of the Opus Audio Codec
 
-    [4] draft-ietf-codec-oggopus-06
+    [3] draft-ietf-codec-oggopus-06
         Ogg Encapsulation for the Opus Audio Codec
 
 <a name="3"></a>
@@ -129,7 +125,7 @@ Table of Contents
                 The channelcount field shall be set to the sum of the total number of Opus bitstreams and the number
                 of Opus bitstreams producing two channels. This value is indentical with (M+N), where M is the value of
                 the *Coupled Stream Count* field and N is the value of the *Stream Count* field in the *Channel Mapping
-                Table* in the identification header defined in Ogg Opus [4].
+                Table* in the identification header defined in Ogg Opus [3].
             + samplesize:
                 The samplesize field shall be set to 16.
             + samplerate:
@@ -142,7 +138,7 @@ Table of Contents
             The Opus Specific Box contains the Version field and this specification defines version 0 of this box.
             If incompatible changes occured in the fields after the Version field within the OpusSpecificBox in the
             future versions of this specification, another version will be defined.
-            This box refers to Ogg Opus [4] at many parts but all the data are stored as big-endian format.
+            This box refers to Ogg Opus [3] at many parts but all the data are stored as big-endian format.
 
             The syntax and semantics of the Opus Specific Box is shown as follows.
 
@@ -170,37 +166,37 @@ Table of Contents
                 of those values, the reader shall not read the fields after this within the OpusSpecificBox.
             + OutputChannelCount:
                 The OutputChannelCount field shall be set to the same value as the *Output Channel Count* field in the
-                identification header defined in Ogg Opus [4].
+                identification header defined in Ogg Opus [3].
             + PreSkip:
                 The PreSkip field indicates the number of the priming samples, that is, the number of samples at 48000 Hz
-                to discard from the decoder output when starting playback. The value of the PreSkip field could be zero
-                when removing Opus samples containing the number of PCM samples equal to or more than of the priming
-                samples. The PreSkip field is not used for discarding the priming samples at the whole playback at all
-                since it is informative only, and that task falls on the Edit List Box.
+                to discard from the decoder output when starting playback. The value of the PreSkip field shall be at least
+                80 milliseconds' worth of PCM samples even when removing any number of Opus samples which may or may not
+                contain the priming samples. The PreSkip field is not used for discarding the priming samples at the whole
+                playback at all since it is informative only, and that task falls on the Edit List Box.
             + InputSampleRate:
                 The InputSampleRate field shall be set to the same value as the *Input Sample Rate* field in the
-                identification header defined in Ogg Opus [4].
+                identification header defined in Ogg Opus [3].
             + OutputGain:
                 The OutputGain field shall be set to the same value as the *Output Gain* field in the identification
-                header define in Ogg Opus [4]. Note that the value is stored as 8.8 fixed-point.
+                header define in Ogg Opus [3]. Note that the value is stored as 8.8 fixed-point.
             + ChannelMappingFamily:
                 The ChannelMappingFamily field shall be set to the same value as the *Channel Mapping Family* field in
-                the identification header defined in Ogg Opus [4].
+                the identification header defined in Ogg Opus [3].
             + StreamCount:
                 The StreamCount field shall be set to the same value as the *Stream Count* field in the identification
-                header defined in Ogg Opus [4].
+                header defined in Ogg Opus [3].
             + CoupledCount:
                 The CoupledCount field shall be set to the same value as the *Coupled Count* field in the identification
-                header defined in Ogg Opus [4].
+                header defined in Ogg Opus [3].
             + ChannelMapping:
                 The ChannelMapping field shall be set to the same octet string as *Channel Mapping* field in the identi-
-                fication header defined in Ogg Opus [4].
+                fication header defined in Ogg Opus [3].
 
         4.3.3 Sample format<a name="4.3.3"></a>
             An Opus sample is exactly one Opus packet for each of different Opus bitstreams. Due to support more than
             two channels, an Opus sample can contain frames from multiple Opus bitstreams but all Opus packets shall
             share with the total of frame sizes in a single Opus sample. The way of how to pack an Opus packet from
-            each of Opus bitstreams into a single Opus sample follows Appendix B. in RFC 6716 [3].
+            each of Opus bitstreams into a single Opus sample follows Appendix B. in RFC 6716 [2].
             The endianness has nothing to do with any Opus sample since every Opus packet is processed byte-by-byte.
             In this specification, 'sample' means 'Opus sample' except for 'padded samples', 'priming samples', 'valid
             sample' and 'sample-accurate', i.e. 'sample' is 'sample' in the term defined in ISO/IEC 14496-12 [1].
