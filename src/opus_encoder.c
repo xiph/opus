@@ -122,28 +122,28 @@ struct OpusEncoder {
    middle (memoriless) threshold. The second column is the hysteresis
    (difference with the middle) */
 static const opus_int32 mono_voice_bandwidth_thresholds[8] = {
-        11000, 1000, /* NB<->MB */
-        12500, 1000, /* MB<->WB */
-        14000, 1000, /* WB<->SWB */
-        15000, 2000, /* SWB<->FB */
+        10000, 1000, /* NB<->MB */
+        11000, 1000, /* MB<->WB */
+        13500, 1000, /* WB<->SWB */
+        14000, 2000, /* SWB<->FB */
 };
 static const opus_int32 mono_music_bandwidth_thresholds[8] = {
-        11000, 1000, /* NB<->MB */
-        12500, 1000, /* MB<->WB */
-        14000, 1000, /* WB<->SWB */
-        15000, 2000, /* SWB<->FB */
+        10000, 1000, /* NB<->MB */
+        11000, 1000, /* MB<->WB */
+        13500, 1000, /* WB<->SWB */
+        14000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
-        11000, 1000, /* NB<->MB */
-        12500, 1000, /* MB<->WB */
-        14000, 1000, /* WB<->SWB */
-        15000, 2000, /* SWB<->FB */
+        10000, 1000, /* NB<->MB */
+        11000, 1000, /* MB<->WB */
+        13500, 1000, /* WB<->SWB */
+        14000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
-        11000, 1000, /* NB<->MB */
-        12500, 1000, /* MB<->WB */
-        14000, 1000, /* WB<->SWB */
-        15000, 2000, /* SWB<->FB */
+        10000, 1000, /* NB<->MB */
+        11000, 1000, /* MB<->WB */
+        13500, 1000, /* WB<->SWB */
+        14000, 2000, /* SWB<->FB */
 };
 /* Threshold bit-rates for switching between mono and stereo */
 static const opus_int32 stereo_voice_threshold = 24000;
@@ -953,7 +953,7 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
               SWB-10  FB-10 SWB-20  FB-20 */
       {    0,     0,     0,     0,     0},
       {12000, 10000, 10000, 10000, 10000},
-      {16000, 14000, 14000, 14000, 14000},
+      {16000, 14000, 14000, 14000, 13500},
       {20000, 16000, 16000, 16000, 16000},
       {24000, 18000, 18000, 18000, 18000},
       {32000, 22000, 22000, 22000, 22000},
