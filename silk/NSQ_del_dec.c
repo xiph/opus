@@ -362,9 +362,6 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec(
     NSQ_sample_struct  *psSS;
     SAVE_STACK;
 
-    /* We're getting desperate to hit the target -- pretend there's
-       no dithering to make hitting the target more likely. */
-    if (Lambda_Q10 > 3072) offset_Q10 = 0;
     silk_assert( nStatesDelayedDecision > 0 );
     ALLOC( psSampleState, nStatesDelayedDecision, NSQ_sample_pair );
 
