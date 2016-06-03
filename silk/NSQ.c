@@ -225,10 +225,6 @@ void silk_noise_shape_quantizer(
     silk_short_prediction_create_arch_coef(a_Q12_arch, a_Q12, predictLPCOrder);
 #endif
 
-    /* We're getting desperate to hit the target -- pretend there's
-       no dithering to make hitting the target more likely. */
-    if (Lambda_Q10 > 3072) offset_Q10 = 0;
-
     for( i = 0; i < length; i++ ) {
         /* Generate dither */
         NSQ->rand_seed = silk_RAND( NSQ->rand_seed );
