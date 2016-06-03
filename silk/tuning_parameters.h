@@ -50,8 +50,11 @@ extern "C"
 /* Linear prediction */
 /*********************/
 
-/* LPC analysis defines: regularization and bandwidth expansion */
+/* LPC analysis regularization */
 #define FIND_LPC_COND_FAC                               1e-5f
+
+/* Max cumulative LTP gain */
+#define MAX_SUM_LOG_GAIN_DB                             250.0f
 
 /***********************/
 /* High pass filtering */

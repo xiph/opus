@@ -175,6 +175,7 @@ void silk_quant_LTP_gains_FLP(
     silk_float                      B[ MAX_NB_SUBFR * LTP_ORDER ],      /* O    Quantized LTP gains                            */
     opus_int8                       cbk_index[ MAX_NB_SUBFR ],          /* O    Codebook index                              */
     opus_int8                       *periodicity_index,                 /* O    Periodicity index                           */
+    opus_int32                      *sum_log_gain_Q7,                   /* I/O  Cumulative max prediction gain  */
     silk_float                      *pred_gain_dB,                        /* O    LTP prediction gain                            */
     const silk_float                XX[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* I    Correlation matrix                    */
     const silk_float                xX[ MAX_NB_SUBFR * LTP_ORDER ],        /* I    Correlation vector                            */
@@ -195,7 +196,7 @@ void silk_quant_LTP_gains_FLP(
         xX_Q17[ i ] = (opus_int32)silk_float2int( xX[ i ] * 131072.0f );
     }
 
-    silk_quant_LTP_gains( B_Q14, cbk_index, periodicity_index, &pred_gain_dB_Q7, XX_Q17, xX_Q17, subfr_len, nb_subfr, arch );
+    silk_quant_LTP_gains( B_Q14, cbk_index, periodicity_index, sum_log_gain_Q7, &pred_gain_dB_Q7, XX_Q17, xX_Q17, subfr_len, nb_subfr, arch );
 
     for( i = 0; i < nb_subfr * LTP_ORDER; i++ ) {
         B[ i ] = (silk_float)B_Q14[ i ] * ( 1.0f / 16384.0f );
