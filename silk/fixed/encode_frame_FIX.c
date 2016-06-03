@@ -206,6 +206,9 @@ opus_int silk_encode_frame_FIX(
                 /****************************************/
                 silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0, condCoding );
 
+                if ( iter == maxIter && !found_lower ) {
+                    silk_memcpy( &sRangeEnc_copy2, psRangeEnc, sizeof( ec_enc ) );
+                }
                 /****************************************/
                 /* Encode Excitation Signal             */
                 /****************************************/
@@ -213,6 +216,16 @@ opus_int silk_encode_frame_FIX(
                     psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
 
                 nBits = ec_tell( psRangeEnc );
+
+                if ( iter == maxIter && !found_lower && nBits > maxBits ) {
+                    silk_memcpy( psRangeEnc, &sRangeEnc_copy2, sizeof( ec_enc ) );
+                    for ( i = 0; i < psEnc->sCmn.frame_length; i++ ) {
+                        psEnc->sCmn.pulses[ i ] = 0;
+                    }
+                    silk_encode_pulses( psRangeEnc, psEnc->sCmn.indices.signalType, psEnc->sCmn.indices.quantOffsetType,
+                        psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
+                    nBits = ec_tell( psRangeEnc );
+                }
 
                 if( useCBR == 0 && iter == 0 && nBits <= maxBits ) {
                     break;
