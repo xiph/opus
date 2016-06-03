@@ -30,12 +30,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "main.h"
+#include "tuning_parameters.h"
 
 void silk_quant_LTP_gains(
     opus_int16                  B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    Quantized LTP gains             */
     opus_int8                   cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook Index                  */
     opus_int8                   *periodicity_index,                         /* O    Periodicity Index               */
-    opus_int32                  *sum_gain_dB_Q7,                            /* I/O  Cumulative max prediction gain  */
+    opus_int32                  *sum_log_gain_Q7,                           /* I/O  Cumulative max prediction gain  */
     opus_int                    *pred_gain_dB_Q7,                           /* O    LTP prediction gain             */
     const opus_int32            XX_Q17[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ], /* I    Correlation matrix in Q18       */
     const opus_int32            xX_Q17[ MAX_NB_SUBFR*LTP_ORDER ],           /* I    Correlation vector in Q18       */
