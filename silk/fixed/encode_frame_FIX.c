@@ -97,6 +97,7 @@ opus_int silk_encode_frame_FIX(
     opus_int     gain_lock[ MAX_NB_SUBFR ] = {0};
     opus_int16   best_gain_mult[ MAX_NB_SUBFR ];
     opus_int     best_sum[ MAX_NB_SUBFR ];
+    opus_int     orig_gain[ MAX_NB_SUBFR ];
     SAVE_STACK;
 
     /* This is totally unnecessary but many compilers (including gcc) are too dumb to realise it */
@@ -201,14 +202,15 @@ opus_int silk_encode_frame_FIX(
                             psEnc->sCmn.arch);
                 }
 
+                if ( iter == maxIter && !found_lower ) {
+                    silk_memcpy( &sRangeEnc_copy2, psRangeEnc, sizeof( ec_enc ) );
+                }
+
                 /****************************************/
                 /* Encode Parameters                    */
                 /****************************************/
                 silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0, condCoding );
 
-                if ( iter == maxIter && !found_lower ) {
-                    silk_memcpy( &sRangeEnc_copy2, psRangeEnc, sizeof( ec_enc ) );
-                }
                 /****************************************/
                 /* Encode Excitation Signal             */
                 /****************************************/
@@ -217,13 +219,27 @@ opus_int silk_encode_frame_FIX(
 
                 nBits = ec_tell( psRangeEnc );
 
+                /* If we still bust after the last iteration, do some damage control. */
                 if ( iter == maxIter && !found_lower && nBits > maxBits ) {
                     silk_memcpy( psRangeEnc, &sRangeEnc_copy2, sizeof( ec_enc ) );
+
+                    /* Set original gains, which should be cheaper to code than the
+                       boosted ones (maybe we can find something cheaper?). */
+                    if (iter == maxIter && !found_lower ) {
+                        for ( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
+                            psEnc->sCmn.indices.GainsIndices[i] = orig_gain[ i ];
+                        }
+                    }
+                    /* Clear all pulses. */
                     for ( i = 0; i < psEnc->sCmn.frame_length; i++ ) {
                         psEnc->sCmn.pulses[ i ] = 0;
                     }
+
+                    silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0, condCoding );
+
                     silk_encode_pulses( psRangeEnc, psEnc->sCmn.indices.signalType, psEnc->sCmn.indices.quantOffsetType,
                         psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
+
                     nBits = ec_tell( psRangeEnc );
                 }
 

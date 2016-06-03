@@ -99,6 +99,7 @@ opus_int silk_encode_frame_FLP(
     opus_int     gain_lock[ MAX_NB_SUBFR ] = {0};
     opus_int16   best_gain_mult[ MAX_NB_SUBFR ];
     opus_int     best_sum[ MAX_NB_SUBFR ];
+    opus_int     orig_gain[ MAX_NB_SUBFR ];
 
     /* This is totally unnecessary but many compilers (including gcc) are too dumb to realise it */
     LastGainIndex_copy2 = nBits_lower = nBits_upper = gainMult_lower = gainMult_upper = 0;
@@ -127,6 +128,9 @@ opus_int silk_encode_frame_FLP(
         x_frame[ LA_SHAPE_MS * psEnc->sCmn.fs_kHz + i * ( psEnc->sCmn.frame_length >> 3 ) ] += ( 1 - ( i & 2 ) ) * 1e-6f;
     }
 
+    for ( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
+       orig_gain[ i ] = psEnc->sCmn.indices.GainsIndices[i];
+    }
     if( !psEnc->sCmn.prefillFlag ) {
         /*****************************************/
         /* Find pitch lags, initial LPC analysis */
@@ -187,14 +191,15 @@ opus_int silk_encode_frame_FLP(
                 /*****************************************/
                 silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, &psEnc->sCmn.indices, &psEnc->sCmn.sNSQ, psEnc->sCmn.pulses, x_frame );
 
+                if ( iter == maxIter && !found_lower ) {
+                    silk_memcpy( &sRangeEnc_copy2, psRangeEnc, sizeof( ec_enc ) );
+                }
+
                 /****************************************/
                 /* Encode Parameters                    */
                 /****************************************/
                 silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0, condCoding );
 
-                if ( iter == maxIter && !found_lower ) {
-                    silk_memcpy( &sRangeEnc_copy2, psRangeEnc, sizeof( ec_enc ) );
-                }
                 /****************************************/
                 /* Encode Excitation Signal             */
                 /****************************************/
@@ -203,13 +208,27 @@ opus_int silk_encode_frame_FLP(
 
                 nBits = ec_tell( psRangeEnc );
 
+                /* If we still bust after the last iteration, do some damage control. */
                 if ( iter == maxIter && !found_lower && nBits > maxBits ) {
                     silk_memcpy( psRangeEnc, &sRangeEnc_copy2, sizeof( ec_enc ) );
+
+                    /* Set original gains, which should be cheaper to code than the
+                       boosted ones (maybe we can find something cheaper?). */
+                    if (iter == maxIter && !found_lower ) {
+                        for ( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
+                            psEnc->sCmn.indices.GainsIndices[i] = orig_gain[ i ];
+                        }
+                    }
+                    /* Clear all pulses. */
                     for ( i = 0; i < psEnc->sCmn.frame_length; i++ ) {
                         psEnc->sCmn.pulses[ i ] = 0;
                     }
+
+                    silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0, condCoding );
+
                     silk_encode_pulses( psRangeEnc, psEnc->sCmn.indices.signalType, psEnc->sCmn.indices.quantOffsetType,
                         psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
+
                     nBits = ec_tell( psRangeEnc );
                 }
 
@@ -274,6 +293,7 @@ opus_int silk_encode_frame_FLP(
                         best_gain_mult[i] = gainMult_Q8;
                     } else {
                         gain_lock[i] = 1;
+                        gain_lock[0] = gain_lock[1] = gain_lock[2] = gain_lock[3] = 1;
                     }
                 }
             }
