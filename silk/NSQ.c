@@ -214,10 +214,6 @@ void silk_noise_shape_quantizer(
     /* Set up short term AR state */
     psLPC_Q14 = &NSQ->sLPC_Q14[ NSQ_LPC_BUF_LENGTH - 1 ];
 
-    /* We're getting desperate to hit the target -- pretend there's
-       no dithering to make hitting the target more likely. */
-    if (Lambda_Q10 > 3072) offset_Q10 = 0;
-
     for( i = 0; i < length; i++ ) {
         /* Generate dither */
         NSQ->rand_seed = silk_RAND( NSQ->rand_seed );
