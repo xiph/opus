@@ -208,6 +208,7 @@ void silk_quant_LTP_gains(
     opus_int16                  B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    Quantized LTP gains             */
     opus_int8                   cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook Index                  */
     opus_int8                   *periodicity_index,                         /* O    Periodicity Index               */
+    opus_int32                  *sum_gain_dB_Q7,                            /* I/O  Cumulative max prediction gain  */
     opus_int                    *pred_gain_dB_Q7,                           /* O    LTP prediction gain             */
     const opus_int32            XX_Q17[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ], /* I    Correlation matrix in Q18       */
     const opus_int32            xX_Q17[ MAX_NB_SUBFR*LTP_ORDER ],           /* I    Correlation vector in Q18       */
@@ -221,17 +222,20 @@ void silk_VQ_WMat_EC_c(
     opus_int8                   *ind,                           /* O    index of best codebook vector               */
     opus_int32                  *res_nrg_Q15,                   /* O    best residual energy                        */
     opus_int32                  *rate_dist_Q8,                  /* O    best total bitrate                          */
+    opus_int                    *gain_Q7,                       /* O    sum of absolute LTP coefficients            */
     const opus_int32            *XX_Q17,                        /* I    correlation matrix                          */
     const opus_int32            *xX_Q17,                        /* I    correlation vector                          */
     const opus_int8             *cb_Q7,                         /* I    codebook                                    */
+    const opus_uint8            *cb_gain_Q7,                    /* I    codebook effective gain                     */
     const opus_uint8            *cl_Q5,                         /* I    code length for each codebook vector        */
     const opus_int              subfr_len,                      /* I    number of samples per subframe              */
+    const opus_int32            max_gain_Q7,                    /* I    maximum sum of absolute LTP coefficients    */
     const opus_int              L                               /* I    number of vectors in codebook               */
 );
 
 #if !defined(OVERRIDE_silk_VQ_WMat_EC)
-#define silk_VQ_WMat_EC(ind, rate_dist_Q15, gain_Q8, XX_Q17, xX_Q17, cb_Q7, cl_Q5, subfr_len, L, arch) \
-    ((void)(arch),silk_VQ_WMat_EC_c(ind, rate_dist_Q15, gain_Q8, XX_Q17, xX_Q17, cb_Q7, cl_Q5, subfr_len, L))
+#define silk_VQ_WMat_EC(ind, res_nrg_Q15, rate_dist_Q8, gain_Q7, XX_Q17, xX_Q17, cb_Q7, cb_gain_Q7, cl_Q5, subfr_len, max_gain_Q7, L, arch) \
+    ((void)(arch),silk_VQ_WMat_EC_c(ind, res_nrg_Q15, rate_dist_Q8, gain_Q7, XX_Q17, xX_Q17, cb_Q7, cb_gain_Q7, cl_Q5, subfr_len, max_gain_Q7, L))
 #endif
 
 /************************************/
