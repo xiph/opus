@@ -188,6 +188,7 @@ void silk_quant_LTP_gains_FLP(
     silk_float                      B[ MAX_NB_SUBFR * LTP_ORDER ],      /* O    Quantized LTP gains                         */
     opus_int8                       cbk_index[ MAX_NB_SUBFR ],          /* O    Codebook index                              */
     opus_int8                       *periodicity_index,                 /* O    Periodicity index                           */
+    opus_int32                      *sum_log_gain_Q7,                   /* I/O  Cumulative max prediction gain  */
     silk_float                      *pred_gain_dB,                      /* O    LTP prediction gain                         */
     const silk_float                XX[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* I    Correlation matrix                  */
     const silk_float                xX[ MAX_NB_SUBFR * LTP_ORDER ],     /* I    Correlation vector                          */

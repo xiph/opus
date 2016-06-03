@@ -36,15 +36,18 @@ void silk_VQ_WMat_EC_c(
     opus_int8                   *ind,                           /* O    index of best codebook vector               */
     opus_int32                  *res_nrg_Q15,                   /* O    best residual energy                        */
     opus_int32                  *rate_dist_Q8,                  /* O    best total bitrate                          */
+    opus_int                    *gain_Q7,                       /* O    sum of absolute LTP coefficients            */
     const opus_int32            *XX_Q17,                        /* I    correlation matrix                          */
     const opus_int32            *xX_Q17,                        /* I    correlation vector                          */
     const opus_int8             *cb_Q7,                         /* I    codebook                                    */
+    const opus_uint8            *cb_gain_Q7,                    /* I    codebook effective gain                     */
     const opus_uint8            *cl_Q5,                         /* I    code length for each codebook vector        */
     const opus_int              subfr_len,                      /* I    number of samples per subframe              */
+    const opus_int32            max_gain_Q7,                    /* I    maximum sum of absolute LTP coefficients    */
     const opus_int              L                               /* I    number of vectors in codebook               */
 )
 {
-    opus_int   k;
+    opus_int   k, gain_tmp_Q7;
     const opus_int8 *cb_row_Q7;
     opus_int32 neg_xX_Q24[ 5 ];
     opus_int32 sum1_Q15, sum2_Q24;
@@ -64,9 +67,14 @@ void silk_VQ_WMat_EC_c(
     /* In things go really bad, at least *ind is set to something safe. */
     *ind = 0;
     for( k = 0; k < L; k++ ) {
+        opus_int32 penalty;
+        gain_tmp_Q7 = cb_gain_Q7[k];
         /* Weighted rate */
         /* Quantization error: 1 - 2 * xX * cb + cb' * XX * cb */
         sum1_Q15 = SILK_FIX_CONST( 1.001, 15 );
+
+        /* Penalty for too large gain */
+        penalty = silk_LSHIFT32( silk_max( silk_SUB32( gain_tmp_Q7, max_gain_Q7 ), 0 ), 11 );
 
         /* first row of XX_Q17 */
         sum2_Q24 = silk_MLA( neg_xX_Q24[ 0 ], XX_Q17[  1 ], cb_row_Q7[ 1 ] );
@@ -106,13 +114,14 @@ void silk_VQ_WMat_EC_c(
         /* find best */
         if( sum1_Q15 >= 0 ) {
             /* Translate residual energy to bits using high-rate assumption (6 dB ==> 1 bit/sample) */
-            bits_res_Q8 = silk_SMULBB( subfr_len, silk_lin2log( sum1_Q15 ) - (15 << 7) );
+            bits_res_Q8 = silk_SMULBB( subfr_len, silk_lin2log( sum1_Q15 + penalty) - (15 << 7) );
             /* In the following line we reduce the codelength component by half ("-1"); seems to slghtly improve quality */
             bits_tot_Q8 = silk_ADD_LSHIFT32( bits_res_Q8, cl_Q5[ k ], 3-1 );
             if( bits_tot_Q8 <= *rate_dist_Q8 ) {
                 *rate_dist_Q8 = bits_tot_Q8;
-                *res_nrg_Q15 = sum1_Q15;
+                *res_nrg_Q15 = sum1_Q15 + penalty;
                 *ind = (opus_int8)k;
+                *gain_Q7 = gain_tmp_Q7;
             }
         }
 
