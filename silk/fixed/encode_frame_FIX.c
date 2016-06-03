@@ -260,13 +260,18 @@ opus_int silk_encode_frame_FIX(
 
             if( ( found_lower & found_upper ) == 0 ) {
                 /* Adjust gain according to high-rate rate/distortion curve */
-                opus_int32 gain_factor_Q16;
-                gain_factor_Q16 = silk_log2lin( silk_LSHIFT( nBits - maxBits, 7 ) / psEnc->sCmn.frame_length + SILK_FIX_CONST( 16, 7 ) );
-                gain_factor_Q16 = silk_min_32( gain_factor_Q16, SILK_FIX_CONST( 2, 16 ) );
                 if( nBits > maxBits ) {
-                    gain_factor_Q16 = silk_max_32( gain_factor_Q16, SILK_FIX_CONST( 1.3, 16 ) );
+                    if (gainMult_Q8 < 16384) {
+                        gainMult_Q8 *= 2;
+                    } else {
+                        gainMult_Q8 = 32767;
+                    }
+                } else {
+                    opus_int32 gain_factor_Q16;
+                    gain_factor_Q16 = silk_log2lin( silk_LSHIFT( nBits - maxBits, 7 ) / psEnc->sCmn.frame_length + SILK_FIX_CONST( 16, 7 ) );
+                    gainMult_Q8 = silk_SMULWB( gain_factor_Q16, gainMult_Q8 );
                 }
-                gainMult_Q8 = silk_SMULWB( gain_factor_Q16, gainMult_Q8 );
+
             } else {
                 /* Adjust gain by interpolating */
                 gainMult_Q8 = gainMult_lower + silk_DIV32_16( silk_MUL( gainMult_upper - gainMult_lower, maxBits - nBits_lower ), nBits_upper - nBits_lower );
