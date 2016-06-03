@@ -94,6 +94,9 @@ opus_int silk_encode_frame_FIX(
     opus_int16   ec_prevLagIndex_copy;
     opus_int     ec_prevSignalType_copy;
     opus_int8    LastGainIndex_copy2;
+    opus_int     gain_lock[ MAX_NB_SUBFR ] = {0};
+    opus_int16   best_gain_mult[ MAX_NB_SUBFR ];
+    opus_int     best_sum[ MAX_NB_SUBFR ];
     SAVE_STACK;
 
     /* This is totally unnecessary but many compilers (including gcc) are too dumb to realise it */
@@ -258,6 +261,21 @@ opus_int silk_encode_frame_FIX(
                 break;
             }
 
+            if ( !found_lower && nBits > maxBits ) {
+                int j;
+                for ( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
+                    int sum=0;
+                    for ( j = i*psEnc->sCmn.subfr_length; j < (i+1)*psEnc->sCmn.subfr_length; j++ ) {
+                        sum += abs( psEnc->sCmn.pulses[j] );
+                    }
+                    if ( iter == 0 || (sum < best_sum[i] && !gain_lock[i]) ) {
+                        best_sum[i] = sum;
+                        best_gain_mult[i] = gainMult_Q8;
+                    } else {
+                        gain_lock[i] = 1;
+                    }
+                }
+            }
             if( ( found_lower & found_upper ) == 0 ) {
                 /* Adjust gain according to high-rate rate/distortion curve */
                 if( nBits > maxBits ) {
@@ -285,7 +303,13 @@ opus_int silk_encode_frame_FIX(
             }
 
             for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
-                sEncCtrl.Gains_Q16[ i ] = silk_LSHIFT_SAT32( silk_SMULWB( sEncCtrl.GainsUnq_Q16[ i ], gainMult_Q8 ), 8 );
+                opus_int16 tmp;
+                if ( gain_lock[i] ) {
+                    tmp = best_gain_mult[i];
+                } else {
+                    tmp = gainMult_Q8;
+                }
+                sEncCtrl.Gains_Q16[ i ] = silk_LSHIFT_SAT32( silk_SMULWB( sEncCtrl.GainsUnq_Q16[ i ], tmp ), 8 );
             }
 
             /* Quantize gains */
