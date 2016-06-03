@@ -53,6 +53,9 @@ extern "C"
 /* LPC analysis defines: regularization and bandwidth expansion */
 #define FIND_LPC_COND_FAC                               1e-5f
 
+/* Max cumulative LTP gain */
+#define MAX_SUM_LOG_GAIN_DB                             250.0f
+
 /***********************/
 /* High pass filtering */
 /***********************/

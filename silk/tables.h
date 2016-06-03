@@ -77,6 +77,7 @@ extern const opus_uint8  silk_LTP_per_index_iCDF[ 3 ];                          
 extern const opus_uint8  * const silk_LTP_gain_iCDF_ptrs[ NB_LTP_CBKS ];                            /*   3 */
 extern const opus_uint8  * const silk_LTP_gain_BITS_Q5_ptrs[ NB_LTP_CBKS ];                         /*   3 */
 extern const opus_int8   * const silk_LTP_vq_ptrs_Q7[ NB_LTP_CBKS ];                                /* 168 */
+extern const opus_uint8  * const silk_LTP_vq_gain_ptrs_Q7[NB_LTP_CBKS];
 extern const opus_int8   silk_LTP_vq_sizes[ NB_LTP_CBKS ];                                          /*   3 */
 
 extern const opus_uint8  silk_LTPscale_iCDF[ 3 ];                                                   /*   4 */
