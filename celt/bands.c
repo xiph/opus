@@ -1445,9 +1445,17 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          b = 0;
       }
 
-      if (resynth && M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband_offset==0))
+      if (resynth && (M*eBands[i]-N >= M*eBands[start] || i==start+1) && (update_lowband || lowband_offset==0))
             lowband_offset = i;
-
+      if (i == start+1)
+      {
+         int n1, n2;
+         n1 = M*(eBands[start+1]-eBands[start]);
+         n2 = M*(eBands[start+2]-eBands[start+1]);
+         /* Duplicate enough of the first band folding data to be able to fold the second band.
+            Copies no data for CELT-only mode. */
+         OPUS_COPY(&norm[n1], &norm[2*n1 - n2], n2-n1);
+      }
       tf_change = tf_res[i];
       ctx.tf_change = tf_change;
       if (i>=m->effEBands)
