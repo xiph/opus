@@ -1772,6 +1772,13 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tf_select = tf_analysis(mode, effEnd, isTransient, tf_res, lambda, X, N, LM, &tf_sum, tf_estimate, tf_chan);
       for (i=effEnd;i<end;i++)
          tf_res[i] = tf_res[effEnd-1];
+   } else if (hybrid && effectiveBytes<15)
+   {
+      /* For low bitrate hybrid, we force temporal resolution to 5 ms rather than 2.5 ms. */
+      tf_sum = 0;
+      for (i=0;i<end;i++)
+         tf_res[i] = 0;
+      tf_select=isTransient;
    } else {
       tf_sum = 0;
       for (i=0;i<end;i++)
