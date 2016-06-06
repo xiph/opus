@@ -1800,7 +1800,15 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       {
          st->tapset_decision = 0;
          st->spread_decision = SPREAD_NORMAL;
-      } else if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C || hybrid)
+      } else if (hybrid)
+      {
+         if (st->complexity == 0)
+            st->spread_decision = SPREAD_NONE;
+         else if (isTransient)
+            st->spread_decision = SPREAD_NORMAL;
+         else
+            st->spread_decision = SPREAD_AGGRESSIVE;
+      } else if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C)
       {
          if (st->complexity == 0)
             st->spread_decision = SPREAD_NONE;
