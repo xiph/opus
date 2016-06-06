@@ -1447,6 +1447,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       unsigned x_cm;
       unsigned y_cm;
       int last;
+      int hybrid_save_len = 0;
 
       ctx.i = i;
       last = (i==end-1);
@@ -1472,8 +1473,27 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          b = 0;
       }
 
+#ifdef ENABLE_UPDATE_DRAFT
+      if (resynth && (M*eBands[i]-N >= M*eBands[start] || i==start+1) && (update_lowband || lowband_offset==0))
+            lowband_offset = i;
+      if (i == start+1)
+      {
+         int n1, n2;
+         n1 = M*(eBands[start+1]-eBands[start]);
+         n2 = M*(eBands[start+2]-eBands[start+1]);
+         /* Duplicate enough of the first band folding data to be able to fold the second band.
+            Copies no data for CELT-only mode. */
+         OPUS_COPY(&norm[n1], &norm[2*n1 - n2], n2-n1);
+         if (C==2)
+            OPUS_COPY(&norm2[n1], &norm2[2*n1 - n2], n2-n1);
+         /* We have to "save" these samples if we do theta RDO. */
+         hybrid_save_len = n2-n1;
+         celt_assert(hybrid_save_len <= 32);
+      }
+#else
       if (resynth && M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband_offset==0))
             lowband_offset = i;
+#endif
 
       tf_change = tf_res[i];
       ctx.tf_change = tf_change;
@@ -1499,7 +1519,11 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          fold_start = lowband_offset;
          while(M*eBands[--fold_start] > effective_lowband+norm_offset);
          fold_end = lowband_offset-1;
+#ifdef ENABLE_UPDATE_DRAFT
+         while(++fold_end < i && M*eBands[fold_end] < effective_lowband+norm_offset+N);
+#else
          while(M*eBands[++fold_end] < effective_lowband+norm_offset+N);
+#endif
          x_cm = y_cm = 0;
          fold_i = fold_start; do {
            x_cm |= collapse_masks[fold_i*C+0];
@@ -1542,7 +1566,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                unsigned char *bytes_buf;
                unsigned char bytes_save[1275];
                opus_val16 w[2];
+               /* This is only for low-bitrate hybrid stereo. The max we can have to save is 32. */
+               celt_norm hybrid_save[32];
                compute_channel_weights(bandE[i], bandE[i+m->nbEBands], w);
+               OPUS_COPY(hybrid_save, &norm[M*(eBands[start+1]-eBands[start])], hybrid_save_len);
                /* Make a copy. */
                cm = x_cm|y_cm;
                ec_save = *ec;
@@ -1575,6 +1602,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ctx = ctx_save;
                OPUS_COPY(X, X_save, N);
                OPUS_COPY(Y, Y_save, N);
+               OPUS_COPY(&norm[M*(eBands[start+1]-eBands[start])], hybrid_save, hybrid_save_len);
                /* Encode and round up. */
                ctx.theta_round = 1;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
