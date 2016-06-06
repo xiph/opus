@@ -1731,7 +1731,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    /* Last chance to catch any transient we might have missed in the
       time-domain analysis */
-   if (LM>0 && ec_tell(enc)+3<=total_bits && !isTransient && st->complexity>=5 && !st->lfe)
+   if (LM>0 && ec_tell(enc)+3<=total_bits && !isTransient && st->complexity>=5 && !st->lfe && !hybrid)
    {
       if (patch_transient_decision(bandLogE, oldBandE, nbEBands, start, end, C))
       {
