@@ -1365,7 +1365,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_val16 surround_masking=0;
    opus_val16 temporal_vbr=0;
    opus_val16 surround_trim = 0;
-   opus_int32 equiv_rate = 510000;
+   opus_int32 equiv_rate;
    int hybrid;
    VARDECL(opus_val16, surround_dynalloc);
    ALLOC_STACK;
@@ -1461,8 +1461,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
                (tmp+4*mode->Fs)/(8*mode->Fs)-!!st->signalling));
       effectiveBytes = nbCompressedBytes - nbFilledBytes;
    }
+   equiv_rate = ((opus_int32)nbCompressedBytes*8*50 >> (3-LM)) - (40*C+20)*((400>>LM) - 50);
    if (st->bitrate != OPUS_BITRATE_MAX)
-      equiv_rate = st->bitrate - (40*C+20)*((400>>LM) - 50);
+      equiv_rate = IMIN(equiv_rate, st->bitrate - (40*C+20)*((400>>LM) - 50));
 
    if (enc==NULL)
    {
