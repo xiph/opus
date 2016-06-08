@@ -1758,15 +1758,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if (effectiveBytes>=15*C && !hybrid && st->complexity>=2 && !st->lfe)
    {
       int lambda;
-      if (effectiveBytes<40)
-         lambda = 12;
-      else if (effectiveBytes<60)
-         lambda = 6;
-      else if (effectiveBytes<100)
-         lambda = 4;
-      else
-         lambda = 3;
-      lambda*=2;
+      lambda = IMAX(5, 1280/effectiveBytes + 2);
       tf_select = tf_analysis(mode, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan);
       for (i=effEnd;i<end;i++)
          tf_res[i] = tf_res[effEnd-1];
