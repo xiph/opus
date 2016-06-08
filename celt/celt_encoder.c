@@ -550,7 +550,7 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, opus_val16 bias
 
 static int tf_analysis(const CELTMode *m, int len, int isTransient,
       int *tf_res, int lambda, celt_norm *X, int N0, int LM,
-      int *tf_sum, opus_val16 tf_estimate, int tf_chan)
+      opus_val16 tf_estimate, int tf_chan)
 {
    int i;
    VARDECL(int, metric);
@@ -575,7 +575,6 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
    ALLOC(path0, len, int);
    ALLOC(path1, len, int);
 
-   *tf_sum = 0;
    for (i=0;i<len;i++)
    {
       int k, N;
@@ -630,7 +629,6 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
          metric[i] = 2*best_level;
       else
          metric[i] = -2*best_level;
-      *tf_sum += (isTransient ? LM : 0) - metric[i]/2;
       /* For bands that can't be split to -1, set the metric to the half-way point to avoid
          biasing the decision */
       if (narrow && (metric[i]==0 || metric[i]==-2*LM))
@@ -1334,7 +1332,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    int end;
    int effEnd;
    int codedBands;
-   int tf_sum;
    int alloc_trim;
    int pitch_index=COMBFILTER_MINPERIOD;
    opus_val16 gain1 = 0;
@@ -1769,18 +1766,16 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       else
          lambda = 3;
       lambda*=2;
-      tf_select = tf_analysis(mode, effEnd, isTransient, tf_res, lambda, X, N, LM, &tf_sum, tf_estimate, tf_chan);
+      tf_select = tf_analysis(mode, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan);
       for (i=effEnd;i<end;i++)
          tf_res[i] = tf_res[effEnd-1];
    } else if (hybrid && effectiveBytes<15)
    {
       /* For low bitrate hybrid, we force temporal resolution to 5 ms rather than 2.5 ms. */
-      tf_sum = 0;
       for (i=0;i<end;i++)
          tf_res[i] = 0;
       tf_select=isTransient;
    } else {
-      tf_sum = 0;
       for (i=0;i<end;i++)
          tf_res[i] = isTransient;
       tf_select=0;
