@@ -57,7 +57,6 @@ void silk_LPC_analysis_filter(
 {
     opus_int   j;
 #if USE_CELT_FIR
-    opus_int16 mem[SILK_MAX_ORDER_LPC];
     opus_int16 num[SILK_MAX_ORDER_LPC];
 #else
     int ix;
@@ -74,10 +73,7 @@ void silk_LPC_analysis_filter(
     for ( j = 0; j < d; j++ ) {
         num[ j ] = -B[ j ];
     }
-    for (j=0;j<d;j++) {
-        mem[ j ] = in[ d - j - 1 ];
-    }
-    celt_fir( in + d, num, out + d, len - d, d, mem, arch );
+    celt_fir( in + d, num, out + d, len - d, d, arch );
     for ( j = 0; j < d; j++ ) {
         out[ j ] = 0;
     }
