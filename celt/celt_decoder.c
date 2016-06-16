@@ -556,10 +556,11 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
    } else {
       /* Pitch-based PLC */
       const opus_val16 *window;
+      opus_val16 *exc;
       opus_val16 fade = Q15ONE;
       int pitch_index;
       VARDECL(opus_val32, etmp);
-      VARDECL(opus_val16, exc);
+      VARDECL(opus_val16, _exc);
 
       if (loss_count == 0)
       {
@@ -570,7 +571,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
       }
 
       ALLOC(etmp, overlap, opus_val32);
-      ALLOC(exc, MAX_PERIOD, opus_val16);
+      ALLOC(_exc, MAX_PERIOD+LPC_ORDER, opus_val16);
+      exc = _exc+LPC_ORDER;
       window = mode->window;
       c=0; do {
          opus_val16 decay;
@@ -635,15 +637,14 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          /* Initialize the LPC history with the samples just before the start
             of the region for which we're computing the excitation. */
          {
-            opus_val16 lpc_mem[LPC_ORDER];
             for (i=0;i<LPC_ORDER;i++)
             {
-               lpc_mem[i] =
-                     ROUND16(buf[DECODE_BUFFER_SIZE-exc_length-1-i], SIG_SHIFT);
+               exc[MAX_PERIOD-exc_length-LPC_ORDER+i] =
+                     ROUND16(buf[DECODE_BUFFER_SIZE-exc_length-LPC_ORDER+i], SIG_SHIFT);
             }
             /* Compute the excitation for exc_length samples before the loss. */
             celt_fir(exc+MAX_PERIOD-exc_length, lpc+c*LPC_ORDER,
-                  exc+MAX_PERIOD-exc_length, exc_length, LPC_ORDER, lpc_mem, st->arch);
+                  exc+MAX_PERIOD-exc_length, exc_length, LPC_ORDER, st->arch);
          }
 
          /* Check if the waveform is decaying, and if so how fast.
