@@ -1281,12 +1281,15 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
 
    if ((!has_surround_mask||lfe) && (constrained_vbr || bitrate<64000))
    {
-      opus_val16 rate_factor;
+      opus_val16 rate_factor = Q15ONE;
+      if (bitrate < 64000)
+      {
 #ifdef FIXED_POINT
-      rate_factor = MAX16(0,(bitrate-32000));
+         rate_factor = MAX16(0,(bitrate-32000));
 #else
-      rate_factor = MAX16(0,(1.f/32768)*(bitrate-32000));
+         rate_factor = MAX16(0,(1.f/32768)*(bitrate-32000));
 #endif
+      }
       if (constrained_vbr)
          rate_factor = MIN16(rate_factor, QCONST16(0.67f, 15));
       target = base_target + (opus_int32)MULT16_32_Q15(rate_factor, target-base_target);
