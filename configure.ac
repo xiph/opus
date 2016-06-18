@@ -366,9 +366,9 @@ m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
 m4_define([DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS], [-mfpu=neon -mfloat-abi=softfp])
 
 AS_CASE([$host],
-	[arm*hf*], [AS_VAR_SET([RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS], "DEFAULT_ARM_NEON_INTR_CFLAGS")],
-	[arm*eabi*], [AS_VAR_SET([RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS], "DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS")],
-	[AS_VAR_SET([RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS], "DEFAULT_ARM_NEON_INTR_CFLAGS")])
+        [arm*hf*], [AS_VAR_SET([RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS], "DEFAULT_ARM_NEON_INTR_CFLAGS")],
+        [arm*eabi*], [AS_VAR_SET([RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS], "DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS")],
+        [AS_VAR_SET([RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS], "DEFAULT_ARM_NEON_INTR_CFLAGS")])
 
 AC_ARG_VAR([X86_SSE_CFLAGS], [C compiler flags to compile SSE intrinsics @<:@default=]DEFAULT_X86_SSE_CFLAGS[@:>@])
 AC_ARG_VAR([X86_SSE2_CFLAGS], [C compiler flags to compile SSE2 intrinsics @<:@default=]DEFAULT_X86_SSE2_CFLAGS[@:>@])
@@ -702,7 +702,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
             ]])],
             [get_cpuid_by_asm="yes"
              AC_MSG_RESULT([Inline Assembly])
-			 AC_DEFINE([CPU_INFO_BY_ASM], [1], [Get CPU Info by asm method])],
+                 AC_DEFINE([CPU_INFO_BY_ASM], [1], [Get CPU Info by asm method])],
              [AC_LINK_IFELSE([AC_LANG_PROGRAM([[
                  #include <cpuid.h>
             ]],[[
@@ -714,7 +714,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
                  __get_cpuid(InfoType, &CPUInfo0, &CPUInfo1, &CPUInfo2, &CPUInfo3);
             ]])],
             [AC_MSG_RESULT([C method])
-			 AC_DEFINE([CPU_INFO_BY_C], [1], [Get CPU Info by c method])],
+                 AC_DEFINE([CPU_INFO_BY_C], [1], [Get CPU Info by c method])],
             [AC_MSG_ERROR([no supported Get CPU Info method, please disable intrinsics])])])])
    ],
    [
