@@ -989,9 +989,9 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
 /* Returns the equivalent bitrate corresponding to 20 ms frames,
    complexity 10 VBR operation. */
 static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
-      int frame_rate, int vbr, int mode, int complexity)
+      int frame_rate, int vbr, int mode, int complexity, int loss)
 {
-   int equiv;
+   opus_int32 equiv;
    equiv = bitrate;
    /* Take into account overhead from smaller frames. */
    equiv -= (40*channels+20)*(frame_rate - 50);
@@ -1006,6 +1006,7 @@ static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
          costs about 20%. */
       if (complexity<2)
          equiv = equiv*4/5;
+      equiv -= equiv*loss/(6*loss + 10);
    } else if (mode == MODE_CELT_ONLY) {
       /* CELT complexity 0-4 doesn't have the pitch filter, which costs
          about 10%. */
@@ -1013,6 +1014,8 @@ static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
          equiv = equiv*9/10;
    } else {
       /* Mode not known yet */
+      /* Half the SILK loss*/
+      equiv -= equiv*loss/(12*loss + 20);
    }
    return equiv;
 }
@@ -1282,7 +1285,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     /* Equivalent 20-ms rate for mode/channel/bandwidth decisions */
     equiv_rate = compute_equiv_rate(st->bitrate_bps, st->channels, st->Fs/frame_size,
-          st->use_vbr, 0, st->silk_mode.complexity);
+          st->use_vbr, 0, st->silk_mode.complexity, st->silk_mode.packetLossPercentage);
 
     if (st->signal_type == OPUS_SIGNAL_VOICE)
        voice_est = 127;
@@ -1325,7 +1328,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     /* Update equivalent rate for channels decision. */
     equiv_rate = compute_equiv_rate(st->bitrate_bps, st->stream_channels, st->Fs/frame_size,
-          st->use_vbr, 0, st->silk_mode.complexity);
+          st->use_vbr, 0, st->silk_mode.complexity, st->silk_mode.packetLossPercentage);
 
     /* Mode selection depending on application and signal type */
     if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
@@ -1425,7 +1428,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     /* Update equivalent rate with mode decision. */
     equiv_rate = compute_equiv_rate(st->bitrate_bps, st->stream_channels, st->Fs/frame_size,
-          st->use_vbr, st->mode, st->silk_mode.complexity);
+          st->use_vbr, st->mode, st->silk_mode.complexity, st->silk_mode.packetLossPercentage);
 
     /* For the first frame at a new SILK bandwidth */
     if (st->silk_bw_switch)
