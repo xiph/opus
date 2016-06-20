@@ -514,7 +514,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       if (abs(T1-prev_period)<=1)
          cont = prev_gain;
       else if (abs(T1-prev_period)<=2 && 5*k*k < T0)
-         cont = HALF32(prev_gain);
+         cont = HALF16(prev_gain);
       else
          cont = 0;
       thresh = MAX16(QCONST16(.3f,15), MULT16_16_Q15(QCONST16(.7f,15),g0)-cont);

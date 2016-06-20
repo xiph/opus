@@ -414,7 +414,7 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    /* Compensating for the mid normalization */
    xp = MULT16_32_Q15(mid, xp);
    /* mid and side are in Q15, not Q14 like X and Y */
-   mid2 = SHR32(mid, 1);
+   mid2 = SHR16(mid, 1);
    El = MULT16_16(mid2, mid2) + side - 2*xp;
    Er = MULT16_16(mid2, mid2) + side + 2*xp;
    if (Er < QCONST32(6e-4f, 28) || El < QCONST32(6e-4f, 28))
