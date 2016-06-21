@@ -156,6 +156,14 @@ static const opus_int32 mode_thresholds[2][2] = {
       {  36000,      16000}, /* stereo */
 };
 
+static const opus_int32 fec_thresholds[] = {
+        12000, 1000, /* NB */
+        14000, 1000, /* MB */
+        16000, 1000, /* WB */
+        20000, 1000, /* SWB */
+        22000, 1000, /* FB */
+};
+
 int opus_encoder_get_size(int channels)
 {
     int silkEncSizeBytes, celtEncSizeBytes;
@@ -947,6 +955,39 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
    return EXTRACT16(MIN32(Q15ONE, MULT16_16(20, mem->max_follower)));
 }
 
+static int decide_fec(int useInBandFEC, int PacketLoss_perc, int last_fec, int mode, int *bandwidth, opus_int32 rate)
+{
+   int orig_bandwidth;
+   if (!useInBandFEC || PacketLoss_perc == 0 || mode == MODE_CELT_ONLY)
+      return 0;
+   orig_bandwidth = *bandwidth;
+   for (;;)
+   {
+      opus_int32 hysteresis;
+      opus_int32 LBRR_rate_thres_bps;
+      /* Compute threshold for using FEC at the current bandwidth setting */
+      LBRR_rate_thres_bps = fec_thresholds[2*(*bandwidth - OPUS_BANDWIDTH_NARROWBAND)];
+      hysteresis = fec_thresholds[2*(*bandwidth - OPUS_BANDWIDTH_NARROWBAND) + 1];
+      if (last_fec == 1) LBRR_rate_thres_bps -= hysteresis;
+      if (last_fec == 0) LBRR_rate_thres_bps += hysteresis;
+      LBRR_rate_thres_bps = silk_SMULWB( silk_MUL( LBRR_rate_thres_bps,
+            125 - silk_min( PacketLoss_perc, 25 ) ), SILK_FIX_CONST( 0.01, 16 ) );
+      /* If loss <= 5%, we look at whether we have enough rate to enable FEC.
+         If loss > 5%, we decrease the bandwidth until we can enable FEC. */
+      if (rate > LBRR_rate_thres_bps)
+         return 1;
+      else if (PacketLoss_perc <= 5)
+         return 0;
+      else if (*bandwidth > OPUS_BANDWIDTH_NARROWBAND)
+         (*bandwidth)--;
+      else
+         break;
+   }
+   /* Couldn't find any bandwidth to enable FEC, keep original bandwidth. */
+   *bandwidth = orig_bandwidth;
+   return 0;
+}
+
 static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, int vbr) {
    int entry;
    int i;
@@ -1537,6 +1578,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        st->bandwidth = IMIN(st->bandwidth, st->detected_bandwidth);
     }
 #endif
+    st->silk_mode.LBRR_coded = decide_fec(st->silk_mode.useInBandFEC, st->silk_mode.packetLossPercentage,
+          st->silk_mode.LBRR_coded, st->mode, &st->bandwidth, equiv_rate);
     celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(lsb_depth));
 
     /* CELT mode doesn't support mediumband, use wideband instead */
