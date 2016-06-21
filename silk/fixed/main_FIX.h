@@ -81,7 +81,6 @@ opus_int silk_init_encoder(
 opus_int silk_control_encoder(
     silk_encoder_state_Fxx          *psEnc,                                 /* I/O  Pointer to Silk encoder state                                               */
     silk_EncControlStruct           *encControl,                            /* I    Control structure                                                           */
-    const opus_int32                TargetRate_bps,                         /* I    Target max bitrate (bps)                                                    */
     const opus_int                  allow_bw_switch,                        /* I    Flag to allow switching audio bandwidth                                     */
     const opus_int                  channelNb,                              /* I    Channel number                                                              */
     const opus_int                  force_fs_kHz
