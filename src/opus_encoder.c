@@ -984,23 +984,24 @@ static int decide_fec(int useInBandFEC, int PacketLoss_perc, int last_fec, int m
    return 0;
 }
 
-static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, int vbr) {
+static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, int vbr, int fec) {
    int entry;
    int i;
    int N;
    int silk_rate;
    static int rate_table[][5] = {
   /*  |total| |-------- SILK------------|
-              SWB-10  FB-10 SWB-20  FB-20 */
+              |-- No FEC -| |--- FEC ---|
+               10ms   20ms   10ms   20ms */
       {    0,     0,     0,     0,     0},
-      {12000, 10000, 10000, 10000, 10000},
-      {16000, 14000, 14000, 14000, 13500},
-      {20000, 16000, 16000, 16000, 16000},
-      {24000, 18000, 18000, 18000, 18000},
-      {32000, 22000, 22000, 22000, 22000},
-      {64000, 38000, 38000, 38000, 38000}
+      {12000, 10000, 10000, 11000, 11000},
+      {16000, 13500, 13500, 15000, 15000},
+      {20000, 16000, 16000, 18000, 18000},
+      {24000, 18000, 18000, 21000, 21000},
+      {32000, 22000, 22000, 28000, 28000},
+      {64000, 38000, 38000, 50000, 50000}
    };
-   entry = 1 + 2*frame20ms + (bandwidth==OPUS_BANDWIDTH_FULLBAND);
+   entry = 1 + frame20ms + 2*fec;
    N = sizeof(rate_table)/sizeof(rate_table[0]);
    for (i=1;i<N;i++)
    {
@@ -1024,6 +1025,8 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
       /* Tiny boost to SILK for CBR. We should probably tune this better. */
       silk_rate += 100;
    }
+   if (bandwidth==OPUS_BANDWIDTH_SUPERWIDEBAND)
+      silk_rate += 300;
    return silk_rate;
 }
 
@@ -1741,7 +1744,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         if( st->mode == MODE_HYBRID ) {
             /* Base rate for SILK */
             st->silk_mode.bitRate = compute_silk_rate_for_hybrid(total_bitRate,
-                  curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr);
+                  curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr, st->silk_mode.LBRR_coded);
             if (!st->energy_masking)
             {
                /* Increasingly attenuate high band when it gets allocated fewer bits */
@@ -1850,7 +1853,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            {
               /* Compute SILK bitrate corresponding to the max total bits available */
               opus_int32 maxBitRate = compute_silk_rate_for_hybrid(nBytes*8*st->Fs / frame_size,
-                    curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr);
+                    curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr, st->silk_mode.LBRR_coded);
               st->silk_mode.maxBits = maxBitRate * frame_size / st->Fs;
            }
         }
