@@ -237,7 +237,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
     for( n = 0; n < encControl->nChannelsInternal; n++ ) {
         /* Force the side channel to the same rate as the mid */
         opus_int force_fs_kHz = (n==1) ? psEnc->state_Fxx[0].sCmn.fs_kHz : 0;
-        if( ( ret = silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch, n, force_fs_kHz ) ) != 0 ) {
+        if( ( ret = silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, psEnc->allowBandwidthSwitch, n, force_fs_kHz ) ) != 0 ) {
             silk_assert( 0 );
             RESTORE_STACK;
             return ret;
