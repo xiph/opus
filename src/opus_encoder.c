@@ -860,9 +860,6 @@ opus_int32 compute_frame_size(const void *analysis_pcm, int frame_size,
 
 opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int32 Fs, StereoWidthState *mem)
 {
-   opus_val16 corr;
-   opus_val16 ldiff;
-   opus_val16 width;
    opus_val32 xx, xy, yy;
    opus_val16 sqrt_xx, sqrt_yy;
    opus_val16 qrrt_xx, qrrt_yy;
@@ -915,6 +912,9 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
    mem->YY = MAX32(0, mem->YY);
    if (MAX32(mem->XX, mem->YY)>QCONST16(8e-4f, 18))
    {
+      opus_val16 corr;
+      opus_val16 ldiff;
+      opus_val16 width;
       sqrt_xx = celt_sqrt(mem->XX);
       sqrt_yy = celt_sqrt(mem->YY);
       qrrt_xx = celt_sqrt(sqrt_xx);
@@ -929,10 +929,6 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
       mem->smoothed_width += (width-mem->smoothed_width)/frame_rate;
       /* Peak follower */
       mem->max_follower = MAX16(mem->max_follower-QCONST16(.02f,15)/frame_rate, mem->smoothed_width);
-   } else {
-      width = 0;
-      corr=Q15ONE;
-      ldiff=0;
    }
    /*printf("%f %f %f %f %f ", corr/(float)Q15ONE, ldiff/(float)Q15ONE, width/(float)Q15ONE, mem->smoothed_width/(float)Q15ONE, mem->max_follower/(float)Q15ONE);*/
    return EXTRACT16(MIN32(Q15ONE, MULT16_16(20, mem->max_follower)));
