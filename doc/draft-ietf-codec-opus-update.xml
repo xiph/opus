@@ -10,7 +10,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-ietf-codec-opus-update-01"
+<rfc category="std" docName="draft-ietf-codec-opus-update-02"
      ipr="trust200902">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
@@ -47,7 +47,7 @@
 
 
 
-    <date day="4" month="September" year="2014" />
+    <date day="1" month="July" year="2016" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
@@ -79,8 +79,9 @@
       during a mode switch. The old stereo memory can produce a brief impulse
       (i.e. single sample) in the decoded audio. This can be fixed by changing
       silk/dec_API.c at line 72:
-      <figure>
-      <artwork><![CDATA[
+    </t>
+<figure>
+<artwork><![CDATA[
      for( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
          ret  = silk_init_decoder( &channel_state[ n ] );
      }
@@ -93,11 +94,9 @@
  }
 ]]></artwork>
 </figure>
-     This change affects the normative part of the decoder. Fortunately,
-     the modified decoder is still compliant with the original specification because
-     it still easily passes the testvectors. For example, for the float decoder
-     at 48 kHz, the opus_compare (arbitrary) "quality score" changes from
-     from 99.9333% to 99.925%.
+     <t>
+     This change affects the normative part of the decoder, although the
+     amount of change is too small to make a significant impact on testvectors.
       </t>
     </section>
 
@@ -107,8 +106,9 @@
       This is due to an integer overflow if the signaled padding exceeds 2^31-1 bytes
       (the actual packet may be smaller). The code can be fixed by applying the following
       changes at line 596 of src/opus_decoder.c:
-      <figure>
-      <artwork><![CDATA[
+    </t>
+<figure>
+<artwork><![CDATA[
        /* Padding flag is bit 6 */
        if (ch&0x40)
        {
@@ -126,7 +126,6 @@
        }
 ]]></artwork>
 </figure>
-      </t>
       <t>This packet parsing issue is limited to reading memory up
          to about 60 kB beyond the compressed buffer. This can only be triggered
          by a compressed packet more than about 16 MB long, so it's not a problem
@@ -158,6 +157,7 @@
      was ever a problem. However, proving that is non-obvious.
     </t>
     <t>The code can be fixed by applying the following changes to line 70 of silk/resampler_private_IIR_FIR.c:
+    </t>
 <figure>
 <artwork><![CDATA[
  )
@@ -214,6 +214,7 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
  }
 ]]></artwork>
 </figure>
+    <t>
     Note: due to RFC formatting conventions, lines exceeding the column width
     in the patch above are split using a backslash character. The backslashes
     at the end of a line and the white space at the beginning
@@ -223,7 +224,7 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
     </t>
     </section>
 
-    <section title="Downmix to Mono">
+    <section title="Downmix to Mono" anchor="stereo">
       <t>The last issue is not strictly a bug, but it is an issue that has been reported
       when downmixing an Opus decoded stream to mono, whether this is done inside the decoder
       or as a post-processing step on the stereo decoder output. Opus intensity stereo allows
@@ -237,6 +238,102 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
       outside of the decoder).
       </t>
     </section>
+
+    <section title="Hybrid Folding" anchor="folding">
+      <t>When encoding in hybrid mode at low bitrate, we sometimes only have
+        enough bits to code a single CELT band (8 - 9.6 kHz). When that happens,
+        the second band (CELT band 18, from 9.6 to 12 kHz) cannot use folding
+        because it is wider than the amount already coded, and falls back to
+        LCG noise. Because it can also happen on transients (e.g. stops), it
+        can cause audible pre-echo.
+      </t>
+      <t>
+        To address the issue, we change the folding behaviour so that it is
+        never forced to fall back to LCG due to not enough folding data. This
+        is achieved by simply repeating part of the first band in the folding
+        of the second band. This changes the code in celt/bands.c around line 237:
+      </t>
+<figure>
+<artwork><![CDATA[
+          b = 0;
+       }
+ 
+-      if (resynth && M*eBands[i]-N >= M*eBands[start] && \
+(update_lowband || lowband_offset==0))
++      if (resynth && (M*eBands[i]-N >= M*eBands[start] || \
+i==start+1) && (update_lowband || lowband_offset==0))
+             lowband_offset = i;
+ 
++      if (i == start+1)
++      {
++         int n1, n2;
++         int offset;
++         n1 = M*(eBands[start+1]-eBands[start]);
++         n2 = M*(eBands[start+2]-eBands[start+1]);
++         offset = M*eBands[start];
++         /* Duplicate enough of the first band folding data to \
+be able to fold the second band.
++            Copies no data for CELT-only mode. */
++         OPUS_COPY(&norm[offset+n1], &norm[offset+2*n1 - n2], n2-n1);
++         if (C==2)
++            OPUS_COPY(&norm2[offset+n1], &norm2[offset+2*n1 - n2], \
+n2-n1);
++      }
++
+       tf_change = tf_res[i];
+       if (i>=m->effEBands)
+       {
+]]></artwork>
+</figure>
+
+      <t>
+       as well as line 260:
+      </t>
+
+<figure>
+<artwork><![CDATA[
+          fold_start = lowband_offset;
+          while(M*eBands[--fold_start] > effective_lowband);
+          fold_end = lowband_offset-1;
+-         while(M*eBands[++fold_end] < effective_lowband+N);
++         while(++fold_end < i && M*eBands[++fold_end] < \
+effective_lowband+N);
+          x_cm = y_cm = 0;
+          fold_i = fold_start; do {
+            x_cm |= collapse_masks[fold_i*C+0];
+
+]]></artwork>
+</figure>
+      <t>
+        The fix does not impact compatibility, because the improvement does
+        not depend on the encoder doing anything special. There is also no
+        reasonable way for an encoder to use the original behaviour to
+        improve quality over the proposed change.
+      </t>
+    </section>
+
+    <section title="New Test Vectors">
+      <t>Changes in <xref target="stereo"/> and <xref target="folding"/> have
+        sufficient impact on the testvectors to make them fail. For this reason,
+        this document also updates the Opus test vectors. The new test vectors now
+        include two decoded outputs for the same bitstream. The outputs with
+        suffix 'm' do not apply the CELT 180-degree phase shift as allowed in
+        <xref target="stereo"/>, while the outputs with suffix 's' do. An
+        implementation is compliant as long as it passes either the 'm' or the
+        's' set of vectors.
+      </t>
+      <t>
+        In addition, any Opus implementation
+        that passes the original test vectors from <xref target="RFC6716">RFC 6716</xref>
+        is still compliant with the Opus specification. However, newer implementations
+        SHOULD be based on the new test vectors rather than the old ones.
+      </t>
+      <t>The new test vectors are located at
+        <eref target="https://jmvalin.ca/misc_stuff/opus_newvectors.tar.gz"/>. (EDITOR:
+        change link ietf.org when ready).
+      </t>
+    </section>
+
     <section anchor="IANA" title="IANA Considerations">
       <t>This document makes no request of IANA.</t>
 
