@@ -72,9 +72,10 @@ typedef void (*opus_copy_channel_in_func)(
 
 typedef enum {
   MAPPING_TYPE_NONE,
-  MAPPING_TYPE_SURROUND,
+  MAPPING_TYPE_SURROUND
 #ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-  MAPPING_TYPE_AMBISONICS,
+  ,  /* Do not include comma at end of enumerator list */
+  MAPPING_TYPE_AMBISONICS
 #endif
 } MappingType;
 
