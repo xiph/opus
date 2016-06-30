@@ -591,10 +591,11 @@ int main(int argc, char *argv[])
 
     in = (short*)malloc(max_frame_size*channels*sizeof(short));
     out = (short*)malloc(max_frame_size*channels*sizeof(short));
+    /* We need to allocate for 16-bit PCM data, but we store it as unsigned char. */
     fbytes = (unsigned char*)malloc(max_frame_size*channels*sizeof(short));
-    data[0] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
+    data[0] = (unsigned char*)calloc(max_payload_bytes,sizeof(unsigned char));
     if ( use_inbandfec ) {
-        data[1] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
+        data[1] = (unsigned char*)calloc(max_payload_bytes,sizeof(unsigned char));
     }
     if(delayed_decision)
     {
