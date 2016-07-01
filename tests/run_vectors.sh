@@ -1,6 +1,4 @@
-#!/bin/sh
-
-# Copyright (c) 2011-2012 Jean-Marc Valin
+# Copyright (c) 2011-2012 IETF Trust, Jean-Marc Valin. All rights reserved.
 #
 #  This file is extracted from RFC6716. Please see that RFC for additional
 #  information.
@@ -32,6 +30,8 @@
 #  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 #  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#!/bin/sh
 
 rm logs_mono.txt logs_mono2.txt
 rm logs_stereo.txt logs_stereo2.txt
