@@ -220,7 +220,8 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
     at the end of a line and the white space at the beginning
     of the following line are not part of the patch. A properly formatted patch
     including the three changes above is available at
-    <eref target="http://jmvalin.ca/misc_stuff/opus_update.patch"/>.
+    <eref target="https://jmvalin.ca/misc_stuff/opus_update.patch"/>. (EDITOR:
+        change to an ietf.org link when ready)
     </t>
     </section>
 
@@ -330,7 +331,7 @@ effective_lowband+N);
       </t>
       <t>The new test vectors are located at
         <eref target="https://jmvalin.ca/misc_stuff/opus_newvectors.tar.gz"/>. (EDITOR:
-        change link ietf.org when ready).
+        change to an ietf.org link when ready)
       </t>
     </section>
 
