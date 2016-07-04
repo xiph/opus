@@ -250,9 +250,10 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
       </t>
       <t>
         To address the issue, we change the folding behaviour so that it is
-        never forced to fall back to LCG due to not enough folding data. This
+        never forced to fall back to LCG due to the first band not containing
+        enough coefficients to fold onto the second band. This
         is achieved by simply repeating part of the first band in the folding
-        of the second band. This changes the code in celt/bands.c around line 237:
+        of the second band. This changes the code in celt/bands.c around line 1237:
       </t>
 <figure>
 <artwork><![CDATA[
@@ -288,7 +289,7 @@ n2-n1);
 </figure>
 
       <t>
-       as well as line 260:
+       as well as line 1260:
       </t>
 
 <figure>
