@@ -298,7 +298,7 @@ n2-n1);
           while(M*eBands[--fold_start] > effective_lowband);
           fold_end = lowband_offset-1;
 -         while(M*eBands[++fold_end] < effective_lowband+N);
-+         while(++fold_end < i && M*eBands[++fold_end] < \
++         while(++fold_end < i && M*eBands[fold_end] < \
 effective_lowband+N);
           x_cm = y_cm = 0;
           fold_i = fold_start; do {
