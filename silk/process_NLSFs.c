@@ -100,6 +100,7 @@ void silk_process_NLSFs(
 
     } else {
         /* Copy LPC coefficients for first half from second half */
+        silk_assert( psEncC->predictLPCOrder <= MAX_LPC_ORDER );
         silk_memcpy( PredCoef_Q12[ 0 ], PredCoef_Q12[ 1 ], psEncC->predictLPCOrder * sizeof( opus_int16 ) );
     }
 }
