@@ -124,6 +124,7 @@ struct OpusCustomEncoder {
    /* opus_val16 oldBandE[],     Size = channels*mode->nbEBands */
    /* opus_val16 oldLogE[],      Size = channels*mode->nbEBands */
    /* opus_val16 oldLogE2[],     Size = channels*mode->nbEBands */
+   /* opus_val16 energyError[],  Size = channels*mode->nbEBands */
 };
 
 int celt_encoder_get_size(int channels)
@@ -137,9 +138,10 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_get_size(const CELTMode *mode, int 
    int size = sizeof(struct CELTEncoder)
          + (channels*mode->overlap-1)*sizeof(celt_sig)    /* celt_sig in_mem[channels*mode->overlap]; */
          + channels*COMBFILTER_MAXPERIOD*sizeof(celt_sig) /* celt_sig prefilter_mem[channels*COMBFILTER_MAXPERIOD]; */
-         + 3*channels*mode->nbEBands*sizeof(opus_val16);  /* opus_val16 oldBandE[channels*mode->nbEBands]; */
+         + 4*channels*mode->nbEBands*sizeof(opus_val16);  /* opus_val16 oldBandE[channels*mode->nbEBands]; */
                                                           /* opus_val16 oldLogE[channels*mode->nbEBands]; */
                                                           /* opus_val16 oldLogE2[channels*mode->nbEBands]; */
+                                                          /* opus_val16 energyError[channels*mode->nbEBands]; */
    return size;
 }
 
@@ -1320,7 +1322,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    VARDECL(int, tf_res);
    VARDECL(unsigned char, collapse_masks);
    celt_sig *prefilter_mem;
-   opus_val16 *oldBandE, *oldLogE, *oldLogE2;
+   opus_val16 *oldBandE, *oldLogE, *oldLogE2, *energyError;
    int shortBlocks=0;
    int isTransient=0;
    const int CC = st->channels;
@@ -1400,6 +1402,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    oldBandE = (opus_val16*)(st->in_mem+CC*(overlap+COMBFILTER_MAXPERIOD));
    oldLogE = oldBandE + CC*nbEBands;
    oldLogE2 = oldLogE + CC*nbEBands;
+   energyError = oldLogE2 + CC*nbEBands;
 
    if (enc==NULL)
    {
@@ -1775,6 +1778,19 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    }
 
    ALLOC(error, C*nbEBands, opus_val16);
+   c=0;
+   do {
+      for (i=start;i<end;i++)
+      {
+         /* When the energy is stable, slightly bias energy quantization towards
+            the previous error to make the gain more stable (a constant offset is
+            better than fluctuations). */
+         if (ABS32(SUB32(bandLogE[i+c*nbEBands], oldBandE[i+c*nbEBands])) < QCONST16(2.f, DB_SHIFT))
+         {
+            bandLogE[i+c*nbEBands] -= MULT16_16_Q15(energyError[i+c*nbEBands], QCONST16(0.25f, 15));
+         }
+      }
+   } while (++c < C);
    quant_coarse_energy(mode, start, end, effEnd, bandLogE,
          oldBandE, total_bits, error, enc,
          C, LM, nbAvailableBytes, st->force_intra,
@@ -2074,6 +2090,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       ec_enc_bits(enc, anti_collapse_on, 1);
    }
    quant_energy_finalise(mode, start, end, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_tell(enc), enc, C);
+   OPUS_CLEAR(energyError, nbEBands*CC);
+   c=0;
+   do {
+      for (i=start;i<end;i++)
+      {
+         energyError[i+c*nbEBands] = MAX16(-QCONST16(0.5f, 15), MIN16(QCONST16(0.5f, 15), error[i+c*nbEBands]));
+      }
+   } while (++c < C);
 
    if (silence)
    {
