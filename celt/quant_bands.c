@@ -418,6 +418,7 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, opus_val16 *ol
             offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
             oldEBands[i+c*m->nbEBands] += offset;
+            error[i+c*m->nbEBands] -= offset;
             bits_left--;
          } while (++c < C);
       }
