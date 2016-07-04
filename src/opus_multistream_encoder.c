@@ -968,6 +968,7 @@ static int opus_multistream_encode_native
       int len;
       int curr_max;
       int c1, c2;
+      int ret;
 
       opus_repacketizer_init(&rp);
       enc = (OpusEncoder*)ptr;
@@ -1027,7 +1028,11 @@ static int opus_multistream_encode_native
       /* We need to use the repacketizer to add the self-delimiting lengths
          while taking into account the fact that the encoder can now return
          more than one frame at a time (e.g. 60 ms CELT-only) */
-      opus_repacketizer_cat(&rp, tmp_data, len);
+      ret = opus_repacketizer_cat(&rp, tmp_data, len);
+      /* If the opus_repacketizer_cat() fails, then something's seriously wrong
+         with the encoder. */
+      if (ret != OPUS_OK)
+         return OPUS_INTERNAL_ERROR;
       len = opus_repacketizer_out_range_impl(&rp, 0, opus_repacketizer_get_nb_frames(&rp),
             data, max_data_bytes-tot_size, s != st->layout.nb_streams-1, !vbr && s == st->layout.nb_streams-1);
       data += len;

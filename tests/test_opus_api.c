@@ -1699,9 +1699,9 @@ int test_repacketizer_api(void)
    cfgs++;
    if(opus_multistream_packet_pad(po,4,4,1)!=OPUS_OK)test_failed();
    cfgs++;
-   if(opus_packet_pad(po,4,5)!=OPUS_BAD_ARG)test_failed();
+   if(opus_packet_pad(po,4,5)!=OPUS_INVALID_PACKET)test_failed();
    cfgs++;
-   if(opus_multistream_packet_pad(po,4,5,1)!=OPUS_BAD_ARG)test_failed();
+   if(opus_multistream_packet_pad(po,4,5,1)!=OPUS_INVALID_PACKET)test_failed();
    cfgs++;
    if(opus_packet_pad(po,0,5)!=OPUS_BAD_ARG)test_failed();
    cfgs++;
