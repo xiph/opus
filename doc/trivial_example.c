@@ -27,7 +27,7 @@
 /* This is meant to be a simple example of encoding and decoding audio
    using Opus. It should make it easy to understand how the Opus API
    works. For more information, see the full API documentation at:
-   http://www.opus-codec.org/docs/ */
+   https://www.opus-codec.org/docs/ */
 
 #include <stdlib.h>
 #include <errno.h>
