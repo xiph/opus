@@ -24,7 +24,7 @@
 
 Releases are commited to https://svn.xiph.org/releases/opus/
 which propagates to downloads.xiph.org, and copied manually
-to https://arcive.mozilla.org/pub/opus/
+to https://archive.mozilla.org/pub/opus/
 
 Website updates are committed to https://svn.xiph.org/websites/opus-codec.org/
 which propagates to https://opus-codec.org/
