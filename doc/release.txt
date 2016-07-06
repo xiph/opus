@@ -14,31 +14,31 @@
  - Add to https://svn.xiph.org/releases/opus/
  - Update checksum files
  - svn commit
- - Copy to ftp.mozilla.org:/pub/mozilla.org/opus/
-   and verify file permissions.
-- Upload source packge 'opus-${version}.tar.gz'
-  to website and verify file permissions.
+ - Copy to archive.mozilla.org/pub/opus/
+ - Update checksum files there as well.
 - Add release notes to https://svn.xiph.org/websites/opus-codec.org/
 - Update links and checksums on the downloads page.
-- Add a copy of the documentation to <http://www.opus-codec.org/docs/>
+- Add a copy of the documentation to <https://www.opus-codec.org/docs/>
   and update the links.
 - Update /topic in #opus IRC channel.
 
 Releases are commited to https://svn.xiph.org/releases/opus/
 which propagates to downloads.xiph.org, and copied manually
-to https://ftp.mozilla.org/pub/mozilla.org/opus/
+to https://arcive.mozilla.org/pub/opus/
 
 Website updates are committed to https://svn.xiph.org/websites/opus-codec.org/
-which propagates to http://opus-codec.org/
+which propagates to https://opus-codec.org/
 
 == Binary release ==
 
 We usually build opus-tools binaries for MacOS and Windows.
 
 Binary releases are copied manually to
-ftp.mozilla.org:/pub/mozilla.org/opus/win32/
+https://archive.mozilla.org/pub/opus/win32/
+
+For Mac, submit a pull request to homebrew.
 
 == Website updates ==
 
-For major releases, recreate the files on http://opus-codec.org/examples/
+For major releases, recreate the files on https://opus-codec.org/examples/
 with the next encoder.
