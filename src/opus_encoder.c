@@ -1065,7 +1065,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           bw=OPUS_BANDWIDTH_WIDEBAND;
        else if (tocmode==MODE_CELT_ONLY&&bw==OPUS_BANDWIDTH_MEDIUMBAND)
           bw=OPUS_BANDWIDTH_NARROWBAND;
-       else if (bw<=OPUS_BANDWIDTH_SUPERWIDEBAND)
+       else if (tocmode==MODE_HYBRID&&bw<=OPUS_BANDWIDTH_SUPERWIDEBAND)
           bw=OPUS_BANDWIDTH_SUPERWIDEBAND;
        data[0] = gen_toc(tocmode, frame_rate, bw, st->stream_channels);
        RESTORE_STACK;
