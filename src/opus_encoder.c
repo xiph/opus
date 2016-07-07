@@ -1049,6 +1049,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
 
     frame_rate = st->Fs/frame_size;
+    if (!st->use_vbr)
+    {
+       int cbrBytes;
+       cbrBytes = IMIN( (st->bitrate_bps + 4*frame_rate)/(8*frame_rate) , max_data_bytes);
+       st->bitrate_bps = cbrBytes * (8*frame_rate);
+       max_data_bytes = cbrBytes;
+    }
     if (max_data_bytes<3 || st->bitrate_bps < 3*frame_rate*8
        || (frame_rate<50 && (max_data_bytes*frame_rate<300 || st->bitrate_bps < 2400)))
     {
@@ -1068,15 +1075,15 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        else if (tocmode==MODE_HYBRID&&bw<=OPUS_BANDWIDTH_SUPERWIDEBAND)
           bw=OPUS_BANDWIDTH_SUPERWIDEBAND;
        data[0] = gen_toc(tocmode, frame_rate, bw, st->stream_channels);
+       ret = 1;
+       if (!st->use_vbr)
+       {
+          ret = opus_packet_pad(data, ret, max_data_bytes);
+          if (ret == OPUS_OK)
+             ret = max_data_bytes;
+       }
        RESTORE_STACK;
-       return 1;
-    }
-    if (!st->use_vbr)
-    {
-       int cbrBytes;
-       cbrBytes = IMIN( (st->bitrate_bps + 4*frame_rate)/(8*frame_rate) , max_data_bytes);
-       st->bitrate_bps = cbrBytes * (8*frame_rate);
-       max_data_bytes = cbrBytes;
+       return ret;
     }
     max_rate = frame_rate*max_data_bytes*8;
 
