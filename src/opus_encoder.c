@@ -1052,8 +1052,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (!st->use_vbr)
     {
        int cbrBytes;
-       cbrBytes = IMIN( (st->bitrate_bps + 4*frame_rate)/(8*frame_rate) , max_data_bytes);
-       st->bitrate_bps = cbrBytes * (8*frame_rate);
+       /* Multiply by 3 to make sure the division is exact. */
+       int frame_rate3 = 3*st->Fs/frame_size;
+       /* We need to make sure that "int" values always fit in 16 bits. */
+       cbrBytes = IMIN( (3*st->bitrate_bps/8 + frame_rate3/2)/frame_rate3, max_data_bytes);
+       st->bitrate_bps = cbrBytes*(opus_int32)frame_rate3*8/3;
        max_data_bytes = cbrBytes;
     }
     if (max_data_bytes<3 || st->bitrate_bps < 3*frame_rate*8
