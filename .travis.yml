@@ -1,6 +1,13 @@
 language: c
 
+env:
+  - CONFIG=""
+  - CONFIG="--enable-assertions"
+  - CONFIG="--enable-fixed-point"
+  - CONFIG="--enable-fixed-point --disable-float-api"
+  - CONFIG="--enable-fixed-point --enable-assertions"
+
 script:
   - ./autogen.sh
-  - ./configure
+  - ./configure $CONFIG
   - make distcheck
