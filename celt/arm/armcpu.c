@@ -56,7 +56,8 @@ static OPUS_INLINE opus_uint32 opus_cpu_capabilities(void){
   /* MSVC has no OPUS_INLINE __asm support for ARM, but it does let you __emit
    * instructions via their assembled hex code.
    * All of these instructions should be essentially nops. */
-# if defined(OPUS_ARM_MAY_HAVE_EDSP)
+# if defined(OPUS_ARM_MAY_HAVE_EDSP) || defined(OPUS_ARM_MAY_HAVE_MEDIA) \
+ || defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
   __try{
     /*PLD [r13]*/
     __emit(0xF5DDF000);
@@ -65,7 +66,8 @@ static OPUS_INLINE opus_uint32 opus_cpu_capabilities(void){
   __except(GetExceptionCode()==EXCEPTION_ILLEGAL_INSTRUCTION){
     /*Ignore exception.*/
   }
-#  if defined(OPUS_ARM_MAY_HAVE_MEDIA)
+#  if defined(OPUS_ARM_MAY_HAVE_MEDIA) \
+ || defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
   __try{
     /*SHADD8 r3,r3,r3*/
     __emit(0xE6333F93);
@@ -108,16 +110,15 @@ opus_uint32 opus_cpu_capabilities(void)
 
     while(fgets(buf, 512, cpuinfo) != NULL)
     {
-# if defined(OPUS_ARM_MAY_HAVE_EDSP) || defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+# if defined(OPUS_ARM_MAY_HAVE_EDSP) || defined(OPUS_ARM_MAY_HAVE_MEDIA) \
+ || defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
       /* Search for edsp and neon flag */
       if(memcmp(buf, "Features", 8) == 0)
       {
         char *p;
-#  if defined(OPUS_ARM_MAY_HAVE_EDSP)
         p = strstr(buf, " edsp");
         if(p != NULL && (p[5] == ' ' || p[5] == '\n'))
           flags |= OPUS_CPU_ARM_EDSP_FLAG;
-#  endif
 
 #  if defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
         p = strstr(buf, " neon");
@@ -127,7 +128,8 @@ opus_uint32 opus_cpu_capabilities(void)
       }
 # endif
 
-# if defined(OPUS_ARM_MAY_HAVE_MEDIA)
+# if defined(OPUS_ARM_MAY_HAVE_MEDIA) \
+ || defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
       /* Search for media capabilities (>= ARMv6) */
       if(memcmp(buf, "CPU architecture:", 17) == 0)
       {
