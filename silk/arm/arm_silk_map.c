@@ -87,4 +87,23 @@ opus_int32
 
 # endif
 
+# if defined(FIXED_POINT) && \
+ defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR)
+
+void (*const SILK_WARPED_AUTOCORRELATION_FIX_IMPL[OPUS_ARCHMASK + 1])(
+          opus_int32                *corr,                                  /* O    Result [order + 1]                                                          */
+          opus_int                  *scale,                                 /* O    Scaling of the correlation vector                                           */
+    const opus_int16                *input,                                 /* I    Input data to correlate                                                     */
+    const opus_int                  warping_Q16,                            /* I    Warping coefficient                                                         */
+    const opus_int                  length,                                 /* I    Length of input                                                             */
+    const opus_int                  order                                   /* I    Correlation order (even)                                                    */
+) = {
+      silk_warped_autocorrelation_FIX_c,              /* ARMv4 */
+      silk_warped_autocorrelation_FIX_c,              /* EDSP */
+      silk_warped_autocorrelation_FIX_c,              /* Media */
+      MAY_HAVE_NEON(silk_warped_autocorrelation_FIX), /* Neon */
+};
+
+# endif
+
 #endif /* OPUS_HAVE_RTCD */
