@@ -256,7 +256,8 @@ void silk_A2NLSF_FLP(
 void silk_NLSF2A_FLP(
     silk_float                      *pAR,                               /* O    LPC coefficients [ LPC_order ]              */
     const opus_int16                *NLSF_Q15,                          /* I    NLSF vector      [ LPC_order ]              */
-    const opus_int                  LPC_order                           /* I    LPC order                                   */
+    const opus_int                  LPC_order,                          /* I    LPC order                                   */
+    int                             arch                                /* I    Run-time architecture                       */
 );
 
 /* Limit, stabilize, and quantize NLSFs */

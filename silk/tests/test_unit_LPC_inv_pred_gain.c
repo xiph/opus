@@ -78,6 +78,7 @@ int check_stability(opus_int16 *A_Q12, int order) {
 }
 
 int main(void) {
+    const int arch = opus_select_arch();
     /* Set to 10000 so all branches in C function are triggered */
     const int loop_num = 10000;
     int count = 0;
@@ -100,7 +101,7 @@ int main(void) {
                 for( i = 0; i < SILK_MAX_ORDER_LPC; i++ ) {
                     A_Q12[i] = ((opus_int16)rand()) >> shift;
                 }
-                gain = silk_LPC_inverse_pred_gain(A_Q12, order);
+                gain = silk_LPC_inverse_pred_gain(A_Q12, order, arch);
                 /* Look for filters that silk_LPC_inverse_pred_gain() thinks are
                    stable but definitely aren't. */
                 if( gain != 0 && !check_stability(A_Q12, order) ) {
