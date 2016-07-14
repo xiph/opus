@@ -301,6 +301,7 @@ typedef struct {
     /* Stuff used for PLC */
     opus_int                    lossCnt;
     opus_int                    prevSignalType;
+    int                         arch;
 
     silk_PLC_struct sPLC;
 

@@ -47,6 +47,10 @@ extern "C"
 #include "x86/SigProc_FIX_sse.h"
 #endif
 
+#if (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
+#include "arm/LPC_inv_pred_gain_arm.h"
+#endif
+
 /********************************************************************/
 /*                    SIGNAL PROCESSING FUNCTIONS                   */
 /********************************************************************/
@@ -132,7 +136,7 @@ void silk_bwexpander_32(
 
 /* Compute inverse of LPC prediction gain, and                           */
 /* test if LPC coefficients are stable (all poles within unit circle)    */
-opus_int32 silk_LPC_inverse_pred_gain(              /* O   Returns inverse prediction gain in energy domain, Q30        */
+opus_int32 silk_LPC_inverse_pred_gain_c(            /* O   Returns inverse prediction gain in energy domain, Q30        */
     const opus_int16            *A_Q12,             /* I   Prediction coefficients, Q12 [order]                         */
     const opus_int              order               /* I   Prediction order                                             */
 );
@@ -145,6 +149,10 @@ void silk_ana_filt_bank_1(
     opus_int16                  *outH,              /* O    High band [N/2]                                             */
     const opus_int32            N                   /* I    Number of input samples                                     */
 );
+
+#if !defined(OVERRIDE_silk_LPC_inverse_pred_gain)
+#define silk_LPC_inverse_pred_gain(A_Q12, order, arch)     ((void)(arch), silk_LPC_inverse_pred_gain_c(A_Q12, order))
+#endif
 
 /********************************************************************/
 /*                        SCALAR FUNCTIONS                          */
@@ -265,7 +273,8 @@ void silk_A2NLSF(
 void silk_NLSF2A(
     opus_int16                  *a_Q12,             /* O    monic whitening filter coefficients in Q12,  [ d ]          */
     const opus_int16            *NLSF,              /* I    normalized line spectral frequencies in Q15, [ d ]          */
-    const opus_int              d                   /* I    filter order (should be even)                               */
+    const opus_int              d,                  /* I    filter order (should be even)                               */
+    int                         arch                /* I    Run-time architecture                                       */
 );
 
 /* Convert int32 coefficients to int16 coefs and make sure there's no wrap-around */

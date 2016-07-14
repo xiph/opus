@@ -30,11 +30,22 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "main_FIX.h"
 #include "NSQ.h"
+#include "SigProc_FIX.h"
 
 #if defined(OPUS_HAVE_RTCD)
 
 # if (defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && \
  !defined(OPUS_ARM_PRESUME_NEON_INTR))
+
+opus_int32 (*const SILK_LPC_INVERSE_PRED_GAIN_IMPL[OPUS_ARCHMASK + 1])( /* O   Returns inverse prediction gain in energy domain, Q30        */
+        const opus_int16            *A_Q12,                             /* I   Prediction coefficients, Q12 [order]                         */
+        const opus_int              order                               /* I   Prediction order                                             */
+) = {
+      silk_LPC_inverse_pred_gain_c,              /* ARMv4 */
+      silk_LPC_inverse_pred_gain_c,              /* EDSP */
+      silk_LPC_inverse_pred_gain_c,              /* Media */
+      MAY_HAVE_NEON(silk_LPC_inverse_pred_gain), /* Neon */
+};
 
 void  (*const SILK_NSQ_DEL_DEC_IMPL[OPUS_ARCHMASK + 1])(
         const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */

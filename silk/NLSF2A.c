@@ -66,7 +66,8 @@ static OPUS_INLINE void silk_NLSF2A_find_poly(
 void silk_NLSF2A(
     opus_int16                  *a_Q12,             /* O    monic whitening filter coefficients in Q12,  [ d ]          */
     const opus_int16            *NLSF,              /* I    normalized line spectral frequencies in Q15, [ d ]          */
-    const opus_int              d                   /* I    filter order (should be even)                               */
+    const opus_int              d,                  /* I    filter order (should be even)                               */
+    int                         arch                /* I    Run-time architecture                                       */
 )
 {
     /* This ordering was found to maximize quality. It improves numerical accuracy of
@@ -128,7 +129,7 @@ void silk_NLSF2A(
     /* Convert int32 coefficients to Q12 int16 coefs */
     silk_LPC_fit( a_Q12, a32_QA1, 12, QA + 1, d );
 
-    for( i = 0; silk_LPC_inverse_pred_gain( a_Q12, d ) == 0 && i < MAX_LPC_STABILIZE_ITERATIONS; i++ ) {
+    for( i = 0; silk_LPC_inverse_pred_gain( a_Q12, d, arch ) == 0 && i < MAX_LPC_STABILIZE_ITERATIONS; i++ ) {
         /* Prediction coefficients are (too close to) unstable; apply bandwidth expansion   */
         /* on the unscaled coefficients, convert to Q12 and measure again                   */
         silk_bwexpander_32( a32_QA1, d, 65536 - silk_LSHIFT( 2, i ) );
