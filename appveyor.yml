@@ -1,0 +1,29 @@
+version: 1.0.{build}
+branches:
+  only:
+  - master
+  - appveyor
+
+image: Visual Studio 2015
+configuration:
+- Debug
+- DebugDLL
+- Release
+- ReleaseDLL
+
+platform:
+- Win32
+- x64
+
+build:
+  project: win32\VS2015\opus.sln
+  parallel: true
+  verbosity: minimal
+
+test_script:
+- cmd: >-
+    %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%\test_opus_api.exe
+
+    %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%\test_opus_decode.exe
+
+    %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%\test_opus_encode.exe
