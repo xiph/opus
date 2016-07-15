@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "mlp.h"
 
 /* RMS error was 0.230027, seed was 1452289367 */
