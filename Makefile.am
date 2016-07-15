@@ -185,6 +185,7 @@ EXTRA_DIST = version.mk \
              win32/VS2015/test_opus_decode.vcxproj \
              win32/VS2015/celt.vcxproj \
              win32/VS2015/opus.sln \
+             win32/VS2015/generate_version.vcxproj \
              win32/genversion.bat \
              win32/config.h
 
