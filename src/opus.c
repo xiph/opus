@@ -104,6 +104,10 @@ OPUS_EXPORT void opus_pcm_soft_clip(float *_x, int N, int C, float *declip_mem)
 
          /* Compute a such that maxval + a*maxval^2 = 1 */
          a=(maxval-1)/(maxval*maxval);
+         /* Slightly boost "a" by 2^-24. This is just enough to ensure -ffast-math
+            does not cause output values larger than +/-1, but small enough not
+            to matter even for 24-bit output.  */
+         a += a*6e-8;
          if (x[i*C]>0)
             a = -a;
          /* Apply soft clipping */
