@@ -4,6 +4,7 @@
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleaseDLL/
+[Rr]eleaseDLL_fixed/
 [Rr]eleases/
 *.manifest
 *.lastbuildstate
