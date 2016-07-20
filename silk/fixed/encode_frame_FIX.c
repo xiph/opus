@@ -29,6 +29,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #endif
 
+#include <stdlib.h>
 #include "main_FIX.h"
 #include "stack_alloc.h"
 #include "tuning_parameters.h"
