@@ -618,6 +618,7 @@
     <ClCompile Include="..\..\silk\lin2log.c" />
     <ClCompile Include="..\..\silk\log2lin.c" />
     <ClCompile Include="..\..\silk\LPC_analysis_filter.c" />
+    <ClCompile Include="..\..\silk\LPC_fit.c" />
     <ClCompile Include="..\..\silk\LPC_inv_pred_gain.c" />
     <ClCompile Include="..\..\silk\LP_variable_cutoff.c" />
     <ClCompile Include="..\..\silk\NLSF2A.c" />

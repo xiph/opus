@@ -38,9 +38,6 @@
     <ClCompile Include="..\..\silk\float\schur_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\silk\float\solve_LS_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\silk\float\sort_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -89,9 +86,6 @@
     <ClCompile Include="..\..\silk\float\k2a_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\silk\float\levinsondurbin_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\silk\float\LPC_analysis_filter_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -108,9 +102,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\float\pitch_analysis_core_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\prefilter_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\float\process_gains_FLP.c">

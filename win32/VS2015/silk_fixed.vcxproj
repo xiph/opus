@@ -499,18 +499,15 @@
     <ClCompile Include="..\..\silk\fixed\LTP_scale_ctrl_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\noise_shape_analysis_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\pitch_analysis_core_FIX.c" />
-    <ClCompile Include="..\..\silk\fixed\prefilter_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\process_gains_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\regularize_correlations_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\residual_energy16_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\residual_energy_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\schur64_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\schur_FIX.c" />
-    <ClCompile Include="..\..\silk\fixed\solve_LS_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\vector_ops_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\warped_autocorrelation_FIX.c" />
     <ClCompile Include="..\..\silk\fixed\x86\burg_modified_FIX_sse.c" />
-    <ClCompile Include="..\..\silk\fixed\x86\prefilter_FIX_sse.c" />
     <ClCompile Include="..\..\silk\fixed\x86\vector_ops_FIX_sse.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
