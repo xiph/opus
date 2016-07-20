@@ -41,9 +41,6 @@
     <ClCompile Include="..\..\silk\fixed\pitch_analysis_core_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\prefilter_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\silk\fixed\process_gains_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -60,9 +57,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\fixed\schur64_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\solve_LS_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\fixed\vector_ops_FIX.c">
@@ -108,9 +102,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\fixed\x86\burg_modified_FIX_sse.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\x86\prefilter_FIX_sse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\fixed\x86\vector_ops_FIX_sse.c">

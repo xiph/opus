@@ -332,5 +332,8 @@
     <ClCompile Include="..\..\silk\x86\x86_silk_map.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\silk\LPC_fit.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
