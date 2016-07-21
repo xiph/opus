@@ -101,6 +101,8 @@ typedef opus_val32 celt_ener;
 #define Q15ONE 32767
 
 #define SIG_SHIFT 12
+/* Safe saturation value for 32-bit signals. */
+#define SIG_SAT (48000<<SIG_SHIFT)
 
 #define NORM_SCALING 16384
 
