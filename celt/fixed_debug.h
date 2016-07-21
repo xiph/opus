@@ -59,6 +59,12 @@ extern opus_int64 celt_mips;
 #define SHR(a,b) SHR32(a,b)
 #define PSHR(a,b) PSHR32(a,b)
 
+/** Add two 32-bit values, ignore any overflows */
+#define ADD32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)+(opus_uint32)(b)))
+/** Subtract two 32-bit values, ignore any overflows  */
+#define SUB32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)-(opus_uint32)(b)))
+#define NEG32_ovflw(a) (celt_mips+=2,(opus_val32)(-(opus_uint32)(a)))
+
 static OPUS_INLINE short NEG16(int x)
 {
    int res;

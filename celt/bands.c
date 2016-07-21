@@ -228,6 +228,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
 #ifndef FIXED_POINT
       g = celt_exp2(lg);
 #else
+      lg = MIN16(lg, QCONST16(18., DB_SHIFT));
       /* Handle the integer part of the log energy */
       shift = 16-(lg>>DB_SHIFT);
       if (shift>31)
