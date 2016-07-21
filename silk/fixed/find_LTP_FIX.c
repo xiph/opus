@@ -85,10 +85,10 @@ TIC(div)
         }
 #else
         for( i = 0; i < LTP_ORDER * LTP_ORDER; i++ ) {
-            XXLTP_Q17_ptr[ i ] = (opus_int32)( ( ((opus_int64)XXLTP_Q17_ptr[ i ]) << 17 ) / temp );
+            XXLTP_Q17_ptr[ i ] = (opus_int32)( silk_LSHIFT64( (opus_int64)XXLTP_Q17_ptr[ i ], 17 ) / temp );
         }
         for( i = 0; i < LTP_ORDER; i++ ) {
-            xXLTP_Q17_ptr[ i ] = (opus_int32)( ( ((opus_int64)xXLTP_Q17_ptr[ i ]) << 17 ) / temp );
+            xXLTP_Q17_ptr[ i ] = (opus_int32)( silk_LSHIFT64( (opus_int64)xXLTP_Q17_ptr[ i ], 17 ) / temp );
         }
 #endif
 TOC(div)
