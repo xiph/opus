@@ -57,7 +57,7 @@ extern "C"
 #define MAX_SUM_LOG_GAIN_DB                             250.0f
 
 /* LTP analysis defines */
-#define LTP_CORR_INV_MAX                                0.015f
+#define LTP_CORR_INV_MAX                                0.03f
 
 /***********************/
 /* High pass filtering */
