@@ -166,7 +166,7 @@ void celt_iir(const opus_val32 *_x,
       {
          mem[j]=mem[j-1];
       }
-      mem[0] = ROUND16(sum,SIG_SHIFT);
+      mem[0] = SROUND16(sum, SIG_SHIFT);
       _y[i] = sum;
    }
 #else
@@ -195,20 +195,20 @@ void celt_iir(const opus_val32 *_x,
       xcorr_kernel(rden, y+i, sum, ord, arch);
 
       /* Patch up the result to compensate for the fact that this is an IIR */
-      y[i+ord  ] = -ROUND16(sum[0],SIG_SHIFT);
+      y[i+ord  ] = -SROUND16(sum[0],SIG_SHIFT);
       _y[i  ] = sum[0];
       sum[1] = MAC16_16(sum[1], y[i+ord  ], den[0]);
-      y[i+ord+1] = -ROUND16(sum[1],SIG_SHIFT);
+      y[i+ord+1] = -SROUND16(sum[1],SIG_SHIFT);
       _y[i+1] = sum[1];
       sum[2] = MAC16_16(sum[2], y[i+ord+1], den[0]);
       sum[2] = MAC16_16(sum[2], y[i+ord  ], den[1]);
-      y[i+ord+2] = -ROUND16(sum[2],SIG_SHIFT);
+      y[i+ord+2] = -SROUND16(sum[2],SIG_SHIFT);
       _y[i+2] = sum[2];
 
       sum[3] = MAC16_16(sum[3], y[i+ord+2], den[0]);
       sum[3] = MAC16_16(sum[3], y[i+ord+1], den[1]);
       sum[3] = MAC16_16(sum[3], y[i+ord  ], den[2]);
-      y[i+ord+3] = -ROUND16(sum[3],SIG_SHIFT);
+      y[i+ord+3] = -SROUND16(sum[3],SIG_SHIFT);
       _y[i+3] = sum[3];
    }
    for (;i<N;i++)
@@ -216,7 +216,7 @@ void celt_iir(const opus_val32 *_x,
       opus_val32 sum = _x[i];
       for (j=0;j<ord;j++)
          sum -= MULT16_16(rden[j],y[i+j]);
-      y[i+ord] = ROUND16(sum,SIG_SHIFT);
+      y[i+ord] = SROUND16(sum,SIG_SHIFT);
       _y[i] = sum;
    }
    for(i=0;i<ord;i++)

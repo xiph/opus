@@ -206,6 +206,7 @@ static OPUS_INLINE int celt_isnan(float x)
 #define SATURATE16(x)   (x)
 
 #define ROUND16(a,shift)  (a)
+#define SROUND16(a,shift) (a)
 #define HALF16(x)       (.5f*(x))
 #define HALF32(x)       (.5f*(x))
 
