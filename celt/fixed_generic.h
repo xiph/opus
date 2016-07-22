@@ -104,6 +104,9 @@
 
 /** Shift by a and round-to-neareast 32-bit value. Result is a 16-bit value */
 #define ROUND16(x,a) (EXTRACT16(PSHR32((x),(a))))
+/** Shift by a and round-to-neareast 32-bit value. Result is a saturated 16-bit value */
+#define SROUND16(x,a) EXTRACT16(SATURATE(PSHR32(x,a), 32767));
+
 /** Divide by two */
 #define HALF16(x)  (SHR16(x,1))
 #define HALF32(x)  (SHR32(x,1))
