@@ -630,7 +630,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
             tmp = ROUND16(
                   buf[DECODE_BUFFER_SIZE-MAX_PERIOD-N+extrapolation_offset+j],
                   SIG_SHIFT);
-            S1 += SHR32(MULT16_16(tmp, tmp), 8);
+            S1 += SHR32(MULT16_16(tmp, tmp), 9);
          }
 
          {
@@ -654,7 +654,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
             for (i=0;i<extrapolation_len;i++)
             {
                opus_val16 tmp = ROUND16(buf[DECODE_BUFFER_SIZE-N+i], SIG_SHIFT);
-               S2 += SHR32(MULT16_16(tmp, tmp), 8);
+               S2 += SHR32(MULT16_16(tmp, tmp), 9);
             }
             /* This checks for an "explosion" in the synthesis. */
 #ifdef FIXED_POINT
