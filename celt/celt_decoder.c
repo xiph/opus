@@ -333,7 +333,7 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       denormalise_bands(mode, X+N, freq2, oldBandE+nbEBands, start, effEnd, M,
             downsample, silence);
       for (i=0;i<N;i++)
-         freq[i] = HALF32(ADD32(freq[i],freq2[i]));
+         freq[i] = ADD32(HALF32(freq[i]), HALF32(freq2[i]));
       for (b=0;b<B;b++)
          clt_mdct_backward(&mode->mdct, &freq[b], out_syn[0]+NB*b, mode->window, overlap, shift, B, arch);
    } else {
