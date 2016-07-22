@@ -632,7 +632,23 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
                   SIG_SHIFT);
             S1 += SHR32(MULT16_16(tmp, tmp), 9);
          }
-
+#ifdef FIXED_POINT
+         /* For fixed-point, apply bandwidth expansion until we can guarantee that
+            no overflow can happen in the IIR filter. This means:
+            attenuation*32768*sum(abs(filter)) < 2^31 */
+         while (1) {
+            opus_val16 tmp=Q15ONE;
+            opus_val32 sum=QCONST16(1., SIG_SHIFT);
+            for (i=0;i<LPC_ORDER;i++)
+               sum += ABS16(lpc[c*LPC_ORDER+i]);
+            if (MULT16_32_Q15(attenuation, sum) < 65535) break;
+            for (i=0;i<LPC_ORDER;i++)
+            {
+               tmp = MULT16_16_Q15(QCONST16(.99f,15), tmp);
+               lpc[c*LPC_ORDER+i] = MULT16_16_Q15(lpc[c*LPC_ORDER+i], tmp);
+            }
+         }
+#endif
          {
             opus_val16 lpc_mem[LPC_ORDER];
             /* Copy the last decoded samples (prior to the overlap region) to
