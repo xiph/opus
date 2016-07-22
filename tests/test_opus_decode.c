@@ -384,26 +384,26 @@ void test_soft_clip(void)
    {
       for (j=0;j<1024;j++)
       {
-        x[j]=(i&255)*(1/32.f)-4.f;
+        x[j]=(j&255)*(1/32.f)-4.f;
       }
       opus_pcm_soft_clip(&x[i],1024-i,1,s);
       for (j=i;j<1024;j++)
       {
-        if(x[i]>1.f)test_failed();
-        if(x[i]<-1.f)test_failed();
+        if(x[j]>1.f)test_failed();
+        if(x[j]<-1.f)test_failed();
       }
    }
    for(i=1;i<9;i++)
    {
       for (j=0;j<1024;j++)
       {
-        x[j]=(i&255)*(1/32.f)-4.f;
+        x[j]=(j&255)*(1/32.f)-4.f;
       }
       opus_pcm_soft_clip(x,1024/i,i,s);
       for (j=0;j<(1024/i)*i;j++)
       {
-        if(x[i]>1.f)test_failed();
-        if(x[i]<-1.f)test_failed();
+        if(x[j]>1.f)test_failed();
+        if(x[j]<-1.f)test_failed();
       }
    }
    opus_pcm_soft_clip(x,0,1,s);
