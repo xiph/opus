@@ -246,7 +246,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
                already corrupted. */
          if (shift < -2)
          {
-            g = 32767;
+            g = 16384;
             shift = -2;
          }
          do {
