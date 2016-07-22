@@ -236,11 +236,20 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       /* OPT: Happens to work without the OPUS_MOVE(), but only because the current encoder already copies x to y */
       if (x!=y)
          OPUS_MOVE(y+overlap, x+overlap, N-overlap);
+#ifdef FIXED_POINT
+      for (i=0; i < overlap; i++)
+         y[i] = SATURATE(y[i], SIG_SAT);
+#endif
       return;
    }
 
    /* Compute the part with the constant filter. */
    comb_filter_const(y+i, x+i, T1, N-i, g10, g11, g12, arch);
+#ifdef FIXED_POINT
+   for (i=0; i < N; i++)
+      y[i] = SATURATE(y[i], SIG_SAT);
+#endif
+
 }
 #endif /* OVERRIDE_comb_filter */
 
