@@ -224,7 +224,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
 #endif
       j=M*eBands[i];
       band_end = M*eBands[i+1];
-      lg = ADD16(bandLogE[i], SHL16((opus_val16)eMeans[i],6));
+      lg = SATURATE16(ADD32(bandLogE[i], SHL32((opus_val32)eMeans[i],6)));
 #ifndef FIXED_POINT
       g = celt_exp2(lg);
 #else
