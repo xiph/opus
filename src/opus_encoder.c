@@ -1075,6 +1075,7 @@ static int is_digital_silence(const opus_val16* pcm, int frame_size, int lsb_dep
 
 #ifdef FIXED_POINT
    silence = (sample_max == 0);
+   (void)lsb_depth;
 #else
    silence = (sample_max <= (opus_val16) 1 / (1 << lsb_depth));
 #endif
