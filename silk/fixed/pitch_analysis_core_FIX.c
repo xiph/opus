@@ -141,7 +141,7 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
 
     /* Downscale input if necessary */
     silk_sum_sqr_shift( &energy, &shift, frame_unscaled, frame_length );
-    shift += 2 - silk_CLZ32( energy );        /* at least one bit headroom */
+    shift += 3 - silk_CLZ32( energy );        /* at least two bits headroom */
     ALLOC( frame_scaled, frame_length, opus_int16 );
     if( shift > 0 ) {
         shift = silk_RSHIFT( shift + 1, 1 );
