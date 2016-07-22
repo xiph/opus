@@ -436,7 +436,7 @@ int main(int _argc, char **_argv)
       iseed=atoi(env_seed);
       env_used=1;
    }
-   else iseed=(opus_uint32)time(NULL)^((getpid()&65535)<<16);
+   else iseed=(opus_uint32)time(NULL)^(((opus_uint32)getpid()&65535)<<16);
    Rw=Rz=iseed;
 
    oversion=opus_get_version_string();
