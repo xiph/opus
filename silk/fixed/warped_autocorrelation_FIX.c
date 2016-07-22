@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FIX.h"
 
 #define QC  10
-#define QS  14
+#define QS  13
 
 #if defined(MIPSr1_ASM)
 #include "mips/warped_autocorrelation_FIX_mipsr1.h"
