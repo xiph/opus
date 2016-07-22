@@ -660,6 +660,10 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
             celt_iir(buf+DECODE_BUFFER_SIZE-N, lpc+c*LPC_ORDER,
                   buf+DECODE_BUFFER_SIZE-N, extrapolation_len, LPC_ORDER,
                   lpc_mem, st->arch);
+#ifdef FIXED_POINT
+            for (i=0; i < extrapolation_len; i++)
+               buf[DECODE_BUFFER_SIZE-N+i] = SATURATE(buf[DECODE_BUFFER_SIZE-N+i], SIG_SAT);
+#endif
          }
 
          /* Check if the synthesis energy is higher than expected, which can
