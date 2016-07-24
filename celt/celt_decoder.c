@@ -641,13 +641,13 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
 #ifdef FIXED_POINT
          /* For fixed-point, apply bandwidth expansion until we can guarantee that
             no overflow can happen in the IIR filter. This means:
-            attenuation*32768*sum(abs(filter)) < 2^31 */
+            32768*sum(abs(filter)) < 2^31 */
          while (1) {
             opus_val16 tmp=Q15ONE;
             opus_val32 sum=QCONST16(1., SIG_SHIFT);
             for (i=0;i<LPC_ORDER;i++)
                sum += ABS16(lpc[c*LPC_ORDER+i]);
-            if (MULT16_32_Q15(attenuation, sum) < 65535) break;
+            if (sum < 65535) break;
             for (i=0;i<LPC_ORDER;i++)
             {
                tmp = MULT16_16_Q15(QCONST16(.99f,15), tmp);
