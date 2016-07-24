@@ -306,16 +306,16 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_sca
          /* We swap real and imag because we're using an FFT instead of an IFFT. */
          re = yp1[1];
          im = yp1[0];
-         yp0[0] = SATURATE(yr, SIG_SAT);
-         yp1[1] = SATURATE(yi, SIG_SAT);
+         yp0[0] = yr;
+         yp1[1] = yi;
 
          t0 = t[(N4-i-1)];
          t1 = t[(N2-i-1)];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
          yr = ADD32_ovflw(S_MUL(re,t0), S_MUL(im,t1));
          yi = SUB32_ovflw(S_MUL(re,t1), S_MUL(im,t0));
-         yp1[0] = SATURATE(yr, SIG_SAT);
-         yp0[1] = SATURATE(yi, SIG_SAT);
+         yp1[0] = yr;
+         yp0[1] = yi;
          yp0 += 2;
          yp1 -= 2;
       }
