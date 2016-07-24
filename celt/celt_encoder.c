@@ -283,7 +283,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       /* Normalize tmp to max range */
       {
          int shift=0;
-         shift = 14-celt_ilog2(1+celt_maxabs16(tmp, len));
+         shift = 14-celt_ilog2(MAX16(1, celt_maxabs16(tmp, len)));
          if (shift!=0)
          {
             for (i=0;i<len;i++)
