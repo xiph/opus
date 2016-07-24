@@ -272,7 +272,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          mem0 = mem1 + y - 2*x;
          mem1 = x - .5f*y;
 #endif
-         tmp[i] = EXTRACT16(SHR32(y,2));
+         tmp[i] = SROUND16(y, 2);
          /*printf("%f ", tmp[i]);*/
       }
       /*printf("\n");*/
@@ -283,7 +283,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       /* Normalize tmp to max range */
       {
          int shift=0;
-         shift = 14-celt_ilog2(1+celt_maxabs16(tmp, len));
+         shift = 14-celt_ilog2(MAX16(1, celt_maxabs16(tmp, len)));
          if (shift!=0)
          {
             for (i=0;i<len;i++)
