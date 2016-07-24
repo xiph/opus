@@ -207,6 +207,10 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
          OPUS_MOVE(y, x, N);
       return;
    }
+   /* When the gain is zero, T0 and/or T1 is set to zero. We need
+      to have then be at least 2 to avoid processing garbage data. */
+   T0 = IMAX(T0, COMBFILTER_MINPERIOD);
+   T1 = IMAX(T1, COMBFILTER_MINPERIOD);
    g00 = MULT16_16_P15(g0, gains[tapset0][0]);
    g01 = MULT16_16_P15(g0, gains[tapset0][1]);
    g02 = MULT16_16_P15(g0, gains[tapset0][2]);
