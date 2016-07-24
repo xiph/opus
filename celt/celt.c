@@ -111,26 +111,31 @@ void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
       t = MAC16_32_Q16(x[i], g10, x2);
       t = MAC16_32_Q16(t, g11, ADD32(x1,x3));
       t = MAC16_32_Q16(t, g12, ADD32(x0,x4));
+      t = SATURATE(t, SIG_SAT);
       y[i] = t;
       x4=SHL32(x[i-T+3],1);
       t = MAC16_32_Q16(x[i+1], g10, x1);
       t = MAC16_32_Q16(t, g11, ADD32(x0,x2));
       t = MAC16_32_Q16(t, g12, ADD32(x4,x3));
+      t = SATURATE(t, SIG_SAT);
       y[i+1] = t;
       x3=SHL32(x[i-T+4],1);
       t = MAC16_32_Q16(x[i+2], g10, x0);
       t = MAC16_32_Q16(t, g11, ADD32(x4,x1));
       t = MAC16_32_Q16(t, g12, ADD32(x3,x2));
+      t = SATURATE(t, SIG_SAT);
       y[i+2] = t;
       x2=SHL32(x[i-T+5],1);
       t = MAC16_32_Q16(x[i+3], g10, x4);
       t = MAC16_32_Q16(t, g11, ADD32(x3,x0));
       t = MAC16_32_Q16(t, g12, ADD32(x2,x1));
+      t = SATURATE(t, SIG_SAT);
       y[i+3] = t;
       x1=SHL32(x[i-T+6],1);
       t = MAC16_32_Q16(x[i+4], g10, x3);
       t = MAC16_32_Q16(t, g11, ADD32(x2,x4));
       t = MAC16_32_Q16(t, g12, ADD32(x1,x0));
+      t = SATURATE(t, SIG_SAT);
       y[i+4] = t;
    }
 #ifdef CUSTOM_MODES
@@ -141,6 +146,7 @@ void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
       t = MAC16_32_Q16(x[i], g10, x2);
       t = MAC16_32_Q16(t, g11, ADD32(x1,x3));
       t = MAC16_32_Q16(t, g12, ADD32(x0,x4));
+      t = SATURATE(t, SIG_SAT);
       y[i] = t;
       x4=x3;
       x3=x2;
@@ -169,6 +175,7 @@ void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
                + MULT16_32_Q15(g10,x2)
                + MULT16_32_Q15(g11,ADD32(x1,x3))
                + MULT16_32_Q15(g12,ADD32(x0,x4));
+      y[i] = SATURATE(y[i], SIG_SAT);
       x4=x3;
       x3=x2;
       x2=x1;
@@ -225,6 +232,7 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
                + MULT16_32_Q15(MULT16_16_Q15(f,g10),x2)
                + MULT16_32_Q15(MULT16_16_Q15(f,g11),ADD32(x1,x3))
                + MULT16_32_Q15(MULT16_16_Q15(f,g12),ADD32(x0,x4));
+      y[i] = SATURATE(y[i], SIG_SAT);
       x4=x3;
       x3=x2;
       x2=x1;
@@ -236,20 +244,11 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       /* OPT: Happens to work without the OPUS_MOVE(), but only because the current encoder already copies x to y */
       if (x!=y)
          OPUS_MOVE(y+overlap, x+overlap, N-overlap);
-#ifdef FIXED_POINT
-      for (i=0; i < overlap; i++)
-         y[i] = SATURATE(y[i], SIG_SAT);
-#endif
       return;
    }
 
    /* Compute the part with the constant filter. */
    comb_filter_const(y+i, x+i, T1, N-i, g10, g11, g12, arch);
-#ifdef FIXED_POINT
-   for (i=0; i < N; i++)
-      y[i] = SATURATE(y[i], SIG_SAT);
-#endif
-
 }
 #endif /* OVERRIDE_comb_filter */
 
