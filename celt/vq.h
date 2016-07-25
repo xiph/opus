@@ -53,9 +53,7 @@
 */
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
       ec_enc *enc
-#ifdef RESYNTH
       , opus_val16 gain
-#endif
       );
 
 /** Algebraic pulse decoder

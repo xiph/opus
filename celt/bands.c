@@ -1006,9 +1006,7 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
          if (encode)
          {
             cm = alg_quant(X, N, K, spread, B, ec
-#ifdef RESYNTH
                  , gain
-#endif
                  );
          } else {
             cm = alg_unquant(X, N, K, spread, B, ec, gain);
@@ -1547,6 +1545,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
+               /* Restore rounding mode (is it needed?) */
+               ctx.theta_round = 0;
             } else {
                ctx.theta_round = 0;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,

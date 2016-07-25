@@ -159,9 +159,7 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
 }
 
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
-#ifdef RESYNTH
    , opus_val16 gain
-#endif
    )
 {
    VARDECL(celt_norm, y);
@@ -314,10 +312,8 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
    } while (++j<N);
    encode_pulses(iy, N, K, enc);
 
-#ifdef RESYNTH
    normalise_residual(iy, X, N, yy, gain);
    exp_rotation(X, N, -1, B, K, spread);
-#endif
 
    collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;
