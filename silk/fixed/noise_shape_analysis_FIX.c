@@ -65,6 +65,7 @@ static OPUS_INLINE void limit_warped_coefs(
     opus_int   i, iter, ind = 0;
     opus_int32 tmp, maxabs_Q24, chirp_Q16, gain_Q16;
     opus_int32 nom_Q16, den_Q24;
+    opus_int32 limit_Q20, maxabs_Q20;
 
     /* Convert to monic coefficients */
     lambda_Q16 = -lambda_Q16;
@@ -78,7 +79,7 @@ static OPUS_INLINE void limit_warped_coefs(
     for( i = 0; i < order; i++ ) {
         coefs_Q24[ i ] = silk_SMULWW( gain_Q16, coefs_Q24[ i ] );
     }
-
+    limit_Q20 = silk_RSHIFT(limit_Q24, 4);
     for( iter = 0; iter < 10; iter++ ) {
         /* Find maximum absolute value */
         maxabs_Q24 = -1;
@@ -89,7 +90,9 @@ static OPUS_INLINE void limit_warped_coefs(
                 ind = i;
             }
         }
-        if( maxabs_Q24 <= limit_Q24 ) {
+        /* Use Q20 to avoid any overflow when multiplying by (ind + 1) later. */
+        maxabs_Q20 = silk_RSHIFT(maxabs_Q24, 4);
+        if( maxabs_Q20 <= limit_Q20 ) {
             /* Coefficients are within range - done */
             return;
         }
@@ -105,8 +108,8 @@ static OPUS_INLINE void limit_warped_coefs(
 
         /* Apply bandwidth expansion */
         chirp_Q16 = SILK_FIX_CONST( 0.99, 16 ) - silk_DIV32_varQ(
-            silk_SMULWB( maxabs_Q24 - limit_Q24, silk_SMLABB( SILK_FIX_CONST( 0.8, 10 ), SILK_FIX_CONST( 0.1, 10 ), iter ) ),
-            silk_MUL( maxabs_Q24, ind + 1 ), 22 );
+            silk_SMULWB( maxabs_Q20 - limit_Q20, silk_SMLABB( SILK_FIX_CONST( 0.8, 10 ), SILK_FIX_CONST( 0.1, 10 ), iter ) ),
+            silk_MUL( maxabs_Q20, ind + 1 ), 22 );
         silk_bwexpander_32( coefs_Q24, order, chirp_Q16 );
 
         /* Convert to monic warped coefficients */
