@@ -241,12 +241,12 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       /* Handle extreme gains with negative shift. */
       if (shift<0)
       {
-         /* For shift < -2 we'd be likely to overflow, so we're capping
-               the gain here. This shouldn't happen unless the bitstream is
-               already corrupted. */
-         if (shift < -2)
+         /* For shift <= -2 and g > 16384 we'd be likely to overflow, so we're
+            capping the gain here, which is equivalent to a cap of 18 on lg.
+            This shouldn't trigger unless the bitstream is already corrupted. */
+         if (shift <= -2)
          {
-            g = 32767;
+            g = 16384;
             shift = -2;
          }
          do {
