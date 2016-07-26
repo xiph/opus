@@ -1330,13 +1330,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
    return cm;
 }
 
-static double celt_dist(opus_val16 *x, opus_val16 *y, int N)
-{
-   double sum = 0;
-   int i;
-   for (i=0;i<N;i++) sum += (x[i]-y[i])*(double)(x[i]-y[i]);
-   return sum;
-}
+
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm *X_, celt_norm *Y_, unsigned char *collapse_masks,
       const celt_ener *bandE, int *pulses, int shortBlocks, int spread,
@@ -1517,7 +1511,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
-               dist0 = celt_dist(X_save, X, N) + celt_dist(Y_save, Y, N);
+               dist0 = celt_inner_prod(X_save, X, N, arch) + celt_inner_prod(Y_save, Y, N, arch);
                /* Restore */
                *ec = ec_save;
                ctx = ctx_save;
@@ -1529,7 +1523,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
-               dist1 = celt_dist(X_save, X, N) + celt_dist(Y_save, Y, N);
+               dist1 = celt_inner_prod(X_save, X, N, arch) + celt_inner_prod(Y_save, Y, N, arch);
                /* Restore */
                *ec = ec_save;
                ctx = ctx_save;
@@ -1537,7 +1531,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                OPUS_COPY(Y, Y_save, N);
                OPUS_COPY(norm+effective_lowband, norm_save, N);
                /* Encode with best choice. */
-               ctx.theta_round = dist0 < dist1 ? -1 : 1;
+               ctx.theta_round = dist0 >= dist1 ? -1 : 1;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
