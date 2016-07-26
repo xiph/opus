@@ -1498,7 +1498,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ec_ctx ec_save;
                struct band_ctx ctx_save;
                opus_val32 dist0, dist1;
-               int cm;
+               unsigned cm;
                /* Make a copy. */
                cm = x_cm|y_cm;
                ec_save = *ec;
