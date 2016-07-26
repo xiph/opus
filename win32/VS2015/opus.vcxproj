@@ -897,7 +897,10 @@
     <ClCompile Include="..\..\celt\entcode.c" />
     <ClCompile Include="..\..\celt\entdec.c" />
     <ClCompile Include="..\..\celt\entenc.c" />
-    <ClCompile Include="..\..\celt\kiss_fft.c" />
+    <ClCompile Include="..\..\celt\kiss_fft.c">
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='DebugDLL_fixed|Win32'">4146;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='DebugDLL_fixed|x64'">4146;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
     <ClCompile Include="..\..\celt\laplace.c" />
     <ClCompile Include="..\..\celt\mathops.c" />
     <ClCompile Include="..\..\celt\mdct.c" />
