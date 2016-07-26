@@ -1377,6 +1377,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    /* We can use the last band as scratch space because we don't need that
       scratch space for the last band. */
    lowband_scratch = X_+M*eBands[m->nbEBands-1];
+   if (encode) lowband_scratch = alloca(1024*4);
 
    lowband_offset = 0;
    ctx.bandE = bandE;
