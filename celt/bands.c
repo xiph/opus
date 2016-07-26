@@ -1336,6 +1336,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    const opus_int16 * OPUS_RESTRICT eBands = m->eBands;
    celt_norm * OPUS_RESTRICT norm, * OPUS_RESTRICT norm2;
    VARDECL(celt_norm, _norm);
+   VARDECL(celt_norm, _lowband_scratch);
+   int resynth_alloc;
    celt_norm *lowband_scratch;
    int B;
    int M;
@@ -1359,9 +1361,19 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    ALLOC(_norm, C*(M*eBands[m->nbEBands-1]-norm_offset), celt_norm);
    norm = _norm;
    norm2 = norm + M*eBands[m->nbEBands-1]-norm_offset;
-   /* We can use the last band as scratch space because we don't need that
-      scratch space for the last band. */
-   lowband_scratch = X_+M*eBands[m->nbEBands-1];
+
+   /* For decoding, we can use the last band as scratch space because we don't need that
+      scratch space for the last band and we don't care about the data there until we're
+      decoding the last band. */
+   if (encode && resynth)
+      resynth_alloc = M*(eBands[m->nbEBands]-eBands[m->nbEBands-1]);
+   else
+      resynth_alloc = ALLOC_NONE;
+   ALLOC(_lowband_scratch, resynth_alloc, celt_norm);
+   if (encode && resynth)
+      lowband_scratch = _lowband_scratch;
+   else
+      lowband_scratch = X_+M*eBands[m->nbEBands-1];
 
    lowband_offset = 0;
    ctx.bandE = bandE;
