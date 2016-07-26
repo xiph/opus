@@ -16,10 +16,18 @@ build:
   parallel: true
   verbosity: minimal
 
+after_build:
+- cmd: 7z a opus.zip win32\VS2015\%PLATFORM%\%CONFIGURATION%\opus.lib include\*.h
+
 test_script:
 - cmd: >-
-    %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%\test_opus_api.exe
+    cd %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%
 
-    %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%\test_opus_decode.exe
+    test_opus_api.exe
 
-    %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%\test_opus_encode.exe
+    test_opus_decode.exe
+
+    test_opus_encode.exe
+
+artifacts:
+- path: opus.zip
