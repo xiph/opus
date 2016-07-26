@@ -1496,8 +1496,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                struct band_ctx ctx_save;
                opus_val32 dist0, dist1;
                int cm;
-               int rate0, rate1;
-               float lambda = .00000003;
                /* Make a copy. */
                cm = x_cm|y_cm;
                ec_save = *ec;
@@ -1507,12 +1505,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                OPUS_COPY(norm_save, norm+effective_lowband, N);
                /* Encode and round down. */
                ctx.theta_round = -1;
-               rate0 = ec_tell_frac(ec);
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
                dist0 = celt_dist(X_save, X, N) + celt_dist(Y_save, Y, N);
-               rate0 = ec_tell_frac(ec) - rate0;
                /* Restore */
                *ec = ec_save;
                ctx = ctx_save;
@@ -1521,12 +1517,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                OPUS_COPY(norm+effective_lowband, norm_save, N);
                /* Encode and round up. */
                ctx.theta_round = 1;
-               rate1 = ec_tell_frac(ec);
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
                dist1 = celt_dist(X_save, X, N) + celt_dist(Y_save, Y, N);
-               rate1 = ec_tell_frac(ec) - rate1;
                /* Restore */
                *ec = ec_save;
                ctx = ctx_save;
@@ -1534,15 +1528,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                OPUS_COPY(Y, Y_save, N);
                OPUS_COPY(norm+effective_lowband, norm_save, N);
                /* Encode with best choice. */
-               //printf("%d %f %f %d %d\n", N, dist0, dist1, rate0, rate1);
-               ctx.theta_round = (dist0 + lambda*rate0 < dist1 + lambda*rate1) ? -1 : 1;
-               //if (fabs(dist0-dist1) < .0001 || dist0 > 2) ctx.theta_round = 0;
-               //ctx.theta_round = 0;
-               //ctx.theta_round = 0;
-               //if (dist0 < dist1 && rate0 < rate1)
-               //   ctx.theta_round = -1;
-               //else if (dist0 > dist1 && rate0 > rate1)
-               //   ctx.theta_round = 1;
+               ctx.theta_round = dist0 < dist1 ? -1 : 1;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
