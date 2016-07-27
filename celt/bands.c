@@ -1350,7 +1350,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    VARDECL(celt_norm, X_save2);
    VARDECL(celt_norm, Y_save2);
    VARDECL(celt_norm, norm_save2);
-   VARDECL(unsigned char, bytes_save);
    int resynth_alloc;
    celt_norm *lowband_scratch;
    int B;
@@ -1395,7 +1394,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    ALLOC(X_save2, resynth_alloc, celt_norm);
    ALLOC(Y_save2, resynth_alloc, celt_norm);
    ALLOC(norm_save2, resynth_alloc, celt_norm);
-   ALLOC(bytes_save, resynth_alloc, unsigned char);
 
    lowband_offset = 0;
    ctx.bandE = bandE;
@@ -1513,6 +1511,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                unsigned cm, cm2;
                int nstart_bytes, nend_bytes, save_bytes;
                unsigned char *bytes_buf;
+               unsigned char bytes_save[1275];
                /* Make a copy. */
                cm = x_cm|y_cm;
                ec_save = *ec;
@@ -1536,11 +1535,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                OPUS_COPY(Y_save2, Y, N);
                if (effective_lowband != -1)
                   OPUS_COPY(norm_save2, norm+effective_lowband, N);
-               nstart_bytes = ec_range_bytes(&ec_save);
-               nend_bytes = ec_range_bytes(&ec_save2);
-               bytes_buf = ec_get_buffer(&ec_save2) + nstart_bytes;
+               nstart_bytes = ec_save.offs;
+               nend_bytes = ec_save.storage;
+               bytes_buf = ec_save.buf+nstart_bytes;
                save_bytes = nend_bytes-nstart_bytes;
-               celt_assert(save_bytes <= resynth_alloc && save_bytes >= 0);
                OPUS_COPY(bytes_save, bytes_buf, save_bytes);
 
                /* Restore */
