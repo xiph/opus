@@ -1346,7 +1346,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    VARDECL(celt_norm, _lowband_scratch);
    VARDECL(celt_norm, X_save);
    VARDECL(celt_norm, Y_save);
-   VARDECL(celt_norm, norm_save);
    VARDECL(celt_norm, X_save2);
    VARDECL(celt_norm, Y_save2);
    VARDECL(celt_norm, norm_save2);
@@ -1390,7 +1389,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       lowband_scratch = X_+M*eBands[m->nbEBands-1];
    ALLOC(X_save, resynth_alloc, celt_norm);
    ALLOC(Y_save, resynth_alloc, celt_norm);
-   ALLOC(norm_save, resynth_alloc, celt_norm);
    ALLOC(X_save2, resynth_alloc, celt_norm);
    ALLOC(Y_save2, resynth_alloc, celt_norm);
    ALLOC(norm_save2, resynth_alloc, celt_norm);
@@ -1455,7 +1453,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
             Y = norm;
          lowband_scratch = NULL;
       }
-      if (i==end-1)
+      if (last && !theta_rdo)
          lowband_scratch = NULL;
 
       /* Get a conservative estimate of the collapse_mask's for the bands we're
@@ -1518,8 +1516,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ctx_save = ctx;
                OPUS_COPY(X_save, X, N);
                OPUS_COPY(Y_save, Y, N);
-               if (effective_lowband != -1)
-                  OPUS_COPY(norm_save, norm+effective_lowband, N);
                /* Encode and round down. */
                ctx.theta_round = -1;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
@@ -1533,8 +1529,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ctx_save2 = ctx;
                OPUS_COPY(X_save2, X, N);
                OPUS_COPY(Y_save2, Y, N);
-               if (effective_lowband != -1)
-                  OPUS_COPY(norm_save2, norm+effective_lowband, N);
+               if (!last)
+                  OPUS_COPY(norm_save2, norm+M*eBands[i]-norm_offset, N);
                nstart_bytes = ec_save.offs;
                nend_bytes = ec_save.storage;
                bytes_buf = ec_save.buf+nstart_bytes;
@@ -1546,8 +1542,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ctx = ctx_save;
                OPUS_COPY(X, X_save, N);
                OPUS_COPY(Y, Y_save, N);
-               if (effective_lowband != -1)
-                  OPUS_COPY(norm+effective_lowband, norm_save, N);
                /* Encode and round up. */
                ctx.theta_round = 1;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
@@ -1561,8 +1555,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                   ctx = ctx_save;
                   OPUS_COPY(X, X_save, N);
                   OPUS_COPY(Y, Y_save, N);
-                  if (effective_lowband != -1)
-                     OPUS_COPY(norm+effective_lowband, norm_save, N);
+                  if (!last)
+                     OPUS_COPY(norm+M*eBands[i]-norm_offset, norm_save, N);
                   /* Encode with best choice. */
                   ctx.theta_round = -1;
                   x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
@@ -1574,8 +1568,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                   ctx = ctx_save2;
                   OPUS_COPY(X, X_save2, N);
                   OPUS_COPY(Y, Y_save2, N);
-                  if (effective_lowband != -1)
-                     OPUS_COPY(norm+effective_lowband, norm_save2, N);
+                  if (!last)
+                     OPUS_COPY(norm+M*eBands[i]-norm_offset, norm_save2, N);
                   OPUS_COPY(bytes_buf, bytes_save, save_bytes);
 #endif
                }
