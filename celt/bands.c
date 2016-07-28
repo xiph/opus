@@ -1501,7 +1501,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       } else {
          if (Y!=NULL)
          {
-            if (theta_rdo)
+            if (theta_rdo && i < intensity)
             {
                ec_ctx ec_save, ec_save2;
                struct band_ctx ctx_save, ctx_save2;
