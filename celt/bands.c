@@ -742,11 +742,18 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
       if (encode)
       {
          if (!stereo || ctx->theta_round == 0)
+         {
             itheta = (itheta*(opus_int32)qn+8192)>>14;
-         else if (ctx->theta_round < 0)
-            itheta = (itheta*(opus_int32)qn)>>14;
-         else
-            itheta = (itheta*(opus_int32)qn+16383)>>14;
+         } else {
+            int down;
+            /* Bias quantization towards itheta=0 and itheta=16384. */
+            int bias = itheta > 8192 ? 32767/qn : -32767/qn;
+            down = IMIN(qn-1, IMAX(0, (itheta*(opus_int32)qn + bias)>>14));
+            if (ctx->theta_round < 0)
+               itheta = down;
+            else
+               itheta = down+1;
+         }
       }
       /* Entropy coding of the angle. We use a uniform pdf for the
          time split, a step for stereo, and a triangular one for the rest. */
