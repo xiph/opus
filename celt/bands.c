@@ -386,22 +386,19 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
 }
 
 static void stereo_split_collapse(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y,
-      int N, int bits, int utheta, int itheta, int arch)
+      int N, float wx, float wy, int utheta, int itheta, int arch)
 {
    int i, j;
    float phi;
-   float depth;
    float S;
-   float wx, wy;
    float dx, dy;
    float cos_phi, sin_phi;
    float gxx, gxy, gyx, gyy;
-   wx = 1;
-   wy = 1;
+   //wx = 1;
+   //wy = 1;
    phi = acos(MIN16(1.f, MAX16(-1., celt_inner_prod(X, Y, N, arch))));
    cos_phi = cos(phi);
    sin_phi = sin(phi);
-   depth = (double)bits / ((2*N-1)<<BITRES);
    S = (utheta-itheta)*M_PI/16384.f;
    dx = atan(wy*sin(S)/(wx + wy*cos(S)));
    dy = atan(wx*sin(S)/(wy + wx*cos(S)));
@@ -842,7 +839,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
          if (itheta==0)
             intensity_stereo(m, X, Y, bandE, i, N);
          else
-            stereo_split_collapse(X, Y, N, *b, utheta, itheta, ctx->arch);
+            stereo_split_collapse(X, Y, N, bandE[i], bandE[i+m->nbEBands], utheta, itheta, ctx->arch);
       }
       /* NOTE: Renormalising X and Y *may* help fixed-point a bit at very high rate.
                Let's do that at higher complexity */
