@@ -385,6 +385,54 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
    }
 }
 
+static void stereo_split_collapse(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y,
+      int N, int bits, int utheta, int itheta, int arch)
+{
+   int i, j;
+   float phi;
+   float depth;
+   float S;
+   float wx, wy;
+   float dx, dy;
+   float cos_phi, sin_phi;
+   float gxx, gxy, gyx, gyy;
+   wx = 1;
+   wy = 1;
+   phi = acos(MIN16(1.f, MAX16(-1., celt_inner_prod(X, Y, N, arch))));
+   cos_phi = cos(phi);
+   sin_phi = sin(phi);
+   depth = (double)bits / ((2*N-1)<<BITRES);
+   S = (utheta-itheta)*M_PI/16384.f;
+   dx = atan(wy*sin(S)/(wx + wy*cos(S)));
+   dy = atan(wx*sin(S)/(wy + wx*cos(S)));
+   //printf("%f %f %f %f %f %f %f\n", phi, depth, utheta*3.1416/16384, itheta*3.1416/16384, S, dx, dy);
+   gxy = tan(dx);
+   gxx = sin_phi - cos_phi*tan(dx);
+   gyx = tan(dy);
+   gyy = sin_phi - cos_phi*tan(dy);
+   //printf("%f %f %f %f\n", gxy, gxx, gyx, gyy);
+#if 1
+   for (i=0;i<N;i++)
+   {
+      float x, y;
+      x = X[i];
+      y = Y[i];
+      X[i] = gxx*x + gxy*y;
+      Y[i] = gyx*x + gyy*y;
+   }
+   renormalise_vector(X, N, Q15ONE, arch);
+   renormalise_vector(Y, N, Q15ONE, arch);
+#endif
+   for (j=0;j<N;j++)
+   {
+      opus_val32 r, l;
+      l = MULT16_16(QCONST16(.70710678f, 15), X[j]);
+      r = MULT16_16(QCONST16(.70710678f, 15), Y[j]);
+      X[j] = EXTRACT16(SHR32(ADD32(l, r), 15));
+      Y[j] = EXTRACT16(SHR32(SUB32(r, l), 15));
+   }
+}
+
 static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, int N)
 {
    int j;
@@ -676,7 +724,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
       int stereo, int *fill)
 {
    int qn;
-   int itheta=0;
+   int itheta=0, utheta=0;
    int delta;
    int imid, iside;
    int qalloc;
@@ -710,7 +758,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
          side and mid. With just that parameter, we can re-scale both
          mid and side because we know that 1) they have unit norm and
          2) they are orthogonal. */
-      itheta = stereo_itheta(X, Y, stereo, N, ctx->arch);
+      utheta = itheta = stereo_itheta(X, Y, stereo, N, ctx->arch);
    }
    tell = ec_tell_frac(ec);
    if (qn!=1)
@@ -794,7 +842,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
          if (itheta==0)
             intensity_stereo(m, X, Y, bandE, i, N);
          else
-            stereo_split(X, Y, N);
+            stereo_split_collapse(X, Y, N, *b, utheta, itheta, ctx->arch);
       }
       /* NOTE: Renormalising X and Y *may* help fixed-point a bit at very high rate.
                Let's do that at higher complexity */
@@ -1501,6 +1549,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       } else {
          if (Y!=NULL)
          {
+            /*if (encode)
+            {
+               partial_stereo_collapse(X, Y, N, 1., 1., b, arch);
+            }*/
             if (theta_rdo && i < intensity)
             {
                ec_ctx ec_save, ec_save2;
