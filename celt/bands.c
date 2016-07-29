@@ -1559,6 +1559,9 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                int nstart_bytes, nend_bytes, save_bytes;
                unsigned char *bytes_buf;
                unsigned char bytes_save[1275];
+               double wl, wr;
+               wl = (bandE[i]);
+               wr = (bandE[i+m->nbEBands]);
                /* Make a copy. */
                cm = x_cm|y_cm;
                ec_save = *ec;
@@ -1570,7 +1573,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
-               dist0 = celt_inner_prod(X_save, X, N, arch) + celt_inner_prod(Y_save, Y, N, arch);
+               dist0 = wl*celt_inner_prod(X_save, X, N, arch) + wr*celt_inner_prod(Y_save, Y, N, arch);
 
                /* Save first result. */
                cm2 = x_cm;
@@ -1596,7 +1599,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
-               dist1 = celt_inner_prod(X_save, X, N, arch) + celt_inner_prod(Y_save, Y, N, arch);
+               dist1 = wl*celt_inner_prod(X_save, X, N, arch) + wr*celt_inner_prod(Y_save, Y, N, arch);
                if (dist0 >= dist1) {
                   x_cm = cm2;
                   *ec = ec_save2;
