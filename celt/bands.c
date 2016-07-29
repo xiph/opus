@@ -360,6 +360,30 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
    }
 }
 
+/* Compute the weights to use for optimizing normalized distortion across
+   channels. We use the amplitude to weight square distortion, which means
+   that we use the square root of the value we would have been using if we
+   wanted to minimize the MSE in the non-normalized domain. This roughly
+   corresponds to some quick-and-dirty perceptual experiments I ran to
+   measure inter-aural masking (there doesn't seem to be any published data
+   on the topic). */
+static void compute_channel_weights(celt_ener Ex, celt_ener Ey, opus_val16 w[2])
+{
+   celt_ener minE;
+   minE = MIN32(Ex, Ey);
+#if FIXED_POINT
+   int shift;
+#endif
+   /* Adjustment to make the weights a bit more conservative. */
+   Ex = ADD32(Ex, minE/3);
+   Ey = ADD32(Ey, minE/3);
+#if FIXED_POINT
+   shift = celt_ilog2(EPSILON+MAX32(Ex, Ey))-14;
+#endif
+   w[0] = VSHR32(Ex, shift);
+   w[1] = VSHR32(Ey, shift);
+}
+
 static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, const celt_norm * OPUS_RESTRICT Y, const celt_ener *bandE, int bandID, int N)
 {
    int i = bandID;
@@ -1510,6 +1534,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                int nstart_bytes, nend_bytes, save_bytes;
                unsigned char *bytes_buf;
                unsigned char bytes_save[1275];
+               opus_val16 w[2];
+               compute_channel_weights(bandE[i], bandE[i+m->nbEBands], w);
                /* Make a copy. */
                cm = x_cm|y_cm;
                ec_save = *ec;
@@ -1521,7 +1547,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
-               dist0 = celt_inner_prod(X_save, X, N, arch) + celt_inner_prod(Y_save, Y, N, arch);
+               dist0 = MULT16_32_Q15(w[0], celt_inner_prod(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod(Y_save, Y, N, arch));
 
                /* Save first result. */
                cm2 = x_cm;
@@ -1547,7 +1573,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
-               dist1 = celt_inner_prod(X_save, X, N, arch) + celt_inner_prod(Y_save, Y, N, arch);
+               dist1 = MULT16_32_Q15(w[0], celt_inner_prod(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod(Y_save, Y, N, arch));
                if (dist0 >= dist1) {
                   x_cm = cm2;
                   *ec = ec_save2;
