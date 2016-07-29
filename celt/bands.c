@@ -409,6 +409,54 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
    }
 }
 
+static void stereo_split_collapse(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y,
+      int N, opus_val16 w[2], int utheta, int itheta, int arch)
+{
+   int j;
+#ifdef FIXED_POINT
+#else
+   if (w[0] != w[1])
+   {
+      int i;
+      float phi;
+      float S;
+      float dx, dy;
+      float cos_phi, sin_phi;
+      float gxx, gxy, gyx, gyy;
+      phi = acos(MIN16(1.f, MAX16(-1., celt_inner_prod(X, Y, N, arch))));
+      cos_phi = cos(phi);
+      sin_phi = sin(phi);
+      S = (utheta-itheta)*M_PI/16384.f;
+      dx = atan(w[1]*sin(S)/(w[0] + w[1]*cos(S)));
+      dy = atan(w[0]*sin(S)/(w[1] + w[0]*cos(S)));
+      //printf("%f %f %f %f %f %f %f\n", phi, depth, utheta*3.1416/16384, itheta*3.1416/16384, S, dx, dy);
+      gxy = tan(dx);
+      gxx = sin_phi - cos_phi*tan(dx);
+      gyx = tan(dy);
+      gyy = sin_phi - cos_phi*tan(dy);
+      //printf("%f %f %f %f\n", gxy, gxx, gyx, gyy);
+      for (i=0;i<N;i++)
+      {
+         float x, y;
+         x = X[i];
+         y = Y[i];
+         X[i] = gxx*x + gxy*y;
+         Y[i] = gyx*x + gyy*y;
+      }
+      renormalise_vector(X, N, Q15ONE, arch);
+      renormalise_vector(Y, N, Q15ONE, arch);
+   }
+#endif
+   for (j=0;j<N;j++)
+   {
+      opus_val32 r, l;
+      l = MULT16_16(QCONST16(.70710678f, 15), X[j]);
+      r = MULT16_16(QCONST16(.70710678f, 15), Y[j]);
+      X[j] = EXTRACT16(SHR32(ADD32(l, r), 15));
+      Y[j] = EXTRACT16(SHR32(SUB32(r, l), 15));
+   }
+}
+
 static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, int N)
 {
    int j;
@@ -683,6 +731,7 @@ struct band_ctx {
    opus_uint32 seed;
    int arch;
    int theta_round;
+   opus_val16 w[2];
 };
 
 struct split_ctx {
@@ -700,7 +749,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
       int stereo, int *fill)
 {
    int qn;
-   int itheta=0;
+   int itheta=0, utheta=0;
    int delta;
    int imid, iside;
    int qalloc;
@@ -734,7 +783,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
          side and mid. With just that parameter, we can re-scale both
          mid and side because we know that 1) they have unit norm and
          2) they are orthogonal. */
-      itheta = stereo_itheta(X, Y, stereo, N, ctx->arch);
+      utheta = itheta = stereo_itheta(X, Y, stereo, N, ctx->arch);
    }
    tell = ec_tell_frac(ec);
    if (qn!=1)
@@ -822,7 +871,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
          if (itheta==0)
             intensity_stereo(m, X, Y, bandE, i, N);
          else
-            stereo_split(X, Y, N);
+            stereo_split_collapse(X, Y, N, ctx->w, utheta, itheta, ctx->arch);
       }
       /* NOTE: Renormalising X and Y *may* help fixed-point a bit at very high rate.
                Let's do that at higher complexity */
@@ -1432,6 +1481,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    ctx.arch = arch;
    ctx.resynth = resynth;
    ctx.theta_round = 0;
+   ctx.w[0] = ctx.w[1] = Q15ONE;
    for (i=start;i<end;i++)
    {
       opus_int32 tell;
@@ -1538,8 +1588,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                int nstart_bytes, nend_bytes, save_bytes;
                unsigned char *bytes_buf;
                unsigned char bytes_save[1275];
-               opus_val16 w[2];
-               compute_channel_weights(bandE[i], bandE[i+m->nbEBands], w);
+               compute_channel_weights(bandE[i], bandE[i+m->nbEBands], ctx.w);
                /* Make a copy. */
                cm = x_cm|y_cm;
                ec_save = *ec;
@@ -1551,7 +1600,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
-               dist0 = MULT16_32_Q15(w[0], celt_inner_prod(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod(Y_save, Y, N, arch));
+               dist0 = MULT16_32_Q15(ctx.w[0], celt_inner_prod(X_save, X, N, arch))
+                     + MULT16_32_Q15(ctx.w[1], celt_inner_prod(Y_save, Y, N, arch));
 
                /* Save first result. */
                cm2 = x_cm;
@@ -1577,7 +1627,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm);
-               dist1 = MULT16_32_Q15(w[0], celt_inner_prod(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod(Y_save, Y, N, arch));
+               dist1 = MULT16_32_Q15(ctx.w[0], celt_inner_prod(X_save, X, N, arch))
+                     + MULT16_32_Q15(ctx.w[1], celt_inner_prod(Y_save, Y, N, arch));
                if (dist0 >= dist1) {
                   x_cm = cm2;
                   *ec = ec_save2;
