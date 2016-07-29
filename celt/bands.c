@@ -423,6 +423,7 @@ static void stereo_split_collapse(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_
       float dx, dy;
       float cos_phi, sin_phi;
       float gxx, gxy, gyx, gyy;
+      float gx, gy;
       phi = acos(MIN16(1.f, MAX16(-1., celt_inner_prod(X, Y, N, arch))));
       cos_phi = cos(phi);
       sin_phi = sin(phi);
@@ -430,10 +431,12 @@ static void stereo_split_collapse(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_
       dx = atan(w[1]*sin(S)/(w[0] + w[1]*cos(S)));
       dy = atan(w[0]*sin(S)/(w[1] + w[0]*cos(S)));
       //printf("%f %f %f %f %f %f %f\n", phi, depth, utheta*3.1416/16384, itheta*3.1416/16384, S, dx, dy);
-      gxy = tan(dx);
-      gxx = sin_phi - cos_phi*tan(dx);
-      gyx = tan(dy);
-      gyy = sin_phi - cos_phi*tan(dy);
+      gx = cos(dx)/(EPSILON+sin_phi);
+      gy = cos(dy)/(EPSILON+sin_phi);
+      gxy = gx*tan(dx);
+      gxx = gx*(sin_phi - cos_phi*tan(dx));
+      gyx = gy*tan(dy);
+      gyy = gy*(sin_phi - cos_phi*tan(dy));
       //printf("%f %f %f %f\n", gxy, gxx, gyx, gyy);
       for (i=0;i<N;i++)
       {
@@ -443,8 +446,6 @@ static void stereo_split_collapse(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_
          X[i] = gxx*x + gxy*y;
          Y[i] = gyx*x + gyy*y;
       }
-      renormalise_vector(X, N, Q15ONE, arch);
-      renormalise_vector(Y, N, Q15ONE, arch);
    }
 #endif
    for (j=0;j<N;j++)
