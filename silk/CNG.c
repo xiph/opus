@@ -170,7 +170,7 @@ void silk_CNG(
             }
 
             /* Update states */
-            CNG_sig_Q14[ MAX_LPC_ORDER + i ] = silk_ADD_LSHIFT( CNG_sig_Q14[ MAX_LPC_ORDER + i ], LPC_pred_Q10, 4 );
+            CNG_sig_Q14[ MAX_LPC_ORDER + i ] = silk_ADD_SAT32( CNG_sig_Q14[ MAX_LPC_ORDER + i ], silk_LSHIFT_SAT32( LPC_pred_Q10, 4 ) );
             
             /* Scale with Gain and add to input signal */
             frame[ i ] = (opus_int16)silk_ADD_SAT16( frame[ i ], silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( CNG_sig_Q14[ MAX_LPC_ORDER + i ], gain_Q10 ), 8 ) ) );
