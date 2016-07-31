@@ -77,10 +77,21 @@ static opus_int32 LPC_inverse_pred_gain_QA(                 /* O   Returns inver
 
         /* Update AR coefficient */
         for( n = 0; n < (k + 1) >> 1; n++ ) {
+            opus_int64 tmp64;
             tmp1 = A_QA[ n ];
             tmp2 = A_QA[ k - n - 1 ];
-            A_QA[ n ] =            MUL32_FRAC_Q( tmp1 - MUL32_FRAC_Q( tmp2, rc_Q31, 31 ), rc_mult2, mult2Q );
-            A_QA[ k - n - 1 ] = MUL32_FRAC_Q( tmp2 - MUL32_FRAC_Q( tmp1, rc_Q31, 31 ), rc_mult2, mult2Q );
+            tmp64 = silk_RSHIFT_ROUND64( silk_SMULL( silk_SUB_SAT32(tmp1,
+                  MUL32_FRAC_Q( tmp2, rc_Q31, 31 ) ), rc_mult2 ), mult2Q);
+            if( tmp64 > silk_int32_MAX || tmp64 < silk_int32_MIN ) {
+               return 0;
+            }
+            A_QA[ n ] = ( opus_int32 )tmp64;
+            tmp64 = silk_RSHIFT_ROUND64( silk_SMULL( silk_SUB_SAT32(tmp2,
+                  MUL32_FRAC_Q( tmp1, rc_Q31, 31 ) ), rc_mult2), mult2Q);
+            if( tmp64 > silk_int32_MAX || tmp64 < silk_int32_MIN ) {
+               return 0;
+            }
+            A_QA[ k - n - 1 ] = ( opus_int32 )tmp64;
         }
     }
 
