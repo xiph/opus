@@ -751,6 +751,40 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
    /*for(i=0;i<end;i++)printf("%d ", isTransient ? tf_res[i] : LM+tf_res[i]);printf("\n");*/
 }
 
+static const float band_ref_sin_phi[25] = {
+      0.509281f, 0.663011f, 0.701323f, 0.702672f, 0.708633f, 0.704768f, 0.709104f, 0.706810f,
+      0.742055f, 0.751930f, 0.749841f, 0.746101f, 0.755911f, 0.751052f, 0.745155f, 0.737439f,
+      0.732349f, 0.736192f, 0.740892f, 0.756152f, 0.769366f, 0.769366f, 0.769366f, 0.769366f,
+      0.769366f
+};
+
+static float dist_from_bits(float bits, int N, float sin_phi)
+{
+   float r;
+   r = MIN16(8, bits/(2*N - 1));
+   return 3*(pow(4., -r)*sin_phi + pow(4., -2*r)*(1-sin_phi));
+}
+
+static float bits_from_dist(float dist, int N, float sin_phi)
+{
+   float R;
+   if (fabs(sin_phi)<.99)
+   {
+      R = (-3*sin_phi + sqrt(9*sin_phi*sin_phi + 12*dist*(1-sin_phi)))/(6*(1-sin_phi));
+   } else {
+      R = dist/3;
+   }
+   //printf("=> %f %f %f\n", dist, sin_phi, R);
+   return MAX16(0, -(2*N-1)*log(R)/log(4));
+}
+
+static float delta_bits(float bits, int N, float sin_phi, float sin_phi_ref)
+{
+   float dist = dist_from_bits(bits, N, sin_phi_ref);
+   return bits_from_dist(dist, N, sin_phi)-bits;
+}
+extern int band_bits[25];
+float stereo_delta;
 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
@@ -768,6 +802,27 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       opus_val16 sum = 0; /* Q10 */
       opus_val16 minXC; /* Q10 */
       /* Compute inter-channel correlation for low frequencies */
+      stereo_delta = 0;
+      for (i=0;i<intensity;i++)
+      {
+         opus_val32 partial;
+         opus_val32 sin_phi;
+         float tmp;
+         int N;
+         partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
+               (m->eBands[i+1]-m->eBands[i])<<LM, arch);
+         N = (m->eBands[i+1]-m->eBands[i])<<LM;
+         sin_phi = sqrt(1 - MIN32(1, partial*partial));
+         //printf("%f ", dist_from_bits(band_bits[i]*.125, N, band_ref_sin_phi[i]));
+         tmp = delta_bits(band_bits[i]*.125, N, sin_phi, band_ref_sin_phi[i]);
+         //printf("%f ", delta_bits(band_bits[i]*.125, N, sin_phi, band_ref_sin_phi[i]));
+         //delta_bits(20., N, band_ref_sin_phi[i], band_ref_sin_phi[i]);
+         //printf("%f %f %f\n", band_bits[i]*.125, sin_phi, tmp);
+         //printf("%f ", tmp);
+         stereo_delta += tmp;
+      }
+      //printf("%f\n", stereo_delta);
+      //stereo_delta *= 0.5;
       for (i=0;i<8;i++)
       {
          opus_val32 partial;
@@ -799,6 +854,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
 
       trim += MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC));
       *stereo_saving = MIN16(*stereo_saving + QCONST16(0.25f, 8), -HALF16(logXC2));
+      //printf("%d\n", *stereo_saving);
    }
 
    /* Estimate spectral tilt */
@@ -1229,11 +1285,17 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       coded_stereo_bands = IMIN(intensity, coded_bands);
       coded_stereo_dof = (eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
       /* Maximum fraction of the bits we can save if the signal is mono. */
-      max_frac = DIV32_16(MULT16_16(QCONST16(0.8f, 15), coded_stereo_dof), coded_bins);
+      max_frac = DIV32_16(MULT16_16(Q15ONE, coded_stereo_dof), coded_bins);
       stereo_saving = MIN16(stereo_saving, QCONST16(1.f, 8));
       /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
+#if 1
+      target += (opus_int32)MAX32(MULT16_32_Q15(-max_frac,target), stereo_delta*8);
+#else
       target -= (opus_int32)MIN32(MULT16_32_Q15(max_frac,target),
                       SHR32(MULT16_16(stereo_saving-QCONST16(0.1f,8),(coded_stereo_dof<<BITRES)),8));
+#endif
+      //printf("%d\n", (opus_int32)MIN32(MULT16_32_Q15(max_frac,target),
+      //                SHR32(MULT16_16(stereo_saving-QCONST16(0.1f,8),(coded_stereo_dof<<BITRES)),8)));
    }
    /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
    target += tot_boost-(16<<LM);
