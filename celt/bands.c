@@ -1408,6 +1408,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
    return cm;
 }
 
+int band_bits[25];
 
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm *X_, celt_norm *Y_, unsigned char *collapse_masks,
@@ -1519,6 +1520,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       } else {
          b = 0;
       }
+      band_bits[i] = b;
 
       if (resynth && M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband_offset==0))
             lowband_offset = i;
