@@ -758,14 +758,12 @@ static const float band_ref_sin_phi[25] = {
       0.769366f
 };
 
-static float dist_from_bits(float bits, int N, float sin_phi)
+static float dist_from_bits(float r, float sin_phi)
 {
-   float r;
-   r = MIN16(8, bits/(2*N - 1));
    return 3*(pow(4., -r)*sin_phi + pow(4., -2*r)*(1-sin_phi));
 }
 
-static float bits_from_dist(float dist, int N, float sin_phi)
+static float bits_from_dist(float dist, float sin_phi)
 {
    float R;
    if (fabs(sin_phi)<.99)
@@ -775,16 +773,17 @@ static float bits_from_dist(float dist, int N, float sin_phi)
       R = dist/3;
    }
    //printf("=> %f %f %f\n", dist, sin_phi, R);
-   return MAX16(0, -(2*N-1)*log(R)/log(4));
+   return MAX16(0, -log(R)/log(4));
 }
 
-static float delta_bits(float bits, int N, float sin_phi, float sin_phi_ref)
+static float delta_bits(float r, float sin_phi, float sin_phi_ref)
 {
-   float dist = dist_from_bits(bits, N, sin_phi_ref);
-   return bits_from_dist(dist, N, sin_phi)-bits;
+   float dist = dist_from_bits(r, sin_phi_ref);
+   return bits_from_dist(dist, sin_phi)-r;
 }
 extern int band_bits[25];
 float stereo_delta;
+float stereo_avg;
 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
@@ -797,31 +796,47 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    int trim_index;
    opus_val16 trim = QCONST16(5.f, 8);
    opus_val16 logXC, logXC2;
-   if (C==2)
+   if (C==2 && intensity > 0)
    {
       opus_val16 sum = 0; /* Q10 */
       opus_val16 minXC; /* Q10 */
+      opus_val16 stereo_tilt=0;
+      opus_val16 stereo_diff = 0;
+      float mono_ratio;
       /* Compute inter-channel correlation for low frequencies */
       stereo_delta = 0;
+      stereo_avg = 0;
+      mono_ratio = 0;
       for (i=0;i<intensity;i++)
       {
          opus_val32 partial;
          opus_val32 sin_phi;
          float tmp;
+         float r;
          int N;
          partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
                (m->eBands[i+1]-m->eBands[i])<<LM, arch);
          N = (m->eBands[i+1]-m->eBands[i])<<LM;
+         r = MAX16(0,MIN16(6, band_bits[i]*.125/(2*N - 1)));
          sin_phi = sqrt(1 - MIN32(1, partial*partial));
          //printf("%f ", dist_from_bits(band_bits[i]*.125, N, band_ref_sin_phi[i]));
-         tmp = delta_bits(band_bits[i]*.125, N, sin_phi, band_ref_sin_phi[i]);
+         tmp = delta_bits(r, sin_phi, band_ref_sin_phi[i]);
          //printf("%f ", delta_bits(band_bits[i]*.125, N, sin_phi, band_ref_sin_phi[i]));
          //delta_bits(20., N, band_ref_sin_phi[i], band_ref_sin_phi[i]);
          //printf("%f %f %f\n", band_bits[i]*.125, sin_phi, tmp);
          //printf("%f ", tmp);
-         stereo_delta += tmp;
+         stereo_delta += tmp*(2*N-1);
+         stereo_avg += tmp;
+         if (i < 8) stereo_tilt += tmp;
+         stereo_diff += tmp * (i-0.5*intensity);
+         mono_ratio += (.1+tmp)/(.1+r);
       }
-      //printf("%f\n", stereo_delta);
+      stereo_avg /= intensity;
+      stereo_diff /= (intensity*(intensity*intensity-1))/12.;
+      mono_ratio /= intensity;
+      mono_ratio = MIN16(0, mono_ratio);
+      //printf("\n");
+      //printf("%d %f %f %f\n", intensity, stereo_avg, stereo_diff, mono_ratio);
       //stereo_delta *= 0.5;
       for (i=0;i<8;i++)
       {
@@ -852,9 +867,14 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       logXC2 = PSHR32(logXC2-QCONST16(6.f, DB_SHIFT),DB_SHIFT-8);
 #endif
 
-      trim += MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC));
+      //printf("%f %f\n", logXC, stereo_tilt);
+      //logXC = .5*(stereo_tilt-1);
+      //trim += MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC));
       *stereo_saving = MIN16(*stereo_saving + QCONST16(0.25f, 8), -HALF16(logXC2));
       //printf("%d\n", *stereo_saving);
+      //printf("%f %f %f\n", stereo_avg, stereo_diff, MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC)));
+      trim += MAX16(-QCONST16(4.f, 8), -12*stereo_diff-0.2 + 10*mono_ratio);
+      //printf("%f %f %f %f\n", -*stereo_saving, stereo_avg, MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC)), MAX16(-QCONST16(4.f, 8), -12*stereo_diff-0.2 + 10*mono_ratio));
    }
 
    /* Estimate spectral tilt */
@@ -1289,7 +1309,9 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       stereo_saving = MIN16(stereo_saving, QCONST16(1.f, 8));
       /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
 #if 1
-      target += (opus_int32)MAX32(MULT16_32_Q15(-max_frac,target), stereo_delta*8);
+      //target += (opus_int32)MAX32(MULT16_32_Q15(-max_frac,target), stereo_delta*8);
+      target += (opus_int32)MIN32(MULT16_32_Q15(max_frac,target),
+                      SHR32(MULT16_16(stereo_avg,(coded_stereo_dof<<BITRES)),8));
 #else
       target -= (opus_int32)MIN32(MULT16_32_Q15(max_frac,target),
                       SHR32(MULT16_16(stereo_saving-QCONST16(0.1f,8),(coded_stereo_dof<<BITRES)),8));
