@@ -163,7 +163,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
 {
    VARDECL(celt_norm, y);
    VARDECL(int, iy);
-   VARDECL(opus_val16, signx);
+   VARDECL(int, signx);
    int i, j;
    int pulsesLeft;
    opus_val32 sum;
@@ -177,16 +177,15 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
 
    ALLOC(y, N, celt_norm);
    ALLOC(iy, N, int);
-   ALLOC(signx, N, opus_val16);
+   ALLOC(signx, N, int);
 
    exp_rotation(X, N, 1, B, K, spread);
 
    /* Get rid of the sign */
    sum = 0;
    j=0; do {
-      /* OPT: Make sure the following two lines result in conditional moves
-         rather than branches. */
-      signx[j] = X[j]>0 ? 1 : -1;
+      signx[j] = X[j]<0;
+      /* OPT: Make sure the compiler doesn't use a branch on ABS16(). */
       X[j] = ABS16(X[j]);
       iy[j] = 0;
       y[j] = 0;
@@ -318,10 +317,10 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    /* Put the original sign back */
    j=0;
    do {
-      X[j] = MULT16_16(signx[j],X[j]);
-      /* OPT: Make sure your compiler uses a conditional move here rather than
-         a branch. */
-      iy[j] = signx[j] < 0 ? -iy[j] : iy[j];
+      /*iy[j] = signx[j] ? -iy[j] : iy[j];*/
+      /* OPT: The is more likely to be compiled without a branch than the code above
+         but has the same performance otherwise. */
+      iy[j] = (iy[j]^-signx[j]) + signx[j];
    } while (++j<N);
    encode_pulses(iy, N, K, enc);
 
