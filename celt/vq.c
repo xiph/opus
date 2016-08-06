@@ -165,7 +165,6 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    VARDECL(int, iy);
    VARDECL(opus_val16, signx);
    int i, j;
-   opus_val16 s;
    int pulsesLeft;
    opus_val32 sum;
    opus_val32 xy;
@@ -251,12 +250,12 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       pulsesLeft=0;
    }
 
-   s = 1;
    for (i=0;i<pulsesLeft;i++)
    {
+      opus_val16 Rxy, Ryy;
       int best_id;
-      opus_val32 best_num = -VERY_LARGE16;
-      opus_val16 best_den = 0;
+      opus_val32 best_num;
+      opus_val16 best_den;
 #ifdef FIXED_POINT
       int rshift;
 #endif
@@ -267,9 +266,22 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       /* The squared magnitude term gets added anyway, so we might as well
          add it outside the loop */
       yy = ADD16(yy, 1);
-      j=0;
+
+      /* Calculations for position 0 are out of the loop, in part to reduce
+         mispredicted branches (since the if condition is usually false)
+         in the loop. */
+      /* Temporary sums of the new pulse(s) */
+      Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[0])),rshift));
+      /* We're multiplying y[j] by two so we don't have to do it here */
+      Ryy = ADD16(yy, y[0]);
+
+      /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that
+         Rxy is positive because the sign is pre-computed) */
+      Rxy = MULT16_16_Q15(Rxy,Rxy);
+      best_den = Ryy;
+      best_num = Rxy;
+      j=1;
       do {
-         opus_val16 Rxy, Ryy;
          /* Temporary sums of the new pulse(s) */
          Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[j])),rshift));
          /* We're multiplying y[j] by two so we don't have to do it here */
@@ -280,8 +292,11 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
          Rxy = MULT16_16_Q15(Rxy,Rxy);
          /* The idea is to check for num/den >= best_num/best_den, but that way
             we can do it without any division */
-         /* OPT: Make sure to use conditional moves here */
-         if (MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num))
+         /* OPT: It's not clear whether a cmov is faster than a branch here
+            since the condition is more often false than true and using
+            a cmov introduces data dependencies across iterations. The optimal
+            choice may be architecture-dependent. */
+         if (opus_unlikely(MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num)))
          {
             best_den = Ryy;
             best_num = Rxy;
@@ -296,7 +311,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
 
       /* Only now that we've made the final choice, update y/iy */
       /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
-      y[best_id] += 2*s;
+      y[best_id] += 2;
       iy[best_id]++;
    }
 

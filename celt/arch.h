@@ -46,6 +46,14 @@
 #  endif
 # endif
 
+#if OPUS_GNUC_PREREQ(3, 0)
+#define opus_likely(x)       (__builtin_expect(!!(x), 1))
+#define opus_unlikely(x)     (__builtin_expect(!!(x), 0))
+#else
+#define opus_likely(x)       (!!(x))
+#define opus_unlikely(x)     (!!(x))
+#endif
+
 #define CELT_SIG_SCALE 32768.f
 
 #define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
