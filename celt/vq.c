@@ -185,12 +185,10 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    /* Get rid of the sign */
    sum = 0;
    j=0; do {
-      if (X[j]>0)
-         signx[j]=1;
-      else {
-         signx[j]=-1;
-         X[j]=-X[j];
-      }
+      /* OPT: Make sure the following two lines result in conditional moves
+         rather than branches. */
+      signx[j] = X[j]>0 ? 1 : -1;
+      X[j] = ABS16(X[j]);
       iy[j] = 0;
       y[j] = 0;
    } while (++j<N);
@@ -306,8 +304,9 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    j=0;
    do {
       X[j] = MULT16_16(signx[j],X[j]);
-      if (signx[j] < 0)
-         iy[j] = -iy[j];
+      /* OPT: Make sure your compiler uses a conditional move here rather than
+         a branch. */
+      iy[j] = signx[j] < 0 ? -iy[j] : iy[j];
    } while (++j<N);
    encode_pulses(iy, N, K, enc);
 
