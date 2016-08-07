@@ -38,6 +38,7 @@
 #include "bands.h"
 #include "rate.h"
 #include "pitch.h"
+#include <xmmintrin.h>
 
 #ifndef OVERRIDE_vq_exp_rotation1
 static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_val16 s)
@@ -157,7 +158,74 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    } while (++i<B);
    return collapse_mask;
 }
+#if 1
+static void compute_search_vec(const float *X, const float *y, int N, float xy, float yy, float *r)
+{
+   int j;
+   __m128 xy4, yy4;
+   xy4 = _mm_load1_ps(&xy);
+   yy4 = _mm_load1_ps(&yy);
+   for (j=0;j<N-3;j+=4)
+   {
+#if 1
+      __m128 x4, y4, r4;
+      x4 = _mm_loadu_ps(&X[j]);
+      y4 = _mm_loadu_ps(&y[j]);
+      x4 = _mm_add_ps(x4, xy4);
+      y4 = _mm_add_ps(y4, yy4);
+      y4 = _mm_rsqrt_ps(y4);
+      r4 = _mm_mul_ps(x4, y4);
+      _mm_storeu_ps(&r[j], r4);
+#else
+      r[j  ] = (xy + X[j  ])/sqrt(yy + y[j  ]);
+      r[j+1] = (xy + X[j+1])/sqrt(yy + y[j+1]);
+      r[j+2] = (xy + X[j+2])/sqrt(yy + y[j+2]);
+      r[j+3] = (xy + X[j+3])/sqrt(yy + y[j+3]);
+#endif
+   }
+   for (;j<N;j++)
+   {
+#if 1
+      __m128 x4, y4, r4;
+      x4 = _mm_load_ss(&X[j]);
+      y4 = _mm_load_ss(&y[j]);
+      x4 = _mm_add_ss(x4, xy4);
+      y4 = _mm_add_ss(y4, yy4);
+      y4 = _mm_rsqrt_ss(y4);
+      r4 = _mm_mul_ss(x4, y4);
+      _mm_store_ss(&r[j], r4);
+#else
+      r[j] = (xy + X[j])/sqrt(yy + y[j]);
+#endif
+   }
+}
+#else
+static void compute_search_vec(const float *X, const float *y, int N, float xy, float yy, float *r)
+{
+   int j;
+   for (j=0;j<N;j++)
+   {
+      r[j] = (xy + X[j])/sqrt(yy + y[j]);
+   }
+}
+#endif
 
+static int find_vec_max(float *r, int N)
+{
+   int j;
+   float maxval;
+   int maxj;
+   maxval = r[0];
+   maxj = 0;
+   for (j=1;j<N;j++)
+   {
+      if (r[j] > maxval) {
+         maxval = r[j];
+         maxj = j;
+      }
+   }
+   return maxj;
+}
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       opus_val16 gain, int resynth)
 {
@@ -265,7 +333,11 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       /* The squared magnitude term gets added anyway, so we might as well
          add it outside the loop */
       yy = ADD16(yy, 1);
-
+#if 1
+      float r[1000];
+      compute_search_vec(X, y, N, xy, yy, r);
+      best_id = find_vec_max(r, N);
+#else
       /* Calculations for position 0 are out of the loop, in part to reduce
          mispredicted branches (since the if condition is usually false)
          in the loop. */
@@ -302,7 +374,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
             best_id = j;
          }
       } while (++j<N);
-
+#endif
       /* Updating the sums of the new pulse(s) */
       xy = ADD32(xy, EXTEND32(X[best_id]));
       /* We're multiplying y[j] by two so we don't have to do it here */
