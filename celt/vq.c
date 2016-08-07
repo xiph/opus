@@ -195,19 +195,25 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
 #endif
    }
    {
-      int i;
       float tmp[8];
       _mm_storeu_ps(&tmp[0], max);
       _mm_storeu_ps(&tmp[4], pos);
       maxval = tmp[0];
       maxpos = 4*tmp[4];
-      for (i=1;i<4;i++)
+      if (tmp[1] > maxval)
       {
-         if (tmp[i] > maxval)
-         {
-            maxval = tmp[i];
-            maxpos = 4*tmp[i+4] + i;
-         }
+         maxval = tmp[1];
+         maxpos = 4*tmp[5]+1;
+      }
+      if (tmp[2] > maxval)
+      {
+         maxval = tmp[2];
+         maxpos = 4*tmp[6]+2;
+      }
+      if (tmp[3] > maxval)
+      {
+         maxval = tmp[3];
+         maxpos = 4*tmp[7]+3;
       }
       //printf("n = %d\n", N);
       //for (i=0;i<8;i++) printf("%f ", tmp[i]);
