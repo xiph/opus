@@ -174,7 +174,7 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
    count = pos = max = _mm_setzero_ps();
    count = _mm_set_ps(3., 2., 1., 0.);
    fours = _mm_set_ps1(4.0f);
-   for (j=0;j<N-3;j+=4)
+   for (j=0;j<N;j+=4)
    {
       __m128 x4, y4, r4;
       x4 = _mm_loadu_ps(&X[j]);
@@ -210,6 +210,7 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
          maxpos = tmp[7];
       }
    }
+#if 0
    for (;j<N;j++)
    {
       __m128 x4, y4, r4;
@@ -225,6 +226,7 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
          maxpos = j;
       }
    }
+#endif
    return (int)maxpos;
 }
 #else
@@ -255,10 +257,11 @@ static int find_vec_max(float *r, int N)
    //printf("%f %d\n\n", maxval, maxj);
    return maxj;
 }
-unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
+unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
       opus_val16 gain, int resynth)
 {
    VARDECL(celt_norm, y);
+   VARDECL(celt_norm, X);
    VARDECL(int, iy);
    VARDECL(int, signx);
    int i, j;
@@ -272,21 +275,24 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    celt_assert2(K>0, "alg_quant() needs at least one pulse");
    celt_assert2(N>1, "alg_quant() needs at least two dimensions");
 
-   ALLOC(y, N, celt_norm);
+   ALLOC(y, N+3, celt_norm);
+   ALLOC(X, N+3, celt_norm);
    ALLOC(iy, N, int);
    ALLOC(signx, N, int);
 
-   exp_rotation(X, N, 1, B, K, spread);
+   exp_rotation(_X, N, 1, B, K, spread);
 
    /* Get rid of the sign */
    sum = 0;
    j=0; do {
-      signx[j] = X[j]<0;
+      signx[j] = _X[j]<0;
       /* OPT: Make sure the compiler doesn't use a branch on ABS16(). */
-      X[j] = ABS16(X[j]);
+      X[j] = ABS16(_X[j]);
       iy[j] = 0;
       y[j] = 0;
    } while (++j<N);
+   X[N] = X[N+1] = X[N+2] = -100;
+   y[N] = y[N+1] = y[N+2] = 100;
 
    xy = yy = 0;
 
@@ -431,6 +437,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    {
       normalise_residual(iy, X, N, yy, gain);
       exp_rotation(X, N, -1, B, K, spread);
+      OPUS_COPY(_X, X, N);
    }
 
    collapse_mask = extract_collapse_mask(iy, N, B);
