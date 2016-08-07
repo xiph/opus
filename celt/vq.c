@@ -188,7 +188,7 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
       max = _mm_max_ps(max, r4);
       count = _mm_add_ps(count, fours);
    }
-   {
+   if (0) {
       float tmp[8];
       _mm_storeu_ps(&tmp[0], max);
       _mm_storeu_ps(&tmp[4], pos);
@@ -209,6 +209,18 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
          maxval = tmp[3];
          maxpos = tmp[7];
       }
+      //printf("\n%f %f %f %f\n", tmp[0], tmp[1], tmp[2], tmp[3]);
+   }
+   {
+      float tmp[4];
+      int mask;
+      __m128 max2 = _mm_max_ps(max, _mm_shuffle_ps(max, max, _MM_SHUFFLE(1, 0, 3, 2)));
+      max2 = _mm_max_ps(max2, _mm_shuffle_ps(max2, max2, _MM_SHUFFLE(2, 3, 0, 1)));
+      mask = _mm_movemask_ps(_mm_cmpeq_ps(max, max2));
+      //printf("%f %f %d\n", maxval, _mm_cvtss_f32(max2), 31-__builtin_clz(mask));
+      _mm_storeu_ps(&tmp[0], pos);
+      maxpos = tmp[31-__builtin_clz(mask)];
+      //printf("%d %d\n", (int)tmp[31-__builtin_clz(mask)], (int)maxpos);
    }
 #if 0
    for (;j<N;j++)
