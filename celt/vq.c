@@ -164,7 +164,7 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
    int j;
    __m128 xy4, yy4;
    __m128 max;
-   __m128 ones;
+   __m128 fours;
    __m128 count;
    __m128 pos;
    float maxval=0;
@@ -172,10 +172,10 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
    xy4 = _mm_load1_ps(&xy);
    yy4 = _mm_load1_ps(&yy);
    count = pos = max = _mm_setzero_ps();
-   ones = _mm_set_ps1(1.0f);
+   count = _mm_set_ps(3., 2., 1., 0.);
+   fours = _mm_set_ps1(4.0f);
    for (j=0;j<N-3;j+=4)
    {
-#if 1
       __m128 x4, y4, r4;
       x4 = _mm_loadu_ps(&X[j]);
       y4 = _mm_loadu_ps(&y[j]);
@@ -183,45 +183,35 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
       y4 = _mm_add_ps(y4, yy4);
       y4 = _mm_rsqrt_ps(y4);
       r4 = _mm_mul_ps(x4, y4);
-      _mm_storeu_ps(&r[j], r4);
+      //_mm_storeu_ps(&r[j], r4);
       pos = _mm_max_ps(pos, _mm_and_ps(count, _mm_cmpgt_ps(r4, max)));
       max = _mm_max_ps(max, r4);
-      count = _mm_add_ps(count, ones);
-#else
-      r[j  ] = (xy + X[j  ])/sqrt(yy + y[j  ]);
-      r[j+1] = (xy + X[j+1])/sqrt(yy + y[j+1]);
-      r[j+2] = (xy + X[j+2])/sqrt(yy + y[j+2]);
-      r[j+3] = (xy + X[j+3])/sqrt(yy + y[j+3]);
-#endif
+      count = _mm_add_ps(count, fours);
    }
    {
       float tmp[8];
       _mm_storeu_ps(&tmp[0], max);
       _mm_storeu_ps(&tmp[4], pos);
       maxval = tmp[0];
-      maxpos = 4*tmp[4];
+      maxpos = tmp[4];
       if (tmp[1] > maxval)
       {
          maxval = tmp[1];
-         maxpos = 4*tmp[5]+1;
+         maxpos = tmp[5];
       }
       if (tmp[2] > maxval)
       {
          maxval = tmp[2];
-         maxpos = 4*tmp[6]+2;
+         maxpos = tmp[6];
       }
       if (tmp[3] > maxval)
       {
          maxval = tmp[3];
-         maxpos = 4*tmp[7]+3;
+         maxpos = tmp[7];
       }
-      //printf("n = %d\n", N);
-      //for (i=0;i<8;i++) printf("%f ", tmp[i]);
-      //printf("\n%f %d\n", maxval, (int)maxpos);
    }
    for (;j<N;j++)
    {
-#if 1
       __m128 x4, y4, r4;
       x4 = _mm_load_ss(&X[j]);
       y4 = _mm_load_ss(&y[j]);
@@ -230,9 +220,6 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
       y4 = _mm_rsqrt_ss(y4);
       r4 = _mm_mul_ss(x4, y4);
       _mm_store_ss(&r[j], r4);
-#else
-      r[j] = (xy + X[j])/sqrt(yy + y[j]);
-#endif
       if (r[j] > maxval) {
          maxval = r[j];
          maxpos = j;
