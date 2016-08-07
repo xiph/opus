@@ -159,12 +159,20 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    return collapse_mask;
 }
 #if 1
-static void compute_search_vec(const float *X, const float *y, int N, float xy, float yy, float *r)
+static int compute_search_vec(const float *X, const float *y, int N, float xy, float yy, float *r)
 {
    int j;
    __m128 xy4, yy4;
+   __m128 max;
+   __m128 ones;
+   __m128 count;
+   __m128 pos;
+   float maxval=0;
+   float maxpos=0;
    xy4 = _mm_load1_ps(&xy);
    yy4 = _mm_load1_ps(&yy);
+   count = pos = max = _mm_setzero_ps();
+   ones = _mm_set_ps1(1.0f);
    for (j=0;j<N-3;j+=4)
    {
 #if 1
@@ -176,12 +184,34 @@ static void compute_search_vec(const float *X, const float *y, int N, float xy, 
       y4 = _mm_rsqrt_ps(y4);
       r4 = _mm_mul_ps(x4, y4);
       _mm_storeu_ps(&r[j], r4);
+      pos = _mm_max_ps(pos, _mm_and_ps(count, _mm_cmpgt_ps(r4, max)));
+      max = _mm_max_ps(max, r4);
+      count = _mm_add_ps(count, ones);
 #else
       r[j  ] = (xy + X[j  ])/sqrt(yy + y[j  ]);
       r[j+1] = (xy + X[j+1])/sqrt(yy + y[j+1]);
       r[j+2] = (xy + X[j+2])/sqrt(yy + y[j+2]);
       r[j+3] = (xy + X[j+3])/sqrt(yy + y[j+3]);
 #endif
+   }
+   {
+      int i;
+      float tmp[8];
+      _mm_storeu_ps(&tmp[0], max);
+      _mm_storeu_ps(&tmp[4], pos);
+      maxval = tmp[0];
+      maxpos = 4*tmp[4];
+      for (i=1;i<4;i++)
+      {
+         if (tmp[i] > maxval)
+         {
+            maxval = tmp[i];
+            maxpos = 4*tmp[i+4] + i;
+         }
+      }
+      //printf("n = %d\n", N);
+      //for (i=0;i<8;i++) printf("%f ", tmp[i]);
+      //printf("\n%f %d\n", maxval, (int)maxpos);
    }
    for (;j<N;j++)
    {
@@ -197,7 +227,12 @@ static void compute_search_vec(const float *X, const float *y, int N, float xy, 
 #else
       r[j] = (xy + X[j])/sqrt(yy + y[j]);
 #endif
+      if (r[j] > maxval) {
+         maxval = r[j];
+         maxpos = j;
+      }
    }
+   return (int)maxpos;
 }
 #else
 static void compute_search_vec(const float *X, const float *y, int N, float xy, float yy, float *r)
@@ -224,6 +259,7 @@ static int find_vec_max(float *r, int N)
          maxj = j;
       }
    }
+   //printf("%f %d\n\n", maxval, maxj);
    return maxj;
 }
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
@@ -335,8 +371,10 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       yy = ADD16(yy, 1);
 #if 1
       float r[1000];
-      compute_search_vec(X, y, N, xy, yy, r);
-      best_id = find_vec_max(r, N);
+      best_id = compute_search_vec(X, y, N, xy, yy, r);
+      //printf("%d ", best_id);
+      //best_id = find_vec_max(r, N);
+      //printf("%d\n", best_id);
 #else
       /* Calculations for position 0 are out of the loop, in part to reduce
          mispredicted branches (since the if condition is usually false)
