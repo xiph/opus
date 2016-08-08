@@ -159,27 +159,51 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    return collapse_mask;
 }
 
+#define PVQ_SEARCH_INT (1)
+
+#ifdef PVQ_SEARCH_INT
+#include <smmintrin.h>
+#endif
+
 static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLeft, int N, float xy, float yy)
 {
    int i;
+#ifdef PVQ_SEARCH_INT
+   __m128i fours;
+   fours = _mm_set_epi32(4, 4, 4, 4);
+#else
    __m128 fours;
    fours = _mm_set_ps1(4.0f);
+#endif
    for (i=0;i<pulsesLeft;i++)
    {
       int j;
       int best_id;
+      __m128 xy4, yy4;
+      __m128 max;
+#ifdef PVQ_SEARCH_INT
+      int tmp[4];
+      __m128i count;
+      __m128i pos;
+#else
+      float tmp[4];
+      __m128 count;
+      __m128 pos;
+#endif
       best_id = 0;
       /* The squared magnitude term gets added anyway, so we might as well
          add it outside the loop */
       yy = ADD16(yy, 1);
-      __m128 xy4, yy4;
-      __m128 max;
-      __m128 count;
-      __m128 pos;
       xy4 = _mm_load1_ps(&xy);
       yy4 = _mm_load1_ps(&yy);
-      count = pos = max = _mm_setzero_ps();
+      max = _mm_setzero_ps();
+#ifdef PVQ_SEARCH_INT
+      pos = _mm_setzero_si128();
+      count = _mm_set_epi32(3, 2, 1, 0);
+#else
+      pos = _mm_setzero_ps();
       count = _mm_set_ps(3., 2., 1., 0.);
+#endif
       for (j=0;j<N;j+=4)
       {
          __m128 x4, y4, r4;
@@ -189,15 +213,23 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
          y4 = _mm_add_ps(y4, yy4);
          y4 = _mm_rsqrt_ps(y4);
          r4 = _mm_mul_ps(x4, y4);
+#ifdef PVQ_SEARCH_INT
+         /* Update the index of the max. */
+         pos = _mm_max_epi32(pos, _mm_and_si128(count, _mm_castps_si128(_mm_cmpgt_ps(r4, max))));
+         /* Update the max. */
+         max = _mm_max_ps(max, r4);
+         /* Update the indices (+4) */
+         count = _mm_add_epi32(count, fours);
+#else
          /* Update the index of the max. */
          pos = _mm_max_ps(pos, _mm_and_ps(count, _mm_cmpgt_ps(r4, max)));
          /* Update the max. */
          max = _mm_max_ps(max, r4);
          /* Update the indices (+4) */
          count = _mm_add_ps(count, fours);
+#endif
       }
       {
-         float tmp[4];
          int mask;
          /* Horizontal max */
          __m128 max2 = _mm_max_ps(max, _mm_shuffle_ps(max, max, _MM_SHUFFLE(1, 0, 3, 2)));
@@ -205,8 +237,13 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
          /* Now that max2 contains the max at all positions, look at which value(s) of the
          partial max is equal to the global max. */
          mask = _mm_movemask_ps(_mm_cmpeq_ps(max, max2));
+#ifdef PVQ_SEARCH_INT
+         _mm_storeu_si128((__m128i*)&tmp[0], pos);
+         best_id = tmp[31-__builtin_clz(mask)];
+#else
          _mm_storeu_ps(&tmp[0], pos);
          best_id = _mm_cvtss_si32(_mm_load_ss(&tmp[31-__builtin_clz(mask)]));
+#endif
       }
       /* Updating the sums of the new pulse(s) */
       xy = ADD32(xy, EXTEND32(X[best_id]));
