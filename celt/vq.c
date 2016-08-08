@@ -232,8 +232,8 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
          partial max is equal to the global max. */
 #ifdef PVQ_SEARCH_INT
          pos = _mm_and_si128(pos, _mm_castps_si128(_mm_cmpeq_ps(max, max2)));
-         pos = _mm_max_epi16(pos, _mm_shuffle_epi32(pos, _MM_SHUFFLE(1, 0, 3, 2)));
-         pos = _mm_max_epi16(pos, _mm_shuffle_epi32(pos, _MM_SHUFFLE(2, 3, 0, 1)));
+         pos = _mm_max_epi16(pos, _mm_unpackhi_epi64(pos, pos));
+         pos = _mm_max_epi16(pos, _mm_shufflelo_epi16(pos, _MM_SHUFFLE(1, 0, 3, 2)));
          best_id = _mm_cvtsi128_si32(pos);
 #else
          int mask = _mm_movemask_ps(_mm_cmpeq_ps(max, max2));
