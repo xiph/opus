@@ -181,7 +181,6 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
       __m128i count;
       __m128i pos;
 #else
-      float tmp[4];
       __m128 count;
       __m128 pos;
 #endif
@@ -236,9 +235,10 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
          pos = _mm_max_epi16(pos, _mm_shufflelo_epi16(pos, _MM_SHUFFLE(1, 0, 3, 2)));
          best_id = _mm_cvtsi128_si32(pos);
 #else
-         int mask = _mm_movemask_ps(_mm_cmpeq_ps(max, max2));
-         _mm_storeu_ps(&tmp[0], pos);
-         best_id = _mm_cvtss_si32(_mm_load_ss(&tmp[31-__builtin_clz(mask)]));
+         pos = _mm_and_ps(pos, _mm_cmpeq_ps(max, max2));
+         pos = _mm_max_ps(pos, _mm_shuffle_ps(pos, pos, _MM_SHUFFLE(1, 0, 3, 2)));
+         pos = _mm_max_ps(pos, _mm_shuffle_ps(pos, pos, _MM_SHUFFLE(2, 3, 0, 1)));
+         best_id = _mm_cvt_ss2si(pos);
 #endif
       }
       /* Updating the sums of the new pulse(s) */
