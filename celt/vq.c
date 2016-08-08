@@ -158,8 +158,8 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    } while (++i<B);
    return collapse_mask;
 }
-#if 1
-static int compute_search_vec(const float *X, const float *y, int N, float xy, float yy, float *r)
+
+static int compute_search_vec(const float *X, const float *y, int N, float xy, float yy)
 {
    int j;
    __m128 xy4, yy4;
@@ -201,34 +201,7 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
       return _mm_cvtss_si32(_mm_load_ss(&tmp[31-__builtin_clz(mask)]));
    }
 }
-#else
-static void compute_search_vec(const float *X, const float *y, int N, float xy, float yy, float *r)
-{
-   int j;
-   for (j=0;j<N;j++)
-   {
-      r[j] = (xy + X[j])/sqrt(yy + y[j]);
-   }
-}
-#endif
 
-static int find_vec_max(float *r, int N)
-{
-   int j;
-   float maxval;
-   int maxj;
-   maxval = r[0];
-   maxj = 0;
-   for (j=1;j<N;j++)
-   {
-      if (r[j] > maxval) {
-         maxval = r[j];
-         maxj = j;
-      }
-   }
-   //printf("%f %d\n\n", maxval, maxj);
-   return maxj;
-}
 unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
       opus_val16 gain, int resynth)
 {
@@ -341,11 +314,7 @@ unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
          add it outside the loop */
       yy = ADD16(yy, 1);
 #if 1
-      float r[1000];
-      best_id = compute_search_vec(X, y, N, xy, yy, r);
-      //printf("%d ", best_id);
-      //best_id = find_vec_max(r, N);
-      //printf("%d\n", best_id);
+      best_id = compute_search_vec(X, y, N, xy, yy);
 #else
       /* Calculations for position 0 are out of the loop, in part to reduce
          mispredicted branches (since the if condition is usually false)
