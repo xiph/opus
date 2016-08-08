@@ -176,7 +176,7 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
       int j;
       int best_id;
       __m128 xy4, yy4;
-      __m128 max;
+      __m128 max, max2;
 #ifdef PVQ_SEARCH_INT
       __m128i count;
       __m128i pos;
@@ -223,24 +223,22 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
          count = _mm_add_ps(count, fours);
 #endif
       }
-      {
-         /* Horizontal max */
-         __m128 max2 = _mm_max_ps(max, _mm_shuffle_ps(max, max, _MM_SHUFFLE(1, 0, 3, 2)));
-         max2 = _mm_max_ps(max2, _mm_shuffle_ps(max2, max2, _MM_SHUFFLE(2, 3, 0, 1)));
-         /* Now that max2 contains the max at all positions, look at which value(s) of the
+      /* Horizontal max */
+      max2 = _mm_max_ps(max, _mm_shuffle_ps(max, max, _MM_SHUFFLE(1, 0, 3, 2)));
+      max2 = _mm_max_ps(max2, _mm_shuffle_ps(max2, max2, _MM_SHUFFLE(2, 3, 0, 1)));
+      /* Now that max2 contains the max at all positions, look at which value(s) of the
          partial max is equal to the global max. */
 #ifdef PVQ_SEARCH_INT
-         pos = _mm_and_si128(pos, _mm_castps_si128(_mm_cmpeq_ps(max, max2)));
-         pos = _mm_max_epi16(pos, _mm_unpackhi_epi64(pos, pos));
-         pos = _mm_max_epi16(pos, _mm_shufflelo_epi16(pos, _MM_SHUFFLE(1, 0, 3, 2)));
-         best_id = _mm_cvtsi128_si32(pos);
+      pos = _mm_and_si128(pos, _mm_castps_si128(_mm_cmpeq_ps(max, max2)));
+      pos = _mm_max_epi16(pos, _mm_unpackhi_epi64(pos, pos));
+      pos = _mm_max_epi16(pos, _mm_shufflelo_epi16(pos, _MM_SHUFFLE(1, 0, 3, 2)));
+      best_id = _mm_cvtsi128_si32(pos);
 #else
-         pos = _mm_and_ps(pos, _mm_cmpeq_ps(max, max2));
-         pos = _mm_max_ps(pos, _mm_shuffle_ps(pos, pos, _MM_SHUFFLE(1, 0, 3, 2)));
-         pos = _mm_max_ps(pos, _mm_shuffle_ps(pos, pos, _MM_SHUFFLE(2, 3, 0, 1)));
-         best_id = _mm_cvt_ss2si(pos);
+      pos = _mm_and_ps(pos, _mm_cmpeq_ps(max, max2));
+      pos = _mm_max_ps(pos, _mm_shuffle_ps(pos, pos, _MM_SHUFFLE(1, 0, 3, 2)));
+      pos = _mm_max_ps(pos, _mm_shuffle_ps(pos, pos, _MM_SHUFFLE(2, 3, 0, 1)));
+      best_id = _mm_cvt_ss2si(pos);
 #endif
-      }
       /* Updating the sums of the new pulse(s) */
       xy = ADD32(xy, EXTEND32(X[best_id]));
       /* We're multiplying y[j] by two so we don't have to do it here */
