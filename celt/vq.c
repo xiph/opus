@@ -167,8 +167,6 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
    __m128 fours;
    __m128 count;
    __m128 pos;
-   float maxval=0;
-   float maxpos=0;
    xy4 = _mm_load1_ps(&xy);
    yy4 = _mm_load1_ps(&yy);
    count = pos = max = _mm_setzero_ps();
@@ -183,63 +181,25 @@ static int compute_search_vec(const float *X, const float *y, int N, float xy, f
       y4 = _mm_add_ps(y4, yy4);
       y4 = _mm_rsqrt_ps(y4);
       r4 = _mm_mul_ps(x4, y4);
-      //_mm_storeu_ps(&r[j], r4);
+      /* Update the index of the max. */
       pos = _mm_max_ps(pos, _mm_and_ps(count, _mm_cmpgt_ps(r4, max)));
+      /* Update the max. */
       max = _mm_max_ps(max, r4);
+      /* Update the indices (+4) */
       count = _mm_add_ps(count, fours);
-   }
-   if (0) {
-      float tmp[8];
-      _mm_storeu_ps(&tmp[0], max);
-      _mm_storeu_ps(&tmp[4], pos);
-      maxval = tmp[0];
-      maxpos = tmp[4];
-      if (tmp[1] > maxval)
-      {
-         maxval = tmp[1];
-         maxpos = tmp[5];
-      }
-      if (tmp[2] > maxval)
-      {
-         maxval = tmp[2];
-         maxpos = tmp[6];
-      }
-      if (tmp[3] > maxval)
-      {
-         maxval = tmp[3];
-         maxpos = tmp[7];
-      }
-      //printf("\n%f %f %f %f\n", tmp[0], tmp[1], tmp[2], tmp[3]);
    }
    {
       float tmp[4];
       int mask;
+      /* Horizontal max */
       __m128 max2 = _mm_max_ps(max, _mm_shuffle_ps(max, max, _MM_SHUFFLE(1, 0, 3, 2)));
       max2 = _mm_max_ps(max2, _mm_shuffle_ps(max2, max2, _MM_SHUFFLE(2, 3, 0, 1)));
+      /* Now that max2 contains the max at all positions, look at which value(s) of the
+         partial max is equal to the global max. */
       mask = _mm_movemask_ps(_mm_cmpeq_ps(max, max2));
-      //printf("%f %f %d\n", maxval, _mm_cvtss_f32(max2), 31-__builtin_clz(mask));
       _mm_storeu_ps(&tmp[0], pos);
-      maxpos = tmp[31-__builtin_clz(mask)];
-      //printf("%d %d\n", (int)tmp[31-__builtin_clz(mask)], (int)maxpos);
+      return _mm_cvtss_si32(_mm_load_ss(&tmp[31-__builtin_clz(mask)]));
    }
-#if 0
-   for (;j<N;j++)
-   {
-      __m128 x4, y4, r4;
-      x4 = _mm_load_ss(&X[j]);
-      y4 = _mm_load_ss(&y[j]);
-      x4 = _mm_add_ss(x4, xy4);
-      y4 = _mm_add_ss(y4, yy4);
-      y4 = _mm_rsqrt_ss(y4);
-      r4 = _mm_mul_ss(x4, y4);
-      _mm_store_ss(&r[j], r4);
-      if (r[j] > maxval) {
-         maxval = r[j];
-         maxpos = j;
-      }
-   }
-#endif
-   return (int)maxpos;
 }
 #else
 static void compute_search_vec(const float *X, const float *y, int N, float xy, float yy, float *r)
