@@ -252,6 +252,74 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
    return yy;
 }
 
+static float compute_search_vec_c(const float *X, float *y, int *iy, int pulsesLeft, int N, float xy, float yy)
+{
+   int i, j;
+   for (i=0;i<pulsesLeft;i++)
+   {
+      opus_val16 Rxy, Ryy;
+      int best_id;
+      opus_val32 best_num;
+      opus_val16 best_den;
+#ifdef FIXED_POINT
+      int rshift;
+#endif
+#ifdef FIXED_POINT
+      rshift = 1+celt_ilog2(K-pulsesLeft+i+1);
+#endif
+      best_id = 0;
+      /* The squared magnitude term gets added anyway, so we might as well
+         add it outside the loop */
+      yy = ADD16(yy, 1);
+      /* Calculations for position 0 are out of the loop, in part to reduce
+         mispredicted branches (since the if condition is usually false)
+         in the loop. */
+      /* Temporary sums of the new pulse(s) */
+      Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[0])),rshift));
+      /* We're multiplying y[j] by two so we don't have to do it here */
+      Ryy = ADD16(yy, y[0]);
+
+      /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that
+         Rxy is positive because the sign is pre-computed) */
+      Rxy = MULT16_16_Q15(Rxy,Rxy);
+      best_den = Ryy;
+      best_num = Rxy;
+      j=1;
+      do {
+         /* Temporary sums of the new pulse(s) */
+         Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[j])),rshift));
+         /* We're multiplying y[j] by two so we don't have to do it here */
+         Ryy = ADD16(yy, y[j]);
+
+         /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that
+            Rxy is positive because the sign is pre-computed) */
+         Rxy = MULT16_16_Q15(Rxy,Rxy);
+         /* The idea is to check for num/den >= best_num/best_den, but that way
+            we can do it without any division */
+         /* OPT: It's not clear whether a cmov is faster than a branch here
+            since the condition is more often false than true and using
+            a cmov introduces data dependencies across iterations. The optimal
+            choice may be architecture-dependent. */
+         if (opus_unlikely(MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num)))
+         {
+            best_den = Ryy;
+            best_num = Rxy;
+            best_id = j;
+         }
+      } while (++j<N);
+      /* Updating the sums of the new pulse(s) */
+      xy = ADD32(xy, EXTEND32(X[best_id]));
+      /* We're multiplying y[j] by two so we don't have to do it here */
+      yy = ADD16(yy, y[best_id]);
+
+      /* Only now that we've made the final choice, update y/iy */
+      /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
+      y[best_id] += 2;
+      iy[best_id]++;
+   }
+   return yy;
+}
+
 unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
       opus_val16 gain, int resynth)
 {
@@ -350,68 +418,7 @@ unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
 #if 1
       yy = compute_search_vec(X, y, iy, pulsesLeft, N, xy, yy);
 #else
-   for (i=0;i<pulsesLeft;i++)
-   {
-      opus_val16 Rxy, Ryy;
-      int best_id;
-      opus_val32 best_num;
-      opus_val16 best_den;
-#ifdef FIXED_POINT
-      int rshift;
-#endif
-#ifdef FIXED_POINT
-      rshift = 1+celt_ilog2(K-pulsesLeft+i+1);
-#endif
-      best_id = 0;
-      /* The squared magnitude term gets added anyway, so we might as well
-         add it outside the loop */
-      yy = ADD16(yy, 1);
-      /* Calculations for position 0 are out of the loop, in part to reduce
-         mispredicted branches (since the if condition is usually false)
-         in the loop. */
-      /* Temporary sums of the new pulse(s) */
-      Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[0])),rshift));
-      /* We're multiplying y[j] by two so we don't have to do it here */
-      Ryy = ADD16(yy, y[0]);
-
-      /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that
-         Rxy is positive because the sign is pre-computed) */
-      Rxy = MULT16_16_Q15(Rxy,Rxy);
-      best_den = Ryy;
-      best_num = Rxy;
-      j=1;
-      do {
-         /* Temporary sums of the new pulse(s) */
-         Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[j])),rshift));
-         /* We're multiplying y[j] by two so we don't have to do it here */
-         Ryy = ADD16(yy, y[j]);
-
-         /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that
-            Rxy is positive because the sign is pre-computed) */
-         Rxy = MULT16_16_Q15(Rxy,Rxy);
-         /* The idea is to check for num/den >= best_num/best_den, but that way
-            we can do it without any division */
-         /* OPT: It's not clear whether a cmov is faster than a branch here
-            since the condition is more often false than true and using
-            a cmov introduces data dependencies across iterations. The optimal
-            choice may be architecture-dependent. */
-         if (opus_unlikely(MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num)))
-         {
-            best_den = Ryy;
-            best_num = Rxy;
-            best_id = j;
-         }
-      } while (++j<N);
-      /* Updating the sums of the new pulse(s) */
-      xy = ADD32(xy, EXTEND32(X[best_id]));
-      /* We're multiplying y[j] by two so we don't have to do it here */
-      yy = ADD16(yy, y[best_id]);
-
-      /* Only now that we've made the final choice, update y/iy */
-      /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
-      y[best_id] += 2;
-      iy[best_id]++;
-   }
+      yy = compute_search_vec_c(X, y, iy, pulsesLeft, N, xy, yy);
 #endif
 
    /* Put the original sign back */
@@ -426,9 +433,8 @@ unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
 
    if (resynth)
    {
-      normalise_residual(iy, X, N, yy, gain);
-      exp_rotation(X, N, -1, B, K, spread);
-      OPUS_COPY(_X, X, N);
+      normalise_residual(iy, _X, N, yy, gain);
+      exp_rotation(_X, N, -1, B, K, spread);
    }
 
    collapse_mask = extract_collapse_mask(iy, N, B);
