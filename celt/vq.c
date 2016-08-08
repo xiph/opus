@@ -161,10 +161,6 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
 
 #define PVQ_SEARCH_INT (1)
 
-#ifdef PVQ_SEARCH_INT
-#include <smmintrin.h>
-#endif
-
 static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLeft, int N, float xy, float yy)
 {
    int i;
@@ -182,7 +178,6 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
       __m128 xy4, yy4;
       __m128 max;
 #ifdef PVQ_SEARCH_INT
-      int tmp[4];
       __m128i count;
       __m128i pos;
 #else
@@ -215,7 +210,7 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
          r4 = _mm_mul_ps(x4, y4);
 #ifdef PVQ_SEARCH_INT
          /* Update the index of the max. */
-         pos = _mm_max_epi32(pos, _mm_and_si128(count, _mm_castps_si128(_mm_cmpgt_ps(r4, max))));
+         pos = _mm_max_epi16(pos, _mm_and_si128(count, _mm_castps_si128(_mm_cmpgt_ps(r4, max))));
          /* Update the max. */
          max = _mm_max_ps(max, r4);
          /* Update the indices (+4) */
@@ -230,17 +225,18 @@ static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLef
 #endif
       }
       {
-         int mask;
          /* Horizontal max */
          __m128 max2 = _mm_max_ps(max, _mm_shuffle_ps(max, max, _MM_SHUFFLE(1, 0, 3, 2)));
          max2 = _mm_max_ps(max2, _mm_shuffle_ps(max2, max2, _MM_SHUFFLE(2, 3, 0, 1)));
          /* Now that max2 contains the max at all positions, look at which value(s) of the
          partial max is equal to the global max. */
-         mask = _mm_movemask_ps(_mm_cmpeq_ps(max, max2));
 #ifdef PVQ_SEARCH_INT
-         _mm_storeu_si128((__m128i*)&tmp[0], pos);
-         best_id = tmp[31-__builtin_clz(mask)];
+         pos = _mm_and_si128(pos, _mm_castps_si128(_mm_cmpeq_ps(max, max2)));
+         pos = _mm_max_epi16(pos, _mm_shuffle_epi32(pos, _MM_SHUFFLE(1, 0, 3, 2)));
+         pos = _mm_max_epi16(pos, _mm_shuffle_epi32(pos, _MM_SHUFFLE(2, 3, 0, 1)));
+         best_id = _mm_cvtsi128_si32(pos);
 #else
+         int mask = _mm_movemask_ps(_mm_cmpeq_ps(max, max2));
          _mm_storeu_ps(&tmp[0], pos);
          best_id = _mm_cvtss_si32(_mm_load_ss(&tmp[31-__builtin_clz(mask)]));
 #endif
