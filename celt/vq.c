@@ -159,47 +159,66 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    return collapse_mask;
 }
 
-static int compute_search_vec(const float *X, const float *y, int N, float xy, float yy)
+static float compute_search_vec(const float *X, float *y, int *iy, int pulsesLeft, int N, float xy, float yy)
 {
-   int j;
-   __m128 xy4, yy4;
-   __m128 max;
+   int i;
    __m128 fours;
-   __m128 count;
-   __m128 pos;
-   xy4 = _mm_load1_ps(&xy);
-   yy4 = _mm_load1_ps(&yy);
-   count = pos = max = _mm_setzero_ps();
-   count = _mm_set_ps(3., 2., 1., 0.);
    fours = _mm_set_ps1(4.0f);
-   for (j=0;j<N;j+=4)
+   for (i=0;i<pulsesLeft;i++)
    {
-      __m128 x4, y4, r4;
-      x4 = _mm_loadu_ps(&X[j]);
-      y4 = _mm_loadu_ps(&y[j]);
-      x4 = _mm_add_ps(x4, xy4);
-      y4 = _mm_add_ps(y4, yy4);
-      y4 = _mm_rsqrt_ps(y4);
-      r4 = _mm_mul_ps(x4, y4);
-      /* Update the index of the max. */
-      pos = _mm_max_ps(pos, _mm_and_ps(count, _mm_cmpgt_ps(r4, max)));
-      /* Update the max. */
-      max = _mm_max_ps(max, r4);
-      /* Update the indices (+4) */
-      count = _mm_add_ps(count, fours);
-   }
-   {
-      float tmp[4];
-      int mask;
-      /* Horizontal max */
-      __m128 max2 = _mm_max_ps(max, _mm_shuffle_ps(max, max, _MM_SHUFFLE(1, 0, 3, 2)));
-      max2 = _mm_max_ps(max2, _mm_shuffle_ps(max2, max2, _MM_SHUFFLE(2, 3, 0, 1)));
-      /* Now that max2 contains the max at all positions, look at which value(s) of the
+      int j;
+      int best_id;
+      best_id = 0;
+      /* The squared magnitude term gets added anyway, so we might as well
+         add it outside the loop */
+      yy = ADD16(yy, 1);
+      __m128 xy4, yy4;
+      __m128 max;
+      __m128 count;
+      __m128 pos;
+      xy4 = _mm_load1_ps(&xy);
+      yy4 = _mm_load1_ps(&yy);
+      count = pos = max = _mm_setzero_ps();
+      count = _mm_set_ps(3., 2., 1., 0.);
+      for (j=0;j<N;j+=4)
+      {
+         __m128 x4, y4, r4;
+         x4 = _mm_loadu_ps(&X[j]);
+         y4 = _mm_loadu_ps(&y[j]);
+         x4 = _mm_add_ps(x4, xy4);
+         y4 = _mm_add_ps(y4, yy4);
+         y4 = _mm_rsqrt_ps(y4);
+         r4 = _mm_mul_ps(x4, y4);
+         /* Update the index of the max. */
+         pos = _mm_max_ps(pos, _mm_and_ps(count, _mm_cmpgt_ps(r4, max)));
+         /* Update the max. */
+         max = _mm_max_ps(max, r4);
+         /* Update the indices (+4) */
+         count = _mm_add_ps(count, fours);
+      }
+      {
+         float tmp[4];
+         int mask;
+         /* Horizontal max */
+         __m128 max2 = _mm_max_ps(max, _mm_shuffle_ps(max, max, _MM_SHUFFLE(1, 0, 3, 2)));
+         max2 = _mm_max_ps(max2, _mm_shuffle_ps(max2, max2, _MM_SHUFFLE(2, 3, 0, 1)));
+         /* Now that max2 contains the max at all positions, look at which value(s) of the
          partial max is equal to the global max. */
-      mask = _mm_movemask_ps(_mm_cmpeq_ps(max, max2));
-      _mm_storeu_ps(&tmp[0], pos);
-      return _mm_cvtss_si32(_mm_load_ss(&tmp[31-__builtin_clz(mask)]));
+         mask = _mm_movemask_ps(_mm_cmpeq_ps(max, max2));
+         _mm_storeu_ps(&tmp[0], pos);
+         best_id = _mm_cvtss_si32(_mm_load_ss(&tmp[31-__builtin_clz(mask)]));
+      }
+      /* Updating the sums of the new pulse(s) */
+      xy = ADD32(xy, EXTEND32(X[best_id]));
+      /* We're multiplying y[j] by two so we don't have to do it here */
+      yy = ADD16(yy, y[best_id]);
+
+      /* Only now that we've made the final choice, update y/iy */
+      /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
+      y[best_id] += 2;
+      iy[best_id]++;
    }
+   return yy;
 }
 
 unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
@@ -297,6 +316,9 @@ unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
       pulsesLeft=0;
    }
 
+#if 1
+      yy = compute_search_vec(X, y, iy, pulsesLeft, N, xy, yy);
+#else
    for (i=0;i<pulsesLeft;i++)
    {
       opus_val16 Rxy, Ryy;
@@ -313,9 +335,6 @@ unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
       /* The squared magnitude term gets added anyway, so we might as well
          add it outside the loop */
       yy = ADD16(yy, 1);
-#if 1
-      best_id = compute_search_vec(X, y, N, xy, yy);
-#else
       /* Calculations for position 0 are out of the loop, in part to reduce
          mispredicted branches (since the if condition is usually false)
          in the loop. */
@@ -352,7 +371,6 @@ unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
             best_id = j;
          }
       } while (++j<N);
-#endif
       /* Updating the sums of the new pulse(s) */
       xy = ADD32(xy, EXTEND32(X[best_id]));
       /* We're multiplying y[j] by two so we don't have to do it here */
@@ -363,6 +381,7 @@ unsigned alg_quant(celt_norm *_X, int N, int K, int spread, int B, ec_enc *enc,
       y[best_id] += 2;
       iy[best_id]++;
    }
+#endif
 
    /* Put the original sign back */
    j=0;
