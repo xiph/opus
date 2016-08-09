@@ -164,13 +164,13 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
 static float compute_search_vec(float *_X, int *iy, int K, int N)
 {
    int i, j;
-   opus_val32 sum;
    int pulsesLeft;
    float xy, yy;
    VARDECL(celt_norm, y);
    VARDECL(celt_norm, X);
    VARDECL(float, signy);
    __m128 signmask;
+   __m128 sums;
 #ifdef PVQ_SEARCH_INT
    __m128i fours;
 #else
@@ -189,19 +189,24 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    ALLOC(X, N+3, celt_norm);
    ALLOC(signy, N+3, float);
 
+   OPUS_COPY(X, _X, N);
+   X[N] = X[N+1] = X[N+2] = 0;
+   sums = _mm_setzero_ps();
    for (j=0;j<N;j+=4)
    {
       __m128 x4, s4;
-      x4 = _mm_loadu_ps(&_X[j]);
+      x4 = _mm_loadu_ps(&X[j]);
       s4 = _mm_cmplt_ps(x4, _mm_setzero_ps());
       /* Get rid of the sign */
       x4 = _mm_andnot_ps(signmask, x4);
+      sums = _mm_add_ps(sums, x4);
       _mm_storeu_ps(&X[j], x4);
       _mm_storeu_ps(&signy[j], s4);
       _mm_storeu_ps(&y[j], _mm_setzero_ps());
       _mm_storeu_si128((__m128i*)&iy[j], _mm_setzero_si128());
    }
-   sum = 0;
+   sums = _mm_add_ps(sums, _mm_shuffle_ps(sums, sums, _MM_SHUFFLE(1, 0, 3, 2)));
+   sums = _mm_add_ps(sums, _mm_shuffle_ps(sums, sums, _MM_SHUFFLE(2, 3, 0, 1)));
 
    xy = yy = 0;
 
@@ -211,10 +216,7 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    if (K > (N>>1))
    {
       opus_val16 rcp;
-      j=0; do {
-         sum += X[j];
-      }  while (++j<N);
-
+      opus_val32 sum = _mm_cvtss_f32(sums);
       /* If X is too small, just replace it with a pulse at 0 */
       /* Prevents infinities and NaNs from causing too many pulses
          to be allocated. 64 is an approximation of infinity here. */
