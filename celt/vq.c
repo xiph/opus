@@ -159,7 +159,7 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    return collapse_mask;
 }
 
-float op_pvq_search_c(celt_norm *X, int *iy, int K, int N)
+opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch)
 {
    VARDECL(celt_norm, y);
    VARDECL(int, signx);
@@ -170,6 +170,7 @@ float op_pvq_search_c(celt_norm *X, int *iy, int K, int N)
    opus_val16 yy;
    SAVE_STACK;
 
+   (void)arch;
    ALLOC(y, N, celt_norm);
    ALLOC(signx, N, int);
 
@@ -319,7 +320,7 @@ float op_pvq_search_c(celt_norm *X, int *iy, int K, int N)
 }
 
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
-      opus_val16 gain, int resynth)
+      opus_val16 gain, int resynth, int arch)
 {
    VARDECL(int, iy);
    opus_val16 yy;
@@ -334,7 +335,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
 
    exp_rotation(X, N, 1, B, K, spread);
 
-   yy = op_pvq_search(X, iy, K, N);
+   yy = op_pvq_search(X, iy, K, N, arch);
 
    encode_pulses(iy, N, K, enc);
 

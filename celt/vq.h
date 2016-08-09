@@ -45,9 +45,11 @@
 #include "mips/vq_mipsr1.h"
 #endif
 
+opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch);
+
 #if !defined(OVERRIDE_OP_PVQ_SEARCH)
-#define op_pvq_search(x, iy, K, N) \
-    (op_pvq_search_c(x, iy, K, N))
+#define op_pvq_search(x, iy, K, N, arch) \
+    (op_pvq_search_c(x, iy, K, N, arch))
 #endif
 
 /** Algebraic pulse-vector quantiser. The signal x is replaced by the sum of
@@ -60,7 +62,7 @@
  * @ret A mask indicating which blocks in the band received pulses
 */
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
-      opus_val16 gain, int resynth);
+      opus_val16 gain, int resynth, int arch);
 
 /** Algebraic pulse decoder
  * @param X Decoded normalised spectrum (returned)

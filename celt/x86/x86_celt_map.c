@@ -33,6 +33,7 @@
 #include "celt_lpc.h"
 #include "pitch.h"
 #include "pitch_sse.h"
+#include "vq.h"
 
 #if defined(OPUS_HAVE_RTCD)
 
@@ -152,8 +153,8 @@ void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK + 1])(
 #endif
 
 #if defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(OPUS_X86_PRESUME_SSE2)
-void (*const OP_PVQ_SEARCH_IMPL[OPUS_ARCHMASK + 1])(
-      celt_norm *_X, int *iy, int K, int N
+opus_val16 (*const OP_PVQ_SEARCH_IMPL[OPUS_ARCHMASK + 1])(
+      celt_norm *_X, int *iy, int K, int N, int arch
 ) = {
   op_pvq_search_c,                /* non-sse */
   op_pvq_search_c,
