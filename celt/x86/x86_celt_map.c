@@ -151,5 +151,17 @@ void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK + 1])(
 
 #endif
 
+#if defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(OPUS_X86_PRESUME_SSE2)
+void (*const OP_PVQ_SEARCH_IMPL[OPUS_ARCHMASK + 1])(
+      celt_norm *_X, int *iy, int K, int N
+) = {
+  op_pvq_search_c,                /* non-sse */
+  op_pvq_search_c,
+  MAY_HAVE_SSE2(op_pvq_search),
+  MAY_HAVE_SSE2(op_pvq_search),
+  MAY_HAVE_SSE2(op_pvq_search)
+};
+#endif
+
 #endif
 #endif

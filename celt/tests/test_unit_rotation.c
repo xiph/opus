@@ -55,6 +55,7 @@
 # endif
 # if defined(OPUS_X86_MAY_HAVE_SSE2)
 #  include "x86/pitch_sse2.c"
+#  include "x86/vq_sse2.c"
 # endif
 # if defined(OPUS_X86_MAY_HAVE_SSE4_1)
 #  include "x86/pitch_sse4_1.c"

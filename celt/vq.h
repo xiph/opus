@@ -37,10 +37,18 @@
 #include "entdec.h"
 #include "modes.h"
 
+#if (defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(FIXED_POINT))
+#include "x86/vq_sse.h"
+#endif
+
 #if defined(MIPSr1_ASM)
 #include "mips/vq_mipsr1.h"
 #endif
 
+#if !defined(OVERRIDE_OP_PVQ_SEARCH)
+#define op_pvq_search(x, iy, K, N) \
+    (op_pvq_search_c(x, iy, K, N))
+#endif
 
 /** Algebraic pulse-vector quantiser. The signal x is replaced by the sum of
   * the pitch and a combination of pulses such that its norm is still equal
