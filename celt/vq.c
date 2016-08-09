@@ -170,8 +170,18 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    VARDECL(celt_norm, y);
    VARDECL(celt_norm, X);
    VARDECL(int, signx);
+#ifdef PVQ_SEARCH_INT
+   __m128i fours;
+#else
+   __m128 fours;
+#endif
    SAVE_STACK;
 
+#ifdef PVQ_SEARCH_INT
+   fours = _mm_set_epi32(4, 4, 4, 4);
+#else
+   fours = _mm_set_ps1(4.0f);
+#endif
    ALLOC(y, N+3, celt_norm);
    ALLOC(X, N+3, celt_norm);
    ALLOC(signx, N, int);
@@ -201,13 +211,9 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
       }  while (++j<N);
 
       /* If X is too small, just replace it with a pulse at 0 */
-#ifdef FIXED_POINT
-      if (sum <= K)
-#else
       /* Prevents infinities and NaNs from causing too many pulses
          to be allocated. 64 is an approximation of infinity here. */
       if (!(sum > EPSILON && sum < 64))
-#endif
       {
          X[0] = QCONST16(1.f,14);
          j=1; do
@@ -217,12 +223,7 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
       }
       rcp = EXTRACT16(MULT16_32_Q16(K-1, celt_rcp(sum)));
       j=0; do {
-#ifdef FIXED_POINT
-         /* It's really important to round *towards zero* here */
-         iy[j] = MULT16_16_Q15(X[j],rcp);
-#else
          iy[j] = (int)floor(rcp*X[j]);
-#endif
          y[j] = (celt_norm)iy[j];
          yy = MAC16_16(yy, y[j],y[j]);
          xy = MAC16_16(xy, X[j],y[j]);
@@ -234,9 +235,6 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
 
    /* This should never happen, but just in case it does (e.g. on silence)
       we fill the first bin with pulses. */
-#ifdef FIXED_POINT_DEBUG
-   celt_assert2(pulsesLeft<=N+3, "Not enough pulses in the quick pass");
-#endif
    if (pulsesLeft > N+3)
    {
       opus_val16 tmp = (opus_val16)pulsesLeft;
@@ -246,13 +244,6 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
       pulsesLeft=0;
    }
 
-#ifdef PVQ_SEARCH_INT
-   __m128i fours;
-   fours = _mm_set_epi32(4, 4, 4, 4);
-#else
-   __m128 fours;
-   fours = _mm_set_ps1(4.0f);
-#endif
    for (i=0;i<pulsesLeft;i++)
    {
       int best_id;
