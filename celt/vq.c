@@ -161,7 +161,7 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
 
 #define PVQ_SEARCH_INT (1)
 
-static float compute_search_vec(const float *_X, int *iy, int K, int N)
+static float compute_search_vec(float *_X, int *iy, int K, int N)
 {
    int i, j;
    opus_val32 sum;
@@ -343,9 +343,8 @@ static float compute_search_vec(const float *_X, int *iy, int K, int N)
    return yy;
 }
 
-static float compute_search_vec_c(const float *_X, int *iy, int K, int N)
+static float compute_search_vec_c(float *X, int *iy, int K, int N)
 {
-   VARDECL(celt_norm, X);
    VARDECL(celt_norm, y);
    VARDECL(int, signx);
    int i, j;
@@ -355,21 +354,18 @@ static float compute_search_vec_c(const float *_X, int *iy, int K, int N)
    opus_val16 yy;
    SAVE_STACK;
 
-   ALLOC(y, N+3, celt_norm);
-   ALLOC(X, N+3, celt_norm);
+   ALLOC(y, N, celt_norm);
    ALLOC(signx, N, int);
 
    /* Get rid of the sign */
    sum = 0;
    j=0; do {
-      signx[j] = _X[j]<0;
+      signx[j] = X[j]<0;
       /* OPT: Make sure the compiler doesn't use a branch on ABS16(). */
-      X[j] = ABS16(_X[j]);
+      X[j] = ABS16(X[j]);
       iy[j] = 0;
       y[j] = 0;
    } while (++j<N);
-   X[N] = X[N+1] = X[N+2] = -100;
-   y[N] = y[N+1] = y[N+2] = 100;
 
    xy = yy = 0;
 
