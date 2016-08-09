@@ -206,6 +206,7 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    if (K > (N>>1))
    {
       opus_val16 rcp;
+      __m128 rcp4;
       opus_val32 sum = _mm_cvtss_f32(sums);
       /* If X is too small, just replace it with a pulse at 0 */
       /* Prevents infinities and NaNs from causing too many pulses
@@ -219,9 +220,18 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
          sum = QCONST16(1.f,14);
       }
       rcp = EXTRACT16(MULT16_32_Q16(K-1, celt_rcp(sum)));
+      rcp4 = _mm_load_ps1(&rcp);
+      for (j=0;j<N;j+=4)
+      {
+         __m128 x4;
+         __m128i iy4;
+         x4 = _mm_loadu_ps(&X[j]);
+         x4 = _mm_mul_ps(x4, rcp4);
+         iy4 = _mm_cvttps_epi32(x4);
+         _mm_storeu_si128((__m128i*)&iy[j], iy4);
+         _mm_storeu_ps(&y[j], _mm_cvtepi32_ps(iy4));
+      }
       j=0; do {
-         iy[j] = (int)floor(rcp*X[j]);
-         y[j] = (celt_norm)iy[j];
          yy = MAC16_16(yy, y[j],y[j]);
          xy = MAC16_16(xy, X[j],y[j]);
          y[j] *= 2;
