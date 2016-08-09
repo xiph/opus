@@ -169,7 +169,8 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    float xy, yy;
    VARDECL(celt_norm, y);
    VARDECL(celt_norm, X);
-   VARDECL(int, signx);
+   VARDECL(float, signy);
+   __m128 signmask;
 #ifdef PVQ_SEARCH_INT
    __m128i fours;
 #else
@@ -177,6 +178,8 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
 #endif
    SAVE_STACK;
 
+   /* All bits set to zero, except for the sign bit. */
+   signmask = _mm_set_ps1(-0.f);
 #ifdef PVQ_SEARCH_INT
    fours = _mm_set_epi32(4, 4, 4, 4);
 #else
@@ -184,19 +187,21 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
 #endif
    ALLOC(y, N+3, celt_norm);
    ALLOC(X, N+3, celt_norm);
-   ALLOC(signx, N, int);
+   ALLOC(signy, N+3, float);
 
-   /* Get rid of the sign */
+   for (j=0;j<N;j+=4)
+   {
+      __m128 x4, s4;
+      x4 = _mm_loadu_ps(&_X[j]);
+      s4 = _mm_cmplt_ps(x4, _mm_setzero_ps());
+      /* Get rid of the sign */
+      x4 = _mm_andnot_ps(signmask, x4);
+      _mm_storeu_ps(&X[j], x4);
+      _mm_storeu_ps(&signy[j], s4);
+      _mm_storeu_ps(&y[j], _mm_setzero_ps());
+      _mm_storeu_si128((__m128i*)&iy[j], _mm_setzero_si128());
+   }
    sum = 0;
-   j=0; do {
-      signx[j] = _X[j]<0;
-      /* OPT: Make sure the compiler doesn't use a branch on ABS16(). */
-      X[j] = ABS16(_X[j]);
-      iy[j] = 0;
-      y[j] = 0;
-   } while (++j<N);
-   X[N] = X[N+1] = X[N+2] = -100;
-   y[N] = y[N+1] = y[N+2] = 100;
 
    xy = yy = 0;
 
@@ -231,6 +236,8 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
          pulsesLeft -= iy[j];
       }  while (++j<N);
    }
+   X[N] = X[N+1] = X[N+2] = -100;
+   y[N] = y[N+1] = y[N+2] = 100;
    celt_assert2(pulsesLeft>=1, "Allocated too many pulses in the quick pass");
 
    /* This should never happen, but just in case it does (e.g. on silence)
@@ -323,13 +330,15 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    }
 
    /* Put the original sign back */
-   j=0;
-   do {
-      /*iy[j] = signx[j] ? -iy[j] : iy[j];*/
-      /* OPT: The is more likely to be compiled without a branch than the code above
-         but has the same performance otherwise. */
-      iy[j] = (iy[j]^-signx[j]) + signx[j];
-   } while (++j<N);
+   for (j=0;j<N;j+=4)
+   {
+      __m128i y4;
+      __m128i s4;
+      y4 = _mm_loadu_si128((__m128i*)&iy[j]);
+      s4 = _mm_castps_si128(_mm_loadu_ps(&signy[j]));
+      y4 = _mm_xor_si128(_mm_add_epi32(y4, s4), s4);
+      _mm_storeu_si128((__m128i*)&iy[j], y4);
+   }
    RESTORE_STACK;
    return yy;
 }
