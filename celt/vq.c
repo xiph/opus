@@ -38,7 +38,6 @@
 #include "bands.h"
 #include "rate.h"
 #include "pitch.h"
-#include <xmmintrin.h>
 
 #ifndef OVERRIDE_vq_exp_rotation1
 static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_val16 s)
