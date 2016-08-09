@@ -159,7 +159,7 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    return collapse_mask;
 }
 
-static float compute_search_vec(float *_X, int *iy, int K, int N)
+static float op_pvq_search_sse(celt_norm *_X, int *iy, int K, int N)
 {
    int i, j;
    int pulsesLeft;
@@ -190,10 +190,11 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
       /* Get rid of the sign */
       x4 = _mm_andnot_ps(signmask, x4);
       sums = _mm_add_ps(sums, x4);
-      _mm_storeu_ps(&X[j], x4);
-      _mm_storeu_ps(&signy[j], s4);
+      /* Clear y and iy in case we don't do the projection. */
       _mm_storeu_ps(&y[j], _mm_setzero_ps());
       _mm_storeu_si128((__m128i*)&iy[j], _mm_setzero_si128());
+      _mm_storeu_ps(&X[j], x4);
+      _mm_storeu_ps(&signy[j], s4);
    }
    sums = _mm_add_ps(sums, _mm_shuffle_ps(sums, sums, _MM_SHUFFLE(1, 0, 3, 2)));
    sums = _mm_add_ps(sums, _mm_shuffle_ps(sums, sums, _MM_SHUFFLE(2, 3, 0, 1)));
@@ -330,7 +331,7 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    return yy;
 }
 
-static float compute_search_vec_c(float *X, int *iy, int K, int N)
+static float op_pvq_search_c(celt_norm *X, int *iy, int K, int N)
 {
    VARDECL(celt_norm, y);
    VARDECL(int, signx);
@@ -506,9 +507,9 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    exp_rotation(X, N, 1, B, K, spread);
 
 #if 1
-   yy = compute_search_vec(X, iy, K, N);
+   yy = op_pvq_search_sse(X, iy, K, N);
 #else
-   yy = compute_search_vec_c(X, iy, K, N);
+   yy = op_pvq_search_c(X, iy, K, N);
 #endif
 
    encode_pulses(iy, N, K, enc);
