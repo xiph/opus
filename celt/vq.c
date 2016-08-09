@@ -205,8 +205,8 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    /* Do a pre-search by projecting on the pyramid */
    if (K > (N>>1))
    {
+      __m128i pulses_sum;
       __m128 yy4, xy4;
-      opus_val16 rcp;
       __m128 rcp4;
       opus_val32 sum = _mm_cvtss_f32(sums);
       /* If X is too small, just replace it with a pulse at 0 */
@@ -218,11 +218,11 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
          j=1; do
             X[j]=0;
          while (++j<N);
-         sum = QCONST16(1.f,14);
+         sums = _mm_set_ps1(1.f);
       }
-      rcp = EXTRACT16(MULT16_32_Q16(K-1, celt_rcp(sum)));
-      rcp4 = _mm_load_ps1(&rcp);
+      rcp4 = _mm_mul_ps(_mm_set_ps1((float)(K-1)), _mm_rcp_ps(sums));
       xy4 = yy4 = _mm_setzero_ps();
+      pulses_sum = _mm_setzero_si128();
       for (j=0;j<N;j+=4)
       {
          __m128 rx4, x4, y4;
@@ -230,6 +230,7 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
          x4 = _mm_loadu_ps(&X[j]);
          rx4 = _mm_mul_ps(x4, rcp4);
          iy4 = _mm_cvttps_epi32(rx4);
+         pulses_sum = _mm_add_epi32(pulses_sum, iy4);
          _mm_storeu_si128((__m128i*)&iy[j], iy4);
          y4 = _mm_cvtepi32_ps(iy4);
          xy4 = _mm_add_ps(xy4, _mm_mul_ps(x4, y4));
@@ -237,9 +238,9 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
          /* double the y[] vector so we don't have to do it in the search loop. */
          _mm_storeu_ps(&y[j], _mm_add_ps(y4, y4));
       }
-      j=0; do {
-         pulsesLeft -= iy[j];
-      }  while (++j<N);
+      pulses_sum = _mm_add_epi32(pulses_sum, _mm_shuffle_epi32(pulses_sum, _MM_SHUFFLE(1, 0, 3, 2)));
+      pulses_sum = _mm_add_epi32(pulses_sum, _mm_shuffle_epi32(pulses_sum, _MM_SHUFFLE(2, 3, 0, 1)));
+      pulsesLeft -= _mm_cvtsi128_si32(pulses_sum);
       xy4 = _mm_add_ps(xy4, _mm_shuffle_ps(xy4, xy4, _MM_SHUFFLE(1, 0, 3, 2)));
       xy4 = _mm_add_ps(xy4, _mm_shuffle_ps(xy4, xy4, _MM_SHUFFLE(2, 3, 0, 1)));
       xy = _mm_cvtss_f32(xy4);
