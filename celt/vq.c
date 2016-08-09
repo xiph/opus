@@ -205,6 +205,7 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    /* Do a pre-search by projecting on the pyramid */
    if (K > (N>>1))
    {
+      __m128 yy4, xy4;
       opus_val16 rcp;
       __m128 rcp4;
       opus_val32 sum = _mm_cvtss_f32(sums);
@@ -221,22 +222,30 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
       }
       rcp = EXTRACT16(MULT16_32_Q16(K-1, celt_rcp(sum)));
       rcp4 = _mm_load_ps1(&rcp);
+      xy4 = yy4 = _mm_setzero_ps();
       for (j=0;j<N;j+=4)
       {
-         __m128 x4;
+         __m128 rx4, x4, y4;
          __m128i iy4;
          x4 = _mm_loadu_ps(&X[j]);
-         x4 = _mm_mul_ps(x4, rcp4);
-         iy4 = _mm_cvttps_epi32(x4);
+         rx4 = _mm_mul_ps(x4, rcp4);
+         iy4 = _mm_cvttps_epi32(rx4);
          _mm_storeu_si128((__m128i*)&iy[j], iy4);
-         _mm_storeu_ps(&y[j], _mm_cvtepi32_ps(iy4));
+         y4 = _mm_cvtepi32_ps(iy4);
+         xy4 = _mm_add_ps(xy4, _mm_mul_ps(x4, y4));
+         yy4 = _mm_add_ps(yy4, _mm_mul_ps(y4, y4));
+         /* double the y[] vector so we don't have to do it in the search loop. */
+         _mm_storeu_ps(&y[j], _mm_add_ps(y4, y4));
       }
       j=0; do {
-         yy = MAC16_16(yy, y[j],y[j]);
-         xy = MAC16_16(xy, X[j],y[j]);
-         y[j] *= 2;
          pulsesLeft -= iy[j];
       }  while (++j<N);
+      xy4 = _mm_add_ps(xy4, _mm_shuffle_ps(xy4, xy4, _MM_SHUFFLE(1, 0, 3, 2)));
+      xy4 = _mm_add_ps(xy4, _mm_shuffle_ps(xy4, xy4, _MM_SHUFFLE(2, 3, 0, 1)));
+      xy = _mm_cvtss_f32(xy4);
+      yy4 = _mm_add_ps(yy4, _mm_shuffle_ps(yy4, yy4, _MM_SHUFFLE(1, 0, 3, 2)));
+      yy4 = _mm_add_ps(yy4, _mm_shuffle_ps(yy4, yy4, _MM_SHUFFLE(2, 3, 0, 1)));
+      yy = _mm_cvtss_f32(yy4);
    }
    X[N] = X[N+1] = X[N+2] = -100;
    y[N] = y[N+1] = y[N+2] = 100;
