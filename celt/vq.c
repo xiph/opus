@@ -159,8 +159,6 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    return collapse_mask;
 }
 
-#define PVQ_SEARCH_INT (1)
-
 static float compute_search_vec(float *_X, int *iy, int K, int N)
 {
    int i, j;
@@ -171,20 +169,12 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
    VARDECL(float, signy);
    __m128 signmask;
    __m128 sums;
-#ifdef PVQ_SEARCH_INT
    __m128i fours;
-#else
-   __m128 fours;
-#endif
    SAVE_STACK;
 
    /* All bits set to zero, except for the sign bit. */
    signmask = _mm_set_ps1(-0.f);
-#ifdef PVQ_SEARCH_INT
    fours = _mm_set_epi32(4, 4, 4, 4);
-#else
-   fours = _mm_set_ps1(4.0f);
-#endif
    ALLOC(y, N+3, celt_norm);
    ALLOC(X, N+3, celt_norm);
    ALLOC(signy, N+3, float);
@@ -258,13 +248,8 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
       int best_id;
       __m128 xy4, yy4;
       __m128 max, max2;
-#ifdef PVQ_SEARCH_INT
       __m128i count;
       __m128i pos;
-#else
-      __m128 count;
-      __m128 pos;
-#endif
       best_id = 0;
       /* The squared magnitude term gets added anyway, so we might as well
          add it outside the loop */
@@ -272,13 +257,8 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
       xy4 = _mm_load1_ps(&xy);
       yy4 = _mm_load1_ps(&yy);
       max = _mm_setzero_ps();
-#ifdef PVQ_SEARCH_INT
       pos = _mm_setzero_si128();
       count = _mm_set_epi32(3, 2, 1, 0);
-#else
-      pos = _mm_setzero_ps();
-      count = _mm_set_ps(3., 2., 1., 0.);
-#endif
       for (j=0;j<N;j+=4)
       {
          __m128 x4, y4, r4;
@@ -288,38 +268,23 @@ static float compute_search_vec(float *_X, int *iy, int K, int N)
          y4 = _mm_add_ps(y4, yy4);
          y4 = _mm_rsqrt_ps(y4);
          r4 = _mm_mul_ps(x4, y4);
-#ifdef PVQ_SEARCH_INT
          /* Update the index of the max. */
          pos = _mm_max_epi16(pos, _mm_and_si128(count, _mm_castps_si128(_mm_cmpgt_ps(r4, max))));
          /* Update the max. */
          max = _mm_max_ps(max, r4);
          /* Update the indices (+4) */
          count = _mm_add_epi32(count, fours);
-#else
-         /* Update the index of the max. */
-         pos = _mm_max_ps(pos, _mm_and_ps(count, _mm_cmpgt_ps(r4, max)));
-         /* Update the max. */
-         max = _mm_max_ps(max, r4);
-         /* Update the indices (+4) */
-         count = _mm_add_ps(count, fours);
-#endif
       }
       /* Horizontal max */
       max2 = _mm_max_ps(max, _mm_shuffle_ps(max, max, _MM_SHUFFLE(1, 0, 3, 2)));
       max2 = _mm_max_ps(max2, _mm_shuffle_ps(max2, max2, _MM_SHUFFLE(2, 3, 0, 1)));
       /* Now that max2 contains the max at all positions, look at which value(s) of the
          partial max is equal to the global max. */
-#ifdef PVQ_SEARCH_INT
       pos = _mm_and_si128(pos, _mm_castps_si128(_mm_cmpeq_ps(max, max2)));
       pos = _mm_max_epi16(pos, _mm_unpackhi_epi64(pos, pos));
       pos = _mm_max_epi16(pos, _mm_shufflelo_epi16(pos, _MM_SHUFFLE(1, 0, 3, 2)));
       best_id = _mm_cvtsi128_si32(pos);
-#else
-      pos = _mm_and_ps(pos, _mm_cmpeq_ps(max, max2));
-      pos = _mm_max_ps(pos, _mm_shuffle_ps(pos, pos, _MM_SHUFFLE(1, 0, 3, 2)));
-      pos = _mm_max_ps(pos, _mm_shuffle_ps(pos, pos, _MM_SHUFFLE(2, 3, 0, 1)));
-      best_id = _mm_cvt_ss2si(pos);
-#endif
+
       /* Updating the sums of the new pulse(s) */
       xy = ADD32(xy, EXTEND32(X[best_id]));
       /* We're multiplying y[j] by two so we don't have to do it here */
@@ -515,7 +480,8 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    celt_assert2(K>0, "alg_quant() needs at least one pulse");
    celt_assert2(N>1, "alg_quant() needs at least two dimensions");
 
-   ALLOC(iy, N, int);
+   /* Covers vectorization by up to 4. */
+   ALLOC(iy, N+3, int);
 
    exp_rotation(X, N, 1, B, K, spread);
 
