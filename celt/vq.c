@@ -158,28 +158,20 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    return collapse_mask;
 }
 
-unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
-      opus_val16 gain, int resynth)
+opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch)
 {
    VARDECL(celt_norm, y);
-   VARDECL(int, iy);
    VARDECL(int, signx);
    int i, j;
    int pulsesLeft;
    opus_val32 sum;
    opus_val32 xy;
    opus_val16 yy;
-   unsigned collapse_mask;
    SAVE_STACK;
 
-   celt_assert2(K>0, "alg_quant() needs at least one pulse");
-   celt_assert2(N>1, "alg_quant() needs at least two dimensions");
-
+   (void)arch;
    ALLOC(y, N, celt_norm);
-   ALLOC(iy, N, int);
    ALLOC(signx, N, int);
-
-   exp_rotation(X, N, 1, B, K, spread);
 
    /* Get rid of the sign */
    sum = 0;
@@ -322,6 +314,28 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
          but has the same performance otherwise. */
       iy[j] = (iy[j]^-signx[j]) + signx[j];
    } while (++j<N);
+   RESTORE_STACK;
+   return yy;
+}
+
+unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
+      opus_val16 gain, int resynth, int arch)
+{
+   VARDECL(int, iy);
+   opus_val16 yy;
+   unsigned collapse_mask;
+   SAVE_STACK;
+
+   celt_assert2(K>0, "alg_quant() needs at least one pulse");
+   celt_assert2(N>1, "alg_quant() needs at least two dimensions");
+
+   /* Covers vectorization by up to 4. */
+   ALLOC(iy, N+3, int);
+
+   exp_rotation(X, N, 1, B, K, spread);
+
+   yy = op_pvq_search(X, iy, K, N, arch);
+
    encode_pulses(iy, N, K, enc);
 
    if (resynth)
