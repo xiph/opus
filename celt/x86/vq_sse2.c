@@ -39,6 +39,7 @@
 #include "x86cpu.h"
 
 
+#ifndef FIXED_POINT
 
 opus_val16 op_pvq_search_sse2(celt_norm *_X, int *iy, int K, int N, int arch)
 {
@@ -212,3 +213,5 @@ opus_val16 op_pvq_search_sse2(celt_norm *_X, int *iy, int K, int N, int arch)
    RESTORE_STACK;
    return yy;
 }
+
+#endif
