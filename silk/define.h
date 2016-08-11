@@ -173,11 +173,7 @@ extern "C"
 
 #define MAX_MATRIX_SIZE                         MAX_LPC_ORDER /* Max of LPC Order and LTP order */
 
-#if( MAX_LPC_ORDER > DECISION_DELAY )
 # define NSQ_LPC_BUF_LENGTH                     MAX_LPC_ORDER
-#else
-# define NSQ_LPC_BUF_LENGTH                     DECISION_DELAY
-#endif
 
 /***************************/
 /* Voice activity detector */
