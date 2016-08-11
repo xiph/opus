@@ -29,12 +29,16 @@
 #include "config.h"
 #endif
 
+#define ANALYSIS_C
+
+#include <stdio.h>
+
+#include "mathops.h"
 #include "kiss_fft.h"
 #include "celt.h"
 #include "modes.h"
 #include "arch.h"
 #include "quant_bands.h"
-#include <stdio.h>
 #include "analysis.h"
 #include "mlp.h"
 #include "stack_alloc.h"
@@ -109,28 +113,6 @@ static const int extra_bands[NB_TOT_BANDS+1] = {
 
 #define NB_TONAL_SKIP_BANDS 9
 
-#define cA 0.43157974f
-#define cB 0.67848403f
-#define cC 0.08595542f
-#define cE ((float)M_PI/2)
-static OPUS_INLINE float fast_atan2f(float y, float x) {
-   float x2, y2;
-   x2 = x*x;
-   y2 = y*y;
-   /* For very small values, we don't care about the answer, so
-      we can just return 0. */
-   if (x2 + y2 < 1e-18f)
-   {
-      return 0;
-   }
-   if(x2<y2){
-      float den = (y2 + cB*x2) * (y2 + cC*x2);
-      return -x*y*(y2 + cA*x2) / den + (y<0 ? -cE : cE);
-   }else{
-      float den = (x2 + cB*y2) * (x2 + cC*y2);
-      return  x*y*(x2 + cA*y2) / den + (y<0 ? -cE : cE) - (x*y<0 ? -cE : cE);
-   }
-}
 
 void tonality_analysis_init(TonalityAnalysisState *tonal)
 {

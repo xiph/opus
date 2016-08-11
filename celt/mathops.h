@@ -43,6 +43,37 @@
 
 unsigned isqrt32(opus_uint32 _val);
 
+/* CELT doesn't need it for fixed-point, by analysis.c does. */
+#if !defined(FIXED_POINT) || defined(ANALYSIS_C)
+#define cA 0.43157974f
+#define cB 0.67848403f
+#define cC 0.08595542f
+#define cE ((float)M_PI/2)
+static OPUS_INLINE float fast_atan2f(float y, float x) {
+   float x2, y2;
+   x2 = x*x;
+   y2 = y*y;
+   /* For very small values, we don't care about the answer, so
+      we can just return 0. */
+   if (x2 + y2 < 1e-18f)
+   {
+      return 0;
+   }
+   if(x2<y2){
+      float den = (y2 + cB*x2) * (y2 + cC*x2);
+      return -x*y*(y2 + cA*x2) / den + (y<0 ? -cE : cE);
+   }else{
+      float den = (x2 + cB*y2) * (x2 + cC*y2);
+      return  x*y*(x2 + cA*y2) / den + (y<0 ? -cE : cE) - (x*y<0 ? -cE : cE);
+   }
+}
+#undef cA
+#undef cB
+#undef cC
+#undef cD
+#endif
+
+
 #ifndef OVERRIDE_CELT_MAXABS16
 static OPUS_INLINE opus_val32 celt_maxabs16(const opus_val16 *x, int len)
 {
