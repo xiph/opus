@@ -225,7 +225,7 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
          /* Shortcut for the standard (non-custom modes) case */
          for (j=0;j<N;j++)
          {
-            celt_sig tmp = x[j] + m + VERY_SMALL;
+            celt_sig tmp = x[j] + VERY_SMALL + m;
             m = MULT16_32_Q15(coef0, tmp);
             scratch[j] = tmp;
          }
@@ -246,7 +246,7 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
          {
             for (j=0;j<N;j++)
             {
-               celt_sig tmp = x[j] + m + VERY_SMALL;
+               celt_sig tmp = x[j] + VERY_SMALL + m;
                m = MULT16_32_Q15(coef0, tmp);
                y[j*C] = SCALEOUT(SIG2WORD16(tmp));
             }
