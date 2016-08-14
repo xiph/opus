@@ -177,6 +177,36 @@ void opus_custom_decoder_destroy(CELTDecoder *st)
 }
 #endif /* CUSTOM_MODES */
 
+#ifndef CUSTOM_MODES
+/* Special case for stereo with no downsampling and no accumulation. This is
+   quite common and we can make it faster by processing both channels in the
+   same loop, reducing overhead due to the dependency loop in the IIR filter. */
+static void deemphasis_stereo_simple(celt_sig *in[], opus_val16 *pcm, int N, const opus_val16 coef0,
+      celt_sig *mem)
+{
+   celt_sig * OPUS_RESTRICT x0;
+   celt_sig * OPUS_RESTRICT x1;
+   celt_sig m0, m1;
+   int j;
+   x0=in[0];
+   x1=in[1];
+   m0 = mem[0];
+   m1 = mem[1];
+   for (j=0;j<N;j++)
+   {
+      celt_sig tmp0, tmp1;
+      /* Add VERY_SMALL to x[] first to reduce dependency chain. */
+      tmp0 = x0[j] + VERY_SMALL + m0;
+      tmp1 = x1[j] + VERY_SMALL + m1;
+      m0 = MULT16_32_Q15(coef0, tmp0);
+      m1 = MULT16_32_Q15(coef0, tmp1);
+      pcm[2*j  ] = SCALEOUT(SIG2WORD16(tmp0));
+      pcm[2*j+1] = SCALEOUT(SIG2WORD16(tmp1));
+   }
+   mem[0] = m0;
+   mem[1] = m1;
+}
+#endif
 
 #ifndef RESYNTH
 static
@@ -190,6 +220,14 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
    opus_val16 coef0;
    VARDECL(celt_sig, scratch);
    SAVE_STACK;
+#ifndef CUSTOM_MODES
+   /* Short version for common case. */
+   if (downsample == 1 && C == 2 && !accum)
+   {
+      deemphasis_stereo_simple(in, pcm, N, coef[0], mem);
+      return;
+   }
+#endif
 #ifndef FIXED_POINT
    (void)accum;
    celt_assert(accum==0);
