@@ -1116,24 +1116,21 @@ static int is_digital_silence(const opus_val16* pcm, int frame_size, int lsb_dep
    return silence;
 }
 
-static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size)
+#ifdef FIXED_POINT
+static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size, int arch)
 {
    int i;
-#ifdef FIXED_POINT
    opus_val32 sample_max;
    int max_shift;
    int shift;
-#endif
    opus_val32 energy = 0;
-
-#ifdef FIXED_POINT
+   (void)arch;
    /* Max amplitude in the signal */
    sample_max = celt_maxabs16(pcm, frame_size);
 
    /* Compute the right shift required in the MAC to avoid an overflow */
    max_shift = celt_ilog2(frame_size);
    shift = IMAX(0, (celt_ilog2(sample_max) << 1) + max_shift - 28);
-#endif
 
    /* Compute the energy */
    for (i=0; i<frame_size; i++)
@@ -1145,6 +1142,12 @@ static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size)
 
    return energy;
 }
+#else
+static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size, int arch)
+{
+   return celt_inner_prod(pcm, pcm, frame_size, arch)/frame_size;
+}
+#endif
 
 /* Decides if DTX should be turned on (=1) or off (=0) */
 static int decide_dtx_mode(float activity_probability,    /* probability that current frame contains speech/music */
@@ -1152,7 +1155,8 @@ static int decide_dtx_mode(float activity_probability,    /* probability that cu
                            opus_val32 peak_signal_energy, /* peak energy of desired signal detected so far */
                            const opus_val16 *pcm,         /* input pcm signal */
                            int frame_size,                /* frame size */
-                           int is_silence                 /* only digital silence detected in this frame */
+                           int is_silence,                 /* only digital silence detected in this frame */
+                           int arch
                           )
 {
    int is_noise;
@@ -1164,7 +1168,7 @@ static int decide_dtx_mode(float activity_probability,    /* probability that cu
       is_noise = activity_probability < DTX_ACTIVITY_THRESHOLD;
       if (is_noise)
       {
-         noise_energy = compute_frame_energy(pcm, frame_size);
+         noise_energy = compute_frame_energy(pcm, frame_size, arch);
          is_sufficiently_quiet = peak_signal_energy >= (PSEUDO_SNR_THRESHOLD * noise_energy);
       }
    }
@@ -1276,7 +1280,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
        /* Track the peak signal energy */
        if (!is_silence && analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD)
-          st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999, 15), st->peak_signal_energy), compute_frame_energy(pcm, frame_size));
+          st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999, 15), st->peak_signal_energy),
+                compute_frame_energy(pcm, frame_size, st->arch));
     }
 #else
     (void)analysis_pcm;
@@ -2238,7 +2243,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifndef DISABLE_FLOAT_API
     if (st->use_dtx && (analysis_info.valid || is_silence))
     {
-       if (decide_dtx_mode(analysis_info.activity_probability, &st->nb_no_activity_frames, st->peak_signal_energy, pcm, frame_size, is_silence))
+       if (decide_dtx_mode(analysis_info.activity_probability, &st->nb_no_activity_frames, st->peak_signal_energy, pcm, frame_size, is_silence, st->arch))
        {
           st->rangeFinal = 0;
           data[0] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
