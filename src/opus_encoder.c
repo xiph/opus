@@ -403,24 +403,57 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 #else
 static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs)
 {
-   int c, i;
-   float coef;
-
+   int i;
+   float coef, coef2;
    coef = 4.0f*cutoff_Hz/Fs;
-   for (c=0;c<channels;c++)
+   coef2 = 1-coef;
+   if (channels==2)
    {
+      float m0, m1, m2, m3;
+      m0 = hp_mem[0];
+      m1 = hp_mem[1];
+      m2 = hp_mem[2];
+      m3 = hp_mem[3];
+      for (i=0;i<len;i++)
+      {
+         opus_val32 x0, x1, tmp0, tmp1, y0, y1;
+         x0 = in[2*i+0];
+         x1 = in[2*i+1];
+         /* First stage */
+         tmp0 = x0-m0;
+         tmp1 = x1-m2;
+         m0 = coef*x0 + VERY_SMALL - coef2*m0;
+         m2 = coef*x1 + VERY_SMALL - coef2*m2;
+         /* Second stage */
+         y0 = tmp0 - m1;
+         y1 = tmp1 - m3;
+         m1 = coef*tmp0 + VERY_SMALL + coef2*m1;
+         m3 = coef*tmp1 + VERY_SMALL + coef2*m3;
+         out[2*i+0] = y0;
+         out[2*i+1] = y1;
+      }
+      hp_mem[0] = m0;
+      hp_mem[1] = m1;
+      hp_mem[2] = m2;
+      hp_mem[3] = m3;
+   } else {
+      float m0, m1;
+      m0 = hp_mem[0];
+      m1 = hp_mem[1];
       for (i=0;i<len;i++)
       {
          opus_val32 x, tmp, y;
-         x = in[channels*i+c];
+         x = in[i];
          /* First stage */
-         tmp = x-hp_mem[2*c];
-         hp_mem[2*c] = coef*x + VERY_SMALL - (1-coef)*hp_mem[2*c];
+         tmp = x-m0;
+         m0 = coef*x + VERY_SMALL - coef2*m0;
          /* Second stage */
-         y = tmp - hp_mem[2*c+1];
-         hp_mem[2*c+1] = coef*tmp + VERY_SMALL + (1-coef)*hp_mem[2*c+1];
-         out[channels*i+c] = y;
+         y = tmp - m1;
+         m1 = coef*tmp + VERY_SMALL + coef2*m1;
+         out[i] = y;
       }
+      hp_mem[0] = m0;
+      hp_mem[1] = m1;
    }
 }
 #endif
