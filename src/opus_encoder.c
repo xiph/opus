@@ -422,8 +422,8 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
          /* First stage */
          tmp0 = x0-m0;
          tmp1 = x1-m2;
-         m0 = coef*x0 + VERY_SMALL - coef2*m0;
-         m2 = coef*x1 + VERY_SMALL - coef2*m2;
+         m0 = coef*x0 + VERY_SMALL + coef2*m0;
+         m2 = coef*x1 + VERY_SMALL + coef2*m2;
          /* Second stage */
          y0 = tmp0 - m1;
          y1 = tmp1 - m3;
@@ -446,7 +446,7 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
          x = in[i];
          /* First stage */
          tmp = x-m0;
-         m0 = coef*x + VERY_SMALL - coef2*m0;
+         m0 = coef*x + VERY_SMALL + coef2*m0;
          /* Second stage */
          y = tmp - m1;
          m1 = coef*tmp + VERY_SMALL + coef2*m1;
