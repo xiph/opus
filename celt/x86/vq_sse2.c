@@ -104,7 +104,8 @@ opus_val16 op_pvq_search_sse2(celt_norm *_X, int *iy, int K, int N, int arch)
          while (++j<N);
          sums = _mm_set_ps1(1.f);
       }
-      rcp4 = _mm_mul_ps(_mm_set_ps1((float)(K-1)), _mm_rcp_ps(sums));
+      /* Using K+e with e < 1 guarantees we cannot get more than K pulses. */
+      rcp4 = _mm_mul_ps(_mm_set_ps1((float)(K+.8)), _mm_rcp_ps(sums));
       xy4 = yy4 = _mm_setzero_ps();
       pulses_sum = _mm_setzero_si128();
       for (j=0;j<N;j+=4)
@@ -134,7 +135,7 @@ opus_val16 op_pvq_search_sse2(celt_norm *_X, int *iy, int K, int N, int arch)
    }
    X[N] = X[N+1] = X[N+2] = -100;
    y[N] = y[N+1] = y[N+2] = 100;
-   celt_assert2(pulsesLeft>=1, "Allocated too many pulses in the quick pass");
+   celt_assert2(pulsesLeft>=0, "Allocated too many pulses in the quick pass");
 
    /* This should never happen, but just in case it does (e.g. on silence)
       we fill the first bin with pulses. */
