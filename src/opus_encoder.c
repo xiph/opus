@@ -415,10 +415,10 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
          x = in[channels*i+c];
          /* First stage */
          tmp = x-hp_mem[2*c];
-         hp_mem[2*c] = hp_mem[2*c] + coef*(x - hp_mem[2*c]) + VERY_SMALL;
+         hp_mem[2*c] = coef*x + VERY_SMALL - (1-coef)*hp_mem[2*c];
          /* Second stage */
          y = tmp - hp_mem[2*c+1];
-         hp_mem[2*c+1] = hp_mem[2*c+1] + coef*(tmp - hp_mem[2*c+1]) + VERY_SMALL;
+         hp_mem[2*c+1] = coef*tmp + VERY_SMALL + (1-coef)*hp_mem[2*c+1];
          out[channels*i+c] = y;
       }
    }
