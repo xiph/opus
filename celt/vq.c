@@ -210,8 +210,12 @@ opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch)
          while (++j<N);
          sum = QCONST16(1.f,14);
       }
+#ifdef FIXED_POINT
+      rcp = EXTRACT16(MULT16_32_Q16(K, celt_rcp(sum)));
+#else
       /* Using K+e with e < 1 guarantees we cannot get more than K pulses. */
       rcp = EXTRACT16(MULT16_32_Q16(K+0.8, celt_rcp(sum)));
+#endif
       j=0; do {
 #ifdef FIXED_POINT
          /* It's really important to round *towards zero* here */
