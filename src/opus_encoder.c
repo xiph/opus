@@ -388,14 +388,14 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
       for (i=0;i<len;i++)
       {
          opus_val32 x, tmp, y;
-         x = SHL32(EXTEND32(in[channels*i+c]), 15);
+         x = SHL32(EXTEND32(in[channels*i+c]), 14);
          /* First stage */
          tmp = x-hp_mem[2*c];
          hp_mem[2*c] = hp_mem[2*c] + PSHR32(x - hp_mem[2*c], shift);
          /* Second stage */
          y = tmp - hp_mem[2*c+1];
          hp_mem[2*c+1] = hp_mem[2*c+1] + PSHR32(tmp - hp_mem[2*c+1], shift);
-         out[channels*i+c] = EXTRACT16(SATURATE(PSHR32(y, 15), 32767));
+         out[channels*i+c] = EXTRACT16(SATURATE(PSHR32(y, 14), 32767));
       }
    }
 }
