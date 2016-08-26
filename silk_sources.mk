@@ -85,6 +85,7 @@ silk/x86/VQ_WMat_EC_sse.c
 
 SILK_SOURCES_ARM_NEON_INTR = \
 silk/arm/arm_silk_map.c \
+silk/arm/NSQ_del_dec_neon_intr.c \
 silk/arm/NSQ_neon.c
 
 SILK_SOURCES_FIXED = \
