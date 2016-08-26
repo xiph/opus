@@ -27,6 +27,7 @@ silk/arm/macros_armv5e.h \
 silk/arm/macros_arm64.h \
 silk/arm/SigProc_FIX_armv4.h \
 silk/arm/SigProc_FIX_armv5e.h \
+silk/arm/NSQ_del_dec_arm.h \
 silk/arm/NSQ_neon.h \
 silk/fixed/main_FIX.h \
 silk/fixed/structs_FIX.h \
