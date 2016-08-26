@@ -580,7 +580,9 @@ static OPUS_INLINE opus_int64 silk_max_64(opus_int64 a, opus_int64 b)
 /* Make sure to store the result as the seed for the next call (also in between     */
 /* frames), otherwise result won't be random at all. When only using some of the    */
 /* bits, take the most significant bits by right-shifting.                          */
-#define silk_RAND(seed)                     (silk_MLA_ovflw(907633515, (seed), 196314165))
+#define RAND_MULTIPLIER                     196314165
+#define RAND_INCREMENT                      907633515
+#define silk_RAND(seed)                     (silk_MLA_ovflw((RAND_INCREMENT), (seed), (RAND_MULTIPLIER)))
 
 /*  Add some multiplication functions that can be easily mapped to ARM. */
 
