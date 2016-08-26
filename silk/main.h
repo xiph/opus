@@ -42,6 +42,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "x86/main_sse.h"
 #endif
 
+#if (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
+#include "arm/NSQ_del_dec_arm.h"
+#endif
+
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */
 void silk_stereo_LR_to_MS(
     stereo_enc_state            *state,                         /* I/O  State                                       */
