@@ -811,9 +811,9 @@ void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, in
 #else
    scale = 1.f;
 #endif
-   if (C==-2)
+   if (c2==-2)
       scale /= C;
-   else
+   else if (c2>-1)
       scale /= 2;
    for (j=0;j<subframe;j++)
       sub[j] *= scale;
@@ -846,9 +846,9 @@ void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int 
 #else
    scale = 1.f/32768;
 #endif
-   if (C==-2)
+   if (c2==-2)
       scale /= C;
-   else
+   else if (c2>-1)
       scale /= 2;
    for (j=0;j<subframe;j++)
       sub[j] *= scale;
