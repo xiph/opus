@@ -861,13 +861,11 @@ static int opus_multistream_encode_native
 
    {
       opus_int32 delay_compensation;
-      int channels;
 
-      channels = st->layout.nb_streams + st->layout.nb_coupled_streams;
       opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_LOOKAHEAD(&delay_compensation));
       delay_compensation -= Fs/400;
       frame_size = compute_frame_size(pcm, analysis_frame_size,
-            st->variable_duration, channels, Fs, st->bitrate_bps,
+            st->variable_duration, st->layout.nb_channels, Fs, st->bitrate_bps,
             delay_compensation, downmix
 #ifndef DISABLE_FLOAT_API
             , st->subframe_mem
