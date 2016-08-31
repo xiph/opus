@@ -794,6 +794,15 @@ AC_ARG_ENABLE([extra-programs],
 AM_CONDITIONAL([EXTRA_PROGRAMS], [test "$enable_extra_programs" = "yes"])
 
 
+AC_ARG_ENABLE([update-draft],
+  AS_HELP_STRING([--enable-update-draft], [Enable bitstream changes from draft-ietf-codec-opus-update]),,
+  [enable_update_draft=no])
+
+AS_IF([test "$enable_update_draft" = "yes"], [
+  AC_DEFINE([ENABLE_UPDATE_DRAFT], [1], [Enable bitstream changes from draft-ietf-codec-opus-update])
+])
+
+
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden"
 AC_MSG_CHECKING([if ${CC} supports -fvisibility=hidden])
