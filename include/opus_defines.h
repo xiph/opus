@@ -683,7 +683,10 @@ extern "C" {
 #define OPUS_GET_SAMPLE_RATE(x) OPUS_GET_SAMPLE_RATE_REQUEST, __opus_check_int_ptr(x)
 
 /** If set to 1, disables the use of phase inversion for intensity stereo, improving the
-  * quality of mono downmixes, but slightly reducing normal stereo quality.
+  * quality of mono downmixes, but slightly reducing normal stereo quality. Disabling phase
+  * inversion does not comply with RFC6716, even though it does not cause any
+  * interoperability issue. It will become part of the Opus standard once RFC6716 gets
+  * updated with draft-ietf-codec-opus-update.
   * @see OPUS_GET_PHASE_INVERSION_DISABLED
   * @param[in] x <tt>opus_int32</tt>: Allowed values:
   * <dl>
