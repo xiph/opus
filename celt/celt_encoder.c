@@ -182,7 +182,6 @@ static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
    st->start = 0;
    st->end = st->mode->effEBands;
    st->signalling = 1;
-   st->disable_inv = channels == 1;
    st->arch = arch;
 
    st->constrained_vbr = 1;
