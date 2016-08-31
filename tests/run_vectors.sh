@@ -87,7 +87,7 @@ do
         echo ERROR: decoding failed
         exit 1
     fi
-    $OPUS_COMPARE -r $RATE $VECTOR_PATH/testvector${file}s.dec tmp.out >> logs_mono.txt 2>&1
+    $OPUS_COMPARE -r $RATE $VECTOR_PATH/testvector${file}.dec tmp.out >> logs_mono.txt 2>&1
     float_ret=$?
     $OPUS_COMPARE -r $RATE $VECTOR_PATH/testvector${file}m.dec tmp.out >> logs_mono2.txt 2>&1
     float_ret2=$?
@@ -118,7 +118,7 @@ do
         echo ERROR: decoding failed
         exit 1
     fi
-    $OPUS_COMPARE -s -r $RATE $VECTOR_PATH/testvector${file}s.dec tmp.out >> logs_stereo.txt 2>&1
+    $OPUS_COMPARE -s -r $RATE $VECTOR_PATH/testvector${file}.dec tmp.out >> logs_stereo.txt 2>&1
     float_ret=$?
     $OPUS_COMPARE -s -r $RATE $VECTOR_PATH/testvector${file}m.dec tmp.out >> logs_stereo2.txt 2>&1
     float_ret2=$?
