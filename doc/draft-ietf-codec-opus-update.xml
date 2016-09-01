@@ -10,7 +10,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-ietf-codec-opus-update-02"
+<rfc category="std" docName="draft-ietf-codec-opus-update-03"
      ipr="trust200902">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
@@ -47,7 +47,7 @@
 
 
 
-    <date day="1" month="July" year="2016" />
+    <date day="1" month="September" year="2016" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
@@ -62,8 +62,7 @@
       <xref target="RFC6716">RFC 6716</xref>. Only issues affecting the decoder are
       listed here. An up-to-date implementation of the Opus encoder can be found at
       http://opus-codec.org/. The updated specification remains fully compatible with
-      the original specification and only one of the changes results in any difference
-      in the audio output.
+      the original specification.
       </t>
     </section>
 
@@ -225,19 +224,56 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
     </t>
     </section>
 
-    <section title="Downmix to Mono" anchor="stereo">
-      <t>The last issue is not strictly a bug, but it is an issue that has been reported
-      when downmixing an Opus decoded stream to mono, whether this is done inside the decoder
-      or as a post-processing step on the stereo decoder output. Opus intensity stereo allows
-      optionally coding the two channels 180-degrees out of phase on a per-band basis.
-      This provides better stereo quality than forcing the two channels to be in phase,
-      but when the output is downmixed to mono, the energy in the affected bands is cancelled
-      sometimes resulting in audible artefacts.
+    <section title="Integer wrap-around in inverse gain computation">
+      <t>
+        It was discovered through decoder fuzzing that some bitstreams could produce
+        integer values exceeding 32-bits in LPC_inverse_pred_gain_QA(), causing
+        a wrap-around. Although the error is harmless in practice, the C standard considers
+        the behaviour as undefined, so the following patch detects values
+        that would cause wrap-around and considers the corresponding filters unstable:
       </t>
-      <t>As a work-around for this issue, the decoder MAY choose not to apply the 180-degree
-      phase shift when the output is meant to be downmixed (inside or
-      outside of the decoder).
+<figure>
+<artwork><![CDATA[
+         /* Update AR coefficient */
+         for( n = 0; n < k; n++ ) {
+-            tmp_QA = Aold_QA[ n ] - MUL32_FRAC_Q( \
+Aold_QA[ k - n - 1 ], rc_Q31, 31 );
+-            Anew_QA[ n ] = MUL32_FRAC_Q( tmp_QA, rc_mult2 , mult2Q );
++            opus_int64 tmp64;
++            tmp_QA = silk_SUB_SAT32( Aold_QA[ n ], MUL32_FRAC_Q( \
+Aold_QA[ k - n - 1 ], rc_Q31, 31 ) );
++            tmp64 = silk_RSHIFT_ROUND64( silk_SMULL( tmp_QA, \
+rc_mult2 ), mult2Q);
++            if( tmp64 > silk_int32_MAX || tmp64 < silk_int32_MIN ) {
++               return 0;
++            }
++            Anew_QA[ n ] = ( opus_int32 )tmp64;
+         }
+]]></artwork>
+</figure>
+    </section>
+
+    <section title="Integer wrap-around in LSF decoding">
+      <t>
+        It was discovered -- also from decoder fuzzing -- that an integer wrap-around could
+        occur when decoding line spectral frequency coefficients from extreme bitstreams.
+        The end result of the wrap-around is an illegal read access on the stack, which
+        the authors do not believe is explitable but should nontheless be fixed. The following
+        patch avoids the problem:
       </t>
+<figure>
+<artwork><![CDATA[
+           /* Keep delta_min distance between the NLSFs */
+         for( i = 1; i < L; i++ )
+-            NLSF_Q15[i] = silk_max_int( NLSF_Q15[i], \
+NLSF_Q15[i-1] + NDeltaMin_Q15[i] );
++            NLSF_Q15[i] = silk_max_int( NLSF_Q15[i], \
+silk_ADD_SAT16( NLSF_Q15[i-1], NDeltaMin_Q15[i] ) );
+ 
+         /* Last NLSF should be no higher than 1 - NDeltaMin[L] */
+]]></artwork>
+</figure>
+
     </section>
 
     <section title="Hybrid Folding" anchor="folding">
@@ -314,8 +350,24 @@ effective_lowband+N);
       </t>
     </section>
 
+    <section title="Downmix to Mono" anchor="stereo">
+      <t>The last issue is not strictly a bug, but it is an issue that has been reported
+      when downmixing an Opus decoded stream to mono, whether this is done inside the decoder
+      or as a post-processing step on the stereo decoder output. Opus intensity stereo allows
+      optionally coding the two channels 180-degrees out of phase on a per-band basis.
+      This provides better stereo quality than forcing the two channels to be in phase,
+      but when the output is downmixed to mono, the energy in the affected bands is cancelled
+      sometimes resulting in audible artefacts.
+      </t>
+      <t>As a work-around for this issue, the decoder MAY choose not to apply the 180-degree
+      phase shift when the output is meant to be downmixed (inside or
+      outside of the decoder).
+      </t>
+    </section>
+
+
     <section title="New Test Vectors">
-      <t>Changes in <xref target="stereo"/> and <xref target="folding"/> have
+      <t>Changes in <xref target="folding"/> and <xref target="stereo"/> have
         sufficient impact on the testvectors to make them fail. For this reason,
         this document also updates the Opus test vectors. The new test vectors now
         include two decoded outputs for the same bitstream. The outputs with
