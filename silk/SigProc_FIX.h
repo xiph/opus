@@ -100,14 +100,22 @@ void silk_resampler_down2_3(
  * slower than biquad() but uses more precise coefficients
  * can handle (slowly) varying coefficients
  */
-void silk_biquad_alt(
+void silk_biquad_alt_stride1(
     const opus_int16            *in,                /* I     input signal                                               */
     const opus_int32            *B_Q28,             /* I     MA coefficients [3]                                        */
     const opus_int32            *A_Q28,             /* I     AR coefficients [2]                                        */
     opus_int32                  *S,                 /* I/O   State vector [2]                                           */
     opus_int16                  *out,               /* O     output signal                                              */
-    const opus_int32            len,                /* I     signal length (must be even)                               */
-    opus_int                    stride              /* I     Operate on interleaved signal if > 1                       */
+    const opus_int32            len                 /* I     signal length (must be even)                               */
+);
+
+void silk_biquad_alt_stride2(
+    const opus_int16            *in,                /* I     input signal                                               */
+    const opus_int32            *B_Q28,             /* I     MA coefficients [3]                                        */
+    const opus_int32            *A_Q28,             /* I     AR coefficients [2]                                        */
+    opus_int32                  *S,                 /* I/O   State vector [4]                                           */
+    opus_int16                  *out,               /* O     output signal                                              */
+    const opus_int32            len                 /* I     signal length (must be even)                               */
 );
 
 /* Variable order MA prediction error filter. */

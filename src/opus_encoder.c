@@ -364,9 +364,10 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
    A_Q28[ 1 ] = silk_SMULWW( r_Q22, r_Q22 );
 
 #ifdef FIXED_POINT
-   silk_biquad_alt( in, B_Q28, A_Q28, hp_mem, out, len, channels );
-   if( channels == 2 ) {
-       silk_biquad_alt( in+1, B_Q28, A_Q28, hp_mem+2, out+1, len, channels );
+   if( channels == 1 ) {
+      silk_biquad_alt_stride1( in, B_Q28, A_Q28, hp_mem, out, len );
+   } else {
+      silk_biquad_alt_stride2( in, B_Q28, A_Q28, hp_mem, out, len );
    }
 #else
    silk_biquad_float( in, B_Q28, A_Q28, hp_mem, out, len, channels );
