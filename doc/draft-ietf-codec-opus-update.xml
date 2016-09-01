@@ -372,9 +372,8 @@ effective_lowband+N);
         this document also updates the Opus test vectors. The new test vectors now
         include two decoded outputs for the same bitstream. The outputs with
         suffix 'm' do not apply the CELT 180-degree phase shift as allowed in
-        <xref target="stereo"/>, while the outputs with suffix 's' do. An
-        implementation is compliant as long as it passes either the 'm' or the
-        's' set of vectors.
+        <xref target="stereo"/>, while the outputs without the suffix do. An
+        implementation is compliant as long as it passes either set of vectors.
       </t>
       <t>
         In addition, any Opus implementation
