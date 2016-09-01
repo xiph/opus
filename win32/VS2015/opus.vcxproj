@@ -852,6 +852,7 @@
     <ClInclude Include="..\..\celt\vq.h" />
     <ClInclude Include="..\..\celt\x86\celt_lpc_sse.h" />
     <ClInclude Include="..\..\celt\x86\pitch_sse.h" />
+    <ClInclude Include="..\..\celt\x86\vq_sse.h" />
     <ClInclude Include="..\..\celt\x86\x86cpu.h" />
     <ClInclude Include="..\..\celt\_kiss_fft_guts.h" />
     <ClInclude Include="..\..\include\opus.h" />
@@ -913,6 +914,7 @@
     <ClCompile Include="..\..\celt\x86\pitch_sse.c" />
     <ClCompile Include="..\..\celt\x86\pitch_sse2.c" />
     <ClCompile Include="..\..\celt\x86\pitch_sse4_1.c" />
+    <ClCompile Include="..\..\celt\x86\vq_sse2.c" />
     <ClCompile Include="..\..\celt\x86\x86cpu.c" />
     <ClCompile Include="..\..\celt\x86\x86_celt_map.c" />
     <ClCompile Include="..\..\silk\A2NLSF.c" />
