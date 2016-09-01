@@ -37,6 +37,20 @@ POSSIBILITY OF SUCH DAMAGE.
 # if (defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && \
  !defined(OPUS_ARM_PRESUME_NEON_INTR))
 
+void (*const SILK_BIQUAD_ALT_STRIDE2_IMPL[OPUS_ARCHMASK + 1])(
+        const opus_int16            *in,                /* I     input signal                                               */
+        const opus_int32            *B_Q28,             /* I     MA coefficients [3]                                        */
+        const opus_int32            *A_Q28,             /* I     AR coefficients [2]                                        */
+        opus_int32                  *S,                 /* I/O   State vector [4]                                           */
+        opus_int16                  *out,               /* O     output signal                                              */
+        const opus_int32            len                 /* I     signal length (must be even)                               */
+) = {
+      silk_biquad_alt_stride2_c,              /* ARMv4 */
+      silk_biquad_alt_stride2_c,              /* EDSP */
+      silk_biquad_alt_stride2_c,              /* Media */
+      MAY_HAVE_NEON(silk_biquad_alt_stride2), /* Neon */
+};
+
 opus_int32 (*const SILK_LPC_INVERSE_PRED_GAIN_IMPL[OPUS_ARCHMASK + 1])( /* O   Returns inverse prediction gain in energy domain, Q30        */
         const opus_int16            *A_Q12,                             /* I   Prediction coefficients, Q12 [order]                         */
         const opus_int              order                               /* I   Prediction order                                             */

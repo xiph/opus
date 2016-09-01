@@ -48,6 +48,7 @@ extern "C"
 #endif
 
 #if (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
+#include "arm/biquad_alt_arm.h"
 #include "arm/LPC_inv_pred_gain_arm.h"
 #endif
 
@@ -109,7 +110,7 @@ void silk_biquad_alt_stride1(
     const opus_int32            len                 /* I     signal length (must be even)                               */
 );
 
-void silk_biquad_alt_stride2(
+void silk_biquad_alt_stride2_c(
     const opus_int16            *in,                /* I     input signal                                               */
     const opus_int32            *B_Q28,             /* I     MA coefficients [3]                                        */
     const opus_int32            *A_Q28,             /* I     AR coefficients [2]                                        */
@@ -157,6 +158,10 @@ void silk_ana_filt_bank_1(
     opus_int16                  *outH,              /* O    High band [N/2]                                             */
     const opus_int32            N                   /* I    Number of input samples                                     */
 );
+
+#if !defined(OVERRIDE_silk_biquad_alt_stride2)
+#define silk_biquad_alt_stride2(in, B_Q28, A_Q28, S, out, len, arch) ((void)(arch), silk_biquad_alt_stride2_c(in, B_Q28, A_Q28, S, out, len))
+#endif
 
 #if !defined(OVERRIDE_silk_LPC_inverse_pred_gain)
 #define silk_LPC_inverse_pred_gain(A_Q12, order, arch)     ((void)(arch), silk_LPC_inverse_pred_gain_c(A_Q12, order))

@@ -22,6 +22,7 @@ silk/resampler_rom.h \
 silk/resampler_structs.h \
 silk/SigProc_FIX.h \
 silk/x86/SigProc_FIX_sse.h \
+silk/arm/biquad_alt_arm.h \
 silk/arm/LPC_inv_pred_gain_arm.h \
 silk/arm/macros_armv4.h \
 silk/arm/macros_armv5e.h \

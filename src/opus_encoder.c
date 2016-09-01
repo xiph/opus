@@ -341,10 +341,11 @@ static void silk_biquad_float(
 }
 #endif
 
-static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs)
+static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs, int arch)
 {
    opus_int32 B_Q28[ 3 ], A_Q28[ 2 ];
    opus_int32 Fc_Q19, r_Q28, r_Q22;
+   (void)arch;
 
    silk_assert( cutoff_Hz <= silk_int32_MAX / SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ) );
    Fc_Q19 = silk_DIV32_16( silk_SMULBB( SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ), cutoff_Hz ), Fs/1000 );
@@ -367,7 +368,7 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
    if( channels == 1 ) {
       silk_biquad_alt_stride1( in, B_Q28, A_Q28, hp_mem, out, len );
    } else {
-      silk_biquad_alt_stride2( in, B_Q28, A_Q28, hp_mem, out, len );
+      silk_biquad_alt_stride2( in, B_Q28, A_Q28, hp_mem, out, len, arch );
    }
 #else
    silk_biquad_float( in, B_Q28, A_Q28, hp_mem, out, len, channels );
@@ -1609,7 +1610,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     if (st->application == OPUS_APPLICATION_VOIP)
     {
-       hp_cutoff(pcm, cutoff_Hz, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
+       hp_cutoff(pcm, cutoff_Hz, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs, st->arch);
     } else {
        dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     }
