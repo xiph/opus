@@ -84,6 +84,60 @@ Jean-Marc Valin
 \end_layout
 
 \begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+Stereo coding in Opus is performed very differently from other audio codecs.
+ In the CELT coding scheme used for music, the energy of both channels is
+ coded explicitly to avoid energy 
+\emph on
+leaking
+\emph default
+ from one channel to another.
+ This makes it possible to use mid-side stereo even when the energy of two
+ channels differs significantly.
+ The correlation between the two channels is also explicitly coded, reducing
+ the risk of 
+\emph on
+stereo unmasking
+\emph default
+ [].
+ Further reducing that risk is the fact that the use dual (left-right) stereo
+ is limited to only the cases where the two channels have nearly no correlation.
+ 
+\end_layout
+
+\begin_layout Standard
+A side effect of how CELT works is that by default the number of bits allocated
+ to a band does not depend on the inter-channel correlation, nor on the
+ intensity difference.
+ The encoder will also attempt to maintain the same noise-to-mask ratio,
+ independenly of the intensity difference, i.e.
+ it ignores inter-channel masking.
+ 
+\end_layout
+
+\begin_layout Standard
+In this paper, we investigate how to take into account inter-channel masking
+ to make better encoding decisions.
+\end_layout
+
+\begin_layout Section
+Inter-channel masking
+\end_layout
+
+\begin_layout Standard
+Despite decades of research and measurements on psycho-acoustic masking,
+ there appears to be a complete lack of research into inter-channel masking.
+ We define inter-channel masking as the effect where the presence of a sound
+ in one ear changes the masking thresholds for the other ear.
+ It would appear as common sense that a loud sound in one ear would reduce
+ one's ability to detect artefacts in the other ear's more quiet signal.
+ Quantifying that effect is unfortunately not an easy task.
+\end_layout
+
+\begin_layout Section
 Modifying stereo input vectors
 \end_layout
 
@@ -521,11 +575,8 @@ r=\frac{b}{2N-1}\,.
 \end_layout
 
 \begin_layout Standard
-Solving for 
-\begin_inset Formula $r$
-\end_inset
-
-, we get
+If instead we want a fixed distortion and find the corresponding bit depth,
+ we get
 \begin_inset Formula 
 \[
 R=\frac{-3\sin\phi+\sqrt{9\sin^{2}\phi+12D\left(1-\sin\phi\right)}}{6\left(1-\sin\phi\right)}\,,
@@ -538,7 +589,58 @@ with
 \end_inset
 
 .
- 
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $D=3R_{0}$
+\end_inset
+
+ the distortion we obtain for 
+\begin_inset Formula $\phi=\pi/2$
+\end_inset
+
+,
+\begin_inset Formula 
+\begin{align*}
+R & =\frac{-3\sin\phi+\sqrt{9\sin^{2}\phi+12\cdot3R_{0}\left(1-\sin\phi\right)}}{6\left(1-\sin\phi\right)}\\
+ & =\sin\phi\cdot\frac{-1+\sqrt{1+\frac{4R_{0}\left(1-\sin\phi\right)}{\sin^{2}\phi}}}{2-2\sin\phi}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+At high rate, we have:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+R & =\sin\phi\frac{\frac{2R_{0}\left(1-\sin\phi\right)}{\sin^{2}\phi}}{2-2\sin\phi}\\
+ & =\frac{R_{0}}{\sin\phi}\\
+r & =-\log_{4}\frac{R_{0}}{\sin\phi}\\
+ & =r_{0}+\log_{4}\sin\phi\\
+ & =r_{0}+\frac{1}{2}\log_{2}\sin\phi
+\end{align*}
+
+\end_inset
+
+At low rate we instead have
+\begin_inset Formula 
+\begin{align*}
+R & =\frac{\sqrt{4R_{0}\left(1-\sin\phi\right)}}{2-2\sin\phi}\\
+ & =\sqrt{\frac{R_{0}}{\left(1-\sin\phi\right)}}\\
+ & =\sqrt{R_{0}}\\
+r & =-\log_{4}\sqrt{R_{0}}\\
+ & =r_{0}/2
+\end{align*}
+
+\end_inset
+
+
 \end_layout
 
 \end_body
