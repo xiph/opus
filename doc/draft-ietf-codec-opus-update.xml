@@ -229,8 +229,8 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
         It was discovered through decoder fuzzing that some bitstreams could produce
         integer values exceeding 32-bits in LPC_inverse_pred_gain_QA(), causing
         a wrap-around. Although the error is harmless in practice, the C standard considers
-        the behaviour as undefined, so the following patch detects values
-        that would cause wrap-around and considers the corresponding filters unstable:
+        the behavior as undefined, so the following patch to line 87 of silk/LPC_inv_pred_gain.c
+        detects values that do not fit in a 32-bit integer and considers the corresponding filters unstable:
       </t>
 <figure>
 <artwork><![CDATA[
@@ -258,8 +258,8 @@ rc_mult2 ), mult2Q);
         It was discovered -- also from decoder fuzzing -- that an integer wrap-around could
         occur when decoding line spectral frequency coefficients from extreme bitstreams.
         The end result of the wrap-around is an illegal read access on the stack, which
-        the authors do not believe is explitable but should nontheless be fixed. The following
-        patch avoids the problem:
+        the authors do not believe is exploitable but should nonetheless be fixed. The following
+        patch to line 137 of silk/NLSF_stabilize.c prevents the problem:
       </t>
 <figure>
 <artwork><![CDATA[
@@ -285,7 +285,7 @@ silk_ADD_SAT16( NLSF_Q15[i-1], NDeltaMin_Q15[i] ) );
         can cause audible pre-echo.
       </t>
       <t>
-        To address the issue, we change the folding behaviour so that it is
+        To address the issue, we change the folding behavior so that it is
         never forced to fall back to LCG due to the first band not containing
         enough coefficients to fold onto the second band. This
         is achieved by simply repeating part of the first band in the folding
@@ -345,7 +345,7 @@ effective_lowband+N);
       <t>
         The fix does not impact compatibility, because the improvement does
         not depend on the encoder doing anything special. There is also no
-        reasonable way for an encoder to use the original behaviour to
+        reasonable way for an encoder to use the original behavior to
         improve quality over the proposed change.
       </t>
     </section>
