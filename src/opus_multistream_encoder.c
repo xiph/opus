@@ -1204,6 +1204,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_GET_INBAND_FEC_REQUEST:
    case OPUS_GET_FORCE_CHANNELS_REQUEST:
    case OPUS_GET_PREDICTION_DISABLED_REQUEST:
+   case OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST:
    {
       OpusEncoder *enc;
       /* For int32* GET params, just query the first stream */
@@ -1250,6 +1251,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_FORCE_MODE_REQUEST:
    case OPUS_SET_FORCE_CHANNELS_REQUEST:
    case OPUS_SET_PREDICTION_DISABLED_REQUEST:
+   case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:
    {
       int s;
       /* This works for int32 params */
