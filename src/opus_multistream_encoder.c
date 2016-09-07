@@ -747,7 +747,8 @@ static void ambisonics_rate_allocation(
 
    if (st->bitrate_bps==OPUS_AUTO)
    {
-      total_rate = num_channels * (20000 + st->layout.nb_streams*(Fs+60*Fs/frame_size));
+      total_rate = (st->layout.nb_coupled_streams + st->layout.nb_streams) *
+         (Fs+60*Fs/frame_size) + st->layout.nb_streams * 15000;
    } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
    {
       total_rate = num_channels * 320000;
