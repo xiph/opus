@@ -37,7 +37,8 @@ CELT_AM_SOURCES_ARM_ASM = \
 celt/arm/armopts.s.in
 
 CELT_SOURCES_ARM_NEON_INTR = \
-celt/arm/celt_neon_intr.c
+celt/arm/celt_neon_intr.c \
+celt/arm/pitch_neon_intr.c
 
 CELT_SOURCES_ARM_NE10= \
 celt/arm/celt_ne10_fft.c \
