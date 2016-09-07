@@ -378,7 +378,7 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
       for (j=0;j<len>>1;j++)
          sum += SHR32(MULT16_16(x_lp[j],y[i+j]), shift);
 #else
-      sum = celt_inner_prod_c(x_lp, y+i, len>>1);
+      sum = celt_inner_prod(x_lp, y+i, len>>1, arch);
 #endif
       xcorr[i] = MAX32(-1, sum);
 #ifdef FIXED_POINT

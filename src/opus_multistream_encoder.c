@@ -326,7 +326,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
                freq[i] = 0;
          }
 
-         compute_band_energies(celt_mode, freq, tmpE, 21, 1, LM);
+         compute_band_energies(celt_mode, freq, tmpE, 21, 1, LM, arch);
          /* If we have multiple frames, take the max energy. */
          for (i=0;i<21;i++)
             bandE[i] = MAX32(bandE[i], tmpE[i]);
