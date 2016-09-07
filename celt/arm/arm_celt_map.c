@@ -40,7 +40,7 @@
     (defined(OPUS_ARM_MAY_HAVE_MEDIA) && !defined(OPUS_ARM_PRESUME_MEDIA)) || \
     (defined(OPUS_ARM_MAY_HAVE_EDSP) && !defined(OPUS_ARM_PRESUME_EDSP)))
 opus_val32 (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
-    const opus_val16 *, opus_val32 *, int , int) = {
+    const opus_val16 *, opus_val32 *, int, int, int) = {
   celt_pitch_xcorr_c,               /* ARMv4 */
   MAY_HAVE_EDSP(celt_pitch_xcorr),  /* EDSP */
   MAY_HAVE_MEDIA(celt_pitch_xcorr), /* Media */
@@ -51,7 +51,7 @@ opus_val32 (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
 # else /* !FIXED_POINT */
 #  if defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR)
 void (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
-    const opus_val16 *, opus_val32 *, int, int) = {
+    const opus_val16 *, opus_val32 *, int, int, int) = {
   celt_pitch_xcorr_c,              /* ARMv4 */
   celt_pitch_xcorr_c,              /* EDSP */
   celt_pitch_xcorr_c,              /* Media */

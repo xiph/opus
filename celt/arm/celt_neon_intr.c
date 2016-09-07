@@ -290,8 +290,9 @@ static void xcorr_kernel_neon_float_process1(const float32_t *x,
 }
 
 void celt_pitch_xcorr_float_neon(const opus_val16 *_x, const opus_val16 *_y,
-                        opus_val32 *xcorr, int len, int max_pitch) {
+                        opus_val32 *xcorr, int len, int max_pitch, int arch) {
    int i;
+   (void)arch;
    celt_assert(max_pitch > 0);
    celt_assert((((unsigned char *)_x-(unsigned char *)NULL)&3)==0);
 

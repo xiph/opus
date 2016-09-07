@@ -184,17 +184,10 @@ opus_val32
 void
 #endif
 celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y,
-      opus_val32 *xcorr, int len, int max_pitch);
-
-#if !defined(OVERRIDE_PITCH_XCORR)
-#ifdef FIXED_POINT
-opus_val32
-#else
-void
-#endif
-celt_pitch_xcorr(const opus_val16 *_x, const opus_val16 *_y,
       opus_val32 *xcorr, int len, int max_pitch, int arch);
 
+#ifndef OVERRIDE_PITCH_XCORR
+# define celt_pitch_xcorr celt_pitch_xcorr_c
 #endif
 
 #endif
