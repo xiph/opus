@@ -642,11 +642,11 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
 
       pcm_len = analysis_frame_size - analysis->analysis_offset;
       offset = analysis->analysis_offset;
-      do {
+      while (pcm_len>0) {
          tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
          offset += 480;
          pcm_len -= 480;
-      } while (pcm_len>0);
+      }
       analysis->analysis_offset = analysis_frame_size;
 
       analysis->analysis_offset -= frame_size;
