@@ -705,7 +705,7 @@ static void surround_rate_allocation(
       total = (nb_uncoupled<<8)         /* mono */
             + coupled_ratio*nb_coupled /* stereo */
             + nb_lfe*lfe_ratio;
-      channel_rate = 256*(st->bitrate_bps-lfe_offset*nb_lfe-stream_offset*(nb_coupled+nb_uncoupled))/total;
+      channel_rate = 256*(opus_int64)(st->bitrate_bps-lfe_offset*nb_lfe-stream_offset*(nb_coupled+nb_uncoupled))/total;
    }
 #ifndef FIXED_POINT
    if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != Fs/50)
@@ -1159,9 +1159,11 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_BITRATE_REQUEST:
    {
       opus_int32 value = va_arg(ap, opus_int32);
-      if (value<0 && value!=OPUS_AUTO && value!=OPUS_BITRATE_MAX)
+      if (value != OPUS_AUTO && value != OPUS_BITRATE_MAX)
       {
-         goto bad_arg;
+         if (value <= 0)
+            goto bad_arg;
+         value = IMIN(300000*st->layout.nb_channels, IMAX(500*st->layout.nb_channels, value));
       }
       st->bitrate_bps = value;
    }
