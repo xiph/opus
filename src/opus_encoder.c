@@ -1729,6 +1729,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         st->mode = MODE_HYBRID;
     if (st->mode == MODE_HYBRID && curr_bandwidth <= OPUS_BANDWIDTH_WIDEBAND)
         st->mode = MODE_SILK_ONLY;
+    /* If we decided to go with CELT, make sure redundancy is off, no matter what
+       we decided earlier. */
+    if (st->mode == MODE_CELT_ONLY)
+    {
+        redundancy = 0;
+        redundancy_bytes = 0;
+    }
 
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, curr_bandwidth); */
     bytes_target = IMIN(max_data_bytes-redundancy_bytes, st->bitrate_bps * frame_size / (st->Fs * 8)) - 1;
