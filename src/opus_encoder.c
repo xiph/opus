@@ -1336,7 +1336,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        /* We need to make sure that "int" values always fit in 16 bits. */
        cbrBytes = IMIN( (3*st->bitrate_bps/8 + frame_rate3/2)/frame_rate3, max_data_bytes);
        st->bitrate_bps = cbrBytes*(opus_int32)frame_rate3*8/3;
-       max_data_bytes = cbrBytes;
+       /* Make sure we provide at least one byte to avoid failing. */
+       max_data_bytes = IMAX(1, cbrBytes);
     }
     if (max_data_bytes<3 || st->bitrate_bps < 3*frame_rate*8
        || (frame_rate<50 && (max_data_bytes*frame_rate<300 || st->bitrate_bps < 2400)))
@@ -1363,6 +1364,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           ret = opus_packet_pad(data, ret, max_data_bytes);
           if (ret == OPUS_OK)
              ret = max_data_bytes;
+          else
+             ret = OPUS_INTERNAL_ERROR;
        }
        RESTORE_STACK;
        return ret;
