@@ -240,6 +240,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
    int pos[8] = {0};
    int upsample;
    int frame_size;
+   int freq_size;
    opus_val16 channel_offset;
    opus_val32 bandE[21];
    opus_val16 maskLogE[3][21];
@@ -250,6 +251,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
 
    upsample = resampling_factor(rate);
    frame_size = len*upsample;
+   freq_size = IMIN(960, frame_size);
 
    /* LM = log2(frame_size / 120) */
    for (LM=0;LM<celt_mode->maxLM;LM++)
@@ -258,7 +260,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
 
    ALLOC(in, frame_size+overlap, opus_val32);
    ALLOC(x, len, opus_val16);
-   ALLOC(freq, frame_size, opus_val32);
+   ALLOC(freq, freq_size, opus_val32);
 
    channel_pos(channels, pos);
 
@@ -268,6 +270,9 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
 
    for (c=0;c<channels;c++)
    {
+      int frame;
+      int nb_frames = frame_size/freq_size;
+      celt_assert(nb_frames*freq_size == frame_size);
       OPUS_COPY(in, mem+c*overlap, overlap);
       (*copy_channel_in)(x, 1, pcm, channels, c, len);
       celt_preemphasis(x, in+overlap, frame_size, 1, upsample, celt_mode->preemph, preemph_mem+c, 0);
@@ -284,18 +289,26 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
          }
       }
 #endif
-      clt_mdct_forward(&celt_mode->mdct, in, freq, celt_mode->window,
-            overlap, celt_mode->maxLM-LM, 1, arch);
-      if (upsample != 1)
+      OPUS_CLEAR(bandE, 21);
+      for (frame=0;frame<nb_frames;frame++)
       {
-         int bound = len;
-         for (i=0;i<bound;i++)
-            freq[i] *= upsample;
-         for (;i<frame_size;i++)
-            freq[i] = 0;
-      }
+         opus_val32 tmpE[21];
+         clt_mdct_forward(&celt_mode->mdct, in+960*frame, freq, celt_mode->window,
+               overlap, celt_mode->maxLM-LM, 1, arch);
+         if (upsample != 1)
+         {
+            int bound = freq_size/upsample;
+            for (i=0;i<bound;i++)
+               freq[i] *= upsample;
+            for (;i<freq_size;i++)
+               freq[i] = 0;
+         }
 
-      compute_band_energies(celt_mode, freq, bandE, 21, 1, LM);
+         compute_band_energies(celt_mode, freq, tmpE, 21, 1, LM);
+         /* If we have multiple frames, take the max energy. */
+         for (i=0;i<21;i++)
+            bandE[i] = MAX32(bandE[i], tmpE[i]);
+      }
       amp2Log2(celt_mode, 21, 21, bandE, bandLogE+21*c, 1);
       /* Apply spreading function with -6 dB/band going up and -12 dB/band going down. */
       for (i=1;i<21;i++)
