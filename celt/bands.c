@@ -226,7 +226,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       band_end = M*eBands[i+1];
       lg = SATURATE16(ADD32(bandLogE[i], SHL32((opus_val32)eMeans[i],6)));
 #ifndef FIXED_POINT
-      g = celt_exp2(lg);
+      g = celt_exp2(MIN32(32.f, lg));
 #else
       /* Handle the integer part of the log energy */
       shift = 16-(lg>>DB_SHIFT);
