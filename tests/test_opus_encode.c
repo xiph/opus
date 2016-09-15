@@ -213,7 +213,6 @@ void fuzz_encoder_settings(const int num_encoders, const int num_setting_changes
       for (j=0; j<num_setting_changes; j++) {
          int bitrate = RAND_SAMPLE(bitrates);
          int force_channel = RAND_SAMPLE(force_channels);
-         force_channel = IMIN(force_channel, num_channels);
          int vbr = RAND_SAMPLE(use_vbr);
          int vbr_constraint = RAND_SAMPLE(vbr_constraints);
          int complexity = RAND_SAMPLE(complexities);
@@ -227,6 +226,7 @@ void fuzz_encoder_settings(const int num_encoders, const int num_setting_changes
          float frame_size_ms = RAND_SAMPLE(frame_sizes_ms);
          int frame_size = (int)(frame_size_ms*sampling_rate/1000);
          int frame_size_enum = get_frame_size_enum(frame_size, sampling_rate);
+         force_channel = IMIN(force_channel, num_channels);
 
          sprintf(debug_info,
                  "fuzz_encoder_settings: %d kHz, %d ch, application: %d, "
