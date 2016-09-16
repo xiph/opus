@@ -196,7 +196,7 @@ void fuzz_encoder_settings(const int num_encoders, const int num_setting_changes
    int lsb_depths[2] = {8, 24};
    int prediction_disabled[3] = {0, 0, 1};
    int use_dtx[2] = {0, 1};
-   float frame_sizes_ms[6] = {2.5, 5, 10, 20, 40, 60};
+   int frame_sizes_ms_x2[6] = {5, 10, 20, 40, 80, 120};  /* x2 to avoid 2.5 ms */
    char debug_info[512];
 
    for (i=0; i<num_encoders; i++) {
@@ -223,8 +223,8 @@ void fuzz_encoder_settings(const int num_encoders, const int num_setting_changes
          int lsb_depth = RAND_SAMPLE(lsb_depths);
          int pred_disabled = RAND_SAMPLE(prediction_disabled);
          int dtx = RAND_SAMPLE(use_dtx);
-         float frame_size_ms = RAND_SAMPLE(frame_sizes_ms);
-         int frame_size = (int)(frame_size_ms*sampling_rate/1000);
+         int frame_size_ms_x2 = RAND_SAMPLE(frame_sizes_ms_x2);
+         int frame_size = frame_size_ms_x2*sampling_rate/2000;
          int frame_size_enum = get_frame_size_enum(frame_size, sampling_rate);
          force_channel = IMIN(force_channel, num_channels);
 
@@ -232,10 +232,10 @@ void fuzz_encoder_settings(const int num_encoders, const int num_setting_changes
                  "fuzz_encoder_settings: %d kHz, %d ch, application: %d, "
                  "%d bps, force ch: %d, vbr: %d, vbr constraint: %d, complexity: %d, "
                  "max bw: %d, signal: %d, inband fec: %d, pkt loss: %d%%, lsb depth: %d, "
-                 "pred disabled: %d, dtx: %d, %.1f ms\n",
+                 "pred disabled: %d, dtx: %d, (%d/2) ms\n",
                  sampling_rate/1000, num_channels, application, bitrate,
                  force_channel, vbr, vbr_constraint, complexity, max_bw, sig, inband_fec,
-                 pkt_loss, lsb_depth, pred_disabled, dtx, frame_size_ms);
+                 pkt_loss, lsb_depth, pred_disabled, dtx, frame_size_ms_x2);
 
          if(opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate)) != OPUS_OK) test_failed();
          if(opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(force_channel)) != OPUS_OK) test_failed();
