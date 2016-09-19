@@ -685,41 +685,50 @@ static void surround_rate_allocation(
    int lfe_offset;
    int coupled_ratio; /* Q8 */
    int lfe_ratio;     /* Q8 */
+   int nb_lfe;
+   int nb_uncoupled;
+   int nb_coupled;
+   int nb_normal;
+   opus_int32 channel_offset;
+   opus_int32 bitrate;
+   int total;
 
-   if (st->bitrate_bps > st->layout.nb_channels*40000)
-      stream_offset = 20000;
-   else
-      stream_offset = st->bitrate_bps/st->layout.nb_channels/2;
-   stream_offset += 60*(Fs/frame_size-50);
-   /* We start by giving each stream (coupled or uncoupled) the same bitrate.
+   nb_lfe = (st->lfe_stream!=-1);
+   nb_coupled = st->layout.nb_coupled_streams;
+   nb_uncoupled = st->layout.nb_streams-nb_coupled-nb_lfe;
+   nb_normal = 2*nb_coupled + nb_uncoupled;
+
+   /* Give each non-LFE channel enough bits per channel for coding band energy. */
+   channel_offset = 40*IMAX(50, Fs/frame_size);
+
+   if (st->bitrate_bps==OPUS_AUTO)
+   {
+      bitrate = nb_normal*(channel_offset + Fs + 10000) + 8000*nb_lfe;
+   } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
+   {
+      bitrate = nb_normal*300000 + nb_lfe*128000;
+   } else {
+      bitrate = st->bitrate_bps;
+   }
+
+   /* Give LFE some basic stream_channel allocation but never exceed 1/20 of the
+      total rate for the non-energy part to avoid problems at really low rate. */
+   lfe_offset = IMIN(bitrate/20, 3000) + 15*IMAX(50, Fs/frame_size);
+
+   /* We give each stream (coupled or uncoupled) a starting bitrate.
       This models the main saving of coupled channels over uncoupled. */
-   /* The LFE stream is an exception to the above and gets fewer bits. */
-   lfe_offset = 3500 + 60*(Fs/frame_size-50);
-   /* Coupled streams get twice the mono rate after the first 20 kb/s. */
+   stream_offset = (bitrate - channel_offset*nb_normal - lfe_offset*nb_lfe)/nb_normal/2;
+   stream_offset = IMAX(0, IMIN(20000, stream_offset));
+
+   /* Coupled streams get twice the mono rate after the offset is allocated. */
    coupled_ratio = 512;
    /* Should depend on the bitrate, for now we assume LFE gets 1/8 the bits of mono */
    lfe_ratio = 32;
 
-   /* Compute bitrate allocation between streams */
-   if (st->bitrate_bps==OPUS_AUTO)
-   {
-      channel_rate = Fs+60*Fs/frame_size;
-   } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
-   {
-      channel_rate = 300000;
-   } else {
-      int nb_lfe;
-      int nb_uncoupled;
-      int nb_coupled;
-      int total;
-      nb_lfe = (st->lfe_stream!=-1);
-      nb_coupled = st->layout.nb_coupled_streams;
-      nb_uncoupled = st->layout.nb_streams-nb_coupled-nb_lfe;
-      total = (nb_uncoupled<<8)         /* mono */
-            + coupled_ratio*nb_coupled /* stereo */
-            + nb_lfe*lfe_ratio;
-      channel_rate = 256*(opus_int64)(st->bitrate_bps-lfe_offset*nb_lfe-stream_offset*(nb_coupled+nb_uncoupled))/total;
-   }
+   total = (nb_uncoupled<<8)         /* mono */
+         + coupled_ratio*nb_coupled /* stereo */
+         + nb_lfe*lfe_ratio;
+   channel_rate = 256*(opus_int64)(bitrate - lfe_offset*nb_lfe - stream_offset*(nb_coupled+nb_uncoupled) - channel_offset*nb_normal)/total;
 #ifndef FIXED_POINT
    if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != Fs/50)
    {
@@ -732,11 +741,11 @@ static void surround_rate_allocation(
    for (i=0;i<st->layout.nb_streams;i++)
    {
       if (i<st->layout.nb_coupled_streams)
-         rate[i] = stream_offset+(channel_rate*coupled_ratio>>8);
+         rate[i] = 2*channel_offset + IMAX(0, stream_offset+(channel_rate*coupled_ratio>>8));
       else if (i!=st->lfe_stream)
-         rate[i] = stream_offset+channel_rate;
+         rate[i] = channel_offset + IMAX(0, stream_offset + channel_rate);
       else
-         rate[i] = lfe_offset+(channel_rate*lfe_ratio>>8);
+         rate[i] = IMAX(0, lfe_offset+(channel_rate*lfe_ratio>>8));
    }
 }
 
