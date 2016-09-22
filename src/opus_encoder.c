@@ -1197,6 +1197,100 @@ static int decide_dtx_mode(float activity_probability,    /* probability that cu
 
 #endif
 
+static opus_int32 encode_multiframe_packet(OpusEncoder *st,
+                                           const opus_val16 *pcm,
+                                           int nb_frames,
+                                           int frame_size,
+                                           unsigned char *data,
+                                           opus_int32 out_data_bytes,
+                                           int to_celt,
+                                           int lsb_depth,
+                                           int float_api)
+{
+   int i;
+   int ret = 0;
+   VARDECL(unsigned char, tmp_data);
+   int bak_mode, bak_bandwidth, bak_channels, bak_to_mono;
+   VARDECL(OpusRepacketizer, rp);
+   opus_int32 bytes_per_frame;
+   opus_int32 cbr_bytes;
+   opus_int32 repacketize_len;
+   int tmp_len;
+   ALLOC_STACK;
+
+   bytes_per_frame = IMIN(1276, (out_data_bytes-3)/nb_frames);
+   ALLOC(tmp_data, nb_frames*bytes_per_frame, unsigned char);
+
+   ALLOC(rp, 1, OpusRepacketizer);
+   opus_repacketizer_init(rp);
+
+   bak_mode = st->user_forced_mode;
+   bak_bandwidth = st->user_bandwidth;
+   bak_channels = st->force_channels;
+
+   st->user_forced_mode = st->mode;
+   st->user_bandwidth = st->bandwidth;
+   st->force_channels = st->stream_channels;
+   bak_to_mono = st->silk_mode.toMono;
+
+   if (bak_to_mono)
+      st->force_channels = 1;
+   else
+      st->prev_channels = st->stream_channels;
+
+   for (i=0;i<nb_frames;i++)
+   {
+      st->silk_mode.toMono = 0;
+
+      /* When switching from SILK/Hybrid to CELT, only ask for a switch at the last frame */
+      if (to_celt && i==nb_frames-1)
+         st->user_forced_mode = MODE_CELT_ONLY;
+
+      tmp_len = opus_encode_native(st, pcm+i*(st->channels*frame_size), frame_size,
+         tmp_data+i*bytes_per_frame, bytes_per_frame, lsb_depth, NULL, 0, 0, 0, 0,
+         NULL, float_api);
+
+      if (tmp_len<0)
+      {
+         RESTORE_STACK;
+         return OPUS_INTERNAL_ERROR;
+      }
+
+      ret = opus_repacketizer_cat(rp, tmp_data+i*bytes_per_frame, tmp_len);
+
+      if (ret<0)
+      {
+         RESTORE_STACK;
+         return OPUS_INTERNAL_ERROR;
+      }
+   }
+
+   if (st->use_vbr)
+      repacketize_len = out_data_bytes;
+   else {
+      /* Multiply by 3 to avoid inexact division */
+      cbr_bytes = 3*st->bitrate_bps/(3*8*st->Fs/(frame_size*nb_frames));
+      repacketize_len = IMIN(cbr_bytes, out_data_bytes);
+   }
+
+   ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr);
+
+   if (ret<0)
+   {
+      RESTORE_STACK;
+      return OPUS_INTERNAL_ERROR;
+   }
+
+   /* Discard configs that were forced locally for the purpose of repacketization */
+   st->user_forced_mode = bak_mode;
+   st->user_bandwidth = bak_bandwidth;
+   st->force_channels = bak_channels;
+   st->silk_mode.toMono = bak_to_mono;
+
+   RESTORE_STACK;
+   return ret;
+}
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
                 const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
@@ -1649,12 +1743,12 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     /* Can't support higher than wideband for >20 ms frames */
     if (frame_size > st->Fs/50 && (st->mode == MODE_CELT_ONLY || st->bandwidth > OPUS_BANDWIDTH_WIDEBAND))
     {
-       VARDECL(unsigned char, tmp_data);
+       int enc_frame_size;
        int nb_frames;
-       int bak_mode, bak_bandwidth, bak_channels, bak_to_mono;
-       VARDECL(OpusRepacketizer, rp);
-       opus_int32 bytes_per_frame;
-       opus_int32 repacketize_len;
+
+       /* CELT can only support up to 20 ms */
+       enc_frame_size = st->Fs/50;
+       nb_frames = frame_size > st->Fs/25 ? 3 : 2;
 
 #ifndef DISABLE_FLOAT_API
        if (analysis_read_pos_bak!= -1)
@@ -1664,63 +1758,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        }
 #endif
 
-       nb_frames = frame_size > st->Fs/25 ? 3 : 2;
-       bytes_per_frame = IMIN(1276,(out_data_bytes-3)/nb_frames);
+       ret = encode_multiframe_packet(st, pcm, nb_frames, enc_frame_size, data,
+                                      out_data_bytes, to_celt, lsb_depth, float_api);
 
-       ALLOC(tmp_data, nb_frames*bytes_per_frame, unsigned char);
-
-       ALLOC(rp, 1, OpusRepacketizer);
-       opus_repacketizer_init(rp);
-
-       bak_mode = st->user_forced_mode;
-       bak_bandwidth = st->user_bandwidth;
-       bak_channels = st->force_channels;
-
-       st->user_forced_mode = st->mode;
-       st->user_bandwidth = st->bandwidth;
-       st->force_channels = st->stream_channels;
-       bak_to_mono = st->silk_mode.toMono;
-
-       if (bak_to_mono)
-          st->force_channels = 1;
-       else
-          st->prev_channels = st->stream_channels;
-       for (i=0;i<nb_frames;i++)
-       {
-          int tmp_len;
-          st->silk_mode.toMono = 0;
-          /* When switching from SILK/Hybrid to CELT, only ask for a switch at the last frame */
-          if (to_celt && i==nb_frames-1)
-             st->user_forced_mode = MODE_CELT_ONLY;
-          tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50,
-                tmp_data+i*bytes_per_frame, bytes_per_frame, lsb_depth,
-                NULL, 0, c1, c2, analysis_channels, downmix, float_api);
-          if (tmp_len<0)
-          {
-             RESTORE_STACK;
-             return OPUS_INTERNAL_ERROR;
-          }
-          ret = opus_repacketizer_cat(rp, tmp_data+i*bytes_per_frame, tmp_len);
-          if (ret<0)
-          {
-             RESTORE_STACK;
-             return OPUS_INTERNAL_ERROR;
-          }
-       }
-       if (st->use_vbr)
-          repacketize_len = out_data_bytes;
-       else
-          repacketize_len = IMIN(3*st->bitrate_bps/(3*8*50/nb_frames), out_data_bytes);
-       ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr);
-       if (ret<0)
-       {
-          RESTORE_STACK;
-          return OPUS_INTERNAL_ERROR;
-       }
-       st->user_forced_mode = bak_mode;
-       st->user_bandwidth = bak_bandwidth;
-       st->force_channels = bak_channels;
-       st->silk_mode.toMono = bak_to_mono;
        RESTORE_STACK;
        return ret;
     }
