@@ -765,7 +765,7 @@ int main(int argc, char *argv[])
             }
             tot_samples += nb_encoded;
         } else {
-            int output_samples;
+            opus_int32 output_samples;
             lost = len[toggle]==0 || (packet_loss_perc>0 && rand()%100 < packet_loss_perc);
             if (lost)
                opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));

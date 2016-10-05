@@ -891,7 +891,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    break;
    case OPUS_GET_LAST_PACKET_DURATION_REQUEST:
    {
-      opus_uint32 *value = va_arg(ap, opus_uint32*);
+      opus_int32 *value = va_arg(ap, opus_int32*);
       if (!value)
       {
          goto bad_arg;

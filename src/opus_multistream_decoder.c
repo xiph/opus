@@ -237,7 +237,8 @@ static int opus_multistream_decode_native(
    for (s=0;s<st->layout.nb_streams;s++)
    {
       OpusDecoder *dec;
-      int packet_offset, ret;
+      opus_int32 packet_offset;
+      int ret;
 
       dec = (OpusDecoder*)ptr;
       ptr += (s < st->layout.nb_coupled_streams) ? align(coupled_size) : align(mono_size);

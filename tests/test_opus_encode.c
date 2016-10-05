@@ -265,8 +265,8 @@ int run_test1(int no_fuzz)
    static const char *mstrings[3] = {"    LP","Hybrid","  MDCT"};
    unsigned char mapping[256] = {0,1,255};
    unsigned char db62[36];
-   opus_int32 i;
-   int rc,j,err;
+   opus_int32 i,j;
+   int rc,err;
    OpusEncoder *enc;
    OpusMSEncoder *MSenc;
    OpusDecoder *dec;
@@ -482,7 +482,8 @@ int run_test1(int no_fuzz)
          if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_BITRATE(rate))!=OPUS_OK)test_failed();
          count=i=0;
          do {
-            int pred,len,out_samples,frame_size,loss;
+            int len,out_samples,frame_size,loss;
+            opus_int32 pred;
             if(opus_multistream_encoder_ctl(MSenc, OPUS_GET_PREDICTION_DISABLED(&pred))!=OPUS_OK)test_failed();
             if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_PREDICTION_DISABLED((int)(fast_rand()&15)<(pred?11:4)))!=OPUS_OK)test_failed();
             frame_size=frame[j];

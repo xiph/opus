@@ -52,7 +52,8 @@ void silk_quant_LTP_gains(
     const opus_uint8     *cbk_gain_ptr_Q7;
     const opus_int32     *XX_Q17_ptr, *xX_Q17_ptr;
     opus_int32           res_nrg_Q15_subfr, res_nrg_Q15, rate_dist_Q7_subfr, rate_dist_Q7, min_rate_dist_Q7;
-    opus_int32           sum_log_gain_tmp_Q7, best_sum_log_gain_Q7, max_gain_Q7, gain_Q7;
+    opus_int32           sum_log_gain_tmp_Q7, best_sum_log_gain_Q7, max_gain_Q7;
+    opus_int             gain_Q7;
 
     /***************************************************/
     /* iterate over different codebooks with different */

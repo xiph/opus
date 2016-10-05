@@ -103,8 +103,8 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
     VARDECL( opus_int16, C );
     VARDECL( opus_int32, xcorr32 );
     const opus_int16 *target_ptr, *basis_ptr;
-    opus_int32 cross_corr, normalizer, energy, shift, energy_basis, energy_target;
-    opus_int   d_srch[ PE_D_SRCH_LENGTH ], Cmax, length_d_srch, length_d_comp;
+    opus_int32 cross_corr, normalizer, energy, energy_basis, energy_target;
+    opus_int   d_srch[ PE_D_SRCH_LENGTH ], Cmax, length_d_srch, length_d_comp, shift;
     VARDECL( opus_int16, d_comp );
     opus_int32 sum, threshold, lag_counter;
     opus_int   CBimax, CBimax_new, CBimax_old, lag, start_lag, end_lag, lag_new;

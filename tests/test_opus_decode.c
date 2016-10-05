@@ -104,7 +104,7 @@ int test_decoder_code0(int no_fuzz)
       int factor=48000/fsv[t>>1];
       for(fec=0;fec<2;fec++)
       {
-         int dur;
+         opus_int32 dur;
          /*Test PLC on a fresh decoder*/
          out_samples = opus_decode(dec[t], 0, 0, outbuf, 120/factor, fec);
          if(out_samples!=120/factor)test_failed();
@@ -160,7 +160,7 @@ int test_decoder_code0(int no_fuzz)
    /*Count code 0 tests*/
    for(i=0;i<64;i++)
    {
-      int dur;
+      opus_int32 dur;
       int j,expected[5*2];
       packet[0]=i<<2;
       packet[1]=255;
@@ -314,7 +314,7 @@ int test_decoder_code0(int no_fuzz)
       if(opus_decode(decbak,  0, 0, outbuf, MAX_FRAME_SAMP, 0)<20)test_failed();
       for(t=0;t<5*2;t++)
       {
-         int dur;
+         opus_int32 dur;
          out_samples = opus_decode(dec[t], packet, plen+1, outbuf, MAX_FRAME_SAMP, 0);
          if(out_samples!=expected[t])test_failed();
          if(t==0)dec_final_range2=dec_final_range1;
