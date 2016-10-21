@@ -10,7 +10,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-ietf-codec-opus-update-03"
+<rfc category="std" docName="draft-ietf-codec-opus-update-04"
      ipr="trust200902">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
@@ -47,7 +47,7 @@
 
 
 
-    <date day="1" month="September" year="2016" />
+    <date day="21" month="October" year="2016" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
@@ -274,6 +274,26 @@ silk_ADD_SAT16( NLSF_Q15[i-1], NDeltaMin_Q15[i] ) );
 ]]></artwork>
 </figure>
 
+    </section>
+
+    <section title="Cap on Band Energy">
+      <t>On extreme bit-streams, it is possible for log-domain band energy levels
+        to exceed the maximum single-precision floating point value once converted
+        to a linear scale. This would later cause the decoded values to be NaN,
+        possibly causing problems in the software using the PCM values. This can be
+        avoided with the following patch to line 552 of celt/quant_bands.c:
+      </t>
+<figure>
+<artwork><![CDATA[
+       {
+          opus_val16 lg = ADD16(oldEBands[i+c*m->nbEBands],
+                          SHL16((opus_val16)eMeans[i],6));
++         lg = MIN32(QCONST32(32.f, 16), lg);
+          eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(lg),4);
+       }
+       for (;i<m->nbEBands;i++)
+]]></artwork>
+</figure>
     </section>
 
     <section title="Hybrid Folding" anchor="folding">
