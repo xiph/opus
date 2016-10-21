@@ -552,6 +552,7 @@ void log2Amp(const CELTMode *m, int start, int end,
       {
          opus_val16 lg = ADD16(oldEBands[i+c*m->nbEBands],
                          SHL16((opus_val16)eMeans[i],6));
+         lg = MIN32(QCONST32(32.f, 16), lg);
          eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(lg),4);
       }
       for (;i<m->nbEBands;i++)
