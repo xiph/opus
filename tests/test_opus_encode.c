@@ -236,12 +236,6 @@ void fuzz_encoder_settings(const int num_encoders, const int num_setting_changes
          int frame_size_enum = get_frame_size_enum(frame_size, sampling_rate);
          force_channel = IMIN(force_channel, num_channels);
 
-         /* Todo: remove when a fix is available for coding SILK in DTX mode for >60 ms.
-          * Currently, SILK may internally adjust the bandwidth leading to mismatching
-          * bandwidths within a packet. */
-         if (frame_size_ms_x2 > 120)
-           dtx = 0;
-
          sprintf(debug_info,
                  "fuzz_encoder_settings: %d kHz, %d ch, application: %d, "
                  "%d bps, force ch: %d, vbr: %d, vbr constraint: %d, complexity: %d, "

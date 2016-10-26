@@ -2070,13 +2070,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            RESTORE_STACK;
            return OPUS_INTERNAL_ERROR;
         }
-        if (nBytes==0)
-        {
-           st->rangeFinal = 0;
-           data[-1] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
-           RESTORE_STACK;
-           return 1;
-        }
+
         /* Extract SILK internal bandwidth for signaling in first byte */
         if( st->mode == MODE_SILK_ONLY ) {
             if( st->silk_mode.internalSampleRate == 8000 ) {
@@ -2091,6 +2085,15 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         }
 
         st->silk_mode.opusCanSwitch = st->silk_mode.switchReady && !st->nonfinal_frame;
+
+        if (nBytes==0)
+        {
+           st->rangeFinal = 0;
+           data[-1] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
+           RESTORE_STACK;
+           return 1;
+        }
+
         /* FIXME: How do we allocate the redundancy for CBR? */
         if (st->silk_mode.opusCanSwitch)
         {
