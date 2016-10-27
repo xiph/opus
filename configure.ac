@@ -781,6 +781,7 @@ AC_ARG_ENABLE([doc],
 
 AS_IF([test "$enable_doc" = "yes"], [
   AC_CHECK_PROG(HAVE_DOXYGEN, [doxygen], [yes], [no])
+  AC_CHECK_PROG(HAVE_DOT, [dot], [yes], [no])
 ],[
   HAVE_DOXYGEN=no
 ])
