@@ -226,7 +226,7 @@ void opus_custom_encoder_destroy(CELTEncoder *st)
 
 
 static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int C,
-                              opus_val16 *tf_estimate, int *tf_chan)
+                              opus_val16 *tf_estimate, int *tf_chan, int low_rate)
 {
    int i;
    VARDECL(opus_val16, tmp);
@@ -236,6 +236,12 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    int c;
    opus_val16 tf_max;
    int len2;
+   /* Forward masking: 6.7 dB/ms. */
+#ifdef FIXED_POINT
+   int forward_shift = 4;
+#else
+   opus_val16 forward_decay = QCONST16(.0625f,15);
+#endif
    /* Table of 6*64/x, trained on real data to minimize the average error */
    static const unsigned char inv_table[128] = {
          255,255,156,110, 86, 70, 59, 51, 45, 40, 37, 33, 31, 28, 26, 25,
@@ -250,6 +256,18 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    SAVE_STACK;
    ALLOC(tmp, len, opus_val16);
 
+   /* For lower bitrates, let's be more conservative and have a forward masking
+      decay of 3.3 dB/ms. This avoids having to code transients at very low
+      bitrate (mostly for hybrid), which can result in unstable energy and/or
+      partial collapse. */
+   if (low_rate)
+   {
+#ifdef FIXED_POINT
+      forward_shift = 5;
+#else
+      forward_decay = QCONST16(.03125f,15);
+#endif
+   }
    len2=len/2;
    for (c=0;c<C;c++)
    {
@@ -302,9 +320,9 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          mean += x2;
 #ifdef FIXED_POINT
          /* FIXME: Use PSHR16() instead */
-         tmp[i] = mem0 + PSHR32(x2-mem0,4);
+         tmp[i] = mem0 + PSHR32(x2-mem0,forward_shift);
 #else
-         tmp[i] = mem0 + MULT16_16_P15(QCONST16(.0625f,15),x2-mem0);
+         tmp[i] = mem0 + MULT16_16_P15(forward_decay,x2-mem0);
 #endif
          mem0 = tmp[i];
       }
@@ -314,6 +332,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       /* Backward pass to compute the pre-echo threshold */
       for (i=len2-1;i>=0;i--)
       {
+         /* Backward masking: 13.9 dB/ms. */
 #ifdef FIXED_POINT
          /* FIXME: Use PSHR16() instead */
          tmp[i] = mem0 + PSHR32(tmp[i]-mem0,3);
@@ -1586,7 +1605,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if (st->complexity >= 1 && !st->lfe)
    {
       isTransient = transient_analysis(in, N+overlap, CC,
-            &tf_estimate, &tf_chan);
+            &tf_estimate, &tf_chan, effectiveBytes<15);
    }
    if (LM>0 && ec_tell(enc)+3<=total_bits)
    {
