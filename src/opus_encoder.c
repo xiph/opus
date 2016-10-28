@@ -1360,6 +1360,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        RESTORE_STACK;
        return OPUS_BAD_ARG;
     }
+
+    /* Cannot encode 100 ms in 1 byte */
+    if (max_data_bytes==1 && st->Fs==(frame_size*10))
+    {
+      RESTORE_STACK;
+      return OPUS_BUFFER_TOO_SMALL;
+    }
+
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
     if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
@@ -1453,20 +1461,56 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        /*If the space is too low to do something useful, emit 'PLC' frames.*/
        int tocmode = st->mode;
        int bw = st->bandwidth == 0 ? OPUS_BANDWIDTH_NARROWBAND : st->bandwidth;
+       int packet_code = 0;
+       int num_multiframes = 0;
+
        if (tocmode==0)
           tocmode = MODE_SILK_ONLY;
        if (frame_rate>100)
           tocmode = MODE_CELT_ONLY;
-       if (frame_rate < 50)
-          tocmode = MODE_SILK_ONLY;
+       /* 40 ms -> 2 x 20 ms if in CELT_ONLY or HYBRID mode */
+       if (frame_rate==25 && tocmode!=MODE_SILK_ONLY)
+       {
+          frame_rate = 50;
+          packet_code = 1;
+       }
+
+       /* >= 60 ms frames */
+       if (frame_rate<=16)
+       {
+          /* 1 x 60 ms, 2 x 40 ms, 2 x 60 ms */
+          if (out_data_bytes==1 || (tocmode==MODE_SILK_ONLY && frame_rate!=10))
+          {
+             tocmode = MODE_SILK_ONLY;
+
+             packet_code = frame_rate <= 12;
+             frame_rate = frame_rate == 12 ? 25 : 16;
+          }
+          else
+          {
+             num_multiframes = 50/frame_rate;
+             frame_rate = 50;
+             packet_code = 3;
+          }
+       }
+
        if(tocmode==MODE_SILK_ONLY&&bw>OPUS_BANDWIDTH_WIDEBAND)
           bw=OPUS_BANDWIDTH_WIDEBAND;
        else if (tocmode==MODE_CELT_ONLY&&bw==OPUS_BANDWIDTH_MEDIUMBAND)
           bw=OPUS_BANDWIDTH_NARROWBAND;
        else if (tocmode==MODE_HYBRID&&bw<=OPUS_BANDWIDTH_SUPERWIDEBAND)
           bw=OPUS_BANDWIDTH_SUPERWIDEBAND;
+
        data[0] = gen_toc(tocmode, frame_rate, bw, st->stream_channels);
-       ret = 1;
+       data[0] |= packet_code;
+
+       ret = packet_code <= 1 ? 1 : 2;
+
+       max_data_bytes = IMAX(max_data_bytes, ret);
+
+       if (packet_code==3)
+          data[1] = num_multiframes;
+
        if (!st->use_vbr)
        {
           ret = opus_packet_pad(data, ret, max_data_bytes);
