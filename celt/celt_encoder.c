@@ -226,7 +226,8 @@ void opus_custom_encoder_destroy(CELTEncoder *st)
 
 
 static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int C,
-                              opus_val16 *tf_estimate, int *tf_chan, int low_rate)
+                              opus_val16 *tf_estimate, int *tf_chan, int low_rate,
+                              int *weak_transient)
 {
    int i;
    VARDECL(opus_val16, tmp);
@@ -256,6 +257,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    SAVE_STACK;
    ALLOC(tmp, len, opus_val16);
 
+   *weak_transient = 0;
    /* For lower bitrates, let's be more conservative and have a forward masking
       decay of 3.3 dB/ms. This avoids having to code transients at very low
       bitrate (mostly for hybrid), which can result in unstable energy and/or
@@ -381,7 +383,12 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       }
    }
    is_transient = mask_metric>200;
-
+   /* For low bitrates, define "weak transients" that need to be
+      handled differently to avoid partial collapse. */
+   if (low_rate && is_transient && mask_metric<600) {
+      is_transient = 0;
+      *weak_transient = 1;
+   }
    /* Arbitrary metric for VBR boost */
    tf_max = MAX16(0,celt_sqrt(27*mask_metric)-42);
    /* *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20); */
@@ -1388,6 +1395,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_val16 surround_trim = 0;
    opus_int32 equiv_rate;
    int hybrid;
+   int weak_transient = 0;
    VARDECL(opus_val16, surround_dynalloc);
    ALLOC_STACK;
 
@@ -1605,7 +1613,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if (st->complexity >= 1 && !st->lfe)
    {
       isTransient = transient_analysis(in, N+overlap, CC,
-            &tf_estimate, &tf_chan, effectiveBytes<15);
+            &tf_estimate, &tf_chan, effectiveBytes<15, &weak_transient);
    }
    if (LM>0 && ec_tell(enc)+3<=total_bits)
    {
@@ -1784,6 +1792,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tf_select = tf_analysis(mode, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan);
       for (i=effEnd;i<end;i++)
          tf_res[i] = tf_res[effEnd-1];
+   } else if (hybrid && weak_transient)
+   {
+      /* For weak transients, we rely on the fact that improving time resolution using
+         TF on a long window is imperfect and will not result in an energy collapse at
+         low bitrate. */
+      for (i=0;i<end;i++)
+         tf_res[i] = 1;
+      tf_select=0;
    } else if (hybrid && effectiveBytes<15)
    {
       /* For low bitrate hybrid, we force temporal resolution to 5 ms rather than 2.5 ms. */
