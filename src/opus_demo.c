@@ -57,7 +57,7 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-variable-duration   : enable frames of variable duration (experimental, experts only); default: disabled\n" );
     fprintf(stderr, "-delayed-decision    : use look-ahead for speech/music detection (experts only); default: disabled\n" );
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB> : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
-    fprintf(stderr, "-framesize <2.5|5|10|20|40|60> : frame size in ms; default: 20 \n" );
+    fprintf(stderr, "-framesize <2.5|5|10|20|40|60|80|100|120> : frame size in ms; default: 20 \n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
     fprintf(stderr, "-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10\n" );
     fprintf(stderr, "-inbandfec           : enable SILK inband FEC\n" );
@@ -383,9 +383,15 @@ int main(int argc, char *argv[])
                 frame_size = sampling_rate/25;
             else if (strcmp(argv[ args + 1 ], "60")==0)
                 frame_size = 3*sampling_rate/50;
+            else if (strcmp(argv[ args + 1 ], "80")==0)
+                frame_size = 4*sampling_rate/50;
+            else if (strcmp(argv[ args + 1 ], "100")==0)
+                frame_size = 5*sampling_rate/50;
+            else if (strcmp(argv[ args + 1 ], "120")==0)
+                frame_size = 6*sampling_rate/50;
             else {
                 fprintf(stderr, "Unsupported frame size: %s ms. "
-                                "Supported are 2.5, 5, 10, 20, 40, 60.\n",
+                                "Supported are 2.5, 5, 10, 20, 40, 60, 80, 100, 120.\n",
                                 argv[ args + 1 ]);
                 return EXIT_FAILURE;
             }
@@ -612,8 +618,14 @@ int main(int argc, char *argv[])
              variable_duration = OPUS_FRAMESIZE_20_MS;
           else if (frame_size==sampling_rate/25)
              variable_duration = OPUS_FRAMESIZE_40_MS;
-          else
+          else if (frame_size==3*sampling_rate/50)
              variable_duration = OPUS_FRAMESIZE_60_MS;
+          else if (frame_size==4*sampling_rate/50)
+             variable_duration = OPUS_FRAMESIZE_80_MS;
+          else if (frame_size==5*sampling_rate/50)
+             variable_duration = OPUS_FRAMESIZE_100_MS;
+          else
+             variable_duration = OPUS_FRAMESIZE_120_MS;
           opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
        }
        frame_size = 2*48000;

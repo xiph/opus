@@ -835,8 +835,8 @@ static opus_int32 rate_allocation(
    return rate_sum;
 }
 
-/* Max size in case the encoder decides to return three frames */
-#define MS_FRAME_TMP (3*1275+7)
+/* Max size in case the encoder decides to return six frames (6 x 20 ms = 120 ms) */
+#define MS_FRAME_TMP (6*1275+12)
 static int opus_multistream_encode_native
 (
     OpusMSEncoder *st,
@@ -903,9 +903,11 @@ static int opus_multistream_encode_native
    }
    /* Validate frame_size before using it to allocate stack space.
       This mirrors the checks in opus_encode[_float](). */
-   if (400*frame_size != Fs && 200*frame_size != Fs &&
-       100*frame_size != Fs &&  50*frame_size != Fs &&
-        25*frame_size != Fs &&  50*frame_size != 3*Fs)
+   if (400*frame_size != Fs   && 200*frame_size != Fs   &&
+       100*frame_size != Fs   &&  50*frame_size != Fs   &&
+        25*frame_size != Fs   &&  50*frame_size != 3*Fs &&
+        50*frame_size != 4*Fs &&  50*frame_size != 5*Fs &&
+        50*frame_size != 6*Fs)
    {
       RESTORE_STACK;
       return OPUS_BAD_ARG;
