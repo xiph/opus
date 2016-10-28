@@ -1285,7 +1285,6 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
       }
    }
 
-   /* If encoding multiframes recursively, the true number of frames is rp->nb_frames. */
    ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr);
 
    if (ret<0)
@@ -1447,11 +1446,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (!st->use_vbr)
     {
        int cbrBytes;
-       /* Multiply by 3 to make sure the division is exact. */
-       int frame_rate6 = 6*st->Fs/frame_size;
+       /* Multiply by 12 to make sure the division is exact. */
+       int frame_rate12 = 12*st->Fs/frame_size;
        /* We need to make sure that "int" values always fit in 16 bits. */
-       cbrBytes = IMIN( (6*st->bitrate_bps/8 + frame_rate6/2)/frame_rate6, max_data_bytes);
-       st->bitrate_bps = cbrBytes*(opus_int32)frame_rate6*8/6;
+       cbrBytes = IMIN( (12*st->bitrate_bps/8 + frame_rate12/2)/frame_rate12, max_data_bytes);
+       st->bitrate_bps = cbrBytes*(opus_int32)frame_rate12*8/12;
        /* Make sure we provide at least one byte to avoid failing. */
        max_data_bytes = IMAX(1, cbrBytes);
     }
