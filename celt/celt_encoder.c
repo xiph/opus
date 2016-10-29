@@ -226,7 +226,7 @@ void opus_custom_encoder_destroy(CELTEncoder *st)
 
 
 static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int C,
-                              opus_val16 *tf_estimate, int *tf_chan, int low_rate,
+                              opus_val16 *tf_estimate, int *tf_chan, int allow_weak_transients,
                               int *weak_transient)
 {
    int i;
@@ -262,7 +262,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       decay of 3.3 dB/ms. This avoids having to code transients at very low
       bitrate (mostly for hybrid), which can result in unstable energy and/or
       partial collapse. */
-   if (low_rate)
+   if (allow_weak_transients)
    {
 #ifdef FIXED_POINT
       forward_shift = 5;
@@ -385,7 +385,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    is_transient = mask_metric>200;
    /* For low bitrates, define "weak transients" that need to be
       handled differently to avoid partial collapse. */
-   if (low_rate && is_transient && mask_metric<600) {
+   if (allow_weak_transients && is_transient && mask_metric<600) {
       is_transient = 0;
       *weak_transient = 1;
    }
@@ -1612,8 +1612,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    shortBlocks = 0;
    if (st->complexity >= 1 && !st->lfe)
    {
+      /* Reduces the likelihood of energy instability on fricatives at low bitrate
+         in hybrid mode. It seems like we still want to have real transients on vowels
+         though (small SILK quantization offset value). */
+      int allow_weak_transients = hybrid && effectiveBytes<15 && st->silk_info.offset >= 100;
       isTransient = transient_analysis(in, N+overlap, CC,
-            &tf_estimate, &tf_chan, effectiveBytes<15, &weak_transient);
+            &tf_estimate, &tf_chan, allow_weak_transients, &weak_transient);
    }
    if (LM>0 && ec_tell(enc)+3<=total_bits)
    {
