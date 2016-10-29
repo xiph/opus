@@ -76,3 +76,5 @@ static OPUS_INLINE void _test_failed(const char *file, int line)
   abort();
 }
 #define test_failed() _test_failed(__FILE__, __LINE__);
+
+void regression_test(void);

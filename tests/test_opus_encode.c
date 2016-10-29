@@ -680,6 +680,8 @@ int main(int _argc, char **_argv)
    fprintf(stderr,"Testing %s encoder. Random seed: %u (%.4X)\n", oversion, iseed, fast_rand() % 65535);
    if(env_used)fprintf(stderr,"  Random seed set from the environment (SEED=%s).\n", env_seed);
 
+   regression_test();
+
    /*Setting TEST_OPUS_NOFUZZ tells the tool not to send garbage data
      into the decoders. This is helpful because garbage data
      may cause the decoders to clip, which angers CLANG IOC.*/

@@ -102,7 +102,7 @@ opus_compare_LDADD = $(LIBM)
 tests_test_opus_api_SOURCES = tests/test_opus_api.c tests/test_opus_common.h
 tests_test_opus_api_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
-tests_test_opus_encode_SOURCES = tests/test_opus_encode.c tests/test_opus_common.h
+tests_test_opus_encode_SOURCES = tests/test_opus_encode.c tests/opus_encode_regressions.c tests/test_opus_common.h
 tests_test_opus_encode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
 tests_test_opus_decode_SOURCES = tests/test_opus_decode.c tests/test_opus_common.h
