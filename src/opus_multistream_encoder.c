@@ -1039,9 +1039,9 @@ static int opus_multistream_encode_native
       curr_max = max_data_bytes - tot_size;
       /* Reserve one byte for the last stream and two for the others */
       curr_max -= IMAX(0,2*(st->layout.nb_streams-s-1)-1);
-      /* For 100 ms, reserve an extra byte per stream for the Toc */
+      /* For 100 ms, reserve an extra byte per stream for the ToC */
       if (Fs/frame_size == 10)
-        curr_max -= st->layout.nb_streams-s;
+        curr_max -= st->layout.nb_streams-s-1;
       curr_max = IMIN(curr_max,MS_FRAME_TMP);
       /* Repacketizer will add one or two bytes for self-delimited frames */
       if (s != st->layout.nb_streams-1) curr_max -=  curr_max>253 ? 2 : 1;
