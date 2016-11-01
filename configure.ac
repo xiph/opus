@@ -421,8 +421,8 @@ AC_DEFUN([OPUS_PATH_NE10],
       fi
 
       AC_MSG_CHECKING(for NE10)
-      save_CFLAGS="$CFLAGS"; CFLAGS="$NE10_CFLAGS"
-      save_LIBS="$LIBS"; LIBS="$NE10_LIBS $LIBM"
+      save_CFLAGS="$CFLAGS"; CFLAGS="$CFLAGS $NE10_CFLAGS"
+      save_LIBS="$LIBS"; LIBS="$LIBS $NE10_LIBS $LIBM"
       AC_LINK_IFELSE(
          [
             AC_LANG_PROGRAM(
