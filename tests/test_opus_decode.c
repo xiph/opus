@@ -135,7 +135,14 @@ int test_decoder_code0(int no_fuzz)
          outbuf[0]=32749;
          out_samples = opus_decode(dec[t], packet, 0, outbuf, 0, fec);
          if(out_samples>0)test_failed();
+#if defined(__GNUC__) && OPUS_GNUC_PREREQ(3, 4)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull"
+#endif
          out_samples = opus_decode(dec[t], packet, 0, 0, 0, fec);
+#if defined(__GNUC__) && OPUS_GNUC_PREREQ(3, 4)
+#pragma GCC diagnostic pop
+#endif
          if(out_samples>0)test_failed();
          if(outbuf[0]!=32749)test_failed();
 
