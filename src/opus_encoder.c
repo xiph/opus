@@ -1677,24 +1677,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     equiv_rate = compute_equiv_rate(st->bitrate_bps, st->stream_channels, st->Fs/frame_size,
           st->use_vbr, st->mode, st->silk_mode.complexity, st->silk_mode.packetLossPercentage);
 
-    /* For the first frame at a new SILK bandwidth */
-    if (st->silk_bw_switch)
-    {
-       redundancy = 1;
-       celt_to_silk = 1;
-       st->silk_bw_switch = 0;
-       prefill=1;
-    }
-
-    if (redundancy)
-    {
-       /* Fair share of the max size allowed */
-       redundancy_bytes = IMIN(257, max_data_bytes*(opus_int32)(st->Fs/200)/(frame_size+st->Fs/200));
-       /* For VBR, target the actual bitrate (subject to the limit above) */
-       if (st->use_vbr)
-          redundancy_bytes = IMIN(redundancy_bytes, st->bitrate_bps/1600);
-    }
-
     if (st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY)
     {
         silk_EncControlStruct dummy;
@@ -1844,12 +1826,27 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        return ret;
     }
 
+    /* For the first frame at a new SILK bandwidth */
+    if (st->silk_bw_switch)
+    {
+       redundancy = 1;
+       celt_to_silk = 1;
+       st->silk_bw_switch = 0;
+       prefill=1;
+    }
+
     /* If we decided to go with CELT, make sure redundancy is off, no matter what
        we decided earlier. */
     if (st->mode == MODE_CELT_ONLY)
-    {
         redundancy = 0;
-        redundancy_bytes = 0;
+
+    if (redundancy)
+    {
+       /* Fair share of the max size allowed */
+       redundancy_bytes = IMIN(257, max_data_bytes*(opus_int32)(st->Fs/200)/(frame_size+st->Fs/200));
+       /* For VBR, target the actual bitrate (subject to the limit above) */
+       if (st->use_vbr)
+          redundancy_bytes = IMIN(redundancy_bytes, st->bitrate_bps/1600);
     }
 
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, curr_bandwidth); */
