@@ -299,7 +299,7 @@ void silk_noise_shape_analysis_FIX(
             gain_mult_Q16 = warped_gain( AR_Q24, warping_Q16, psEnc->sCmn.shapingLPCOrder );
             silk_assert( psEncCtrl->Gains_Q16[ k ] > 0 );
             if( psEncCtrl->Gains_Q16[ k ] < SILK_FIX_CONST( 0.25, 16 ) ) {
-                psEncCtrl->Gains_Q16[ k ] = silk_SMULWW( psEncCtrl->Gains_Q16[ k ], gain_mult_Q16 ); 
+                psEncCtrl->Gains_Q16[ k ] = silk_SMULWW( psEncCtrl->Gains_Q16[ k ], gain_mult_Q16 );
             } else {
                 psEncCtrl->Gains_Q16[ k ] = silk_SMULWW( silk_RSHIFT_ROUND( psEncCtrl->Gains_Q16[ k ], 1 ), gain_mult_Q16 );
                 if ( psEncCtrl->Gains_Q16[ k ] >= ( silk_int32_MAX >> 1 ) ) {
