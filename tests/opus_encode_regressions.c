@@ -951,6 +951,38 @@ static int ec_enc_shrink_assert(void)
     return 0;
 }
 
+static int ec_enc_shrink_assert2(void)
+{
+    OpusEncoder *enc;
+    int err;
+    int data_len;
+    unsigned char data[2000];
+
+    enc = opus_encoder_create(48000, 1, OPUS_APPLICATION_AUDIO, &err);
+    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(6));
+    opus_encoder_ctl(enc, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
+    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_FULLBAND));
+    opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(26));
+    opus_encoder_ctl(enc, OPUS_SET_BITRATE(27000));
+    {
+        static const short pcm[960] = { 0 };
+        data_len = opus_encode(enc, pcm, 960, data, 2000);
+        assert(data_len > 0);
+    }
+    opus_encoder_ctl(enc, OPUS_SET_SIGNAL(OPUS_SIGNAL_MUSIC));
+    {
+        static const short pcm[480] =
+        {
+            32767, 32767, 0, 0, 32767, 32767, 0, 0, 32767, 32767,
+            -32768, -32768, 0, 0, -32768, -32768, 0, 0, -32768, -32768
+        };
+        data_len = opus_encode(enc, pcm, 480, data, 19);
+        assert(data_len > 0);
+    }
+    opus_encoder_destroy(enc);
+    return 0;
+}
+
 void regression_test(void)
 {
    fprintf(stderr, "Running simple tests for bugs that have been fixed previously\n");
@@ -959,4 +991,5 @@ void regression_test(void)
    mscbr_encode_fail();
    surround_analysis_uninit();
    ec_enc_shrink_assert();
+   ec_enc_shrink_assert2();
 }

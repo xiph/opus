@@ -1961,7 +1961,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
               st->silk_mode.bitRate += 3*rate_offset/5;
            else
               st->silk_mode.bitRate += rate_offset;
-           bytes_target += rate_offset * frame_size / (8 * st->Fs);
         }
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
@@ -2005,11 +2004,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         /* Call SILK encoder for the low band */
 
         /* Max bits for SILK, counting ToC, redundancy bytes, and optionally redundancy. */
-        st->silk_mode.maxBits = IMIN(1275, max_data_bytes-1-redundancy_bytes)*8;
-        if (redundancy)
+        st->silk_mode.maxBits = (max_data_bytes-1)*8;
+        if (redundancy && redundancy_bytes >= 2)
         {
            /* Counting 1 bit for redundancy position and 20 bits for flag+size (only for hybrid). */
-           st->silk_mode.maxBits -= 1;
+           st->silk_mode.maxBits -= redundancy_bytes*8 + 1;
            if (st->mode == MODE_HYBRID)
               st->silk_mode.maxBits -= 20;
         }
@@ -2134,18 +2133,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
         if (st->mode == MODE_HYBRID)
         {
-            int len;
-
-            len = (ec_tell(&enc)+7)>>3;
-            if (redundancy)
-               len += st->mode == MODE_HYBRID ? 3 : 1;
             if( st->use_vbr ) {
                 celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps-st->silk_mode.bitRate));
-                nb_compr_bytes = max_data_bytes-1-redundancy_bytes;
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR_CONSTRAINT(0));
-            } else {
-                /* check if SILK used up too much */
-                nb_compr_bytes = len > bytes_target ? len : bytes_target;
             }
         } else {
             if (st->use_vbr)
@@ -2162,14 +2152,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR(1));
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR_CONSTRAINT(st->vbr_constraint));
                 celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps+bonus));
-                nb_compr_bytes = max_data_bytes-1-redundancy_bytes;
-            } else {
-                nb_compr_bytes = bytes_target;
             }
         }
-
-    } else {
-        nb_compr_bytes = 0;
     }
 
     ALLOC(tmp_prefill, st->channels*st->Fs/400, opus_val16);
@@ -2218,14 +2202,19 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if ( st->mode != MODE_CELT_ONLY && ec_tell(&enc)+17+20*(st->mode == MODE_HYBRID) <= 8*(max_data_bytes-1))
     {
         /* For SILK mode, the redundancy is inferred from the length */
-        if (st->mode == MODE_HYBRID && (redundancy || ec_tell(&enc)+37 <= 8*nb_compr_bytes))
+        if (st->mode == MODE_HYBRID)
            ec_enc_bit_logp(&enc, redundancy, 12);
         if (redundancy)
         {
             int max_redundancy;
             ec_enc_bit_logp(&enc, celt_to_silk, 1);
             if (st->mode == MODE_HYBRID)
-               max_redundancy = (max_data_bytes-1)-nb_compr_bytes;
+            {
+               /* Reserve the 8 bits needed for the redundancy length,
+                  and at least a few bits for CELT if possible */
+               max_redundancy = (max_data_bytes-1)-((ec_tell(&enc)+8+3+7)>>3);
+               max_redundancy = IMIN(max_redundancy, redundancy_bytes);
+            }
             else
                max_redundancy = (max_data_bytes-1)-((ec_tell(&enc)+7)>>3);
             /* Target the same bit-rate for redundancy as for the rest,
@@ -2252,7 +2241,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         ec_enc_done(&enc);
         nb_compr_bytes = ret;
     } else {
-       nb_compr_bytes = IMIN((max_data_bytes-1)-redundancy_bytes, nb_compr_bytes);
+       nb_compr_bytes = (max_data_bytes-1)-redundancy_bytes;
        ec_enc_shrink(&enc, nb_compr_bytes);
     }
 
@@ -2299,7 +2288,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            celt_encode_with_ec(celt_enc, tmp_prefill, st->Fs/400, dummy, 2, NULL);
            celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
         }
-        /* If false, we already busted the budget and we'll end up with a "PLC packet" */
+        /* If false, we already busted the budget and we'll end up with a "PLC frame" */
         if (ec_tell(&enc) <= 8*nb_compr_bytes)
         {
            /* Set the bitrate again if it was overridden in the redundancy code above*/
@@ -2413,7 +2402,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (!st->use_vbr)
     {
        if (opus_packet_pad(data, ret, max_data_bytes) != OPUS_OK)
-
        {
           RESTORE_STACK;
           return OPUS_INTERNAL_ERROR;
