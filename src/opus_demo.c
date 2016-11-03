@@ -876,8 +876,6 @@ int main(int argc, char *argv[])
                1e-3*bits_act*sampling_rate/(1e-15+frame_size*(double)count_act));
     fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n",
             1e-3*sqrt(bits2/count - bits*bits/(count*(double)count))*sampling_rate/frame_size);
-    /* Close any files to which intermediate results were stored */
-    SILK_DEBUG_STORE_CLOSE_FILES
     silk_TimerSave("opus_timing.txt");
     opus_encoder_destroy(enc);
     opus_decoder_destroy(dec);

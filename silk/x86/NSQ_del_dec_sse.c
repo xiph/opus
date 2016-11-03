@@ -301,7 +301,6 @@ void silk_NSQ_del_dec_sse4_1(
     NSQ->lagPrev        = pitchL[ psEncC->nb_subfr - 1 ];
 
     /* Save quantized speech signal */
-    /* DEBUG_STORE_DATA( enc.pcm, &NSQ->xq[psEncC->ltp_mem_length], psEncC->frame_length * sizeof( opus_int16 ) ) */
     silk_memmove( NSQ->xq,           &NSQ->xq[           psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int16 ) );
     silk_memmove( NSQ->sLTP_shp_Q14, &NSQ->sLTP_shp_Q14[ psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int32 ) );
     RESTORE_STACK;
