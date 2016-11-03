@@ -51,6 +51,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tests\opus_encode_regressions.c" />
     <ClCompile Include="..\..\tests\test_opus_encode.c" />
   </ItemGroup>
   <ItemGroup>

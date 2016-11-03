@@ -10,5 +10,8 @@
     <ClCompile Include="..\..\tests\test_opus_encode.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tests\opus_encode_regressions.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
