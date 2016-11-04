@@ -73,7 +73,6 @@ struct OpusCustomEncoder {
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
    int loss_rate;
    int lsb_depth;
-   int variable_duration;
    int lfe;
    int disable_inv;
    int arch;
@@ -1220,7 +1219,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       int LM, opus_int32 bitrate, int lastCodedBands, int C, int intensity,
       int constrained_vbr, opus_val16 stereo_saving, int tot_boost,
       opus_val16 tf_estimate, int pitch_change, opus_val16 maxDepth,
-      int variable_duration, int lfe, int has_surround_mask, opus_val16 surround_masking,
+      int lfe, int has_surround_mask, opus_val16 surround_masking,
       opus_val16 temporal_vbr)
 {
    /* The target rate in 8th bits per frame */
@@ -1264,8 +1263,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
    /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
    target += tot_boost-(16<<LM);
    /* Apply transient boost, compensating for average boost. */
-   tf_calibration = variable_duration==OPUS_FRAMESIZE_VARIABLE ?
-                    QCONST16(0.02f,14) : QCONST16(0.04f,14);
+   tf_calibration = QCONST16(0.04f,14);
    target += (opus_int32)SHL32(MULT16_32_Q15(tf_estimate-tf_calibration, target),1);
 
 #ifndef DISABLE_FLOAT_API
@@ -1582,7 +1580,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       int enabled;
       int qg;
       enabled = ((st->lfe&&nbAvailableBytes>3) || nbAvailableBytes>12*C) && !hybrid && !silence && !st->disable_pf
-            && st->complexity >= 5 && !(st->consec_transient && LM!=3 && st->variable_duration==OPUS_FRAMESIZE_VARIABLE);
+            && st->complexity >= 5;
 
       prefilter_tapset = st->tapset_decision;
       pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes);
@@ -1990,7 +1988,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         target = compute_vbr(mode, &st->analysis, base_target, LM, equiv_rate,
            st->lastCodedBands, C, st->intensity, st->constrained_vbr,
            st->stereo_saving, tot_boost, tf_estimate, pitch_change, maxDepth,
-           st->variable_duration, st->lfe, st->energy_mask!=NULL, surround_masking,
+           st->lfe, st->energy_mask!=NULL, surround_masking,
            temporal_vbr);
      } else {
         target = base_target;
@@ -2407,12 +2405,6 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
       {
           opus_int32 *value = va_arg(ap, opus_int32*);
           *value=st->lsb_depth;
-      }
-      break;
-      case OPUS_SET_EXPERT_FRAME_DURATION_REQUEST:
-      {
-          opus_int32 value = va_arg(ap, opus_int32);
-          st->variable_duration = value;
       }
       break;
       case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:

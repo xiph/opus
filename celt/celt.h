@@ -74,9 +74,6 @@ typedef struct {
 
 /* Encoder/decoder Requests */
 
-/* Expose this option again when variable framesize actually works */
-#define OPUS_FRAMESIZE_VARIABLE              5010 /**< Optimize the frame size dynamically */
-
 
 #define CELT_SET_PREDICTION_REQUEST    10002
 /** Controls the use of interframe prediction.
