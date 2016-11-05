@@ -157,8 +157,7 @@ opus_custom_demo_LDADD = libopus.la $(LIBM)
 endif
 endif
 
-EXTRA_DIST = version.mk \
-             opus.pc.in \
+EXTRA_DIST = opus.pc.in \
              opus-uninstalled.pc.in \
              opus.m4 \
              Makefile.mips \

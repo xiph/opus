@@ -4,7 +4,6 @@
 
 - Check for uncommitted changes to master.
 - Update OPUS_LT_* API versioning in configure.ac.
-- Update the version in version.mk
 - Tag the release commit with 'git tag -s vN.M'.
  - Include release notes in the tag annotation.
 - Verify 'make distcheck' produces a tarball with
