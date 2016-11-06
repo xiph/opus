@@ -33,10 +33,13 @@
 
 #define NB_FRAMES 8
 #define NB_TBANDS 18
-#define NB_TOT_BANDS 21
+#define NB_TOT_BANDS 19
 #define ANALYSIS_BUF_SIZE 720 /* 15 ms at 48 kHz */
 
 #define DETECT_SIZE 200
+
+/* Uncomment this to print the MLP features on stdout. */
+/*#define MLP_TRAINING*/
 
 typedef struct {
    int arch;
@@ -49,13 +52,15 @@ typedef struct {
    float prev_band_tonality[NB_TBANDS];
    float prev_tonality;
    float E[NB_FRAMES][NB_TBANDS];
+   float logE[NB_FRAMES][NB_TBANDS];
    float lowE[NB_TBANDS];
    float highE[NB_TBANDS];
-   float meanE[NB_TOT_BANDS];
+   float meanE[NB_TOT_BANDS+1];
    float mem[32];
    float cmean[8];
    float std[9];
    float music_prob;
+   float vad_prob;
    float Etracker;
    float lowECount;
    int E_count;
@@ -76,6 +81,8 @@ typedef struct {
    int write_pos;
    int read_pos;
    int read_subframe;
+   float hp_ener_accum;
+   opus_val32 downmix_state[3];
    AnalysisInfo info[DETECT_SIZE];
 } TonalityAnalysisState;
 
