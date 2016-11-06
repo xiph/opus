@@ -384,6 +384,7 @@ int run_test1(int no_fuzz)
 
    if(opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(OPUS_AUTO))!=OPUS_OK)test_failed();
    if(opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(-2))!=OPUS_BAD_ARG)test_failed();
+   if(opus_encode(enc, inbuf, 500, packet, MAX_PACKET)!=OPUS_BAD_ARG)test_failed();
 
    for(rc=0;rc<3;rc++)
    {

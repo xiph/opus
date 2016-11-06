@@ -2171,7 +2171,11 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
    ALLOC_STACK;
 
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
-
+   if (frame_size <= 0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    ALLOC(in, frame_size*st->channels, opus_int16);
 
    for (i=0;i<frame_size*st->channels;i++)
@@ -2202,7 +2206,11 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
    ALLOC_STACK;
 
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
-
+   if (frame_size <= 0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    ALLOC(in, frame_size*st->channels, float);
 
    for (i=0;i<frame_size*st->channels;i++)
