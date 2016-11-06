@@ -378,7 +378,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        frame_stationarity += stationarity;
        /*band_tonality[b] = tE/(1e-15+E)*/;
        band_tonality[b] = MAX16(tE/(1e-15f+E), stationarity*tonal->prev_band_tonality[b]);
-       //printf("%f ", band_tonality[b]);
+       printf("%f ", band_tonality[b]);
 #if 0
        if (b>=NB_TONAL_SKIP_BANDS)
        {
@@ -395,7 +395,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        /*printf("%f %f ", band_tonality[b], stationarity);*/
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
-    //printf("\n");
+    printf("\n");
     bandwidth_mask = 0;
     bandwidth = 0;
     maxE = 0;
