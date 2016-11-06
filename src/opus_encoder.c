@@ -1105,12 +1105,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     max_data_bytes = IMIN(1276, out_data_bytes);
 
     st->rangeFinal = 0;
-    if ((!st->variable_duration && 400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
-         50*frame_size != st->Fs && 25*frame_size != st->Fs && 50*frame_size != 3*st->Fs && 50*frame_size != 4*st->Fs &&
-         50*frame_size != 5*st->Fs && 50*frame_size != 6*st->Fs)
-         || (400*frame_size < st->Fs)
-         || max_data_bytes<=0
-         )
+    if (frame_size <= 0 || max_data_bytes <= 0)
     {
        RESTORE_STACK;
        return OPUS_BAD_ARG;

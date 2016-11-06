@@ -864,26 +864,8 @@ static int opus_multistream_encode_native
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_VBR(&vbr));
    opus_encoder_ctl((OpusEncoder*)ptr, CELT_GET_MODE(&celt_mode));
 
-   {
-      opus_int32 delay_compensation;
-
-      opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_LOOKAHEAD(&delay_compensation));
-      delay_compensation -= Fs/400;
-      frame_size = frame_size_select(analysis_frame_size, st->variable_duration, Fs);
-   }
-
-   if (400*frame_size < Fs)
-   {
-      RESTORE_STACK;
-      return OPUS_BAD_ARG;
-   }
-   /* Validate frame_size before using it to allocate stack space.
-      This mirrors the checks in opus_encode[_float](). */
-   if (400*frame_size != Fs   && 200*frame_size != Fs   &&
-       100*frame_size != Fs   &&  50*frame_size != Fs   &&
-        25*frame_size != Fs   &&  50*frame_size != 3*Fs &&
-        50*frame_size != 4*Fs &&  50*frame_size != 5*Fs &&
-        50*frame_size != 6*Fs)
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, Fs);
+   if (frame_size <= 0)
    {
       RESTORE_STACK;
       return OPUS_BAD_ARG;
