@@ -586,7 +586,7 @@ void silk_resampler_down2_float(
     int                         inLen               /* I    Number of input samples                                     */
 )
 {
-    int k, len2 = silk_RSHIFT32( inLen, 1 );
+    int k, len2 = inLen/2;
     opus_val32 in32, out32, Y, X;
 
     /* Internal variables and state are in Q10 format */
@@ -654,24 +654,29 @@ void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, in
 float S[2];
 void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
-   float out[1000];
+   VARDECL(opus_val16, tmp);
    const opus_int16 *x;
    opus_val32 scale;
    int j;
+   ALLOC_STACK;
+
+   subframe *= 2;
+   ALLOC(tmp, subframe, opus_val16);
+
    x = (const opus_int16 *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = x[(j+offset)*C+c1];
+      tmp[j] = x[(j+offset)*C+c1];
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         sub[j] += x[(j+offset)*C+c2];
+         tmp[j] += x[(j+offset)*C+c2];
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            sub[j] += x[(j+offset)*C+c];
+            tmp[j] += x[(j+offset)*C+c];
       }
    }
 #ifdef FIXED_POINT
@@ -684,9 +689,8 @@ void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int 
    else if (c2>-1)
       scale /= 2;
    for (j=0;j<subframe;j++)
-      sub[j] *= scale;
-   silk_resampler_down2_float(S, out, sub, subframe);
-   for (j=0;j<subframe/2;j++) printf("%f\n", out[j]);
+      tmp[j] *= scale;
+   silk_resampler_down2_float(S, sub, tmp, subframe);
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
