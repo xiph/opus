@@ -223,6 +223,10 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     alphaE = 1.f/IMIN(50, 1+tonal->count);
     alphaE2 = 1.f/IMIN(1000, 1+tonal->count);
 
+    /* len and offset are now at 24 kHz. */
+    len/= 2;
+    offset /= 2;
+
     if (tonal->count<4)
        tonal->music_prob = .5;
     kfft = celt_mode->mdct.kfft[0];
@@ -325,7 +329,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        float E=0, tE=0, nE=0;
        float L1, L2;
        float stationarity;
-       for (i=tbands[b];i<tbands[b+1];i++)
+       for (i=2*tbands[b];i<2*tbands[b+1];i++)
        {
           float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r
                      + out[i].i*(float)out[i].i + out[N-i].i*(float)out[N-i].i;
@@ -374,6 +378,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        frame_stationarity += stationarity;
        /*band_tonality[b] = tE/(1e-15+E)*/;
        band_tonality[b] = MAX16(tE/(1e-15f+E), stationarity*tonal->prev_band_tonality[b]);
+       //printf("%f ", band_tonality[b]);
 #if 0
        if (b>=NB_TONAL_SKIP_BANDS)
        {
@@ -390,7 +395,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        /*printf("%f %f ", band_tonality[b], stationarity);*/
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
-
+    //printf("\n");
     bandwidth_mask = 0;
     bandwidth = 0;
     maxE = 0;
@@ -635,6 +640,7 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
    int offset;
    int pcm_len;
 
+   analysis_frame_size -= analysis_frame_size&1;
    if (analysis_pcm != NULL)
    {
       /* Avoid overflow/wrap-around of the analysis buffer */
@@ -643,9 +649,9 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
       pcm_len = analysis_frame_size - analysis->analysis_offset;
       offset = analysis->analysis_offset;
       while (pcm_len>0) {
-         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(480, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
-         offset += 480;
-         pcm_len -= 480;
+         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(960, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
+         offset += 960;
+         pcm_len -= 960;
       }
       analysis->analysis_offset = analysis_frame_size;
 
