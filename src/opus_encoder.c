@@ -577,6 +577,45 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 #else
 #define PCM2VAL(x) SCALEIN(x)
 #endif
+
+#ifndef FIXED_POINT
+void silk_resampler_down2_float(
+    opus_val32                  *S,                 /* I/O  State vector [ 2 ]                                          */
+    opus_val16                  *out,               /* O    Output signal [ floor(len/2) ]                              */
+    const opus_val16            *in,                /* I    Input signal [ len ]                                        */
+    int                         inLen               /* I    Number of input samples                                     */
+)
+{
+    int k, len2 = silk_RSHIFT32( inLen, 1 );
+    opus_val32 in32, out32, Y, X;
+
+    /* Internal variables and state are in Q10 format */
+    for( k = 0; k < len2; k++ ) {
+        /* Convert to Q10 */
+        in32 = in[ 2 * k ];
+
+        /* All-pass section for even input sample */
+        Y      = SUB32( in32, S[ 0 ] );
+        X      = 0.6074371f*Y;
+        out32  = ADD32( S[ 0 ], X );
+        S[ 0 ] = ADD32( in32, X );
+
+        /* Convert to Q10 */
+        in32 = in[ 2 * k + 1 ];
+
+        /* All-pass section for odd input sample, and add to output of previous section */
+        Y      = SUB32( in32, S[ 1 ] );
+        X      = 0.15063f*Y;
+        out32  = ADD32( out32, S[ 1 ] );
+        out32  = ADD32( out32, X );
+        S[ 1 ] = ADD32( in32, X );
+
+        /* Add, convert back to int16 and store to output */
+        out[ k ] = .5*out32;
+    }
+}
+#endif
+
 void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
    const float *x;
@@ -612,8 +651,10 @@ void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, in
 }
 #endif
 
+float S[2];
 void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
+   float out[1000];
    const opus_int16 *x;
    opus_val32 scale;
    int j;
@@ -644,6 +685,8 @@ void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int 
       scale /= 2;
    for (j=0;j<subframe;j++)
       sub[j] *= scale;
+   silk_resampler_down2_float(S, out, sub, subframe);
+   for (j=0;j<subframe/2;j++) printf("%f\n", out[j]);
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
