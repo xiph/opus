@@ -300,7 +300,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        mod2 *= mod2;
        mod2 *= mod2;
 
-       avg_mod = .25f*(d2A[i]+2.f*mod1+mod2);
+       avg_mod = .25f*(.25*d2A[i]+.5f*mod1+3.25*mod2);
        tonality[i] = 1.f/(1.f+40.f*16.f*pi4*avg_mod)-.015f;
 
        A[i] = angle2;
@@ -378,7 +378,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        frame_stationarity += stationarity;
        /*band_tonality[b] = tE/(1e-15+E)*/;
        band_tonality[b] = MAX16(tE/(1e-15f+E), stationarity*tonal->prev_band_tonality[b]);
-       printf("%f ", band_tonality[b]);
+       //printf("%f ", band_tonality[b]);
 #if 0
        if (b>=NB_TONAL_SKIP_BANDS)
        {
@@ -395,7 +395,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        /*printf("%f %f ", band_tonality[b], stationarity);*/
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
-    printf("\n");
+    //printf("\n");
     bandwidth_mask = 0;
     bandwidth = 0;
     maxE = 0;
@@ -659,5 +659,5 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
    }
 
    analysis_info->valid = 0;
-   tonality_get_info(analysis, analysis_info, frame_size);
+   tonality_get_info(analysis, analysis_info, frame_size/2);
 }
