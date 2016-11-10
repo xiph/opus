@@ -183,6 +183,7 @@ static const float std_feature_bias[9] = {
       2.163313, 1.260756, 1.116868, 1.918795
 };
 
+float oldE[1024];
 static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix)
 {
     int i, b;
@@ -271,6 +272,39 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     }
 #endif
 
+    float S[240];
+    float S2[240];
+    float M[240];
+    float T[240] = {0};
+    S[0] = 1e-10;
+    for (i=1;i<N2;i++)
+    {
+       float X2r, X2i;
+       X2r = (float)out[i].i+out[N-i].i;
+       X2i = (float)out[N-i].r-out[i].r;
+       S[i] = X2r*X2r + X2i*X2i;
+    }
+
+    for (i=2;i<N2-2;i++)
+    {
+       T[i] = S[i] / (1e-10 + MAX32(S[i-2], S[i+2]));
+    }
+
+    S2[0] = 1e-10;
+    S2[N2-1] = S[N2-1];
+    for (i=1;i<N2-1;i++)
+    {
+       S2[i] = .25*(S[i-1]+2*S[i]+S[i+1]);
+    }
+
+    M[0] = 1e-10;
+    for (i=1;i<N2;i++)
+       M[i] = 0.9f*M[i-1] + .1f/(S2[i] + 1e-10);
+    M[N2-1] = 1.f/M[N2-1];
+    for (i=N2-2;i>=0;i--)
+       M[i] = 0.9f*M[i+1] + .1f/(M[i]);
+
+    float newtone[240];
     for (i=1;i<N2;i++)
     {
        float X1r, X2r, X1i, X2i;
@@ -300,14 +334,34 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        mod2 *= mod2;
        mod2 *= mod2;
 
-       avg_mod = .25f*(.25*d2A[i]+.5f*mod1+3.25*mod2);
+#if 0
+    avg_mod = .25f*(1*d2A[i]+2*mod1+1*mod2);
+    tonality[i] = 1.f/(1.f+40.f*16.f*pi4*avg_mod)-.015f;
+#else
+       float E, E0;
+       E = X2r*X2r + X2i*X2i + 1e-10;
+       E0 = X1r*X1r + X1i*X1i + 1e-10;
+
+       avg_mod = .25f*(.0*d2A[i]+.5f*mod1+3.5*mod2);
        tonality[i] = 1.f/(1.f+40.f*16.f*pi4*avg_mod)-.015f;
 
+       float f;
+       f = MAX32(0, E-oldE[i])/(1e-10+E);
+       f *= f;
+       newtone[i] = MIN32(1., MAX32(0, log10(1e-10+T[i])-.3));
+       if (E < 1.5*oldE[i]) newtone[i]=0;
+          //printf("%f %f ", tonality[i], f*MIN32(1., MAX32(0, .5*log10(1e-10+T[i])-.2)));//10*log10(E / M[i]));
+          //tonality[i] = MAX32(tonality[i], newtone);
+          //printf("\n");
+          //printf("%f %f\n", 20*log10((E+1e-8)/(oldE[i]+1e-8)), tonality[i]);
+          //printf("%f ", 10*log10((E+1e-16)/(oldE[i]+1e-16)));
+       oldE[i] = E0;
+#endif
        A[i] = angle2;
        dA[i] = d_angle2;
        d2A[i] = mod2;
     }
-
+    printf("\n");
     frame_tonality = 0;
     max_frame_tonality = 0;
     /*tw_sum = 0;*/
@@ -338,6 +392,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
           binE *= 5.55e-17f;
 #endif
           E += binE;
+          //tonality[i] = MAX32(newtone[i],MAX32(newtone[i+1],newtone[i-1]));
+          tonality[i] = MAX32(tonality[i], MAX32(newtone[i],MAX32(newtone[i+1],newtone[i-1])));
           tE += binE*tonality[i];
           nE += binE*2.f*(.5f-noisiness[i]);
        }
@@ -460,7 +516,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     frame_tonality = (max_frame_tonality/(NB_TBANDS-NB_TONAL_SKIP_BANDS));
     frame_tonality = MAX16(frame_tonality, tonal->prev_tonality*.8f);
     tonal->prev_tonality = frame_tonality;
-
+    //printf("%f\n", frame_tonality);
     slope /= 8*8;
     info->tonality_slope = slope;
 
