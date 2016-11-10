@@ -342,13 +342,13 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        E = X2r*X2r + X2i*X2i + 1e-10;
        E0 = X1r*X1r + X1i*X1i + 1e-10;
 
-       avg_mod = .25f*(.0*d2A[i]+.5f*mod1+3.5*mod2);
+       avg_mod = .25f*(2*d2A[i]+2.f*mod1+1*mod2);
        tonality[i] = 1.f/(1.f+40.f*16.f*pi4*avg_mod)-.015f;
 
        float f;
        f = MAX32(0, E-oldE[i])/(1e-10+E);
        f *= f;
-       newtone[i] = MIN32(1., MAX32(0, log10(1e-10+T[i])-.3));
+       newtone[i] = MIN32(1., MAX32(0, .5*log10(1e-10+T[i])-.3));
        if (E < 1.5*oldE[i]) newtone[i]=0;
           //printf("%f %f ", tonality[i], f*MIN32(1., MAX32(0, .5*log10(1e-10+T[i])-.2)));//10*log10(E / M[i]));
           //tonality[i] = MAX32(tonality[i], newtone);
@@ -361,7 +361,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        dA[i] = d_angle2;
        d2A[i] = mod2;
     }
-    printf("\n");
+    //printf("\n");
     frame_tonality = 0;
     max_frame_tonality = 0;
     /*tw_sum = 0;*/
