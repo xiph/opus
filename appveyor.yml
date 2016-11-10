@@ -26,7 +26,7 @@ after_build:
 
     cd %APPVEYOR_BUILD_FOLDER%
 
-    7z a opus.zip artifacts\* include\*.h
+    7z a opus.zip .\artifacts\* include\*.h
 
 test_script:
 - cmd: >-
