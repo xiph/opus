@@ -151,7 +151,18 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       pos--;
    if (pos<0)
       pos = DETECT_SIZE-1;
+   //printf("%d %d %d\n", tonal->read_pos, tonal->write_pos, pos);
    OPUS_COPY(info_out, &tonal->info[pos], 1);
+   for (i=0;i<3;i++)
+   {
+      pos++;
+      if (pos==DETECT_SIZE)
+         pos = 0;
+      if (pos == tonal->write_pos)
+         break;
+      info_out->tonality = MAX32(0, -.008 + MAX32(info_out->tonality, tonal->info[pos].tonality-.05));
+   }
+   //printf("%f\n", info_out->tonality);
    tonal->read_subframe += len/120;
    while (tonal->read_subframe>=4)
    {
@@ -241,6 +252,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        RESTORE_STACK;
        return;
     }
+    //printf("write to %d (%d)\n", tonal->write_pos, tonal->count);
     info = &tonal->info[tonal->write_pos++];
     if (tonal->write_pos>=DETECT_SIZE)
        tonal->write_pos-=DETECT_SIZE;
@@ -342,7 +354,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        E = X2r*X2r + X2i*X2i + 1e-10;
        E0 = X1r*X1r + X1i*X1i + 1e-10;
 
-       avg_mod = .25f*(2*d2A[i]+2.f*mod1+1*mod2);
+       avg_mod = .25f*(.5*d2A[i]+1.f*mod1+3.5*mod2);
        tonality[i] = 1.f/(1.f+40.f*16.f*pi4*avg_mod)-.015f;
 
        float f;
@@ -393,7 +405,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 #endif
           E += binE;
           //tonality[i] = MAX32(newtone[i],MAX32(newtone[i+1],newtone[i-1]));
-          tonality[i] = MAX32(tonality[i], MAX32(newtone[i],MAX32(newtone[i+1],newtone[i-1])));
+          //tonality[i] = MAX32(tonality[i], MAX32(newtone[i],MAX32(newtone[i+1],newtone[i-1])));
           tE += binE*tonality[i];
           nE += binE*2.f*(.5f-noisiness[i]);
        }
