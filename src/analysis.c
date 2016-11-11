@@ -159,7 +159,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
          pos = 0;
       if (pos == tonal->write_pos)
          break;
-      info_out->tonality = MAX32(0, -.008 + MAX32(info_out->tonality, tonal->info[pos].tonality-.05));
+      info_out->tonality = MAX32(0, -.03 + MAX32(info_out->tonality, tonal->info[pos].tonality-.05));
    }
    tonal->read_subframe += len/120;
    while (tonal->read_subframe>=4)
@@ -309,7 +309,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        mod2 *= mod2;
        mod2 *= mod2;
 
-       avg_mod = .25f*(.5*d2A[i]+1.f*mod1+3.5*mod2);
+       avg_mod = .25f*(.0*d2A[i]+1.5f*mod1+2.5*mod2);
        tonality[i] = 1.f/(1.f+40.f*16.f*pi4*avg_mod)-.015f;
 
        A[i] = angle2;
