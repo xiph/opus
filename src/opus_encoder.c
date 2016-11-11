@@ -661,6 +661,7 @@ void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int 
    ALLOC_STACK;
 
    subframe *= 2;
+   offset *= 2;
    ALLOC(tmp, subframe, opus_val16);
 
    x = (const opus_int16 *)_x;
