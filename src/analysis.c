@@ -228,9 +228,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     SAVE_STACK;
 
     tonal->last_transition++;
-    alpha = 1.f/IMIN(20, 1+tonal->count);
-    alphaE = 1.f/IMIN(50, 1+tonal->count);
-    alphaE2 = 1.f/IMIN(1000, 1+tonal->count);
+    alpha = 1.f/IMIN(10, 1+tonal->count);
+    alphaE = 1.f/IMIN(25, 1+tonal->count);
+    alphaE2 = 1.f/IMIN(500, 1+tonal->count);
 
     /* len and offset are now at 24 kHz. */
     len/= 2;
@@ -511,6 +511,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 #ifndef DISABLE_FLOAT_API
     mlp_process(&net, features, frame_probs);
     frame_probs[0] = .5f*(frame_probs[0]+1);
+    //frame_probs[0] = MIN32(.98, frame_probs[0]+.1);
+    //frame_probs[0] = .1 + .9*frame_probs[0];
     /* Curve fitting between the MLP probability and the actual probability */
     /*frame_probs[0] = .01f + 1.21f*frame_probs[0]*frame_probs[0] - .23f*(float)pow(frame_probs[0], 10);*/
     /* Probability of active audio (as opposed to silence) */
