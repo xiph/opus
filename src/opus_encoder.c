@@ -1226,7 +1226,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
       st->voice_ratio = -1;
 
     st->detected_bandwidth = 0;
-    if (0 && analysis_info.valid)
+    if (analysis_info.valid)
     {
        int analysis_bandwidth;
        if (st->signal_type == OPUS_AUTO)
