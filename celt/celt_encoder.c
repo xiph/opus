@@ -839,7 +839,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    trim -= SHR16(surround_trim, DB_SHIFT-8);
    trim -= 2*SHR16(tf_estimate, 14-8);
 #ifndef DISABLE_FLOAT_API
-   if (0 && analysis->valid)
+   if (analysis->valid)
    {
       trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8),
             (opus_val16)(QCONST16(2.f, 8)*(analysis->tonality_slope+.05f))));
@@ -1242,7 +1242,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
 
    /*printf("%f %f %f %f %d %d ", st->analysis.activity, st->analysis.tonality, tf_estimate, st->stereo_saving, tot_boost, coded_bands);*/
 #ifndef DISABLE_FLOAT_API
-   if (0 && analysis->valid && analysis->activity<.4)
+   if (analysis->valid && analysis->activity<.4)
       target -= (opus_int32)((coded_bins<<BITRES)*(.4f-analysis->activity));
 #endif
    /* Stereo savings */
@@ -2083,7 +2083,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    bits -= anti_collapse_rsv;
    signalBandwidth = end-1;
 #ifndef DISABLE_FLOAT_API
-   if (0 && st->analysis.valid)
+   if (st->analysis.valid)
    {
       int min_bandwidth;
       if (equiv_rate < (opus_int32)32000*C)
