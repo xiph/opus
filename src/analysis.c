@@ -104,7 +104,7 @@ static const int tbands[NB_TBANDS+1] = {
 };
 
 static const int extra_bands[NB_TOT_BANDS+1] = {
-      1, 2,  4,  6,  8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120, 160, 200
+      1, 2,  4,  6,  8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120
 };
 
 /*static const float tweight[NB_TBANDS+1] = {
@@ -225,6 +225,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     float noise_floor;
     int remaining;
     AnalysisInfo *info;
+    float hp_ener;
     SAVE_STACK;
 
     tonal->last_transition++;
@@ -241,7 +242,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     kfft = celt_mode->mdct.kfft[0];
     if (tonal->count==0)
        tonal->mem_fill = 240;
-    downmix(x, &tonal->inmem[tonal->mem_fill], IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C);
+    tonal->hp_ener_accum += downmix(x, &tonal->inmem[tonal->mem_fill], IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C);
     if (tonal->mem_fill+len < ANALYSIS_BUF_SIZE)
     {
        tonal->mem_fill += len;
@@ -249,6 +250,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        RESTORE_STACK;
        return;
     }
+    hp_ener = tonal->hp_ener_accum;
     info = &tonal->info[tonal->write_pos++];
     if (tonal->write_pos>=DETECT_SIZE)
        tonal->write_pos-=DETECT_SIZE;
@@ -267,7 +269,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     }
     OPUS_MOVE(tonal->inmem, tonal->inmem+ANALYSIS_BUF_SIZE-240, 240);
     remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
-    downmix(x, &tonal->inmem[240], remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C);
+    tonal->hp_ener_accum = downmix(x, &tonal->inmem[240], remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C);
     tonal->mem_fill = 240 + remaining;
     opus_fft(kfft, in, out, tonal->arch);
 #ifndef FIXED_POINT
@@ -417,8 +419,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        float E=0;
        int band_start, band_end;
        /* Keep a margin of 300 Hz for aliasing */
-       band_start = extra_bands[b];
-       band_end = extra_bands[b+1];
+       band_start = 2*extra_bands[b];
+       band_end = 2*extra_bands[b+1];
        for (i=band_start;i<band_end;i++)
        {
           float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r
@@ -438,6 +440,18 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        */
        if (E>.1*bandwidth_mask && E*1e9f > maxE && E > noise_floor*(band_end-band_start))
           bandwidth = b;
+    }
+    /* Special case for the last two bands, for which we don't have spectrum but only
+       the energy above 12 kHz. */
+    {
+       float E = hp_ener*(1./(240*240));
+       maxE = MAX32(maxE, E);
+       tonal->meanE[b] = MAX32((1-alphaE2)*tonal->meanE[b], E);
+       E = MAX32(E, tonal->meanE[b]);
+       /* Use a simple follower with 13 dB/Bark slope for spreading function */
+       bandwidth_mask = MAX32(.05f*bandwidth_mask, E);
+       if (E>.1*bandwidth_mask && E*1e9f > maxE && E > noise_floor*160)
+          bandwidth = 20;
     }
     if (tonal->count<=2)
        bandwidth = 20;

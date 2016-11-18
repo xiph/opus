@@ -579,7 +579,7 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 #endif
 
 #ifndef FIXED_POINT
-void silk_resampler_down2_float(
+float silk_resampler_down2_float(
     opus_val32                  *S,                 /* I/O  State vector [ 2 ]                                          */
     opus_val16                  *out,               /* O    Output signal [ floor(len/2) ]                              */
     const opus_val16            *in,                /* I    Input signal [ len ]                                        */
@@ -587,8 +587,8 @@ void silk_resampler_down2_float(
 )
 {
     int k, len2 = inLen/2;
-    opus_val32 in32, out32, Y, X;
-
+    opus_val32 in32, out32, out32_hp, Y, X;
+    float hp_ener = 0;
     /* Internal variables and state are in Q10 format */
     for( k = 0; k < len2; k++ ) {
         /* Convert to Q10 */
@@ -599,7 +599,7 @@ void silk_resampler_down2_float(
         X      = 0.6074371f*Y;
         out32  = ADD32( S[ 0 ], X );
         S[ 0 ] = ADD32( in32, X );
-
+        out32_hp = out32;
         /* Convert to Q10 */
         in32 = in[ 2 * k + 1 ];
 
@@ -610,13 +610,21 @@ void silk_resampler_down2_float(
         out32  = ADD32( out32, X );
         S[ 1 ] = ADD32( in32, X );
 
+        Y      = SUB32( -in32, S[ 2 ] );
+        X      = 0.15063f*Y;
+        out32_hp  = ADD32( out32_hp, S[ 2 ] );
+        out32_hp  = ADD32( out32_hp, X );
+        S[ 2 ] = ADD32( -in32, X );
+
+        hp_ener += out32_hp*out32_hp;
         /* Add, convert back to int16 and store to output */
         out[ k ] = .5*out32;
     }
+    return hp_ener;
 }
 #endif
 
-void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
+opus_val32 downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
    const float *x;
    opus_val32 scale;
@@ -648,11 +656,12 @@ void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, in
       scale /= 2;
    for (j=0;j<subframe;j++)
       sub[j] *= scale;
+   return 0;
 }
 #endif
 
-float S[2];
-void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
+float S[3];
+opus_val32 downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
    VARDECL(opus_val16, tmp);
    const opus_int16 *x;
@@ -691,7 +700,7 @@ void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int 
       scale /= 2;
    for (j=0;j<subframe;j++)
       tmp[j] *= scale;
-   silk_resampler_down2_float(S, sub, tmp, subframe);
+   return silk_resampler_down2_float(S, sub, tmp, subframe);
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
