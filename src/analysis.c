@@ -226,6 +226,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     int remaining;
     AnalysisInfo *info;
     float hp_ener;
+    float tonality2[240];
     SAVE_STACK;
 
     tonal->last_transition++;
@@ -311,14 +312,19 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        mod2 *= mod2;
        mod2 *= mod2;
 
-       avg_mod = .25f*(.0*d2A[i]+1.5f*mod1+2.5*mod2);
+       avg_mod = .25f*(d2A[i]+mod1+2*mod2);
        tonality[i] = 1.f/(1.f+40.f*16.f*pi4*avg_mod)-.015f;
+       tonality2[i] = 1.f/(1.f+40.f*16.f*pi4*mod2)-.015f;
 
        A[i] = angle2;
        dA[i] = d_angle2;
        d2A[i] = mod2;
     }
-
+    for (i=2;i<N2-1;i++)
+    {
+       float tt = MIN32(tonality2[i], MAX32(tonality2[i-1], tonality2[i+1]));
+       tonality[i] = .9*MAX32(tonality[i], tt-.1);
+    }
     frame_tonality = 0;
     max_frame_tonality = 0;
     /*tw_sum = 0;*/
@@ -349,7 +355,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
           binE *= 5.55e-17f;
 #endif
           E += binE;
-          tE += binE*tonality[i];
+          tE += binE*MAX32(0, tonality[i]);
           nE += binE*2.f*(.5f-noisiness[i]);
        }
 #ifndef FIXED_POINT
