@@ -18,6 +18,7 @@ depcomp
 INSTALL
 install-sh
 .deps
+.idea
 .libs
 .dirstamp
 *.a
