@@ -170,9 +170,8 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    if (tonal->read_pos>=DETECT_SIZE)
       tonal->read_pos-=DETECT_SIZE;
 
-   /* Compensate for the delay in the features themselves.
-      FIXME: Need a better estimate the 10 I just made up */
-   curr_lookahead = IMAX(curr_lookahead-10, 0);
+   /* The -1 is to compensate for the delay in the features themselves. */
+   curr_lookahead = IMAX(curr_lookahead-1, 0);
 
    psum=0;
    /* Summing the probability of transition patterns that involve music at
@@ -182,7 +181,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    for (;i<DETECT_SIZE;i++)
       psum += tonal->pspeech[i];
    psum = psum*tonal->music_confidence + (1-psum)*tonal->speech_confidence;
-   /*printf("%f %f %f\n", psum, info_out->music_prob, info_out->tonality);*/
+   /*printf("%f %f %f %f %f\n", psum, info_out->music_prob, info_out->vad_prob, info_out->activity_probability, info_out->tonality);*/
 
    info_out->music_prob = psum;
 }
@@ -575,15 +574,11 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 #ifndef DISABLE_FLOAT_API
     mlp_process(&net, features, frame_probs);
     frame_probs[0] = .5f*(frame_probs[0]+1);
-    //frame_probs[0] = MIN32(.98, frame_probs[0]+.1);
-    //frame_probs[0] = .1 + .9*frame_probs[0];
     /* Curve fitting between the MLP probability and the actual probability */
     /*frame_probs[0] = .01f + 1.21f*frame_probs[0]*frame_probs[0] - .23f*(float)pow(frame_probs[0], 10);*/
     /* Probability of active audio (as opposed to silence) */
     frame_probs[1] = .5f*frame_probs[1]+.5f;
     frame_probs[1] *= frame_probs[1];
-    /* Consider that silence has a 50-50 probability. */
-    frame_probs[0] = frame_probs[1]*frame_probs[0] + (1-frame_probs[1])*.5f;
 
     /* Probability of speech or music vs noise */
     info->activity_probability = frame_probs[1];
@@ -606,8 +601,28 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        float music0;
        float p, q;
 
+       /* More silence transitions for speech than for music. */
+       tau = .001f*tonal->music_prob + .01f*(1-tonal->music_prob);
+       p = MAX16(.05f,MIN16(.95f,frame_probs[1]));
+       q = MAX16(.05f,MIN16(.95f,tonal->vad_prob));
+       beta = .02f+.05f*ABS16(p-q)/(p*(1-q)+q*(1-p));
+       /* p0 and p1 are the probabilities of speech and music at this frame
+          using only information from previous frame and applying the
+          state transition model */
+       p0 = (1-tonal->vad_prob)*(1-tau) +    tonal->vad_prob *tau;
+       p1 =    tonal->vad_prob *(1-tau) + (1-tonal->vad_prob)*tau;
+       /* We apply the current probability with exponent beta to work around
+          the fact that the probability estimates aren't independent. */
+       p0 *= (float)pow(1-frame_probs[1], beta);
+       p1 *= (float)pow(frame_probs[1], beta);
+       /* Normalise the probabilities to get the Marokv probability of music. */
+       tonal->vad_prob = p1/(p0+p1);
+       info->vad_prob = tonal->vad_prob;
+       /* Consider that silence has a 50-50 probability of being speech or music. */
+       frame_probs[0] = tonal->vad_prob*frame_probs[0] + (1-tonal->vad_prob)*.5f;
+
        /* One transition every 3 minutes of active audio */
-       tau = .0001f*frame_probs[1];
+       tau = .0001f;
        /* Adapt beta based on how "unexpected" the new prob is */
        p = MAX16(.05f,MIN16(.95f,frame_probs[0]));
        q = MAX16(.05f,MIN16(.95f,tonal->music_prob));
@@ -625,6 +640,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        tonal->music_prob = p1/(p0+p1);
        info->music_prob = tonal->music_prob;
 
+       /*printf("%f %f %f %f\n", frame_probs[0], frame_probs[1], tonal->music_prob, tonal->vad_prob);*/
        /* This chunk of code deals with delayed decision. */
        psum=1e-20f;
        /* Instantaneous probability of speech and music, with beta pre-applied. */
