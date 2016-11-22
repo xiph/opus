@@ -57,6 +57,7 @@ typedef struct {
    float cmean[8];
    float std[9];
    float music_prob;
+   float vad_prob;
    float Etracker;
    float lowECount;
    int E_count;
