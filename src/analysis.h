@@ -49,6 +49,7 @@ typedef struct {
    float prev_band_tonality[NB_TBANDS];
    float prev_tonality;
    float E[NB_FRAMES][NB_TBANDS];
+   float logE[NB_FRAMES][NB_TBANDS];
    float lowE[NB_TBANDS];
    float highE[NB_TBANDS];
    float meanE[NB_TOT_BANDS+1];

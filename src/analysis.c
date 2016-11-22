@@ -227,6 +227,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     AnalysisInfo *info;
     float hp_ener;
     float tonality2[240];
+    float midE[8];
+    float spec_variability=0;
     SAVE_STACK;
 
     tonal->last_transition++;
@@ -373,12 +375,24 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 
        frame_loudness += (float)sqrt(E+1e-10f);
        logE[b] = (float)log(E+1e-10f);
-       tonal->lowE[b] = MIN32(logE[b], tonal->lowE[b]+.01f);
-       tonal->highE[b] = MAX32(logE[b], tonal->highE[b]-.1f);
-       if (tonal->highE[b] < tonal->lowE[b]+1.f)
+       tonal->logE[tonal->E_count][b] = logE[b];
+       if (tonal->count==0)
+          tonal->highE[b] = tonal->lowE[b] = logE[b];
+       if (tonal->highE[b] > tonal->lowE[b] + 7.5)
        {
-          tonal->highE[b]+=.5f;
-          tonal->lowE[b]-=.5f;
+          if (tonal->highE[b] - logE[b] > logE[b] - tonal->lowE[b])
+             tonal->highE[b] -= .01;
+          else
+             tonal->lowE[b] += .01;
+       }
+       if (logE[b] > tonal->highE[b])
+       {
+          tonal->highE[b] = logE[b];
+          tonal->lowE[b] = MAX32(tonal->highE[b]-15, tonal->lowE[b]);
+       } else if (logE[b] < tonal->lowE[b])
+       {
+          tonal->lowE[b] = logE[b];
+          tonal->highE[b] = MIN32(tonal->lowE[b]+15, tonal->highE[b]);
        }
        relativeE += (logE[b]-tonal->lowE[b])/(1e-15f+tonal->highE[b]-tonal->lowE[b]);
 
@@ -412,6 +426,26 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
 
+    for (i=0;i<NB_FRAMES;i++)
+    {
+       int j;
+       float mindist = 1e15;
+       for (j=0;j<NB_FRAMES;j++)
+       {
+          int k;
+          float dist=0;
+          for (k=0;k<NB_TBANDS;k++)
+          {
+             float tmp;
+             tmp = tonal->logE[i][k] - tonal->logE[j][k];
+             dist += tmp*tmp;
+          }
+          if (j!=i)
+             mindist = MIN32(mindist, dist);
+       }
+       spec_variability += mindist;
+    }
+    spec_variability = sqrt(spec_variability/NB_FRAMES/NB_TBANDS);
     bandwidth_mask = 0;
     bandwidth = 0;
     maxE = 0;
@@ -462,7 +496,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     if (tonal->count<=2)
        bandwidth = 20;
     frame_loudness = 20*(float)log10(frame_loudness);
-    tonal->Etracker = MAX32(tonal->Etracker-.03f, frame_loudness);
+    tonal->Etracker = MAX32(tonal->Etracker-.003f, frame_loudness);
     tonal->lowECount *= (1-alphaE);
     if (frame_loudness < tonal->Etracker-30)
        tonal->lowECount += alphaE;
@@ -473,6 +507,13 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        for (b=0;b<16;b++)
           sum += dct_table[i*16+b]*logE[b];
        BFCC[i] = sum;
+    }
+    for (i=0;i<8;i++)
+    {
+       float sum=0;
+       for (b=0;b<16;b++)
+          sum += dct_table[i*16+b]*.5*(tonal->highE[b]+tonal->lowE[b]);
+       midE[i] = sum;
     }
 
     frame_stationarity /= NB_TBANDS;
@@ -512,6 +553,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        for (i=0;i<9;i++)
           tonal->std[i] = (1-alpha)*tonal->std[i] + alpha*features[i]*features[i];
     }
+    for (i=0;i<4;i++)
+       features[i] = BFCC[i]-midE[i];
 
     for (i=0;i<8;i++)
     {
@@ -522,6 +565,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     }
     for (i=0;i<9;i++)
        features[11+i] = (float)sqrt(tonal->std[i]) - std_feature_bias[i];
+    features[18] = spec_variability-.78;;
     features[20] = info->tonality - 0.154723;
     features[21] = info->activity - 0.724643;
     features[22] = frame_stationarity - 0.743717;
@@ -563,11 +607,11 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        float p, q;
 
        /* One transition every 3 minutes of active audio */
-       tau = .00005f*frame_probs[1];
+       tau = .0001f*frame_probs[1];
        /* Adapt beta based on how "unexpected" the new prob is */
        p = MAX16(.05f,MIN16(.95f,frame_probs[0]));
        q = MAX16(.05f,MIN16(.95f,tonal->music_prob));
-       beta = .01f+.05f*ABS16(p-q)/(p*(1-q)+q*(1-p));
+       beta = .02f+.05f*ABS16(p-q)/(p*(1-q)+q*(1-p));
        /* p0 and p1 are the probabilities of speech and music at this frame
           using only information from previous frame and applying the
           state transition model */
