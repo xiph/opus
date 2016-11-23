@@ -100,16 +100,12 @@ static const float analysis_window[240] = {
 };
 
 static const int tbands[NB_TBANDS+1] = {
-       2,  4,  6,  8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120
+      4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64, 80, 96, 112, 136, 160, 192, 240
 };
 
 static const int extra_bands[NB_TOT_BANDS+1] = {
-      1, 2,  4,  6,  8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120
+      2, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64, 80, 96, 112, 136, 160, 192, 240
 };
-
-/*static const float tweight[NB_TBANDS+1] = {
-      .3, .4, .5, .6, .7, .8, .9, 1., 1., 1., 1., 1., 1., 1., .8, .7, .6, .5
-};*/
 
 #define NB_TONAL_SKIP_BANDS 9
 
@@ -152,6 +148,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    if (pos<0)
       pos = DETECT_SIZE-1;
    OPUS_COPY(info_out, &tonal->info[pos], 1);
+   /* If possible, look ahead for a tone to compensate for the delay in the tone detector. */
    for (i=0;i<3;i++)
    {
       pos++;
@@ -316,7 +313,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        mod2 *= mod2;
 
        avg_mod = .25f*(d2A[i]+mod1+2*mod2);
+       /* This introduces an extra delay of 2 frames in the detection. */
        tonality[i] = 1.f/(1.f+40.f*16.f*pi4*avg_mod)-.015f;
+       /* No delay on this detection, but it's less reliable. */
        tonality2[i] = 1.f/(1.f+40.f*16.f*pi4*mod2)-.015f;
 
        A[i] = angle2;
@@ -349,7 +348,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        float E=0, tE=0, nE=0;
        float L1, L2;
        float stationarity;
-       for (i=2*tbands[b];i<2*tbands[b+1];i++)
+       for (i=tbands[b];i<tbands[b+1];i++)
        {
           float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r
                      + out[i].i*(float)out[i].i + out[N-i].i*(float)out[N-i].i;
@@ -460,8 +459,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        float E=0;
        int band_start, band_end;
        /* Keep a margin of 300 Hz for aliasing */
-       band_start = 2*extra_bands[b];
-       band_end = 2*extra_bands[b+1];
+       band_start = extra_bands[b];
+       band_end = extra_bands[b+1];
        for (i=band_start;i<band_end;i++)
        {
           float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r

@@ -160,7 +160,6 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
             if (out[i] == 0) error[i] *= .0;
             error_rate[i] += fabs(error[i])>1;
             if (i==0) error[i] *= 5;
-            //if (i==1 && out[i] < 0) error[i] *= 2.25;
             rms += error[i]*error[i];
             /*error[i] = error[i]/(1+fabs(error[i]));*/
         }
