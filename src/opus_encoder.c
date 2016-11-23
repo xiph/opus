@@ -626,8 +626,7 @@ static opus_val32 silk_resampler_down2_hp(
     return hp_ener;
 }
 
-opus_val32 S[3];
-opus_val32 downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
+opus_val32 downmix_float(const void *_x, opus_val32 *sub, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C)
 {
    VARDECL(opus_val32, tmp);
    const float *x;
@@ -670,7 +669,7 @@ opus_val32 downmix_float(const void *_x, opus_val32 *sub, int subframe, int offs
 }
 #endif
 
-opus_val32 downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
+opus_val32 downmix_int(const void *_x, opus_val32 *sub, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C)
 {
    VARDECL(opus_val32, tmp);
    const opus_int16 *x;

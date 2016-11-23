@@ -244,7 +244,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     kfft = celt_mode->mdct.kfft[0];
     if (tonal->count==0)
        tonal->mem_fill = 240;
-    tonal->hp_ener_accum += downmix(x, &tonal->inmem[tonal->mem_fill], IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C);
+    tonal->hp_ener_accum += downmix(x, &tonal->inmem[tonal->mem_fill], tonal->downmix_state,
+          IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C);
     if (tonal->mem_fill+len < ANALYSIS_BUF_SIZE)
     {
        tonal->mem_fill += len;
@@ -271,7 +272,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     }
     OPUS_MOVE(tonal->inmem, tonal->inmem+ANALYSIS_BUF_SIZE-240, 240);
     remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
-    tonal->hp_ener_accum = downmix(x, &tonal->inmem[240], remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C);
+    tonal->hp_ener_accum = downmix(x, &tonal->inmem[240], tonal->downmix_state,
+          remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C);
     tonal->mem_fill = 240 + remaining;
     opus_fft(kfft, in, out, tonal->arch);
 #ifndef FIXED_POINT
