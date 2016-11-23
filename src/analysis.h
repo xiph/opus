@@ -79,6 +79,7 @@ typedef struct {
    int read_pos;
    int read_subframe;
    float hp_ener_accum;
+   opus_val32 downmix_state[3];
    AnalysisInfo info[DETECT_SIZE];
 } TonalityAnalysisState;
 
