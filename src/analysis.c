@@ -484,6 +484,10 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        the energy above 12 kHz. */
     {
        float E = hp_ener*(1./(240*240));
+#ifdef FIXED_POINT
+       /* silk_resampler_down2_hp() shifted right by an extra 8 bits. */
+       E *= ((opus_int32)1 << 2*SIG_SHIFT)*256.f;
+#endif
        maxE = MAX32(maxE, E);
        tonal->meanE[b] = MAX32((1-alphaE2)*tonal->meanE[b], E);
        E = MAX32(E, tonal->meanE[b]);
