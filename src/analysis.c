@@ -718,9 +718,11 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 #else
     info->music_prob = 0;
 #endif
-    /*for (i=0;i<25;i++)
+#ifdef MLP_TRAINING
+    for (i=0;i<25;i++)
        printf("%f ", features[i]);
-    printf("\n");*/
+    printf("\n");
+#endif
 
     info->bandwidth = bandwidth;
     /*printf("%d %d\n", info->bandwidth, info->opus_bandwidth);*/
