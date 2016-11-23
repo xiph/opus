@@ -137,7 +137,8 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    if (curr_lookahead<0)
       curr_lookahead += DETECT_SIZE;
 
-   if (len > 480 && pos != tonal->write_pos)
+   /* On long frames, look at the second analysis window rather than the first. */
+   if (len > 960 && pos != tonal->write_pos)
    {
       pos++;
       if (pos==DETECT_SIZE)
@@ -159,9 +160,9 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       info_out->tonality = MAX32(0, -.03 + MAX32(info_out->tonality, tonal->info[pos].tonality-.05));
    }
    tonal->read_subframe += len/120;
-   while (tonal->read_subframe>=4)
+   while (tonal->read_subframe>=8)
    {
-      tonal->read_subframe -= 4;
+      tonal->read_subframe -= 8;
       tonal->read_pos++;
    }
    if (tonal->read_pos>=DETECT_SIZE)
@@ -756,5 +757,5 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
    }
 
    analysis_info->valid = 0;
-   tonality_get_info(analysis, analysis_info, frame_size/2);
+   tonality_get_info(analysis, analysis_info, frame_size);
 }
