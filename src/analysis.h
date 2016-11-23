@@ -38,6 +38,9 @@
 
 #define DETECT_SIZE 200
 
+/* Uncomment this to print the MLP features on stdout. */
+/*#define MLP_TRAINING*/
+
 typedef struct {
    int arch;
 #define TONALITY_ANALYSIS_RESET_START angle

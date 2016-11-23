@@ -932,7 +932,9 @@ static int is_digital_silence(const opus_val16* pcm, int frame_size, int channel
 {
    int silence = 0;
    opus_val32 sample_max = 0;
-
+#ifdef MLP_TRAINING
+   return 0;
+#endif
    sample_max = celt_maxabs16(pcm, frame_size*channels);
 
 #ifdef FIXED_POINT
