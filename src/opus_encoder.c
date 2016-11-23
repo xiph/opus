@@ -578,7 +578,7 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 #define PCM2VAL(x) SCALEIN(x)
 #endif
 
-float silk_resampler_down2_hp(
+static opus_val32 silk_resampler_down2_hp(
     opus_val32                  *S,                 /* I/O  State vector [ 2 ]                                          */
     opus_val32                  *out,               /* O    Output signal [ floor(len/2) ]                              */
     const opus_val32            *in,                /* I    Input signal [ len ]                                        */
@@ -626,25 +626,33 @@ float silk_resampler_down2_hp(
     return hp_ener;
 }
 
+opus_val32 S[3];
 opus_val32 downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
+   VARDECL(opus_val32, tmp);
    const float *x;
    opus_val32 scale;
    int j;
+
+   if (subframe==0) return 0;
+   subframe *= 2;
+   offset *= 2;
+   ALLOC(tmp, subframe, opus_val32);
+
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = PCM2VAL(x[(j+offset)*C+c1]);
+      tmp[j] = PCM2VAL(x[(j+offset)*C+c1]);
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         sub[j] += PCM2VAL(x[(j+offset)*C+c2]);
+         tmp[j] += PCM2VAL(x[(j+offset)*C+c2]);
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            sub[j] += PCM2VAL(x[(j+offset)*C+c]);
+            tmp[j] += PCM2VAL(x[(j+offset)*C+c]);
       }
    }
 #ifdef FIXED_POINT
@@ -657,12 +665,11 @@ opus_val32 downmix_float(const void *_x, opus_val32 *sub, int subframe, int offs
    else if (c2>-1)
       scale /= 2;
    for (j=0;j<subframe;j++)
-      sub[j] *= scale;
-   return 0;
+      tmp[j] *= scale;
+   return silk_resampler_down2_hp(S, sub, tmp, subframe);
 }
 #endif
 
-opus_val32 S[3];
 opus_val32 downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
 {
    VARDECL(opus_val32, tmp);
