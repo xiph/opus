@@ -180,7 +180,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    for (;i<DETECT_SIZE;i++)
       psum += tonal->pspeech[i];
    psum = psum*tonal->music_confidence + (1-psum)*tonal->speech_confidence;
-   /*printf("%f %f %f %f %f\n", psum, info_out->music_prob, info_out->vad_prob, info_out->activity_probability, info_out->tonality);*/
+   printf("%f %f %f %f %f\n", psum, info_out->music_prob, info_out->vad_prob, info_out->activity_probability, info_out->tonality);
 
    info_out->music_prob = psum;
 }
@@ -239,6 +239,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        /* len and offset are now at 24 kHz. */
        len/= 2;
        offset /= 2;
+    } else if (tonal->Fs == 16000) {
+       len = 3*len/2;
+       offset = 3*offset/2;
     }
 
     if (tonal->count<4)
