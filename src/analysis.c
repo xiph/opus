@@ -109,6 +109,107 @@ static const int extra_bands[NB_TOT_BANDS+1] = {
 
 #define NB_TONAL_SKIP_BANDS 9
 
+static opus_val32 silk_resampler_down2_hp(
+    opus_val32                  *S,                 /* I/O  State vector [ 2 ]                                          */
+    opus_val32                  *out,               /* O    Output signal [ floor(len/2) ]                              */
+    const opus_val32            *in,                /* I    Input signal [ len ]                                        */
+    int                         inLen               /* I    Number of input samples                                     */
+)
+{
+    int k, len2 = inLen/2;
+    opus_val32 in32, out32, out32_hp, Y, X;
+    opus_val64 hp_ener = 0;
+    /* Internal variables and state are in Q10 format */
+    for( k = 0; k < len2; k++ ) {
+        /* Convert to Q10 */
+        in32 = in[ 2 * k ];
+
+        /* All-pass section for even input sample */
+        Y      = SUB32( in32, S[ 0 ] );
+        X      = MULT16_32_Q15(QCONST16(0.6074371f, 15), Y);
+        out32  = ADD32( S[ 0 ], X );
+        S[ 0 ] = ADD32( in32, X );
+        out32_hp = out32;
+        /* Convert to Q10 */
+        in32 = in[ 2 * k + 1 ];
+
+        /* All-pass section for odd input sample, and add to output of previous section */
+        Y      = SUB32( in32, S[ 1 ] );
+        X      = MULT16_32_Q15(QCONST16(0.15063f, 15), Y);
+        out32  = ADD32( out32, S[ 1 ] );
+        out32  = ADD32( out32, X );
+        S[ 1 ] = ADD32( in32, X );
+
+        Y      = SUB32( -in32, S[ 2 ] );
+        X      = MULT16_32_Q15(QCONST16(0.15063f, 15), Y);
+        out32_hp  = ADD32( out32_hp, S[ 2 ] );
+        out32_hp  = ADD32( out32_hp, X );
+        S[ 2 ] = ADD32( -in32, X );
+
+        hp_ener += out32_hp*(opus_val64)out32_hp;
+        /* Add, convert back to int16 and store to output */
+        out[ k ] = HALF32(out32);
+    }
+#ifdef FIXED_POINT
+    /* len2 can be up to 480, so we shift by 8 more to make it fit. */
+    hp_ener = hp_ener >> (2*SIG_SHIFT + 8);
+#endif
+    return hp_ener;
+}
+
+static opus_val32 downmix_and_resample(downmix_func downmix, const void *_x, opus_val32 *y, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C, int Fs)
+{
+   VARDECL(opus_val32, tmp);
+   opus_val32 scale;
+   int j;
+   opus_val32 ret = 0;
+   SAVE_STACK;
+
+   if (subframe==0) return 0;
+   if (Fs == 48000)
+   {
+      subframe *= 2;
+      offset *= 2;
+   } else if (Fs == 16000) {
+      subframe = subframe*2/3;
+      offset = offset*2/3;
+   }
+   ALLOC(tmp, subframe, opus_val32);
+
+   downmix(_x, tmp, subframe, offset, c1, c2, C);
+#ifdef FIXED_POINT
+   scale = (1<<SIG_SHIFT);
+#else
+   scale = 1.f/32768;
+#endif
+   if (c2==-2)
+      scale /= C;
+   else if (c2>-1)
+      scale /= 2;
+   for (j=0;j<subframe;j++)
+      tmp[j] *= scale;
+   if (Fs == 48000)
+   {
+      ret = silk_resampler_down2_hp(S, y, tmp, subframe);
+   } else if (Fs == 24000) {
+      OPUS_COPY(y, tmp, subframe);
+   } else if (Fs == 16000) {
+      VARDECL(opus_val32, tmp3x);
+      ALLOC(tmp3x, 3*subframe, opus_val32);
+      /* Don't do this at home! This resampler is horrible and it's only (barely)
+         usable for the purpose of the analysis because we don't care about all
+         the aliasing between 8 kHz and 12 kHz. */
+      for (j=0;j<subframe;j++)
+      {
+         tmp3x[3*j] = tmp[j];
+         tmp3x[3*j+1] = tmp[j];
+         tmp3x[3*j+2] = tmp[j];
+      }
+      silk_resampler_down2_hp(S, y, tmp3x, 3*subframe);
+   }
+   RESTORE_STACK;
+   return ret;
+}
 
 void tonality_analysis_init(TonalityAnalysisState *tonal, int Fs)
 {
@@ -249,7 +350,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     kfft = celt_mode->mdct.kfft[0];
     if (tonal->count==0)
        tonal->mem_fill = 240;
-    tonal->hp_ener_accum += downmix(x, &tonal->inmem[tonal->mem_fill], tonal->downmix_state,
+    tonal->hp_ener_accum += downmix_and_resample(downmix, x, &tonal->inmem[tonal->mem_fill], tonal->downmix_state,
           IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C, tonal->Fs);
     if (tonal->mem_fill+len < ANALYSIS_BUF_SIZE)
     {
@@ -277,7 +378,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     }
     OPUS_MOVE(tonal->inmem, tonal->inmem+ANALYSIS_BUF_SIZE-240, 240);
     remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
-    tonal->hp_ener_accum = downmix(x, &tonal->inmem[240], tonal->downmix_state,
+    tonal->hp_ener_accum = downmix_and_resample(downmix, x, &tonal->inmem[240], tonal->downmix_state,
           remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C, tonal->Fs);
     tonal->mem_fill = 240 + remaining;
     opus_fft(kfft, in, out, tonal->arch);

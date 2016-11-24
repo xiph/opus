@@ -578,193 +578,51 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 #define PCM2VAL(x) SCALEIN(x)
 #endif
 
-static opus_val32 silk_resampler_down2_hp(
-    opus_val32                  *S,                 /* I/O  State vector [ 2 ]                                          */
-    opus_val32                  *out,               /* O    Output signal [ floor(len/2) ]                              */
-    const opus_val32            *in,                /* I    Input signal [ len ]                                        */
-    int                         inLen               /* I    Number of input samples                                     */
-)
+void downmix_float(const void *_x, opus_val32 *y, int subframe, int offset, int c1, int c2, int C)
 {
-    int k, len2 = inLen/2;
-    opus_val32 in32, out32, out32_hp, Y, X;
-    opus_val64 hp_ener = 0;
-    /* Internal variables and state are in Q10 format */
-    for( k = 0; k < len2; k++ ) {
-        /* Convert to Q10 */
-        in32 = in[ 2 * k ];
-
-        /* All-pass section for even input sample */
-        Y      = SUB32( in32, S[ 0 ] );
-        X      = MULT16_32_Q15(QCONST16(0.6074371f, 15), Y);
-        out32  = ADD32( S[ 0 ], X );
-        S[ 0 ] = ADD32( in32, X );
-        out32_hp = out32;
-        /* Convert to Q10 */
-        in32 = in[ 2 * k + 1 ];
-
-        /* All-pass section for odd input sample, and add to output of previous section */
-        Y      = SUB32( in32, S[ 1 ] );
-        X      = MULT16_32_Q15(QCONST16(0.15063f, 15), Y);
-        out32  = ADD32( out32, S[ 1 ] );
-        out32  = ADD32( out32, X );
-        S[ 1 ] = ADD32( in32, X );
-
-        Y      = SUB32( -in32, S[ 2 ] );
-        X      = MULT16_32_Q15(QCONST16(0.15063f, 15), Y);
-        out32_hp  = ADD32( out32_hp, S[ 2 ] );
-        out32_hp  = ADD32( out32_hp, X );
-        S[ 2 ] = ADD32( -in32, X );
-
-        hp_ener += out32_hp*(opus_val64)out32_hp;
-        /* Add, convert back to int16 and store to output */
-        out[ k ] = HALF32(out32);
-    }
-#ifdef FIXED_POINT
-    /* len2 can be up to 480, so we shift by 8 more to make it fit. */
-    hp_ener = hp_ener >> (2*SIG_SHIFT + 8);
-#endif
-    return hp_ener;
-}
-
-opus_val32 downmix_float(const void *_x, opus_val32 *sub, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C, int Fs)
-{
-   VARDECL(opus_val32, tmp);
    const float *x;
-   opus_val32 scale;
    int j;
-   opus_val32 ret = 0;
-   SAVE_STACK;
-
-   if (subframe==0) return 0;
-   if (Fs == 48000)
-   {
-      subframe *= 2;
-      offset *= 2;
-   } else if (Fs == 16000) {
-      subframe = subframe*2/3;
-      offset = offset*2/3;
-   }
-   ALLOC(tmp, subframe, opus_val32);
 
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
-      tmp[j] = PCM2VAL(x[(j+offset)*C+c1]);
+      y[j] = PCM2VAL(x[(j+offset)*C+c1]);
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         tmp[j] += PCM2VAL(x[(j+offset)*C+c2]);
+         y[j] += PCM2VAL(x[(j+offset)*C+c2]);
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            tmp[j] += PCM2VAL(x[(j+offset)*C+c]);
+            y[j] += PCM2VAL(x[(j+offset)*C+c]);
       }
    }
-#ifdef FIXED_POINT
-   scale = (1<<SIG_SHIFT);
-#else
-   scale = 1.f;
-#endif
-   if (c2==-2)
-      scale /= C;
-   else if (c2>-1)
-      scale /= 2;
-   for (j=0;j<subframe;j++)
-      tmp[j] *= scale;
-   if (Fs == 48000)
-   {
-      ret = silk_resampler_down2_hp(S, sub, tmp, subframe);
-   } else if (Fs == 24000) {
-      OPUS_COPY(sub, tmp, subframe);
-   } else if (Fs == 16000) {
-      VARDECL(opus_val32, tmp3x);
-      ALLOC(tmp3x, 3*subframe, opus_val32);
-      /* Don't do this at home! This resampler is horrible and it's only (barely)
-         usable for the purpose of the analysis because we don't care about all
-         the aliasing between 8 kHz and 12 kHz. */
-      for (j=0;j<subframe;j++)
-      {
-         tmp3x[3*j] = tmp[j];
-         tmp3x[3*j+1] = tmp[j];
-         tmp3x[3*j+2] = tmp[j];
-      }
-      silk_resampler_down2_hp(S, sub, tmp3x, 3*subframe);
-   }
-   RESTORE_STACK;
-   return ret;
 }
 #endif
 
-opus_val32 downmix_int(const void *_x, opus_val32 *sub, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C, int Fs)
+void downmix_int(const void *_x, opus_val32 *y, int subframe, int offset, int c1, int c2, int C)
 {
-   VARDECL(opus_val32, tmp);
    const opus_int16 *x;
-   opus_val32 scale;
    int j;
-   opus_val32 ret = 0;
-   SAVE_STACK;
-
-   if (subframe==0) return 0;
-   if (Fs == 48000)
-   {
-      subframe *= 2;
-      offset *= 2;
-   } else if (Fs == 16000) {
-      subframe = subframe*2/3;
-      offset = offset*2/3;
-   }
-   ALLOC(tmp, subframe, opus_val32);
 
    x = (const opus_int16 *)_x;
    for (j=0;j<subframe;j++)
-      tmp[j] = x[(j+offset)*C+c1];
+      y[j] = x[(j+offset)*C+c1];
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         tmp[j] += x[(j+offset)*C+c2];
+         y[j] += x[(j+offset)*C+c2];
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            tmp[j] += x[(j+offset)*C+c];
+            y[j] += x[(j+offset)*C+c];
       }
    }
-#ifdef FIXED_POINT
-   scale = (1<<SIG_SHIFT);
-#else
-   scale = 1.f/32768;
-#endif
-   if (c2==-2)
-      scale /= C;
-   else if (c2>-1)
-      scale /= 2;
-   for (j=0;j<subframe;j++)
-      tmp[j] *= scale;
-   if (Fs == 48000)
-   {
-      ret = silk_resampler_down2_hp(S, sub, tmp, subframe);
-   } else if (Fs == 24000) {
-      OPUS_COPY(sub, tmp, subframe);
-   } else if (Fs == 16000) {
-      VARDECL(opus_val32, tmp3x);
-      ALLOC(tmp3x, 3*subframe, opus_val32);
-      /* Don't do this at home! This resampler is horrible and it's only (barely)
-         usable for the purpose of the analysis because we don't care about all
-         the aliasing between 8 kHz and 12 kHz. */
-      for (j=0;j<subframe;j++)
-      {
-         tmp3x[3*j] = tmp[j];
-         tmp3x[3*j+1] = tmp[j];
-         tmp3x[3*j+2] = tmp[j];
-      }
-      silk_resampler_down2_hp(S, sub, tmp3x, 3*subframe);
-   }
-   RESTORE_STACK;
-   return ret;
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
