@@ -632,6 +632,8 @@ opus_val32 downmix_float(const void *_x, opus_val32 *sub, opus_val32 S[3], int s
    const float *x;
    opus_val32 scale;
    int j;
+   opus_val32 ret = 0;
+   SAVE_STACK;
 
    if (subframe==0) return 0;
    if (Fs == 48000)
@@ -670,11 +672,12 @@ opus_val32 downmix_float(const void *_x, opus_val32 *sub, opus_val32 S[3], int s
       tmp[j] *= scale;
    if (Fs == 48000)
    {
-      return silk_resampler_down2_hp(S, sub, tmp, subframe);
+      ret = silk_resampler_down2_hp(S, sub, tmp, subframe);
    } else /*if (Fs == 12000)*/ {
       OPUS_COPY(sub, tmp, subframe);
-      return 0;
    }
+   RESTORE_STACK;
+   return ret;
 }
 #endif
 
@@ -684,7 +687,8 @@ opus_val32 downmix_int(const void *_x, opus_val32 *sub, opus_val32 S[3], int sub
    const opus_int16 *x;
    opus_val32 scale;
    int j;
-   ALLOC_STACK;
+   opus_val32 ret = 0;
+   SAVE_STACK;
 
    if (subframe==0) return 0;
    if (Fs == 48000)
@@ -723,11 +727,12 @@ opus_val32 downmix_int(const void *_x, opus_val32 *sub, opus_val32 S[3], int sub
       tmp[j] *= scale;
    if (Fs == 48000)
    {
-      return silk_resampler_down2_hp(S, sub, tmp, subframe);
+      ret = silk_resampler_down2_hp(S, sub, tmp, subframe);
    } else /*if (Fs == 12000)*/ {
       OPUS_COPY(sub, tmp, subframe);
-      return 0;
    }
+   RESTORE_STACK;
+   return ret;
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
