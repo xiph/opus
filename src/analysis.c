@@ -239,6 +239,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        /* len and offset are now at 24 kHz. */
        len/= 2;
        offset /= 2;
+    } else if (tonal->Fs == 16000) {
+       len = 3*len/2;
+       offset = 3*offset/2;
     }
 
     if (tonal->count<4)
