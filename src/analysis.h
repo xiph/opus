@@ -33,7 +33,6 @@
 
 #define NB_FRAMES 8
 #define NB_TBANDS 18
-#define NB_TOT_BANDS 19
 #define ANALYSIS_BUF_SIZE 720 /* 15 ms at 48 kHz */
 
 #define DETECT_SIZE 200
@@ -56,7 +55,7 @@ typedef struct {
    float logE[NB_FRAMES][NB_TBANDS];
    float lowE[NB_TBANDS];
    float highE[NB_TBANDS];
-   float meanE[NB_TOT_BANDS+1];
+   float meanE[NB_TBANDS+1];
    float mem[32];
    float cmean[8];
    float std[9];

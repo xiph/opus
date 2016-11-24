@@ -103,10 +103,6 @@ static const int tbands[NB_TBANDS+1] = {
       4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64, 80, 96, 112, 136, 160, 192, 240
 };
 
-static const int extra_bands[NB_TOT_BANDS+1] = {
-      2, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64, 80, 96, 112, 136, 160, 192, 240
-};
-
 #define NB_TONAL_SKIP_BANDS 9
 
 static opus_val32 silk_resampler_down2_hp(
@@ -563,13 +559,13 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     noise_floor *= 1<<(15+SIG_SHIFT);
 #endif
     noise_floor *= noise_floor;
-    for (b=0;b<NB_TOT_BANDS;b++)
+    for (b=0;b<NB_TBANDS;b++)
     {
        float E=0;
        int band_start, band_end;
        /* Keep a margin of 300 Hz for aliasing */
-       band_start = extra_bands[b];
-       band_end = extra_bands[b+1];
+       band_start = tbands[b];
+       band_end = tbands[b+1];
        for (i=band_start;i<band_end;i++)
        {
           float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r
@@ -586,9 +582,10 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
           2) less than 90 dB below the peak band (maximal masking possible considering
              both the ATH and the loudness-dependent slope of the spreading function)
           3) above the PCM quantization noise floor
+          We use b+1 because the first CELT band isn't included in tbands[]
        */
        if (E>.1*bandwidth_mask && E*1e9f > maxE && E > noise_floor*(band_end-band_start))
-          bandwidth = b;
+          bandwidth = b+1;
     }
     /* Special case for the last two bands, for which we don't have spectrum but only
        the energy above 12 kHz. */
