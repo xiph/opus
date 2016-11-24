@@ -43,6 +43,7 @@
 
 typedef struct {
    int arch;
+   int Fs;
 #define TONALITY_ANALYSIS_RESET_START angle
    float angle[240];
    float d_angle[240];
@@ -92,7 +93,7 @@ typedef struct {
  * not be repeated every analysis step. No allocated memory is retained
  * by the state struct, so no cleanup call is required.
  */
-void tonality_analysis_init(TonalityAnalysisState *analysis);
+void tonality_analysis_init(TonalityAnalysisState *analysis, int Fs);
 
 /** Reset a TonalityAnalysisState stuct.
  *

@@ -263,7 +263,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
 
 #ifndef DISABLE_FLOAT_API
-    tonality_analysis_init(&st->analysis);
+    tonality_analysis_init(&st->analysis, st->Fs);
 #endif
 
     return OPUS_OK;
@@ -626,7 +626,7 @@ static opus_val32 silk_resampler_down2_hp(
     return hp_ener;
 }
 
-opus_val32 downmix_float(const void *_x, opus_val32 *sub, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C)
+opus_val32 downmix_float(const void *_x, opus_val32 *sub, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C, int Fs)
 {
    VARDECL(opus_val32, tmp);
    const float *x;
@@ -634,8 +634,11 @@ opus_val32 downmix_float(const void *_x, opus_val32 *sub, opus_val32 S[3], int s
    int j;
 
    if (subframe==0) return 0;
-   subframe *= 2;
-   offset *= 2;
+   if (Fs == 48000)
+   {
+      subframe *= 2;
+      offset *= 2;
+   }
    ALLOC(tmp, subframe, opus_val32);
 
    x = (const float *)_x;
@@ -665,11 +668,17 @@ opus_val32 downmix_float(const void *_x, opus_val32 *sub, opus_val32 S[3], int s
       scale /= 2;
    for (j=0;j<subframe;j++)
       tmp[j] *= scale;
-   return silk_resampler_down2_hp(S, sub, tmp, subframe);
+   if (Fs == 48000)
+   {
+      return silk_resampler_down2_hp(S, sub, tmp, subframe);
+   } else /*if (Fs == 12000)*/ {
+      OPUS_COPY(sub, tmp, subframe);
+      return 0;
+   }
 }
 #endif
 
-opus_val32 downmix_int(const void *_x, opus_val32 *sub, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C)
+opus_val32 downmix_int(const void *_x, opus_val32 *sub, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C, int Fs)
 {
    VARDECL(opus_val32, tmp);
    const opus_int16 *x;
@@ -678,8 +687,11 @@ opus_val32 downmix_int(const void *_x, opus_val32 *sub, opus_val32 S[3], int sub
    ALLOC_STACK;
 
    if (subframe==0) return 0;
-   subframe *= 2;
-   offset *= 2;
+   if (Fs == 48000)
+   {
+      subframe *= 2;
+      offset *= 2;
+   }
    ALLOC(tmp, subframe, opus_val32);
 
    x = (const opus_int16 *)_x;
@@ -709,7 +721,13 @@ opus_val32 downmix_int(const void *_x, opus_val32 *sub, opus_val32 S[3], int sub
       scale /= 2;
    for (j=0;j<subframe;j++)
       tmp[j] *= scale;
-   return silk_resampler_down2_hp(S, sub, tmp, subframe);
+   if (Fs == 48000)
+   {
+      return silk_resampler_down2_hp(S, sub, tmp, subframe);
+   } else /*if (Fs == 12000)*/ {
+      OPUS_COPY(sub, tmp, subframe);
+      return 0;
+   }
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
@@ -1199,9 +1217,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifndef DISABLE_FLOAT_API
     analysis_info.valid = 0;
 #ifdef FIXED_POINT
-    if (st->silk_mode.complexity >= 10 && st->Fs==48000)
+    if (st->silk_mode.complexity >= 10 && st->Fs>=24000)
 #else
-    if (st->silk_mode.complexity >= 7 && st->Fs==48000)
+    if (st->silk_mode.complexity >= 7 && st->Fs>=24000)
 #endif
     {
        if (is_digital_silence(pcm, frame_size, st->channels, lsb_depth))

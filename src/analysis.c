@@ -110,10 +110,11 @@ static const int extra_bands[NB_TOT_BANDS+1] = {
 #define NB_TONAL_SKIP_BANDS 9
 
 
-void tonality_analysis_init(TonalityAnalysisState *tonal)
+void tonality_analysis_init(TonalityAnalysisState *tonal, int Fs)
 {
   /* Initialize reusable fields. */
   tonal->arch = opus_select_arch();
+  tonal->Fs = Fs;
   /* Clear remaining fields. */
   tonality_analysis_reset(tonal);
 }
@@ -138,7 +139,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       curr_lookahead += DETECT_SIZE;
 
    /* On long frames, look at the second analysis window rather than the first. */
-   if (len > 960 && pos != tonal->write_pos)
+   if (len > tonal->Fs/50 && pos != tonal->write_pos)
    {
       pos++;
       if (pos==DETECT_SIZE)
@@ -159,7 +160,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
          break;
       info_out->tonality = MAX32(0, -.03 + MAX32(info_out->tonality, tonal->info[pos].tonality-.05));
    }
-   tonal->read_subframe += len/120;
+   tonal->read_subframe += len/(tonal->Fs/400);
    while (tonal->read_subframe>=8)
    {
       tonal->read_subframe -= 8;
@@ -233,9 +234,12 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     alphaE = 1.f/IMIN(25, 1+tonal->count);
     alphaE2 = 1.f/IMIN(500, 1+tonal->count);
 
-    /* len and offset are now at 24 kHz. */
-    len/= 2;
-    offset /= 2;
+    if (tonal->Fs == 48000)
+    {
+       /* len and offset are now at 24 kHz. */
+       len/= 2;
+       offset /= 2;
+    }
 
     if (tonal->count<4)
        tonal->music_prob = .5;
@@ -243,7 +247,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     if (tonal->count==0)
        tonal->mem_fill = 240;
     tonal->hp_ener_accum += downmix(x, &tonal->inmem[tonal->mem_fill], tonal->downmix_state,
-          IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C);
+          IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C, tonal->Fs);
     if (tonal->mem_fill+len < ANALYSIS_BUF_SIZE)
     {
        tonal->mem_fill += len;
@@ -271,7 +275,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     OPUS_MOVE(tonal->inmem, tonal->inmem+ANALYSIS_BUF_SIZE-240, 240);
     remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
     tonal->hp_ener_accum = downmix(x, &tonal->inmem[240], tonal->downmix_state,
-          remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C);
+          remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C, tonal->Fs);
     tonal->mem_fill = 240 + remaining;
     opus_fft(kfft, in, out, tonal->arch);
 #ifndef FIXED_POINT
@@ -747,9 +751,9 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
       pcm_len = analysis_frame_size - analysis->analysis_offset;
       offset = analysis->analysis_offset;
       while (pcm_len>0) {
-         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(960, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
-         offset += 960;
-         pcm_len -= 960;
+         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(Fs/50, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
+         offset += Fs/50;
+         pcm_len -= Fs/50;
       }
       analysis->analysis_offset = analysis_frame_size;
 
