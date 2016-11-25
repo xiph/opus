@@ -42,6 +42,7 @@
 #include "analysis.h"
 #include "mlp.h"
 #include "stack_alloc.h"
+#include "float_cast.h"
 
 #ifndef M_PI
 #define M_PI 3.141592653
@@ -407,12 +408,12 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        d_angle2 = angle2 - angle;
        d2_angle2 = d_angle2 - d_angle;
 
-       mod1 = d2_angle - (float)floor(.5+d2_angle);
+       mod1 = d2_angle - (float)float2int(d2_angle);
        noisiness[i] = ABS16(mod1);
        mod1 *= mod1;
        mod1 *= mod1;
 
-       mod2 = d2_angle2 - (float)floor(.5+d2_angle2);
+       mod2 = d2_angle2 - (float)float2int(d2_angle2);
        noisiness[i] += ABS16(mod2);
        mod2 *= mod2;
        mod2 *= mod2;
