@@ -848,7 +848,7 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
    if (analysis_pcm != NULL)
    {
       /* Avoid overflow/wrap-around of the analysis buffer */
-      analysis_frame_size = IMIN((DETECT_SIZE-5)*Fs/100, analysis_frame_size);
+      analysis_frame_size = IMIN((DETECT_SIZE-5)*Fs/50, analysis_frame_size);
 
       pcm_len = analysis_frame_size - analysis->analysis_offset;
       offset = analysis->analysis_offset;

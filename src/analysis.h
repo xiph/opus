@@ -35,7 +35,7 @@
 #define NB_TBANDS 18
 #define ANALYSIS_BUF_SIZE 720 /* 15 ms at 48 kHz */
 
-#define DETECT_SIZE 200
+#define DETECT_SIZE 100
 
 /* Uncomment this to print the MLP features on stdout. */
 /*#define MLP_TRAINING*/
