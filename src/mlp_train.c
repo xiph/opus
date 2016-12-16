@@ -235,8 +235,6 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
     int inDim, outDim, hiddenDim;
     int *topo;
     double *W0, *W1, *best_W0, *best_W1;
-    double *W0_old, *W1_old;
-    double *W0_old2, *W1_old2;
     double *W0_grad, *W1_grad;
     double *W0_oldgrad, *W1_oldgrad;
     double *W0_rate, *W1_rate;
@@ -259,10 +257,6 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
     W1 = net->weights[1];
     best_W0 = net->best_weights[0];
     best_W1 = net->best_weights[1];
-    W0_old = malloc(W0_size*sizeof(double));
-    W1_old = malloc(W1_size*sizeof(double));
-    W0_old2 = malloc(W0_size*sizeof(double));
-    W1_old2 = malloc(W1_size*sizeof(double));
     W0_grad = malloc(W0_size*sizeof(double));
     W1_grad = malloc(W1_size*sizeof(double));
     W0_oldgrad = malloc(W0_size*sizeof(double));
@@ -271,12 +265,8 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
     W1_rate = malloc(W1_size*sizeof(double));
     best_W0_rate = malloc(W0_size*sizeof(double));
     best_W1_rate = malloc(W1_size*sizeof(double));
-    memcpy(W0_old, W0, W0_size*sizeof(double));
-    memcpy(W0_old2, W0, W0_size*sizeof(double));
     memset(W0_grad, 0, W0_size*sizeof(double));
     memset(W0_oldgrad, 0, W0_size*sizeof(double));
-    memcpy(W1_old, W1, W1_size*sizeof(double));
-    memcpy(W1_old2, W1, W1_size*sizeof(double));
     memset(W1_grad, 0, W1_size*sizeof(double));
     memset(W1_oldgrad, 0, W1_size*sizeof(double));
 
@@ -381,8 +371,6 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
             /*if (W0_rate[i] > .01)
                 W0_rate[i] = .01;*/
             W0_oldgrad[i] = W0_grad[i];
-            W0_old2[i] = W0_old[i];
-            W0_old[i] = W0[i];
             W0[i] += W0_grad[i]*W0_rate[i];
         }
         for (i=0;i<W1_size;i++)
@@ -397,8 +385,6 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
             if (W1_rate[i] < 1e-15)
                 W1_rate[i] = 1e-15;
             W1_oldgrad[i] = W1_grad[i];
-            W1_old2[i] = W1_old[i];
-            W1_old[i] = W1[i];
             W1[i] += W1_grad[i]*W1_rate[i];
         }
         mean_rate /= (topo[0]+1)*topo[1] + (topo[1]+1)*topo[2];
@@ -416,12 +402,14 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
         pthread_join(thread[i], NULL);
         fprintf (stderr, "joined %d\n", i);
     }
-    free(W0_old);
-    free(W1_old);
     free(W0_grad);
+    free(W0_oldgrad);
     free(W1_grad);
+    free(W1_oldgrad);
     free(W0_rate);
+    free(best_W0_rate);
     free(W1_rate);
+    free(best_W1_rate);
     return best_rms;
 }
 
@@ -488,16 +476,20 @@ int main(int argc, char **argv)
     printf ("\n/* hidden layer */\n");
     for (i=0;i<(topo[0]+1)*topo[1];i++)
     {
-        printf ("%gf, ", net->weights[0][i]);
+        printf ("%gf,", net->weights[0][i]);
         if (i%5==4)
             printf("\n");
+        else
+            printf(" ");
     }
     printf ("\n/* output layer */\n");
     for (i=0;i<(topo[1]+1)*topo[2];i++)
     {
-        printf ("%g, ", net->weights[1][i]);
+        printf ("%g,", net->weights[1][i]);
         if (i%5==4)
             printf("\n");
+        else
+            printf(" ");
     }
     printf ("};\n\n");
     printf ("static const int topo[3] = {%d, %d, %d};\n\n", topo[0], topo[1], topo[2]);
