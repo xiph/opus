@@ -1552,7 +1552,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        {
          if (frame_size == 2*st->Fs/25)  /* 80 ms -> 2x 40 ms */
            enc_frame_size = st->Fs/25;
-         if (frame_size == 3*st->Fs/25)  /* 120 ms -> 2x 60 ms */
+         else if (frame_size == 3*st->Fs/25)  /* 120 ms -> 2x 60 ms */
            enc_frame_size = 3*st->Fs/50;
          else                            /* 100 ms -> 5x 20 ms */
            enc_frame_size = st->Fs/50;
