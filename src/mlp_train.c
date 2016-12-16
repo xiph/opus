@@ -138,13 +138,16 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
     for (s=0;s<nbSamples;s++)
     {
         float *in, *out;
+        float inp[inDim];
         in = inputs+s*inDim;
         out = outputs + s*outDim;
+        for (j=0;j<inDim;j++)
+           inp[j] = in[j];
         for (i=0;i<hiddenDim;i++)
         {
             double sum = W0[i*(inDim+1)];
             for (j=0;j<inDim;j++)
-                sum += W0[i*(inDim+1)+j+1]*in[j];
+                sum += W0[i*(inDim+1)+j+1]*inp[j];
             hidden[i] = tansig_approx(sum);
         }
         for (i=0;i<outDim;i++)
@@ -156,14 +159,14 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
             error[i] = out[i] - netOut[i];
             if (out[i] == 0) error[i] *= .0;
             error_rate[i] += fabs(error[i])>1;
-            if (i==0) error[i] *= 3;
+            if (i==0) error[i] *= 5;
             rms += error[i]*error[i];
             /*error[i] = error[i]/(1+fabs(error[i]));*/
         }
         /* Back-propagate error */
         for (i=0;i<outDim;i++)
         {
-            float grad = 1-netOut[i]*netOut[i];
+            double grad = 1-netOut[i]*netOut[i];
             W1_grad[i*(hiddenDim+1)] += error[i]*grad;
             for (j=0;j<hiddenDim;j++)
                 W1_grad[i*(hiddenDim+1)+j+1] += grad*error[i]*hidden[j];
@@ -177,7 +180,7 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
             grad *= 1-hidden[i]*hidden[i];
             W0_grad[i*(inDim+1)] += grad;
             for (j=0;j<inDim;j++)
-                W0_grad[i*(inDim+1)+j+1] += grad*in[j];
+                W0_grad[i*(inDim+1)+j+1] += grad*inp[j];
         }
     }
     return rms;
@@ -476,6 +479,9 @@ int main(int argc, char **argv)
     fprintf (stderr, "Got %d samples\n", nbSamples);
     net = mlp_init(topo, 3, inputs, outputs, nbSamples);
     rms = mlp_train_backprop(net, inputs, outputs, nbSamples, nbEpoch, 1);
+    printf ("#ifdef HAVE_CONFIG_H\n");
+    printf ("#include \"config.h\"\n");
+    printf ("#endif\n\n");
     printf ("#include \"mlp.h\"\n\n");
     printf ("/* RMS error was %f, seed was %u */\n\n", rms, seed);
     printf ("static const float weights[%d] = {\n", (topo[0]+1)*topo[1] + (topo[1]+1)*topo[2]);
