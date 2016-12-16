@@ -263,7 +263,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
 
 #ifndef DISABLE_FLOAT_API
-    tonality_analysis_init(&st->analysis);
+    tonality_analysis_init(&st->analysis, st->Fs);
 #endif
 
     return OPUS_OK;
@@ -577,73 +577,52 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 #else
 #define PCM2VAL(x) SCALEIN(x)
 #endif
-void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
+
+void downmix_float(const void *_x, opus_val32 *y, int subframe, int offset, int c1, int c2, int C)
 {
    const float *x;
-   opus_val32 scale;
    int j;
+
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = PCM2VAL(x[(j+offset)*C+c1]);
+      y[j] = PCM2VAL(x[(j+offset)*C+c1]);
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         sub[j] += PCM2VAL(x[(j+offset)*C+c2]);
+         y[j] += PCM2VAL(x[(j+offset)*C+c2]);
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            sub[j] += PCM2VAL(x[(j+offset)*C+c]);
+            y[j] += PCM2VAL(x[(j+offset)*C+c]);
       }
    }
-#ifdef FIXED_POINT
-   scale = (1<<SIG_SHIFT);
-#else
-   scale = 1.f;
-#endif
-   if (c2==-2)
-      scale /= C;
-   else if (c2>-1)
-      scale /= 2;
-   for (j=0;j<subframe;j++)
-      sub[j] *= scale;
 }
 #endif
 
-void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
+void downmix_int(const void *_x, opus_val32 *y, int subframe, int offset, int c1, int c2, int C)
 {
    const opus_int16 *x;
-   opus_val32 scale;
    int j;
+
    x = (const opus_int16 *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = x[(j+offset)*C+c1];
+      y[j] = x[(j+offset)*C+c1];
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         sub[j] += x[(j+offset)*C+c2];
+         y[j] += x[(j+offset)*C+c2];
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            sub[j] += x[(j+offset)*C+c];
+            y[j] += x[(j+offset)*C+c];
       }
    }
-#ifdef FIXED_POINT
-   scale = (1<<SIG_SHIFT);
-#else
-   scale = 1.f/32768;
-#endif
-   if (c2==-2)
-      scale /= C;
-   else if (c2>-1)
-      scale /= 2;
-   for (j=0;j<subframe;j++)
-      sub[j] *= scale;
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
@@ -866,7 +845,9 @@ static int is_digital_silence(const opus_val16* pcm, int frame_size, int channel
 {
    int silence = 0;
    opus_val32 sample_max = 0;
-
+#ifdef MLP_TRAINING
+   return 0;
+#endif
    sample_max = celt_maxabs16(pcm, frame_size*channels);
 
 #ifdef FIXED_POINT
@@ -1131,9 +1112,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifndef DISABLE_FLOAT_API
     analysis_info.valid = 0;
 #ifdef FIXED_POINT
-    if (st->silk_mode.complexity >= 10 && st->Fs==48000)
+    if (st->silk_mode.complexity >= 10 && st->Fs>=16000)
 #else
-    if (st->silk_mode.complexity >= 7 && st->Fs==48000)
+    if (st->silk_mode.complexity >= 7 && st->Fs>=16000)
 #endif
     {
        if (is_digital_silence(pcm, frame_size, st->channels, lsb_depth))
