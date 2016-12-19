@@ -66,15 +66,15 @@
       Some of the changes in this document update normative behaviour in a way that requires
       new test vectors. The English text of the specification is unaffected, only
       the C implementation is. The updated specification remains fully compatible with
-      the original specification. 
+      the original specification.
     </t>
 
     <t>
     Note: due to RFC formatting conventions, lines exceeding the column width
-    in the patch above are split using a backslash character. The backslashes
+    in the patch are split using a backslash character. The backslashes
     at the end of a line and the white space at the beginning
     of the following line are not part of the patch. A properly formatted patch
-    including the three changes above is available at
+    including all changes is available at
     <eref target="https://jmvalin.ca/misc_stuff/opus_update.patch"/>. (EDITOR:
         change to an ietf.org link when ready)
     </t>
