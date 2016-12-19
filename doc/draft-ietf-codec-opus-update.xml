@@ -10,7 +10,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-ietf-codec-opus-update-04"
+<rfc category="std" docName="draft-ietf-codec-opus-update-05"
      ipr="trust200902">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
@@ -47,7 +47,7 @@
 
 
 
-    <date day="21" month="October" year="2016" />
+    <date day="19" month="December" year="2016" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
@@ -61,9 +61,24 @@
       implementation of the Opus codec that serves as the specification in
       <xref target="RFC6716">RFC 6716</xref>. Only issues affecting the decoder are
       listed here. An up-to-date implementation of the Opus encoder can be found at
-      http://opus-codec.org/. The updated specification remains fully compatible with
-      the original specification.
-      </t>
+      https://opus-codec.org/.</t>
+    <t>
+      Some of the changes in this document update normative behaviour in a way that requires
+      new test vectors. The English text of the specification is unaffected, only
+      the C implementation is. The updated specification remains fully compatible with
+      the original specification. 
+    </t>
+
+    <t>
+    Note: due to RFC formatting conventions, lines exceeding the column width
+    in the patch above are split using a backslash character. The backslashes
+    at the end of a line and the white space at the beginning
+    of the following line are not part of the patch. A properly formatted patch
+    including the three changes above is available at
+    <eref target="https://jmvalin.ca/misc_stuff/opus_update.patch"/>. (EDITOR:
+        change to an ietf.org link when ready)
+    </t>
+
     </section>
 
     <section title="Terminology">
@@ -155,7 +170,7 @@
      the batch sizes are reasonable enough that none of the issues above
      was ever a problem. However, proving that is non-obvious.
     </t>
-    <t>The code can be fixed by applying the following changes to line 70 of silk/resampler_private_IIR_FIR.c:
+    <t>The code can be fixed by applying the following changes to line 78 of silk/resampler_private_IIR_FIR.c:
     </t>
 <figure>
 <artwork><![CDATA[
@@ -213,15 +228,6 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
  }
 ]]></artwork>
 </figure>
-    <t>
-    Note: due to RFC formatting conventions, lines exceeding the column width
-    in the patch above are split using a backslash character. The backslashes
-    at the end of a line and the white space at the beginning
-    of the following line are not part of the patch. A properly formatted patch
-    including the three changes above is available at
-    <eref target="https://jmvalin.ca/misc_stuff/opus_update.patch"/>. (EDITOR:
-        change to an ietf.org link when ready)
-    </t>
     </section>
 
     <section title="Integer wrap-around in inverse gain computation">
@@ -416,7 +422,8 @@ effective_lowband+N);
 
     <section anchor="Acknowledgements" title="Acknowledgements">
       <t>We would like to thank Juri Aedla for reporting the issue with the parsing of
-      the Opus padding.</t>
+      the Opus padding. Also, thanks to Jonathan Lennox and Mark Harris for their
+      feedback on this document.</t>
     </section>
   </middle>
 
