@@ -1136,6 +1136,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #else
     (void)analysis_pcm;
     (void)analysis_size;
+    (void)c1;
+    (void)c2;
+    (void)analysis_channels;
+    (void)downmix;
 #endif
 
 #ifndef DISABLE_FLOAT_API
