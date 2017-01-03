@@ -715,7 +715,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
             ]])],
             [AC_MSG_RESULT([C method])
                  AC_DEFINE([CPU_INFO_BY_C], [1], [Get CPU Info by c method])],
-            [AC_MSG_ERROR([no supported Get CPU Info method, please disable intrinsics])])])])
+            [AC_MSG_ERROR([no supported Get CPU Info method, please disable real time CPU detection])])])])
    ],
    [
       AC_MSG_WARN([No intrinsics support for your architecture])
