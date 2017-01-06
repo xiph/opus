@@ -684,6 +684,7 @@ struct band_ctx {
    int arch;
    int theta_round;
    int disable_inv;
+   int avoid_split_noise;
 };
 
 struct split_ctx {
@@ -745,6 +746,20 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
          if (!stereo || ctx->theta_round == 0)
          {
             itheta = (itheta*(opus_int32)qn+8192)>>14;
+            if (!stereo && ctx->avoid_split_noise && itheta > 0 && itheta < qn)
+            {
+               /* Check if the selected value of theta will cause the bit allocation
+                  to inject noise on one side. If so, make sure the energy of that side
+                  is zero. */
+               int unquantized = celt_udiv((opus_int32)itheta*16384, qn);
+               imid = bitexact_cos((opus_int16)unquantized);
+               iside = bitexact_cos((opus_int16)(16384-unquantized));
+               delta = FRAC_MUL16((N-1)<<7,bitexact_log2tan(iside,imid));
+               if (delta > *b)
+                  itheta = qn;
+               else if (delta < -*b)
+                  itheta = 0;
+            }
          } else {
             int down;
             /* Bias quantization towards itheta=0 and itheta=16384. */
@@ -1452,6 +1467,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    ctx.disable_inv = disable_inv;
    ctx.resynth = resynth;
    ctx.theta_round = 0;
+   /* Avoid injecting noise in the first band on transients. */
+   ctx.avoid_split_noise = B > 1;
    for (i=start;i<end;i++)
    {
       opus_int32 tell;
@@ -1640,6 +1657,9 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 
       /* Update the folding position only as long as we have 1 bit/sample depth. */
       update_lowband = b>(N<<BITRES);
+      /* We only need to avoid noise on a split for the first band. After that, we
+         have folding. */
+      ctx.avoid_split_noise = 0;
    }
    *seed = ctx.seed;
 
