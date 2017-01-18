@@ -56,7 +56,7 @@ void silk_LPC_analysis_filter(
 )
 {
     opus_int   j;
-#if USE_CELT_FIR
+#if defined(FIXED_POINT) && USE_CELT_FIR
     opus_int16 num[SILK_MAX_ORDER_LPC];
 #else
     int ix;
@@ -68,7 +68,7 @@ void silk_LPC_analysis_filter(
     silk_assert( (d & 1) == 0 );
     silk_assert( d <= len );
 
-#if USE_CELT_FIR
+#if defined(FIXED_POINT) && USE_CELT_FIR
     silk_assert( d <= SILK_MAX_ORDER_LPC );
     for ( j = 0; j < d; j++ ) {
         num[ j ] = -B[ j ];
