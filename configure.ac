@@ -23,7 +23,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 # For libtool.
 dnl Please update these for releases.
 OPUS_LT_CURRENT=5
-OPUS_LT_REVISION=3
+OPUS_LT_REVISION=4
 OPUS_LT_AGE=5
 
 AC_SUBST(OPUS_LT_CURRENT)
