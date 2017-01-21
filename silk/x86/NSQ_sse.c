@@ -71,7 +71,7 @@ static OPUS_INLINE void silk_noise_shape_quantizer_10_16_sse4_1(
 );
 
 void silk_NSQ_sse4_1(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */

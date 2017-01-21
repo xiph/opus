@@ -247,7 +247,7 @@ void silk_VQ_WMat_EC_c(
 /************************************/
 
 void silk_NSQ_c(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int16            x16[],                                      /* I    Input                           */
@@ -273,7 +273,7 @@ void silk_NSQ_c(
 
 /* Noise shaping using delayed decision */
 void silk_NSQ_del_dec_c(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int16            x16[],                                      /* I    Input                           */

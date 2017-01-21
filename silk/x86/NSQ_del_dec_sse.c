@@ -107,12 +107,12 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_sse4_1(
     opus_int            predictLPCOrder,        /* I    Prediction filter order             */
     opus_int            warping_Q16,            /* I                                        */
     opus_int            nStatesDelayedDecision, /* I    Number of states in decision tree   */
-    opus_int            *smpl_buf_idx,          /* I    Index to newest samples in buffers  */
+    opus_int            *smpl_buf_idx,          /* I/O  Index to newest samples in buffers  */
     opus_int            decisionDelay           /* I                                        */
 );
 
 void silk_NSQ_del_dec_sse4_1(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */
@@ -334,7 +334,7 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_sse4_1(
     opus_int            predictLPCOrder,        /* I    Prediction filter order             */
     opus_int            warping_Q16,            /* I                                        */
     opus_int            nStatesDelayedDecision, /* I    Number of states in decision tree   */
-    opus_int            *smpl_buf_idx,          /* I    Index to newest samples in buffers  */
+    opus_int            *smpl_buf_idx,          /* I/O  Index to newest samples in buffers  */
     opus_int            decisionDelay           /* I                                        */
 )
 {
