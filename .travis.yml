@@ -1,5 +1,13 @@
 language: c
 
+compiler:
+  - gcc
+  - clang
+
+os:
+  - linux
+  - osx
+
 env:
   - CONFIG=""
   - CONFIG="--enable-assertions"
