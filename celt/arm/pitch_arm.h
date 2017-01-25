@@ -30,8 +30,6 @@
 
 # include "armcpu.h"
 
-# if defined(FIXED_POINT)
-
 # if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
 opus_val32 celt_inner_prod_neon(const opus_val16 *x, const opus_val16 *y, int N);
 void dual_inner_prod_neon(const opus_val16 *x, const opus_val16 *y01,
@@ -67,6 +65,8 @@ extern void (*const DUAL_INNER_PROD_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *x,
 #   define dual_inner_prod(x, y01, y02, N, xy1, xy2, arch) ((void)(arch), dual_inner_prod_neon(x, y01, y02, N, xy1, xy2))
 #  endif
 # endif
+
+# if defined(FIXED_POINT)
 
 #  if defined(OPUS_ARM_MAY_HAVE_NEON)
 opus_val32 celt_pitch_xcorr_neon(const opus_val16 *_x, const opus_val16 *_y,

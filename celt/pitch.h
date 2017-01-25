@@ -46,8 +46,7 @@
 #include "mips/pitch_mipsr1.h"
 #endif
 
-#if ((defined(OPUS_ARM_ASM) && defined(FIXED_POINT)) \
-  || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
+#if (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
 # include "arm/pitch_arm.h"
 #endif
 
