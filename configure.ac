@@ -426,7 +426,7 @@ AC_DEFUN([OPUS_PATH_NE10],
       AC_LINK_IFELSE(
          [
             AC_LANG_PROGRAM(
-               [[#include <NE10_init.h>
+               [[#include <NE10_dsp.h>
                ]],
                [[
                   ne10_fft_cfg_float32_t cfg;
