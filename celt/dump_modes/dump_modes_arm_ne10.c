@@ -60,7 +60,7 @@ void dump_modes_arch_init(CELTMode **modes, int nb_modes)
       fprintf(file, " %d %d",mode->Fs,mode->shortMdctSize*mode->nbShortMdcts);
    }
    fprintf(file, "\n * It contains static definitions for some pre-defined modes. */\n");
-   fprintf(file, "#include <NE10_init.h>\n\n");
+   fprintf(file, "#include <NE10_types.h>\n\n");
 }
 
 void dump_modes_arch_finalize()
