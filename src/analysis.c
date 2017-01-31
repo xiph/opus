@@ -290,6 +290,9 @@ static const float std_feature_bias[9] = {
       2.163313f, 1.260756f, 1.116868f, 1.918795f
 };
 
+#define LEAKAGE_OFFSET 2.5f
+#define LEAKAGE_SLOPE 2.f
+
 static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix)
 {
     int i, b;
@@ -327,6 +330,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     float tonality2[240];
     float midE[8];
     float spec_variability=0;
+    float band_log2[NB_TBANDS+1];
+    float leakage_low[NB_TBANDS+1];
+    float leakage_high[NB_TBANDS+1];
     SAVE_STACK;
 
     alpha = 1.f/IMIN(10, 1+tonal->count);
@@ -452,6 +458,21 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     }
     relativeE = 0;
     frame_loudness = 0;
+    /* The energy of the very first band is special because of DC. */
+    {
+       float E = 0;
+       float X1r, X2r;
+       X1r = 2*(float)out[0].r;
+       X2r = 2*(float)out[0].i;
+       E = X1r*X1r + X2r*X2r;
+       for (i=1;i<4;i++)
+       {
+          float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r
+                     + out[i].i*(float)out[i].i + out[N-i].i*(float)out[N-i].i;
+          E += binE;
+       }
+       band_log2[0] = (float).5*log2(E+1e-10f);
+    }
     for (b=0;b<NB_TBANDS;b++)
     {
        float E=0, tE=0, nE=0;
@@ -484,6 +505,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 
        frame_loudness += (float)sqrt(E+1e-10f);
        logE[b] = (float)log(E+1e-10f);
+       band_log2[b+1] = (float).5*log2(E+1e-10f);
        tonal->logE[tonal->E_count][b] = logE[b];
        if (tonal->count==0)
           tonal->highE[b] = tonal->lowE[b] = logE[b];
@@ -534,6 +556,34 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        /*printf("%f %f ", band_tonality[b], stationarity);*/
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
+
+    leakage_low[0] = band_log2[0];
+    leakage_high[0] = band_log2[0] - LEAKAGE_OFFSET;
+    for (b=1;b<NB_TBANDS+1;b++)
+    {
+       float leak_slope = LEAKAGE_SLOPE*(tbands[b]-tbands[b-1])/4;
+       leakage_low[b] = MIN16(leakage_low[b-1]+leak_slope, band_log2[b]);
+       leakage_high[b] = MAX16(leakage_high[b-1]-leak_slope, band_log2[b]-LEAKAGE_OFFSET);
+    }
+    for (b=NB_TBANDS-2;b>=0;b--)
+    {
+       float leak_slope = LEAKAGE_SLOPE*(tbands[b+1]-tbands[b])/4;
+       leakage_low[b] = MIN16(leakage_low[b+1]+leak_slope, leakage_low[b]);
+       leakage_high[b] = MAX16(leakage_high[b+1]-leak_slope, leakage_high[b]);
+    }
+    celt_assert(NB_TBANDS+1 <= LEAK_BANDS);
+    for (b=0;b<NB_TBANDS+1;b++)
+    {
+       /* leak_boost[] is made up of two terms. The first, based on leakage_high[],
+          represents the boost needed to overcome the amount of analysis leakage
+          cause in a weaker band b by louder neighroubing bands.
+          The second, based on leakage_low[], applies to a loud band b for
+          which the quantization noise causes synthesis leakage to the weaker
+          neighbouring bands. */
+       info->leak_boost[b] = MAX16(0, leakage_high[b] - band_log2[b]) +
+             MAX16(0, band_log2[b] - (leakage_low[b]+LEAKAGE_OFFSET));
+    }
+    for (;b<LEAK_BANDS;b++) info->leak_boost[b] = 0;
 
     for (i=0;i<NB_FRAMES;i++)
     {
