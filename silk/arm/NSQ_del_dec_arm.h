@@ -43,7 +43,6 @@ void silk_NSQ_del_dec_neon(
     const opus_int32 Gains_Q16[MAX_NB_SUBFR],
     const opus_int pitchL[MAX_NB_SUBFR], const opus_int Lambda_Q10,
     const opus_int LTP_scale_Q14);
-#endif
 
 #if !defined(OPUS_HAVE_RTCD)
 #define OVERRIDE_silk_NSQ_del_dec (1)
@@ -56,6 +55,7 @@ void silk_NSQ_del_dec_neon(
          psEncC, NSQ, psIndices, x16, pulses, PredCoef_Q12, LTPCoef_Q14,     \
          AR_Q13, HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, pitchL, \
          Lambda_Q10, LTP_scale_Q14))
+#endif
 #endif
 
 #if !defined(OVERRIDE_silk_NSQ_del_dec)
