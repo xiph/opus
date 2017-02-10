@@ -17,26 +17,14 @@ build:
   verbosity: minimal
 
 after_build:
-- cmd: >-
-    mkdir %APPVEYOR_BUILD_FOLDER%\artifacts
-
-    cd %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%
-
-    for %%a in (lib dll exp pdb) do if exist opus.%%a copy opus.%%a %APPVEYOR_BUILD_FOLDER%\artifacts\
-
-    cd %APPVEYOR_BUILD_FOLDER%
-
-    7z a opus.zip .\artifacts\* include\*.h
+- cd %APPVEYOR_BUILD_FOLDER%
+- 7z a opus.zip win32\VS2015\%PLATFORM%\%CONFIGURATION%\opus.??? include\*.h
 
 test_script:
-- cmd: >-
-    cd %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%
-
-    test_opus_api.exe
-
-    test_opus_decode.exe
-
-    test_opus_encode.exe
+- cd %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%
+- test_opus_api.exe
+- test_opus_decode.exe
+- test_opus_encode.exe
 
 artifacts:
 - path: opus.zip
