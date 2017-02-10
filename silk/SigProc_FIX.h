@@ -137,12 +137,6 @@ opus_int32 silk_LPC_inverse_pred_gain(              /* O   Returns inverse predi
     const opus_int              order               /* I   Prediction order                                             */
 );
 
-/* For input in Q24 domain */
-opus_int32 silk_LPC_inverse_pred_gain_Q24(          /* O    Returns inverse prediction gain in energy domain, Q30       */
-    const opus_int32            *A_Q24,             /* I    Prediction coefficients [order]                             */
-    const opus_int              order               /* I    Prediction order                                            */
-);
-
 /* Split signal in two decimated bands using first-order allpass filters */
 void silk_ana_filt_bank_1(
     const opus_int16            *in,                /* I    Input signal [N]                                            */
