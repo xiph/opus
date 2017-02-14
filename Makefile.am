@@ -84,9 +84,9 @@ pkginclude_HEADERS = include/opus.h include/opus_multistream.h include/opus_type
 noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD)
 
 if EXTRA_PROGRAMS
-noinst_PROGRAMS = opus_demo repacketizer_demo opus_compare tests/test_opus_api tests/test_opus_encode tests/test_opus_decode tests/test_opus_padding celt/tests/test_unit_cwrs32 celt/tests/test_unit_dft celt/tests/test_unit_entropy celt/tests/test_unit_laplace celt/tests/test_unit_mathops celt/tests/test_unit_mdct celt/tests/test_unit_rotation celt/tests/test_unit_types
+noinst_PROGRAMS = opus_demo repacketizer_demo opus_compare tests/test_opus_api tests/test_opus_encode tests/test_opus_decode tests/test_opus_padding celt/tests/test_unit_cwrs32 celt/tests/test_unit_dft celt/tests/test_unit_entropy celt/tests/test_unit_laplace celt/tests/test_unit_mathops celt/tests/test_unit_mdct celt/tests/test_unit_rotation celt/tests/test_unit_types celt/tests/test_unit_pitch_float
 
-TESTS = celt/tests/test_unit_types celt/tests/test_unit_mathops celt/tests/test_unit_entropy celt/tests/test_unit_laplace celt/tests/test_unit_dft celt/tests/test_unit_mdct celt/tests/test_unit_rotation celt/tests/test_unit_cwrs32 tests/test_opus_api tests/test_opus_decode tests/test_opus_encode tests/test_opus_padding
+TESTS = celt/tests/test_unit_types celt/tests/test_unit_mathops celt/tests/test_unit_entropy celt/tests/test_unit_laplace celt/tests/test_unit_dft celt/tests/test_unit_mdct celt/tests/test_unit_rotation celt/tests/test_unit_cwrs32 celt/tests/test_unit_pitch_float tests/test_opus_api tests/test_opus_decode tests/test_opus_encode tests/test_opus_padding
 
 opus_demo_SOURCES = src/opus_demo.c
 
@@ -147,6 +147,9 @@ endif
 celt_tests_test_unit_types_SOURCES = celt/tests/test_unit_types.c
 celt_tests_test_unit_types_LDADD = $(LIBM)
 endif
+
+celt_tests_test_unit_pitch_float_SOURCES = celt/tests/test_unit_pitch_float.c
+celt_tests_test_unit_pitch_float_LDADD = $(LIBM)
 
 if CUSTOM_MODES
 pkginclude_HEADERS += include/opus_custom.h
@@ -267,7 +270,8 @@ $(CELT_SOURCES_ARM_ASM:%.s=%-gnu.S): $(top_srcdir)/celt/arm/arm2gnu.pl
 OPT_UNIT_TEST_OBJ = $(celt_tests_test_unit_mathops_SOURCES:.c=.o) \
                     $(celt_tests_test_unit_rotation_SOURCES:.c=.o) \
                     $(celt_tests_test_unit_mdct_SOURCES:.c=.o) \
-                    $(celt_tests_test_unit_dft_SOURCES:.c=.o)
+                    $(celt_tests_test_unit_dft_SOURCES:.c=.o) \
+                    $(celt_tests_test_unit_pitch_float_SOURCES:.c=.o)
 
 if HAVE_SSE
 SSE_OBJ = $(CELT_SOURCES_SSE:.c=.lo)
