@@ -417,7 +417,7 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
       m3 = hp_mem[3];
       for (i=0;i<len;i++)
       {
-         opus_val32 x0, x1, tmp0, tmp1, y0, y1;
+         opus_val32 x0, x1, tmp0, tmp1, out0, out1;
          x0 = in[2*i+0];
          x1 = in[2*i+1];
          /* First stage */
@@ -426,12 +426,12 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
          m0 = coef*x0 + VERY_SMALL + coef2*m0;
          m2 = coef*x1 + VERY_SMALL + coef2*m2;
          /* Second stage */
-         y0 = tmp0 - m1;
-         y1 = tmp1 - m3;
+         out0 = tmp0 - m1;
+         out1 = tmp1 - m3;
          m1 = coef*tmp0 + VERY_SMALL + coef2*m1;
          m3 = coef*tmp1 + VERY_SMALL + coef2*m3;
-         out[2*i+0] = y0;
-         out[2*i+1] = y1;
+         out[2*i+0] = out0;
+         out[2*i+1] = out1;
       }
       hp_mem[0] = m0;
       hp_mem[1] = m1;
