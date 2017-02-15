@@ -84,9 +84,36 @@ pkginclude_HEADERS = include/opus.h include/opus_multistream.h include/opus_type
 noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD)
 
 if EXTRA_PROGRAMS
-noinst_PROGRAMS = opus_demo repacketizer_demo opus_compare tests/test_opus_api tests/test_opus_encode tests/test_opus_decode tests/test_opus_padding celt/tests/test_unit_cwrs32 celt/tests/test_unit_dft celt/tests/test_unit_entropy celt/tests/test_unit_laplace celt/tests/test_unit_mathops celt/tests/test_unit_mdct celt/tests/test_unit_rotation celt/tests/test_unit_types
+noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
+                  celt/tests/test_unit_dft \
+                  celt/tests/test_unit_entropy \
+                  celt/tests/test_unit_laplace \
+                  celt/tests/test_unit_mathops \
+                  celt/tests/test_unit_mdct \
+                  celt/tests/test_unit_rotation \
+                  celt/tests/test_unit_types \
+                  opus_compare \
+                  opus_demo \
+                  repacketizer_demo \
+                  silk/tests/test_unit_LPC_inv_pred_gain \
+                  tests/test_opus_api \
+                  tests/test_opus_decode \
+                  tests/test_opus_encode \
+                  tests/test_opus_padding
 
-TESTS = celt/tests/test_unit_types celt/tests/test_unit_mathops celt/tests/test_unit_entropy celt/tests/test_unit_laplace celt/tests/test_unit_dft celt/tests/test_unit_mdct celt/tests/test_unit_rotation celt/tests/test_unit_cwrs32 tests/test_opus_api tests/test_opus_decode tests/test_opus_encode tests/test_opus_padding
+TESTS = celt/tests/test_unit_cwrs32 \
+        celt/tests/test_unit_dft \
+        celt/tests/test_unit_entropy \
+        celt/tests/test_unit_laplace \
+        celt/tests/test_unit_mathops \
+        celt/tests/test_unit_mdct \
+        celt/tests/test_unit_rotation \
+        celt/tests/test_unit_types \
+        silk/tests/test_unit_LPC_inv_pred_gain \
+        tests/test_opus_api \
+        tests/test_opus_decode \
+        tests/test_opus_encode \
+        tests/test_opus_padding
 
 opus_demo_SOURCES = src/opus_demo.c
 
@@ -110,6 +137,11 @@ tests_test_opus_decode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
 tests_test_opus_padding_SOURCES = tests/test_opus_padding.c tests/test_opus_common.h
 tests_test_opus_padding_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+
+silk_tests_test_unit_LPC_inv_pred_gain_SOURCES = silk/tests/test_unit_LPC_inv_pred_gain.c
+silk_tests_test_unit_LPC_inv_pred_gain_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+# this target requires hidden symbols
+silk_tests_test_unit_LPC_inv_pred_gain_LDFLAGS = -static
 
 celt_tests_test_unit_cwrs32_SOURCES = celt/tests/test_unit_cwrs32.c
 celt_tests_test_unit_cwrs32_LDADD = $(LIBM)
@@ -267,7 +299,8 @@ $(CELT_SOURCES_ARM_ASM:%.s=%-gnu.S): $(top_srcdir)/celt/arm/arm2gnu.pl
 OPT_UNIT_TEST_OBJ = $(celt_tests_test_unit_mathops_SOURCES:.c=.o) \
                     $(celt_tests_test_unit_rotation_SOURCES:.c=.o) \
                     $(celt_tests_test_unit_mdct_SOURCES:.c=.o) \
-                    $(celt_tests_test_unit_dft_SOURCES:.c=.o)
+                    $(celt_tests_test_unit_dft_SOURCES:.c=.o) \
+                    $(silk_tests_test_unit_LPC_inv_pred_gain_SOURCES:.c=.o)
 
 if HAVE_SSE
 SSE_OBJ = $(CELT_SOURCES_SSE:.c=.lo)

@@ -78,6 +78,7 @@ silk/fixed/x64
 silk/float/Debug
 silk/float/Release
 silk/float/x64
+silk/tests/test_unit_LPC_inv_pred_gain
 src/Debug
 src/Release
 src/x64
