@@ -103,35 +103,25 @@ void celt_fir_c(
    ALLOC(rnum, ord, opus_val16);
    for(i=0;i<ord;i++)
       rnum[i] = num[ord-i-1];
-#ifdef SMALL_FOOTPRINT
-   (void)arch;
-   for (i=0;i<N;i++)
-   {
-      opus_val32 sum = SHL32(EXTEND32(x[i]), SIG_SHIFT);
-      for (j=0;j<ord;j++)
-      {
-         sum = MAC16_16(sum,rnum[j],x[i+j-ord]);
-      }
-      y[i] = SATURATE16(PSHR32(sum, SIG_SHIFT));
-   }
-#else
    for (i=0;i<N-3;i+=4)
    {
-      opus_val32 sum[4]={0,0,0,0};
+      opus_val32 sum[4]={SHL32(EXTEND32(x[i  ]), SIG_SHIFT),
+                         SHL32(EXTEND32(x[i+1]), SIG_SHIFT),
+                         SHL32(EXTEND32(x[i+2]), SIG_SHIFT),
+                         SHL32(EXTEND32(x[i+3]), SIG_SHIFT)};
       xcorr_kernel(rnum, x+i-ord, sum, ord, arch);
-      y[i  ] = SATURATE16(ADD32(EXTEND32(x[i  ]), PSHR32(sum[0], SIG_SHIFT)));
-      y[i+1] = SATURATE16(ADD32(EXTEND32(x[i+1]), PSHR32(sum[1], SIG_SHIFT)));
-      y[i+2] = SATURATE16(ADD32(EXTEND32(x[i+2]), PSHR32(sum[2], SIG_SHIFT)));
-      y[i+3] = SATURATE16(ADD32(EXTEND32(x[i+3]), PSHR32(sum[3], SIG_SHIFT)));
+      y[i  ] = ROUND16(sum[0], SIG_SHIFT);
+      y[i+1] = ROUND16(sum[1], SIG_SHIFT);
+      y[i+2] = ROUND16(sum[2], SIG_SHIFT);
+      y[i+3] = ROUND16(sum[3], SIG_SHIFT);
    }
    for (;i<N;i++)
    {
-      opus_val32 sum = 0;
+      opus_val32 sum = SHL32(EXTEND32(x[i]), SIG_SHIFT);
       for (j=0;j<ord;j++)
          sum = MAC16_16(sum,rnum[j],x[i+j-ord]);
-      y[i] = SATURATE16(ADD32(EXTEND32(x[i]), PSHR32(sum, SIG_SHIFT)));
+      y[i] = ROUND16(sum, SIG_SHIFT);
    }
-#endif
    RESTORE_STACK;
 }
 
