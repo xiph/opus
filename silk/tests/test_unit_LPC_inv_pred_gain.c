@@ -73,6 +73,16 @@ int check_stability(opus_int16 *A_Q12, int order) {
         if( !(y[ 0 ] < 10000 && y[ 0 ] > -10000) ) {
             return 0;
         }
+        /* Test every 8 sample for low amplitude. */
+        if( ( i & 0x7 ) == 0 ) {
+            double amp = 0;
+            for( j = 0; j < order; j++ ) {
+                amp += fabs(y[0]);
+            }
+            if( amp < 0.00001 ) {
+                return 1;
+            }
+        }
     }
     return 1;
 }
