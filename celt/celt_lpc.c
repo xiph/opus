@@ -105,10 +105,11 @@ void celt_fir_c(
       rnum[i] = num[ord-i-1];
    for (i=0;i<N-3;i+=4)
    {
-      opus_val32 sum[4]={SHL32(EXTEND32(x[i  ]), SIG_SHIFT),
-                         SHL32(EXTEND32(x[i+1]), SIG_SHIFT),
-                         SHL32(EXTEND32(x[i+2]), SIG_SHIFT),
-                         SHL32(EXTEND32(x[i+3]), SIG_SHIFT)};
+      opus_val32 sum[4];
+      sum[0] = SHL32(EXTEND32(x[i  ]), SIG_SHIFT);
+      sum[1] = SHL32(EXTEND32(x[i+1]), SIG_SHIFT),
+      sum[2] = SHL32(EXTEND32(x[i+2]), SIG_SHIFT);
+      sum[3] = SHL32(EXTEND32(x[i+3]), SIG_SHIFT);
       xcorr_kernel(rnum, x+i-ord, sum, ord, arch);
       y[i  ] = ROUND16(sum[0], SIG_SHIFT);
       y[i+1] = ROUND16(sum[1], SIG_SHIFT);
