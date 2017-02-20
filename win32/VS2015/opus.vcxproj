@@ -285,165 +285,6 @@
     <ClCompile Include="..\..\silk\encode_indices.c" />
     <ClCompile Include="..\..\silk\encode_pulses.c" />
     <ClCompile Include="..\..\silk\enc_API.c" />
-    <ClCompile Include="..\..\silk\fixed\apply_sine_window_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\autocorr_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\burg_modified_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\corrMatrix_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\encode_frame_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\find_LPC_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\find_LTP_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\find_pitch_lags_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\find_pred_coefs_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\k2a_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\k2a_Q16_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\LTP_analysis_filter_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\LTP_scale_ctrl_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\noise_shape_analysis_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\pitch_analysis_core_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\process_gains_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\regularize_correlations_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\residual_energy16_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\residual_energy_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\schur64_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\schur_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\vector_ops_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\warped_autocorrelation_FIX.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\x86\burg_modified_FIX_sse.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\fixed\x86\vector_ops_FIX_sse.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL' or '$(Configuration)'=='ReleaseDLL'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\apply_sine_window_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\autocorrelation_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\burg_modified_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\bwexpander_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\corrMatrix_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\encode_frame_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\energy_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\find_LPC_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\find_LTP_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\find_pitch_lags_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\find_pred_coefs_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\inner_product_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\k2a_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\LPC_analysis_filter_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\LPC_inv_pred_gain_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\LTP_analysis_filter_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\LTP_scale_ctrl_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\noise_shape_analysis_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\pitch_analysis_core_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\process_gains_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\regularize_correlations_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\residual_energy_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\scale_copy_vector_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\scale_vector_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\schur_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\sort_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\warped_autocorrelation_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\silk\float\wrappers_FLP.c">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\silk\gain_quant.c" />
     <ClCompile Include="..\..\silk\HP_variable_cutoff.c" />
     <ClCompile Include="..\..\silk\init_decoder.c" />
@@ -515,6 +356,34 @@
     <ClCompile Include="..\..\src\opus_multistream_encoder.c" />
     <ClCompile Include="..\..\src\repacketizer.c" />
   </ItemGroup>
+  <Choose>
+    <When Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed' or $(PreprocessorDefinitions.Contains('FIXED_POINT'))">
+      <ItemGroup>
+        <ClCompile Include="..\..\silk\fixed\*.c">
+          <ExcludedFromBuild>false</ExcludedFromBuild>
+        </ClCompile>
+        <ClCompile Include="..\..\silk\fixed\x86\*.c">
+          <ExcludedFromBuild>false</ExcludedFromBuild>
+        </ClCompile>
+        <ClCompile Include="..\..\silk\float\*.c">
+          <ExcludedFromBuild>true</ExcludedFromBuild>
+        </ClCompile>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <ClCompile Include="..\..\silk\fixed\*.c">
+          <ExcludedFromBuild>true</ExcludedFromBuild>
+        </ClCompile>
+        <ClCompile Include="..\..\silk\fixed\x86\*.c">
+          <ExcludedFromBuild>true</ExcludedFromBuild>
+        </ClCompile>
+        <ClCompile Include="..\..\silk\float\*.c">
+          <ExcludedFromBuild>false</ExcludedFromBuild>
+        </ClCompile>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
