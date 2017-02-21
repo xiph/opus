@@ -1130,7 +1130,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
        /* Track the peak signal energy */
        if (!is_silence && analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD)
-          st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999, 15), st->peak_signal_energy),
+          st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999f, 15), st->peak_signal_energy),
                 compute_frame_energy(pcm, frame_size, st->channels, st->arch));
     }
 #else

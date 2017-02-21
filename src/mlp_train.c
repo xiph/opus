@@ -485,7 +485,7 @@ int main(int argc, char **argv)
     printf ("\n/* output layer */\n");
     for (i=0;i<(topo[1]+1)*topo[2];i++)
     {
-        printf ("%g,", net->weights[1][i]);
+        printf ("%gf,", net->weights[1][i]);
         if (i%5==4)
             printf("\n");
         else
@@ -494,8 +494,8 @@ int main(int argc, char **argv)
     printf ("};\n\n");
     printf ("static const int topo[3] = {%d, %d, %d};\n\n", topo[0], topo[1], topo[2]);
     printf ("const MLP net = {\n");
-    printf ("\t3,\n");
-    printf ("\ttopo,\n");
-    printf ("\tweights\n};\n");
+    printf ("    3,\n");
+    printf ("    topo,\n");
+    printf ("    weights\n};\n");
     return 0;
 }

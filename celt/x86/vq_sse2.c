@@ -155,7 +155,6 @@ opus_val16 op_pvq_search_sse2(celt_norm *_X, int *iy, int K, int N, int arch)
       __m128 max, max2;
       __m128i count;
       __m128i pos;
-      best_id = 0;
       /* The squared magnitude term gets added anyway, so we might as well
          add it outside the loop */
       yy = ADD16(yy, 1);

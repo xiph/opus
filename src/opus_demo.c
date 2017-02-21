@@ -253,6 +253,7 @@ int main(int argc, char *argv[])
     opus_uint32 dec_final_range;
     int encode_only=0, decode_only=0;
     int max_frame_size = 48000*2;
+    size_t num_read;
     int curr_read=0;
     int sweep_bps = 0;
     int random_framesize=0, newsize=0, delayed_celt=0;
@@ -657,8 +658,8 @@ int main(int argc, char *argv[])
         if (decode_only)
         {
             unsigned char ch[4];
-            err = fread(ch, 1, 4, fin);
-            if (feof(fin))
+            num_read = fread(ch, 1, 4, fin);
+            if (num_read!=4)
                 break;
             len[toggle] = char_to_int(ch);
             if (len[toggle]>max_payload_bytes || len[toggle]<0)
@@ -666,14 +667,16 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Invalid payload length: %d\n",len[toggle]);
                 break;
             }
-            err = fread(ch, 1, 4, fin);
+            num_read = fread(ch, 1, 4, fin);
+            if (num_read!=4)
+                break;
             enc_final_range[toggle] = char_to_int(ch);
-            err = fread(data[toggle], 1, len[toggle], fin);
-            if (err<len[toggle])
+            num_read = fread(data[toggle], 1, len[toggle], fin);
+            if (num_read!=(size_t)len[toggle])
             {
                 fprintf(stderr, "Ran out of input, "
                                 "expecting %d bytes got %d\n",
-                                len[toggle],err);
+                                len[toggle],(int)num_read);
                 break;
             }
         } else {
@@ -685,8 +688,8 @@ int main(int argc, char *argv[])
                 opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(mode_list[curr_mode][3]));
                 frame_size = mode_list[curr_mode][2];
             }
-            err = fread(fbytes, sizeof(short)*channels, frame_size-remaining, fin);
-            curr_read = err;
+            num_read = fread(fbytes, sizeof(short)*channels, frame_size-remaining, fin);
+            curr_read = (int)num_read;
             tot_in += curr_read;
             for(i=0;i<curr_read*channels;i++)
             {
@@ -795,7 +798,7 @@ int main(int argc, char *argv[])
                     if (!decode_only && tot_out + output_samples > tot_in)
                     {
                        stop=1;
-                       output_samples  = tot_in-tot_out;
+                       output_samples = (opus_int32)(tot_in - tot_out);
                     }
                     if (output_samples>skip) {
                        int i;

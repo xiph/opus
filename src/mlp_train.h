@@ -59,7 +59,7 @@ static inline double tansig_approx(double x)
     return y;
 }
 
-inline float randn(float sd)
+static inline float randn(float sd)
 {
    float U1, U2, S, x;
    do {
