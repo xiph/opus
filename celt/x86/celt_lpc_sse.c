@@ -57,17 +57,6 @@ void celt_fir_sse4_1(const opus_val16 *x,
    ALLOC(rnum, ord, opus_val16);
    for(i=0;i<ord;i++)
       rnum[i] = num[ord-i-1];
-#ifdef SMALL_FOOTPRINT
-   for (i=0;i<N;i++)
-   {
-      opus_val32 sum = SHL32(EXTEND32(x[i]), SIG_SHIFT);
-      for (j=0;j<ord;j++)
-      {
-         sum = MAC16_16(sum,rnum[j],x[i+j-ord]);
-      }
-      y[i] = SATURATE16(PSHR32(sum, SIG_SHIFT));
-   }
-#else
    noA = EXTEND32(1) << SIG_SHIFT >> 1;
    vecNoA = _mm_set_epi32(noA, noA, noA, noA);
 
@@ -94,7 +83,6 @@ void celt_fir_sse4_1(const opus_val16 *x,
       y[i] = SATURATE16(ADD32(EXTEND32(x[i]), PSHR32(sum, SIG_SHIFT)));
    }
 
-#endif
    RESTORE_STACK;
 }
 

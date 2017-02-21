@@ -48,6 +48,8 @@
 #define M_PI 3.141592653
 #endif
 
+#ifndef DISABLE_FLOAT_API
+
 static const float dct_table[128] = {
         0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f,
         0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f,
@@ -151,7 +153,7 @@ static opus_val32 silk_resampler_down2_hp(
     /* len2 can be up to 480, so we shift by 8 more to make it fit. */
     hp_ener = hp_ener >> (2*SIG_SHIFT + 8);
 #endif
-    return hp_ener;
+    return (opus_val32)hp_ener;
 }
 
 static opus_val32 downmix_and_resample(downmix_func downmix, const void *_x, opus_val32 *y, opus_val32 S[3], int subframe, int offset, int c1, int c2, int C, int Fs)
@@ -256,7 +258,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
          pos = 0;
       if (pos == tonal->write_pos)
          break;
-      info_out->tonality = MAX32(0, -.03 + MAX32(info_out->tonality, tonal->info[pos].tonality-.05));
+      info_out->tonality = MAX32(0, -.03f + MAX32(info_out->tonality, tonal->info[pos].tonality-.05f));
    }
    tonal->read_subframe += len/(tonal->Fs/400);
    while (tonal->read_subframe>=8)
@@ -284,8 +286,8 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
 }
 
 static const float std_feature_bias[9] = {
-      5.684947, 3.475288, 1.770634, 1.599784, 3.773215,
-      2.163313, 1.260756, 1.116868, 1.918795
+      5.684947f, 3.475288f, 1.770634f, 1.599784f, 3.773215f,
+      2.163313f, 1.260756f, 1.116868f, 1.918795f
 };
 
 static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix)
@@ -346,7 +348,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     kfft = celt_mode->mdct.kfft[0];
     if (tonal->count==0)
        tonal->mem_fill = 240;
-    tonal->hp_ener_accum += downmix_and_resample(downmix, x, &tonal->inmem[tonal->mem_fill], tonal->downmix_state,
+    tonal->hp_ener_accum += (float)downmix_and_resample(downmix, x,
+          &tonal->inmem[tonal->mem_fill], tonal->downmix_state,
           IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C, tonal->Fs);
     if (tonal->mem_fill+len < ANALYSIS_BUF_SIZE)
     {
@@ -374,8 +377,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     }
     OPUS_MOVE(tonal->inmem, tonal->inmem+ANALYSIS_BUF_SIZE-240, 240);
     remaining = len - (ANALYSIS_BUF_SIZE-tonal->mem_fill);
-    tonal->hp_ener_accum = downmix_and_resample(downmix, x, &tonal->inmem[240], tonal->downmix_state,
-          remaining, offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C, tonal->Fs);
+    tonal->hp_ener_accum = (float)downmix_and_resample(downmix, x,
+          &tonal->inmem[240], tonal->downmix_state, remaining,
+          offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C, tonal->Fs);
     tonal->mem_fill = 240 + remaining;
     opus_fft(kfft, in, out, tonal->arch);
 #ifndef FIXED_POINT
@@ -430,7 +434,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     for (i=2;i<N2-1;i++)
     {
        float tt = MIN32(tonality2[i], MAX32(tonality2[i-1], tonality2[i+1]));
-       tonality[i] = .9*MAX32(tonality[i], tt-.1);
+       tonality[i] = .9f*MAX32(tonality[i], tt-.1f);
     }
     frame_tonality = 0;
     max_frame_tonality = 0;
@@ -486,9 +490,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        if (tonal->highE[b] > tonal->lowE[b] + 7.5)
        {
           if (tonal->highE[b] - logE[b] > logE[b] - tonal->lowE[b])
-             tonal->highE[b] -= .01;
+             tonal->highE[b] -= .01f;
           else
-             tonal->lowE[b] += .01;
+             tonal->lowE[b] += .01f;
        }
        if (logE[b] > tonal->highE[b])
        {
@@ -534,7 +538,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     for (i=0;i<NB_FRAMES;i++)
     {
        int j;
-       float mindist = 1e15;
+       float mindist = 1e15f;
        for (j=0;j<NB_FRAMES;j++)
        {
           int k;
@@ -550,7 +554,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        }
        spec_variability += mindist;
     }
-    spec_variability = sqrt(spec_variability/NB_FRAMES/NB_TBANDS);
+    spec_variability = (float)sqrt(spec_variability/NB_FRAMES/NB_TBANDS);
     bandwidth_mask = 0;
     bandwidth = 0;
     maxE = 0;
@@ -590,7 +594,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     /* Special case for the last two bands, for which we don't have spectrum but only
        the energy above 12 kHz. */
     {
-       float E = hp_ener*(1./(240*240));
+       float E = hp_ener*(1.f/(240*240));
 #ifdef FIXED_POINT
        /* silk_resampler_down2_hp() shifted right by an extra 8 bits. */
        E *= ((opus_int32)1 << 2*SIG_SHIFT)*256.f;
@@ -622,7 +626,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     {
        float sum=0;
        for (b=0;b<16;b++)
-          sum += dct_table[i*16+b]*.5*(tonal->highE[b]+tonal->lowE[b]);
+          sum += dct_table[i*16+b]*.5f*(tonal->highE[b]+tonal->lowE[b]);
        midE[i] = sum;
     }
 
@@ -675,14 +679,13 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     }
     for (i=0;i<9;i++)
        features[11+i] = (float)sqrt(tonal->std[i]) - std_feature_bias[i];
-    features[18] = spec_variability-.78;;
-    features[20] = info->tonality - 0.154723;
-    features[21] = info->activity - 0.724643;
-    features[22] = frame_stationarity - 0.743717;
-    features[23] = info->tonality_slope + 0.069216;
-    features[24] = tonal->lowECount - 0.067930;
+    features[18] = spec_variability - 0.78f;
+    features[20] = info->tonality - 0.154723f;
+    features[21] = info->activity - 0.724643f;
+    features[22] = frame_stationarity - 0.743717f;
+    features[23] = info->tonality_slope + 0.069216f;
+    features[24] = tonal->lowECount - 0.067930f;
 
-#ifndef DISABLE_FLOAT_API
     mlp_process(&net, features, frame_probs);
     frame_probs[0] = .5f*(frame_probs[0]+1);
     /* Curve fitting between the MLP probability and the actual probability */
@@ -818,9 +821,6 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        }
     }
     tonal->last_music = tonal->music_prob>.5f;
-#else
-    info->music_prob = 0;
-#endif
 #ifdef MLP_TRAINING
     for (i=0;i<25;i++)
        printf("%f ", features[i]);
@@ -862,3 +862,5 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
    analysis_info->valid = 0;
    tonality_get_info(analysis, analysis_info, frame_size);
 }
+
+#endif /* DISABLE_FLOAT_API */

@@ -935,6 +935,7 @@ static int ec_enc_shrink_assert(void)
     opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(6));
     opus_encoder_ctl(enc, OPUS_SET_BITRATE(6000));
     data_len = opus_encode(enc, pcm1, 960, data, 2000);
+    assert(data_len > 0);
 
     opus_encoder_ctl(enc, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
     opus_encoder_ctl(enc, OPUS_SET_PREDICTION_DISABLED(1));
@@ -942,11 +943,13 @@ static int ec_enc_shrink_assert(void)
     opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(1));
     opus_encoder_ctl(enc, OPUS_SET_BITRATE(15600));
     data_len = opus_encode(enc, pcm2, 2880, data, 122);
+    assert(data_len > 0);
 
     opus_encoder_ctl(enc, OPUS_SET_SIGNAL(OPUS_SIGNAL_MUSIC));
     opus_encoder_ctl(enc, OPUS_SET_BITRATE(27000));
     data_len = opus_encode(enc, pcm3, 2880, data, 122); /* assertion failure */
-    (void)data_len;
+    assert(data_len > 0);
+
     opus_encoder_destroy(enc);
     return 0;
 }
