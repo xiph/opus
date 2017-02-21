@@ -582,7 +582,7 @@ int run_test1(int no_fuzz)
          the decoders in order to compare them. */
       if(opus_packet_parse(packet,len,&toc,frames,size,&payload_offset)<=0)test_failed();
       if((fast_rand()&1023)==0)len=0;
-      for(j=(frames[0]-packet);j<len;j++)for(jj=0;jj<8;jj++)packet[j]^=((!no_fuzz)&&((fast_rand()&1023)==0))<<jj;
+      for(j=(opus_int32)(frames[0]-packet);j<len;j++)for(jj=0;jj<8;jj++)packet[j]^=((!no_fuzz)&&((fast_rand()&1023)==0))<<jj;
       out_samples = opus_decode(dec_err[0], len>0?packet:NULL, len, out2buf, MAX_FRAME_SAMP, 0);
       if(out_samples<0||out_samples>MAX_FRAME_SAMP)test_failed();
       if((len>0&&out_samples!=frame_size))test_failed(); /*FIXME use lastframe*/

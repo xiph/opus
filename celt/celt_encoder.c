@@ -1997,7 +1997,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         if (st->silk_info.offset > 100) target -= 18 << BITRES >> (3-LM);
         /* Boosting bitrate on transients and vowels with significant temporal
            spikes. */
-        target += MULT16_16_Q14(tf_estimate-QCONST16(.25f,14), (50<<BITRES));
+        target += (opus_int32)MULT16_16_Q14(tf_estimate-QCONST16(.25f,14), (50<<BITRES));
         /* If we have a strong transient, let's make sure it has enough bits to code
            the first two bands, so that it can use folding rather than noise. */
         if (tf_estimate > QCONST16(.7f,14))

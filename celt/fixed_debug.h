@@ -61,9 +61,11 @@ extern opus_int64 celt_mips;
 
 /** Add two 32-bit values, ignore any overflows */
 #define ADD32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)+(opus_uint32)(b)))
-/** Subtract two 32-bit values, ignore any overflows  */
+/** Subtract two 32-bit values, ignore any overflows */
 #define SUB32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)-(opus_uint32)(b)))
-#define NEG32_ovflw(a) (celt_mips+=2,(opus_val32)(-(opus_uint32)(a)))
+/* Avoid MSVC warning C4146: unary minus operator applied to unsigned type */
+/** Negate 32-bit value, ignore any overflows */
+#define NEG32_ovflw(a) (celt_mips+=2,(opus_val32)(0-(opus_uint32)(a)))
 
 static OPUS_INLINE short NEG16(int x)
 {

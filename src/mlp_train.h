@@ -36,7 +36,7 @@ static inline double tansig_double(double x)
 {
     return 2./(1.+exp(-2.*x)) - 1.;
 }
-static inline void build_tansig_table()
+static inline void build_tansig_table(void)
 {
     int i;
     for (i=0;i<501;i++)
@@ -59,7 +59,7 @@ static inline double tansig_approx(double x)
     return y;
 }
 
-inline float randn(float sd)
+static inline float randn(float sd)
 {
    float U1, U2, S, x;
    do {
