@@ -208,6 +208,7 @@ EXTRA_DIST = opus.pc.in \
              win32/VS2015/opus.vcxproj.filters \
              win32/VS2015/test_opus_decode.vcxproj \
              win32/VS2015/opus.sln \
+             win32/VS2015/common.props \
              win32/genversion.bat \
              win32/config.h
 
