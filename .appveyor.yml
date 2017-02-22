@@ -11,6 +11,10 @@ platform:
 - Win32
 - x64
 
+environment:
+  api_key:
+    secure: xZGjzJ/mG19pPdLOzpV3uFSzrBgqcU3qDLOTN2qC8xg=
+
 build:
   project: win32\VS2015\opus.sln
   parallel: true
@@ -28,3 +32,6 @@ test_script:
 
 artifacts:
 - path: opus.zip
+
+on_success:
+- appveyor Start-AppveyorBuild -ApiKey %API_KEY% -ProjectSlug opus-tools
