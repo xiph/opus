@@ -161,7 +161,11 @@
       <AdditionalIncludeDirectories>..\..\silk\fixed;..\..\silk\float;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(ConfigurationType)'=='DynamicLibrary'">DLL_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)'=='DebugDLL_fixed' or '$(Configuration)'=='ReleaseDLL_fixed'">FIXED_POINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions Condition="'$(Platform)'=='Win32'">/arch:IA32 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <Lib>
+      <AdditionalOptions>/ignore:4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
     <PreBuildEvent>
       <Command>"$(ProjectDir)..\..\win32\genversion.bat" "$(ProjectDir)..\..\win32\version.h" PACKAGE_VERSION</Command>
       <Message>Generating version.h</Message>
@@ -349,7 +353,7 @@
     <ClCompile Include="..\..\src\mlp_data.c" />
     <ClCompile Include="..\..\src\opus.c" />
     <ClCompile Include="..\..\src\opus_compare.c">
-        <DisableSpecificWarnings>4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="..\..\src\opus_decoder.c" />
     <ClCompile Include="..\..\src\opus_encoder.c" />
