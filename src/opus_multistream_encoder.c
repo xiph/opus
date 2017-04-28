@@ -500,8 +500,6 @@ static int opus_multistream_encoder_init_impl(
        !validate_ambisonics(st->layout.nb_channels, NULL, NULL))
       return OPUS_BAD_ARG;
 #endif
-   )
-      return OPUS_BAD_ARG;
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    coupled_size = opus_encoder_get_size(2);
    mono_size = opus_encoder_get_size(1);
