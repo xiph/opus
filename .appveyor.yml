@@ -13,7 +13,7 @@ platform:
 
 environment:
   api_key:
-    secure: xZGjzJ/mG19pPdLOzpV3uFSzrBgqcU3qDLOTN2qC8xg=
+    secure: kR3Ac0NjGwFnTmXdFrR8d6VXjdk5F7L4F/BilC4nvaM=
 
 build:
   project: win32\VS2015\opus.sln
