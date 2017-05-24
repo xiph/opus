@@ -424,7 +424,7 @@ static opus_val16 compute_pitch_gain(opus_val32 xy, opus_val32 xx, opus_val32 yy
    sx = celt_ilog2(xx)-14;
    sy = celt_ilog2(yy)-14;
    shift = sx + sy;
-   x2y2 = MULT16_16_Q14(VSHR32(xx, sx), VSHR32(yy, sy));
+   x2y2 = SHR32(MULT16_16(VSHR32(xx, sx), VSHR32(yy, sy)), 14);
    if (shift & 1) {
       if (x2y2 < 32768)
       {
