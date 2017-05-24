@@ -794,7 +794,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       trim = QCONST16(4.f, 8);
    } else if (equiv_rate < 80000) {
       opus_int32 frac = (equiv_rate-64000) >> 10;
-      trim = QCONST16(4.f, 8) + QCONST16(1.f/16., 8)*frac;
+      trim = QCONST16(4.f, 8) + QCONST16(1.f/16.f, 8)*frac;
    }
    if (C==2)
    {
