@@ -780,7 +780,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
       AnalysisInfo *analysis, opus_val16 *stereo_saving, opus_val16 tf_estimate,
-      int intensity, opus_val16 surround_trim, int arch)
+      int intensity, opus_val16 surround_trim, opus_int32 equiv_rate, int arch)
 {
    int i;
    opus_val32 diff=0;
@@ -788,6 +788,14 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    int trim_index;
    opus_val16 trim = QCONST16(5.f, 8);
    opus_val16 logXC, logXC2;
+   /* At low bitrate, reducing the trim seems to help. At higher bitrates, it's less
+      clear what's best, so we're keeping it as it was before, at least for now. */
+   if (equiv_rate < 64000) {
+      trim = QCONST16(4.f, 8);
+   } else if (equiv_rate < 80000) {
+      opus_int32 frac = (equiv_rate-64000) >> 10;
+      trim = QCONST16(4.f, 8) + QCONST16(1.f/16., 8)*frac;
+   }
    if (C==2)
    {
       opus_val16 sum = 0; /* Q10 */
@@ -1954,7 +1962,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       } else {
          alloc_trim = alloc_trim_analysis(mode, X, bandLogE,
             end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate,
-            st->intensity, surround_trim, st->arch);
+            st->intensity, surround_trim, equiv_rate, st->arch);
       }
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
