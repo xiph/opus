@@ -141,16 +141,20 @@ tests_test_opus_decode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 tests_test_opus_padding_SOURCES = tests/test_opus_padding.c tests/test_opus_common.h
 tests_test_opus_padding_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
+CELT_OBJ = $(CELT_SOURCES:.c=.lo)
+SILK_OBJ = $(SILK_SOURCES:.c=.lo)
+
 silk_tests_test_unit_LPC_inv_pred_gain_SOURCES = silk/tests/test_unit_LPC_inv_pred_gain.c
-silk_tests_test_unit_LPC_inv_pred_gain_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
-# this target requires hidden symbols
-silk_tests_test_unit_LPC_inv_pred_gain_LDFLAGS = -static
+silk_tests_test_unit_LPC_inv_pred_gain_LDADD = $(SILK_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+if OPUS_ARM_EXTERNAL_ASM
+silk_tests_test_unit_LPC_inv_pred_gain_LDADD += libarmasm.la
+endif
 
 celt_tests_test_unit_cwrs32_SOURCES = celt/tests/test_unit_cwrs32.c
 celt_tests_test_unit_cwrs32_LDADD = $(LIBM)
 
 celt_tests_test_unit_dft_SOURCES = celt/tests/test_unit_dft.c
-celt_tests_test_unit_dft_LDADD = $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_dft_LDADD = $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_dft_LDADD += libarmasm.la
 endif
@@ -162,19 +166,19 @@ celt_tests_test_unit_laplace_SOURCES = celt/tests/test_unit_laplace.c
 celt_tests_test_unit_laplace_LDADD = $(LIBM)
 
 celt_tests_test_unit_mathops_SOURCES = celt/tests/test_unit_mathops.c
-celt_tests_test_unit_mathops_LDADD = $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_mathops_LDADD = $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_mathops_LDADD += libarmasm.la
 endif
 
 celt_tests_test_unit_mdct_SOURCES = celt/tests/test_unit_mdct.c
-celt_tests_test_unit_mdct_LDADD = $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_mdct_LDADD = $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_mdct_LDADD += libarmasm.la
 endif
 
 celt_tests_test_unit_rotation_SOURCES = celt/tests/test_unit_rotation.c
-celt_tests_test_unit_rotation_LDADD = $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_rotation_LDADD = $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_rotation_LDADD += libarmasm.la
 endif
@@ -308,25 +312,25 @@ OPT_UNIT_TEST_OBJ = $(celt_tests_test_unit_mathops_SOURCES:.c=.o) \
 
 if HAVE_SSE
 SSE_OBJ = $(CELT_SOURCES_SSE:.c=.lo)
-$(SSE_OBJ) $(OPT_UNIT_TEST_OBJ): CFLAGS += $(OPUS_X86_SSE_CFLAGS)
+$(SSE_OBJ): CFLAGS += $(OPUS_X86_SSE_CFLAGS)
 endif
 
 if HAVE_SSE2
 SSE2_OBJ = $(CELT_SOURCES_SSE2:.c=.lo)
-$(SSE2_OBJ) $(OPT_UNIT_TEST_OBJ): CFLAGS += $(OPUS_X86_SSE2_CFLAGS)
+$(SSE2_OBJ): CFLAGS += $(OPUS_X86_SSE2_CFLAGS)
 endif
 
 if HAVE_SSE4_1
 SSE4_1_OBJ = $(CELT_SOURCES_SSE4_1:.c=.lo) \
              $(SILK_SOURCES_SSE4_1:.c=.lo) \
              $(SILK_SOURCES_FIXED_SSE4_1:.c=.lo)
-$(SSE4_1_OBJ) $(OPT_UNIT_TEST_OBJ): CFLAGS += $(OPUS_X86_SSE4_1_CFLAGS)
+$(SSE4_1_OBJ): CFLAGS += $(OPUS_X86_SSE4_1_CFLAGS)
 endif
 
 if HAVE_ARM_NEON_INTR
 ARM_NEON_INTR_OBJ = $(CELT_SOURCES_ARM_NEON_INTR:.c=.lo) \
                     $(SILK_SOURCES_ARM_NEON_INTR:.c=.lo) \
                     $(SILK_SOURCES_FIXED_ARM_NEON_INTR:.c=.lo)
-$(ARM_NEON_INTR_OBJ) $(OPT_UNIT_TEST_OBJ): CFLAGS += \
+$(ARM_NEON_INTR_OBJ): CFLAGS += \
  $(OPUS_ARM_NEON_INTR_CFLAGS)  $(NE10_CFLAGS)
 endif
