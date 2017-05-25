@@ -65,7 +65,7 @@ opus_uint32 celt_lcg_rand(opus_uint32 seed)
 
 /* This is a cos() approximation designed to be bit-exact on any platform. Bit exactness
    with this approximation is important because it has an impact on the bit allocation */
-static opus_int16 bitexact_cos(opus_int16 x)
+opus_int16 bitexact_cos(opus_int16 x)
 {
    opus_int32 tmp;
    opus_int16 x2;
@@ -77,7 +77,7 @@ static opus_int16 bitexact_cos(opus_int16 x)
    return 1+x2;
 }
 
-static int bitexact_log2tan(int isin,int icos)
+int bitexact_log2tan(int isin,int icos)
 {
    int lc;
    int ls;

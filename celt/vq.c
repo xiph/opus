@@ -67,7 +67,7 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
 }
 #endif /* OVERRIDE_vq_exp_rotation1 */
 
-static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
+void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
 {
    static const int SPREAD_FACTOR[3]={15,10,5};
    int i;

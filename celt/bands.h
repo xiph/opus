@@ -36,6 +36,9 @@
 #include "entdec.h"
 #include "rate.h"
 
+opus_int16 bitexact_cos(opus_int16 x);
+int bitexact_log2tan(int isin,int icos);
+
 /** Compute the amplitude (sqrt energy) in each of the bands
  * @param m Mode data
  * @param X Spectrum
