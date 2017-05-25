@@ -34,4 +34,4 @@ artifacts:
 - path: opus.zip
 
 on_success:
-- appveyor Start-AppveyorBuild -ApiKey %API_KEY% -ProjectSlug opus-tools
+- ps: if ($env:api_key -and "$env:configuration/$env:platform" -eq "ReleaseDLL_fixed/x64") { Start-AppveyorBuild -ApiKey $env:api_key -ProjectSlug 'opus-tools' }
