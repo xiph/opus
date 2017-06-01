@@ -1076,11 +1076,11 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
             boost = (int)SHR32(EXTEND32(follower[i])*width/6,DB_SHIFT);
             boost_bits = boost*6<<BITRES;
          }
-         /* For CBR and non-transient CVBR frames, limit dynalloc to 1/4 of the bits */
+         /* For CBR and non-transient CVBR frames, limit dynalloc to 2/3 of the bits */
          if ((!vbr || (constrained_vbr&&!isTransient))
-               && (tot_boost+boost_bits)>>BITRES>>3 > effectiveBytes/4)
+               && (tot_boost+boost_bits)>>BITRES>>3 > 2*effectiveBytes/3)
          {
-            opus_int32 cap = ((effectiveBytes/4)<<BITRES<<3);
+            opus_int32 cap = ((2*effectiveBytes/3)<<BITRES<<3);
             offsets[i] = cap-tot_boost;
             tot_boost = cap;
             break;
