@@ -50,6 +50,8 @@ extern "C" {
 #define CELTDecoder OpusCustomDecoder
 #define CELTMode OpusCustomMode
 
+#define LEAK_BANDS 19
+
 typedef struct {
    int valid;
    float tonality;
@@ -60,6 +62,8 @@ typedef struct {
    float vad_prob;
    int   bandwidth;
    float activity_probability;
+   /* Store as Q6 char to save space. */
+   unsigned char leak_boost[LEAK_BANDS];
 } AnalysisInfo;
 
 typedef struct {

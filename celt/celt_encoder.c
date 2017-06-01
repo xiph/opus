@@ -964,7 +964,7 @@ static opus_val16 median_of_3(const opus_val16 *x)
 static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
-      int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc)
+      int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc, AnalysisInfo *analysis)
 {
    int i, c;
    opus_int32 tot_boost=0;
@@ -1054,14 +1054,26 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       }
       for (i=start;i<end;i++)
       {
-         int width;
-         int boost;
-         int boost_bits;
-
          if (i<8)
             follower[i] *= 2;
          if (i>=12)
             follower[i] = HALF16(follower[i]);
+      }
+#ifdef DISABLE_FLOAT_API
+      (void)analysis;
+#else
+      if (analysis->valid)
+      {
+         for (i=start;i<IMIN(LEAK_BANDS, end);i++)
+            follower[i] = follower[i] +  QCONST16(1.f/64.f, DB_SHIFT)*analysis->leak_boost[i];
+      }
+#endif
+      for (i=start;i<end;i++)
+      {
+         int width;
+         int boost;
+         int boost_bits;
+
          follower[i] = MIN16(follower[i], QCONST16(4, DB_SHIFT));
 
          width = C*(eBands[i+1]-eBands[i])<<LM;
@@ -1893,7 +1905,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, start, end, C, offsets,
          st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
-         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc);
+         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis);
    /* For LFE, everything interesting is in the first band */
    if (st->lfe)
       offsets[0] = IMIN(8, effectiveBytes/3);
