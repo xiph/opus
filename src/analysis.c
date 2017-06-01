@@ -290,6 +290,15 @@ static const float std_feature_bias[9] = {
       2.163313f, 1.260756f, 1.116868f, 1.918795f
 };
 
+#ifdef FIXED_POINT
+/* For fixed-point, the input is +/-2^15 shifted up by SIG_SHIFT, so we need to
+   compensate for that in the energy. */
+#define SCALE_COMPENS (1.f/((opus_int32)1<<(15+SIG_SHIFT)))
+#define SCALE_ENER(e) ((SCALE_COMPENS*SCALE_COMPENS)*(e))
+#else
+#define SCALE_ENER(e) (e)
+#endif
+
 static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix)
 {
     int i, b;
@@ -461,10 +470,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        {
           float binE = out[i].r*(float)out[i].r + out[N-i].r*(float)out[N-i].r
                      + out[i].i*(float)out[i].i + out[N-i].i*(float)out[N-i].i;
-#ifdef FIXED_POINT
-          /* FIXME: It's probably best to change the BFCC filter initial state instead */
-          binE *= 5.55e-17f;
-#endif
+          binE = SCALE_ENER(binE);
           E += binE;
           tE += binE*MAX32(0, tonality[i]);
           nE += binE*2.f*(.5f-noisiness[i]);
@@ -559,9 +565,6 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     bandwidth = 0;
     maxE = 0;
     noise_floor = 5.7e-4f/(1<<(IMAX(0,lsb_depth-8)));
-#ifdef FIXED_POINT
-    noise_floor *= 1<<(15+SIG_SHIFT);
-#endif
     noise_floor *= noise_floor;
     for (b=0;b<NB_TBANDS;b++)
     {
@@ -576,6 +579,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
                      + out[i].i*(float)out[i].i + out[N-i].i*(float)out[N-i].i;
           E += binE;
        }
+       E = SCALE_ENER(E);
        maxE = MAX32(maxE, E);
        tonal->meanE[b] = MAX32((1-alphaE2)*tonal->meanE[b], E);
        E = MAX32(E, tonal->meanE[b]);
@@ -597,7 +601,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        float E = hp_ener*(1.f/(240*240));
 #ifdef FIXED_POINT
        /* silk_resampler_down2_hp() shifted right by an extra 8 bits. */
-       E *= ((opus_int32)1 << 2*SIG_SHIFT)*256.f;
+       E *= 256.f*(1.f/Q15ONE)*(1.f/Q15ONE);
 #endif
        maxE = MAX32(maxE, E);
        tonal->meanE[b] = MAX32((1-alphaE2)*tonal->meanE[b], E);
