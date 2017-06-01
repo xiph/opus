@@ -481,7 +481,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
           E += binE;
        }
        E = SCALE_ENER(E);
-       band_log2[0] = (float).5*log2(E+1e-10f);
+       band_log2[0] = .5f*1.442695f*(float)log(E+1e-10f);
     }
     for (b=0;b<NB_TBANDS;b++)
     {
@@ -512,7 +512,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 
        frame_loudness += (float)sqrt(E+1e-10f);
        logE[b] = (float)log(E+1e-10f);
-       band_log2[b+1] = (float).5*log2(E+1e-10f);
+       band_log2[b+1] = .5f*1.442695f*(float)log(E+1e-10f);
        tonal->logE[tonal->E_count][b] = logE[b];
        if (tonal->count==0)
           tonal->highE[b] = tonal->lowE[b] = logE[b];
