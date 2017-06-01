@@ -581,10 +581,10 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     celt_assert(NB_TBANDS+1 <= LEAK_BANDS);
     for (b=0;b<NB_TBANDS+1;b++)
     {
-       /* leak_boost[] is made up of two terms. The first, based on leakage_high[],
+       /* leak_boost[] is made up of two terms. The first, based on leakage_to[],
           represents the boost needed to overcome the amount of analysis leakage
-          cause in a weaker band b by louder neighroubing bands.
-          The second, based on leakage_low[], applies to a loud band b for
+          cause in a weaker band b by louder neighbouring bands.
+          The second, based on leakage_from[], applies to a loud band b for
           which the quantization noise causes synthesis leakage to the weaker
           neighbouring bands. */
        float boost = MAX16(0, leakage_to[b] - band_log2[b]) +
