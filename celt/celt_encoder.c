@@ -1283,7 +1283,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
    /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
    target += tot_boost-(19<<LM);
    /* Apply transient boost, compensating for average boost. */
-   tf_calibration = QCONST16(0.04f,14);
+   tf_calibration = QCONST16(0.044f,14);
    target += (opus_int32)SHL32(MULT16_32_Q15(tf_estimate-tf_calibration, target),1);
 
 #ifndef DISABLE_FLOAT_API
@@ -1294,7 +1294,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       float tonal;
 
       /* Tonality boost (compensating for the average). */
-      tonal = MAX16(0.f,analysis->tonality-.15f)-0.09f;
+      tonal = MAX16(0.f,analysis->tonality-.15f)-0.12f;
       tonal_target = target + (opus_int32)((coded_bins<<BITRES)*1.2f*tonal);
       if (pitch_change)
          tonal_target +=  (opus_int32)((coded_bins<<BITRES)*.8f);
