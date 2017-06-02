@@ -45,20 +45,20 @@ void (*const SILK_BIQUAD_ALT_STRIDE2_IMPL[OPUS_ARCHMASK + 1])(
         opus_int16                  *out,               /* O     output signal                                              */
         const opus_int32            len                 /* I     signal length (must be even)                               */
 ) = {
-      silk_biquad_alt_stride2_c,              /* ARMv4 */
-      silk_biquad_alt_stride2_c,              /* EDSP */
-      silk_biquad_alt_stride2_c,              /* Media */
-      MAY_HAVE_NEON(silk_biquad_alt_stride2), /* Neon */
+      silk_biquad_alt_stride2_c,    /* ARMv4 */
+      silk_biquad_alt_stride2_c,    /* EDSP */
+      silk_biquad_alt_stride2_c,    /* Media */
+      silk_biquad_alt_stride2_neon, /* Neon */
 };
 
 opus_int32 (*const SILK_LPC_INVERSE_PRED_GAIN_IMPL[OPUS_ARCHMASK + 1])( /* O   Returns inverse prediction gain in energy domain, Q30        */
         const opus_int16            *A_Q12,                             /* I   Prediction coefficients, Q12 [order]                         */
         const opus_int              order                               /* I   Prediction order                                             */
 ) = {
-      silk_LPC_inverse_pred_gain_c,              /* ARMv4 */
-      silk_LPC_inverse_pred_gain_c,              /* EDSP */
-      silk_LPC_inverse_pred_gain_c,              /* Media */
-      MAY_HAVE_NEON(silk_LPC_inverse_pred_gain), /* Neon */
+      silk_LPC_inverse_pred_gain_c,    /* ARMv4 */
+      silk_LPC_inverse_pred_gain_c,    /* EDSP */
+      silk_LPC_inverse_pred_gain_c,    /* Media */
+      silk_LPC_inverse_pred_gain_neon, /* Neon */
 };
 
 void  (*const SILK_NSQ_DEL_DEC_IMPL[OPUS_ARCHMASK + 1])(
@@ -78,10 +78,10 @@ void  (*const SILK_NSQ_DEL_DEC_IMPL[OPUS_ARCHMASK + 1])(
         const opus_int              Lambda_Q10,                                 /* I    Rate/distortion tradeoff        */
         const opus_int              LTP_scale_Q14                               /* I    LTP state scaling               */
 ) = {
-      silk_NSQ_del_dec_c,              /* ARMv4 */
-      silk_NSQ_del_dec_c,              /* EDSP */
-      silk_NSQ_del_dec_c,              /* Media */
-      MAY_HAVE_NEON(silk_NSQ_del_dec), /* Neon */
+      silk_NSQ_del_dec_c,    /* ARMv4 */
+      silk_NSQ_del_dec_c,    /* EDSP */
+      silk_NSQ_del_dec_c,    /* Media */
+      silk_NSQ_del_dec_neon, /* Neon */
 };
 
 /*There is no table for silk_noise_shape_quantizer_short_prediction because the
@@ -112,10 +112,10 @@ void (*const SILK_WARPED_AUTOCORRELATION_FIX_IMPL[OPUS_ARCHMASK + 1])(
     const opus_int                  length,                                 /* I    Length of input                                                             */
     const opus_int                  order                                   /* I    Correlation order (even)                                                    */
 ) = {
-      silk_warped_autocorrelation_FIX_c,              /* ARMv4 */
-      silk_warped_autocorrelation_FIX_c,              /* EDSP */
-      silk_warped_autocorrelation_FIX_c,              /* Media */
-      MAY_HAVE_NEON(silk_warped_autocorrelation_FIX), /* Neon */
+      silk_warped_autocorrelation_FIX_c,    /* ARMv4 */
+      silk_warped_autocorrelation_FIX_c,    /* EDSP */
+      silk_warped_autocorrelation_FIX_c,    /* Media */
+      silk_warped_autocorrelation_FIX_neon, /* Neon */
 };
 
 # endif
