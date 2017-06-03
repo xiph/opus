@@ -1042,6 +1042,34 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
    return ret;
 }
 
+static int compute_redundancy_bytes(opus_int32 max_data_bytes, opus_int32 bitrate_bps, int frame_rate, int channels)
+{
+   int redundancy_bytes_cap;
+   int redundancy_bytes;
+   opus_int32 redundancy_rate;
+   int base_bits;
+   opus_int32 available_bits;
+   base_bits = (40*channels+20);
+
+   /* Equivalent rate for 5 ms frames. */
+   redundancy_rate = bitrate_bps + base_bits*(200 - frame_rate);
+   /* For VBR, further increase the bitrate if we can afford it. It's pretty short
+      and we'll avoid artefacts. */
+   redundancy_rate = 3*redundancy_rate/2;
+   redundancy_bytes = redundancy_rate/1600;
+
+   /* Compute the max rate we can use given CBR or VBR with cap. */
+   available_bits = max_data_bytes*8 - 2*base_bits;
+   redundancy_bytes_cap = (available_bits*240/(240+48000/frame_rate) + base_bits)/8;
+   redundancy_bytes = IMIN(redundancy_bytes, redundancy_bytes_cap);
+   /* It we can't get enough bits for redundancy to be worth it, rely on the decoder PLC. */
+   if (redundancy_bytes > 4 + 8*channels)
+      redundancy_bytes = IMIN(257, redundancy_bytes);
+   else
+      redundancy_bytes = 0;
+   return redundancy_bytes;
+}
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
                 const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
@@ -1580,11 +1608,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     if (redundancy)
     {
-       /* Fair share of the max size allowed */
-       redundancy_bytes = IMIN(257, max_data_bytes*(opus_int32)(st->Fs/200)/(frame_size+st->Fs/200));
-       /* For VBR, target the actual bitrate (subject to the limit above) */
-       if (st->use_vbr)
-          redundancy_bytes = IMIN(redundancy_bytes, st->bitrate_bps/1600);
+       redundancy_bytes = compute_redundancy_bytes(max_data_bytes, st->bitrate_bps, frame_rate, st->stream_channels);
+       if (redundancy_bytes == 0)
+          redundancy = 0;
     }
 
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, curr_bandwidth); */
@@ -1830,7 +1856,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         /* FIXME: How do we allocate the redundancy for CBR? */
         if (st->silk_mode.opusCanSwitch)
         {
-           redundancy = 1;
+           redundancy_bytes = compute_redundancy_bytes(max_data_bytes, st->bitrate_bps, frame_rate, st->stream_channels);
+           redundancy = (redundancy_bytes != 0);
            celt_to_silk = 0;
            st->silk_bw_switch = 1;
         }
@@ -1942,13 +1969,12 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                /* Reserve the 8 bits needed for the redundancy length,
                   and at least a few bits for CELT if possible */
                max_redundancy = (max_data_bytes-1)-((ec_tell(&enc)+8+3+7)>>3);
-               max_redundancy = IMIN(max_redundancy, redundancy_bytes);
             }
             else
                max_redundancy = (max_data_bytes-1)-((ec_tell(&enc)+7)>>3);
             /* Target the same bit-rate for redundancy as for the rest,
                up to a max of 257 bytes */
-            redundancy_bytes = IMIN(max_redundancy, st->bitrate_bps/1600);
+            redundancy_bytes = IMIN(max_redundancy, redundancy_bytes);
             redundancy_bytes = IMIN(257, IMAX(2, redundancy_bytes));
             if (st->mode == MODE_HYBRID)
                 ec_enc_uint(&enc, redundancy_bytes-2, 256);
