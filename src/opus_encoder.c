@@ -264,6 +264,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
 
 #ifndef DISABLE_FLOAT_API
     tonality_analysis_init(&st->analysis, st->Fs);
+    st->analysis.application = st->application;
 #endif
 
     return OPUS_OK;
@@ -2263,6 +2264,9 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                break;
             }
             st->application = value;
+#ifndef DISABLE_FLOAT_API
+            st->analysis.application = value;
+#endif
         }
         break;
         case OPUS_GET_APPLICATION_REQUEST:

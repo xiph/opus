@@ -360,8 +360,12 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        offset = 3*offset/2;
     }
 
-    if (tonal->count<4)
-       tonal->music_prob = .5;
+    if (tonal->count<4) {
+       if (tonal->application == OPUS_APPLICATION_VOIP)
+          tonal->music_prob = .1;
+       else
+          tonal->music_prob = .625;
+    }
     kfft = celt_mode->mdct.kfft[0];
     if (tonal->count==0)
        tonal->mem_fill = 240;
@@ -820,8 +824,11 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        music0  = (float)pow(frame_probs[0], beta);
        if (tonal->count==1)
        {
-          tonal->pspeech[0]=.5;
-          tonal->pmusic [0]=.5;
+          if (tonal->application == OPUS_APPLICATION_VOIP)
+             tonal->pmusic[0] = .1;
+          else
+             tonal->pmusic[0] = .625;
+          tonal->pspeech[0] = 1-tonal->pmusic[0];
        }
        /* Updated probability of having only speech (s0) or only music (m0),
           before considering the new observation. */

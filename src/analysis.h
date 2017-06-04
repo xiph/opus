@@ -45,6 +45,7 @@
 
 typedef struct {
    int arch;
+   int application;
    opus_int32 Fs;
 #define TONALITY_ANALYSIS_RESET_START angle
    float angle[240];
