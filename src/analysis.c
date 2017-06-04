@@ -224,6 +224,8 @@ void tonality_analysis_reset(TonalityAnalysisState *tonal)
   /* Clear non-reusable fields. */
   char *start = (char*)&tonal->TONALITY_ANALYSIS_RESET_START;
   OPUS_CLEAR(start, sizeof(TonalityAnalysisState) - (start - (char*)tonal));
+  tonal->music_confidence = .9f;
+  tonal->speech_confidence = .1f;
 }
 
 void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int len)
@@ -869,11 +871,6 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
              tonal->speech_confidence_count = IMIN(tonal->speech_confidence_count, 500);
              tonal->speech_confidence += adapt*MIN16(.2f,frame_probs[0]-tonal->speech_confidence);
           }
-       } else {
-          if (tonal->music_confidence_count==0)
-             tonal->music_confidence = .9f;
-          if (tonal->speech_confidence_count==0)
-             tonal->speech_confidence = .1f;
        }
     }
     tonal->last_music = tonal->music_prob>.5f;
