@@ -33,6 +33,7 @@
 #include "opus_private.h"
 
 #ifndef DISABLE_FLOAT_API
+#pragma float_control(precise, on, push)
 OPUS_EXPORT void opus_pcm_soft_clip(float *_x, int N, int C, float *declip_mem)
 {
    int c;
@@ -135,6 +136,7 @@ OPUS_EXPORT void opus_pcm_soft_clip(float *_x, int N, int C, float *declip_mem)
       declip_mem[c] = a;
    }
 }
+#pragma float_control(pop)
 #endif
 
 int encode_size(int size, unsigned char *data)
