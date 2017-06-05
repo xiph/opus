@@ -75,7 +75,7 @@ static size_t read_pcm16(float **_samples,FILE *_fin,int _nchannels){
         int s;
         s=buf[2*(xi*_nchannels+ci)+1]<<8|buf[2*(xi*_nchannels+ci)];
         s=((s&0xFFFF)^0x8000)-0x8000;
-        samples[(nsamples+xi)*_nchannels+ci]=s;
+        samples[(nsamples+xi)*_nchannels+ci]=(float)s;
       }
     }
     nsamples+=nread;
@@ -230,7 +230,7 @@ int main(int _argc,const char **_argv){
   /*Read in the data and allocate scratch space.*/
   xlength=read_pcm16(&x,fin1,2);
   if(nchannels==1){
-    for(xi=0;xi<xlength;xi++)x[xi]=.5*(x[2*xi]+x[2*xi+1]);
+    for(xi=0;xi<xlength;xi++)x[xi]=.5f*(x[2*xi]+x[2*xi+1]);
   }
   fclose(fin1);
   ylength=read_pcm16(&y,fin2,nchannels);
@@ -346,7 +346,7 @@ int main(int _argc,const char **_argv){
           float re;
           float im;
           re=Y[(xi*yfreqs+xj)*nchannels+ci]/X[(xi*NFREQS+xj)*nchannels+ci];
-          im=re-log(re)-1;
+          im=(float)(re-log(re)-1);
           /*Make comparison less sensitive around the SILK/CELT cross-over to
             allow for mode freedom in the filters.*/
           if(xj>=79&&xj<=81)im*=0.1F;
@@ -367,7 +367,7 @@ int main(int _argc,const char **_argv){
   free(X);
   free(Y);
   err=pow(err/nframes,1.0/16);
-  Q=100*(1-0.5*log(1+err)/log(1.13));
+  Q=(float)(100*(1-0.5*log(1+err)/log(1.13)));
   if(Q<0){
     fprintf(stderr,"Test vector FAILS\n");
     fprintf(stderr,"Internal weighted error is %f\n",err);
