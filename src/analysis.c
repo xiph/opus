@@ -233,6 +233,9 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    int pos;
    int curr_lookahead;
    float psum;
+   float tonality_max;
+   float tonality_avg;
+   int tonality_count;
    int i;
 
    pos = tonal->read_pos;
@@ -252,6 +255,8 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    if (pos<0)
       pos = DETECT_SIZE-1;
    OPUS_COPY(info_out, &tonal->info[pos], 1);
+   tonality_max = tonality_avg = info_out->tonality;
+   tonality_count = 1;
    /* If possible, look ahead for a tone to compensate for the delay in the tone detector. */
    for (i=0;i<3;i++)
    {
@@ -260,8 +265,11 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
          pos = 0;
       if (pos == tonal->write_pos)
          break;
-      info_out->tonality = MAX32(0, -.03f + MAX32(info_out->tonality, tonal->info[pos].tonality-.05f));
+      tonality_max = MAX32(tonality_max, tonal->info[pos].tonality);
+      tonality_avg += tonal->info[pos].tonality;
+      tonality_count++;
    }
+   info_out->tonality = MAX32(tonality_avg/tonality_count, tonality_max-.2);
    tonal->read_subframe += len/(tonal->Fs/400);
    while (tonal->read_subframe>=8)
    {
