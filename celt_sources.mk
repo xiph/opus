@@ -17,13 +17,17 @@ celt/quant_bands.c \
 celt/rate.c \
 celt/vq.c
 
-CELT_SOURCES_SSE = celt/x86/x86cpu.c \
+CELT_SOURCES_SSE = \
+celt/x86/x86cpu.c \
 celt/x86/x86_celt_map.c \
 celt/x86/pitch_sse.c
 
-CELT_SOURCES_SSE2 = celt/x86/pitch_sse2.c celt/x86/vq_sse2.c
+CELT_SOURCES_SSE2 = \
+celt/x86/pitch_sse2.c \
+celt/x86/vq_sse2.c
 
-CELT_SOURCES_SSE4_1 = celt/x86/celt_lpc_sse.c \
+CELT_SOURCES_SSE4_1 = \
+celt/x86/celt_lpc_sse.c \
 celt/x86/pitch_sse4_1.c
 
 CELT_SOURCES_ARM = \
@@ -40,6 +44,6 @@ CELT_SOURCES_ARM_NEON_INTR = \
 celt/arm/celt_neon_intr.c \
 celt/arm/pitch_neon_intr.c
 
-CELT_SOURCES_ARM_NE10= \
+CELT_SOURCES_ARM_NE10 = \
 celt/arm/celt_ne10_fft.c \
 celt/arm/celt_ne10_mdct.c
