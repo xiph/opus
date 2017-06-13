@@ -27,7 +27,7 @@ celt/x86/pitch_sse2.c \
 celt/x86/vq_sse2.c
 
 CELT_SOURCES_SSE4_1 = \
-celt/x86/celt_lpc_sse.c \
+celt/x86/celt_lpc_sse4_1.c \
 celt/x86/pitch_sse4_1.c
 
 CELT_SOURCES_ARM = \
