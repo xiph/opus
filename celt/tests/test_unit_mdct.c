@@ -106,11 +106,10 @@ void check_inv(kiss_fft_scalar  * in,kiss_fft_scalar  * out,int nfft,int isinver
 void test1d(int nfft,int isinverse,int arch)
 {
     size_t buflen = sizeof(kiss_fft_scalar)*nfft;
-
-    kiss_fft_scalar  * in = (kiss_fft_scalar*)malloc(buflen);
-    kiss_fft_scalar  * in_copy = (kiss_fft_scalar*)malloc(buflen);
-    kiss_fft_scalar  * out= (kiss_fft_scalar*)malloc(buflen);
-    opus_val16  * window= (opus_val16*)malloc(sizeof(opus_val16)*nfft/2);
+    kiss_fft_scalar *in;
+    kiss_fft_scalar *in_copy;
+    kiss_fft_scalar *out;
+    opus_val16 *window;
     int k;
 
 #ifdef CUSTOM_MODES
@@ -130,6 +129,12 @@ void test1d(int nfft,int isinverse,int arch)
     else return;
     cfg = &mode->mdct;
 #endif
+
+    in = (kiss_fft_scalar*)malloc(buflen);
+    in_copy = (kiss_fft_scalar*)malloc(buflen);
+    out = (kiss_fft_scalar*)malloc(buflen);
+    window = (opus_val16*)malloc(sizeof(opus_val16)*nfft/2);
+
     for (k=0;k<nfft;++k) {
         in[k] = (rand() % 32768) - 16384;
     }

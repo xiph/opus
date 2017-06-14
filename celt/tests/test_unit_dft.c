@@ -86,9 +86,8 @@ void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)
 void test1d(int nfft,int isinverse,int arch)
 {
     size_t buflen = sizeof(kiss_fft_cpx)*nfft;
-
-    kiss_fft_cpx  * in = (kiss_fft_cpx*)malloc(buflen);
-    kiss_fft_cpx  * out= (kiss_fft_cpx*)malloc(buflen);
+    kiss_fft_cpx *in;
+    kiss_fft_cpx *out;
     int k;
 #ifdef CUSTOM_MODES
     kiss_fft_state *cfg = opus_fft_alloc(nfft,0,0,arch);
@@ -103,6 +102,9 @@ void test1d(int nfft,int isinverse,int arch)
     else return;
     cfg = mode->mdct.kfft[id];
 #endif
+
+    in = (kiss_fft_cpx*)malloc(buflen);
+    out = (kiss_fft_cpx*)malloc(buflen);
 
     for (k=0;k<nfft;++k) {
         in[k].r = (rand() % 32767) - 16384;
