@@ -10,7 +10,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-ietf-codec-opus-update-05"
+<rfc category="std" docName="draft-ietf-codec-opus-update-06"
      ipr="trust200902">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
@@ -47,7 +47,7 @@
 
 
 
-    <date day="19" month="December" year="2016" />
+    <date day="19" month="June" year="2017" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
