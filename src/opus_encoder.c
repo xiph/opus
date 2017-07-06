@@ -909,21 +909,20 @@ static int decide_dtx_mode(float activity_probability,    /* probability that cu
                            int arch
                           )
 {
-   int is_noise;
    opus_val32 noise_energy;
-   int is_sufficiently_quiet;
 
    if (!is_silence)
    {
-      is_noise = activity_probability < DTX_ACTIVITY_THRESHOLD;
-      if (is_noise)
+      if (activity_probability < DTX_ACTIVITY_THRESHOLD)  /* is noise */
       {
          noise_energy = compute_frame_energy(pcm, frame_size, channels, arch);
-         is_sufficiently_quiet = peak_signal_energy >= (PSEUDO_SNR_THRESHOLD * noise_energy);
+
+         /* but is sufficiently quiet */
+         is_silence = peak_signal_energy >= (PSEUDO_SNR_THRESHOLD * noise_energy);
       }
    }
 
-   if (is_silence || (is_noise && is_sufficiently_quiet))
+   if (is_silence)
    {
       /* The number of consecutive DTX frames should be within the allowed bounds */
       (*nb_no_activity_frames)++;
