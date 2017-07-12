@@ -224,15 +224,12 @@ void tonality_analysis_reset(TonalityAnalysisState *tonal)
   /* Clear non-reusable fields. */
   char *start = (char*)&tonal->TONALITY_ANALYSIS_RESET_START;
   OPUS_CLEAR(start, sizeof(TonalityAnalysisState) - (start - (char*)tonal));
-  tonal->music_confidence = .9f;
-  tonal->speech_confidence = .1f;
 }
 
 void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int len)
 {
    int pos;
    int curr_lookahead;
-   float psum;
    float tonality_max;
    float tonality_avg;
    int tonality_count;
@@ -282,17 +279,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    /* The -1 is to compensate for the delay in the features themselves. */
    curr_lookahead = IMAX(curr_lookahead-1, 0);
 
-   psum=0;
-   /* Summing the probability of transition patterns that involve music at
-      time (DETECT_SIZE-curr_lookahead-1) */
-   for (i=0;i<DETECT_SIZE-curr_lookahead;i++)
-      psum += tonal->pmusic[i];
-   for (;i<DETECT_SIZE;i++)
-      psum += tonal->pspeech[i];
-   psum = psum*tonal->music_confidence + (1-psum)*tonal->speech_confidence;
    /*printf("%f %f %f %f %f\n", psum, info_out->music_prob, info_out->vad_prob, info_out->activity_probability, info_out->tonality);*/
-
-   info_out->music_prob = psum;
 }
 
 static const float std_feature_bias[9] = {
@@ -369,12 +356,6 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        offset = 3*offset/2;
     }
 
-    if (tonal->count<4) {
-       if (tonal->application == OPUS_APPLICATION_VOIP)
-          tonal->music_prob = .1f;
-       else
-          tonal->music_prob = .625f;
-    }
     kfft = celt_mode->mdct.kfft[0];
     if (tonal->count==0)
        tonal->mem_fill = 240;
@@ -768,129 +749,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 
     /* Probability of speech or music vs noise */
     info->activity_probability = frame_probs[1];
+    info->music_prob = frame_probs[0];
 
     /*printf("%f %f\n", frame_probs[0], frame_probs[1]);*/
-    {
-       /* Probability of state transition */
-       float tau;
-       /* Represents independence of the MLP probabilities, where
-          beta=1 means fully independent. */
-       float beta;
-       /* Denormalized probability of speech (p0) and music (p1) after update */
-       float p0, p1;
-       /* Probabilities for "all speech" and "all music" */
-       float s0, m0;
-       /* Probability sum for renormalisation */
-       float psum;
-       /* Instantaneous probability of speech and music, with beta pre-applied. */
-       float speech0;
-       float music0;
-       float p, q;
-
-       /* More silence transitions for speech than for music. */
-       tau = .001f*tonal->music_prob + .01f*(1-tonal->music_prob);
-       p = MAX16(.05f,MIN16(.95f,frame_probs[1]));
-       q = MAX16(.05f,MIN16(.95f,tonal->vad_prob));
-       beta = .02f+.05f*ABS16(p-q)/(p*(1-q)+q*(1-p));
-       /* p0 and p1 are the probabilities of speech and music at this frame
-          using only information from previous frame and applying the
-          state transition model */
-       p0 = (1-tonal->vad_prob)*(1-tau) +    tonal->vad_prob *tau;
-       p1 =    tonal->vad_prob *(1-tau) + (1-tonal->vad_prob)*tau;
-       /* We apply the current probability with exponent beta to work around
-          the fact that the probability estimates aren't independent. */
-       p0 *= (float)pow(1-frame_probs[1], beta);
-       p1 *= (float)pow(frame_probs[1], beta);
-       /* Normalise the probabilities to get the Marokv probability of music. */
-       tonal->vad_prob = p1/(p0+p1);
-       info->vad_prob = tonal->vad_prob;
-       /* Consider that silence has a 50-50 probability of being speech or music. */
-       frame_probs[0] = tonal->vad_prob*frame_probs[0] + (1-tonal->vad_prob)*.5f;
-
-       /* One transition every 3 minutes of active audio */
-       tau = .0001f;
-       /* Adapt beta based on how "unexpected" the new prob is */
-       p = MAX16(.05f,MIN16(.95f,frame_probs[0]));
-       q = MAX16(.05f,MIN16(.95f,tonal->music_prob));
-       beta = .02f+.05f*ABS16(p-q)/(p*(1-q)+q*(1-p));
-       /* p0 and p1 are the probabilities of speech and music at this frame
-          using only information from previous frame and applying the
-          state transition model */
-       p0 = (1-tonal->music_prob)*(1-tau) +    tonal->music_prob *tau;
-       p1 =    tonal->music_prob *(1-tau) + (1-tonal->music_prob)*tau;
-       /* We apply the current probability with exponent beta to work around
-          the fact that the probability estimates aren't independent. */
-       p0 *= (float)pow(1-frame_probs[0], beta);
-       p1 *= (float)pow(frame_probs[0], beta);
-       /* Normalise the probabilities to get the Marokv probability of music. */
-       tonal->music_prob = p1/(p0+p1);
-       info->music_prob = tonal->music_prob;
-
-       /*printf("%f %f %f %f\n", frame_probs[0], frame_probs[1], tonal->music_prob, tonal->vad_prob);*/
-       /* This chunk of code deals with delayed decision. */
-       psum=1e-20f;
-       /* Instantaneous probability of speech and music, with beta pre-applied. */
-       speech0 = (float)pow(1-frame_probs[0], beta);
-       music0  = (float)pow(frame_probs[0], beta);
-       if (tonal->count==1)
-       {
-          if (tonal->application == OPUS_APPLICATION_VOIP)
-             tonal->pmusic[0] = .1f;
-          else
-             tonal->pmusic[0] = .625f;
-          tonal->pspeech[0] = 1-tonal->pmusic[0];
-       }
-       /* Updated probability of having only speech (s0) or only music (m0),
-          before considering the new observation. */
-       s0 = tonal->pspeech[0] + tonal->pspeech[1];
-       m0 = tonal->pmusic [0] + tonal->pmusic [1];
-       /* Updates s0 and m0 with instantaneous probability. */
-       tonal->pspeech[0] = s0*(1-tau)*speech0;
-       tonal->pmusic [0] = m0*(1-tau)*music0;
-       /* Propagate the transition probabilities */
-       for (i=1;i<DETECT_SIZE-1;i++)
-       {
-          tonal->pspeech[i] = tonal->pspeech[i+1]*speech0;
-          tonal->pmusic [i] = tonal->pmusic [i+1]*music0;
-       }
-       /* Probability that the latest frame is speech, when all the previous ones were music. */
-       tonal->pspeech[DETECT_SIZE-1] = m0*tau*speech0;
-       /* Probability that the latest frame is music, when all the previous ones were speech. */
-       tonal->pmusic [DETECT_SIZE-1] = s0*tau*music0;
-
-       /* Renormalise probabilities to 1 */
-       for (i=0;i<DETECT_SIZE;i++)
-          psum += tonal->pspeech[i] + tonal->pmusic[i];
-       psum = 1.f/psum;
-       for (i=0;i<DETECT_SIZE;i++)
-       {
-          tonal->pspeech[i] *= psum;
-          tonal->pmusic [i] *= psum;
-       }
-       psum = tonal->pmusic[0];
-       for (i=1;i<DETECT_SIZE;i++)
-          psum += tonal->pspeech[i];
-
-       /* Estimate our confidence in the speech/music decisions */
-       if (frame_probs[1]>.75)
-       {
-          if (tonal->music_prob>.9)
-          {
-             float adapt;
-             adapt = 1.f/(++tonal->music_confidence_count);
-             tonal->music_confidence_count = IMIN(tonal->music_confidence_count, 500);
-             tonal->music_confidence += adapt*MAX16(-.2f,frame_probs[0]-tonal->music_confidence);
-          }
-          if (tonal->music_prob<.1)
-          {
-             float adapt;
-             adapt = 1.f/(++tonal->speech_confidence_count);
-             tonal->speech_confidence_count = IMIN(tonal->speech_confidence_count, 500);
-             tonal->speech_confidence += adapt*MIN16(.2f,frame_probs[0]-tonal->speech_confidence);
-          }
-       }
-    }
-    tonal->last_music = tonal->music_prob>.5f;
 #ifdef MLP_TRAINING
     for (i=0;i<25;i++)
        printf("%f ", features[i]);

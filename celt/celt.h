@@ -59,7 +59,6 @@ typedef struct {
    float noisiness;
    float activity;
    float music_prob;
-   float vad_prob;
    int   bandwidth;
    float activity_probability;
    /* Store as Q6 char to save space. */
