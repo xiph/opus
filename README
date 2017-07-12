@@ -129,7 +129,7 @@ https://opus-codec.org/testvectors/opus_testvectors.tar.gz
 
 To run compare the code to these test vectors:
 
-    % curl -O https://opus-codec.org/testvectors/opus_testvectors.tar.gz
+    % curl -OL https://opus-codec.org/testvectors/opus_testvectors.tar.gz
     % tar -zxf opus_testvectors.tar.gz
     % ./tests/run_vectors.sh ./ opus_testvectors 48000
 
