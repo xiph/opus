@@ -10,8 +10,8 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-ietf-codec-opus-update-06"
-     ipr="trust200902">
+<rfc category="std" docName="draft-ietf-codec-opus-update-07"
+     ipr="trust200902" updates="6716">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
 
@@ -47,11 +47,11 @@
 
 
 
-    <date day="19" month="June" year="2017" />
+    <date day="16" month="July" year="2017" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
-      of the Opus audio codec in <xref target="RFC6716">RFC 6716</xref>.</t>
+      of the Opus audio codec in RFC 6716.</t>
     </abstract>
   </front>
 
@@ -61,7 +61,7 @@
       implementation of the Opus codec that serves as the specification in
       <xref target="RFC6716">RFC 6716</xref>. Only issues affecting the decoder are
       listed here. An up-to-date implementation of the Opus encoder can be found at
-      https://opus-codec.org/.</t>
+      <eref target="https://opus-codec.org/"/>.</t>
     <t>
       Some of the changes in this document update normative behaviour in a way that requires
       new test vectors. The English text of the specification is unaffected, only
@@ -75,8 +75,7 @@
     at the end of a line and the white space at the beginning
     of the following line are not part of the patch. A properly formatted patch
     including all changes is available at
-    <eref target="https://jmvalin.ca/misc_stuff/opus_update.patch"/>. (EDITOR:
-        change to an ietf.org link when ready)
+    <eref target="https://www.ietf.org/proceedings/98/slides/materials-98-codec-opus-update-00.patch"/>.
     </t>
 
     </section>
@@ -96,6 +95,7 @@
     </t>
 <figure>
 <artwork><![CDATA[
+<CODE BEGINS>
      for( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
          ret  = silk_init_decoder( &channel_state[ n ] );
      }
@@ -106,6 +106,7 @@
  
      return ret;
  }
+<CODE ENDS>
 ]]></artwork>
 </figure>
      <t>
@@ -123,6 +124,7 @@
     </t>
 <figure>
 <artwork><![CDATA[
+<CODE BEGINS>
        /* Padding flag is bit 6 */
        if (ch&0x40)
        {
@@ -138,6 +140,7 @@
           } while (p==255);
 -         len -= padding;
        }
+<CODE ENDS>
 ]]></artwork>
 </figure>
       <t>This packet parsing issue is limited to reading memory up
@@ -174,6 +177,7 @@
     </t>
 <figure>
 <artwork><![CDATA[
+<CODE BEGINS>
  )
  {
      silk_resampler_state_struct *S = \
@@ -226,6 +230,7 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int32 ) );
 +    silk_memcpy( S->sFIR, &buf[ nSamplesIn << 1 ], \
 RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
  }
+<CODE ENDS>
 ]]></artwork>
 </figure>
     </section>
@@ -240,6 +245,7 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
       </t>
 <figure>
 <artwork><![CDATA[
+<CODE BEGINS>
          /* Update AR coefficient */
          for( n = 0; n < k; n++ ) {
 -            tmp_QA = Aold_QA[ n ] - MUL32_FRAC_Q( \
@@ -255,6 +261,7 @@ rc_mult2 ), mult2Q);
 +            }
 +            Anew_QA[ n ] = ( opus_int32 )tmp64;
          }
+<CODE ENDS>
 ]]></artwork>
 </figure>
     </section>
@@ -269,6 +276,7 @@ rc_mult2 ), mult2Q);
       </t>
 <figure>
 <artwork><![CDATA[
+<CODE BEGINS>
            /* Keep delta_min distance between the NLSFs */
          for( i = 1; i < L; i++ )
 -            NLSF_Q15[i] = silk_max_int( NLSF_Q15[i], \
@@ -277,6 +285,7 @@ NLSF_Q15[i-1] + NDeltaMin_Q15[i] );
 silk_ADD_SAT16( NLSF_Q15[i-1], NDeltaMin_Q15[i] ) );
  
          /* Last NLSF should be no higher than 1 - NDeltaMin[L] */
+<CODE ENDS>
 ]]></artwork>
 </figure>
 
@@ -291,6 +300,7 @@ silk_ADD_SAT16( NLSF_Q15[i-1], NDeltaMin_Q15[i] ) );
       </t>
 <figure>
 <artwork><![CDATA[
+<CODE BEGINS>
        {
           opus_val16 lg = ADD16(oldEBands[i+c*m->nbEBands],
                           SHL16((opus_val16)eMeans[i],6));
@@ -298,6 +308,7 @@ silk_ADD_SAT16( NLSF_Q15[i-1], NDeltaMin_Q15[i] ) );
           eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(lg),4);
        }
        for (;i<m->nbEBands;i++)
+<CODE ENDS>
 ]]></artwork>
 </figure>
     </section>
@@ -319,6 +330,7 @@ silk_ADD_SAT16( NLSF_Q15[i-1], NDeltaMin_Q15[i] ) );
       </t>
 <figure>
 <artwork><![CDATA[
+<CODE BEGINS>
           b = 0;
        }
  
@@ -347,6 +359,7 @@ n2-n1);
        tf_change = tf_res[i];
        if (i>=m->effEBands)
        {
+<CODE ENDS>
 ]]></artwork>
 </figure>
 
@@ -356,6 +369,7 @@ n2-n1);
 
 <figure>
 <artwork><![CDATA[
+<CODE BEGINS>
           fold_start = lowband_offset;
           while(M*eBands[--fold_start] > effective_lowband);
           fold_end = lowband_offset-1;
@@ -366,6 +380,7 @@ effective_lowband+N);
           fold_i = fold_start; do {
             x_cm |= collapse_masks[fold_i*C+0];
 
+<CODE ENDS>
 ]]></artwork>
 </figure>
       <t>
@@ -408,8 +423,13 @@ effective_lowband+N);
         SHOULD be based on the new test vectors rather than the old ones.
       </t>
       <t>The new test vectors are located at
-        <eref target="https://jmvalin.ca/misc_stuff/opus_newvectors.tar.gz"/>. (EDITOR:
-        change to an ietf.org link when ready)
+        <eref target="https://www.ietf.org/proceedings/98/slides/materials-98-codec-opus-newvectors-00.tar.gz"/>.
+      </t>
+    </section>
+
+    <section anchor="security" title="Security Considerations">
+      <t>This document adds no new security considerations on top of
+        <xref target="RFC6716">RFC 6716</xref>.
       </t>
     </section>
 
@@ -428,7 +448,7 @@ effective_lowband+N);
   </middle>
 
   <back>
-    <references title="References">
+    <references title="Normative References">
       <?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?>
       <?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.6716.xml"?>
 
