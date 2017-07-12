@@ -1189,7 +1189,16 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     {
        int analysis_bandwidth;
        if (st->signal_type == OPUS_AUTO)
-          st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
+       {
+          float prob;
+          if (st->prev_mode == 0)
+             prob = analysis_info.music_prob;
+          else if (st->prev_mode == MODE_CELT_ONLY)
+             prob = analysis_info.music_prob_max;
+          else
+             prob = analysis_info.music_prob_min;
+          st->voice_ratio = (int)floor(.5+100*(1-prob));
+       }
 
        analysis_bandwidth = analysis_info.bandwidth;
        if (analysis_bandwidth<=12)
