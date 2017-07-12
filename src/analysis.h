@@ -30,6 +30,7 @@
 
 #include "celt.h"
 #include "opus_private.h"
+#include "mlp.h"
 
 #define NB_FRAMES 8
 #define NB_TBANDS 18
@@ -86,6 +87,7 @@ typedef struct {
    int read_pos;
    int read_subframe;
    float hp_ener_accum;
+   float rnn_state[MAX_NEURONS];
    opus_val32 downmix_state[3];
    AnalysisInfo info[DETECT_SIZE];
 } TonalityAnalysisState;

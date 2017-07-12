@@ -352,6 +352,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     float band_log2[NB_TBANDS+1];
     float leakage_from[NB_TBANDS+1];
     float leakage_to[NB_TBANDS+1];
+    float layer_out[MAX_NEURONS];
     SAVE_STACK;
 
     alpha = 1.f/IMIN(10, 1+tonal->count);
@@ -761,18 +762,14 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     features[23] = info->tonality_slope + 0.069216f;
     features[24] = tonal->lowECount - 0.067930f;
 
-    mlp_process(&net, features, frame_probs);
-    frame_probs[0] = .5f*(frame_probs[0]+1);
-    /* Curve fitting between the MLP probability and the actual probability */
-    /*frame_probs[0] = .01f + 1.21f*frame_probs[0]*frame_probs[0] - .23f*(float)pow(frame_probs[0], 10);*/
-    /* Probability of active audio (as opposed to silence) */
-    frame_probs[1] = .5f*frame_probs[1]+.5f;
-    frame_probs[1] *= frame_probs[1];
+    compute_dense(&layer0, layer_out, features);
+    compute_gru(&layer1, tonal->rnn_state, layer_out);
+    compute_dense(&layer2, frame_probs, tonal->rnn_state);
 
     /* Probability of speech or music vs noise */
     info->activity_probability = frame_probs[1];
 
-    /*printf("%f %f\n", frame_probs[0], frame_probs[1]);*/
+    printf("%f %f\n", frame_probs[0], frame_probs[1]);
     {
        /* Probability of state transition */
        float tau;

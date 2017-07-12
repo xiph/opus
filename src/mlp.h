@@ -1,43 +1,30 @@
-/* Copyright (c) 2008-2011 Octasic Inc.
-   Written by Jean-Marc Valin */
-/*
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
+#ifndef MLP_H
+#define MLP_H
 
-   - Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-   - Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
-#ifndef _MLP_H_
-#define _MLP_H_
-
-#include "arch.h"
+#define MAX_NEURONS 20
 
 typedef struct {
-    int layers;
-    const int *topo;
-    const float *weights;
-} MLP;
+  const float *bias;
+  const float *input_weights;
+  int nb_inputs;
+  int nb_neurons;
+  int sigmoid;
+} DenseLayer;
 
-extern const MLP net;
+typedef struct {
+  const float *bias;
+  const float *input_weights;
+  const float *recurrent_weights;
+  int nb_inputs;
+  int nb_neurons;
+} GRULayer;
 
-void mlp_process(const MLP *m, const float *in, float *out);
+const DenseLayer layer0;
+const GRULayer layer1;
+const DenseLayer layer2;
 
-#endif /* _MLP_H_ */
+void compute_dense(const DenseLayer *layer, float *output, const float *input);
+
+void compute_gru(const GRULayer *gru, float *state, const float *input);
+
+#endif
