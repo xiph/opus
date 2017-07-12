@@ -1,5 +1,5 @@
 /* Copyright (c) 2008-2011 Octasic Inc.
-                 2012-1027 Jean-Marc Valin */
+                 2012-2017 Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions

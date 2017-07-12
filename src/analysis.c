@@ -769,7 +769,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     /* Probability of speech or music vs noise */
     info->activity_probability = frame_probs[1];
 
-    printf("%f %f\n", frame_probs[0], frame_probs[1]);
+    /*printf("%f %f\n", frame_probs[0], frame_probs[1]);*/
     {
        /* Probability of state transition */
        float tau;
