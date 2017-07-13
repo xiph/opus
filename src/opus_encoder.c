@@ -1366,11 +1366,19 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        mode_music = (opus_int32)(MULT16_32_Q15(Q15ONE-stereo_width,mode_thresholds[1][1])
              + MULT16_32_Q15(stereo_width,mode_thresholds[1][1]));
        /* Interpolate based on speech/music probability */
-       if (analysis_info.valid)
+#ifndef DISABLE_FLOAT_API
+       if (st->signal_type == OPUS_AUTO && analysis_info.valid)
        {
-          float prob = (st->prev_mode == MODE_CELT_ONLY) ? analysis_info.music_prob_max : analysis_info.music_prob_min;
+          float prob;
+          if (st->prev_mode == 0)
+             prob = .5;
+          else if (st->prev_mode == MODE_CELT_ONLY)
+             prob = analysis_info.music_prob_max;
+          else
+             prob = analysis_info.music_prob_min;
           threshold = prob*mode_music + (1-prob)*mode_voice;
        } else
+#endif
           threshold = mode_music + ((voice_est*voice_est*(mode_voice-mode_music))>>14);
        /* Bias towards SILK for VoIP because of some useful features */
        if (st->application == OPUS_APPLICATION_VOIP)

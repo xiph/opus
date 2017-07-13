@@ -360,11 +360,6 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    }
    if (tonal->read_pos>=DETECT_SIZE)
       tonal->read_pos-=DETECT_SIZE;
-
-   /* The -1 is to compensate for the delay in the features themselves. */
-   curr_lookahead = IMAX(curr_lookahead-1, 0);
-
-   /*printf("%f %f %f %f %f\n", psum, info_out->music_prob, info_out->vad_prob, info_out->activity_probability, info_out->tonality);*/
 }
 
 static const float std_feature_bias[9] = {
