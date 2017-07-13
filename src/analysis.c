@@ -277,17 +277,19 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    info_out->tonality = MAX32(tonality_avg/tonality_count, tonality_max-.2f);
 
    pos = pos0;
-   /* If we have enough look-ahead, discard the first 5 frames to compensate for the
+   /* If we have enough look-ahead, discard the first 2 frames to compensate for the
       delay in the features. */
-   if (curr_lookahead > 15)
+   if (curr_lookahead > 10)
    {
-      pos += 5;
+      pos += 2;
       if (pos>=DETECT_SIZE)
          pos -= DETECT_SIZE;
    }
 
    info_out->music_prob = tonal->info[pos].music_prob;
-   prob_min = prob_max = prob_avg = tonal->info[pos].music_prob;
+   prob_avg = tonal->info[pos].music_prob;
+   prob_min = 1;
+   prob_max = 0;
    vad_prob = tonal->info[pos].activity_probability;
    prob_count = MAX16(.1, vad_prob);
    while (1)
@@ -304,6 +306,8 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       prob_min = MIN16(prob_avg - TRANSITION_PENALTY*(vad_prob - pos_vad)/prob_count, prob_min);
       prob_max = MAX16(prob_avg + TRANSITION_PENALTY*(vad_prob - pos_vad)/prob_count, prob_max);
    }
+   prob_min = MIN16(prob_avg, prob_min);
+   prob_max = MAX16(prob_avg, prob_max);
    prob_min = MAX16(prob_min, 0);
    prob_max = MIN16(prob_max, 1);
    info_out->music_prob_min = prob_min;
