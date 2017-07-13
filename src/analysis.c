@@ -50,7 +50,7 @@
 
 #ifndef DISABLE_FLOAT_API
 
-#define TRANSITION_PENALTY 5
+#define TRANSITION_PENALTY 10
 
 static const float dct_table[128] = {
         0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f,
@@ -241,6 +241,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    float prob_count;
    float prob_min, prob_max;
    float vad_prob;
+   int mpos, vpos;
 
    pos = tonal->read_pos;
    curr_lookahead = tonal->write_pos-tonal->read_pos;
@@ -276,44 +277,52 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    }
    info_out->tonality = MAX32(tonality_avg/tonality_count, tonality_max-.2f);
 
-   pos = pos0;
-   /* If we have enough look-ahead, discard the first 2 frames to compensate for the
-      delay in the features. */
+   mpos = vpos = pos0;
+   /* If we have enough look-ahead, compensate for the ~5-frame delay in the music prob and
+      ~1 frame delay in the VAD prob. */
    if (curr_lookahead > 10)
    {
-      pos += 2;
-      if (pos>=DETECT_SIZE)
-         pos -= DETECT_SIZE;
+      mpos += 5;
+      if (mpos>=DETECT_SIZE)
+         mpos -= DETECT_SIZE;
+      vpos += 1;
+      if (vpos>=DETECT_SIZE)
+         vpos -= DETECT_SIZE;
    }
 
-   info_out->music_prob = tonal->info[pos].music_prob;
-   prob_avg = tonal->info[pos].music_prob;
+   info_out->music_prob = tonal->info[mpos].music_prob;
    prob_min = 1;
    prob_max = 0;
-   vad_prob = tonal->info[pos].activity_probability;
+   vad_prob = tonal->info[vpos].activity_probability;
    prob_count = MAX16(.1, vad_prob);
+   prob_avg = MAX16(.1, vad_prob)*tonal->info[mpos].music_prob;
    while (1)
    {
       float pos_vad;
-      pos++;
-      if (pos==DETECT_SIZE)
-         pos = 0;
-      if (pos == tonal->write_pos)
+      mpos++;
+      if (mpos==DETECT_SIZE)
+         mpos = 0;
+      if (mpos == tonal->write_pos)
          break;
-      pos_vad = tonal->info[pos].activity_probability;
+      vpos++;
+      if (vpos==DETECT_SIZE)
+         vpos = 0;
+      if (vpos == tonal->write_pos)
+         break;
+      pos_vad = tonal->info[vpos].activity_probability;
+      prob_min = MIN16((prob_avg - TRANSITION_PENALTY*(vad_prob - pos_vad))/prob_count, prob_min);
+      prob_max = MAX16((prob_avg + TRANSITION_PENALTY*(vad_prob - pos_vad))/prob_count, prob_max);
       prob_count += MAX16(.1, pos_vad);
-      prob_avg += (tonal->info[pos].music_prob-prob_avg)/prob_count;
-      prob_min = MIN16(prob_avg - TRANSITION_PENALTY*(vad_prob - pos_vad)/prob_count, prob_min);
-      prob_max = MAX16(prob_avg + TRANSITION_PENALTY*(vad_prob - pos_vad)/prob_count, prob_max);
+      prob_avg += MAX16(.1, pos_vad)*tonal->info[mpos].music_prob;
    }
-   prob_min = MIN16(prob_avg, prob_min);
-   prob_max = MAX16(prob_avg, prob_max);
+   prob_min = MIN16(prob_avg/prob_count, prob_min);
+   prob_max = MAX16(prob_avg/prob_count, prob_max);
    prob_min = MAX16(prob_min, 0);
    prob_max = MIN16(prob_max, 1);
    info_out->music_prob_min = prob_min;
    info_out->music_prob_max = prob_max;
 
-   /*printf("%f %f %f\n", prob_min, prob_max, prob_count);*/
+   /*printf("%f %f %f %f\n", prob_min, prob_max, prob_avg/prob_count, vad_prob);*/
    tonal->read_subframe += len/(tonal->Fs/400);
    while (tonal->read_subframe>=8)
    {
