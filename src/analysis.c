@@ -50,6 +50,8 @@
 
 #ifndef DISABLE_FLOAT_API
 
+#define TRANSITION_PENALTY 5
+
 static const float dct_table[128] = {
         0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f,
         0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f, 0.250000f,
@@ -234,6 +236,11 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    float tonality_avg;
    int tonality_count;
    int i;
+   int pos0;
+   float prob_avg;
+   float prob_count;
+   float prob_min, prob_max;
+   float vad_prob;
 
    pos = tonal->read_pos;
    curr_lookahead = tonal->write_pos-tonal->read_pos;
@@ -251,6 +258,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       pos--;
    if (pos<0)
       pos = DETECT_SIZE-1;
+   pos0 = pos;
    OPUS_COPY(info_out, &tonal->info[pos], 1);
    tonality_max = tonality_avg = info_out->tonality;
    tonality_count = 1;
@@ -267,6 +275,41 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       tonality_count++;
    }
    info_out->tonality = MAX32(tonality_avg/tonality_count, tonality_max-.2f);
+
+   pos = pos0;
+   /* If we have enough look-ahead, discard the first 5 frames to compensate for the
+      delay in the features. */
+   if (curr_lookahead > 15)
+   {
+      pos += 5;
+      if (pos>=DETECT_SIZE)
+         pos -= DETECT_SIZE;
+   }
+
+   info_out->music_prob = tonal->info[pos].music_prob;
+   prob_min = prob_max = prob_avg = tonal->info[pos].music_prob;
+   vad_prob = tonal->info[pos].activity_probability;
+   prob_count = MAX16(.1, vad_prob);
+   while (1)
+   {
+      float pos_vad;
+      pos++;
+      if (pos==DETECT_SIZE)
+         pos = 0;
+      if (pos == tonal->write_pos)
+         break;
+      pos_vad = tonal->info[pos].activity_probability;
+      prob_count += MAX16(.1, pos_vad);
+      prob_avg += (tonal->info[pos].music_prob-prob_avg)/prob_count;
+      prob_min = MIN16(prob_avg - TRANSITION_PENALTY*(vad_prob - pos_vad)/prob_count, prob_min);
+      prob_max = MAX16(prob_avg + TRANSITION_PENALTY*(vad_prob - pos_vad)/prob_count, prob_max);
+   }
+   prob_min = MAX16(prob_min, 0);
+   prob_max = MIN16(prob_max, 1);
+   info_out->music_prob_min = prob_min;
+   info_out->music_prob_max = prob_max;
+
+   /*printf("%f %f %f\n", prob_min, prob_max, prob_count);*/
    tonal->read_subframe += len/(tonal->Fs/400);
    while (tonal->read_subframe>=8)
    {
