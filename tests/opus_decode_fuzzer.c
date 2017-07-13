@@ -28,6 +28,7 @@
 #include "config.h"
 #endif
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include "opus.h"
