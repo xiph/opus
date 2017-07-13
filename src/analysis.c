@@ -290,6 +290,35 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
          vpos -= DETECT_SIZE;
    }
 
+   /* The following calculations attempt to minimize a "badness function"
+      for the transition. When switching from speech to music, the badness
+      of switching at frame k is
+      b_k = S*v_k + \sum_{i=0}^{k-1} v_i*(p_i - T)
+      where
+      v_i is the activity probability (VAD) at frame i,
+      p_i is the music probability at frame i
+      T is the probability threshold for switching
+      S is the penalty for switching during active audio rather than silence
+
+      Rather than apply badness to directly decide when to switch, what we compute
+      instead is the threshold for which the optimal switching point is now. When
+      considering whether to switch now (frame 0) or at frame k, we have:
+      S*v_0 = S*v_k + \sum_{i=0}^{k-1} v_i*(p_i - T)
+      which gives us:
+      T = ( \sum_{i=0}^{k-1} v_i*p_i + S*(v_k-v_0) ) / ( \sum_{i=0}^{k-1} v_i )
+      We take the min threshold across all values of k to give us the threshold
+      for which the current frame is the optimal switch point.
+
+      The last step is that we need to consider whether we want to switch at all.
+      For that we use the average of the music probability over the entire window.
+      If the threshold is higher than higher than that average we're not going to
+      switch, so we compute a min with the average as well. The result of all these
+      min operations is music_prob_min, which gives the threshold for switching to music
+      if we're currently encoding for speech.
+
+      We do the exact opposite to compute music_prob_max which is used for switching
+      from music to speech.
+    */
    info_out->music_prob = tonal->info[mpos].music_prob;
    prob_min = 1;
    prob_max = 0;
