@@ -19,9 +19,9 @@ typedef struct {
   int nb_neurons;
 } GRULayer;
 
-const DenseLayer layer0;
-const GRULayer layer1;
-const DenseLayer layer2;
+extern const DenseLayer layer0;
+extern const GRULayer layer1;
+extern const DenseLayer layer2;
 
 void compute_dense(const DenseLayer *layer, float *output, const float *input);
 
