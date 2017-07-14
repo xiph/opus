@@ -829,9 +829,11 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 
     /* Probability of speech or music vs noise */
     info->activity_probability = frame_probs[1];
-    info->music_prob = frame_probs[0];
+    /* It seems like the RNN tends to have a bias towards speech and this
+       warping of the probabilities compensates for it. */
+    info->music_prob = frame_probs[0] * (2 - frame_probs[0]);
 
-    /*printf("%f %f\n", frame_probs[0], frame_probs[1]);*/
+    /*printf("%f %f %f\n", frame_probs[0], frame_probs[1], info->music_prob);*/
 #ifdef MLP_TRAINING
     for (i=0;i<25;i++)
        printf("%f ", features[i]);
