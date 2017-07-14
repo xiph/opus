@@ -299,6 +299,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       p_i is the music probability at frame i
       T is the probability threshold for switching
       S is the penalty for switching during active audio rather than silence
+      the current frame has index i=0
 
       Rather than apply badness to directly decide when to switch, what we compute
       instead is the threshold for which the optimal switching point is now. When
@@ -306,8 +307,9 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       S*v_0 = S*v_k + \sum_{i=0}^{k-1} v_i*(p_i - T)
       which gives us:
       T = ( \sum_{i=0}^{k-1} v_i*p_i + S*(v_k-v_0) ) / ( \sum_{i=0}^{k-1} v_i )
-      We take the min threshold across all values of k to give us the threshold
-      for which the current frame is the optimal switch point.
+      We take the min threshold across all positive values of k (up to the maximum
+      amount of lookahead we have) to give us the threshold for which the current
+      frame is the optimal switch point.
 
       The last step is that we need to consider whether we want to switch at all.
       For that we use the average of the music probability over the entire window.
