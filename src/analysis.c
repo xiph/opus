@@ -322,11 +322,11 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       from music to speech.
     */
    info_out->music_prob = tonal->info[mpos].music_prob;
-   prob_min = 1;
-   prob_max = 0;
+   prob_min = 1.f;
+   prob_max = 0.f;
    vad_prob = tonal->info[vpos].activity_probability;
-   prob_count = MAX16(.1, vad_prob);
-   prob_avg = MAX16(.1, vad_prob)*tonal->info[mpos].music_prob;
+   prob_count = MAX16(.1f, vad_prob);
+   prob_avg = MAX16(.1f, vad_prob)*tonal->info[mpos].music_prob;
    while (1)
    {
       float pos_vad;
@@ -343,13 +343,13 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       pos_vad = tonal->info[vpos].activity_probability;
       prob_min = MIN16((prob_avg - TRANSITION_PENALTY*(vad_prob - pos_vad))/prob_count, prob_min);
       prob_max = MAX16((prob_avg + TRANSITION_PENALTY*(vad_prob - pos_vad))/prob_count, prob_max);
-      prob_count += MAX16(.1, pos_vad);
-      prob_avg += MAX16(.1, pos_vad)*tonal->info[mpos].music_prob;
+      prob_count += MAX16(.1f, pos_vad);
+      prob_avg += MAX16(.1f, pos_vad)*tonal->info[mpos].music_prob;
    }
    prob_min = MIN16(prob_avg/prob_count, prob_min);
    prob_max = MAX16(prob_avg/prob_count, prob_max);
-   prob_min = MAX16(prob_min, 0);
-   prob_max = MIN16(prob_max, 1);
+   prob_min = MAX16(prob_min, 0.f);
+   prob_max = MIN16(prob_max, 1.f);
 
    /* If we don't have enough look-ahead, do our best to make a decent decision. */
    if (curr_lookahead < 10)
@@ -368,10 +368,10 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
          pmax = MAX16(pmax, tonal->info[pos].music_prob);
       }
       /* Bias against switching on active audio. */
-      pmin = MAX16(0.f, pmin - .1*vad_prob);
-      pmax = MIN16(1.f, pmax + .1*vad_prob);
-      prob_min += (1-.1*curr_lookahead)*(pmin - prob_min);
-      prob_max += (1-.1*curr_lookahead)*(pmax - prob_max);
+      pmin = MAX16(0.f, pmin - .1f*vad_prob);
+      pmax = MIN16(1.f, pmax + .1f*vad_prob);
+      prob_min += (1.f-.1f*curr_lookahead)*(pmin - prob_min);
+      prob_max += (1.f-.1f*curr_lookahead)*(pmax - prob_max);
    }
    info_out->music_prob_min = prob_min;
    info_out->music_prob_max = prob_max;
