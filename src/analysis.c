@@ -280,7 +280,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    mpos = vpos = pos0;
    /* If we have enough look-ahead, compensate for the ~5-frame delay in the music prob and
       ~1 frame delay in the VAD prob. */
-   if (curr_lookahead > 10)
+   if (curr_lookahead > 15)
    {
       mpos += 5;
       if (mpos>=DETECT_SIZE)
@@ -350,6 +350,29 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    prob_max = MAX16(prob_avg/prob_count, prob_max);
    prob_min = MAX16(prob_min, 0);
    prob_max = MIN16(prob_max, 1);
+
+   /* If we don't have enough look-ahead, do our best to make a decent decision. */
+   if (curr_lookahead < 10)
+   {
+      float pmin, pmax;
+      pmin = prob_min;
+      pmax = prob_max;
+      pos = pos0;
+      /* Look for min/max in the past. */
+      for (i=0;i<IMIN(tonal->count-1, 15);i++)
+      {
+         pos--;
+         if (pos < 0)
+            pos = DETECT_SIZE-1;
+         pmin = MIN16(pmin, tonal->info[pos].music_prob);
+         pmax = MAX16(pmax, tonal->info[pos].music_prob);
+      }
+      /* Bias against switching on active audio. */
+      pmin = MAX16(0.f, pmin - .1*vad_prob);
+      pmax = MIN16(1.f, pmax + .1*vad_prob);
+      prob_min += (1-.1*curr_lookahead)*(pmin - prob_min);
+      prob_max += (1-.1*curr_lookahead)*(pmax - prob_max);
+   }
    info_out->music_prob_min = prob_min;
    info_out->music_prob_max = prob_max;
 
