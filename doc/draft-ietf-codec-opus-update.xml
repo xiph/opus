@@ -427,6 +427,14 @@ effective_lowband+N);
       </t>
     </section>
 
+    <section anchor="security" title="Security Considerations">
+      <t>This document fixes two security issues reported on Opus and that affect the
+        reference implementation in <xref target="RFC6716">RFC 6716</xref>: CVE-2013-0899
+        and CVE-2017-0381. Beyond those, this document has the same security considerations
+        as <xref target="RFC6716">RFC 6716</xref>.
+      </t>
+    </section>
+
     <section anchor="IANA" title="IANA Considerations">
       <t>This document makes no request of IANA.</t>
 
