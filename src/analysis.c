@@ -313,7 +313,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
 
       The last step is that we need to consider whether we want to switch at all.
       For that we use the average of the music probability over the entire window.
-      If the threshold is higher than higher than that average we're not going to
+      If the threshold is higher than that average we're not going to
       switch, so we compute a min with the average as well. The result of all these
       min operations is music_prob_min, which gives the threshold for switching to music
       if we're currently encoding for speech.
@@ -321,7 +321,6 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       We do the exact opposite to compute music_prob_max which is used for switching
       from music to speech.
     */
-   info_out->music_prob = tonal->info[mpos].music_prob;
    prob_min = 1.f;
    prob_max = 0.f;
    vad_prob = tonal->info[vpos].activity_probability;
@@ -346,6 +345,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       prob_count += MAX16(.1f, pos_vad);
       prob_avg += MAX16(.1f, pos_vad)*tonal->info[mpos].music_prob;
    }
+   info_out->music_prob = prob_avg/prob_count;
    prob_min = MIN16(prob_avg/prob_count, prob_min);
    prob_max = MAX16(prob_avg/prob_count, prob_max);
    prob_min = MAX16(prob_min, 0.f);
