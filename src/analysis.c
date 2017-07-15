@@ -376,7 +376,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    info_out->music_prob_min = prob_min;
    info_out->music_prob_max = prob_max;
 
-   /*printf("%f %f %f %f\n", prob_min, prob_max, prob_avg/prob_count, vad_prob);*/
+   /* printf("%f %f %f %f %f\n", prob_min, prob_max, prob_avg/prob_count, vad_prob, info_out->music_prob); */
    tonal->read_subframe += len/(tonal->Fs/400);
    while (tonal->read_subframe>=8)
    {

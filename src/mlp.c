@@ -83,7 +83,7 @@ void compute_dense(const DenseLayer *layer, float *output, const float *input)
       float sum = layer->bias[i];
       for (j=0;j<M;j++)
          sum += layer->input_weights[j*stride + i]*input[j];
-      output[i] = sum;
+      output[i] = WEIGHTS_SCALE*sum;
    }
    if (layer->sigmoid) {
       for (i=0;i<N;i++)
@@ -113,7 +113,7 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
          sum += gru->input_weights[j*stride + i]*input[j];
       for (j=0;j<N;j++)
          sum += gru->recurrent_weights[j*stride + i]*state[j];
-      z[i] = sigmoid_approx(sum);
+      z[i] = sigmoid_approx(WEIGHTS_SCALE*sum);
    }
    for (i=0;i<N;i++)
    {
@@ -123,7 +123,7 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
          sum += gru->input_weights[N + j*stride + i]*input[j];
       for (j=0;j<N;j++)
          sum += gru->recurrent_weights[N + j*stride + i]*state[j];
-      r[i] = sigmoid_approx(sum);
+      r[i] = sigmoid_approx(WEIGHTS_SCALE*sum);
    }
    for (i=0;i<N;i++)
    {
@@ -133,7 +133,7 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
          sum += gru->input_weights[2*N + j*stride + i]*input[j];
       for (j=0;j<N;j++)
          sum += gru->recurrent_weights[2*N + j*stride + i]*state[j]*r[j];
-      h[i] = z[i]*state[i] + (1-z[i])*tansig_approx(sum);
+      h[i] = z[i]*state[i] + (1-z[i])*tansig_approx(WEIGHTS_SCALE*sum);
    }
    for (i=0;i<N;i++)
       state[i] = h[i];
