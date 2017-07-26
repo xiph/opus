@@ -10,7 +10,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-ietf-codec-opus-update-07"
+<rfc category="std" docName="draft-ietf-codec-opus-update-08"
      ipr="trust200902" updates="6716">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
@@ -47,7 +47,7 @@
 
 
 
-    <date day="16" month="July" year="2017" />
+    <date day="26" month="July" year="2017" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
@@ -58,8 +58,11 @@
   <middle>
     <section title="Introduction">
       <t>This document addresses minor issues that were discovered in the reference
-      implementation of the Opus codec that serves as the specification in
-      <xref target="RFC6716">RFC 6716</xref>. Only issues affecting the decoder are
+      implementation of the Opus codec. Unlike most IETF specifications, Opus is defined
+      in <xref target="RFC6716">RFC 6716</xref> in terms of a normative reference
+      decoder implementation rather than from the associated text description.
+      That RFC includes the reference decoder implementation as Appendix A.
+      That's why only issues affecting the decoder are
       listed here. An up-to-date implementation of the Opus encoder can be found at
       <eref target="https://opus-codec.org/"/>.</t>
     <t>
@@ -75,7 +78,8 @@
     at the end of a line and the white space at the beginning
     of the following line are not part of the patch. A properly formatted patch
     including all changes is available at
-    <eref target="https://www.ietf.org/proceedings/98/slides/materials-98-codec-opus-update-00.patch"/>.
+    <eref target="https://www.ietf.org/proceedings/98/slides/materials-98-codec-opus-update-00.patch"/>
+    and has a SHA1 029e3aa88fc342c91e67a21e7bfbc9458661cd5f.
     </t>
 
     </section>
@@ -110,8 +114,8 @@
 ]]></artwork>
 </figure>
      <t>
-     This change affects the normative part of the decoder, although the
-     amount of change is too small to make a significant impact on testvectors.
+     This change affects the normative output of the decoder, but the
+     amount of change is within the tolerance and too small to make the testvector check fail.
       </t>
     </section>
 
@@ -146,7 +150,7 @@
       <t>This packet parsing issue is limited to reading memory up
          to about 60 kB beyond the compressed buffer. This can only be triggered
          by a compressed packet more than about 16 MB long, so it's not a problem
-         for RTP. In theory, it <spanx style="emph">could</spanx> crash a file
+         for RTP. In theory, it could crash a file
          decoder (e.g. Opus in Ogg) if the memory just after the incoming packet
          is out-of-range, but our attempts to trigger such a crash in a production
          application built using an affected version of the Opus decoder failed.</t>
@@ -159,19 +163,19 @@
         local buffer was opus_int16.</t>
     <t>Because the size was wrong, this potentially allowed the source
         and destination regions of the memcpy() to overlap.
-          We <spanx style="emph">believe</spanx> that nSamplesIn is at least fs_in_khZ,
+          We believe that nSamplesIn (number of input samples) is at least fs_in_khZ (sampling rate in kHz),
           which is at least 8.
        Since RESAMPLER_ORDER_FIR_12 is only 8, that should not be a problem once
        the type size is fixed.</t>
           <t>The size of the buffer used RESAMPLER_MAX_BATCH_SIZE_IN, but the
-        data stored in it was actually _twice_ the input batch size
+        data stored in it was actually twice the input batch size
         (nSamplesIn&lt;&lt;1).</t>
       </list></t>
       <t>
       The fact that the code never produced any error in testing (including when run under the
       Valgrind memory debugger), suggests that in practice
      the batch sizes are reasonable enough that none of the issues above
-     was ever a problem. However, proving that is non-obvious.
+     was ever a problem. However, the authors know of no obvious approach to proving that.
     </t>
     <t>The code can be fixed by applying the following changes to line 78 of silk/resampler_private_IIR_FIR.c:
     </t>
@@ -266,7 +270,7 @@ rc_mult2 ), mult2Q);
 </figure>
     </section>
 
-    <section title="Integer wrap-around in LSF decoding">
+    <section title="Integer wrap-around in LSF decoding" anchor="lsf_overflow">
       <t>
         It was discovered -- also from decoder fuzzing -- that an integer wrap-around could
         occur when decoding line spectral frequency coefficients from extreme bitstreams.
@@ -294,7 +298,7 @@ silk_ADD_SAT16( NLSF_Q15[i-1], NDeltaMin_Q15[i] ) );
     <section title="Cap on Band Energy">
       <t>On extreme bit-streams, it is possible for log-domain band energy levels
         to exceed the maximum single-precision floating point value once converted
-        to a linear scale. This would later cause the decoded values to be NaN,
+        to a linear scale. This would later cause the decoded values to be NaN (not a number),
         possibly causing problems in the software using the PCM values. This can be
         avoided with the following patch to line 552 of celt/quant_bands.c:
       </t>
@@ -318,7 +322,7 @@ silk_ADD_SAT16( NLSF_Q15[i-1], NDeltaMin_Q15[i] ) );
         enough bits to code a single CELT band (8 - 9.6 kHz). When that happens,
         the second band (CELT band 18, from 9.6 to 12 kHz) cannot use folding
         because it is wider than the amount already coded, and falls back to
-        LCG noise. Because it can also happen on transients (e.g. stops), it
+        white noise. Because it can also happen on transients (e.g. stops), it
         can cause audible pre-echo.
       </t>
       <t>
@@ -424,11 +428,67 @@ effective_lowband+N);
       </t>
       <t>The new test vectors are located at
         <eref target="https://www.ietf.org/proceedings/98/slides/materials-98-codec-opus-newvectors-00.tar.gz"/>.
+        The SHA1 hash of the test vectors are:
+<figure>
+<artwork>
+<![CDATA[
+e49b2862ceec7324790ed8019eb9744596d5be01  testvector01.bit
+b809795ae1bcd606049d76de4ad24236257135e0  testvector02.bit
+e0c4ecaeab44d35a2f5b6575cd996848e5ee2acc  testvector03.bit
+a0f870cbe14ebb71fa9066ef3ee96e59c9a75187  testvector04.bit
+9b3d92b48b965dfe9edf7b8a85edd4309f8cf7c8  testvector05.bit
+28e66769ab17e17f72875283c14b19690cbc4e57  testvector06.bit
+bacf467be3215fc7ec288f29e2477de1192947a6  testvector07.bit
+ddbe08b688bbf934071f3893cd0030ce48dba12f  testvector08.bit
+3932d9d61944dab1201645b8eeaad595d5705ecb  testvector09.bit
+521eb2a1e0cc9c31b8b740673307c2d3b10c1900  testvector10.bit
+6bc8f3146fcb96450c901b16c3d464ccdf4d5d96  testvector11.bit
+338c3f1b4b97226bc60bc41038becbc6de06b28f  testvector12.bit
+f5ef93884da6a814d311027918e9afc6f2e5c2c8  testvector01.dec
+48ac1ff1995250a756e1e17bd32acefa8cd2b820  testvector02.dec
+d15567e919db2d0e818727092c0af8dd9df23c95  testvector03.dec
+1249dd28f5bd1e39a66fd6d99449dca7a8316342  testvector04.dec
+b85675d81deef84a112c466cdff3b7aaa1d2fc76  testvector05.dec
+55f0b191e90bfa6f98b50d01a64b44255cb4813e  testvector06.dec
+61e8b357ab090b1801eeb578a28a6ae935e25b7b  testvector07.dec
+a58539ee5321453b2ddf4c0f2500e856b3966862  testvector08.dec
+bb96aad2cde188555862b7bbb3af6133851ef8f4  testvector09.dec
+1b6cdf0413ac9965b16184b1bea129b5c0b2a37a  testvector10.dec
+b1fff72b74666e3027801b29dbc48b31f80dee0d  testvector11.dec
+98e09bbafed329e341c3b4052e9c4ba5fc83f9b1  testvector12.dec
+1e7d984ea3fbb16ba998aea761f4893fbdb30157  testvector01m.dec
+48ac1ff1995250a756e1e17bd32acefa8cd2b820  testvector02m.dec
+d15567e919db2d0e818727092c0af8dd9df23c95  testvector03m.dec
+1249dd28f5bd1e39a66fd6d99449dca7a8316342  testvector04m.dec
+d70b0bad431e7d463bc3da49bd2d49f1c6d0a530  testvector05m.dec
+6ac1648c3174c95fada565161a6c78bdbe59c77d  testvector06m.dec
+fc5e2f709693738324fb4c8bdc0dad6dda04e713  testvector07m.dec
+aad2ba397bf1b6a18e8e09b50e4b19627d479f00  testvector08m.dec
+6feb7a7b9d7cdc1383baf8d5739e2a514bd0ba08  testvector09m.dec
+1b6cdf0413ac9965b16184b1bea129b5c0b2a37a  testvector10m.dec
+fd3d3a7b0dfbdab98d37ed9aa04b659b9fefbd18  testvector11m.dec
+98e09bbafed329e341c3b4052e9c4ba5fc83f9b1  testvector12m.dec
+]]>
+</artwork>
+</figure>
+      Note that the decoder input bitstream files (.bit) are unchanged.
       </t>
     </section>
 
     <section anchor="security" title="Security Considerations">
-      <t>This document adds no new security considerations on top of
+      <t>This document fixes two security issues reported on Opus and that affect the
+        reference implementation in <xref target="RFC6716">RFC 6716</xref>: CVE-2013-0899
+        <eref target="https://nvd.nist.gov/vuln/detail/CVE-2013-0899"/>
+        and CVE-2017-0381 <eref target="https://nvd.nist.gov/vuln/detail/CVE-2017-0381"/>.
+        CVE-2013-0899 is fixed by <xref target="padding"/> and
+        could theoretically cause information leak, but the
+        leaked information would at the very least go through the decoder process before
+        being accessible to the attacker. Also, the bug can only be triggered by Opus packets
+        at least 24 MB in size. CVE-2017-0381 is fixed by <xref target="lsf_overflow"/> and, as far
+        as the authors are aware, could not be exploited in any way (despite the claims in
+        the CVE) unless the read-only table
+        was somehow placed very close to sensitive data, which is highly unlikely.
+        Beyond the two fixed CVEs, this document adds no new security considerations on top of
         <xref target="RFC6716">RFC 6716</xref>.
       </t>
     </section>
@@ -442,7 +502,8 @@ effective_lowband+N);
 
     <section anchor="Acknowledgements" title="Acknowledgements">
       <t>We would like to thank Juri Aedla for reporting the issue with the parsing of
-      the Opus padding. Also, thanks to Jonathan Lennox and Mark Harris for their
+      the Opus padding. Thanks to Felicia Lim for reporting the LSF integer overflow issue.
+      Also, thanks to Tina le Grand, Jonathan Lennox, and Mark Harris for their
       feedback on this document.</t>
     </section>
   </middle>
