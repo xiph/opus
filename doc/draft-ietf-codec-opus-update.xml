@@ -10,7 +10,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc category="std" docName="draft-ietf-codec-opus-update-09"
+<rfc category="std" docName="draft-ietf-codec-opus-update-10"
      ipr="trust200902" updates="6716">
   <front>
     <title abbrev="Opus Update">Updates to the Opus Audio Codec</title>
@@ -47,11 +47,11 @@
 
 
 
-    <date day="17" month="August" year="2017" />
+    <date day="21" month="August" year="2017" />
 
     <abstract>
       <t>This document addresses minor issues that were found in the specification
-      of the Opus audio codec in RFC 6716. It updates the nornative decoder implementation
+      of the Opus audio codec in RFC 6716. It updates the normative decoder implementation
       included in the appendix of RFC 6716. The changes fixes real and potential security-related
       issues, as well minor quality-related issues.</t>
     </abstract>
@@ -174,11 +174,6 @@
         data stored in it was actually twice the input batch size
         (nSamplesIn&lt;&lt;1).</t>
       </list></t>
-      <t>
-      The allocated buffers involved (buf and S->sFIR) are actually larger than they need to be for
-      the batch size used, so no out-of-bounds read or write is possible. Therefore the bug cannot be
-      exploited.
-    </t>
     <t>The code can be fixed by applying the following changes to line 78 of silk/resampler_private_IIR_FIR.c:
     </t>
 <figure>
@@ -245,9 +240,8 @@ RESAMPLER_ORDER_FIR_12 * sizeof( opus_int16 ) );
       <t>
         It was discovered through decoder fuzzing that some bitstreams could produce
         integer values exceeding 32-bits in LPC_inverse_pred_gain_QA(), causing
-        a wrap-around. Although the authors are not aware of any way to exploit the bug,
-        the C standard considers
-        the behavior as undefined. The following patch to line 87 of silk/LPC_inv_pred_gain.c
+        a wrap-around. The C standard considers
+        this behavior as undefined. The following patch to line 87 of silk/LPC_inv_pred_gain.c
         detects values that do not fit in a 32-bit integer and considers the corresponding filters unstable:
       </t>
 <figure>
@@ -483,18 +477,11 @@ fd3d3a7b0dfbdab98d37ed9aa04b659b9fefbd18  testvector11m.dec
         reference implementation in <xref target="RFC6716">RFC 6716</xref>: CVE-2013-0899
         <eref target="https://nvd.nist.gov/vuln/detail/CVE-2013-0899"/>
         and CVE-2017-0381 <eref target="https://nvd.nist.gov/vuln/detail/CVE-2017-0381"/>.
-        CVE-2013-0899 is fixed by <xref target="padding"/> and
-        could theoretically cause an information leak, but the
-        leaked information would at the very least go through the decoder process before
-        being accessible to the attacker. Also, the bug can only be triggered by Opus packets
-        at least 24 MB in size. CVE-2017-0381 is fixed by Section 7 and can only result in a 16-bit
-        out-of-bounds read to a fixed location 256 bytes before a constant
-        table. That location would normally be part of an executable's read-only
-        data segment, but if that is not the case, the bug could at worst
-        results in either a crash or the leakage of 16 bits of information from
-        that fixed memory location (if the attacker has access to the decoded
-        output). Despite the claims of the CVE, the bug cannot results in
-        arbitrary code execution.
+        CVE- 2013-0899 theoretically could have caused an information leak. The leaked
+        information would have gone through the decoder process before being accessible
+        to the attacker. It is fixed by <xref target="padding"/>.
+        CVE-2017-0381 could have resulted in a 16-bit out-of-bounds read from a fixed
+        location.  It is fixed in <xref target="lsf_overflow"/>.
         Beyond the two fixed CVEs, this document adds no new security considerations on top of
         <xref target="RFC6716">RFC 6716</xref>.
       </t>
