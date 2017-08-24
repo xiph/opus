@@ -104,7 +104,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
       return OPUS_BAD_ARG;
 
    OPUS_CLEAR((char*)st, opus_decoder_get_size(channels));
-   /* Initialize SILK encoder */
+   /* Initialize SILK decoder */
    ret = silk_Get_Decoder_Size(&silkDecSizeBytes);
    if (ret)
       return OPUS_INTERNAL_ERROR;
