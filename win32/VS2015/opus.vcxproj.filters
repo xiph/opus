@@ -230,7 +230,7 @@
     <ClCompile Include="..\..\celt\celt_lpc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\celt\x86\celt_lpc_sse.c">
+    <ClCompile Include="..\..\celt\x86\celt_lpc_sse4_1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\celt\cwrs.c">
@@ -449,10 +449,10 @@
     <ClCompile Include="..\..\silk\NSQ_del_dec.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\silk\x86\NSQ_del_dec_sse.c">
+    <ClCompile Include="..\..\silk\x86\NSQ_del_dec_sse4_1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\silk\x86\NSQ_sse.c">
+    <ClCompile Include="..\..\silk\x86\NSQ_sse4_1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\pitch_est_tables.c">
@@ -548,13 +548,13 @@
     <ClCompile Include="..\..\silk\VAD.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\silk\x86\VAD_sse.c">
+    <ClCompile Include="..\..\silk\x86\VAD_sse4_1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\VQ_WMat_EC.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\silk\x86\VQ_WMat_EC_sse.c">
+    <ClCompile Include="..\..\silk\x86\VQ_WMat_EC_sse4_1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\silk\x86\x86_silk_map.c">
