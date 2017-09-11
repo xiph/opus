@@ -414,7 +414,7 @@ AC_DEFUN([OPUS_PATH_NE10],
          NE10_CFLAGS="-I$NE10_includes"
       elif test "x$NE10_prefix" = "xno" || test "x$NE10_prefix" = "xyes" ; then
          NE10_CFLAGS=""
-      elif test "x$ogg_prefix" != "x" ; then
+      elif test "x$NE10_prefix" != "x" ; then
          NE10_CFLAGS="-I$NE10_prefix/include"
       elif test "x$prefix" != "xNONE"; then
          NE10_CFLAGS="-I$prefix/include"
