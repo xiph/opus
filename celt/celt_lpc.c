@@ -99,7 +99,7 @@ void celt_fir_c(
    int i,j;
    VARDECL(opus_val16, rnum);
    SAVE_STACK;
-
+   celt_assert(x != y);
    ALLOC(rnum, ord, opus_val16);
    for(i=0;i<ord;i++)
       rnum[i] = num[ord-i-1];

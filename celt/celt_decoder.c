@@ -554,6 +554,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
 
       celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch);
    } else {
+      int exc_length;
       /* Pitch-based PLC */
       const opus_val16 *window;
       opus_val16 *exc;
@@ -561,6 +562,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
       int pitch_index;
       VARDECL(opus_val32, etmp);
       VARDECL(opus_val16, _exc);
+      VARDECL(opus_val16, fir_tmp);
 
       if (loss_count == 0)
       {
@@ -570,8 +572,13 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          fade = QCONST16(.8f,15);
       }
 
+      /* We want the excitation for 2 pitch periods in order to look for a
+         decaying signal, but we can't get more than MAX_PERIOD. */
+      exc_length = IMIN(2*pitch_index, MAX_PERIOD);
+
       ALLOC(etmp, overlap, opus_val32);
       ALLOC(_exc, MAX_PERIOD+LPC_ORDER, opus_val16);
+      ALLOC(fir_tmp, exc_length, opus_val16);
       exc = _exc+LPC_ORDER;
       window = mode->window;
       c=0; do {
@@ -581,13 +588,11 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          celt_sig *buf;
          int extrapolation_offset;
          int extrapolation_len;
-         int exc_length;
          int j;
 
          buf = decode_mem[c];
-         for (i=0;i<MAX_PERIOD;i++) {
-            exc[i] = ROUND16(buf[DECODE_BUFFER_SIZE-MAX_PERIOD+i], SIG_SHIFT);
-         }
+         for (i=0;i<MAX_PERIOD+LPC_ORDER;i++)
+            exc[i-LPC_ORDER] = ROUND16(buf[DECODE_BUFFER_SIZE-MAX_PERIOD-LPC_ORDER+i], SIG_SHIFT);
 
          if (loss_count == 0)
          {
@@ -631,20 +636,14 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          }
 #endif
          }
-         /* We want the excitation for 2 pitch periods in order to look for a
-            decaying signal, but we can't get more than MAX_PERIOD. */
-         exc_length = IMIN(2*pitch_index, MAX_PERIOD);
          /* Initialize the LPC history with the samples just before the start
             of the region for which we're computing the excitation. */
          {
-            for (i=0;i<LPC_ORDER;i++)
-            {
-               exc[MAX_PERIOD-exc_length-LPC_ORDER+i] =
-                     ROUND16(buf[DECODE_BUFFER_SIZE-exc_length-LPC_ORDER+i], SIG_SHIFT);
-            }
-            /* Compute the excitation for exc_length samples before the loss. */
+            /* Compute the excitation for exc_length samples before the loss. We need the copy
+               because celt_fir() cannot filter in-place. */
             celt_fir(exc+MAX_PERIOD-exc_length, lpc+c*LPC_ORDER,
-                  exc+MAX_PERIOD-exc_length, exc_length, LPC_ORDER, st->arch);
+                  fir_tmp, exc_length, LPC_ORDER, st->arch);
+            OPUS_COPY(exc+MAX_PERIOD-exc_length, fir_tmp, exc_length);
          }
 
          /* Check if the waveform is decaying, and if so how fast.
