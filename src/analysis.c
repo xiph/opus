@@ -432,6 +432,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     float alpha, alphaE, alphaE2;
     float frame_loudness;
     float bandwidth_mask;
+    int is_masked[NB_TBANDS+1];
     int bandwidth=0;
     float maxE = 0;
     float noise_floor;
@@ -449,7 +450,9 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 
     alpha = 1.f/IMIN(10, 1+tonal->count);
     alphaE = 1.f/IMIN(25, 1+tonal->count);
-    alphaE2 = 1.f/IMIN(500, 1+tonal->count);
+    /* Noise floor related decay for bandwidth detection: -2.2 dB/second */
+    alphaE2 = 1.f/IMIN(100, 1+tonal->count);
+    if (tonal->count <= 1) alphaE2 = 1;
 
     if (tonal->Fs == 48000)
     {
@@ -722,6 +725,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     for (b=0;b<NB_TBANDS;b++)
     {
        float E=0;
+       float Em;
        int band_start, band_end;
        /* Keep a margin of 300 Hz for aliasing */
        band_start = tbands[b];
@@ -735,40 +739,47 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        E = SCALE_ENER(E);
        maxE = MAX32(maxE, E);
        tonal->meanE[b] = MAX32((1-alphaE2)*tonal->meanE[b], E);
-       E = MAX32(E, tonal->meanE[b]);
-       /* Use a simple follower with 13 dB/Bark slope for spreading function */
-       bandwidth_mask = MAX32(.05f*bandwidth_mask, E);
+       Em = MAX32(E, tonal->meanE[b]);
        /* Consider the band "active" only if all these conditions are met:
-          1) less than 10 dB below the simple follower
-          2) less than 90 dB below the peak band (maximal masking possible considering
+          1) less than 90 dB below the peak band (maximal masking possible considering
              both the ATH and the loudness-dependent slope of the spreading function)
-          3) above the PCM quantization noise floor
+          2) above the PCM quantization noise floor
           We use b+1 because the first CELT band isn't included in tbands[]
        */
-       if (E>.1*bandwidth_mask && E*1e9f > maxE && E > noise_floor*(band_end-band_start))
+       if (E*1e9f > maxE && (Em > 3*noise_floor*(band_end-band_start) || E > noise_floor*(band_end-band_start)))
           bandwidth = b+1;
+       /* Check if the band is masked (see below). */
+       is_masked[b] = E < (tonal->prev_bandwidth >= b+1  ? .01f : .05f)*bandwidth_mask;
+       /* Use a simple follower with 13 dB/Bark slope for spreading function. */
+       bandwidth_mask = MAX32(.05f*bandwidth_mask, E);
     }
     /* Special case for the last two bands, for which we don't have spectrum but only
-       the energy above 12 kHz. */
+       the energy above 12 kHz. The difficulty here is that the high-pass we use
+       leaks some LF energy, so we need to increase the threshold without accidentally cutting
+       off the band. */
     if (tonal->Fs == 48000) {
-       float ratio;
-       float E = hp_ener*(1.f/(240*240));
-       ratio = tonal->prev_bandwidth==20 ? 0.03f : 0.07f;
+       float noise_ratio;
+       float Em;
+       float E = hp_ener*(1.f/(60*60));
+       noise_ratio = tonal->prev_bandwidth==20 ? 10.f : 30.f;
+
 #ifdef FIXED_POINT
        /* silk_resampler_down2_hp() shifted right by an extra 8 bits. */
        E *= 256.f*(1.f/Q15ONE)*(1.f/Q15ONE);
 #endif
-       maxE = MAX32(maxE, E);
        tonal->meanE[b] = MAX32((1-alphaE2)*tonal->meanE[b], E);
-       E = MAX32(E, tonal->meanE[b]);
-       /* Use a simple follower with 13 dB/Bark slope for spreading function */
-       bandwidth_mask = MAX32(.05f*bandwidth_mask, E);
-       if (E>ratio*bandwidth_mask && E*1e9f > maxE && E > noise_floor*160)
+       Em = MAX32(E, tonal->meanE[b]);
+       if (Em > 3*noise_ratio*noise_floor*160 || E > noise_ratio*noise_floor*160)
           bandwidth = 20;
-       /* This detector is unreliable, so if the bandwidth is close to SWB, assume it's FB. */
-       if (bandwidth >= 17)
-          bandwidth = 20;
+       /* Check if the band is masked (see below). */
+       is_masked[b] = E < (tonal->prev_bandwidth == 20  ? .01f : .05f)*bandwidth_mask;
     }
+    /* In some cases, resampling aliasing can create a small amount of energy in the first band
+       being cut. So if the last band is masked, we don't include it.  */
+    if (bandwidth == 20 && is_masked[NB_TBANDS])
+       bandwidth-=2;
+    else if (bandwidth > 0 && bandwidth <= NB_TBANDS && is_masked[bandwidth-1])
+       bandwidth--;
     if (tonal->count<=2)
        bandwidth = 20;
     frame_loudness = 20*(float)log10(frame_loudness);
