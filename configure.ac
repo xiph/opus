@@ -873,7 +873,7 @@ AC_MSG_NOTICE([
       Fixed point debugging: ......... ${enable_fixed_point_debug}
       Inline Assembly Optimizations: . ${inline_optimization}
       External Assembly Optimizations: ${asm_optimization}
-      Intrinsics Optimizations.......: ${intrinsics_support}
+      Intrinsics Optimizations: ...... ${intrinsics_support}
       Run-time CPU detection: ........ ${rtcd_support}
       Custom modes: .................. ${enable_custom_modes}
       Assertion checking: ............ ${enable_assertions}
