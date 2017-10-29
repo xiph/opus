@@ -804,12 +804,12 @@ AC_ARG_ENABLE([extra-programs],
 AM_CONDITIONAL([EXTRA_PROGRAMS], [test "$enable_extra_programs" = "yes"])
 
 
-AC_ARG_ENABLE([update-draft],
-  AS_HELP_STRING([--enable-update-draft], [Enable bitstream changes from draft-ietf-codec-opus-update]),,
-  [enable_update_draft=no])
+AC_ARG_ENABLE([rfc8251],
+	      AS_HELP_STRING([--disable-rfc8251], [Disable bitstream fixes from RFC 8251]),,
+  [enable_rfc8251=yes])
 
-AS_IF([test "$enable_update_draft" = "yes"], [
-  AC_DEFINE([ENABLE_UPDATE_DRAFT], [1], [Enable bitstream changes from draft-ietf-codec-opus-update])
+AS_IF([test "$enable_rfc8251" = "no"], [
+       AC_DEFINE([DISABLE_UPDATE_DRAFT], [1], [Disable bitstream fixes from RFC 8251])
 ])
 
 

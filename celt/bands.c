@@ -1507,7 +1507,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          b = 0;
       }
 
-#ifdef ENABLE_UPDATE_DRAFT
+#ifndef DISABLE_UPDATE_DRAFT
       if (resynth && (M*eBands[i]-N >= M*eBands[start] || i==start+1) && (update_lowband || lowband_offset==0))
             lowband_offset = i;
       if (i == start+1)
@@ -1541,7 +1541,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          fold_start = lowband_offset;
          while(M*eBands[--fold_start] > effective_lowband+norm_offset);
          fold_end = lowband_offset-1;
-#ifdef ENABLE_UPDATE_DRAFT
+#ifndef DISABLE_UPDATE_DRAFT
          while(++fold_end < i && M*eBands[fold_end] < effective_lowband+norm_offset+N);
 #else
          while(M*eBands[++fold_end] < effective_lowband+norm_offset+N);

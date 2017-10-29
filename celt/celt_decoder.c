@@ -164,7 +164,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_init(CELTDecoder *st, const CELTMod
    st->start = 0;
    st->end = st->mode->effEBands;
    st->signalling = 1;
-#ifdef ENABLE_UPDATE_DRAFT
+#ifndef DISABLE_UPDATE_DRAFT
    st->disable_inv = channels == 1;
 #else
    st->disable_inv = 0;
