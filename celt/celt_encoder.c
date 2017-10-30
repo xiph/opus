@@ -1454,7 +1454,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tell0_frac=tell=1;
       nbFilledBytes=0;
    } else {
-      tell0_frac=tell=ec_tell_frac(enc);
+      tell0_frac=ec_tell_frac(enc);
       tell=ec_tell(enc);
       nbFilledBytes=(tell+4)>>3;
    }
