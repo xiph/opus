@@ -82,7 +82,7 @@ if OPUS_ARM_EXTERNAL_ASM
 libopus_la_LIBADD += libarmasm.la
 endif
 
-pkginclude_HEADERS = include/opus.h include/opus_multistream.h include/opus_types.h include/opus_defines.h
+pkginclude_HEADERS = include/opus.h include/opus_multistream.h include/opus_types.h include/opus_defines.h include/opus_projection.h
 
 noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD)
 
@@ -102,7 +102,8 @@ noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
                   tests/test_opus_api \
                   tests/test_opus_decode \
                   tests/test_opus_encode \
-                  tests/test_opus_padding
+                  tests/test_opus_padding \
+                  tests/test_opus_projection
 
 TESTS = celt/tests/test_unit_cwrs32 \
         celt/tests/test_unit_dft \
@@ -116,7 +117,8 @@ TESTS = celt/tests/test_unit_cwrs32 \
         tests/test_opus_api \
         tests/test_opus_decode \
         tests/test_opus_encode \
-        tests/test_opus_padding
+        tests/test_opus_padding \
+        tests/test_opus_projection
 
 opus_demo_SOURCES = src/opus_demo.c
 
@@ -140,6 +142,9 @@ tests_test_opus_decode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
 tests_test_opus_padding_SOURCES = tests/test_opus_padding.c tests/test_opus_common.h
 tests_test_opus_padding_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+
+tests_test_opus_projection_SOURCES = tests/test_opus_projection.c tests/test_opus_common.h
+tests_test_opus_projection_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
 CELT_OBJ = $(CELT_SOURCES:.c=.lo)
 SILK_OBJ = $(SILK_SOURCES:.c=.lo)

@@ -33,6 +33,7 @@
 #include "opus.h"
 #include "celt.h"
 
+#include <stdarg.h> /* va_list */
 #include <stddef.h> /* offsetof */
 
 struct OpusRepacketizer {
@@ -49,6 +50,38 @@ typedef struct ChannelLayout {
    int nb_coupled_streams;
    unsigned char mapping[256];
 } ChannelLayout;
+
+typedef enum {
+  MAPPING_TYPE_NONE,
+  MAPPING_TYPE_SURROUND
+#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
+  ,  /* Do not include comma at end of enumerator list */
+  MAPPING_TYPE_AMBISONICS
+#endif /* ENABLE_EXPERIMENTAL_AMBISONICS */
+} MappingType;
+
+struct OpusMSEncoder {
+   ChannelLayout layout;
+   int arch;
+   int lfe_stream;
+   int application;
+   int variable_duration;
+   MappingType mapping_type;
+   opus_int32 bitrate_bps;
+   /* Encoder states go here */
+   /* then opus_val32 window_mem[channels*120]; */
+   /* then opus_val32 preemph_mem[channels]; */
+};
+
+struct OpusMSDecoder {
+   ChannelLayout layout;
+   /* Decoder states go here */
+};
+
+int opus_multistream_encoder_ctl_va_list(struct OpusMSEncoder *st, int request,
+  va_list ap);
+int opus_multistream_decoder_ctl_va_list(struct OpusMSDecoder *st, int request,
+  va_list ap);
 
 int validate_layout(const ChannelLayout *layout);
 int get_left_channel(const ChannelLayout *layout, int stream_id, int prev);

@@ -70,28 +70,6 @@ typedef void (*opus_copy_channel_in_func)(
   int frame_size
 );
 
-typedef enum {
-  MAPPING_TYPE_NONE,
-  MAPPING_TYPE_SURROUND
-#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-  ,  /* Do not include comma at end of enumerator list */
-  MAPPING_TYPE_AMBISONICS
-#endif
-} MappingType;
-
-struct OpusMSEncoder {
-   ChannelLayout layout;
-   int arch;
-   int lfe_stream;
-   int application;
-   int variable_duration;
-   MappingType mapping_type;
-   opus_int32 bitrate_bps;
-   /* Encoder states go here */
-   /* then opus_val32 window_mem[channels*120]; */
-   /* then opus_val32 preemph_mem[channels]; */
-};
-
 static opus_val32 *ms_get_preemph_mem(OpusMSEncoder *st)
 {
    int s;
@@ -1196,14 +1174,12 @@ int opus_multistream_encode(
 }
 #endif
 
-int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
+int opus_multistream_encoder_ctl_va_list(OpusMSEncoder *st, int request,
+                                         va_list ap)
 {
-   va_list ap;
    int coupled_size, mono_size;
    char *ptr;
    int ret = OPUS_OK;
-
-   va_start(ap, request);
 
    coupled_size = opus_encoder_get_size(2);
    mono_size = opus_encoder_get_size(1);
@@ -1392,12 +1368,19 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       ret = OPUS_UNIMPLEMENTED;
       break;
    }
-
-   va_end(ap);
    return ret;
 bad_arg:
-   va_end(ap);
    return OPUS_BAD_ARG;
+}
+
+int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
+{
+   int ret;
+   va_list ap;
+   va_start(ap, request);
+   ret = opus_multistream_encoder_ctl_va_list(st, request, ap);
+   va_end(ap);
+   return ret;
 }
 
 void opus_multistream_encoder_destroy(OpusMSEncoder *st)

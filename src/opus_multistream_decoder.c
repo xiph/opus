@@ -37,14 +37,6 @@
 #include "float_cast.h"
 #include "os_support.h"
 
-struct OpusMSDecoder {
-   ChannelLayout layout;
-   /* Decoder states go here */
-};
-
-
-
-
 /* DECODER */
 
 opus_int32 opus_multistream_decoder_get_size(int nb_streams, int nb_coupled_streams)
@@ -408,14 +400,12 @@ int opus_multistream_decode_float(
 }
 #endif
 
-int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
+int opus_multistream_decoder_ctl_va_list(OpusMSDecoder *st, int request,
+                                         va_list ap)
 {
-   va_list ap;
    int coupled_size, mono_size;
    char *ptr;
    int ret = OPUS_OK;
-
-   va_start(ap, request);
 
    coupled_size = opus_decoder_get_size(2);
    mono_size = opus_decoder_get_size(1);
@@ -525,14 +515,20 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
           ret = OPUS_UNIMPLEMENTED;
        break;
    }
-
-   va_end(ap);
    return ret;
 bad_arg:
-   va_end(ap);
    return OPUS_BAD_ARG;
 }
 
+int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
+{
+   int ret;
+   va_list ap;
+   va_start(ap, request);
+   ret = opus_multistream_decoder_ctl_va_list(st, request, ap);
+   va_end(ap);
+   return ret;
+}
 
 void opus_multistream_decoder_destroy(OpusMSDecoder *st)
 {
