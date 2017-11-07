@@ -103,7 +103,7 @@ int opus_projection_decoder_init(OpusProjectionDecoder *st, opus_int32 Fs,
 
   /* Assign demixing matrix. */
   st->demixing_matrix_size_in_bytes = expected_matrix_size;
-  mapping_matrix_init(get_demixing_matrix(st), nb_input_streams, channels, 0,
+  mapping_matrix_init(get_demixing_matrix(st), channels, nb_input_streams, 0,
     buf, demixing_matrix_size);
 
   /* Set trivial mapping so each input channel pairs with a matrix column. */

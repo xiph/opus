@@ -361,7 +361,7 @@ int opus_projection_encoder_ctl(OpusProjectionEncoder *st, int request, ...)
   break;
   case OPUS_PROJECTION_GET_DEMIXING_MATRIX_REQUEST:
   {
-    int i;
+    int i, j, k, l;
     int nb_input_streams;
     int nb_output_streams;
     unsigned char *external_char;
@@ -388,10 +388,14 @@ int opus_projection_encoder_ctl(OpusProjectionEncoder *st, int request, ...)
     }
 
     /* Copy demixing matrix subset to output destination. */
-    for (i = 0; i < nb_input_streams * nb_output_streams; i++)
-    {
-      external_char[2*i] = (unsigned char)internal_short[i];
-      external_char[2*i+1] = (unsigned char)(internal_short[i] >> 8);
+    l = 0;
+    for (i = 0; i < nb_input_streams; i++) {
+      for (j = 0; j < nb_output_streams; j++) {
+        k = demixing_matrix->rows * i + j;
+        external_char[2*l] = (unsigned char)internal_short[k];
+        external_char[2*l+1] = (unsigned char)(internal_short[k] >> 8);
+        l++;
+      }
     }
   }
   break;
