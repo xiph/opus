@@ -129,10 +129,10 @@ static const opus_int32 mono_voice_bandwidth_thresholds[8] = {
         14000, 2000, /* SWB<->FB */
 };
 static const opus_int32 mono_music_bandwidth_thresholds[8] = {
-        10000, 1000, /* NB<->MB */
-        11000, 1000, /* MB<->WB */
-        13500, 1000, /* WB<->SWB */
-        14000, 2000, /* SWB<->FB */
+         9000, 1000, /* NB<->MB */
+        10000, 1000, /* MB<->WB */
+        11000, 1000, /* WB<->SWB */
+        12000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
         10000, 1000, /* NB<->MB */
@@ -141,20 +141,20 @@ static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
         14000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
-        10000, 1000, /* NB<->MB */
-        11000, 1000, /* MB<->WB */
-        13500, 1000, /* WB<->SWB */
-        14000, 2000, /* SWB<->FB */
+         9000, 1000, /* NB<->MB */
+        10000, 1000, /* MB<->WB */
+        11000, 1000, /* WB<->SWB */
+        12000, 2000, /* SWB<->FB */
 };
 /* Threshold bit-rates for switching between mono and stereo */
-static const opus_int32 stereo_voice_threshold = 24000;
-static const opus_int32 stereo_music_threshold = 24000;
+static const opus_int32 stereo_voice_threshold = 19000;
+static const opus_int32 stereo_music_threshold = 17000;
 
 /* Threshold bit-rate for switching between SILK/hybrid and CELT-only */
 static const opus_int32 mode_thresholds[2][2] = {
       /* voice */ /* music */
-      {  64000,      16000}, /* mono */
-      {  44000,      16000}, /* stereo */
+      {  64000,      10000}, /* mono */
+      {  44000,      10000}, /* stereo */
 };
 
 static const opus_int32 fec_thresholds[] = {
@@ -1952,7 +1952,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     st->prev_HB_gain = HB_gain;
     if (st->mode != MODE_HYBRID || st->stream_channels==1)
-       st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),2*IMAX(0,equiv_rate-24000));
+    {
+       if (equiv_rate > 32000)
+          st->silk_mode.stereoWidth_Q14 = 16384;
+       else if (equiv_rate < 16000)
+          st->silk_mode.stereoWidth_Q14 = 0;
+       else
+          st->silk_mode.stereoWidth_Q14 = 16384 - 2048*(opus_int32)(32000-equiv_rate)/(equiv_rate-14000);
+    }
     if( !st->energy_masking && st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
