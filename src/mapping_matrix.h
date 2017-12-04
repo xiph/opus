@@ -44,8 +44,8 @@ extern "C" {
 
 typedef struct MappingMatrix
 {
-    int rows;
-    int cols;
+    int rows; /* number of channels outputted from matrix. */
+    int cols; /* number of channels inputted to matrix. */
     int gain; /* in dB. S7.8-format. */
     /* Matrix cell data goes here using col-wise ordering. */
 } MappingMatrix;
@@ -64,9 +64,20 @@ void mapping_matrix_init(
 );
 
 #ifndef DISABLE_FLOAT_API
-void mapping_matrix_multiply_float(
+void mapping_matrix_multiply_channel_in_float(
     const MappingMatrix *matrix,
     const float *input,
+    int input_rows,
+    opus_val16 *output,
+    int output_row,
+    int output_rows,
+    int frame_size
+);
+
+void mapping_matrix_multiply_channel_out_float(
+    const MappingMatrix *matrix,
+    const opus_val16 *input,
+    int input_row,
     int input_rows,
     float *output,
     int output_rows,
@@ -74,9 +85,20 @@ void mapping_matrix_multiply_float(
 );
 #endif /* DISABLE_FLOAT_API */
 
-void mapping_matrix_multiply_short(
+void mapping_matrix_multiply_channel_in_short(
     const MappingMatrix *matrix,
     const opus_int16 *input,
+    int input_rows,
+    opus_val16 *output,
+    int output_row,
+    int output_rows,
+    int frame_size
+);
+
+void mapping_matrix_multiply_channel_out_short(
+    const MappingMatrix *matrix,
+    const opus_val16 *input,
+    int input_row,
     int input_rows,
     opus_int16 *output,
     int output_rows,

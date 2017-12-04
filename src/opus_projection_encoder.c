@@ -42,10 +42,40 @@
 
 struct OpusProjectionEncoder
 {
-  int mixing_matrix_size_in_bytes;
-  int demixing_matrix_size_in_bytes;
+  opus_int32 mixing_matrix_size_in_bytes;
+  opus_int32 demixing_matrix_size_in_bytes;
   /* Encoder states go here */
 };
+
+#if !defined(DISABLE_FLOAT_API)
+static void opus_projection_copy_channel_in_float(
+  opus_val16 *dst,
+  int dst_stride,
+  const void *src,
+  int src_stride,
+  int src_channel,
+  int frame_size,
+  void *user_data
+)
+{
+  mapping_matrix_multiply_channel_in_float((const MappingMatrix*)user_data,
+    (const float*)src, src_stride, dst, src_channel, dst_stride, frame_size);
+}
+#endif
+
+static void opus_projection_copy_channel_in_short(
+  opus_val16 *dst,
+  int dst_stride,
+  const void *src,
+  int src_stride,
+  int src_channel,
+  int frame_size,
+  void *user_data
+)
+{
+  mapping_matrix_multiply_channel_in_short((const MappingMatrix*)user_data,
+    (const opus_int16*)src, src_stride, dst, src_channel, dst_stride, frame_size);
+}
 
 static int get_order_plus_one_from_channels(int channels, int *order_plus_one)
 {
@@ -115,10 +145,8 @@ opus_int32 opus_projection_ambisonics_encoder_get_size(int channels,
 
   ret = get_streams_from_channels(channels, mapping_family, &nb_streams,
                                   &nb_coupled_streams, &order_plus_one);
-  if (ret != OPUS_OK)
-  {
+  if (ret != OPUS_OK || order_plus_one < 2 || order_plus_one > 4)
     return 0;
-  }
 
   matrix_rows = order_plus_one * order_plus_one + 2;
   matrix_size = mapping_matrix_get_size(matrix_rows, matrix_rows);
@@ -126,7 +154,7 @@ opus_int32 opus_projection_ambisonics_encoder_get_size(int channels,
       opus_multistream_encoder_get_size(nb_streams, nb_coupled_streams);
   if (!encoder_size)
     return 0;
-  return align(sizeof(OpusProjectionEncoder) + matrix_size + matrix_size + encoder_size);
+  return align(sizeof(OpusProjectionEncoder)) + matrix_size + matrix_size + encoder_size;
 }
 
 int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int32 Fs,
@@ -218,9 +246,7 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
 
   /* Set trivial mapping so each input channel pairs with a matrix column. */
   for (i = 0; i < channels; i++)
-  {
     mapping[i] = i;
-  }
 
   /* Initialize multistream encoder with provided settings. */
   ms_encoder = get_multistream_encoder(st);
@@ -269,54 +295,31 @@ int opus_projection_encode(OpusProjectionEncoder *st, const opus_int16 *pcm,
                            int frame_size, unsigned char *data,
                            opus_int32 max_data_bytes)
 {
-#ifdef NONTHREADSAFE_PSEUDOSTACK
-  celt_fatal("Unable to use opus_projection_encode() when NONTHREADSAFE_PSEUDOSTACK is defined.");
-#endif
-  MappingMatrix *matrix;
-  OpusMSEncoder *ms_encoder;
-  int ret;
-  VARDECL(opus_int16, buf);
-  ALLOC_STACK;
-
-  matrix = get_mixing_matrix(st);
-  ms_encoder = get_multistream_encoder(st);
-  ALLOC(buf, (ms_encoder->layout.nb_streams + ms_encoder->layout.nb_coupled_streams) *
-    frame_size, opus_int16);
-  mapping_matrix_multiply_short(matrix, pcm,
-    ms_encoder->layout.nb_channels, buf,
-    ms_encoder->layout.nb_streams + ms_encoder->layout.nb_coupled_streams,
-    frame_size);
-  ret = opus_multistream_encode(ms_encoder, buf, frame_size, data, max_data_bytes);
-  RESTORE_STACK;
-  return ret;
+  return opus_multistream_encode_native(get_multistream_encoder(st),
+    opus_projection_copy_channel_in_short, pcm, frame_size, data,
+    max_data_bytes, 16, downmix_int, 0, get_mixing_matrix(st));
 }
 
 #ifndef DISABLE_FLOAT_API
+#ifdef FIXED_POINT
 int opus_projection_encode_float(OpusProjectionEncoder *st, const float *pcm,
                                  int frame_size, unsigned char *data,
                                  opus_int32 max_data_bytes)
 {
-#ifdef NONTHREADSAFE_PSEUDOSTACK
-  celt_fatal("Unable to use opus_projection_encode_float() when NONTHREADSAFE_PSEUDOSTACK is defined.");
-#endif
-  MappingMatrix *matrix;
-  OpusMSEncoder *ms_encoder;
-  int ret;
-  VARDECL(float, buf);
-  ALLOC_STACK;
-
-  matrix = get_mixing_matrix(st);
-  ms_encoder = get_multistream_encoder(st);
-  ALLOC(buf, (ms_encoder->layout.nb_streams + ms_encoder->layout.nb_coupled_streams) *
-    frame_size, float);
-  mapping_matrix_multiply_float(matrix, pcm,
-    ms_encoder->layout.nb_channels, buf,
-    ms_encoder->layout.nb_streams + ms_encoder->layout.nb_coupled_streams,
-    frame_size);
-  ret = opus_multistream_encode_float(ms_encoder, buf, frame_size, data, max_data_bytes);
-  RESTORE_STACK;
-  return ret;
+  return opus_multistream_encode_native(get_multistream_encoder(st),
+    opus_projection_copy_channel_in_float, pcm, frame_size, data,
+    max_data_bytes, 16, downmix_float, 1, get_mixing_matrix(st));
 }
+#else
+int opus_projection_encode_float(OpusProjectionEncoder *st, const float *pcm,
+                                 int frame_size, unsigned char *data,
+                                 opus_int32 max_data_bytes)
+{
+  return opus_multistream_encode_native(get_multistream_encoder(st),
+    opus_projection_copy_channel_in_float, pcm, frame_size, data,
+    max_data_bytes, 24, downmix_float, 1, get_mixing_matrix(st));
+}
+#endif
 #endif
 
 void opus_projection_encoder_destroy(OpusProjectionEncoder *st)

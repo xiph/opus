@@ -88,7 +88,25 @@ int get_left_channel(const ChannelLayout *layout, int stream_id, int prev);
 int get_right_channel(const ChannelLayout *layout, int stream_id, int prev);
 int get_mono_channel(const ChannelLayout *layout, int stream_id, int prev);
 
+typedef void (*opus_copy_channel_in_func)(
+  opus_val16 *dst,
+  int dst_stride,
+  const void *src,
+  int src_stride,
+  int src_channel,
+  int frame_size,
+  void *user_data
+);
 
+typedef void (*opus_copy_channel_out_func)(
+  void *dst,
+  int dst_stride,
+  int dst_channel,
+  const opus_val16 *src,
+  int src_stride,
+  int frame_size,
+  void *user_data
+);
 
 #define MODE_SILK_ONLY          1000
 #define MODE_HYBRID             1001
@@ -155,5 +173,31 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       unsigned char *data, opus_int32 maxlen, int self_delimited, int pad);
 
 int pad_frame(unsigned char *data, opus_int32 len, opus_int32 new_len);
+
+int opus_multistream_encode_native
+(
+  struct OpusMSEncoder *st,
+  opus_copy_channel_in_func copy_channel_in,
+  const void *pcm,
+  int analysis_frame_size,
+  unsigned char *data,
+  opus_int32 max_data_bytes,
+  int lsb_depth,
+  downmix_func downmix,
+  int float_api,
+  void *user_data
+);
+
+int opus_multistream_decode_native(
+  struct OpusMSDecoder *st,
+  const unsigned char *data,
+  opus_int32 len,
+  void *pcm,
+  opus_copy_channel_out_func copy_channel_out,
+  int frame_size,
+  int decode_fec,
+  int soft_clip,
+  void *user_data
+);
 
 #endif /* OPUS_PRIVATE_H */

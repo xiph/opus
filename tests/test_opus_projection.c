@@ -47,170 +47,141 @@
 #define BUFFER_SIZE 960
 #define MAX_DATA_BYTES 32768
 #define MAX_FRAME_SAMPLES 5760
+#define ERROR_TOLERANCE 1
 
-#define INT16_TO_FLOAT(x) ((1/32768.f)*(float)x)
+#define SIMPLE_MATRIX_SIZE 12
+#define SIMPLE_MATRIX_FRAME_SIZE 10
+#define SIMPLE_MATRIX_INPUT_SIZE 30
+#define SIMPLE_MATRIX_OUTPUT_SIZE 40
 
-void print_matrix_short(const opus_int16 *data, int rows, int cols)
+int assert_is_equal(
+  const opus_val16 *a, const opus_int16 *b, int size, opus_int16 tolerance)
 {
-  int i, j;
-  for (i = 0; i < rows; i++)
+  int i;
+  for (i = 0; i < size; i++)
   {
-    for (j = 0; j < cols; j++)
-    {
-      fprintf(stderr, "%8.5f  ", (float)INT16_TO_FLOAT(data[j * rows + i]));
-    }
-    fprintf(stderr, "\n");
+#ifdef FIXED_POINT
+    opus_int16 val = a[i];
+#else
+    opus_int16 val = FLOAT2INT16(a[i]);
+#endif
+    if (abs(val - b[i]) > tolerance)
+      return 1;
   }
-  fprintf(stderr, "\n");
+  return 0;
 }
 
-void print_matrix_float(const float *data, int rows, int cols)
-{
-  int i, j;
-  for (i = 0; i < rows; i++)
-  {
-    for (j = 0; j < cols; j++)
-    {
-      fprintf(stderr, "%8.5f ", data[j * rows + i]);
-    }
-    fprintf(stderr, "\n");
-  }
-  fprintf(stderr, "\n");
-}
-
-void print_matrix(MappingMatrix *matrix)
-{
-  opus_int16 *data;
-
-  fprintf(stderr, "%d x %d, gain: %d\n", matrix->rows, matrix->cols,
-    matrix->gain);
-
-  data = mapping_matrix_get_data(matrix);
-  print_matrix_short(data, matrix->rows, matrix->cols);
-}
-
-int assert_transform_short(
+int assert_is_equal_short(
   const opus_int16 *a, const opus_int16 *b, int size, opus_int16 tolerance)
 {
   int i;
   for (i = 0; i < size; i++)
-  {
     if (abs(a[i] - b[i]) > tolerance)
-    {
-      return 0;
-    }
-  }
-  return 1;
+      return 1;
+  return 0;
 }
 
-int assert_transform_float(
-  const float *a, const float *b, int size, float tolerance)
+void test_simple_matrix(void)
 {
-  int i;
-  for (i = 0; i < size; i++)
-  {
-    if (fabsf(a[i] - b[i]) > tolerance)
-    {
-      return 0;
-    }
-  }
-  return 1;
-}
-
-void test_matrix_transform(void)
-{
-  /* Create testing mixing matrix (4 x 3), gain 0dB:
-  *   [ 0 1 0 ]
-  *   [ 1 0 0 ]
-  *   [ 0 0 0 ]
-  *   [ 0 0 1 ]
-  */
-  opus_int32 matrix_size;
-  MappingMatrix *testing_matrix;
-  const opus_int16 testing_matrix_data[12] = {
-    0, 32767, 0, 0, 32767, 0, 0, 0, 0, 0, 0, 32767 };
-
-  const int frame_size = 10;
-  const opus_int16 input[30] = {
+  const MappingMatrix simple_matrix_params = {4, 3, 0};
+  const opus_int16 simple_matrix_data[SIMPLE_MATRIX_SIZE] = {0, 32767, 0, 0, 32767, 0, 0, 0, 0, 0, 0, 32767};
+  const opus_int16 input_int16[SIMPLE_MATRIX_INPUT_SIZE] = {
     32767, 0, -32768, 29491, -3277, -29491, 26214, -6554, -26214, 22938, -9830,
     -22938, 19661, -13107, -19661, 16384, -16384, -16384, 13107, -19661, -13107,
     9830, -22938, -9830, 6554, -26214, -6554, 3277, -29491, -3277};
-  const opus_int16 expected_output[40] = {
+  const opus_int16 expected_output_int16[SIMPLE_MATRIX_OUTPUT_SIZE] = {
     0, 32767, 0, -32768, -3277, 29491, 0, -29491, -6554, 26214, 0, -26214,
     -9830, 22938, 0, -22938, -13107, 19661, 0, -19661, -16384, 16384, 0, -16384,
     -19661, 13107, 0, -13107, -22938, 9830, 0, -9830, -26214, 6554, 0, -6554,
     -29491, 3277, 0, -3277};
-  opus_int16 output[40] = {0};
 
-#ifndef DISABLE_FLOAT_API
-  int i;
-  /* Sample-accurate to -93.9794 dB */
-  float flt_tolerance = 2e-5f;
-  float input32[30] = {0};
-  float output32[40] = {0};
-  float expected_output32[40] = {0};
+  int i, ret;
+  opus_val16 *input_val16;
+  opus_val16 *output_val16;
+  opus_int16 *output_int16;
+  MappingMatrix *simple_matrix;
 
-  /* Convert short to float representations. */
-  for (i = 0; i < 30; i++)
+  /* Allocate input/output buffers. */
+  input_val16 = (opus_val16 *)opus_alloc(align(sizeof(opus_val16) * SIMPLE_MATRIX_INPUT_SIZE));
+  output_int16 = (opus_int16 *)opus_alloc(align(sizeof(opus_int16) * SIMPLE_MATRIX_OUTPUT_SIZE));
+  output_val16 = (opus_val16 *)opus_alloc(align(sizeof(opus_val16) * SIMPLE_MATRIX_OUTPUT_SIZE));
+
+  /* Initialize matrix */
+  simple_matrix = (MappingMatrix *)opus_alloc(
+    mapping_matrix_get_size(simple_matrix_params.rows,
+                            simple_matrix_params.cols));
+  mapping_matrix_init(simple_matrix, simple_matrix_params.rows,
+    simple_matrix_params.cols, simple_matrix_params.gain, simple_matrix_data,
+    sizeof(simple_matrix_data));
+
+  /* Copy inputs. */
+  for (i = 0; i < SIMPLE_MATRIX_INPUT_SIZE; i++)
   {
-    input32[i] = INT16_TO_FLOAT(input[i]);
-  }
-  for (i = 0; i < 40; i++)
-  {
-    expected_output32[i] = INT16_TO_FLOAT(expected_output[i]);
-  }
-#endif /* DISABLE_FLOAT_API */
-
-  /* Create the matrix. */
-  matrix_size = mapping_matrix_get_size(4, 3);
-  testing_matrix = (MappingMatrix *)opus_alloc(matrix_size);
-  mapping_matrix_init(testing_matrix, 4, 3, 0, testing_matrix_data,
-    12 * sizeof(opus_int16));
-
-  mapping_matrix_multiply_short(testing_matrix, input, testing_matrix->cols,
-    output, testing_matrix->rows, frame_size);
-  if (!assert_transform_short(output, expected_output, 40, 1))
-  {
-    fprintf(stderr, "Matrix:\n");
-    print_matrix(testing_matrix);
-
-    fprintf(stderr, "Input (short):\n");
-    print_matrix_short(input, testing_matrix->cols, frame_size);
-
-    fprintf(stderr, "Expected Output (short):\n");
-    print_matrix_short(expected_output, testing_matrix->rows, frame_size);
-
-    fprintf(stderr, "Output (short):\n");
-    print_matrix_short(output, testing_matrix->rows, frame_size);
-
-    goto bad_cleanup;
-  }
-
-#ifndef DISABLE_FLOAT_API
-  mapping_matrix_multiply_float(testing_matrix, input32, testing_matrix->cols,
-    output32, testing_matrix->rows, frame_size);
-  if (!assert_transform_float(output32, expected_output32, 40, flt_tolerance))
-  {
-    fprintf(stderr, "Matrix:\n");
-    print_matrix(testing_matrix);
-
-    fprintf(stderr, "Input (float):\n");
-    print_matrix_float(input32, testing_matrix->cols, frame_size);
-
-    fprintf(stderr, "Expected Output (float):\n");
-    print_matrix_float(expected_output32, testing_matrix->rows, frame_size);
-
-    fprintf(stderr, "Output (float):\n");
-    print_matrix_float(output32, testing_matrix->rows, frame_size);
-
-    goto bad_cleanup;
-  }
+#ifdef FIXED_POINT
+    input_val16[i] = input_int16[i];
+#else
+    input_val16[i] = (1/32768.f)*input_int16[i];
 #endif
-  opus_free(testing_matrix);
-  return;
-bad_cleanup:
-  opus_free(testing_matrix);
-  test_failed();
+  }
+
+  /* _in_short */
+  for (i = 0; i < SIMPLE_MATRIX_OUTPUT_SIZE; i++)
+    output_val16[i] = 0;
+  for (i = 0; i < simple_matrix->rows; i++)
+  {
+    mapping_matrix_multiply_channel_in_short(simple_matrix,
+      input_int16, simple_matrix->cols, &output_val16[i], i,
+      simple_matrix->rows, SIMPLE_MATRIX_FRAME_SIZE);
+  }
+  ret = assert_is_equal(output_val16, expected_output_int16, SIMPLE_MATRIX_OUTPUT_SIZE, ERROR_TOLERANCE);
+  if (ret)
+    test_failed();
+
+  /* _out_short */
+  for (i = 0; i < SIMPLE_MATRIX_OUTPUT_SIZE; i++)
+    output_int16[i] = 0;
+  for (i = 0; i < simple_matrix->cols; i++)
+  {
+    mapping_matrix_multiply_channel_out_short(simple_matrix,
+      &input_val16[i], i, simple_matrix->cols, output_int16,
+      simple_matrix->rows, SIMPLE_MATRIX_FRAME_SIZE);
+  }
+  ret = assert_is_equal_short(output_int16, expected_output_int16, SIMPLE_MATRIX_OUTPUT_SIZE, ERROR_TOLERANCE);
+  if (ret)
+    test_failed();
+
+#if !defined(DISABLE_FLOAT_API) && !defined(FIXED_POINT)
+  /* _in_float */
+  for (i = 0; i < SIMPLE_MATRIX_OUTPUT_SIZE; i++)
+    output_val16[i] = 0;
+  for (i = 0; i < simple_matrix->rows; i++)
+  {
+    mapping_matrix_multiply_channel_in_float(simple_matrix,
+      input_val16, simple_matrix->cols, &output_val16[i], i,
+      simple_matrix->rows, SIMPLE_MATRIX_FRAME_SIZE);
+  }
+  ret = assert_is_equal(output_val16, expected_output_int16, SIMPLE_MATRIX_OUTPUT_SIZE, ERROR_TOLERANCE);
+  if (ret)
+    test_failed();
+
+  /* _out_float */
+  for (i = 0; i < SIMPLE_MATRIX_OUTPUT_SIZE; i++)
+    output_val16[i] = 0;
+  for (i = 0; i < simple_matrix->cols; i++)
+  {
+    mapping_matrix_multiply_channel_out_float(simple_matrix,
+      &input_val16[i], i, simple_matrix->cols, output_val16,
+      simple_matrix->rows, SIMPLE_MATRIX_FRAME_SIZE);
+  }
+  ret = assert_is_equal(output_val16, expected_output_int16, SIMPLE_MATRIX_OUTPUT_SIZE, ERROR_TOLERANCE);
+  if (ret)
+    test_failed();
+#endif
+
+  opus_free(input_val16);
+  opus_free(output_int16);
+  opus_free(output_val16);
+  opus_free(simple_matrix);
 }
 
 void test_creation_arguments(const int channels, const int mapping_family)
@@ -403,15 +374,15 @@ int main(int _argc, char **_argv)
   (void)_argc;
   (void)_argv;
 
-  /* Test matrix creation/multiplication. */
-  test_matrix_transform();
+  /* Test simple matrix multiplication routines. */
+  test_simple_matrix();
 
   /* Test full range of channels in creation arguments. */
   for (i = 0; i < 255; i++)
     test_creation_arguments(i, 253);
 
   /* Test encode/decode pipeline. */
-  test_encode_decode(64 * 16, 16, 253);
+  test_encode_decode(64 * 18, 18, 253);
 
   fprintf(stderr, "All projection tests passed.\n");
   return 0;

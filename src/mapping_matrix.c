@@ -41,12 +41,12 @@
 
 int mapping_matrix_get_size(int rows, int cols)
 {
-  return align(sizeof(MappingMatrix)) + rows * cols * sizeof(opus_int16);
+  return align(sizeof(MappingMatrix)) + align(rows * cols * sizeof(opus_int16));
 }
 
 opus_int16 *mapping_matrix_get_data(const MappingMatrix *matrix)
 {
-  return (opus_int16*)(void *)(matrix + align(sizeof(MappingMatrix)));
+  return (opus_int16*)((char*)matrix + align(sizeof(MappingMatrix)));
 }
 
 void mapping_matrix_init(MappingMatrix * const matrix,
@@ -58,7 +58,7 @@ void mapping_matrix_init(MappingMatrix * const matrix,
 #if !defined(ENABLE_ASSERTIONS)
   (void)data_size;
 #endif
-  celt_assert((opus_uint32)data_size == rows * cols * sizeof(opus_int16));
+  celt_assert(align(data_size) == align(rows * cols * sizeof(opus_int16)));
 
   matrix->rows = rows;
   matrix->cols = cols;
@@ -71,18 +71,18 @@ void mapping_matrix_init(MappingMatrix * const matrix,
 }
 
 #ifndef DISABLE_FLOAT_API
-void mapping_matrix_multiply_float(const MappingMatrix *matrix,
-                                   const float *input, int input_rows,
-                                   float *output, int output_rows,
-                                   int frame_size)
+void mapping_matrix_multiply_channel_in_float(
+    const MappingMatrix *matrix,
+    const float *input,
+    int input_rows,
+    opus_val16 *output,
+    int output_row,
+    int output_rows,
+    int frame_size)
 {
-  /* Matrix data is ordered col-wise.
-   * Input (x) is [n x k], output (y) is [m x k], matrix (M) is [m x n]:
-   *   y = M x
-   */
+  /* Matrix data is ordered col-wise. */
   opus_int16* matrix_data;
-  int i, row, col;
-  float matrix_cell, input_sample;
+  int i, col;
 
   celt_assert(input_rows <= matrix->cols && output_rows <= matrix->rows);
 
@@ -90,31 +90,70 @@ void mapping_matrix_multiply_float(const MappingMatrix *matrix,
 
   for (i = 0; i < frame_size; i++)
   {
+    float tmp = 0;
+    for (col = 0; col < input_rows; col++)
+    {
+      tmp +=
+        matrix_data[MATRIX_INDEX(matrix->rows, output_row, col)] *
+        input[MATRIX_INDEX(input_rows, col, i)];
+    }
+#if defined(FIXED_POINT)
+    output[output_rows * i] = FLOAT2INT16((1/32768.f)*tmp);
+#else
+    output[output_rows * i] = (1/32768.f)*tmp;
+#endif
+  }
+}
+
+void mapping_matrix_multiply_channel_out_float(
+    const MappingMatrix *matrix,
+    const opus_val16 *input,
+    int input_row,
+    int input_rows,
+    float *output,
+    int output_rows,
+    int frame_size
+)
+{
+  /* Matrix data is ordered col-wise. */
+  opus_int16* matrix_data;
+  int i, row;
+  float input_sample;
+
+  celt_assert(input_rows <= matrix->cols && output_rows <= matrix->rows);
+
+  matrix_data = mapping_matrix_get_data(matrix);
+
+  for (i = 0; i < frame_size; i++)
+  {
+#if defined(FIXED_POINT)
+    input_sample = (1/32768.f)*input[input_rows * i];
+#else
+    input_sample = input[input_rows * i];
+#endif
     for (row = 0; row < output_rows; row++)
     {
-      output[MATRIX_INDEX(output_rows, row, i)] = 0;
-      for (col = 0; col < input_rows; col++)
-      {
-        matrix_cell = (0.000030518f)*(float)matrix_data[MATRIX_INDEX(matrix->rows, row, col)];
-        input_sample = input[MATRIX_INDEX(input_rows, col, i)];
-        output[MATRIX_INDEX(output_rows, row, i)] += matrix_cell * input_sample;
-      }
+      float tmp =
+        (1/32768.f)*matrix_data[MATRIX_INDEX(matrix->rows, row, input_row)] *
+        input_sample;
+      output[MATRIX_INDEX(output_rows, row, i)] += tmp;
     }
   }
 }
 #endif /* DISABLE_FLOAT_API */
 
-void mapping_matrix_multiply_short(const MappingMatrix *matrix,
-                                   const opus_int16 *input, int input_rows,
-                                   opus_int16 *output, int output_rows,
-                                   int frame_size)
+void mapping_matrix_multiply_channel_in_short(
+    const MappingMatrix *matrix,
+    const opus_int16 *input,
+    int input_rows,
+    opus_val16 *output,
+    int output_row,
+    int output_rows,
+    int frame_size)
 {
-  /* Matrix data is ordered col-wise.
-   * Input (x) is [n x k], output (y) is [m x k], matrix (M) is [m x n]:
-   *   y = M x
-   */
+  /* Matrix data is ordered col-wise. */
   opus_int16* matrix_data;
-  int i, row, col;
+  int i, col;
 
   celt_assert(input_rows <= matrix->cols && output_rows <= matrix->rows);
 
@@ -122,16 +161,58 @@ void mapping_matrix_multiply_short(const MappingMatrix *matrix,
 
   for (i = 0; i < frame_size; i++)
   {
+    opus_val32 tmp = 0;
+    for (col = 0; col < input_rows; col++)
+    {
+#if defined(FIXED_POINT)
+      tmp +=
+        ((opus_int32)matrix_data[MATRIX_INDEX(matrix->rows, output_row, col)] *
+        (opus_int32)input[MATRIX_INDEX(input_rows, col, i)]) >> 8;
+#else
+      tmp +=
+        matrix_data[MATRIX_INDEX(matrix->rows, output_row, col)] *
+        input[MATRIX_INDEX(input_rows, col, i)];
+#endif
+    }
+#if defined(FIXED_POINT)
+    output[output_rows * i] = (opus_int16)((tmp + 64) >> 7);
+#else
+    output[output_rows * i] = (1/(32768.f*32768.f))*tmp;
+#endif
+  }
+}
+
+void mapping_matrix_multiply_channel_out_short(
+    const MappingMatrix *matrix,
+    const opus_val16 *input,
+    int input_row,
+    int input_rows,
+    opus_int16 *output,
+    int output_rows,
+    int frame_size)
+{
+  /* Matrix data is ordered col-wise. */
+  opus_int16* matrix_data;
+  int i, row;
+  opus_int32 input_sample;
+
+  celt_assert(input_rows <= matrix->cols && output_rows <= matrix->rows);
+
+  matrix_data = mapping_matrix_get_data(matrix);
+
+  for (i = 0; i < frame_size; i++)
+  {
+#if defined(FIXED_POINT)
+    input_sample = (opus_int32)input[input_rows * i];
+#else
+    input_sample = (opus_int32)FLOAT2INT16(input[input_rows * i]);
+#endif
     for (row = 0; row < output_rows; row++)
     {
-      opus_int32 tmp = 0;
-      for (col = 0; col < input_rows; col++)
-      {
-        tmp +=
-          (matrix_data[MATRIX_INDEX(matrix->rows, row, col)] *
-          input[MATRIX_INDEX(input_rows, col, i)]) >> 8;
-      }
-      output[MATRIX_INDEX(output_rows, row, i)] = (tmp + 64)>>7;
+      opus_int32 tmp =
+        (opus_int32)matrix_data[MATRIX_INDEX(matrix->rows, row, input_row)] *
+        input_sample;
+      output[MATRIX_INDEX(output_rows, row, i)] += (tmp + 16384) >> 15;
     }
   }
 }

@@ -42,18 +42,63 @@
 
 struct OpusProjectionDecoder
 {
-  int demixing_matrix_size_in_bytes;
+  opus_int32 demixing_matrix_size_in_bytes;
   /* Encoder states go here */
 };
 
+#if !defined(DISABLE_FLOAT_API)
+static void opus_projection_copy_channel_out_float(
+  void *dst,
+  int dst_stride,
+  int dst_channel,
+  const opus_val16 *src,
+  int src_stride,
+  int frame_size,
+  void *user_data)
+{
+  float *float_dst;
+  const MappingMatrix *matrix;
+  float_dst = (float *)dst;
+  matrix = (const MappingMatrix *)user_data;
+
+  if (dst_channel == 0)
+    OPUS_CLEAR(float_dst, frame_size * dst_stride);
+
+  if (src != NULL)
+    mapping_matrix_multiply_channel_out_float(matrix, src, dst_channel,
+      src_stride, float_dst, dst_stride, frame_size);
+}
+#endif
+
+static void opus_projection_copy_channel_out_short(
+  void *dst,
+  int dst_stride,
+  int dst_channel,
+  const opus_val16 *src,
+  int src_stride,
+  int frame_size,
+  void *user_data)
+{
+  opus_int16 *short_dst;
+  const MappingMatrix *matrix;
+  short_dst = (opus_int16 *)dst;
+  matrix = (const MappingMatrix *)user_data;
+  if (dst_channel == 0)
+    OPUS_CLEAR(short_dst, frame_size * dst_stride);
+
+  if (src != NULL)
+    mapping_matrix_multiply_channel_out_short(matrix, src, dst_channel,
+      src_stride, short_dst, dst_stride, frame_size);
+}
+
 static MappingMatrix *get_demixing_matrix(OpusProjectionDecoder *st)
 {
-  return (MappingMatrix *)((char*)st + align(sizeof(OpusProjectionDecoder)));
+  return (MappingMatrix*)((char*)st + align(sizeof(OpusProjectionDecoder)));
 }
 
 static OpusMSDecoder *get_multistream_decoder(OpusProjectionDecoder *st)
 {
-  return (OpusMSDecoder *)((char*)st + align(sizeof(OpusProjectionDecoder) +
+  return (OpusMSDecoder*)((char*)st + align(sizeof(OpusProjectionDecoder) +
     st->demixing_matrix_size_in_bytes));
 }
 
@@ -69,7 +114,7 @@ opus_int32 opus_projection_decoder_get_size(int channels, int streams,
   if (!decoder_size)
     return 0;
 
-  return align(sizeof(OpusProjectionDecoder) + matrix_size + decoder_size);
+  return align(sizeof(OpusProjectionDecoder)) + matrix_size + decoder_size;
 }
 
 int opus_projection_decoder_init(OpusProjectionDecoder *st, opus_int32 Fs,
@@ -86,14 +131,14 @@ int opus_projection_decoder_init(OpusProjectionDecoder *st, opus_int32 Fs,
   /* Verify supplied matrix size. */
   nb_input_streams = streams + coupled_streams;
   expected_matrix_size = nb_input_streams * channels * sizeof(opus_int16);
-  if (expected_matrix_size != demixing_matrix_size)
+  if (align(expected_matrix_size) != align(demixing_matrix_size))
   {
     RESTORE_STACK;
     return OPUS_BAD_ARG;
   }
 
   /* Convert demixing matrix input into internal format. */
-  ALLOC(buf, demixing_matrix_size, opus_int16);
+  ALLOC(buf, nb_input_streams * channels, opus_int16);
   for (i = 0; i < nb_input_streams * channels; i++)
   {
     int s = demixing_matrix[2*i + 1] << 8 | demixing_matrix[2*i];
@@ -102,15 +147,13 @@ int opus_projection_decoder_init(OpusProjectionDecoder *st, opus_int32 Fs,
   }
 
   /* Assign demixing matrix. */
-  st->demixing_matrix_size_in_bytes = expected_matrix_size;
+  st->demixing_matrix_size_in_bytes = mapping_matrix_get_size(channels, nb_input_streams);
   mapping_matrix_init(get_demixing_matrix(st), channels, nb_input_streams, 0,
     buf, demixing_matrix_size);
 
   /* Set trivial mapping so each input channel pairs with a matrix column. */
   for (i = 0; i < channels; i++)
-  {
     mapping[i] = i;
-  }
 
   ret = opus_multistream_decoder_init(
     get_multistream_decoder(st), Fs, channels, streams, coupled_streams, mapping);
@@ -154,63 +197,33 @@ OpusProjectionDecoder *opus_projection_decoder_create(
   return st;
 }
 
+#ifdef FIXED_POINT
 int opus_projection_decode(OpusProjectionDecoder *st, const unsigned char *data,
                            opus_int32 len, opus_int16 *pcm, int frame_size,
                            int decode_fec)
 {
-#ifdef NONTHREADSAFE_PSEUDOSTACK
-  celt_fatal("Unable to use opus_projection_decode() when NONTHREADSAFE_PSEUDOSTACK is defined.");
-#endif
-  MappingMatrix *matrix;
-  OpusMSDecoder *ms_decoder;
-  int ret;
-  VARDECL(opus_int16, buf);
-  ALLOC_STACK;
-
-  ms_decoder = get_multistream_decoder(st);
-  ALLOC(buf, (ms_decoder->layout.nb_streams + ms_decoder->layout.nb_coupled_streams) *
-    frame_size, opus_int16);
-  ret = opus_multistream_decode(ms_decoder, data, len, buf, frame_size,
-                                        decode_fec);
-  if (ret <= 0)
-    return ret;
-  frame_size = ret;
-  matrix = get_demixing_matrix(st);
-  mapping_matrix_multiply_short(matrix, buf,
-    ms_decoder->layout.nb_streams + ms_decoder->layout.nb_coupled_streams,
-    pcm, ms_decoder->layout.nb_channels, frame_size);
-  RESTORE_STACK;
-  return frame_size;
+  return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
+    pcm, opus_projection_copy_channel_out_short, frame_size, decode_fec, 0,
+    get_demixing_matrix(st));
 }
+#else
+int opus_projection_decode(OpusProjectionDecoder *st, const unsigned char *data,
+                           opus_int32 len, opus_int16 *pcm, int frame_size,
+                           int decode_fec)
+{
+  return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
+    pcm, opus_projection_copy_channel_out_short, frame_size, decode_fec, 1,
+    get_demixing_matrix(st));
+}
+#endif
 
 #ifndef DISABLE_FLOAT_API
 int opus_projection_decode_float(OpusProjectionDecoder *st, const unsigned char *data,
-                                 opus_int32 len, float *pcm,
-                                 int frame_size, int decode_fec)
+                                 opus_int32 len, float *pcm, int frame_size, int decode_fec)
 {
-#ifdef NONTHREADSAFE_PSEUDOSTACK
-  celt_fatal("Unable to use opus_projection_decode_float() when NONTHREADSAFE_PSEUDOSTACK is defined.");
-#endif
-  MappingMatrix *matrix;
-  OpusMSDecoder *ms_decoder;
-  int ret;
-  VARDECL(float, buf);
-  ALLOC_STACK;
-
-  ms_decoder = get_multistream_decoder(st);
-  ALLOC(buf, (ms_decoder->layout.nb_streams + ms_decoder->layout.nb_coupled_streams) *
-    frame_size, float);
-  ret = opus_multistream_decode_float(ms_decoder, data, len, buf,
-                                      frame_size, decode_fec);
-  if (ret <= 0)
-    return ret;
-  frame_size = ret;
-  matrix = get_demixing_matrix(st);
-  mapping_matrix_multiply_float(matrix, buf,
-    ms_decoder->layout.nb_streams + ms_decoder->layout.nb_coupled_streams,
-    pcm, ms_decoder->layout.nb_channels, frame_size);
-  RESTORE_STACK;
-  return frame_size;
+  return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
+    pcm, opus_projection_copy_channel_out_float, frame_size, decode_fec, 0,
+    get_demixing_matrix(st));
 }
 #endif
 
