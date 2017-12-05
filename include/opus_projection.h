@@ -83,7 +83,7 @@ extern "C" {
 /** Copies the demixing matrix to the supplied pointer location.
   * @param[out] x <tt>unsigned char *</tt>: Returns the demixing matrix to the
   *                                         supplied pointer location.
-  * @param y <tt>opus_in32</tt>: The size in bytes of the reserved memory at the
+  * @param y <tt>opus_int32</tt>: The size in bytes of the reserved memory at the
   *                              pointer location.
   * @hideinitializer
   */
