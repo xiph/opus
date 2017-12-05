@@ -50,7 +50,7 @@ typedef struct MappingMatrix
     /* Matrix cell data goes here using col-wise ordering. */
 } MappingMatrix;
 
-int mapping_matrix_get_size(int rows, int cols);
+opus_int32 mapping_matrix_get_size(int rows, int cols);
 
 opus_int16 *mapping_matrix_get_data(const MappingMatrix *matrix);
 

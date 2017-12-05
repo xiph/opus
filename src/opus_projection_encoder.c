@@ -150,6 +150,9 @@ opus_int32 opus_projection_ambisonics_encoder_get_size(int channels,
 
   matrix_rows = order_plus_one * order_plus_one + 2;
   matrix_size = mapping_matrix_get_size(matrix_rows, matrix_rows);
+  if (!matrix_size)
+    return 0;
+
   encoder_size =
       opus_multistream_encoder_get_size(nb_streams, nb_coupled_streams);
   if (!encoder_size)
@@ -210,6 +213,8 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
     }
     st->mixing_matrix_size_in_bytes = mapping_matrix_get_size(
       mixing_matrix->rows, mixing_matrix->cols);
+    if (!st->mixing_matrix_size_in_bytes)
+      return OPUS_BAD_ARG;
 
     /* Assign demixing matrix based on available pre-computed matrices. */
     demixing_matrix = get_demixing_matrix(st);
@@ -233,6 +238,8 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
     }
     st->demixing_matrix_size_in_bytes = mapping_matrix_get_size(
       demixing_matrix->rows, demixing_matrix->cols);
+    if (!st->demixing_matrix_size_in_bytes)
+      return OPUS_BAD_ARG;
   }
   else
     return OPUS_UNIMPLEMENTED;

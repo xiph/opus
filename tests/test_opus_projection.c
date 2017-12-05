@@ -96,6 +96,7 @@ void test_simple_matrix(void)
     -29491, 3277, 0, -3277};
 
   int i, ret;
+  opus_int32 simple_matrix_size;
   opus_val16 *input_val16;
   opus_val16 *output_val16;
   opus_int16 *output_int16;
@@ -107,9 +108,12 @@ void test_simple_matrix(void)
   output_val16 = (opus_val16 *)opus_alloc(align(sizeof(opus_val16) * SIMPLE_MATRIX_OUTPUT_SIZE));
 
   /* Initialize matrix */
-  simple_matrix = (MappingMatrix *)opus_alloc(
-    mapping_matrix_get_size(simple_matrix_params.rows,
-                            simple_matrix_params.cols));
+  simple_matrix_size = mapping_matrix_get_size(simple_matrix_params.rows,
+    simple_matrix_params.cols);
+  if (!simple_matrix_size)
+    test_failed();
+
+  simple_matrix = (MappingMatrix *)opus_alloc(simple_matrix_size);
   mapping_matrix_init(simple_matrix, simple_matrix_params.rows,
     simple_matrix_params.cols, simple_matrix_params.gain, simple_matrix_data,
     sizeof(simple_matrix_data));

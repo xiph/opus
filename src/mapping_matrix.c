@@ -39,9 +39,21 @@
 
 #define MATRIX_INDEX(nb_rows, row, col) (nb_rows * col + row)
 
-int mapping_matrix_get_size(int rows, int cols)
+opus_int32 mapping_matrix_get_size(int rows, int cols)
 {
-  return align(sizeof(MappingMatrix)) + align(rows * cols * sizeof(opus_int16));
+  opus_int32 size;
+
+  /* Mapping Matrix must only support up to 255 channels in or out.
+   * Additionally, the total cell count must be <= 65004 octets in order
+   * for the matrix to be stored in an OGG header.
+   */
+  if (rows > 255 || cols > 255)
+      return 0;
+  size = rows * (opus_int32)cols * sizeof(opus_int16);
+  if (size > 65004)
+    return 0;
+
+  return align(sizeof(MappingMatrix)) + align(size);
 }
 
 opus_int16 *mapping_matrix_get_data(const MappingMatrix *matrix)
