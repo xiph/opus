@@ -699,6 +699,12 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
       xy += SHR32(pxy, 10);
       yy += SHR32(pyy, 10);
    }
+#ifndef FIXED_POINT
+   if (!(xx < 1e9f) || celt_isnan(xx) || !(yy < 1e9f) || celt_isnan(yy))
+   {
+      xy = xx = yy = 0;
+   }
+#endif
    mem->XX += MULT16_32_Q15(short_alpha, xx-mem->XX);
    mem->XY += MULT16_32_Q15(short_alpha, xy-mem->XY);
    mem->YY += MULT16_32_Q15(short_alpha, yy-mem->YY);
