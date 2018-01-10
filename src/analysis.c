@@ -446,6 +446,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     float leakage_from[NB_TBANDS+1];
     float leakage_to[NB_TBANDS+1];
     float layer_out[MAX_NEURONS];
+    float below_max_pitch;
+    float above_max_pitch;
     SAVE_STACK;
 
     alpha = 1.f/IMIN(10, 1+tonal->count);
@@ -722,6 +724,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     maxE = 0;
     noise_floor = 5.7e-4f/(1<<(IMAX(0,lsb_depth-8)));
     noise_floor *= noise_floor;
+    below_max_pitch=0;
+    above_max_pitch=0;
     for (b=0;b<NB_TBANDS;b++)
     {
        float E=0;
@@ -738,6 +742,12 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        }
        E = SCALE_ENER(E);
        maxE = MAX32(maxE, E);
+       if (band_start < 64)
+       {
+          below_max_pitch += E;
+       } else {
+          above_max_pitch += E;
+       }
        tonal->meanE[b] = MAX32((1-alphaE2)*tonal->meanE[b], E);
        Em = MAX32(E, tonal->meanE[b]);
        /* Consider the band "active" only if all these conditions are met:
@@ -767,6 +777,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        /* silk_resampler_down2_hp() shifted right by an extra 8 bits. */
        E *= 256.f*(1.f/Q15ONE)*(1.f/Q15ONE);
 #endif
+       above_max_pitch += E;
        tonal->meanE[b] = MAX32((1-alphaE2)*tonal->meanE[b], E);
        Em = MAX32(E, tonal->meanE[b]);
        if (Em > 3*noise_ratio*noise_floor*160 || E > noise_ratio*noise_floor*160)
@@ -774,6 +785,10 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        /* Check if the band is masked (see below). */
        is_masked[b] = E < (tonal->prev_bandwidth == 20  ? .01f : .05f)*bandwidth_mask;
     }
+    if (above_max_pitch > below_max_pitch)
+       info->max_pitch_ratio = below_max_pitch/above_max_pitch;
+    else
+       info->max_pitch_ratio = 1;
     /* In some cases, resampling aliasing can create a small amount of energy in the first band
        being cut. So if the last band is masked, we don't include it.  */
     if (bandwidth == 20 && is_masked[NB_TBANDS])
