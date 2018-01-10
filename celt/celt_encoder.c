@@ -1109,7 +1109,7 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
 
 
 static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem, int CC, int N,
-      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes)
+      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes, float ratio)
 {
    int c;
    VARDECL(celt_sig, _pre);
@@ -1165,7 +1165,7 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       gain1 = 0;
       pitch_index = COMBFILTER_MINPERIOD;
    }
-
+   gain1 *= ratio;
    /* Gain threshold for enabling the prefilter/postfilter */
    pf_threshold = QCONST16(.2f,15);
 
@@ -1603,7 +1603,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
             && st->complexity >= 5;
 
       prefilter_tapset = st->tapset_decision;
-      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes);
+      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes, st->analysis.max_pitch_ratio);
       if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && (!st->analysis.valid || st->analysis.tonality > .3)
             && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
          pitch_change = 1;

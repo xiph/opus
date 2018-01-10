@@ -63,6 +63,7 @@ typedef struct {
    float music_prob_max;
    int   bandwidth;
    float activity_probability;
+   float max_pitch_ratio;
    /* Store as Q6 char to save space. */
    unsigned char leak_boost[LEAK_BANDS];
 } AnalysisInfo;
