@@ -666,10 +666,10 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 #endif
        max_frame_tonality = MAX16(max_frame_tonality, (1.f+.03f*(b-NB_TBANDS))*frame_tonality);
        slope += band_tonality[b]*(b-8);
-       /*printf("%f %f ", band_tonality[b], stationarity);*/
+       //printf("%f ", band_tonality[b]);
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
-
+    //printf("\n");
     leakage_from[0] = band_log2[0];
     leakage_to[0] = band_log2[0] - LEAKAGE_OFFSET;
     for (b=1;b<NB_TBANDS+1;b++)

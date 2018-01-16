@@ -381,6 +381,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          mask_metric = unmask;
       }
    }
+   //printf("%d ", mask_metric);
    is_transient = mask_metric>200;
    /* For low bitrates, define "weak transients" that need to be
       handled differently to avoid partial collapse. */
@@ -660,9 +661,9 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
          biasing the decision */
       if (narrow && (metric[i]==0 || metric[i]==-2*LM))
          metric[i]-=1;
-      /*printf("%d ", metric[i]);*/
+      //printf("%d ", metric[i]/2 + (!isTransient)*LM);
    }
-   /*printf("\n");*/
+   //printf("\n");
    /* Search for the optimal tf resolution, including tf_select */
    tf_select = 0;
    for (sel=0;sel<2;sel++)
@@ -1415,6 +1416,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    int hybrid;
    int weak_transient = 0;
    VARDECL(opus_val16, surround_dynalloc);
+   VARDECL(opus_val16, band_transient);
    ALLOC_STACK;
 
    mode = st->mode;
@@ -1804,6 +1806,28 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    /* Band normalisation */
    normalise_bands(mode, freq, X, bandE, effEnd, C, M);
+
+   ALLOC(band_transient, end, opus_val16);
+   OPUS_CLEAR(band_transient, end);
+   if (st->complexity > -4 && !isTransient)
+   {
+      VARDECL(celt_norm, X2);
+      VARDECL(celt_ener, bandE2);
+      compute_mdcts(mode, M, in, freq, C, CC, LM, st->upsample, st->arch);
+      ALLOC(bandE2,nbEBands*CC, celt_ener);
+      compute_band_energies(mode, freq, bandE2, effEnd, C, LM, st->arch);
+      ALLOC(X2, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
+      normalise_bands(mode, freq, X2, bandE2, effEnd, C, M);
+      tf_hack(mode, X2, band_transient, effEnd, C, LM);
+   } else if (isTransient) {
+      tf_hack(mode, X, band_transient, effEnd, C, LM);
+   }
+
+   for (i=0;i<nbEBands;i++)
+   {
+      printf("%f ", band_transient[i]);
+   }
+   printf("\n");
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
