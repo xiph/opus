@@ -576,7 +576,7 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, opus_val16 bias
 
 }
 
-static int tf_analysis(const CELTMode *m, int len, int isTransient,
+static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int len, int isTransient,
       int *tf_res, int lambda, celt_norm *X, int N0, int LM,
       opus_val16 tf_estimate, int tf_chan)
 {
@@ -596,7 +596,7 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
    SAVE_STACK;
    bias = MULT16_16_Q14(QCONST16(.04f,15), MAX16(-QCONST16(.25f,14), QCONST16(.5f,14)-tf_estimate));
    /*printf("%f ", bias);*/
-
+   //lambda = 0;
    ALLOC(metric, len, int);
    ALLOC(tmp, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
    ALLOC(tmp_1, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
@@ -661,15 +661,29 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
          biasing the decision */
       if (narrow && (metric[i]==0 || metric[i]==-2*LM))
          metric[i]-=1;
-      //printf("%d ", metric[i]/2 + (!isTransient)*LM);
+#if 1
+      int offset = 0 -0*(i-10);
+      if (band_transient[i] > 270 + offset)
+         metric[i] = -2;
+      else if (band_transient[i] > 140 + offset)
+         metric[i] = 0;
+      else if (band_transient[i] > 110 + offset)
+         metric[i] = 2;
+      else if (band_transient[i] > 90 + offset)
+         metric[i] = 4;
+      else
+         metric[i] = 6;
+      if (!isTransient) metric[i] -= 2*LM;
+#endif
+     //printf("%d ", metric[i]/2 + (!isTransient)*LM);
    }
    //printf("\n");
    /* Search for the optimal tf resolution, including tf_select */
    tf_select = 0;
    for (sel=0;sel<2;sel++)
    {
-      cost0 = 0;
-      cost1 = isTransient ? 0 : lambda;
+      cost0 = abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*sel+0]);
+      cost1 = abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*sel+1]) + (isTransient ? 0 : lambda);
       for (i=1;i<len;i++)
       {
          int curr0, curr1;
@@ -685,8 +699,8 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
     * If tests confirm it's useful for non-transients, we could allow it. */
    if (selcost[1]<selcost[0] && isTransient)
       tf_select=1;
-   cost0 = 0;
-   cost1 = isTransient ? 0 : lambda;
+   cost0 = abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*tf_select+0]);
+   cost1 = abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*tf_select+1]) + (isTransient ? 0 : lambda);
    /* Viterbi forward pass */
    for (i=1;i<len;i++)
    {
@@ -1824,11 +1838,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tf_hack(mode, X, band_transient, effEnd, C, LM);
    }
 
-   for (i=0;i<nbEBands;i++)
-   {
+   /*for (i=0;i<nbEBands;i++)
       printf("%f ", band_transient[i]);
-   }
-   printf("\n");
+   printf("\n");*/
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
@@ -1836,7 +1848,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    {
       int lambda;
       lambda = IMAX(5, 1280/effectiveBytes + 2);
-      tf_select = tf_analysis(mode, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan);
+      tf_select = tf_analysis(mode, band_transient, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan);
       for (i=effEnd;i<end;i++)
          tf_res[i] = tf_res[effEnd-1];
    } else if (hybrid && weak_transient)
