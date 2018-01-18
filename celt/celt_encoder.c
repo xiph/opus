@@ -560,6 +560,44 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
    *mem = m;
 }
 
+static opus_val32 band_transient_metric(const celt_norm *tmp, int N, int LM)
+{
+   int i, j;
+   opus_val32 L2;
+   opus_val32 L_1;
+   L_1=0;
+   L2=0;
+   for (i=0;i<1<<LM;i++)
+   {
+      opus_val32 sum = 0;
+      for (j=0;j<N>>LM;j++)
+         sum = MAC16_16(sum, tmp[(j<<LM)+i], tmp[(j<<LM)+i]);
+      L_1 += 1./(.003+sum);
+      L2 += sum;
+   }
+   return L_1*L2;
+}
+
+static void tf_extra_analysis(const CELTMode *m, const celt_norm * X, opus_val16 *band_transient, int end, int C, int LM)
+{
+   int i, c, N;
+   const opus_int16 *eBands = m->eBands;
+   N = m->shortMdctSize<<LM;
+   OPUS_CLEAR(band_transient, end);
+   c=0; do {
+      for (i=0;i<end;i++)
+      {
+         int b = (i>0)+(i>13)+(i>17);
+         int e = (i!=end-1) ? (2 + (i>13) + (i>17)) : 0;
+         band_transient[i] += band_transient_metric(&X[c*N + ((eBands[i] - b)<<LM)], (eBands[i+1]-eBands[i]+b+e)<<LM, LM);
+      }
+   } while (++c<C);
+   if (C==2)
+   {
+      for (i=0;i<end;i++)
+         band_transient[i] = HALF16(band_transient[i]);
+   }
+}
 
 
 static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, opus_val16 bias)
@@ -1832,7 +1870,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    OPUS_CLEAR(band_transient, end);
    if (isTransient)
    {
-      tf_hack(mode, X, band_transient, effEnd, C, LM);
+      tf_extra_analysis(mode, X, band_transient, effEnd, C, LM);
    } else if (st->complexity > -4)
    {
       VARDECL(celt_norm, X2);
@@ -1842,7 +1880,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       compute_band_energies(mode, freq, bandE2, effEnd, C, LM, st->arch);
       ALLOC(X2, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
       normalise_bands(mode, freq, X2, bandE2, effEnd, C, M);
-      tf_hack(mode, X2, band_transient, effEnd, C, LM);
+      tf_extra_analysis(mode, X2, band_transient, effEnd, C, LM);
    }
 
    ALLOC(offsets, nbEBands, int);

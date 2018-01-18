@@ -192,46 +192,6 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
 
 #endif /* FIXED_POINT */
 
-static opus_val32 tf_metric(const celt_norm *tmp, int N, int LM)
-{
-   int i, j;
-   opus_val32 L2;
-   opus_val32 L_1;
-   L_1=0;
-   L2=0;
-   for (i=0;i<1<<LM;i++)
-   {
-      opus_val32 sum = 0;
-      for (j=0;j<N>>LM;j++)
-         sum = MAC16_16(sum, tmp[(j<<LM)+i], tmp[(j<<LM)+i]);
-      L_1 += 1./(.003+sum);
-      L2 += sum;
-   }
-   return L_1*L2;
-}
-
-void tf_hack(const CELTMode *m, const celt_norm * X, opus_val16 *band_transient, int end, int C, int LM)
-{
-   int i, c, N;
-   const opus_int16 *eBands = m->eBands;
-   N = m->shortMdctSize<<LM;
-   OPUS_CLEAR(band_transient, end);
-   c=0; do {
-      for (i=0;i<end;i++)
-      {
-         int b = (i>0)+(i>13)+(i>17);
-         int e = (i!=end-1) ? (2 + (i>13) + (i>17)) : 0;
-         band_transient[i] += tf_metric(&X[c*N + ((eBands[i] - b)<<LM)], (eBands[i+1]-eBands[i]+b+e)<<LM, LM);
-      }
-   } while (++c<C);
-   if (C==2)
-   {
-      for (i=0;i<end;i++)
-         band_transient[i] = HALF16(band_transient[i]);
-   }
-}
-
-
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       celt_sig * OPUS_RESTRICT freq, const opus_val16 *bandLogE, int start,

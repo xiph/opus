@@ -36,8 +36,6 @@
 #include "entdec.h"
 #include "rate.h"
 
-void tf_hack(const CELTMode *m, const celt_norm * X, opus_val16 *band_transient, int end, int C, int LM);
-
 opus_int16 bitexact_cos(opus_int16 x);
 int bitexact_log2tan(int isin,int icos);
 
