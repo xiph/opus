@@ -192,14 +192,11 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
 
 #endif /* FIXED_POINT */
 
-static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM)
+static opus_val32 tf_metric(const celt_norm *tmp, int N, int LM)
 {
    int i, j;
-   static const opus_val16 sqrtM_1[4] = {Q15ONE, QCONST16(.70710678f,15), QCONST16(0.5f,15), QCONST16(0.35355339f,15)};
-   opus_val32 L1;
    opus_val32 L2;
    opus_val32 L_1;
-   L1=0;
    L_1=0;
    L2=0;
    for (i=0;i<1<<LM;i++)
@@ -207,14 +204,10 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM)
       opus_val32 sum = 0;
       for (j=0;j<N>>LM;j++)
          sum = MAC16_16(sum, tmp[(j<<LM)+i], tmp[(j<<LM)+i]);
-      //printf("%f ", sum);
-      L1 += celt_sqrt(sum);
       L_1 += 1./(.003+sum);
       L2 += sum;
    }
-   return L_1*L2;//*((N>>LM)/(double)((N>>LM)+1));
-   L1 = MULT16_32_Q15(sqrtM_1[LM], L1);
-   return L1 * (N/(double)(N-1));
+   return L_1*L2;
 }
 
 void tf_hack(const CELTMode *m, const celt_norm * X, opus_val16 *band_transient, int end, int C, int LM)
@@ -226,15 +219,9 @@ void tf_hack(const CELTMode *m, const celt_norm * X, opus_val16 *band_transient,
    c=0; do {
       for (i=0;i<end;i++)
       {
-#if 1
          int b = (i>0)+(i>13)+(i>17);
-         int e = (i!=end-1)*(2 + (i>13) + (i>17));
-#else
-         int b = (i!=0);
-         int e = 2*(i!=end-1);
-#endif
-         band_transient[i] += l1_metric(&X[c*N + ((eBands[i] - b)<<LM)], (eBands[i+1]-eBands[i]+b+e)<<LM, LM);
-         //printf("%f ", l1_metric(&X[c*N + ((eBands[i] - b)<<LM)], (eBands[i+1]-eBands[i]+b+e)<<LM, LM));
+         int e = (i!=end-1) ? (2 + (i>13) + (i>17)) : 0;
+         band_transient[i] += tf_metric(&X[c*N + ((eBands[i] - b)<<LM)], (eBands[i+1]-eBands[i]+b+e)<<LM, LM);
       }
    } while (++c<C);
    if (C==2)
@@ -242,9 +229,6 @@ void tf_hack(const CELTMode *m, const celt_norm * X, opus_val16 *band_transient,
       for (i=0;i<end;i++)
          band_transient[i] = HALF16(band_transient[i]);
    }
-   //for (i=0;i<end;i++)
-   //   printf("%f ", band_transient[i]);
-   //printf("\n");
 }
 
 

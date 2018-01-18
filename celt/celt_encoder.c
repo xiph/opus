@@ -381,7 +381,6 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          mask_metric = unmask;
       }
    }
-   //printf("%d ", mask_metric);
    is_transient = mask_metric>200;
    /* For low bitrates, define "weak transients" that need to be
       handled differently to avoid partial collapse. */
@@ -605,6 +604,7 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
 
    for (i=0;i<len;i++)
    {
+#if 1
       int k, N;
       int narrow;
       opus_val32 L1, best_L1;
@@ -661,6 +661,7 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
          biasing the decision */
       if (narrow && (metric[i]==0 || metric[i]==-2*LM))
          metric[i]-=1;
+#endif
 #if 1
       int offset = 10 -0*(i-10);
       if (band_transient[i] > 270 + offset)
@@ -1829,7 +1830,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(band_transient, end, opus_val16);
    OPUS_CLEAR(band_transient, end);
-   if (st->complexity > -4 && !isTransient)
+   if (isTransient)
+   {
+      tf_hack(mode, X, band_transient, effEnd, C, LM);
+   } else if (st->complexity > -4)
    {
       VARDECL(celt_norm, X2);
       VARDECL(celt_ener, bandE2);
@@ -1839,13 +1843,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       ALLOC(X2, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
       normalise_bands(mode, freq, X2, bandE2, effEnd, C, M);
       tf_hack(mode, X2, band_transient, effEnd, C, LM);
-   } else if (isTransient) {
-      tf_hack(mode, X, band_transient, effEnd, C, LM);
    }
 
-   /*for (i=0;i<nbEBands;i++)
-      printf("%f ", band_transient[i]);
-   printf("\n");*/
    ALLOC(offsets, nbEBands, int);
    ALLOC(importance, nbEBands, opus_val16);
 
