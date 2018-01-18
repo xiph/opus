@@ -640,9 +640,27 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
    ALLOC(path0, len, int);
    ALLOC(path1, len, int);
 
+   if (1)
+   {
+      for (i=0;i<len;i++)
+      {
+         int offset = 10 -0*(i-10);
+         if (band_transient[i] > 270 + offset)
+            metric[i] = -2;
+         else if (band_transient[i] > 140 + offset)
+            metric[i] = 0;
+         else if (band_transient[i] > 110 + offset)
+            metric[i] = 2;
+         else if (band_transient[i] > 90 + offset)
+            metric[i] = 4;
+         else
+            metric[i] = 6;
+         if (!isTransient) metric[i] -= 2*LM;
+         /*printf("%f ", band_transient[i]);*/
+      }
+   } else {
    for (i=0;i<len;i++)
    {
-#if 1
       int k, N;
       int narrow;
       opus_val32 L1, best_L1;
@@ -699,25 +717,10 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
          biasing the decision */
       if (narrow && (metric[i]==0 || metric[i]==-2*LM))
          metric[i]-=1;
-#endif
-#if 1
-      int offset = 10 -0*(i-10);
-      if (band_transient[i] > 270 + offset)
-         metric[i] = -2;
-      else if (band_transient[i] > 140 + offset)
-         metric[i] = 0;
-      else if (band_transient[i] > 110 + offset)
-         metric[i] = 2;
-      else if (band_transient[i] > 90 + offset)
-         metric[i] = 4;
-      else
-         metric[i] = 6;
-      if (!isTransient) metric[i] -= 2*LM;
-#endif
-     //printf("%d ", metric[i]/2 + (!isTransient)*LM);
-     //printf("%f ", band_transient[i]);
+      /*printf("%d ", metric[i]/2 + (!isTransient)*LM);*/
    }
-   //printf("\n");
+   }
+   /*printf("\n");*/
    /* Search for the optimal tf resolution, including tf_select */
    tf_select = 0;
    for (sel=0;sel<2;sel++)
