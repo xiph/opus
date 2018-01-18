@@ -207,6 +207,7 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM)
       opus_val32 sum = 0;
       for (j=0;j<N>>LM;j++)
          sum = MAC16_16(sum, tmp[(j<<LM)+i], tmp[(j<<LM)+i]);
+      //printf("%f ", sum);
       L1 += celt_sqrt(sum);
       L_1 += 1./(.003+sum);
       L2 += sum;
@@ -225,8 +226,13 @@ void tf_hack(const CELTMode *m, const celt_norm * X, opus_val16 *band_transient,
    c=0; do {
       for (i=0;i<end;i++)
       {
+#if 1
+         int b = (i>0)+(i>13)+(i>17);
+         int e = (i!=end-1)*(2 + (i>13) + (i>17));
+#else
          int b = (i!=0);
          int e = 2*(i!=end-1);
+#endif
          band_transient[i] += l1_metric(&X[c*N + ((eBands[i] - b)<<LM)], (eBands[i+1]-eBands[i]+b+e)<<LM, LM);
          //printf("%f ", l1_metric(&X[c*N + ((eBands[i] - b)<<LM)], (eBands[i+1]-eBands[i]+b+e)<<LM, LM));
       }

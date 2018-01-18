@@ -578,7 +578,7 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, opus_val16 bias
 
 static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int len, int isTransient,
       int *tf_res, int lambda, celt_norm *X, int N0, int LM,
-      opus_val16 tf_estimate, int tf_chan)
+      opus_val16 tf_estimate, int tf_chan, opus_val16 *importance)
 {
    int i;
    VARDECL(int, metric);
@@ -596,7 +596,7 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
    SAVE_STACK;
    bias = MULT16_16_Q14(QCONST16(.04f,15), MAX16(-QCONST16(.25f,14), QCONST16(.5f,14)-tf_estimate));
    /*printf("%f ", bias);*/
-   //lambda = 0;
+   lambda *= 10;
    ALLOC(metric, len, int);
    ALLOC(tmp, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
    ALLOC(tmp_1, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
@@ -662,7 +662,7 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
       if (narrow && (metric[i]==0 || metric[i]==-2*LM))
          metric[i]-=1;
 #if 1
-      int offset = 0 -0*(i-10);
+      int offset = 10 -0*(i-10);
       if (band_transient[i] > 270 + offset)
          metric[i] = -2;
       else if (band_transient[i] > 140 + offset)
@@ -676,21 +676,22 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
       if (!isTransient) metric[i] -= 2*LM;
 #endif
      //printf("%d ", metric[i]/2 + (!isTransient)*LM);
+     //printf("%f ", band_transient[i]);
    }
    //printf("\n");
    /* Search for the optimal tf resolution, including tf_select */
    tf_select = 0;
    for (sel=0;sel<2;sel++)
    {
-      cost0 = abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*sel+0]);
-      cost1 = abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*sel+1]) + (isTransient ? 0 : lambda);
+      cost0 = importance[0]*abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*sel+0]);
+      cost1 = importance[0]*abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*sel+1]) + (isTransient ? 0 : lambda);
       for (i=1;i<len;i++)
       {
          int curr0, curr1;
          curr0 = IMIN(cost0, cost1 + lambda);
          curr1 = IMIN(cost0 + lambda, cost1);
-         cost0 = curr0 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+0]);
-         cost1 = curr1 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+1]);
+         cost0 = curr0 + importance[i]*abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+0]);
+         cost1 = curr1 + importance[i]*abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+1]);
       }
       cost0 = IMIN(cost0, cost1);
       selcost[sel]=cost0;
@@ -699,8 +700,8 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
     * If tests confirm it's useful for non-transients, we could allow it. */
    if (selcost[1]<selcost[0] && isTransient)
       tf_select=1;
-   cost0 = abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*tf_select+0]);
-   cost1 = abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*tf_select+1]) + (isTransient ? 0 : lambda);
+   cost0 = importance[0]*abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*tf_select+0]);
+   cost1 = importance[0]*abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*tf_select+1]) + (isTransient ? 0 : lambda);
    /* Viterbi forward pass */
    for (i=1;i<len;i++)
    {
@@ -728,8 +729,8 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
          curr1 = from1;
          path1[i]= 1;
       }
-      cost0 = curr0 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+0]);
-      cost1 = curr1 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+1]);
+      cost0 = curr0 + importance[i]*abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+0]);
+      cost1 = curr1 + importance[i]*abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+1]);
    }
    tf_res[len-1] = cost0 < cost1 ? 0 : 1;
    /* Viterbi backward pass to check the decisions */
@@ -979,7 +980,8 @@ static opus_val16 median_of_3(const opus_val16 *x)
 static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
-      int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc, AnalysisInfo *analysis)
+      int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc,
+      AnalysisInfo *analysis, opus_val16 *importance)
 {
    int i, c;
    opus_int32 tot_boost=0;
@@ -1061,6 +1063,8 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       }
       for (i=start;i<end;i++)
          follower[i] = MAX16(follower[i], surround_dynalloc[i]);
+      for (i=start;i<end;i++)
+         importance[i] = 8*pow(2, follower[i]);
       /* For non-transient CBR/CVBR frames, halve the dynalloc contribution */
       if ((!vbr || constrained_vbr)&&!isTransient)
       {
@@ -1377,6 +1381,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    VARDECL(int, pulses);
    VARDECL(int, cap);
    VARDECL(int, offsets);
+   VARDECL(opus_val16, importance);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
    VARDECL(unsigned char, collapse_masks);
@@ -1841,6 +1846,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    /*for (i=0;i<nbEBands;i++)
       printf("%f ", band_transient[i]);
    printf("\n");*/
+   ALLOC(offsets, nbEBands, int);
+   ALLOC(importance, nbEBands, opus_val16);
+
+   maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, start, end, C, offsets,
+         st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
+         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis, importance);
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
@@ -1848,7 +1859,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    {
       int lambda;
       lambda = IMAX(5, 1280/effectiveBytes + 2);
-      tf_select = tf_analysis(mode, band_transient, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan);
+      tf_select = tf_analysis(mode, band_transient, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan, importance);
       for (i=effEnd;i<end;i++)
          tf_res[i] = tf_res[effEnd-1];
    } else if (hybrid && weak_transient)
@@ -1938,11 +1949,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
    }
 
-   ALLOC(offsets, nbEBands, int);
-
-   maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, start, end, C, offsets,
-         st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
-         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis);
    /* For LFE, everything interesting is in the first band */
    if (st->lfe)
       offsets[0] = IMIN(8, effectiveBytes/3);
