@@ -1877,7 +1877,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    enable_tf_analysis = effectiveBytes>=15*C && !hybrid && st->complexity>=2 && !st->lfe;
    has_tf_extra_analysis = 0;
-   if (enable_tf_analysis)
+   /* Only do TF extra analysis for 20-ms frames since it's less likely to be reliable
+      (and totally untested) for other frame sizes. */
+   if (enable_tf_analysis && LM==3)
    {
       if (isTransient)
       {
