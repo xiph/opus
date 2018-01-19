@@ -639,7 +639,7 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
    ALLOC(path0, len, int);
    ALLOC(path1, len, int);
 
-   if (1)
+   if (band_transient != NULL)
    {
       for (i=0;i<len;i++)
       {
@@ -1475,6 +1475,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_int32 equiv_rate;
    int hybrid;
    int weak_transient = 0;
+   int enable_tf_analysis;
+   int has_tf_extra_analysis;
    VARDECL(opus_val16, surround_dynalloc);
    VARDECL(opus_val16, band_transient);
    ALLOC_STACK;
@@ -1872,19 +1874,27 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(band_transient, end, opus_val16);
    OPUS_CLEAR(band_transient, end);
-   if (isTransient)
+
+   enable_tf_analysis = effectiveBytes>=15*C && !hybrid && st->complexity>=2 && !st->lfe;
+   has_tf_extra_analysis = 0;
+   if (enable_tf_analysis)
    {
-      tf_extra_analysis(mode, X, band_transient, effEnd, C, LM);
-   } else if (st->complexity > -4)
-   {
-      VARDECL(celt_norm, X2);
-      VARDECL(celt_ener, bandE2);
-      compute_mdcts(mode, M, in, freq, C, CC, LM, st->upsample, st->arch);
-      ALLOC(bandE2,nbEBands*CC, celt_ener);
-      compute_band_energies(mode, freq, bandE2, effEnd, C, LM, st->arch);
-      ALLOC(X2, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
-      normalise_bands(mode, freq, X2, bandE2, effEnd, C, M);
-      tf_extra_analysis(mode, X2, band_transient, effEnd, C, LM);
+      if (isTransient)
+      {
+         tf_extra_analysis(mode, X, band_transient, effEnd, C, LM);
+         has_tf_extra_analysis = 1;
+      } else if (st->complexity > 6)
+      {
+         VARDECL(celt_norm, X2);
+         VARDECL(celt_ener, bandE2);
+         compute_mdcts(mode, M, in, freq, C, CC, LM, st->upsample, st->arch);
+         ALLOC(bandE2,nbEBands*CC, celt_ener);
+         compute_band_energies(mode, freq, bandE2, effEnd, C, LM, st->arch);
+         ALLOC(X2, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
+         normalise_bands(mode, freq, X2, bandE2, effEnd, C, M);
+         tf_extra_analysis(mode, X2, band_transient, effEnd, C, LM);
+         has_tf_extra_analysis = 1;
+      }
    }
 
    ALLOC(offsets, nbEBands, int);
@@ -1896,11 +1906,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
-   if (effectiveBytes>=15*C && !hybrid && st->complexity>=2 && !st->lfe)
+   if (enable_tf_analysis)
    {
       int lambda;
       lambda = IMAX(80, 20480/effectiveBytes + 2);
-      tf_select = tf_analysis(mode, band_transient, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan, importance);
+      tf_select = tf_analysis(mode, has_tf_extra_analysis ? band_transient : NULL, effEnd,
+            isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan, importance);
       for (i=effEnd;i<end;i++)
          tf_res[i] = tf_res[effEnd-1];
    } else if (hybrid && weak_transient)
