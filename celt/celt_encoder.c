@@ -1850,6 +1850,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       {
          isTransient = 1;
          shortBlocks = M;
+         /* Save the energy of the long MDCT as if we had secondMdct set.*/
+         OPUS_COPY(bandLogE2, bandLogE, C*nbEBands);
          compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample, st->arch);
          compute_band_energies(mode, freq, bandE, effEnd, C, LM, st->arch);
          amp2Log2(mode, effEnd, end, bandE, bandLogE, C);
