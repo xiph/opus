@@ -643,14 +643,13 @@ static int tf_analysis(const CELTMode *m, const opus_val16 *band_transient, int 
    {
       for (i=0;i<len;i++)
       {
-         int offset = 10 -0*(i-10);
-         if (band_transient[i] > 270 + offset)
+         if (band_transient[i] > 260)
             metric[i] = -2;
-         else if (band_transient[i] > 140 + offset)
+         else if (band_transient[i] > 130)
             metric[i] = 0;
-         else if (band_transient[i] > 110 + offset)
+         else if (band_transient[i] > 110)
             metric[i] = 2;
-         else if (band_transient[i] > 90 + offset)
+         else if (band_transient[i] > 90)
             metric[i] = 4;
          else
             metric[i] = 6;
