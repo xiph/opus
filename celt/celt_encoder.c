@@ -965,7 +965,7 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
       int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc,
-      AnalysisInfo *analysis, int *importance)
+      AnalysisInfo *analysis, int *importance, int *spread_weight)
 {
    int i, c;
    opus_int32 tot_boost=0;
@@ -991,6 +991,42 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       for (i=0;i<end;i++)
          maxDepth = MAX16(maxDepth, bandLogE[c*nbEBands+i]-noise_floor[i]);
    } while (++c<C);
+   {
+      /* Compute a really simple masking model to avoid taking into account completely masked
+         bands when computing the spreading decision. */
+      VARDECL(opus_val16, mask);
+      VARDECL(opus_val16, sig);
+      ALLOC(mask, nbEBands, opus_val16);
+      ALLOC(sig, nbEBands, opus_val16);
+      for (i=0;i<end;i++)
+         mask[i] = bandLogE[i]-noise_floor[i];
+      if (C==2)
+      {
+         for (i=0;i<end;i++)
+            mask[i] = MAX16(mask[i], bandLogE[nbEBands+i]-noise_floor[i]);
+      }
+      OPUS_COPY(sig, mask, end);
+      for (i=1;i<end;i++)
+         mask[i] = MAX16(mask[i], mask[i-1] - QCONST16(2.f, DB_SHIFT));
+      for (i=end-2;i>=0;i--)
+         mask[i] = MAX16(mask[i], mask[i+1] - QCONST16(3.f, DB_SHIFT));
+      for (i=0;i<end;i++)
+      {
+         /* Compute SMR: Mask is never more than 72 dB below the peak and never below the noise floor.*/
+         opus_val16 smr = sig[i]-MAX16(MAX16(0, maxDepth-QCONST16(12.f, DB_SHIFT)), mask[i]);
+         /* Clamp SMR to make sure we're not shifting by something negative or too large. */
+         smr = MAX16(-QCONST16(5.f, DB_SHIFT), MIN16(0, smr));
+#ifdef FIXED_POINT
+         /* FIXME: Use PSHR16() instead */
+         spread_weight[i] = IMAX(1, 32 >> -PSHR32(smr, DB_SHIFT));
+#else
+         spread_weight[i] = IMAX(1, 32 >> -(int)floor(.5f + smr));
+#endif
+      }
+      /*for (i=0;i<end;i++)
+         printf("%d ", spread_weight[i]);
+      printf("\n");*/
+   }
    /* Make sure that dynamic allocation can't make us bust the budget */
    if (effectiveBytes > 50 && LM>=1 && !lfe)
    {
@@ -1378,6 +1414,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    VARDECL(int, cap);
    VARDECL(int, offsets);
    VARDECL(int, importance);
+   VARDECL(int, spread_weight);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
    VARDECL(unsigned char, collapse_masks);
@@ -1826,10 +1863,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(offsets, nbEBands, int);
    ALLOC(importance, nbEBands, int);
+   ALLOC(spread_weight, nbEBands, int);
 
    maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, start, end, C, offsets,
          st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
-         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis, importance);
+         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis, importance, spread_weight);
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
@@ -1919,7 +1957,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          {
             st->spread_decision = spreading_decision(mode, X,
                   &st->tonal_average, st->spread_decision, &st->hf_average,
-                  &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M);
+                  &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M, spread_weight);
          }
          /*printf("%d %d\n", st->tapset_decision, st->spread_decision);*/
          /*printf("%f %d %f %d\n\n", st->analysis.tonality, st->spread_decision, st->analysis.tonality_slope, st->tapset_decision);*/

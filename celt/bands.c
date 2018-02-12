@@ -478,7 +478,7 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
 /* Decide whether we should spread the pulses in the current frame */
 int spreading_decision(const CELTMode *m, const celt_norm *X, int *average,
       int last_decision, int *hf_average, int *tapset_decision, int update_hf,
-      int end, int C, int M)
+      int end, int C, int M, const int *spread_weight)
 {
    int i, c, N0;
    int sum = 0, nbBands=0;
@@ -519,8 +519,8 @@ int spreading_decision(const CELTMode *m, const celt_norm *X, int *average,
          if (i>m->nbEBands-4)
             hf_sum += celt_udiv(32*(tcount[1]+tcount[0]), N);
          tmp = (2*tcount[2] >= N) + (2*tcount[1] >= N) + (2*tcount[0] >= N);
-         sum += tmp*256;
-         nbBands++;
+         sum += tmp*spread_weight[i];
+         nbBands+=spread_weight[i];
       }
    } while (++c<C);
 
@@ -544,7 +544,7 @@ int spreading_decision(const CELTMode *m, const celt_norm *X, int *average,
    /*printf("%d %d %d\n", hf_sum, *hf_average, *tapset_decision);*/
    celt_assert(nbBands>0); /* end has to be non-zero */
    celt_assert(sum>=0);
-   sum = celt_udiv(sum, nbBands);
+   sum = celt_udiv((opus_int32)sum<<8, nbBands);
    /* Recursive averaging */
    sum = (sum+*average)>>1;
    *average = sum;
