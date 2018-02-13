@@ -1110,6 +1110,9 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
             tot_boost += boost_bits;
          }
       }
+   } else {
+      for (i=start;i<end;i++)
+         importance[i] = 13;
    }
    *tot_boost_ = tot_boost;
    RESTORE_STACK;
