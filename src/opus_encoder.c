@@ -816,7 +816,7 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
    silk_rate *= channels;
    /* The CELT layer saves a bit more than SILK for stereo, so we boost SILK. */
    if (channels == 2 && rate >= 12000)
-      silk_rate += 1000;
+      silk_rate -= 1000;
    return silk_rate;
 }
 
