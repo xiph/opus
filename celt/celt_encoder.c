@@ -1687,7 +1687,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       /* Reduces the likelihood of energy instability on fricatives at low bitrate
          in hybrid mode. It seems like we still want to have real transients on vowels
          though (small SILK quantization offset value). */
-      int allow_weak_transients = hybrid && effectiveBytes<15 && st->silk_info.offset >= 100;
+      int allow_weak_transients = hybrid && effectiveBytes<15 && st->silk_info.signalType != 2;
       isTransient = transient_analysis(in, N+overlap, CC,
             &tf_estimate, &tf_chan, allow_weak_transients, &weak_transient);
    }
@@ -1886,7 +1886,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       for (i=0;i<end;i++)
          tf_res[i] = 1;
       tf_select=0;
-   } else if (hybrid && effectiveBytes<15)
+   } else if (hybrid && effectiveBytes<15 && st->silk_info.signalType != 2)
    {
       /* For low bitrate hybrid, we force temporal resolution to 5 ms rather than 2.5 ms. */
       for (i=0;i<end;i++)
