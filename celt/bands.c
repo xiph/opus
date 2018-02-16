@@ -1621,8 +1621,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ctx = ctx_save;
                OPUS_COPY(X, X_save, N);
                OPUS_COPY(Y, Y_save, N);
+#ifndef DISABLE_UPDATE_DRAFT
                if (i == start+1)
                   special_hybrid_folding(m, norm, norm2, start, M, dual_stereo);
+#endif
                /* Encode and round up. */
                ctx.theta_round = 1;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
