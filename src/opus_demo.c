@@ -865,19 +865,28 @@ int main(int argc, char *argv[])
         toggle = (toggle + use_inbandfec) & 1;
     }
 
-    /* Print out bitrate statistics */
-    if(decode_only)
+    if(decode_only && count > 0)
         frame_size = (int)(tot_samples / count);
     count -= use_inbandfec;
-    fprintf (stderr, "average bitrate:             %7.3f kb/s\n",
-                     1e-3*bits*sampling_rate/tot_samples);
-    fprintf (stderr, "maximum bitrate:             %7.3f kb/s\n",
-                     1e-3*bits_max*sampling_rate/frame_size);
-    if (!decode_only)
-       fprintf (stderr, "active bitrate:              %7.3f kb/s\n",
-               1e-3*bits_act*sampling_rate/(1e-15+frame_size*(double)count_act));
-    fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n",
-            1e-3*sqrt(bits2/count - bits*bits/(count*(double)count))*sampling_rate/frame_size);
+    if (tot_samples >= 1 && count > 0 && frame_size)
+    {
+       /* Print out bitrate statistics */
+       double var;
+       fprintf (stderr, "average bitrate:             %7.3f kb/s\n",
+                        1e-3*bits*sampling_rate/tot_samples);
+       fprintf (stderr, "maximum bitrate:             %7.3f kb/s\n",
+                        1e-3*bits_max*sampling_rate/frame_size);
+       if (!decode_only)
+          fprintf (stderr, "active bitrate:              %7.3f kb/s\n",
+                           1e-3*bits_act*sampling_rate/(1e-15+frame_size*(double)count_act));
+       var = bits2/count - bits*bits/(count*(double)count);
+       if (var < 0)
+          var = 0;
+       fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n",
+                        1e-3*sqrt(var)*sampling_rate/frame_size);
+    } else {
+       fprintf(stderr, "bitrate statistics are undefined\n");
+    }
     silk_TimerSave("opus_timing.txt");
     opus_encoder_destroy(enc);
     opus_decoder_destroy(dec);
