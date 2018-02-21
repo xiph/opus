@@ -814,7 +814,7 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
    if (bandwidth==OPUS_BANDWIDTH_SUPERWIDEBAND)
       silk_rate += 300;
    silk_rate *= channels;
-   /* The CELT layer saves a bit more than SILK for stereo, so we boost SILK. */
+   /* Small adjustment for stereo (calibrated for 32 kb/s, haven't tried other bitrates). */
    if (channels == 2 && rate >= 12000)
       silk_rate -= 1000;
    return silk_rate;
