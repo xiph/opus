@@ -822,6 +822,37 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[char foo;]])],
       CFLAGS="$saved_CFLAGS"
     ])
 
+on_x86=no
+case "$host_cpu" in
+i[[3456]]86 | x86_64)
+  on_x86=yes
+  ;;
+esac
+
+dnl Enable stack-protector-all only on x86 where it's well supported.
+dnl on some platforms it causes crashes. Hopefully the OS's default's
+dnl include this on platforms that work but have been missed here.
+AC_ARG_ENABLE([stack-protector],
+    [AS_HELP_STRING([--disable-stack-protector],[Disable compiler stack hardening])],,
+    [
+      AS_IF([test "$ac_cv_c_compiler_gnu" = "yes" && test "$on_x86" = "yes"],
+            [enable_stack_protector=yes],[enable_stack_protector=no])
+    ])
+
+AS_IF([test "$enable_stack_protector" = "yes"],
+ [
+  saved_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS -fstack-protector-strong"
+  AC_MSG_CHECKING([if ${CC} supports -fstack-protector-strong])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([],[[char foo;]])],
+    [ AC_MSG_RESULT([yes]) ],
+    [
+      AC_MSG_RESULT([no])
+      enable_stack_protector=no
+      CFLAGS="$saved_CFLAGS"
+    ])
+ ])
+
 CFLAGS="$CFLAGS -W"
 
 warn_CFLAGS="-Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes"
