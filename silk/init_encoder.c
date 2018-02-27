@@ -29,9 +29,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #endif
 #ifdef FIXED_POINT
-#include "main_FIX.h"
+#include "fixed/main_FIX.h"
 #else
-#include "main_FLP.h"
+#include "float/main_FLP.h"
 #endif
 #include "tuning_parameters.h"
 #include "cpu_support.h"

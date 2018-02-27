@@ -52,9 +52,6 @@ CINCLUDES = include silk celt
 
 ifdef FIXED_POINT
 CFLAGS += -DFIXED_POINT=1 -DDISABLE_FLOAT_API
-CINCLUDES += silk/fixed
-else
-CINCLUDES += silk/float
 endif
 
 

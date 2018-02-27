@@ -10,7 +10,7 @@ lib_LTLIBRARIES = libopus.la
 DIST_SUBDIRS = doc
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/celt -I$(top_srcdir)/silk \
-              -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed $(NE10_CFLAGS)
+              $(NE10_CFLAGS)
 
 include celt_sources.mk
 include silk_sources.mk

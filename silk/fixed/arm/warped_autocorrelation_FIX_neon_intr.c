@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 # include <string.h>
 #endif
 #include "stack_alloc.h"
-#include "main_FIX.h"
+#include "fixed/main_FIX.h"
 
 static OPUS_INLINE void calc_corr( const opus_int32 *const input_QS, opus_int64 *const corr_QC, const opus_int offset, const int32x4_t state_QS_s32x4 )
 {

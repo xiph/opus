@@ -36,9 +36,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "structs.h"
 #include "tuning_parameters.h"
 #ifdef FIXED_POINT
-#include "main_FIX.h"
+#include "fixed/main_FIX.h"
 #else
-#include "main_FLP.h"
+#include "float/main_FLP.h"
 #endif
 
 /***************************************/
