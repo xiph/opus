@@ -385,20 +385,16 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
    int c, i;
    int shift;
 
-   /* Approximates -round(log2(4.*cutoff_Hz/Fs)) */
-   shift=celt_ilog2(Fs/(cutoff_Hz*3));
+   /* Approximates -round(log2(6.3*cutoff_Hz/Fs)) */
+   shift=celt_ilog2(Fs/(cutoff_Hz*4));
    for (c=0;c<channels;c++)
    {
       for (i=0;i<len;i++)
       {
-         opus_val32 x, tmp, y;
+         opus_val32 x, y;
          x = SHL32(EXTEND32(in[channels*i+c]), 14);
-         /* First stage */
-         tmp = x-hp_mem[2*c];
+         y = x-hp_mem[2*c];
          hp_mem[2*c] = hp_mem[2*c] + PSHR32(x - hp_mem[2*c], shift);
-         /* Second stage */
-         y = tmp - hp_mem[2*c+1];
-         hp_mem[2*c+1] = hp_mem[2*c+1] + PSHR32(tmp - hp_mem[2*c+1], shift);
          out[channels*i+c] = EXTRACT16(SATURATE(PSHR32(y, 14), 32767));
       }
    }
@@ -409,55 +405,39 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 {
    int i;
    float coef, coef2;
-   coef = 4.0f*cutoff_Hz/Fs;
+   coef = 6.3f*cutoff_Hz/Fs;
    coef2 = 1-coef;
    if (channels==2)
    {
-      float m0, m1, m2, m3;
+      float m0, m2;
       m0 = hp_mem[0];
-      m1 = hp_mem[1];
       m2 = hp_mem[2];
-      m3 = hp_mem[3];
       for (i=0;i<len;i++)
       {
-         opus_val32 x0, x1, tmp0, tmp1, out0, out1;
+         opus_val32 x0, x1, out0, out1;
          x0 = in[2*i+0];
          x1 = in[2*i+1];
-         /* First stage */
-         tmp0 = x0-m0;
-         tmp1 = x1-m2;
+         out0 = x0-m0;
+         out1 = x1-m2;
          m0 = coef*x0 + VERY_SMALL + coef2*m0;
          m2 = coef*x1 + VERY_SMALL + coef2*m2;
-         /* Second stage */
-         out0 = tmp0 - m1;
-         out1 = tmp1 - m3;
-         m1 = coef*tmp0 + VERY_SMALL + coef2*m1;
-         m3 = coef*tmp1 + VERY_SMALL + coef2*m3;
          out[2*i+0] = out0;
          out[2*i+1] = out1;
       }
       hp_mem[0] = m0;
-      hp_mem[1] = m1;
       hp_mem[2] = m2;
-      hp_mem[3] = m3;
    } else {
-      float m0, m1;
+      float m0;
       m0 = hp_mem[0];
-      m1 = hp_mem[1];
       for (i=0;i<len;i++)
       {
-         opus_val32 x, tmp, y;
+         opus_val32 x, y;
          x = in[i];
-         /* First stage */
-         tmp = x-m0;
+         y = x-m0;
          m0 = coef*x + VERY_SMALL + coef2*m0;
-         /* Second stage */
-         y = tmp - m1;
-         m1 = coef*tmp + VERY_SMALL + coef2*m1;
          out[i] = y;
       }
       hp_mem[0] = m0;
-      hp_mem[1] = m1;
    }
 }
 #endif
