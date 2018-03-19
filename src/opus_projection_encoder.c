@@ -459,4 +459,93 @@ bad_arg:
   return OPUS_BAD_ARG;
 }
 
+#else /* ENABLE_EXPERIMENTAL_AMBISONICS */
+
+opus_int32 opus_projection_ambisonics_encoder_get_size(
+    int channels, int mapping_family)
+{
+  (void)channels;
+  (void)mapping_family;
+  return OPUS_UNIMPLEMENTED;
+}
+
+OpusProjectionEncoder *opus_projection_ambisonics_encoder_create(
+    opus_int32 Fs, int channels, int mapping_family, int *streams,
+    int *coupled_streams, int application, int *error)
+{
+  (void)Fs;
+  (void)channels;
+  (void)mapping_family;
+  (void)streams;
+  (void)coupled_streams;
+  (void)application;
+  if (error) *error = OPUS_UNIMPLEMENTED;
+  return NULL;
+}
+
+int opus_projection_ambisonics_encoder_init(
+    OpusProjectionEncoder *st,
+    opus_int32 Fs,
+    int channels,
+    int mapping_family,
+    int *streams,
+    int *coupled_streams,
+    int application)
+{
+  (void)st;
+  (void)Fs;
+  (void)channels;
+  (void)mapping_family;
+  (void)streams;
+  (void)coupled_streams;
+  (void)application;
+  return OPUS_UNIMPLEMENTED;
+}
+
+int opus_projection_encode(
+    OpusProjectionEncoder *st,
+    const opus_int16 *pcm,
+    int frame_size,
+    unsigned char *data,
+    opus_int32 max_data_bytes)
+{
+  (void)st;
+  (void)pcm;
+  (void)frame_size;
+  (void)data;
+  (void)max_data_bytes;
+  return OPUS_UNIMPLEMENTED;
+}
+
+int opus_projection_encode_float(
+    OpusProjectionEncoder *st,
+    const float *pcm,
+    int frame_size,
+    unsigned char *data,
+    opus_int32 max_data_bytes)
+{
+  (void)st;
+  (void)pcm;
+  (void)frame_size;
+  (void)data;
+  (void)max_data_bytes;
+  return OPUS_UNIMPLEMENTED;
+}
+
+void opus_projection_encoder_destroy(
+    OpusProjectionEncoder *st)
+{
+  (void)st;
+}
+
+int opus_projection_encoder_ctl(
+    OpusProjectionEncoder *st,
+    int request,
+    ...)
+{
+  (void)st;
+  (void)request;
+  return OPUS_UNIMPLEMENTED;
+}
+
 #endif /* ENABLE_EXPERIMENTAL_AMBISONICS */

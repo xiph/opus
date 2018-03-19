@@ -254,4 +254,105 @@ void opus_projection_decoder_destroy(OpusProjectionDecoder *st)
   opus_free(st);
 }
 
+#else /* ENABLE_EXPERIMENTAL_AMBISONICS */
+
+opus_int32 opus_projection_decoder_get_size(
+    int channels,
+    int streams,
+    int coupled_streams)
+{
+  (void)channels;
+  (void)streams;
+  (void)coupled_streams;
+  return OPUS_UNIMPLEMENTED;
+}
+
+OpusProjectionDecoder *opus_projection_decoder_create(
+    opus_int32 Fs,
+    int channels,
+    int streams,
+    int coupled_streams,
+    unsigned char *demixing_matrix,
+    opus_int32 demixing_matrix_size,
+    int *error)
+{
+  (void)Fs;
+  (void)channels;
+  (void)streams;
+  (void)coupled_streams;
+  (void)demixing_matrix;
+  (void)demixing_matrix_size;
+  if (error) *error = OPUS_UNIMPLEMENTED;
+  return NULL;
+}
+
+int opus_projection_decoder_init(
+    OpusProjectionDecoder *st,
+    opus_int32 Fs,
+    int channels,
+    int streams,
+    int coupled_streams,
+    unsigned char *demixing_matrix,
+    opus_int32 demixing_matrix_size)
+{
+  (void)st;
+  (void)Fs;
+  (void)channels;
+  (void)streams;
+  (void)coupled_streams;
+  (void)demixing_matrix;
+  (void)demixing_matrix_size;
+  return OPUS_UNIMPLEMENTED;
+}
+
+int opus_projection_decode(
+    OpusProjectionDecoder *st,
+    const unsigned char *data,
+    opus_int32 len,
+    opus_int16 *pcm,
+    int frame_size,
+    int decode_fec)
+{
+  (void)st;
+  (void)data;
+  (void)len;
+  (void)pcm;
+  (void)frame_size;
+  (void)decode_fec;
+  return OPUS_UNIMPLEMENTED;
+}
+
+int opus_projection_decode_float(
+    OpusProjectionDecoder *st,
+    const unsigned char *data,
+    opus_int32 len,
+    float *pcm,
+    int frame_size,
+    int decode_fec)
+{
+  (void)st;
+  (void)data;
+  (void)len;
+  (void)pcm;
+  (void)frame_size;
+  (void)decode_fec;
+  return OPUS_UNIMPLEMENTED;
+}
+
+int opus_projection_decoder_ctl(
+    OpusProjectionDecoder *st,
+    int request,
+    ...)
+{
+  (void)st;
+  (void)request;
+  return OPUS_UNIMPLEMENTED;
+}
+
+void opus_projection_decoder_destroy(
+    OpusProjectionDecoder *st)
+{
+  (void)st;
+}
+
 #endif /* ENABLE_EXPERIMENTAL_AMBISONICS */
