@@ -56,23 +56,38 @@
 
 #define CELT_SIG_SCALE 32768.f
 
-#define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
-#ifdef ENABLE_ASSERTIONS
+#define CELT_FATAL(str) celt_fatal(str, __FILE__, __LINE__);
+
+#if defined(ENABLE_ASSERTIONS) || defined(ENABLE_HARDENING)
+#ifdef __GNUC__
+__attribute__((noreturn))
+#endif
+void celt_fatal(const char *str, const char *file, int line);
+
+#if defined(CELT_C) && !defined(OVERRIDE_celt_fatal)
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef __GNUC__
 __attribute__((noreturn))
 #endif
-static OPUS_INLINE void _celt_fatal(const char *str, const char *file, int line)
+void celt_fatal(const char *str, const char *file, int line)
 {
    fprintf (stderr, "Fatal (internal) error in %s, line %d: %s\n", file, line, str);
    abort();
 }
-#define celt_assert(cond) {if (!(cond)) {celt_fatal("assertion failed: " #cond);}}
-#define celt_assert2(cond, message) {if (!(cond)) {celt_fatal("assertion failed: " #cond "\n" message);}}
+#endif
+
+#define celt_assert(cond) {if (!(cond)) {CELT_FATAL("assertion failed: " #cond);}}
+#define celt_assert2(cond, message) {if (!(cond)) {CELT_FATAL("assertion failed: " #cond "\n" message);}}
 #else
 #define celt_assert(cond)
 #define celt_assert2(cond, message)
+#endif
+
+#if defined(ENABLE_ASSERTIONS)
+#define celt_sig_assert(cond) {if (!(cond)) {CELT_FATAL("signal assertion failed: " #cond);}}
+#else
+#define celt_sig_assert(cond)
 #endif
 
 #define IMUL32(a,b) ((a)*(b))

@@ -182,7 +182,7 @@ opus_val32 celt_rcp(opus_val32 x)
    int i;
    opus_val16 n;
    opus_val16 r;
-   celt_assert2(x>0, "celt_rcp() only defined for positive values");
+   celt_sig_assert(x>0);
    i = celt_ilog2(x);
    /* n is Q15 with range [0,1). */
    n = VSHR32(x,i-15)-32768;

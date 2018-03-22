@@ -70,10 +70,10 @@ opus_int16 bitexact_cos(opus_int16 x)
    opus_int32 tmp;
    opus_int16 x2;
    tmp = (4096+((opus_int32)(x)*(x)))>>13;
-   celt_assert(tmp<=32767);
+   celt_sig_assert(tmp<=32767);
    x2 = tmp;
    x2 = (32767-x2) + FRAC_MUL16(x2, (-7651 + FRAC_MUL16(x2, (8277 + FRAC_MUL16(-626, x2)))));
-   celt_assert(x2<=32766);
+   celt_sig_assert(x2<=32766);
    return 1+x2;
 }
 
@@ -282,7 +282,7 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
 
       N0 = m->eBands[i+1]-m->eBands[i];
       /* depth in 1/8 bits */
-      celt_assert(pulses[i]>=0);
+      celt_sig_assert(pulses[i]>=0);
       depth = celt_udiv(1+pulses[i], (m->eBands[i+1]-m->eBands[i]))>>LM;
 
 #ifdef FIXED_POINT
