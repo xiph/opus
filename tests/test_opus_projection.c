@@ -39,8 +39,8 @@
 #include "test_opus_common.h"
 #include "opus_projection.h"
 #include "mathops.h"
-#include "../src/mapping_matrix.c"
-#include "mathops.c"
+#include "../src/mapping_matrix.h"
+#include "mathops.h"
 
 #ifdef ENABLE_EXPERIMENTAL_AMBISONICS
 
@@ -103,9 +103,9 @@ void test_simple_matrix(void)
   MappingMatrix *simple_matrix;
 
   /* Allocate input/output buffers. */
-  input_val16 = (opus_val16 *)opus_alloc(align(sizeof(opus_val16) * SIMPLE_MATRIX_INPUT_SIZE));
-  output_int16 = (opus_int16 *)opus_alloc(align(sizeof(opus_int16) * SIMPLE_MATRIX_OUTPUT_SIZE));
-  output_val16 = (opus_val16 *)opus_alloc(align(sizeof(opus_val16) * SIMPLE_MATRIX_OUTPUT_SIZE));
+  input_val16 = (opus_val16 *)opus_alloc(sizeof(opus_val16) * SIMPLE_MATRIX_INPUT_SIZE);
+  output_int16 = (opus_int16 *)opus_alloc(sizeof(opus_int16) * SIMPLE_MATRIX_OUTPUT_SIZE);
+  output_val16 = (opus_val16 *)opus_alloc(sizeof(opus_val16) * SIMPLE_MATRIX_OUTPUT_SIZE);
 
   /* Initialize matrix */
   simple_matrix_size = mapping_matrix_get_size(simple_matrix_params.rows,

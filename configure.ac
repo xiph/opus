@@ -759,6 +759,14 @@ AS_IF([test "$enable_assertions" = "yes"], [
   AC_DEFINE([ENABLE_ASSERTIONS], [1], [Assertions])
 ])
 
+AC_ARG_ENABLE([hardening],
+    [AS_HELP_STRING([--enable-hardening],[enable run-time checks that are cheap and safe for use in production])],,
+    [enable_hardening=no])
+
+AS_IF([test "$enable_hardening" = "yes"], [
+  AC_DEFINE([ENABLE_HARDENING], [1], [Hardening])
+])
+
 AC_ARG_ENABLE([fuzzing],
     [AS_HELP_STRING([--enable-fuzzing],[causes the encoder to make random decisions])],,
     [enable_fuzzing=no])
@@ -919,6 +927,7 @@ AC_MSG_NOTICE([
       Run-time CPU detection: ........ ${rtcd_support}
       Custom modes: .................. ${enable_custom_modes}
       Assertion checking: ............ ${enable_assertions}
+      Hardening: ..................... ${enable_hardening}
       Fuzzing: ....................... ${enable_fuzzing}
       Check ASM: ..................... ${enable_check_asm}
       Ambisonics support: ............ ${enable_ambisonics}
