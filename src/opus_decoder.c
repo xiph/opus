@@ -217,6 +217,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
    int audiosize;
    int mode;
+   int bandwidth;
    int transition=0;
    int start_band;
    int redundancy=0;
@@ -253,10 +254,12 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    {
       audiosize = st->frame_size;
       mode = st->mode;
+      bandwidth = st->bandwidth;
       ec_dec_init(&dec,(unsigned char*)data,len);
    } else {
       audiosize = frame_size;
       mode = st->prev_mode;
+      bandwidth = 0;
 
       if (mode == 0)
       {
@@ -355,15 +358,15 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       {
         st->DecControl.nChannelsInternal = st->stream_channels;
         if( mode == MODE_SILK_ONLY ) {
-           if( st->bandwidth == OPUS_BANDWIDTH_NARROWBAND ) {
+           if( bandwidth == OPUS_BANDWIDTH_NARROWBAND ) {
               st->DecControl.internalSampleRate = 8000;
-           } else if( st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND ) {
+           } else if( bandwidth == OPUS_BANDWIDTH_MEDIUMBAND ) {
               st->DecControl.internalSampleRate = 12000;
-           } else if( st->bandwidth == OPUS_BANDWIDTH_WIDEBAND ) {
+           } else if( bandwidth == OPUS_BANDWIDTH_WIDEBAND ) {
               st->DecControl.internalSampleRate = 16000;
            } else {
               st->DecControl.internalSampleRate = 16000;
-              silk_assert( 0 );
+              celt_assert( 0 );
            }
         } else {
            /* Hybrid mode */
@@ -427,10 +430,26 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    if (mode != MODE_CELT_ONLY)
       start_band = 17;
 
+   if (redundancy)
+   {
+      transition = 0;
+      pcm_transition_silk_size=ALLOC_NONE;
+   }
+
+   ALLOC(pcm_transition_silk, pcm_transition_silk_size, opus_val16);
+
+   if (transition && mode != MODE_CELT_ONLY)
+   {
+      pcm_transition = pcm_transition_silk;
+      opus_decode_frame(st, NULL, 0, pcm_transition, IMIN(F5, audiosize), 0);
+   }
+
+
+   if (bandwidth)
    {
       int endband=21;
 
-      switch(st->bandwidth)
+      switch(bandwidth)
       {
       case OPUS_BANDWIDTH_NARROWBAND:
          endband = 13;
@@ -445,24 +464,13 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       case OPUS_BANDWIDTH_FULLBAND:
          endband = 21;
          break;
+      default:
+         celt_assert(0);
+         break;
       }
       celt_decoder_ctl(celt_dec, CELT_SET_END_BAND(endband));
-      celt_decoder_ctl(celt_dec, CELT_SET_CHANNELS(st->stream_channels));
    }
-
-   if (redundancy)
-   {
-      transition = 0;
-      pcm_transition_silk_size=ALLOC_NONE;
-   }
-
-   ALLOC(pcm_transition_silk, pcm_transition_silk_size, opus_val16);
-
-   if (transition && mode != MODE_CELT_ONLY)
-   {
-      pcm_transition = pcm_transition_silk;
-      opus_decode_frame(st, NULL, 0, pcm_transition, IMIN(F5, audiosize), 0);
-   }
+   celt_decoder_ctl(celt_dec, CELT_SET_CHANNELS(st->stream_channels));
 
    /* Only allocation memory for redundancy if/when needed */
    redundant_audio_size = redundancy ? F5*st->channels : ALLOC_NONE;
