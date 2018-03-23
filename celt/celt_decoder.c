@@ -51,6 +51,14 @@
 #include "celt_lpc.h"
 #include "vq.h"
 
+/* The maximum pitch lag to allow in the pitch-based PLC. It's possible to save
+   CPU time in the PLC pitch search by making this smaller than MAX_PERIOD. The
+   current value corresponds to a pitch of 66.67 Hz. */
+#define PLC_PITCH_LAG_MAX (720)
+/* The minimum pitch lag to allow in the pitch-based PLC. This corresponds to a
+   pitch of 480 Hz. */
+#define PLC_PITCH_LAG_MIN (100)
+
 #if defined(SMALL_FOOTPRINT) && defined(FIXED_POINT)
 #define NORM_ALIASING_HACK
 #endif
@@ -120,12 +128,12 @@ void validate_celt_decoder(CELTDecoder *st)
    celt_assert(st->arch >= 0);
    celt_assert(st->arch <= OPUS_ARCHMASK);
 #endif
-   celt_assert(st->last_pitch_index <= MAX_PERIOD);
-   celt_assert(st->last_pitch_index >= 0);
-   celt_assert(st->postfilter_period <= MAX_PERIOD);
-   celt_assert(st->postfilter_period >= 0);
-   celt_assert(st->postfilter_period_old <= MAX_PERIOD);
-   celt_assert(st->postfilter_period_old >= 0);
+   celt_assert(st->last_pitch_index <= PLC_PITCH_LAG_MAX);
+   celt_assert(st->last_pitch_index >= PLC_PITCH_LAG_MIN || st->last_pitch_index == 0);
+   celt_assert(st->postfilter_period < MAX_PERIOD);
+   celt_assert(st->postfilter_period >= COMBFILTER_MINPERIOD || st->postfilter_period == 0);
+   celt_assert(st->postfilter_period_old < MAX_PERIOD);
+   celt_assert(st->postfilter_period_old >= COMBFILTER_MINPERIOD || st->postfilter_period_old == 0);
    celt_assert(st->postfilter_tapset <= 2);
    celt_assert(st->postfilter_tapset >= 0);
    celt_assert(st->postfilter_tapset_old <= 2);
@@ -468,14 +476,6 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
    }
 }
-
-/* The maximum pitch lag to allow in the pitch-based PLC. It's possible to save
-   CPU time in the PLC pitch search by making this smaller than MAX_PERIOD. The
-   current value corresponds to a pitch of 66.67 Hz. */
-#define PLC_PITCH_LAG_MAX (720)
-/* The minimum pitch lag to allow in the pitch-based PLC. This corresponds to a
-   pitch of 480 Hz. */
-#define PLC_PITCH_LAG_MIN (100)
 
 static int celt_plc_pitch_search(celt_sig *decode_mem[2], int C, int arch)
 {
