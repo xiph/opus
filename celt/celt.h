@@ -209,6 +209,13 @@ static OPUS_INLINE int fromOpus(unsigned char c)
 
 extern const signed char tf_select_table[4][8];
 
+#if defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS)
+void validate_celt_decoder(CELTDecoder *st);
+#define VALIDATE_CELT_DECODER(st) validate_celt_decoder(st)
+#else
+#define VALIDATE_CELT_DECODER(st)
+#endif
+
 int resampling_factor(opus_int32 rate);
 
 void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
