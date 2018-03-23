@@ -83,7 +83,7 @@ void celt_fatal(const char *str, const char *file, int line)
 #else
 #define celt_assert(cond)
 #define celt_assert2(cond, message)
-#define MUST_SUCCEED(call) call
+#define MUST_SUCCEED(call) do {if((call) != OPUS_OK) {RESTORE_STACK; return OPUS_INTERNAL_ERROR;} } while (0)
 #endif
 
 #if defined(ENABLE_ASSERTIONS)
