@@ -39,6 +39,21 @@
 
 /* DECODER */
 
+#if defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS)
+static void validate_ms_decoder(OpusMSDecoder *st)
+{
+   validate_layout(&st->layout);
+#ifdef OPUS_ARCHMASK
+   celt_assert(st->arch >= 0);
+   celt_assert(st->arch <= OPUS_ARCHMASK);
+#endif
+}
+#define VALIDATE_MS_DECODER(st) validate_ms_decoder(st)
+#else
+#define VALIDATE_MS_DECODER(st)
+#endif
+
+
 opus_int32 opus_multistream_decoder_get_size(int nb_streams, int nb_coupled_streams)
 {
    int coupled_size;
@@ -185,6 +200,7 @@ int opus_multistream_decode_native(
    VARDECL(opus_val16, buf);
    ALLOC_STACK;
 
+   VALIDATE_MS_DECODER(st);
    /* Limit frame_size to avoid excessive stack allocations. */
    opus_multistream_decoder_ctl(st, OPUS_GET_SAMPLE_RATE(&Fs));
    frame_size = IMIN(frame_size, Fs/25*3);
