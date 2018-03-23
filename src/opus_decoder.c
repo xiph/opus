@@ -78,6 +78,26 @@ struct OpusDecoder {
    opus_uint32  rangeFinal;
 };
 
+#if defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS)
+static void validate_opus_decoder(OpusDecoder *st)
+{
+   celt_assert(st->channels == 1 || st->channels == 2);
+   celt_assert(st->Fs == 48000 || st->Fs == 24000 || st->Fs == 16000 || st->Fs == 12000 || st->Fs == 8000);
+   celt_assert(st->DecControl.API_sampleRate == st->Fs);
+   celt_assert(st->DecControl.internalSampleRate == 0 || st->DecControl.internalSampleRate == 16000 || st->DecControl.internalSampleRate == 12000 || st->DecControl.internalSampleRate == 8000);
+   celt_assert(st->DecControl.nChannelsAPI == st->channels);
+   celt_assert(st->DecControl.nChannelsInternal == 0 || st->DecControl.nChannelsInternal == 1 || st->DecControl.nChannelsInternal == 2);
+   celt_assert(st->DecControl.payloadSize_ms == 0 || st->DecControl.payloadSize_ms == 10 || st->DecControl.payloadSize_ms == 20 || st->DecControl.payloadSize_ms == 40 || st->DecControl.payloadSize_ms == 60);
+#ifdef OPUS_ARCHMASK
+   celt_assert(st->arch >= 0);
+   celt_assert(st->arch <= OPUS_ARCHMASK);
+#endif
+   celt_assert(st->stream_channels == 1 || st->stream_channels == 2);
+}
+#define VALIDATE_OPUS_DECODER(st) validate_opus_decoder(st)
+#else
+#define VALIDATE_OPUS_DECODER(st)
+#endif
 
 int opus_decoder_get_size(int channels)
 {
@@ -613,6 +633,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    int packet_frame_size, packet_bandwidth, packet_mode, packet_stream_channels;
    /* 48 x 2.5 ms = 120 ms */
    opus_int16 size[48];
+   VALIDATE_OPUS_DECODER(st);
    if (decode_fec<0 || decode_fec>1)
       return OPUS_BAD_ARG;
    /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
