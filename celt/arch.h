@@ -79,9 +79,11 @@ void celt_fatal(const char *str, const char *file, int line)
 
 #define celt_assert(cond) {if (!(cond)) {CELT_FATAL("assertion failed: " #cond);}}
 #define celt_assert2(cond, message) {if (!(cond)) {CELT_FATAL("assertion failed: " #cond "\n" message);}}
+#define MUST_SUCCEED(call) celt_assert((call) == OPUS_OK)
 #else
 #define celt_assert(cond)
 #define celt_assert2(cond, message)
+#define MUST_SUCCEED(call) call
 #endif
 
 #if defined(ENABLE_ASSERTIONS)

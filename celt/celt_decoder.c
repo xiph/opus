@@ -211,7 +211,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_init(CELTDecoder *st, const CELTMod
 #endif
    st->arch = opus_select_arch();
 
-   opus_custom_decoder_ctl(st, OPUS_RESET_STATE);
+   MUST_SUCCEED(opus_custom_decoder_ctl(st, OPUS_RESET_STATE));
 
    return OPUS_OK;
 }
