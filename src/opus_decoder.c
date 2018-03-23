@@ -769,6 +769,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
       else
          return OPUS_INVALID_PACKET;
    }
+   celt_assert(st->channels == 1 || st->channels == 2);
    ALLOC(out, frame_size*st->channels, opus_int16);
 
    ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0);
@@ -806,6 +807,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
       else
          return OPUS_INVALID_PACKET;
    }
+   celt_assert(st->channels == 1 || st->channels == 2);
    ALLOC(out, frame_size*st->channels, float);
 
    ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 1);
