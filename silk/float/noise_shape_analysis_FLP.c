@@ -110,7 +110,7 @@ static OPUS_INLINE void warped_true2monic_coefs(
             coefs[ i ] *= gain;
         }
     }
-    celt_assert( 0 );
+    silk_assert( 0 );
 }
 
 static OPUS_INLINE void limit_coefs(
@@ -140,7 +140,7 @@ static OPUS_INLINE void limit_coefs(
         chirp = 0.99f - ( 0.8f + 0.1f * iter ) * ( maxabs - limit ) / ( maxabs * ( ind + 1 ) );
         silk_bwexpander_FLP( coefs, order, chirp );
     }
-    celt_assert( 0 );
+    silk_assert( 0 );
 }
 
 /* Compute noise shaping coefficients and initial gain values */
