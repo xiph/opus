@@ -1737,7 +1737,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         } else if (curr_bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
             st->silk_mode.desiredInternalSampleRate = 12000;
         } else {
-            silk_assert( st->mode == MODE_HYBRID || curr_bandwidth == OPUS_BANDWIDTH_WIDEBAND );
+            celt_assert( st->mode == MODE_HYBRID || curr_bandwidth == OPUS_BANDWIDTH_WIDEBAND );
             st->silk_mode.desiredInternalSampleRate = 16000;
         }
         if( st->mode == MODE_HYBRID ) {
@@ -1843,7 +1843,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                curr_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
             }
         } else {
-            silk_assert( st->silk_mode.internalSampleRate == 16000 );
+            celt_assert( st->silk_mode.internalSampleRate == 16000 );
         }
 
         st->silk_mode.opusCanSwitch = st->silk_mode.switchReady && !st->nonfinal_frame;
