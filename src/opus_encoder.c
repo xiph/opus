@@ -2129,6 +2129,12 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifndef DISABLE_FLOAT_API
     if (st->use_dtx && (analysis_info.valid || is_silence))
     {
+       /* Mark the frame active if Silk considers it active */
+       if(st->mode != MODE_CELT_ONLY && st->silk_mode.signalType != TYPE_NO_VOICE_ACTIVITY)
+       {
+          analysis_info.activity_probability = 1.0f;
+       }
+
        if (decide_dtx_mode(analysis_info.activity_probability, &st->nb_no_activity_frames,
              st->peak_signal_energy, pcm, frame_size, st->channels, is_silence, st->arch))
        {
