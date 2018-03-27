@@ -1492,6 +1492,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       else
          Y = NULL;
       N = M*eBands[i+1]-M*eBands[i];
+      celt_assert(N > 0);
       tell = ec_tell_frac(ec);
 
       /* Compute how many bits we want to allocate to this band */
