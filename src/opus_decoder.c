@@ -148,7 +148,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
    ret = celt_decoder_init(celt_dec, Fs, channels);
    if(ret!=OPUS_OK)return OPUS_INTERNAL_ERROR;
 
-   MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0)));
+   celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));
 
    st->prev_mode = 0;
    st->frame_size = Fs/400;
@@ -871,7 +871,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
             sizeof(OpusDecoder)-
             ((char*)&st->OPUS_DECODER_RESET_START - (char*)st));
 
-      MUST_SUCCEED(celt_decoder_ctl(celt_dec, OPUS_RESET_STATE));
+      celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
       silk_InitDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
