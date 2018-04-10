@@ -43,18 +43,25 @@ static OPUS_INLINE void silk_LBRR_encode_FIX(
 );
 
 void silk_encode_do_VAD_FIX(
-    silk_encoder_state_FIX          *psEnc                                  /* I/O  Pointer to Silk FIX encoder state                                           */
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
+    opus_int                        activity                                /* I    Decision of Opus voice activity detector                                    */
 )
 {
+    const opus_int activity_threshold = SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 );
+
     /****************************/
     /* Voice Activity Detection */
     /****************************/
     silk_VAD_GetSA_Q8( &psEnc->sCmn, psEnc->sCmn.inputBuf + 1, psEnc->sCmn.arch );
+    /* If Opus VAD is inactive and Silk VAD is active: lower Silk VAD to just under the threshold */
+    if( activity == VAD_NO_ACTIVITY && psEnc->sCmn.speech_activity_Q8 >= activity_threshold ) {
+        psEnc->sCmn.speech_activity_Q8 = activity_threshold - 1;
+    }
 
     /**************************************************/
     /* Convert speech activity into VAD and DTX flags */
     /**************************************************/
-    if( psEnc->sCmn.speech_activity_Q8 < SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ) ) {
+    if( psEnc->sCmn.speech_activity_Q8 < activity_threshold ) {
         psEnc->sCmn.indices.signalType = TYPE_NO_VOICE_ACTIVITY;
         psEnc->sCmn.noSpeechCounter++;
         if( psEnc->sCmn.noSpeechCounter <= NB_SPEECH_FRAMES_BEFORE_DTX ) {

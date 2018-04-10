@@ -58,6 +58,11 @@ extern "C"
 #define MAX_CONSECUTIVE_DTX                     20      /* eq 400 ms */
 #define DTX_ACTIVITY_THRESHOLD                  0.1f
 
+/* VAD decision */
+#define VAD_NO_DECISION                         -1
+#define VAD_NO_ACTIVITY                         0
+#define VAD_ACTIVITY                            1
+
 /* Maximum sampling frequency */
 #define MAX_FS_KHZ                              16
 #define MAX_API_FS_KHZ                          48
