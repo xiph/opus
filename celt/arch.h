@@ -124,6 +124,8 @@ typedef opus_val32 celt_sig;
 typedef opus_val16 celt_norm;
 typedef opus_val32 celt_ener;
 
+#define celt_isnan(x) 0
+
 #define Q15ONE 32767
 
 #define SIG_SHIFT 12

@@ -362,6 +362,12 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       /* Compute harmonic mean discarding the unreliable boundaries
          The data is smooth, so we only take 1/4th of the samples */
       unmask=0;
+      /* We should never see NaNs here. If we find any, then something really bad happened and we better abort
+         before it does any damage later on. If these asserts are disabled (no hardening), then the table
+         lookup a few lines below (id = ...) is likely to crash dur to an out-of-bounds read. DO NOT FIX
+         that crash on NaN since it could result in a worse issue later on. */
+      celt_assert(!celt_isnan(tmp[0]));
+      celt_assert(!celt_isnan(norm));
       for (i=12;i<len2-5;i+=4)
       {
          int id;
@@ -1716,6 +1722,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    }
 
    compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample, st->arch);
+   /* This should catch any NaN in the CELT input. Since we're not supposed to see any (they're filtered
+      at the Opus layer), just abort. */
+   celt_assert(!celt_isnan(freq[0]) && (C==1 || !celt_isnan(freq[C*N])));
    if (CC==2&&C==1)
       tf_chan = 0;
    compute_band_energies(mode, freq, bandE, effEnd, C, LM, st->arch);
