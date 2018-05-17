@@ -46,7 +46,6 @@ extern "C"
 /* Limits on bitrate */
 #define MIN_TARGET_RATE_BPS                     5000
 #define MAX_TARGET_RATE_BPS                     80000
-#define TARGET_RATE_TAB_SZ                      8
 
 /* LBRR thresholds */
 #define LBRR_NB_MIN_RATE_BPS                    12000
