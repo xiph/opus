@@ -1599,7 +1599,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        redundancy = 1;
        celt_to_silk = 1;
        st->silk_bw_switch = 0;
-       prefill=1;
+       /* Do a prefill without reseting the sampling rate control. */
+       prefill=2;
     }
 
     /* If we decided to go with CELT, make sure redundancy is off, no matter what
@@ -1825,7 +1826,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             for (i=0;i<st->encoder_buffer*st->channels;i++)
                 pcm_silk[i] = FLOAT2INT16(st->delay_buffer[i]);
 #endif
-            silk_Encode( silk_enc, &st->silk_mode, pcm_silk, st->encoder_buffer, NULL, &zero, 1, activity );
+            silk_Encode( silk_enc, &st->silk_mode, pcm_silk, st->encoder_buffer, NULL, &zero, prefill, activity );
+            /* Prevent a second switch in the real encode call. */
+            st->silk_mode.opusCanSwitch = 0;
         }
 
 #ifdef FIXED_POINT

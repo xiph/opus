@@ -200,15 +200,25 @@ opus_int silk_Encode(                                   /* O    Returns error co
     tot_blocks = ( nBlocksOf10ms > 1 ) ? nBlocksOf10ms >> 1 : 1;
     curr_block = 0;
     if( prefillFlag ) {
+        silk_LP_state save_LP;
         /* Only accept input length of 10 ms */
         if( nBlocksOf10ms != 1 ) {
             celt_assert( 0 );
             RESTORE_STACK;
             return SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
         }
+        if ( prefillFlag == 2 ) {
+            save_LP = psEnc->state_Fxx[ 0 ].sCmn.sLP;
+            /* Save the sampling rate so the bandwidth switching code can keep handling transitions. */
+            save_LP.saved_fs_kHz = psEnc->state_Fxx[ 0 ].sCmn.fs_kHz;
+        }
         /* Reset Encoder */
         for( n = 0; n < encControl->nChannelsInternal; n++ ) {
             ret = silk_init_encoder( &psEnc->state_Fxx[ n ], psEnc->state_Fxx[ n ].sCmn.arch );
+            /* Restore the variable LP state. */
+            if ( prefillFlag == 2 ) {
+                psEnc->state_Fxx[ n ].sCmn.sLP = save_LP;
+            }
             celt_assert( !ret );
         }
         tmp_payloadSize_ms = encControl->payloadSize_ms;
