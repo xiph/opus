@@ -123,26 +123,26 @@ struct OpusEncoder {
    middle (memoriless) threshold. The second column is the hysteresis
    (difference with the middle) */
 static const opus_int32 mono_voice_bandwidth_thresholds[8] = {
-        10000, 1000, /* NB<->MB */
-        11000, 1000, /* MB<->WB */
+         9000,  700, /* NB<->MB */
+         9000,  700, /* MB<->WB */
         13500, 1000, /* WB<->SWB */
         14000, 2000, /* SWB<->FB */
 };
 static const opus_int32 mono_music_bandwidth_thresholds[8] = {
-         9000, 1000, /* NB<->MB */
-        10000, 1000, /* MB<->WB */
+         9000,  700, /* NB<->MB */
+         9000,  700, /* MB<->WB */
         11000, 1000, /* WB<->SWB */
         12000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
-        10000, 1000, /* NB<->MB */
-        11000, 1000, /* MB<->WB */
+         9000,  700, /* NB<->MB */
+         9000,  700, /* MB<->WB */
         13500, 1000, /* WB<->SWB */
         14000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
-         9000, 1000, /* NB<->MB */
-        10000, 1000, /* MB<->WB */
+         9000,  700, /* NB<->MB */
+         9000,  700, /* MB<->WB */
         11000, 1000, /* WB<->SWB */
         12000, 2000, /* SWB<->FB */
 };
@@ -1487,6 +1487,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             if (equiv_rate >= threshold)
                 break;
         } while (--bandwidth>OPUS_BANDWIDTH_NARROWBAND);
+        /* We don't use mediumband anymore, except when explicitly requested or during
+           mode transitions. */
+        if (bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
+           bandwidth = OPUS_BANDWIDTH_WIDEBAND;
         st->bandwidth = st->auto_bandwidth = bandwidth;
         /* Prevents any transition to SWB/FB until the SILK layer has fully
            switched to WB mode and turned the variable LP filter off */
