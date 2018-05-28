@@ -86,15 +86,17 @@ static int get_order_plus_one_from_channels(int channels, int *order_plus_one)
   /* Allowed numbers of channels:
    * (1 + n)^2 + 2j, for n = 0...14 and j = 0 or 1.
    */
+  if (channels < 1 || channels > 227)
+    return OPUS_BAD_ARG;
+
   order_plus_one_ = isqrt32(channels);
   acn_channels = order_plus_one_ * order_plus_one_;
   nondiegetic_channels = channels - acn_channels;
+  if (nondiegetic_channels != 0 && nondiegetic_channels != 2)
+    return OPUS_BAD_ARG;
+
   if (order_plus_one)
     *order_plus_one = order_plus_one_;
-
-  if (order_plus_one_ < 1 || order_plus_one_ > 15 ||
-      (nondiegetic_channels != 0 && nondiegetic_channels != 2))
-    return OPUS_BAD_ARG;
   return OPUS_OK;
 }
 

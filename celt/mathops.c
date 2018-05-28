@@ -38,7 +38,8 @@
 #include "mathops.h"
 
 /*Compute floor(sqrt(_val)) with exact arithmetic.
-  This has been tested on all possible 32-bit inputs.*/
+  _val must be greater than 0.
+  This has been tested on all possible 32-bit inputs greater than 0.*/
 unsigned isqrt32(opus_uint32 _val){
   unsigned b;
   unsigned g;
