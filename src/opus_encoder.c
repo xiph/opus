@@ -2036,8 +2036,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        info.signalType = st->silk_mode.signalType;
        info.offset = st->silk_mode.offset;
        celt_encoder_ctl(celt_enc, CELT_SET_SILK_INFO(&info));
-    } else {
-       celt_encoder_ctl(celt_enc, CELT_SET_SILK_INFO((SILKInfo*)NULL));
     }
 
     /* 5 ms redundant frame for CELT->SILK */
