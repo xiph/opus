@@ -242,6 +242,7 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    float prob_min, prob_max;
    float vad_prob;
    int mpos, vpos;
+   int bandwidth_span;
 
    pos = tonal->read_pos;
    curr_lookahead = tonal->write_pos-tonal->read_pos;
@@ -263,6 +264,8 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    OPUS_COPY(info_out, &tonal->info[pos], 1);
    tonality_max = tonality_avg = info_out->tonality;
    tonality_count = 1;
+   /* Look at the neighbouring frames and pick largest bandwidth found (to be safe). */
+   bandwidth_span = 6;
    /* If possible, look ahead for a tone to compensate for the delay in the tone detector. */
    for (i=0;i<3;i++)
    {
@@ -274,6 +277,19 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       tonality_max = MAX32(tonality_max, tonal->info[pos].tonality);
       tonality_avg += tonal->info[pos].tonality;
       tonality_count++;
+      info_out->bandwidth = IMAX(info_out->bandwidth, tonal->info[pos].bandwidth);
+      bandwidth_span--;
+   }
+   pos = pos0;
+   /* Look back in time to see if any has a wider bandwidth than the current frame. */
+   for (i=0;i<bandwidth_span;i++)
+   {
+      pos--;
+      if (pos < 0)
+         pos = DETECT_SIZE-1;
+      if (pos == tonal->write_pos)
+         break;
+      info_out->bandwidth = IMAX(info_out->bandwidth, tonal->info[pos].bandwidth);
    }
    info_out->tonality = MAX32(tonality_avg/tonality_count, tonality_max-.2f);
 
