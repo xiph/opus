@@ -415,7 +415,7 @@ opus_int32 opus_multistream_surround_encoder_get_size(int channels, int mapping_
       nb_streams=channels;
       nb_coupled_streams=0;
 #ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-   } else if (mapping_family==254)
+   } else if (mapping_family==2)
    {
       if (!validate_ambisonics(channels, &nb_streams, &nb_coupled_streams))
          return 0;
@@ -563,7 +563,7 @@ int opus_multistream_surround_encoder_init(
       for(i=0;i<channels;i++)
          mapping[i] = i;
 #ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-   } else if (mapping_family==254)
+   } else if (mapping_family==2)
    {
       int i;
       if (!validate_ambisonics(channels, streams, coupled_streams))
@@ -579,7 +579,7 @@ int opus_multistream_surround_encoder_init(
    if (channels>2 && mapping_family==1) {
       mapping_type = MAPPING_TYPE_SURROUND;
 #ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-   } else if (mapping_family==254)
+   } else if (mapping_family==2)
    {
       mapping_type = MAPPING_TYPE_AMBISONICS;
 #endif

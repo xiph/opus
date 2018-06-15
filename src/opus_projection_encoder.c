@@ -104,7 +104,7 @@ static int get_streams_from_channels(int channels, int mapping_family,
                                      int *streams, int *coupled_streams,
                                      int *order_plus_one)
 {
-  if (mapping_family == 253)
+  if (mapping_family == 3)
   {
     if (get_order_plus_one_from_channels(channels, order_plus_one) != OPUS_OK)
       return OPUS_BAD_ARG;
@@ -222,7 +222,7 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
     coupled_streams, &order_plus_one) != OPUS_OK)
     return OPUS_BAD_ARG;
 
-  if (mapping_family == 253)
+  if (mapping_family == 3)
   {
     /* Assign mixing matrix based on available pre-computed matrices. */
     mixing_matrix = get_mixing_matrix(st);
