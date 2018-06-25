@@ -317,13 +317,19 @@ static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const f
   {
     _celt_autocorr(x, ac, NULL, 0, LPC_ORDER, WINDOW_SIZE);
     /* -40 dB noise floor. */
-    ac[0] -= ac[0]*1e-4;
+    ac[0] += ac[0]*1e-4;
     /* Lag windowing. */
     for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
     _celt_lpc(lpc, ac, LPC_ORDER);
+#if 0
+    for(i=0;i<WINDOW_SIZE;i++) printf("%f ", x[i]);
+    printf("\n");
+#endif
+#if 1
     printf("1 ");
     for(i=0;i<LPC_ORDER;i++) printf("%f ", lpc[i]);
     printf("\n");
+#endif
   }
   forward_transform(X, x);
 #if TRAINING
