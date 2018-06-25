@@ -64,7 +64,7 @@
 #define CEPS_MEM 8
 #define NB_DELTA_CEPS 6
 
-#define NB_FEATURES (NB_BANDS+3*NB_DELTA_CEPS+2)
+#define NB_FEATURES (2*NB_BANDS+2+LPC_ORDER)
 
 
 #ifndef TRAINING
@@ -305,12 +305,11 @@ int lowpass = FREQ_SIZE;
 int band_lp = NB_BANDS;
 #endif
 
-static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
+static void frame_analysis(DenoiseState *st, float *lpc, kiss_fft_cpx *X, float *Ex, const float *in) {
   int i;
   float x[WINDOW_SIZE];
   float x0[WINDOW_SIZE];
   float ac[LPC_ORDER+1];
-  float lpc[LPC_ORDER];
   float rc[LPC_ORDER];
   RNN_COPY(x, st->analysis_mem, FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) x[FRAME_SIZE + i] = in[i];
@@ -360,17 +359,15 @@ static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cp
                                   float *Ex, float *Ep, float *Exp, float *features, const float *in) {
   int i;
   float E = 0;
-  float *ceps_0, *ceps_1, *ceps_2;
-  float spec_variability = 0;
   float Ly[NB_BANDS];
+  float lpc[LPC_ORDER];
   float p[WINDOW_SIZE];
   float pitch_buf[PITCH_BUF_SIZE];
   int pitch_index;
   float gain;
-  float *(pre[1]);
   float tmp[NB_BANDS];
   float follow, logMax;
-  frame_analysis(st, X, Ex, in);
+  frame_analysis(st, lpc, X, Ex, in);
   RNN_MOVE(st->pitch_buf, &st->pitch_buf[FRAME_SIZE], PITCH_BUF_SIZE-FRAME_SIZE);
   RNN_COPY(&st->pitch_buf[PITCH_BUF_SIZE-FRAME_SIZE], in, FRAME_SIZE);
   //pre[0] = &st->pitch_buf[0];
@@ -378,14 +375,14 @@ static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cp
   pitch_downsample(pitch_buf, PITCH_BUF_SIZE);
   pitch_search(pitch_buf+PITCH_MAX_PERIOD, pitch_buf, PITCH_FRAME_SIZE<<1,
                (PITCH_MAX_PERIOD-3*PITCH_MIN_PERIOD)<<1, &pitch_index);
-  printf("%d ", pitch_index);
+  //printf("%d ", pitch_index);
   pitch_index = 2*PITCH_MAX_PERIOD-pitch_index;
-  printf("%d ", pitch_index);
+  //printf("%d ", pitch_index);
   gain = remove_doubling(pitch_buf, 2*PITCH_MAX_PERIOD, 2*PITCH_MIN_PERIOD,
           2*PITCH_FRAME_SIZE, &pitch_index, st->last_period, st->last_gain);
   st->last_period = pitch_index;
   st->last_gain = gain;
-  printf("%d %f\n", pitch_index, gain);
+  //printf("%d %f\n", pitch_index, gain);
   for (i=0;i<WINDOW_SIZE;i++)
     p[i] = st->pitch_buf[PITCH_BUF_SIZE-WINDOW_SIZE-pitch_index/2+i];
   apply_window(p);
@@ -393,60 +390,36 @@ static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cp
   compute_band_energy(Ep, P);
   compute_band_corr(Exp, X, P);
   for (i=0;i<NB_BANDS;i++) Exp[i] = Exp[i]/sqrt(.001+Ex[i]*Ep[i]);
+#if 0
+  for (i=0;i<NB_BANDS;i++) printf("%f ", Exp[i]);
+  printf("\n");
+#endif
   dct(tmp, Exp);
-  for (i=0;i<NB_DELTA_CEPS;i++) features[NB_BANDS+2*NB_DELTA_CEPS+i] = tmp[i];
-  features[NB_BANDS+2*NB_DELTA_CEPS] -= 1.3;
-  features[NB_BANDS+2*NB_DELTA_CEPS+1] -= 0.9;
-  features[NB_BANDS+3*NB_DELTA_CEPS] = .01*(pitch_index-300);
+  for (i=0;i<NB_BANDS;i++) features[NB_BANDS+i] = tmp[i];
+  features[NB_BANDS] -= 1.3;
+  features[NB_BANDS+1] -= 0.9;
   logMax = -2;
   follow = -2;
   for (i=0;i<NB_BANDS;i++) {
     Ly[i] = log10(1e-2+Ex[i]);
-    Ly[i] = MAX16(logMax-7, MAX16(follow-1.5, Ly[i]));
+    Ly[i] = MAX16(logMax-8, MAX16(follow-2.5, Ly[i]));
     logMax = MAX16(logMax, Ly[i]);
-    follow = MAX16(follow-1.5, Ly[i]);
+    follow = MAX16(follow-2.5, Ly[i]);
     E += Ex[i];
   }
-  if (!TRAINING && E < 0.04) {
-    /* If there's no audio, avoid messing up the state. */
-    RNN_CLEAR(features, NB_FEATURES);
-    return 1;
-  }
   dct(features, Ly);
-  features[0] -= 12;
-  features[1] -= 4;
-  ceps_0 = st->cepstral_mem[st->memid];
-  ceps_1 = (st->memid < 1) ? st->cepstral_mem[CEPS_MEM+st->memid-1] : st->cepstral_mem[st->memid-1];
-  ceps_2 = (st->memid < 2) ? st->cepstral_mem[CEPS_MEM+st->memid-2] : st->cepstral_mem[st->memid-2];
-  for (i=0;i<NB_BANDS;i++) ceps_0[i] = features[i];
-  st->memid++;
-  for (i=0;i<NB_DELTA_CEPS;i++) {
-    features[i] = ceps_0[i] + ceps_1[i] + ceps_2[i];
-    features[NB_BANDS+i] = ceps_0[i] - ceps_2[i];
-    features[NB_BANDS+NB_DELTA_CEPS+i] =  ceps_0[i] - 2*ceps_1[i] + ceps_2[i];
-  }
-  /* Spectral variability features. */
-  if (st->memid == CEPS_MEM) st->memid = 0;
-  for (i=0;i<CEPS_MEM;i++)
-  {
-    int j;
-    float mindist = 1e15f;
-    for (j=0;j<CEPS_MEM;j++)
-    {
-      int k;
-      float dist=0;
-      for (k=0;k<NB_BANDS;k++)
-      {
-        float tmp;
-        tmp = st->cepstral_mem[i][k] - st->cepstral_mem[j][k];
-        dist += tmp*tmp;
-      }
-      if (j!=i)
-        mindist = MIN32(mindist, dist);
-    }
-    spec_variability += mindist;
-  }
-  features[NB_BANDS+3*NB_DELTA_CEPS+1] = spec_variability/CEPS_MEM-2.1;
+  features[0] -= 4;
+#if 0
+  for (i=0;i<NB_BANDS;i++) printf("%f ", Ly[i]);
+  printf("\n");
+#endif
+  features[2*NB_BANDS] = .01*(pitch_index-200);
+  features[2*NB_BANDS+1] = gain;
+  for (i=0;i<LPC_ORDER;i++) features[2*NB_BANDS+2+i] = lpc[i];
+#if 0
+  for (i=0;i<NB_FEATURES;i++) printf("%f ", features[i]);
+  printf("\n");
+#endif
   return TRAINING && E < 0.1;
 }
 
