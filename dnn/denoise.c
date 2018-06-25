@@ -37,6 +37,9 @@
 #include "rnnoise.h"
 #include "pitch.h"
 #include "arch.h"
+#include "celt_lpc.h"
+
+#define PREEMPHASIS (0.85f)
 
 #define FRAME_SIZE_SHIFT 2
 #define FRAME_SIZE (40<<FRAME_SIZE_SHIFT)
@@ -305,10 +308,23 @@ int band_lp = NB_BANDS;
 static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
   int i;
   float x[WINDOW_SIZE];
+  float ac[LPC_ORDER+1];
+  float lpc[LPC_ORDER];
   RNN_COPY(x, st->analysis_mem, FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) x[FRAME_SIZE + i] = in[i];
   RNN_COPY(st->analysis_mem, in, FRAME_SIZE);
   apply_window(x);
+  {
+    _celt_autocorr(x, ac, NULL, 0, LPC_ORDER, WINDOW_SIZE);
+    /* -40 dB noise floor. */
+    ac[0] -= ac[0]*1e-4;
+    /* Lag windowing. */
+    for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
+    _celt_lpc(lpc, ac, LPC_ORDER);
+    printf("1 ");
+    for(i=0;i<LPC_ORDER;i++) printf("%f ", lpc[i]);
+    printf("\n");
+  }
   forward_transform(X, x);
 #if TRAINING
   for (i=lowpass;i<FREQ_SIZE;i++)
@@ -429,6 +445,16 @@ static void biquad(float *y, float mem[2], const float *x, const float *b, const
   }
 }
 
+static void preemphasis(float *y, float *mem, const float *x, float coef, int N) {
+  int i;
+  for (i=0;i<N;i++) {
+    float yi;
+    yi = x[i] + *mem;
+    *mem = -coef*x[i];
+    y[i] = yi;
+  }
+}
+
 void pitch_filter(kiss_fft_cpx *X, const kiss_fft_cpx *P, const float *Ex, const float *Ep,
                   const float *Exp, const float *g) {
   int i;
@@ -521,6 +547,7 @@ int main(int argc, char **argv) {
   static const float a_hp[2] = {-1.99599, 0.99600};
   static const float b_hp[2] = {-2, 1};
   float mem_hp_x[2]={0};
+  float mem_preemph=0;
   float x[FRAME_SIZE];
   FILE *f1;
   DenoiseState *st;
@@ -546,10 +573,11 @@ int main(int argc, char **argv) {
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
     for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
+    preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
 
     compute_frame_features(st, X, P, Ex, Ep, Exp, features, x);
     pitch_filter(X, P, Ex, Ep, Exp, g);
-#if 1
+#if 0
     fwrite(features, sizeof(float), NB_FEATURES, stdout);
     fwrite(g, sizeof(float), NB_BANDS, stdout);
     fwrite(Ln, sizeof(float), NB_BANDS, stdout);
