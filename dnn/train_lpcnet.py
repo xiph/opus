@@ -6,6 +6,7 @@ import numpy as np
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
 from ulaw import ulaw2lin, lin2ulaw
+import keras.backend as K
 
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
@@ -21,22 +22,30 @@ model.compile(optimizer=Adam(0.0008), loss='sparse_categorical_crossentropy', me
 model.summary()
 
 pcmfile = sys.argv[1]
-chunk_size = int(sys.argv[2])
+feature_file = sys.argv[2]
+nb_features = 54
+nb_used_features = 38
+feature_chunk_size = 15
+pcm_chunk_size = 160*feature_chunk_size
 
-data = np.fromfile(pcmfile, dtype='int16')
-#data = data[:100000000]
-data = data/32768
-nb_frames = (len(data)-1)//chunk_size
+data = np.fromfile(pcmfile, dtype='int8')
+nb_frames = len(data)//pcm_chunk_size
 
-in_data = data[:nb_frames*chunk_size]
-#out_data = data[1:1+nb_frames*chunk_size]//256 + 128
-out_data = lin2ulaw(data[1:1+nb_frames*chunk_size]) + 128
+features = np.fromfile(feature_file, dtype='float32')
 
-in_data = np.reshape(in_data, (nb_frames, chunk_size, 1))
-out_data = np.reshape(out_data, (nb_frames, chunk_size, 1))
+data = data[:nb_frames*pcm_chunk_size]
+features = features[:nb_frames*feature_chunk_size*nb_features]
 
-checkpoint = ModelCheckpoint('wavernn1f_{epoch:02d}.h5')
+in_data = np.concatenate([data[0:1], data[:-1]])/16.;
+
+in_data = np.reshape(in_data, (nb_frames, pcm_chunk_size, 1))
+out_data = np.reshape(data, (nb_frames, pcm_chunk_size, 1))
+out_data = (out_data.astype('int16')+128).astype('uint8')
+features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
+features = features[:, :, :nb_used_features]
+
+checkpoint = ModelCheckpoint('lpcnet1b_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
-model.compile(optimizer=Adam(0.002, amsgrad=True, decay=1e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
+model.compile(optimizer=Adam(0.002, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 model.fit(in_data, out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])

@@ -9,9 +9,9 @@ import numpy as np
 import h5py
 import sys
 
-rnn_units=256
+rnn_units=64
 pcm_bits = 8
-pcm_levels = 1+2**pcm_bits
+pcm_levels = 2**pcm_bits
 
 def new_wavernn_model():
     pcm = Input(shape=(None, 1))
