@@ -308,27 +308,44 @@ int band_lp = NB_BANDS;
 static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
   int i;
   float x[WINDOW_SIZE];
+  float x0[WINDOW_SIZE];
   float ac[LPC_ORDER+1];
   float lpc[LPC_ORDER];
+  float rc[LPC_ORDER];
   RNN_COPY(x, st->analysis_mem, FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) x[FRAME_SIZE + i] = in[i];
   RNN_COPY(st->analysis_mem, in, FRAME_SIZE);
+  RNN_COPY(x0, x, WINDOW_SIZE);
   apply_window(x);
   {
+    float e;
+    float g_1;
     _celt_autocorr(x, ac, NULL, 0, LPC_ORDER, WINDOW_SIZE);
     /* -40 dB noise floor. */
     ac[0] += ac[0]*1e-4;
     /* Lag windowing. */
     for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
-    _celt_lpc(lpc, ac, LPC_ORDER);
+    e = _celt_lpc(lpc, rc, ac, LPC_ORDER);
+    g_1 = sqrt(FRAME_SIZE/(1e-10+e));
 #if 0
     for(i=0;i<WINDOW_SIZE;i++) printf("%f ", x[i]);
     printf("\n");
 #endif
-#if 1
-    printf("1 ");
+#if 0
+    printf("%f 1 ", e);
     for(i=0;i<LPC_ORDER;i++) printf("%f ", lpc[i]);
     printf("\n");
+#endif
+#if 0
+    for (i=0;i<FRAME_SIZE;i++) {
+      int j;
+      float *z;
+      float tmp;
+      z = &x0[i]+FRAME_SIZE/2;
+      tmp = z[0];
+      for (j=0;j<LPC_ORDER;j++) tmp += lpc[j]*z[-1-j];
+      printf("%f\n", g_1*tmp);
+    }
 #endif
   }
   forward_transform(X, x);
@@ -347,7 +364,7 @@ static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cp
   float spec_variability = 0;
   float Ly[NB_BANDS];
   float p[WINDOW_SIZE];
-  float pitch_buf[PITCH_BUF_SIZE>>1];
+  float pitch_buf[PITCH_BUF_SIZE];
   int pitch_index;
   float gain;
   float *(pre[1]);
@@ -356,18 +373,21 @@ static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cp
   frame_analysis(st, X, Ex, in);
   RNN_MOVE(st->pitch_buf, &st->pitch_buf[FRAME_SIZE], PITCH_BUF_SIZE-FRAME_SIZE);
   RNN_COPY(&st->pitch_buf[PITCH_BUF_SIZE-FRAME_SIZE], in, FRAME_SIZE);
-  pre[0] = &st->pitch_buf[0];
-  pitch_downsample(pre, pitch_buf, PITCH_BUF_SIZE, 1);
-  pitch_search(pitch_buf+(PITCH_MAX_PERIOD>>1), pitch_buf, PITCH_FRAME_SIZE,
-               PITCH_MAX_PERIOD-3*PITCH_MIN_PERIOD, &pitch_index);
-  pitch_index = PITCH_MAX_PERIOD-pitch_index;
-
-  gain = remove_doubling(pitch_buf, PITCH_MAX_PERIOD, PITCH_MIN_PERIOD,
-          PITCH_FRAME_SIZE, &pitch_index, st->last_period, st->last_gain);
+  //pre[0] = &st->pitch_buf[0];
+  RNN_COPY(pitch_buf, &st->pitch_buf[0], PITCH_BUF_SIZE);
+  pitch_downsample(pitch_buf, PITCH_BUF_SIZE);
+  pitch_search(pitch_buf+PITCH_MAX_PERIOD, pitch_buf, PITCH_FRAME_SIZE<<1,
+               (PITCH_MAX_PERIOD-3*PITCH_MIN_PERIOD)<<1, &pitch_index);
+  printf("%d ", pitch_index);
+  pitch_index = 2*PITCH_MAX_PERIOD-pitch_index;
+  printf("%d ", pitch_index);
+  gain = remove_doubling(pitch_buf, 2*PITCH_MAX_PERIOD, 2*PITCH_MIN_PERIOD,
+          2*PITCH_FRAME_SIZE, &pitch_index, st->last_period, st->last_gain);
   st->last_period = pitch_index;
   st->last_gain = gain;
+  printf("%d %f\n", pitch_index, gain);
   for (i=0;i<WINDOW_SIZE;i++)
-    p[i] = st->pitch_buf[PITCH_BUF_SIZE-WINDOW_SIZE-pitch_index+i];
+    p[i] = st->pitch_buf[PITCH_BUF_SIZE-WINDOW_SIZE-pitch_index/2+i];
   apply_window(p);
   forward_transform(P, p);
   compute_band_energy(Ep, P);

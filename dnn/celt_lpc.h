@@ -37,7 +37,7 @@
 
 #define LPC_ORDER 16
 
-void _celt_lpc(opus_val16 *_lpc, const opus_val32 *ac, int p);
+float _celt_lpc(opus_val16 *_lpc, opus_val16 *rc, const opus_val32 *ac, int p);
 
 void celt_fir(
          const opus_val16 *x,

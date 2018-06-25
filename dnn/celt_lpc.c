@@ -34,8 +34,9 @@
 #include "common.h"
 #include "pitch.h"
 
-void _celt_lpc(
+float _celt_lpc(
       opus_val16       *_lpc, /* out: [0...p-1] LPC coefficients      */
+      opus_val16 *rc,
 const opus_val32 *ac,  /* in:  [0...p] autocorrelation values  */
 int          p
 )
@@ -50,6 +51,7 @@ int          p
 #endif
 
    RNN_CLEAR(lpc, p);
+   RNN_CLEAR(rc, p);
    if (ac[0] != 0)
    {
       for (i = 0; i < p; i++) {
@@ -59,6 +61,7 @@ int          p
             rr += MULT32_32_Q31(lpc[j],ac[i - j]);
          rr += SHR32(ac[i + 1],3);
          r = -SHL32(rr,3)/error;
+         rc[i] = r;
          /*  Update LPC coefficients and total error */
          lpc[i] = SHR32(r,3);
          for (j = 0; j < (i+1)>>1; j++)
@@ -85,6 +88,7 @@ int          p
    for (i=0;i<p;i++)
       _lpc[i] = ROUND16(lpc[i],16);
 #endif
+   return error;
 }
 
 

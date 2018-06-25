@@ -38,8 +38,8 @@
 //#include "cpu_support.h"
 #include "arch.h"
 
-void pitch_downsample(celt_sig *x[], opus_val16 *x_lp,
-      int len, int C);
+void pitch_downsample(opus_val16 *x_lp,
+      int len);
 
 void pitch_search(const opus_val16 *x_lp, opus_val16 *y,
                   int len, int max_pitch, int *pitch);

@@ -145,43 +145,19 @@ static void celt_fir5(const opus_val16 *x,
 }
 
 
-void pitch_downsample(celt_sig *x[], opus_val16 *x_lp,
-      int len, int C)
+void pitch_downsample(opus_val16 *x_lp,
+      int len)
 {
    int i;
    opus_val32 ac[5];
    opus_val16 tmp=Q15ONE;
+   opus_val16 rc[4];
    opus_val16 lpc[4], mem[5]={0,0,0,0,0};
    opus_val16 lpc2[5];
    opus_val16 c1 = QCONST16(.8f,15);
-#ifdef FIXED_POINT
-   int shift;
-   opus_val32 maxabs = celt_maxabs32(x[0], len);
-   if (C==2)
-   {
-      opus_val32 maxabs_1 = celt_maxabs32(x[1], len);
-      maxabs = MAX32(maxabs, maxabs_1);
-   }
-   if (maxabs<1)
-      maxabs=1;
-   shift = celt_ilog2(maxabs)-10;
-   if (shift<0)
-      shift=0;
-   if (C==2)
-      shift++;
-#endif
-   for (i=1;i<len>>1;i++)
-      x_lp[i] = SHR32(HALF32(HALF32(x[0][(2*i-1)]+x[0][(2*i+1)])+x[0][2*i]), shift);
-   x_lp[0] = SHR32(HALF32(HALF32(x[0][1])+x[0][0]), shift);
-   if (C==2)
-   {
-      for (i=1;i<len>>1;i++)
-         x_lp[i] += SHR32(HALF32(HALF32(x[1][(2*i-1)]+x[1][(2*i+1)])+x[1][2*i]), shift);
-      x_lp[0] += SHR32(HALF32(HALF32(x[1][1])+x[1][0]), shift);
-   }
 
    _celt_autocorr(x_lp, ac, NULL, 0,
-                  4, len>>1);
+                  4, len);
 
    /* Noise floor -40 dB */
 #ifdef FIXED_POINT
@@ -200,7 +176,7 @@ void pitch_downsample(celt_sig *x[], opus_val16 *x_lp,
 #endif
    }
 
-   _celt_lpc(lpc, ac, 4);
+   _celt_lpc(lpc, rc, ac, 4);
    for (i=0;i<4;i++)
    {
       tmp = MULT16_16_Q15(QCONST16(.9f,15), tmp);
@@ -212,7 +188,7 @@ void pitch_downsample(celt_sig *x[], opus_val16 *x_lp,
    lpc2[2] = lpc[2] + MULT16_16_Q15(c1,lpc[1]);
    lpc2[3] = lpc[3] + MULT16_16_Q15(c1,lpc[2]);
    lpc2[4] = MULT16_16_Q15(c1,lpc[3]);
-   celt_fir5(x_lp, lpc2, x_lp, len>>1, mem);
+   celt_fir5(x_lp, lpc2, x_lp, len, mem);
 }
 
 void celt_pitch_xcorr(const opus_val16 *_x, const opus_val16 *_y,
