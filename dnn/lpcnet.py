@@ -16,15 +16,22 @@ nb_used_features = 37
 
 
 def new_wavernn_model():
-    pcm = Input(shape=(None, 2))
+    pcm = Input(shape=(None, 1))
+    pitch = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
 
+    conv1 = Conv1D(16, 7, padding='causal')
+    pconv1 = Conv1D(16, 5, padding='same')
+    pconv2 = Conv1D(16, 5, padding='same')
+
+    cpcm = conv1(pcm)
+    cpitch = pconv2(pconv1(pitch))
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))
 
     rnn = CuDNNGRU(rnn_units, return_sequences=True)
-    rnn_in = Concatenate()([pcm, rep(feat)])
+    rnn_in = Concatenate()([cpcm, cpitch, rep(feat)])
     md = MDense(pcm_levels, activation='softmax')
     ulaw_prob = md(rnn(rnn_in))
     
-    model = Model([pcm, feat], ulaw_prob)
+    model = Model([pcm, pitch, feat], ulaw_prob)
     return model

@@ -56,7 +56,7 @@ features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
 
 
-in_data = np.concatenate([in_data, in_pitch], axis=-1)
+#in_data = np.concatenate([in_data, in_pitch], axis=-1)
 
 #with h5py.File('in_data.h5', 'w') as f:
 # f.create_dataset('data', data=in_data[:50000, :, :])
@@ -66,4 +66,4 @@ checkpoint = ModelCheckpoint('lpcnet1e_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.002, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.fit([in_data, features], out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])
+model.fit([in_data, in_pitch, features], out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])
