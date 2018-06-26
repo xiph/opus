@@ -24,7 +24,7 @@ model.summary()
 pcmfile = sys.argv[1]
 feature_file = sys.argv[2]
 nb_features = 54
-nb_used_features = 38
+nb_used_features = lpcnet.nb_used_features
 feature_chunk_size = 15
 pcm_chunk_size = 160*feature_chunk_size
 
@@ -44,8 +44,8 @@ out_data = (out_data.astype('int16')+128).astype('uint8')
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
 
-checkpoint = ModelCheckpoint('lpcnet1b_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('lpcnet1c_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.002, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.fit(in_data, out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])
+model.fit([in_data, features], out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])
