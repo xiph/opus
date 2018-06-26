@@ -16,7 +16,7 @@ nb_used_features = 37
 
 
 def new_wavernn_model():
-    pcm = Input(shape=(None, 1))
+    pcm = Input(shape=(None, 2))
     feat = Input(shape=(None, nb_used_features))
 
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))

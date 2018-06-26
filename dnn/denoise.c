@@ -46,7 +46,7 @@
 #define WINDOW_SIZE (2*FRAME_SIZE)
 #define FREQ_SIZE (FRAME_SIZE + 1)
 
-#define PITCH_MIN_PERIOD 20
+#define PITCH_MIN_PERIOD 32
 #define PITCH_MAX_PERIOD 256
 #define PITCH_FRAME_SIZE 320
 #define PITCH_BUF_SIZE (PITCH_MAX_PERIOD+PITCH_FRAME_SIZE)
@@ -321,7 +321,7 @@ static void frame_analysis(DenoiseState *st, signed char *iexc, float *lpc, kiss
     float g_1;
     _celt_autocorr(x, ac, NULL, 0, LPC_ORDER, WINDOW_SIZE);
     /* -40 dB noise floor. */
-    ac[0] += ac[0]*1e-4;
+    ac[0] += ac[0]*1e-4 + 320/12;
     /* Lag windowing. */
     for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
     e = _celt_lpc(lpc, rc, ac, LPC_ORDER);
@@ -582,7 +582,6 @@ int main(int argc, char **argv) {
     preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
 
     compute_frame_features(st, iexc, X, P, Ex, Ep, Exp, features, x);
-    pitch_filter(X, P, Ex, Ep, Exp, g);
 #if 1
     fwrite(features, sizeof(float), NB_FEATURES, stdout);
     fwrite(iexc, sizeof(signed char), FRAME_SIZE, fexc);
