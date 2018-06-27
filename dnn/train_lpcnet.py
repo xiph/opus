@@ -62,7 +62,7 @@ features = features[:, :, :nb_used_features]
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('lpcnet1e_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('lpcnet1g_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.002, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])

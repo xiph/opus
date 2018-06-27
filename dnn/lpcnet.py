@@ -23,13 +23,22 @@ def new_wavernn_model():
     conv1 = Conv1D(16, 7, padding='causal')
     pconv1 = Conv1D(16, 5, padding='same')
     pconv2 = Conv1D(16, 5, padding='same')
+    fconv1 = Conv1D(128, 3, padding='same')
+    fconv2 = Conv1D(32, 3, padding='same')
 
-    cpcm = conv1(pcm)
-    cpitch = pconv2(pconv1(pitch))
+    if True:
+        cpcm = conv1(pcm)
+        cpitch = pconv2(pconv1(pitch))
+    else:
+        cpcm = pcm
+        cpitch = pitch
+
+    cfeat = fconv2(fconv1(feat))
+
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))
 
     rnn = CuDNNGRU(rnn_units, return_sequences=True)
-    rnn_in = Concatenate()([cpcm, cpitch, rep(feat)])
+    rnn_in = Concatenate()([cpcm, cpitch, rep(cfeat)])
     md = MDense(pcm_levels, activation='softmax')
     ulaw_prob = md(rnn(rnn_in))
     
