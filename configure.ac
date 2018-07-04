@@ -786,7 +786,7 @@ AS_IF([test "$enable_check_asm" = "yes"], [
 
 AC_ARG_ENABLE([ambisonics],
     [AS_HELP_STRING([--enable-ambisonics],[enable experimental ambisonic encoding and decoding support])],,
-    [enable_ambisonics=no])
+    [enable_ambisonics=yes])
 
 AS_IF([test "$enable_ambisonics" = "yes"], [
   AC_DEFINE([ENABLE_EXPERIMENTAL_AMBISONICS], [1], [Ambisonics Support])
