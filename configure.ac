@@ -761,7 +761,7 @@ AS_IF([test "$enable_assertions" = "yes"], [
 
 AC_ARG_ENABLE([hardening],
     [AS_HELP_STRING([--enable-hardening],[enable run-time checks that are cheap and safe for use in production])],,
-    [enable_hardening=no])
+    [enable_hardening=yes])
 
 AS_IF([test "$enable_hardening" = "yes"], [
   AC_DEFINE([ENABLE_HARDENING], [1], [Hardening])
