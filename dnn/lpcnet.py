@@ -19,6 +19,7 @@ def new_wavernn_model():
     pcm = Input(shape=(None, 1))
     pitch = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
+    dec_feat = Input(shape=(None, 32))
 
     conv1 = Conv1D(16, 7, padding='causal')
     pconv1 = Conv1D(16, 5, padding='same')
@@ -26,7 +27,7 @@ def new_wavernn_model():
     fconv1 = Conv1D(128, 3, padding='same')
     fconv2 = Conv1D(32, 3, padding='same')
 
-    if True:
+    if False:
         cpcm = conv1(pcm)
         cpitch = pconv2(pconv1(pitch))
     else:
@@ -37,10 +38,18 @@ def new_wavernn_model():
 
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))
 
-    rnn = CuDNNGRU(rnn_units, return_sequences=True)
+    rnn = CuDNNGRU(rnn_units, return_sequences=True, return_state=True)
     rnn_in = Concatenate()([cpcm, cpitch, rep(cfeat)])
     md = MDense(pcm_levels, activation='softmax')
-    ulaw_prob = md(rnn(rnn_in))
+    gru_out, state = rnn(rnn_in)
+    ulaw_prob = md(gru_out)
     
     model = Model([pcm, pitch, feat], ulaw_prob)
-    return model
+    encoder = Model(feat, cfeat)
+    
+    dec_rnn_in = Concatenate()([cpcm, cpitch, dec_feat])
+    dec_gru_out, state = rnn(dec_rnn_in)
+    dec_ulaw_prob = md(dec_gru_out)
+
+    decoder = Model([pcm, pitch, dec_feat], [dec_ulaw_prob, state])
+    return model, encoder, decoder
