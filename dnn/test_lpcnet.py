@@ -52,13 +52,23 @@ model.load_weights('lpcnet1h_30.h5')
 order = 16
 
 pcm = 0.*out_data
+exc = 0.*out_data
+pitch = np.zeros((1, 1, 1), dtype='float32')
+iexc = np.zeros((1, 1, 1), dtype='float32')
+state = np.zeros((1, lpcnet.rnn_units), dtype='float32')
 for c in range(1, nb_frames):
+    cfeat = enc.predict(features[c:c+1, :, :nb_used_features])
     for fr in range(1, feature_chunk_size):
         f = c*feature_chunk_size + fr
         a = features[c, fr, nb_used_features+1:]
+        
         #print(a)
-        gain = 1;
+        gain = 1.;
+        period = int(50*features[c, fr, 36]+100)
+        period = period - 4
         for i in range(frame_size):
+            pitch[0, 0, 0] = exc[f*frame_size + i - period, 0]
+            #p, state = dec.predict([
             pcm[f*frame_size + i, 0] = gain*out_data[f*frame_size + i, 0] - sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1, 0])
             print(pcm[f*frame_size + i, 0])
 
