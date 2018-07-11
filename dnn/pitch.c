@@ -42,6 +42,7 @@
 //#include "mathops.h"
 #include "celt_lpc.h"
 #include "math.h"
+#include <stdio.h>
 
 static void find_best_pitch(opus_val32 *xcorr, opus_val16 *y, int len,
                             int max_pitch, int *best_pitch
@@ -165,6 +166,7 @@ void pitch_downsample(opus_val16 *x_lp,
 #else
    ac[0] *= 1.0001f;
 #endif
+   ac[0] += EPSILON;
    /* Lag windowing */
    for (i=1;i<=4;i++)
    {
