@@ -9,7 +9,7 @@ import numpy as np
 import h5py
 import sys
 
-rnn_units=64
+rnn_units=512
 pcm_bits = 8
 pcm_levels = 2**pcm_bits
 nb_used_features = 37
@@ -20,6 +20,7 @@ def new_wavernn_model():
     pitch = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
     dec_feat = Input(shape=(None, 32))
+    dec_state = Input(shape=(rnn_units,))
 
     conv1 = Conv1D(16, 7, padding='causal')
     pconv1 = Conv1D(16, 5, padding='same')
@@ -48,8 +49,8 @@ def new_wavernn_model():
     encoder = Model(feat, cfeat)
     
     dec_rnn_in = Concatenate()([cpcm, cpitch, dec_feat])
-    dec_gru_out, state = rnn(dec_rnn_in)
+    dec_gru_out, state = rnn(dec_rnn_in, initial_state=dec_state)
     dec_ulaw_prob = md(dec_gru_out)
 
-    decoder = Model([pcm, pitch, dec_feat], [dec_ulaw_prob, state])
+    decoder = Model([pcm, pitch, dec_feat, dec_state], [dec_ulaw_prob, state])
     return model, encoder, decoder

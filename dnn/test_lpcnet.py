@@ -21,7 +21,7 @@ batch_size = 64
 
 model, enc, dec = lpcnet.new_wavernn_model()
 model.compile(optimizer=Adadiff(), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.summary()
+#model.summary()
 
 pcmfile = sys.argv[1]
 feature_file = sys.argv[2]
@@ -47,14 +47,15 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('lpcnet1h_30.h5')
+model.load_weights('lpcnet1i_30.h5')
 
 order = 16
 
 pcm = 0.*out_data
-exc = 0.*out_data
+exc = out_data-0
 pitch = np.zeros((1, 1, 1), dtype='float32')
-iexc = np.zeros((1, 1, 1), dtype='float32')
+fexc = np.zeros((1, 1, 1), dtype='float32')
+iexc = np.zeros((1, 1, 1), dtype='int16')
 state = np.zeros((1, lpcnet.rnn_units), dtype='float32')
 for c in range(1, nb_frames):
     cfeat = enc.predict(features[c:c+1, :, :nb_used_features])
@@ -68,7 +69,14 @@ for c in range(1, nb_frames):
         period = period - 4
         for i in range(frame_size):
             pitch[0, 0, 0] = exc[f*frame_size + i - period, 0]
-            #p, state = dec.predict([
-            pcm[f*frame_size + i, 0] = gain*out_data[f*frame_size + i, 0] - sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1, 0])
-            print(pcm[f*frame_size + i, 0])
+            fexc[0, 0, 0] = exc[f*frame_size + i - 1]
+            #print(cfeat.shape)
+            p, state = dec.predict([fexc, pitch, cfeat[:, fr:fr+1, :], state])
+            p = p/(1e-5 + np.sum(p))
+            #print(np.sum(p))
+            iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))-128
+            exc[f*frame_size + i] = iexc[0, 0, 0]/16.
+            #out_data[f*frame_size + i, 0] = iexc[0, 0, 0]
+            pcm[f*frame_size + i, 0] = gain*iexc[0, 0, 0] - sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1, 0])
+            print(iexc[0, 0, 0], out_data[f*frame_size + i, 0], pcm[f*frame_size + i, 0])
 
