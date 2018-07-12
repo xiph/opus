@@ -47,7 +47,7 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('lpcnet1i_30.h5')
+model.load_weights('lpcnet3a_21.h5')
 
 order = 16
 
@@ -61,7 +61,7 @@ for c in range(1, nb_frames):
     cfeat = enc.predict(features[c:c+1, :, :nb_used_features])
     for fr in range(1, feature_chunk_size):
         f = c*feature_chunk_size + fr
-        a = features[c, fr, nb_used_features+1:]
+        a = features[c, fr, nb_used_features:]
         
         #print(a)
         gain = 1.;
@@ -69,9 +69,10 @@ for c in range(1, nb_frames):
         period = period - 4
         for i in range(frame_size):
             pitch[0, 0, 0] = exc[f*frame_size + i - period, 0]
-            fexc[0, 0, 0] = exc[f*frame_size + i - 1]
+            fexc[0, 0, 0] = 2*exc[f*frame_size + i - 1]
+            #fexc[0, 0, 0] = in_data[f*frame_size + i, 0]
             #print(cfeat.shape)
-            p, state = dec.predict([fexc, pitch, cfeat[:, fr:fr+1, :], state])
+            p, state = dec.predict([fexc, cfeat[:, fr:fr+1, :], state])
             p = p/(1e-5 + np.sum(p))
             #print(np.sum(p))
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))-128

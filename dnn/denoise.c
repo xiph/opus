@@ -577,6 +577,7 @@ int main(int argc, char **argv) {
       return 0;
     }
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
+    for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
     for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
