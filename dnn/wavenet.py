@@ -10,13 +10,13 @@ import h5py
 import sys
 from causalconv import CausalConv
 
-units=128
+units=256
 pcm_bits = 8
 pcm_levels = 2**pcm_bits
 nb_used_features = 38
 
 
-def new_wavenet_model():
+def new_wavenet_model(fftnet=False):
     pcm = Input(shape=(None, 1))
     pitch = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
@@ -36,8 +36,9 @@ def new_wavenet_model():
     for k in range(10):
         res = tmp
         tmp = Concatenate()([tmp, rfeat])
-        c1 = CausalConv(units, 2, dilation_rate=2**k, activation='tanh')
-        c2 = CausalConv(units, 2, dilation_rate=2**k, activation='sigmoid')
+        dilation = 9-k if fftnet else k
+        c1 = CausalConv(units, 2, dilation_rate=2**dilation, activation='tanh')
+        c2 = CausalConv(units, 2, dilation_rate=2**dilation, activation='sigmoid')
         tmp = Multiply()([c1(tmp), c2(tmp)])
         tmp = Dense(units, activation='relu')(tmp)
         if k != 0:

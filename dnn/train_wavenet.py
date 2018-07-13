@@ -16,9 +16,9 @@ import h5py
 #set_session(tf.Session(config=config))
 
 nb_epochs = 40
-batch_size = 32
+batch_size = 64
 
-model = wavenet.new_wavenet_model()
+model = wavenet.new_wavenet_model(fftnet=True)
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 model.summary()
 
@@ -62,7 +62,7 @@ features = features[:, :, :nb_used_features]
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('wavenet3a_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet3c_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
