@@ -119,19 +119,26 @@ static int get_streams_from_channels(int channels, int mapping_family,
 
 static MappingMatrix *get_mixing_matrix(OpusProjectionEncoder *st)
 {
-  return (MappingMatrix *)((char*)st + align(sizeof(OpusProjectionEncoder)));
+  /* void* cast avoids clang -Wcast-align warning */
+  return (MappingMatrix *)(void*)((char*)st +
+    align(sizeof(OpusProjectionEncoder)));
 }
 
 static MappingMatrix *get_demixing_matrix(OpusProjectionEncoder *st)
 {
-  return (MappingMatrix *)((char*)st + align(sizeof(OpusProjectionEncoder) +
+  /* void* cast avoids clang -Wcast-align warning */
+  return (MappingMatrix *)(void*)((char*)st +
+    align(sizeof(OpusProjectionEncoder) +
     st->mixing_matrix_size_in_bytes));
 }
 
 static OpusMSEncoder *get_multistream_encoder(OpusProjectionEncoder *st)
 {
-  return (OpusMSEncoder *)((char*)st + align(sizeof(OpusProjectionEncoder) +
-    st->mixing_matrix_size_in_bytes + st->demixing_matrix_size_in_bytes));
+  /* void* cast avoids clang -Wcast-align warning */
+  return (OpusMSEncoder *)(void*)((char*)st +
+    align(sizeof(OpusProjectionEncoder) +
+    st->mixing_matrix_size_in_bytes +
+    st->demixing_matrix_size_in_bytes));
 }
 
 opus_int32 opus_projection_ambisonics_encoder_get_size(int channels,

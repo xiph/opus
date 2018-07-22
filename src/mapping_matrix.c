@@ -58,7 +58,8 @@ opus_int32 mapping_matrix_get_size(int rows, int cols)
 
 opus_int16 *mapping_matrix_get_data(const MappingMatrix *matrix)
 {
-  return (opus_int16*)((char*)matrix + align(sizeof(MappingMatrix)));
+  /* void* cast avoids clang -Wcast-align warning */
+  return (opus_int16*)(void*)((char*)matrix + align(sizeof(MappingMatrix)));
 }
 
 void mapping_matrix_init(MappingMatrix * const matrix,

@@ -1221,7 +1221,7 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
    }
 #ifndef DISABLE_FLOAT_API
    if (analysis->valid)
-      gain1 *= analysis->max_pitch_ratio;
+      gain1 = (opus_val16)(gain1 * analysis->max_pitch_ratio);
 #else
    (void)analysis;
 #endif

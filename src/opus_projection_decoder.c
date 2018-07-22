@@ -93,12 +93,16 @@ static void opus_projection_copy_channel_out_short(
 
 static MappingMatrix *get_demixing_matrix(OpusProjectionDecoder *st)
 {
-  return (MappingMatrix*)((char*)st + align(sizeof(OpusProjectionDecoder)));
+  /* void* cast avoids clang -Wcast-align warning */
+  return (MappingMatrix*)(void*)((char*)st +
+    align(sizeof(OpusProjectionDecoder)));
 }
 
 static OpusMSDecoder *get_multistream_decoder(OpusProjectionDecoder *st)
 {
-  return (OpusMSDecoder*)((char*)st + align(sizeof(OpusProjectionDecoder) +
+  /* void* cast avoids clang -Wcast-align warning */
+  return (OpusMSDecoder*)(void*)((char*)st +
+    align(sizeof(OpusProjectionDecoder) +
     st->demixing_matrix_size_in_bytes));
 }
 
