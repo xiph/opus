@@ -653,6 +653,8 @@ opus_int32 test_msdec_api(void)
    packet[1]=packet[2]=0;
    if(opus_multistream_decode(dec, packet, -1, sbuf, 960, 0)!=OPUS_BAD_ARG){printf("%d\n",opus_multistream_decode(dec, packet, -1, sbuf, 960, 0));test_failed();}
    cfgs++;
+   if(opus_multistream_decode(dec, packet, 3, sbuf, -960, 0)!=OPUS_BAD_ARG)test_failed();
+   cfgs++;
    if(opus_multistream_decode(dec, packet, 3, sbuf, 60, 0)!=OPUS_BUFFER_TOO_SMALL)test_failed();
    cfgs++;
    if(opus_multistream_decode(dec, packet, 3, sbuf, 480, 0)!=OPUS_BUFFER_TOO_SMALL)test_failed();
