@@ -1,6 +1,6 @@
 from keras import backend as K
 from keras.engine.topology import Layer
-from keras.layers import activations, initializers, regularizers, constraints, InputSpec, Conv1D
+from keras.layers import activations, initializers, regularizers, constraints, InputSpec, Conv1D, Dense
 import numpy as np
 
 class GatedConv(Conv1D):
@@ -42,13 +42,16 @@ class GatedConv(Conv1D):
         self.out_dims = filters
         self.nongate_activation = activations.get(activation)
         
-    def call(self, inputs, memory=None):
+    def call(self, inputs, cond=None, memory=None):
         if memory is None:
             mem = K.zeros((K.shape(inputs)[0], self.mem_size, K.shape(inputs)[-1]))
         else:
             mem = K.variable(K.cast_to_floatx(memory))
         inputs = K.concatenate([mem, inputs], axis=1)
         ret = super(GatedConv, self).call(inputs)
+        if cond is not None:
+            d = Dense(2*self.out_dims, use_bias=False, activation='linear')
+            ret = ret + d(cond)
         ret = self.nongate_activation(ret[:, :, :self.out_dims]) * activations.sigmoid(ret[:, :, self.out_dims:])
         if self.return_memory:
             ret = ret, inputs[:, :self.mem_size, :]

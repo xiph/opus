@@ -4,6 +4,7 @@ import math
 from keras.models import Model
 from keras.layers import Input, LSTM, CuDNNGRU, Dense, Embedding, Reshape, Concatenate, Lambda, Conv1D, Add, Multiply, Bidirectional, MaxPooling1D, Activation
 from keras import backend as K
+from keras.initializers import VarianceScaling
 from mdense import MDense
 import numpy as np
 import h5py
@@ -34,12 +35,20 @@ def new_wavenet_model(fftnet=False):
     rfeat = rep(cfeat)
     #tmp = Concatenate()([pcm, rfeat])
     tmp = pcm
+    init = VarianceScaling(scale=1.5,mode='fan_avg',distribution='uniform')
     for k in range(10):
         res = tmp
-        tmp = Concatenate()([tmp, rfeat])
         dilation = 9-k if fftnet else k
-        c = GatedConv(units, 2, dilation_rate=2**dilation, activation='tanh')
-        tmp = Dense(units, activation='relu')(c(tmp))
+        '''#tmp = Concatenate()([tmp, rfeat])
+        c = GatedConv(units, 2, dilation_rate=2**dilation, activation='tanh', kernel_initializer=init)
+        tmp = Dense(units, activation='relu')(c(tmp, cond=rfeat))'''
+        
+        tmp = Concatenate()([tmp, rfeat])
+        c1 = CausalConv(units, 2, dilation_rate=2**dilation, activation='tanh')
+        c2 = CausalConv(units, 2, dilation_rate=2**dilation, activation='sigmoid')
+        tmp = Multiply()([c1(tmp), c2(tmp)])
+        tmp = Dense(units, activation='relu')(tmp)
+        
         if k != 0:
             tmp = Add()([tmp, res])
 
