@@ -39,15 +39,15 @@ def new_wavenet_model(fftnet=False):
     for k in range(10):
         res = tmp
         dilation = 9-k if fftnet else k
-        '''#tmp = Concatenate()([tmp, rfeat])
-        c = GatedConv(units, 2, dilation_rate=2**dilation, activation='tanh', kernel_initializer=init)
-        tmp = Dense(units, activation='relu')(c(tmp, cond=rfeat))'''
-        
         tmp = Concatenate()([tmp, rfeat])
+        c = GatedConv(units, 2, dilation_rate=2**dilation, activation='tanh', kernel_initializer=init)
+        tmp = Dense(units, activation='relu')(c(tmp))
+        
+        '''tmp = Concatenate()([tmp, rfeat])
         c1 = CausalConv(units, 2, dilation_rate=2**dilation, activation='tanh')
         c2 = CausalConv(units, 2, dilation_rate=2**dilation, activation='sigmoid')
         tmp = Multiply()([c1(tmp), c2(tmp)])
-        tmp = Dense(units, activation='relu')(tmp)
+        tmp = Dense(units, activation='relu')(tmp)'''
         
         if k != 0:
             tmp = Add()([tmp, res])
