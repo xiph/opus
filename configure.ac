@@ -784,14 +784,6 @@ AS_IF([test "$enable_check_asm" = "yes"], [
   AC_DEFINE([OPUS_CHECK_ASM], [1], [Run bit-exactness checks between optimized and c implementations])
 ])
 
-AC_ARG_ENABLE([ambisonics],
-    [AS_HELP_STRING([--enable-ambisonics],[enable experimental ambisonic encoding and decoding support])],,
-    [enable_ambisonics=yes])
-
-AS_IF([test "$enable_ambisonics" = "yes"], [
-  AC_DEFINE([ENABLE_EXPERIMENTAL_AMBISONICS], [1], [Ambisonics Support])
-])
-
 AC_ARG_ENABLE([doc],
     [AS_HELP_STRING([--disable-doc], [Do not build API documentation])],,
     [enable_doc=yes])
@@ -930,7 +922,6 @@ AC_MSG_NOTICE([
       Hardening: ..................... ${enable_hardening}
       Fuzzing: ....................... ${enable_fuzzing}
       Check ASM: ..................... ${enable_check_asm}
-      Ambisonics support: ............ ${enable_ambisonics}
 
       API documentation: ............. ${enable_doc}
       Extra programs: ................ ${enable_extra_programs}

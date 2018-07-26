@@ -53,11 +53,8 @@ typedef struct ChannelLayout {
 
 typedef enum {
   MAPPING_TYPE_NONE,
-  MAPPING_TYPE_SURROUND
-#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-  ,  /* Do not include comma at end of enumerator list */
+  MAPPING_TYPE_SURROUND,
   MAPPING_TYPE_AMBISONICS
-#endif /* ENABLE_EXPERIMENTAL_AMBISONICS */
 } MappingType;
 
 struct OpusMSEncoder {
