@@ -383,10 +383,10 @@ int main(int _argc, char **_argv)
 
   /* Test full range of channels in creation arguments. */
   for (i = 0; i < 255; i++)
-    test_creation_arguments(i, 253);
+    test_creation_arguments(i, 3);
 
   /* Test encode/decode pipeline. */
-  test_encode_decode(64 * 18, 18, 253);
+  test_encode_decode(64 * 18, 18, 3);
 
   fprintf(stderr, "All projection tests passed.\n");
   return 0;
