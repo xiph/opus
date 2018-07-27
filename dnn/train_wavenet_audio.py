@@ -31,7 +31,7 @@ feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
 
 data = np.fromfile(pcmfile, dtype='int16')
-data = np.minimum(127, lin2ulaw(data[160:]/32768.))
+data = np.minimum(127, lin2ulaw(data[80:]/32768.))
 nb_frames = len(data)//pcm_chunk_size
 
 features = np.fromfile(feature_file, dtype='float32')
@@ -39,7 +39,7 @@ features = np.fromfile(feature_file, dtype='float32')
 data = data[:nb_frames*pcm_chunk_size]
 features = features[:nb_frames*feature_chunk_size*nb_features]
 
-in_data = np.concatenate([data[0:1], data[:-1]])/16.;
+in_data = np.concatenate([data[0:1], data[:-1]]);
 
 features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
 pitch = 1.*data
@@ -51,6 +51,7 @@ for i in range(2, nb_frames*feature_chunk_size):
 in_pitch = np.reshape(pitch/16., (nb_frames, pcm_chunk_size, 1))
 
 in_data = np.reshape(in_data, (nb_frames, pcm_chunk_size, 1))
+in_data = (in_data.astype('int16')+128).astype('uint8')
 out_data = np.reshape(data, (nb_frames, pcm_chunk_size, 1))
 out_data = (out_data.astype('int16')+128).astype('uint8')
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
