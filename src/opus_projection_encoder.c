@@ -379,6 +379,7 @@ void opus_projection_encoder_destroy(OpusProjectionEncoder *st)
 
 int opus_projection_encoder_ctl(OpusProjectionEncoder *st, int request, ...)
 {
+  va_list ap;
   MappingMatrix *demixing_matrix;
   OpusMSEncoder *ms_encoder;
   int ret = OPUS_OK;
@@ -386,7 +387,6 @@ int opus_projection_encoder_ctl(OpusProjectionEncoder *st, int request, ...)
   ms_encoder = get_multistream_encoder(st);
   demixing_matrix = get_demixing_matrix(st);
 
-  va_list ap;
   va_start(ap, request);
   switch(request)
   {
