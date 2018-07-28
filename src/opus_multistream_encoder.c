@@ -741,10 +741,10 @@ static void ambisonics_rate_allocation(
       )
 {
    int i;
-   int total_rate;
-   int directional_rate;
-   int nondirectional_rate;
-   int leftover_bits;
+   opus_int32 total_rate;
+   opus_int32 directional_rate;
+   opus_int32 nondirectional_rate;
+   opus_int32 leftover_bits;
 
    /* Each nondirectional channel gets (rate_ratio_num / rate_ratio_den) times
     * as many bits as all other ambisonics channels.
@@ -760,7 +760,7 @@ static void ambisonics_rate_allocation(
    if (st->bitrate_bps==OPUS_AUTO)
    {
       total_rate = (st->layout.nb_coupled_streams + st->layout.nb_streams) *
-         (Fs+60*Fs/frame_size) + st->layout.nb_streams * 15000;
+         (Fs+60*Fs/frame_size) + st->layout.nb_streams * (opus_int32)15000;
    } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
    {
       total_rate = nb_channels * 320000;
