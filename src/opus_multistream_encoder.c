@@ -752,8 +752,10 @@ static void ambisonics_rate_allocation(
    const int rate_ratio_num = 4;
    const int rate_ratio_den = 3;
    const int nb_channels = st->layout.nb_streams + st->layout.nb_coupled_streams;
+   /* The omnidirectional ambisonics and non-diegetic stereo channels */
    const int nb_nondirectional_channels = st->layout.nb_coupled_streams * 2 + 1;
-   const int nb_directional_channels = st->layout.nb_streams - 1;
+   /* The remaining ambisonics channels */
+   const int nb_directional_channels = nb_channels - nb_nondirectional_channels;
 
    if (st->bitrate_bps==OPUS_AUTO)
    {
