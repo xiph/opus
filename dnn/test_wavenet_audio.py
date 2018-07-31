@@ -20,7 +20,7 @@ nb_epochs = 40
 batch_size = 64
 
 #model = wavenet.new_wavenet_model(fftnet=True)
-model, _, _ = lpcnet.new_wavernn_model()
+model, enc, dec = lpcnet.new_wavernn_model()
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 model.summary()
@@ -61,14 +61,43 @@ features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
 
 
-#in_data = np.concatenate([in_data, in_pitch], axis=-1)
 
-#with h5py.File('in_data.h5', 'w') as f:
-# f.create_dataset('data', data=in_data[:50000, :, :])
-# f.create_dataset('feat', data=features[:50000, :, :])
+in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
+out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
-checkpoint = ModelCheckpoint('wavenet3e_{epoch:02d}.h5')
 
-#model.load_weights('wavernn1c_01.h5')
-model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.fit([in_data, features], out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])
+model.load_weights('wavenet3e_30.h5')
+
+order = 16
+
+pcm = 0.*out_data
+exc = out_data-0
+pitch = np.zeros((1, 1, 1), dtype='float32')
+fexc = np.zeros((1, 1, 1), dtype='float32')
+iexc = np.zeros((1, 1, 1), dtype='int16')
+state = np.zeros((1, lpcnet.rnn_units), dtype='float32')
+for c in range(1, nb_frames):
+    cfeat = enc.predict(features[c:c+1, :, :nb_used_features])
+    for fr in range(1, feature_chunk_size):
+        f = c*feature_chunk_size + fr
+        a = features[c, fr, nb_used_features:]
+        
+        #print(a)
+        gain = 1.;
+        period = int(50*features[c, fr, 36]+100)
+        period = period - 4
+        for i in range(frame_size):
+            pitch[0, 0, 0] = exc[f*frame_size + i - period, 0]
+            fexc[0, 0, 0] = iexc + 128
+            #fexc[0, 0, 0] = in_data[f*frame_size + i, 0]
+            #print(cfeat.shape)
+            p, state = dec.predict([fexc, cfeat[:, fr:fr+1, :], state])
+            p = p/(1e-5 + np.sum(p))
+            #print(np.sum(p))
+            iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))-128
+            exc[f*frame_size + i] = iexc[0, 0, 0]/16.
+            #out_data[f*frame_size + i, 0] = iexc[0, 0, 0]
+            pcm[f*frame_size + i, 0] = 32768*ulaw2lin(iexc[0, 0, 0]*1.0)
+            print(iexc[0, 0, 0], out_data[f*frame_size + i, 0], pcm[f*frame_size + i, 0])
+
+

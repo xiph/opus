@@ -5,7 +5,7 @@ import math
 def ulaw2lin(u):
     s = np.sign(u)
     u = np.abs(u)
-    return s*(np.exp(u/128*math.log(256))-1)/255
+    return s*(np.exp(u/128.*math.log(256))-1)/255
 
 
 def lin2ulaw(x):
