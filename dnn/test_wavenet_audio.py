@@ -10,11 +10,11 @@ from ulaw import ulaw2lin, lin2ulaw
 import keras.backend as K
 import h5py
 
-#import tensorflow as tf
-#from keras.backend.tensorflow_backend import set_session
-#config = tf.ConfigProto()
-#config.gpu_options.per_process_gpu_memory_fraction = 0.44
-#set_session(tf.Session(config=config))
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.2
+set_session(tf.Session(config=config))
 
 nb_epochs = 40
 batch_size = 64
@@ -66,7 +66,7 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('wavenet3e_30.h5')
+model.load_weights('wavenet3g_30.h5')
 
 order = 16
 
@@ -92,6 +92,7 @@ for c in range(1, nb_frames):
             #fexc[0, 0, 0] = in_data[f*frame_size + i, 0]
             #print(cfeat.shape)
             p, state = dec.predict([fexc, cfeat[:, fr:fr+1, :], state])
+            #p = np.maximum(p-0.003, 0)
             p = p/(1e-5 + np.sum(p))
             #print(np.sum(p))
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))-128

@@ -73,6 +73,7 @@ for c in range(1, nb_frames):
             #fexc[0, 0, 0] = in_data[f*frame_size + i, 0]
             #print(cfeat.shape)
             p, state = dec.predict([fexc, cfeat[:, fr:fr+1, :], state])
+            #p = np.maximum(p-0.003, 0)
             p = p/(1e-5 + np.sum(p))
             #print(np.sum(p))
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))-128

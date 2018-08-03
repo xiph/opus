@@ -10,11 +10,11 @@ from ulaw import ulaw2lin, lin2ulaw
 import keras.backend as K
 import h5py
 
-#import tensorflow as tf
-#from keras.backend.tensorflow_backend import set_session
-#config = tf.ConfigProto()
-#config.gpu_options.per_process_gpu_memory_fraction = 0.44
-#set_session(tf.Session(config=config))
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.44
+set_session(tf.Session(config=config))
 
 nb_epochs = 40
 batch_size = 64
@@ -43,6 +43,7 @@ data = data[:nb_frames*pcm_chunk_size]
 features = features[:nb_frames*feature_chunk_size*nb_features]
 
 in_data = np.concatenate([data[0:1], data[:-1]]);
+in_data = in_data + np.random.randint(-1, 1, len(data))
 
 features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
 pitch = 1.*data
@@ -67,7 +68,7 @@ features = features[:, :, :nb_used_features]
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('wavenet3e_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet3g_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])

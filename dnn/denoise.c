@@ -38,6 +38,7 @@
 #include "pitch.h"
 #include "arch.h"
 #include "celt_lpc.h"
+#include <assert.h>
 
 #define PREEMPHASIS (0.85f)
 
@@ -64,7 +65,7 @@
 #define CEPS_MEM 8
 #define NB_DELTA_CEPS 6
 
-#define NB_FEATURES (2*NB_BANDS+2+LPC_ORDER)
+#define NB_FEATURES (2*NB_BANDS+3+LPC_ORDER)
 
 
 #ifndef TRAINING
@@ -305,12 +306,20 @@ int lowpass = FREQ_SIZE;
 int band_lp = NB_BANDS;
 #endif
 
-static void frame_analysis(DenoiseState *st, signed char *iexc, float *lpc, kiss_fft_cpx *X, float *Ex, const float *in) {
+short float2short(float x)
+{
+  int i;
+  i = (int)floor(.5+x);
+  return IMAX(-32767, IMIN(32767, i));
+}
+
+static float frame_analysis(DenoiseState *st, signed char *iexc, short *pred, short *pcm, float *lpc, kiss_fft_cpx *X, float *Ex, const float *in) {
   int i;
   float x[WINDOW_SIZE];
   float x0[WINDOW_SIZE];
   float ac[LPC_ORDER+1];
   float rc[LPC_ORDER];
+  float g;
   RNN_COPY(x, st->analysis_mem, FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) x[FRAME_SIZE + i] = in[i];
   RNN_COPY(st->analysis_mem, in, FRAME_SIZE);
@@ -325,7 +334,8 @@ static void frame_analysis(DenoiseState *st, signed char *iexc, float *lpc, kiss
     /* Lag windowing. */
     for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
     e = _celt_lpc(lpc, rc, ac, LPC_ORDER);
-    g_1 = sqrt(FRAME_SIZE/(1e-10+e));
+    g = sqrt((1e-10+e)*(1./FRAME_SIZE));
+    g_1 = 1./g;
 #if 0
     for(i=0;i<WINDOW_SIZE;i++) printf("%f ", x[i]);
     printf("\n");
@@ -343,6 +353,8 @@ static void frame_analysis(DenoiseState *st, signed char *iexc, float *lpc, kiss
       z = &x0[i]+FRAME_SIZE/2;
       tmp = z[0];
       for (j=0;j<LPC_ORDER;j++) tmp += lpc[j]*z[-1-j];
+      pcm[i] = float2short(z[0]);
+      pred[i] = float2short(z[0] - tmp);
       nexc = (int)floor(.5 + 16*g_1*tmp);
       nexc = IMAX(-128, IMIN(127, nexc));
       iexc[i] = nexc;
@@ -357,9 +369,10 @@ static void frame_analysis(DenoiseState *st, signed char *iexc, float *lpc, kiss
     X[i].r = X[i].i = 0;
 #endif
   compute_band_energy(Ex, X);
+  return g;
 }
 
-static int compute_frame_features(DenoiseState *st, signed char *iexc, kiss_fft_cpx *X, kiss_fft_cpx *P,
+static int compute_frame_features(DenoiseState *st, signed char *iexc, short *pred, short *pcm, kiss_fft_cpx *X, kiss_fft_cpx *P,
                                   float *Ex, float *Ep, float *Exp, float *features, const float *in) {
   int i;
   float E = 0;
@@ -371,7 +384,8 @@ static int compute_frame_features(DenoiseState *st, signed char *iexc, kiss_fft_
   float gain;
   float tmp[NB_BANDS];
   float follow, logMax;
-  frame_analysis(st, iexc, lpc, X, Ex, in);
+  float g;
+  g = frame_analysis(st, iexc, pred, pcm, lpc, X, Ex, in);
   RNN_MOVE(st->pitch_buf, &st->pitch_buf[FRAME_SIZE], PITCH_BUF_SIZE-FRAME_SIZE);
   RNN_COPY(&st->pitch_buf[PITCH_BUF_SIZE-FRAME_SIZE], in, FRAME_SIZE);
   //pre[0] = &st->pitch_buf[0];
@@ -419,7 +433,8 @@ static int compute_frame_features(DenoiseState *st, signed char *iexc, kiss_fft_
 #endif
   features[2*NB_BANDS] = .01*(pitch_index-200);
   features[2*NB_BANDS+1] = gain;
-  for (i=0;i<LPC_ORDER;i++) features[2*NB_BANDS+2+i] = lpc[i];
+  features[2*NB_BANDS+2] = log10(g);
+  for (i=0;i<LPC_ORDER;i++) features[2*NB_BANDS+3+i] = lpc[i];
 #if 0
   for (i=0;i<NB_FEATURES;i++) printf("%f ", features[i]);
   printf("\n");
@@ -505,11 +520,11 @@ float rnnoise_process_frame(DenoiseState *st, float *out, const float *in) {
   float g[NB_BANDS];
   float gf[FREQ_SIZE]={1};
   float vad_prob = 0;
-  int silence;
+  int silence=0;
   static const float a_hp[2] = {-1.99599, 0.99600};
   static const float b_hp[2] = {-2, 1};
   biquad(x, st->mem_hp_x, in, b_hp, a_hp, FRAME_SIZE);
-  silence = compute_frame_features(st, NULL, X, P, Ex, Ep, Exp, features, x);
+  //silence = compute_frame_features(st, NULL, X, P, Ex, Ep, Exp, features, x);
 
   if (!silence) {
     pitch_filter(X, P, Ex, Ep, Exp, g);
@@ -554,15 +569,23 @@ int main(int argc, char **argv) {
   float x[FRAME_SIZE];
   FILE *f1;
   FILE *fexc;
+  FILE *ffeat;
+  FILE *fpred;
+  FILE *fpcm;
   signed char iexc[FRAME_SIZE];
+  short pred[FRAME_SIZE];
+  short pcm[FRAME_SIZE];
   DenoiseState *st;
   st = rnnoise_create();
-  if (argc!=3) {
-    fprintf(stderr, "usage: %s <speech> <exc out>\n", argv[0]);
+  if (argc!=6) {
+    fprintf(stderr, "usage: %s <speech> <exc out> <features out> <prediction out> <pcm out> \n", argv[0]);
     return 1;
   }
   f1 = fopen(argv[1], "r");
   fexc = fopen(argv[2], "w");
+  ffeat = fopen(argv[3], "w");
+  fpred = fopen(argv[4], "w");
+  fpcm = fopen(argv[5], "w");
   while (1) {
     kiss_fft_cpx X[FREQ_SIZE], P[WINDOW_SIZE];
     float Ex[NB_BANDS], Ep[NB_BANDS];
@@ -582,10 +605,12 @@ int main(int argc, char **argv) {
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
 
-    compute_frame_features(st, iexc, X, P, Ex, Ep, Exp, features, x);
+    compute_frame_features(st, iexc, pred, pcm, X, P, Ex, Ep, Exp, features, x);
 #if 1
-    fwrite(features, sizeof(float), NB_FEATURES, stdout);
     fwrite(iexc, sizeof(signed char), FRAME_SIZE, fexc);
+    fwrite(features, sizeof(float), NB_FEATURES, ffeat);
+    fwrite(pred, sizeof(short), FRAME_SIZE, fpred);
+    fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
 #endif
     count++;
   }

@@ -9,11 +9,11 @@ from ulaw import ulaw2lin, lin2ulaw
 import keras.backend as K
 import h5py
 
-#import tensorflow as tf
-#from keras.backend.tensorflow_backend import set_session
-#config = tf.ConfigProto()
-#config.gpu_options.per_process_gpu_memory_fraction = 0.44
-#set_session(tf.Session(config=config))
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.44
+set_session(tf.Session(config=config))
 
 nb_epochs = 40
 batch_size = 64
