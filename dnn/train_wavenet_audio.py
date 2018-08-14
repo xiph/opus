@@ -25,16 +25,18 @@ model, _, _ = lpcnet.new_wavernn_model()
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 model.summary()
 
-pcmfile = sys.argv[1]
+exc_file = sys.argv[1]
 feature_file = sys.argv[2]
+pred_file = sys.argv[3]
+pcm_file = sys.argv[4]
 frame_size = 160
 nb_features = 54
 nb_used_features = wavenet.nb_used_features
 feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
 
-data = np.fromfile(pcmfile, dtype='int16')
-data = np.minimum(127, lin2ulaw(data[80:]/32768.))
+data = np.fromfile(pcm_file, dtype='int16')
+data = np.minimum(127, lin2ulaw(data/32768.))
 nb_frames = len(data)//pcm_chunk_size
 
 features = np.fromfile(feature_file, dtype='float32')
@@ -46,6 +48,13 @@ in_data = np.concatenate([data[0:1], data[:-1]]);
 in_data = in_data + np.random.randint(-1, 1, len(data))
 
 features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
+
+pred = np.fromfile(pred_file, dtype='int16')
+pred = pred[:nb_frames*pcm_chunk_size]
+pred = np.minimum(127, lin2ulaw(pred/32768.))
+pred = pred + np.random.randint(-1, 1, len(data))
+
+
 pitch = 1.*data
 pitch[:320] = 0
 for i in range(2, nb_frames*feature_chunk_size):
@@ -60,7 +69,10 @@ out_data = np.reshape(data, (nb_frames, pcm_chunk_size, 1))
 out_data = (out_data.astype('int16')+128).astype('uint8')
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
+pred = np.reshape(pred, (nb_frames, pcm_chunk_size, 1))
+pred = (pred.astype('int16')+128).astype('uint8')
 
+in_data = np.concatenate([in_data, pred], axis=-1)
 
 #in_data = np.concatenate([in_data, in_pitch], axis=-1)
 
@@ -68,7 +80,7 @@ features = features[:, :, :nb_used_features]
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('wavenet3g_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet3h9_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
