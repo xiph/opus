@@ -23,18 +23,18 @@ batch_size = 64
 model, enc, dec = lpcnet.new_wavernn_model()
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.summary()
+#model.summary()
 
 pcmfile = sys.argv[1]
 feature_file = sys.argv[2]
 frame_size = 160
-nb_features = 54
+nb_features = 55
 nb_used_features = wavenet.nb_used_features
 feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
 
 data = np.fromfile(pcmfile, dtype='int16')
-data = np.minimum(127, lin2ulaw(data[80:]/32768.))
+data = np.minimum(127, lin2ulaw(data/32768.))
 nb_frames = len(data)//pcm_chunk_size
 
 features = np.fromfile(feature_file, dtype='float32')
@@ -66,7 +66,7 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('wavenet3g_30.h5')
+model.load_weights('wavenet3h12_30.h5')
 
 order = 16
 
@@ -92,7 +92,7 @@ for c in range(1, nb_frames):
             #fexc[0, 0, 0] = in_data[f*frame_size + i, 0]
             #print(cfeat.shape)
             p, state = dec.predict([fexc, cfeat[:, fr:fr+1, :], state])
-            #p = np.maximum(p-0.003, 0)
+            p = np.maximum(p-0.0003, 0)
             p = p/(1e-5 + np.sum(p))
             #print(np.sum(p))
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))-128

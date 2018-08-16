@@ -30,7 +30,7 @@ feature_file = sys.argv[2]
 pred_file = sys.argv[3]
 pcm_file = sys.argv[4]
 frame_size = 160
-nb_features = 54
+nb_features = 55
 nb_used_features = wavenet.nb_used_features
 feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
@@ -72,7 +72,7 @@ features = features[:, :, :nb_used_features]
 pred = np.reshape(pred, (nb_frames, pcm_chunk_size, 1))
 pred = (pred.astype('int16')+128).astype('uint8')
 
-in_data = np.concatenate([in_data, pred], axis=-1)
+#in_data = np.concatenate([in_data, pred], axis=-1)
 
 #in_data = np.concatenate([in_data, in_pitch], axis=-1)
 
@@ -80,7 +80,7 @@ in_data = np.concatenate([in_data, pred], axis=-1)
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('wavenet3h9_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet3h13_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
