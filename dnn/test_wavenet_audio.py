@@ -58,7 +58,7 @@ in_data = (in_data.astype('int16')+128).astype('uint8')
 out_data = np.reshape(data, (nb_frames, pcm_chunk_size, 1))
 out_data = (out_data.astype('int16')+128).astype('uint8')
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
-features = features[:, :, :nb_used_features]
+features = features[:, :, :]
 
 
 
@@ -66,38 +66,34 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('wavenet3h12_30.h5')
+model.load_weights('wavenet3h13_30.h5')
 
 order = 16
 
 pcm = 0.*out_data
-exc = out_data-0
-pitch = np.zeros((1, 1, 1), dtype='float32')
-fexc = np.zeros((1, 1, 1), dtype='float32')
+fexc = np.zeros((1, 1, 2), dtype='float32')
 iexc = np.zeros((1, 1, 1), dtype='int16')
 state = np.zeros((1, lpcnet.rnn_units), dtype='float32')
 for c in range(1, nb_frames):
     cfeat = enc.predict(features[c:c+1, :, :nb_used_features])
     for fr in range(1, feature_chunk_size):
         f = c*feature_chunk_size + fr
-        a = features[c, fr, nb_used_features:]
+        a = features[c, fr, nb_features-order:]
         
         #print(a)
         gain = 1.;
         period = int(50*features[c, fr, 36]+100)
         period = period - 4
         for i in range(frame_size):
-            pitch[0, 0, 0] = exc[f*frame_size + i - period, 0]
             fexc[0, 0, 0] = iexc + 128
-            #fexc[0, 0, 0] = in_data[f*frame_size + i, 0]
-            #print(cfeat.shape)
+            pred = -sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1, 0])
+            fexc[0, 0, 1] = np.minimum(127, lin2ulaw(pred/32768.)) + 128
+
             p, state = dec.predict([fexc, cfeat[:, fr:fr+1, :], state])
-            p = np.maximum(p-0.0003, 0)
+            p = np.maximum(p-0.001, 0)
             p = p/(1e-5 + np.sum(p))
-            #print(np.sum(p))
+
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))-128
-            exc[f*frame_size + i] = iexc[0, 0, 0]/16.
-            #out_data[f*frame_size + i, 0] = iexc[0, 0, 0]
             pcm[f*frame_size + i, 0] = 32768*ulaw2lin(iexc[0, 0, 0]*1.0)
             print(iexc[0, 0, 0], out_data[f*frame_size + i, 0], pcm[f*frame_size + i, 0])
 
