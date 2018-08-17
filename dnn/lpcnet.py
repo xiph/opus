@@ -41,7 +41,7 @@ class PCMInit(Initializer):
         }
 
 def new_wavernn_model():
-    pcm = Input(shape=(None, 1))
+    pcm = Input(shape=(None, 2))
     pitch = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
     dec_feat = Input(shape=(None, 32))
@@ -61,7 +61,7 @@ def new_wavernn_model():
         cpitch = pitch
 
     embed = Embedding(256, 128, embeddings_initializer=PCMInit())
-    cpcm = Reshape((-1, 128))(embed(pcm))
+    cpcm = Reshape((-1, 128*2))(embed(pcm))
 
 
     cfeat = fconv2(fconv1(feat))

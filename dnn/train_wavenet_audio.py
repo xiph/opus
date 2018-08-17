@@ -51,8 +51,18 @@ features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
 
 pred = np.fromfile(pred_file, dtype='int16')
 pred = pred[:nb_frames*pcm_chunk_size]
+
+pred_in = 32768.*ulaw2lin(data)
+for i in range(2, nb_frames*feature_chunk_size):
+    pred[i*frame_size:(i+1)*frame_size] = 0
+    if i % 100000 == 0:
+        print(i)
+    for k in range(16):
+        pred[i*frame_size:(i+1)*frame_size] = pred[i*frame_size:(i+1)*frame_size] - \
+            pred_in[i*frame_size-k-1:(i+1)*frame_size-k-1]*features[i, nb_features-16+k]
+
 pred = np.minimum(127, lin2ulaw(pred/32768.))
-pred = pred + np.random.randint(-1, 1, len(data))
+#pred = pred + np.random.randint(-1, 1, len(data))
 
 
 pitch = 1.*data
@@ -72,7 +82,7 @@ features = features[:, :, :nb_used_features]
 pred = np.reshape(pred, (nb_frames, pcm_chunk_size, 1))
 pred = (pred.astype('int16')+128).astype('uint8')
 
-#in_data = np.concatenate([in_data, pred], axis=-1)
+in_data = np.concatenate([in_data, pred], axis=-1)
 
 #in_data = np.concatenate([in_data, in_pitch], axis=-1)
 
