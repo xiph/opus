@@ -66,7 +66,7 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('wavenet3h13_30.h5')
+model.load_weights('wavenet3h21_30.h5')
 
 order = 16
 
@@ -90,11 +90,13 @@ for c in range(1, nb_frames):
             fexc[0, 0, 1] = np.minimum(127, lin2ulaw(pred/32768.)) + 128
 
             p, state = dec.predict([fexc, cfeat[:, fr:fr+1, :], state])
+            #p = p*p
+            #p = p/(1e-18 + np.sum(p))
             p = np.maximum(p-0.001, 0)
             p = p/(1e-5 + np.sum(p))
 
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))-128
             pcm[f*frame_size + i, 0] = 32768*ulaw2lin(iexc[0, 0, 0]*1.0)
-            print(iexc[0, 0, 0], out_data[f*frame_size + i, 0], pcm[f*frame_size + i, 0])
+            print(iexc[0, 0, 0], 32768*ulaw2lin(out_data[f*frame_size + i, 0]), pcm[f*frame_size + i, 0], pred)
 
 
