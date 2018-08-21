@@ -51,19 +51,19 @@ in_data = np.maximum(-127, np.minimum(127, in_data))
 
 features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
 
-pred = np.fromfile(pred_file, dtype='int16')
-pred = pred[:nb_frames*pcm_chunk_size]
+upred = np.fromfile(pred_file, dtype='int16')
+upred = upred[:nb_frames*pcm_chunk_size]
 
 pred_in = 32768.*ulaw2lin(in_data)
 for i in range(2, nb_frames*feature_chunk_size):
-    pred[i*frame_size:(i+1)*frame_size] = 0
+    upred[i*frame_size:(i+1)*frame_size] = 0
     if i % 100000 == 0:
         print(i)
     for k in range(16):
-        pred[i*frame_size:(i+1)*frame_size] = pred[i*frame_size:(i+1)*frame_size] - \
+        upred[i*frame_size:(i+1)*frame_size] = upred[i*frame_size:(i+1)*frame_size] - \
             pred_in[i*frame_size-k:(i+1)*frame_size-k]*features[i, nb_features-16+k]
 
-pred = np.minimum(127, lin2ulaw(pred/32768.))
+pred = np.minimum(127, lin2ulaw(upred/32768.))
 #pred = pred + np.random.randint(-1, 1, len(data))
 
 
@@ -77,7 +77,8 @@ in_pitch = np.reshape(pitch/16., (nb_frames, pcm_chunk_size, 1))
 
 in_data = np.reshape(in_data, (nb_frames, pcm_chunk_size, 1))
 in_data = (in_data.astype('int16')+128).astype('uint8')
-out_data = np.reshape(data, (nb_frames, pcm_chunk_size, 1))
+out_data = np.reshape(lin2ulaw((32768*ulaw2lin(data)-upred)/32768), (nb_frames, pcm_chunk_size, 1))
+out_data = np.maximum(-127, np.minimum(127, out_data))
 out_data = (out_data.astype('int16')+128).astype('uint8')
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
@@ -92,7 +93,7 @@ in_data = np.concatenate([in_data, pred], axis=-1)
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('wavenet3h21_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet4a1_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
