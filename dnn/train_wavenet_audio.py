@@ -46,7 +46,7 @@ udata = udata[:nb_frames*pcm_chunk_size]
 features = features[:nb_frames*feature_chunk_size*nb_features]
 
 in_data = np.concatenate([data[0:1], data[:-1]]);
-noise = np.concatenate([np.zeros((len(data)*2//5)), np.random.randint(-2, 2, len(data)//5), np.random.randint(-1, 1, len(data)*2//5)])
+noise = np.concatenate([np.zeros((len(data)*2//5)), np.random.randint(-1, 1, len(data)*3//5)])
 in_data = in_data + noise
 in_data = np.maximum(-127, np.minimum(127, in_data))
 
@@ -78,9 +78,18 @@ in_pitch = np.reshape(pitch/16., (nb_frames, pcm_chunk_size, 1))
 
 in_data = np.reshape(in_data, (nb_frames, pcm_chunk_size, 1))
 in_data = (in_data.astype('int16')+128).astype('uint8')
-out_data = np.reshape(lin2ulaw((udata-upred)/32768), (nb_frames, pcm_chunk_size, 1))
+out_data = lin2ulaw((udata-upred)/32768)
+in_exc = np.concatenate([out_data[0:1], out_data[:-1]]);
+
+out_data = np.reshape(out_data, (nb_frames, pcm_chunk_size, 1))
 out_data = np.maximum(-127, np.minimum(127, out_data))
 out_data = (out_data.astype('int16')+128).astype('uint8')
+
+in_exc = np.reshape(in_exc, (nb_frames, pcm_chunk_size, 1))
+in_exc = np.maximum(-127, np.minimum(127, in_exc))
+in_exc = (in_exc.astype('int16')+128).astype('uint8')
+
+
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
 pred = np.reshape(pred, (nb_frames, pcm_chunk_size, 1))
@@ -94,8 +103,8 @@ in_data = np.concatenate([in_data, pred], axis=-1)
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('wavenet4a3_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet4b_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.fit([in_data, features], out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])
+model.fit([in_data, in_exc, features], out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])

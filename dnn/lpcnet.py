@@ -12,6 +12,7 @@ import sys
 
 rnn_units=512
 pcm_bits = 8
+embed_size = 128
 pcm_levels = 2**pcm_bits
 nb_used_features = 38
 
@@ -42,6 +43,7 @@ class PCMInit(Initializer):
 
 def new_wavernn_model():
     pcm = Input(shape=(None, 2))
+    exc = Input(shape=(None, 1))
     pitch = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
     dec_feat = Input(shape=(None, 32))
@@ -60,26 +62,27 @@ def new_wavernn_model():
         cpcm = pcm
         cpitch = pitch
 
-    embed = Embedding(256, 128, embeddings_initializer=PCMInit())
-    cpcm = Reshape((-1, 128*2))(embed(pcm))
-
+    embed = Embedding(256, embed_size, embeddings_initializer=PCMInit())
+    cpcm = Reshape((-1, embed_size*2))(embed(pcm))
+    embed2 = Embedding(256, embed_size, embeddings_initializer=PCMInit())
+    cexc = Reshape((-1, embed_size))(embed2(exc))
 
     cfeat = fconv2(fconv1(feat))
 
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))
 
     rnn = CuDNNGRU(rnn_units, return_sequences=True, return_state=True)
-    rnn_in = Concatenate()([cpcm, rep(cfeat)])
+    rnn_in = Concatenate()([cpcm, cexc, rep(cfeat)])
     md = MDense(pcm_levels, activation='softmax')
     gru_out, state = rnn(rnn_in)
     ulaw_prob = md(gru_out)
     
-    model = Model([pcm, feat], ulaw_prob)
+    model = Model([pcm, exc, feat], ulaw_prob)
     encoder = Model(feat, cfeat)
     
-    dec_rnn_in = Concatenate()([cpcm, dec_feat])
+    dec_rnn_in = Concatenate()([cpcm, cexc, dec_feat])
     dec_gru_out, state = rnn(dec_rnn_in, initial_state=dec_state)
     dec_ulaw_prob = md(dec_gru_out)
 
-    decoder = Model([pcm, dec_feat, dec_state], [dec_ulaw_prob, state])
+    decoder = Model([pcm, exc, dec_feat, dec_state], [dec_ulaw_prob, state])
     return model, encoder, decoder

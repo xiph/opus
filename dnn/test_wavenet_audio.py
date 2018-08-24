@@ -66,7 +66,7 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('wavenet4a3_30.h5')
+model.load_weights('wavenet4b_30.h5')
 
 order = 16
 
@@ -85,19 +85,19 @@ for c in range(1, nb_frames):
         period = int(50*features[c, fr, 36]+100)
         period = period - 4
         for i in range(frame_size):
-            fexc[0, 0, 0] = iexc + 128
+            #fexc[0, 0, 0] = iexc + 128
             pred = -sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1, 0])
             fexc[0, 0, 1] = np.minimum(127, lin2ulaw(pred/32768.)) + 128
 
-            p, state = dec.predict([fexc, cfeat[:, fr:fr+1, :], state])
+            p, state = dec.predict([fexc, iexc, cfeat[:, fr:fr+1, :], state])
             #p = p*p
             #p = p/(1e-18 + np.sum(p))
             p = np.maximum(p-0.001, 0)
             p = p/(1e-5 + np.sum(p))
 
-            iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))-128
-            pcm[f*frame_size + i, 0] = pred + 32768*ulaw2lin(iexc[0, 0, 0]*1.0)
-            iexc[0, 0, 0] = lin2ulaw(pcm[f*frame_size + i, 0]/32768)
+            iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))
+            pcm[f*frame_size + i, 0] = pred + 32768*ulaw2lin(iexc[0, 0, 0]-128)
+            fexc[0, 0, 0] = lin2ulaw(pcm[f*frame_size + i, 0]/32768) + 128
             print(iexc[0, 0, 0], 32768*ulaw2lin(out_data[f*frame_size + i, 0]), pcm[f*frame_size + i, 0], pred)
 
 
