@@ -742,20 +742,9 @@ static void ambisonics_rate_allocation(
 {
    int i;
    opus_int32 total_rate;
-   opus_int32 directional_rate;
-   opus_int32 nondirectional_rate;
-   opus_int32 leftover_bits;
+   opus_int32 per_stream_rate;
 
-   /* Each nondirectional channel gets (rate_ratio_num / rate_ratio_den) times
-    * as many bits as all other ambisonics channels.
-    */
-   const int rate_ratio_num = 4;
-   const int rate_ratio_den = 3;
    const int nb_channels = st->layout.nb_streams + st->layout.nb_coupled_streams;
-   /* The omnidirectional ambisonics and non-diegetic stereo channels */
-   const int nb_nondirectional_channels = st->layout.nb_coupled_streams * 2 + 1;
-   /* The remaining ambisonics channels */
-   const int nb_directional_channels = nb_channels - nb_nondirectional_channels;
 
    if (st->bitrate_bps==OPUS_AUTO)
    {
@@ -769,46 +758,12 @@ static void ambisonics_rate_allocation(
       total_rate = st->bitrate_bps;
    }
 
-   /* Let y be the directional rate, m be the num of nondirectional channels
-    *   m = (s + 1)
-    * and let p, q be integers such that the nondirectional rate is
-    *   m_rate = (p / q) * y
-    * Also let T be the total bitrate to allocate. Then
-    *   T = (n - m) * y + m * m_rate
-    * Solving for y,
-    *   y = (q * T) / (m * (p - q) + n * q)
-    */
-   directional_rate =
-      total_rate * rate_ratio_den
-      / (nb_nondirectional_channels * (rate_ratio_num - rate_ratio_den)
-       + nb_channels * rate_ratio_den);
-
-   /* Calculate the nondirectional rate.
-    *   m_rate = y * (p / q)
-    */
-   nondirectional_rate = directional_rate * rate_ratio_num / rate_ratio_den;
-
-   /* Calculate the leftover from truncation error.
-    *   leftover = T - y * (n - m) - m_rate * m
-    * Place leftover bits in omnidirectional channel.
-    */
-   leftover_bits = total_rate
-      - directional_rate * nb_directional_channels
-      - nondirectional_rate * nb_nondirectional_channels;
-
-   /* Calculate rates for each channel */
+   /* Allocate equal number of bits to Ambisonic (uncoupled) and non-diegetic
+    * (coupled) streams */
+   per_stream_rate = total_rate / st->layout.nb_streams;
    for (i = 0; i < st->layout.nb_streams; i++)
    {
-      if (i < st->layout.nb_coupled_streams)
-      {
-         rate[i] = nondirectional_rate * 2;
-      } else if (i == st->layout.nb_coupled_streams)
-      {
-         rate[i] = nondirectional_rate + leftover_bits;
-      } else
-      {
-         rate[i] = directional_rate;
-      }
+     rate[i] = per_stream_rate;
    }
 }
 
