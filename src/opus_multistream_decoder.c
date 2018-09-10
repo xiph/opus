@@ -43,10 +43,6 @@
 static void validate_ms_decoder(OpusMSDecoder *st)
 {
    validate_layout(&st->layout);
-#ifdef OPUS_ARCHMASK
-   celt_assert(st->arch >= 0);
-   celt_assert(st->arch <= OPUS_ARCHMASK);
-#endif
 }
 #define VALIDATE_MS_DECODER(st) validate_ms_decoder(st)
 #else
