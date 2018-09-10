@@ -122,7 +122,7 @@ static MappingMatrix *get_mixing_matrix(OpusProjectionEncoder *st)
     align(sizeof(OpusProjectionEncoder)));
 }
 
-static MappingMatrix *get_demixing_matrix(OpusProjectionEncoder *st)
+static MappingMatrix *get_enc_demixing_matrix(OpusProjectionEncoder *st)
 {
   /* void* cast avoids clang -Wcast-align warning */
   return (MappingMatrix *)(void*)((char*)st +
@@ -254,7 +254,7 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
       return OPUS_BAD_ARG;
 
     /* Assign demixing matrix based on available pre-computed matrices. */
-    demixing_matrix = get_demixing_matrix(st);
+    demixing_matrix = get_enc_demixing_matrix(st);
     if (order_plus_one == 2)
     {
       mapping_matrix_init(demixing_matrix, mapping_matrix_foa_demixing.rows,
@@ -385,7 +385,7 @@ int opus_projection_encoder_ctl(OpusProjectionEncoder *st, int request, ...)
   int ret = OPUS_OK;
 
   ms_encoder = get_multistream_encoder(st);
-  demixing_matrix = get_demixing_matrix(st);
+  demixing_matrix = get_enc_demixing_matrix(st);
 
   va_start(ap, request);
   switch(request)
