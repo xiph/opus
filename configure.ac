@@ -760,7 +760,7 @@ AS_IF([test "$enable_assertions" = "yes"], [
 ])
 
 AC_ARG_ENABLE([hardening],
-    [AS_HELP_STRING([--enable-hardening],[enable run-time checks that are cheap and safe for use in production])],,
+    [AS_HELP_STRING([--disable-hardening],[disable run-time checks that are cheap and safe for use in production])],,
     [enable_hardening=yes])
 
 AS_IF([test "$enable_hardening" = "yes"], [
@@ -768,7 +768,7 @@ AS_IF([test "$enable_hardening" = "yes"], [
 ])
 
 AC_ARG_ENABLE([fuzzing],
-    [AS_HELP_STRING([--enable-fuzzing],[causes the encoder to make random decisions])],,
+	      [AS_HELP_STRING([--enable-fuzzing],[causes the encoder to make random decisions (do not use in production)])],,
     [enable_fuzzing=no])
 
 AS_IF([test "$enable_fuzzing" = "yes"], [
