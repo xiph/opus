@@ -31,7 +31,7 @@ pred_file = sys.argv[3]
 pcm_file = sys.argv[4]
 frame_size = 160
 nb_features = 55
-nb_used_features = wavenet.nb_used_features
+nb_used_features = lpcnet.nb_used_features
 feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
 
@@ -46,7 +46,7 @@ udata = udata[:nb_frames*pcm_chunk_size]
 features = features[:nb_frames*feature_chunk_size*nb_features]
 
 in_data = np.concatenate([data[0:1], data[:-1]]);
-noise = np.concatenate([np.zeros((len(data)*2//5)), np.random.randint(-1, 1, len(data)*3//5)])
+noise = np.concatenate([np.zeros((len(data)*1//5)), np.random.randint(-3, 3, len(data)*1//5), np.random.randint(-2, 2, len(data)*1//5), np.random.randint(-1, 1, len(data)*2//5)])
 in_data = in_data + noise
 in_data = np.maximum(-127, np.minimum(127, in_data))
 
@@ -58,8 +58,8 @@ upred = upred[:nb_frames*pcm_chunk_size]
 pred_in = 32768.*ulaw2lin(in_data)
 for i in range(2, nb_frames*feature_chunk_size):
     upred[i*frame_size:(i+1)*frame_size] = 0
-    if i % 100000 == 0:
-        print(i)
+    #if i % 100000 == 0:
+    #    print(i)
     for k in range(16):
         upred[i*frame_size:(i+1)*frame_size] = upred[i*frame_size:(i+1)*frame_size] - \
             pred_in[i*frame_size-k:(i+1)*frame_size-k]*features[i, nb_features-16+k]
@@ -103,7 +103,7 @@ in_data = np.concatenate([in_data, pred], axis=-1)
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('wavenet4b_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet4d3_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])

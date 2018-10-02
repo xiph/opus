@@ -29,7 +29,7 @@ pcmfile = sys.argv[1]
 feature_file = sys.argv[2]
 frame_size = 160
 nb_features = 55
-nb_used_features = wavenet.nb_used_features
+nb_used_features = lpcnet.nb_used_features
 feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
 
@@ -66,7 +66,7 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('wavenet4b_30.h5')
+model.load_weights('wavenet4d2_203.h5')
 
 order = 16
 
@@ -92,8 +92,8 @@ for c in range(1, nb_frames):
             p, state = dec.predict([fexc, iexc, cfeat[:, fr:fr+1, :], state])
             #p = p*p
             #p = p/(1e-18 + np.sum(p))
-            p = np.maximum(p-0.001, 0)
-            p = p/(1e-5 + np.sum(p))
+            p = np.maximum(p-0.001, 0).astype('float64')
+            p = p/(1e-8 + np.sum(p))
 
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))
             pcm[f*frame_size + i, 0] = pred + 32768*ulaw2lin(iexc[0, 0, 0]-128)

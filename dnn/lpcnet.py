@@ -10,7 +10,7 @@ import numpy as np
 import h5py
 import sys
 
-rnn_units=512
+rnn_units=128
 pcm_bits = 8
 embed_size = 128
 pcm_levels = 2**pcm_bits
