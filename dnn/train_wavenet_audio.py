@@ -94,6 +94,7 @@ features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
 pred = np.reshape(pred, (nb_frames, pcm_chunk_size, 1))
 pred = (pred.astype('int16')+128).astype('uint8')
+periods = (50*features[:,:,36:37]+100).astype('int16')
 
 in_data = np.concatenate([in_data, pred], axis=-1)
 
@@ -103,8 +104,8 @@ in_data = np.concatenate([in_data, pred], axis=-1)
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('wavenet4d3_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet4e_{epoch:02d}.h5')
 
 #model.load_weights('wavernn1c_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.fit([in_data, in_exc, features], out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])
+model.fit([in_data, in_exc, features, periods], out_data, batch_size=batch_size, epochs=30, validation_split=0.2, callbacks=[checkpoint])

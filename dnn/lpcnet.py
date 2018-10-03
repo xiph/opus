@@ -46,6 +46,7 @@ def new_wavernn_model():
     exc = Input(shape=(None, 1))
     pitch = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
+    pitch = Input(shape=(None, 1))
     dec_feat = Input(shape=(None, 32))
     dec_state = Input(shape=(rnn_units,))
 
@@ -67,7 +68,10 @@ def new_wavernn_model():
     embed2 = Embedding(256, embed_size, embeddings_initializer=PCMInit())
     cexc = Reshape((-1, embed_size))(embed2(exc))
 
-    cfeat = fconv2(fconv1(feat))
+    pembed = Embedding(256, 64)
+    cat_feat = Concatenate()([feat, Reshape((-1, 64))(pembed(pitch))])
+    
+    cfeat = fconv2(fconv1(cat_feat))
 
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))
 
@@ -77,8 +81,8 @@ def new_wavernn_model():
     gru_out, state = rnn(rnn_in)
     ulaw_prob = md(gru_out)
     
-    model = Model([pcm, exc, feat], ulaw_prob)
-    encoder = Model(feat, cfeat)
+    model = Model([pcm, exc, feat, pitch], ulaw_prob)
+    encoder = Model([feat, pitch], cfeat)
     
     dec_rnn_in = Concatenate()([cpcm, cexc, dec_feat])
     dec_gru_out, state = rnn(dec_rnn_in, initial_state=dec_state)

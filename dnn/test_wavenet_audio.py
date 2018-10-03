@@ -60,7 +60,7 @@ out_data = (out_data.astype('int16')+128).astype('uint8')
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :]
 
-
+periods = (50*features[:,:,36:37]+100).astype('int16')
 
 in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
