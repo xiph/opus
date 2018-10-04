@@ -66,7 +66,7 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('wavenet4d2_203.h5')
+model.load_weights('wavenet4f3_30.h5')
 
 order = 16
 
@@ -75,7 +75,7 @@ fexc = np.zeros((1, 1, 2), dtype='float32')
 iexc = np.zeros((1, 1, 1), dtype='int16')
 state = np.zeros((1, lpcnet.rnn_units), dtype='float32')
 for c in range(1, nb_frames):
-    cfeat = enc.predict(features[c:c+1, :, :nb_used_features])
+    cfeat = enc.predict([features[c:c+1, :, :nb_used_features], periods[c:c+1, :, :]])
     for fr in range(1, feature_chunk_size):
         f = c*feature_chunk_size + fr
         a = features[c, fr, nb_features-order:]

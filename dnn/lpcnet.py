@@ -2,7 +2,7 @@
 
 import math
 from keras.models import Model
-from keras.layers import Input, LSTM, CuDNNGRU, Dense, Embedding, Reshape, Concatenate, Lambda, Conv1D, Multiply, Bidirectional, MaxPooling1D, Activation
+from keras.layers import Input, LSTM, CuDNNGRU, Dense, Embedding, Reshape, Concatenate, Lambda, Conv1D, Multiply, Add, Bidirectional, MaxPooling1D, Activation
 from keras import backend as K
 from keras.initializers import Initializer
 from mdense import MDense
@@ -47,14 +47,14 @@ def new_wavernn_model():
     pitch = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
     pitch = Input(shape=(None, 1))
-    dec_feat = Input(shape=(None, 32))
+    dec_feat = Input(shape=(None, 128))
     dec_state = Input(shape=(rnn_units,))
 
     conv1 = Conv1D(16, 7, padding='causal', activation='tanh')
     pconv1 = Conv1D(16, 5, padding='same', activation='tanh')
     pconv2 = Conv1D(16, 5, padding='same', activation='tanh')
     fconv1 = Conv1D(128, 3, padding='same', activation='tanh')
-    fconv2 = Conv1D(32, 3, padding='same', activation='tanh')
+    fconv2 = Conv1D(102, 3, padding='same', activation='tanh')
 
     if False:
         cpcm = conv1(pcm)
@@ -73,6 +73,12 @@ def new_wavernn_model():
     
     cfeat = fconv2(fconv1(cat_feat))
 
+    fdense1 = Dense(128, activation='tanh')
+    fdense2 = Dense(128, activation='tanh')
+
+    cfeat = Add()([cfeat, cat_feat])
+    cfeat = fdense2(fdense1(cfeat))
+    
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))
 
     rnn = CuDNNGRU(rnn_units, return_sequences=True, return_state=True)
