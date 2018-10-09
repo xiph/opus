@@ -44,24 +44,13 @@ class PCMInit(Initializer):
 def new_wavernn_model():
     pcm = Input(shape=(None, 2))
     exc = Input(shape=(None, 1))
-    pitch = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
     pitch = Input(shape=(None, 1))
     dec_feat = Input(shape=(None, 128))
     dec_state = Input(shape=(rnn_units,))
 
-    conv1 = Conv1D(16, 7, padding='causal', activation='tanh')
-    pconv1 = Conv1D(16, 5, padding='same', activation='tanh')
-    pconv2 = Conv1D(16, 5, padding='same', activation='tanh')
     fconv1 = Conv1D(128, 3, padding='same', activation='tanh')
     fconv2 = Conv1D(102, 3, padding='same', activation='tanh')
-
-    if False:
-        cpcm = conv1(pcm)
-        cpitch = pconv2(pconv1(pitch))
-    else:
-        cpcm = pcm
-        cpitch = pitch
 
     embed = Embedding(256, embed_size, embeddings_initializer=PCMInit())
     cpcm = Reshape((-1, embed_size*2))(embed(pcm))

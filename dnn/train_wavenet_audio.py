@@ -58,14 +58,11 @@ upred = upred[:nb_frames*pcm_chunk_size]
 pred_in = ulaw2lin(in_data)
 for i in range(2, nb_frames*feature_chunk_size):
     upred[i*frame_size:(i+1)*frame_size] = 0
-    #if i % 100000 == 0:
-    #    print(i)
     for k in range(16):
         upred[i*frame_size:(i+1)*frame_size] = upred[i*frame_size:(i+1)*frame_size] - \
             pred_in[i*frame_size-k:(i+1)*frame_size-k]*features[i, nb_features-16+k]
 
 pred = lin2ulaw(upred)
-#pred = pred + np.random.randint(-1, 1, len(data))
 
 
 in_data = np.reshape(in_data, (nb_frames, pcm_chunk_size, 1))
@@ -88,12 +85,6 @@ pred = pred.astype('uint8')
 periods = (50*features[:,:,36:37]+100).astype('int16')
 
 in_data = np.concatenate([in_data, pred], axis=-1)
-
-#in_data = np.concatenate([in_data, in_pitch], axis=-1)
-
-#with h5py.File('in_data.h5', 'w') as f:
-# f.create_dataset('data', data=in_data[:50000, :, :])
-# f.create_dataset('feat', data=features[:50000, :, :])
 
 checkpoint = ModelCheckpoint('wavenet5b_{epoch:02d}.h5')
 
