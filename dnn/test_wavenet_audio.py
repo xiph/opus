@@ -45,13 +45,6 @@ features = features[:nb_frames*feature_chunk_size*nb_features]
 in_data = np.concatenate([data[0:1], data[:-1]]);
 
 features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
-pitch = 1.*data
-pitch[:320] = 0
-for i in range(2, nb_frames*feature_chunk_size):
-    period = int(50*features[i,36]+100)
-    period = period - 4
-    pitch[i*frame_size:(i+1)*frame_size] = data[i*frame_size-period:(i+1)*frame_size-period]
-in_pitch = np.reshape(pitch/16., (nb_frames, pcm_chunk_size, 1))
 
 in_data = np.reshape(in_data, (nb_frames, pcm_chunk_size, 1))
 in_data = in_data.astype('uint8')
