@@ -34,7 +34,7 @@ feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
 
 data = np.fromfile(pcmfile, dtype='int16')
-data = np.minimum(127, lin2ulaw(data/32768.))
+data = lin2ulaw(data)
 nb_frames = len(data)//pcm_chunk_size
 
 features = np.fromfile(feature_file, dtype='float32')
@@ -54,9 +54,9 @@ for i in range(2, nb_frames*feature_chunk_size):
 in_pitch = np.reshape(pitch/16., (nb_frames, pcm_chunk_size, 1))
 
 in_data = np.reshape(in_data, (nb_frames, pcm_chunk_size, 1))
-in_data = (in_data.astype('int16')+128).astype('uint8')
+in_data = in_data.astype('uint8')
 out_data = np.reshape(data, (nb_frames, pcm_chunk_size, 1))
-out_data = (out_data.astype('int16')+128).astype('uint8')
+out_data = out_data.astype('uint8')
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :]
 
@@ -66,7 +66,7 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('wavenet4f3_30.h5')
+model.load_weights('wavenet4f2_30.h5')
 
 order = 16
 
@@ -87,7 +87,7 @@ for c in range(1, nb_frames):
         for i in range(frame_size):
             #fexc[0, 0, 0] = iexc + 128
             pred = -sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1, 0])
-            fexc[0, 0, 1] = np.minimum(127, lin2ulaw(pred/32768.)) + 128
+            fexc[0, 0, 1] = lin2ulaw(pred)
 
             p, state = dec.predict([fexc, iexc, cfeat[:, fr:fr+1, :], state])
             #p = p*p
@@ -96,8 +96,8 @@ for c in range(1, nb_frames):
             p = p/(1e-8 + np.sum(p))
 
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))
-            pcm[f*frame_size + i, 0] = pred + 32768*ulaw2lin(iexc[0, 0, 0]-128)
-            fexc[0, 0, 0] = lin2ulaw(pcm[f*frame_size + i, 0]/32768) + 128
-            print(iexc[0, 0, 0], 32768*ulaw2lin(out_data[f*frame_size + i, 0]), pcm[f*frame_size + i, 0], pred)
+            pcm[f*frame_size + i, 0] = pred + ulaw2lin(iexc[0, 0, 0])
+            fexc[0, 0, 0] = lin2ulaw(pcm[f*frame_size + i, 0])
+            print(iexc[0, 0, 0], ulaw2lin(out_data[f*frame_size + i, 0]), pcm[f*frame_size + i, 0], pred)
 
 

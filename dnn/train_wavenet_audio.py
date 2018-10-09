@@ -36,7 +36,7 @@ feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
 
 udata = np.fromfile(pcm_file, dtype='int16')
-data = np.minimum(127, lin2ulaw(udata/32768.))
+data = lin2ulaw(udata)
 nb_frames = len(data)//pcm_chunk_size
 
 features = np.fromfile(feature_file, dtype='float32')
@@ -48,14 +48,14 @@ features = features[:nb_frames*feature_chunk_size*nb_features]
 in_data = np.concatenate([data[0:1], data[:-1]]);
 noise = np.concatenate([np.zeros((len(data)*1//5)), np.random.randint(-3, 3, len(data)*1//5), np.random.randint(-2, 2, len(data)*1//5), np.random.randint(-1, 1, len(data)*2//5)])
 in_data = in_data + noise
-in_data = np.maximum(-127, np.minimum(127, in_data))
+in_data = np.clip(in_data, 0, 255)
 
 features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
 
 upred = np.fromfile(pred_file, dtype='int16')
 upred = upred[:nb_frames*pcm_chunk_size]
 
-pred_in = 32768.*ulaw2lin(in_data)
+pred_in = ulaw2lin(in_data)
 for i in range(2, nb_frames*feature_chunk_size):
     upred[i*frame_size:(i+1)*frame_size] = 0
     #if i % 100000 == 0:
@@ -64,7 +64,7 @@ for i in range(2, nb_frames*feature_chunk_size):
         upred[i*frame_size:(i+1)*frame_size] = upred[i*frame_size:(i+1)*frame_size] - \
             pred_in[i*frame_size-k:(i+1)*frame_size-k]*features[i, nb_features-16+k]
 
-pred = np.minimum(127, lin2ulaw(upred/32768.))
+pred = lin2ulaw(upred)
 #pred = pred + np.random.randint(-1, 1, len(data))
 
 
@@ -77,23 +77,22 @@ for i in range(2, nb_frames*feature_chunk_size):
 in_pitch = np.reshape(pitch/16., (nb_frames, pcm_chunk_size, 1))
 
 in_data = np.reshape(in_data, (nb_frames, pcm_chunk_size, 1))
-in_data = (in_data.astype('int16')+128).astype('uint8')
-out_data = lin2ulaw((udata-upred)/32768)
+in_data = in_data.astype('uint8')
+out_data = lin2ulaw(udata-upred)
 in_exc = np.concatenate([out_data[0:1], out_data[:-1]]);
 
 out_data = np.reshape(out_data, (nb_frames, pcm_chunk_size, 1))
-out_data = np.maximum(-127, np.minimum(127, out_data))
-out_data = (out_data.astype('int16')+128).astype('uint8')
+out_data = out_data.astype('uint8')
 
 in_exc = np.reshape(in_exc, (nb_frames, pcm_chunk_size, 1))
-in_exc = np.maximum(-127, np.minimum(127, in_exc))
-in_exc = (in_exc.astype('int16')+128).astype('uint8')
+in_exc = in_exc.astype('uint8')
 
 
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
 pred = np.reshape(pred, (nb_frames, pcm_chunk_size, 1))
-pred = (pred.astype('int16')+128).astype('uint8')
+pred = pred.astype('uint8')
+
 periods = (50*features[:,:,36:37]+100).astype('int16')
 
 in_data = np.concatenate([in_data, pred], axis=-1)
@@ -104,7 +103,7 @@ in_data = np.concatenate([in_data, pred], axis=-1)
 # f.create_dataset('data', data=in_data[:50000, :, :])
 # f.create_dataset('feat', data=features[:50000, :, :])
 
-checkpoint = ModelCheckpoint('wavenet4f3_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet5b_{epoch:02d}.h5')
 
 #model.load_weights('wavenet4f2_30.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
