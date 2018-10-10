@@ -10,7 +10,7 @@ import numpy as np
 import h5py
 import sys
 
-rnn_units1=128
+rnn_units1=256
 rnn_units2=32
 pcm_bits = 8
 embed_size = 128
@@ -77,7 +77,7 @@ def new_wavernn_model():
     rnn_in = Concatenate()([cpcm, cexc, rep(cfeat)])
     md = MDense(pcm_levels, activation='softmax')
     gru_out1, _ = rnn(rnn_in)
-    gru_out2, _ = rnn2(gru_out1)
+    gru_out2, _ = rnn2(Concatenate()([gru_out1, rep(cfeat)]))
     ulaw_prob = md(gru_out2)
     
     model = Model([pcm, exc, feat, pitch], ulaw_prob)
@@ -85,7 +85,7 @@ def new_wavernn_model():
     
     dec_rnn_in = Concatenate()([cpcm, cexc, dec_feat])
     dec_gru_out1, state1 = rnn(dec_rnn_in, initial_state=dec_state1)
-    dec_gru_out2, state2 = rnn2(dec_gru_out1, initial_state=dec_state2)
+    dec_gru_out2, state2 = rnn2(Concatenate()([dec_gru_out1, dec_feat]), initial_state=dec_state2)
     dec_ulaw_prob = md(dec_gru_out2)
 
     decoder = Model([pcm, exc, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
