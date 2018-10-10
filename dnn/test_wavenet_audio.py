@@ -59,14 +59,15 @@ in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
 out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
-model.load_weights('wavenet4f2_30.h5')
+model.load_weights('wavenet5d0_19.h5')
 
 order = 16
 
 pcm = 0.*out_data
 fexc = np.zeros((1, 1, 2), dtype='float32')
 iexc = np.zeros((1, 1, 1), dtype='int16')
-state = np.zeros((1, lpcnet.rnn_units), dtype='float32')
+state1 = np.zeros((1, lpcnet.rnn_units1), dtype='float32')
+state2 = np.zeros((1, lpcnet.rnn_units2), dtype='float32')
 for c in range(1, nb_frames):
     cfeat = enc.predict([features[c:c+1, :, :nb_used_features], periods[c:c+1, :, :]])
     for fr in range(1, feature_chunk_size):
@@ -82,7 +83,7 @@ for c in range(1, nb_frames):
             pred = -sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1, 0])
             fexc[0, 0, 1] = lin2ulaw(pred)
 
-            p, state = dec.predict([fexc, iexc, cfeat[:, fr:fr+1, :], state])
+            p, state1, state2 = dec.predict([fexc, iexc, cfeat[:, fr:fr+1, :], state1, state2])
             #p = p*p
             #p = p/(1e-18 + np.sum(p))
             p = np.maximum(p-0.001, 0).astype('float64')

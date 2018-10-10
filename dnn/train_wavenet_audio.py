@@ -86,7 +86,7 @@ periods = (50*features[:,:,36:37]+100).astype('int16')
 
 in_data = np.concatenate([in_data, pred], axis=-1)
 
-checkpoint = ModelCheckpoint('wavenet5b_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet5d0_{epoch:02d}.h5')
 
 #model.load_weights('wavenet4f2_30.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=2e-4), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
