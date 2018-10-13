@@ -25,62 +25,44 @@ model, enc, dec = lpcnet.new_wavernn_model()
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 #model.summary()
 
-pcmfile = sys.argv[1]
-feature_file = sys.argv[2]
+feature_file = sys.argv[1]
 frame_size = 160
 nb_features = 55
 nb_used_features = lpcnet.nb_used_features
-feature_chunk_size = 15
-pcm_chunk_size = frame_size*feature_chunk_size
-
-data = np.fromfile(pcmfile, dtype='int16')
-data = lin2ulaw(data)
-nb_frames = len(data)//pcm_chunk_size
 
 features = np.fromfile(feature_file, dtype='float32')
+features = np.resize(features, (-1, nb_features))
+nb_frames = 1
+feature_chunk_size = features.shape[0]
+pcm_chunk_size = frame_size*feature_chunk_size
 
-data = data[:nb_frames*pcm_chunk_size]
-features = features[:nb_frames*feature_chunk_size*nb_features]
-
-in_data = np.concatenate([data[0:1], data[:-1]]);
-
-features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
-
-in_data = np.reshape(in_data, (nb_frames, pcm_chunk_size, 1))
-in_data = in_data.astype('uint8')
-out_data = np.reshape(data, (nb_frames, pcm_chunk_size, 1))
-out_data = out_data.astype('uint8')
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
-features = features[:, :, :]
 
 periods = (50*features[:,:,36:37]+100).astype('int16')
 
-in_data = np.reshape(in_data, (nb_frames*pcm_chunk_size, 1))
-out_data = np.reshape(data, (nb_frames*pcm_chunk_size, 1))
 
 
 model.load_weights('wavenet5e3_60.h5')
 
 order = 16
 
-pcm = 0.*out_data
+pcm = np.zeros((nb_frames*pcm_chunk_size, ))
 fexc = np.zeros((1, 1, 2), dtype='float32')
 iexc = np.zeros((1, 1, 1), dtype='int16')
 state1 = np.zeros((1, lpcnet.rnn_units1), dtype='float32')
 state2 = np.zeros((1, lpcnet.rnn_units2), dtype='float32')
-for c in range(1, nb_frames):
+
+mem = 0
+coef = 0.85
+
+skip = order + 1
+for c in range(0, nb_frames):
     cfeat = enc.predict([features[c:c+1, :, :nb_used_features], periods[c:c+1, :, :]])
-    for fr in range(1, feature_chunk_size):
+    for fr in range(0, feature_chunk_size):
         f = c*feature_chunk_size + fr
         a = features[c, fr, nb_features-order:]
-        
-        #print(a)
-        gain = 1.;
-        period = int(50*features[c, fr, 36]+100)
-        period = period - 4
-        for i in range(frame_size):
-            #fexc[0, 0, 0] = iexc + 128
-            pred = -sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1, 0])
+        for i in range(skip, frame_size):
+            pred = -sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1])
             fexc[0, 0, 1] = lin2ulaw(pred)
 
             p, state1, state2 = dec.predict([fexc, iexc, cfeat[:, fr:fr+1, :], state1, state2])
@@ -90,8 +72,10 @@ for c in range(1, nb_frames):
             p = p/(1e-8 + np.sum(p))
 
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))
-            pcm[f*frame_size + i, 0] = pred + ulaw2lin(iexc[0, 0, 0])
-            fexc[0, 0, 0] = lin2ulaw(pcm[f*frame_size + i, 0])
-            print(iexc[0, 0, 0], ulaw2lin(out_data[f*frame_size + i, 0]), pcm[f*frame_size + i, 0], pred)
+            pcm[f*frame_size + i] = pred + ulaw2lin(iexc[0, 0, 0])
+            fexc[0, 0, 0] = lin2ulaw(pcm[f*frame_size + i])
+            mem = coef*mem + pcm[f*frame_size + i]
+            print(mem)
+        skip = 0
 
 
