@@ -66,9 +66,11 @@ for c in range(0, nb_frames):
             fexc[0, 0, 1] = lin2ulaw(pred)
 
             p, state1, state2 = dec.predict([fexc, iexc, cfeat[:, fr:fr+1, :], state1, state2])
-            #p = p*p
-            #p = p/(1e-18 + np.sum(p))
-            p = np.maximum(p-0.001, 0).astype('float64')
+            #Lower the temperature for voiced frames to reduce noisiness
+            p *= np.power(p, np.maximum(0, 1.5*features[c, fr, 37] - .5))
+            p = p/(1e-18 + np.sum(p))
+            #Cut off the tail of the remaining distribution
+            p = np.maximum(p-0.0005, 0).astype('float64')
             p = p/(1e-8 + np.sum(p))
 
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))
