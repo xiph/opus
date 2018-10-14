@@ -5,6 +5,7 @@ from keras.models import Model
 from keras.layers import Input, LSTM, CuDNNGRU, Dense, Embedding, Reshape, Concatenate, Lambda, Conv1D, Multiply, Add, Bidirectional, MaxPooling1D, Activation
 from keras import backend as K
 from keras.initializers import Initializer
+from keras.callbacks import Callback
 from mdense import MDense
 import numpy as np
 import h5py
@@ -16,6 +17,49 @@ pcm_bits = 8
 embed_size = 128
 pcm_levels = 2**pcm_bits
 nb_used_features = 38
+
+class Sparsify(Callback):
+    def __init__(self, t_start, t_end, interval, density):
+        super(Sparsify, self).__init__()
+        self.batch = 0
+        self.t_start = t_start
+        self.t_end = t_end
+        self.interval = interval
+        self.final_density = density
+
+    def on_batch_end(self, batch, logs=None):
+        #print("batch number", self.batch)
+        self.batch += 1
+        if self.batch < self.t_start or ((self.batch-self.t_start) % self.interval != 0 and self.batch < self.t_end):
+            #print("don't constrain");
+            pass
+        else:
+            #print("constrain");
+            layer = self.model.get_layer('cu_dnngru_1')
+            w = layer.get_weights()
+            p = w[1]
+            nb = p.shape[1]//p.shape[0]
+            N = p.shape[0]
+            #print("nb = ", nb, ", N = ", N);
+            #print(p.shape)
+            density = self.final_density
+            if self.batch < self.t_end:
+                r = 1 - (self.batch-self.t_start)/(self.t_end - self.t_start)
+                density = 1 - (1-self.final_density)*(1 - r*r*r)
+            #print ("density = ", density)
+            for k in range(nb):
+                A = p[:, k*N:(k+1)*N]
+                L=np.reshape(A, (N, N//16, 16))
+                S=np.sum(L*L, axis=-1)
+                SS=np.sort(np.reshape(S, (-1,)))
+                thresh = SS[round(N*N//16*(1-density))]
+                mask = (S>=thresh).astype('float32');
+                mask = np.repeat(mask, 16, axis=1)
+                p[:, k*N:(k+1)*N] = p[:, k*N:(k+1)*N]*mask
+                #print(thresh, np.mean(mask))
+            w[1] = p
+            layer.set_weights(w)
+            
 
 class PCMInit(Initializer):
     def __init__(self, gain=.1, seed=None):

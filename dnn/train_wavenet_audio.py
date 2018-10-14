@@ -68,6 +68,7 @@ features = features[:nb_frames*feature_chunk_size*nb_features]
 
 in_data = np.concatenate([data[0:1], data[:-1]]);
 noise = np.concatenate([np.zeros((len(data)*1//5)), np.random.randint(-3, 3, len(data)*1//5), np.random.randint(-2, 2, len(data)*1//5), np.random.randint(-1, 1, len(data)*2//5)])
+#noise = np.round(np.concatenate([np.zeros((len(data)*1//5)), np.random.laplace(0, 1.2, len(data)*1//5), np.random.laplace(0, .77, len(data)*1//5), np.random.laplace(0, .33, len(data)*1//5), np.random.randint(-1, 1, len(data)*1//5)]))
 in_data = in_data + noise
 in_data = np.clip(in_data, 0, 255)
 
@@ -118,8 +119,8 @@ periods = (50*features[:,:,36:37]+100).astype('int16')
 in_data = np.concatenate([in_data, pred], axis=-1)
 
 # dump models to disk as we go
-checkpoint = ModelCheckpoint('wavenet5d0_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('wavenet5p0_{epoch:02d}.h5')
 
 #model.load_weights('wavenet4f2_30.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=5e-5), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.fit([in_data, in_exc, features, periods], out_data, batch_size=batch_size, epochs=60, validation_split=0.2, callbacks=[checkpoint])
+model.fit([in_data, in_exc, features, periods], out_data, batch_size=batch_size, epochs=60, validation_split=0.2, callbacks=[checkpoint, lpcnet.Sparsify(1000, 20000, 200, 0.25)])
