@@ -49,12 +49,14 @@ class Sparsify(Callback):
             #print ("density = ", density)
             for k in range(nb):
                 A = p[:, k*N:(k+1)*N]
+                A = A - np.diag(np.diag(A))
                 L=np.reshape(A, (N, N//16, 16))
                 S=np.sum(L*L, axis=-1)
                 SS=np.sort(np.reshape(S, (-1,)))
                 thresh = SS[round(N*N//16*(1-density))]
                 mask = (S>=thresh).astype('float32');
                 mask = np.repeat(mask, 16, axis=1)
+                mask = np.minimum(1, mask + np.diag(np.ones((N,))))
                 p[:, k*N:(k+1)*N] = p[:, k*N:(k+1)*N]*mask
                 #print(thresh, np.mean(mask))
             w[1] = p
