@@ -11,7 +11,7 @@ import numpy as np
 import h5py
 import sys
 
-rnn_units1=256
+rnn_units1=512
 rnn_units2=32
 pcm_bits = 8
 embed_size = 128
