@@ -325,12 +325,29 @@ static float frame_analysis(DenoiseState *st, signed char *iexc, short *pred, sh
   RNN_COPY(st->analysis_mem, in, FRAME_SIZE);
   RNN_COPY(x0, x, WINDOW_SIZE);
   apply_window(x);
+  forward_transform(X, x);
+#if TRAINING
+  for (i=lowpass;i<FREQ_SIZE;i++)
+    X[i].r = X[i].i = 0;
+#endif
+  compute_band_energy(Ex, X);
   {
     float e;
     float g_1;
-    _celt_autocorr(x, ac, NULL, 0, LPC_ORDER, WINDOW_SIZE);
+    if (0) {
+      _celt_autocorr(x, ac, NULL, 0, LPC_ORDER, WINDOW_SIZE);
+    } else {
+      float Xr[FREQ_SIZE];
+      kiss_fft_cpx X_auto[FREQ_SIZE];
+      float x_auto[FRAME_SIZE];
+      interp_band_gain(Xr, Ex);
+      RNN_CLEAR(X_auto, FREQ_SIZE);
+      for (i=0;i<160;i++) X_auto[i].r = Xr[i];
+      inverse_transform(x_auto, X_auto);
+      for (i=0;i<LPC_ORDER+1;i++) ac[i] = x_auto[i];
+    }
     /* -40 dB noise floor. */
-    ac[0] += ac[0]*1e-4 + 320/12;
+    ac[0] += ac[0]*1e-4 + 320/12/38.;
     /* Lag windowing. */
     for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
     e = _celt_lpc(lpc, rc, ac, LPC_ORDER);
@@ -341,7 +358,7 @@ static float frame_analysis(DenoiseState *st, signed char *iexc, short *pred, sh
     printf("\n");
 #endif
 #if 0
-    printf("%f 1 ", e);
+    printf("1 ");
     for(i=0;i<LPC_ORDER;i++) printf("%f ", lpc[i]);
     printf("\n");
 #endif
@@ -363,12 +380,6 @@ static float frame_analysis(DenoiseState *st, signed char *iexc, short *pred, sh
 #endif
     }
   }
-  forward_transform(X, x);
-#if TRAINING
-  for (i=lowpass;i<FREQ_SIZE;i++)
-    X[i].r = X[i].i = 0;
-#endif
-  compute_band_energy(Ex, X);
   return g;
 }
 

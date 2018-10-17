@@ -120,8 +120,8 @@ periods = (50*features[:,:,36:37]+100).astype('int16')
 in_data = np.concatenate([in_data, pred], axis=-1)
 
 # dump models to disk as we go
-checkpoint = ModelCheckpoint('lpcnet5_512_10_G32np_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('lpcnet9_384_10_G16_{epoch:02d}.h5')
 
 #model.load_weights('wavenet4f2_30.h5')
-model.compile(optimizer=Adam(0.0005, amsgrad=True, decay=5e-5), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.fit([in_data, in_exc, features, periods], out_data, batch_size=batch_size, epochs=60, validation_split=0.2, callbacks=[checkpoint, lpcnet.Sparsify(1000, 20000, 200, 0.1)])
+model.compile(optimizer=Adam(0.001, amsgrad=True, decay=5e-5), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
+model.fit([in_data, in_exc, features, periods], out_data, batch_size=batch_size, epochs=120, validation_split=0.0, callbacks=[checkpoint, lpcnet.Sparsify(2000, 40000, 400, 0.1)])

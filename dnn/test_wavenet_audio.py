@@ -42,7 +42,7 @@ periods = (50*features[:,:,36:37]+100).astype('int16')
 
 
 
-model.load_weights('wavenet5p0_30.h5')
+model.load_weights('wavenet5_384_10_G16np_50.h5')
 
 order = 16
 
