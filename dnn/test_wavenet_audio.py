@@ -37,12 +37,12 @@ feature_chunk_size = features.shape[0]
 pcm_chunk_size = frame_size*feature_chunk_size
 
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
-
+features[:,:,18:36] = 0
 periods = (50*features[:,:,36:37]+100).astype('int16')
 
 
 
-model.load_weights('wavenet5_384_10_G16np_50.h5')
+model.load_weights('lpcnet9_384_10_G16_29.h5')
 
 order = 16
 
