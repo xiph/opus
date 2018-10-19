@@ -236,7 +236,7 @@ void fuzz_encoder_settings(const int num_encoders, const int num_setting_changes
          int frame_size_enum = get_frame_size_enum(frame_size, sampling_rate);
          force_channel = IMIN(force_channel, num_channels);
 
-         sprintf(debug_info,
+         snprintf(debug_info, sizeof(debug_info),
                  "fuzz_encoder_settings: %d kHz, %d ch, application: %d, "
                  "%d bps, force ch: %d, vbr: %d, vbr constraint: %d, complexity: %d, "
                  "max bw: %d, signal: %d, inband fec: %d, pkt loss: %d%%, lsb depth: %d, "
