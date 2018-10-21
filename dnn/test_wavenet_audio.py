@@ -42,7 +42,7 @@ periods = (50*features[:,:,36:37]+100).astype('int16')
 
 
 
-model.load_weights('lpcnet9_384_10_G16_29.h5')
+model.load_weights('lpcnet9_384_10_G16_120.h5')
 
 order = 16
 
@@ -70,7 +70,7 @@ for c in range(0, nb_frames):
             p *= np.power(p, np.maximum(0, 1.5*features[c, fr, 37] - .5))
             p = p/(1e-18 + np.sum(p))
             #Cut off the tail of the remaining distribution
-            p = np.maximum(p-0.0005, 0).astype('float64')
+            p = np.maximum(p-0.002, 0).astype('float64')
             p = p/(1e-8 + np.sum(p))
 
             iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))
