@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import wavenet
 import lpcnet
 import sys
 import numpy as np

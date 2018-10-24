@@ -4,7 +4,6 @@
 #
 # Train a LPCNet model (note not a Wavenet model)
 
-import wavenet
 import lpcnet
 import sys
 import numpy as np
@@ -30,8 +29,6 @@ nb_epochs = 40
 batch_size = 64
 
 # Note we are creating a LPCNet model
-
-#model = wavenet.new_wavenet_model(fftnet=True)
 model, _, _ = lpcnet.new_wavernn_model()
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
