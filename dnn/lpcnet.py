@@ -11,12 +11,9 @@ import numpy as np
 import h5py
 import sys
 
-rnn_units1=384
-rnn_units2=16
 pcm_bits = 8
 embed_size = 128
 pcm_levels = 2**pcm_bits
-nb_used_features = 38
 
 class Sparsify(Callback):
     def __init__(self, t_start, t_end, interval, density):
@@ -88,7 +85,7 @@ class PCMInit(Initializer):
             'seed': self.seed
         }
 
-def new_wavernn_model():
+def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38):
     pcm = Input(shape=(None, 2))
     exc = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
@@ -127,6 +124,10 @@ def new_wavernn_model():
     ulaw_prob = md(gru_out2)
     
     model = Model([pcm, exc, feat, pitch], ulaw_prob)
+    model.rnn_units1 = rnn_units1
+    model.rnn_units2 = rnn_units2
+    model.nb_used_features = nb_used_features
+
     encoder = Model([feat, pitch], cfeat)
     
     dec_rnn_in = Concatenate()([cpcm, cexc, dec_feat])

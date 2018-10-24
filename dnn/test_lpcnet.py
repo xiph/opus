@@ -15,11 +15,7 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.2
 set_session(tf.Session(config=config))
 
-nb_epochs = 40
-batch_size = 64
-
-#model = wavenet.new_wavenet_model(fftnet=True)
-model, enc, dec = lpcnet.new_wavernn_model()
+model, enc, dec = lpcnet.new_lpcnet_model()
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 #model.summary()
@@ -27,7 +23,7 @@ model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=
 feature_file = sys.argv[1]
 frame_size = 160
 nb_features = 55
-nb_used_features = lpcnet.nb_used_features
+nb_used_features = model.nb_used_features
 
 features = np.fromfile(feature_file, dtype='float32')
 features = np.resize(features, (-1, nb_features))
@@ -48,8 +44,8 @@ order = 16
 pcm = np.zeros((nb_frames*pcm_chunk_size, ))
 fexc = np.zeros((1, 1, 2), dtype='float32')
 iexc = np.zeros((1, 1, 1), dtype='int16')
-state1 = np.zeros((1, lpcnet.rnn_units1), dtype='float32')
-state2 = np.zeros((1, lpcnet.rnn_units2), dtype='float32')
+state1 = np.zeros((1, model.rnn_units1), dtype='float32')
+state2 = np.zeros((1, model.rnn_units2), dtype='float32')
 
 mem = 0
 coef = 0.85

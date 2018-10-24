@@ -28,8 +28,7 @@ nb_epochs = 40
 # Try reducing batch_size if you run out of memory on your GPU
 batch_size = 64
 
-# Note we are creating a LPCNet model
-model, _, _ = lpcnet.new_wavernn_model()
+model, _, _ = lpcnet.new_lpcnet_model()
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 model.summary()
@@ -40,7 +39,7 @@ pred_file = sys.argv[3]    # LPC predictor samples. Not used at present, see bel
 pcm_file = sys.argv[4]     # 16 bit unsigned short PCM samples
 frame_size = 160
 nb_features = 55
-nb_used_features = lpcnet.nb_used_features
+nb_used_features = model.nb_used_features
 feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
 
