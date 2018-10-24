@@ -2,7 +2,7 @@
 # train_wavenet_audio.py
 # Jean-Marc Valin
 #
-# Train a CELPNet model (note not a Wavenet model)
+# Train a LPCNet model (note not a Wavenet model)
 
 import wavenet
 import lpcnet
@@ -29,7 +29,7 @@ nb_epochs = 40
 # Try reducing batch_size if you run out of memory on your GPU
 batch_size = 64
 
-# Note we are creating a CELPNet model
+# Note we are creating a LPCNet model
 
 #model = wavenet.new_wavenet_model(fftnet=True)
 model, _, _ = lpcnet.new_wavernn_model()
