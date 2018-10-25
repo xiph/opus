@@ -1,4 +1,4 @@
-# CELPNet
+# LPCNet
 
 Low complexity WaveRNN-based speech coding by [Jean-Marc Valin](https://jmvalin.ca/)
 
