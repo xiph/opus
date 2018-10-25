@@ -29,14 +29,14 @@ always use ±5% or 10% resampling to augment your data).
 
 1. Now that you have your files, you can do the training with:
    ```
-   ./train_wavenet_audio.py exc.s8 features.f32 pred.s16 pcm.s16
+   ./train_lpcnet.py exc.s8 features.f32 pred.s16 pcm.s16
    ```
    and it will generate a wavenet*.h5 file for each iteration. If it stops with a 
    "Failed to allocate RNN reserve space" message try reducing the *batch\_size* variable in train_wavenet_audio.py.
 
 1. You can synthesise speech with:
   ```
-   ./test_wavenet_audio.py features.f32 > pcm.txt
+   ./test_lpcnet.py features.f32 > pcm.txt
   ```
   The output file pcm.txt contains ASCII PCM samples that need to be converted to WAV for playback
   

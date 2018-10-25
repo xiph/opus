@@ -23,7 +23,7 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.44
 
 set_session(tf.Session(config=config))
 
-nb_epochs = 40
+nb_epochs = 120
 
 # Try reducing batch_size if you run out of memory on your GPU
 batch_size = 64
@@ -120,4 +120,4 @@ checkpoint = ModelCheckpoint('lpcnet9_384_10_G16_{epoch:02d}.h5')
 
 #model.load_weights('wavenet4f2_30.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=5e-5), loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.fit([in_data, in_exc, features, periods], out_data, batch_size=batch_size, epochs=120, validation_split=0.0, callbacks=[checkpoint, lpcnet.Sparsify(2000, 40000, 400, 0.1)])
+model.fit([in_data, in_exc, features, periods], out_data, batch_size=batch_size, epochs=nb_epochs, validation_split=0.0, callbacks=[checkpoint, lpcnet.Sparsify(2000, 40000, 400, 0.1)])
