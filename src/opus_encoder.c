@@ -2629,7 +2629,6 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                goto bad_arg;
             }
             st->variable_duration = value;
-            celt_encoder_ctl(celt_enc, OPUS_SET_EXPERT_FRAME_DURATION(value));
         }
         break;
         case OPUS_GET_EXPERT_FRAME_DURATION_REQUEST:
