@@ -56,7 +56,7 @@ static OPUS_INLINE float tansig_approx(float x)
        x=-x;
        sign=-1;
     }
-    i = (int)floor(.5f+25*x);
+    i = (int)(.5f+25*x);
     x -= .04f*i;
     y = tansig_table[i];
     dy = 1-y*y;
@@ -73,18 +73,17 @@ void compute_dense(const DenseLayer *layer, float *output, const float *input)
 {
    int i, j;
    int N, M;
-   int stride;
    M = layer->nb_inputs;
    N = layer->nb_neurons;
-   stride = N;
+
    for (i=0;i<N;i++)
    {
-      /* Compute update gate. */
       float sum = layer->bias[i];
       for (j=0;j<M;j++)
-         sum += layer->input_weights[j*stride + i]*input[j];
+         sum += layer->input_weights[i*M + j] * input[j];
       output[i] = WEIGHTS_SCALE*sum;
    }
+
    if (layer->sigmoid) {
       for (i=0;i<N;i++)
          output[i] = sigmoid_approx(output[i]);
@@ -98,44 +97,45 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
 {
    int i, j;
    int N, M;
-   int stride;
    float z[MAX_NEURONS];
    float r[MAX_NEURONS];
    float h[MAX_NEURONS];
    M = gru->nb_inputs;
    N = gru->nb_neurons;
-   stride = 3*N;
+
    for (i=0;i<N;i++)
    {
       /* Compute update gate. */
       float sum = gru->bias[i];
       for (j=0;j<M;j++)
-         sum += gru->input_weights[j*stride + i]*input[j];
+         sum += gru->input_weights[i*M + j] * input[j];
       for (j=0;j<N;j++)
-         sum += gru->recurrent_weights[j*stride + i]*state[j];
+         sum += gru->recurrent_weights[i*N + j] * state[j];
       z[i] = sigmoid_approx(WEIGHTS_SCALE*sum);
    }
+
    for (i=0;i<N;i++)
    {
       /* Compute reset gate. */
       float sum = gru->bias[N + i];
       for (j=0;j<M;j++)
-         sum += gru->input_weights[N + j*stride + i]*input[j];
+         sum += gru->input_weights[(N+i)*M + j] * input[j];
       for (j=0;j<N;j++)
-         sum += gru->recurrent_weights[N + j*stride + i]*state[j];
+         sum += gru->recurrent_weights[(N+i)*N + j] * state[j];
       r[i] = sigmoid_approx(WEIGHTS_SCALE*sum);
    }
+
    for (i=0;i<N;i++)
    {
       /* Compute output. */
       float sum = gru->bias[2*N + i];
       for (j=0;j<M;j++)
-         sum += gru->input_weights[2*N + j*stride + i]*input[j];
+         sum += gru->input_weights[(2*N+i)*M + j] * input[j];
       for (j=0;j<N;j++)
-         sum += gru->recurrent_weights[2*N + j*stride + i]*state[j]*r[j];
-      h[i] = z[i]*state[i] + (1-z[i])*tansig_approx(WEIGHTS_SCALE*sum);
+         sum += gru->recurrent_weights[(2*N+i)*N + j] * state[j] * r[j];
+      h[i] = tansig_approx(WEIGHTS_SCALE*sum);
    }
    for (i=0;i<N;i++)
-      state[i] = h[i];
+      state[i] = z[i]*state[i] + (1-z[i])*h[i];
 }
 

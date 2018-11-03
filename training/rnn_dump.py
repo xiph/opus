@@ -15,7 +15,7 @@ import sys
 import numpy as np
 
 def printVector(f, vector, name):
-    v = np.reshape(vector, (-1));
+    v = np.transpose(vector).reshape(-1)
     #print('static const float ', name, '[', len(v), '] = \n', file=f)
     f.write('static const opus_int8 {}[{}] = {{\n   '.format(name, len(v)))
     for i in range(0, len(v)):
