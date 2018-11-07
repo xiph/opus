@@ -21,6 +21,7 @@ model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=
 #model.summary()
 
 feature_file = sys.argv[1]
+out_file = sys.argv[2]
 frame_size = 160
 nb_features = 55
 nb_used_features = model.nb_used_features
@@ -50,6 +51,8 @@ state2 = np.zeros((1, model.rnn_units2), dtype='float32')
 mem = 0
 coef = 0.85
 
+fout = open(out_file, 'wb')
+
 skip = order + 1
 for c in range(0, nb_frames):
     cfeat = enc.predict([features[c:c+1, :, :nb_used_features], periods[c:c+1, :, :]])
@@ -72,7 +75,8 @@ for c in range(0, nb_frames):
             pcm[f*frame_size + i] = pred + ulaw2lin(iexc[0, 0, 0])
             fexc[0, 0, 0] = lin2ulaw(pcm[f*frame_size + i])
             mem = coef*mem + pcm[f*frame_size + i]
-            print(mem)
+            #print(mem)
+            np.array([mem], dtype='int16').tofile(fout)
         skip = 0
 
 
