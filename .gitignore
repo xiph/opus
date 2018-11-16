@@ -83,3 +83,7 @@ silk/tests/test_unit_LPC_inv_pred_gain
 src/Debug
 src/Release
 src/x64
+/*[Bb]uild*/
+.vs/
+.vscode/
+CMakeSettings.json
