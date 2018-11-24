@@ -42,7 +42,6 @@ def dump_gru_layer(self, f, hf):
     printVector(f, weights[0], name + '_weights')
     printVector(f, weights[1], name + '_recurrent_weights')
     printVector(f, weights[-1], name + '_bias')
-    #activation = re.search('function (.*) at', str(layer.activation)).group(1).upper()
     if hasattr(self, 'activation'):
         activation = self.activation.__name__.upper()
     else:
@@ -65,7 +64,6 @@ def dump_dense_layer(self, f, hf):
     weights = self.get_weights()
     printVector(f, weights[0], name + '_weights')
     printVector(f, weights[-1], name + '_bias')
-    #activation = re.search('function (.*) at', str(layer.activation)).group(1).upper()
     if hasattr(self, 'activation'):
         activation = self.activation.__name__.upper()
     else:
@@ -84,7 +82,6 @@ def dump_mdense_layer(self, f, hf):
     printVector(f, weights[0], name + '_weights')
     printVector(f, weights[1], name + '_bias')
     printVector(f, weights[1], name + '_factor')
-    #activation = re.search('function (.*) at', str(layer.activation)).group(1).upper()
     if hasattr(self, 'activation'):
         activation = self.activation.__name__.upper()
     else:
@@ -95,6 +92,18 @@ def dump_mdense_layer(self, f, hf):
     hf.write('extern const MDenseLayer {};\n\n'.format(name));
     return False
 MDense.dump_layer = dump_mdense_layer
+
+def dump_embedding_layer(self, f, hf):
+    name = self.name
+    print("printing layer " + name + " of type " + self.__class__.__name__)
+    weights = self.get_weights()
+    printVector(f, weights[0], name + '_weights')
+    f.write('const EmbeddingLayer {} = {{\n   {}_weights,\n   {}, {}\n}};\n\n'
+            .format(name, name, weights[0].shape[0], weights[0].shape[1]))
+    hf.write('#define {}_SIZE {}\n'.format(name.upper(), weights[0].shape[1]))
+    hf.write('extern const EmbeddingLayer {};\n\n'.format(name));
+    return False
+Embedding.dump_layer = dump_embedding_layer
 
 
 model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=640, use_gpu=False)

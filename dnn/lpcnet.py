@@ -102,7 +102,7 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_g
     embed2 = Embedding(256, embed_size, embeddings_initializer=PCMInit(), name='embed_exc')
     cexc = Reshape((-1, embed_size))(embed2(exc))
 
-    pembed = Embedding(256, 64)
+    pembed = Embedding(256, 64, name='embed_pitch')
     cat_feat = Concatenate()([feat, Reshape((-1, 64))(pembed(pitch))])
     
     cfeat = fconv2(fconv1(cat_feat))
