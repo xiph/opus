@@ -128,6 +128,10 @@ void compute_dense(const DenseLayer *layer, float *output, const float *input)
    compute_activation(output, output, N, layer->activation);
 }
 
+void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
+{
+}
+
 void compute_gru(const GRULayer *gru, float *state, const float *input)
 {
    int i;
@@ -146,16 +150,14 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
       z[i] = gru->bias[i];
    gemm_accum(z, gru->input_weights, N, M, stride, input);
    gemm_accum(z, gru->recurrent_weights, N, N, stride, state);
-   for (i=0;i<N;i++)
-      z[i] = sigmoid_approx(z[i]);
+   compute_activation(z, z, N, ACTIVATION_SIGMOID);
 
    /* Compute reset gate. */
    for (i=0;i<N;i++)
       r[i] = gru->bias[N + i];
    gemm_accum(r, &gru->input_weights[N], N, M, stride, input);
    gemm_accum(r, &gru->recurrent_weights[N], N, N, stride, state);
-   for (i=0;i<N;i++)
-      r[i] = sigmoid_approx(r[i]);
+   compute_activation(r, r, N, ACTIVATION_SIGMOID);
 
    /* Compute output. */
    for (i=0;i<N;i++)
@@ -174,8 +176,9 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
       gemm_accum(h, &gru->input_weights[2*N], N, M, stride, input);
       gemm_accum(h, &gru->recurrent_weights[2*N], N, N, stride, tmp);
    }
+   compute_activation(h, h, N, gru->activation);
    for (i=0;i<N;i++)
-      h[i] = z[i]*state[i] + (1-z[i])*tansig_approx(h[i]);
+      h[i] = z[i]*state[i] + (1-z[i])*h[i];
    for (i=0;i<N;i++)
       state[i] = h[i];
 }

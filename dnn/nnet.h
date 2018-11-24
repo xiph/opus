@@ -84,6 +84,8 @@ void compute_activation(float *output, float *input, int N, int activation);
 
 void compute_dense(const DenseLayer *layer, float *output, const float *input);
 
+void compute_mdense(const MDenseLayer *layer, float *output, const float *input);
+
 void compute_gru(const GRULayer *gru, float *state, const float *input);
 
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input);

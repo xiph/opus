@@ -64,10 +64,7 @@ def dump_dense_layer(self, f, hf):
     weights = self.get_weights()
     printVector(f, weights[0], name + '_weights')
     printVector(f, weights[-1], name + '_bias')
-    if hasattr(self, 'activation'):
-        activation = self.activation.__name__.upper()
-    else:
-        activation = 'TANH'
+    activation = self.activation.__name__.upper()
     f.write('const DenseLayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}, {}, ACTIVATION_{}\n}};\n\n'
             .format(name, name, name, weights[0].shape[0], weights[0].shape[1], activation))
     hf.write('#define {}_SIZE {}\n'.format(name.upper(), weights[0].shape[1]))
@@ -82,16 +79,28 @@ def dump_mdense_layer(self, f, hf):
     printVector(f, weights[0], name + '_weights')
     printVector(f, weights[1], name + '_bias')
     printVector(f, weights[1], name + '_factor')
-    if hasattr(self, 'activation'):
-        activation = self.activation.__name__.upper()
-    else:
-        activation = 'TANH'
+    activation = self.activation.__name__.upper()
     f.write('const MDenseLayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}_factor,\n   {}, {}, ACTIVATION_{}\n}};\n\n'
             .format(name, name, name, name, weights[0].shape[0], weights[0].shape[1], activation))
     hf.write('#define {}_SIZE {}\n'.format(name.upper(), weights[0].shape[0]))
     hf.write('extern const MDenseLayer {};\n\n'.format(name));
     return False
 MDense.dump_layer = dump_mdense_layer
+
+def dump_conv1d_layer(self, f, hf):
+    name = self.name
+    print("printing layer " + name + " of type " + self.__class__.__name__)
+    weights = self.get_weights()
+    printVector(f, weights[0], name + '_weights')
+    printVector(f, weights[-1], name + '_bias')
+    activation = self.activation.__name__.upper()
+    f.write('const Conv1DLayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}, {}, {}, ACTIVATION_{}\n}};\n\n'
+            .format(name, name, name, weights[0].shape[1], weights[0].shape[0], weights[0].shape[2], activation))
+    hf.write('#define {}_SIZE {}\n'.format(name.upper(), weights[0].shape[1]))
+    hf.write('extern const Conv1DLayer {};\n\n'.format(name));
+    return False
+Conv1D.dump_layer = dump_conv1d_layer
+
 
 def dump_embedding_layer(self, f, hf):
     name = self.name
