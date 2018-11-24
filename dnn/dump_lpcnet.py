@@ -47,8 +47,8 @@ def dump_gru_layer(self, f, hf):
         activation = self.activation.__name__.upper()
     else:
         activation = 'TANH'
-    if hasattr(self, 'reset_after'):
-        reset_after = self.reset_after
+    if hasattr(self, 'reset_after') and not self.reset_after:
+        reset_after = 0
     else:
         reset_after = 1
     f.write('const GRULayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}_recurrent_weights,\n   {}, {}, ACTIVATION_{}, {}\n}};\n\n'
@@ -97,7 +97,7 @@ def dump_mdense_layer(self, f, hf):
 MDense.dump_layer = dump_mdense_layer
 
 
-model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=640)
+model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=640, use_gpu=False)
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 #model.summary()
 

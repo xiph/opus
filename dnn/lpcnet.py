@@ -2,7 +2,7 @@
 
 import math
 from keras.models import Model
-from keras.layers import Input, LSTM, CuDNNGRU, Dense, Embedding, Reshape, Concatenate, Lambda, Conv1D, Multiply, Add, Bidirectional, MaxPooling1D, Activation
+from keras.layers import Input, GRU, CuDNNGRU, Dense, Embedding, Reshape, Concatenate, Lambda, Conv1D, Multiply, Add, Bidirectional, MaxPooling1D, Activation
 from keras import backend as K
 from keras.initializers import Initializer
 from keras.callbacks import Callback
@@ -85,7 +85,7 @@ class PCMInit(Initializer):
             'seed': self.seed
         }
 
-def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38):
+def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_gpu=True):
     pcm = Input(shape=(None, 2))
     exc = Input(shape=(None, 1))
     feat = Input(shape=(None, nb_used_features))
@@ -115,8 +115,13 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38):
     
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))
 
-    rnn = CuDNNGRU(rnn_units1, return_sequences=True, return_state=True, name='gru_a')
-    rnn2 = CuDNNGRU(rnn_units2, return_sequences=True, return_state=True, name='gru_b')
+    if use_gpu:
+        rnn = CuDNNGRU(rnn_units1, return_sequences=True, return_state=True, name='gru_a')
+        rnn2 = CuDNNGRU(rnn_units2, return_sequences=True, return_state=True, name='gru_b')
+    else:
+        rnn = GRU(rnn_units1, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_a')
+        rnn2 = GRU(rnn_units2, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_b')
+
     rnn_in = Concatenate()([cpcm, cexc, rep(cfeat)])
     md = MDense(pcm_levels, activation='softmax', name='dual_fc')
     gru_out1, _ = rnn(rnn_in)
