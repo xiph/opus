@@ -132,11 +132,10 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
    int i, c;
    int N, M, C;
    int stride;
+   float tmp[MAX_MDENSE_TMP];
    M = layer->nb_inputs;
    N = layer->nb_neurons;
    C = layer->nb_channels;
-   /* FIXME: Make this C90. */
-   float tmp[N*C];
    stride = N*C;
    for (i=0;i<N*C;i++)
       tmp[i] = layer->bias[i];

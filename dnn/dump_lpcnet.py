@@ -14,6 +14,7 @@ import re
 
 max_rnn_neurons = 1
 max_conv_inputs = 1
+max_mdense_tmp = 1
 
 def printVector(f, vector, name):
     v = np.reshape(vector, (-1));
@@ -80,6 +81,7 @@ def dump_dense_layer(self, f, hf):
 Dense.dump_layer = dump_dense_layer
 
 def dump_mdense_layer(self, f, hf):
+    global max_mdense_tmp
     name = self.name
     print("printing layer " + name + " of type " + self.__class__.__name__)
     weights = self.get_weights()
@@ -87,6 +89,7 @@ def dump_mdense_layer(self, f, hf):
     printVector(f, weights[1], name + '_bias')
     printVector(f, weights[1], name + '_factor')
     activation = self.activation.__name__.upper()
+    max_mdense_tmp = max(max_mdense_tmp, weights[0].shape[0]*weights[0].shape[2])
     f.write('const MDenseLayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}_factor,\n   {}, {}, {}, ACTIVATION_{}\n}};\n\n'
             .format(name, name, name, name, weights[0].shape[0], weights[0].shape[1], weights[0].shape[2], activation))
     hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[0]))
@@ -148,6 +151,8 @@ for i, layer in enumerate(model.layers):
 
 hf.write('#define MAX_RNN_NEURONS {}\n\n'.format(max_rnn_neurons))
 hf.write('#define MAX_CONV_INPUTS {}\n\n'.format(max_conv_inputs))
+hf.write('#define MAX_MDENSE_TMP {}\n\n'.format(max_mdense_tmp))
+
 
 hf.write('struct RNNState {\n')
 for i, name in enumerate(layer_list):
