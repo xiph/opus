@@ -94,12 +94,12 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38):
     dec_state1 = Input(shape=(rnn_units1,))
     dec_state2 = Input(shape=(rnn_units2,))
 
-    fconv1 = Conv1D(128, 3, padding='same', activation='tanh')
-    fconv2 = Conv1D(102, 3, padding='same', activation='tanh')
+    fconv1 = Conv1D(128, 3, padding='same', activation='tanh', name='feature_conv1')
+    fconv2 = Conv1D(102, 3, padding='same', activation='tanh', name='feature_conv2')
 
-    embed = Embedding(256, embed_size, embeddings_initializer=PCMInit())
+    embed = Embedding(256, embed_size, embeddings_initializer=PCMInit(), name='embed_sig')
     cpcm = Reshape((-1, embed_size*2))(embed(pcm))
-    embed2 = Embedding(256, embed_size, embeddings_initializer=PCMInit())
+    embed2 = Embedding(256, embed_size, embeddings_initializer=PCMInit(), name='embed_exc')
     cexc = Reshape((-1, embed_size))(embed2(exc))
 
     pembed = Embedding(256, 64)
@@ -107,18 +107,18 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38):
     
     cfeat = fconv2(fconv1(cat_feat))
 
-    fdense1 = Dense(128, activation='tanh')
-    fdense2 = Dense(128, activation='tanh')
+    fdense1 = Dense(128, activation='tanh', name='feature_dense1')
+    fdense2 = Dense(128, activation='tanh', name='feature_dense2')
 
     cfeat = Add()([cfeat, cat_feat])
     cfeat = fdense2(fdense1(cfeat))
     
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))
 
-    rnn = CuDNNGRU(rnn_units1, return_sequences=True, return_state=True)
-    rnn2 = CuDNNGRU(rnn_units2, return_sequences=True, return_state=True)
+    rnn = CuDNNGRU(rnn_units1, return_sequences=True, return_state=True, name='gru_a')
+    rnn2 = CuDNNGRU(rnn_units2, return_sequences=True, return_state=True, name='gru_b')
     rnn_in = Concatenate()([cpcm, cexc, rep(cfeat)])
-    md = MDense(pcm_levels, activation='softmax')
+    md = MDense(pcm_levels, activation='softmax', name='dual_fc')
     gru_out1, _ = rnn(rnn_in)
     gru_out2, _ = rnn2(Concatenate()([gru_out1, rep(cfeat)]))
     ulaw_prob = md(gru_out2)

@@ -32,7 +32,7 @@ def printVector(f, vector, name):
 
 def dump_layer_ignore(self, f, hf):
     print("ignoring layer " + self.name + " of type " + self.__class__.__name__)
-    False
+    return False
 Layer.dump_layer = dump_layer_ignore
 
 def dump_gru_layer(self, f, hf):
@@ -55,7 +55,7 @@ def dump_gru_layer(self, f, hf):
             .format(name, name, name, name, weights[0].shape[0], weights[0].shape[1]//3, activation, reset_after))
     hf.write('#define {}_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('extern const GRULayer {};\n\n'.format(name));
-    True
+    return True
 CuDNNGRU.dump_layer = dump_gru_layer
 GRU.dump_layer = dump_gru_layer
 
@@ -74,7 +74,7 @@ def dump_dense_layer(self, f, hf):
             .format(name, name, name, weights[0].shape[0], weights[0].shape[1], activation))
     hf.write('#define {}_SIZE {}\n'.format(name.upper(), weights[0].shape[1]))
     hf.write('extern const DenseLayer {};\n\n'.format(name));
-    False
+    return False
 Dense.dump_layer = dump_dense_layer
 
 def dump_mdense_layer(self, f, hf):
@@ -93,7 +93,7 @@ def dump_mdense_layer(self, f, hf):
             .format(name, name, name, name, weights[0].shape[0], weights[0].shape[1], activation))
     hf.write('#define {}_SIZE {}\n'.format(name.upper(), weights[0].shape[0]))
     hf.write('extern const MDenseLayer {};\n\n'.format(name));
-    False
+    return False
 MDense.dump_layer = dump_mdense_layer
 
 
