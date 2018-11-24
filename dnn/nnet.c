@@ -157,11 +157,11 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
    int i;
    int N, M;
    int stride;
-   float tmp[MAX_NEURONS];
-   float z[MAX_NEURONS];
-   float r[MAX_NEURONS];
-   float h[MAX_NEURONS];
-   celt_assert(gru->nb_neurons <= MAX_NEURONS);
+   float tmp[MAX_RNN_NEURONS];
+   float z[MAX_RNN_NEURONS];
+   float r[MAX_RNN_NEURONS];
+   float h[MAX_RNN_NEURONS];
+   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS);
    M = gru->nb_inputs;
    N = gru->nb_neurons;
    stride = 3*N;

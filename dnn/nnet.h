@@ -28,9 +28,6 @@
 #ifndef _NNET_H_
 #define _NNET_H_
 
-#define MAX_NEURONS 1024
-#define MAX_CONV_INPUTS 1024
-
 #define ACTIVATION_LINEAR  0
 #define ACTIVATION_SIGMOID 1
 #define ACTIVATION_TANH    2
