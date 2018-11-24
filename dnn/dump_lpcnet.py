@@ -80,8 +80,8 @@ def dump_mdense_layer(self, f, hf):
     printVector(f, weights[1], name + '_bias')
     printVector(f, weights[1], name + '_factor')
     activation = self.activation.__name__.upper()
-    f.write('const MDenseLayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}_factor,\n   {}, {}, ACTIVATION_{}\n}};\n\n'
-            .format(name, name, name, name, weights[0].shape[0], weights[0].shape[1], activation))
+    f.write('const MDenseLayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}_factor,\n   {}, {}, {}, ACTIVATION_{}\n}};\n\n'
+            .format(name, name, name, name, weights[0].shape[0], weights[0].shape[1], weights[0].shape[2], activation))
     hf.write('#define {}_SIZE {}\n'.format(name.upper(), weights[0].shape[0]))
     hf.write('extern const MDenseLayer {};\n\n'.format(name));
     return False

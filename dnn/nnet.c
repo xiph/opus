@@ -118,7 +118,6 @@ void compute_dense(const DenseLayer *layer, float *output, const float *input)
    int i;
    int N, M;
    int stride;
-   celt_assert(layer->nb_neurons <= MAX_NEURONS);
    M = layer->nb_inputs;
    N = layer->nb_neurons;
    stride = N;
@@ -130,6 +129,27 @@ void compute_dense(const DenseLayer *layer, float *output, const float *input)
 
 void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
 {
+   int i, c;
+   int N, M, C;
+   int stride;
+   M = layer->nb_inputs;
+   N = layer->nb_neurons;
+   C = layer->nb_channels;
+   /* FIXME: Make this C90. */
+   float tmp[N*C];
+   stride = N*C;
+   for (i=0;i<N*C;i++)
+      tmp[i] = layer->bias[i];
+   gemm_accum(tmp, layer->input_weights, N*C, M, stride, input);
+   compute_activation(tmp, tmp, N*C, ACTIVATION_TANH);
+   for (i=0;i<N;i++)
+      output[i] = 0;
+   for (c=0;c<C;c++)
+   {
+      for (i=0;i<N;i++)
+         output[i] += tmp[c*N + i]*layer->factor[c*N + i];
+   }
+   compute_activation(output, output, N, layer->activation);
 }
 
 void compute_gru(const GRULayer *gru, float *state, const float *input)
@@ -189,7 +209,6 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    int N, M;
    int stride;
    float tmp[MAX_CONV_INPUTS];
-   celt_assert(layer->nb_neurons <= MAX_NEURONS);
    celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS);
    M = layer->nb_inputs;
    N = layer->nb_neurons;
