@@ -36,6 +36,7 @@
 #include "common.h"
 #include "tansig_table.h"
 #include "nnet.h"
+#include "nnet_data.h"
 
 static OPUS_INLINE float tansig_approx(float x)
 {
@@ -136,6 +137,7 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
    M = layer->nb_inputs;
    N = layer->nb_neurons;
    C = layer->nb_channels;
+   celt_assert(N*C <= MAX_MDENSE_TMP);
    stride = N*C;
    for (i=0;i<N*C;i++)
       tmp[i] = layer->bias[i];
