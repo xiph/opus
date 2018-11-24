@@ -210,11 +210,9 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    int stride;
    float tmp[MAX_CONV_INPUTS];
    celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS);
-   M = layer->nb_inputs;
-   N = layer->nb_neurons;
    RNN_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
    RNN_COPY(tmp, input, layer->nb_inputs);
-   M = layer->nb_inputs;
+   M = layer->nb_inputs*layer->kernel_size;
    N = layer->nb_neurons;
    stride = N;
    for (i=0;i<N;i++)
