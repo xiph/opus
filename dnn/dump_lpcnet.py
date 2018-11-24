@@ -85,9 +85,9 @@ def dump_mdense_layer(self, f, hf):
     name = self.name
     print("printing layer " + name + " of type " + self.__class__.__name__)
     weights = self.get_weights()
-    printVector(f, weights[0], name + '_weights')
-    printVector(f, weights[1], name + '_bias')
-    printVector(f, weights[1], name + '_factor')
+    printVector(f, np.transpose(weights[0], (1, 2, 0)), name + '_weights')
+    printVector(f, np.transpose(weights[1], (1, 0)), name + '_bias')
+    printVector(f, np.transpose(weights[2], (1, 0)), name + '_factor')
     activation = self.activation.__name__.upper()
     max_mdense_tmp = max(max_mdense_tmp, weights[0].shape[0]*weights[0].shape[2])
     f.write('const MDenseLayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}_factor,\n   {}, {}, {}, ACTIVATION_{}\n}};\n\n'
