@@ -122,6 +122,7 @@ void compute_dense(const DenseLayer *layer, float *output, const float *input)
    M = layer->nb_inputs;
    N = layer->nb_neurons;
    stride = N;
+   celt_assert(input != output);
    for (i=0;i<N;i++)
       output[i] = layer->bias[i];
    gemm_accum(output, layer->input_weights, N, M, stride, input);
@@ -134,6 +135,7 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
    int N, M, C;
    int stride;
    float tmp[MAX_MDENSE_TMP];
+   celt_assert(input != output);
    M = layer->nb_inputs;
    N = layer->nb_neurons;
    C = layer->nb_channels;
@@ -163,6 +165,7 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
    float r[MAX_RNN_NEURONS];
    float h[MAX_RNN_NEURONS];
    celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS);
+   celt_assert(input != state);
    M = gru->nb_inputs;
    N = gru->nb_neurons;
    stride = 3*N;
@@ -210,6 +213,7 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    int N, M;
    int stride;
    float tmp[MAX_CONV_INPUTS];
+   celt_assert(input != output);
    celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS);
    RNN_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
    RNN_COPY(tmp, input, layer->nb_inputs);
