@@ -25,6 +25,7 @@
 */
 
 #include <math.h>
+#include <stdio.h>
 #include "nnet_data.h"
 #include "nnet.h"
 #include "common.h"
@@ -150,3 +151,21 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
         lpcnet->last_exc = exc;
     }
 }
+
+#if 1
+#define FRAME_SIZE 160
+int main(int argc, char **argv) {
+    LPCNetState *net;
+    net = lpcnet_create();
+    while (1) {
+        float features[NB_FEATURES];
+        short pcm[FRAME_SIZE];
+        fread(features, sizeof(features[0]), NB_FEATURES, stdin);
+        if (feof(stdin)) break;
+        lpcnet_synthesize(net, pcm, features, FRAME_SIZE);
+        fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, stdout);
+    }
+    lpcnet_destroy(net);
+    return 0;
+}
+#endif

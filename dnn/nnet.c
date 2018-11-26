@@ -217,13 +217,13 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    celt_assert(input != output);
    celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS);
    RNN_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
-   RNN_COPY(tmp, input, layer->nb_inputs);
+   RNN_COPY(&tmp[layer->nb_inputs*(layer->kernel_size-1)], input, layer->nb_inputs);
    M = layer->nb_inputs*layer->kernel_size;
    N = layer->nb_neurons;
    stride = N;
    for (i=0;i<N;i++)
       output[i] = layer->bias[i];
-   gemm_accum(output, layer->input_weights, N, M, stride, input);
+   gemm_accum(output, layer->input_weights, N, M, stride, tmp);
    compute_activation(output, output, N, layer->activation);
    RNN_COPY(mem, &tmp[layer->nb_inputs], layer->nb_inputs*(layer->kernel_size-1));
 }

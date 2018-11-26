@@ -116,7 +116,7 @@ def dump_mdense_layer(self, f, hf):
     activation = self.activation.__name__.upper()
     max_mdense_tmp = max(max_mdense_tmp, weights[0].shape[0]*weights[0].shape[2])
     f.write('const MDenseLayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}_factor,\n   {}, {}, {}, ACTIVATION_{}\n}};\n\n'
-            .format(name, name, name, name, weights[0].shape[0], weights[0].shape[1], weights[0].shape[2], activation))
+            .format(name, name, name, name, weights[0].shape[1], weights[0].shape[0], weights[0].shape[2], activation))
     hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[0]))
     hf.write('extern const MDenseLayer {};\n\n'.format(name));
     return False
