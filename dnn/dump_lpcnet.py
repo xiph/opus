@@ -190,7 +190,7 @@ hf.write('#define MAX_MDENSE_TMP {}\n\n'.format(max_mdense_tmp))
 hf.write('typedef struct {\n')
 for i, name in enumerate(layer_list):
     hf.write('  float {}_state[{}_STATE_SIZE];\n'.format(name, name.upper())) 
-hf.write('} LPCNetState;\n')
+hf.write('} NNetState;\n')
 
 hf.write('\n\n#endif\n')
 

@@ -24,16 +24,41 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <math.h>
 #include "nnet_data.h"
 #include "nnet.h"
 #include "common.h"
 #include "arch.h"
+#include "lpcnet.h"
 
 #define NB_FEATURES 38
 
 #define FRAME_INPUT_SIZE (NB_FEATURES + EMBED_PITCH_OUT_SIZE)
 
-void run_frame_network(LPCNetState *net, float *out, const float *features, int pitch)
+static int ulaw2lin(int u)
+{
+    float s;
+    float scale_1 = 32768.f/255.f;
+    u = u - 128;
+    s = u >= 0 ? 1 : -1;
+    u = abs(u);
+    return s*scale_1*(exp(u/128.*log(256))-1);
+}
+
+static int lin2ulaw(int x)
+{
+    float u;
+    float scale = 255.f/32768.f;
+    int s = x >= 0 ? 1 : -1;
+    x = abs(x);
+    u = (s*(128*log(1+scale*x)/log(256)));
+    u = 128 + u;
+    if (u < 0) u = 0;
+    if (u > 255) u = 255;
+    return (int)floor(.5 + u);
+}
+
+void run_frame_network(NNetState *net, float *condition, float *lpc, const float *features, int pitch)
 {
     int i;
     float in[FRAME_INPUT_SIZE];
@@ -47,6 +72,38 @@ void run_frame_network(LPCNetState *net, float *out, const float *features, int 
     celt_assert(FRAME_INPUT_SIZE == FEATURE_CONV2_OUT_SIZE);
     for (i=0;i<FEATURE_CONV2_OUT_SIZE;i++) conv2_out[i] += in[i];
     compute_dense(&feature_dense1, dense1_out, conv2_out);
-    compute_dense(&feature_dense2, out, dense1_out);
+    compute_dense(&feature_dense2, condition, dense1_out);
+    /* FIXME: Actually compute the LPC on the middle frame. */
+    RNN_CLEAR(lpc, LPC_ORDER);
 }
 
+int run_sample_network(NNetState *net, const float *condition, const float *lpc, int last_exc, int last_sig, int pred)
+{
+    
+}
+
+void generate_samples(LPCNetState *lpcnet, short *output, const float *features, int pitch, int N)
+{
+    int i;
+    float condition[FEATURE_DENSE2_OUT_SIZE];
+    float lpc[LPC_ORDER];
+    run_frame_network(&lpcnet->nnet, condition, lpc, features, pitch);
+    for (i=0;i<N;i++)
+    {
+        int j;
+        int pred;
+        int exc;
+        int last_sig_ulaw;
+        int pred_ulaw;
+        float sum = 0;
+        for (j=0;j<LPC_ORDER;j++) sum += lpcnet->last_sig[j]*lpc[j];
+        pred = (int)floor(.5f + sum);
+        last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
+        pred_ulaw = lin2ulaw(pred);
+        exc = run_sample_network(&lpcnet->nnet, condition, lpc, lpcnet->last_exc, last_sig_ulaw, pred_ulaw);
+        output[i] = pred + ulaw2lin(exc);
+        RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
+        lpcnet->last_sig[0] = output[i];
+        lpcnet->last_exc = exc;
+    }
+}
