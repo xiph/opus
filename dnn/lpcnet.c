@@ -33,6 +33,8 @@
 #include "lpcnet.h"
 
 #define NB_FEATURES 38
+#define NB_TOTAL_FEATURES 55
+
 #define LPC_ORDER 16
 
 
@@ -43,10 +45,12 @@
 
 #define SAMPLE_INPUT_SIZE (2*EMBED_SIG_OUT_SIZE + EMBED_EXC_OUT_SIZE + FEATURE_DENSE2_OUT_SIZE)
 
+#define FEATURES_DELAY (FEATURE_CONV1_DELAY + FEATURE_CONV2_DELAY)
 struct LPCNetState {
     NNetState nnet;
     int last_exc;
     short last_sig[LPC_ORDER];
+    float old_input[FEATURES_DELAY][FEATURE_CONV2_OUT_SIZE];
 };
 
 
@@ -73,19 +77,23 @@ static int lin2ulaw(int x)
     return (int)floor(.5 + u);
 }
 
-void run_frame_network(NNetState *net, float *condition, float *lpc, const float *features, int pitch)
+void run_frame_network(LPCNetState *lpcnet, float *condition, float *lpc, const float *features, int pitch)
 {
     int i;
+    NNetState *net;
     float in[FRAME_INPUT_SIZE];
     float conv1_out[FEATURE_CONV1_OUT_SIZE];
     float conv2_out[FEATURE_CONV2_OUT_SIZE];
     float dense1_out[FEATURE_DENSE1_OUT_SIZE];
+    net = &lpcnet->nnet;
     RNN_COPY(in, features, NB_FEATURES);
     compute_embedding(&embed_pitch, &in[NB_FEATURES], pitch);
     compute_conv1d(&feature_conv1, conv1_out, net->feature_conv1_state, in);
     compute_conv1d(&feature_conv2, conv2_out, net->feature_conv2_state, conv1_out);
     celt_assert(FRAME_INPUT_SIZE == FEATURE_CONV2_OUT_SIZE);
-    for (i=0;i<FEATURE_CONV2_OUT_SIZE;i++) conv2_out[i] += in[i];
+    for (i=0;i<FEATURE_CONV2_OUT_SIZE;i++) conv2_out[i] += lpcnet->old_input[FEATURES_DELAY-1][i];
+    memmove(lpcnet->old_input[1], lpcnet->old_input[0], (FEATURES_DELAY-1)*FRAME_INPUT_SIZE*sizeof(in[0]));
+    memcpy(lpcnet->old_input[0], in, FRAME_INPUT_SIZE*sizeof(in[0]));
     compute_dense(&feature_dense1, dense1_out, conv2_out);
     compute_dense(&feature_dense2, condition, dense1_out);
     /* FIXME: Actually compute the LPC on the middle frame. */
@@ -127,10 +135,11 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     float pdf[DUAL_FC_OUT_SIZE];
     int pitch;
     float pitch_gain;
-    pitch = (int)floor(.5 + 50*features[36]+100);
+    /* FIXME: Do proper rounding once the Python code rounds properly. */
+    pitch = (int)floor(50*features[36]+100);
     /* FIXME: get the pitch gain from 2 frames in the past. */
     pitch_gain = features[PITCH_GAIN_FEATURE];
-    run_frame_network(&lpcnet->nnet, condition, lpc, features, pitch);
+    run_frame_network(lpcnet, condition, lpc, features, pitch);
     for (i=0;i<N;i++)
     {
         int j;
@@ -154,13 +163,16 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
 
 #if 1
 #define FRAME_SIZE 160
-int main(int argc, char **argv) {
+int main() {
     LPCNetState *net;
     net = lpcnet_create();
     while (1) {
+        float in_features[NB_TOTAL_FEATURES];
         float features[NB_FEATURES];
         short pcm[FRAME_SIZE];
-        fread(features, sizeof(features[0]), NB_FEATURES, stdin);
+        fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, stdin);
+        RNN_COPY(features, in_features, NB_FEATURES);
+        RNN_CLEAR(&features[18], 18);
         if (feof(stdin)) break;
         lpcnet_synthesize(net, pcm, features, FRAME_SIZE);
         fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, stdout);

@@ -135,6 +135,7 @@ def dump_conv1d_layer(self, f, hf):
             .format(name, name, name, weights[0].shape[1], weights[0].shape[0], weights[0].shape[2], activation))
     hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[2]))
     hf.write('#define {}_STATE_SIZE ({}*{})\n'.format(name.upper(), weights[0].shape[1], (weights[0].shape[0]-1)))
+    hf.write('#define {}_DELAY {}\n'.format(name.upper(), (weights[0].shape[0]-1)//2))
     hf.write('extern const Conv1DLayer {};\n\n'.format(name));
     return True
 Conv1D.dump_layer = dump_conv1d_layer

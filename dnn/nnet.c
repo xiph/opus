@@ -109,7 +109,7 @@ void compute_activation(float *output, float *input, int N, int activation)
       for (i=0;i<N;i++)
          output[i] = sum*output[i];
    } else {
-      celt_assert(layer->activation == ACTIVATION_LINEAR);
+      celt_assert(activation == ACTIVATION_LINEAR);
       for (i=0;i<N;i++)
          output[i] = input[i];
    }
@@ -231,6 +231,9 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
 void compute_embedding(const EmbeddingLayer *layer, float *output, int input)
 {
    int i;
+   celt_assert(input >= 0);
+   celt_assert(input < layer->nb_inputs);
+   /*if (layer->dim == 64) printf("%d\n", input);*/
    for (i=0;i<layer->dim;i++)
    {
       output[i] = layer->embedding_weights[input*layer->dim + i];
