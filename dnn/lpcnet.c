@@ -124,7 +124,11 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     float condition[FEATURE_DENSE2_OUT_SIZE];
     float lpc[LPC_ORDER];
     float pdf[DUAL_FC_OUT_SIZE];
-    int pitch = (int)floor(.5 + 50*features[36]+100);
+    int pitch;
+    float pitch_gain;
+    pitch = (int)floor(.5 + 50*features[36]+100);
+    /* FIXME: get the pitch gain from 2 frames in the past. */
+    pitch_gain = features[PITCH_GAIN_FEATURE];
     run_frame_network(&lpcnet->nnet, condition, lpc, features, pitch);
     for (i=0;i<N;i++)
     {
@@ -139,7 +143,7 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
         run_sample_network(&lpcnet->nnet, pdf, condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw);
-        exc = sample_from_pdf(pdf, DUAL_FC_OUT_SIZE, MAX16(0, 1.5f*features[PITCH_GAIN_FEATURE] - .5f), PDF_FLOOR);
+        exc = sample_from_pdf(pdf, DUAL_FC_OUT_SIZE, MAX16(0, 1.5f*pitch_gain - .5f), PDF_FLOOR);
         output[i] = pred + ulaw2lin(exc);
         RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
         lpcnet->last_sig[0] = output[i];
