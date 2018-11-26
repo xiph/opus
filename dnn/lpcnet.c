@@ -33,6 +33,9 @@
 
 #define NB_FEATURES 38
 
+#define PITCH_GAIN_FEATURE 37
+#define PDF_FLOOR 0.002
+
 #define FRAME_INPUT_SIZE (NB_FEATURES + EMBED_PITCH_OUT_SIZE)
 
 #define SAMPLE_INPUT_SIZE (2*EMBED_SIG_OUT_SIZE + EMBED_EXC_OUT_SIZE + FEATURE_DENSE2_OUT_SIZE)
@@ -79,11 +82,10 @@ void run_frame_network(NNetState *net, float *condition, float *lpc, const float
     RNN_CLEAR(lpc, LPC_ORDER);
 }
 
-int run_sample_network(NNetState *net, const float *condition, int last_exc, int last_sig, int pred)
+void run_sample_network(NNetState *net, float *pdf, const float *condition, int last_exc, int last_sig, int pred)
 {
     float in_a[SAMPLE_INPUT_SIZE];
     float in_b[GRU_A_STATE_SIZE+FEATURE_DENSE2_OUT_SIZE];
-    float pdf[DUAL_FC_OUT_SIZE];
     compute_embedding(&embed_sig, &in_a[0], last_sig);
     compute_embedding(&embed_sig, &in_a[EMBED_SIG_OUT_SIZE], pred);
     compute_embedding(&embed_exc, &in_a[2*EMBED_SIG_OUT_SIZE], last_exc);
@@ -93,8 +95,6 @@ int run_sample_network(NNetState *net, const float *condition, int last_exc, int
     RNN_COPY(&in_b[GRU_A_STATE_SIZE], condition, FEATURE_DENSE2_OUT_SIZE);
     compute_gru(&gru_b, net->gru_b_state, in_b);
     compute_mdense(&dual_fc, pdf, net->gru_b_state);
-    /* FIXME: Do the actual sampling here. */
-    return 0;
 }
 
 void generate_samples(LPCNetState *lpcnet, short *output, const float *features, int pitch, int N)
@@ -102,6 +102,7 @@ void generate_samples(LPCNetState *lpcnet, short *output, const float *features,
     int i;
     float condition[FEATURE_DENSE2_OUT_SIZE];
     float lpc[LPC_ORDER];
+    float pdf[DUAL_FC_OUT_SIZE];
     run_frame_network(&lpcnet->nnet, condition, lpc, features, pitch);
     for (i=0;i<N;i++)
     {
@@ -115,7 +116,8 @@ void generate_samples(LPCNetState *lpcnet, short *output, const float *features,
         pred = (int)floor(.5f + sum);
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
-        exc = run_sample_network(&lpcnet->nnet, condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw);
+        run_sample_network(&lpcnet->nnet, pdf, condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw);
+        exc = sample_from_pdf(pdf, DUAL_FC_OUT_SIZE, MAX16(0, 1.5f*features[PITCH_GAIN_FEATURE] - .5f), PDF_FLOOR);
         output[i] = pred + ulaw2lin(exc);
         RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
         lpcnet->last_sig[0] = output[i];

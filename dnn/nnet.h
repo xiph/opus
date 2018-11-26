@@ -89,5 +89,6 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
 
 void compute_embedding(const EmbeddingLayer *layer, float *output, int input);
 
+int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor);
 
 #endif /* _MLP_H_ */

@@ -30,6 +30,7 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
 #include <math.h>
 #include "opus_types.h"
 #include "arch.h"
@@ -236,3 +237,32 @@ void compute_embedding(const EmbeddingLayer *layer, float *output, int input)
    }    
 }
 
+int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor)
+{
+    int i;
+    float sum, norm;
+    float r;
+    float tmp[DUAL_FC_OUT_SIZE];
+    celt_assert(N <= DUAL_FC_OUT_SIZE);
+    sum = 0;
+    /* Decrease the temperature of the sampling. */
+    for (i=0;i<N;i++)
+    {
+        tmp[i] = pow(pdf[i], 1.f+exp_boost);
+        sum += tmp[i];
+    }
+    norm = 1.f/sum;
+    /* Convert tmp to a CDF while subtracting the floor */
+    tmp[0] = MAX16(0, norm*tmp[0] - pdf_floor);
+    for (i=1;i<N;i++)
+    {
+        tmp[i] = tmp[i-1] + MAX16(0, norm*tmp[i] - pdf_floor);
+    }
+    /* Do the sampling (from the cdf). */
+    r = tmp[N-1] * ((float)rand()/RAND_MAX);
+    for (i=0;i<N-1;i++)
+    {
+        if (r > tmp[i]) return r;
+    }
+    return N-1;
+}
