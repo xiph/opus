@@ -27,18 +27,12 @@
 #ifndef _LPCNET_H_
 #define _LPCNET_H_
 
+typedef struct LPCNetState LPCNetState;
 
-#include "nnet_data.h"
+LPCNetState *lpcnet_create();
 
-#define LPC_ORDER 16
+void lpcnet_destroy(LPCNetState *lpcnet);
 
-typedef struct {
-    NNetState nnet;
-    int last_exc;
-    short last_sig[LPC_ORDER];
-} LPCNetState;
-
-
-
+void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, int N);
 
 #endif

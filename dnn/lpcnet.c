@@ -32,6 +32,8 @@
 #include "lpcnet.h"
 
 #define NB_FEATURES 38
+#define LPC_ORDER 16
+
 
 #define PITCH_GAIN_FEATURE 37
 #define PDF_FLOOR 0.002
@@ -39,6 +41,13 @@
 #define FRAME_INPUT_SIZE (NB_FEATURES + EMBED_PITCH_OUT_SIZE)
 
 #define SAMPLE_INPUT_SIZE (2*EMBED_SIG_OUT_SIZE + EMBED_EXC_OUT_SIZE + FEATURE_DENSE2_OUT_SIZE)
+
+struct LPCNetState {
+    NNetState nnet;
+    int last_exc;
+    short last_sig[LPC_ORDER];
+};
+
 
 static int ulaw2lin(int u)
 {
@@ -97,12 +106,25 @@ void run_sample_network(NNetState *net, float *pdf, const float *condition, int 
     compute_mdense(&dual_fc, pdf, net->gru_b_state);
 }
 
-void generate_samples(LPCNetState *lpcnet, short *output, const float *features, int pitch, int N)
+LPCNetState *lpcnet_create()
+{
+    LPCNetState *lpcnet;
+    lpcnet = (LPCNetState *)calloc(sizeof(LPCNetState), 1);
+    return lpcnet;
+}
+
+void lpcnet_destroy(LPCNetState *lpcnet)
+{
+    free(lpcnet);
+}
+
+void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, int N)
 {
     int i;
     float condition[FEATURE_DENSE2_OUT_SIZE];
     float lpc[LPC_ORDER];
     float pdf[DUAL_FC_OUT_SIZE];
+    int pitch = (int)floor(.5 + 50*features[36]+100);
     run_frame_network(&lpcnet->nnet, condition, lpc, features, pitch);
     for (i=0;i<N;i++)
     {
