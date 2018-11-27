@@ -275,7 +275,7 @@ int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor)
     r = tmp[N-1] * ((float)rand()/RAND_MAX);
     for (i=0;i<N-1;i++)
     {
-        if (r > tmp[i]) return r;
+        if (r < tmp[i]) return i;
     }
     return N-1;
 }
