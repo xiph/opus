@@ -101,7 +101,7 @@ for c in range(0, nb_frames):
             fexc[0, 0, 0] = lin2ulaw(pcm[f*frame_size + i])
             mem = coef*mem + pcm[f*frame_size + i]
             #print(mem)
-            np.array([mem], dtype='int16').tofile(fout)
+            np.array([np.round(mem)], dtype='int16').tofile(fout)
         skip = 0
 
 

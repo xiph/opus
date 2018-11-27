@@ -49,7 +49,7 @@
 struct LPCNetState {
     NNetState nnet;
     int last_exc;
-    short last_sig[LPC_ORDER];
+    float last_sig[LPC_ORDER];
     float old_input[FEATURES_DELAY][FEATURE_CONV2_OUT_SIZE];
     float old_lpc[FEATURES_DELAY][LPC_ORDER];
     int frame_count;
@@ -57,22 +57,22 @@ struct LPCNetState {
 };
 
 
-static int ulaw2lin(int u)
+static float ulaw2lin(float u)
 {
     float s;
     float scale_1 = 32768.f/255.f;
     u = u - 128;
     s = u >= 0 ? 1 : -1;
-    u = abs(u);
+    u = fabs(u);
     return s*scale_1*(exp(u/128.*log(256))-1);
 }
 
-static int lin2ulaw(int x)
+static int lin2ulaw(float x)
 {
     float u;
     float scale = 255.f/32768.f;
     int s = x >= 0 ? 1 : -1;
-    x = abs(x);
+    x = fabs(x);
     u = (s*(128*log(1+scale*x)/log(256)));
     u = 128 + u;
     if (u < 0) u = 0;
@@ -148,6 +148,8 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     float pdf[DUAL_FC_OUT_SIZE];
     int pitch;
     float pitch_gain;
+    /* FIXME: Remove this -- it's just a temporary hack to match the Python code. */
+    static int start = LPC_ORDER+1;
     /* FIXME: Do proper rounding once the Python code rounds properly. */
     pitch = (int)floor(50*features[36]+100);
     /* FIXME: get the pitch gain from 2 frames in the past. */
@@ -161,27 +163,28 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
         RNN_CLEAR(output, N);
         return;
     }
-    for (i=0;i<N;i++)
+    for (i=start;i<N;i++)
     {
         int j;
-        int pred;
+        float pcm;
         int exc;
         int last_sig_ulaw;
         int pred_ulaw;
-        float sum = 0;
-        for (j=0;j<LPC_ORDER;j++) sum -= lpcnet->last_sig[j]*lpc[j];
-        pred = (int)floor(.5f + sum);
+        float pred = 0;
+        for (j=0;j<LPC_ORDER;j++) pred -= lpcnet->last_sig[j]*lpc[j];
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
         run_sample_network(&lpcnet->nnet, pdf, condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw);
         exc = sample_from_pdf(pdf, DUAL_FC_OUT_SIZE, MAX16(0, 1.5f*pitch_gain - .5f), PDF_FLOOR);
-        output[i] = pred + ulaw2lin(exc);
+        pcm = pred + ulaw2lin(exc);
         RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
-        lpcnet->last_sig[0] = output[i];
+        lpcnet->last_sig[0] = pcm;
         lpcnet->last_exc = exc;
-        output[i] += PREEMPH*lpcnet->deemph_mem;
-        lpcnet->deemph_mem = output[i];
+        pcm += PREEMPH*lpcnet->deemph_mem;
+        lpcnet->deemph_mem = pcm;
+        output[i] = (int)floor(.5 + pcm);
     }
+    start = 0;
 }
 
 #if 1
