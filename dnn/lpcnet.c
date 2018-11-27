@@ -36,7 +36,7 @@
 #define NB_TOTAL_FEATURES 55
 
 #define LPC_ORDER 16
-
+#define PREEMPH 0.85f
 
 #define PITCH_GAIN_FEATURE 37
 #define PDF_FLOOR 0.002
@@ -53,6 +53,7 @@ struct LPCNetState {
     float old_input[FEATURES_DELAY][FEATURE_CONV2_OUT_SIZE];
     float old_lpc[FEATURES_DELAY][LPC_ORDER];
     int frame_count;
+    float deemph_mem;
 };
 
 
@@ -178,6 +179,8 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
         RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
         lpcnet->last_sig[0] = output[i];
         lpcnet->last_exc = exc;
+        output[i] += PREEMPH*lpcnet->deemph_mem;
+        lpcnet->deemph_mem = output[i];
     }
 }
 
