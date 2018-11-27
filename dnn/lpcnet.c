@@ -51,6 +51,7 @@ struct LPCNetState {
     int last_exc;
     short last_sig[LPC_ORDER];
     float old_input[FEATURES_DELAY][FEATURE_CONV2_OUT_SIZE];
+    float old_lpc[FEATURES_DELAY][LPC_ORDER];
     int frame_count;
 };
 
@@ -78,13 +79,16 @@ static int lin2ulaw(int x)
     return (int)floor(.5 + u);
 }
 
+#if 0
 static void print_vector(float *x, int N)
 {
     int i;
     for (i=0;i<N;i++) printf("%f ", x[i]);
     printf("\n");
 }
-void run_frame_network(LPCNetState *lpcnet, float *condition, float *lpc, const float *features, int pitch)
+#endif
+
+void run_frame_network(LPCNetState *lpcnet, float *condition, const float *features, int pitch)
 {
     int i;
     NNetState *net;
@@ -105,8 +109,6 @@ void run_frame_network(LPCNetState *lpcnet, float *condition, float *lpc, const 
     memcpy(lpcnet->old_input[0], in, FRAME_INPUT_SIZE*sizeof(in[0]));
     compute_dense(&feature_dense1, dense1_out, conv2_out);
     compute_dense(&feature_dense2, condition, dense1_out);
-    /* FIXME: Actually compute the LPC on the middle frame. */
-    RNN_CLEAR(lpc, LPC_ORDER);
     if (lpcnet->frame_count < 1000) lpcnet->frame_count++;
 }
 
@@ -137,7 +139,7 @@ void lpcnet_destroy(LPCNetState *lpcnet)
     free(lpcnet);
 }
 
-void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, int N)
+void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, const float *new_lpc, int N)
 {
     int i;
     float condition[FEATURE_DENSE2_OUT_SIZE];
@@ -149,7 +151,10 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     pitch = (int)floor(50*features[36]+100);
     /* FIXME: get the pitch gain from 2 frames in the past. */
     pitch_gain = features[PITCH_GAIN_FEATURE];
-    run_frame_network(lpcnet, condition, lpc, features, pitch);
+    run_frame_network(lpcnet, condition, features, pitch);
+    memcpy(lpc, lpcnet->old_lpc[FEATURES_DELAY-1], LPC_ORDER*sizeof(lpc[0]));
+    memmove(lpcnet->old_lpc[1], lpcnet->old_lpc[0], (FEATURES_DELAY-1)*LPC_ORDER*sizeof(lpc[0]));
+    memcpy(lpcnet->old_lpc[0], new_lpc, LPC_ORDER*sizeof(lpc[0]));
     if (lpcnet->frame_count <= FEATURES_DELAY)
     {
         RNN_CLEAR(output, N);
@@ -163,7 +168,7 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
         int last_sig_ulaw;
         int pred_ulaw;
         float sum = 0;
-        for (j=0;j<LPC_ORDER;j++) sum += lpcnet->last_sig[j]*lpc[j];
+        for (j=0;j<LPC_ORDER;j++) sum -= lpcnet->last_sig[j]*lpc[j];
         pred = (int)floor(.5f + sum);
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
@@ -178,20 +183,32 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
 
 #if 1
 #define FRAME_SIZE 160
-int main() {
+int main(int argc, char **argv) {
+    FILE *fin, *fout;
     LPCNetState *net;
     net = lpcnet_create();
+    if (argc != 3)
+    {
+        fprintf(stderr, "usage: test_lpcnet <features.f32> <output.pcm>\n");
+        return 0;
+    }
+    fin = fopen(argv[1], "rb");
+    fout = fopen(argv[2], "wb");
     while (1) {
         float in_features[NB_TOTAL_FEATURES];
         float features[NB_FEATURES];
+        float lpc[LPC_ORDER];
         short pcm[FRAME_SIZE];
-        fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, stdin);
+        fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
         RNN_COPY(features, in_features, NB_FEATURES);
         RNN_CLEAR(&features[18], 18);
-        if (feof(stdin)) break;
-        lpcnet_synthesize(net, pcm, features, FRAME_SIZE);
-        fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, stdout);
+        RNN_COPY(lpc, &in_features[NB_TOTAL_FEATURES-LPC_ORDER], LPC_ORDER);
+        if (feof(fin)) break;
+        lpcnet_synthesize(net, pcm, features, lpc, FRAME_SIZE);
+        fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
     }
+    fclose(fin);
+    fclose(fout);
     lpcnet_destroy(net);
     return 0;
 }
