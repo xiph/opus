@@ -105,6 +105,38 @@ static void gemm_accum16(float *out, const float *weights, int rows, int cols, i
       _mm256_storeu_ps (&y[8], vy8);
    }
 }
+static void sparse_gemm_accum16(float *out, const float *weights, int rows, const int *idx, const float *x)
+{
+   int i, j;
+   for (i=0;i<rows;i+=16)
+   {
+      float * restrict y;
+      int cols;
+      __m256 vy0, vy8;
+      y = &out[i];
+      vy0 = _mm256_loadu_ps(&y[0]);
+      vy8 = _mm256_loadu_ps(&y[8]);
+      cols = *idx++;
+      for (j=0;j<cols;j++)
+      {
+         int id;
+         __m256 vxj;
+         __m256 vw;
+         id = *idx++;
+         vxj = _mm256_broadcast_ss(&x[id]);
+
+         vw = _mm256_loadu_ps(&weights[0]);
+         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
+
+         vw = _mm256_loadu_ps(&weights[8]);
+         vy8 = _mm256_fmadd_ps(vw, vxj, vy8);
+         weights += 16;
+      }
+      _mm256_storeu_ps (&y[0], vy0);
+      _mm256_storeu_ps (&y[8], vy8);
+   }
+}
+
 #else
 static void gemm_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
@@ -346,6 +378,43 @@ void compute_gru3(const GRULayer *gru, float *state, const float *input)
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
    gemm_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
+   for (i=0;i<2*N;i++)
+      zrh[i] += recur[i];
+   compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
+   for (i=0;i<N;i++)
+      h[i] += recur[2*N+i]*r[i];
+   compute_activation(h, h, N, gru->activation);
+   for (i=0;i<N;i++)
+      h[i] = z[i]*state[i] + (1-z[i])*h[i];
+   for (i=0;i<N;i++)
+      state[i] = h[i];
+}
+
+void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input)
+{
+   int i, k;
+   int N;
+   float zrh[3*MAX_RNN_NEURONS];
+   float recur[3*MAX_RNN_NEURONS];
+   float *z;
+   float *r;
+   float *h;
+   N = gru->nb_neurons;
+   z = zrh;
+   r = &zrh[N];
+   h = &zrh[2*N];
+   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS);
+   celt_assert(input != state);
+   celt_assert(gru->reset_after);
+   RNN_COPY(zrh, input, 3*N);
+   for (i=0;i<3*N;i++)
+      recur[i] = gru->bias[3*N + i];
+   for (k=0;k<3;k++)
+   {
+      for (i=0;i<N;i++)
+         recur[k*N + i] += gru->diag_weights[k*N + i]*state[i];
+   }
+   sparse_gemm_accum16(recur, gru->recurrent_weights, 3*N, gru->idx, state);
    for (i=0;i<2*N;i++)
       zrh[i] += recur[i];
    compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);

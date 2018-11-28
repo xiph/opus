@@ -64,6 +64,16 @@ typedef struct {
 
 typedef struct {
   const float *bias;
+  const float *diag_weights;
+  const float *recurrent_weights;
+  const int *idx;
+  int nb_neurons;
+  int activation;
+  int reset_after;
+} SparseGRULayer;
+
+typedef struct {
+  const float *bias;
   const float *input_weights;
   int nb_inputs;
   int kernel_size;
@@ -88,6 +98,8 @@ void compute_gru(const GRULayer *gru, float *state, const float *input);
 void compute_gru2(const GRULayer *gru, float *state, const float *input);
 
 void compute_gru3(const GRULayer *gru, float *state, const float *input);
+
+void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input);
 
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input);
 

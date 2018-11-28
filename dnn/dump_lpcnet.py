@@ -41,10 +41,10 @@ max_rnn_neurons = 1
 max_conv_inputs = 1
 max_mdense_tmp = 1
 
-def printVector(f, vector, name):
+def printVector(f, vector, name, dtype='float'):
     v = np.reshape(vector, (-1));
     #print('static const float ', name, '[', len(v), '] = \n', file=f)
-    f.write('static const float {}[{}] = {{\n   '.format(name, len(v)))
+    f.write('static const {} {}[{}] = {{\n   '.format(dtype, name, len(v)))
     for i in range(0, len(v)):
         f.write('{}'.format(v[i]))
         if (i!=len(v)-1):
@@ -59,10 +59,50 @@ def printVector(f, vector, name):
     f.write('\n};\n\n')
     return;
 
+def printSparseVector(f, A, name):
+    N = A.shape[0]
+    W = np.zeros((0,))
+    diag = np.concatenate([np.diag(A[:,:N]), np.diag(A[:,N:2*N]), np.diag(A[:,2*N:])])
+    A[:,:N] = A[:,:N] - np.diag(np.diag(A[:,:N]))
+    A[:,N:2*N] = A[:,N:2*N] - np.diag(np.diag(A[:,N:2*N]))
+    A[:,2*N:] = A[:,2*N:] - np.diag(np.diag(A[:,2*N:]))
+    printVector(f, diag, name + '_diag')
+    for i in range(3*N//16):
+        for j in range(N):
+            W = np.concatenate([W, A[j, i*16:(i+1)*16]])
+    printVector(f, W, name)
+    idx = np.tile(np.concatenate([np.array([N]), np.arange(N)]), 3*N//16)
+    printVector(f, idx, name + '_idx', dtype='int')
+    return;
+
 def dump_layer_ignore(self, f, hf):
     print("ignoring layer " + self.name + " of type " + self.__class__.__name__)
     return False
 Layer.dump_layer = dump_layer_ignore
+
+def dump_sparse_gru(self, f, hf):
+    global max_rnn_neurons
+    name = 'sparse_' + self.name
+    print("printing layer " + name + " of type sparse " + self.__class__.__name__)
+    weights = self.get_weights()
+    printSparseVector(f, weights[1], name + '_recurrent_weights')
+    printVector(f, weights[-1], name + '_bias')
+    if hasattr(self, 'activation'):
+        activation = self.activation.__name__.upper()
+    else:
+        activation = 'TANH'
+    if hasattr(self, 'reset_after') and not self.reset_after:
+        reset_after = 0
+    else:
+        reset_after = 1
+    neurons = weights[0].shape[1]//3
+    max_rnn_neurons = max(max_rnn_neurons, neurons)
+    f.write('const SparseGRULayer {} = {{\n   {}_bias,\n   {}_recurrent_weights_diag,\n   {}_recurrent_weights,\n   {}_recurrent_weights_idx,\n   {}, ACTIVATION_{}, {}\n}};\n\n'
+            .format(name, name, name, name, name, weights[0].shape[1]//3, activation, reset_after))
+    hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
+    hf.write('#define {}_STATE_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
+    hf.write('extern const SparseGRULayer {};\n\n'.format(name));
+    return True
 
 def dump_gru_layer(self, f, hf):
     global max_rnn_neurons
@@ -204,6 +244,8 @@ layer_list = []
 for i, layer in enumerate(model.layers):
     if layer.dump_layer(f, hf):
         layer_list.append(layer.name)
+
+dump_sparse_gru(model.get_layer('gru_a'), f, hf)
 
 hf.write('#define MAX_RNN_NEURONS {}\n\n'.format(max_rnn_neurons))
 hf.write('#define MAX_CONV_INPUTS {}\n\n'.format(max_conv_inputs))
