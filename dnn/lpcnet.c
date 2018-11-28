@@ -121,10 +121,10 @@ void run_sample_network(NNetState *net, float *pdf, const float *condition, int 
     compute_embedding(&embed_sig, &in_a[EMBED_SIG_OUT_SIZE], pred);
     compute_embedding(&embed_exc, &in_a[2*EMBED_SIG_OUT_SIZE], last_exc);
     RNN_COPY(&in_a[2*EMBED_SIG_OUT_SIZE + EMBED_EXC_OUT_SIZE], condition, FEATURE_DENSE2_OUT_SIZE);
-    compute_gru(&gru_a, net->gru_a_state, in_a);
+    compute_gru2(&gru_a, net->gru_a_state, in_a);
     RNN_COPY(in_b, net->gru_a_state, GRU_A_STATE_SIZE);
     RNN_COPY(&in_b[GRU_A_STATE_SIZE], condition, FEATURE_DENSE2_OUT_SIZE);
-    compute_gru(&gru_b, net->gru_b_state, in_b);
+    compute_gru2(&gru_b, net->gru_b_state, in_b);
     compute_mdense(&dual_fc, pdf, net->gru_b_state);
 }
 

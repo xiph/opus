@@ -85,6 +85,8 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
 
 void compute_gru(const GRULayer *gru, float *state, const float *input);
 
+void compute_gru2(const GRULayer *gru, float *state, const float *input);
+
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input);
 
 void compute_embedding(const EmbeddingLayer *layer, float *output, int input);
