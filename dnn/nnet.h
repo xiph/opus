@@ -87,9 +87,13 @@ void compute_gru(const GRULayer *gru, float *state, const float *input);
 
 void compute_gru2(const GRULayer *gru, float *state, const float *input);
 
+void compute_gru3(const GRULayer *gru, float *state, const float *input);
+
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input);
 
 void compute_embedding(const EmbeddingLayer *layer, float *output, int input);
+
+void accum_embedding(const EmbeddingLayer *layer, float *output, int input);
 
 int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor);
 

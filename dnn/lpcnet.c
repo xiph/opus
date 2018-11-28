@@ -116,12 +116,17 @@ void run_frame_network(LPCNetState *lpcnet, float *condition, const float *featu
 void run_sample_network(NNetState *net, float *pdf, const float *condition, int last_exc, int last_sig, int pred)
 {
     float in_a[SAMPLE_INPUT_SIZE];
+    float gru_a_input[3*GRU_A_STATE_SIZE];
     float in_b[GRU_A_STATE_SIZE+FEATURE_DENSE2_OUT_SIZE];
     compute_embedding(&embed_sig, &in_a[0], last_sig);
     compute_embedding(&embed_sig, &in_a[EMBED_SIG_OUT_SIZE], pred);
     compute_embedding(&embed_exc, &in_a[2*EMBED_SIG_OUT_SIZE], last_exc);
     RNN_COPY(&in_a[2*EMBED_SIG_OUT_SIZE + EMBED_EXC_OUT_SIZE], condition, FEATURE_DENSE2_OUT_SIZE);
-    compute_gru2(&gru_a, net->gru_a_state, in_a);
+    compute_dense(&gru_a_dense_feature, gru_a_input, condition);
+    accum_embedding(&gru_a_embed_sig, gru_a_input, last_sig);
+    accum_embedding(&gru_a_embed_pred, gru_a_input, pred);
+    accum_embedding(&gru_a_embed_exc, gru_a_input, last_exc);
+    compute_gru3(&gru_a, net->gru_a_state, gru_a_input);
     RNN_COPY(in_b, net->gru_a_state, GRU_A_STATE_SIZE);
     RNN_COPY(&in_b[GRU_A_STATE_SIZE], condition, FEATURE_DENSE2_OUT_SIZE);
     compute_gru2(&gru_b, net->gru_b_state, in_b);
