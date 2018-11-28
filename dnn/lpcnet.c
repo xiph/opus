@@ -89,7 +89,7 @@ static void print_vector(float *x, int N)
 }
 #endif
 
-void run_frame_network(LPCNetState *lpcnet, float *condition, const float *features, int pitch)
+void run_frame_network(LPCNetState *lpcnet, float *condition, float *gru_a_condition, const float *features, int pitch)
 {
     int i;
     NNetState *net;
@@ -110,19 +110,15 @@ void run_frame_network(LPCNetState *lpcnet, float *condition, const float *featu
     memcpy(lpcnet->old_input[0], in, FRAME_INPUT_SIZE*sizeof(in[0]));
     compute_dense(&feature_dense1, dense1_out, conv2_out);
     compute_dense(&feature_dense2, condition, dense1_out);
+    compute_dense(&gru_a_dense_feature, gru_a_condition, condition);
     if (lpcnet->frame_count < 1000) lpcnet->frame_count++;
 }
 
-void run_sample_network(NNetState *net, float *pdf, const float *condition, int last_exc, int last_sig, int pred)
+void run_sample_network(NNetState *net, float *pdf, const float *condition, const float *gru_a_condition, int last_exc, int last_sig, int pred)
 {
-    float in_a[SAMPLE_INPUT_SIZE];
     float gru_a_input[3*GRU_A_STATE_SIZE];
     float in_b[GRU_A_STATE_SIZE+FEATURE_DENSE2_OUT_SIZE];
-    compute_embedding(&embed_sig, &in_a[0], last_sig);
-    compute_embedding(&embed_sig, &in_a[EMBED_SIG_OUT_SIZE], pred);
-    compute_embedding(&embed_exc, &in_a[2*EMBED_SIG_OUT_SIZE], last_exc);
-    RNN_COPY(&in_a[2*EMBED_SIG_OUT_SIZE + EMBED_EXC_OUT_SIZE], condition, FEATURE_DENSE2_OUT_SIZE);
-    compute_dense(&gru_a_dense_feature, gru_a_input, condition);
+    RNN_COPY(gru_a_input, gru_a_condition, 3*GRU_A_STATE_SIZE);
     accum_embedding(&gru_a_embed_sig, gru_a_input, last_sig);
     accum_embedding(&gru_a_embed_pred, gru_a_input, pred);
     accum_embedding(&gru_a_embed_exc, gru_a_input, last_exc);
@@ -151,6 +147,7 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     float condition[FEATURE_DENSE2_OUT_SIZE];
     float lpc[LPC_ORDER];
     float pdf[DUAL_FC_OUT_SIZE];
+    float gru_a_condition[3*GRU_A_STATE_SIZE];
     int pitch;
     float pitch_gain;
     /* FIXME: Remove this -- it's just a temporary hack to match the Python code. */
@@ -159,7 +156,7 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     pitch = (int)floor(50*features[36]+100);
     /* FIXME: get the pitch gain from 2 frames in the past. */
     pitch_gain = features[PITCH_GAIN_FEATURE];
-    run_frame_network(lpcnet, condition, features, pitch);
+    run_frame_network(lpcnet, condition, gru_a_condition, features, pitch);
     memcpy(lpc, lpcnet->old_lpc[FEATURES_DELAY-1], LPC_ORDER*sizeof(lpc[0]));
     memmove(lpcnet->old_lpc[1], lpcnet->old_lpc[0], (FEATURES_DELAY-1)*LPC_ORDER*sizeof(lpc[0]));
     memcpy(lpcnet->old_lpc[0], new_lpc, LPC_ORDER*sizeof(lpc[0]));
@@ -179,7 +176,7 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
         for (j=0;j<LPC_ORDER;j++) pred -= lpcnet->last_sig[j]*lpc[j];
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
-        run_sample_network(&lpcnet->nnet, pdf, condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw);
+        run_sample_network(&lpcnet->nnet, pdf, condition, gru_a_condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw);
         exc = sample_from_pdf(pdf, DUAL_FC_OUT_SIZE, MAX16(0, 1.5f*pitch_gain - .5f), PDF_FLOOR);
         pcm = pred + ulaw2lin(exc);
         RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
