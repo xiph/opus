@@ -57,7 +57,7 @@ class Sparsify(Callback):
             pass
         else:
             #print("constrain");
-            layer = self.model.get_layer('cu_dnngru_1')
+            layer = self.model.get_layer('gru_a')
             w = layer.get_weights()
             p = w[1]
             nb = p.shape[1]//p.shape[0]
@@ -72,6 +72,7 @@ class Sparsify(Callback):
             for k in range(nb):
                 A = p[:, k*N:(k+1)*N]
                 A = A - np.diag(np.diag(A))
+                A = np.transpose(A, (1, 0))
                 L=np.reshape(A, (N, N//16, 16))
                 S=np.sum(L*L, axis=-1)
                 SS=np.sort(np.reshape(S, (-1,)))
@@ -79,6 +80,7 @@ class Sparsify(Callback):
                 mask = (S>=thresh).astype('float32');
                 mask = np.repeat(mask, 16, axis=1)
                 mask = np.minimum(1, mask + np.diag(np.ones((N,))))
+                mask = np.transpose(mask, (1, 0))
                 p[:, k*N:(k+1)*N] = p[:, k*N:(k+1)*N]*mask
                 #print(thresh, np.mean(mask))
             w[1] = p

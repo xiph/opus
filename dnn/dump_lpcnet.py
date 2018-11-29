@@ -67,11 +67,19 @@ def printSparseVector(f, A, name):
     A[:,N:2*N] = A[:,N:2*N] - np.diag(np.diag(A[:,N:2*N]))
     A[:,2*N:] = A[:,2*N:] - np.diag(np.diag(A[:,2*N:]))
     printVector(f, diag, name + '_diag')
+    idx = np.zeros((0,), dtype='int')
     for i in range(3*N//16):
+        pos = idx.shape[0]
+        idx = np.append(idx, -1)
+        nb_nonzero = 0
         for j in range(N):
-            W = np.concatenate([W, A[j, i*16:(i+1)*16]])
+            if np.sum(np.abs(A[j, i*16:(i+1)*16])) > 1e-10:
+                nb_nonzero = nb_nonzero + 1
+                idx = np.append(idx, j)
+                W = np.concatenate([W, A[j, i*16:(i+1)*16]])
+        idx[pos] = nb_nonzero
     printVector(f, W, name)
-    idx = np.tile(np.concatenate([np.array([N]), np.arange(N)]), 3*N//16)
+    #idx = np.tile(np.concatenate([np.array([N]), np.arange(N)]), 3*N//16)
     printVector(f, idx, name + '_idx', dtype='int')
     return;
 
