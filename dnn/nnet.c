@@ -132,7 +132,73 @@ static void vec_sigmoid(float *y, const float *x, int N)
         y[i] = (ex)/(ex+1);
     }
 }
-#else
+
+static void gemm_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+{
+   int i, j;
+   for (i=0;i<rows;i+=16)
+   {
+      float * restrict y;
+      __m256 vy0, vy8;
+      y = &out[i];
+      vy0 = _mm256_loadu_ps(&y[0]);
+      vy8 = _mm256_loadu_ps(&y[8]);
+      for (j=0;j<cols;j++)
+      {
+         __m256 vxj;
+         __m256 vw;
+         vxj = _mm256_broadcast_ss(&x[j]);
+
+         vw = _mm256_loadu_ps(&weights[j*col_stride + i]);
+         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
+
+         vw = _mm256_loadu_ps(&weights[j*col_stride + i + 8]);
+         vy8 = _mm256_fmadd_ps(vw, vxj, vy8);
+      }
+      _mm256_storeu_ps (&y[0], vy0);
+      _mm256_storeu_ps (&y[8], vy8);
+   }
+}
+static void sparse_gemm_accum16(float *out, const float *weights, int rows, const int *idx, const float *x)
+{
+   int i, j;
+   for (i=0;i<rows;i+=16)
+   {
+      float * restrict y;
+      int cols;
+      __m256 vy0, vy8;
+      y = &out[i];
+      vy0 = _mm256_loadu_ps(&y[0]);
+      vy8 = _mm256_loadu_ps(&y[8]);
+      cols = *idx++;
+      for (j=0;j<cols;j++)
+      {
+         int id;
+         __m256 vxj;
+         __m256 vw;
+         id = *idx++;
+         vxj = _mm256_broadcast_ss(&x[id]);
+
+         vw = _mm256_loadu_ps(&weights[0]);
+         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
+
+         vw = _mm256_loadu_ps(&weights[8]);
+         vy8 = _mm256_fmadd_ps(vw, vxj, vy8);
+         weights += 16;
+      }
+      _mm256_storeu_ps (&y[0], vy0);
+      _mm256_storeu_ps (&y[8], vy8);
+   }
+}
+
+
+#else /* No AVX2/FMA support */
+
+
+#warning Compiling without any vectorization. This code will be very slow
+#warning Try adding -mavx2 -mfma
+
+
 static float celt_exp2(float x)
 {
    int integer;
@@ -211,81 +277,6 @@ static void vec_sigmoid(float *y, const float *x, int N)
     }
 }
 
-
-#endif
-
-
-
-static OPUS_INLINE float relu(float x)
-{
-   return x < 0 ? 0 : x;
-}
-
-#ifdef __AVX2__
-#include <immintrin.h>
-static void gemm_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
-{
-   int i, j;
-   for (i=0;i<rows;i+=16)
-   {
-      float * restrict y;
-      __m256 vy0, vy8;
-      y = &out[i];
-      vy0 = _mm256_loadu_ps(&y[0]);
-      vy8 = _mm256_loadu_ps(&y[8]);
-      for (j=0;j<cols;j++)
-      {
-         __m256 vxj;
-         __m256 vw;
-         vxj = _mm256_broadcast_ss(&x[j]);
-
-         vw = _mm256_loadu_ps(&weights[j*col_stride + i]);
-         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
-
-         vw = _mm256_loadu_ps(&weights[j*col_stride + i + 8]);
-         vy8 = _mm256_fmadd_ps(vw, vxj, vy8);
-      }
-      _mm256_storeu_ps (&y[0], vy0);
-      _mm256_storeu_ps (&y[8], vy8);
-   }
-}
-static void sparse_gemm_accum16(float *out, const float *weights, int rows, const int *idx, const float *x)
-{
-   int i, j;
-   for (i=0;i<rows;i+=16)
-   {
-      float * restrict y;
-      int cols;
-      __m256 vy0, vy8;
-      y = &out[i];
-      vy0 = _mm256_loadu_ps(&y[0]);
-      vy8 = _mm256_loadu_ps(&y[8]);
-      cols = *idx++;
-      for (j=0;j<cols;j++)
-      {
-         int id;
-         __m256 vxj;
-         __m256 vw;
-         id = *idx++;
-         vxj = _mm256_broadcast_ss(&x[id]);
-
-         vw = _mm256_loadu_ps(&weights[0]);
-         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
-
-         vw = _mm256_loadu_ps(&weights[8]);
-         vy8 = _mm256_fmadd_ps(vw, vxj, vy8);
-         weights += 16;
-      }
-      _mm256_storeu_ps (&y[0], vy0);
-      _mm256_storeu_ps (&y[8], vy8);
-   }
-}
-
-#else
-
-#warning Compiling without any vectorization. This code will be very slow
-#warning Try adding -mavx2 -mfma
-
 static void gemm_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
    int i, j;
@@ -353,6 +344,14 @@ static void sparse_gemm_accum16(float *out, const float *w, int rows, const int 
    }
 }
 #endif
+
+
+
+static OPUS_INLINE float relu(float x)
+{
+   return x < 0 ? 0 : x;
+}
+
 
 static void gemm_accum(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
