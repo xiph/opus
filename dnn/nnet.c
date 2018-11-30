@@ -317,7 +317,7 @@ static void gemm_accum16(float *out, const float *weights, int rows, int cols, i
 static void gemm_accum(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
    int i, j;
-   if (rows % 16 == 0 && cols % 16 == 0)
+   if (rows % 16 == 0)
    {
       gemm_accum16(out, weights, rows, cols, col_stride, x);
    } else {
