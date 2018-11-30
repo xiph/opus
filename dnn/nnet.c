@@ -133,7 +133,7 @@ static void vec_sigmoid(float *y, const float *x, int N)
     }
 }
 
-static void gemm_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+static void sgemv_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
    int i, j;
    for (i=0;i<rows;i+=16)
@@ -159,7 +159,7 @@ static void gemm_accum16(float *out, const float *weights, int rows, int cols, i
       _mm256_storeu_ps (&y[8], vy8);
    }
 }
-static void sparse_gemm_accum16(float *out, const float *weights, int rows, const int *idx, const float *x)
+static void sparse_sgemv_accum16(float *out, const float *weights, int rows, const int *idx, const float *x)
 {
    int i, j;
    for (i=0;i<rows;i+=16)
@@ -277,7 +277,7 @@ static void vec_sigmoid(float *y, const float *x, int N)
     }
 }
 
-static void gemm_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+static void sgemv_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
    int i, j;
    for (i=0;i<rows;i+=16)
@@ -310,7 +310,7 @@ static void gemm_accum16(float *out, const float *weights, int rows, int cols, i
    }
 }
 
-static void sparse_gemm_accum16(float *out, const float *w, int rows, const int *idx, const float *x)
+static void sparse_sgemv_accum16(float *out, const float *w, int rows, const int *idx, const float *x)
 {
    int i, j;
    for (i=0;i<rows;i+=16)
@@ -353,12 +353,12 @@ static OPUS_INLINE float relu(float x)
 }
 
 
-static void gemm_accum(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+static void sgemv_accum(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
    int i, j;
    if (rows % 16 == 0)
    {
-      gemm_accum16(out, weights, rows, cols, col_stride, x);
+      sgemv_accum16(out, weights, rows, cols, col_stride, x);
    } else {
       for (i=0;i<rows;i++)
       {
@@ -410,7 +410,7 @@ void compute_dense(const DenseLayer *layer, float *output, const float *input)
    celt_assert(input != output);
    for (i=0;i<N;i++)
       output[i] = layer->bias[i];
-   gemm_accum(output, layer->input_weights, N, M, stride, input);
+   sgemv_accum(output, layer->input_weights, N, M, stride, input);
    compute_activation(output, output, N, layer->activation);
 }
 
@@ -428,7 +428,7 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
    stride = N*C;
    for (i=0;i<N*C;i++)
       tmp[i] = layer->bias[i];
-   gemm_accum(tmp, layer->input_weights, N*C, M, stride, input);
+   sgemv_accum(tmp, layer->input_weights, N*C, M, stride, input);
    compute_activation(tmp, tmp, N*C, ACTIVATION_TANH);
    for (i=0;i<N;i++)
       output[i] = 0;
@@ -462,8 +462,8 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
       for (i=0;i<N;i++)
          z[i] += gru->bias[3*N + i];
    }
-   gemm_accum(z, gru->input_weights, N, M, stride, input);
-   gemm_accum(z, gru->recurrent_weights, N, N, stride, state);
+   sgemv_accum(z, gru->input_weights, N, M, stride, input);
+   sgemv_accum(z, gru->recurrent_weights, N, N, stride, state);
    compute_activation(z, z, N, ACTIVATION_SIGMOID);
 
    /* Compute reset gate. */
@@ -474,8 +474,8 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
       for (i=0;i<N;i++)
          r[i] += gru->bias[4*N + i];
    }
-   gemm_accum(r, &gru->input_weights[N], N, M, stride, input);
-   gemm_accum(r, &gru->recurrent_weights[N], N, N, stride, state);
+   sgemv_accum(r, &gru->input_weights[N], N, M, stride, input);
+   sgemv_accum(r, &gru->recurrent_weights[N], N, N, stride, state);
    compute_activation(r, r, N, ACTIVATION_SIGMOID);
 
    /* Compute output. */
@@ -485,15 +485,15 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
    {
       for (i=0;i<N;i++)
          tmp[i] = gru->bias[5*N + i];
-      gemm_accum(tmp, &gru->recurrent_weights[2*N], N, N, stride, state);
+      sgemv_accum(tmp, &gru->recurrent_weights[2*N], N, N, stride, state);
       for (i=0;i<N;i++)
          h[i] += tmp[i] * r[i];
-      gemm_accum(h, &gru->input_weights[2*N], N, M, stride, input);
+      sgemv_accum(h, &gru->input_weights[2*N], N, M, stride, input);
    } else {
       for (i=0;i<N;i++)
          tmp[i] = state[i] * r[i];
-      gemm_accum(h, &gru->input_weights[2*N], N, M, stride, input);
-      gemm_accum(h, &gru->recurrent_weights[2*N], N, N, stride, tmp);
+      sgemv_accum(h, &gru->input_weights[2*N], N, M, stride, input);
+      sgemv_accum(h, &gru->recurrent_weights[2*N], N, N, stride, tmp);
    }
    compute_activation(h, h, N, gru->activation);
    for (i=0;i<N;i++)
@@ -524,10 +524,10 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input)
    /* Compute update gate. */
    for (i=0;i<3*N;i++)
       zrh[i] = gru->bias[i];
-   gemm_accum(zrh, gru->input_weights, 3*N, M, stride, input);
+   sgemv_accum(zrh, gru->input_weights, 3*N, M, stride, input);
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
-   gemm_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
+   sgemv_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
    for (i=0;i<2*N;i++)
       zrh[i] += recur[i];
    compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
@@ -561,7 +561,7 @@ void compute_gru3(const GRULayer *gru, float *state, const float *input)
    RNN_COPY(zrh, input, 3*N);
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
-   gemm_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
+   sgemv_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
    for (i=0;i<2*N;i++)
       zrh[i] += recur[i];
    compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
@@ -598,7 +598,7 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
       for (i=0;i<N;i++)
          recur[k*N + i] += gru->diag_weights[k*N + i]*state[i];
    }
-   sparse_gemm_accum16(recur, gru->recurrent_weights, 3*N, gru->idx, state);
+   sparse_sgemv_accum16(recur, gru->recurrent_weights, 3*N, gru->idx, state);
    for (i=0;i<2*N;i++)
       zrh[i] += recur[i];
    compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
@@ -626,7 +626,7 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    stride = N;
    for (i=0;i<N;i++)
       output[i] = layer->bias[i];
-   gemm_accum(output, layer->input_weights, N, M, stride, tmp);
+   sgemv_accum(output, layer->input_weights, N, M, stride, tmp);
    compute_activation(output, output, N, layer->activation);
    RNN_COPY(mem, &tmp[layer->nb_inputs], layer->nb_inputs*(layer->kernel_size-1));
 }
