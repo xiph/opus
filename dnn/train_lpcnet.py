@@ -56,10 +56,8 @@ model, _, _ = lpcnet.new_lpcnet_model()
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 model.summary()
 
-exc_file = sys.argv[1]     # not used at present
-feature_file = sys.argv[2]
-pred_file = sys.argv[3]    # LPC predictor samples. Not used at present, see below
-pcm_file = sys.argv[4]     # 16 bit unsigned short PCM samples
+feature_file = sys.argv[1]
+pcm_file = sys.argv[2]     # 16 bit unsigned short PCM samples
 frame_size = 160
 nb_features = 55
 nb_used_features = model.nb_used_features
@@ -96,8 +94,7 @@ features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
 # Note: the LPC predictor output is now calculated by the loop below, this code was
 # for an ealier version that implemented the prediction filter in C
 
-upred = np.fromfile(pred_file, dtype='int16')
-upred = upred[:nb_frames*pcm_chunk_size]
+upred = np.zeros((nb_frames*pcm_chunk_size,), dtype='int16')
 
 # Use 16th order LPC to generate LPC prediction output upred[] and (in
 # mu-law form) pred[]

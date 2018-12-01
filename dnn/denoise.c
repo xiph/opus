@@ -579,24 +579,20 @@ int main(int argc, char **argv) {
   float mem_preemph=0;
   float x[FRAME_SIZE];
   FILE *f1;
-  FILE *fexc;
   FILE *ffeat;
-  FILE *fpred;
   FILE *fpcm;
   signed char iexc[FRAME_SIZE];
   short pred[FRAME_SIZE];
   short pcm[FRAME_SIZE];
   DenoiseState *st;
   st = rnnoise_create();
-  if (argc!=6) {
-    fprintf(stderr, "usage: %s <speech> <exc out> <features out> <prediction out> <pcm out> \n", argv[0]);
+  if (argc!=4) {
+    fprintf(stderr, "usage: %s <speech> <features out>\n", argv[0]);
     return 1;
   }
   f1 = fopen(argv[1], "r");
-  fexc = fopen(argv[2], "w");
-  ffeat = fopen(argv[3], "w");
-  fpred = fopen(argv[4], "w");
-  fpcm = fopen(argv[5], "w");
+  ffeat = fopen(argv[2], "w");
+  fpcm = fopen(argv[3], "w");
   while (1) {
     kiss_fft_cpx X[FREQ_SIZE], P[WINDOW_SIZE];
     float Ex[NB_BANDS], Ep[NB_BANDS];
@@ -617,17 +613,14 @@ int main(int argc, char **argv) {
     preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
 
     compute_frame_features(st, iexc, pred, pcm, X, P, Ex, Ep, Exp, features, x);
-#if 1
-    fwrite(iexc, sizeof(signed char), FRAME_SIZE, fexc);
     fwrite(features, sizeof(float), NB_FEATURES, ffeat);
-    fwrite(pred, sizeof(short), FRAME_SIZE, fpred);
     fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
-#endif
     count++;
   }
   //fprintf(stderr, "matrix size: %d x %d\n", count, NB_FEATURES + 2*NB_BANDS + 1);
   fclose(f1);
-  fclose(fexc);
+  fclose(ffeat);
+  fclose(fpcm);
   return 0;
 }
 
