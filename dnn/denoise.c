@@ -642,6 +642,7 @@ int main(int argc, char **argv) {
   float speech_gain=1;
   int last_silent = 1;
   float old_speech_gain = 1;
+  int one_pass_completed = 0;
   DenoiseState *st;
   st = rnnoise_create();
   if (argc!=4) {
@@ -663,7 +664,9 @@ int main(int argc, char **argv) {
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
     fread(tmp, sizeof(short), FRAME_SIZE, f1);
     if (feof(f1)) {
-      return 0;
+      rewind(f1);
+      fread(tmp, sizeof(short), FRAME_SIZE, f1);
+      one_pass_completed = 1;
     }
     for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
     silent = E < 5000 || (last_silent && E < 20000);
@@ -681,6 +684,7 @@ int main(int argc, char **argv) {
       continue;
     }
     last_silent = silent;
+    if (count==5000000 && one_pass_completed) break;
     if (++gain_change_count > 2821) {
       speech_gain = pow(10., (-20+(rand()%40))/20.);
       if (rand()%20==0) speech_gain *= .01;
