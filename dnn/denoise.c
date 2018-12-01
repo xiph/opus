@@ -633,6 +633,9 @@ int main(int argc, char **argv) {
   signed char iexc[FRAME_SIZE];
   short pred[FRAME_SIZE];
   short pcm[FRAME_SIZE];
+  short tmp[FRAME_SIZE] = {0};
+  float savedX[FRAME_SIZE] = {0};
+  int last_silent = 1;
   DenoiseState *st;
   st = rnnoise_create();
   if (argc!=4) {
@@ -649,18 +652,33 @@ int main(int argc, char **argv) {
     float Ln[NB_BANDS];
     float features[NB_FEATURES];
     float g[NB_BANDS];
-    short tmp[FRAME_SIZE];
     float E=0;
+    int silent;
+    for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
     fread(tmp, sizeof(short), FRAME_SIZE, f1);
     if (feof(f1)) {
       return 0;
     }
-    for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
-    for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
     for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
+    silent = E < 5000 || (last_silent && E < 20000);
+    if (!last_silent && silent) {
+      for (i=0;i<FRAME_SIZE;i++) savedX[i] = x[i];
+    }
+    if (last_silent && !silent) {
+        for (i=0;i<FRAME_SIZE;i++) {
+          float f = (float)i/FRAME_SIZE;
+          tmp[i] = (int)floor(.5 + f*tmp[i] + (1-f)*savedX[i]);
+        }
+    }
+    if (last_silent) {
+      last_silent = silent;
+      continue;
+    }
+    last_silent = silent;
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
 
+    for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
     compute_frame_features(st, iexc, pred, pcm, X, P, Ex, Ep, Exp, features, x);
     fwrite(features, sizeof(float), NB_FEATURES, ffeat);
     fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
