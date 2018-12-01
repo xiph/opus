@@ -608,7 +608,7 @@ float rnnoise_process_frame(DenoiseState *st, float *out, const float *in) {
 
 #if TRAINING
 
-/*static float uni_rand() {
+static float uni_rand() {
   return rand()/(double)RAND_MAX-.5;
 }
 
@@ -617,16 +617,20 @@ static void rand_resp(float *a, float *b) {
   a[1] = .75*uni_rand();
   b[0] = .75*uni_rand();
   b[1] = .75*uni_rand();
-}*/
+}
 
 int main(int argc, char **argv) {
   int i;
   int count=0;
   static const float a_hp[2] = {-1.99599, 0.99600};
   static const float b_hp[2] = {-2, 1};
+  float a_sig[2] = {0};
+  float b_sig[2] = {0};
   float mem_hp_x[2]={0};
+  float mem_resp_x[2]={0};
   float mem_preemph=0;
   float x[FRAME_SIZE];
+  int gain_change_count=0;
   FILE *f1;
   FILE *ffeat;
   FILE *fpcm;
@@ -635,7 +639,9 @@ int main(int argc, char **argv) {
   short pcm[FRAME_SIZE];
   short tmp[FRAME_SIZE] = {0};
   float savedX[FRAME_SIZE] = {0};
+  float speech_gain=1;
   int last_silent = 1;
+  float old_speech_gain = 1;
   DenoiseState *st;
   st = rnnoise_create();
   if (argc!=4) {
@@ -675,13 +681,27 @@ int main(int argc, char **argv) {
       continue;
     }
     last_silent = silent;
+    if (++gain_change_count > 2821) {
+      speech_gain = pow(10., (-20+(rand()%40))/20.);
+      if (rand()%20==0) speech_gain *= .01;
+      if (rand()%100==0) speech_gain = 0;
+      gain_change_count = 0;
+      rand_resp(a_sig, b_sig);
+    }
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
+    biquad(x, mem_resp_x, x, b_sig, a_sig, FRAME_SIZE);
     preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
-
+    for (i=0;i<FRAME_SIZE;i++) {
+      float g;
+      float f = (float)i/FRAME_SIZE;
+      g = f*speech_gain + (1-f)*old_speech_gain;
+      x[i] *= g;
+    }
     for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
     compute_frame_features(st, iexc, pred, pcm, X, P, Ex, Ep, Exp, features, x);
     fwrite(features, sizeof(float), NB_FEATURES, ffeat);
     fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
+    old_speech_gain = speech_gain;
     count++;
   }
   //fprintf(stderr, "matrix size: %d x %d\n", count, NB_FEATURES + 2*NB_BANDS + 1);
