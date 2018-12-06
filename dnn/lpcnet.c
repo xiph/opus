@@ -185,6 +185,8 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
         lpcnet->last_exc = exc;
         pcm += PREEMPH*lpcnet->deemph_mem;
         lpcnet->deemph_mem = pcm;
+        if (pcm<-32767) pcm = -32767;
+        if (pcm>32767) pcm = 32767;
         output[i] = (int)floor(.5 + pcm);
     }
     start = 0;
