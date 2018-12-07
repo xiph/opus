@@ -650,8 +650,20 @@ int main(int argc, char **argv) {
     return 1;
   }
   f1 = fopen(argv[1], "r");
+  if (f1 == NULL) {
+      fprintf(stderr,"Error opening input .s16 16kHz speech input file: %s\n", argv[1]);
+      exit(1);
+  }
   ffeat = fopen(argv[2], "w");
+  if (ffeat == NULL) {
+      fprintf(stderr,"Error opening output feature file: %s\n", argv[2]);
+      exit(1);
+  }
   fpcm = fopen(argv[3], "w");
+  if (ffeat == NULL) {
+      fprintf(stderr,"Error opening output PCM file: %s\n", argv[2]);
+      exit(1);
+  }
   while (1) {
     kiss_fft_cpx X[FREQ_SIZE], P[WINDOW_SIZE];
     float Ex[NB_BANDS], Ep[NB_BANDS];
