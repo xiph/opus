@@ -222,6 +222,19 @@ static void dct(float *out, const float *in) {
   }
 }
 
+static void idct(float *out, const float *in) {
+  int i;
+  check_init();
+  for (i=0;i<NB_BANDS;i++) {
+    int j;
+    float sum = 0;
+    for (j=0;j<NB_BANDS;j++) {
+      sum += in[j] * common.dct_table[i*NB_BANDS + j];
+    }
+    out[i] = sum*sqrt(2.*22)*(1.f/NB_BANDS);
+  }
+}
+
 #if 0
 static void idct(float *out, const float *in) {
   int i;
@@ -311,6 +324,41 @@ short float2short(float x)
   int i;
   i = (int)floor(.5+x);
   return IMAX(-32767, IMIN(32767, i));
+}
+
+static float lpc_from_bands(float *lpc, const float *Ex)
+{
+   int i;
+   float e;
+   float ac[LPC_ORDER+1];
+   float rc[LPC_ORDER];
+   float Xr[FREQ_SIZE];
+   kiss_fft_cpx X_auto[FREQ_SIZE];
+   float x_auto[FRAME_SIZE];
+   interp_band_gain(Xr, Ex);
+   RNN_CLEAR(X_auto, FREQ_SIZE);
+   for (i=0;i<160;i++) X_auto[i].r = Xr[i];
+   inverse_transform(x_auto, X_auto);
+   for (i=0;i<LPC_ORDER+1;i++) ac[i] = x_auto[i];
+
+   /* -40 dB noise floor. */
+   ac[0] += ac[0]*1e-4 + 320/12/38.;
+   /* Lag windowing. */
+   for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
+   e = _celt_lpc(lpc, rc, ac, LPC_ORDER);
+   return e;
+}
+
+float lpc_from_cepstrum(float *lpc, const float *cepstrum)
+{
+   int i;
+   float Ex[NB_BANDS];
+   float tmp[NB_BANDS];
+   RNN_COPY(tmp, cepstrum, NB_BANDS);
+   tmp[0] += 4;
+   idct(Ex, tmp);
+   for (i=0;i<NB_BANDS;i++) Ex[i] = pow(10.f, Ex[i]);
+   return lpc_from_bands(lpc, Ex);
 }
 
 static float frame_analysis(DenoiseState *st, signed char *iexc, short *pred, short *pcm, float *lpc, kiss_fft_cpx *X, float *Ex, const float *in) {

@@ -9,6 +9,8 @@
 #define RNN_INLINE inline
 #define OPUS_INLINE inline
 
+float lpc_from_cepstrum(float *lpc, const float *cepstrum);
+
 
 /** RNNoise wrapper for malloc(). To do your own dynamic allocation, all you need t
 o do is replace this function and rnnoise_free */

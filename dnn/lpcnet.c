@@ -142,7 +142,7 @@ void lpcnet_destroy(LPCNetState *lpcnet)
     free(lpcnet);
 }
 
-void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, const float *new_lpc, int N)
+void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, int N)
 {
     int i;
     float condition[FEATURE_DENSE2_OUT_SIZE];
@@ -160,7 +160,7 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     run_frame_network(lpcnet, condition, gru_a_condition, features, pitch);
     memcpy(lpc, lpcnet->old_lpc[FEATURES_DELAY-1], LPC_ORDER*sizeof(lpc[0]));
     memmove(lpcnet->old_lpc[1], lpcnet->old_lpc[0], (FEATURES_DELAY-1)*LPC_ORDER*sizeof(lpc[0]));
-    memcpy(lpcnet->old_lpc[0], new_lpc, LPC_ORDER*sizeof(lpc[0]));
+    lpc_from_cepstrum(lpcnet->old_lpc[0], features);
     if (lpcnet->frame_count <= FEATURES_DELAY)
     {
         RNN_CLEAR(output, N);
@@ -208,14 +208,12 @@ int main(int argc, char **argv) {
     while (1) {
         float in_features[NB_TOTAL_FEATURES];
         float features[NB_FEATURES];
-        float lpc[LPC_ORDER];
         short pcm[FRAME_SIZE];
         fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
         RNN_COPY(features, in_features, NB_FEATURES);
         RNN_CLEAR(&features[18], 18);
-        RNN_COPY(lpc, &in_features[NB_TOTAL_FEATURES-LPC_ORDER], LPC_ORDER);
         if (feof(fin)) break;
-        lpcnet_synthesize(net, pcm, features, lpc, FRAME_SIZE);
+        lpcnet_synthesize(net, pcm, features, FRAME_SIZE);
         fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
     }
     fclose(fin);
