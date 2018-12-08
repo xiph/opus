@@ -28,8 +28,6 @@ target_link_libraries(opus PRIVATE ${CMAKE_REQUIRED_LIBRARIES})
 
 target_compile_definitions(opus PRIVATE CUSTOM_MODES OPUS_BUILD)
 
-set_property(TARGET opus PROPERTY POSITION_INDEPENDENT_CODE ON)
-
 if(BUILD_SHARED_LIBS AND MSVC)
   target_compile_definitions(opus PRIVATE DLL_EXPORT)
 elseif(BUILD_SHARED)
@@ -49,12 +47,12 @@ if(FIXED_POINT)
     opus
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/silk/fixed>)
   target_compile_definitions(opus PRIVATE FIXED_POINT=1 DISABLE_FLOAT_API)
-else(FIXED_POINT)
+else()
   add_sources_group(opus silk ${silk_sources_float})
   target_include_directories(
     opus
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/silk/float>)
-endif(FIXED_POINT)
+endif()
 
 if(HAVE_SSE)
 
@@ -65,10 +63,10 @@ if(HAVE_SSE)
     add_sources_group(opus celt ${celt_sources_sse4_1})
     if(FIXED_POINT)
       add_sources_group(opus silk ${silk_sources_fixed_sse4_1})
-    else(FIXED_POINT)
+    else()
       add_sources_group(opus silk ${silk_sources_sse4_1})
-    endif(FIXED_POINT)
-  endif(SSE4_FLAG_SUPPORTED)
+    endif()
+  endif()
 
   if(OPUS_MAY_HAVE_SSE)
     # Do runtime check for SIMD
@@ -79,7 +77,7 @@ if(HAVE_SSE)
                                OPUS_HAVE_RTCD)
     if(SSE4_FLAG_SUPPORTED)
       target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_SSE4_1)
-    endif(SSE4_FLAG_SUPPORTED)
+    endif()
 
   elseif(OPUS_PRESUME_SSE)
     target_compile_definitions(opus
@@ -88,9 +86,9 @@ if(HAVE_SSE)
                                OPUS_X86_PRESUME_HAVE_SSE2)
     if(SSE4_FLAG_SUPPORTED)
       target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_SSE4_1)
-    endif(SSE4_FLAG_SUPPORTED)
+    endif()
   endif()
-endif(HAVE_SSE)
+endif()
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(armv7-a)")
   add_sources_group(opus celt ${celt_sources_arm})
@@ -102,13 +100,11 @@ if(HAVE_NEON)
   add_sources_group(opus silk ${silk_sources_arm_neon_intr})
 
   # silk arm neon depends on main_Fix.h
-  target_include_directories(
-    opus
-    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/silk/fixed>)
+  target_include_directories(opus PRIVATE silk/fixed)
 
   if(FIXED_POINT)
     add_sources_group(opus silk ${silk_sources_fixed_arm_neon_intr})
-  endif(FIXED_POINT)
+  endif()
 
   if(OPUS_MAY_HAVE_NEON)
     # Do runtime check for NEON
@@ -128,7 +124,7 @@ endif()
 install(TARGETS opus
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(DIRECTORY include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
 
@@ -140,7 +136,7 @@ if(BUILD_PROGRAMS)
   # compare
   add_executable(opus_compare ${opus_compare_sources})
   target_link_libraries(opus_compare PRIVATE opus)
-endif(BUILD_PROGRAMS)
+endif()
 
 if(BUILD_TESTING)
   enable_testing()
@@ -150,7 +146,7 @@ if(BUILD_TESTING)
   target_link_libraries(test_opus_decode PRIVATE opus)
   if(FIXED_POINT)
     target_compile_definitions(test_opus_decode PRIVATE DISABLE_FLOAT_API)
-  endif(FIXED_POINT)
+  endif()
   add_test(test_opus_decode test_opus_decode)
 
   add_executable(test_opus_padding ${test_opus_padding_sources})
@@ -166,7 +162,7 @@ if(BUILD_TESTING)
     target_link_libraries(test_opus_api PRIVATE opus)
     if(FIXED_POINT)
       target_compile_definitions(test_opus_api PRIVATE DISABLE_FLOAT_API)
-    endif(FIXED_POINT)
+    endif()
     add_test(test_opus_api test_opus_api)
 
     add_executable(test_opus_encode ${test_opus_encode_sources})
@@ -175,5 +171,5 @@ if(BUILD_TESTING)
                                        ${CMAKE_CURRENT_SOURCE_DIR}/celt >)
     target_link_libraries(test_opus_encode PRIVATE opus)
     add_test(test_opus_encode test_opus_encode)
-  endif(NOT BUILD_SHARED_LIBS)
-endif(BUILD_TESTING)
+  endif()
+endif()

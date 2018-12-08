@@ -48,12 +48,6 @@ set_property(GLOBAL PROPERTY C_STANDARD 99)
 
 if(MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-  string(REGEX
-         REPLACE " /W[0-4]"
-                 ""
-                 CMAKE_C_FLAGS
-                 "${CMAKE_C_FLAGS}")
-  add_compile_options(/W4)
 endif()
 
 # It is strongly recommended to uncomment one of these VAR_ARRAYS: Use C99
@@ -62,9 +56,9 @@ endif()
 # array
 if(USE_ALLOCA OR MSVC)
   add_definitions(-DUSE_ALLOCA)
-else(USE_ALLOCA OR MSVC)
+else()
   add_definitions(-DVAR_ARRAYS)
-endif(USE_ALLOCA OR MSVC)
+endif()
 
 include(CheckLibraryExists)
 check_library_exists(m floor "" HAVE_LIBM)
