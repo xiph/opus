@@ -486,6 +486,7 @@ static int compute_frame_features(DenoiseState *st, signed char *iexc, short *pr
   }
   dct(features, Ly);
   features[0] -= 4;
+  lpc_from_cepstrum(lpc, features);
 #if 0
   for (i=0;i<NB_BANDS;i++) printf("%f ", Ly[i]);
   printf("\n");
