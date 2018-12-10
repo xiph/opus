@@ -218,7 +218,7 @@ static void dct(float *out, const float *in) {
     for (j=0;j<NB_BANDS;j++) {
       sum += in[j] * common.dct_table[j*NB_BANDS + i];
     }
-    out[i] = sum*sqrt(2./22);
+    out[i] = sum*sqrt(2./NB_BANDS);
   }
 }
 
@@ -231,7 +231,7 @@ static void idct(float *out, const float *in) {
     for (j=0;j<NB_BANDS;j++) {
       sum += in[j] * common.dct_table[i*NB_BANDS + j];
     }
-    out[i] = sum*sqrt(2.*22)*(1.f/NB_BANDS);
+    out[i] = sum*sqrt(2./NB_BANDS);
   }
 }
 
