@@ -59,7 +59,7 @@ pcm_chunk_size = frame_size*feature_chunk_size
 
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features[:,:,18:36] = 0
-periods = (50*features[:,:,36:37]+100).astype('int16')
+periods = (.1 + 50*features[:,:,36:37]+100).astype('int16')
 
 
 

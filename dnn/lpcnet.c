@@ -154,7 +154,7 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     /* FIXME: Remove this -- it's just a temporary hack to match the Python code. */
     static int start = LPC_ORDER+1;
     /* FIXME: Do proper rounding once the Python code rounds properly. */
-    pitch = (int)floor(50*features[36]+100);
+    pitch = (int)floor(.1 + 50*features[36]+100);
     /* FIXME: get the pitch gain from 2 frames in the past. */
     pitch_gain = features[PITCH_GAIN_FEATURE];
     run_frame_network(lpcnet, condition, gru_a_condition, features, pitch);
