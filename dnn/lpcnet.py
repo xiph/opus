@@ -64,12 +64,12 @@ class Sparsify(Callback):
             N = p.shape[0]
             #print("nb = ", nb, ", N = ", N);
             #print(p.shape)
-            density = self.final_density
-            if self.batch < self.t_end:
-                r = 1 - (self.batch-self.t_start)/(self.t_end - self.t_start)
-                density = 1 - (1-self.final_density)*(1 - r*r*r)
             #print ("density = ", density)
             for k in range(nb):
+                density = self.final_density[k]
+                if self.batch < self.t_end:
+                    r = 1 - (self.batch-self.t_start)/(self.t_end - self.t_start)
+                    density = 1 - (1-self.final_density[k])*(1 - r*r*r)
                 A = p[:, k*N:(k+1)*N]
                 A = A - np.diag(np.diag(A))
                 A = np.transpose(A, (1, 0))
