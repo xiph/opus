@@ -270,15 +270,6 @@ static void inverse_transform(float *out, const kiss_fft_cpx *in) {
   }
 }
 
-static void apply_window(float *x) {
-  int i;
-  check_init();
-  for (i=0;i<FRAME_SIZE;i++) {
-    x[i] *= common.half_window[i];
-    x[WINDOW_SIZE - 1 - i] *= common.half_window[i];
-  }
-}
-
 int rnnoise_get_size() {
   return sizeof(DenoiseState);
 }
@@ -298,11 +289,6 @@ DenoiseState *rnnoise_create() {
 void rnnoise_destroy(DenoiseState *st) {
   free(st);
 }
-
-#if TRAINING
-int lowpass = FREQ_SIZE;
-int band_lp = NB_BANDS;
-#endif
 
 short float2short(float x)
 {
@@ -347,6 +333,18 @@ float lpc_from_cepstrum(float *lpc, const float *cepstrum)
 }
 
 #if TRAINING
+
+int lowpass = FREQ_SIZE;
+int band_lp = NB_BANDS;
+
+static void apply_window(float *x) {
+  int i;
+  check_init();
+  for (i=0;i<FRAME_SIZE;i++) {
+    x[i] *= common.half_window[i];
+    x[WINDOW_SIZE - 1 - i] *= common.half_window[i];
+  }
+}
 
 static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
   int i;
