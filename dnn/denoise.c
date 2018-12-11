@@ -348,13 +348,10 @@ float lpc_from_cepstrum(float *lpc, const float *cepstrum)
 
 #if TRAINING
 
-static float frame_analysis(DenoiseState *st, signed char *iexc, short *pred, short *pcm, float *lpc, kiss_fft_cpx *X, float *Ex, const float *in) {
+static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
   int i;
   float x[WINDOW_SIZE];
   float x0[WINDOW_SIZE];
-  float ac[LPC_ORDER+1];
-  float rc[LPC_ORDER];
-  float g;
   RNN_COPY(x, st->analysis_mem, FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) x[FRAME_SIZE + i] = in[i];
   RNN_COPY(st->analysis_mem, in, FRAME_SIZE);
@@ -366,59 +363,9 @@ static float frame_analysis(DenoiseState *st, signed char *iexc, short *pred, sh
     X[i].r = X[i].i = 0;
 #endif
   compute_band_energy(Ex, X);
-  {
-    float e;
-    float g_1;
-    if (0) {
-      _celt_autocorr(x, ac, NULL, 0, LPC_ORDER, WINDOW_SIZE);
-    } else {
-      float Xr[FREQ_SIZE];
-      kiss_fft_cpx X_auto[FREQ_SIZE];
-      float x_auto[FRAME_SIZE];
-      interp_band_gain(Xr, Ex);
-      RNN_CLEAR(X_auto, FREQ_SIZE);
-      for (i=0;i<160;i++) X_auto[i].r = Xr[i];
-      inverse_transform(x_auto, X_auto);
-      for (i=0;i<LPC_ORDER+1;i++) ac[i] = x_auto[i];
-    }
-    /* -40 dB noise floor. */
-    ac[0] += ac[0]*1e-4 + 320/12/38.;
-    /* Lag windowing. */
-    for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
-    e = _celt_lpc(lpc, rc, ac, LPC_ORDER);
-    g = sqrt((1e-10+e)*(1./FRAME_SIZE));
-    g_1 = 1./g;
-#if 0
-    for(i=0;i<WINDOW_SIZE;i++) printf("%f ", x[i]);
-    printf("\n");
-#endif
-#if 0
-    printf("1 ");
-    for(i=0;i<LPC_ORDER;i++) printf("%f ", lpc[i]);
-    printf("\n");
-#endif
-    for (i=0;i<FRAME_SIZE;i++) {
-      int j;
-      float *z;
-      float tmp;
-      int nexc;
-      z = &x0[i]+FRAME_SIZE/2;
-      tmp = z[0];
-      for (j=0;j<LPC_ORDER;j++) tmp += lpc[j]*z[-1-j];
-      pcm[i] = float2short(z[0]);
-      pred[i] = float2short(z[0] - tmp);
-      nexc = (int)floor(.5 + 16*g_1*tmp);
-      nexc = IMAX(-128, IMIN(127, nexc));
-      iexc[i] = nexc;
-#if 0
-      printf("%f\n", g_1*tmp);
-#endif
-    }
-  }
-  return g;
 }
 
-static int compute_frame_features(DenoiseState *st, signed char *iexc, short *pred, short *pcm, kiss_fft_cpx *X, kiss_fft_cpx *P,
+static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cpx *P,
                                   float *Ex, float *Ep, float *Exp, float *features, const float *in) {
   int i;
   float E = 0;
@@ -431,22 +378,18 @@ static int compute_frame_features(DenoiseState *st, signed char *iexc, short *pr
   float tmp[NB_BANDS];
   float follow, logMax;
   float g;
-  g = frame_analysis(st, iexc, pred, pcm, lpc, X, Ex, in);
+  frame_analysis(st, X, Ex, in);
   RNN_MOVE(st->pitch_buf, &st->pitch_buf[FRAME_SIZE], PITCH_BUF_SIZE-FRAME_SIZE);
   RNN_COPY(&st->pitch_buf[PITCH_BUF_SIZE-FRAME_SIZE], in, FRAME_SIZE);
-  //pre[0] = &st->pitch_buf[0];
   RNN_COPY(pitch_buf, &st->pitch_buf[0], PITCH_BUF_SIZE);
   pitch_downsample(pitch_buf, PITCH_BUF_SIZE);
   pitch_search(pitch_buf+PITCH_MAX_PERIOD, pitch_buf, PITCH_FRAME_SIZE<<1,
                (PITCH_MAX_PERIOD-3*PITCH_MIN_PERIOD)<<1, &pitch_index);
-  //printf("%d ", pitch_index);
   pitch_index = 2*PITCH_MAX_PERIOD-pitch_index;
-  //printf("%d ", pitch_index);
   gain = remove_doubling(pitch_buf, 2*PITCH_MAX_PERIOD, 2*PITCH_MIN_PERIOD,
           2*PITCH_FRAME_SIZE, &pitch_index, st->last_period, st->last_gain);
   st->last_period = pitch_index;
   st->last_gain = gain;
-  //printf("%d %f\n", pitch_index, gain);
   for (i=0;i<WINDOW_SIZE;i++)
     p[i] = st->pitch_buf[PITCH_BUF_SIZE-WINDOW_SIZE-pitch_index/2+i];
   apply_window(p);
@@ -454,10 +397,6 @@ static int compute_frame_features(DenoiseState *st, signed char *iexc, short *pr
   compute_band_energy(Ep, P);
   compute_band_corr(Exp, X, P);
   for (i=0;i<NB_BANDS;i++) Exp[i] = Exp[i]/sqrt(.001+Ex[i]*Ep[i]);
-#if 0
-  for (i=0;i<NB_BANDS;i++) printf("%f ", Exp[i]);
-  printf("\n");
-#endif
   dct(tmp, Exp);
   for (i=0;i<NB_BANDS;i++) features[NB_BANDS+i] = tmp[i];
   features[NB_BANDS] -= 1.3;
@@ -473,7 +412,7 @@ static int compute_frame_features(DenoiseState *st, signed char *iexc, short *pr
   }
   dct(features, Ly);
   features[0] -= 4;
-  lpc_from_cepstrum(lpc, features);
+  g = lpc_from_cepstrum(lpc, features);
 #if 0
   for (i=0;i<NB_BANDS;i++) printf("%f ", Ly[i]);
   printf("\n");
@@ -537,9 +476,7 @@ int main(int argc, char **argv) {
   FILE *f1;
   FILE *ffeat;
   FILE *fpcm=NULL;
-  signed char iexc[FRAME_SIZE];
-  short pred[FRAME_SIZE];
-  short pcm[FRAME_SIZE];
+  short pcm[FRAME_SIZE]={0};
   short tmp[FRAME_SIZE] = {0};
   float savedX[FRAME_SIZE] = {0};
   float speech_gain=1;
@@ -624,9 +561,12 @@ int main(int argc, char **argv) {
       x[i] *= g;
     }
     for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
-    compute_frame_features(st, iexc, pred, pcm, X, P, Ex, Ep, Exp, features, x);
+    compute_frame_features(st, X, P, Ex, Ep, Exp, features, x);
     fwrite(features, sizeof(float), NB_FEATURES, ffeat);
+    /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
+    for (i=0;i<FRAME_SIZE/2;i++) pcm[i+FRAME_SIZE/2] = float2short(x[i]);
     if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
+    for (i=0;i<FRAME_SIZE/2;i++) pcm[i] = float2short(x[i+FRAME_SIZE/2]);
     old_speech_gain = speech_gain;
     count++;
   }
