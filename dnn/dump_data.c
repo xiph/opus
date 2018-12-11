@@ -52,7 +52,7 @@
 #define NB_FEATURES (2*NB_BANDS+3+LPC_ORDER)
 
 
-struct DenoiseState {
+typedef struct {
   float analysis_mem[FRAME_SIZE];
   float cepstral_mem[CEPS_MEM][NB_BANDS];
   int memid;
@@ -63,29 +63,29 @@ struct DenoiseState {
   int last_period;
   float mem_hp_x[2];
   float lastg[NB_BANDS];
-};
+} DenoiseState;
 
-int rnnoise_get_size() {
+static int rnnoise_get_size() {
   return sizeof(DenoiseState);
 }
 
-int rnnoise_init(DenoiseState *st) {
+static int rnnoise_init(DenoiseState *st) {
   memset(st, 0, sizeof(*st));
   return 0;
 }
 
-DenoiseState *rnnoise_create() {
+static DenoiseState *rnnoise_create() {
   DenoiseState *st;
   st = malloc(rnnoise_get_size());
   rnnoise_init(st);
   return st;
 }
 
-void rnnoise_destroy(DenoiseState *st) {
+static void rnnoise_destroy(DenoiseState *st) {
   free(st);
 }
 
-short float2short(float x)
+static short float2short(float x)
 {
   int i;
   i = (int)floor(.5+x);
@@ -314,10 +314,10 @@ int main(int argc, char **argv) {
     old_speech_gain = speech_gain;
     count++;
   }
-  //fprintf(stderr, "matrix size: %d x %d\n", count, NB_FEATURES + 2*NB_BANDS + 1);
   fclose(f1);
   fclose(ffeat);
   if (fpcm) fclose(fpcm);
+  rnnoise_destroy(st);
   return 0;
 }
 
