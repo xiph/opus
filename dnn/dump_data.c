@@ -34,7 +34,7 @@
 #include "kiss_fft.h"
 #include "common.h"
 #include <math.h>
-#include "rnnoise.h"
+#include "freq.h"
 #include "pitch.h"
 #include "arch.h"
 #include "celt_lpc.h"
