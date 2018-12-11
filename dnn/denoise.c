@@ -633,7 +633,7 @@ int main(int argc, char **argv) {
   int gain_change_count=0;
   FILE *f1;
   FILE *ffeat;
-  FILE *fpcm;
+  FILE *fpcm=NULL;
   signed char iexc[FRAME_SIZE];
   short pred[FRAME_SIZE];
   short pcm[FRAME_SIZE];
@@ -644,25 +644,31 @@ int main(int argc, char **argv) {
   float old_speech_gain = 1;
   int one_pass_completed = 0;
   DenoiseState *st;
+  int training = -1;
   st = rnnoise_create();
-  if (argc!=4) {
-    fprintf(stderr, "usage: %s <speech> <features out>\n", argv[0]);
+  if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
+  if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
+  if (training == -1) {
+    fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv[0]);
+    fprintf(stderr, "  or   %s -test <speech> <features out>\n", argv[0]);
     return 1;
   }
-  f1 = fopen(argv[1], "r");
+  f1 = fopen(argv[2], "r");
   if (f1 == NULL) {
-      fprintf(stderr,"Error opening input .s16 16kHz speech input file: %s\n", argv[1]);
-      exit(1);
+    fprintf(stderr,"Error opening input .s16 16kHz speech input file: %s\n", argv[2]);
+    exit(1);
   }
-  ffeat = fopen(argv[2], "w");
+  ffeat = fopen(argv[3], "w");
   if (ffeat == NULL) {
-      fprintf(stderr,"Error opening output feature file: %s\n", argv[2]);
-      exit(1);
+    fprintf(stderr,"Error opening output feature file: %s\n", argv[3]);
+    exit(1);
   }
-  fpcm = fopen(argv[3], "w");
-  if (ffeat == NULL) {
-      fprintf(stderr,"Error opening output PCM file: %s\n", argv[2]);
+  if (training) {
+    fpcm = fopen(argv[4], "w");
+    if (fpcm == NULL) {
+      fprintf(stderr,"Error opening output PCM file: %s\n", argv[4]);
       exit(1);
+    }
   }
   while (1) {
     kiss_fft_cpx X[FREQ_SIZE], P[WINDOW_SIZE];
@@ -676,28 +682,31 @@ int main(int argc, char **argv) {
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
     fread(tmp, sizeof(short), FRAME_SIZE, f1);
     if (feof(f1)) {
+      if (!training) break;
       rewind(f1);
       fread(tmp, sizeof(short), FRAME_SIZE, f1);
       one_pass_completed = 1;
     }
     for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
-    silent = E < 5000 || (last_silent && E < 20000);
-    if (!last_silent && silent) {
-      for (i=0;i<FRAME_SIZE;i++) savedX[i] = x[i];
-    }
-    if (last_silent && !silent) {
-        for (i=0;i<FRAME_SIZE;i++) {
-          float f = (float)i/FRAME_SIZE;
-          tmp[i] = (int)floor(.5 + f*tmp[i] + (1-f)*savedX[i]);
-        }
-    }
-    if (last_silent) {
+    if (training) {
+      silent = E < 5000 || (last_silent && E < 20000);
+      if (!last_silent && silent) {
+        for (i=0;i<FRAME_SIZE;i++) savedX[i] = x[i];
+      }
+      if (last_silent && !silent) {
+          for (i=0;i<FRAME_SIZE;i++) {
+            float f = (float)i/FRAME_SIZE;
+            tmp[i] = (int)floor(.5 + f*tmp[i] + (1-f)*savedX[i]);
+          }
+      }
+      if (last_silent) {
+        last_silent = silent;
+        continue;
+      }
       last_silent = silent;
-      continue;
     }
-    last_silent = silent;
     if (count==5000000 && one_pass_completed) break;
-    if (++gain_change_count > 2821) {
+    if (training && ++gain_change_count > 2821) {
       speech_gain = pow(10., (-20+(rand()%40))/20.);
       if (rand()%20==0) speech_gain *= .01;
       if (rand()%100==0) speech_gain = 0;
@@ -716,14 +725,14 @@ int main(int argc, char **argv) {
     for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
     compute_frame_features(st, iexc, pred, pcm, X, P, Ex, Ep, Exp, features, x);
     fwrite(features, sizeof(float), NB_FEATURES, ffeat);
-    fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
+    if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
     old_speech_gain = speech_gain;
     count++;
   }
   //fprintf(stderr, "matrix size: %d x %d\n", count, NB_FEATURES + 2*NB_BANDS + 1);
   fclose(f1);
   fclose(ffeat);
-  fclose(fpcm);
+  if (fpcm) fclose(fpcm);
   return 0;
 }
 
