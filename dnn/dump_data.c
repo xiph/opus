@@ -40,27 +40,13 @@
 #include "celt_lpc.h"
 #include <assert.h>
 
-#define PREEMPHASIS (0.85f)
-
-#define FRAME_SIZE_SHIFT 2
-#define FRAME_SIZE (40<<FRAME_SIZE_SHIFT)
-#define WINDOW_SIZE (2*FRAME_SIZE)
-#define FREQ_SIZE (FRAME_SIZE + 1)
 
 #define PITCH_MIN_PERIOD 32
 #define PITCH_MAX_PERIOD 256
 #define PITCH_FRAME_SIZE 320
 #define PITCH_BUF_SIZE (PITCH_MAX_PERIOD+PITCH_FRAME_SIZE)
 
-#define SQUARE(x) ((x)*(x))
 
-#define SMOOTH_BANDS 1
-
-#if SMOOTH_BANDS
-#define NB_BANDS 18
-#else
-#define NB_BANDS 17
-#endif
 
 #define CEPS_MEM 8
 #define NB_DELTA_CEPS 6
@@ -72,18 +58,9 @@
 #define TRAINING 0
 #endif
 
-static const opus_int16 eband5ms[] = {
-/*0  200 400 600 800  1k 1.2 1.4 1.6  2k 2.4 2.8 3.2  4k 4.8 5.6 6.8  8k*/
-  0,  1,  2,  3,  4,  5,  6,  7,  8, 10, 12, 14, 16, 20, 24, 28, 34, 40
-};
 
 
-typedef struct {
-  int init;
-  kiss_fft_state *kfft;
-  float half_window[FRAME_SIZE];
-  float dct_table[NB_BANDS*NB_BANDS];
-} CommonState;
+
 
 struct DenoiseState {
   float analysis_mem[FRAME_SIZE];
@@ -97,178 +74,6 @@ struct DenoiseState {
   float mem_hp_x[2];
   float lastg[NB_BANDS];
 };
-
-#if SMOOTH_BANDS
-void compute_band_energy(float *bandE, const kiss_fft_cpx *X) {
-  int i;
-  float sum[NB_BANDS] = {0};
-  for (i=0;i<NB_BANDS-1;i++)
-  {
-    int j;
-    int band_size;
-    band_size = (eband5ms[i+1]-eband5ms[i])<<FRAME_SIZE_SHIFT;
-    for (j=0;j<band_size;j++) {
-      float tmp;
-      float frac = (float)j/band_size;
-      tmp = SQUARE(X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].r);
-      tmp += SQUARE(X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].i);
-      sum[i] += (1-frac)*tmp;
-      sum[i+1] += frac*tmp;
-    }
-  }
-  sum[0] *= 2;
-  sum[NB_BANDS-1] *= 2;
-  for (i=0;i<NB_BANDS;i++)
-  {
-    bandE[i] = sum[i];
-  }
-}
-
-void compute_band_corr(float *bandE, const kiss_fft_cpx *X, const kiss_fft_cpx *P) {
-  int i;
-  float sum[NB_BANDS] = {0};
-  for (i=0;i<NB_BANDS-1;i++)
-  {
-    int j;
-    int band_size;
-    band_size = (eband5ms[i+1]-eband5ms[i])<<FRAME_SIZE_SHIFT;
-    for (j=0;j<band_size;j++) {
-      float tmp;
-      float frac = (float)j/band_size;
-      tmp = X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].r * P[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].r;
-      tmp += X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].i * P[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].i;
-      sum[i] += (1-frac)*tmp;
-      sum[i+1] += frac*tmp;
-    }
-  }
-  sum[0] *= 2;
-  sum[NB_BANDS-1] *= 2;
-  for (i=0;i<NB_BANDS;i++)
-  {
-    bandE[i] = sum[i];
-  }
-}
-
-void interp_band_gain(float *g, const float *bandE) {
-  int i;
-  memset(g, 0, FREQ_SIZE);
-  for (i=0;i<NB_BANDS-1;i++)
-  {
-    int j;
-    int band_size;
-    band_size = (eband5ms[i+1]-eband5ms[i])<<FRAME_SIZE_SHIFT;
-    for (j=0;j<band_size;j++) {
-      float frac = (float)j/band_size;
-      g[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j] = (1-frac)*bandE[i] + frac*bandE[i+1];
-    }
-  }
-}
-#else
-void compute_band_energy(float *bandE, const kiss_fft_cpx *X) {
-  int i;
-  for (i=0;i<NB_BANDS;i++)
-  {
-    int j;
-    opus_val32 sum = 0;
-    for (j=0;j<(eband5ms[i+1]-eband5ms[i])<<FRAME_SIZE_SHIFT;j++) {
-      sum += SQUARE(X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].r);
-      sum += SQUARE(X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].i);
-    }
-    bandE[i] = sum;
-  }
-}
-
-void interp_band_gain(float *g, const float *bandE) {
-  int i;
-  memset(g, 0, FREQ_SIZE);
-  for (i=0;i<NB_BANDS;i++)
-  {
-    int j;
-    for (j=0;j<(eband5ms[i+1]-eband5ms[i])<<FRAME_SIZE_SHIFT;j++)
-      g[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j] = bandE[i];
-  }
-}
-#endif
-
-
-CommonState common;
-
-static void check_init() {
-  int i;
-  if (common.init) return;
-  common.kfft = opus_fft_alloc_twiddles(2*FRAME_SIZE, NULL, NULL, NULL, 0);
-  for (i=0;i<FRAME_SIZE;i++)
-    common.half_window[i] = sin(.5*M_PI*sin(.5*M_PI*(i+.5)/FRAME_SIZE) * sin(.5*M_PI*(i+.5)/FRAME_SIZE));
-  for (i=0;i<NB_BANDS;i++) {
-    int j;
-    for (j=0;j<NB_BANDS;j++) {
-      common.dct_table[i*NB_BANDS + j] = cos((i+.5)*j*M_PI/NB_BANDS);
-      if (j==0) common.dct_table[i*NB_BANDS + j] *= sqrt(.5);
-    }
-  }
-  common.init = 1;
-}
-
-static void dct(float *out, const float *in) {
-  int i;
-  check_init();
-  for (i=0;i<NB_BANDS;i++) {
-    int j;
-    float sum = 0;
-    for (j=0;j<NB_BANDS;j++) {
-      sum += in[j] * common.dct_table[j*NB_BANDS + i];
-    }
-    out[i] = sum*sqrt(2./NB_BANDS);
-  }
-}
-
-static void idct(float *out, const float *in) {
-  int i;
-  check_init();
-  for (i=0;i<NB_BANDS;i++) {
-    int j;
-    float sum = 0;
-    for (j=0;j<NB_BANDS;j++) {
-      sum += in[j] * common.dct_table[i*NB_BANDS + j];
-    }
-    out[i] = sum*sqrt(2./NB_BANDS);
-  }
-}
-
-static void forward_transform(kiss_fft_cpx *out, const float *in) {
-  int i;
-  kiss_fft_cpx x[WINDOW_SIZE];
-  kiss_fft_cpx y[WINDOW_SIZE];
-  check_init();
-  for (i=0;i<WINDOW_SIZE;i++) {
-    x[i].r = in[i];
-    x[i].i = 0;
-  }
-  opus_fft(common.kfft, x, y, 0);
-  for (i=0;i<FREQ_SIZE;i++) {
-    out[i] = y[i];
-  }
-}
-
-static void inverse_transform(float *out, const kiss_fft_cpx *in) {
-  int i;
-  kiss_fft_cpx x[WINDOW_SIZE];
-  kiss_fft_cpx y[WINDOW_SIZE];
-  check_init();
-  for (i=0;i<FREQ_SIZE;i++) {
-    x[i] = in[i];
-  }
-  for (;i<WINDOW_SIZE;i++) {
-    x[i].r = x[WINDOW_SIZE - i].r;
-    x[i].i = -x[WINDOW_SIZE - i].i;
-  }
-  opus_fft(common.kfft, x, y, 0);
-  /* output in reverse order for IFFT. */
-  out[0] = WINDOW_SIZE*y[0].r;
-  for (i=1;i<WINDOW_SIZE;i++) {
-    out[i] = WINDOW_SIZE*y[WINDOW_SIZE - i].r;
-  }
-}
 
 int rnnoise_get_size() {
   return sizeof(DenoiseState);
@@ -297,54 +102,8 @@ short float2short(float x)
   return IMAX(-32767, IMIN(32767, i));
 }
 
-static float lpc_from_bands(float *lpc, const float *Ex)
-{
-   int i;
-   float e;
-   float ac[LPC_ORDER+1];
-   float rc[LPC_ORDER];
-   float Xr[FREQ_SIZE];
-   kiss_fft_cpx X_auto[FREQ_SIZE];
-   float x_auto[FRAME_SIZE];
-   interp_band_gain(Xr, Ex);
-   RNN_CLEAR(X_auto, FREQ_SIZE);
-   for (i=0;i<160;i++) X_auto[i].r = Xr[i];
-   inverse_transform(x_auto, X_auto);
-   for (i=0;i<LPC_ORDER+1;i++) ac[i] = x_auto[i];
-
-   /* -40 dB noise floor. */
-   ac[0] += ac[0]*1e-4 + 320/12/38.;
-   /* Lag windowing. */
-   for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
-   e = _celt_lpc(lpc, rc, ac, LPC_ORDER);
-   return e;
-}
-
-float lpc_from_cepstrum(float *lpc, const float *cepstrum)
-{
-   int i;
-   float Ex[NB_BANDS];
-   float tmp[NB_BANDS];
-   RNN_COPY(tmp, cepstrum, NB_BANDS);
-   tmp[0] += 4;
-   idct(Ex, tmp);
-   for (i=0;i<NB_BANDS;i++) Ex[i] = pow(10.f, Ex[i]);
-   return lpc_from_bands(lpc, Ex);
-}
-
-#if TRAINING
-
 int lowpass = FREQ_SIZE;
 int band_lp = NB_BANDS;
-
-static void apply_window(float *x) {
-  int i;
-  check_init();
-  for (i=0;i<FRAME_SIZE;i++) {
-    x[i] *= common.half_window[i];
-    x[WINDOW_SIZE - 1 - i] *= common.half_window[i];
-  }
-}
 
 static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
   int i;
@@ -575,4 +334,3 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-#endif
