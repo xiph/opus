@@ -46,20 +46,10 @@
 #define PITCH_FRAME_SIZE 320
 #define PITCH_BUF_SIZE (PITCH_MAX_PERIOD+PITCH_FRAME_SIZE)
 
-
-
 #define CEPS_MEM 8
 #define NB_DELTA_CEPS 6
 
 #define NB_FEATURES (2*NB_BANDS+3+LPC_ORDER)
-
-
-#ifndef TRAINING
-#define TRAINING 0
-#endif
-
-
-
 
 
 struct DenoiseState {
@@ -115,14 +105,12 @@ static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const f
   RNN_COPY(x0, x, WINDOW_SIZE);
   apply_window(x);
   forward_transform(X, x);
-#if TRAINING
   for (i=lowpass;i<FREQ_SIZE;i++)
     X[i].r = X[i].i = 0;
-#endif
   compute_band_energy(Ex, X);
 }
 
-static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cpx *P,
+static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cpx *P,
                                   float *Ex, float *Ep, float *Exp, float *features, const float *in) {
   int i;
   float E = 0;
@@ -182,7 +170,6 @@ static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cp
   for (i=0;i<NB_FEATURES;i++) printf("%f ", features[i]);
   printf("\n");
 #endif
-  return TRAINING && E < 0.1;
 }
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
