@@ -287,7 +287,7 @@ int main(int argc, char **argv) {
       }
       last_silent = silent;
     }
-    if (count==5000000 && one_pass_completed) break;
+    if (count>=5000000 && one_pass_completed) break;
     if (training && ++gain_change_count > 2821) {
       speech_gain = pow(10., (-20+(rand()%40))/20.);
       if (rand()%20==0) speech_gain *= .01;
