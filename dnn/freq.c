@@ -51,7 +51,7 @@ static const opus_int16 eband5ms[] = {
 typedef struct {
   int init;
   kiss_fft_state *kfft;
-  float half_window[FRAME_SIZE];
+  float half_window[OVERLAP_SIZE];
   float dct_table[NB_BANDS*NB_BANDS];
 } CommonState;
 
@@ -127,9 +127,9 @@ CommonState common;
 static void check_init() {
   int i;
   if (common.init) return;
-  common.kfft = opus_fft_alloc_twiddles(2*FRAME_SIZE, NULL, NULL, NULL, 0);
-  for (i=0;i<FRAME_SIZE;i++)
-    common.half_window[i] = sin(.5*M_PI*sin(.5*M_PI*(i+.5)/FRAME_SIZE) * sin(.5*M_PI*(i+.5)/FRAME_SIZE));
+  common.kfft = opus_fft_alloc_twiddles(WINDOW_SIZE, NULL, NULL, NULL, 0);
+  for (i=0;i<OVERLAP_SIZE;i++)
+    common.half_window[i] = sin(.5*M_PI*sin(.5*M_PI*(i+.5)/OVERLAP_SIZE) * sin(.5*M_PI*(i+.5)/OVERLAP_SIZE));
   for (i=0;i<NB_BANDS;i++) {
     int j;
     for (j=0;j<NB_BANDS;j++) {
@@ -209,10 +209,11 @@ float lpc_from_bands(float *lpc, const float *Ex)
    float rc[LPC_ORDER];
    float Xr[FREQ_SIZE];
    kiss_fft_cpx X_auto[FREQ_SIZE];
-   float x_auto[FRAME_SIZE];
+   float x_auto[WINDOW_SIZE];
    interp_band_gain(Xr, Ex);
+   Xr[FREQ_SIZE-1] = 0;
    RNN_CLEAR(X_auto, FREQ_SIZE);
-   for (i=0;i<160;i++) X_auto[i].r = Xr[i];
+   for (i=0;i<FREQ_SIZE;i++) X_auto[i].r = Xr[i];
    inverse_transform(x_auto, X_auto);
    for (i=0;i<LPC_ORDER+1;i++) ac[i] = x_auto[i];
 
@@ -239,7 +240,7 @@ float lpc_from_cepstrum(float *lpc, const float *cepstrum)
 void apply_window(float *x) {
   int i;
   check_init();
-  for (i=0;i<FRAME_SIZE;i++) {
+  for (i=0;i<OVERLAP_SIZE;i++) {
     x[i] *= common.half_window[i];
     x[WINDOW_SIZE - 1 - i] *= common.half_window[i];
   }
