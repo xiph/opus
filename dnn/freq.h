@@ -24,6 +24,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "kiss_fft.h"
+
 #define PREEMPHASIS (0.85f)
 
 #define FRAME_SIZE_SHIFT 2
