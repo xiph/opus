@@ -64,12 +64,12 @@ void compute_band_energy(float *bandE, const kiss_fft_cpx *X) {
   {
     int j;
     int band_size;
-    band_size = (eband5ms[i+1]-eband5ms[i])<<FRAME_SIZE_SHIFT;
+    band_size = (eband5ms[i+1]-eband5ms[i])*WINDOW_SIZE_5MS;
     for (j=0;j<band_size;j++) {
       float tmp;
       float frac = (float)j/band_size;
-      tmp = SQUARE(X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].r);
-      tmp += SQUARE(X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].i);
+      tmp = SQUARE(X[(eband5ms[i]*WINDOW_SIZE_5MS) + j].r);
+      tmp += SQUARE(X[(eband5ms[i]*WINDOW_SIZE_5MS) + j].i);
       sum[i] += (1-frac)*tmp;
       sum[i+1] += frac*tmp;
     }
@@ -89,12 +89,12 @@ void compute_band_corr(float *bandE, const kiss_fft_cpx *X, const kiss_fft_cpx *
   {
     int j;
     int band_size;
-    band_size = (eband5ms[i+1]-eband5ms[i])<<FRAME_SIZE_SHIFT;
+    band_size = (eband5ms[i+1]-eband5ms[i])*WINDOW_SIZE_5MS;
     for (j=0;j<band_size;j++) {
       float tmp;
       float frac = (float)j/band_size;
-      tmp = X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].r * P[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].r;
-      tmp += X[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].i * P[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j].i;
+      tmp = X[(eband5ms[i]*WINDOW_SIZE_5MS) + j].r * P[(eband5ms[i]*WINDOW_SIZE_5MS) + j].r;
+      tmp += X[(eband5ms[i]*WINDOW_SIZE_5MS) + j].i * P[(eband5ms[i]*WINDOW_SIZE_5MS) + j].i;
       sum[i] += (1-frac)*tmp;
       sum[i+1] += frac*tmp;
     }
@@ -114,10 +114,10 @@ void interp_band_gain(float *g, const float *bandE) {
   {
     int j;
     int band_size;
-    band_size = (eband5ms[i+1]-eband5ms[i])<<FRAME_SIZE_SHIFT;
+    band_size = (eband5ms[i+1]-eband5ms[i])*WINDOW_SIZE_5MS;
     for (j=0;j<band_size;j++) {
       float frac = (float)j/band_size;
-      g[(eband5ms[i]<<FRAME_SIZE_SHIFT) + j] = (1-frac)*bandE[i] + frac*bandE[i+1];
+      g[(eband5ms[i]*WINDOW_SIZE_5MS) + j] = (1-frac)*bandE[i] + frac*bandE[i+1];
     }
   }
 }

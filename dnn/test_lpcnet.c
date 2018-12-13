@@ -28,9 +28,9 @@
 #include <stdio.h>
 #include "arch.h"
 #include "lpcnet.h"
+#include "freq.h"
 
 
-#define FRAME_SIZE 160
 int main(int argc, char **argv) {
     FILE *fin, *fout;
     LPCNetState *net;
