@@ -53,10 +53,9 @@
 
 
 typedef struct {
-  float analysis_mem[FRAME_SIZE];
+  float analysis_mem[OVERLAP_SIZE];
   float cepstral_mem[CEPS_MEM][NB_BANDS];
   int memid;
-  float synthesis_mem[FRAME_SIZE];
   float pitch_buf[PITCH_BUF_SIZE];
   float pitch_enh_buf[PITCH_BUF_SIZE];
   float last_gain;
@@ -98,11 +97,9 @@ int band_lp = NB_BANDS;
 static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
   int i;
   float x[WINDOW_SIZE];
-  float x0[WINDOW_SIZE];
-  RNN_COPY(x, st->analysis_mem, FRAME_SIZE);
-  for (i=0;i<FRAME_SIZE;i++) x[FRAME_SIZE + i] = in[i];
-  RNN_COPY(st->analysis_mem, in, FRAME_SIZE);
-  RNN_COPY(x0, x, WINDOW_SIZE);
+  RNN_COPY(x, st->analysis_mem, OVERLAP_SIZE);
+  RNN_COPY(&x[OVERLAP_SIZE], in, FRAME_SIZE);
+  RNN_COPY(st->analysis_mem, &in[FRAME_SIZE-OVERLAP_SIZE], OVERLAP_SIZE);
   apply_window(x);
   forward_transform(X, x);
   for (i=lowpass;i<FREQ_SIZE;i++)
