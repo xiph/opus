@@ -305,9 +305,9 @@ int main(int argc, char **argv) {
     compute_frame_features(st, X, P, Ex, Ep, Exp, features, x);
     fwrite(features, sizeof(float), NB_FEATURES, ffeat);
     /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
-    for (i=0;i<FRAME_SIZE/2;i++) pcm[i+FRAME_SIZE/2] = float2short(x[i]);
+    for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
     if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
-    for (i=0;i<FRAME_SIZE/2;i++) pcm[i] = float2short(x[i+FRAME_SIZE/2]);
+    for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);
     old_speech_gain = speech_gain;
     count++;
   }
