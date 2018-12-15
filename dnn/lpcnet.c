@@ -50,6 +50,7 @@ struct LPCNetState {
     float last_sig[LPC_ORDER];
     float old_input[FEATURES_DELAY][FEATURE_CONV2_OUT_SIZE];
     float old_lpc[FEATURES_DELAY][LPC_ORDER];
+    float old_gain[FEATURES_DELAY];
     int frame_count;
     float deemph_mem;
 };
@@ -153,8 +154,9 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     static int start = LPC_ORDER+1;
     /* FIXME: Do proper rounding once the Python code rounds properly. */
     pitch = (int)floor(.1 + 50*features[36]+100);
-    /* FIXME: get the pitch gain from 2 frames in the past. */
-    pitch_gain = features[PITCH_GAIN_FEATURE];
+    pitch_gain = lpcnet->old_gain[FEATURES_DELAY-1];
+    memmove(&lpcnet->old_gain[1], &lpcnet->old_gain[0], (FEATURES_DELAY-1)*sizeof(lpcnet->old_gain[0]));
+    lpcnet->old_gain[0] = features[PITCH_GAIN_FEATURE];
     run_frame_network(lpcnet, condition, gru_a_condition, features, pitch);
     memcpy(lpc, lpcnet->old_lpc[FEATURES_DELAY-1], LPC_ORDER*sizeof(lpc[0]));
     memmove(lpcnet->old_lpc[1], lpcnet->old_lpc[0], (FEATURES_DELAY-1)*LPC_ORDER*sizeof(lpc[0]));
