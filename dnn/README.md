@@ -1,14 +1,16 @@
 # LPCNet
 
-Low complexity WaveRNN-based speech coding by [Jean-Marc Valin](https://jmvalin.ca/)
+Low complexity implementation of the WaveRNN-based LPCNet algorithm, as described in:
+
+J.-M. Valin, J. Skoglund, [LPCNet: Improving Neural Speech Synthesis Through Linear Prediction](https://jmvalin.ca/papers/lpcnet_icassp2019.pdf), *Submitted for ICASSP 2019*, arXiv:1810.11846.
 
 # Introduction
 
-Work in progress software for researching low CPU complexity algorithms for speech synthesis and compression by applying Linear Prediction techniques to WaveRNN. High quality speech can be synthesised on regular CPUs (around 1 GFLOP) with SIMD support (AVX, AVX2, NEON currently supported).
+Work in progress software for researching low CPU complexity algorithms for speech synthesis and compression by applying Linear Prediction techniques to WaveRNN. High quality speech can be synthesised on regular CPUs (around 3 GFLOP) with SIMD support (AVX, AVX2/FMA, NEON currently supported).
 
-The BSD licensed software is written in C and Keras. For training, a GTX 1080 Ti or better is recommended.
+The BSD licensed software is written in C and Python/Keras. For training, a GTX 1080 Ti or better is recommended.
 
-This software is an open source starting point for WaveRNN-based speech coding.
+This software is an open source starting point for WaveRNN-based speech synthesis and coding.
 
 # Quickstart
 
@@ -52,7 +54,7 @@ This software is an open source starting point for WaveRNN-based speech coding.
 Suitable training material can be obtained from the [McGill University Telecommunications & Signal Processing Laboratory](http://www-mmsp.ece.mcgill.ca/Documents/Data/).  Download the ISO and extract the 16k-LP7 directory, the src/concat.sh script can be used to generate a headerless file of training samples.
 ```
 cd 16k-LP7
-sh ~/CELP/src/concat.sh
+sh /path/to/concat.sh
 ```
 
 # Reading Further
