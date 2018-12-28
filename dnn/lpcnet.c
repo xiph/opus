@@ -56,29 +56,6 @@ struct LPCNetState {
 };
 
 
-static float ulaw2lin(float u)
-{
-    float s;
-    float scale_1 = 32768.f/255.f;
-    u = u - 128;
-    s = u >= 0 ? 1 : -1;
-    u = fabs(u);
-    return s*scale_1*(exp(u/128.*log(256))-1);
-}
-
-static int lin2ulaw(float x)
-{
-    float u;
-    float scale = 255.f/32768.f;
-    int s = x >= 0 ? 1 : -1;
-    x = fabs(x);
-    u = (s*(128*log(1+scale*x)/log(256)));
-    u = 128 + u;
-    if (u < 0) u = 0;
-    if (u > 255) u = 255;
-    return (int)floor(.5 + u);
-}
-
 #if 0
 static void print_vector(float *x, int N)
 {

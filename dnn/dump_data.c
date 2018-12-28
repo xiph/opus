@@ -55,13 +55,9 @@
 typedef struct {
   float analysis_mem[OVERLAP_SIZE];
   float cepstral_mem[CEPS_MEM][NB_BANDS];
-  int memid;
   float pitch_buf[PITCH_BUF_SIZE];
-  float pitch_enh_buf[PITCH_BUF_SIZE];
   float last_gain;
   int last_period;
-  float mem_hp_x[2];
-  float lastg[NB_BANDS];
 } DenoiseState;
 
 static int rnnoise_get_size() {
