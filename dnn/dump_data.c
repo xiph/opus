@@ -219,7 +219,7 @@ void write_audio(DenoiseState *st, const short *pcm, float noise_std, FILE *file
     /* Excitation out. */
     data[4*i+3] = e;
     /* Simulate error on excitation. */
-    noise = (int)floor(.5 + noise_std*.707*(log((float)rand()/RAND_MAX)-log((float)rand()/RAND_MAX)));
+    noise = (int)floor(.5 + noise_std*.707*(log_approx((float)rand()/RAND_MAX)-log_approx((float)rand()/RAND_MAX)));
     e += noise;
     e = IMIN(255, IMAX(0, e));
     
