@@ -315,12 +315,14 @@ int main(int argc, char **argv) {
     }
     if (count>=5000000 && one_pass_completed) break;
     if (training && ++gain_change_count > 2821) {
+      float tmp;
       speech_gain = pow(10., (-20+(rand()%40))/20.);
       if (rand()%20==0) speech_gain *= .01;
       if (rand()%100==0) speech_gain = 0;
       gain_change_count = 0;
       rand_resp(a_sig, b_sig);
-      noise_std = 3*(float)rand()/RAND_MAX;
+      tmp = (float)rand()/RAND_MAX;
+      noise_std = 4*tmp*tmp;
     }
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     biquad(x, mem_resp_x, x, b_sig, a_sig, FRAME_SIZE);
