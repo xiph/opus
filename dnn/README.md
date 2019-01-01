@@ -19,13 +19,13 @@ This software is an open source starting point for WaveRNN-based speech synthesi
 1. Generate training data:
    ```
    make dump_data
-   ./dump_data -train input.s16 features.f32 pcm.s16
+   ./dump_data -train input.s16 features.f32 data.u8
    ```
    where the first file contains 16 kHz 16-bit raw PCM audio (no header) and the other files are output files. This program makes several passes over the data with different filters to generate a large amount of training data.
 
 1. Now that you have your files, train with:
    ```
-   ./train_lpcnet.py features.f32 pcm.s16
+   ./train_lpcnet.py features.f32 data.u8
    ```
    and it will generate a wavenet*.h5 file for each iteration. If it stops with a 
    "Failed to allocate RNN reserve space" message try reducing the *batch\_size* variable in train_wavenet_audio.py.
