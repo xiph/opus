@@ -129,7 +129,7 @@ static OPUS_INLINE void limit_warped_coefs(
 }
 
 /* Disable MIPS version until it's updated. */
-#if 0 && defined(MIPSr1_ASM)
+#if 0 && defined(MIPSr2dsp_ASM)
 #include "mips/noise_shape_analysis_FIX_mipsr1.h"
 #endif
 

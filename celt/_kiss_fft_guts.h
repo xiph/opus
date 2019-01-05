@@ -97,7 +97,7 @@
 #if defined(OPUS_ARM_INLINE_EDSP)
 #include "arm/kiss_fft_armv5e.h"
 #endif
-#if defined(MIPSr1_ASM)
+#if defined(MIPSr2dsp_ASM)
 #include "mips/kiss_fft_mipsr1.h"
 #endif
 

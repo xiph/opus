@@ -54,7 +54,7 @@
 #define PACKAGE_VERSION "unknown"
 #endif
 
-#if defined(MIPSr1_ASM)
+#if defined(MIPSr2dsp_ASM)
 #include "mips/celt_mipsr1.h"
 #endif
 

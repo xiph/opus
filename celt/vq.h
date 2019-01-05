@@ -41,7 +41,7 @@
 #include "x86/vq_sse.h"
 #endif
 
-#if defined(MIPSr1_ASM)
+#if defined(MIPSr2dsp_ASM)
 #include "mips/vq_mipsr1.h"
 #endif
 
