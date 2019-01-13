@@ -5,6 +5,9 @@ message(STATUS "Opus library version: ${OPUS_LIBRARY_VERSION}")
 
 get_package_version(PACKAGE_VERSION)
 message(STATUS "Opus package version: ${PACKAGE_VERSION}")
+
+string(REGEX REPLACE "^v([0-9]+.[0-9]+\\.?([0-9]+)?).*" "\\1" PROJECT_VERSION ${PACKAGE_VERSION})
+
 configure_file(config.h.in config.h @ONLY)
 add_definitions(-DHAVE_CONFIG_H)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
