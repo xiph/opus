@@ -9,11 +9,22 @@ include(GNUInstallDirs)
 
 add_library(opus ${opus_sources} ${opus_sources_float})
 
+set(Opus_PUBLIC_HEADER
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/opus.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_custom.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_defines.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_multistream.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_projection.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_types.h
+)
+
 set_target_properties(opus
                       PROPERTIES SOVERSION
                                  ${OPUS_LIBRARY_VERSION_MAJOR}
                                  VERSION
-                                 ${OPUS_LIBRARY_VERSION})
+                                 ${OPUS_LIBRARY_VERSION}
+                                 PUBLIC_HEADER "${Opus_PUBLIC_HEADER}"
+                                 )
 
 target_include_directories(
   opus
@@ -124,9 +135,8 @@ endif()
 install(TARGETS opus
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(DIRECTORY include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
 
 if(BUILD_PROGRAMS)
   # demo
