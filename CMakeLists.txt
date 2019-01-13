@@ -1,10 +1,19 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(opus LANGUAGES C)
+include(opus_functions.cmake)
+
+get_library_version(OPUS_LIBRARY_VERSION OPUS_LIBRARY_VERSION_MAJOR)
+message(STATUS "Opus library version: ${OPUS_LIBRARY_VERSION}")
+
+get_package_version(PACKAGE_VERSION)
+message(STATUS "Opus package version: ${PACKAGE_VERSION}")
+
+string(REGEX REPLACE "^v([0-9]+.[0-9]+\\.?([0-9]+)?).*" "\\1" PROJECT_VERSION ${PACKAGE_VERSION})
+
+project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
 
 include(opus_config.cmake)
 include(opus_sources.cmake)
-include(opus_functions.cmake)
 include(GNUInstallDirs)
 
 add_library(opus ${opus_sources} ${opus_sources_float})
@@ -28,12 +37,13 @@ set_target_properties(opus
 
 target_include_directories(
   opus
-  PUBLIC $<BUILD_INTERFACE: ${CMAKE_CURRENT_SOURCE_DIR}/include>
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  PRIVATE $<BUILD_INTERFACE:
-          ${CMAKE_CURRENT_SOURCE_DIR}/include
-          ${CMAKE_CURRENT_SOURCE_DIR}/celt
-          ${CMAKE_CURRENT_SOURCE_DIR}/silk>)
+  PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        celt
+        silk)
 
 target_link_libraries(opus PRIVATE ${CMAKE_REQUIRED_LIBRARIES})
 
@@ -133,18 +143,48 @@ if(HAVE_NEON)
 endif()
 
 install(TARGETS opus
+        EXPORT OpusTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/opus)
+
+set(CMAKE_INSTALL_PACKAGEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+install(
+  EXPORT OpusTargets
+  NAMESPACE Opus::
+  DESTINATION ${CMAKE_INSTALL_PACKAGEDIR}
+)
+
+include(CMakePackageConfigHelpers)
+
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+configure_package_config_file(OpusConfig.cmake.in OpusConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_PACKAGEDIR}
+  PATH_VARS
+    INCLUDE_INSTALL_DIR
+  INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}
+)
+write_basic_package_version_file(OpusConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/OpusConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/OpusConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_PACKAGEDIR}
+)
 
 if(BUILD_PROGRAMS)
   # demo
   add_executable(opus_demo ${opus_demo_sources})
+  target_include_directories(opus_demo PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
   target_link_libraries(opus_demo PRIVATE opus)
 
   # compare
   add_executable(opus_compare ${opus_compare_sources})
+  target_include_directories(opus_compare PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
   target_link_libraries(opus_compare PRIVATE opus)
 endif()
 
@@ -153,6 +193,7 @@ if(BUILD_TESTING)
 
   # tests
   add_executable(test_opus_decode ${test_opus_decode_sources})
+  target_include_directories(test_opus_decode PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
   target_link_libraries(test_opus_decode PRIVATE opus)
   if(FIXED_POINT)
     target_compile_definitions(test_opus_decode PRIVATE DISABLE_FLOAT_API)
@@ -160,6 +201,7 @@ if(BUILD_TESTING)
   add_test(test_opus_decode test_opus_decode)
 
   add_executable(test_opus_padding ${test_opus_padding_sources})
+  target_include_directories(test_opus_padding PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
   target_link_libraries(test_opus_padding PRIVATE opus)
   add_test(test_opus_padding test_opus_padding)
 
@@ -167,8 +209,9 @@ if(BUILD_TESTING)
     # disable tests that depends on private API when building shared lib
     add_executable(test_opus_api ${test_opus_api_sources})
     target_include_directories(test_opus_api
-                               PRIVATE $<BUILD_INTERFACE:
-                                       ${CMAKE_CURRENT_SOURCE_DIR}/celt >)
+                               PRIVATE 
+                                      ${CMAKE_CURRENT_BINARY_DIR}
+                                      celt)
     target_link_libraries(test_opus_api PRIVATE opus)
     if(FIXED_POINT)
       target_compile_definitions(test_opus_api PRIVATE DISABLE_FLOAT_API)
@@ -177,8 +220,9 @@ if(BUILD_TESTING)
 
     add_executable(test_opus_encode ${test_opus_encode_sources})
     target_include_directories(test_opus_encode
-                               PRIVATE $<BUILD_INTERFACE:
-                                       ${CMAKE_CURRENT_SOURCE_DIR}/celt >)
+                               PRIVATE
+                                      ${CMAKE_CURRENT_BINARY_DIR}
+                                      celt)
     target_link_libraries(test_opus_encode PRIVATE opus)
     add_test(test_opus_encode test_opus_encode)
   endif()
