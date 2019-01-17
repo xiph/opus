@@ -236,16 +236,16 @@ hf.write('#ifndef RNN_DATA_H\n#define RNN_DATA_H\n\n#include "nnet.h"\n\n')
 embed_size = lpcnet.embed_size
 
 E = model.get_layer('embed_sig').get_weights()[0]
-W = model.layers[18].get_weights()[0][:embed_size,:]
+W = model.get_layer('gru_a').get_weights()[0][:embed_size,:]
 dump_embedding_layer_impl('gru_a_embed_sig', np.dot(E, W), f, hf)
-W = model.layers[18].get_weights()[0][embed_size:2*embed_size,:]
+W = model.get_layer('gru_a').get_weights()[0][embed_size:2*embed_size,:]
 dump_embedding_layer_impl('gru_a_embed_pred', np.dot(E, W), f, hf)
 E = model.get_layer('embed_exc').get_weights()[0]
-W = model.layers[18].get_weights()[0][2*embed_size:3*embed_size,:]
+W = model.get_layer('gru_a').get_weights()[0][2*embed_size:3*embed_size,:]
 dump_embedding_layer_impl('gru_a_embed_exc', np.dot(E, W), f, hf)
-W = model.layers[18].get_weights()[0][3*embed_size:,:]
+W = model.get_layer('gru_a').get_weights()[0][3*embed_size:,:]
 #FIXME: dump only half the biases
-b = model.layers[18].get_weights()[2]
+b = model.get_layer('gru_a').get_weights()[2]
 dump_dense_layer_impl('gru_a_dense_feature', W, b, 'LINEAR', f, hf)
 
 layer_list = []
