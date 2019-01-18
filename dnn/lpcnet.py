@@ -122,7 +122,7 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_g
     dec_state2 = Input(shape=(rnn_units2,))
 
     fconv1 = Conv1D(128, 3, padding='same', activation='tanh', name='feature_conv1')
-    fconv2 = Conv1D(102, 3, padding='same', activation='tanh', name='feature_conv2')
+    fconv2 = Conv1D(128, 3, padding='same', activation='tanh', name='feature_conv2')
 
     embed = Embedding(256, embed_size, embeddings_initializer=PCMInit(), name='embed_sig')
     cpcm = Reshape((-1, embed_size*2))(embed(pcm))
@@ -137,7 +137,6 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_g
     fdense1 = Dense(128, activation='tanh', name='feature_dense1')
     fdense2 = Dense(128, activation='tanh', name='feature_dense2')
 
-    cfeat = Add()([cfeat, cat_feat])
     cfeat = fdense2(fdense1(cfeat))
     
     rep = Lambda(lambda x: K.repeat_elements(x, 160, 1))
