@@ -58,7 +58,7 @@ model.summary()
 
 feature_file = sys.argv[1]
 pcm_file = sys.argv[2]     # 16 bit unsigned short PCM samples
-frame_size = 160
+frame_size = model.frame_size
 nb_features = 55
 nb_used_features = model.nb_used_features
 feature_chunk_size = 15
@@ -97,7 +97,7 @@ del sig
 del pred
 
 # dump models to disk as we go
-checkpoint = ModelCheckpoint('lpcnet20c_384_10_G16_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('lpcnet20g_384_10_G16_{epoch:02d}.h5')
 
 #model.load_weights('lpcnet9b_384_10_G16_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=5e-5), loss='sparse_categorical_crossentropy')

@@ -47,7 +47,7 @@ model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=
 
 feature_file = sys.argv[1]
 out_file = sys.argv[2]
-frame_size = 160
+frame_size = model.frame_size
 nb_features = 55
 nb_used_features = model.nb_used_features
 
