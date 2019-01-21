@@ -109,6 +109,7 @@ LPCNetState *lpcnet_create()
 {
     LPCNetState *lpcnet;
     lpcnet = (LPCNetState *)calloc(sizeof(LPCNetState), 1);
+    lpcnet->last_exc = 128;
     return lpcnet;
 }
 

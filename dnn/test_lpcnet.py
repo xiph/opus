@@ -68,7 +68,7 @@ model.load_weights('lpcnet20g_384_10_G16_02.h5')
 order = 16
 
 pcm = np.zeros((nb_frames*pcm_chunk_size, ))
-fexc = np.zeros((1, 1, 3), dtype='int16')
+fexc = np.zeros((1, 1, 3), dtype='int16')+128
 state1 = np.zeros((1, model.rnn_units1), dtype='float32')
 state2 = np.zeros((1, model.rnn_units2), dtype='float32')
 
