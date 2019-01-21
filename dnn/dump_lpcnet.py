@@ -240,7 +240,6 @@ W = model.get_layer('gru_a').get_weights()[0][:embed_size,:]
 dump_embedding_layer_impl('gru_a_embed_sig', np.dot(E, W), f, hf)
 W = model.get_layer('gru_a').get_weights()[0][embed_size:2*embed_size,:]
 dump_embedding_layer_impl('gru_a_embed_pred', np.dot(E, W), f, hf)
-E = model.get_layer('embed_exc').get_weights()[0]
 W = model.get_layer('gru_a').get_weights()[0][2*embed_size:3*embed_size,:]
 dump_embedding_layer_impl('gru_a_embed_exc', np.dot(E, W), f, hf)
 W = model.get_layer('gru_a').get_weights()[0][3*embed_size:,:]

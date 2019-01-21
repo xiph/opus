@@ -63,13 +63,12 @@ periods = (.1 + 50*features[:,:,36:37]+100).astype('int16')
 
 
 
-model.load_weights('lpcnet20c_384_10_G16_80.h5')
+model.load_weights('lpcnet20g_384_10_G16_02.h5')
 
 order = 16
 
 pcm = np.zeros((nb_frames*pcm_chunk_size, ))
-fexc = np.zeros((1, 1, 2), dtype='float32')
-iexc = np.zeros((1, 1, 1), dtype='int16')
+fexc = np.zeros((1, 1, 3), dtype='int16')
 state1 = np.zeros((1, model.rnn_units1), dtype='float32')
 state2 = np.zeros((1, model.rnn_units2), dtype='float32')
 
@@ -88,7 +87,7 @@ for c in range(0, nb_frames):
             pred = -sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1])
             fexc[0, 0, 1] = lin2ulaw(pred)
 
-            p, state1, state2 = dec.predict([fexc, iexc, cfeat[:, fr:fr+1, :], state1, state2])
+            p, state1, state2 = dec.predict([fexc, cfeat[:, fr:fr+1, :], state1, state2])
             #Lower the temperature for voiced frames to reduce noisiness
             p *= np.power(p, np.maximum(0, 1.5*features[c, fr, 37] - .5))
             p = p/(1e-18 + np.sum(p))
@@ -96,8 +95,8 @@ for c in range(0, nb_frames):
             p = np.maximum(p-0.002, 0).astype('float64')
             p = p/(1e-8 + np.sum(p))
 
-            iexc[0, 0, 0] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))
-            pcm[f*frame_size + i] = pred + ulaw2lin(iexc[0, 0, 0])
+            fexc[0, 0, 2] = np.argmax(np.random.multinomial(1, p[0,0,:], 1))
+            pcm[f*frame_size + i] = pred + ulaw2lin(fexc[0, 0, 2])
             fexc[0, 0, 0] = lin2ulaw(pcm[f*frame_size + i])
             mem = coef*mem + pcm[f*frame_size + i]
             #print(mem)

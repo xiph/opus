@@ -114,8 +114,7 @@ class PCMInit(Initializer):
         }
 
 def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_gpu=True):
-    pcm = Input(shape=(None, 2))
-    exc = Input(shape=(None, 1))
+    pcm = Input(shape=(None, 3))
     feat = Input(shape=(None, nb_used_features))
     pitch = Input(shape=(None, 1))
     dec_feat = Input(shape=(None, 128))
@@ -126,9 +125,7 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_g
     fconv2 = Conv1D(128, 3, padding='same', activation='tanh', name='feature_conv2')
 
     embed = Embedding(256, embed_size, embeddings_initializer=PCMInit(), name='embed_sig')
-    cpcm = Reshape((-1, embed_size*2))(embed(pcm))
-    embed2 = Embedding(256, embed_size, embeddings_initializer=PCMInit(), name='embed_exc')
-    cexc = Reshape((-1, embed_size))(embed2(exc))
+    cpcm = Reshape((-1, embed_size*3))(embed(pcm))
 
     pembed = Embedding(256, 64, name='embed_pitch')
     cat_feat = Concatenate()([feat, Reshape((-1, 64))(pembed(pitch))])
@@ -149,13 +146,13 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_g
         rnn = GRU(rnn_units1, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_a')
         rnn2 = GRU(rnn_units2, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_b')
 
-    rnn_in = Concatenate()([cpcm, cexc, rep(cfeat)])
+    rnn_in = Concatenate()([cpcm, rep(cfeat)])
     md = MDense(pcm_levels, activation='softmax', name='dual_fc')
     gru_out1, _ = rnn(rnn_in)
     gru_out2, _ = rnn2(Concatenate()([gru_out1, rep(cfeat)]))
     ulaw_prob = md(gru_out2)
     
-    model = Model([pcm, exc, feat, pitch], ulaw_prob)
+    model = Model([pcm, feat, pitch], ulaw_prob)
     model.rnn_units1 = rnn_units1
     model.rnn_units2 = rnn_units2
     model.nb_used_features = nb_used_features
@@ -163,10 +160,10 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_g
 
     encoder = Model([feat, pitch], cfeat)
     
-    dec_rnn_in = Concatenate()([cpcm, cexc, dec_feat])
+    dec_rnn_in = Concatenate()([cpcm, dec_feat])
     dec_gru_out1, state1 = rnn(dec_rnn_in, initial_state=dec_state1)
     dec_gru_out2, state2 = rnn2(Concatenate()([dec_gru_out1, dec_feat]), initial_state=dec_state2)
     dec_ulaw_prob = md(dec_gru_out2)
 
-    decoder = Model([pcm, exc, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
+    decoder = Model([pcm, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
     return model, encoder, decoder

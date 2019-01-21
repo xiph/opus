@@ -91,14 +91,15 @@ features[:,:,18:36] = 0
 
 periods = (.1 + 50*features[:,:,36:37]+100).astype('int16')
 
-in_data = np.concatenate([sig, pred], axis=-1)
+in_data = np.concatenate([sig, pred, in_exc], axis=-1)
 
 del sig
 del pred
+del in_exc
 
 # dump models to disk as we go
 checkpoint = ModelCheckpoint('lpcnet20g_384_10_G16_{epoch:02d}.h5')
 
 #model.load_weights('lpcnet9b_384_10_G16_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=5e-5), loss='sparse_categorical_crossentropy')
-model.fit([in_data, in_exc, features, periods], out_exc, batch_size=batch_size, epochs=nb_epochs, validation_split=0.0, callbacks=[checkpoint, lpcnet.Sparsify(2000, 40000, 400, (0.05, 0.05, 0.2))])
+model.fit([in_data, features, periods], out_exc, batch_size=batch_size, epochs=nb_epochs, validation_split=0.0, callbacks=[checkpoint, lpcnet.Sparsify(2000, 40000, 400, (0.05, 0.05, 0.2))])
