@@ -113,7 +113,7 @@ class PCMInit(Initializer):
             'seed': self.seed
         }
 
-def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_gpu=True):
+def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, training=False, use_gpu=True):
     pcm = Input(shape=(None, 3))
     feat = Input(shape=(None, nb_used_features))
     pitch = Input(shape=(None, 1))
@@ -121,8 +121,9 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, use_g
     dec_state1 = Input(shape=(rnn_units1,))
     dec_state2 = Input(shape=(rnn_units2,))
 
-    fconv1 = Conv1D(128, 3, padding='same', activation='tanh', name='feature_conv1')
-    fconv2 = Conv1D(128, 3, padding='same', activation='tanh', name='feature_conv2')
+    padding = 'valid' if training else 'same'
+    fconv1 = Conv1D(128, 3, padding=padding, activation='tanh', name='feature_conv1')
+    fconv2 = Conv1D(128, 3, padding=padding, activation='tanh', name='feature_conv2')
 
     embed = Embedding(256, embed_size, embeddings_initializer=PCMInit(), name='embed_sig')
     cpcm = Reshape((-1, embed_size*3))(embed(pcm))

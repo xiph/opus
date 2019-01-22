@@ -51,7 +51,7 @@ nb_epochs = 120
 # Try reducing batch_size if you run out of memory on your GPU
 batch_size = 64
 
-model, _, _ = lpcnet.new_lpcnet_model()
+model, _, _ = lpcnet.new_lpcnet_model(training=True)
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 model.summary()
@@ -89,6 +89,11 @@ features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
 features[:,:,18:36] = 0
 
+fpad1 = np.concatenate([features[0:1, 0:2, :], features[:-1, -2:, :]], axis=0)
+fpad2 = np.concatenate([features[1:, :2, :], features[0:1, -2:, :]], axis=0)
+features = np.concatenate([fpad1, features, fpad2], axis=1)
+
+
 periods = (.1 + 50*features[:,:,36:37]+100).astype('int16')
 
 in_data = np.concatenate([sig, pred, in_exc], axis=-1)
@@ -98,7 +103,7 @@ del pred
 del in_exc
 
 # dump models to disk as we go
-checkpoint = ModelCheckpoint('lpcnet20g_384_10_G16_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('lpcnet20h_384_10_G16_{epoch:02d}.h5')
 
 #model.load_weights('lpcnet9b_384_10_G16_01.h5')
 model.compile(optimizer=Adam(0.001, amsgrad=True, decay=5e-5), loss='sparse_categorical_crossentropy')
