@@ -67,7 +67,6 @@ static void print_vector(float *x, int N)
 
 void run_frame_network(LPCNetState *lpcnet, float *condition, float *gru_a_condition, const float *features, int pitch)
 {
-    int i;
     NNetState *net;
     float in[FRAME_INPUT_SIZE];
     float conv1_out[FEATURE_CONV1_OUT_SIZE];
