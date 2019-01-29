@@ -56,6 +56,7 @@ typedef struct {
   float analysis_mem[OVERLAP_SIZE];
   float cepstral_mem[CEPS_MEM][NB_BANDS];
   float pitch_buf[PITCH_BUF_SIZE];
+  float exc_buf[PITCH_BUF_SIZE];
   float last_gain;
   int last_period;
   float lpc[LPC_ORDER];
@@ -153,6 +154,148 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
   dct(features, Ly);
   features[0] -= 4;
   g = lpc_from_cepstrum(st->lpc, features);
+  {
+    float xcorr[PITCH_MAX_PERIOD];
+    float interp[2*PITCH_MAX_PERIOD];
+    static float mem[LPC_ORDER];
+    static float filt=0;
+    float best_corr = -100;
+    int best_period = 2*PITCH_MIN_PERIOD;
+    float ener0;
+    RNN_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
+    for (i=0;i<FRAME_SIZE;i++) {
+      int j;
+      float sum = in[i];
+      for (j=0;j<LPC_ORDER;j++)
+        sum += st->lpc[j]*mem[j];
+      RNN_MOVE(mem+1, mem, LPC_ORDER-1);
+      mem[0] = in[i];
+      st->exc_buf[PITCH_MAX_PERIOD+i] = sum + .7*filt;
+      filt = sum;
+      //printf("%f\n", st->exc_buf[PITCH_MAX_PERIOD+i]);
+    }
+#if 1
+    int sub;
+    static int pcount = 0;
+    static float xc[8][PITCH_MAX_PERIOD];
+    static float ener[8][PITCH_MAX_PERIOD];
+    for (sub=0;sub<2;sub++) {
+      int off = sub*FRAME_SIZE/2;
+      celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD);
+      ener0 = celt_inner_prod(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE/2);
+      for (i=0;i<PITCH_MAX_PERIOD;i++) {
+        ener[2*pcount+sub][i] = (1 + ener0 + celt_inner_prod(&st->exc_buf[i+off], &st->exc_buf[i+off], FRAME_SIZE/2));
+        xc[2*pcount+sub][i] = 2*xcorr[i] / ener[2*pcount+sub][i];
+      }
+#if 0
+      for (i=0;i<PITCH_MAX_PERIOD;i++)
+        printf("%f ", xc[2*pcount+sub][i]);
+      printf("\n");
+#endif
+    }
+    pcount++;
+    if (pcount == 4) {
+      int period;
+      float best_a=0;
+      float best_b=0;
+      float w;
+      float sx=0, sxx=0, sxy=0, sy=0, sw=0;
+      best_corr = -100;
+      best_period = PITCH_MIN_PERIOD;
+      for (i=PITCH_MAX_PERIOD-PITCH_MIN_PERIOD*5/4;i>=0;i--) {
+        int j;
+        float corr;
+        period = PITCH_MAX_PERIOD - i;
+        float num=0;
+        float den=0;
+        for (sub=0;sub<8;sub++) {
+          float max_xc=-1000, max_ener=0;
+          for (j=0;j<period/5;j++) {
+            if (xc[sub][i+j] > max_xc) {
+              max_xc = xc[sub][i+j];
+              max_ener = ener[sub][i+j];
+            }
+          }
+          num += max_xc*max_ener;
+          den += max_ener;
+        }
+        corr = num/den;
+        if (corr > best_corr) {
+          if (period < best_period*5/4 || (corr > 1.2*best_corr && best_corr < .6)) {
+            best_corr = corr;
+            best_period = period;
+          }
+        }
+        //printf("%f ", corr);
+      }
+      int best[8];
+      i = PITCH_MAX_PERIOD - best_period;
+      period = best_period;
+      for (sub=0;sub<8;sub++) {
+        int j;
+        int sub_period = PITCH_MIN_PERIOD;
+        float max_xc=-1000, max_ener=0;
+        for (j=0;j<period/5;j++) {
+          if (xc[sub][i+j] > max_xc) {
+            max_xc = xc[sub][i+j];
+            max_ener = ener[sub][i+j];
+            sub_period = period - j;
+          }
+        }
+        w = MAX16(1e-2, max_xc-.2)*max_ener;
+        sw += w;
+        sx += w*sub;
+        sxx += w*sub*sub;
+        sxy += w*sub*sub_period;
+        sy += w*sub_period;
+        best[sub] = sub_period;
+      }
+      best_a = (sw*sxy - sx*sy)/(sw*sxx - sx*sx);
+      best_b = (sxx*sy - sx*sxy)/(sw*sxx - sx*sx);
+      for (sub=0;sub<8;sub++) printf("%f %d %f\n", best_b + sub*best_a, best[sub], best_corr);
+      //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
+      pcount=0;
+    }
+#endif
+
+    celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD], st->exc_buf, xcorr, FRAME_SIZE, PITCH_MAX_PERIOD);
+    ener0 = celt_inner_prod(&st->exc_buf[PITCH_MAX_PERIOD], &st->exc_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
+    RNN_CLEAR(interp, 2*PITCH_MAX_PERIOD);
+    for (i=0;i<PITCH_MAX_PERIOD;i++)
+      interp[2*i] = 2*xcorr[i] / (1 + ener0 + celt_inner_prod(&st->exc_buf[i], &st->exc_buf[i], FRAME_SIZE));
+    for (i=2;i<PITCH_MAX_PERIOD-3;i++) {
+      interp[2*i+1] = .605*(interp[2*i]+interp[2*i+2]) - .13*(interp[2*i-2]+interp[2*i+4]) + .025*(interp[2*i-4]+interp[2*i+6]);
+      interp[2*i+1] = 0*MIN16(1, interp[2*i+1]);
+    }
+    best_corr = -100;
+    best_period = 2*PITCH_MIN_PERIOD;
+    for (i=2*PITCH_MAX_PERIOD-2*PITCH_MIN_PERIOD;i>=0;i--) {
+      int period = 2*PITCH_MAX_PERIOD - i;
+      float fact[5] = {1.35, 1.25, 1.15, 1.1, 1.05};
+      if (interp[i] > best_corr)
+      {
+        int j;
+        int multiple=0;
+        for (j=2;j<=7;j++) {
+          int diff;
+          if (period/j < 2*PITCH_MIN_PERIOD) break;
+          diff = abs((period+j/2)/j - best_period);
+          if (diff <= 4 && interp[i] < fact[diff]*best_corr) multiple = 1;
+        }
+        if (!multiple) {
+          best_period = period;
+          best_corr = interp[i];
+        }
+      }
+      if (best_corr > .5 && interp[i] < .4) break;
+    }
+    //printf("%d %f %d %f\n", best_period, best_corr, pitch_index, gain);
+#if 0
+    for (i=0;i<2*PITCH_MAX_PERIOD;i++)
+      printf("%f ", interp[i]);
+    printf("\n");
+#endif
+  }
 #if 0
   for (i=0;i<NB_BANDS;i++) printf("%f ", Ly[i]);
   printf("\n");
@@ -290,13 +433,13 @@ int main(int argc, char **argv) {
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
     fread(tmp, sizeof(short), FRAME_SIZE, f1);
     if (feof(f1)) {
-      if (!training) break;
+      if (1) break;
       rewind(f1);
       fread(tmp, sizeof(short), FRAME_SIZE, f1);
       one_pass_completed = 1;
     }
     for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
-    if (training) {
+    if (0) {
       silent = E < 5000 || (last_silent && E < 20000);
       if (!last_silent && silent) {
         for (i=0;i<FRAME_SIZE;i++) savedX[i] = x[i];
@@ -314,7 +457,7 @@ int main(int argc, char **argv) {
       last_silent = silent;
     }
     if (count*FRAME_SIZE_5MS>=10000000 && one_pass_completed) break;
-    if (training && ++gain_change_count > 2821) {
+    if (0 && ++gain_change_count > 2821) {
       float tmp;
       speech_gain = pow(10., (-20+(rand()%40))/20.);
       if (rand()%20==0) speech_gain *= .01;
