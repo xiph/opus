@@ -162,11 +162,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
   st->features[pcount][2*NB_BANDS+1] = gain;
   st->features[pcount][2*NB_BANDS+2] = log10(g);
   for (i=0;i<LPC_ORDER;i++) st->features[pcount][2*NB_BANDS+3+i] = st->lpc[i];
-#if 0
-  for (i=0;i<NB_FEATURES;i++) printf("%f ", features[i]);
-  printf("\n");
-#endif
-  fwrite(st->features[pcount], sizeof(float), NB_FEATURES, ffeat);
   {
     float xcorr[PITCH_MAX_PERIOD];
     static float mem[LPC_ORDER];
@@ -292,6 +287,10 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       RNN_COPY(&xc[1][0], &xc[9][0], PITCH_MAX_PERIOD);
       RNN_COPY(&ener[0][0], &ener[8][0], PITCH_MAX_PERIOD);
       RNN_COPY(&ener[1][0], &ener[9][0], PITCH_MAX_PERIOD);
+
+      for (i=0;i<4;i++) {
+        fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
+      }
       pcount=0;
     }
 #endif
