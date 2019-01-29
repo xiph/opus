@@ -60,6 +60,7 @@ typedef struct {
   float last_gain;
   int last_period;
   float lpc[LPC_ORDER];
+  float features[4][NB_FEATURES];
   float sig_mem[LPC_ORDER];
   int exc_mem;
 } DenoiseState;
@@ -108,6 +109,7 @@ static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const f
 }
 
 static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *in) {
+  static int pcount = 0;
   int i;
   float E = 0;
   float Ly[NB_BANDS];
@@ -121,7 +123,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
   kiss_fft_cpx X[FREQ_SIZE], P[WINDOW_SIZE];
   float Ex[NB_BANDS], Ep[NB_BANDS];
   float Exp[NB_BANDS];
-  float features[NB_FEATURES];
   frame_analysis(st, X, Ex, in);
   RNN_MOVE(st->pitch_buf, &st->pitch_buf[FRAME_SIZE], PITCH_BUF_SIZE-FRAME_SIZE);
   RNN_COPY(&st->pitch_buf[PITCH_BUF_SIZE-FRAME_SIZE], in, FRAME_SIZE);
@@ -142,9 +143,9 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
   compute_band_corr(Exp, X, P);
   for (i=0;i<NB_BANDS;i++) Exp[i] = Exp[i]/sqrt(.001+Ex[i]*Ep[i]);
   dct(tmp, Exp);
-  for (i=0;i<NB_BANDS;i++) features[NB_BANDS+i] = tmp[i];
-  features[NB_BANDS] -= 1.3;
-  features[NB_BANDS+1] -= 0.9;
+  for (i=0;i<NB_BANDS;i++) st->features[pcount][NB_BANDS+i] = tmp[i];
+  st->features[pcount][NB_BANDS] -= 1.3;
+  st->features[pcount][NB_BANDS+1] -= 0.9;
   logMax = -2;
   follow = -2;
   for (i=0;i<NB_BANDS;i++) {
@@ -154,9 +155,18 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     follow = MAX16(follow-2.5, Ly[i]);
     E += Ex[i];
   }
-  dct(features, Ly);
-  features[0] -= 4;
-  g = lpc_from_cepstrum(st->lpc, features);
+  dct(st->features[pcount], Ly);
+  st->features[pcount][0] -= 4;
+  g = lpc_from_cepstrum(st->lpc, st->features[pcount]);
+  st->features[pcount][2*NB_BANDS] = .01*(pitch_index-200);
+  st->features[pcount][2*NB_BANDS+1] = gain;
+  st->features[pcount][2*NB_BANDS+2] = log10(g);
+  for (i=0;i<LPC_ORDER;i++) st->features[pcount][2*NB_BANDS+3+i] = st->lpc[i];
+#if 0
+  for (i=0;i<NB_FEATURES;i++) printf("%f ", features[i]);
+  printf("\n");
+#endif
+  fwrite(st->features[pcount], sizeof(float), NB_FEATURES, ffeat);
   {
     float xcorr[PITCH_MAX_PERIOD];
     static float mem[LPC_ORDER];
@@ -178,7 +188,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     }
 #if 1
     int sub;
-    static int pcount = 0;
     static float xc[10][PITCH_MAX_PERIOD];
     static float ener[10][PITCH_MAX_PERIOD];
     static float frame_max_corr[PITCH_MAX_PERIOD];
@@ -287,20 +296,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     }
 #endif
   }
-#if 0
-  for (i=0;i<NB_BANDS;i++) printf("%f ", Ly[i]);
-  printf("\n");
-#endif
-  features[2*NB_BANDS] = .01*(pitch_index-200);
-  features[2*NB_BANDS+1] = gain;
-  features[2*NB_BANDS+2] = log10(g);
-  for (i=0;i<LPC_ORDER;i++) features[2*NB_BANDS+3+i] = st->lpc[i];
-#if 0
-  for (i=0;i<NB_FEATURES;i++) printf("%f ", features[i]);
-  printf("\n");
-#endif
-  fwrite(features, sizeof(float), NB_FEATURES, ffeat);
-
 }
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
