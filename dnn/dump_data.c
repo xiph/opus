@@ -107,8 +107,7 @@ static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const f
   compute_band_energy(Ex, X);
 }
 
-static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cpx *P,
-                                  float *Ex, float *Ep, float *Exp, float *features, const float *in) {
+static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *in) {
   int i;
   float E = 0;
   float Ly[NB_BANDS];
@@ -119,6 +118,10 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
   float tmp[NB_BANDS];
   float follow, logMax;
   float g;
+  kiss_fft_cpx X[FREQ_SIZE], P[WINDOW_SIZE];
+  float Ex[NB_BANDS], Ep[NB_BANDS];
+  float Exp[NB_BANDS];
+  float features[NB_FEATURES];
   frame_analysis(st, X, Ex, in);
   RNN_MOVE(st->pitch_buf, &st->pitch_buf[FRAME_SIZE], PITCH_BUF_SIZE-FRAME_SIZE);
   RNN_COPY(&st->pitch_buf[PITCH_BUF_SIZE-FRAME_SIZE], in, FRAME_SIZE);
@@ -296,6 +299,8 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
   for (i=0;i<NB_FEATURES;i++) printf("%f ", features[i]);
   printf("\n");
 #endif
+  fwrite(features, sizeof(float), NB_FEATURES, ffeat);
+
 }
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
@@ -412,10 +417,6 @@ int main(int argc, char **argv) {
     }
   }
   while (1) {
-    kiss_fft_cpx X[FREQ_SIZE], P[WINDOW_SIZE];
-    float Ex[NB_BANDS], Ep[NB_BANDS];
-    float Exp[NB_BANDS];
-    float features[NB_FEATURES];
     float E=0;
     int silent;
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
@@ -465,8 +466,7 @@ int main(int argc, char **argv) {
       x[i] *= g;
     }
     for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
-    compute_frame_features(st, X, P, Ex, Ep, Exp, features, x);
-    fwrite(features, sizeof(float), NB_FEATURES, ffeat);
+    compute_frame_features(st, ffeat, x);
     /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
     for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
     if (fpcm) write_audio(st, pcm, noise_std, fpcm);
