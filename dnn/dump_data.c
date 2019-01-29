@@ -276,7 +276,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       for (sub=2;sub<10;sub++) {
           float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
           p *= 1 + modulation/16./7.*(sub-5.5);
-          printf("%f %f %d %f\n", best_b + sub*best_a, p, best[sub], best_corr);
+          //printf("%f %f %d %f\n", best_b + sub*best_a, p, best[sub], best_corr);
       }
       //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
       RNN_COPY(&xc[0][0], &xc[8][0], PITCH_MAX_PERIOD);
@@ -422,13 +422,13 @@ int main(int argc, char **argv) {
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
     fread(tmp, sizeof(short), FRAME_SIZE, f1);
     if (feof(f1)) {
-      if (1) break;
+      if (!training) break;
       rewind(f1);
       fread(tmp, sizeof(short), FRAME_SIZE, f1);
       one_pass_completed = 1;
     }
     for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
-    if (0) {
+    if (training) {
       silent = E < 5000 || (last_silent && E < 20000);
       if (!last_silent && silent) {
         for (i=0;i<FRAME_SIZE;i++) savedX[i] = x[i];
@@ -446,7 +446,7 @@ int main(int argc, char **argv) {
       last_silent = silent;
     }
     if (count*FRAME_SIZE_5MS>=10000000 && one_pass_completed) break;
-    if (0 && ++gain_change_count > 2821) {
+    if (training && ++gain_change_count > 2821) {
       float tmp;
       speech_gain = pow(10., (-20+(rand()%40))/20.);
       if (rand()%20==0) speech_gain *= .01;
