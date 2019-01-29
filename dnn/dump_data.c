@@ -254,8 +254,27 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
         best[sub] = sub_period;
       }
       best_a = (sw*sxy - sx*sy)/(sw*sxx - sx*sx);
-      best_b = (sxx*sy - sx*sxy)/(sw*sxx - sx*sx);
-      for (sub=2;sub<10;sub++) printf("%f %d %f\n", best_b + sub*best_a, best[sub], best_corr);
+      {
+        float mean_pitch = sy/sw;
+        /* Allow a relative variation of up to 1/4 over 8 sub-frames. */
+        float max_a = mean_pitch/32;
+        best_a = MIN16(max_a, MAX16(-max_a, best_a));
+      }
+      //best_b = (sxx*sy - sx*sxy)/(sw*sxx - sx*sx);
+      best_b = (sy - best_a*sx)/sw;
+      float center_pitch = best_b+5.5*best_a;
+      int main_pitch = (int)floor(.5 + 21.*log2(center_pitch/PITCH_MIN_PERIOD));
+      main_pitch = IMAX(0, IMIN(63, main_pitch));
+      int modulation = (int)floor(.5 + 16*7*best_a/center_pitch);
+      modulation = IMAX(-3, IMIN(3, modulation));
+      //printf("%d %d\n", main_pitch, modulation);
+      //printf("%f %f\n", best_a/center_pitch, best_corr);
+      //for (sub=2;sub<10;sub++) printf("%f %d %f\n", best_b + sub*best_a, best[sub], best_corr);
+      for (sub=2;sub<10;sub++) {
+          float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
+          p *= 1 + modulation/16./7.*(sub-5.5);
+          printf("%f %f %d %f\n", best_b + sub*best_a, p, best[sub], best_corr);
+      }
       //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
       RNN_COPY(&xc[0][0], &xc[8][0], PITCH_MAX_PERIOD);
       RNN_COPY(&xc[1][0], &xc[9][0], PITCH_MAX_PERIOD);
