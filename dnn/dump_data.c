@@ -156,7 +156,6 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
   g = lpc_from_cepstrum(st->lpc, features);
   {
     float xcorr[PITCH_MAX_PERIOD];
-    float interp[2*PITCH_MAX_PERIOD];
     static float mem[LPC_ORDER];
     static float filt=0;
     float best_corr = -100;
@@ -264,44 +263,6 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
       RNN_COPY(&ener[1][0], &ener[9][0], PITCH_MAX_PERIOD);
       pcount=0;
     }
-#endif
-
-    celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD], st->exc_buf, xcorr, FRAME_SIZE, PITCH_MAX_PERIOD);
-    ener0 = celt_inner_prod(&st->exc_buf[PITCH_MAX_PERIOD], &st->exc_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
-    RNN_CLEAR(interp, 2*PITCH_MAX_PERIOD);
-    for (i=0;i<PITCH_MAX_PERIOD;i++)
-      interp[2*i] = 2*xcorr[i] / (1 + ener0 + celt_inner_prod(&st->exc_buf[i], &st->exc_buf[i], FRAME_SIZE));
-    for (i=2;i<PITCH_MAX_PERIOD-3;i++) {
-      interp[2*i+1] = .605*(interp[2*i]+interp[2*i+2]) - .13*(interp[2*i-2]+interp[2*i+4]) + .025*(interp[2*i-4]+interp[2*i+6]);
-      interp[2*i+1] = 0*MIN16(1, interp[2*i+1]);
-    }
-    best_corr = -100;
-    best_period = 2*PITCH_MIN_PERIOD;
-    for (i=2*PITCH_MAX_PERIOD-2*PITCH_MIN_PERIOD;i>=0;i--) {
-      int period = 2*PITCH_MAX_PERIOD - i;
-      float fact[5] = {1.35, 1.25, 1.15, 1.1, 1.05};
-      if (interp[i] > best_corr)
-      {
-        int j;
-        int multiple=0;
-        for (j=2;j<=7;j++) {
-          int diff;
-          if (period/j < 2*PITCH_MIN_PERIOD) break;
-          diff = abs((period+j/2)/j - best_period);
-          if (diff <= 4 && interp[i] < fact[diff]*best_corr) multiple = 1;
-        }
-        if (!multiple) {
-          best_period = period;
-          best_corr = interp[i];
-        }
-      }
-      if (best_corr > .5 && interp[i] < .4) break;
-    }
-    //printf("%d %f %d %f\n", best_period, best_corr, pitch_index, gain);
-#if 0
-    for (i=0;i<2*PITCH_MAX_PERIOD;i++)
-      printf("%f ", interp[i]);
-    printf("\n");
 #endif
   }
 #if 0
