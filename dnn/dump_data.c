@@ -177,15 +177,16 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
 #if 1
     int sub;
     static int pcount = 0;
-    static float xc[8][PITCH_MAX_PERIOD];
-    static float ener[8][PITCH_MAX_PERIOD];
+    static float xc[10][PITCH_MAX_PERIOD];
+    static float ener[10][PITCH_MAX_PERIOD];
+    static float frame_max_corr[PITCH_MAX_PERIOD];
     for (sub=0;sub<2;sub++) {
       int off = sub*FRAME_SIZE/2;
       celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD);
       ener0 = celt_inner_prod(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE/2);
       for (i=0;i<PITCH_MAX_PERIOD;i++) {
-        ener[2*pcount+sub][i] = (1 + ener0 + celt_inner_prod(&st->exc_buf[i+off], &st->exc_buf[i+off], FRAME_SIZE/2));
-        xc[2*pcount+sub][i] = 2*xcorr[i] / ener[2*pcount+sub][i];
+        ener[2+2*pcount+sub][i] = (1 + ener0 + celt_inner_prod(&st->exc_buf[i+off], &st->exc_buf[i+off], FRAME_SIZE/2));
+        xc[2+2*pcount+sub][i] = 2*xcorr[i] / ener[2+2*pcount+sub][i];
       }
 #if 0
       for (i=0;i<PITCH_MAX_PERIOD;i++)
@@ -208,7 +209,7 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
         period = PITCH_MAX_PERIOD - i;
         float num=0;
         float den=0;
-        for (sub=0;sub<8;sub++) {
+        for (sub=0;sub<10;sub++) {
           float max_xc=-1000, max_ener=0;
           for (j=0;j<period/5;j++) {
             if (xc[sub][i+j] > max_xc) {
@@ -220,18 +221,20 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
           den += max_ener;
         }
         corr = num/den;
+        corr = MAX16(corr, frame_max_corr[i]-.1);
+        frame_max_corr[i] = corr;
         if (corr > best_corr) {
-          if (period < best_period*5/4 || (corr > 1.2*best_corr && best_corr < .6)) {
+          if (period < best_period*5/4 || (corr > 1.2*best_corr && best_corr < .5)) {
             best_corr = corr;
             best_period = period;
           }
         }
         //printf("%f ", corr);
       }
-      int best[8];
+      int best[10];
       i = PITCH_MAX_PERIOD - best_period;
       period = best_period;
-      for (sub=0;sub<8;sub++) {
+      for (sub=0;sub<10;sub++) {
         int j;
         int sub_period = PITCH_MIN_PERIOD;
         float max_xc=-1000, max_ener=0;
@@ -242,7 +245,8 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
             sub_period = period - j;
           }
         }
-        w = MAX16(1e-2, max_xc-.2)*max_ener;
+        w = MAX16(1e-1, MIN16(1, 5*(max_xc-.2)))*max_ener;
+        w = MAX16(.1, MIN16(1, 5*(max_xc-.2)));
         sw += w;
         sx += w*sub;
         sxx += w*sub*sub;
@@ -252,8 +256,12 @@ static void compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_c
       }
       best_a = (sw*sxy - sx*sy)/(sw*sxx - sx*sx);
       best_b = (sxx*sy - sx*sxy)/(sw*sxx - sx*sx);
-      for (sub=0;sub<8;sub++) printf("%f %d %f\n", best_b + sub*best_a, best[sub], best_corr);
+      for (sub=2;sub<10;sub++) printf("%f %d %f\n", best_b + sub*best_a, best[sub], best_corr);
       //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
+      RNN_COPY(&xc[0][0], &xc[8][0], PITCH_MAX_PERIOD);
+      RNN_COPY(&xc[1][0], &xc[9][0], PITCH_MAX_PERIOD);
+      RNN_COPY(&ener[0][0], &ener[8][0], PITCH_MAX_PERIOD);
+      RNN_COPY(&ener[1][0], &ener[9][0], PITCH_MAX_PERIOD);
       pcount=0;
     }
 #endif
