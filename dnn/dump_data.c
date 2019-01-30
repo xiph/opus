@@ -207,6 +207,9 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       float best_b=0;
       float w;
       float sx=0, sxx=0, sxy=0, sy=0, sw=0;
+      float sc=0;
+      float frame_corr;
+      int voiced;
       best_corr = -100;
       best_period = PITCH_MIN_PERIOD;
       for (i=PITCH_MAX_PERIOD-PITCH_MIN_PERIOD*5/4;i>=0;i--) {
@@ -258,14 +261,19 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
         sxx += w*sub*sub;
         sxy += w*sub*sub_period;
         sy += w*sub_period;
+        sc += w*max_xc;
         best[sub] = sub_period;
       }
+      frame_corr = sc/sw;
+      voiced = frame_corr > .45;
       best_a = (sw*sxy - sx*sy)/(sw*sxx - sx*sx);
-      {
+      if (voiced) {
         float mean_pitch = sy/sw;
         /* Allow a relative variation of up to 1/4 over 8 sub-frames. */
         float max_a = mean_pitch/32;
         best_a = MIN16(max_a, MAX16(-max_a, best_a));
+      } else {
+        best_a = 0;
       }
       //best_b = (sxx*sy - sx*sxy)/(sw*sxx - sx*sx);
       best_b = (sy - best_a*sx)/sw;
@@ -277,10 +285,12 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       //printf("%d %d\n", main_pitch, modulation);
       //printf("%f %f\n", best_a/center_pitch, best_corr);
       //for (sub=2;sub<10;sub++) printf("%f %d %f\n", best_b + sub*best_a, best[sub], best_corr);
-      for (sub=2;sub<10;sub++) {
+      for (sub=0;sub<4;sub++) {
           float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
-          p *= 1 + modulation/16./7.*(sub-5.5);
-          //printf("%f %f %d %f\n", best_b + sub*best_a, p, best[sub], best_corr);
+          p *= 1 + modulation/16./7.*(2*sub-3);
+          st->features[sub][2*NB_BANDS] = .02*(p-100);
+          st->features[sub][2*NB_BANDS + 1] = voiced ? 1 : -1;
+          //printf("%f %f %d %f %f\n", st->features[sub][2*NB_BANDS], p, best[sub], best_corr, frame_corr);
       }
       //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
       RNN_COPY(&xc[0][0], &xc[8][0], PITCH_MAX_PERIOD);
