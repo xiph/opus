@@ -109,6 +109,7 @@ static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const f
 }
 
 static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *in) {
+  float aligned_in[FRAME_SIZE];
   static int pcount = 0;
   int i;
   float E = 0;
@@ -117,6 +118,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
   float g;
   kiss_fft_cpx X[FREQ_SIZE];
   float Ex[NB_BANDS];
+  RNN_COPY(aligned_in, &st->analysis_mem[OVERLAP_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
   frame_analysis(st, X, Ex, in);
   logMax = -2;
   follow = -2;
@@ -140,19 +142,20 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     int best_period = 2*PITCH_MIN_PERIOD;
     float ener0;
     RNN_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
+    RNN_COPY(&aligned_in[TRAINING_OFFSET], in, FRAME_SIZE-TRAINING_OFFSET);
     for (i=0;i<FRAME_SIZE;i++) {
       int j;
-      float sum = in[i];
+      float sum = aligned_in[i];
       for (j=0;j<LPC_ORDER;j++)
         sum += st->lpc[j]*mem[j];
       RNN_MOVE(mem+1, mem, LPC_ORDER-1);
-      mem[0] = in[i];
+      mem[0] = aligned_in[i];
       st->exc_buf[PITCH_MAX_PERIOD+i] = sum + .7*filt;
       filt = sum;
       //printf("%f\n", st->exc_buf[PITCH_MAX_PERIOD+i]);
     }
     int sub;
-    static float xc[10][PITCH_MAX_PERIOD];
+    static float xc[10][PITCH_MAX_PERIOD+1];
     static float ener[10][PITCH_MAX_PERIOD];
     static float frame_max_corr[PITCH_MAX_PERIOD];
     /* Cross-correlation on half-frames. */
@@ -203,7 +206,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
           den += max_ener;
         }
         corr = num/den;
-        corr = MAX16(corr, frame_max_corr[i]-.1);
+        corr = MAX16(corr, frame_max_corr[i]-.15);
         frame_max_corr[i] = corr;
         if (corr > best_corr) {
           if (period < best_period*5/4 || (corr > 1.2*best_corr && best_corr < .5)) {
@@ -221,8 +224,13 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
         int sub_period = PITCH_MIN_PERIOD;
         float max_xc=-1000, max_ener=0;
         for (j=0;j<period/5;j++) {
-          if (xc[sub][i+j] > max_xc) {
-            max_xc = xc[sub][i+j];
+          float curr;
+          curr = xc[sub][i+j];
+          if (sub > 0 && sub < 9) {
+            curr = .5*xc[sub][i+j] + .25*MAX16(MAX16(xc[sub-1][i+j]+xc[sub+1][i+j], xc[sub-1][i+j-1]+xc[sub+1][i+j+1]), xc[sub-1][i+j+1]+xc[sub+1][i+j-1]);
+          }
+          if (curr > max_xc) {
+            max_xc = curr;
             max_ener = ener[sub][i+j];
             sub_period = period - j;
           }
@@ -265,7 +273,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
           p *= 1 + modulation/16./7.*(2*sub-3);
           st->features[sub][2*NB_BANDS] = .02*(p-100);
           st->features[sub][2*NB_BANDS + 1] = voiced ? 1 : -1;
-          //printf("%f %f %d %f %f\n", st->features[sub][2*NB_BANDS], p, best[sub], best_corr, frame_corr);
+          //printf("%f %f %d %f %f\n", st->features[sub][2*NB_BANDS], p, best[2+2*sub], best_corr, frame_corr);
       }
       //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
       RNN_COPY(&xc[0][0], &xc[8][0], PITCH_MAX_PERIOD);
