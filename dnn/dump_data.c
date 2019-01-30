@@ -113,39 +113,11 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
   int i;
   float E = 0;
   float Ly[NB_BANDS];
-  float p[WINDOW_SIZE];
-  float pitch_buf[PITCH_BUF_SIZE];
-  int pitch_index;
-  float gain;
-  float tmp[NB_BANDS];
   float follow, logMax;
   float g;
-  kiss_fft_cpx X[FREQ_SIZE], P[WINDOW_SIZE];
-  float Ex[NB_BANDS], Ep[NB_BANDS];
-  float Exp[NB_BANDS];
+  kiss_fft_cpx X[FREQ_SIZE];
+  float Ex[NB_BANDS];
   frame_analysis(st, X, Ex, in);
-  RNN_MOVE(st->pitch_buf, &st->pitch_buf[FRAME_SIZE], PITCH_BUF_SIZE-FRAME_SIZE);
-  RNN_COPY(&st->pitch_buf[PITCH_BUF_SIZE-FRAME_SIZE], in, FRAME_SIZE);
-  RNN_COPY(pitch_buf, &st->pitch_buf[0], PITCH_BUF_SIZE);
-  pitch_downsample(pitch_buf, PITCH_BUF_SIZE);
-  pitch_search(pitch_buf+PITCH_MAX_PERIOD, pitch_buf, PITCH_FRAME_SIZE<<1,
-               (PITCH_MAX_PERIOD-3*PITCH_MIN_PERIOD)<<1, &pitch_index);
-  pitch_index = 2*PITCH_MAX_PERIOD-pitch_index;
-  gain = remove_doubling(pitch_buf, 2*PITCH_MAX_PERIOD, 2*PITCH_MIN_PERIOD,
-          2*PITCH_FRAME_SIZE, &pitch_index, st->last_period, st->last_gain);
-  st->last_period = pitch_index;
-  st->last_gain = gain;
-  for (i=0;i<WINDOW_SIZE;i++)
-    p[i] = st->pitch_buf[PITCH_BUF_SIZE-WINDOW_SIZE-pitch_index/2+i];
-  apply_window(p);
-  forward_transform(P, p);
-  compute_band_energy(Ep, P);
-  compute_band_corr(Exp, X, P);
-  for (i=0;i<NB_BANDS;i++) Exp[i] = Exp[i]/sqrt(.001+Ex[i]*Ep[i]);
-  dct(tmp, Exp);
-  for (i=0;i<NB_BANDS;i++) st->features[pcount][NB_BANDS+i] = tmp[i];
-  st->features[pcount][NB_BANDS] -= 1.3;
-  st->features[pcount][NB_BANDS+1] -= 0.9;
   logMax = -2;
   follow = -2;
   for (i=0;i<NB_BANDS;i++) {
@@ -158,8 +130,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
   dct(st->features[pcount], Ly);
   st->features[pcount][0] -= 4;
   g = lpc_from_cepstrum(st->lpc, st->features[pcount]);
-  st->features[pcount][2*NB_BANDS] = .01*(pitch_index-200);
-  st->features[pcount][2*NB_BANDS+1] = gain;
   st->features[pcount][2*NB_BANDS+2] = log10(g);
   for (i=0;i<LPC_ORDER;i++) st->features[pcount][2*NB_BANDS+3+i] = st->lpc[i];
   {
@@ -181,7 +151,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       filt = sum;
       //printf("%f\n", st->exc_buf[PITCH_MAX_PERIOD+i]);
     }
-#if 1
     int sub;
     static float xc[10][PITCH_MAX_PERIOD];
     static float ener[10][PITCH_MAX_PERIOD];
@@ -303,7 +272,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       }
       pcount=0;
     }
-#endif
   }
 }
 
