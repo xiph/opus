@@ -155,6 +155,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     static float xc[10][PITCH_MAX_PERIOD];
     static float ener[10][PITCH_MAX_PERIOD];
     static float frame_max_corr[PITCH_MAX_PERIOD];
+    /* Cross-correlation on half-frames. */
     for (sub=0;sub<2;sub++) {
       int off = sub*FRAME_SIZE/2;
       celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD);
@@ -170,6 +171,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
 #endif
     }
     pcount++;
+    /* Running on groups of 4 frames. */
     if (pcount == 4) {
       int period;
       float best_a=0;
@@ -181,6 +183,8 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       int voiced;
       best_corr = -100;
       best_period = PITCH_MIN_PERIOD;
+      /* Search approximate pitch by considering the max correlation over all sub-frames
+         within a window corresponding to 25% of the pitch (4 semitones). */
       for (i=PITCH_MAX_PERIOD-PITCH_MIN_PERIOD*5/4;i>=0;i--) {
         int j;
         float corr;
@@ -235,6 +239,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       }
       frame_corr = sc/sw;
       voiced = frame_corr > .45;
+      /* Linear regression to figure out the pitch contour. */
       best_a = (sw*sxy - sx*sy)/(sw*sxx - sx*sx);
       if (voiced) {
         float mean_pitch = sy/sw;
@@ -246,6 +251,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       }
       //best_b = (sxx*sy - sx*sxy)/(sw*sxx - sx*sx);
       best_b = (sy - best_a*sx)/sw;
+      /* Quantizing the pitch as "main" pitch + slope. */
       float center_pitch = best_b+5.5*best_a;
       int main_pitch = (int)floor(.5 + 21.*log2(center_pitch/PITCH_MIN_PERIOD));
       main_pitch = IMAX(0, IMIN(63, main_pitch));
