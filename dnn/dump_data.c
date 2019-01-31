@@ -169,7 +169,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD);
       ener0 = celt_inner_prod(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE/2);
       ener_follow = MAX16(.7*ener_follow, ener0);
-      frame_weight[2+2*pcount+sub] = ener0/(1+ener_follow);
+      frame_weight[2+2*pcount+sub] = ener0;///(1+ener_follow);
       //printf("%f\n", frame_weight[2+2*pcount+sub]);
       for (i=0;i<PITCH_MAX_PERIOD;i++) {
         ener[2+2*pcount+sub][i] = (1 + ener0 + celt_inner_prod(&st->exc_buf[i+off], &st->exc_buf[i+off], FRAME_SIZE/2));
@@ -195,8 +195,11 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       float sc=0;
       float frame_corr;
       int voiced;
+      float frame_weight_sum = 1e-15;
       best_corr = -100;
       best_period = PITCH_MIN_PERIOD;
+      for(sub=0;sub<8;sub++) frame_weight_sum += frame_weight[2+sub];
+      for(sub=0;sub<8;sub++) frame_weight[2+sub] *= (8.f/frame_weight_sum);
       for(sub=0;sub<8;sub++) {
         float max_path_all = -1e15;
         best_i = 0;
@@ -235,7 +238,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       /* Backward pass. */
       for (sub=7;sub>=0;sub--) {
         best[sub] = PITCH_MAX_PERIOD-best_i;
-        frame_corr += xc[2+sub][best_i];
+        frame_corr += frame_weight[2+sub]*xc[2+sub][best_i];
         best_i = pitch_prev[sub][best_i];
       }
       frame_corr /= 8;
