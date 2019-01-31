@@ -59,6 +59,7 @@ typedef struct {
   float exc_buf[PITCH_BUF_SIZE];
   float pitch_max_path[2][PITCH_MAX_PERIOD];
   float pitch_max_path_all;
+  int best_i;
   float last_gain;
   int last_period;
   float lpc[LPC_ORDER];
@@ -178,7 +179,10 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     pcount++;
     /* Running on groups of 4 frames. */
     if (pcount == 4) {
+      int best_i;
+      int best[10];
       int period;
+      int pitch_prev[8][PITCH_MAX_PERIOD];
       float best_a=0;
       float best_b=0;
       float w;
@@ -190,26 +194,45 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       best_period = PITCH_MIN_PERIOD;
       for(sub=0;sub<8;sub++) {
         float max_path_all = -1e15;
+        best_i = 0;
         for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
           int j;
           float max_prev;
-          max_prev = st->pitch_max_path_all - 3.f;
+          max_prev = st->pitch_max_path_all - 1.5f;
+          pitch_prev[sub][i] = st->best_i;
           for (j=IMIN(0, 4-i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
             if (st->pitch_max_path[0][i+j] > max_prev) {
               max_prev = st->pitch_max_path[0][i+j] - .05f*abs(j);
-              /* FIXME: set ancestor. */
+              pitch_prev[sub][i] = i+j;
             }
           }
           st->pitch_max_path[1][i] = max_prev + xc[2+sub][i];
-          max_path_all = MAX16(max_path_all, st->pitch_max_path[1][i]);
+          if (st->pitch_max_path[1][i] > max_path_all) {
+            max_path_all = st->pitch_max_path[1][i];
+            best_i = i;
+          }
         }
         /* Renormalize. */
         for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) st->pitch_max_path[1][i] -= max_path_all;
-        for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) printf("%f ", st->pitch_max_path[1][i]);
-        printf("\n");
+        //for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) printf("%f ", st->pitch_max_path[1][i]);
+        //printf("\n");
         RNN_COPY(&st->pitch_max_path[0][0], &st->pitch_max_path[1][0], PITCH_MAX_PERIOD);
         st->pitch_max_path_all = max_path_all;
+        st->best_i = best_i;
       }
+      best_i = st->best_i;
+      frame_corr = 0;
+      /* Backward pass. */
+      for (sub=7;sub>=0;sub--) {
+        best[sub] = PITCH_MAX_PERIOD-best_i;
+        frame_corr += xc[2+sub][best_i];
+        best_i = pitch_prev[sub][best_i];
+      }
+      frame_corr /= 8;
+      for (sub=0;sub<8;sub++) {
+        printf("%d %f\n", best[sub], frame_corr);
+      }
+      printf("\n");
       /* Search approximate pitch by considering the max correlation over all sub-frames
          within a window corresponding to 25% of the pitch (4 semitones). */
       for (i=PITCH_MAX_PERIOD-PITCH_MIN_PERIOD*5/4;i>=0;i--) {
@@ -240,7 +263,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
         }
         //printf("%f ", corr);
       }
-      int best[10];
       i = PITCH_MAX_PERIOD - best_period;
       period = best_period;
       for (sub=0;sub<10;sub++) {
