@@ -141,8 +141,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     float xcorr[PITCH_MAX_PERIOD];
     static float mem[LPC_ORDER];
     static float filt=0;
-    float best_corr = -100;
-    int best_period = 2*PITCH_MIN_PERIOD;
     float ener0;
     RNN_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
     RNN_COPY(&aligned_in[TRAINING_OFFSET], in, FRAME_SIZE-TRAINING_OFFSET);
@@ -161,7 +159,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     static float xc[10][PITCH_MAX_PERIOD+1];
     static float ener[10][PITCH_MAX_PERIOD];
     static float frame_weight[10];
-    static float frame_max_corr[PITCH_MAX_PERIOD];
     static float ener_follow;
     /* Cross-correlation on half-frames. */
     for (sub=0;sub<2;sub++) {
@@ -186,18 +183,14 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     if (pcount == 4) {
       int best_i;
       static int best[10];
-      int period;
       int pitch_prev[8][PITCH_MAX_PERIOD];
       float best_a=0;
       float best_b=0;
       float w;
       float sx=0, sxx=0, sxy=0, sy=0, sw=0;
-      float sc=0;
       float frame_corr;
       int voiced;
       float frame_weight_sum = 1e-15;
-      best_corr = -100;
-      best_period = PITCH_MIN_PERIOD;
       for(sub=0;sub<8;sub++) frame_weight_sum += frame_weight[2+sub];
       for(sub=0;sub<8;sub++) frame_weight[2+sub] *= (8.f/frame_weight_sum);
       for(sub=0;sub<8;sub++) {
@@ -210,7 +203,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
         for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
           int j;
           float max_prev;
-          period = PITCH_MAX_PERIOD-i;
           max_prev = st->pitch_max_path_all - 6.f;
           pitch_prev[sub][i] = st->best_i;
           for (j=IMIN(0, 4-i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
@@ -288,7 +280,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
           st->features[sub][2*NB_BANDS] = .01*(best[2+2*sub]+best[2+2*sub+1]-200);
           st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
 #endif
-          printf("%f %d %f %f\n", st->features[sub][2*NB_BANDS], best[2+2*sub], best_corr, frame_corr);
+          //printf("%f %d %f %f\n", st->features[sub][2*NB_BANDS], best[2+2*sub], best_corr, frame_corr);
       }
       //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
       RNN_COPY(&xc[0][0], &xc[8][0], PITCH_MAX_PERIOD);
