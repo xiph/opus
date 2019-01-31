@@ -57,6 +57,8 @@ typedef struct {
   float cepstral_mem[CEPS_MEM][NB_BANDS];
   float pitch_buf[PITCH_BUF_SIZE];
   float exc_buf[PITCH_BUF_SIZE];
+  float pitch_max_path[2][PITCH_MAX_PERIOD];
+  float pitch_max_path_all;
   float last_gain;
   int last_period;
   float lpc[LPC_ORDER];
@@ -186,6 +188,28 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       int voiced;
       best_corr = -100;
       best_period = PITCH_MIN_PERIOD;
+      for(sub=0;sub<8;sub++) {
+        float max_path_all = -1e15;
+        for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
+          int j;
+          float max_prev;
+          max_prev = st->pitch_max_path_all - 3.f;
+          for (j=IMIN(0, 4-i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
+            if (st->pitch_max_path[0][i+j] > max_prev) {
+              max_prev = st->pitch_max_path[0][i+j] - .05f*abs(j);
+              /* FIXME: set ancestor. */
+            }
+          }
+          st->pitch_max_path[1][i] = max_prev + xc[2+sub][i];
+          max_path_all = MAX16(max_path_all, st->pitch_max_path[1][i]);
+        }
+        /* Renormalize. */
+        for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) st->pitch_max_path[1][i] -= max_path_all;
+        for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) printf("%f ", st->pitch_max_path[1][i]);
+        printf("\n");
+        RNN_COPY(&st->pitch_max_path[0][0], &st->pitch_max_path[1][0], PITCH_MAX_PERIOD);
+        st->pitch_max_path_all = max_path_all;
+      }
       /* Search approximate pitch by considering the max correlation over all sub-frames
          within a window corresponding to 25% of the pitch (4 semitones). */
       for (i=PITCH_MAX_PERIOD-PITCH_MIN_PERIOD*5/4;i>=0;i--) {
