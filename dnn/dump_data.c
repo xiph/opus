@@ -185,7 +185,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     /* Running on groups of 4 frames. */
     if (pcount == 4) {
       int best_i;
-      int best[10];
+      static int best[10];
       int period;
       int pitch_prev[8][PITCH_MAX_PERIOD];
       float best_a=0;
@@ -237,75 +237,26 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       frame_corr = 0;
       /* Backward pass. */
       for (sub=7;sub>=0;sub--) {
-        best[sub] = PITCH_MAX_PERIOD-best_i;
+        best[2+sub] = PITCH_MAX_PERIOD-best_i;
         frame_corr += frame_weight[2+sub]*xc[2+sub][best_i];
         best_i = pitch_prev[sub][best_i];
       }
       frame_corr /= 8;
       for (sub=0;sub<8;sub++) {
-        printf("%d %f\n", best[sub], frame_corr);
+        //printf("%d %f\n", best[2+sub], frame_corr);
       }
-      printf("\n");
-      /* Search approximate pitch by considering the max correlation over all sub-frames
-         within a window corresponding to 25% of the pitch (4 semitones). */
-      for (i=PITCH_MAX_PERIOD-PITCH_MIN_PERIOD*5/4;i>=0;i--) {
-        int j;
-        float corr;
-        period = PITCH_MAX_PERIOD - i;
-        float num=0;
-        float den=0;
-        for (sub=0;sub<10;sub++) {
-          float max_xc=-1000, max_ener=0;
-          for (j=0;j<period/5;j++) {
-            if (xc[sub][i+j] > max_xc) {
-              max_xc = xc[sub][i+j];
-              max_ener = ener[sub][i+j];
-            }
-          }
-          num += max_xc*max_ener;
-          den += max_ener;
-        }
-        corr = num/den;
-        corr = MAX16(corr, frame_max_corr[i]-.15);
-        frame_max_corr[i] = corr;
-        if (corr > best_corr) {
-          if (period < best_period*5/4 || (corr > 1.2*best_corr && best_corr < .5)) {
-            best_corr = corr;
-            best_period = period;
-          }
-        }
-        //printf("%f ", corr);
-      }
-      i = PITCH_MAX_PERIOD - best_period;
-      period = best_period;
-      for (sub=0;sub<10;sub++) {
-        int j;
-        int sub_period = PITCH_MIN_PERIOD;
-        float max_xc=-1000, max_ener=0;
-        for (j=0;j<period/5;j++) {
-          float curr;
-          curr = xc[sub][i+j];
-          if (sub > 0 && sub < 9) {
-            curr = .5*xc[sub][i+j] + .25*MAX16(MAX16(xc[sub-1][i+j]+xc[sub+1][i+j], xc[sub-1][i+j-1]+xc[sub+1][i+j+1]), xc[sub-1][i+j+1]+xc[sub+1][i+j-1]);
-          }
-          if (curr > max_xc) {
-            max_xc = curr;
-            max_ener = ener[sub][i+j];
-            sub_period = period - j;
-          }
-        }
-        w = MAX16(1e-1, MIN16(1, 5*(max_xc-.2)))*max_ener;
-        w = MAX16(.1, MIN16(1, 5*(max_xc-.2)));
+      //printf("\n");
+      for (sub=2;sub<10;sub++) {
+        w = frame_weight[sub];
         sw += w;
         sx += w*sub;
         sxx += w*sub*sub;
-        sxy += w*sub*sub_period;
-        sy += w*sub_period;
-        sc += w*max_xc;
-        best[sub] = sub_period;
+        sxy += w*sub*best[sub];
+        sy += w*best[sub];
       }
-      frame_corr = sc/sw;
-      voiced = frame_corr > .45;
+      best[0] = best[8];
+      best[1] = best[9];
+      voiced = frame_corr > .3;
       /* Linear regression to figure out the pitch contour. */
       best_a = (sw*sxy - sx*sy)/(sw*sxx - sx*sx);
       if (voiced) {
@@ -328,11 +279,16 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       //printf("%f %f\n", best_a/center_pitch, best_corr);
       //for (sub=2;sub<10;sub++) printf("%f %d %f\n", best_b + sub*best_a, best[sub], best_corr);
       for (sub=0;sub<4;sub++) {
+#if 0
           float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
           p *= 1 + modulation/16./7.*(2*sub-3);
           st->features[sub][2*NB_BANDS] = .02*(p-100);
           st->features[sub][2*NB_BANDS + 1] = voiced ? 1 : -1;
-          //printf("%f %f %d %f %f\n", st->features[sub][2*NB_BANDS], p, best[2+2*sub], best_corr, frame_corr);
+#else
+          st->features[sub][2*NB_BANDS] = .01*(best[2+2*sub]+best[2+2*sub+1]-200);
+          st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
+#endif
+          printf("%f %d %f %f\n", st->features[sub][2*NB_BANDS], best[2+2*sub], best_corr, frame_corr);
       }
       //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
       RNN_COPY(&xc[0][0], &xc[8][0], PITCH_MAX_PERIOD);
