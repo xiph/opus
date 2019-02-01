@@ -55,7 +55,6 @@
 typedef struct {
   float analysis_mem[OVERLAP_SIZE];
   float cepstral_mem[CEPS_MEM][NB_BANDS];
-  float pitch_buf[PITCH_BUF_SIZE];
   float exc_buf[PITCH_BUF_SIZE];
   float pitch_max_path[2][PITCH_MAX_PERIOD];
   float pitch_max_path_all;
@@ -157,20 +156,18 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     }
     int sub;
     static float xc[10][PITCH_MAX_PERIOD+1];
-    static float ener[10][PITCH_MAX_PERIOD];
+    float ener;
     static float frame_weight[10];
-    static float ener_follow;
     /* Cross-correlation on half-frames. */
     for (sub=0;sub<2;sub++) {
       int off = sub*FRAME_SIZE/2;
       celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD);
       ener0 = celt_inner_prod(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE/2);
-      ener_follow = MAX16(.7*ener_follow, ener0);
-      frame_weight[2+2*pcount+sub] = ener0;///(1+ener_follow);
+      frame_weight[2+2*pcount+sub] = ener0;
       //printf("%f\n", frame_weight[2+2*pcount+sub]);
       for (i=0;i<PITCH_MAX_PERIOD;i++) {
-        ener[2+2*pcount+sub][i] = (1 + ener0 + celt_inner_prod(&st->exc_buf[i+off], &st->exc_buf[i+off], FRAME_SIZE/2));
-        xc[2+2*pcount+sub][i] = 2*xcorr[i] / ener[2+2*pcount+sub][i];
+        ener = (1 + ener0 + celt_inner_prod(&st->exc_buf[i+off], &st->exc_buf[i+off], FRAME_SIZE/2));
+        xc[2+2*pcount+sub][i] = 2*xcorr[i] / ener;
       }
 #if 0
       for (i=0;i<PITCH_MAX_PERIOD;i++)
@@ -182,7 +179,7 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     /* Running on groups of 4 frames. */
     if (pcount == 4) {
       int best_i;
-      static int best[10];
+      int best[10];
       int pitch_prev[8][PITCH_MAX_PERIOD];
       float best_a=0;
       float best_b=0;
@@ -246,8 +243,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
         sxy += w*sub*best[sub];
         sy += w*best[sub];
       }
-      best[0] = best[8];
-      best[1] = best[9];
       voiced = frame_corr > .3;
       /* Linear regression to figure out the pitch contour. */
       best_a = (sw*sxy - sx*sy)/(sw*sxx - sx*sx);
@@ -285,8 +280,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
       //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
       RNN_COPY(&xc[0][0], &xc[8][0], PITCH_MAX_PERIOD);
       RNN_COPY(&xc[1][0], &xc[9][0], PITCH_MAX_PERIOD);
-      RNN_COPY(&ener[0][0], &ener[8][0], PITCH_MAX_PERIOD);
-      RNN_COPY(&ener[1][0], &ener[9][0], PITCH_MAX_PERIOD);
 
       for (i=0;i<4;i++) {
         fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
