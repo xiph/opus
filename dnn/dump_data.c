@@ -115,7 +115,7 @@ static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const f
   compute_band_energy(Ex, X);
 }
 
-static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *in) {
+static void compute_frame_features(DenoiseState *st, const float *in) {
   float aligned_in[FRAME_SIZE];
   int i;
   float E = 0;
@@ -174,7 +174,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
     printf("\n");
 #endif
   }
-  st->pcount++;
 }
 
 static void process_superframe(DenoiseState *st, FILE *ffeat) {
@@ -190,6 +189,9 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   float frame_corr;
   int voiced;
   float frame_weight_sum = 1e-15;
+  float center_pitch;
+  int main_pitch;
+  int modulation;
   for(sub=0;sub<8;sub++) frame_weight_sum += st->frame_weight[2+sub];
   for(sub=0;sub<8;sub++) st->frame_weight[2+sub] *= (8.f/frame_weight_sum);
   for(sub=0;sub<8;sub++) {
@@ -249,9 +251,10 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   /* Linear regression to figure out the pitch contour. */
   best_a = (sw*sxy - sx*sy)/(sw*sxx - sx*sx);
   if (voiced) {
+    float max_a;
     float mean_pitch = sy/sw;
     /* Allow a relative variation of up to 1/4 over 8 sub-frames. */
-    float max_a = mean_pitch/32;
+    max_a = mean_pitch/32;
     best_a = MIN16(max_a, MAX16(-max_a, best_a));
   } else {
     best_a = 0;
@@ -259,10 +262,10 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   //best_b = (sxx*sy - sx*sxy)/(sw*sxx - sx*sx);
   best_b = (sy - best_a*sx)/sw;
   /* Quantizing the pitch as "main" pitch + slope. */
-  float center_pitch = best_b+5.5*best_a;
-  int main_pitch = (int)floor(.5 + 21.*log2(center_pitch/PITCH_MIN_PERIOD));
+  center_pitch = best_b+5.5*best_a;
+  main_pitch = (int)floor(.5 + 21.*log2(center_pitch/PITCH_MIN_PERIOD));
   main_pitch = IMAX(0, IMIN(63, main_pitch));
-  int modulation = (int)floor(.5 + 16*7*best_a/center_pitch);
+  modulation = (int)floor(.5 + 16*7*best_a/center_pitch);
   modulation = IMAX(-3, IMIN(3, modulation));
   //printf("%d %d\n", main_pitch, modulation);
   //printf("%f %f\n", best_a/center_pitch, best_corr);
@@ -285,7 +288,6 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   for (i=0;i<4;i++) {
     fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
   }
-  st->pcount=0;
 }
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
@@ -451,10 +453,12 @@ int main(int argc, char **argv) {
       x[i] *= g;
     }
     for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
-    compute_frame_features(st, ffeat, x);
+    compute_frame_features(st, x);
+    st->pcount++;
     /* Running on groups of 4 frames. */
     if (st->pcount == 4) {
       process_superframe(st, ffeat);
+      st->pcount = 0;
     }
 
     /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
