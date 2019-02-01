@@ -176,8 +176,12 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
 #endif
     }
     st->pcount++;
-    /* Running on groups of 4 frames. */
-    if (st->pcount == 4) {
+  }
+}
+
+static void process_superframe(DenoiseState *st, FILE *ffeat) {
+  int i;
+  int sub;
       int best_i;
       int best[10];
       int pitch_prev[8][PITCH_MAX_PERIOD];
@@ -285,8 +289,6 @@ static void compute_frame_features(DenoiseState *st, FILE *ffeat, const float *i
         fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
       }
       st->pcount=0;
-    }
-  }
 }
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
@@ -453,6 +455,11 @@ int main(int argc, char **argv) {
     }
     for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
     compute_frame_features(st, ffeat, x);
+    /* Running on groups of 4 frames. */
+    if (st->pcount == 4) {
+      process_superframe(st, ffeat);
+    }
+
     /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
     for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
     if (fpcm) write_audio(st, pcm, noise_std, fpcm);
