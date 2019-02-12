@@ -654,7 +654,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
           tonal->lowE[b] = logE[b];
           tonal->highE[b] = MIN32(tonal->lowE[b]+15, tonal->highE[b]);
        }
-       relativeE += (logE[b]-tonal->lowE[b])/(1e-15f + (tonal->highE[b]-tonal->lowE[b]));
+       relativeE += (logE[b]-tonal->lowE[b])/(1e-5f + (tonal->highE[b]-tonal->lowE[b]));
 
        L1=L2=0;
        for (i=0;i<NB_FRAMES;i++)
