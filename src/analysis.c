@@ -488,7 +488,11 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     int is_silence;
     SAVE_STACK;
 
-    tonal->initialized = 1;
+    if (!tonal->initialized)
+    {
+       tonal->mem_fill = 240;
+       tonal->initialized = 1;
+    }
     alpha = 1.f/IMIN(10, 1+tonal->count);
     alphaE = 1.f/IMIN(25, 1+tonal->count);
     /* Noise floor related decay for bandwidth detection: -2.2 dB/second */
@@ -506,8 +510,6 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     }
 
     kfft = celt_mode->mdct.kfft[0];
-    if (tonal->count==0)
-       tonal->mem_fill = 240;
     tonal->hp_ener_accum += (float)downmix_and_resample(downmix, x,
           &tonal->inmem[tonal->mem_fill], tonal->downmix_state,
           IMIN(len, ANALYSIS_BUF_SIZE-tonal->mem_fill), offset, c1, c2, C, tonal->Fs);
