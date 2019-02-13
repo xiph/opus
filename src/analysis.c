@@ -249,6 +249,15 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    if (curr_lookahead<0)
       curr_lookahead += DETECT_SIZE;
 
+   tonal->read_subframe += len/(tonal->Fs/400);
+   while (tonal->read_subframe>=8)
+   {
+      tonal->read_subframe -= 8;
+      tonal->read_pos++;
+   }
+   if (tonal->read_pos>=DETECT_SIZE)
+      tonal->read_pos-=DETECT_SIZE;
+
    /* On long frames, look at the second analysis window rather than the first. */
    if (len > tonal->Fs/50 && pos != tonal->write_pos)
    {
@@ -262,6 +271,8 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
       pos = DETECT_SIZE-1;
    pos0 = pos;
    OPUS_COPY(info_out, &tonal->info[pos], 1);
+   if (!info_out->valid)
+      return;
    tonality_max = tonality_avg = info_out->tonality;
    tonality_count = 1;
    /* Look at the neighbouring frames and pick largest bandwidth found (to be safe). */
@@ -393,14 +404,6 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
    info_out->music_prob_max = prob_max;
 
    /* printf("%f %f %f %f %f\n", prob_min, prob_max, prob_avg/prob_count, vad_prob, info_out->music_prob); */
-   tonal->read_subframe += len/(tonal->Fs/400);
-   while (tonal->read_subframe>=8)
-   {
-      tonal->read_subframe -= 8;
-      tonal->read_pos++;
-   }
-   if (tonal->read_pos>=DETECT_SIZE)
-      tonal->read_pos-=DETECT_SIZE;
 }
 
 static const float std_feature_bias[9] = {
@@ -420,7 +423,25 @@ static const float std_feature_bias[9] = {
 #define SCALE_ENER(e) (e)
 #endif
 
-static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix)
+#ifdef FIXED_POINT
+static int is_digital_silence32(const opus_val32* pcm, int frame_size, int channels, int lsb_depth)
+{
+   int silence = 0;
+   opus_val32 sample_max = 0;
+#ifdef MLP_TRAINING
+   return 0;
+#endif
+   sample_max = celt_maxabs32(pcm, frame_size*channels);
+
+   silence = (sample_max == 0);
+   (void)lsb_depth;
+   return silence;
+}
+#else
+#define is_digital_silence32(pcm, frame_size, channels, lsb_depth) is_digital_silence(pcm, frame_size, channels, lsb_depth)
+#endif
+
+static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix, int complexity)
 {
     int i, b;
     const kiss_fft_state *kfft;
@@ -464,6 +485,8 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     float layer_out[MAX_NEURONS];
     float below_max_pitch;
     float above_max_pitch;
+    int complexity_threshold;
+    int is_silence;
     SAVE_STACK;
 
     alpha = 1.f/IMIN(10, 1+tonal->count);
@@ -499,6 +522,18 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     info = &tonal->info[tonal->write_pos++];
     if (tonal->write_pos>=DETECT_SIZE)
        tonal->write_pos-=DETECT_SIZE;
+
+    is_silence = is_digital_silence32(tonal->inmem, ANALYSIS_BUF_SIZE, 1, lsb_depth);
+    complexity_threshold = 7;
+#ifdef FIXED_POINT
+    complexity_threshold = 10;
+#endif
+    if (complexity < complexity_threshold || is_silence)
+    {
+       info->valid = 0;
+       RESTORE_STACK;
+       return;
+    }
 
     ALLOC(in, 480, kiss_fft_cpx);
     ALLOC(out, 480, kiss_fft_cpx);
@@ -915,7 +950,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 
 void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *analysis_pcm,
                  int analysis_frame_size, int frame_size, int c1, int c2, int C, opus_int32 Fs,
-                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info)
+                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info, int complexity)
 {
    int offset;
    int pcm_len;
@@ -929,7 +964,7 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
       pcm_len = analysis_frame_size - analysis->analysis_offset;
       offset = analysis->analysis_offset;
       while (pcm_len>0) {
-         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(Fs/50, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
+         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(Fs/50, pcm_len), offset, c1, c2, C, lsb_depth, downmix, complexity);
          offset += Fs/50;
          pcm_len -= Fs/50;
       }
@@ -938,7 +973,6 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
       analysis->analysis_offset -= frame_size;
    }
 
-   analysis_info->valid = 0;
    tonality_get_info(analysis, analysis_info, frame_size);
 }
 

@@ -97,6 +97,6 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
 
 void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *analysis_pcm,
                  int analysis_frame_size, int frame_size, int c1, int c2, int C, opus_int32 Fs,
-                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info);
+                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info, int complexity);
 
 #endif

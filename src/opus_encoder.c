@@ -837,7 +837,7 @@ static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
 
 #ifndef DISABLE_FLOAT_API
 
-static int is_digital_silence(const opus_val16* pcm, int frame_size, int channels, int lsb_depth)
+int is_digital_silence(const opus_val16* pcm, int frame_size, int channels, int lsb_depth)
 {
    int silence = 0;
    opus_val32 sample_max = 0;
@@ -1134,22 +1134,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
 #ifndef DISABLE_FLOAT_API
     analysis_info.valid = 0;
-#ifdef FIXED_POINT
-    if (st->silk_mode.complexity >= 10 && st->Fs>=16000)
-#else
-    if (st->silk_mode.complexity >= 7 && st->Fs>=16000)
-#endif
+    if (st->Fs>=16000)
     {
-       if (is_digital_silence(pcm, frame_size, st->channels, lsb_depth))
-       {
-          is_silence = 1;
-       } else {
-          analysis_read_pos_bak = st->analysis.read_pos;
-          analysis_read_subframe_bak = st->analysis.read_subframe;
-          run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
-                c1, c2, analysis_channels, st->Fs,
-                lsb_depth, downmix, &analysis_info);
-       }
+       is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
+       analysis_read_pos_bak = st->analysis.read_pos;
+       analysis_read_subframe_bak = st->analysis.read_subframe;
+       run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
+             c1, c2, analysis_channels, st->Fs,
+             lsb_depth, downmix, &analysis_info, st->silk_mode.complexity);
 
        /* Track the peak signal energy */
        if (!is_silence && analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD)
