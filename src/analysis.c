@@ -547,7 +547,11 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     tonal->mem_fill = 240 + remaining;
     if (is_silence)
     {
-       info->valid = 0;
+       /* On silence, copy the previous analysis. */
+       int prev_pos = tonal->write_pos-2;
+       if (prev_pos < 0)
+          prev_pos += DETECT_SIZE;
+       OPUS_COPY(info, &tonal->info[prev_pos], 1);
        RESTORE_STACK;
        return;
     }
