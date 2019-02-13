@@ -74,6 +74,7 @@ typedef struct {
    int read_pos;
    int read_subframe;
    float hp_ener_accum;
+   int initialized;
    float rnn_state[MAX_NEURONS];
    opus_val32 downmix_state[3];
    AnalysisInfo info[DETECT_SIZE];
@@ -97,6 +98,6 @@ void tonality_get_info(TonalityAnalysisState *tonal, AnalysisInfo *info_out, int
 
 void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *analysis_pcm,
                  int analysis_frame_size, int frame_size, int c1, int c2, int C, opus_int32 Fs,
-                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info, int complexity);
+                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info);
 
 #endif

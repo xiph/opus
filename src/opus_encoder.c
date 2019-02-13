@@ -1134,19 +1134,25 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
 #ifndef DISABLE_FLOAT_API
     analysis_info.valid = 0;
-    if (st->Fs>=16000)
+#ifdef FIXED_POINT
+    if (st->silk_mode.complexity >= 10 && st->Fs>=16000)
+#else
+    if (st->silk_mode.complexity >= 7 && st->Fs>=16000)
+#endif
     {
        is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
        analysis_read_pos_bak = st->analysis.read_pos;
        analysis_read_subframe_bak = st->analysis.read_subframe;
        run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
              c1, c2, analysis_channels, st->Fs,
-             lsb_depth, downmix, &analysis_info, st->silk_mode.complexity);
+             lsb_depth, downmix, &analysis_info);
 
        /* Track the peak signal energy */
        if (!is_silence && analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD)
           st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999f, 15), st->peak_signal_energy),
                 compute_frame_energy(pcm, frame_size, st->channels, st->arch));
+    } else if (st->analysis.initialized) {
+       OPUS_CLEAR(&st->analysis, 1);
     }
 #else
     (void)analysis_pcm;

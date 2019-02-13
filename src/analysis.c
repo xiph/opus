@@ -441,7 +441,7 @@ static int is_digital_silence32(const opus_val32* pcm, int frame_size, int chann
 #define is_digital_silence32(pcm, frame_size, channels, lsb_depth) is_digital_silence(pcm, frame_size, channels, lsb_depth)
 #endif
 
-static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix, int complexity)
+static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt_mode, const void *x, int len, int offset, int c1, int c2, int C, int lsb_depth, downmix_func downmix)
 {
     int i, b;
     const kiss_fft_state *kfft;
@@ -485,10 +485,10 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
     float layer_out[MAX_NEURONS];
     float below_max_pitch;
     float above_max_pitch;
-    int complexity_threshold;
     int is_silence;
     SAVE_STACK;
 
+    tonal->initialized = 1;
     alpha = 1.f/IMIN(10, 1+tonal->count);
     alphaE = 1.f/IMIN(25, 1+tonal->count);
     /* Noise floor related decay for bandwidth detection: -2.2 dB/second */
@@ -524,13 +524,11 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        tonal->write_pos-=DETECT_SIZE;
 
     is_silence = is_digital_silence32(tonal->inmem, ANALYSIS_BUF_SIZE, 1, lsb_depth);
-    complexity_threshold = 7;
-#ifdef FIXED_POINT
-    complexity_threshold = 10;
-#endif
-    if (complexity < complexity_threshold || is_silence)
+    if (is_silence)
     {
        info->valid = 0;
+       /* No need to copy zeros in the buffer, just pretend we did. */
+       tonal->mem_fill += len + 240 - ANALYSIS_BUF_SIZE;
        RESTORE_STACK;
        return;
     }
@@ -950,7 +948,7 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
 
 void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, const void *analysis_pcm,
                  int analysis_frame_size, int frame_size, int c1, int c2, int C, opus_int32 Fs,
-                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info, int complexity)
+                 int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info)
 {
    int offset;
    int pcm_len;
@@ -964,7 +962,7 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
       pcm_len = analysis_frame_size - analysis->analysis_offset;
       offset = analysis->analysis_offset;
       while (pcm_len>0) {
-         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(Fs/50, pcm_len), offset, c1, c2, C, lsb_depth, downmix, complexity);
+         tonality_analysis(analysis, celt_mode, analysis_pcm, IMIN(Fs/50, pcm_len), offset, c1, c2, C, lsb_depth, downmix);
          offset += Fs/50;
          pcm_len -= Fs/50;
       }
