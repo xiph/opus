@@ -1152,7 +1152,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999f, 15), st->peak_signal_energy),
                 compute_frame_energy(pcm, frame_size, st->channels, st->arch));
     } else if (st->analysis.initialized) {
-       OPUS_CLEAR(&st->analysis, 1);
+       tonality_analysis_reset(&st->analysis);
     }
 #else
     (void)analysis_pcm;

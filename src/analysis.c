@@ -524,14 +524,6 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
        tonal->write_pos-=DETECT_SIZE;
 
     is_silence = is_digital_silence32(tonal->inmem, ANALYSIS_BUF_SIZE, 1, lsb_depth);
-    if (is_silence)
-    {
-       info->valid = 0;
-       /* No need to copy zeros in the buffer, just pretend we did. */
-       tonal->mem_fill += len + 240 - ANALYSIS_BUF_SIZE;
-       RESTORE_STACK;
-       return;
-    }
 
     ALLOC(in, 480, kiss_fft_cpx);
     ALLOC(out, 480, kiss_fft_cpx);
@@ -551,6 +543,12 @@ static void tonality_analysis(TonalityAnalysisState *tonal, const CELTMode *celt
           &tonal->inmem[240], tonal->downmix_state, remaining,
           offset+ANALYSIS_BUF_SIZE-tonal->mem_fill, c1, c2, C, tonal->Fs);
     tonal->mem_fill = 240 + remaining;
+    if (is_silence)
+    {
+       info->valid = 0;
+       RESTORE_STACK;
+       return;
+    }
     opus_fft(kfft, in, out, tonal->arch);
 #ifndef FIXED_POINT
     /* If there's any NaN on the input, the entire output will be NaN, so we only need to check one value. */
