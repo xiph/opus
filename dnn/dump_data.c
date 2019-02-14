@@ -271,16 +271,18 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   //printf("%f %f\n", best_a/center_pitch, best_corr);
   //for (sub=2;sub<10;sub++) printf("%f %d %f\n", best_b + sub*best_a, best[sub], best_corr);
   for (sub=0;sub<4;sub++) {
-#if 0
+#if 1
     float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
     p *= 1 + modulation/16./7.*(2*sub-3);
     st->features[sub][2*NB_BANDS] = .02*(p-100);
-    st->features[sub][2*NB_BANDS + 1] = voiced ? 1 : -1;
+    //st->features[sub][2*NB_BANDS + 1] = voiced ? 1 : -1;
+    //if (frame_corr < .2) st->features[sub][2*NB_BANDS] = -2;
+    st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
 #else
     st->features[sub][2*NB_BANDS] = .01*(best[2+2*sub]+best[2+2*sub+1]-200);
     st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
 #endif
-    //printf("%f %d %f %f\n", st->features[sub][2*NB_BANDS], best[2+2*sub], best_corr, frame_corr);
+    //printf("%f %d %f\n", st->features[sub][2*NB_BANDS], best[2+2*sub], frame_corr);
   }
   //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
   RNN_COPY(&st->xc[0][0], &st->xc[8][0], PITCH_MAX_PERIOD);
