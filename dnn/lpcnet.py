@@ -153,6 +153,11 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, train
     gru_out2, _ = rnn2(Concatenate()([gru_out1, rep(cfeat)]))
     ulaw_prob = md(gru_out2)
     
+    rnn.trainable=False
+    rnn2.trainable=False
+    md.trainable=False
+    embed.Trainable=False
+    
     model = Model([pcm, feat, pitch], ulaw_prob)
     model.rnn_units1 = rnn_units1
     model.rnn_units2 = rnn_units2

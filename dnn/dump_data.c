@@ -51,6 +51,66 @@
 
 #define NB_FEATURES (2*NB_BANDS+3+LPC_ORDER)
 
+#include "ceps_codebooks.c"
+
+int vq_quantize(const float *codebook, int nb_entries, const float *x, int ndim, float *dist)
+{
+  int i, j;
+  float min_dist = 1e15;
+  int nearest = 0;
+  
+  for (i=0;i<nb_entries;i++)
+  {
+    float dist=0;
+    for (j=0;j<ndim;j++)
+      dist += (x[j]-codebook[i*ndim+j])*(x[j]-codebook[i*ndim+j]);
+    if (dist<min_dist)
+    {
+      min_dist = dist;
+      nearest = i;
+    }
+  }
+  if (dist)
+    *dist = min_dist;
+  return nearest;
+}
+
+#define NB_BANDS_1 (NB_BANDS - 1)
+float vq_mem[NB_BANDS_1];
+int quantize(float *x, float *mem)
+{
+    int i;
+    int id, id2;
+    float ref[NB_BANDS_1];
+    RNN_COPY(ref, x, NB_BANDS_1);
+    for (i=0;i<NB_BANDS_1;i++) {
+        x[i] -= 0.0f*mem[i];
+    }
+    id = vq_quantize(ceps_codebook1, 1024, x, NB_BANDS_1, NULL);
+    for (i=0;i<NB_BANDS_1;i++) {
+        x[i] -= ceps_codebook1[id*NB_BANDS_1 + i];
+    }
+    id2 = vq_quantize(ceps_codebook2, 1024, x, NB_BANDS_1, NULL);
+    for (i=0;i<NB_BANDS_1;i++) {
+        x[i] = ceps_codebook2[id2*NB_BANDS_1 + i];
+    }
+    for (i=0;i<NB_BANDS_1;i++) {
+        x[i] += ceps_codebook1[id*NB_BANDS_1 + i];
+    }
+    for (i=0;i<NB_BANDS_1;i++) {
+        x[i] += 0.0f*mem[i];
+        mem[i] = x[i];
+    }
+    if (0) {
+        float err = 0;
+        for (i=0;i<NB_BANDS_1;i++) {
+            err += (x[i]-ref[i])*(x[i]-ref[i]);
+        }
+        printf("%f\n", sqrt(err/NB_BANDS_1));
+    }
+    
+    return id;
+}
 
 typedef struct {
   float analysis_mem[OVERLAP_SIZE];
@@ -140,6 +200,7 @@ static void compute_frame_features(DenoiseState *st, const float *in) {
     E += Ex[i];
   }
   dct(st->features[st->pcount], Ly);
+  quantize(&st->features[st->pcount][1], vq_mem);
   st->features[st->pcount][0] -= 4;
   g = lpc_from_cepstrum(st->lpc, st->features[st->pcount]);
   st->features[st->pcount][2*NB_BANDS+2] = log10(g);
