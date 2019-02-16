@@ -484,26 +484,26 @@ int main(int argc, char **argv)
 
   for (i=0;i<nb_vectors-4;i++)
   {
-    for (j=0;j<ndim0;j++)
-      multi_data[MULTI*i*ndim+j] = data[(i+1)*ndim+j+1] - .5*(qdata[i*ndim+j+1]+qdata[(i+2)*ndim+j+1]);
-    for (j=0;j<ndim0;j++)
-      multi_data[(MULTI*i+1)*ndim+j] = data[(i+1)*ndim+j+1] - .5*(qdata[i*ndim+j+1]+qdata[(i+2)*ndim+j+1]);
-    for (j=0;j<ndim0;j++)
-      multi_data[(MULTI*i+2)*ndim+j] = data[(i+1)*ndim+j+1] - qdata[i*ndim+j+1];
-    for (j=0;j<ndim0;j++)
-      multi_data[(MULTI*i+3)*ndim+j] = data[(i+1)*ndim+j+1] - qdata[(i+2)*ndim+j+1];
+    for (j=0;j<ndim;j++)
+      multi_data[MULTI*i*ndim+j]     = data[(i+1)*ndim+j] - .5*(qdata[i*ndim+j]+qdata[(i+2)*ndim+j]);
+    for (j=0;j<ndim;j++)
+      multi_data[(MULTI*i+1)*ndim+j] = data[(i+1)*ndim+j] - .5*(qdata[i*ndim+j]+qdata[(i+2)*ndim+j]);
+    for (j=0;j<ndim;j++)
+      multi_data[(MULTI*i+2)*ndim+j] = data[(i+1)*ndim+j] - qdata[i*ndim+j];
+    for (j=0;j<ndim;j++)
+      multi_data[(MULTI*i+3)*ndim+j] = data[(i+1)*ndim+j] - qdata[(i+2)*ndim+j];
   }
 
   for (i=0;i<nb_vectors-4;i++)
   {
-    for (j=0;j<ndim0;j++)
-      multi_data2[MULTI*i*ndim+j] = data[(i+2)*ndim+j+1] - .5*(qdata[i*ndim+j+1]+qdata[(i+4)*ndim+j+1]);
-    for (j=0;j<ndim0;j++)
-      multi_data2[(MULTI*i+1)*ndim+j] = data[(i+2)*ndim+j+1] - .5*(qdata[i*ndim+j+1]+qdata[(i+4)*ndim+j+1]);
-    for (j=0;j<ndim0;j++)
-      multi_data2[(MULTI*i+2)*ndim+j] = data[(i+2)*ndim+j+1] - qdata[i*ndim+j+1];
-    for (j=0;j<ndim0;j++)
-      multi_data2[(MULTI*i+3)*ndim+j] = data[(i+2)*ndim+j+1] - qdata[(i+4)*ndim+j+1];
+    for (j=0;j<ndim;j++)
+      multi_data2[MULTI*i*ndim+j]     = data[(i+2)*ndim+j] - .5*(qdata[i*ndim+j]+qdata[(i+4)*ndim+j]);
+    for (j=0;j<ndim;j++)
+      multi_data2[(MULTI*i+1)*ndim+j] = data[(i+2)*ndim+j] - .5*(qdata[i*ndim+j]+qdata[(i+4)*ndim+j]);
+    for (j=0;j<ndim;j++)
+      multi_data2[(MULTI*i+2)*ndim+j] = data[(i+2)*ndim+j] - qdata[i*ndim+j];
+    for (j=0;j<ndim;j++)
+      multi_data2[(MULTI*i+3)*ndim+j] = data[(i+2)*ndim+j] - qdata[(i+4)*ndim+j];
   }
 
   vq_train_multi(multi_data2, nb_vectors-4, codebook_diff4, nb_entries, ndim);
