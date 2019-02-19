@@ -51,6 +51,10 @@
 
 #define NB_FEATURES (2*NB_BANDS+3+LPC_ORDER)
 
+#define MULTI 4
+#define MULTI_MASK (MULTI-1)
+
+
 #include "ceps_codebooks.c"
 
 int vq_quantize(const float *codebook, int nb_entries, const float *x, int ndim, float *dist)
@@ -76,16 +80,13 @@ int vq_quantize(const float *codebook, int nb_entries, const float *x, int ndim,
 }
 
 #define NB_BANDS_1 (NB_BANDS - 1)
-float vq_mem[NB_BANDS_1];
-int quantize(float *x, float *mem)
+float vq_mem[NB_BANDS];
+int quantize_2stage(float *x)
 {
     int i;
     int id, id2;
     float ref[NB_BANDS_1];
     RNN_COPY(ref, x, NB_BANDS_1);
-    for (i=0;i<NB_BANDS_1;i++) {
-        x[i] -= 0.0f*mem[i];
-    }
     id = vq_quantize(ceps_codebook1, 1024, x, NB_BANDS_1, NULL);
     for (i=0;i<NB_BANDS_1;i++) {
         x[i] -= ceps_codebook1[id*NB_BANDS_1 + i];
@@ -97,20 +98,71 @@ int quantize(float *x, float *mem)
     for (i=0;i<NB_BANDS_1;i++) {
         x[i] += ceps_codebook1[id*NB_BANDS_1 + i];
     }
-    for (i=0;i<NB_BANDS_1;i++) {
-        x[i] += 0.0f*mem[i];
-        mem[i] = x[i];
-    }
-    if (0) {
+    if (1) {
         float err = 0;
         for (i=0;i<NB_BANDS_1;i++) {
             err += (x[i]-ref[i])*(x[i]-ref[i]);
         }
-        printf("%f\n", sqrt(err/NB_BANDS_1));
+        printf("%f\n", sqrt(err/NB_BANDS));
     }
     
     return id;
 }
+
+static int find_nearest_multi(const float *codebook, int nb_entries, const float *x, int ndim, float *dist)
+{
+  int i, j;
+  float min_dist = 1e15;
+  int nearest = 0;
+
+  for (i=0;i<nb_entries;i++)
+  {
+    int offset;
+    float dist=0;
+    offset = (i&MULTI_MASK)*ndim;
+    for (j=0;j<ndim;j++)
+      dist += (x[offset+j]-codebook[i*ndim+j])*(x[offset+j]-codebook[i*ndim+j]);
+    if (dist<min_dist)
+    {
+      min_dist = dist;
+      nearest = i;
+    }
+  }
+  if (dist)
+    *dist = min_dist;
+  return nearest;
+}
+
+int quantize_diff(float *x, float *left, float *right, float *codebook, int bits)
+{
+    int i;
+    int nb_entries;
+    int id;
+    float ref[NB_BANDS];
+    float pred[4*NB_BANDS];
+    float target[4*NB_BANDS];
+    nb_entries = 1<<bits;
+    RNN_COPY(ref, x, NB_BANDS);
+    for (i=0;i<NB_BANDS;i++) pred[i] = pred[NB_BANDS+i] = .5*(left[i] + right[i]);
+    for (i=0;i<NB_BANDS;i++) pred[2*NB_BANDS+i] = left[i];
+    for (i=0;i<NB_BANDS;i++) pred[3*NB_BANDS+i] = right[i];
+    for (i=0;i<4*NB_BANDS;i++) target[i] = x[i%NB_BANDS] - pred[i];
+
+    id = find_nearest_multi(codebook, nb_entries, target, NB_BANDS, NULL);
+    for (i=0;i<NB_BANDS;i++) {
+      x[i] = pred[(id&MULTI_MASK)*NB_BANDS + i] + codebook[id*NB_BANDS + i];
+    }
+    if (1) {
+        float err = 0;
+        for (i=0;i<NB_BANDS;i++) {
+            err += (x[i]-ref[i])*(x[i]-ref[i]);
+        }
+        printf("%f\n", sqrt(err/NB_BANDS));
+    }
+    
+    return id;
+}
+
 
 typedef struct {
   float analysis_mem[OVERLAP_SIZE];
@@ -200,7 +252,6 @@ static void compute_frame_features(DenoiseState *st, const float *in) {
     E += Ex[i];
   }
   dct(st->features[st->pcount], Ly);
-  quantize(&st->features[st->pcount][1], vq_mem);
   st->features[st->pcount][0] -= 4;
   g = lpc_from_cepstrum(st->lpc, st->features[st->pcount]);
   st->features[st->pcount][2*NB_BANDS+2] = log10(g);
@@ -348,6 +399,14 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
   RNN_COPY(&st->xc[0][0], &st->xc[8][0], PITCH_MAX_PERIOD);
   RNN_COPY(&st->xc[1][0], &st->xc[9][0], PITCH_MAX_PERIOD);
+  //printf("%f\n", st->features[3][0]);
+  st->features[3][0] = floor(.5 + st->features[3][0]*5)/5;
+  quantize_2stage(&st->features[3][1]);
+  quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 10);
+  //quantize_2stage(&st->features[1][1]);
+  quantize_diff(&st->features[0][0], vq_mem, &st->features[1][0], ceps_codebook_diff2, 6);
+  quantize_diff(&st->features[2][0], &st->features[1][0], &st->features[3][0], ceps_codebook_diff2, 6);
+  RNN_COPY(vq_mem, &st->features[3][0], NB_BANDS);
   for (i=0;i<4;i++) {
     fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
   }
