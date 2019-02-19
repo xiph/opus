@@ -91,7 +91,7 @@ int quantize_2stage(float *x)
     for (i=0;i<NB_BANDS_1;i++) {
         x[i] -= ceps_codebook1[id*NB_BANDS_1 + i];
     }
-    id2 = vq_quantize(ceps_codebook2, 1024, x, NB_BANDS_1, NULL);
+    id2 = vq_quantize(ceps_codebook2, 256, x, NB_BANDS_1, NULL);
     for (i=0;i<NB_BANDS_1;i++) {
         x[i] = ceps_codebook2[id2*NB_BANDS_1 + i];
     }
@@ -109,7 +109,7 @@ int quantize_2stage(float *x)
     return id;
 }
 
-static int find_nearest_multi(const float *codebook, int nb_entries, const float *x, int ndim, float *dist)
+static int find_nearest_multi(const float *codebook, int nb_entries, const float *x, int ndim, float *dist, int sign)
 {
   int i, j;
   float min_dist = 1e15;
@@ -128,12 +128,28 @@ static int find_nearest_multi(const float *codebook, int nb_entries, const float
       nearest = i;
     }
   }
+  if (sign) {
+    for (i=0;i<nb_entries;i++)
+    {
+      int offset;
+      float dist=0;
+      offset = (i&MULTI_MASK)*ndim;
+      for (j=0;j<ndim;j++)
+        dist += (x[offset+j]+codebook[i*ndim+j])*(x[offset+j]+codebook[i*ndim+j]);
+      if (dist<min_dist)
+      {
+        min_dist = dist;
+        nearest = i+nb_entries;
+      }
+    }
+  }
   if (dist)
     *dist = min_dist;
   return nearest;
 }
 
-int quantize_diff(float *x, float *left, float *right, float *codebook, int bits)
+
+int quantize_diff(float *x, float *left, float *right, float *codebook, int bits, int sign)
 {
     int i;
     int nb_entries;
@@ -141,6 +157,7 @@ int quantize_diff(float *x, float *left, float *right, float *codebook, int bits
     float ref[NB_BANDS];
     float pred[4*NB_BANDS];
     float target[4*NB_BANDS];
+    float s = 1;
     nb_entries = 1<<bits;
     RNN_COPY(ref, x, NB_BANDS);
     for (i=0;i<NB_BANDS;i++) pred[i] = pred[NB_BANDS+i] = .5*(left[i] + right[i]);
@@ -148,9 +165,13 @@ int quantize_diff(float *x, float *left, float *right, float *codebook, int bits
     for (i=0;i<NB_BANDS;i++) pred[3*NB_BANDS+i] = right[i];
     for (i=0;i<4*NB_BANDS;i++) target[i] = x[i%NB_BANDS] - pred[i];
 
-    id = find_nearest_multi(codebook, nb_entries, target, NB_BANDS, NULL);
+    id = find_nearest_multi(codebook, nb_entries, target, NB_BANDS, NULL, sign);
+    if (id >= 1<<bits) {
+      s = -1;
+      id -= (1<<bits);
+    }
     for (i=0;i<NB_BANDS;i++) {
-      x[i] = pred[(id&MULTI_MASK)*NB_BANDS + i] + codebook[id*NB_BANDS + i];
+      x[i] = pred[(id&MULTI_MASK)*NB_BANDS + i] + s*codebook[id*NB_BANDS + i];
     }
     if (1) {
         float err = 0;
@@ -402,10 +423,10 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   //printf("%f\n", st->features[3][0]);
   st->features[3][0] = floor(.5 + st->features[3][0]*5)/5;
   quantize_2stage(&st->features[3][1]);
-  quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 10);
+  quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 11, 1);
   //quantize_2stage(&st->features[1][1]);
-  quantize_diff(&st->features[0][0], vq_mem, &st->features[1][0], ceps_codebook_diff2, 6);
-  quantize_diff(&st->features[2][0], &st->features[1][0], &st->features[3][0], ceps_codebook_diff2, 6);
+  quantize_diff(&st->features[0][0], vq_mem, &st->features[1][0], ceps_codebook_diff2, 8, 0);
+  quantize_diff(&st->features[2][0], &st->features[1][0], &st->features[3][0], ceps_codebook_diff2, 8, 0);
   RNN_COPY(vq_mem, &st->features[3][0], NB_BANDS);
   for (i=0;i<4;i++) {
     fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);

@@ -51,7 +51,7 @@ int find_nearest(const float *codebook, int nb_entries, const float *x, int ndim
   return nearest;
 }
 
-int find_nearest_multi(const float *codebook, int nb_entries, const float *x, int ndim, float *dist)
+int find_nearest_multi(const float *codebook, int nb_entries, const float *x, int ndim, float *dist, int sign)
 {
   int i, j;
   float min_dist = 1e15;
@@ -68,6 +68,21 @@ int find_nearest_multi(const float *codebook, int nb_entries, const float *x, in
     {
       min_dist = dist;
       nearest = i;
+    }
+  }
+  if (sign) {
+    for (i=0;i<nb_entries;i++)
+    {
+      int offset;
+      float dist=0;
+      offset = (i&MULTI_MASK)*ndim;
+      for (j=0;j<ndim;j++)
+        dist += (x[offset+j]+codebook[i*ndim+j])*(x[offset+j]+codebook[i*ndim+j]);
+      if (dist<min_dist)
+      {
+        min_dist = dist;
+        nearest = i+nb_entries;
+      }
     }
   }
   if (dist)
@@ -231,7 +246,7 @@ void update(float *data, int nb_vectors, float *codebook, int nb_entries, int nd
   //fprintf(stderr, "%f / %d\n", 1./w2, nb_entries);
 }
 
-void update_multi(float *data, int nb_vectors, float *codebook, int nb_entries, int ndim)
+void update_multi(float *data, int nb_vectors, float *codebook, int nb_entries, int ndim, int sign)
 {
   int i,j;
   int count[nb_entries];
@@ -244,7 +259,7 @@ void update_multi(float *data, int nb_vectors, float *codebook, int nb_entries, 
   for (i=0;i<nb_vectors;i++)
   {
     float dist;
-    nearest[i] = find_nearest_multi(codebook, nb_entries, data+MULTI*i*ndim, ndim, &dist);
+    nearest[i] = find_nearest_multi(codebook, nb_entries, data+MULTI*i*ndim, ndim, &dist, sign);
     err += dist;
   }
   printf("RMS error = %f\n", sqrt(err/nb_vectors/ndim));
@@ -253,10 +268,11 @@ void update_multi(float *data, int nb_vectors, float *codebook, int nb_entries, 
 
   for (i=0;i<nb_vectors;i++)
   {
-    int n = nearest[i];
+    int n = nearest[i] % nb_entries;
+    float sign = nearest[i] < nb_entries ? 1 : -1;
     count[n]++;
     for (j=0;j<ndim;j++)
-      codebook[n*ndim+j] += data[(MULTI*i + (n&MULTI_MASK))*ndim+j];
+      codebook[n*ndim+j] += sign*data[(MULTI*i + (n&MULTI_MASK))*ndim+j];
   }
 
   float w2=0;
@@ -334,11 +350,11 @@ void vq_train(float *data, int nb_vectors, float *codebook, int nb_entries, int 
     for (j=0;j<4;j++)
       update(data, nb_vectors, codebook, e, ndim);
   }
-  for (j=0;j<ndim*2;j++)
+  for (j=0;j<10;j++)
     update(data, nb_vectors, codebook, e, ndim);
 }
 
-void vq_train_multi(float *data, int nb_vectors, float *codebook, int nb_entries, int ndim)
+void vq_train_multi(float *data, int nb_vectors, float *codebook, int nb_entries, int ndim, int sign)
 {
   int i, j, e;
   for (e=0;e<MULTI;e++) {
@@ -355,7 +371,7 @@ void vq_train_multi(float *data, int nb_vectors, float *codebook, int nb_entries
   }
   e = MULTI;
   for (j=0;j<10;j++)
-    update_multi(data, nb_vectors, codebook, e, ndim);
+    update_multi(data, nb_vectors, codebook, e, ndim, sign);
 
   while (e < nb_entries)
   {
@@ -363,10 +379,10 @@ void vq_train_multi(float *data, int nb_vectors, float *codebook, int nb_entries
     e<<=1;
     fprintf(stderr, "%d\n", e);
     for (j=0;j<4;j++)
-      update_multi(data, nb_vectors, codebook, e, ndim);
+      update_multi(data, nb_vectors, codebook, e, ndim, sign);
   }
-  for (j=0;j<ndim*2;j++)
-    update_multi(data, nb_vectors, codebook, e, ndim);
+  for (j=0;j<10;j++)
+    update_multi(data, nb_vectors, codebook, e, ndim, sign);
 }
 
 
@@ -402,7 +418,7 @@ void vq_train_weighted(float *data, float *weight, int nb_vectors, float *codebo
 int main(int argc, char **argv)
 {
   int i,j;
-  int nb_vectors, nb_entries, nb_entries2, ndim, ndim0, total_dim;
+  int nb_vectors, nb_entries, nb_entries1, nb_entries2a, nb_entries2b, ndim, ndim0, total_dim;
   float *data, *pred, *multi_data, *multi_data2, *qdata;
   float *codebook, *codebook2, *codebook_diff2, *codebook_diff4;
   float *delta;
@@ -414,7 +430,9 @@ int main(int argc, char **argv)
   total_dim = atoi(argv[2]);
   nb_vectors = atoi(argv[3]);
   nb_entries = 1<<atoi(argv[4]);
-  nb_entries2 = 64;
+  nb_entries1 = 256;
+  nb_entries2a = 2048;
+  nb_entries2b = 256;
   
   data = malloc((nb_vectors*ndim+total_dim)*sizeof(*data));
   qdata = malloc((nb_vectors*ndim+total_dim)*sizeof(*qdata));
@@ -422,9 +440,9 @@ int main(int argc, char **argv)
   multi_data = malloc(MULTI*nb_vectors*ndim*sizeof(*multi_data));
   multi_data2 = malloc(MULTI*nb_vectors*ndim*sizeof(*multi_data));
   codebook = malloc(nb_entries*ndim0*sizeof(*codebook));
-  codebook2 = malloc(nb_entries*ndim0*sizeof(*codebook2));
-  codebook_diff4 = malloc(nb_entries*ndim*sizeof(*codebook_diff4));
-  codebook_diff2 = malloc(nb_entries2*ndim*sizeof(*codebook_diff2));
+  codebook2 = malloc(nb_entries1*ndim0*sizeof(*codebook2));
+  codebook_diff4 = malloc(nb_entries2a*ndim*sizeof(*codebook_diff4));
+  codebook_diff2 = malloc(nb_entries2b*ndim*sizeof(*codebook_diff2));
   
   for (i=0;i<nb_vectors;i++)
   {
@@ -465,13 +483,13 @@ int main(int argc, char **argv)
   }
   fprintf(stderr, "Cepstrum RMS error: %f\n", sqrt(err/nb_vectors/ndim));
 
-  vq_train(delta, nb_vectors, codebook2, nb_entries, ndim0);
+  vq_train(delta, nb_vectors, codebook2, nb_entries1, ndim0);
   
   err=0;
   for (i=0;i<nb_vectors;i++)
   {
     int n1;
-    n1 = find_nearest(codebook2, nb_entries, &delta[i*ndim0], ndim0, NULL);
+    n1 = find_nearest(codebook2, nb_entries1, &delta[i*ndim0], ndim0, NULL);
     for (j=0;j<ndim0;j++)
     {
       qdata[i*ndim+j+1] += codebook2[n1*ndim0+j];
@@ -506,10 +524,10 @@ int main(int argc, char **argv)
       multi_data2[(MULTI*i+3)*ndim+j] = data[(i+2)*ndim+j] - qdata[(i+4)*ndim+j];
   }
 
-  vq_train_multi(multi_data2, nb_vectors-4, codebook_diff4, nb_entries, ndim);
+  vq_train_multi(multi_data2, nb_vectors-4, codebook_diff4, nb_entries2a, ndim, 1);
 
   printf("done\n");
-  vq_train_multi(multi_data, nb_vectors-4, codebook_diff2, 64, ndim);
+  vq_train_multi(multi_data, nb_vectors-4, codebook_diff2, nb_entries2b, ndim, 0);
 
 
   fout = fopen("ceps_codebooks.c", "w");
@@ -524,8 +542,8 @@ int main(int argc, char **argv)
   }
   fprintf(fout, "};\n\n");
 
-  fprintf(fout, "float ceps_codebook2[%d*%d] = {\n",nb_entries, ndim0);
-  for (i=0;i<nb_entries;i++)
+  fprintf(fout, "float ceps_codebook2[%d*%d] = {\n",nb_entries1, ndim0);
+  for (i=0;i<nb_entries1;i++)
   {
     for (j=0;j<ndim0;j++)
       fprintf(fout, "%f, ", codebook2[i*ndim0+j]);
@@ -533,8 +551,8 @@ int main(int argc, char **argv)
   }
   fprintf(fout, "};\n\n");
 
-  fprintf(fout, "float ceps_codebook_diff4[%d*%d] = {\n",nb_entries, ndim);
-  for (i=0;i<nb_entries;i++)
+  fprintf(fout, "float ceps_codebook_diff4[%d*%d] = {\n",nb_entries2a, ndim);
+  for (i=0;i<nb_entries2a;i++)
   {
     for (j=0;j<ndim;j++)
       fprintf(fout, "%f, ", codebook_diff4[i*ndim+j]);
@@ -542,8 +560,8 @@ int main(int argc, char **argv)
   }
   fprintf(fout, "};\n\n");
 
-  fprintf(fout, "float ceps_codebook_diff2[%d*%d] = {\n",nb_entries2, ndim);
-  for (i=0;i<nb_entries2;i++)
+  fprintf(fout, "float ceps_codebook_diff2[%d*%d] = {\n",nb_entries2b, ndim);
+  for (i=0;i<nb_entries2b;i++)
   {
     for (j=0;j<ndim;j++)
       fprintf(fout, "%f, ", codebook_diff2[i*ndim+j]);
