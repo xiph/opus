@@ -84,19 +84,20 @@ float vq_mem[NB_BANDS];
 int quantize_2stage(float *x)
 {
     int i;
-    int id, id2;
+    int id, id2, id3;
     float ref[NB_BANDS_1];
     RNN_COPY(ref, x, NB_BANDS_1);
     id = vq_quantize(ceps_codebook1, 1024, x, NB_BANDS_1, NULL);
     for (i=0;i<NB_BANDS_1;i++) {
         x[i] -= ceps_codebook1[id*NB_BANDS_1 + i];
     }
-    id2 = vq_quantize(ceps_codebook2, 256, x, NB_BANDS_1, NULL);
+    id2 = vq_quantize(ceps_codebook2, 1024, x, NB_BANDS_1, NULL);
     for (i=0;i<NB_BANDS_1;i++) {
-        x[i] = ceps_codebook2[id2*NB_BANDS_1 + i];
+        x[i] -= ceps_codebook2[id2*NB_BANDS_1 + i];
     }
+    id3 = vq_quantize(ceps_codebook3, 1024, x, NB_BANDS_1, NULL);
     for (i=0;i<NB_BANDS_1;i++) {
-        x[i] += ceps_codebook1[id*NB_BANDS_1 + i];
+        x[i] = ceps_codebook1[id*NB_BANDS_1 + i] + ceps_codebook2[id2*NB_BANDS_1 + i] + ceps_codebook3[id3*NB_BANDS_1 + i];
     }
     if (1) {
         float err = 0;
@@ -182,6 +183,41 @@ int quantize_diff(float *x, float *left, float *right, float *codebook, int bits
     }
     
     return id;
+}
+
+void interp_diff(float *x, float *left, float *right, float *codebook, int bits, int sign)
+{
+    int i, k;
+    float min_dist = 1e15;
+    int best_pred = 0;
+    float ref[NB_BANDS];
+    float pred[4*NB_BANDS];
+    (void)sign;
+    (void)codebook;
+    (void)bits;
+    RNN_COPY(ref, x, NB_BANDS);
+    for (i=0;i<NB_BANDS;i++) pred[i] = pred[NB_BANDS+i] = .5*(left[i] + right[i]);
+    for (i=0;i<NB_BANDS;i++) pred[2*NB_BANDS+i] = left[i];
+    for (i=0;i<NB_BANDS;i++) pred[3*NB_BANDS+i] = right[i];
+
+    for (k=1;k<4;k++) {
+      float dist = 0;
+      for (i=0;i<NB_BANDS;i++) dist += (x[i] - pred[k*NB_BANDS+i])*(x[i] - pred[k*NB_BANDS+i]);
+      if (dist < min_dist) {
+        min_dist = dist;
+        best_pred = k;
+      }
+    }
+    for (i=0;i<NB_BANDS;i++) {
+      x[i] = pred[best_pred*NB_BANDS + i];
+    }
+    if (1) {
+        float err = 0;
+        for (i=0;i<NB_BANDS;i++) {
+            err += (x[i]-ref[i])*(x[i]-ref[i]);
+        }
+        printf("%f\n", sqrt(err/NB_BANDS));
+    }
 }
 
 
@@ -380,7 +416,7 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
     sxy += w*sub*best[sub];
     sy += w*best[sub];
   }
-  voiced = frame_corr > .3;
+  voiced = frame_corr >= .3;
   /* Linear regression to figure out the pitch contour. */
   best_a = (sw*sxy - sx*sy)/(sw*sxx - sx*sx);
   if (voiced) {
@@ -389,8 +425,10 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
     /* Allow a relative variation of up to 1/4 over 8 sub-frames. */
     max_a = mean_pitch/32;
     best_a = MIN16(max_a, MAX16(-max_a, best_a));
+    frame_corr = 0.3875f + .175f*floor((frame_corr-.3f)/.175f);
   } else {
     best_a = 0;
+    frame_corr = 0.0375f + .075f*floor(frame_corr/.075f);
   }
   //best_b = (sxx*sy - sx*sxy)/(sw*sxx - sx*sx);
   best_b = (sy - best_a*sx)/sw;
@@ -425,8 +463,8 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   quantize_2stage(&st->features[3][1]);
   quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 11, 1);
   //quantize_2stage(&st->features[1][1]);
-  quantize_diff(&st->features[0][0], vq_mem, &st->features[1][0], ceps_codebook_diff2, 8, 0);
-  quantize_diff(&st->features[2][0], &st->features[1][0], &st->features[3][0], ceps_codebook_diff2, 8, 0);
+  interp_diff(&st->features[0][0], vq_mem, &st->features[1][0], ceps_codebook_diff2, 6, 0);
+  interp_diff(&st->features[2][0], &st->features[1][0], &st->features[3][0], ceps_codebook_diff2, 6, 0);
   RNN_COPY(vq_mem, &st->features[3][0], NB_BANDS);
   for (i=0;i<4;i++) {
     fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
