@@ -142,7 +142,7 @@ int quantize_2stage(float *x)
 }
 
 
-int quantize_3stage_mbest(float *x)
+int quantize_3stage_mbest(float *x, int entry[3])
 {
     int i, k;
     int id, id2, id3;
@@ -227,9 +227,9 @@ int quantize_3stage_mbest(float *x)
         }
       }
     }
-    id = index3[0][0];
-    id2 = index3[0][1];
-    id3 = index3[0][2];
+    entry[0] = id = index3[0][0];
+    entry[1] = id2 = index3[0][1];
+    entry[2] = id3 = index3[0][2];
     //printf("%f ", glob_dist[0]);
     for (i=0;i<NB_BANDS_1;i++) {
         x[i] -= ceps_codebook1[id*NB_BANDS_1 + i];
@@ -292,7 +292,7 @@ static int find_nearest_multi(const float *codebook, int nb_entries, const float
 }
 
 
-int quantize_diff(float *x, float *left, float *right, float *codebook, int bits, int sign)
+int quantize_diff(float *x, float *left, float *right, float *codebook, int bits, int sign, int *entry)
 {
     int i;
     int nb_entries;
@@ -309,6 +309,7 @@ int quantize_diff(float *x, float *left, float *right, float *codebook, int bits
     for (i=0;i<4*NB_BANDS;i++) target[i] = x[i%NB_BANDS] - pred[i];
 
     id = find_nearest_multi(codebook, nb_entries, target, NB_BANDS, NULL, sign);
+    *entry = id;
     if (id >= 1<<bits) {
       s = -1;
       id -= (1<<bits);
@@ -391,12 +392,11 @@ void interp_diff(float *x, float *left, float *right, float *codebook, int bits,
 
 int double_interp_search(const float features[4][NB_FEATURES], const float *mem) {
     int i, j;
-    int id0, id1;
     int best_id=0;
     float min_dist = 1e15;
     float dist[2][3];
-    id0 = interp_search(features[0], mem, features[1], dist[0]);
-    id1 = interp_search(features[2], features[1], features[3], dist[1]);
+    interp_search(features[0], mem, features[1], dist[0]);
+    interp_search(features[2], features[1], features[3], dist[1]);
     for (i=0;i<3;i++) {
         for (j=0;j<3;j++) {
             float d;
@@ -591,7 +591,7 @@ static void compute_frame_features(DenoiseState *st, const float *in) {
   }
 }
 
-static void process_superframe(DenoiseState *st, FILE *ffeat) {
+static void process_superframe(DenoiseState *st, FILE *ffeat, int encode) {
   int i;
   int sub;
   int best_i;
@@ -607,6 +607,10 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   float center_pitch;
   int main_pitch;
   int modulation;
+  int c0_id;
+  int vq_end[3];
+  int vq_mid;
+  int corr_id = 0;
   for(sub=0;sub<8;sub++) frame_weight_sum += st->frame_weight[2+sub];
   for(sub=0;sub<8;sub++) st->frame_weight[2+sub] *= (8.f/frame_weight_sum);
   for(sub=0;sub<8;sub++) {
@@ -650,6 +654,7 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
     best_i = pitch_prev[sub][best_i];
   }
   frame_corr /= 8;
+  if (frame_corr < 0) frame_corr = 0;
   for (sub=0;sub<8;sub++) {
     //printf("%d %f\n", best[2+sub], frame_corr);
   }
@@ -671,10 +676,12 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
     /* Allow a relative variation of up to 1/4 over 8 sub-frames. */
     max_a = mean_pitch/32;
     best_a = MIN16(max_a, MAX16(-max_a, best_a));
-    frame_corr = 0.3875f + .175f*floor((frame_corr-.3f)/.175f);
+    corr_id = (int)floor((frame_corr-.3f)/.175f);
+    frame_corr = 0.3875f + .175f*corr_id;
   } else {
     best_a = 0;
-    frame_corr = 0.0375f + .075f*floor(frame_corr/.075f);
+    corr_id = (int)floor(frame_corr/.075f);
+    frame_corr = 0.0375f + .075f*corr_id;
   }
   //best_b = (sxx*sy - sx*sxy)/(sw*sxx - sx*sx);
   best_b = (sy - best_a*sx)/sw;
@@ -705,10 +712,11 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   RNN_COPY(&st->xc[0][0], &st->xc[8][0], PITCH_MAX_PERIOD);
   RNN_COPY(&st->xc[1][0], &st->xc[9][0], PITCH_MAX_PERIOD);
   //printf("%f\n", st->features[3][0]);
-  st->features[3][0] = floor(.5 + st->features[3][0]*5)/5;
-  quantize_3stage_mbest(&st->features[3][1]);
+  c0_id = (int)floor(.5 + st->features[3][0]*5);
+  st->features[3][0] = c0_id/5.;
+  quantize_3stage_mbest(&st->features[3][1], vq_end);
   /*perform_interp_relaxation(st->features, vq_mem);*/
-  quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 11, 1);
+  quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 11, 1, &vq_mid);
 #if 0
   interp_diff(&st->features[0][0], vq_mem, &st->features[1][0], ceps_codebook_diff2, 6, 0);
   interp_diff(&st->features[2][0], &st->features[1][0], &st->features[3][0], ceps_codebook_diff2, 6, 0);
@@ -718,8 +726,12 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
 #endif
   //printf("\n");
   RNN_COPY(vq_mem, &st->features[3][0], NB_BANDS);
-  for (i=0;i<4;i++) {
-    fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
+  if (encode) {
+    fprintf(ffeat, "%d %d %d %d %d %d %d %d %d\n", c0_id, main_pitch, voiced ? modulation : -4, corr_id, vq_end[0], vq_end[1], vq_end[2], vq_mid, interp_id);
+  } else {
+    for (i=0;i<4;i++) {
+      fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
+    }
   }
 }
 
@@ -811,9 +823,14 @@ int main(int argc, char **argv) {
   DenoiseState *st;
   float noise_std=0;
   int training = -1;
+  int encode = 0;
   st = rnnoise_create();
   if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
   if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
+  if (argc == 4 && strcmp(argv[1], "-encode")==0) {
+      training = 0;
+      encode = 1;
+  }
   if (training == -1) {
     fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv[0]);
     fprintf(stderr, "  or   %s -test <speech> <features out>\n", argv[0]);
@@ -890,7 +907,7 @@ int main(int argc, char **argv) {
     st->pcount++;
     /* Running on groups of 4 frames. */
     if (st->pcount == 4) {
-      process_superframe(st, ffeat);
+      process_superframe(st, ffeat, encode);
       st->pcount = 0;
     }
 
