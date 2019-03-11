@@ -292,15 +292,37 @@ static void single_interp(float *x, const float *left, const float *right, int i
     }
 }
 
-void perform_double_interp(float features[4][NB_FEATURES], const float *mem) {
+void perform_double_interp(float features[4][NB_FEATURES], const float *mem, int best_id) {
     int id0, id1;
-    int best_id;
-    best_id = double_interp_search(features, mem);
     best_id += (best_id >= FORBIDDEN_INTERP);
     id0 = best_id / 3;
     id1 = best_id % 3;
     single_interp(features[0], mem, features[1], id0);
     single_interp(features[2], features[1], features[3], id1);
+}
+
+void perform_interp_relaxation(float features[4][NB_FEATURES], const float *mem) {
+    int id0, id1;
+    int best_id;
+    int i;
+    float count, count_1;
+    best_id = double_interp_search(features, mem);
+    best_id += (best_id >= FORBIDDEN_INTERP);
+    id0 = best_id / 3;
+    id1 = best_id % 3;
+    count = 1;
+    if (id0 != 1) {
+        float t = (id0==0) ? .5 : 1.;
+        for (i=0;i<NB_BANDS;i++) features[1][i] += t*features[0][i];
+        count += t;
+    }
+    if (id1 != 2) {
+        float t = (id1==0) ? .5 : 1.;
+        for (i=0;i<NB_BANDS;i++) features[1][i] += t*features[2][i];
+        count += t;
+    }
+    count_1 = 1.f/count;
+    for (i=0;i<NB_BANDS;i++) features[1][i] *= count_1;
 }
 
 typedef struct {
@@ -543,14 +565,14 @@ static void process_superframe(DenoiseState *st, FILE *ffeat) {
   //printf("%f\n", st->features[3][0]);
   st->features[3][0] = floor(.5 + st->features[3][0]*5)/5;
   quantize_2stage(&st->features[3][1]);
+  /*perform_interp_relaxation(st->features, vq_mem);*/
   quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 11, 1);
-  double_interp_search(st->features, vq_mem);
-  //quantize_2stage(&st->features[1][1]);
 #if 0
   interp_diff(&st->features[0][0], vq_mem, &st->features[1][0], ceps_codebook_diff2, 6, 0);
   interp_diff(&st->features[2][0], &st->features[1][0], &st->features[3][0], ceps_codebook_diff2, 6, 0);
 #else
-  perform_double_interp(st->features, vq_mem);
+  int interp_id = double_interp_search(st->features, vq_mem);
+  perform_double_interp(st->features, vq_mem, interp_id);
 #endif
   //printf("\n");
   RNN_COPY(vq_mem, &st->features[3][0], NB_BANDS);
