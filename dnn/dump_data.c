@@ -721,6 +721,11 @@ static void process_superframe(DenoiseState *st, FILE *ffeat, int encode, int qu
     interp_id = double_interp_search(st->features, vq_mem);
     perform_double_interp(st->features, vq_mem, interp_id);
   }
+  for (sub=0;sub<4;sub++) {
+    float g = lpc_from_cepstrum(st->lpc, st->features[sub]);
+    st->features[sub][2*NB_BANDS+2] = log10(g);
+    for (i=0;i<LPC_ORDER;i++) st->features[sub][2*NB_BANDS+3+i] = st->lpc[i];
+  }
   //printf("\n");
   RNN_COPY(vq_mem, &st->features[3][0], NB_BANDS);
   if (encode) {
@@ -820,16 +825,23 @@ static void rand_resp(float *a, float *b) {
   b[1] = .75*uni_rand();
 }
 
-void write_audio(DenoiseState *st, const short *pcm, float noise_std, FILE *file) {
+void compute_noise(int *noise, float noise_std) {
   int i;
+  for (i=0;i<FRAME_SIZE;i++) {
+    noise[i] = (int)floor(.5 + noise_std*.707*(log_approx((float)rand()/RAND_MAX)-log_approx((float)rand()/RAND_MAX)));
+  }
+}
+
+void write_audio(DenoiseState *st, const short *pcm, const int *noise, FILE *file) {
+  int i, k;
+  for (k=0;k<4;k++) {
   unsigned char data[4*FRAME_SIZE];
   for (i=0;i<FRAME_SIZE;i++) {
-    int noise;
     float p=0;
     float e;
     int j;
-    for (j=0;j<LPC_ORDER;j++) p -= st->lpc[j]*st->sig_mem[j];
-    e = lin2ulaw(pcm[i] - p);
+    for (j=0;j<LPC_ORDER;j++) p -= st->features[k][2*NB_BANDS+3+j]*st->sig_mem[j];
+    e = lin2ulaw(pcm[k*FRAME_SIZE+i] - p);
     /* Signal. */
     data[4*i] = lin2ulaw(st->sig_mem[0]);
     /* Prediction. */
@@ -839,8 +851,7 @@ void write_audio(DenoiseState *st, const short *pcm, float noise_std, FILE *file
     /* Excitation out. */
     data[4*i+3] = e;
     /* Simulate error on excitation. */
-    noise = (int)floor(.5 + noise_std*.707*(log_approx((float)rand()/RAND_MAX)-log_approx((float)rand()/RAND_MAX)));
-    e += noise;
+    e += noise[k*FRAME_SIZE+i];
     e = IMIN(255, IMAX(0, e));
     
     RNN_MOVE(&st->sig_mem[1], &st->sig_mem[0], LPC_ORDER-1);
@@ -848,6 +859,7 @@ void write_audio(DenoiseState *st, const short *pcm, float noise_std, FILE *file
     st->exc_mem = e;
   }
   fwrite(data, 4*FRAME_SIZE, 1, file);
+  }
 }
 
 int main(int argc, char **argv) {
@@ -866,6 +878,8 @@ int main(int argc, char **argv) {
   FILE *ffeat;
   FILE *fpcm=NULL;
   short pcm[FRAME_SIZE]={0};
+  short pcmbuf[FRAME_SIZE*4]={0};
+  int noisebuf[FRAME_SIZE*4]={0};
   short tmp[FRAME_SIZE] = {0};
   float savedX[FRAME_SIZE] = {0};
   float speech_gain=1;
@@ -980,17 +994,21 @@ int main(int argc, char **argv) {
       x[i] *= g;
     }
     for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
+    /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
+    for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
     compute_frame_features(st, x);
+
+    RNN_COPY(&pcmbuf[st->pcount*FRAME_SIZE], pcm, FRAME_SIZE);
+    if (fpcm) {
+        compute_noise(&noisebuf[st->pcount*FRAME_SIZE], noise_std);
+    }
     st->pcount++;
     /* Running on groups of 4 frames. */
     if (st->pcount == 4) {
       process_superframe(st, ffeat, encode, quantize);
+      if (fpcm) write_audio(st, pcmbuf, noisebuf, fpcm);
       st->pcount = 0;
     }
-
-    /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
-    for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
-    if (fpcm) write_audio(st, pcm, noise_std, fpcm);
     //if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
     for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);
     old_speech_gain = speech_gain;
