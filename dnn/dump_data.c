@@ -735,6 +735,60 @@ static void process_superframe(DenoiseState *st, FILE *ffeat, int encode) {
   }
 }
 
+void decode_packet(FILE *ffeat, int c0_id, int main_pitch, int modulation, int corr_id, int vq_end[3], int vq_mid, int interp_id)
+{
+  int i;
+  int sub;
+  int voiced = 1;
+  float frame_corr;
+  float features[4][NB_FEATURES];
+  for (i=0;i<4;i++) RNN_CLEAR(&features[i][0], NB_FEATURES);
+
+  if (modulation==-4) {
+    voiced = 0;
+    modulation = 0;
+  }
+  if (voiced) {
+    frame_corr = 0.3875f + .175f*corr_id;
+  } else {
+    frame_corr = 0.0375f + .075f*corr_id;
+  }
+  for (sub=0;sub<4;sub++) {
+    float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
+    p *= 1 + modulation/16./7.*(2*sub-3);
+    features[sub][2*NB_BANDS] = .02*(p-100);
+    features[sub][2*NB_BANDS + 1] = frame_corr-.5;
+  }
+  
+  features[3][0] = c0_id/5.;
+  for (i=0;i<NB_BANDS_1;i++) {
+    features[3][i+1] = ceps_codebook1[vq_end[0]*NB_BANDS_1 + i] + ceps_codebook2[vq_end[1]*NB_BANDS_1 + i] + ceps_codebook3[vq_end[2]*NB_BANDS_1 + i];
+  }
+
+  float sign = 1;
+  if (vq_mid >= 2048) {
+    vq_mid -= 2048;
+    sign = -1;
+  }
+  for (i=0;i<NB_BANDS;i++) {
+    features[1][i] = sign*ceps_codebook_diff4[vq_mid*NB_BANDS + i];
+  }
+  if ((vq_mid&MULTI_MASK) < 2) {
+    for (i=0;i<NB_BANDS;i++) features[1][i] += .5*(vq_mem[i] + features[3][i]);
+  } else if ((vq_mid&MULTI_MASK) == 2) {
+    for (i=0;i<NB_BANDS;i++) features[1][i] += vq_mem[i];
+  } else {
+    for (i=0;i<NB_BANDS;i++) features[1][i] += features[3][i];
+  }
+  
+  perform_double_interp(features, vq_mem, interp_id);
+
+  RNN_COPY(vq_mem, &features[3][0], NB_BANDS);
+  for (i=0;i<4;i++) {
+    fwrite(features[i], sizeof(float), NB_FEATURES, ffeat);
+  }
+}
+
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
   int i;
   for (i=0;i<N;i++) {
@@ -824,12 +878,17 @@ int main(int argc, char **argv) {
   float noise_std=0;
   int training = -1;
   int encode = 0;
+  int decode = 0;
   st = rnnoise_create();
   if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
   if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
   if (argc == 4 && strcmp(argv[1], "-encode")==0) {
       training = 0;
       encode = 1;
+  }
+  if (argc == 4 && strcmp(argv[1], "-decode")==0) {
+      training = 0;
+      decode = 1;
   }
   if (training == -1) {
     fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv[0]);
@@ -845,6 +904,16 @@ int main(int argc, char **argv) {
   if (ffeat == NULL) {
     fprintf(stderr,"Error opening output feature file: %s\n", argv[3]);
     exit(1);
+  }
+  if (decode) {
+    while (1) {
+      int ret;
+      int c0_id, main_pitch, modulation, corr_id, vq_end[3], vq_mid, interp_id;
+      ret = fscanf(f1, "%d %d %d %d %d %d %d %d %d\n", &c0_id, &main_pitch, &modulation, &corr_id, &vq_end[0], &vq_end[1], &vq_end[2], &vq_mid, &interp_id);
+      if (ret != 9) break;
+      decode_packet(ffeat, c0_id, main_pitch, modulation, corr_id, vq_end, vq_mid, interp_id);
+    }
+    return 0;
   }
   if (training) {
     fpcm = fopen(argv[4], "w");
