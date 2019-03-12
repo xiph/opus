@@ -254,6 +254,7 @@ void update_multi(float *data, int nb_vectors, float *codebook, int nb_entries, 
 {
   int i,j;
   int count[nb_entries];
+  int idcount[8]={0};
   int nearest[nb_vectors];
   double err=0;
 
@@ -275,6 +276,7 @@ void update_multi(float *data, int nb_vectors, float *codebook, int nb_entries, 
     int n = nearest[i] % nb_entries;
     float sign = nearest[i] < nb_entries ? 1 : -1;
     count[n]++;
+    idcount[(n&MULTI_MASK) + 4*(sign!=1)]++;
     for (j=0;j<ndim;j++)
       codebook[n*ndim+j] += sign*data[(MULTI*i + (n&MULTI_MASK))*ndim+j];
   }
@@ -290,7 +292,8 @@ void update_multi(float *data, int nb_vectors, float *codebook, int nb_entries, 
     if (count[i] < min_count) min_count = count[i];
     small += (count[i] < 50);
   }
-  fprintf(stderr, "%f / %d, min = %d, small=%d\n", 1./w2, nb_entries, min_count, small);
+  fprintf(stderr, "%d %d %d %d %d %d %d %d ", idcount[0], idcount[1], idcount[2], idcount[3], idcount[4], idcount[5], idcount[6], idcount[7]);
+  fprintf(stderr, "| %f / %d, min = %d, small=%d\n", 1./w2, nb_entries, min_count, small);
 }
 
 
@@ -358,7 +361,7 @@ void vq_train(float *data, int nb_vectors, float *codebook, int nb_entries, int 
     for (j=0;j<4;j++)
       update(data, nb_vectors, codebook, e, ndim);
   }
-  for (j=0;j<10;j++)
+  for (j=0;j<20;j++)
     update(data, nb_vectors, codebook, e, ndim);
 }
 
@@ -393,7 +396,7 @@ void vq_train_multi(float *data, int nb_vectors, float *codebook, int nb_entries
     for (j=0;j<4;j++)
       update_multi(data, nb_vectors, codebook, e, ndim, sign);
   }
-  for (j=0;j<10;j++)
+  for (j=0;j<20;j++)
     update_multi(data, nb_vectors, codebook, e, ndim, sign);
 }
 
@@ -443,7 +446,7 @@ int main(int argc, char **argv)
   nb_vectors = atoi(argv[3]);
   nb_entries = 1<<atoi(argv[4]);
   nb_entries1 = 1024;
-  nb_entries2a = 2048;
+  nb_entries2a = 4096;
   nb_entries2b = 64;
   
   data = malloc((nb_vectors*ndim+total_dim)*sizeof(*data));
@@ -476,7 +479,7 @@ int main(int argc, char **argv)
     for (j=0;j<ndim0;j++)
       pred[i*ndim0+j] = data[i*ndim+j+1] - COEF*data[(i-4)*ndim+j+1];
   }
-
+#if 1
   VALGRIND_CHECK_MEM_IS_DEFINED(pred, nb_entries*ndim0);
   vq_train(pred, nb_vectors, codebook, nb_entries, ndim0);
   
@@ -528,7 +531,9 @@ int main(int argc, char **argv)
     }
   }
   fprintf(stderr, "Cepstrum RMS error after stage 3: %f)\n", sqrt(err/nb_vectors/ndim));
-
+#else
+  qdata = data;
+#endif
   for (i=0;i<nb_vectors-4;i++)
   {
     for (j=0;j<ndim;j++)
