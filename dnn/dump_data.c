@@ -712,18 +712,19 @@ static void process_superframe(DenoiseState *st, FILE *ffeat, int encode, int qu
   RNN_COPY(&st->xc[1][0], &st->xc[9][0], PITCH_MAX_PERIOD);
   if (quantize) {
     //printf("%f\n", st->features[3][0]);
-    c0_id = (int)floor(.5 + st->features[3][0]*5);
-    st->features[3][0] = c0_id/5.;
+    c0_id = (int)floor(.5 + st->features[3][0]*4);
+    c0_id = IMAX(-64, IMIN(63, c0_id));
+    st->features[3][0] = c0_id/4.;
     quantize_3stage_mbest(&st->features[3][1], vq_end);
     /*perform_interp_relaxation(st->features, vq_mem);*/
-    quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 11, 1, &vq_mid);
+    quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 12, 1, &vq_mid);
     interp_id = double_interp_search(st->features, vq_mem);
     perform_double_interp(st->features, vq_mem, interp_id);
   }
   //printf("\n");
   RNN_COPY(vq_mem, &st->features[3][0], NB_BANDS);
   if (encode) {
-    fprintf(ffeat, "%d %d %d %d %d %d %d %d %d\n", c0_id, main_pitch, voiced ? modulation : -4, corr_id, vq_end[0], vq_end[1], vq_end[2], vq_mid, interp_id);
+    fprintf(ffeat, "%d %d %d %d %d %d %d %d %d\n", c0_id+64, main_pitch, voiced ? modulation+4 : 0, corr_id, vq_end[0], vq_end[1], vq_end[2], vq_mid, interp_id);
   } else {
     for (i=0;i<4;i++) {
       fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
@@ -740,6 +741,7 @@ void decode_packet(FILE *ffeat, int c0_id, int main_pitch, int modulation, int c
   float features[4][NB_FEATURES];
   for (i=0;i<4;i++) RNN_CLEAR(&features[i][0], NB_FEATURES);
 
+  modulation -= 4;
   if (modulation==-4) {
     voiced = 0;
     modulation = 0;
@@ -756,14 +758,14 @@ void decode_packet(FILE *ffeat, int c0_id, int main_pitch, int modulation, int c
     features[sub][2*NB_BANDS + 1] = frame_corr-.5;
   }
   
-  features[3][0] = c0_id/5.;
+  features[3][0] = (c0_id-64)/4.;
   for (i=0;i<NB_BANDS_1;i++) {
     features[3][i+1] = ceps_codebook1[vq_end[0]*NB_BANDS_1 + i] + ceps_codebook2[vq_end[1]*NB_BANDS_1 + i] + ceps_codebook3[vq_end[2]*NB_BANDS_1 + i];
   }
 
   float sign = 1;
-  if (vq_mid >= 2048) {
-    vq_mid -= 2048;
+  if (vq_mid >= 4096) {
+    vq_mid -= 4096;
     sign = -1;
   }
   for (i=0;i<NB_BANDS;i++) {
