@@ -1,26 +1,25 @@
-== Opus audio codec ==
+# Opus audio codec [![Travis Build Status](https://travis-ci.org/xiph/opus.svg?branch=master)](https://travis-ci.org/xiph/opus) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/xiph/opus?branch=master&svg=true)](https://ci.appveyor.com/project/rillian/opus/history)
 
 Opus is a codec for interactive speech and audio transmission over the Internet.
 
-  Opus can handle a wide range of interactive audio applications, including
+Opus can handle a wide range of interactive audio applications, including
 Voice over IP, videoconferencing, in-game  chat, and even remote live music
 performances. It can scale from low bit-rate narrowband speech to very high
 quality stereo music.
 
-  Opus, when coupled with an appropriate container format, is also suitable
+Opus, when coupled with an appropriate container format, is also suitable
 for non-realtime  stored-file applications such as music distribution, game
 soundtracks, portable music players, jukeboxes, and other applications that
 have historically used high latency formats such as MP3, AAC, or Vorbis.
 
-                    Opus is specified by IETF RFC 6716:
-                    https://tools.ietf.org/html/rfc6716
+*Opus is specified by IETF RFC 6716: https://tools.ietf.org/html/rfc6716*
 
-  The Opus format and this implementation of it are subject to the royalty-
+The Opus format and this implementation of it are subject to the royalty-
 free patent and copyright licenses specified in the file COPYING.
 
 This package implements a shared library for encoding and decoding raw Opus
 bitstreams. Raw Opus bitstreams should be used over RTP according to
- https://tools.ietf.org/html/rfc7587
+https://tools.ietf.org/html/rfc7587
 
 The package also includes a number of test  tools used for testing the
 correct operation of the library. The bitstreams read/written by these
@@ -28,8 +27,7 @@ tools should not be used for Opus file distribution: They include
 additional debugging data and cannot support seeking.
 
 Opus stored in files should use the Ogg encapsulation for Opus which is
-described at:
- https://tools.ietf.org/html/rfc7845
+described at: https://tools.ietf.org/html/rfc7845
 
 An opus-tools package is available which provides encoding and decoding of
 Ogg encapsulated Opus files and includes a number of useful features.
@@ -39,7 +37,7 @@ Opus-tools can be found at:
 or on the main Opus website:
  https://opus-codec.org/
 
-== Compiling libopus ==
+## Compiling libopus
 
 To build from a distribution tarball, you only need to do the following:
 
@@ -48,7 +46,7 @@ To build from a distribution tarball, you only need to do the following:
 
 To build from the git repository, the following steps are necessary:
 
-0) Set up a development environment:
+### 0) Set up a development environment:
 
 On an Ubuntu or Debian family Linux distribution:
 
@@ -66,24 +64,25 @@ On Apple macOS, install Xcode and brew.sh, then in the Terminal enter:
 
     % brew install autoconf automake libtool
 
-1) Clone the repository:
+### 1) Clone the repository:
 
     % git clone https://git.xiph.org/opus.git
     % cd opus
 
-2) Compiling the source
+### 2) Compiling the source
 
     % ./autogen.sh
     % ./configure
     % make
 
-3) Install the codec libraries (optional)
+### 3) Install the codec libraries (optional)
 
     % sudo make install
 
 Once you have compiled the codec, there will be a opus_demo executable
 in the top directory.
 
+```
 Usage: opus_demo [-e] <application> <sampling rate (Hz)> <channels (1/2)>
          <bits per second> [options] <input> <output>
        opus_demo -d <sampling rate (Hz)> <channels (1/2)> [options]
@@ -109,11 +108,12 @@ options:
   -forcemono        : force mono encoding, even for stereo input
   -dtx              : enable SILK DTX
   -loss <perc>      : simulate packet loss, in percent (0-100); default: 0
+```
 
-input and output are little-endian signed 16-bit PCM files or opus
+Input and output are little-endian signed 16-bit PCM files or opus
 bitstreams with simple opus_demo proprietary framing.
 
-== Testing ==
+## Testing
 
 This package includes a collection of automated unit and system tests
 which SHOULD be run after compiling the package especially the first
@@ -133,7 +133,7 @@ To run compare the code to these test vectors:
     % tar -zxf opus_testvectors-rfc8251.tar.gz
     % ./tests/run_vectors.sh ./ opus_newvectors 48000
 
-== Portability notes ==
+## Portability notes
 
 This implementation uses floating-point by default but can be compiled to
 use only fixed-point arithmetic by setting --enable-fixed-point (if using
@@ -147,15 +147,15 @@ While it does not rely on any _undefined behavior_ as defined by C89 or
 C99, it relies on common _implementation-defined behavior_ for two's
 complement architectures:
 
-o Right shifts of negative values are consistent with two's
+* Right shifts of negative values are consistent with two's
   complement arithmetic, so that a>>b is equivalent to
   floor(a/(2^b)),
 
-o For conversion to a signed integer of N bits, the value is reduced
+* For conversion to a signed integer of N bits, the value is reduced
   modulo 2^N to be within range of the type,
 
-o The result of integer division of a negative value is truncated
+* The result of integer division of a negative value is truncated
   towards zero, and
 
-o The compiler provides a 64-bit integer type (a C99 requirement
+* The compiler provides a 64-bit integer type (a C99 requirement
   which is supported by most C89 compilers).
