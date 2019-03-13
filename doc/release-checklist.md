@@ -1,6 +1,6 @@
-= Release checklist =
+# Release checklist
 
-== Source release ==
+## Source release
 
 - Check for uncommitted changes to master.
 - Update OPUS_LT_* API versioning in configure.ac.
@@ -28,7 +28,7 @@ to https://archive.mozilla.org/pub/opus/
 Website updates are committed to https://git.xiph.org/opus-website.git
 which propagates to https://opus-codec.org/
 
-== Binary release ==
+## Binary release
 
 We usually build opus-tools binaries for MacOS and Windows.
 
@@ -37,7 +37,7 @@ https://archive.mozilla.org/pub/opus/win32/
 
 For Mac, submit a pull request to homebrew.
 
-== Website updates ==
+## Website updates
 
 For major releases, recreate the files on https://opus-codec.org/examples/
 with the next encoder.
