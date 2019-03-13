@@ -1,0 +1,7 @@
+# Authors
+* Jean-Marc Valin (jmvalin@jmvalin.ca)
+* Koen Vos (koenvos74@gmail.com)
+* Timothy Terriberry (tterribe@xiph.org)
+* Karsten Vandborg Sorensen (karsten.vandborg.sorensen@skype.net)
+* Soren Skak Jensen (ssjensen@gn.com)
+* Gregory Maxwell (greg@xiph.org)
