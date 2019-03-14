@@ -474,7 +474,22 @@ typedef struct {
     unsigned char *chars;
 } packer;
 
-void bits_init(packer *bits, unsigned char *buf, int size) {
+typedef struct {
+    int byte_pos;
+    int bit_pos;
+    int max_bytes;
+    const unsigned char *chars;
+} unpacker;
+
+void bits_packer_init(packer *bits, unsigned char *buf, int size) {
+  bits->byte_pos = 0;
+  bits->bit_pos = 0;
+  bits->max_bytes = size;
+  bits->chars = buf;
+  RNN_CLEAR(buf, size);
+}
+
+void bits_unpacker_init(unpacker *bits, unsigned char *buf, int size) {
   bits->byte_pos = 0;
   bits->bit_pos = 0;
   bits->max_bytes = size;
@@ -503,7 +518,7 @@ void bits_pack(packer *bits, unsigned int data, int nb_bits) {
   }
 }
 
-unsigned int bits_unpack(packer *bits, int nb_bits) {
+unsigned int bits_unpack(unpacker *bits, int nb_bits) {
   unsigned int d=0;
   while(nb_bits)
   {
@@ -787,7 +802,20 @@ static void process_superframe(DenoiseState *st, FILE *ffeat, int encode, int qu
   //printf("\n");
   RNN_COPY(st->vq_mem, &st->features[3][0], NB_BANDS);
   if (encode) {
-    fprintf(ffeat, "%d %d %d %d %d %d %d %d %d\n", c0_id+64, main_pitch, voiced ? modulation+4 : 0, corr_id, vq_end[0], vq_end[1], vq_end[2], vq_mid, interp_id);
+    unsigned char buf[8];
+    packer bits;
+    //fprintf(stdout, "%d %d %d %d %d %d %d %d %d\n", c0_id+64, main_pitch, voiced ? modulation+4 : 0, corr_id, vq_end[0], vq_end[1], vq_end[2], vq_mid, interp_id);
+    bits_packer_init(&bits, buf, 8);
+    bits_pack(&bits, c0_id+64, 7);
+    bits_pack(&bits, main_pitch, 6);
+    bits_pack(&bits, voiced ? modulation+4 : 0, 3);
+    bits_pack(&bits, corr_id, 2);
+    bits_pack(&bits, vq_end[0], 10);
+    bits_pack(&bits, vq_end[1], 10);
+    bits_pack(&bits, vq_end[2], 10);
+    bits_pack(&bits, vq_mid, 13);
+    bits_pack(&bits, interp_id, 3);
+    fwrite(buf, 1, 8, ffeat);
   } else {
     for (i=0;i<4;i++) {
       fwrite(st->features[i], sizeof(float), NB_FEATURES, ffeat);
@@ -795,13 +823,36 @@ static void process_superframe(DenoiseState *st, FILE *ffeat, int encode, int qu
   }
 }
 
-void decode_packet(FILE *ffeat, float *vq_mem, int c0_id, int main_pitch, int modulation, int corr_id, int vq_end[3], int vq_mid, int interp_id)
+void decode_packet(FILE *ffeat, float *vq_mem, unsigned char buf[8])
 {
+  int c0_id;
+  int main_pitch;
+  int modulation;
+  int corr_id;
+  int vq_end[3];
+  int vq_mid;
+  int interp_id;
+  
   int i;
   int sub;
   int voiced = 1;
   float frame_corr;
   float features[4][NB_FEATURES];
+  unpacker bits;
+  
+  bits_unpacker_init(&bits, buf, 8);
+  c0_id = bits_unpack(&bits, 7);
+  main_pitch = bits_unpack(&bits, 6);
+  modulation = bits_unpack(&bits, 3);
+  corr_id = bits_unpack(&bits, 2);
+  vq_end[0] = bits_unpack(&bits, 10);
+  vq_end[1] = bits_unpack(&bits, 10);
+  vq_end[2] = bits_unpack(&bits, 10);
+  vq_mid = bits_unpack(&bits, 13);
+  interp_id = bits_unpack(&bits, 3);
+  //fprintf(stdout, "%d %d %d %d %d %d %d %d %d\n", c0_id, main_pitch, modulation, corr_id, vq_end[0], vq_end[1], vq_end[2], vq_mid, interp_id);
+
+  
   for (i=0;i<4;i++) RNN_CLEAR(&features[i][0], NB_FEATURES);
 
   modulation -= 4;
@@ -990,10 +1041,12 @@ int main(int argc, char **argv) {
     float vq_mem[NB_BANDS] = {0};
     while (1) {
       int ret;
-      int c0_id, main_pitch, modulation, corr_id, vq_end[3], vq_mid, interp_id;
-      ret = fscanf(f1, "%d %d %d %d %d %d %d %d %d\n", &c0_id, &main_pitch, &modulation, &corr_id, &vq_end[0], &vq_end[1], &vq_end[2], &vq_mid, &interp_id);
-      if (ret != 9) break;
-      decode_packet(ffeat, vq_mem, c0_id, main_pitch, modulation, corr_id, vq_end, vq_mid, interp_id);
+      unsigned char buf[8];
+      //int c0_id, main_pitch, modulation, corr_id, vq_end[3], vq_mid, interp_id;
+      //ret = fscanf(f1, "%d %d %d %d %d %d %d %d %d\n", &c0_id, &main_pitch, &modulation, &corr_id, &vq_end[0], &vq_end[1], &vq_end[2], &vq_mid, &interp_id);
+      ret = fread(buf, 1, 8, f1);
+      if (ret != 8) break;
+      decode_packet(ffeat, vq_mem, buf);
     }
     return 0;
   }
