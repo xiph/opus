@@ -587,19 +587,13 @@ static short float2short(float x)
   return IMAX(-32767, IMIN(32767, i));
 }
 
-int lowpass = FREQ_SIZE;
-int band_lp = NB_BANDS;
-
 static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
-  int i;
   float x[WINDOW_SIZE];
   RNN_COPY(x, st->analysis_mem, OVERLAP_SIZE);
   RNN_COPY(&x[OVERLAP_SIZE], in, FRAME_SIZE);
   RNN_COPY(st->analysis_mem, &in[FRAME_SIZE-OVERLAP_SIZE], OVERLAP_SIZE);
   apply_window(x);
   forward_transform(X, x);
-  for (i=lowpass;i<FREQ_SIZE;i++)
-    X[i].r = X[i].i = 0;
   compute_band_energy(Ex, X);
 }
 
