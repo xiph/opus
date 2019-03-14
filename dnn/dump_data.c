@@ -466,6 +466,64 @@ void perform_interp_relaxation(float features[4][NB_FEATURES], const float *mem)
     for (i=0;i<NB_BANDS;i++) features[1][i] *= count_1;
 }
 
+#define BITS_PER_CHAR 8
+typedef struct {
+    int byte_pos;
+    int bit_pos;
+    int max_bytes;
+    unsigned char *chars;
+} packer;
+
+void bits_init(packer *bits, unsigned char *buf, int size) {
+  bits->byte_pos = 0;
+  bits->bit_pos = 0;
+  bits->max_bytes = size;
+  bits->chars = buf;
+}
+
+void bits_pack(packer *bits, unsigned int data, int nb_bits) {
+  while(nb_bits)
+  {
+    int bit;
+    if (bits->byte_pos == bits->max_bytes) {
+      fprintf(stderr, "something went horribly wrong\n");
+      return;
+    }
+    bit = (data>>(nb_bits-1))&1;
+    bits->chars[bits->byte_pos] |= bit<<(BITS_PER_CHAR-1-bits->bit_pos);
+    bits->bit_pos++;
+
+    if (bits->bit_pos==BITS_PER_CHAR)
+    {
+      bits->bit_pos=0;
+      bits->byte_pos++;
+      if (bits->byte_pos < bits->max_bytes) bits->chars[bits->byte_pos] = 0;
+    }
+    nb_bits--;
+  }
+}
+
+unsigned int bits_unpack(packer *bits, int nb_bits) {
+  unsigned int d=0;
+  while(nb_bits)
+  {
+    if (bits->byte_pos == bits->max_bytes) {
+      fprintf(stderr, "something went horribly wrong\n");
+      return 0;
+    }
+    d<<=1;
+    d |= (bits->chars[bits->byte_pos]>>(BITS_PER_CHAR-1 - bits->bit_pos))&1;
+    bits->bit_pos++;
+    if (bits->bit_pos==BITS_PER_CHAR)
+    {
+      bits->bit_pos=0;
+      bits->byte_pos++;
+    }
+    nb_bits--;
+  }
+  return d;
+}
+
 typedef struct {
   float analysis_mem[OVERLAP_SIZE];
   float cepstral_mem[CEPS_MEM][NB_BANDS];
@@ -831,6 +889,7 @@ void compute_noise(int *noise, float noise_std) {
     noise[i] = (int)floor(.5 + noise_std*.707*(log_approx((float)rand()/RAND_MAX)-log_approx((float)rand()/RAND_MAX)));
   }
 }
+
 
 void write_audio(DenoiseState *st, const short *pcm, const int *noise, FILE *file) {
   int i, k;
