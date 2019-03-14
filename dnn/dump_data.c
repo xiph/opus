@@ -560,23 +560,23 @@ typedef struct {
   int exc_mem;
 } DenoiseState;
 
-static int rnnoise_get_size() {
+static int lpcnet_encoder_get_size() {
   return sizeof(DenoiseState);
 }
 
-static int rnnoise_init(DenoiseState *st) {
+static int lpcnet_encoder_init(DenoiseState *st) {
   memset(st, 0, sizeof(*st));
   return 0;
 }
 
-static DenoiseState *rnnoise_create() {
+static DenoiseState *lpcnet_encoder_create() {
   DenoiseState *st;
-  st = malloc(rnnoise_get_size());
-  rnnoise_init(st);
+  st = malloc(lpcnet_encoder_get_size());
+  lpcnet_encoder_init(st);
   return st;
 }
 
-static void rnnoise_destroy(DenoiseState *st) {
+static void lpcnet_encoder_destroy(DenoiseState *st) {
   free(st);
 }
 
@@ -996,7 +996,7 @@ int main(int argc, char **argv) {
   int encode = 0;
   int decode = 0;
   int quantize = 0;
-  st = rnnoise_create();
+  st = lpcnet_encoder_create();
   if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
   if (argc == 5 && strcmp(argv[1], "-qtrain")==0) {
       training = 1;
@@ -1124,7 +1124,7 @@ int main(int argc, char **argv) {
   fclose(f1);
   fclose(ffeat);
   if (fpcm) fclose(fpcm);
-  rnnoise_destroy(st);
+  lpcnet_encoder_destroy(st);
   return 0;
 }
 
