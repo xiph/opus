@@ -111,7 +111,6 @@ int vq_quantize(const float *codebook, int nb_entries, const float *x, int ndim,
 }
 
 #define NB_BANDS_1 (NB_BANDS - 1)
-float vq_mem[NB_BANDS];
 int quantize_2stage(float *x)
 {
     int i;
@@ -482,6 +481,7 @@ typedef struct {
   float last_gain;
   int last_period;
   float lpc[LPC_ORDER];
+  float vq_mem[NB_BANDS];
   float features[4][NB_FEATURES];
   float sig_mem[LPC_ORDER];
   int exc_mem;
@@ -716,10 +716,10 @@ static void process_superframe(DenoiseState *st, FILE *ffeat, int encode, int qu
     c0_id = IMAX(-64, IMIN(63, c0_id));
     st->features[3][0] = c0_id/4.;
     quantize_3stage_mbest(&st->features[3][1], vq_end);
-    /*perform_interp_relaxation(st->features, vq_mem);*/
-    quantize_diff(&st->features[1][0], vq_mem, &st->features[3][0], ceps_codebook_diff4, 12, 1, &vq_mid);
-    interp_id = double_interp_search(st->features, vq_mem);
-    perform_double_interp(st->features, vq_mem, interp_id);
+    /*perform_interp_relaxation(st->features, st->vq_mem);*/
+    quantize_diff(&st->features[1][0], st->vq_mem, &st->features[3][0], ceps_codebook_diff4, 12, 1, &vq_mid);
+    interp_id = double_interp_search(st->features, st->vq_mem);
+    perform_double_interp(st->features, st->vq_mem, interp_id);
   }
   for (sub=0;sub<4;sub++) {
     float g = lpc_from_cepstrum(st->lpc, st->features[sub]);
@@ -727,7 +727,7 @@ static void process_superframe(DenoiseState *st, FILE *ffeat, int encode, int qu
     for (i=0;i<LPC_ORDER;i++) st->features[sub][2*NB_BANDS+3+i] = st->lpc[i];
   }
   //printf("\n");
-  RNN_COPY(vq_mem, &st->features[3][0], NB_BANDS);
+  RNN_COPY(st->vq_mem, &st->features[3][0], NB_BANDS);
   if (encode) {
     fprintf(ffeat, "%d %d %d %d %d %d %d %d %d\n", c0_id+64, main_pitch, voiced ? modulation+4 : 0, corr_id, vq_end[0], vq_end[1], vq_end[2], vq_mid, interp_id);
   } else {
@@ -737,7 +737,7 @@ static void process_superframe(DenoiseState *st, FILE *ffeat, int encode, int qu
   }
 }
 
-void decode_packet(FILE *ffeat, int c0_id, int main_pitch, int modulation, int corr_id, int vq_end[3], int vq_mid, int interp_id)
+void decode_packet(FILE *ffeat, float *vq_mem, int c0_id, int main_pitch, int modulation, int corr_id, int vq_end[3], int vq_mid, int interp_id)
 {
   int i;
   int sub;
@@ -928,12 +928,13 @@ int main(int argc, char **argv) {
     exit(1);
   }
   if (decode) {
+    float vq_mem[NB_BANDS] = {0};
     while (1) {
       int ret;
       int c0_id, main_pitch, modulation, corr_id, vq_end[3], vq_mid, interp_id;
       ret = fscanf(f1, "%d %d %d %d %d %d %d %d %d\n", &c0_id, &main_pitch, &modulation, &corr_id, &vq_end[0], &vq_end[1], &vq_end[2], &vq_mid, &interp_id);
       if (ret != 9) break;
-      decode_packet(ffeat, c0_id, main_pitch, modulation, corr_id, vq_end, vq_mid, interp_id);
+      decode_packet(ffeat, vq_mem, c0_id, main_pitch, modulation, corr_id, vq_end, vq_mid, interp_id);
     }
     return 0;
   }
