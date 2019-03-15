@@ -41,6 +41,7 @@
 #define FREQ_SIZE (WINDOW_SIZE/2 + 1)
 
 #define NB_BANDS 18
+#define NB_BANDS_1 (NB_BANDS - 1)
 
 void compute_band_energy(float *bandE, const kiss_fft_cpx *X);
 void compute_band_corr(float *bandE, const kiss_fft_cpx *X, const kiss_fft_cpx *P);

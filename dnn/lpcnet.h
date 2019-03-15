@@ -32,6 +32,17 @@
 
 typedef struct LPCNetState LPCNetState;
 
+typedef struct LPCNetEncState LPCNetEncState;
+
+int lpcnet_encoder_get_size();
+
+int lpcnet_encoder_init(LPCNetEncState *st);
+
+LPCNetEncState *lpcnet_encoder_create();
+
+void lpcnet_encoder_destroy(LPCNetEncState *st);
+
+
 LPCNetState *lpcnet_create();
 
 void lpcnet_destroy(LPCNetState *lpcnet);
