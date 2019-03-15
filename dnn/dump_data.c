@@ -369,7 +369,8 @@ int main(int argc, char **argv) {
     st->pcount++;
     /* Running on groups of 4 frames. */
     if (st->pcount == 4) {
-      process_superframe(st, ffeat, encode, quantize);
+      unsigned char buf[8];
+      process_superframe(st, buf, ffeat, encode, quantize);
       if (fpcm) write_audio(st, pcmbuf, noisebuf, fpcm);
       st->pcount = 0;
     }

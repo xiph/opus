@@ -586,7 +586,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   }
 }
 
-void process_superframe(LPCNetEncState *st, FILE *ffeat, int encode, int quantize) {
+void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int encode, int quantize) {
   int i;
   int sub;
   int best_i;
@@ -724,7 +724,6 @@ void process_superframe(LPCNetEncState *st, FILE *ffeat, int encode, int quantiz
   //printf("\n");
   RNN_COPY(st->vq_mem, &st->features[3][0], NB_BANDS);
   if (encode) {
-    unsigned char buf[8];
     packer bits;
     //fprintf(stdout, "%d %d %d %d %d %d %d %d %d\n", c0_id+64, main_pitch, voiced ? modulation+4 : 0, corr_id, vq_end[0], vq_end[1], vq_end[2], vq_mid, interp_id);
     bits_packer_init(&bits, buf, 8);
@@ -737,8 +736,8 @@ void process_superframe(LPCNetEncState *st, FILE *ffeat, int encode, int quantiz
     bits_pack(&bits, vq_end[2], 10);
     bits_pack(&bits, vq_mid, 13);
     bits_pack(&bits, interp_id, 3);
-    fwrite(buf, 1, 8, ffeat);
-  } else {
+    if (ffeat) fwrite(buf, 1, 8, ffeat);
+  } else if (ffeat) {
     for (i=0;i<4;i++) {
       fwrite(st->features[i], sizeof(float), NB_TOTAL_FEATURES, ffeat);
     }
@@ -753,4 +752,17 @@ void preemphasis(float *y, float *mem, const float *x, float coef, int N) {
     *mem = -coef*x[i];
     y[i] = yi;
   }
+}
+
+int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf) {
+  int i, k;
+  for (k=0;k<4;k++) {
+    float x[FRAME_SIZE];
+    for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[k*FRAME_SIZE + i];
+    preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
+    st->pcount = k;
+    compute_frame_features(st, x);
+  }
+  process_superframe(st, buf, NULL, 1, 1);
+  return 0;
 }

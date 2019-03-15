@@ -42,6 +42,9 @@ LPCNetEncState *lpcnet_encoder_create();
 
 void lpcnet_encoder_destroy(LPCNetEncState *st);
 
+int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf);
+
+
 
 LPCNetState *lpcnet_create();
 
