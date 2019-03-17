@@ -42,118 +42,6 @@
 #include "lpcnet.h"
 #include "lpcnet_private.h"
 
-typedef struct {
-    int byte_pos;
-    int bit_pos;
-    int max_bytes;
-    const unsigned char *chars;
-} unpacker;
-
-void bits_unpacker_init(unpacker *bits, unsigned char *buf, int size) {
-  bits->byte_pos = 0;
-  bits->bit_pos = 0;
-  bits->max_bytes = size;
-  bits->chars = buf;
-}
-
-unsigned int bits_unpack(unpacker *bits, int nb_bits) {
-  unsigned int d=0;
-  while(nb_bits)
-  {
-    if (bits->byte_pos == bits->max_bytes) {
-      fprintf(stderr, "something went horribly wrong\n");
-      return 0;
-    }
-    d<<=1;
-    d |= (bits->chars[bits->byte_pos]>>(BITS_PER_CHAR-1 - bits->bit_pos))&1;
-    bits->bit_pos++;
-    if (bits->bit_pos==BITS_PER_CHAR)
-    {
-      bits->bit_pos=0;
-      bits->byte_pos++;
-    }
-    nb_bits--;
-  }
-  return d;
-}
-
-void decode_packet(FILE *ffeat, float *vq_mem, unsigned char buf[8])
-{
-  int c0_id;
-  int main_pitch;
-  int modulation;
-  int corr_id;
-  int vq_end[3];
-  int vq_mid;
-  int interp_id;
-  
-  int i;
-  int sub;
-  int voiced = 1;
-  float frame_corr;
-  float features[4][NB_TOTAL_FEATURES];
-  unpacker bits;
-  
-  bits_unpacker_init(&bits, buf, 8);
-  c0_id = bits_unpack(&bits, 7);
-  main_pitch = bits_unpack(&bits, 6);
-  modulation = bits_unpack(&bits, 3);
-  corr_id = bits_unpack(&bits, 2);
-  vq_end[0] = bits_unpack(&bits, 10);
-  vq_end[1] = bits_unpack(&bits, 10);
-  vq_end[2] = bits_unpack(&bits, 10);
-  vq_mid = bits_unpack(&bits, 13);
-  interp_id = bits_unpack(&bits, 3);
-  //fprintf(stdout, "%d %d %d %d %d %d %d %d %d\n", c0_id, main_pitch, modulation, corr_id, vq_end[0], vq_end[1], vq_end[2], vq_mid, interp_id);
-
-  
-  for (i=0;i<4;i++) RNN_CLEAR(&features[i][0], NB_TOTAL_FEATURES);
-
-  modulation -= 4;
-  if (modulation==-4) {
-    voiced = 0;
-    modulation = 0;
-  }
-  if (voiced) {
-    frame_corr = 0.3875f + .175f*corr_id;
-  } else {
-    frame_corr = 0.0375f + .075f*corr_id;
-  }
-  for (sub=0;sub<4;sub++) {
-    float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
-    p *= 1 + modulation/16./7.*(2*sub-3);
-    features[sub][2*NB_BANDS] = .02*(p-100);
-    features[sub][2*NB_BANDS + 1] = frame_corr-.5;
-  }
-  
-  features[3][0] = (c0_id-64)/4.;
-  for (i=0;i<NB_BANDS_1;i++) {
-    features[3][i+1] = ceps_codebook1[vq_end[0]*NB_BANDS_1 + i] + ceps_codebook2[vq_end[1]*NB_BANDS_1 + i] + ceps_codebook3[vq_end[2]*NB_BANDS_1 + i];
-  }
-
-  float sign = 1;
-  if (vq_mid >= 4096) {
-    vq_mid -= 4096;
-    sign = -1;
-  }
-  for (i=0;i<NB_BANDS;i++) {
-    features[1][i] = sign*ceps_codebook_diff4[vq_mid*NB_BANDS + i];
-  }
-  if ((vq_mid&MULTI_MASK) < 2) {
-    for (i=0;i<NB_BANDS;i++) features[1][i] += .5*(vq_mem[i] + features[3][i]);
-  } else if ((vq_mid&MULTI_MASK) == 2) {
-    for (i=0;i<NB_BANDS;i++) features[1][i] += vq_mem[i];
-  } else {
-    for (i=0;i<NB_BANDS;i++) features[1][i] += features[3][i];
-  }
-  
-  perform_double_interp(features, vq_mem, interp_id);
-
-  RNN_COPY(vq_mem, &features[3][0], NB_BANDS);
-  for (i=0;i<4;i++) {
-    fwrite(features[i], sizeof(float), NB_TOTAL_FEATURES, ffeat);
-  }
-}
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
   int i;
@@ -293,11 +181,15 @@ int main(int argc, char **argv) {
     while (1) {
       int ret;
       unsigned char buf[8];
+      float features[4][NB_TOTAL_FEATURES];
       //int c0_id, main_pitch, modulation, corr_id, vq_end[3], vq_mid, interp_id;
       //ret = fscanf(f1, "%d %d %d %d %d %d %d %d %d\n", &c0_id, &main_pitch, &modulation, &corr_id, &vq_end[0], &vq_end[1], &vq_end[2], &vq_mid, &interp_id);
       ret = fread(buf, 1, 8, f1);
       if (ret != 8) break;
-      decode_packet(ffeat, vq_mem, buf);
+      decode_packet(features, vq_mem, buf);
+      for (i=0;i<4;i++) {
+        fwrite(features[i], sizeof(float), NB_TOTAL_FEATURES, ffeat);
+      }
     }
     return 0;
   }

@@ -22,7 +22,7 @@ endif
 
 all: dump_data test_lpcnet test_vec
 
-dump_data_objs := src/dump_data.o src/freq.o src/kiss_fft.o src/pitch.o src/celt_lpc.o src/lpcnet_enc.o src/ceps_codebooks.o
+dump_data_objs := src/dump_data.o src/freq.o src/kiss_fft.o src/pitch.o src/celt_lpc.o src/lpcnet_dec.o src/lpcnet_enc.o src/ceps_codebooks.o
 dump_data_deps := $(dump_data_objs:.o=.d)
 dump_data: $(dump_data_objs)
 	gcc -o $@ $(CFLAGS) $(dump_data_objs) -lm

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2018 Mozilla */
+/* Copyright (c) 2017-2019 Mozilla */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -42,8 +42,6 @@
 #include "lpcnet_private.h"
 #include "lpcnet.h"
 
-
-#define NB_DELTA_CEPS 6
 
 //#define NB_FEATURES (2*NB_BANDS+3+LPC_ORDER)
 
@@ -317,8 +315,6 @@ int quantize_diff(float *x, float *left, float *right, float *codebook, int bits
     
     return id;
 }
-
-#define FORBIDDEN_INTERP 7
 
 int interp_search(const float *x, const float *left, const float *right, float *dist_out)
 {

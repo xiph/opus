@@ -16,6 +16,9 @@
 #define MULTI 4
 #define MULTI_MASK (MULTI-1)
 
+#define FORBIDDEN_INTERP 7
+
+
 struct LPCNetEncState{
   float analysis_mem[OVERLAP_SIZE];
   float mem_preemph;
@@ -51,5 +54,6 @@ void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int
 
 void compute_frame_features(LPCNetEncState *st, const float *in);
 
+void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, unsigned char buf[8]);
 
 #endif

@@ -103,8 +103,8 @@ del pred
 del in_exc
 
 # dump models to disk as we go
-checkpoint = ModelCheckpoint('lpcnet24fq_384_10_G16_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('lpcnet24g_384_10_G16_{epoch:02d}.h5')
 
-model.load_weights('lpcnet24f_384_10_G16_31.h5')
-model.compile(optimizer=Adam(0.0005, amsgrad=True, decay=5e-5), loss='sparse_categorical_crossentropy')
+model.load_weights('lpcnet24c_384_10_G16_120.h5')
+model.compile(optimizer=Adam(0.0001, amsgrad=True), loss='sparse_categorical_crossentropy')
 model.fit([in_data, features, periods], out_exc, batch_size=batch_size, epochs=nb_epochs, validation_split=0.0, callbacks=[checkpoint, lpcnet.Sparsify(0, 0, 1, (0.05, 0.05, 0.2))])
