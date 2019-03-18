@@ -50,7 +50,7 @@ typedef struct {
     const unsigned char *chars;
 } unpacker;
 
-void bits_unpacker_init(unpacker *bits, unsigned char *buf, int size) {
+void bits_unpacker_init(unpacker *bits, const unsigned char *buf, int size) {
   bits->byte_pos = 0;
   bits->bit_pos = 0;
   bits->max_bytes = size;
@@ -78,7 +78,7 @@ unsigned int bits_unpack(unpacker *bits, int nb_bits) {
   return d;
 }
 
-void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, unsigned char buf[8])
+void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const unsigned char buf[8])
 {
   int c0_id;
   int main_pitch;

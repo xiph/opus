@@ -22,14 +22,14 @@ endif
 
 all: dump_data test_lpcnet test_vec
 
-dump_data_objs := src/dump_data.o src/freq.o src/kiss_fft.o src/pitch.o src/celt_lpc.o src/lpcnet_dec.o src/lpcnet_enc.o src/ceps_codebooks.o
+dump_data_objs := src/common.o src/dump_data.o src/freq.o src/kiss_fft.o src/pitch.o src/celt_lpc.o src/lpcnet_dec.o src/lpcnet_enc.o src/ceps_codebooks.o
 dump_data_deps := $(dump_data_objs:.o=.d)
 dump_data: $(dump_data_objs)
 	gcc -o $@ $(CFLAGS) $(dump_data_objs) -lm
 
 -include $dump_data_deps(_deps)
 
-test_lpcnet_objs := src/test_lpcnet.o src/lpcnet.o src/nnet.o src/nnet_data.o src/freq.o src/kiss_fft.o src/pitch.o src/celt_lpc.o
+test_lpcnet_objs := src/common.o src/test_lpcnet.o src/lpcnet.o src/nnet.o src/nnet_data.o src/freq.o src/kiss_fft.o src/pitch.o src/celt_lpc.o src/lpcnet_dec.o  src/ceps_codebooks.o
 test_lpcnet_deps := $(test_lpcnet_objs:.o=.d)
 test_lpcnet: $(test_lpcnet_objs)
 	gcc -o $@ $(CFLAGS) $(test_lpcnet_objs) -lm

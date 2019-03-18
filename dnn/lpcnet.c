@@ -89,11 +89,24 @@ void run_sample_network(NNetState *net, float *pdf, const float *condition, cons
     compute_mdense(&dual_fc, pdf, net->gru_b_state);
 }
 
+int lpcnet_get_size()
+{
+    return sizeof(LPCNetState);
+}
+
+int lpcnet_init(LPCNetState *lpcnet)
+{
+    memset(lpcnet, 0, lpcnet_get_size());
+    lpcnet->last_exc = 128;
+    return 0;
+}
+
+
 LPCNetState *lpcnet_create()
 {
     LPCNetState *lpcnet;
-    lpcnet = (LPCNetState *)calloc(sizeof(LPCNetState), 1);
-    lpcnet->last_exc = 128;
+    lpcnet = (LPCNetState *)calloc(lpcnet_get_size(), 1);
+    lpcnet_init(lpcnet);
     return lpcnet;
 }
 
@@ -153,6 +166,40 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
     start = 0;
 }
 
-#if 1
 
-#endif
+int lpcnet_decoder_get_size()
+{
+  return sizeof(LPCNetDecState);
+}
+
+int lpcnet_decoder_init(LPCNetDecState *st)
+{
+  memset(st, 0, lpcnet_decoder_get_size());
+  lpcnet_init(&st->lpcnet_state);
+  return 0;
+}
+
+LPCNetDecState *lpcnet_decoder_create()
+{
+  LPCNetDecState *st;
+  st = malloc(lpcnet_decoder_get_size());
+  lpcnet_decoder_init(st);
+  return st;
+}
+
+void lpcnet_decoder_destroy(LPCNetDecState *st)
+{
+  free(st);
+}
+
+int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm)
+{
+  int k;
+  float features[4][NB_TOTAL_FEATURES];
+  decode_packet(features, st->vq_mem, buf);
+  for (k=0;k<4;k++) {
+    lpcnet_synthesize(&st->lpcnet_state, &pcm[k*FRAME_SIZE], features[k], FRAME_SIZE);
+  }
+  return 0;
+}
+

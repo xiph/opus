@@ -1,4 +1,5 @@
-/* Copyright (c) 2018 Mozilla */
+
+/* Copyright (c) 2017-2019 Mozilla */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -24,51 +25,41 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _LPCNET_H_
-#define _LPCNET_H_
-
-#define NB_FEATURES 38
-#define NB_TOTAL_FEATURES 55
-
-typedef struct LPCNetState LPCNetState;
-
-typedef struct LPCNetDecState LPCNetDecState;
-
-typedef struct LPCNetEncState LPCNetEncState;
-
-
-int lpcnet_decoder_get_size();
-
-int lpcnet_decoder_init(LPCNetDecState *st);
-
-LPCNetDecState *lpcnet_decoder_create();
-
-void lpcnet_decoder_destroy(LPCNetDecState *st);
-
-int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm);
-
-
-
-int lpcnet_encoder_get_size();
-
-int lpcnet_encoder_init(LPCNetEncState *st);
-
-LPCNetEncState *lpcnet_encoder_create();
-
-void lpcnet_encoder_destroy(LPCNetEncState *st);
-
-int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf);
-
-
-
-int lpcnet_get_size();
-
-int lpcnet_init(LPCNetState *lpcnet);
-
-LPCNetState *lpcnet_create();
-
-void lpcnet_destroy(LPCNetState *lpcnet);
-
-void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, int N);
-
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
+
+#include <stdio.h>
+#include "freq.h"
+#include "lpcnet_private.h"
+
+
+static void single_interp(float *x, const float *left, const float *right, int id)
+{
+    int i;
+    float ref[NB_BANDS];
+    float pred[3*NB_BANDS];
+    RNN_COPY(ref, x, NB_BANDS);
+    for (i=0;i<NB_BANDS;i++) pred[i] = .5*(left[i] + right[i]);
+    for (i=0;i<NB_BANDS;i++) pred[NB_BANDS+i] = left[i];
+    for (i=0;i<NB_BANDS;i++) pred[2*NB_BANDS+i] = right[i];
+    for (i=0;i<NB_BANDS;i++) {
+      x[i] = pred[id*NB_BANDS + i];
+    }
+    if (0) {
+        float err = 0;
+        for (i=0;i<NB_BANDS;i++) {
+            err += (x[i]-ref[i])*(x[i]-ref[i]);
+        }
+        printf("%f\n", sqrt(err/NB_BANDS));
+    }
+}
+
+void perform_double_interp(float features[4][NB_TOTAL_FEATURES], const float *mem, int best_id) {
+    int id0, id1;
+    best_id += (best_id >= FORBIDDEN_INTERP);
+    id0 = best_id / 3;
+    id1 = best_id % 3;
+    single_interp(features[0], mem, features[1], id0);
+    single_interp(features[2], features[1], features[3], id1);
+}
