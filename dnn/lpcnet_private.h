@@ -4,6 +4,8 @@
 #include "common.h"
 #include "freq.h"
 #include "lpcnet.h"
+#include "nnet_data.h"
+#include "celt_lpc.h"
 
 #define BITS_PER_CHAR 8
 
@@ -17,6 +19,20 @@
 #define MULTI_MASK (MULTI-1)
 
 #define FORBIDDEN_INTERP 7
+
+#define FEATURES_DELAY (FEATURE_CONV1_DELAY + FEATURE_CONV2_DELAY)
+
+struct LPCNetState {
+    NNetState nnet;
+    int last_exc;
+    float last_sig[LPC_ORDER];
+    float old_input[FEATURES_DELAY][FEATURE_CONV2_OUT_SIZE];
+    float old_lpc[FEATURES_DELAY][LPC_ORDER];
+    float old_gain[FEATURES_DELAY];
+    int frame_count;
+    float deemph_mem;
+};
+
 
 
 struct LPCNetEncState{

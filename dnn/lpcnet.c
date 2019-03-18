@@ -31,29 +31,14 @@
 #include "common.h"
 #include "arch.h"
 #include "lpcnet.h"
+#include "lpcnet_private.h"
 
-
-#define LPC_ORDER 16
 #define PREEMPH 0.85f
 
 #define PITCH_GAIN_FEATURE 37
 #define PDF_FLOOR 0.002
 
 #define FRAME_INPUT_SIZE (NB_FEATURES + EMBED_PITCH_OUT_SIZE)
-
-#define SAMPLE_INPUT_SIZE (2*EMBED_SIG_OUT_SIZE + EMBED_EXC_OUT_SIZE + FEATURE_DENSE2_OUT_SIZE)
-
-#define FEATURES_DELAY (FEATURE_CONV1_DELAY + FEATURE_CONV2_DELAY)
-struct LPCNetState {
-    NNetState nnet;
-    int last_exc;
-    float last_sig[LPC_ORDER];
-    float old_input[FEATURES_DELAY][FEATURE_CONV2_OUT_SIZE];
-    float old_lpc[FEATURES_DELAY][LPC_ORDER];
-    float old_gain[FEATURES_DELAY];
-    int frame_count;
-    float deemph_mem;
-};
 
 
 #if 0
