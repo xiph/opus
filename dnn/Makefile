@@ -22,35 +22,31 @@ endif
 
 all: dump_data lpcnet_demo test_lpcnet test_vec
 
-src/nnet_data.c: lpcnet_data-8ea8396.tar.gz
-	tar xvf lpcnet_data-8ea8396.tar.gz
+lpcnet_data-8ea8396.tar.gz:
+	wget https://media.xiph.org/lpcnet/data/lpcnet_data-8ea8396.tar.gz
 
-src/nnet_data.h: lpcnet_data-8ea8396.tar.gz
-	tar xvf lpcnet_data-8ea8396.tar.gz
+download: src/ceps_codebooks.c src/nnet_data.c
 
 src/ceps_codebooks.c: lpcnet_data-8ea8396.tar.gz
 	tar xvf lpcnet_data-8ea8396.tar.gz
 
-lpcnet_data-8ea8396.tar.gz:
-	wget https://media.xiph.org/lpcnet/data/lpcnet_data-8ea8396.tar.gz
-
 dump_data_objs := src/common.o src/dump_data.o src/freq.o src/kiss_fft.o src/pitch.o src/celt_lpc.o src/lpcnet_dec.o src/lpcnet_enc.o src/ceps_codebooks.o
 dump_data_deps := $(dump_data_objs:.o=.d)
-dump_data: $(dump_data_objs)
+dump_data: download $(dump_data_objs)
 	gcc -o $@ $(CFLAGS) $(dump_data_objs) -lm
 
 -include $dump_data_deps(_deps)
 
 test_lpcnet_objs := src/common.o src/test_lpcnet.o src/lpcnet.o src/nnet.o src/nnet_data.o src/freq.o src/kiss_fft.o src/pitch.o src/celt_lpc.o src/lpcnet_dec.o  src/ceps_codebooks.o
 test_lpcnet_deps := $(test_lpcnet_objs:.o=.d)
-test_lpcnet: $(test_lpcnet_objs)
+test_lpcnet: download $(test_lpcnet_objs)
 	gcc -o $@ $(CFLAGS) $(test_lpcnet_objs) -lm
 
 -include $(test_lpcnet_deps)
 
 lpcnet_demo_objs := src/common.o src/lpcnet_demo.o src/lpcnet.o src/nnet.o src/nnet_data.o src/freq.o src/kiss_fft.o src/pitch.o src/celt_lpc.o src/lpcnet_dec.o  src/ceps_codebooks.o src/lpcnet_enc.o
 lpcnet_demo_deps := $(lpcnet_demo_objs:.o=.d)
-lpcnet_demo: $(lpcnet_demo_objs)
+lpcnet_demo: download $(lpcnet_demo_objs)
 	gcc -o $@ $(CFLAGS) $(lpcnet_demo_objs) -lm
 
 -include $(lpcnet_demo_deps)
