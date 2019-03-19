@@ -44,8 +44,8 @@ if OP_ENABLE_EXAMPLES
 noinst_PROGRAMS = lpcnet_demo
 endif
 
-src_lpcnet_demo_SOURCES = lpcnet_demo.c
-src_lpcnet_demo_LDADD = liblpcnet.la
+lpcnet_demo_SOURCES = lpcnet_demo.c
+lpcnet_demo_LDADD = liblpcnet.la
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = lpcnet.pc
