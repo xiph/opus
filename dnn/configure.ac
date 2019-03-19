@@ -73,11 +73,6 @@ AS_IF([test "$enable_assertions" = "yes"], [
   AC_DEFINE([OP_ENABLE_ASSERTIONS], [1], [Enable assertions in code])
 ])
 
-AC_ARG_ENABLE([examples],
-  AS_HELP_STRING([--disable-examples], [Do not build example applications]),,
-  enable_examples=yes)
-AM_CONDITIONAL([OP_ENABLE_EXAMPLES], [test "$enable_examples" = "yes"])
-
 AS_CASE(["$ac_cv_search_lrintf"],
   ["no"],[],
   ["none required"],[],
@@ -123,7 +118,6 @@ AC_MSG_NOTICE([
 
     Hidden visibility ............ ${cc_cv_flag_visibility}
 
-    API code examples ............ ${enable_examples}
     API documentation ............ ${enable_doc}
 ------------------------------------------------------------------------
 ])

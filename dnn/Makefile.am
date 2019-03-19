@@ -40,12 +40,20 @@ liblpcnet_la_LIBADD = $(DEPS_LIBS) $(lrintf_lib) $(LIBM)
 liblpcnet_la_LDFLAGS = -no-undefined \
  -version-info @OP_LT_CURRENT@:@OP_LT_REVISION@:@OP_LT_AGE@
 
-if OP_ENABLE_EXAMPLES
-noinst_PROGRAMS = lpcnet_demo
-endif
+noinst_PROGRAMS = lpcnet_demo dump_data
 
 lpcnet_demo_SOURCES = lpcnet_demo.c
 lpcnet_demo_LDADD = liblpcnet.la
+
+
+#DUMP_SOURCES = freq.c kiss_fft.c pitch.c celt_lpc.c lpcnet_dec.c lpcnet_enc.c ceps_codebooks.c common.c
+#DUMP_OBJ = $(DUMP_SOURCES:.c=.lo)
+#dump_data_SOURCES = dump_data.c
+#dump_data_LDADD = $(DUMP_OBJ) $(LIBM)
+
+dump_data_SOURCES = common.c dump_data.c freq.c kiss_fft.c pitch.c celt_lpc.c lpcnet_dec.c lpcnet_enc.c ceps_codebooks.c
+dump_data_LDADD = $(LIBM)
+dump_data_CFLAGS = $(AM_CFLAGS)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = lpcnet.pc
