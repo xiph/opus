@@ -24,6 +24,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <math.h>
 #include <stdio.h>
 #include "nnet_data.h"
@@ -89,12 +93,12 @@ void run_sample_network(NNetState *net, float *pdf, const float *condition, cons
     compute_mdense(&dual_fc, pdf, net->gru_b_state);
 }
 
-int lpcnet_get_size()
+LPCNET_EXPORT int lpcnet_get_size()
 {
     return sizeof(LPCNetState);
 }
 
-int lpcnet_init(LPCNetState *lpcnet)
+LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
 {
     memset(lpcnet, 0, lpcnet_get_size());
     lpcnet->last_exc = 128;
@@ -102,7 +106,7 @@ int lpcnet_init(LPCNetState *lpcnet)
 }
 
 
-LPCNetState *lpcnet_create()
+LPCNET_EXPORT LPCNetState *lpcnet_create()
 {
     LPCNetState *lpcnet;
     lpcnet = (LPCNetState *)calloc(lpcnet_get_size(), 1);
@@ -110,12 +114,12 @@ LPCNetState *lpcnet_create()
     return lpcnet;
 }
 
-void lpcnet_destroy(LPCNetState *lpcnet)
+LPCNET_EXPORT void lpcnet_destroy(LPCNetState *lpcnet)
 {
     free(lpcnet);
 }
 
-void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, int N)
+LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, int N)
 {
     int i;
     float condition[FEATURE_DENSE2_OUT_SIZE];
@@ -167,19 +171,19 @@ void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features
 }
 
 
-int lpcnet_decoder_get_size()
+LPCNET_EXPORT int lpcnet_decoder_get_size()
 {
   return sizeof(LPCNetDecState);
 }
 
-int lpcnet_decoder_init(LPCNetDecState *st)
+LPCNET_EXPORT int lpcnet_decoder_init(LPCNetDecState *st)
 {
   memset(st, 0, lpcnet_decoder_get_size());
   lpcnet_init(&st->lpcnet_state);
   return 0;
 }
 
-LPCNetDecState *lpcnet_decoder_create()
+LPCNET_EXPORT LPCNetDecState *lpcnet_decoder_create()
 {
   LPCNetDecState *st;
   st = malloc(lpcnet_decoder_get_size());
@@ -187,12 +191,12 @@ LPCNetDecState *lpcnet_decoder_create()
   return st;
 }
 
-void lpcnet_decoder_destroy(LPCNetDecState *st)
+LPCNET_EXPORT void lpcnet_decoder_destroy(LPCNetDecState *st)
 {
   free(st);
 }
 
-int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm)
+LPCNET_EXPORT int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm)
 {
   int k;
   float features[4][NB_TOTAL_FEATURES];

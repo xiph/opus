@@ -1,7 +1,7 @@
 # Makefile for LPCNet
 
 CC=gcc
-CFLAGS+=-Wall -W -Wextra -Wno-unused-function -O3 -g -I../include 
+CFLAGS+=-Wall -W -Wextra -Wno-unused-function -O3 -g -Iinclude 
 
 AVX2:=$(shell cat /proc/cpuinfo | grep -c avx2)
 AVX:=$(shell cat /proc/cpuinfo | grep -c avx)
