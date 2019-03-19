@@ -375,7 +375,7 @@ void interp_diff(float *x, float *left, float *right, float *codebook, int bits,
     }
 }
 
-int double_interp_search(const float features[4][NB_TOTAL_FEATURES], const float *mem) {
+int double_interp_search(float features[4][NB_TOTAL_FEATURES], const float *mem) {
     int i, j;
     int best_id=0;
     float min_dist = 1e15;
@@ -462,23 +462,23 @@ void bits_pack(packer *bits, unsigned int data, int nb_bits) {
 }
 
 
-int lpcnet_encoder_get_size() {
+LPCNET_EXPORT int lpcnet_encoder_get_size() {
   return sizeof(LPCNetEncState);
 }
 
-int lpcnet_encoder_init(LPCNetEncState *st) {
+LPCNET_EXPORT int lpcnet_encoder_init(LPCNetEncState *st) {
   memset(st, 0, sizeof(*st));
   return 0;
 }
 
-LPCNetEncState *lpcnet_encoder_create() {
+LPCNET_EXPORT LPCNetEncState *lpcnet_encoder_create() {
   LPCNetEncState *st;
   st = malloc(lpcnet_encoder_get_size());
   lpcnet_encoder_init(st);
   return st;
 }
 
-void lpcnet_encoder_destroy(LPCNetEncState *st) {
+LPCNET_EXPORT void lpcnet_encoder_destroy(LPCNetEncState *st) {
   free(st);
 }
 
@@ -721,7 +721,7 @@ void preemphasis(float *y, float *mem, const float *x, float coef, int N) {
   }
 }
 
-int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf) {
+LPCNET_EXPORT int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf) {
   int i, k;
   for (k=0;k<4;k++) {
     float x[FRAME_SIZE];

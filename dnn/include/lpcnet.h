@@ -27,6 +27,21 @@
 #ifndef _LPCNET_H_
 #define _LPCNET_H_
 
+#ifndef LPCNET_EXPORT
+# if defined(WIN32)
+#  if defined(LPCNET_BUILD) && defined(DLL_EXPORT)
+#   define LPCNET_EXPORT __declspec(dllexport)
+#  else
+#   define LPCNET_EXPORT
+#  endif
+# elif defined(__GNUC__) && defined(LPCNET_BUILD)
+#  define LPCNET_EXPORT __attribute__ ((visibility ("default")))
+# else
+#  define LPCNET_EXPORT
+# endif
+#endif
+
+
 #define NB_FEATURES 38
 #define NB_TOTAL_FEATURES 55
 
