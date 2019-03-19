@@ -2,8 +2,8 @@
 
 PROJECT_NAME           = @PACKAGE_NAME@
 PROJECT_NUMBER         = @PACKAGE_VERSION@
-PROJECT_BRIEF          = "RNN-based noise suppressor."
-INPUT                  = @top_srcdir@/include/rnnoise.h
+PROJECT_BRIEF          = "Neural Vocoder."
+INPUT                  = @top_srcdir@/include/lpcnet.h
 OPTIMIZE_OUTPUT_FOR_C  = YES
 
 QUIET                  = YES

@@ -1,13 +1,13 @@
-# rnnoise uninstalled pkg-config file
+# lpcnet uninstalled pkg-config file
 
 prefix=
 exec_prefix=
 libdir=${pcfiledir}/.libs
 includedir=${pcfiledir}/@top_srcdir@/include
 
-Name: rnnoise uninstalled
+Name: lpcnet uninstalled
 Description: RNN-based noise suppression (not installed)
 Version: @PACKAGE_VERSION@
 Conflicts:
-Libs: ${libdir}/librnnoise.la @lrintf_lib@
+Libs: ${libdir}/liblpcnet.la @lrintf_lib@
 Cflags: -I${includedir}

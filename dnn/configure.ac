@@ -12,7 +12,7 @@ m4_define([CURRENT_VERSION],
                            printf "unknown"
                        fi ]))
 
-AC_INIT([rnnoise],[CURRENT_VERSION],[jmvalin@jmvalin.ca])
+AC_INIT([lpcnet],[CURRENT_VERSION],[jmvalin@jmvalin.ca])
 AC_CONFIG_SRCDIR([denoise.c])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -28,7 +28,7 @@ LT_INIT
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-AC_DEFINE([RNNOISE_BUILD], [], [This is a build of the library])
+AC_DEFINE([LPCNET_BUILD], [], [This is a build of the library])
 
 dnl Library versioning for libtool.
 dnl Please update these for releases.
@@ -108,8 +108,8 @@ AM_CONDITIONAL([HAVE_DOXYGEN], [test "$HAVE_DOXYGEN" = "yes"])
 
 AC_CONFIG_FILES([
   Makefile
-  rnnoise.pc
-  rnnoise-uninstalled.pc
+  lpcnet.pc
+  lpcnet-uninstalled.pc
   doc/Doxyfile
 ])
 AC_CONFIG_HEADERS([config.h])
