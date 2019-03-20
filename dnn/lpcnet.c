@@ -128,9 +128,7 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const f
     float gru_a_condition[3*GRU_A_STATE_SIZE];
     int pitch;
     float pitch_gain;
-    /* FIXME: Remove this -- it's just a temporary hack to match the Python code. */
-    static int start = LPC_ORDER+1;
-    /* FIXME: Do proper rounding once the Python code rounds properly. */
+    /* Matches the Python code -- the 0.1 avoids rounding issues. */
     pitch = (int)floor(.1 + 50*features[36]+100);
     pitch_gain = lpcnet->old_gain[FEATURES_DELAY-1];
     memmove(&lpcnet->old_gain[1], &lpcnet->old_gain[0], (FEATURES_DELAY-1)*sizeof(lpcnet->old_gain[0]));
@@ -144,7 +142,7 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const f
         RNN_CLEAR(output, N);
         return;
     }
-    for (i=start;i<N;i++)
+    for (i=0;i<N;i++)
     {
         int j;
         float pcm;
@@ -167,7 +165,6 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const f
         if (pcm>32767) pcm = 32767;
         output[i] = (int)floor(.5 + pcm);
     }
-    start = 0;
 }
 
 
