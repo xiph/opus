@@ -52,22 +52,13 @@ static float tansig_approx(float x)
     int i;
     float y, dy;
     float sign=1;
-    /* Tests are reversed to catch NaNs */
-    if (!(x<8))
-        return 1;
-    if (!(x>-8))
-        return -1;
-#ifndef FIXED_POINT
-    /* Another check in case of -ffast-math */
-    if (celt_isnan(x))
-       return 0;
-#endif
     if (x<0)
     {
        x=-x;
        sign=-1;
     }
     i = (int)floor(.5f+25*x);
+    i = IMAX(0, IMIN(200, i));
     x -= .04f*i;
     y = tansig_table[i];
     dy = 1-y*y;

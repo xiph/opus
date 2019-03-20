@@ -157,22 +157,6 @@ typedef float celt_sig;
 typedef float celt_norm;
 typedef float celt_ener;
 
-#ifdef FLOAT_APPROX
-/* This code should reliably detect NaN/inf even when -ffast-math is used.
-   Assumes IEEE 754 format. */
-static OPUS_INLINE int celt_isnan(float x)
-{
-   union {float f; opus_uint32 i;} in;
-   in.f = x;
-   return ((in.i>>23)&0xFF)==0xFF && (in.i&0x007FFFFF)!=0;
-}
-#else
-#ifdef __FAST_MATH__
-#error Cannot build libopus with -ffast-math unless FLOAT_APPROX is defined. This could result in crashes on extreme (e.g. NaN) input
-#endif
-#define celt_isnan(x) ((x)!=(x))
-#endif
-
 #define Q15ONE 1.0f
 
 #define NORM_SCALING 1.f
