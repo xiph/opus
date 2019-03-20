@@ -30,81 +30,96 @@
 
 #include <arm_neon.h>
 #ifndef LPCNET_TEST
-static float celt_exp2(float x)
-{
-    int integer;
-    float frac;
-    union {
-	float f;
-	opus_uint32 i;
-    } res;
-    integer = floor(x);
-    if (integer < -50)
-	return 0;
-    frac = x-integer;
-    /* K0 = 1, K1 = log(2), K2 = 3-4*log(2), K3 = 3*log(2) - 2 */
-    res.f = 0.99992522f + frac * (0.69583354f
-				  + frac * (0.22606716f + 0.078024523f*frac));
-    res.i = (res.i + (integer<<23)) & 0x7fffffff;
-    return res.f;
-}
-#define celt_exp_neon(x) celt_exp2((x)*1.44269504f)
+static OPUS_INLINE float32x4_t exp4_approx(float32x4_t x) {
+  int32x4_t i;
+  float32x4_t xf;
 
-static float tansig_approx(float x)
-{
-    int i;
-    float y, dy;
-    float sign=1;
-    /* Tests are reversed to catch NaNs */
-    if (!(x<8))
-        return 1;
-    if (!(x>-8))
-        return -1;
-#ifndef FIXED_POINT
-    /* Another check in case of -ffast-math */
-    if (celt_isnan(x))
-	return 0;
-#endif
-    if (x<0)
-    {
-	x=-x;
-	sign=-1;
-    }
-    i = (int)floor(.5f+25*x);
-    x -= .04f*i;
-    y = tansig_table[i];
-    dy = 1-y*y;
-    y = y + x*dy*(1 - y*x);
-    return sign*y;
+  x = vmaxq_f32(vminq_f32(x, vdupq_n_f32(88.f)), vdupq_n_f32(-88.f));
+
+  /* express exp(x) as exp2(x/log(2)), add 127 for the exponent later */
+  x = vmlaq_f32(vdupq_n_f32(127.f), x, vdupq_n_f32(1.44269504f));
+
+  /* split into integer and fractional parts */
+  i = vcvtq_s32_f32(x);
+  xf = vcvtq_f32_s32(i);
+  x = vsubq_f32(x, xf);
+
+  float32x4_t K0 = vdupq_n_f32(0.99992522f);
+  float32x4_t K1 = vdupq_n_f32(0.69583354f);
+  float32x4_t K2 = vdupq_n_f32(0.22606716f);
+  float32x4_t K3 = vdupq_n_f32(0.078024523f);
+  float32x4_t Y = vmlaq_f32(K0, x, vmlaq_f32(K1, x, vmlaq_f32(K2, K3, x)));
+
+  /* compute 2^i */
+  float32x4_t exponent = vreinterpretq_f32_s32(vshlq_n_s32(i, 23));
+
+  Y = vmulq_f32(Y, exponent);
+  return Y;
 }
 
-static OPUS_INLINE float sigmoid_approx(float x)
+static OPUS_INLINE float celt_exp(float x)
 {
-    return .5f + .5f*tansig_approx(.5f*x);
+   float out[4];
+   float32x4_t X, Y;
+   X = vdupq_n_f32(x);
+   Y = exp4_approx(X);
+   vst1q_f32(out, Y);
+   return out[0];
 }
 
 static void softmax(float *y, const float *x, int N)
 {
     int i;
-    for (i=0;i<N;i++)
-        y[i] = celt_exp_neon(x[i]);
+    for (i=0;i<N-3;i+=4)
+    {
+        float32x4_t X, Y;
+        X = vld1q_f32(&x[i]);
+        Y = exp4_approx(X);
+        vst1q_f32(&y[i], Y);
+    }
+    for (;i<N;i++)
+        y[i] = celt_exp(x[i]);
 }
 
 static void vec_tanh(float *y, const float *x, int N)
 {
     int i;
-    for (i=0;i<N;i++)
+    for (i=0;i<N-3;i+=4)
     {
-        y[i] = tansig_approx(x[i]);
+        const float32x4_t two = vdupq_n_f32(2.f);
+        const float32x4_t one = vdupq_n_f32(1.f);
+        float32x4_t X, Y;
+        X = vld1q_f32(&x[i]);
+        X = vmulq_f32(X, two);
+        Y = exp4_approx(X);
+        Y = vmulq_f32(vsubq_f32(Y, one),  vrecpeq_f32(vaddq_f32(Y, one)));
+        vst1q_f32(&y[i], Y);
+    }
+    for (;i<N;i++)
+    {
+        float ex2;
+        ex2 = celt_exp(2*x[i]);
+        y[i] = (ex2-1)/(ex2+1);
     }
 }
 
 static void vec_sigmoid(float *y, const float *x, int N)
 {
     int i;
-    for (i=0;i<N;i++)
+    for (i=0;i<N-3;i+=4)
     {
-        y[i] = sigmoid_approx(x[i]);
+        const float32x4_t one = vdupq_n_f32(1.f);
+        float32x4_t X, Y;
+        X = vld1q_f32(&x[i]);
+        Y = exp4_approx(X);
+        Y = vmulq_f32(Y,  vrecpeq_f32(vaddq_f32(Y, one)));
+        vst1q_f32(&y[i], Y);
+    }
+    for (;i<N;i++)
+    {
+        float ex;
+        ex = celt_exp(x[i]);
+        y[i] = (ex)/(ex+1);
     }
 }
 #endif
