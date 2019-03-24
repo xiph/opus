@@ -45,6 +45,11 @@
 #define NB_FEATURES 38
 #define NB_TOTAL_FEATURES 55
 
+/** Number of bytes in a compressed packet. */
+#define LPCNET_COMPRESSED_SIZE 8
+/** Number of audio samples in a packet. */
+#define LPCNET_PACKET_SAMPLES (4*160)
+
 typedef struct LPCNetState LPCNetState;
 
 typedef struct LPCNetDecState LPCNetDecState;
@@ -52,38 +57,105 @@ typedef struct LPCNetDecState LPCNetDecState;
 typedef struct LPCNetEncState LPCNetEncState;
 
 
-int lpcnet_decoder_get_size();
+/** Gets the size of an <code>LPCNetDecState</code> structure.
+  * @returns The size in bytes.
+  */
+LPCNET_EXPORT int lpcnet_decoder_get_size();
 
-int lpcnet_decoder_init(LPCNetDecState *st);
+/** Initializes a previously allocated decoder state
+  * The memory pointed to by st must be at least the size returned by lpcnet_decoder_get_size().
+  * This is intended for applications which use their own allocator instead of malloc.
+  * @see lpcnet_decoder_create(),lpcnet_decoder_get_size()
+  * @param [in] st <tt>LPCNetDecState*</tt>: Decoder state
+  * @retval 0 Success
+  */
+LPCNET_EXPORT int lpcnet_decoder_init(LPCNetDecState *st);
 
-LPCNetDecState *lpcnet_decoder_create();
+/** Allocates and initializes a decoder state.
+  *  @returns The newly created state
+  */
+LPCNET_EXPORT LPCNetDecState *lpcnet_decoder_create();
 
-void lpcnet_decoder_destroy(LPCNetDecState *st);
+/** Frees an <code>LPCNetDecState</code> allocated by lpcnet_decoder_create().
+  * @param[in] st <tt>LPCNetDecState*</tt>: State to be freed.
+  */
+LPCNET_EXPORT void lpcnet_decoder_destroy(LPCNetDecState *st);
 
-int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm);
-
-
-
-int lpcnet_encoder_get_size();
-
-int lpcnet_encoder_init(LPCNetEncState *st);
-
-LPCNetEncState *lpcnet_encoder_create();
-
-void lpcnet_encoder_destroy(LPCNetEncState *st);
-
-int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf);
+/** Decodes a packet of LPCNET_COMPRESSED_SIZE bytes (currently 8) into LPCNET_PACKET_SAMPLES samples (currently 640).
+  * @param [in] st <tt>LPCNetDecState*</tt>: Decoder state
+  * @param [in] buf <tt>const unsigned char *</tt>: Compressed packet
+  * @param [out] pcm <tt>short **</tt>: Decoded audio
+  * @retval 0 Success
+  */
+LPCNET_EXPORT int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm);
 
 
 
-int lpcnet_get_size();
+/** Gets the size of an <code>LPCNetEncState</code> structure.
+  * @returns The size in bytes.
+  */
+LPCNET_EXPORT int lpcnet_encoder_get_size();
 
-int lpcnet_init(LPCNetState *lpcnet);
+/** Initializes a previously allocated encoder state
+  * The memory pointed to by st must be at least the size returned by lpcnet_encoder_get_size().
+  * This is intended for applications which use their own allocator instead of malloc.
+  * @see lpcnet_encoder_create(),lpcnet_encoder_get_size()
+  * @param [in] st <tt>LPCNetEncState*</tt>: Encoder state
+  * @retval 0 Success
+  */
+LPCNET_EXPORT int lpcnet_encoder_init(LPCNetEncState *st);
 
-LPCNetState *lpcnet_create();
+/** Allocates and initializes an encoder state.
+  *  @returns The newly created state
+  */
+LPCNET_EXPORT LPCNetEncState *lpcnet_encoder_create();
 
-void lpcnet_destroy(LPCNetState *lpcnet);
+/** Frees an <code>LPCNetEncState</code> allocated by lpcnet_encoder_create().
+  * @param[in] st <tt>LPCNetEncState*</tt>: State to be freed.
+  */
+LPCNET_EXPORT void lpcnet_encoder_destroy(LPCNetEncState *st);
 
-void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, int N);
+/** Encodes LPCNET_PACKET_SAMPLES speech samples (currently 640) into a packet of LPCNET_COMPRESSED_SIZE bytes (currently 8).
+  * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
+  * @param [in] pcm <tt>short **</tt>: Input speech to be encoded
+  * @param [out] buf <tt>const unsigned char *</tt>: Compressed packet
+  * @retval 0 Success
+  */
+LPCNET_EXPORT int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf);
+
+
+
+/** Gets the size of an <code>LPCNetState</code> structure.
+  * @returns The size in bytes.
+  */
+LPCNET_EXPORT int lpcnet_get_size();
+
+/** Initializes a previously allocated synthesis state
+  * The memory pointed to by st must be at least the size returned by lpcnet_get_size().
+  * This is intended for applications which use their own allocator instead of malloc.
+  * @see lpcnet_create(),lpcnet_get_size()
+  * @param [in] st <tt>LPCNetState*</tt>: Synthesis state
+  * @retval 0 Success
+  */
+LPCNET_EXPORT int lpcnet_init(LPCNetState *st);
+
+/** Allocates and initializes a synthesis state.
+  *  @returns The newly created state
+  */
+LPCNET_EXPORT LPCNetState *lpcnet_create();
+
+/** Frees an <code>LPCNetState</code> allocated by lpcnet_create().
+  * @param[in] st <tt>LPCNetState*</tt>: State to be freed.
+  */
+LPCNET_EXPORT void lpcnet_destroy(LPCNetState *st);
+
+/** Synthesizes speech from an LPCNet feature vector.
+  * @param [in] st <tt>LPCNetState*</tt>: Synthesis state
+  * @param [out] output <tt>short **</tt>: Synthesized speech
+  * @param [in] features <tt>const float *</tt>: Compressed packet
+  * @param [in] N <tt>int</tt>: Number of samples to generate
+  * @retval 0 Success
+  */
+LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, short *output, const float *features, int N);
 
 #endif
