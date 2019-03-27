@@ -151,11 +151,11 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *st);
 
 /** Synthesizes speech from an LPCNet feature vector.
   * @param [in] st <tt>LPCNetState*</tt>: Synthesis state
-  * @param [out] output <tt>short **</tt>: Synthesized speech
   * @param [in] features <tt>const float *</tt>: Compressed packet
+  * @param [out] output <tt>short **</tt>: Synthesized speech
   * @param [in] N <tt>int</tt>: Number of samples to generate
   * @retval 0 Success
   */
-LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, short *output, const float *features, int N);
+LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, const float *features, short *output, int N);
 
 #endif

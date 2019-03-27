@@ -119,7 +119,7 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *lpcnet)
     free(lpcnet);
 }
 
-LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, short *output, const float *features, int N)
+LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features, short *output, int N)
 {
     int i;
     float condition[FEATURE_DENSE2_OUT_SIZE];
@@ -199,7 +199,7 @@ LPCNET_EXPORT int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, sh
   float features[4][NB_TOTAL_FEATURES];
   decode_packet(features, st->vq_mem, buf);
   for (k=0;k<4;k++) {
-    lpcnet_synthesize(&st->lpcnet_state, &pcm[k*FRAME_SIZE], features[k], FRAME_SIZE);
+    lpcnet_synthesize(&st->lpcnet_state, features[k], &pcm[k*FRAME_SIZE], FRAME_SIZE);
   }
   return 0;
 }
