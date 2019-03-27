@@ -49,6 +49,8 @@
 #define LPCNET_COMPRESSED_SIZE 8
 /** Number of audio samples in a packet. */
 #define LPCNET_PACKET_SAMPLES (4*160)
+/** Number of audio samples in a feature frame (not for encoding/decoding). */
+#define LPCNET_FRAME_SIZE (160)
 
 typedef struct LPCNetState LPCNetState;
 

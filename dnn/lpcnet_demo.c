@@ -73,24 +73,24 @@ int main(int argc, char **argv) {
         LPCNetEncState *net;
         net = lpcnet_encoder_create();
         while (1) {
-            unsigned char buf[8];
-            short pcm[4*FRAME_SIZE];
-            fread(pcm, sizeof(pcm[0]), 4*FRAME_SIZE, fin);
+            unsigned char buf[LPCNET_COMPRESSED_SIZE];
+            short pcm[LPCNET_PACKET_SAMPLES];
+            fread(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fin);
             if (feof(fin)) break;
             lpcnet_encode(net, pcm, buf);
-            fwrite(buf, 1, 8, fout);
+            fwrite(buf, 1, LPCNET_COMPRESSED_SIZE, fout);
         }
         lpcnet_encoder_destroy(net);
     } else if (mode == MODE_DECODE) {
         LPCNetDecState *net;
         net = lpcnet_decoder_create();
         while (1) {
-            unsigned char buf[8];
-            short pcm[4*FRAME_SIZE];
-            fread(buf, sizeof(buf[0]), 8, fin);
+            unsigned char buf[LPCNET_COMPRESSED_SIZE];
+            short pcm[LPCNET_PACKET_SAMPLES];
+            fread(buf, sizeof(buf[0]), LPCNET_COMPRESSED_SIZE, fin);
             if (feof(fin)) break;
             lpcnet_decode(net, buf, pcm);
-            fwrite(pcm, sizeof(pcm[0]), 4*FRAME_SIZE, fout);
+            fwrite(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fout);
         }
         lpcnet_decoder_destroy(net);
     } else if (mode == MODE_FEATURES) {
@@ -101,13 +101,13 @@ int main(int argc, char **argv) {
         while (1) {
             float in_features[NB_TOTAL_FEATURES];
             float features[NB_FEATURES];
-            short pcm[FRAME_SIZE];
+            short pcm[LPCNET_FRAME_SIZE];
             fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
             if (feof(fin)) break;
             RNN_COPY(features, in_features, NB_FEATURES);
             RNN_CLEAR(&features[18], 18);
-            lpcnet_synthesize(net, features, pcm, FRAME_SIZE);
-            fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
+            lpcnet_synthesize(net, features, pcm, LPCNET_FRAME_SIZE);
+            fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
         }
         lpcnet_destroy(net);
     } else {
