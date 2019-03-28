@@ -733,3 +733,19 @@ LPCNET_EXPORT int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned c
   process_superframe(st, buf, NULL, 1, 1);
   return 0;
 }
+
+LPCNET_EXPORT int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, float features[4][NB_TOTAL_FEATURES]) {
+  int i, k;
+  for (k=0;k<4;k++) {
+    float x[FRAME_SIZE];
+    for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[k*FRAME_SIZE + i];
+    preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
+    st->pcount = k;
+    compute_frame_features(st, x);
+  }
+  process_superframe(st, NULL, NULL, 0, 0);
+  for (k=0;k<4;k++) {
+    RNN_COPY(&features[k][0], &st->features[k][0], NB_TOTAL_FEATURES);
+  }
+  return 0;
+}

@@ -94,7 +94,17 @@ int main(int argc, char **argv) {
         }
         lpcnet_decoder_destroy(net);
     } else if (mode == MODE_FEATURES) {
-        fprintf(stderr, "-features not yet implemented\n");
+        LPCNetEncState *net;
+        net = lpcnet_encoder_create();
+        while (1) {
+            float features[4][NB_TOTAL_FEATURES];
+            short pcm[LPCNET_PACKET_SAMPLES];
+            fread(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fin);
+            if (feof(fin)) break;
+            lpcnet_compute_features(net, pcm, features);
+            fwrite(features, sizeof(float), 4*NB_TOTAL_FEATURES, fout);
+        }
+        lpcnet_encoder_destroy(net);
     } else if (mode == MODE_SYNTHESIS) {
         LPCNetState *net;
         net = lpcnet_create();
