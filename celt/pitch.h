@@ -42,7 +42,7 @@
 #include "x86/pitch_sse.h"
 #endif
 
-#if defined(MIPSr1_ASM)
+#if defined(MIPSr2dsp_ASM)
 #include "mips/pitch_mipsr1.h"
 #endif
 

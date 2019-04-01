@@ -162,7 +162,7 @@
 /** Divide a 32-bit value by a 32-bit value. Result fits in 32 bits */
 #define DIV32(a,b) (((opus_val32)(a))/((opus_val32)(b)))
 
-#if defined(MIPSr1_ASM)
+#if defined(MIPSr2dsp_ASM)
 #include "mips/fixed_generic_mipsr1.h"
 #endif
 
