@@ -31,6 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "main.h"
 #include "stack_alloc.h"
+#include "opus.h"
+float fdump[4][16+3];
 
 /**********************************************************/
 /* Core decoder. Performs inverse NSQ operation LTP + LPC */
@@ -49,6 +51,7 @@ void silk_decode_core(
     VARDECL( opus_int32, sLTP_Q15 );
     opus_int32 LTP_pred_Q13, LPC_pred_Q10, Gain_Q10, inv_gain_Q31, gain_adj_Q16, rand_seed, offset_Q10;
     opus_int32 *pred_lag_ptr, *pexc_Q14, *pres_Q14;
+    double energy=0;
     VARDECL( opus_int32, res_Q14 );
     VARDECL( opus_int32, sLPC_Q14 );
     SAVE_STACK;
@@ -193,7 +196,18 @@ void silk_decode_core(
         } else {
             pres_Q14 = pexc_Q14;
         }
-
+        energy = 0;
+        float pgain = (B_Q14[ 0 ] + B_Q14[ 1 ] + B_Q14[ 2 ] + B_Q14[ 3 ] + B_Q14[ 4 ])/16384.;
+        for( i = 0; i < psDec->subfr_length; i++ )
+           energy += pres_Q14[ i ]*(double)pres_Q14[ i ];
+#if 0
+        for (i=0;i<psDec->LPC_order;i++) printf("%f ", A_Q12_tmp[i]/4096.);
+        printf("%d %f %g\n", lag, pgain, Gain_Q10/1024.*sqrt(energy)/16384.);
+#endif
+        for (i=0;i<psDec->LPC_order;i++) fdump[k][i] = A_Q12_tmp[i]/4096.;
+        fdump[k][16] = lag;
+        fdump[k][17] = pgain;
+        fdump[k][18] = Gain_Q10/1024.*sqrt(energy)/16384.;
         for( i = 0; i < psDec->subfr_length; i++ ) {
             /* Short-term prediction */
             celt_assert( psDec->LPC_order == 10 || psDec->LPC_order == 16 );
@@ -234,4 +248,12 @@ void silk_decode_core(
     /* Save LPC state */
     silk_memcpy( psDec->sLPC_Q14_buf, sLPC_Q14, MAX_LPC_ORDER * sizeof( opus_int32 ) );
     RESTORE_STACK;
+}
+
+OPUS_EXPORT void get_fdump(float data[4][16+3]) {
+   int i, j;
+   for (i=0;i<4;i++) {
+      for (j=0;j<19;j++) data[i][j] = fdump[i][j];
+   }
+   //printf("%f %f\n", data[1][16], data[3][16]);
 }

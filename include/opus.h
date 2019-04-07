@@ -163,6 +163,8 @@ extern "C" {
   */
 typedef struct OpusEncoder OpusEncoder;
 
+ OPUS_EXPORT void get_fdump(float data[4][16+3]);
+
 /** Gets the size of an <code>OpusEncoder</code> structure.
   * @param[in] channels <tt>int</tt>: Number of channels.
   *                                   This must be 1 or 2.
