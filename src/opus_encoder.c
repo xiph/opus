@@ -1336,6 +1336,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     equiv_rate = compute_equiv_rate(st->bitrate_bps, st->stream_channels, st->Fs/frame_size,
           st->use_vbr, 0, st->silk_mode.complexity, st->silk_mode.packetLossPercentage);
 
+    /* Allow SILK DTX if DTX is enabled but the generalized DTX cannot be used,
+       e.g. because of the complexity setting or sample rate. */
+#ifndef DISABLE_FLOAT_API
+    st->silk_mode.useDTX = st->use_dtx && !(analysis_info.valid || is_silence);
+#else
+    st->silk_mode.useDTX = st->use_dtx;
+#endif
+
     /* Mode selection depending on application and signal type */
     if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
     {
@@ -1384,13 +1392,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        if (st->silk_mode.useInBandFEC && st->silk_mode.packetLossPercentage > (128-voice_est)>>4)
           st->mode = MODE_SILK_ONLY;
        /* When encoding voice and DTX is enabled but the generalized DTX cannot be used,
-          because of complexity and sampling frequency settings, switch to SILK DTX and
-          set the encoder to SILK mode */
-#ifndef DISABLE_FLOAT_API
-       st->silk_mode.useDTX = st->use_dtx && !(analysis_info.valid || is_silence);
-#else
-       st->silk_mode.useDTX = st->use_dtx;
-#endif
+          use SILK in order to make use of its DTX. */
        if (st->silk_mode.useDTX && voice_est > 100)
           st->mode = MODE_SILK_ONLY;
 #endif
