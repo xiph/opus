@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
+include(opus_buildtype.cmake)
 include(opus_functions.cmake)
 
 get_library_version(OPUS_LIBRARY_VERSION OPUS_LIBRARY_VERSION_MAJOR)
@@ -17,6 +18,11 @@ message(STATUS "Opus project version: ${PROJECT_VERSION}")
 
 project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
 
+option(OPUS_STACK_PROTECTOR "Use stack protection" ON)
+option(OPUS_USE_ALLOCA "Use alloca for stack arrays (on non-C99 compilers)" OFF)
+option(OPUS_CUSTOM_MODES "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames"
+       OFF)
+option(OPUS_BUILD_PROGRAMS "Build programs" OFF)
 option(OPUS_FIXED_POINT
        "Compile as fixed-point (for machines without a fast enough FPU)" OFF)
 option(OPUS_ENABLE_FLOAT_API
@@ -31,6 +37,16 @@ include(opus_sources.cmake)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
 include(FeatureSummary)
+
+if(OPUS_STACK_PROTECTOR)
+  if(NOT MSVC) # GC on by default on MSVC
+    check_and_set_flag(STACK_PROTECTION_STRONG -fstack-protector-strong)
+  endif()
+else()
+  if(MSVC)
+    check_and_set_flag(BUFFER_SECURITY_CHECK /GS-)
+  endif()
+endif()
 
 if(OPUS_CPU_X86 OR OPUS_CPU_X64)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE
@@ -100,6 +116,12 @@ set_package_properties(Git
                        PURPOSE
                        "required to set up package version")
 
+add_feature_info(STACK_PROTECTOR OPUS_STACK_PROTECTOR "Use stack protection")
+add_feature_info(USE_ALLOCA OPUS_USE_ALLOCA
+                 "Use alloca for stack arrays (on non-C99 compilers)")
+add_feature_info(CUSTOM_MODES OPUS_CUSTOM_MODES
+                 "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames")
+add_feature_info(BUILD_PROGRAMS OPUS_BUILD_PROGRAMS "Build programs")
 add_feature_info(
   FIXED_POINT OPUS_FIXED_POINT
   "compile as fixed-point (for machines without a fast enough FPU)")
@@ -161,8 +183,25 @@ target_include_directories(
           silk)
 
 target_link_libraries(opus PRIVATE ${OPUS_REQUIRED_LIBRARIES})
+target_compile_definitions(opus PRIVATE OPUS_BUILD ENABLE_HARDENING)
 
-target_compile_definitions(opus PRIVATE CUSTOM_MODES OPUS_BUILD)
+if(NOT MSVC)
+  target_compile_definitions(opus PRIVATE FORTIFY_SOURCE=2)
+endif()
+
+# It is strongly recommended to uncomment one of these VAR_ARRAYS: Use C99
+# variable-length arrays for stack allocation USE_ALLOCA: Use alloca() for stack
+# allocation If none is defined, then the fallback is a non-threadsafe global
+# array
+if(OPUS_USE_ALLOCA OR MSVC)
+  target_compile_definitions(opus PRIVATE USE_ALLOCA)
+else()
+  target_compile_definitions(opus PRIVATE VAR_ARRAYS)
+endif()
+
+if(OPUS_CUSTOM_MODES)
+  target_compile_definitions(opus PRIVATE CUSTOM_MODES)
+endif()
 
 if(BUILD_SHARED_LIBS)
   if(WIN32)
@@ -312,10 +351,19 @@ if(OPUS_INSTALL_CMAKE_CONFIG_MODULE)
           DESTINATION ${CMAKE_INSTALL_PACKAGEDIR})
 endif()
 
-if(BUILD_PROGRAMS)
+if(OPUS_BUILD_PROGRAMS)
   # demo
+  if(OPUS_CUSTOM_MODES)
+    add_executable(opus_custom_demo ${opus_custom_demo_sources})
+    target_include_directories(opus_custom_demo
+                               PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+    target_link_libraries(opus_custom_demo PRIVATE opus)
+  endif()
+
   add_executable(opus_demo ${opus_demo_sources})
   target_include_directories(opus_demo PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  target_include_directories(opus_demo PRIVATE silk) # debug.h
+  target_include_directories(opus_demo PRIVATE celt) # arch.h
   target_link_libraries(opus_demo PRIVATE opus)
 
   # compare
