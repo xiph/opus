@@ -238,7 +238,7 @@ int main(int argc, char **argv) {
       gain_change_count = 0;
       rand_resp(a_sig, b_sig);
       tmp = (float)rand()/RAND_MAX;
-      noise_std = 4*tmp*tmp;
+      noise_std = 10*tmp*tmp;
     }
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     biquad(x, mem_resp_x, x, b_sig, a_sig, FRAME_SIZE);
