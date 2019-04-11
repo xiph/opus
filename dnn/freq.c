@@ -47,6 +47,9 @@ static const opus_int16 eband5ms[] = {
   0,  1,  2,  3,  4,  5,  6,  7,  8, 10, 12, 14, 16, 20, 24, 28, 34, 40
 };
 
+static const float compensation[] = {
+    0.8f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 0.666667f, 0.5f, 0.5f, 0.5f, 0.333333f, 0.25f, 0.25f, 0.2f, 0.166667f, 0.173913f
+};
 
 typedef struct {
   int init;
@@ -233,7 +236,7 @@ float lpc_from_cepstrum(float *lpc, const float *cepstrum)
    RNN_COPY(tmp, cepstrum, NB_BANDS);
    tmp[0] += 4;
    idct(Ex, tmp);
-   for (i=0;i<NB_BANDS;i++) Ex[i] = pow(10.f, Ex[i]);
+   for (i=0;i<NB_BANDS;i++) Ex[i] = pow(10.f, Ex[i])*compensation[i];
    return lpc_from_bands(lpc, Ex);
 }
 
