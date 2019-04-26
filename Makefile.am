@@ -212,6 +212,7 @@ EXTRA_DIST = opus.pc.in \
              Makefile.unix \
              CMakeLists.txt \
              config.h.cmake.in \
+             opus_buildtype.cmake \
              opus_config.cmake \
              opus_functions.cmake \
              opus_sources.cmake \
