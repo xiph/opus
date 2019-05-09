@@ -166,9 +166,8 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
   endif()
 
   if(MSVC) # To avoid warning D9025 of overriding compiler options
-    if(AVX_SUPPORTED) # on 64 bit and 32 bits
-      add_definitions(/arch:AVX)
-    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4) # if AVX not supported then set SSE flag
+    # note we do not set AVX as not supported on older processors
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
       if(SSE4_1_SUPPORTED OR SSE2_SUPPORTED)
         add_definitions(/arch:SSE2)
       elseif(SSE1_SUPPORTED)
