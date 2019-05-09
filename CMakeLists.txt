@@ -157,6 +157,8 @@ feature_summary(WHAT ALL)
 
 add_library(opus ${opus_sources} ${opus_sources_float})
 
+add_library(Opus::opus ALIAS opus)
+
 set(Opus_PUBLIC_HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_custom.h
