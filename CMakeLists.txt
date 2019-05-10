@@ -314,6 +314,11 @@ if(COMPILER_SUPPORT_NEON AND OPUS_USE_NEON)
   endif()
 endif()
 
+target_compile_definitions(opus
+                           PRIVATE
+                           $<$<BOOL:${HAVE_LRINT}>:HAVE_LRINT>
+                           $<$<BOOL:${HAVE_LRINTF}>:HAVE_LRINTF>)
+
 install(TARGETS opus
         EXPORT OpusTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
