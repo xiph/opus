@@ -16,6 +16,10 @@ if(HAVE_LIBM)
   list(APPEND OPUS_REQUIRED_LIBRARIES m)
 endif()
 
+include(CheckFunctionExists)
+check_function_exists(lrintf HAVE_LRINTF)
+check_function_exists(lrint HAVE_LRINT)
+
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(i[0-9]86|x86|X86|amd64|AMD64|x86_64)")
   if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(OPUS_CPU_X64 1)
