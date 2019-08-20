@@ -38,8 +38,6 @@
 #include "mapping_matrix.h"
 #include "stack_alloc.h"
 
-#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-
 struct OpusProjectionDecoder
 {
   opus_int32 demixing_matrix_size_in_bytes;
@@ -91,7 +89,7 @@ static void opus_projection_copy_channel_out_short(
       src_stride, short_dst, dst_stride, frame_size);
 }
 
-static MappingMatrix *get_demixing_matrix(OpusProjectionDecoder *st)
+static MappingMatrix *get_dec_demixing_matrix(OpusProjectionDecoder *st)
 {
   /* void* cast avoids clang -Wcast-align warning */
   return (MappingMatrix*)(void*)((char*)st +
@@ -162,7 +160,7 @@ int opus_projection_decoder_init(OpusProjectionDecoder *st, opus_int32 Fs,
     return OPUS_BAD_ARG;
   }
 
-  mapping_matrix_init(get_demixing_matrix(st), channels, nb_input_streams, 0,
+  mapping_matrix_init(get_dec_demixing_matrix(st), channels, nb_input_streams, 0,
     buf, demixing_matrix_size);
 
   /* Set trivial mapping so each input channel pairs with a matrix column. */
@@ -218,7 +216,7 @@ int opus_projection_decode(OpusProjectionDecoder *st, const unsigned char *data,
 {
   return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
     pcm, opus_projection_copy_channel_out_short, frame_size, decode_fec, 0,
-    get_demixing_matrix(st));
+    get_dec_demixing_matrix(st));
 }
 #else
 int opus_projection_decode(OpusProjectionDecoder *st, const unsigned char *data,
@@ -227,7 +225,7 @@ int opus_projection_decode(OpusProjectionDecoder *st, const unsigned char *data,
 {
   return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
     pcm, opus_projection_copy_channel_out_short, frame_size, decode_fec, 1,
-    get_demixing_matrix(st));
+    get_dec_demixing_matrix(st));
 }
 #endif
 
@@ -237,7 +235,7 @@ int opus_projection_decode_float(OpusProjectionDecoder *st, const unsigned char 
 {
   return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
     pcm, opus_projection_copy_channel_out_float, frame_size, decode_fec, 0,
-    get_demixing_matrix(st));
+    get_dec_demixing_matrix(st));
 }
 #endif
 
@@ -258,105 +256,3 @@ void opus_projection_decoder_destroy(OpusProjectionDecoder *st)
   opus_free(st);
 }
 
-#else /* ENABLE_EXPERIMENTAL_AMBISONICS */
-
-opus_int32 opus_projection_decoder_get_size(
-    int channels,
-    int streams,
-    int coupled_streams)
-{
-  (void)channels;
-  (void)streams;
-  (void)coupled_streams;
-  return OPUS_UNIMPLEMENTED;
-}
-
-OpusProjectionDecoder *opus_projection_decoder_create(
-    opus_int32 Fs,
-    int channels,
-    int streams,
-    int coupled_streams,
-    unsigned char *demixing_matrix,
-    opus_int32 demixing_matrix_size,
-    int *error)
-{
-  (void)Fs;
-  (void)channels;
-  (void)streams;
-  (void)coupled_streams;
-  (void)demixing_matrix;
-  (void)demixing_matrix_size;
-  if (error) *error = OPUS_UNIMPLEMENTED;
-  return NULL;
-}
-
-int opus_projection_decoder_init(
-    OpusProjectionDecoder *st,
-    opus_int32 Fs,
-    int channels,
-    int streams,
-    int coupled_streams,
-    unsigned char *demixing_matrix,
-    opus_int32 demixing_matrix_size)
-{
-  (void)st;
-  (void)Fs;
-  (void)channels;
-  (void)streams;
-  (void)coupled_streams;
-  (void)demixing_matrix;
-  (void)demixing_matrix_size;
-  return OPUS_UNIMPLEMENTED;
-}
-
-int opus_projection_decode(
-    OpusProjectionDecoder *st,
-    const unsigned char *data,
-    opus_int32 len,
-    opus_int16 *pcm,
-    int frame_size,
-    int decode_fec)
-{
-  (void)st;
-  (void)data;
-  (void)len;
-  (void)pcm;
-  (void)frame_size;
-  (void)decode_fec;
-  return OPUS_UNIMPLEMENTED;
-}
-
-int opus_projection_decode_float(
-    OpusProjectionDecoder *st,
-    const unsigned char *data,
-    opus_int32 len,
-    float *pcm,
-    int frame_size,
-    int decode_fec)
-{
-  (void)st;
-  (void)data;
-  (void)len;
-  (void)pcm;
-  (void)frame_size;
-  (void)decode_fec;
-  return OPUS_UNIMPLEMENTED;
-}
-
-int opus_projection_decoder_ctl(
-    OpusProjectionDecoder *st,
-    int request,
-    ...)
-{
-  (void)st;
-  (void)request;
-  return OPUS_UNIMPLEMENTED;
-}
-
-void opus_projection_decoder_destroy(
-    OpusProjectionDecoder *st)
-{
-  (void)st;
-}
-
-#endif /* ENABLE_EXPERIMENTAL_AMBISONICS */

@@ -209,6 +209,7 @@
     <ClInclude Include="..\..\include\opus_defines.h" />
     <ClInclude Include="..\..\include\opus_types.h" />
     <ClInclude Include="..\..\include\opus_multistream.h" />
+    <ClInclude Include="..\..\include\opus_projection.h" />
     <ClInclude Include="..\..\silk\API.h" />
     <ClInclude Include="..\..\silk\control.h" />
     <ClInclude Include="..\..\silk\debug.h" />
@@ -234,6 +235,7 @@
     <ClInclude Include="..\..\silk\x86\main_sse.h" />
     <ClInclude Include="..\..\win32\config.h" />
     <ClInclude Include="..\..\src\analysis.h" />
+    <ClInclude Include="..\..\src\mapping_matrix.h" />
     <ClInclude Include="..\..\src\mlp.h" />
     <ClInclude Include="..\..\src\opus_private.h" />
     <ClInclude Include="..\..\src\tansig_table.h" />
@@ -347,6 +349,7 @@
     <ClCompile Include="..\..\silk\x86\VQ_WMat_EC_sse4_1.c" />
     <ClCompile Include="..\..\silk\x86\x86_silk_map.c" />
     <ClCompile Include="..\..\src\analysis.c" />
+    <ClCompile Include="..\..\src\mapping_matrix.c" />
     <ClCompile Include="..\..\src\mlp.c" />
     <ClCompile Include="..\..\src\mlp_data.c" />
     <ClCompile Include="..\..\src\opus.c" />
@@ -358,6 +361,8 @@
     <ClCompile Include="..\..\src\opus_multistream.c" />
     <ClCompile Include="..\..\src\opus_multistream_decoder.c" />
     <ClCompile Include="..\..\src\opus_multistream_encoder.c" />
+    <ClCompile Include="..\..\src\opus_projection_decoder.c" />
+    <ClCompile Include="..\..\src\opus_projection_encoder.c" />
     <ClCompile Include="..\..\src\repacketizer.c" />
   </ItemGroup>
   <Choose>

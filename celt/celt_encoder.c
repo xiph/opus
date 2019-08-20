@@ -1021,13 +1021,13 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
          /* Compute SMR: Mask is never more than 72 dB below the peak and never below the noise floor.*/
          opus_val16 smr = sig[i]-MAX16(MAX16(0, maxDepth-QCONST16(12.f, DB_SHIFT)), mask[i]);
          /* Clamp SMR to make sure we're not shifting by something negative or too large. */
-         smr = MAX16(-QCONST16(5.f, DB_SHIFT), MIN16(0, smr));
 #ifdef FIXED_POINT
          /* FIXME: Use PSHR16() instead */
-         spread_weight[i] = IMAX(1, 32 >> -PSHR32(smr, DB_SHIFT));
+         int shift = -PSHR32(MAX16(-QCONST16(5.f, DB_SHIFT), MIN16(0, smr)), DB_SHIFT);
 #else
-         spread_weight[i] = IMAX(1, 32 >> -(int)floor(.5f + smr));
+         int shift = IMIN(5, IMAX(0, -(int)floor(.5f + smr)));
 #endif
+         spread_weight[i] = 32 >> shift;
       }
       /*for (i=0;i<end;i++)
          printf("%d ", spread_weight[i]);
@@ -2191,7 +2191,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 #endif
    if (st->lfe)
       signalBandwidth = 1;
-   codedBands = compute_allocation(mode, start, end, offsets, cap,
+   codedBands = clt_compute_allocation(mode, start, end, offsets, cap,
          alloc_trim, &st->intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands, signalBandwidth);
    if (st->lastCodedBands)

@@ -1059,7 +1059,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    ALLOC(pulses, nbEBands, int);
    ALLOC(fine_priority, nbEBands, int);
 
-   codedBands = compute_allocation(mode, start, end, offsets, cap,
+   codedBands = clt_compute_allocation(mode, start, end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, dec, 0, 0, 0);
 

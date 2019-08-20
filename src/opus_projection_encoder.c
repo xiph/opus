@@ -38,8 +38,6 @@
 #include "stack_alloc.h"
 #include "mapping_matrix.h"
 
-#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-
 struct OpusProjectionEncoder
 {
   opus_int32 mixing_matrix_size_in_bytes;
@@ -124,7 +122,7 @@ static MappingMatrix *get_mixing_matrix(OpusProjectionEncoder *st)
     align(sizeof(OpusProjectionEncoder)));
 }
 
-static MappingMatrix *get_demixing_matrix(OpusProjectionEncoder *st)
+static MappingMatrix *get_enc_demixing_matrix(OpusProjectionEncoder *st)
 {
   /* void* cast avoids clang -Wcast-align warning */
   return (MappingMatrix *)(void*)((char*)st +
@@ -256,7 +254,7 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
       return OPUS_BAD_ARG;
 
     /* Assign demixing matrix based on available pre-computed matrices. */
-    demixing_matrix = get_demixing_matrix(st);
+    demixing_matrix = get_enc_demixing_matrix(st);
     if (order_plus_one == 2)
     {
       mapping_matrix_init(demixing_matrix, mapping_matrix_foa_demixing.rows,
@@ -381,14 +379,14 @@ void opus_projection_encoder_destroy(OpusProjectionEncoder *st)
 
 int opus_projection_encoder_ctl(OpusProjectionEncoder *st, int request, ...)
 {
+  va_list ap;
   MappingMatrix *demixing_matrix;
   OpusMSEncoder *ms_encoder;
   int ret = OPUS_OK;
 
   ms_encoder = get_multistream_encoder(st);
-  demixing_matrix = get_demixing_matrix(st);
+  demixing_matrix = get_enc_demixing_matrix(st);
 
-  va_list ap;
   va_start(ap, request);
   switch(request)
   {
@@ -468,93 +466,3 @@ bad_arg:
   return OPUS_BAD_ARG;
 }
 
-#else /* ENABLE_EXPERIMENTAL_AMBISONICS */
-
-opus_int32 opus_projection_ambisonics_encoder_get_size(
-    int channels, int mapping_family)
-{
-  (void)channels;
-  (void)mapping_family;
-  return OPUS_UNIMPLEMENTED;
-}
-
-OpusProjectionEncoder *opus_projection_ambisonics_encoder_create(
-    opus_int32 Fs, int channels, int mapping_family, int *streams,
-    int *coupled_streams, int application, int *error)
-{
-  (void)Fs;
-  (void)channels;
-  (void)mapping_family;
-  (void)streams;
-  (void)coupled_streams;
-  (void)application;
-  if (error) *error = OPUS_UNIMPLEMENTED;
-  return NULL;
-}
-
-int opus_projection_ambisonics_encoder_init(
-    OpusProjectionEncoder *st,
-    opus_int32 Fs,
-    int channels,
-    int mapping_family,
-    int *streams,
-    int *coupled_streams,
-    int application)
-{
-  (void)st;
-  (void)Fs;
-  (void)channels;
-  (void)mapping_family;
-  (void)streams;
-  (void)coupled_streams;
-  (void)application;
-  return OPUS_UNIMPLEMENTED;
-}
-
-int opus_projection_encode(
-    OpusProjectionEncoder *st,
-    const opus_int16 *pcm,
-    int frame_size,
-    unsigned char *data,
-    opus_int32 max_data_bytes)
-{
-  (void)st;
-  (void)pcm;
-  (void)frame_size;
-  (void)data;
-  (void)max_data_bytes;
-  return OPUS_UNIMPLEMENTED;
-}
-
-int opus_projection_encode_float(
-    OpusProjectionEncoder *st,
-    const float *pcm,
-    int frame_size,
-    unsigned char *data,
-    opus_int32 max_data_bytes)
-{
-  (void)st;
-  (void)pcm;
-  (void)frame_size;
-  (void)data;
-  (void)max_data_bytes;
-  return OPUS_UNIMPLEMENTED;
-}
-
-void opus_projection_encoder_destroy(
-    OpusProjectionEncoder *st)
-{
-  (void)st;
-}
-
-int opus_projection_encoder_ctl(
-    OpusProjectionEncoder *st,
-    int request,
-    ...)
-{
-  (void)st;
-  (void)request;
-  return OPUS_UNIMPLEMENTED;
-}
-
-#endif /* ENABLE_EXPERIMENTAL_AMBISONICS */

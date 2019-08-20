@@ -43,10 +43,6 @@
 static void validate_ms_decoder(OpusMSDecoder *st)
 {
    validate_layout(&st->layout);
-#ifdef OPUS_ARCHMASK
-   celt_assert(st->arch >= 0);
-   celt_assert(st->arch <= OPUS_ARCHMASK);
-#endif
 }
 #define VALIDATE_MS_DECODER(st) validate_ms_decoder(st)
 #else
@@ -491,7 +487,7 @@ int opus_multistream_decoder_ctl_va_list(OpusMSDecoder *st, int request,
           OpusDecoder **value;
           stream_id = va_arg(ap, opus_int32);
           if (stream_id<0 || stream_id >= st->layout.nb_streams)
-             ret = OPUS_BAD_ARG;
+             goto bad_arg;
           value = va_arg(ap, OpusDecoder**);
           if (!value)
           {

@@ -33,8 +33,6 @@
 #ifndef MAPPING_MATRIX_H
 #define MAPPING_MATRIX_H
 
-#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-
 #include "opus_types.h"
 #include "opus_projection.h"
 
@@ -55,7 +53,7 @@ opus_int32 mapping_matrix_get_size(int rows, int cols);
 opus_int16 *mapping_matrix_get_data(const MappingMatrix *matrix);
 
 void mapping_matrix_init(
-    MappingMatrix * const st,
+    MappingMatrix * const matrix,
     int rows,
     int cols,
     int gain,
@@ -131,7 +129,5 @@ extern const opus_int16 mapping_matrix_toa_demixing_data[324];
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* ENABLE_EXPERIMENTAL_AMBISONICS */
 
 #endif /* MAPPING_MATRIX_H */

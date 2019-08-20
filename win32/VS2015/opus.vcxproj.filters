@@ -48,10 +48,16 @@
     <ClInclude Include="..\..\include\opus_multistream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\opus_projection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\analysis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mapping_matrix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\mlp.h">
@@ -251,6 +257,9 @@
     <ClCompile Include="..\..\celt\laplace.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\mapping_matrix.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\celt\mathops.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -285,6 +294,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\opus_multistream_encoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\opus_projection_decoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\opus_projection_encoder.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\celt\pitch.c">

@@ -42,8 +42,6 @@
 #include "../src/mapping_matrix.h"
 #include "mathops.h"
 
-#ifdef ENABLE_EXPERIMENTAL_AMBISONICS
-
 #define BUFFER_SIZE 960
 #define MAX_DATA_BYTES 32768
 #define MAX_FRAME_SAMPLES 5760
@@ -362,6 +360,8 @@ void test_encode_decode(opus_int32 bitrate, opus_int32 channels,
     goto bad_cleanup;
   }
 
+  opus_projection_decoder_destroy(st_dec);
+  opus_projection_encoder_destroy(st_enc);
   free(buffer_in);
   free(buffer_out);
   return;
@@ -392,15 +392,3 @@ int main(int _argc, char **_argv)
   return 0;
 }
 
-#else
-
-int main(int _argc, char **_argv)
-{
-  (void)_argc;
-  (void)_argv;
-  fprintf(stderr, "Projection tests are disabled. "
-          "Configure with --enable-ambisonics for support.\n");
-  return 0;
-}
-
-#endif /* ENABLE_EXPERIMENTAL_AMBISONICS */
