@@ -348,6 +348,7 @@ static OPUS_INLINE int interp_bits2pulses(const CELTMode *m, int start, int end,
             /*This if() block is the only part of the allocation function that
                is not a mandatory part of the bitstream: any bands we choose to
                skip here must be explicitly signaled.*/
+#ifndef FUZZING
             int depth_threshold;
             /*We choose a threshold with some hysteresis to keep bands from
                fluctuating in and out, but we try not to fold below a certain point. */
@@ -355,10 +356,9 @@ static OPUS_INLINE int interp_bits2pulses(const CELTMode *m, int start, int end,
                depth_threshold = j<prev ? 7 : 9;
             else
                depth_threshold = 0;
-#ifdef FUZZING
-            if ((rand()&0x1) == 0)
-#else
             if (codedBands<=start+2 || (band_bits > (depth_threshold*band_width<<LM<<BITRES)>>4 && j<=signalBandwidth))
+#else
+            if ((rand()&0x1) == 0)
 #endif
             {
                ec_enc_bit_logp(ec, 1, 1);
