@@ -146,6 +146,8 @@ static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
         11000, 1000, /* WB<->SWB */
         12000, 2000, /* SWB<->FB */
 };
+
+#ifndef FUZZING
 /* Threshold bit-rates for switching between mono and stereo */
 static const opus_int32 stereo_voice_threshold = 19000;
 static const opus_int32 stereo_music_threshold = 17000;
@@ -156,6 +158,7 @@ static const opus_int32 mode_thresholds[2][2] = {
       {  64000,      10000}, /* mono */
       {  44000,      10000}, /* stereo */
 };
+#endif
 
 static const opus_int32 fec_thresholds[] = {
         12000, 1000, /* NB */
