@@ -17,6 +17,7 @@ message(STATUS "Opus project version: ${PROJECT_VERSION}")
 
 project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
 include(opus_buildtype.cmake)
+include(CTest)
 
 option(OPUS_STACK_PROTECTOR "Use stack protection" ON)
 option(OPUS_USE_ALLOCA "Use alloca for stack arrays (on non-C99 compilers)" OFF)
