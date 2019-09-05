@@ -22,7 +22,7 @@ option(OPUS_STACK_PROTECTOR "Use stack protection" ON)
 option(OPUS_USE_ALLOCA "Use alloca for stack arrays (on non-C99 compilers)" OFF)
 option(OPUS_CUSTOM_MODES "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames"
        OFF)
-option(OPUS_BUILD_PROGRAMS "Build programs" OFF)
+option(OPUS_BUILD_PROGRAMS "Build programs" ON)
 option(OPUS_FIXED_POINT
        "Compile as fixed-point (for machines without a fast enough FPU)" OFF)
 option(OPUS_ENABLE_FLOAT_API
