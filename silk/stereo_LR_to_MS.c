@@ -44,7 +44,8 @@ void silk_stereo_LR_to_MS(
     opus_int                    prev_speech_act_Q8,             /* I    Speech activity level in previous frame     */
     opus_int                    toMono,                         /* I    Last frame before a stereo->mono transition */
     opus_int                    fs_kHz,                         /* I    Sample rate (kHz)                           */
-    opus_int                    frame_length                    /* I    Number of samples                           */
+    opus_int                    frame_length,                   /* I    Number of samples                           */
+    opus_int                    waveform_matching               /* I    Attempt to match the waveform as much as possible */
 )
 {
     opus_int   n, is10msFrame, denom_Q16, delta0_Q13, delta1_Q13;
@@ -115,7 +116,7 @@ void silk_stereo_LR_to_MS(
     frac_3_Q16 = silk_MUL( 3, frac_Q16 );
     mid_side_rates_bps[ 0 ] = silk_DIV32_varQ( total_rate_bps, SILK_FIX_CONST( 8 + 5, 16 ) + frac_3_Q16, 16+3 );
     /* If Mid bitrate below minimum, reduce stereo width */
-    if( mid_side_rates_bps[ 0 ] < min_mid_rate_bps ) {
+    if( !waveform_matching && mid_side_rates_bps[ 0 ] < min_mid_rate_bps ) {
         mid_side_rates_bps[ 0 ] = min_mid_rate_bps;
         mid_side_rates_bps[ 1 ] = total_rate_bps - mid_side_rates_bps[ 0 ];
         /* width = 4 * ( 2 * side_rate - min_rate ) / ( ( 1 + 3 * frac ) * min_rate ) */

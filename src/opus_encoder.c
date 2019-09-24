@@ -86,6 +86,7 @@ struct OpusEncoder {
     int          encoder_buffer;
     int          lfe;
     int          arch;
+    int          waveform_matching;
     int          use_dtx;                 /* general DTX for both SILK and CELT */
 #ifndef DISABLE_FLOAT_API
     TonalityAnalysisState analysis;
@@ -226,6 +227,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->silk_mode.useDTX                    = 0;
     st->silk_mode.useCBR                    = 0;
     st->silk_mode.reducedDependency         = 0;
+    st->silk_mode.waveform_matching         = 0;
 
     /* Create CELT encoder */
     /* Initialize CELT encoder */
@@ -1963,6 +1965,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        else
           st->silk_mode.stereoWidth_Q14 = 16384 - 2048*(opus_int32)(32000-equiv_rate)/(equiv_rate-14000);
     }
+    if (st->waveform_matching)
+       st->silk_mode.stereoWidth_Q14 = 16384;
     if( !st->energy_masking && st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
@@ -2677,6 +2681,28 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                goto bad_arg;
             }
             celt_encoder_ctl(celt_enc, OPUS_GET_PHASE_INVERSION_DISABLED(value));
+        }
+        break;
+        case OPUS_SET_WAVEFORM_MATCHING_REQUEST:
+        {
+           opus_int32 value = va_arg(ap, opus_int32);
+           if(value<0 || value>1)
+           {
+              goto bad_arg;
+           }
+           st->waveform_matching = value;
+           st->silk_mode.waveform_matching = value;
+           celt_encoder_ctl(celt_enc, OPUS_SET_WAVEFORM_MATCHING(value));
+        }
+        break;
+        case OPUS_GET_WAVEFORM_MATCHING_REQUEST:
+        {
+            opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value)
+            {
+               goto bad_arg;
+            }
+            *value = st->waveform_matching;
         }
         break;
         case OPUS_RESET_STATE:
