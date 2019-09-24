@@ -58,7 +58,8 @@ void silk_stereo_LR_to_MS(
     opus_int                    prev_speech_act_Q8,             /* I    Speech activity level in previous frame     */
     opus_int                    toMono,                         /* I    Last frame before a stereo->mono transition */
     opus_int                    fs_kHz,                         /* I    Sample rate (kHz)                           */
-    opus_int                    frame_length                    /* I    Number of samples                           */
+    opus_int                    frame_length,                   /* I    Number of samples                           */
+    opus_int                    waveform_matching               /* I    Attempt to match the waveform as much as possible */
 );
 
 /* Convert adaptive Mid/Side representation to Left/Right stereo signal */

@@ -169,6 +169,8 @@ extern "C" {
 #define OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST 4046
 #define OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST 4047
 #define OPUS_GET_IN_DTX_REQUEST              4049
+#define OPUS_SET_WAVEFORM_MATCHING_REQUEST 4050
+#define OPUS_GET_WAVEFORM_MATCHING_REQUEST 4051
 
 /** Defines for the presence of extended APIs. */
 #define OPUS_HAVE_OPUS_PROJECTION_H
@@ -618,6 +620,41 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_GET_PREDICTION_DISABLED(x) OPUS_GET_PREDICTION_DISABLED_REQUEST, __opus_check_int_ptr(x)
 
+/** Gets the DTX state of the encoder.
+  * Returns whether the last encoded frame was either a comfort noise update
+  * during DTX or not encoded because of DTX.
+  * @param[out] x <tt>opus_int32 *</tt>: Returns one of the following values:
+  * <dl>
+  * <dt>0</dt><dd>The encoder is not in DTX.</dd>
+  * <dt>1</dt><dd>The encoder is in DTX.</dd>
+  * </dl>
+  * @hideinitializer */
+#define OPUS_GET_IN_DTX(x) OPUS_GET_IN_DTX_REQUEST, __opus_check_int_ptr(x)
+
+/** If set to 1, attempt to better match the input waveform, at the cost
+  * of reducing the perceptual quality of the signal. This option
+  * disables the use of coding tools like folding, intensity stereo,
+  * and disables some encoder-side filtering. This option will *never* improve
+  * the quality of normal mono or stereo audio and is only meant to be used
+  * for signals where inaudible phase differences matter (e.g. family 2 ambisonics).
+  * @see OPUS_GET_WAVEFORM_MATCHING
+  * @param[in] x <tt>opus_int32</tt>: Allowed values:
+  * <dl>
+  * <dt>0</dt><dd>Disable waveform matching (default).</dd>
+  * <dt>1</dt><dd>Enable waveform matching.</dd>
+  * </dl>
+  * @hideinitializer */
+#define OPUS_SET_WAVEFORM_MATCHING(x) OPUS_SET_WAVEFORM_MATCHING_REQUEST, __opus_check_int(x)
+/** Gets the encoder's configured waveform matching status.
+  * @see OPUS_SET_WAVEFORM_MATCHING
+  * @param[out] x <tt>opus_int32 *</tt>: Returns one of the following values:
+  * <dl>
+  * <dt>0</dt><dd>Waveform matching disabled (default).</dd>
+  * <dt>1</dt><dd>Waveform matching enabled.</dd>
+  * </dl>
+  * @hideinitializer */
+#define OPUS_GET_WAVEFORM_MATCHING(x) OPUS_GET_WAVEFORM_MATCHING_REQUEST, __opus_check_int_ptr(x)
+
 /**@}*/
 
 /** @defgroup opus_genericctls Generic CTLs
@@ -716,16 +753,6 @@ extern "C" {
   * </dl>
   * @hideinitializer */
 #define OPUS_GET_PHASE_INVERSION_DISABLED(x) OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST, __opus_check_int_ptr(x)
-/** Gets the DTX state of the encoder.
-  * Returns whether the last encoded frame was either a comfort noise update
-  * during DTX or not encoded because of DTX.
-  * @param[out] x <tt>opus_int32 *</tt>: Returns one of the following values:
-  * <dl>
-  * <dt>0</dt><dd>The encoder is not in DTX.</dd>
-  * <dt>1</dt><dd>The encoder is in DTX.</dd>
-  * </dl>
-  * @hideinitializer */
-#define OPUS_GET_IN_DTX(x) OPUS_GET_IN_DTX_REQUEST, __opus_check_int_ptr(x)
 
 /**@}*/
 

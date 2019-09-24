@@ -75,6 +75,7 @@ struct OpusCustomEncoder {
    int lsb_depth;
    int lfe;
    int disable_inv;
+   int waveform_matching;
    int arch;
 
    /* Everything beyond this point gets cleared on a reset */
@@ -1973,6 +1974,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          /*printf("%d %d\n", st->tapset_decision, st->spread_decision);*/
          /*printf("%f %d %f %d\n\n", st->analysis.tonality, st->spread_decision, st->analysis.tonality_slope, st->tapset_decision);*/
       }
+      /* SPREAD_AGGRESSIVE can lead to bands being replaced by noise, so disabling for waveform_matching. */
+      if (st->waveform_matching && st->spread_decision == SPREAD_AGGRESSIVE)
+         st->spread_decision = SPREAD_NORMAL;
+
       ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
    }
 
@@ -2031,6 +2036,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
       st->intensity = hysteresis_decision((opus_val16)(equiv_rate/1000),
             intensity_thresholds, intensity_histeresis, 21, st->intensity);
+      if (st->waveform_matching)
+         st->intensity = end;
       st->intensity = IMIN(end,IMAX(start, st->intensity));
    }
 
@@ -2193,7 +2200,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       signalBandwidth = 1;
    codedBands = clt_compute_allocation(mode, start, end, offsets, cap,
          alloc_trim, &st->intensity, &dual_stereo, bits, &balance, pulses,
-         fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands, signalBandwidth);
+         fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands,
+         signalBandwidth, st->waveform_matching);
    if (st->lastCodedBands)
       st->lastCodedBands = IMIN(st->lastCodedBands+1,IMAX(st->lastCodedBands-1,codedBands));
    else
@@ -2210,7 +2218,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    if (anti_collapse_rsv > 0)
    {
-      anti_collapse_on = st->consec_transient<2;
+      anti_collapse_on = st->consec_transient<2 && !st->waveform_matching;
 #ifdef FUZZING
       anti_collapse_on = rand()&0x1;
 #endif
@@ -2515,6 +2523,26 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
              goto bad_arg;
           }
           *value = st->disable_inv;
+      }
+      break;
+      case OPUS_SET_WAVEFORM_MATCHING_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if(value<0 || value>1)
+         {
+            goto bad_arg;
+         }
+         st->waveform_matching = value;
+      }
+      break;
+      case OPUS_GET_WAVEFORM_MATCHING_REQUEST:
+      {
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          if (!value)
+          {
+             goto bad_arg;
+          }
+          *value = st->waveform_matching;
       }
       break;
       case OPUS_RESET_STATE:

@@ -98,6 +98,9 @@ typedef struct {
     /* I: Make frames as independent as possible (but still use LPC)                        */
     opus_int reducedDependency;
 
+    /* I: Attempt to match the waveform as much as possible */
+    opus_int waveform_matching;
+
     /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
     opus_int32 internalSampleRate;
 
