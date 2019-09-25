@@ -475,6 +475,8 @@ static int opus_multistream_encoder_init_impl(
       if(ret!=OPUS_OK)return ret;
       if (i==st->lfe_stream)
          opus_encoder_ctl((OpusEncoder*)ptr, OPUS_SET_LFE(1));
+      if (mapping_type == MAPPING_TYPE_AMBISONICS)
+         opus_encoder_ctl((OpusEncoder*)ptr, OPUS_SET_WAVEFORM_MATCHING(1));
       ptr += align(coupled_size);
    }
    for (;i<st->layout.nb_streams;i++)
@@ -482,6 +484,8 @@ static int opus_multistream_encoder_init_impl(
       ret = opus_encoder_init((OpusEncoder*)ptr, Fs, 1, application);
       if (i==st->lfe_stream)
          opus_encoder_ctl((OpusEncoder*)ptr, OPUS_SET_LFE(1));
+      if (mapping_type == MAPPING_TYPE_AMBISONICS)
+         opus_encoder_ctl((OpusEncoder*)ptr, OPUS_SET_WAVEFORM_MATCHING(1));
       if(ret!=OPUS_OK)return ret;
       ptr += align(mono_size);
    }
