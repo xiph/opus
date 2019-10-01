@@ -18,6 +18,7 @@ message(STATUS "Opus project version: ${PROJECT_VERSION}")
 project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
 include(opus_buildtype.cmake)
 
+option(OPUS_BUILD_SHARED_LIBRARY "Build shared library" OFF)
 option(OPUS_STACK_PROTECTOR "Use stack protection" ON)
 option(OPUS_USE_ALLOCA "Use alloca for stack arrays (on non-C99 compilers)" OFF)
 option(OPUS_CUSTOM_MODES "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames"
@@ -37,6 +38,11 @@ include(opus_sources.cmake)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
 include(FeatureSummary)
+
+if(OPUS_BUILD_SHARED_LIBRARY)
+  # Global flag to cause add_library() to create shared libraries if on.
+  set(BUILD_SHARED_LIBS ON)
+endif()
 
 if(OPUS_STACK_PROTECTOR)
   if(NOT MSVC) # GC on by default on MSVC
