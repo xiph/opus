@@ -2736,11 +2736,11 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             }
             if (st->silk_mode.useDTX && (st->prev_mode == MODE_SILK_ONLY || st->prev_mode == MODE_HYBRID)) {
                 /* DTX determined by Silk. */
-                int n;
-                void *silk_enc = (char*)st+st->silk_enc_offset;
-                *value = 1;
-                for (n=0;n<st->silk_mode.nChannelsInternal;n++) {
-                    *value = *value && ((silk_encoder*)silk_enc)->state_Fxx[n].sCmn.noSpeechCounter >= NB_SPEECH_FRAMES_BEFORE_DTX;
+                silk_encoder *silk_enc = (silk_encoder*)((char*)st+st->silk_enc_offset);
+                *value = silk_enc->state_Fxx[0].sCmn.noSpeechCounter >= NB_SPEECH_FRAMES_BEFORE_DTX;
+                /* Stereo: check second channel unless only the middle channel was encoded. */
+                if(*value == 1 && st->silk_mode.nChannelsInternal == 2 && silk_enc->prev_decode_only_middle == 0) {
+                    *value = silk_enc->state_Fxx[1].sCmn.noSpeechCounter >= NB_SPEECH_FRAMES_BEFORE_DTX;
                 }
             }
 #ifndef DISABLE_FLOAT_API
@@ -2754,7 +2754,6 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             }
         }
         break;
-
         case CELT_GET_MODE_REQUEST:
         {
            const CELTMode ** value = va_arg(ap, const CELTMode**);
