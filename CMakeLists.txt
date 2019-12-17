@@ -39,9 +39,10 @@ include(GNUInstallDirs)
 include(CMakeDependentOption)
 include(FeatureSummary)
 
-if(OPUS_BUILD_SHARED_LIBRARY)
+if(OPUS_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS)
   # Global flag to cause add_library() to create shared libraries if on.
   set(BUILD_SHARED_LIBS ON)
+  set(OPUS_BUILD_SHARED_LIBRARY ON)
 endif()
 
 if(OPUS_STACK_PROTECTOR)
@@ -122,6 +123,7 @@ set_package_properties(Git
                        PURPOSE
                        "required to set up package version")
 
+add_feature_info(BUILD_SHARED_LIBRARY OPUS_BUILD_SHARED_LIBRARY "Build shared library")
 add_feature_info(STACK_PROTECTOR OPUS_STACK_PROTECTOR "Use stack protection")
 add_feature_info(USE_ALLOCA OPUS_USE_ALLOCA
                  "Use alloca for stack arrays (on non-C99 compilers)")
