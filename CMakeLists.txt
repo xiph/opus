@@ -381,12 +381,12 @@ if(OPUS_BUILD_PROGRAMS)
   target_include_directories(opus_demo PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
   target_include_directories(opus_demo PRIVATE silk) # debug.h
   target_include_directories(opus_demo PRIVATE celt) # arch.h
-  target_link_libraries(opus_demo PRIVATE opus)
+  target_link_libraries(opus_demo PRIVATE opus ${OPUS_REQUIRED_LIBRARIES})
 
   # compare
   add_executable(opus_compare ${opus_compare_sources})
   target_include_directories(opus_compare PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-  target_link_libraries(opus_compare PRIVATE opus)
+  target_link_libraries(opus_compare PRIVATE opus ${OPUS_REQUIRED_LIBRARIES})
 endif()
 
 if(BUILD_TESTING)
