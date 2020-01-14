@@ -1,0 +1,452 @@
+name: Opus Build Matrix
+
+on: [push, pull_request]
+
+jobs:
+  CMake:
+    name: CMake as submodule
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Autogen
+        run: ./autogen.sh
+      - name: Configure
+        run: ./configure
+      - name: DistCheck
+        run: make distcheck -j 2
+      - name: Clean out gitrepo
+        run: find . ! -name 'opus*.tar.gz' -type f -exec rm -f {} +
+      - name: Create submodule dir
+        run: mkdir opus_submodule
+      - name: Untar dist
+        run: for F in opus*.tar.gz; do tar -xf "$F" -C ./opus_submodule --strip-components=1; done
+      - name: Create new CMakeLists.txt for submodule
+        run: printf '%s\n' 'cmake_minimum_required(VERSION 3.1)' 'project(OpusSubModule LANGUAGES C)' 'add_subdirectory(opus_submodule)' > CMakeLists.txt
+      - name: Create Build Dir
+        run: mkdir build
+      - name: Configure submodule build
+        working-directory: ./build
+        run: cmake .. -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON
+      - name: Build
+        working-directory: ./build
+        run: make -j 2 -s
+      - name: Test
+        working-directory: ./build
+        run: ctest -j 2
+
+  CheckTrailingWhiteSpaces:
+    name: Check trailing white spaces
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Check Whitespaces
+        run: |
+          git diff-tree --check origin/master HEAD
+
+  CMakeDistCheckTest:
+    name: Dist Check Test CMake
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Autogen
+        run: ./autogen.sh
+      - name: Configure
+        run: ./configure
+      - name: DistCheck
+        run: make distcheck -j 2
+      - name: Untar dist
+        run: tar -xf opus-unknown.tar.gz
+      - name: Create Work Dir
+        run: mkdir opus-unknown/build
+      - name: Configure
+        working-directory: ./opus-unknown/build
+        run: cmake .. -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON
+      - name: Build
+        working-directory: ./opus-unknown/build
+        run: make -j 2 -s
+      - name: Test
+        working-directory: ./opus-unknown/build
+        run: ctest -j 2
+
+  CMakeVersionTest:
+    name: Test build with CMake 3.1.0
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install CMake 3.1
+        run: |
+          curl -sL https://github.com/Kitware/CMake/releases/download/v3.1.0/cmake-3.1.0-Linux-x86_64.sh -o cmakeinstall.sh
+          chmod +x cmakeinstall.sh
+          sudo ./cmakeinstall.sh --prefix=/usr/local --exclude-subdir
+          rm cmakeinstall.sh
+          sudo apt-get install libidn11
+      - name: Create Work Dir
+        run: mkdir build
+      - name: Configure
+        working-directory: ./build
+        run: cmake .. -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON
+      - name: Build
+        working-directory: ./build
+        run: make -j 2 -s
+      - name: Test
+        working-directory: ./build
+        run: ctest -j 2
+
+  CMakeMINGW:
+    name: CMake MINGW
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install MINGW
+        run: sudo apt-get install -y mingw-w64
+      - name: Create Work Dir
+        run: mkdir build
+      - name: Configure
+        working-directory: ./build
+        run: cmake .. -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc
+      - name: Build
+        working-directory: ./build
+        run: cmake --build . -j 2 --config Release --target package
+
+  CMakeBuild:
+    name: CMake/${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Android/Dll/ARMv8/Release",
+            os: ubuntu-latest,
+            config: Release,
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DBUILD_SHARED_LIBS=ON"
+          }
+        - {
+            name: "Android/Dll/ARMv7/Release",
+            os: ubuntu-latest,
+            config: Release,
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DBUILD_SHARED_LIBS=ON"
+          }
+        - {
+            name: "Android/Dll/X86/Release",
+            os: ubuntu-latest,
+            config: Release,
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86 -DBUILD_SHARED_LIBS=ON"
+          }
+        - {
+            name: "Android/Dll/X64/Release",
+            os: ubuntu-latest,
+            config: Release,
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64 -DBUILD_SHARED_LIBS=ON"
+          }
+        - {
+            name: "Windows/Dll/X86/Release",
+            os: windows-latest,
+            config: Release,
+            args: -G "Visual Studio 16 2019" -A Win32 -DBUILD_SHARED_LIBS=ON
+          }
+        - {
+            name: "Windows/Dll/X64/Release",
+            os: windows-latest,
+            config: Release,
+            args: -G "Visual Studio 16 2019" -A Win32 -DBUILD_SHARED_LIBS=ON
+          }
+        - {
+            name: "Windows/Dll/ARMv7/Release",
+            os: windows-latest,
+            config: Release,
+            args: -G "Visual Studio 16 2019" -A ARM -DBUILD_SHARED_LIBS=ON
+          }
+        - {
+            name: "Windows/Dll/ARMv8/Release",
+            os: windows-latest,
+            config: Release,
+            args: -G "Visual Studio 16 2019" -A ARM64 -DBUILD_SHARED_LIBS=ON
+          }
+        - {
+            name: "Linux/Dll/X64/Release",
+            os: ubuntu-latest,
+            config: Release,
+            args: -DBUILD_SHARED_LIBS=ON
+          }
+        - {
+            name: "MacOSX/Dll/X64/Release",
+            os: macos-latest,
+            config: Release,
+            args: -DBUILD_SHARED_LIBS=ON
+          }
+        - {
+            name: "MacOSX/Framework/X64/Release",
+            os: macos-latest,
+            config: Release,
+            args: -DBUILD_FRAMEWORK=ON -DCMAKE_INSTALL_PREFIX=install
+          }
+          # use unix makefiles for iOS to avoid Xcode to complain about signing.
+        - {
+            name: "iOS/Dll/arm64/Release",
+            os: macos-latest,
+            config: Release,
+            args: -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64
+          }
+          # use unix makefiles for iOS to avoid Xcode to complain about signing.
+        - {
+            name: "iOS/Framework/arm64/Release",
+            os: macos-latest,
+            config: Release,
+            args: -G "Unix Makefiles" -DBUILD_FRAMEWORK=ON -DCMAKE_INSTALL_PREFIX=install -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64
+          }
+        - {
+            name: "Windows/Lib/X86/Release",
+            os: windows-latest,
+            config: Release,
+            args: -G "Visual Studio 16 2019" -A Win32
+          }
+        - {
+            name: "Windows/Lib/X64/Release",
+            os: windows-latest,
+            config: Release,
+            args: -G "Visual Studio 16 2019" -A Win32
+          }
+        - {
+            name: "Windows/Lib/ARMv7/Release",
+            os: windows-latest,
+            config: Release,
+            args: -G "Visual Studio 16 2019" -A ARM
+          }
+        - {
+            name: "Windows/Lib/armv8/Release",
+            os: windows-latest,
+            config: Release,
+            args: -G "Visual Studio 16 2019" -A ARM64
+          }
+        - {
+            name: "Linux/Lib/X64/Release",
+            os: ubuntu-latest,
+            config: Release,
+            args: ""
+          }
+        - {
+            name: "MacOSX/Lib/X64/Release",
+            os: macos-latest,
+            config: Release,
+            args: ""
+          }
+          # use unix makefiles for iOS to avoid Xcode to complain about signing.
+        - {
+            name: "iOS/Lib/arm64/Release",
+            os: macos-latest,
+            config: Release,
+            args: -G "Unix Makefiles" -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64
+          }
+        - {
+            name: "Android/Lib/ARMv8/Release",
+            os: macos-latest,
+            config: Release,
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a"
+          }
+        - {
+            name: "Android/Lib/ARMv7/Release",
+            os: macos-latest,
+            config: Release,
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a"
+          }
+        - {
+            name: "Android/Lib/X86/Release",
+            os: macos-latest,
+            config: Release,
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86"
+          }
+        - {
+            name: "Android/Lib/X64/Release",
+            os: macos-latest,
+            config: Release,
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64"
+          }
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+        # Now we need at least CMake 3.15 to use the cmake --install command
+        # Current linux build nodes only have 3.12
+      - name: Install CMake 3.16 on Linux
+        if: matrix.config.os == 'ubuntu-latest'
+        run: |
+          curl -sL https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2-Linux-x86_64.sh -o cmakeinstall.sh
+          chmod +x cmakeinstall.sh
+          sudo ./cmakeinstall.sh --prefix=/usr/local --exclude-subdir
+          rm cmakeinstall.sh
+      - name: Create Work Dir
+        run: mkdir build
+      - name: Configure
+        working-directory: ./build
+        run: cmake .. ${{ matrix.config.args }} -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON
+      - name: Build
+        working-directory: ./build
+        run: cmake --build . -j 2 --config ${{ matrix.config.config }} --target package
+      - name: Install Android Test Image
+        if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+        run: $ANDROID_HOME/tools/bin/sdkmanager "system-images;android-30;google_apis;x86_64"
+      - name: Create Android Virtual Device
+        if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+        run: echo "no" | $ANDROID_HOME/tools/bin/avdmanager --verbose create avd --force --name "generic_10" --package "system-images;android-30;google_apis;x86_64" --tag "google_apis" --abi "x86_64"
+      - name: Start Android Virtual Device
+        if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+        run: $ANDROID_HOME/emulator/emulator -avd "generic_10" -no-window -no-snapshot &
+      - name: Ensure emulator is started
+        if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+        run: while [ "`adb shell getprop sys.boot_completed | tr -d '\r' `" != "1" ] ; do sleep 1; done
+      - name: Test
+        if: contains(matrix.config.name, 'Windows') && !contains(matrix.config.name, 'ARM') && !contains(matrix.config.name, 'Dll') ||
+            contains(matrix.config.name, 'MacOSX') && !contains(matrix.config.name, 'ARM') && !contains(matrix.config.name, 'Dll') ||
+            contains(matrix.config.name, 'Linux') && !contains(matrix.config.name, 'ARM') && !contains(matrix.config.name, 'Dll') ||
+            contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+        working-directory: ./build
+        run: ctest -j 2 -C ${{ matrix.config.config }}
+
+  AutoMakeBuild:
+    name: AutoMake/${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Linux/GCC",
+            os: ubuntu-latest,
+            compiler: gcc,
+            automakeconfig:
+          }
+        - {
+            name: "Linux/GCC/EnableAssertions",
+            os: ubuntu-latest,
+            compiler: gcc,
+            automakeconfig: --enable-assertions
+          }
+        - {
+            name: "Linux/GCC/EnableFixedPoint",
+            os: ubuntu-latest,
+            compiler: gcc,
+            automakeconfig: --enable-fixed-point
+          }
+        - {
+            name: "Linux/GCC/EnableFixedPoint/DisableFloatAPI",
+            os: ubuntu-latest,
+            compiler: gcc,
+            automakeconfig: --enable-assertions --disable-float-api
+          }
+        - {
+            name: "Linux/GCC/EnableFixedPoint/EnableAssertions",
+            os: ubuntu-latest,
+            compiler: gcc,
+            automakeconfig: --enable-fixed-point --enable-assertions
+          }
+        - {
+            name: "Linux/Clang",
+            os: ubuntu-latest,
+            compiler: clang,
+            automakeconfig:
+          }
+        - {
+            name: "Linux/Clang/EnableAssertions",
+            os: ubuntu-latest,
+            compiler: clang,
+            automakeconfig: --enable-assertions
+          }
+        - {
+            name: "Linux/Clang/EnableFixedPoint",
+            os: ubuntu-latest,
+            compiler: clang,
+            automakeconfig: --enable-fixed-point
+          }
+        - {
+            name: "Linux/Clang/EnableFixedPoint/DisableFloatAPI",
+            os: ubuntu-latest,
+            compiler: clang,
+            automakeconfig: --enable-assertions --disable-float-api
+          }
+        - {
+            name: "Linux/Clang/EnableFixedPoint/EnableAssertions",
+            os: ubuntu-latest,
+            compiler: clang,
+            automakeconfig: --enable-fixed-point --enable-assertions
+          }
+        - {
+            name: "MacOSX/GCC",
+            os: macos-latest,
+            compiler: gcc,
+            automakeconfig:
+          }
+        - {
+            name: "MacOSX/GCC/EnableAssertions",
+            os: macos-latest,
+            compiler: gcc,
+            automakeconfig: --enable-assertions
+          }
+        - {
+            name: "MacOSX/GCC/EnableFixedPoint",
+            os: macos-latest,
+            compiler: gcc,
+            automakeconfig: --enable-fixed-point
+          }
+        - {
+            name: "MacOSX/GCC/EnableFixedPoint/DisableFloatAPI",
+            os: macos-latest,
+            compiler: gcc,
+            automakeconfig: --enable-assertions --disable-float-api
+          }
+        - {
+            name: "MacOSX/GCC/EnableFixedPoint/EnableAssertions",
+            os: macos-latest,
+            compiler: gcc,
+            automakeconfig: --enable-fixed-point --enable-assertions
+          }
+        - {
+            name: "MacOSX/Clang",
+            os: macos-latest,
+            compiler: clang,
+            automakeconfig:
+          }
+        - {
+            name: "MacOSX/Clang/EnableAssertions",
+            os: macos-latest,
+            compiler: clang,
+            automakeconfig: --enable-assertions
+          }
+        - {
+            name: "MacOSX/Clang/EnableFixedPoint",
+            os: macos-latest,
+            compiler: clang,
+            automakeconfig: --enable-fixed-point
+          }
+        - {
+            name: "MacOSX/Clang/EnableFixedPoint/DisableFloatAPI",
+            os: macos-latest,
+            compiler: clang,
+            automakeconfig: --enable-assertions --disable-float-api
+          }
+        - {
+            name: "MacOSX/Clang/EnableFixedPoint/EnableAssertions",
+            os: macos-latest,
+            compiler: clang,
+            automakeconfig: --enable-fixed-point --enable-assertions
+          }
+    steps:
+      - uses: actions/checkout@v2
+        # No AutoMake on Mac so let's install it
+      - name: Install AutoConf, AutoMake and LibTool on MacOSX
+        if: matrix.config.os == 'macos-latest'
+        run: brew install autoconf automake libtool
+      - name: Autogen
+        run: CC=${{ matrix.config.compiler }} ./autogen.sh
+      - name: Configure
+        run: ./configure ${{ matrix.config.buildconfig }}
+      - name: DistCheck
+        run: make distcheck -j 2
