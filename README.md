@@ -1,4 +1,4 @@
-== Opus audio codec ==
+# Opus audio codec
 
 Opus is a codec for interactive speech and audio transmission over the Internet.
 
@@ -39,56 +39,62 @@ Opus-tools can be found at:
 or on the main Opus website:
  https://opus-codec.org/
 
-== Compiling libopus ==
+## Compiling libopus
 
 To build from a distribution tarball, you only need to do the following:
 
-    % ./configure
-    % make
+    ./configure
+    make
 
 To build from the git repository, the following steps are necessary:
 
-0) Set up a development environment:
+### 0) Set up a development environment:
 
 On an Ubuntu or Debian family Linux distribution:
 
-    % sudo apt-get install git autoconf automake libtool gcc make
+    sudo apt-get install git autoconf automake libtool gcc make
 
 On a Fedora/Redhat based Linux:
 
-    % sudo dnf install git autoconf automake libtool gcc make
+    sudo dnf install git autoconf automake libtool gcc make
 
 Or for older Redhat/Centos Linux releases:
 
-    % sudo yum install git autoconf automake libtool gcc make
+    sudo yum install git autoconf automake libtool gcc make
 
 On Apple macOS, install Xcode and brew.sh, then in the Terminal enter:
 
-    % brew install autoconf automake libtool
+    brew install autoconf automake libtool
 
-1) Clone the repository:
+### 1) Clone the repository:
 
-    % git clone https://git.xiph.org/opus.git
-    % cd opus
+    git clone https://git.xiph.org/opus.git
+    cd opus
 
-2) Compiling the source
+### 2) Compiling the source:
 
-    % ./autogen.sh
-    % ./configure
-    % make
+    ./autogen.sh
+    ./configure
+    make
 
-3) Install the codec libraries (optional)
+### 3) Install the codec libraries (optional):
 
-    % sudo make install
+    sudo make install
 
 Once you have compiled the codec, there will be a opus_demo executable
 in the top directory.
 
-Usage: opus_demo [-e] <application> <sampling rate (Hz)> <channels (1/2)>
-         <bits per second> [options] <input> <output>
-       opus_demo -d <sampling rate (Hz)> <channels (1/2)> [options]
-         <input> <output>
+## Usage
+Encode:
 
+    opus_demo [-e] <application> <sampling rate (Hz)> <channels (1/2)> <bits per second> [options] <input> <output>
+
+Decode:
+
+    opus_demo -d <sampling rate (Hz)> <channels (1/2)> [options] <input> <output>
+
+All options:
+```
 mode: voip | audio | restricted-lowdelay
 options:
   -e                : only runs the encoder (output the bit-stream)
@@ -109,11 +115,11 @@ options:
   -forcemono        : force mono encoding, even for stereo input
   -dtx              : enable SILK DTX
   -loss <perc>      : simulate packet loss, in percent (0-100); default: 0
-
+```
 input and output are little-endian signed 16-bit PCM files or opus
 bitstreams with simple opus_demo proprietary framing.
 
-== Testing ==
+## Testing
 
 This package includes a collection of automated unit and system tests
 which SHOULD be run after compiling the package especially the first
@@ -121,7 +127,7 @@ time it is run on a new platform.
 
 To run the integrated tests:
 
-    % make check
+    make check
 
 There is also collection of standard test vectors which are not
 included in this package for size reasons but can be obtained from:
@@ -129,11 +135,11 @@ https://opus-codec.org/docs/opus_testvectors-rfc8251.tar.gz
 
 To run compare the code to these test vectors:
 
-    % curl -OL https://opus-codec.org/docs/opus_testvectors-rfc8251.tar.gz
-    % tar -zxf opus_testvectors-rfc8251.tar.gz
-    % ./tests/run_vectors.sh ./ opus_newvectors 48000
+    curl -OL https://opus-codec.org/docs/opus_testvectors-rfc8251.tar.gz
+    tar -zxf opus_testvectors-rfc8251.tar.gz
+    ./tests/run_vectors.sh ./ opus_newvectors 48000
 
-== Portability notes ==
+## Portability notes
 
 This implementation uses floating-point by default but can be compiled to
 use only fixed-point arithmetic by setting --enable-fixed-point (if using
@@ -147,15 +153,15 @@ While it does not rely on any _undefined behavior_ as defined by C89 or
 C99, it relies on common _implementation-defined behavior_ for two's
 complement architectures:
 
-o Right shifts of negative values are consistent with two's
+* Right shifts of negative values are consistent with two's
   complement arithmetic, so that a>>b is equivalent to
   floor(a/(2^b)),
 
-o For conversion to a signed integer of N bits, the value is reduced
+* For conversion to a signed integer of N bits, the value is reduced
   modulo 2^N to be within range of the type,
 
-o The result of integer division of a negative value is truncated
+* The result of integer division of a negative value is truncated
   towards zero, and
 
-o The compiler provides a 64-bit integer type (a C99 requirement
+* The compiler provides a 64-bit integer type (a C99 requirement
   which is supported by most C89 compilers).
