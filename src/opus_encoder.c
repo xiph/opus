@@ -1152,16 +1152,18 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (!is_silence)
       st->voice_ratio = -1;
 
-    if (analysis_info.valid) {
-       activity = !is_silence &&
-              analysis_info.activity_probability >= DTX_ACTIVITY_THRESHOLD;
-       if (!activity) {
-          opus_val32 noise_energy = compute_frame_energy(pcm, frame_size, st->channels, st->arch);
-          /* do not mark as active unless is sufficiently quiet */
-          activity = st->peak_signal_energy < (PSEUDO_SNR_THRESHOLD * noise_energy);
-       }
-    } else {
+    if (is_silence)
+    {
        activity = !is_silence;
+    } else if (analysis_info.valid)
+    {
+       activity = analysis_info.activity_probability >= DTX_ACTIVITY_THRESHOLD;
+       if (!activity)
+       {
+           /* Mark as active if this noise frame is sufficiently loud */
+           opus_val32 noise_energy = compute_frame_energy(pcm, frame_size, st->channels, st->arch);
+           activity = st->peak_signal_energy < (PSEUDO_SNR_THRESHOLD * noise_energy);
+       }
     }
 
     st->detected_bandwidth = 0;
