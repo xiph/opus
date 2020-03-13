@@ -131,34 +131,33 @@ set_package_properties(Git
                        PURPOSE
                        "required to set up package version")
 
-add_feature_info(BUILD_SHARED_LIBRARY OPUS_BUILD_SHARED_LIBRARY "Build shared library")
-add_feature_info(STACK_PROTECTOR OPUS_STACK_PROTECTOR "Use stack protection")
-add_feature_info(USE_ALLOCA OPUS_USE_ALLOCA
+add_feature_info(OPUS_BUILD_SHARED_LIBRARY OPUS_BUILD_SHARED_LIBRARY "Build shared library")
+add_feature_info(OPUS_STACK_PROTECTOR OPUS_STACK_PROTECTOR "Use stack protection")
+add_feature_info(OPUS_USE_ALLOCA OPUS_USE_ALLOCA
                  "Use alloca for stack arrays (on non-C99 compilers)")
-add_feature_info(CUSTOM_MODES OPUS_CUSTOM_MODES
+add_feature_info(OPUS_CUSTOM_MODES OPUS_CUSTOM_MODES
                  "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames")
-add_feature_info(BUILD_TESTING OPUS_BUILD_TESTING "Build test programs")
-add_feature_info(BUILD_PROGRAMS OPUS_BUILD_PROGRAMS "Build programs")
+add_feature_info(OPUS_BUILD_TESTING OPUS_BUILD_TESTING "Build test programs")
+add_feature_info(OPUS_BUILD_PROGRAMS OPUS_BUILD_PROGRAMS "Build programs")
 add_feature_info(
-  FIXED_POINT OPUS_FIXED_POINT
+  OPUS_FIXED_POINT OPUS_FIXED_POINT
   "compile as fixed-point (for machines without a fast enough FPU)")
 add_feature_info(
-  FLOAT_API OPUS_ENABLE_FLOAT_API
+  OPUS_FLOAT_API OPUS_ENABLE_FLOAT_API
   "compile with the floating point API (for machines with float library)")
-
-add_feature_info(INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE
+add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE
                  "install PkgConfig module")
-add_feature_info(INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE
+add_feature_info(OPUS_INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE
                  "install CMake package config module")
 
 if(OPUS_CPU_X86 OR OPUS_CPU_X64)
-  add_feature_info(X86_MAY_HAVE_SSE OPUS_X86_MAY_HAVE_SSE
+  add_feature_info(OPUS_X86_MAY_HAVE_SSE OPUS_X86_MAY_HAVE_SSE
                    "does runtime check for SSE1 support")
-  add_feature_info(X86_MAY_HAVE_SSE2 OPUS_X86_MAY_HAVE_SSE2
+  add_feature_info(OPUS_X86_MAY_HAVE_SSE2 OPUS_X86_MAY_HAVE_SSE2
                    "does runtime check for SSE2 support")
-  add_feature_info(X86_MAY_HAVE_SSE4_1 OPUS_X86_MAY_HAVE_SSE4_1
+  add_feature_info(OPUS_X86_MAY_HAVE_SSE4_1 OPUS_X86_MAY_HAVE_SSE4_1
                    "does runtime check for SSE4_1 support")
-  add_feature_info(X86_MAY_HAVE_AVX OPUS_X86_MAY_HAVE_AVX
+  add_feature_info(OPUS_X86_MAY_HAVE_AVX OPUS_X86_MAY_HAVE_AVX
                    "does runtime check for AVX support")
   add_feature_info(OPUS_X86_PRESUME_SSE OPUS_X86_PRESUME_SSE
                    "assume target CPU has SSE1 support will override the runtime check")
