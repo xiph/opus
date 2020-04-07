@@ -52,12 +52,19 @@ if(OPUS_BUILD_TESTING OR BUILD_TESTING)
 endif()
 
 if(OPUS_STACK_PROTECTOR)
-  if(NOT MSVC) # GC on by default on MSVC
-    check_and_set_flag(STACK_PROTECTION_STRONG -fstack-protector-strong)
+  if(MSVC) # GC on by default on MSVC
+    check_and_set_flag(STACK_PROTECTOR /GS)
+  else()
+    check_and_set_flag(STACK_PROTECTOR -fstack-protector-strong)
   endif()
 else()
   if(MSVC)
-    check_and_set_flag(BUFFER_SECURITY_CHECK /GS-)
+    check_and_set_flag(STACK_PROTECTOR_DISABLED /GS-)
+    if (STACK_PROTECTOR_DISABLED_SUPPORTED)
+      set(STACK_PROTECTOR_SUPPORTED OFF)
+    endif()
+  else()
+    set(STACK_PROTECTOR_SUPPORTED OFF)
   endif()
 endif()
 
@@ -132,7 +139,7 @@ set_package_properties(Git
                        "required to set up package version")
 
 add_feature_info(OPUS_BUILD_SHARED_LIBRARY OPUS_BUILD_SHARED_LIBRARY "Build shared library")
-add_feature_info(OPUS_STACK_PROTECTOR OPUS_STACK_PROTECTOR "Use stack protection")
+add_feature_info(OPUS_STACK_PROTECTOR STACK_PROTECTOR_SUPPORTED "Use stack protection")
 add_feature_info(OPUS_USE_ALLOCA OPUS_USE_ALLOCA
                  "Use alloca for stack arrays (on non-C99 compilers)")
 add_feature_info(OPUS_CUSTOM_MODES OPUS_CUSTOM_MODES
