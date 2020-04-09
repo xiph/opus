@@ -276,7 +276,7 @@ if(OPUS_X86_PRESUME_SSE4_1)
   target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_SSE4_1)
 endif()
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(armv7-a)")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(arm|aarch64)")
   add_sources_group(opus celt ${celt_sources_arm})
 endif()
 
