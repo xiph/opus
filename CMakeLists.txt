@@ -59,6 +59,20 @@ cmake_dependent_option(OPUS_NONTHREADSAFE_PSEUDOSTACK
                        "NOT OPUS_VAR_ARRAYS; NOT OPUS_USE_ALLOCA"
                        OFF)
 
+cmake_dependent_option(OPUS_FAST_MATH
+                       "Enable fast math"
+                       ON
+                       "OPUS_FLOAT_APPROX; OPUS_FAST_MATH"
+                       OFF)
+
+if(OPUS_FAST_MATH)
+  if(MSVC)
+    check_and_set_flag(FAST_MATH /fp:fast)
+  else()
+    check_and_set_flag(FAST_MATH -ffast-math)
+  endif()
+endif()
+
 if(OPUS_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS)
   # Global flag to cause add_library() to create shared libraries if on.
   set(BUILD_SHARED_LIBS ON)
@@ -176,6 +190,7 @@ add_feature_info(
   "compile with the floating point API (for machines with float library)")
 add_feature_info(OPUS_FLOAT_APPROX OPUS_FLOAT_APPROX
   "Enable floating point approximations (Ensure your platform supports IEEE 754 before enabling)")
+add_feature_info(OPUS_FAST_MATH FAST_MATH_SUPPORTED "Enable fast math, (depending on OPUS_FLOAT_APPROX to be enabled)")
 add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE
                  "install PkgConfig module")
 add_feature_info(OPUS_INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE
