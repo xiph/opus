@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(opus_functions.cmake)
 
@@ -20,7 +21,6 @@ include(opus_buildtype.cmake)
 
 option(OPUS_BUILD_SHARED_LIBRARY "Build shared library" OFF)
 option(OPUS_STACK_PROTECTOR "Use stack protection" ON)
-option(OPUS_USE_ALLOCA "Use alloca for stack arrays (on non-C99 compilers)" OFF)
 option(OPUS_CUSTOM_MODES "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames"
        OFF)
 option(OPUS_BUILD_PROGRAMS "Build programs" OFF)
@@ -39,6 +39,22 @@ include(opus_sources.cmake)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
 include(FeatureSummary)
+
+cmake_dependent_option(OPUS_VAR_ARRAYS 
+                      "Use variable length arrays for stack arrays" 
+                      ON
+                      "VLA_SUPPORTED; NOT OPUS_USE_ALLOCA; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
+                      OFF)
+cmake_dependent_option(OPUS_USE_ALLOCA 
+                       "Use alloca for stack arrays (on non-C99 compilers)" 
+                       ON
+                       "USE_ALLOCA_SUPPORTED; NOT OPUS_VAR_ARRAYS; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
+                       OFF)
+cmake_dependent_option(OPUS_NONTHREADSAFE_PSEUDOSTACK 
+                       "Use a non threadsafe pseudostack when neither variable length arrays or alloca is supported"
+                       ON
+                       "NOT OPUS_VAR_ARRAYS; NOT OPUS_USE_ALLOCA"
+                       OFF)
 
 if(OPUS_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS)
   # Global flag to cause add_library() to create shared libraries if on.
@@ -67,7 +83,6 @@ else()
     set(STACK_PROTECTOR_SUPPORTED OFF)
   endif()
 endif()
-
 
 if(OPUS_CPU_X86 OR OPUS_CPU_X64)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE
@@ -140,8 +155,12 @@ set_package_properties(Git
 
 add_feature_info(OPUS_BUILD_SHARED_LIBRARY OPUS_BUILD_SHARED_LIBRARY "Build shared library")
 add_feature_info(OPUS_STACK_PROTECTOR STACK_PROTECTOR_SUPPORTED "Use stack protection")
+add_feature_info(OPUS_VAR_ARRAYS OPUS_VAR_ARRAYS 
+                 "Use variable length arrays for stack arrays")
 add_feature_info(OPUS_USE_ALLOCA OPUS_USE_ALLOCA
                  "Use alloca for stack arrays (on non-C99 compilers)")
+add_feature_info(OPUS_NONTHREADSAFE_PSEUDOSTACK OPUS_NONTHREADSAFE_PSEUDOSTACK 
+                 "Use a non threadsafe pseudostack when neither variable length arrays or alloca is supported")
 add_feature_info(OPUS_CUSTOM_MODES OPUS_CUSTOM_MODES
                  "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames")
 add_feature_info(OPUS_BUILD_TESTING OPUS_BUILD_TESTING "Build test programs")
@@ -215,14 +234,14 @@ if(NOT MSVC)
   target_compile_definitions(opus PRIVATE _FORTIFY_SOURCE=2)
 endif()
 
-# It is strongly recommended to uncomment one of these VAR_ARRAYS: Use C99
-# variable-length arrays for stack allocation USE_ALLOCA: Use alloca() for stack
-# allocation If none is defined, then the fallback is a non-threadsafe global
-# array
-if(OPUS_USE_ALLOCA OR MSVC)
-  target_compile_definitions(opus PRIVATE USE_ALLOCA)
-else()
+if(OPUS_VAR_ARRAYS)
   target_compile_definitions(opus PRIVATE VAR_ARRAYS)
+elseif(OPUS_USE_ALLOCA)
+  target_compile_definitions(opus PRIVATE USE_ALLOCA)
+elseif(OPUS_NONTHREADSAFE_PSEUDOSTACK)
+  target_compile_definitions(opus PRIVATE NONTHREADSAFE_PSEUDOSTACK)
+else()
+  message(ERROR Neet to set a define for stack allocation)
 endif()
 
 if(OPUS_CUSTOM_MODES)

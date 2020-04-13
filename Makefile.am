@@ -217,6 +217,8 @@ EXTRA_DIST = opus.pc.in \
              opus_functions.cmake \
              opus_sources.cmake \
              OpusConfig.cmake.in \
+             cmake/CFeatureCheck.cmake \
+             cmake/vla.c \
              tests/run_vectors.sh \
              celt/arm/arm2gnu.pl \
              celt/arm/celt_pitch_xcorr_arm.s \

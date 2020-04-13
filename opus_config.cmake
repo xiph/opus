@@ -16,6 +16,20 @@ if(HAVE_LIBM)
   list(APPEND OPUS_REQUIRED_LIBRARIES m)
 endif()
 
+include(CFeatureCheck)
+c_feature_check(VLA)
+
+include(CheckIncludeFile)
+check_include_file(alloca.h HAVE_ALLOCA_H)
+
+include(CheckSymbolExists)
+if(HAVE_ALLOCA_H)
+  add_definitions(-DHAVE_ALLOCA_H)
+  check_symbol_exists(alloca "alloca.h" USE_ALLOCA_SUPPORTED)
+else()
+  check_symbol_exists(alloca "stdlib.h;malloc.h" USE_ALLOCA_SUPPORTED)
+endif()
+
 include(CheckFunctionExists)
 check_function_exists(lrintf HAVE_LRINTF)
 check_function_exists(lrint HAVE_LRINT)
