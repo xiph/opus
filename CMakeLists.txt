@@ -30,6 +30,9 @@ option(OPUS_FIXED_POINT
 option(OPUS_ENABLE_FLOAT_API
        "Compile with the floating point API (for machines with float library"
        ON)
+option(OPUS_FLOAT_APPROX
+       "Enable floating point approximations (Ensure your platform supports IEEE 754 before enabling)"
+       OFF)
 option(OPUS_INSTALL_PKG_CONFIG_MODULE "Install PkgConfig module" ON)
 option(OPUS_INSTALL_CMAKE_CONFIG_MODULE "Install CMake package config module"
        ON)
@@ -171,6 +174,8 @@ add_feature_info(
 add_feature_info(
   OPUS_FLOAT_API OPUS_ENABLE_FLOAT_API
   "compile with the floating point API (for machines with float library)")
+add_feature_info(OPUS_FLOAT_APPROX OPUS_FLOAT_APPROX
+  "Enable floating point approximations (Ensure your platform supports IEEE 754 before enabling)")
 add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE
                  "install PkgConfig module")
 add_feature_info(OPUS_INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE
@@ -232,6 +237,10 @@ target_compile_definitions(opus PRIVATE OPUS_BUILD ENABLE_HARDENING)
 
 if(NOT MSVC)
   target_compile_definitions(opus PRIVATE _FORTIFY_SOURCE=2)
+endif()
+
+if(OPUS_FLOAT_APPROX)
+  target_compile_definitions(opus PRIVATE FLOAT_APPROX)
 endif()
 
 if(OPUS_VAR_ARRAYS)
