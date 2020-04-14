@@ -44,7 +44,7 @@ endfunction()
 
 function(get_package_version PACKAGE_VERSION)
   find_package(Git)
-  if(GIT_FOUND)
+  if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git")
     execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --match "v*"
                     OUTPUT_VARIABLE OPUS_PACKAGE_VERSION)
     if(OPUS_PACKAGE_VERSION)
@@ -78,6 +78,11 @@ function(get_package_version PACKAGE_VERSION)
                    ${opus_package_version_string})
     string(REPLACE "\""
                    ""
+                   opus_package_version_string
+                   ${opus_package_version_string})
+    # In case we have a unknown dist here we just replace it with 0
+    string(REPLACE "unknown"
+                   "0"
                    opus_package_version_string
                    ${opus_package_version_string})
     set(PACKAGE_VERSION ${opus_package_version_string} PARENT_SCOPE)
