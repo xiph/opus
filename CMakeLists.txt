@@ -37,6 +37,10 @@ option(OPUS_INSTALL_PKG_CONFIG_MODULE "Install PkgConfig module" ON)
 option(OPUS_INSTALL_CMAKE_CONFIG_MODULE "Install CMake package config module"
        ON)
 
+if(APPLE)
+  option(OPUS_BUILD_FRAMEWORK "Build Framework bundle for Apple systems" OFF)
+endif()
+
 include(opus_config.cmake)
 include(opus_sources.cmake)
 include(GNUInstallDirs)
@@ -73,7 +77,7 @@ if(OPUS_FAST_MATH)
   endif()
 endif()
 
-if(OPUS_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS)
+if(OPUS_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS OR OPUS_BUILD_FRAMEWORK)
   # Global flag to cause add_library() to create shared libraries if on.
   set(BUILD_SHARED_LIBS ON)
   set(OPUS_BUILD_SHARED_LIBRARY ON)
@@ -195,6 +199,7 @@ add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE
                  "install PkgConfig module")
 add_feature_info(OPUS_INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE
                  "install CMake package config module")
+add_feature_info(OPUS_BUILD_FRAMEWORK OPUS_BUILD_FRAMEWORK "Build Framework bundle for Apple systems")
 
 if(OPUS_CPU_X86 OR OPUS_CPU_X64)
   add_feature_info(OPUS_X86_MAY_HAVE_SSE OPUS_X86_MAY_HAVE_SSE
@@ -217,10 +222,6 @@ endif()
 
 feature_summary(WHAT ALL)
 
-add_library(opus ${opus_sources} ${opus_sources_float})
-
-add_library(Opus::opus ALIAS opus)
-
 set(Opus_PUBLIC_HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_custom.h
@@ -228,6 +229,9 @@ set(Opus_PUBLIC_HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_multistream.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_projection.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_types.h)
+
+add_library(opus ${opus_sources} ${opus_sources_float} ${Opus_PUBLIC_HEADER})
+add_library(Opus::opus ALIAS opus)
 
 set_target_properties(opus
                       PROPERTIES SOVERSION
@@ -439,11 +443,23 @@ target_compile_definitions(opus
                            $<$<BOOL:${HAVE_LRINT}>:HAVE_LRINT>
                            $<$<BOOL:${HAVE_LRINTF}>:HAVE_LRINTF>)
 
+if(OPUS_BUILD_FRAMEWORK)
+  set_target_properties(opus PROPERTIES
+                        FRAMEWORK TRUE
+                        FRAMEWORK_VERSION ${PROJECT_VERSION}
+                        MACOSX_FRAMEWORK_IDENTIFIER org.xiph.opus
+                        MACOSX_FRAMEWORK_SHORT_VERSION_STRING ${PROJECT_VERSION}
+                        MACOSX_FRAMEWORK_BUNDLE_VERSION ${PROJECT_VERSION}
+                        XCODE_ATTRIBUTE_INSTALL_PATH "@rpath"
+                        OUTPUT_NAME Opus)
+endif()
+
 install(TARGETS opus
         EXPORT OpusTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/opus)
 
 if(OPUS_INSTALL_PKG_CONFIG_MODULE)
