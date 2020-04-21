@@ -33,3 +33,17 @@ cmake:
     - cmake --build build
   tags:
     - docker
+
+doc:
+  stage: build
+  image: python
+  before_script:
+    - pip install xml2rfc
+  script:
+    - doc/build_draft.sh
+    - doc/build_oggdraft.sh
+  cache:
+    paths:
+      - doc/opus_testvectors.tar.gz
+  tags:
+    - docker
