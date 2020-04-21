@@ -7655,6 +7655,7 @@ name of work, or endorsement information.</t>
 <front>
 <title>Key words for use in RFCs to Indicate Requirement Levels </title>
 <author initials="S." surname="Bradner" fullname="Scott Bradner"></author>
+<date year='1997' month='March' />
 </front>
 <seriesInfo name="RFC" value="2119" />
 </reference>
@@ -7716,6 +7717,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <author initials="N.F." surname="Farvardin" fullname="N.">
 <organization/>
 </author>
+<date year='1991' month='October' />
 </front>
 <seriesInfo name="ICASSP-1991, Proc. IEEE Int. Conf. Acoust., Speech, Signal Processing, pp. 641-644, October" value="1991"/>
 </reference>
@@ -7812,6 +7814,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Valgrind website</title>
 <author></author>
+<date />
 </front>
 </reference>
 
@@ -7819,6 +7822,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Google NetEQ code</title>
 <author></author>
+<date />
 </front>
 </reference>
 
@@ -7826,6 +7830,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Google WebRTC code</title>
 <author></author>
+<date />
 </front>
 </reference>
 
@@ -7834,6 +7839,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Opus Git Repository</title>
 <author></author>
+<date />
 </front>
 </reference>
 
@@ -7841,6 +7847,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Opus website</title>
 <author></author>
+<date />
 </front>
 </reference>
 
@@ -7848,6 +7855,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Vorbis website</title>
 <author></author>
+<date />
 </front>
 </reference>
 
@@ -7855,6 +7863,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Matroska website</title>
 <author></author>
+<date />
 </front>
 </reference>
 
@@ -7862,6 +7871,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Opus Testvectors (webside)</title>
 <author></author>
+<date />
 </front>
 </reference>
 
@@ -7869,6 +7879,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Opus Testvectors (proceedings)</title>
 <author></author>
+<date month="March" year="2012" />
 </front>
 </reference>
 
@@ -7876,6 +7887,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Line Spectral Pairs</title>
 <author><organization>Wikipedia</organization></author>
+<date />
 </front>
 </reference>
 
@@ -7883,6 +7895,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Range Coding</title>
 <author><organization>Wikipedia</organization></author>
+<date />
 </front>
 </reference>
 
@@ -7890,6 +7903,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Hadamard Transform</title>
 <author><organization>Wikipedia</organization></author>
+<date />
 </front>
 </reference>
 
@@ -7897,6 +7911,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Viterbi Algorithm</title>
 <author><organization>Wikipedia</organization></author>
+<date />
 </front>
 </reference>
 
@@ -7904,6 +7919,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>White Noise</title>
 <author><organization>Wikipedia</organization></author>
+<date />
 </front>
 </reference>
 
@@ -7911,6 +7927,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Linear Prediction</title>
 <author><organization>Wikipedia</organization></author>
+<date />
 </front>
 </reference>
 
@@ -7918,6 +7935,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Modified Discrete Cosine Transform</title>
 <author><organization>Wikipedia</organization></author>
+<date />
 </front>
 </reference>
 
@@ -7925,6 +7943,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Fast Fourier Transform</title>
 <author><organization>Wikipedia</organization></author>
+<date />
 </front>
 </reference>
 
@@ -7932,6 +7951,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Z-transform</title>
 <author><organization>Wikipedia</organization></author>
+<date />
 </front>
 </reference>
 
@@ -7940,6 +7960,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Maximum Entropy Spectral Analysis</title>
 <author initials="JP." surname="Burg" fullname="J.P. Burg"><organization/></author>
+<date month="October" year="1967" />
 </front>
 </reference>
 
@@ -7948,6 +7969,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <title>A fixed point computation of partial correlation coefficients</title>
 <author initials="J." surname="Le Roux" fullname="J. Le Roux"><organization/></author>
 <author initials="C." surname="Gueguen" fullname="C. Gueguen"><organization/></author>
+<date month="October" year="1977" />
 </front>
 <seriesInfo name="ICASSP-1977, Proc. IEEE Int. Conf. Acoust., Speech, Signal Processing, pp. 257-259, October" value="1977"/>
 </reference>
@@ -7957,6 +7979,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <title>Analysis/synthesis filter bank design based on time domain aliasing cancellation</title>
 <author initials="J." surname="Princen" fullname="John P. Princen"><organization/></author>
 <author initials="A." surname="Bradley" fullname="Alan B. Bradley"><organization/></author>
+<date month="October" year="1986" />
 </front>
 <seriesInfo name="IEEE Trans. Acoust. Speech Sig. Proc. ASSP-34 (5), 1153-1161" value="1986"/>
 </reference>
@@ -7969,6 +7992,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <author initials="T. B." surname="Terriberry" fullname="Timothy Terriberry"><organization/></author>
 <author initials="C." surname="Montgomery" fullname="Christopher Montgomery"><organization/></author>
 <author initials="G." surname="Maxwell" fullname="Gregory Maxwell"><organization/></author>
+<date year="2010" />
 </front>
 <seriesInfo name="IEEE Trans. on Audio, Speech and Language Processing, Vol. 18, No. 1, pp. 58-67" value="2010" />
 </reference>
