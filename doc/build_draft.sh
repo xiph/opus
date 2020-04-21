@@ -93,7 +93,7 @@ cat opus_source.tar.gz| base64 | tr -d '\n' | fold -w 64 | \
 
 if test ! -d ../opus_testvectors ; then
   echo "Downloading test vectors..."
-  wget 'http://opus-codec.org/testvectors/opus_testvectors.tar.gz'
+  wget 'https://opus-codec.org/testvectors/opus_testvectors.tar.gz'
   tar -C .. -xvzf opus_testvectors.tar.gz
 fi
 echo '<figure>' > testvectors_sha1

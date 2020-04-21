@@ -43,7 +43,7 @@ if test -z `which xml2rfc 2> /dev/null`; then
   echo
   echo "Please install xml2rfc version 2 or later."
   echo "E.g. 'pip install xml2rfc' or follow the instructions"
-  echo "on http://pypi.python.org/pypi/xml2rfc/ or tools.ietf.org."
+  echo "on https://pypi.python.org/pypi/xml2rfc/ or tools.ietf.org."
   exit 1
 fi
 
