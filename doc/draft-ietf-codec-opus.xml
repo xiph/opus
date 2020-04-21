@@ -1800,7 +1800,7 @@ For example, when switching from 20&nbsp;ms to 60&nbsp;ms, the 60&nbsp;ms Opus
 When switching from 20&nbsp;ms to 10&nbsp;ms, the 10&nbsp;ms Opus frame can
  contain an LBRR frame covering at most half the prior 20&nbsp;ms Opus frame,
  potentially leaving a hole that needs to be concealed from even a single
- packet loss (see <xref target="Packet Loss Concealment"/>).
+ packet loss (see <xref target="packet-loss-concealment"/>).
 When switching from mono to stereo, the LBRR frames in the first stereo Opus
  frame MAY contain a non-trivial side channel.
 </t>
@@ -2107,7 +2107,7 @@ As stated above, LBRR frames still include this flag when the LBRR flag
  indicates that the side channel is not coded.
 In that case, if this flag is zero (indicating that there should be a side
  channel), then Packet Loss Concealment (PLC, see
- <xref target="Packet Loss Concealment"/>) SHOULD be invoked to recover a
+ <xref target="packet-loss-concealment"/>) SHOULD be invoked to recover a
  side channel signal.
 Otherwise, the stereo image will collapse.
 </t>
@@ -5428,7 +5428,7 @@ where N is the number of dimensions, K is the number of pulses, and f_r depends 
 the value of the "spread" parameter in the bit-stream.
 </t>
 
-<texttable anchor="spread values" title="Spreading Values">
+<texttable anchor="spread_values" title="Spreading Values">
 <ttcol>Spread value</ttcol>
 <ttcol>f_r</ttcol>
  <c>0</c> <c>infinite (no rotation)</c>
@@ -5659,7 +5659,7 @@ where alpha_p=0.8500061035.
 
 </section>
 
-<section anchor="Packet Loss Concealment" title="Packet Loss Concealment (PLC)">
+<section anchor="packet-loss-concealment" title="Packet Loss Concealment (PLC)">
 <t>
 Packet loss concealment (PLC) is an optional decoder-side feature that
 SHOULD be included when receiving from an unreliable channel. Because
@@ -7368,7 +7368,7 @@ See tf_analysis() in celt/celt.c.
 
 <section title="Spreading Values Decision">
 <t>
-The choice of the spreading value in <xref target="spread values"></xref> has an
+The choice of the spreading value in <xref target="spread_values"></xref> has an
 impact on the nature of the coding noise introduced by CELT. The larger the f_r value, the
 lower the impact of the rotation, and the more tonal the coding noise. The
 more tonal the signal, the more tonal the noise should be, so the CELT encoder determines
