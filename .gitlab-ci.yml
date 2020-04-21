@@ -13,8 +13,12 @@ autoconf:
     - make distcheck
   cache:
     paths:
-      - "lib/*.o"
-      - "lib/.libs/*.o"
+      - "src/*.o"
+      - "src/.libs/*.o"
+      - "silk/*.o"
+      - "silk/.libs/*.o"
+      - "celt/*.o"
+      - "celt/.libs/*.o"
   tags:
     - docker
 
