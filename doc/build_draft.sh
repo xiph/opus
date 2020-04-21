@@ -108,6 +108,5 @@ echo '</artwork>' >> testvectors_sha1
 echo '</figure>' >> testvectors_sha1
 
 echo running xml2rfc
-xml2rfc draft-ietf-codec-opus.xml draft-ietf-codec-opus.html &
-xml2rfc draft-ietf-codec-opus.xml
+xml2rfc draft-ietf-codec-opus.xml --text --html
 wait
