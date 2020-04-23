@@ -215,13 +215,13 @@ EXTRA_DIST = opus.pc.in \
              Makefile.mips \
              Makefile.unix \
              CMakeLists.txt \
-             config.h.cmake.in \
-             opus_buildtype.cmake \
-             opus_config.cmake \
-             opus_functions.cmake \
-             opus_sources.cmake \
-             OpusConfig.cmake.in \
              cmake/CFeatureCheck.cmake \
+             cmake/OpusBuildtype.cmake \
+             cmake/OpusConfig.cmake \
+             cmake/OpusConfig.cmake.in \
+             cmake/OpusFunctions.cmake \
+             cmake/OpusSources.cmake \
+             cmake/config.h.cmake.in \
              cmake/vla.c \
              tests/run_vectors.sh \
              celt/arm/arm2gnu.pl \

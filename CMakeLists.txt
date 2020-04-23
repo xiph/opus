@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-include(opus_functions.cmake)
+include(OpusFunctions)
 
 get_library_version(OPUS_LIBRARY_VERSION OPUS_LIBRARY_VERSION_MAJOR)
 message(STATUS "Opus library version: ${OPUS_LIBRARY_VERSION}")
@@ -17,7 +17,7 @@ string(REGEX
 message(STATUS "Opus project version: ${PROJECT_VERSION}")
 
 project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
-include(opus_buildtype.cmake)
+include(OpusBuildtype)
 
 option(OPUS_BUILD_SHARED_LIBRARY "Build shared library" OFF)
 option(OPUS_STACK_PROTECTOR "Use stack protection" ON)
@@ -41,8 +41,8 @@ if(APPLE)
   option(OPUS_BUILD_FRAMEWORK "Build Framework bundle for Apple systems" OFF)
 endif()
 
-include(opus_config.cmake)
-include(opus_sources.cmake)
+include(OpusConfig)
+include(OpusSources)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
 include(FeatureSummary)
@@ -490,7 +490,7 @@ if(OPUS_INSTALL_CMAKE_CONFIG_MODULE)
   include(CMakePackageConfigHelpers)
 
   set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-  configure_package_config_file(OpusConfig.cmake.in
+  configure_package_config_file(${CMAKE_SOURCE_DIR}/cmake/OpusConfig.cmake.in
                                 OpusConfig.cmake
                                 INSTALL_DESTINATION
                                 ${CMAKE_INSTALL_PACKAGEDIR}
