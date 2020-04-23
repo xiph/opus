@@ -1,3 +1,8 @@
+if(__opus_sources)
+  return()
+endif()
+set(__opus_sources INCLUDED)
+
 include(OpusFunctions)
 
 get_opus_sources(SILK_HEAD silk_headers.mk silk_headers)

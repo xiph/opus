@@ -1,3 +1,8 @@
+if(__opus_config)
+  return()
+endif()
+set(__opus_config INCLUDED)
+
 include(OpusFunctions)
 
 configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.cmake.in config.h @ONLY)
