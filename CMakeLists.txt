@@ -230,7 +230,7 @@ set(Opus_PUBLIC_HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_projection.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_types.h)
 
-add_library(opus ${opus_sources} ${opus_sources_float} ${Opus_PUBLIC_HEADER})
+add_library(opus ${opus_headers} ${opus_sources} ${opus_sources_float} ${Opus_PUBLIC_HEADER})
 add_library(Opus::opus ALIAS opus)
 
 set_target_properties(opus
@@ -288,8 +288,8 @@ if(BUILD_SHARED_LIBS)
   endif()
 endif()
 
-add_sources_group(opus silk ${silk_sources})
-add_sources_group(opus celt ${celt_sources})
+add_sources_group(opus silk ${silk_headers} ${silk_sources})
+add_sources_group(opus celt ${celt_headers} ${celt_sources})
 
 if(OPUS_FIXED_POINT)
   add_sources_group(opus silk ${silk_sources_fixed})
