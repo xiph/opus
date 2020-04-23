@@ -1,4 +1,4 @@
-include(opus_functions.cmake)
+include(OpusFunctions)
 
 get_opus_sources(SILK_HEAD silk_headers.mk silk_headers)
 get_opus_sources(SILK_SOURCES silk_sources.mk silk_sources)
