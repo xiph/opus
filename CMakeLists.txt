@@ -224,11 +224,14 @@ feature_summary(WHAT ALL)
 
 set(Opus_PUBLIC_HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_custom.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_defines.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_multistream.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_projection.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_types.h)
+
+if(OPUS_CUSTOM_MODES)
+  list(APPEND Opus_PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_custom.h)
+endif()
 
 add_library(opus ${opus_headers} ${opus_sources} ${opus_sources_float} ${Opus_PUBLIC_HEADER})
 add_library(Opus::opus ALIAS opus)
