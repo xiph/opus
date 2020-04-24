@@ -82,7 +82,7 @@ cat opus_source.tar.gz| base64 | tr -d '\n' | fold -w 64 | \
 #echo '</artwork>' >> opus_compare_escaped.c
 #echo '</figure>' >> opus_compare_escaped.c
 
-if [[ ! -d ../opus_testvectors ]] ; then
+if [ ! -d ../opus_testvectors ] ; then
   echo "Downloading test vectors..."
   wget 'http://opus-codec.org/testvectors/opus_testvectors.tar.gz'
   tar -C .. -xvzf opus_testvectors.tar.gz
