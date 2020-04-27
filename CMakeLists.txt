@@ -20,7 +20,6 @@ project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
 include(OpusBuildtype)
 
 option(OPUS_BUILD_SHARED_LIBRARY "Build shared library" OFF)
-option(OPUS_STACK_PROTECTOR "Use stack protection" ON)
 option(OPUS_CUSTOM_MODES "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames"
        OFF)
 option(OPUS_BUILD_PROGRAMS "Build programs" OFF)
@@ -66,16 +65,14 @@ cmake_dependent_option(OPUS_NONTHREADSAFE_PSEUDOSTACK
 cmake_dependent_option(OPUS_FAST_MATH
                        "Enable fast math"
                        ON
-                       "OPUS_FLOAT_APPROX; OPUS_FAST_MATH"
+                       "OPUS_FLOAT_APPROX; OPUS_FAST_MATH; FAST_MATH_SUPPORTED"
                        OFF)
 
-if(OPUS_FAST_MATH)
-  if(MSVC)
-    check_and_set_flag(FAST_MATH /fp:fast)
-  else()
-    check_and_set_flag(FAST_MATH -ffast-math)
-  endif()
-endif()
+cmake_dependent_option(OPUS_STACK_PROTECTOR
+                       "Use stack protection"
+                       ON
+                       "STACK_PROTECTOR_SUPPORTED"
+                       OFF)
 
 if(OPUS_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS OR OPUS_BUILD_FRAMEWORK)
   # Global flag to cause add_library() to create shared libraries if on.
@@ -86,23 +83,6 @@ endif()
 if(OPUS_BUILD_TESTING OR BUILD_TESTING)
   set(OPUS_BUILD_TESTING ON)
   set(BUILD_TESTING ON)
-endif()
-
-if(OPUS_STACK_PROTECTOR)
-  if(MSVC) # GC on by default on MSVC
-    check_and_set_flag(STACK_PROTECTOR /GS)
-  else()
-    check_and_set_flag(STACK_PROTECTOR -fstack-protector-strong)
-  endif()
-else()
-  if(MSVC)
-    check_and_set_flag(STACK_PROTECTOR_DISABLED /GS-)
-    if (STACK_PROTECTOR_DISABLED_SUPPORTED)
-      set(STACK_PROTECTOR_SUPPORTED OFF)
-    endif()
-  else()
-    set(STACK_PROTECTOR_SUPPORTED OFF)
-  endif()
 endif()
 
 if(OPUS_CPU_X86 OR OPUS_CPU_X64)
@@ -175,7 +155,7 @@ set_package_properties(Git
                        "required to set up package version")
 
 add_feature_info(OPUS_BUILD_SHARED_LIBRARY OPUS_BUILD_SHARED_LIBRARY "Build shared library")
-add_feature_info(OPUS_STACK_PROTECTOR STACK_PROTECTOR_SUPPORTED "Use stack protection")
+add_feature_info(OPUS_STACK_PROTECTOR OPUS_STACK_PROTECTOR "Use stack protection")
 add_feature_info(OPUS_VAR_ARRAYS OPUS_VAR_ARRAYS 
                  "Use variable length arrays for stack arrays")
 add_feature_info(OPUS_USE_ALLOCA OPUS_USE_ALLOCA
@@ -194,7 +174,7 @@ add_feature_info(
   "compile with the floating point API (for machines with float library)")
 add_feature_info(OPUS_FLOAT_APPROX OPUS_FLOAT_APPROX
   "Enable floating point approximations (Ensure your platform supports IEEE 754 before enabling)")
-add_feature_info(OPUS_FAST_MATH FAST_MATH_SUPPORTED "Enable fast math, (depending on OPUS_FLOAT_APPROX to be enabled)")
+add_feature_info(OPUS_FAST_MATH OPUS_FAST_MATH "Enable fast math, (depending on OPUS_FLOAT_APPROX to be enabled)")
 add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE
                  "install PkgConfig module")
 add_feature_info(OPUS_INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE
@@ -279,15 +259,29 @@ if(OPUS_CUSTOM_MODES)
   target_compile_definitions(opus PRIVATE CUSTOM_MODES)
 endif()
 
+if(OPUS_FAST_MATH)
+  if(MSVC)
+    target_compile_options(opus PRIVATE /fp:fast)
+  else()
+    target_compile_options(opus PRIVATE -ffast-math)
+  endif()
+endif()
+
+if(OPUS_STACK_PROTECTOR)
+  if(MSVC)
+    target_compile_options(opus PRIVATE /GS)
+  else()
+    target_compile_options(opus PRIVATE -fstack-protector-strong)
+  endif()
+elseif(STACK_PROTECTOR_DISABLED_SUPPORTED)
+  target_compile_options(opus PRIVATE /GS-)
+endif()
+
 if(BUILD_SHARED_LIBS)
   if(WIN32)
     target_compile_definitions(opus PRIVATE DLL_EXPORT)
-  else()
-    include(CheckCCompilerFlag)
-    check_c_compiler_flag(-fvisibility=hidden COMPILER_HAS_HIDDEN_VISIBILITY)
-    if(COMPILER_HAS_HIDDEN_VISIBILITY)
-      set_target_properties(opus PROPERTIES C_VISIBILITY_PRESET hidden)
-    endif()
+  elseif(HIDDEN_VISIBILITY_SUPPORTED)
+    set_target_properties(opus PROPERTIES C_VISIBILITY_PRESET hidden)
   endif()
 endif()
 
@@ -408,7 +402,6 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "(arm|aarch64)")
 endif()
 
 if(COMPILER_SUPPORT_NEON AND OPUS_USE_NEON)
-
   if(OPUS_MAY_HAVE_NEON)
     if(RUNTIME_CPU_CAPABILITY_DETECTION)
       message(STATUS "OPUS_MAY_HAVE_NEON enabling runtime detection")
