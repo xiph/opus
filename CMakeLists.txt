@@ -24,6 +24,7 @@ option(OPUS_CUSTOM_MODES "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames"
        OFF)
 option(OPUS_BUILD_PROGRAMS "Build programs" OFF)
 option(OPUS_BUILD_TESTING "Build tests" OFF)
+option(OPUS_DISABLE_INTRINSICS "Disable intrinsics optimizations" OFF)
 option(OPUS_FIXED_POINT
        "Compile as fixed-point (for machines without a fast enough FPU)" OFF)
 option(OPUS_ENABLE_FLOAT_API
@@ -89,22 +90,22 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE
                          "Does runtime check for SSE1 support"
                          ON
-                         "SSE1_SUPPORTED"
+                         "SSE1_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE2
                          "Does runtime check for SSE2 support"
                          ON
-                         "SSE2_SUPPORTED"
+                         "SSE2_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE4_1
                          "Does runtime check for SSE4.1 support"
                          ON
-                         "SSE4_1_SUPPORTED"
+                         "SSE4_1_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_AVX
                          "Does runtime check for AVX support"
                          ON
-                         "AVX_SUPPORTED"
+                         "AVX_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
 
   # PRESUME depends on MAY HAVE, but PRESUME will override runtime detection
@@ -112,34 +113,34 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
     cmake_dependent_option(OPUS_X86_PRESUME_SSE
                            "Assume target CPU has SSE1 support"
                            ON
-                           "OPUS_X86_MAY_HAVE_SSE"
+                           "OPUS_X86_MAY_HAVE_SSE; NOT OPUS_DISABLE_INTRINSICS"
                            OFF)
     cmake_dependent_option(OPUS_X86_PRESUME_SSE2
                            "Assume target CPU has SSE2 support"
                            ON
-                           "OPUS_X86_MAY_HAVE_SSE2"
+                           "OPUS_X86_MAY_HAVE_SSE2; NOT OPUS_DISABLE_INTRINSICS"
                            OFF)
   else()
     cmake_dependent_option(OPUS_X86_PRESUME_SSE
                            "Assume target CPU has SSE1 support"
                            OFF
-                           "OPUS_X86_MAY_HAVE_SSE"
+                           "OPUS_X86_MAY_HAVE_SSE; NOT OPUS_DISABLE_INTRINSICS"
                            OFF)
     cmake_dependent_option(OPUS_X86_PRESUME_SSE2
                            "Assume target CPU has SSE2 support"
                            OFF
-                           "OPUS_X86_MAY_HAVE_SSE2"
+                           "OPUS_X86_MAY_HAVE_SSE2; NOT OPUS_DISABLE_INTRINSICS"
                            OFF)
   endif()
   cmake_dependent_option(OPUS_X86_PRESUME_SSE4_1
                          "Assume target CPU has SSE4.1 support"
                          OFF
-                         "OPUS_X86_MAY_HAVE_SSE4_1"
+                         "OPUS_X86_MAY_HAVE_SSE4_1; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
   cmake_dependent_option(OPUS_X86_PRESUME_AVX
                          "Assume target CPU has AVX support"
                          OFF
-                         "OPUS_X86_MAY_HAVE_AVX"
+                         "OPUS_X86_MAY_HAVE_AVX; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
 endif()
 
@@ -169,6 +170,8 @@ add_feature_info(OPUS_BUILD_PROGRAMS OPUS_BUILD_PROGRAMS "Build programs")
 add_feature_info(
   OPUS_FIXED_POINT OPUS_FIXED_POINT
   "compile as fixed-point (for machines without a fast enough FPU)")
+add_feature_info(OPUS_DISABLE_INTRINSICS OPUS_DISABLE_INTRINSICS 
+  "Disable intrinsics optimizations")
 add_feature_info(
   OPUS_FLOAT_API OPUS_ENABLE_FLOAT_API
   "compile with the floating point API (for machines with float library)")
@@ -301,136 +304,138 @@ if(NOT OPUS_ENABLE_FLOAT_API)
   target_compile_definitions(opus PRIVATE DISABLE_FLOAT_API)
 endif()
 
-#[[Build flags for SSE will be set the following way:
-MSVC: If OPUS_X86_PRESUME_X is set then we will set the highest possible /arch:X
-we won't set any ARCH flag for OPUS_X86_MAY_HAVE_SSE due to:
-https://randomascii.wordpress.com/2016/12/05/vc-archavx-option-unsafe-at-any-speed/
-For non MSVC: we will set the compiler flags on per file basis for OPUS_X86_MAY_HAVE_SSE
-for OPUS_X86_PRESUME_X we will set it for the target]]
+if(NOT OPUS_DISABLE_INTRINSICS)
+  #[[Build flags for SSE will be set the following way:
+  MSVC: If OPUS_X86_PRESUME_X is set then we will set the highest possible /arch:X
+  we won't set any ARCH flag for OPUS_X86_MAY_HAVE_SSE due to:
+  https://randomascii.wordpress.com/2016/12/05/vc-archavx-option-unsafe-at-any-speed/
+  For non MSVC: we will set the compiler flags on per file basis for OPUS_X86_MAY_HAVE_SSE
+  for OPUS_X86_PRESUME_X we will set it for the target]]
 
-if((OPUS_X86_MAY_HAVE_SSE AND NOT OPUS_X86_PRESUME_SSE) OR
-   (OPUS_X86_MAY_HAVE_SSE2 AND NOT OPUS_X86_PRESUME_SSE2) OR
-   (OPUS_X86_MAY_HAVE_SSE4_1 AND NOT OPUS_X86_PRESUME_SSE4_1) OR
-   (OPUS_X86_MAY_HAVE_AVX AND NOT OPUS_X86_PRESUME_AVX))
-  target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
-endif()
-
-if(SSE1_SUPPORTED)
-  if(OPUS_X86_MAY_HAVE_SSE)
-    add_sources_group(opus celt ${celt_sources_sse})
-    target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_SSE)
-    if(NOT MSVC)
-      set_source_files_properties(${celt_sources_sse} PROPERTIES COMPILE_FLAGS -msse)
-    endif()
+  if((OPUS_X86_MAY_HAVE_SSE AND NOT OPUS_X86_PRESUME_SSE) OR
+     (OPUS_X86_MAY_HAVE_SSE2 AND NOT OPUS_X86_PRESUME_SSE2) OR
+     (OPUS_X86_MAY_HAVE_SSE4_1 AND NOT OPUS_X86_PRESUME_SSE4_1) OR
+     (OPUS_X86_MAY_HAVE_AVX AND NOT OPUS_X86_PRESUME_AVX))
+    target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
   endif()
-  if(OPUS_X86_PRESUME_SSE)
-    target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_SSE)
-    if(NOT MSVC)
-      target_compile_options(opus PRIVATE -msse)
-    endif()
-  endif()
-endif()
 
-if(SSE2_SUPPORTED)
-  if(OPUS_X86_MAY_HAVE_SSE2)
-    add_sources_group(opus celt ${celt_sources_sse2})
-    target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_SSE2)
-    if(NOT MSVC)
-      set_source_files_properties(${celt_sources_sse2} PROPERTIES COMPILE_FLAGS -msse2)
-    endif()
-  endif()
-  if(OPUS_X86_PRESUME_SSE2)
-    target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_SSE2)
-    if(NOT MSVC)
-      target_compile_options(opus PRIVATE -msse2)
-    endif()
-  endif()
-endif()
-
-if(SSE4_1_SUPPORTED)
-  if(OPUS_X86_MAY_HAVE_SSE4_1)
-    add_sources_group(opus celt ${celt_sources_sse4_1})
-    add_sources_group(opus silk ${silk_sources_sse4_1})
-    target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_SSE4_1)
-    if(NOT MSVC)
-      set_source_files_properties(${celt_sources_sse4_1} ${silk_sources_sse4_1} PROPERTIES COMPILE_FLAGS -msse4.1)
-    endif()
-
-    if(OPUS_FIXED_POINT)
-      add_sources_group(opus silk ${silk_sources_fixed_sse4_1})
+  if(SSE1_SUPPORTED)
+    if(OPUS_X86_MAY_HAVE_SSE)
+      add_sources_group(opus celt ${celt_sources_sse})
+      target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_SSE)
       if(NOT MSVC)
-        set_source_files_properties(${silk_sources_fixed_sse4_1} PROPERTIES COMPILE_FLAGS -msse4.1)
+        set_source_files_properties(${celt_sources_sse} PROPERTIES COMPILE_FLAGS -msse)
+      endif()
+    endif()
+    if(OPUS_X86_PRESUME_SSE)
+      target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_SSE)
+      if(NOT MSVC)
+        target_compile_options(opus PRIVATE -msse)
       endif()
     endif()
   endif()
-  if(OPUS_X86_PRESUME_SSE4_1)
-    target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_SSE4_1)
-    if(NOT MSVC)
-      target_compile_options(opus PRIVATE -msse4.1)
+  
+  if(SSE2_SUPPORTED)
+    if(OPUS_X86_MAY_HAVE_SSE2)
+      add_sources_group(opus celt ${celt_sources_sse2})
+      target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_SSE2)
+      if(NOT MSVC)
+        set_source_files_properties(${celt_sources_sse2} PROPERTIES COMPILE_FLAGS -msse2)
+      endif()
+    endif()
+    if(OPUS_X86_PRESUME_SSE2)
+      target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_SSE2)
+      if(NOT MSVC)
+        target_compile_options(opus PRIVATE -msse2)
+      endif()
     endif()
   endif()
-endif()
-
-if(AVX_SUPPORTED)
-  # mostly placeholder in case of avx intrinsics is added
-  if(OPUS_X86_MAY_HAVE_AVX)
-    target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_AVX)
-  endif()
-  if(OPUS_X86_PRESUME_AVX)
-    target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_AVX)
-    if(NOT MSVC)
-      target_compile_options(opus PRIVATE -mavx)
+  
+  if(SSE4_1_SUPPORTED)
+    if(OPUS_X86_MAY_HAVE_SSE4_1)
+      add_sources_group(opus celt ${celt_sources_sse4_1})
+      add_sources_group(opus silk ${silk_sources_sse4_1})
+      target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_SSE4_1)
+      if(NOT MSVC)
+        set_source_files_properties(${celt_sources_sse4_1} ${silk_sources_sse4_1} PROPERTIES COMPILE_FLAGS -msse4.1)
+      endif()
+  
+      if(OPUS_FIXED_POINT)
+        add_sources_group(opus silk ${silk_sources_fixed_sse4_1})
+        if(NOT MSVC)
+          set_source_files_properties(${silk_sources_fixed_sse4_1} PROPERTIES COMPILE_FLAGS -msse4.1)
+        endif()
+      endif()
+    endif()
+    if(OPUS_X86_PRESUME_SSE4_1)
+      target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_SSE4_1)
+      if(NOT MSVC)
+        target_compile_options(opus PRIVATE -msse4.1)
+      endif()
     endif()
   endif()
-endif()
-
-if(MSVC)
-  if(AVX_SUPPORTED AND OPUS_X86_PRESUME_AVX) # on 64 bit and 32 bits
-    add_definitions(/arch:AVX)
-  elseif(OPUS_CPU_X86) # if AVX not supported then set SSE flag
-    if((SSE4_1_SUPPORTED AND OPUS_X86_PRESUME_SSE4_1)
-       OR (SSE2_SUPPORTED AND OPUS_X86_PRESUME_SSE2))
-      target_compile_definitions(opus PRIVATE /arch:SSE2)
-    elseif(SSE1_SUPPORTED AND OPUS_X86_PRESUME_SSE)
-      target_compile_definitions(opus PRIVATE /arch:SSE)
+  
+  if(AVX_SUPPORTED)
+    # mostly placeholder in case of avx intrinsics is added
+    if(OPUS_X86_MAY_HAVE_AVX)
+      target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_AVX)
+    endif()
+    if(OPUS_X86_PRESUME_AVX)
+      target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_AVX)
+      if(NOT MSVC)
+        target_compile_options(opus PRIVATE -mavx)
+      endif()
     endif()
   endif()
-endif()
-
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(arm|aarch64)")
-  add_sources_group(opus celt ${celt_sources_arm})
-endif()
-
-if(COMPILER_SUPPORT_NEON AND OPUS_USE_NEON)
-  if(OPUS_MAY_HAVE_NEON)
-    if(RUNTIME_CPU_CAPABILITY_DETECTION)
-      message(STATUS "OPUS_MAY_HAVE_NEON enabling runtime detection")
-      target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
-    else()
-      message(ERROR "Runtime cpu capability detection needed for MAY_HAVE_NEON")
+  
+  if(MSVC)
+    if(AVX_SUPPORTED AND OPUS_X86_PRESUME_AVX) # on 64 bit and 32 bits
+      add_definitions(/arch:AVX)
+    elseif(OPUS_CPU_X86) # if AVX not supported then set SSE flag
+      if((SSE4_1_SUPPORTED AND OPUS_X86_PRESUME_SSE4_1)
+         OR (SSE2_SUPPORTED AND OPUS_X86_PRESUME_SSE2))
+        target_compile_definitions(opus PRIVATE /arch:SSE2)
+      elseif(SSE1_SUPPORTED AND OPUS_X86_PRESUME_SSE)
+        target_compile_definitions(opus PRIVATE /arch:SSE)
+      endif()
     endif()
-    # Do runtime check for NEON
-    target_compile_definitions(opus
-                               PRIVATE
-                               OPUS_ARM_MAY_HAVE_NEON
-                               OPUS_ARM_MAY_HAVE_NEON_INTR)
   endif()
-
-  add_sources_group(opus celt ${celt_sources_arm_neon_intr})
-  add_sources_group(opus silk ${silk_sources_arm_neon_intr})
-
-  # silk arm neon depends on main_Fix.h
-  target_include_directories(opus PRIVATE silk/fixed)
-
-  if(OPUS_FIXED_POINT)
-    add_sources_group(opus silk ${silk_sources_fixed_arm_neon_intr})
+  
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "(arm|aarch64)")
+    add_sources_group(opus celt ${celt_sources_arm})
   endif()
-
-  if(OPUS_PRESUME_NEON)
-    target_compile_definitions(opus
-                               PRIVATE
-                               OPUS_ARM_PRESUME_NEON
-                               OPUS_ARM_PRESUME_NEON_INTR)
+  
+  if(COMPILER_SUPPORT_NEON)
+    if(OPUS_MAY_HAVE_NEON)
+      if(RUNTIME_CPU_CAPABILITY_DETECTION)
+        message(STATUS "OPUS_MAY_HAVE_NEON enabling runtime detection")
+        target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
+      else()
+        message(ERROR "Runtime cpu capability detection needed for MAY_HAVE_NEON")
+      endif()
+      # Do runtime check for NEON
+      target_compile_definitions(opus
+                                 PRIVATE
+                                 OPUS_ARM_MAY_HAVE_NEON
+                                 OPUS_ARM_MAY_HAVE_NEON_INTR)
+    endif()
+  
+    add_sources_group(opus celt ${celt_sources_arm_neon_intr})
+    add_sources_group(opus silk ${silk_sources_arm_neon_intr})
+  
+    # silk arm neon depends on main_Fix.h
+    target_include_directories(opus PRIVATE silk/fixed)
+  
+    if(OPUS_FIXED_POINT)
+      add_sources_group(opus silk ${silk_sources_fixed_arm_neon_intr})
+    endif()
+  
+    if(OPUS_PRESUME_NEON)
+      target_compile_definitions(opus
+                                 PRIVATE
+                                 OPUS_ARM_PRESUME_NEON
+                                 OPUS_ARM_PRESUME_NEON_INTR)
+    endif()
   endif()
 endif()
 
