@@ -85,7 +85,7 @@ int main(int argc, char **argv)
       return EXIT_FAILURE;
    }
    inFile = argv[1];
-   fin = fopen(inFile, "r");
+   fin = fopen(inFile, "rb");
    if (fin==NULL)
    {
       fprintf(stderr, "failed to open input file: %s\n", strerror(errno));
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
       return EXIT_FAILURE;
    }
    outFile = argv[2];
-   fout = fopen(outFile, "w");
+   fout = fopen(outFile, "wb");
    if (fout==NULL)
    {
       fprintf(stderr, "failed to open output file: %s\n", strerror(errno));
