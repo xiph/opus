@@ -17,132 +17,191 @@ string(REGEX
 message(STATUS "Opus project version: ${PROJECT_VERSION}")
 
 project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
+
 include(OpusBuildtype)
-
-option(OPUS_BUILD_SHARED_LIBRARY "Build shared library" OFF)
-option(OPUS_CUSTOM_MODES "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames"
-       OFF)
-option(OPUS_BUILD_PROGRAMS "Build programs" OFF)
-option(OPUS_BUILD_TESTING "Build tests" OFF)
-option(OPUS_DISABLE_INTRINSICS "Disable intrinsics optimizations" OFF)
-option(OPUS_FIXED_POINT
-       "Compile as fixed-point (for machines without a fast enough FPU)" OFF)
-option(OPUS_ENABLE_FLOAT_API
-       "Compile with the floating point API (for machines with float library"
-       ON)
-option(OPUS_FLOAT_APPROX
-       "Enable floating point approximations (Ensure your platform supports IEEE 754 before enabling)"
-       OFF)
-option(OPUS_INSTALL_PKG_CONFIG_MODULE "Install PkgConfig module" ON)
-option(OPUS_INSTALL_CMAKE_CONFIG_MODULE "Install CMake package config module"
-       ON)
-
-if(APPLE)
-  option(OPUS_BUILD_FRAMEWORK "Build Framework bundle for Apple systems" OFF)
-endif()
-
 include(OpusConfig)
 include(OpusSources)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
 include(FeatureSummary)
 
-cmake_dependent_option(OPUS_VAR_ARRAYS 
-                      "Use variable length arrays for stack arrays" 
-                      ON
-                      "VLA_SUPPORTED; NOT OPUS_USE_ALLOCA; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
-                      OFF)
-cmake_dependent_option(OPUS_USE_ALLOCA 
-                       "Use alloca for stack arrays (on non-C99 compilers)" 
-                       ON
-                       "USE_ALLOCA_SUPPORTED; NOT OPUS_VAR_ARRAYS; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
-                       OFF)
-cmake_dependent_option(OPUS_NONTHREADSAFE_PSEUDOSTACK 
-                       "Use a non threadsafe pseudostack when neither variable length arrays or alloca is supported"
-                       ON
-                       "NOT OPUS_VAR_ARRAYS; NOT OPUS_USE_ALLOCA"
-                       OFF)
-
-cmake_dependent_option(OPUS_FAST_MATH
-                       "Enable fast math"
-                       ON
-                       "OPUS_FLOAT_APPROX; OPUS_FAST_MATH; FAST_MATH_SUPPORTED"
-                       OFF)
-
-cmake_dependent_option(OPUS_STACK_PROTECTOR
-                       "Use stack protection"
-                       ON
-                       "STACK_PROTECTOR_SUPPORTED"
-                       OFF)
-
+set(OPUS_BUILD_SHARED_LIBRARY_HELP_STR "build shared library.")
+option(OPUS_BUILD_SHARED_LIBRARY ${OPUS_BUILD_SHARED_LIBRARY_HELP_STR} OFF)
 if(OPUS_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS OR OPUS_BUILD_FRAMEWORK)
   # Global flag to cause add_library() to create shared libraries if on.
   set(BUILD_SHARED_LIBS ON)
   set(OPUS_BUILD_SHARED_LIBRARY ON)
 endif()
+add_feature_info(OPUS_BUILD_SHARED_LIBRARY OPUS_BUILD_SHARED_LIBRARY ${OPUS_BUILD_SHARED_LIBRARY_HELP_STR})
 
+set(OPUS_BUILD_TESTING_HELP_STR "build tests.")
+option(OPUS_BUILD_TESTING ${OPUS_BUILD_TESTING_HELP_STR} OFF)
 if(OPUS_BUILD_TESTING OR BUILD_TESTING)
   set(OPUS_BUILD_TESTING ON)
   set(BUILD_TESTING ON)
 endif()
+add_feature_info(OPUS_BUILD_TESTING OPUS_BUILD_TESTING ${OPUS_BUILD_TESTING_HELP_STR})
+
+set(OPUS_CUSTOM_MODES_HELP_STR "enable non-Opus modes, e.g. 44.1 kHz & 2^n frames.")
+option(OPUS_CUSTOM_MODES ${OPUS_CUSTOM_MODES_HELP_STR} OFF)
+add_feature_info(OPUS_CUSTOM_MODES OPUS_CUSTOM_MODES ${OPUS_CUSTOM_MODES_HELP_STR})
+
+set(OPUS_BUILD_PROGRAMS_HELP_STR "build programs.")
+option(OPUS_BUILD_PROGRAMS ${OPUS_BUILD_PROGRAMS_HELP_STR} OFF)
+add_feature_info(OPUS_BUILD_PROGRAMS OPUS_BUILD_PROGRAMS ${OPUS_BUILD_PROGRAMS_HELP_STR})
+
+set(OPUS_DISABLE_INTRINSICS_HELP_STR "disable all intrinsics optimizations.")
+option(OPUS_DISABLE_INTRINSICS ${OPUS_DISABLE_INTRINSICS_HELP_STR} OFF)
+add_feature_info(OPUS_DISABLE_INTRINSICS OPUS_DISABLE_INTRINSICS ${OPUS_DISABLE_INTRINSICS_HELP_STR})
+
+set(OPUS_FIXED_POINT_HELP_STR "compile as fixed-point (for machines without a fast enough FPU).")
+option(OPUS_FIXED_POINT ${OPUS_FIXED_POINT_HELP_STR} OFF)
+add_feature_info(OPUS_FIXED_POINT OPUS_FIXED_POINT ${OPUS_FIXED_POINT_HELP_STR})
+
+set(OPUS_ENABLE_FLOAT_API_HELP_STR "compile with the floating point API (for machines with float library).")
+option(OPUS_ENABLE_FLOAT_API ${OPUS_ENABLE_FLOAT_API_HELP_STR} ON)
+add_feature_info(OPUS_FLOAT_API OPUS_ENABLE_FLOAT_API ${OPUS_ENABLE_FLOAT_API_HELP_STR})
+
+set(OPUS_FLOAT_APPROX_HELP_STR "enable floating point approximations (Ensure your platform supports IEEE 754 before enabling).")
+option(OPUS_FLOAT_APPROX ${OPUS_FLOAT_APPROX_HELP_STR} OFF)
+add_feature_info(OPUS_FLOAT_APPROX OPUS_FLOAT_APPROX ${OPUS_FLOAT_APPROX_HELP_STR})
+
+set(OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR "install pkg-config module.")
+option(OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR} ON)
+add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR})
+
+set(OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR "install CMake package config module.")
+option(OPUS_INSTALL_CMAKE_CONFIG_MODULE ${OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR} ON)
+add_feature_info(OPUS_INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE ${OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR})
+
+if(APPLE)
+  set(OPUS_BUILD_FRAMEWORK_HELP_STR "build Framework bundle for Apple systems.")
+  option(OPUS_BUILD_FRAMEWORK ${OPUS_BUILD_FRAMEWORK_HELP_STR} OFF)
+  add_feature_info(OPUS_BUILD_FRAMEWORK OPUS_BUILD_FRAMEWORK ${OPUS_BUILD_FRAMEWORK_HELP_STR})
+endif()
+
+set(OPUS_VAR_ARRAYS_HELP_STR "use variable length arrays for stack arrays.")
+cmake_dependent_option(OPUS_VAR_ARRAYS
+                      ${OPUS_VAR_ARRAYS_HELP_STR}
+                      ON
+                      "VLA_SUPPORTED; NOT OPUS_USE_ALLOCA; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
+                      OFF)
+add_feature_info(OPUS_VAR_ARRAYS OPUS_VAR_ARRAYS ${OPUS_VAR_ARRAYS_HELP_STR})
+
+set(OPUS_USE_ALLOCA_HELP_STR "use alloca for stack arrays (on non-C99 compilers).")
+cmake_dependent_option(OPUS_USE_ALLOCA
+                       ${OPUS_USE_ALLOCA_HELP_STR}
+                       ON
+                       "USE_ALLOCA_SUPPORTED; NOT OPUS_VAR_ARRAYS; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
+                       OFF)
+add_feature_info(OPUS_USE_ALLOCA OPUS_USE_ALLOCA ${OPUS_USE_ALLOCA_HELP_STR})
+
+set(OPUS_NONTHREADSAFE_PSEUDOSTACK_HELP_STR "use a non threadsafe pseudostack when neither variable length arrays or alloca is supported.")
+cmake_dependent_option(OPUS_NONTHREADSAFE_PSEUDOSTACK
+                       ${OPUS_NONTHREADSAFE_PSEUDOSTACK_HELP_STR}
+                       ON
+                       "NOT OPUS_VAR_ARRAYS; NOT OPUS_USE_ALLOCA"
+                       OFF)
+add_feature_info(OPUS_NONTHREADSAFE_PSEUDOSTACK OPUS_NONTHREADSAFE_PSEUDOSTACK ${OPUS_NONTHREADSAFE_PSEUDOSTACK_HELP_STR})
+
+set(OPUS_FAST_MATH_HELP_STR "enable fast math (unsupported and discouraged use, as code is not well tested with this build option).")
+cmake_dependent_option(OPUS_FAST_MATH
+                       ${OPUS_FAST_MATH_HELP_STR}
+                       ON
+                       "OPUS_FLOAT_APPROX; OPUS_FAST_MATH; FAST_MATH_SUPPORTED"
+                       OFF)
+add_feature_info(OPUS_FAST_MATH OPUS_FAST_MATH ${OPUS_FAST_MATH_HELP_STR})
+
+set(OPUS_STACK_PROTECTOR_HELP_STR "use stack protection.")
+cmake_dependent_option(OPUS_STACK_PROTECTOR
+                       ${OPUS_STACK_PROTECTOR_HELP_STR}
+                       ON
+                       "STACK_PROTECTOR_SUPPORTED"
+                       OFF)
+add_feature_info(OPUS_STACK_PROTECTOR OPUS_STACK_PROTECTOR ${OPUS_STACK_PROTECTOR_HELP_STR})
 
 if(OPUS_CPU_X86 OR OPUS_CPU_X64)
+  set(OPUS_X86_MAY_HAVE_SSE_HELP_STR "does runtime check for SSE1 support.")
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE
-                         "Does runtime check for SSE1 support"
+                         ${OPUS_X86_MAY_HAVE_SSE_HELP_STR}
                          ON
                          "SSE1_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
+  add_feature_info(OPUS_X86_MAY_HAVE_SSE OPUS_X86_MAY_HAVE_SSE ${OPUS_X86_MAY_HAVE_SSE_HELP_STR})
+
+  set(OPUS_X86_MAY_HAVE_SSE2_HELP_STR "does runtime check for SSE2 support.")
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE2
-                         "Does runtime check for SSE2 support"
+                         ${OPUS_X86_MAY_HAVE_SSE2_HELP_STR}
                          ON
                          "SSE2_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
+  add_feature_info(OPUS_X86_MAY_HAVE_SSE2 OPUS_X86_MAY_HAVE_SSE2 ${OPUS_X86_MAY_HAVE_SSE2_HELP_STR})
+
+  set(OPUS_X86_MAY_HAVE_SSE4_1_HELP_STR "does runtime check for SSE4.1 support.")
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE4_1
-                         "Does runtime check for SSE4.1 support"
+                         ${OPUS_X86_MAY_HAVE_SSE4_1_HELP_STR}
                          ON
                          "SSE4_1_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
+  add_feature_info(OPUS_X86_MAY_HAVE_SSE4_1 OPUS_X86_MAY_HAVE_SSE4_1 ${OPUS_X86_MAY_HAVE_SSE4_1_HELP_STR})
+
+  set(OPUS_X86_MAY_HAVE_AVX_HELP_STR "does runtime check for AVX support.")
   cmake_dependent_option(OPUS_X86_MAY_HAVE_AVX
-                         "Does runtime check for AVX support"
+                         ${OPUS_X86_MAY_HAVE_AVX_HELP_STR}
                          ON
                          "AVX_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
+  add_feature_info(OPUS_X86_MAY_HAVE_AVX OPUS_X86_MAY_HAVE_AVX ${OPUS_X86_MAY_HAVE_AVX_HELP_STR})
 
   # PRESUME depends on MAY HAVE, but PRESUME will override runtime detection
-  if(OPUS_CPU_X64) # Assume 64 bit has SSE2 support
+  set(OPUS_X86_PRESUME_SSE_HELP_STR "assume target CPU has SSE1 support (override runtime check).")
+  set(OPUS_X86_PRESUME_SSE2_HELP_STR "assume target CPU has SSE2 support (override runtime check).")
+  if(OPUS_CPU_X64) # Assume x86_64 has up to SSE2 support
     cmake_dependent_option(OPUS_X86_PRESUME_SSE
-                           "Assume target CPU has SSE1 support"
+                           ${OPUS_X86_PRESUME_SSE_HELP_STR}
                            ON
                            "OPUS_X86_MAY_HAVE_SSE; NOT OPUS_DISABLE_INTRINSICS"
                            OFF)
+
     cmake_dependent_option(OPUS_X86_PRESUME_SSE2
-                           "Assume target CPU has SSE2 support"
+                           ${OPUS_X86_PRESUME_SSE2_HELP_STR}
                            ON
                            "OPUS_X86_MAY_HAVE_SSE2; NOT OPUS_DISABLE_INTRINSICS"
                            OFF)
   else()
     cmake_dependent_option(OPUS_X86_PRESUME_SSE
-                           "Assume target CPU has SSE1 support"
+                           ${OPUS_X86_PRESUME_SSE_HELP_STR}
                            OFF
                            "OPUS_X86_MAY_HAVE_SSE; NOT OPUS_DISABLE_INTRINSICS"
                            OFF)
+
     cmake_dependent_option(OPUS_X86_PRESUME_SSE2
-                           "Assume target CPU has SSE2 support"
+                           ${OPUS_X86_PRESUME_SSE2_HELP_STR}
                            OFF
                            "OPUS_X86_MAY_HAVE_SSE2; NOT OPUS_DISABLE_INTRINSICS"
                            OFF)
   endif()
+  add_feature_info(OPUS_X86_PRESUME_SSE OPUS_X86_PRESUME_SSE ${OPUS_X86_PRESUME_SSE_HELP_STR})
+  add_feature_info(OPUS_X86_PRESUME_SSE2 OPUS_X86_PRESUME_SSE2 ${OPUS_X86_PRESUME_SSE2_HELP_STR})
+
+  set(OPUS_X86_PRESUME_SSE4_1_HELP_STR "assume target CPU has SSE4.1 support (override runtime check).")
   cmake_dependent_option(OPUS_X86_PRESUME_SSE4_1
-                         "Assume target CPU has SSE4.1 support"
+                         ${OPUS_X86_PRESUME_SSE4_1_HELP_STR}
                          OFF
                          "OPUS_X86_MAY_HAVE_SSE4_1; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
+  add_feature_info(OPUS_X86_PRESUME_SSE4_1 OPUS_X86_PRESUME_SSE4_1 ${OPUS_X86_PRESUME_SSE4_1_HELP_STR})
+
+  set(OPUS_X86_PRESUME_AVX_HELP_STR "assume target CPU has AVX support (override runtime check).")
   cmake_dependent_option(OPUS_X86_PRESUME_AVX
-                         "Assume target CPU has AVX support"
+                         ${OPUS_X86_PRESUME_AVX_HELP_STR}
                          OFF
                          "OPUS_X86_MAY_HAVE_AVX; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
+  add_feature_info(OPUS_X86_PRESUME_AVX OPUS_X86_PRESUME_AVX ${OPUS_X86_PRESUME_AVX_HELP_STR})
 endif()
+
+feature_summary(WHAT ALL)
 
 set_package_properties(Git
                        PROPERTIES
@@ -154,56 +213,6 @@ set_package_properties(Git
                        "https://git-scm.com/"
                        PURPOSE
                        "required to set up package version")
-
-add_feature_info(OPUS_BUILD_SHARED_LIBRARY OPUS_BUILD_SHARED_LIBRARY "Build shared library")
-add_feature_info(OPUS_STACK_PROTECTOR OPUS_STACK_PROTECTOR "Use stack protection")
-add_feature_info(OPUS_VAR_ARRAYS OPUS_VAR_ARRAYS 
-                 "Use variable length arrays for stack arrays")
-add_feature_info(OPUS_USE_ALLOCA OPUS_USE_ALLOCA
-                 "Use alloca for stack arrays (on non-C99 compilers)")
-add_feature_info(OPUS_NONTHREADSAFE_PSEUDOSTACK OPUS_NONTHREADSAFE_PSEUDOSTACK 
-                 "Use a non threadsafe pseudostack when neither variable length arrays or alloca is supported")
-add_feature_info(OPUS_CUSTOM_MODES OPUS_CUSTOM_MODES
-                 "Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames")
-add_feature_info(OPUS_BUILD_TESTING OPUS_BUILD_TESTING "Build test programs")
-add_feature_info(OPUS_BUILD_PROGRAMS OPUS_BUILD_PROGRAMS "Build programs")
-add_feature_info(
-  OPUS_FIXED_POINT OPUS_FIXED_POINT
-  "compile as fixed-point (for machines without a fast enough FPU)")
-add_feature_info(OPUS_DISABLE_INTRINSICS OPUS_DISABLE_INTRINSICS
-  "Disable intrinsics optimizations")
-add_feature_info(
-  OPUS_FLOAT_API OPUS_ENABLE_FLOAT_API
-  "compile with the floating point API (for machines with float library)")
-add_feature_info(OPUS_FLOAT_APPROX OPUS_FLOAT_APPROX
-  "Enable floating point approximations (Ensure your platform supports IEEE 754 before enabling)")
-add_feature_info(OPUS_FAST_MATH OPUS_FAST_MATH "Enable fast math, (depending on OPUS_FLOAT_APPROX to be enabled)")
-add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE
-                 "install PkgConfig module")
-add_feature_info(OPUS_INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE
-                 "install CMake package config module")
-add_feature_info(OPUS_BUILD_FRAMEWORK OPUS_BUILD_FRAMEWORK "Build Framework bundle for Apple systems")
-
-if(OPUS_CPU_X86 OR OPUS_CPU_X64)
-  add_feature_info(OPUS_X86_MAY_HAVE_SSE OPUS_X86_MAY_HAVE_SSE
-                   "does runtime check for SSE1 support")
-  add_feature_info(OPUS_X86_MAY_HAVE_SSE2 OPUS_X86_MAY_HAVE_SSE2
-                   "does runtime check for SSE2 support")
-  add_feature_info(OPUS_X86_MAY_HAVE_SSE4_1 OPUS_X86_MAY_HAVE_SSE4_1
-                   "does runtime check for SSE4_1 support")
-  add_feature_info(OPUS_X86_MAY_HAVE_AVX OPUS_X86_MAY_HAVE_AVX
-                   "does runtime check for AVX support")
-  add_feature_info(OPUS_X86_PRESUME_SSE OPUS_X86_PRESUME_SSE
-                   "assume target CPU has SSE1 support will override the runtime check")
-  add_feature_info(OPUS_X86_PRESUME_SSE2 OPUS_X86_PRESUME_SSE2
-                   "assume target CPU has SSE2 support will override the runtime check")
-  add_feature_info(OPUS_X86_PRESUME_SSE4_1 OPUS_X86_PRESUME_SSE4_1
-                   "assume target CPU has SSE4_1 support will override the runtime check")
-  add_feature_info(OPUS_X86_PRESUME_AVX OPUS_X86_PRESUME_AVX
-                   "assume target CPU has AVX support will override the runtime check")
-endif()
-
-feature_summary(WHAT ALL)
 
 set(Opus_PUBLIC_HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/include/opus.h
@@ -255,7 +264,7 @@ elseif(OPUS_USE_ALLOCA)
 elseif(OPUS_NONTHREADSAFE_PSEUDOSTACK)
   target_compile_definitions(opus PRIVATE NONTHREADSAFE_PSEUDOSTACK)
 else()
-  message(ERROR Neet to set a define for stack allocation)
+  message(ERROR "Need to set a define for stack allocation")
 endif()
 
 if(OPUS_CUSTOM_MODES)
@@ -305,13 +314,6 @@ if(NOT OPUS_ENABLE_FLOAT_API)
 endif()
 
 if(NOT OPUS_DISABLE_INTRINSICS)
-  #[[Build flags for SSE will be set the following way:
-  MSVC: If OPUS_X86_PRESUME_X is set then we will set the highest possible /arch:X
-  we won't set any ARCH flag for OPUS_X86_MAY_HAVE_SSE due to:
-  https://randomascii.wordpress.com/2016/12/05/vc-archavx-option-unsafe-at-any-speed/
-  For non MSVC: we will set the compiler flags on per file basis for OPUS_X86_MAY_HAVE_SSE
-  for OPUS_X86_PRESUME_X we will set it for the target]]
-
   if((OPUS_X86_MAY_HAVE_SSE AND NOT OPUS_X86_PRESUME_SSE) OR
      (OPUS_X86_MAY_HAVE_SSE2 AND NOT OPUS_X86_PRESUME_SSE2) OR
      (OPUS_X86_MAY_HAVE_SSE4_1 AND NOT OPUS_X86_PRESUME_SSE4_1) OR
