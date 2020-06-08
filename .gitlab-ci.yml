@@ -30,5 +30,6 @@ cmake:
       apt-get install -y cmake ninja-build
   script:
     - mkdir build
-    - cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+    - cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DOPUS_BUILD_TESTING=ON -DOPUS_BUILD_PROGRAMS=ON
     - cmake --build build
+    - cd build && ctest --output-on-failure
