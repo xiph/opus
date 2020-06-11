@@ -27,7 +27,7 @@ function(c_feature_check FILE)
 
   if (NOT DEFINED COMPILE_${FEATURE})
       message(STATUS "Performing Test ${FEATURE}")
-      try_compile(COMPILE_${FEATURE} ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/cmake/${FILE}.c)
+      try_compile(COMPILE_${FEATURE} ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${FILE}.c)
   endif()
 
   if(COMPILE_${FEATURE})
