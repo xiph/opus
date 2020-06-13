@@ -30,7 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "debug.h"
+
+#if SILK_DEBUG || SILK_TIC_TOC
 #include "SigProc_FIX.h"
+#endif
 
 #if SILK_TIC_TOC
 
