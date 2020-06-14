@@ -33,3 +33,33 @@ cmake:
     - cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DOPUS_BUILD_TESTING=ON -DOPUS_BUILD_PROGRAMS=ON
     - cmake --build build
     - cd build && ctest --output-on-failure
+
+.make:
+  stage: build
+  script:
+    - make -f Makefile.unix ${CFLAGS}
+    - make -f Makefile.unix ${CFLAGS} check
+    - make -f Makefile.unix ${CFLAGS} clean
+
+make.float:
+  extends: .make
+
+make.float.lrintf:
+  extends: .make
+  variables:
+    CFLAGS: -DHAVE_LRINTF
+
+make.float.vararrays:
+  extends: .make
+  variables:
+    CFLAGS: DVAR_ARRAYS
+
+make.fixed:
+  extends: .make
+  variables:
+    CFLAGS: FIXED_POINT=1
+
+make.fixed.vararrays:
+  extends: .make
+  variables:
+    CFLAGS: FIXED_POINT=1 -DVAR_ARRAYS
