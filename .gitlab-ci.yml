@@ -29,9 +29,9 @@ cmake:
 .make:
   stage: build
   script:
-    - make -f Makefile.unix ${CFLAGS}
-    - make -f Makefile.unix ${CFLAGS} check
-    - make -f Makefile.unix ${CFLAGS} clean
+    - make -f Makefile.unix ${FLAGS}
+    - make -f Makefile.unix ${FLAGS} check
+    - make -f Makefile.unix ${FLAGS} clean
 
 make.float:
   extends: .make
@@ -49,9 +49,10 @@ make.float.vararrays:
 make.fixed:
   extends: .make
   variables:
-    CFLAGS: FIXED_POINT=1
+    FLAGS: FIXED_POINT=1
 
 make.fixed.vararrays:
   extends: .make
   variables:
-    CFLAGS: FIXED_POINT=1 -DVAR_ARRAYS
+    FLAGS: FIXED_POINT=1
+    CFLAGS: -DVAR_ARRAYS
