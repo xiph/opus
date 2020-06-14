@@ -34,25 +34,25 @@ cmake:
     - make -f Makefile.unix ${FLAGS} clean
 
 unix.float:
-  extends: .make
+  extends: .unix
 
 unix.float.lrintf:
-  extends: .make
+  extends: .unix
   variables:
     CFLAGS: -DHAVE_LRINTF
 
 unix.float.vararrays:
-  extends: .make
+  extends: .unix
   variables:
     CFLAGS: -DVAR_ARRAYS
 
 unix.fixed:
-  extends: .make
+  extends: .unix
   variables:
     FLAGS: FIXED_POINT=1
 
 unix.fixed.vararrays:
-  extends: .make
+  extends: .unix
   variables:
     FLAGS: FIXED_POINT=1
     CFLAGS: -DVAR_ARRAYS
