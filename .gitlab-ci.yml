@@ -44,7 +44,7 @@ make.float.lrintf:
 make.float.vararrays:
   extends: .make
   variables:
-    CFLAGS: DVAR_ARRAYS
+    CFLAGS: -DVAR_ARRAYS
 
 make.fixed:
   extends: .make
