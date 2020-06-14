@@ -26,32 +26,32 @@ cmake:
     - cmake --build build
     - cd build && ctest --output-on-failure
 
-.make:
+.unix:
   stage: build
   script:
     - make -f Makefile.unix ${FLAGS}
     - make -f Makefile.unix ${FLAGS} check
     - make -f Makefile.unix ${FLAGS} clean
 
-make.float:
+unix.float:
   extends: .make
 
-make.float.lrintf:
+unix.float.lrintf:
   extends: .make
   variables:
     CFLAGS: -DHAVE_LRINTF
 
-make.float.vararrays:
+unix.float.vararrays:
   extends: .make
   variables:
     CFLAGS: -DVAR_ARRAYS
 
-make.fixed:
+unix.fixed:
   extends: .make
   variables:
     FLAGS: FIXED_POINT=1
 
-make.fixed.vararrays:
+unix.fixed.vararrays:
   extends: .make
   variables:
     FLAGS: FIXED_POINT=1
