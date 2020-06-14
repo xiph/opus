@@ -72,12 +72,12 @@ static OPUS_INLINE opus_int32 float2int(float x) {return _mm_cvt_ss2si(_mm_set_s
         #include <xmmintrin.h>
         static OPUS_INLINE opus_int32 float2int(float value)
         {
-                /* _mm_load_ss will generate same code as _mm_set_ss 
-                ** in _MSC_VER >= 1914 /02 so keep __mm_load__ss 
+                /* _mm_load_ss will generate same code as _mm_set_ss
+                ** in _MSC_VER >= 1914 /02 so keep __mm_load__ss
                 ** for backward compatibility.
                 */
                 return _mm_cvtss_si32(_mm_load_ss(&value));
-        } 
+        }
 
 #elif (defined(_MSC_VER) && _MSC_VER >= 1400) && defined (_M_IX86)
 
