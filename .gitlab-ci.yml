@@ -14,14 +14,6 @@ autoconf:
     - ./configure
     - make
     - make distcheck
-  cache:
-    paths:
-      - "src/*.o"
-      - "src/.libs/*.o"
-      - "silk/*.o"
-      - "silk/.libs/*.o"
-      - "celt/*.o"
-      - "celt/.libs/*.o"
 
 cmake:
   stage: build
