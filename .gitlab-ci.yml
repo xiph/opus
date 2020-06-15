@@ -4,6 +4,13 @@ default:
   # Image from https://hub.docker.com/_/gcc/ based on Debian
   image: gcc
 
+whitespace:
+  stage: test
+  only:
+    - merge_requests
+  script:
+    - git diff-tree --check origin/master HEAD
+
 autoconf:
   stage: build
   before_script:
