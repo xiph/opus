@@ -392,10 +392,10 @@ int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor)
         tmp[i] = tmp[i-1] + MAX16(0, norm*tmp[i] - pdf_floor);
     }
     /* Do the sampling (from the cdf). */
-    r = tmp[N-1] * ((float)rand()/RAND_MAX);
+    r = tmp[N-1] * ((rand()+.5f)/(RAND_MAX+1.f));
     for (i=0;i<N-1;i++)
     {
-        if (r < tmp[i]) return i;
+        if (r <= tmp[i]) return i;
     }
     return N-1;
 }
