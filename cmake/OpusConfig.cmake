@@ -5,7 +5,7 @@ set(__opus_config INCLUDED)
 
 include(OpusFunctions)
 
-configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.cmake.in config.h @ONLY)
+configure_file(cmake/config.h.cmake.in config.h @ONLY)
 add_definitions(-DHAVE_CONFIG_H)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

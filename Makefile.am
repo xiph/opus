@@ -220,6 +220,7 @@ EXTRA_DIST = opus.pc.in \
              cmake/OpusConfig.cmake \
              cmake/OpusConfig.cmake.in \
              cmake/OpusFunctions.cmake \
+             cmake/OpusPackageVersion.cmake \
              cmake/OpusSources.cmake \
              cmake/config.h.cmake.in \
              cmake/vla.c \

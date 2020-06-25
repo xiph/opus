@@ -1,23 +1,12 @@
 cmake_minimum_required(VERSION 3.1)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-include(OpusFunctions)
-
-get_library_version(OPUS_LIBRARY_VERSION OPUS_LIBRARY_VERSION_MAJOR)
-message(STATUS "Opus library version: ${OPUS_LIBRARY_VERSION}")
-
-get_package_version(PACKAGE_VERSION)
-message(STATUS "Opus package version: ${PACKAGE_VERSION}")
-
-string(REGEX
-       REPLACE "^([0-9]+.[0-9]+\\.?([0-9]+)?).*"
-               "\\1"
-               PROJECT_VERSION
-               ${PACKAGE_VERSION})
-message(STATUS "Opus project version: ${PROJECT_VERSION}")
+include(OpusPackageVersion)
+get_package_version(PACKAGE_VERSION PROJECT_VERSION)
 
 project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
 
+include(OpusFunctions)
 include(OpusBuildtype)
 include(OpusConfig)
 include(OpusSources)
@@ -227,6 +216,9 @@ endif()
 
 add_library(opus ${opus_headers} ${opus_sources} ${opus_sources_float} ${Opus_PUBLIC_HEADER})
 add_library(Opus::opus ALIAS opus)
+
+get_library_version(OPUS_LIBRARY_VERSION OPUS_LIBRARY_VERSION_MAJOR)
+message(STATUS "Opus library version: ${OPUS_LIBRARY_VERSION}")
 
 set_target_properties(opus
                       PROPERTIES SOVERSION
@@ -490,7 +482,7 @@ if(OPUS_INSTALL_CMAKE_CONFIG_MODULE)
   include(CMakePackageConfigHelpers)
 
   set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-  configure_package_config_file(${CMAKE_SOURCE_DIR}/cmake/OpusConfig.cmake.in
+  configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/OpusConfig.cmake.in
                                 OpusConfig.cmake
                                 INSTALL_DESTINATION
                                 ${CMAKE_INSTALL_PACKAGEDIR}

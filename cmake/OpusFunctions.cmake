@@ -41,57 +41,6 @@ function(get_library_version OPUS_LIBRARY_VERSION OPUS_LIBRARY_VERSION_MAJOR)
   set(OPUS_LIBRARY_VERSION_MAJOR ${OPUS_LIBRARY_VERSION_MAJOR} PARENT_SCOPE)
 endfunction()
 
-function(get_package_version PACKAGE_VERSION)
-  find_package(Git)
-  if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git")
-    execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --match "v*"
-                    OUTPUT_VARIABLE OPUS_PACKAGE_VERSION)
-    if(OPUS_PACKAGE_VERSION)
-      string(STRIP ${OPUS_PACKAGE_VERSION}, OPUS_PACKAGE_VERSION)
-      string(REPLACE \n
-                     ""
-                     OPUS_PACKAGE_VERSION
-                     ${OPUS_PACKAGE_VERSION})
-      string(REPLACE ,
-                     ""
-                     OPUS_PACKAGE_VERSION
-                     ${OPUS_PACKAGE_VERSION})
-
-      string(SUBSTRING ${OPUS_PACKAGE_VERSION}
-                       1
-                       -1
-                       OPUS_PACKAGE_VERSION)
-      set(PACKAGE_VERSION ${OPUS_PACKAGE_VERSION} PARENT_SCOPE)
-      return()
-    endif()
-  endif()
-
-  if(EXISTS "${CMAKE_SOURCE_DIR}/package_version")
-    # Not a git repo, lets' try to parse it from package_version file if exists
-    file(STRINGS package_version opus_package_version_string
-         LIMIT_COUNT 1
-         REGEX "PACKAGE_VERSION=")
-    string(REPLACE "PACKAGE_VERSION="
-                   ""
-                   opus_package_version_string
-                   ${opus_package_version_string})
-    string(REPLACE "\""
-                   ""
-                   opus_package_version_string
-                   ${opus_package_version_string})
-    # In case we have a unknown dist here we just replace it with 0
-    string(REPLACE "unknown"
-                   "0"
-                   opus_package_version_string
-                   ${opus_package_version_string})
-    set(PACKAGE_VERSION ${opus_package_version_string} PARENT_SCOPE)
-    return()
-  endif()
-
-  # if all else fails set to 0
-  set(PACKAGE_VERSION 0 PARENT_SCOPE)
-endfunction()
-
 function(check_flag NAME FLAG)
   include(CheckCCompilerFlag)
   check_c_compiler_flag(${FLAG} ${NAME}_SUPPORTED)
