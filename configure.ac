@@ -116,6 +116,26 @@ AS_IF([test "$has_var_arrays" = "no"],
 
 LT_LIB_M
 
+# If building for Apple we allow cross-compilation by passing x86_64 or arm64
+# to the compiler based on target type. 
+clang_arch_x86_64="no"
+clang_arch_arm64="no"
+
+AS_IF([test "$host_vendor" = "apple"],[ 
+    # If building for x86_64 ask for that
+    AS_IF([test "$host_cpu" = "x86_64"],[
+      clang_arch_x86_64="yes"  
+    ])
+    # If building for arm64, ask for that
+    AS_IF([test "$host_cpu" = "aarch64"],[
+      clang_arch_arm64="yes"      
+    ])
+])
+  
+# set the clang conditionals for our makefile
+AM_CONDITIONAL([CLANG_ARCH_X86_64], [test "$clang_arch_x86_64" = "yes"])
+AM_CONDITIONAL([CLANG_ARCH_ARM64], [test "$clang_arch_arm64" = "yes"])     
+
 AC_ARG_ENABLE([fixed-point],
     [AS_HELP_STRING([--enable-fixed-point],
                     [compile without floating point (for machines without a fast enough FPU)])],,
