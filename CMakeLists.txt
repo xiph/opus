@@ -490,7 +490,7 @@ if(OPUS_INSTALL_CMAKE_CONFIG_MODULE)
   include(CMakePackageConfigHelpers)
 
   set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-  configure_package_config_file(${CMAKE_SOURCE_DIR}/cmake/OpusConfig.cmake.in
+  configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpusConfig.cmake.in
                                 OpusConfig.cmake
                                 INSTALL_DESTINATION
                                 ${CMAKE_INSTALL_PACKAGEDIR}
