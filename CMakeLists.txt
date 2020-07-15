@@ -109,6 +109,12 @@ cmake_dependent_option(OPUS_STACK_PROTECTOR
                        OFF)
 add_feature_info(OPUS_STACK_PROTECTOR OPUS_STACK_PROTECTOR ${OPUS_STACK_PROTECTOR_HELP_STR})
 
+if(NOT MSVC AND NOT MINGW)
+    set(OPUS_FORTIFY_SOURCE_HELP_STR "add protection against buffer overflows.")
+    option(OPUS_FORTIFY_SOURCE ${OPUS_FORTIFY_SOURCE_HELP_STR} ON)
+    add_feature_info(OPUS_FORTIFY_SOURCE OPUS_FORTIFY_SOURCE ${OPUS_FORTIFY_SOURCE_HELP_STR})
+endif()
+
 if(OPUS_CPU_X86 OR OPUS_CPU_X64)
   set(OPUS_X86_MAY_HAVE_SSE_HELP_STR "does runtime check for SSE1 support.")
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE
@@ -241,7 +247,7 @@ target_include_directories(
 target_link_libraries(opus PRIVATE ${OPUS_REQUIRED_LIBRARIES})
 target_compile_definitions(opus PRIVATE OPUS_BUILD ENABLE_HARDENING)
 
-if(NOT MSVC)
+if(OPUS_FORTIFY_SOURCE)
   target_compile_definitions(opus PRIVATE _FORTIFY_SOURCE=2)
 endif()
 
