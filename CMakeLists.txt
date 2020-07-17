@@ -109,10 +109,19 @@ cmake_dependent_option(OPUS_STACK_PROTECTOR
                        OFF)
 add_feature_info(OPUS_STACK_PROTECTOR OPUS_STACK_PROTECTOR ${OPUS_STACK_PROTECTOR_HELP_STR})
 
-if(NOT MSVC AND NOT MINGW)
-    set(OPUS_FORTIFY_SOURCE_HELP_STR "add protection against buffer overflows.")
-    option(OPUS_FORTIFY_SOURCE ${OPUS_FORTIFY_SOURCE_HELP_STR} ON)
-    add_feature_info(OPUS_FORTIFY_SOURCE OPUS_FORTIFY_SOURCE ${OPUS_FORTIFY_SOURCE_HELP_STR})
+if(NOT MSVC)
+  set(OPUS_FORTIFY_SOURCE_HELP_STR "add protection against buffer overflows.")
+  cmake_dependent_option(OPUS_FORTIFY_SOURCE
+                         ${OPUS_FORTIFY_SOURCE_HELP_STR}
+                         ON
+                         "FORTIFY_SOURCE_SUPPORTED"
+                         OFF)
+  add_feature_info(OPUS_FORTIFY_SOURCE OPUS_FORTIFY_SOURCE ${OPUS_FORTIFY_SOURCE_HELP_STR})
+endif()
+
+if(MINGW AND (OPUS_FORTIFY_SOURCE OR OPUS_STACK_PROTECTOR))
+  # ssp lib is needed for security features for MINGW
+  list(APPEND OPUS_REQUIRED_LIBRARIES ssp)
 endif()
 
 if(OPUS_CPU_X86 OR OPUS_CPU_X64)
@@ -247,8 +256,9 @@ target_include_directories(
 target_link_libraries(opus PRIVATE ${OPUS_REQUIRED_LIBRARIES})
 target_compile_definitions(opus PRIVATE OPUS_BUILD ENABLE_HARDENING)
 
-if(OPUS_FORTIFY_SOURCE)
-  target_compile_definitions(opus PRIVATE _FORTIFY_SOURCE=2)
+if(OPUS_FORTIFY_SOURCE AND NOT MSVC)
+  target_compile_definitions(opus PRIVATE
+                             $<$<NOT:$<CONFIG:debug>>:_FORTIFY_SOURCE=2>)
 endif()
 
 if(OPUS_FLOAT_APPROX)

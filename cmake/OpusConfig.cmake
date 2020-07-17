@@ -77,6 +77,18 @@ else()
   check_flag(FAST_MATH -ffast-math)
   check_flag(STACK_PROTECTOR -fstack-protector-strong)
   check_flag(HIDDEN_VISIBILITY -fvisibility=hidden)
+  set(FORTIFY_SOURCE_SUPPORTED 1)
+endif()
+
+if(MINGW)
+  # For MINGW we need to link ssp lib for security features such as
+  # stack protector and fortify_sources
+  check_library_exists(ssp __stack_chk_fail "" HAVE_LIBSSP)
+  if(NOT HAVE_LIBSSP)
+    message(WARNING "Could not find libssp in MinGW, disabling STACK_PROTECTOR and FORTIFY_SOURCE")
+    set(STACK_PROTECTOR_SUPPORTED 0)
+    set(FORTIFY_SOURCE_SUPPORTED 0)
+  endif()
 endif()
 
 if(NOT MSVC)
