@@ -67,7 +67,7 @@ unsigned long GetHighResolutionTime(void) /* O  time in usec*/
 int           silk_Timer_nTimers = 0;
 int           silk_Timer_depth_ctr = 0;
 char          silk_Timer_tags[silk_NUM_TIMERS_MAX][silk_NUM_TIMERS_MAX_TAG_LEN];
-#ifdef WIN32
+#ifdef _WIN32
 LARGE_INTEGER silk_Timer_start[silk_NUM_TIMERS_MAX];
 #else
 unsigned long silk_Timer_start[silk_NUM_TIMERS_MAX];
@@ -78,7 +78,7 @@ opus_int64     silk_Timer_sum[silk_NUM_TIMERS_MAX];
 opus_int64     silk_Timer_max[silk_NUM_TIMERS_MAX];
 opus_int64     silk_Timer_depth[silk_NUM_TIMERS_MAX];
 
-#ifdef WIN32
+#ifdef _WIN32
 void silk_TimerSave(char *file_name)
 {
     if( silk_Timer_nTimers > 0 )
