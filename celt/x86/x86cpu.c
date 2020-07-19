@@ -91,9 +91,12 @@ static void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
             what we want on CPUs that don't support CPUID. */
         CPUInfo[3] = CPUInfo[2] = CPUInfo[1] = CPUInfo[0] = 0;
     }
+#else
+#error no supported Get CPU Info method is defined, \
+       define CPU_INFO_BY ASM OR CPU_INFO_BY_C or \
+       disable run-time CPU capabilities detection
 #endif
 }
-
 #endif
 
 typedef struct CPU_Feature{
