@@ -97,7 +97,7 @@ set(OPUS_VAR_ARRAYS_HELP_STR "use variable length arrays for stack arrays.")
 cmake_dependent_option(OPUS_VAR_ARRAYS
                       ${OPUS_VAR_ARRAYS_HELP_STR}
                       ON
-                      "VLA_SUPPORTED; NOT OPUS_USE_ALLOCA; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
+                      "COMPILER_VLA_SUPPORTED; NOT OPUS_USE_ALLOCA; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
                       OFF)
 add_feature_info(OPUS_VAR_ARRAYS OPUS_VAR_ARRAYS ${OPUS_VAR_ARRAYS_HELP_STR})
 
@@ -105,7 +105,7 @@ set(OPUS_USE_ALLOCA_HELP_STR "use alloca for stack arrays (on non-C99 compilers)
 cmake_dependent_option(OPUS_USE_ALLOCA
                        ${OPUS_USE_ALLOCA_HELP_STR}
                        ON
-                       "USE_ALLOCA_SUPPORTED; NOT OPUS_VAR_ARRAYS; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
+                       "COMPILER_USE_ALLOCA_SUPPORTED; NOT OPUS_VAR_ARRAYS; NOT OPUS_NONTHREADSAFE_PSEUDOSTACK"
                        OFF)
 add_feature_info(OPUS_USE_ALLOCA OPUS_USE_ALLOCA ${OPUS_USE_ALLOCA_HELP_STR})
 
@@ -121,7 +121,7 @@ set(OPUS_FAST_MATH_HELP_STR "enable fast math (unsupported and discouraged use, 
 cmake_dependent_option(OPUS_FAST_MATH
                        ${OPUS_FAST_MATH_HELP_STR}
                        ON
-                       "OPUS_FLOAT_APPROX; OPUS_FAST_MATH; FAST_MATH_SUPPORTED"
+                       "OPUS_FLOAT_APPROX; OPUS_FAST_MATH; COMPILER_FAST_MATH_FLAG_SUPPORTED"
                        OFF)
 add_feature_info(OPUS_FAST_MATH OPUS_FAST_MATH ${OPUS_FAST_MATH_HELP_STR})
 
@@ -129,7 +129,7 @@ set(OPUS_STACK_PROTECTOR_HELP_STR "use stack protection.")
 cmake_dependent_option(OPUS_STACK_PROTECTOR
                        ${OPUS_STACK_PROTECTOR_HELP_STR}
                        ON
-                       "STACK_PROTECTOR_SUPPORTED"
+                       "COMPILER_STACK_PROTECTOR_FLAG_SUPPORTED"
                        OFF)
 add_feature_info(OPUS_STACK_PROTECTOR OPUS_STACK_PROTECTOR ${OPUS_STACK_PROTECTOR_HELP_STR})
 
@@ -153,7 +153,7 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE
                          ${OPUS_X86_MAY_HAVE_SSE_HELP_STR}
                          ON
-                         "SSE1_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
+                         "COMPILER_SSE1_FLAG_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
   add_feature_info(OPUS_X86_MAY_HAVE_SSE OPUS_X86_MAY_HAVE_SSE ${OPUS_X86_MAY_HAVE_SSE_HELP_STR})
 
@@ -161,7 +161,7 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE2
                          ${OPUS_X86_MAY_HAVE_SSE2_HELP_STR}
                          ON
-                         "SSE2_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
+                         "COMPILER_SSE2_FLAG_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
   add_feature_info(OPUS_X86_MAY_HAVE_SSE2 OPUS_X86_MAY_HAVE_SSE2 ${OPUS_X86_MAY_HAVE_SSE2_HELP_STR})
 
@@ -169,7 +169,7 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_SSE4_1
                          ${OPUS_X86_MAY_HAVE_SSE4_1_HELP_STR}
                          ON
-                         "SSE4_1_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
+                         "COMPILER_SSE4_1_FLAG_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
   add_feature_info(OPUS_X86_MAY_HAVE_SSE4_1 OPUS_X86_MAY_HAVE_SSE4_1 ${OPUS_X86_MAY_HAVE_SSE4_1_HELP_STR})
 
@@ -177,7 +177,7 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
   cmake_dependent_option(OPUS_X86_MAY_HAVE_AVX
                          ${OPUS_X86_MAY_HAVE_AVX_HELP_STR}
                          ON
-                         "AVX_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
+                         "COMPILER_AVX_FLAG_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
   add_feature_info(OPUS_X86_MAY_HAVE_AVX OPUS_X86_MAY_HAVE_AVX ${OPUS_X86_MAY_HAVE_AVX_HELP_STR})
 
@@ -337,14 +337,14 @@ if(OPUS_STACK_PROTECTOR)
   else()
     target_compile_options(opus PRIVATE -fstack-protector-strong)
   endif()
-elseif(STACK_PROTECTOR_DISABLED_SUPPORTED)
+elseif(COMPILER_STACK_PROTECTOR_DISABLED_FLAG_SUPPORTED)
   target_compile_options(opus PRIVATE /GS-)
 endif()
 
 if(BUILD_SHARED_LIBS)
   if(WIN32)
     target_compile_definitions(opus PRIVATE DLL_EXPORT)
-  elseif(HIDDEN_VISIBILITY_SUPPORTED)
+  elseif(COMPILER_HIDDEN_VISIBILITY_FLAG_SUPPORTED)
     set_target_properties(opus PROPERTIES C_VISIBILITY_PRESET hidden)
   endif()
 endif()
@@ -366,14 +366,24 @@ if(NOT OPUS_ENABLE_FLOAT_API)
 endif()
 
 if(NOT OPUS_DISABLE_INTRINSICS)
-  if((OPUS_X86_MAY_HAVE_SSE AND NOT OPUS_X86_PRESUME_SSE) OR
+  if(((OPUS_X86_MAY_HAVE_SSE AND NOT OPUS_X86_PRESUME_SSE) OR
      (OPUS_X86_MAY_HAVE_SSE2 AND NOT OPUS_X86_PRESUME_SSE2) OR
      (OPUS_X86_MAY_HAVE_SSE4_1 AND NOT OPUS_X86_PRESUME_SSE4_1) OR
-     (OPUS_X86_MAY_HAVE_AVX AND NOT OPUS_X86_PRESUME_AVX))
+     (OPUS_X86_MAY_HAVE_AVX AND NOT OPUS_X86_PRESUME_AVX)) AND
+     RUNTIME_CPU_CAPABILITY_DETECTION)
     target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
+    if(NOT MSVC)
+      if(COMPILER_CPU_INFO_BY_ASM_SUPPORTED)
+        target_compile_definitions(opus PRIVATE CPU_INFO_BY_ASM)
+      elseif(COMPILER_CPU_INFO_BY_C_SUPPORTED)
+        target_compile_definitions(opus PRIVATE CPU_INFO_BY_C)
+      else()
+        message(ERROR "Runtime cpu capability detection is enabled while CPU_INFO is not supported")
+      endif()
+    endif()
   endif()
 
-  if(SSE1_SUPPORTED)
+  if(COMPILER_SSE1_FLAG_SUPPORTED)
     if(OPUS_X86_MAY_HAVE_SSE)
       add_sources_group(opus celt ${celt_sources_sse})
       target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_SSE)
@@ -389,7 +399,7 @@ if(NOT OPUS_DISABLE_INTRINSICS)
     endif()
   endif()
 
-  if(SSE2_SUPPORTED)
+  if(COMPILER_SSE2_FLAG_SUPPORTED)
     if(OPUS_X86_MAY_HAVE_SSE2)
       add_sources_group(opus celt ${celt_sources_sse2})
       target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_SSE2)
@@ -405,7 +415,7 @@ if(NOT OPUS_DISABLE_INTRINSICS)
     endif()
   endif()
 
-  if(SSE4_1_SUPPORTED)
+  if(COMPILER_SSE4_1_FLAG_SUPPORTED)
     if(OPUS_X86_MAY_HAVE_SSE4_1)
       add_sources_group(opus celt ${celt_sources_sse4_1})
       add_sources_group(opus silk ${silk_sources_sse4_1})
@@ -429,7 +439,7 @@ if(NOT OPUS_DISABLE_INTRINSICS)
     endif()
   endif()
 
-  if(AVX_SUPPORTED)
+  if(COMPILER_AVX_FLAG_SUPPORTED)
     # mostly placeholder in case of avx intrinsics is added
     if(OPUS_X86_MAY_HAVE_AVX)
       target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_AVX)
@@ -443,13 +453,13 @@ if(NOT OPUS_DISABLE_INTRINSICS)
   endif()
 
   if(MSVC)
-    if(AVX_SUPPORTED AND OPUS_X86_PRESUME_AVX) # on 64 bit and 32 bits
+    if(COMPILER_AVX_FLAG_SUPPORTED AND OPUS_X86_PRESUME_AVX) # on 64 bit and 32 bits
       add_definitions(/arch:AVX)
     elseif(OPUS_CPU_X86) # if AVX not supported then set SSE flag
-      if((SSE4_1_SUPPORTED AND OPUS_X86_PRESUME_SSE4_1)
-         OR (SSE2_SUPPORTED AND OPUS_X86_PRESUME_SSE2))
+      if((COMPILER_SSE4_1_FLAG_SUPPORTED AND OPUS_X86_PRESUME_SSE4_1)
+         OR (COMPILER_SSE2_FLAG_SUPPORTED AND OPUS_X86_PRESUME_SSE2))
         target_compile_definitions(opus PRIVATE /arch:SSE2)
-      elseif(SSE1_SUPPORTED AND OPUS_X86_PRESUME_SSE)
+      elseif(COMPILER_SSE1_FLAG_SUPPORTED AND OPUS_X86_PRESUME_SSE)
         target_compile_definitions(opus PRIVATE /arch:SSE)
       endif()
     endif()

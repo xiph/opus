@@ -43,7 +43,7 @@ endfunction()
 
 function(check_flag NAME FLAG)
   include(CheckCCompilerFlag)
-  check_c_compiler_flag(${FLAG} ${NAME}_SUPPORTED)
+  check_c_compiler_flag(${FLAG} COMPILER_${NAME}_FLAG_SUPPORTED)
 endfunction()
 
 include(CheckIncludeFile)
@@ -60,7 +60,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
       if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         check_flag(SSE1 /arch:SSE)
       else()
-        set(SSE1_SUPPORTED
+        set(COMPILER_SSE1_FLAG_SUPPORTED
             1
             PARENT_SCOPE)
       endif()
@@ -68,7 +68,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
       check_flag(SSE1 -msse)
     endif()
   else()
-    set(SSE1_SUPPORTED
+    set(COMPILER_SSE1_FLAG_SUPPORTED
         0
         PARENT_SCOPE)
   endif()
@@ -79,7 +79,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
       if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         check_flag(SSE2 /arch:SSE2)
       else()
-        set(SSE2_SUPPORTED
+        set(COMPILER_SSE2_FLAG_SUPPORTED
             1
             PARENT_SCOPE)
       endif()
@@ -87,7 +87,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
       check_flag(SSE2 -msse2)
     endif()
   else()
-    set(SSE2_SUPPORTED
+    set(COMPILER_SSE2_FLAG_SUPPORTED
         0
         PARENT_SCOPE)
   endif()
@@ -98,7 +98,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
       if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         check_flag(SSE4_1 /arch:SSE2) # SSE2 and above
       else()
-        set(SSE4_1_SUPPORTED
+        set(COMPILER_SEE4_1_FLAG_SUPPORTED
             1
             PARENT_SCOPE)
       endif()
@@ -106,7 +106,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
       check_flag(SSE4_1 -msse4.1)
     endif()
   else()
-    set(SSE4_1_SUPPORTED
+    set(COMPILER_SSE4_1_FLAG_SUPPORTED
         0
         PARENT_SCOPE)
   endif()
@@ -119,12 +119,13 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
       check_flag(AVX -mavx)
     endif()
   else()
-    set(AVX_SUPPORTED
+    set(COMPILER_AVX_FLAG_SUPPORTED
         0
         PARENT_SCOPE)
   endif()
 
-  if(SSE1_SUPPORTED OR SSE2_SUPPORTED OR SSE4_1_SUPPORTED OR AVX_SUPPORTED)
+  if(COMPILER_SSE1_FLAG_SUPPORTED OR COMPILER_SSE2_FLAG_SUPPORTED OR
+     COMPILER_COMPILER_SSE4_1_FLAG_SUPPORTED OR COMPILER_AVX_FLAG_SUPPORTED)
     set(COMPILER_SUPPORT_SIMD 1 PARENT_SCOPE)
   else()
     message(STATUS "No SIMD support in compiler")
@@ -142,21 +143,32 @@ function(opus_detect_neon COMPILER_SUPPORT_NEON)
 endfunction()
 
 function(opus_supports_cpu_detection RUNTIME_CPU_CAPABILITY_DETECTION)
-  if(MSVC)
-    check_include_file(intrin.h HAVE_INTRIN_H)
-  else()
-    check_include_file(cpuid.h HAVE_CPUID_H)
-  endif()
-  if(HAVE_INTRIN_H OR HAVE_CPUID_H)
-    set(RUNTIME_CPU_CAPABILITY_DETECTION 1 PARENT_SCOPE)
-  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(arm|aarch64)")
+  set(RUNTIME_CPU_CAPABILITY_DETECTION 0 PARENT_SCOPE)
+  if(OPUS_CPU_X86 OR OPUS_CPU_X64)
+    if(MSVC)
+      check_include_file(intrin.h HAVE_INTRIN_H)
+      if(HAVE_INTRIN_H)
+        set(RUNTIME_CPU_CAPABILITY_DETECTION 1 PARENT_SCOPE)
+      endif()
+    else()
+      include(CFeatureCheck)
+      c_feature_check(CPU_INFO_BY_ASM)
+      set(COMPILER_CPU_INFO_BY_ASM_SUPPORTED ${COMPILER_CPU_INFO_BY_ASM_SUPPORTED} PARENT_SCOPE)
+      check_include_file(cpuid.h HAVE_CPUID_H)
+      if(HAVE_CPUID_H)
+        c_feature_check(CPU_INFO_BY_C)
+        set(COMPILER_CPU_INFO_BY_C_SUPPORTED ${COMPILER_CPU_INFO_BY_C_SUPPORTED} PARENT_SCOPE)
+      endif()
+      if(COMPILER_CPU_INFO_BY_ASM_SUPPORTED OR COMPILER_CPU_INFO_BY_C_SUPPORTED)
+        set(RUNTIME_CPU_CAPABILITY_DETECTION 1 PARENT_SCOPE)
+      endif()
+    endif()
+  elseif(OPUS_CPU_ARM)
     # ARM cpu detection is implemented for Windows and anything
     # using a Linux kernel (such as Android).
     if (CMAKE_SYSTEM_NAME MATCHES "(Windows|Linux|Android)")
       set(RUNTIME_CPU_CAPABILITY_DETECTION 1 PARENT_SCOPE)
     endif ()
-  else()
-    set(RUNTIME_CPU_CAPABILITY_DETECTION 0 PARENT_SCOPE)
   endif()
 endfunction()
 
