@@ -85,6 +85,14 @@ if(APPLE)
   add_feature_info(OPUS_BUILD_FRAMEWORK OPUS_BUILD_FRAMEWORK ${OPUS_BUILD_FRAMEWORK_HELP_STR})
 endif()
 
+set(OPUS_FIXED_POINT_DEBUG_HELP_STR "debug fixed-point implementation.")
+cmake_dependent_option(OPUS_FIXED_POINT_DEBUG
+                      ${OPUS_FIXED_POINT_DEBUG_HELP_STR}
+                      ON
+                      "OPUS_FIXED_POINT; OPUS_FIXED_POINT_DEBUG"
+                      OFF)
+add_feature_info(OPUS_FIXED_POINT_DEBUG OPUS_FIXED_POINT_DEBUG ${OPUS_FIXED_POINT_DEBUG_HELP_STR})
+
 set(OPUS_VAR_ARRAYS_HELP_STR "use variable length arrays for stack arrays.")
 cmake_dependent_option(OPUS_VAR_ARRAYS
                       ${OPUS_VAR_ARRAYS_HELP_STR}
@@ -271,6 +279,10 @@ target_include_directories(
 
 target_link_libraries(opus PRIVATE ${OPUS_REQUIRED_LIBRARIES})
 target_compile_definitions(opus PRIVATE OPUS_BUILD)
+
+if(OPUS_FIXED_POINT_DEBUG)
+  target_compile_definitions(opus PRIVATE FIXED_DEBUG)
+endif()
 
 if(OPUS_FORTIFY_SOURCE AND NOT MSVC)
   target_compile_definitions(opus PRIVATE
