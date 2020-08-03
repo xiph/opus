@@ -101,7 +101,7 @@ LPCNET_EXPORT int lpcnet_get_size()
 LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
 {
     memset(lpcnet, 0, lpcnet_get_size());
-    lpcnet->last_exc = 128;
+    lpcnet->last_exc = lin2ulaw(0.f);
     return 0;
 }
 

@@ -468,6 +468,7 @@ LPCNET_EXPORT int lpcnet_encoder_get_size() {
 
 LPCNET_EXPORT int lpcnet_encoder_init(LPCNetEncState *st) {
   memset(st, 0, sizeof(*st));
+  st->exc_mem = lin2ulaw(0.f);
   return 0;
 }
 
