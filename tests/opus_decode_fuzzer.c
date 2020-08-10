@@ -40,6 +40,8 @@
 /* 4 bytes: packet length, 4 bytes: encoder final range */
 #define SETUP_BYTE_COUNT 8
 
+#define MAX_DECODES 12
+
 typedef struct {
     int fs;
     int channels;
@@ -66,6 +68,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     TocInfo toc;
     int i = 0;
     int err = OPUS_OK;
+    int num_decodes = 0;
 
     /* Not enough data to setup the decoder (+1 for the ToC) */
     if (size < SETUP_BYTE_COUNT + 1) {
@@ -82,7 +85,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     pcm = (opus_int16*) malloc(sizeof(*pcm) * MAX_FRAME_SAMP * toc.channels);
 
-    while (i + SETUP_BYTE_COUNT < size) {
+    while (i + SETUP_BYTE_COUNT < size && num_decodes++ < MAX_DECODES) {
         int len, fec;
 
         len = (opus_uint32) data[i    ] << 24 |
