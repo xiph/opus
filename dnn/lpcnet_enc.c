@@ -589,7 +589,7 @@ void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int
       max_prev = st->pitch_max_path_all - 6.f;
       pitch_prev[sub][i] = st->best_i;
       for (j=IMIN(0, 4-i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
-        if (st->pitch_max_path[0][i+j] > max_prev) {
+        if (st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j) > max_prev) {
           max_prev = st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j);
           pitch_prev[sub][i] = i+j;
         }
@@ -661,10 +661,11 @@ void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int
     if (quantize) {
       float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
       p *= 1 + modulation/16./7.*(2*sub-3);
+      p = MIN16(255, MAX16(32, p));
       st->features[sub][2*NB_BANDS] = .02*(p-100);
       st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
     } else {
-      st->features[sub][2*NB_BANDS] = .01*(best[2+2*sub]+best[2+2*sub+1]-200);
+      st->features[sub][2*NB_BANDS] = .01*(IMAX(64, IMIN(510, best[2+2*sub]+best[2+2*sub+1]))-200);
       st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
     }
     //printf("%f %d %f\n", st->features[sub][2*NB_BANDS], best[2+2*sub], frame_corr);
