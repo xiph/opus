@@ -233,7 +233,7 @@ add_library(opus ${opus_headers} ${opus_sources} ${opus_sources_float} ${Opus_PU
 add_library(Opus::opus ALIAS opus)
 
 get_library_version(OPUS_LIBRARY_VERSION OPUS_LIBRARY_VERSION_MAJOR)
-message(STATUS "Opus library version: ${OPUS_LIBRARY_VERSION}")
+message(DEBUG "Opus library version: ${OPUS_LIBRARY_VERSION}")
 
 set_target_properties(opus
                       PROPERTIES SOVERSION
