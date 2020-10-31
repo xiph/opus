@@ -29,6 +29,8 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+#include <locale.h>
 #include <stdarg.h>
 #include "celt.h"
 #include "entenc.h"
@@ -2251,6 +2253,197 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
 }
 #endif
+
+
+opus_int32 opus_get_probs(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
+      unsigned char *data, opus_int32 max_data_bytes)
+{
+   int i, ret;
+   int frame_size;
+   VARDECL(float, in);
+   ALLOC_STACK;
+
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   if (frame_size <= 0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+   ALLOC(in, frame_size*st->channels, float);
+
+   for (i=0;i<frame_size*st->channels;i++)
+      in[i] = (1.0f/32768)*pcm[i];
+   ret = opus_encode_get_probs(st, in, frame_size, data, max_data_bytes, 16,
+                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
+   RESTORE_STACK;
+   return ret;
+}
+
+
+
+opus_int32 opus_encode_get_probs(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
+                unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
+                const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
+                int analysis_channels, downmix_func downmix, int float_api)
+{
+    void *silk_enc;
+    CELTEncoder *celt_enc;
+    int i;
+    int ret=0;
+    opus_int32 nBytes;
+    ec_enc enc;
+    int bytes_target;
+    int prefill=0;
+    int start_band = 0;
+    int redundancy = 0;
+    int redundancy_bytes = 0; /* Number of bytes to use for redundancy frame */
+    int celt_to_silk = 0;
+    VARDECL(opus_val16, pcm_buf);
+    int nb_compr_bytes;
+    int to_celt = 0;
+    opus_uint32 redundant_rng = 0;
+    int cutoff_Hz, hp_freq_smth1;
+    int voice_est; /* Probability of voice in Q7 */
+    opus_int32 equiv_rate;
+    int delay_compensation;
+    int frame_rate;
+    opus_int32 max_rate; /* Max bitrate we're allowed to use */
+    int curr_bandwidth;
+    opus_val16 HB_gain;
+    opus_int32 max_data_bytes; /* Max number of bytes we're allowed to use */
+    int total_buffer;
+    opus_val16 stereo_width;
+    const CELTMode *celt_mode;
+#ifndef DISABLE_FLOAT_API
+    AnalysisInfo analysis_info;
+   //  int analysis_read_pos_bak=-1;
+   //  int analysis_read_subframe_bak=-1;
+    int is_silence = 0;
+#endif
+    opus_int activity = VAD_NO_DECISION;
+
+    VARDECL(opus_val16, tmp_prefill);
+
+    ALLOC_STACK;
+
+    max_data_bytes = IMIN(1276, out_data_bytes);
+
+    st->rangeFinal = 0;
+    if (frame_size <= 0 || max_data_bytes <= 0)
+    {
+       RESTORE_STACK;
+       return OPUS_BAD_ARG;
+    }
+
+    /* Cannot encode 100 ms in 1 byte */
+    if (max_data_bytes==1 && st->Fs==(frame_size*10))
+    {
+      RESTORE_STACK;
+      return OPUS_BUFFER_TOO_SMALL;
+    }
+
+    silk_enc = (char*)st+st->silk_enc_offset;
+    celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
+    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+       delay_compensation = 0;
+    else
+       delay_compensation = st->delay_compensation;
+
+    lsb_depth = IMIN(lsb_depth, st->lsb_depth);
+
+    celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
+#ifndef DISABLE_FLOAT_API
+    analysis_info.valid = 0;
+#ifdef FIXED_POINT
+    if (st->silk_mode.complexity >= 10 && st->Fs>=16000)
+#else
+    if (st->silk_mode.complexity >= 7 && st->Fs>=16000)
+#endif
+    {
+       is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
+      //  analysis_read_pos_bak = st->analysis.read_pos;
+      //  analysis_read_subframe_bak = st->analysis.read_subframe;
+       run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
+             c1, c2, analysis_channels, st->Fs,
+             lsb_depth, downmix, &analysis_info);
+
+       /* Track the peak signal energy */
+       if (!is_silence && analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD)
+          st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999f, 15), st->peak_signal_energy),
+                compute_frame_energy(pcm, frame_size, st->channels, st->arch));
+    } else if (st->analysis.initialized) {
+       tonality_analysis_reset(&st->analysis);
+    }
+#else
+    (void)analysis_pcm;
+    (void)analysis_size;
+    (void)c1;
+    (void)c2;
+    (void)analysis_channels;
+    (void)downmix;
+#endif
+
+#ifndef DISABLE_FLOAT_API
+    /* Reset voice_ratio if this frame is not silent or if analysis is disabled.
+     * Otherwise, preserve voice_ratio from the last non-silent frame */
+    if (!is_silence)
+      st->voice_ratio = -1;
+
+    if (is_silence)
+    {
+       activity = !is_silence;
+    } else if (analysis_info.valid)
+    {
+       activity = analysis_info.activity_probability >= DTX_ACTIVITY_THRESHOLD;
+       if (!activity)
+       {
+           /* Mark as active if this noise frame is sufficiently loud */
+           opus_val32 noise_energy = compute_frame_energy(pcm, frame_size, st->channels, st->arch);
+           activity = st->peak_signal_energy < (PSEUDO_SNR_THRESHOLD * noise_energy);
+       }
+    }
+
+
+    st->detected_bandwidth = 0;
+    if (analysis_info.valid)
+    {
+   //    // to set comma as separator in float print
+   //    char *oldLocale = setlocale(LC_NUMERIC, NULL);
+
+   //    // inherit locale from environment
+   //    setlocale(LC_NUMERIC, "");
+   //    const char* fmt = "%f;";
+   //    printf(fmt, analysis_info.music_prob);
+   //    // printf(fmt, is_silence);
+   //    // printf(fmt, analysis_info.tonality);
+   //    // printf(fmt, analysis_info.tonality_slope);
+   //    // printf(fmt, analysis_info.noisiness);
+   //    // printf(fmt, analysis_info.activity);
+   //    // printf(fmt, analysis_info.music_prob);
+   //    // printf(fmt, analysis_info.music_prob_min);
+   //    // printf(fmt, analysis_info.music_prob_max);
+   //    // printf(fmt, analysis_info.bandwidth);
+   //    // printf(fmt, analysis_info.activity_probability);
+   //    // printf(fmt, analysis_info.max_pitch_ratio);
+   //    printf("\n");
+
+   //  // set the locale back
+   //  setlocale(LC_NUMERIC, oldLocale);
+
+      return (opus_int32)(analysis_info.music_prob*INT32_MAX);
+    }
+    else
+    {
+       return -1;
+    }
+    
+#else
+    st->voice_ratio = -1;
+#endif
+
+   //  return 0;
+   
+}
 
 
 int opus_encoder_ctl(OpusEncoder *st, int request, ...)
