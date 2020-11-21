@@ -67,6 +67,10 @@ set(OPUS_FUZZING_HELP_STR "causes the encoder to make random decisions (do not u
 option(OPUS_FUZZING ${OPUS_FUZZING_HELP_STR} OFF)
 add_feature_info(OPUS_FUZZING OPUS_FUZZING ${OPUS_FUZZING_HELP_STR})
 
+set(OPUS_CHECK_ASM_HELP_STR "enable bit-exactness checks between optimized and c implementations.")
+option(OPUS_CHECK_ASM ${OPUS_CHECK_ASM_HELP_STR} OFF)
+add_feature_info(OPUS_CHECK_ASM OPUS_CHECK_ASM ${OPUS_CHECK_ASM_HELP_STR})
+
 set(OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR "install pkg-config module.")
 option(OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR} ON)
 add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR})
@@ -287,6 +291,10 @@ endif()
 
 if(OPUS_FUZZING)
   target_compile_definitions(opus PRIVATE FUZZING)
+endif()
+
+if(OPUS_CHECK_ASM)
+  target_compile_definitions(opus PRIVATE OPUS_CHECK_ASM)
 endif()
 
 if(OPUS_VAR_ARRAYS)
