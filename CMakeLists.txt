@@ -59,6 +59,10 @@ set(OPUS_ASSERTIONS_HELP_STR "additional software error checking.")
 option(OPUS_ASSERTIONS ${OPUS_ASSERTIONS_HELP_STR} OFF)
 add_feature_info(OPUS_ASSERTIONS OPUS_ASSERTIONS ${OPUS_ASSERTIONS_HELP_STR})
 
+set(OPUS_HARDENING_HELP_STR "run-time checks that are cheap and safe for use in production.")
+option(OPUS_HARDENING ${OPUS_HARDENING_HELP_STR} ON)
+add_feature_info(OPUS_HARDENING OPUS_HARDENING ${OPUS_HARDENING_HELP_STR})
+
 set(OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR "install pkg-config module.")
 option(OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR} ON)
 add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR})
@@ -258,7 +262,7 @@ target_include_directories(
           silk)
 
 target_link_libraries(opus PRIVATE ${OPUS_REQUIRED_LIBRARIES})
-target_compile_definitions(opus PRIVATE OPUS_BUILD ENABLE_HARDENING)
+target_compile_definitions(opus PRIVATE OPUS_BUILD)
 
 if(OPUS_FORTIFY_SOURCE AND NOT MSVC)
   target_compile_definitions(opus PRIVATE
@@ -271,6 +275,10 @@ endif()
 
 if(OPUS_ASSERTIONS)
   target_compile_definitions(opus PRIVATE ENABLE_ASSERTIONS)
+endif()
+
+if(OPUS_HARDENING)
+  target_compile_definitions(opus PRIVATE ENABLE_HARDENING)
 endif()
 
 if(OPUS_VAR_ARRAYS)
