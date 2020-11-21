@@ -63,6 +63,10 @@ set(OPUS_HARDENING_HELP_STR "run-time checks that are cheap and safe for use in 
 option(OPUS_HARDENING ${OPUS_HARDENING_HELP_STR} ON)
 add_feature_info(OPUS_HARDENING OPUS_HARDENING ${OPUS_HARDENING_HELP_STR})
 
+set(OPUS_FUZZING_HELP_STR "causes the encoder to make random decisions (do not use in production).")
+option(OPUS_FUZZING ${OPUS_FUZZING_HELP_STR} OFF)
+add_feature_info(OPUS_FUZZING OPUS_FUZZING ${OPUS_FUZZING_HELP_STR})
+
 set(OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR "install pkg-config module.")
 option(OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR} ON)
 add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR})
@@ -279,6 +283,10 @@ endif()
 
 if(OPUS_HARDENING)
   target_compile_definitions(opus PRIVATE ENABLE_HARDENING)
+endif()
+
+if(OPUS_FUZZING)
+  target_compile_definitions(opus PRIVATE FUZZING)
 endif()
 
 if(OPUS_VAR_ARRAYS)
