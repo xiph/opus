@@ -11,6 +11,8 @@ macosversion = run_command('meson/get-version.py', '--darwin-version', check: tr
 cc = meson.get_compiler('c')
 host_system = host_machine.system()
 host_cpu_family = host_machine.cpu_family()
+top_srcdir = meson.current_source_dir()
+top_builddir = meson.current_build_dir()
 
 opus_includes = include_directories('.', 'include', 'celt', 'silk')
 opus_public_includes = include_directories('include')

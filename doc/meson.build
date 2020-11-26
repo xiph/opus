@@ -1,6 +1,3 @@
-top_srcdir = meson.source_root()
-top_builddir = meson.build_root()
-
 have_dot = find_program('dot', required: false).found()
 
 doxyfile_conf = configuration_data()
