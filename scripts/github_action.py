@@ -1,6 +1,5 @@
 class GithubActionsTransformer():
     def __init__(self, name):
-        super(GithubActionsTransformer, self).__init__()
         self.actions = {
             'on': [
                 "push",

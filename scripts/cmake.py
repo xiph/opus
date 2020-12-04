@@ -1,6 +1,5 @@
 class CMakeTransformer():
     def __init__(self):
-        super(CMakeTransformer, self).__init__()
         self.settings_dict = {
             'custom-modes': 'OPUS_CUSTOM_MODES',
             'fixed-point': 'OPUS_FIXED_POINT',
