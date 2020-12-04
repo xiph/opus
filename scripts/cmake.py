@@ -94,7 +94,7 @@ class CMakeTransformer():
             config['name'] += '-shared'
         cmake_configs += cmake_configs_shared_lib
 
-        return cmake_configs
+        return sorted(cmake_configs, key=lambda i: i['name'])
 
     def _generate_name(self, config):
         name = config['platform'] + '-' + config['arch']
