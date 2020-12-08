@@ -69,6 +69,11 @@ def main():
                            'host': 'linux',
                            'test': 'git diff-tree --check origin/master HEAD'
                            })
+    custom_configs.append({'name': 'cppcheck',
+                           'host': 'linux',
+                           'install': 'sudo apt-get install cppcheck',
+                           'test': 'cppcheck . --force --std=c99'
+                           })
 
     github_actions_custom_transformer = GithubActionsTransformer(
         "Custom Build Matrix")

@@ -32,4 +32,17 @@ jobs:
     - working-directory: .
       run: git diff-tree --check origin/master HEAD
       name: Test
+  cppcheck:
+    name: cppcheck
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - working-directory: .
+      run: sudo apt-get install cppcheck
+      name: Install
+    - working-directory: .
+      run: cppcheck . --force --std=c99
+      name: Test
 name: Custom Build Matrix
