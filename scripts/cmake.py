@@ -83,6 +83,7 @@ class CMakeTransformer():
                 config_dict['build'] = 'cmake --build . --config Release'
                 config_dict['name'] = self._generate_name(config)
                 config_dict['host'] = config['platform']
+                config_dict['workdir'] = 'build'
                 if self._supported_test_target(config['platform'], config['arch']):
                     config_dict['test'] = 'ctest -C Release'
                 cmake_configs.append(config_dict)

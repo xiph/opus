@@ -16,7 +16,6 @@ class GithubActionsTransformer():
             'android': 'ubuntu-latest',
             'mac': 'macos-latest',
             'ios': 'macos-latest'}
-        self.workdir = 'build'
 
     def transform(self, configs):
         for config in configs:
@@ -34,25 +33,46 @@ class GithubActionsTransformer():
                 "with": {
                     "fetch-depth": 0
                 }
-            }, {
-                "run": "mkdir {}".format(self.workdir),
-                "name": "Create Work Dir"
-            },
-            {
-                "working-directory": "{}".format(self.workdir),
-                "run": "{}".format(config['configure']),
-                "name": "Configure"
-            },
-            {
-                "working-directory": "{}".format(self.workdir),
-                "run": "{}".format(config['build']),
-                "name": "Build"
-            },
+            }
         ]
+
+        workdir = config['workdir'] if 'workdir' in config else '.'
+
+        if workdir != '.':
+            job['steps'].append(
+                {
+                    "run": "mkdir {}".format(workdir),
+                    "name": "Create Work Dir"
+                })
+
+        if 'install' in config:
+            job['steps'].append(
+                {
+                    "working-directory": "{}".format(workdir),
+                    "run": "{}".format(config['install']),
+                    "name": "Install"
+                })
+
+        if 'configure' in config:
+            job['steps'].append(
+                {
+                    "working-directory": "{}".format(workdir),
+                    "run": "{}".format(config['configure']),
+                    "name": "Configure"
+                })
+
+        if 'build' in config:
+            job['steps'].append(
+                {
+                    "working-directory": "{}".format(workdir),
+                    "run": "{}".format(config['build']),
+                    "name": "Build"
+                })
+
         if 'test' in config:
             job['steps'].append(
                 {
-                    "working-directory": "{}".format(self.workdir),
+                    "working-directory": "{}".format(workdir),
                     "run": "{}".format(config['test']),
                     "name": "Test"
                 }
