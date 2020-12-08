@@ -122,17 +122,17 @@ class CMakeTransformer():
         except:
             pass
         try:
-            platform_build_options += " " + \
+            platform_build_options += ' ' + \
                 self.cmake_platform_build_options['common']
         except:
             pass
         try:
-            platform_build_options += " " + \
+            platform_build_options += ' ' + \
                 self.cmake_platform_build_options[platform]['common']
         except:
             pass
         try:
-            platform_build_options += " " + \
+            platform_build_options += ' ' + \
                 self.cmake_platform_build_options[platform][arch]
         except:
             pass

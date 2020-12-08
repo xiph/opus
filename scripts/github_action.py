@@ -2,13 +2,13 @@ class GithubActionsTransformer():
     def __init__(self, name):
         self.actions = {
             'on': [
-                "push",
-                "pull_request",
-                "pull_request_target",
+                'push',
+                'pull_request',
+                'pull_request_target',
             ],
-            "jobs": {
+            'jobs': {
             },
-            "name": name
+            'name': name
         }
         self.host = {
             'win': 'windows-latest',
@@ -29,9 +29,9 @@ class GithubActionsTransformer():
         job['runs-on'] = self.host[config['host']]
         job['steps'] = [
             {
-                "uses": "actions/checkout@v2",
-                "with": {
-                    "fetch-depth": 0
+                'uses': 'actions/checkout@v2',
+                'with': {
+                    'fetch-depth': 0
                 }
             }
         ]
@@ -41,40 +41,40 @@ class GithubActionsTransformer():
         if workdir != '.':
             job['steps'].append(
                 {
-                    "run": "mkdir {}".format(workdir),
-                    "name": "Create Work Dir"
+                    'run': 'mkdir {}'.format(workdir),
+                    'name': 'Create Work Dir'
                 })
 
         if 'install' in config:
             job['steps'].append(
                 {
-                    "working-directory": "{}".format(workdir),
-                    "run": "{}".format(config['install']),
-                    "name": "Install"
+                    'working-directory': '{}'.format(workdir),
+                    'run': '{}'.format(config['install']),
+                    'name': 'Install'
                 })
 
         if 'configure' in config:
             job['steps'].append(
                 {
-                    "working-directory": "{}".format(workdir),
-                    "run": "{}".format(config['configure']),
-                    "name": "Configure"
+                    'working-directory': '{}'.format(workdir),
+                    'run': '{}'.format(config['configure']),
+                    'name': 'Configure'
                 })
 
         if 'build' in config:
             job['steps'].append(
                 {
-                    "working-directory": "{}".format(workdir),
-                    "run": "{}".format(config['build']),
-                    "name": "Build"
+                    'working-directory': '{}'.format(workdir),
+                    'run': '{}'.format(config['build']),
+                    'name': 'Build'
                 })
 
         if 'test' in config:
             job['steps'].append(
                 {
-                    "working-directory": "{}".format(workdir),
-                    "run": "{}".format(config['test']),
-                    "name": "Test"
+                    'working-directory': '{}'.format(workdir),
+                    'run': '{}'.format(config['test']),
+                    'name': 'Test'
                 }
             )
         return job
