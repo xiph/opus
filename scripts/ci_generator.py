@@ -58,22 +58,7 @@ def main():
     logging.info('Generated github actions file {} with {} configs'.format(
         github_action_cmake_yaml_file, len(cmake_configs)))
 
-    custom_configs = []
-    custom_configs.append({'name': 'ci_configure_self_test',
-                           'host': 'linux',
-                           'install': 'sudo apt-get install python3 && pip3 install ruamel.yaml',
-                           'build': 'python3 ./scripts/ci_generator.py',
-                           'test': 'echo if you fail this test it means you did not autogenerate and pushed the generated files && git diff && git diff-index --name-status --exit-code HEAD'
-                           })
-    custom_configs.append({'name': 'whitespace',
-                           'host': 'linux',
-                           'test': 'git diff-tree --check origin/master HEAD'
-                           })
-    custom_configs.append({'name': 'cppcheck',
-                           'host': 'linux',
-                           'install': 'sudo apt-get install cppcheck',
-                           'test': 'cppcheck . --force --std=c99'
-                           })
+    custom_configs = generate_custom_configs()
 
     github_actions_custom_transformer = GithubActionsTransformer(
         'Custom Build Matrix')
@@ -133,6 +118,38 @@ def save_yaml_file(d, yaml_file):
     yaml.default_flow_style = False
     with open(yaml_file, 'a') as outfile:
         yaml.dump(d, outfile)
+
+
+def generate_ci_self_test():
+    return {'name': 'ci_configure_self_test',
+            'host': 'linux',
+            'install': 'sudo apt-get install python3 && pip3 install ruamel.yaml',
+            'build': 'python3 ./scripts/ci_generator.py',
+            'test': 'echo if you fail this test it means you did not autogenerate and pushed the generated files && git diff && git diff-index --name-status --exit-code HEAD'
+            }
+
+
+def generate_trailing_whitespace_test():
+    return {'name': 'whitespace',
+            'host': 'linux',
+            'test': 'git diff-tree --check origin/master HEAD'
+            }
+
+
+def generate_cpp_check():
+    return {'name': 'cppcheck',
+            'host': 'linux',
+            'install': 'sudo apt-get install cppcheck',
+            'test': 'cppcheck . --force --std=c99'
+            }
+
+
+def generate_custom_configs():
+    custom_configs = []
+    custom_configs.append(generate_ci_self_test())
+    custom_configs.append(generate_trailing_whitespace_test())
+    custom_configs.append(generate_cpp_check())
+    return custom_configs
 
 
 if __name__ == '__main__':
