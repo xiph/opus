@@ -102,7 +102,7 @@ del pred
 del in_exc
 
 # dump models to disk as we go
-checkpoint = ModelCheckpoint('lpcnet32c_384_10_G16_{epoch:02d}.h5')
+checkpoint = ModelCheckpoint('lpcnet32v_384_10_G16_{epoch:02d}.h5')
 
 #Set this to True to adapt an existing model (e.g. on new data)
 adaptation = False
@@ -120,5 +120,5 @@ else:
     decay = 5e-5
 
 model.compile(optimizer=Adam(lr, decay=decay, beta_2=0.99), loss='sparse_categorical_crossentropy')
-model.save_weights('lpcnet32c_384_10_G16_00.h5');
+model.save_weights('lpcnet32v_384_10_G16_00.h5');
 model.fit([in_data, features, periods], out_exc, batch_size=batch_size, epochs=nb_epochs, validation_split=0.0, callbacks=[checkpoint, sparsify])
