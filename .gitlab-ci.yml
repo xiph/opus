@@ -1,3 +1,6 @@
+include:
+  - template: 'Workflows/Branch-Pipelines.gitlab-ci.yml'
+
 default:
   tags:
     - docker
@@ -6,8 +9,6 @@ default:
 
 whitespace:
   stage: test
-  only:
-    - merge_requests
   script:
     - git diff-tree --check origin/master HEAD
 
