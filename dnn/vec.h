@@ -162,3 +162,123 @@ static void sparse_sgemv_accum16(float *out, const float *w, int rows, const int
       }
    }
 }
+
+#ifdef DOT_PROD
+
+static void sparse_sgemv_accum8x4(float *out, const float *w, int rows, const int *idx, const float *x)
+{
+   int i, j;
+   for (i=0;i<rows;i+=8)
+   {
+      int cols;
+      cols = *idx++;
+      for (j=0;j<cols;j++)
+      {
+         int pos;
+         float * restrict y;
+         float xj0, xj1, xj2, xj3;
+         pos = 4 * (*idx++);
+         xj0 = x[pos+0];
+         xj1 = x[pos+1];
+         xj2 = x[pos+2];
+         xj3 = x[pos+3];
+         y = &out[i];
+         y[0] += w[0]*xj0;
+         y[1] += w[4]*xj0;
+         y[2] += w[8]*xj0;
+         y[3] += w[12]*xj0;
+         y[4] += w[16]*xj0;
+         y[5] += w[20]*xj0;
+         y[6] += w[24]*xj0;
+         y[7] += w[28]*xj0;
+
+         y[0] += w[1]*xj1;
+         y[1] += w[5]*xj1;
+         y[2] += w[9]*xj1;
+         y[3] += w[13]*xj1;
+         y[4] += w[17]*xj1;
+         y[5] += w[21]*xj1;
+         y[6] += w[25]*xj1;
+         y[7] += w[29]*xj1;
+
+         y[0] += w[2]*xj2;
+         y[1] += w[6]*xj2;
+         y[2] += w[10]*xj2;
+         y[3] += w[14]*xj2;
+         y[4] += w[18]*xj2;
+         y[5] += w[22]*xj2;
+         y[6] += w[26]*xj2;
+         y[7] += w[30]*xj2;
+
+         y[0] += w[3]*xj3;
+         y[1] += w[7]*xj3;
+         y[2] += w[11]*xj3;
+         y[3] += w[15]*xj3;
+         y[4] += w[19]*xj3;
+         y[5] += w[23]*xj3;
+         y[6] += w[27]*xj3;
+         y[7] += w[31]*xj3;
+         w += 32;
+      }
+   }
+}
+
+#else
+static void sparse_sgemv_accum8x4(float *out, const float *w, int rows, const int *idx, const float *x)
+{
+   int i, j;
+   for (i=0;i<rows;i+=8)
+   {
+      int cols;
+      cols = *idx++;
+      for (j=0;j<cols;j++)
+      {
+         int pos;
+         float * restrict y;
+         float xj0, xj1, xj2, xj3;
+         pos = 4 * (*idx++);
+         xj0 = x[pos+0];
+         xj1 = x[pos+1];
+         xj2 = x[pos+2];
+         xj3 = x[pos+3];
+         y = &out[i];
+         y[0] += w[0]*xj0;
+         y[1] += w[1]*xj0;
+         y[2] += w[2]*xj0;
+         y[3] += w[3]*xj0;
+         y[4] += w[4]*xj0;
+         y[5] += w[5]*xj0;
+         y[6] += w[6]*xj0;
+         y[7] += w[7]*xj0;
+
+         y[0] += w[8]*xj1;
+         y[1] += w[9]*xj1;
+         y[2] += w[10]*xj1;
+         y[3] += w[11]*xj1;
+         y[4] += w[12]*xj1;
+         y[5] += w[13]*xj1;
+         y[6] += w[14]*xj1;
+         y[7] += w[15]*xj1;
+
+         y[0] += w[16]*xj2;
+         y[1] += w[17]*xj2;
+         y[2] += w[18]*xj2;
+         y[3] += w[19]*xj2;
+         y[4] += w[20]*xj2;
+         y[5] += w[21]*xj2;
+         y[6] += w[22]*xj2;
+         y[7] += w[23]*xj2;
+
+         y[0] += w[24]*xj3;
+         y[1] += w[25]*xj3;
+         y[2] += w[26]*xj3;
+         y[3] += w[27]*xj3;
+         y[4] += w[28]*xj3;
+         y[5] += w[29]*xj3;
+         y[6] += w[30]*xj3;
+         y[7] += w[31]*xj3;
+         w += 32;
+      }
+   }
+}
+#endif

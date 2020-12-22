@@ -60,6 +60,7 @@ def printVector(f, vector, name, dtype='float'):
 def printSparseVector(f, A, name):
     N = A.shape[0]
     W = np.zeros((0,))
+    W0 = np.zeros((0,))
     diag = np.concatenate([np.diag(A[:,:N]), np.diag(A[:,N:2*N]), np.diag(A[:,2*N:])])
     A[:,:N] = A[:,:N] - np.diag(np.diag(A[:,:N]))
     A[:,N:2*N] = A[:,N:2*N] - np.diag(np.diag(A[:,N:2*N]))
@@ -76,9 +77,14 @@ def printSparseVector(f, A, name):
                 nb_nonzero = nb_nonzero + 1
                 idx = np.append(idx, j)
                 vblock = block.transpose((1,0)).reshape((-1,))
+                W0 = np.concatenate([W0, block.reshape((-1,))])
                 W = np.concatenate([W, vblock])
         idx[pos] = nb_nonzero
+    f.write('#ifdef DOT_PROD\n')
     printVector(f, W, name)
+    f.write('#else /*DOT_PROD*/\n')
+    printVector(f, W0, name)
+    f.write('#endif /*DOT_PROD*/\n')
     #idx = np.tile(np.concatenate([np.array([N]), np.arange(N)]), 3*N//16)
     printVector(f, idx, name + '_idx', dtype='int')
     return;

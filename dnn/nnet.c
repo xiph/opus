@@ -301,7 +301,7 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
       for (i=0;i<N;i++)
          recur[k*N + i] += gru->diag_weights[k*N + i]*state[i];
    }
-   sparse_sgemv_accum16(recur, gru->recurrent_weights, 3*N, gru->idx, state);
+   sparse_sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, gru->idx, state);
    for (i=0;i<2*N;i++)
       zrh[i] += recur[i];
    compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
