@@ -6,10 +6,12 @@ default:
 
 whitespace:
   stage: test
-  only:
-    - merge_requests
   script:
     - git diff-tree --check origin/master HEAD
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - when: never
 
 autoconf:
   stage: build
