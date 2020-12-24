@@ -34,6 +34,12 @@
 #define ACTIVATION_RELU    3
 #define ACTIVATION_SOFTMAX 4
 
+#ifdef DOT_PROD
+typedef signed char qweight;
+#else
+typedef float qweight;
+#endif
+
 typedef struct {
   const float *bias;
   const float *input_weights;
@@ -65,7 +71,7 @@ typedef struct {
 typedef struct {
   const float *bias;
   const float *diag_weights;
-  const float *recurrent_weights;
+  const qweight *recurrent_weights;
   const int *idx;
   int nb_neurons;
   int activation;

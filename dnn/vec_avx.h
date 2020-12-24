@@ -219,8 +219,34 @@ static void sparse_sgemv_accum16(float *out, const float *weights, int rows, con
 }
 
 #ifdef DOT_PROD
+static void sparse_sgemv_accum8x4(float *out, const qweight *weights, int rows, const int *idx, const float *x)
+{
+   int i, j;
+   for (i=0;i<rows;i+=8)
+   {
+      float * restrict y;
+      int cols;
+      __m256 vy0;
+      y = &out[i];
+      vy0 = _mm256_loadu_ps(&y[0]);
+      cols = *idx++;
+      for (j=0;j<cols;j++)
+      {
+         int id;
+         __m256 vxj;
+         __m256 vw;
+         id = *idx++;
+         
+         //kernel goes here
+
+         weights += 32;
+      }
+      _mm256_storeu_ps (&y[0], vy0);
+   }
+}
+
 #else
-static void sparse_sgemv_accum8x4(float *out, const float *weights, int rows, const int *idx, const float *x)
+static void sparse_sgemv_accum8x4(float *out, const qweight *weights, int rows, const int *idx, const float *x)
 {
    int i, j;
    for (i=0;i<rows;i+=8)
