@@ -200,7 +200,7 @@ static inline void sparse_sgemv_accum16(float *out, const float *w, int rows, co
 static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, int cols, const int *idx, const float *_x)
 {
    int i, j;
-   unsigned x[MAX_INPUTS];
+   unsigned char x[MAX_INPUTS];
    for (i=0;i<rows;i++) out[i] *= SCALE;
    for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);
    for (i=0;i<rows;i+=8)
@@ -235,7 +235,7 @@ static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows,
 static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, int cols, const int *idx, const float *_x)
 {
    int i, j;
-   signed x[MAX_INPUTS];
+   signed char x[MAX_INPUTS];
    for (i=0;i<rows;i++) out[i] *= SCALE;
    for (i=0;i<cols;i++) x[i] = floor(.5+127*_x[i]);
    for (i=0;i<rows;i+=8)
