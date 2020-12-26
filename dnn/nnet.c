@@ -39,16 +39,13 @@
 #include "nnet.h"
 #include "nnet_data.h"
 
+#ifdef NO_OPTIMIZATIONS
+#warning Compiling without any vectorization. This code will be very slow
+#endif
+
+
 #define SOFTMAX_HACK
 
-#ifdef __AVX__
-#include "vec_avx.h"
-#elif __ARM_NEON__
-#include "vec_neon.h"
-#else
-#warning Compiling without any vectorization. This code will be very slow
-#include "vec.h"
-#endif
 
 static OPUS_INLINE float relu(float x)
 {
@@ -294,14 +291,19 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
    celt_assert(input != state);
    celt_assert(gru->reset_after);
    RNN_COPY(zrh, input, 3*N);
+#ifdef USE_SU_BIAS
    for (i=0;i<3*N;i++)
-      recur[i] = gru->bias[3*N + i];
+      recur[i] = gru->subias[3*N + i];
+#else
+   for (i=0;i<3*N;i++)
+      recur[i] = gru->bias[3*N + i];   
+#endif
    for (k=0;k<3;k++)
    {
       for (i=0;i<N;i++)
          recur[k*N + i] += gru->diag_weights[k*N + i]*state[i];
    }
-   sparse_sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, gru->idx, state);
+   sparse_sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, 3*N, gru->idx, state);
    for (i=0;i<2*N;i++)
       zrh[i] += recur[i];
    compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);

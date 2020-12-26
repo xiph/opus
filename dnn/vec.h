@@ -26,11 +26,33 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "nnet.h"
+#ifndef VEC_H
+#define VEC_H
+
+#include "tansig_table.h"
+#include "opus_types.h"
+#include <math.h>
+#include "arch.h"
+
+#ifdef DOT_PROD
+typedef signed char qweight;
+#else
+typedef float qweight;
+#endif
+
+#ifdef __AVX__
+#include "vec_avx.h"
+#elif __ARM_NEON__
+#include "vec_neon.h"
+#else
+
+//#define USE_SU_BIAS
+
+#define NO_OPTIMIZATIONS
 
 /* No AVX2/FMA support */
 #ifndef LPCNET_TEST
-static float celt_exp2(float x)
+static inline float celt_exp2(float x)
 {
    int integer;
    float frac;
@@ -50,7 +72,7 @@ static float celt_exp2(float x)
 }
 #define celt_exp(x) celt_exp2((x)*1.44269504f)
 
-static float tansig_approx(float x)
+static inline float tansig_approx(float x)
 {
     int i;
     float y, dy;
@@ -69,19 +91,19 @@ static float tansig_approx(float x)
     return sign*y;
 }
 
-static OPUS_INLINE float sigmoid_approx(float x)
+static inline float sigmoid_approx(float x)
 {
    return .5f + .5f*tansig_approx(.5f*x);
 }
 
-static void softmax(float *y, const float *x, int N)
+static inline void softmax(float *y, const float *x, int N)
 {
     int i;
     for (i=0;i<N;i++)
         y[i] = celt_exp(x[i]);
 }
 
-static void vec_tanh(float *y, const float *x, int N)
+static inline void vec_tanh(float *y, const float *x, int N)
 {
     int i;
     for (i=0;i<N;i++)
@@ -90,7 +112,7 @@ static void vec_tanh(float *y, const float *x, int N)
     }
 }
 
-static void vec_sigmoid(float *y, const float *x, int N)
+static inline void vec_sigmoid(float *y, const float *x, int N)
 {
     int i;
     for (i=0;i<N;i++)
@@ -99,7 +121,7 @@ static void vec_sigmoid(float *y, const float *x, int N)
     }
 }
 #endif
-static void sgemv_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+static inline void sgemv_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
    int i, j;
    for (i=0;i<rows;i+=16)
@@ -132,7 +154,7 @@ static void sgemv_accum16(float *out, const float *weights, int rows, int cols, 
    }
 }
 
-static void sparse_sgemv_accum16(float *out, const float *w, int rows, const int *idx, const float *x)
+static inline void sparse_sgemv_accum16(float *out, const float *w, int rows, const int *idx, const float *x)
 {
    int i, j;
    for (i=0;i<rows;i+=16)
@@ -167,42 +189,90 @@ static void sparse_sgemv_accum16(float *out, const float *w, int rows, const int
 }
 
 #ifdef DOT_PROD
+
+#define MAX_INPUTS (2048)
+
+
+#define SCALE (128.f*127.f)
 #define SCALE_1 (1.f/128.f/127.f)
-static void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, const int *idx, const float *x)
+
+#ifdef USE_SU_BIAS
+static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, int cols, const int *idx, const float *_x)
 {
    int i, j;
+   unsigned x[MAX_INPUTS];
+   for (i=0;i<rows;i++) out[i] *= SCALE;
+   for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);
    for (i=0;i<rows;i+=8)
    {
-      int cols;
-      cols = *idx++;
-      for (j=0;j<cols;j++)
+      int colblocks;
+      colblocks = *idx++;
+      for (j=0;j<colblocks;j++)
       {
          int pos;
          float * restrict y;
          int xj0, xj1, xj2, xj3;
          pos = 4 * (*idx++);
-         xj0 = floor(.5+127*x[pos+0]);
-         xj1 = floor(.5+127*x[pos+1]);
-         xj2 = floor(.5+127*x[pos+2]);
-         xj3 = floor(.5+127*x[pos+3]);
+         xj0 = x[pos+0];
+         xj1 = x[pos+1];
+         xj2 = x[pos+2];
+         xj3 = x[pos+3];
          y = &out[i];
-         y[0] += SCALE_1*(w[0]*xj0+w[1]*xj1+w[2]*xj2+w[3]*xj3);
-         y[1] += SCALE_1*(w[4]*xj0+w[5]*xj1+w[6]*xj2+w[7]*xj3);
-         y[2] += SCALE_1*(w[8]*xj0+w[9]*xj1+w[10]*xj2+w[11]*xj3);
-         y[3] += SCALE_1*(w[12]*xj0+w[13]*xj1+w[14]*xj2+w[15]*xj3);
-         y[4] += SCALE_1*(w[16]*xj0+w[17]*xj1+w[18]*xj2+w[19]*xj3);
-         y[5] += SCALE_1*(w[20]*xj0+w[21]*xj1+w[22]*xj2+w[23]*xj3);
-         y[6] += SCALE_1*(w[24]*xj0+w[25]*xj1+w[26]*xj2+w[27]*xj3);
-         y[7] += SCALE_1*(w[28]*xj0+w[29]*xj1+w[30]*xj2+w[31]*xj3);
+         y[0] += (w[0]*xj0+w[1]*xj1+w[2]*xj2+w[3]*xj3);
+         y[1] += (w[4]*xj0+w[5]*xj1+w[6]*xj2+w[7]*xj3);
+         y[2] += (w[8]*xj0+w[9]*xj1+w[10]*xj2+w[11]*xj3);
+         y[3] += (w[12]*xj0+w[13]*xj1+w[14]*xj2+w[15]*xj3);
+         y[4] += (w[16]*xj0+w[17]*xj1+w[18]*xj2+w[19]*xj3);
+         y[5] += (w[20]*xj0+w[21]*xj1+w[22]*xj2+w[23]*xj3);
+         y[6] += (w[24]*xj0+w[25]*xj1+w[26]*xj2+w[27]*xj3);
+         y[7] += (w[28]*xj0+w[29]*xj1+w[30]*xj2+w[31]*xj3);
          w += 32;
       }
    }
+   for (i=0;i<rows;i++) out[i] *= SCALE_1;
 }
-
-#else
-static void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, const int *idx, const float *x)
+#else /*USE_SU_BIAS*/
+static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, int cols, const int *idx, const float *_x)
 {
    int i, j;
+   signed x[MAX_INPUTS];
+   for (i=0;i<rows;i++) out[i] *= SCALE;
+   for (i=0;i<cols;i++) x[i] = floor(.5+127*_x[i]);
+   for (i=0;i<rows;i+=8)
+   {
+      int colblocks;
+      colblocks = *idx++;
+      for (j=0;j<colblocks;j++)
+      {
+         int pos;
+         float * restrict y;
+         int xj0, xj1, xj2, xj3;
+         pos = 4 * (*idx++);
+         xj0 = x[pos+0];
+         xj1 = x[pos+1];
+         xj2 = x[pos+2];
+         xj3 = x[pos+3];
+         y = &out[i];
+         y[0] += (w[0]*xj0+w[1]*xj1+w[2]*xj2+w[3]*xj3);
+         y[1] += (w[4]*xj0+w[5]*xj1+w[6]*xj2+w[7]*xj3);
+         y[2] += (w[8]*xj0+w[9]*xj1+w[10]*xj2+w[11]*xj3);
+         y[3] += (w[12]*xj0+w[13]*xj1+w[14]*xj2+w[15]*xj3);
+         y[4] += (w[16]*xj0+w[17]*xj1+w[18]*xj2+w[19]*xj3);
+         y[5] += (w[20]*xj0+w[21]*xj1+w[22]*xj2+w[23]*xj3);
+         y[6] += (w[24]*xj0+w[25]*xj1+w[26]*xj2+w[27]*xj3);
+         y[7] += (w[28]*xj0+w[29]*xj1+w[30]*xj2+w[31]*xj3);
+         w += 32;
+      }
+   }
+   for (i=0;i<rows;i++) out[i] *= SCALE_1;
+}
+#endif /*USE_SU_BIAS*/
+
+#else /*DOT_PROD*/
+static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, int ignore, const int *idx, const float *x)
+{
+   int i, j;
+   (void)ignore;
    for (i=0;i<rows;i+=8)
    {
       int cols;
@@ -257,4 +327,8 @@ static void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, const 
       }
    }
 }
-#endif
+#endif /*DOT_PROD*/
+
+
+#endif /*no optimizations*/
+#endif /*VEC_H*/

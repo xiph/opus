@@ -102,6 +102,9 @@ def dump_sparse_gru(self, f, hf):
     weights = self.get_weights()
     printSparseVector(f, weights[1], name + '_recurrent_weights')
     printVector(f, weights[-1], name + '_bias')
+    subias = weights[-1].copy()
+    subias[1,:] = subias[1,:] - np.sum(np.clip(weights[1], -1, 1),axis=0)
+    printVector(f, subias, name + '_subias')
     if hasattr(self, 'activation'):
         activation = self.activation.__name__.upper()
     else:
@@ -112,8 +115,8 @@ def dump_sparse_gru(self, f, hf):
         reset_after = 1
     neurons = weights[0].shape[1]//3
     max_rnn_neurons = max(max_rnn_neurons, neurons)
-    f.write('const SparseGRULayer {} = {{\n   {}_bias,\n   {}_recurrent_weights_diag,\n   {}_recurrent_weights,\n   {}_recurrent_weights_idx,\n   {}, ACTIVATION_{}, {}\n}};\n\n'
-            .format(name, name, name, name, name, weights[0].shape[1]//3, activation, reset_after))
+    f.write('const SparseGRULayer {} = {{\n   {}_bias,\n   {}_subias,\n   {}_recurrent_weights_diag,\n   {}_recurrent_weights,\n   {}_recurrent_weights_idx,\n   {}, ACTIVATION_{}, {}\n}};\n\n'
+            .format(name, name, name, name, name, name, weights[0].shape[1]//3, activation, reset_after))
     hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('#define {}_STATE_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('extern const SparseGRULayer {};\n\n'.format(name));

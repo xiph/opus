@@ -28,17 +28,13 @@
 #ifndef _NNET_H_
 #define _NNET_H_
 
+#include "vec.h"
+
 #define ACTIVATION_LINEAR  0
 #define ACTIVATION_SIGMOID 1
 #define ACTIVATION_TANH    2
 #define ACTIVATION_RELU    3
 #define ACTIVATION_SOFTMAX 4
-
-#ifdef DOT_PROD
-typedef signed char qweight;
-#else
-typedef float qweight;
-#endif
 
 typedef struct {
   const float *bias;
@@ -70,6 +66,7 @@ typedef struct {
 
 typedef struct {
   const float *bias;
+  const float *subias;
   const float *diag_weights;
   const qweight *recurrent_weights;
   const int *idx;

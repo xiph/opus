@@ -29,6 +29,9 @@
   AVX2/FMA implementation of vector operations, compile with -mavx2 -mfma
 */
 
+#ifndef VEC_AVX_H
+#define VEC_AVX_H
+
 #include <immintrin.h>
 
 #ifdef __AVX2__
@@ -246,9 +249,10 @@ static void sparse_sgemv_accum8x4(float *out, const qweight *weights, int rows, 
 }
 
 #else
-static void sparse_sgemv_accum8x4(float *out, const qweight *weights, int rows, const int *idx, const float *x)
+static void sparse_sgemv_accum8x4(float *out, const qweight *weights, int rows, int ignore, const int *idx, const float *x)
 {
    int i, j;
+   (void)ignore;
    for (i=0;i<rows;i+=8)
    {
       float * restrict y;
@@ -286,3 +290,4 @@ static void sparse_sgemv_accum8x4(float *out, const qweight *weights, int rows, 
 }
 #endif
 
+#endif /*VEC_AVX_H*/
