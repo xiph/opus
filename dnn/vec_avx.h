@@ -242,7 +242,23 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
    int out[MAX_OUTPUTS];
    ones = _mm256_set1_epi16(1);
    for (i=0;i<rows;i++) out[i] = SCALE*_out[i];
-   for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);
+   //for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);
+   __m256 const127 = _mm256_set1_ps(127.f);
+   for (i=0;i<cols;i+=8) {
+       __m256 xf;
+       __m256i xi;
+       xf = _mm256_loadu_ps(&_x[i]);
+       //xf = _mm256_mul_ps(xf, const127);
+       //xf = _mm256_add_ps(xf, const127);
+       xf = _mm256_fmadd_ps(xf, const127, const127);
+       xi = _mm256_cvtps_epi32(xf);
+       xi = _mm256_packus_epi32(xi,  _mm256_setzero_si256());
+       xi = _mm256_permute4x64_epi64(xi, 0xD8);
+       xi = _mm256_packus_epi16(xi, _mm256_setzero_si256());
+       xi = _mm256_permutevar8x32_epi32(xi, _mm256_setr_epi32(0,1, 0,0, 0,0, 0,0));
+       //xi = _mm256_permute4x64_epi64(xi, 0x);
+       _mm256_storeu_si256 ((__m256i *)&x[i], xi);
+   }
    for (i=0;i<rows;i+=8)
    {
       int * restrict y;
