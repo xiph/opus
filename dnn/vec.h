@@ -34,11 +34,6 @@
 #include <math.h>
 #include "arch.h"
 
-#ifdef DOT_PROD
-typedef signed char qweight;
-#else
-typedef float qweight;
-#endif
 
 #ifdef __AVX__
 #include "vec_avx.h"
@@ -46,9 +41,18 @@ typedef float qweight;
 #include "vec_neon.h"
 #else
 
-//#define USE_SU_BIAS
 
 #define NO_OPTIMIZATIONS
+
+//#define DOT_PROD
+//#define USE_SU_BIAS
+
+#ifdef DOT_PROD
+typedef signed char qweight;
+#else
+typedef float qweight;
+#endif
+
 
 /* No AVX2/FMA support */
 #ifndef LPCNET_TEST

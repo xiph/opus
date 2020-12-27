@@ -84,7 +84,7 @@ def printSparseVector(f, A, name):
     W = np.minimum(127, np.maximum(-128, np.round(W*128)))
     printVector(f, W.astype('int'), name, dtype='qweight')
     f.write('#else /*DOT_PROD*/\n')
-    printVector(f, W0, name, dtype='nnet_weight')
+    printVector(f, W0, name, dtype='qweight')
     f.write('#endif /*DOT_PROD*/\n')
     #idx = np.tile(np.concatenate([np.array([N]), np.arange(N)]), 3*N//16)
     printVector(f, idx, name + '_idx', dtype='int')
