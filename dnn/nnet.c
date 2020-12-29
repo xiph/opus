@@ -140,6 +140,7 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
    compute_activation(output, output, N, layer->activation);
 }
 
+#if 0
 void compute_gru(const GRULayer *gru, float *state, const float *input)
 {
    int i;
@@ -201,6 +202,7 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
    for (i=0;i<N;i++)
       state[i] = h[i];
 }
+#endif
 
 void compute_gru2(const GRULayer *gru, float *state, const float *input)
 {
@@ -224,7 +226,11 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input)
    /* Compute update gate. */
    for (i=0;i<3*N;i++)
       zrh[i] = gru->bias[i];
+#if 1
+   sgemv_accum8x4(zrh, gru->input_weights, 3*N, M, stride, input);
+#else
    sgemv_accum(zrh, gru->input_weights, 3*N, M, stride, input);
+#endif
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
    sgemv_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);

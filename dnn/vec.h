@@ -41,10 +41,11 @@
 #include "vec_neon.h"
 #else
 
+#define MAX_INPUTS (2048)
 
 #define NO_OPTIMIZATIONS
 
-//#define DOT_PROD
+#define DOT_PROD
 //#define USE_SU_BIAS
 
 #ifdef DOT_PROD
@@ -193,12 +194,46 @@ static inline void sparse_sgemv_accum16(float *out, const float *w, int rows, co
 }
 
 #ifdef DOT_PROD
-
-#define MAX_INPUTS (2048)
-
-
 #define SCALE (128.f*127.f)
 #define SCALE_1 (1.f/128.f/127.f)
+
+static inline void sgemv_accum8x4(float *out, const qweight *w, int rows, int cols, int col_stride, const float *_x)
+{
+   int i, j;
+   signed char x[MAX_INPUTS];
+   (void)col_stride;
+   for (i=0;i<rows;i++) out[i] *= SCALE;
+   for (i=0;i<cols;i++) x[i] = (int)floor(.5+127*_x[i]);
+   for (i=0;i<rows;i+=8)
+   {
+      for (j=0;j<cols;j+=4)
+      {
+         float * restrict y;
+         float xj0, xj1, xj2, xj3;
+         xj0 = x[j+0];
+         xj1 = x[j+1];
+         xj2 = x[j+2];
+         xj3 = x[j+3];
+         y = &out[i];
+         y[0] += (w[0]*xj0+w[1]*xj1+w[2]*xj2+w[3]*xj3);
+         y[1] += (w[4]*xj0+w[5]*xj1+w[6]*xj2+w[7]*xj3);
+         y[2] += (w[8]*xj0+w[9]*xj1+w[10]*xj2+w[11]*xj3);
+         y[3] += (w[12]*xj0+w[13]*xj1+w[14]*xj2+w[15]*xj3);
+         y[4] += (w[16]*xj0+w[17]*xj1+w[18]*xj2+w[19]*xj3);
+         y[5] += (w[20]*xj0+w[21]*xj1+w[22]*xj2+w[23]*xj3);
+         y[6] += (w[24]*xj0+w[25]*xj1+w[26]*xj2+w[27]*xj3);
+         y[7] += (w[28]*xj0+w[29]*xj1+w[30]*xj2+w[31]*xj3);
+         w += 32;
+      }
+   }
+   for (i=0;i<rows;i++) out[i] *= SCALE_1;
+}
+#else
+#define sgemv_accum sgemv_accum8x4
+#endif
+
+#ifdef DOT_PROD
+
 
 #ifdef USE_SU_BIAS
 static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, int cols, const int *idx, const float *_x)

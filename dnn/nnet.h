@@ -56,7 +56,7 @@ typedef struct {
 
 typedef struct {
   const float *bias;
-  const float *input_weights;
+  const qweight *input_weights;
   const float *recurrent_weights;
   int nb_inputs;
   int nb_neurons;
