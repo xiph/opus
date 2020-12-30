@@ -62,12 +62,13 @@ def printVector(f, vector, name, dtype='float', dotp=False):
 
 def printSparseVector(f, A, name):
     N = A.shape[0]
-    W = np.zeros((0,))
+    W = np.zeros((0,), dtype='int')
     W0 = np.zeros((0,))
     diag = np.concatenate([np.diag(A[:,:N]), np.diag(A[:,N:2*N]), np.diag(A[:,2*N:])])
     A[:,:N] = A[:,:N] - np.diag(np.diag(A[:,:N]))
     A[:,N:2*N] = A[:,N:2*N] - np.diag(np.diag(A[:,N:2*N]))
     A[:,2*N:] = A[:,2*N:] - np.diag(np.diag(A[:,2*N:]))
+    AQ = np.minimum(127, np.maximum(-128, np.round(A*128))).astype('int')
     printVector(f, diag, name + '_diag')
     idx = np.zeros((0,), dtype='int')
     for i in range(3*N//8):
@@ -76,22 +77,22 @@ def printSparseVector(f, A, name):
         nb_nonzero = 0
         for j in range(N//4):
             block = A[j*4:(j+1)*4, i*8:(i+1)*8]
+            qblock = AQ[j*4:(j+1)*4, i*8:(i+1)*8]
             if np.sum(np.abs(block)) > 1e-10:
                 nb_nonzero = nb_nonzero + 1
                 idx = np.append(idx, j)
-                vblock = block.transpose((1,0)).reshape((-1,))
+                vblock = qblock.transpose((1,0)).reshape((-1,))
                 W0 = np.concatenate([W0, block.reshape((-1,))])
                 W = np.concatenate([W, vblock])
         idx[pos] = nb_nonzero
     f.write('#ifdef DOT_PROD\n')
-    W = np.minimum(127, np.maximum(-128, np.round(W*128)))
-    printVector(f, W.astype('int'), name, dtype='qweight')
+    printVector(f, W, name, dtype='qweight')
     f.write('#else /*DOT_PROD*/\n')
     printVector(f, W0, name, dtype='qweight')
     f.write('#endif /*DOT_PROD*/\n')
     #idx = np.tile(np.concatenate([np.array([N]), np.arange(N)]), 3*N//16)
     printVector(f, idx, name + '_idx', dtype='int')
-    return;
+    return AQ
 
 def dump_layer_ignore(self, f, hf):
     print("ignoring layer " + self.name + " of type " + self.__class__.__name__)
@@ -103,10 +104,10 @@ def dump_sparse_gru(self, f, hf):
     name = 'sparse_' + self.name
     print("printing layer " + name + " of type sparse " + self.__class__.__name__)
     weights = self.get_weights()
-    printSparseVector(f, weights[1], name + '_recurrent_weights')
+    qweights = printSparseVector(f, weights[1], name + '_recurrent_weights')
     printVector(f, weights[-1], name + '_bias')
     subias = weights[-1].copy()
-    subias[1,:] = subias[1,:] - np.sum(np.clip(weights[1], -1, 1),axis=0)
+    subias[1,:] = subias[1,:] - np.sum(qweights*(1./128),axis=0)
     printVector(f, subias, name + '_subias')
     if hasattr(self, 'activation'):
         activation = self.activation.__name__.upper()
@@ -131,7 +132,7 @@ def dump_gru_layer(self, f, hf):
     print("printing layer " + name + " of type " + self.__class__.__name__)
     weights = self.get_weights()
     f.write('#ifdef DOT_PROD\n')
-    qweight = np.clip((128*weights[0]).astype('int'), -128, 127)
+    qweight = np.clip(np.round(128.*weights[0]).astype('int'), -128, 127)
     printVector(f, qweight, name + '_weights', dotp=True, dtype='qweight')
     f.write('#else /*DOT_PROD*/\n')
     printVector(f, weights[0], name + '_weights')
@@ -139,7 +140,7 @@ def dump_gru_layer(self, f, hf):
     printVector(f, weights[1], name + '_recurrent_weights')
     printVector(f, weights[-1], name + '_bias')
     subias = weights[-1].copy()
-    subias[0,:] = subias[0,:] - np.sum(np.clip(weights[0], -1, 1),axis=0)
+    subias[0,:] = subias[0,:] - np.sum(qweight*(1./128.),axis=0)
     printVector(f, subias, name + '_subias')
     if hasattr(self, 'activation'):
         activation = self.activation.__name__.upper()
