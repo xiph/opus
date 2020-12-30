@@ -339,7 +339,7 @@ static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows,
 
 #else /*DOT_PROD*/
 
-#define sgemv_accum sgemv_accum8x4
+#define sgemv_accum8x4 sgemv_accum
 
 
 static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, int ignore, const int *idx, const float *x)
