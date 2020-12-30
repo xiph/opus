@@ -224,13 +224,14 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input)
    celt_assert(gru->reset_after);
    stride = 3*N;
    /* Compute update gate. */
+#ifdef USE_SU_BIAS
+   for (i=0;i<3*N;i++)
+      zrh[i] = gru->subias[i];
+#else
    for (i=0;i<3*N;i++)
       zrh[i] = gru->bias[i];
-#if 1
-   sgemv_accum8x4(zrh, gru->input_weights, 3*N, M, stride, input);
-#else
-   sgemv_accum(zrh, gru->input_weights, 3*N, M, stride, input);
 #endif
+   sgemv_accum8x4(zrh, gru->input_weights, 3*N, M, stride, input);
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
    sgemv_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
