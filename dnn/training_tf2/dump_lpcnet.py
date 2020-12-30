@@ -138,6 +138,9 @@ def dump_gru_layer(self, f, hf):
     f.write('#endif /*DOT_PROD*/\n')
     printVector(f, weights[1], name + '_recurrent_weights')
     printVector(f, weights[-1], name + '_bias')
+    subias = weights[-1].copy()
+    subias[0,:] = subias[0,:] - np.sum(np.clip(weights[0], -1, 1),axis=0)
+    printVector(f, subias, name + '_subias')
     if hasattr(self, 'activation'):
         activation = self.activation.__name__.upper()
     else:
@@ -148,8 +151,8 @@ def dump_gru_layer(self, f, hf):
         reset_after = 1
     neurons = weights[0].shape[1]//3
     max_rnn_neurons = max(max_rnn_neurons, neurons)
-    f.write('const GRULayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}_recurrent_weights,\n   {}, {}, ACTIVATION_{}, {}\n}};\n\n'
-            .format(name, name, name, name, weights[0].shape[0], weights[0].shape[1]//3, activation, reset_after))
+    f.write('const GRULayer {} = {{\n   {}_bias,\n   {}_subias,\n   {}_weights,\n   {}_recurrent_weights,\n   {}, {}, ACTIVATION_{}, {}\n}};\n\n'
+            .format(name, name, name, name, name, weights[0].shape[0], weights[0].shape[1]//3, activation, reset_after))
     hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('#define {}_STATE_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('extern const GRULayer {};\n\n'.format(name));

@@ -194,6 +194,7 @@ static inline void sparse_sgemv_accum16(float *out, const float *w, int rows, co
 }
 
 #ifdef DOT_PROD
+
 #define SCALE (128.f*127.f)
 #define SCALE_1 (1.f/128.f/127.f)
 
@@ -228,11 +229,6 @@ static inline void sgemv_accum8x4(float *out, const qweight *w, int rows, int co
    }
    for (i=0;i<rows;i++) out[i] *= SCALE_1;
 }
-#else
-#define sgemv_accum sgemv_accum8x4
-#endif
-
-#ifdef DOT_PROD
 
 
 #ifdef USE_SU_BIAS
@@ -308,6 +304,10 @@ static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows,
 #endif /*USE_SU_BIAS*/
 
 #else /*DOT_PROD*/
+
+#define sgemv_accum sgemv_accum8x4
+
+
 static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, int ignore, const int *idx, const float *x)
 {
    int i, j;
