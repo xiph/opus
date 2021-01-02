@@ -217,70 +217,70 @@ static inline void sparse_sgemv_accum16(float *out, const float *w, int rows, co
 #define SCALE_1 (1.f/128.f/127.f)
 
 #define MAX_INPUTS 2048
+#define MAX_OUTPUTS 8192
 
-static inline void sgemv_accum8x4(float *out, const qweight *w, int rows, int cols, int col_stride, const float *_x)
+static inline int32x4_t vdotprod(int32x4_t acc, int8x16_t a, int8x16_t b)
+{
+  return vpadalq_s16(acc, vpaddq_s16(vmull_s8(vget_low_s8(a), vget_low_s8(b)),  vmull_high_s8(a, b)));
+}
+
+static inline void sgemv_accum8x4(float *_out, const qweight *w, int rows, int cols, int col_stride, const float *_x)
 {
    int i, j;
    signed char x[MAX_INPUTS];
+   int out[MAX_OUTPUTS];
    (void)col_stride;
-   for (i=0;i<rows;i++) out[i] *= SCALE;
+   for (i=0;i<rows;i++) out[i] = (int)floor(.5+SCALE*_out[i]);
    for (i=0;i<cols;i++) x[i] = (int)floor(.5+127*_x[i]);
    for (i=0;i<rows;i+=8)
    {
+      int32x4_t acc0, acc1;
+      acc0 = vld1q_s32(&out[i]);
+      acc1 = vld1q_s32(&out[i+4]);
       for (j=0;j<cols;j+=4)
       {
-         float * restrict y;
-         float xj0, xj1, xj2, xj3;
-         xj0 = x[j+0];
-         xj1 = x[j+1];
-         xj2 = x[j+2];
-         xj3 = x[j+3];
-         y = &out[i];
-         y[0] += (w[0]*xj0+w[1]*xj1+w[2]*xj2+w[3]*xj3);
-         y[1] += (w[4]*xj0+w[5]*xj1+w[6]*xj2+w[7]*xj3);
-         y[2] += (w[8]*xj0+w[9]*xj1+w[10]*xj2+w[11]*xj3);
-         y[3] += (w[12]*xj0+w[13]*xj1+w[14]*xj2+w[15]*xj3);
-         y[4] += (w[16]*xj0+w[17]*xj1+w[18]*xj2+w[19]*xj3);
-         y[5] += (w[20]*xj0+w[21]*xj1+w[22]*xj2+w[23]*xj3);
-         y[6] += (w[24]*xj0+w[25]*xj1+w[26]*xj2+w[27]*xj3);
-         y[7] += (w[28]*xj0+w[29]*xj1+w[30]*xj2+w[31]*xj3);
+         int8x16_t vw0, vw1, vx;
+         vx = (int8x16_t)vld1q_dup_s32((int*)&x[j]);
+         vw0 = vld1q_s8(w);
+         vw1 = vld1q_s8(&w[16]);
+         acc0 = vdotprod(acc0, vw0, vx);
+         acc1 = vdotprod(acc1, vw1, vx);
          w += 32;
       }
+      vst1q_s32(&out[i], acc0);
+      vst1q_s32(&out[i+4], acc1);
    }
-   for (i=0;i<rows;i++) out[i] *= SCALE_1;
+   for (i=0;i<rows;i++) _out[i] = SCALE_1*out[i];
 }
 
-static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows, int cols, const int *idx, const float *_x)
+static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows, int cols, const int *idx, const float *_x)
 {
    int i, j;
    signed char x[MAX_INPUTS];
-   for (i=0;i<rows;i++) out[i] *= SCALE;
+   int out[MAX_OUTPUTS];
+   for (i=0;i<rows;i++) out[i] = (int)floor(.5+SCALE*_out[i]);
    for (i=0;i<cols;i++) x[i] = floor(.5+127*_x[i]);
    for (i=0;i<rows;i+=8)
    {
       int colblocks;
+      int32x4_t acc0, acc1;
+      acc0 = vld1q_s32(&out[i]);
+      acc1 = vld1q_s32(&out[i+4]);
       colblocks = *idx++;
       for (j=0;j<colblocks;j++)
       {
          int pos;
-         float * restrict y;
-         int xj0, xj1, xj2, xj3;
          pos = 4 * (*idx++);
-         xj0 = x[pos+0];
-         xj1 = x[pos+1];
-         xj2 = x[pos+2];
-         xj3 = x[pos+3];
-         y = &out[i];
-         y[0] += (w[0]*xj0+w[1]*xj1+w[2]*xj2+w[3]*xj3);
-         y[1] += (w[4]*xj0+w[5]*xj1+w[6]*xj2+w[7]*xj3);
-         y[2] += (w[8]*xj0+w[9]*xj1+w[10]*xj2+w[11]*xj3);
-         y[3] += (w[12]*xj0+w[13]*xj1+w[14]*xj2+w[15]*xj3);
-         y[4] += (w[16]*xj0+w[17]*xj1+w[18]*xj2+w[19]*xj3);
-         y[5] += (w[20]*xj0+w[21]*xj1+w[22]*xj2+w[23]*xj3);
-         y[6] += (w[24]*xj0+w[25]*xj1+w[26]*xj2+w[27]*xj3);
-         y[7] += (w[28]*xj0+w[29]*xj1+w[30]*xj2+w[31]*xj3);
+         int8x16_t vw0, vw1, vx;
+         vx = (int8x16_t)vld1q_dup_s32((int*)&x[pos]);
+         vw0 = vld1q_s8(w);
+         vw1 = vld1q_s8(&w[16]);
+         acc0 = vdotprod(acc0, vw0, vx);
+         acc1 = vdotprod(acc1, vw1, vx);
          w += 32;
       }
+      vst1q_s32(&out[i], acc0);
+      vst1q_s32(&out[i+4], acc1);
    }
-   for (i=0;i<rows;i++) out[i] *= SCALE_1;
+   for (i=0;i<rows;i++) _out[i] = SCALE_1*out[i];
 }
