@@ -662,11 +662,11 @@ void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int
     if (quantize) {
       float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
       p *= 1 + modulation/16./7.*(2*sub-3);
-      p = MIN16(255, MAX16(32, p));
+      p = MIN16(255, MAX16(33, p));
       st->features[sub][2*NB_BANDS] = .02*(p-100);
       st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
     } else {
-      st->features[sub][2*NB_BANDS] = .01*(IMAX(64, IMIN(510, best[2+2*sub]+best[2+2*sub+1]))-200);
+      st->features[sub][2*NB_BANDS] = .01*(IMAX(66, IMIN(510, best[2+2*sub]+best[2+2*sub+1]))-200);
       st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
     }
     //printf("%f %d %f\n", st->features[sub][2*NB_BANDS], best[2+2*sub], frame_corr);
