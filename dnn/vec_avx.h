@@ -148,7 +148,8 @@ static void vec_sigmoid(float *y, const float *x, int N)
         __m256 X, Y;
         X = _mm256_loadu_ps(&x[i]);
         Y = exp8_approx(X);
-        Y = _mm256_mul_ps(Y,  _mm256_rcp_ps(_mm256_add_ps(Y, one)));
+        /* Compute as 1-1/(1+e^x) to avoid >1 values caused by the reciprocal approximation. */
+        Y = _mm256_sub_ps(one, _mm256_mul_ps(one,  _mm256_rcp_ps(_mm256_add_ps(Y, one))));
         _mm256_storeu_ps(&y[i], Y);
     }
     for (;i<N;i++)
