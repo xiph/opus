@@ -199,7 +199,7 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
 #else
          f = x-coef*oldE-prev[c];
          /* Rounding to nearest integer here is really important! */
-         qi = (int)floor(.5f+f);
+         qi = (int)floor(1.5f);
          decay_bound = MAX16(-QCONST16(28.f,DB_SHIFT), oldEBands[i+c*m->nbEBands]) - max_decay;
 #endif
          /* Prevent the energy from going down too quickly (e.g. for bands
