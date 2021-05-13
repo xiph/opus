@@ -689,7 +689,7 @@ int main(int argc, char *argv[])
                 s=((s&0xFFFF)^0x8000)-0x8000;
                 in[i+remaining*channels]=s;
             }
-            if (curr_read+remaining < frame_size)
+            if (curr_read+remaining <= frame_size)
             {
                 for (i=(curr_read+remaining)*channels;i<frame_size*channels;i++)
                    in[i] = 0;
