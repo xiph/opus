@@ -51,7 +51,7 @@ int          p
 
    OPUS_CLEAR(lpc, p);
 #ifdef FIXED_POINT
-   if (ac[0] > QCONST32(0.001f, 31))
+   if (ac[0] != 0)
 #else
    if (ac[0] > 1e-10f)
 #endif
