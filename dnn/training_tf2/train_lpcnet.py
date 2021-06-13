@@ -49,10 +49,23 @@ nb_epochs = 120
 # Try reducing batch_size if you run out of memory on your GPU
 batch_size = 128
 
-model, _, _ = lpcnet.new_lpcnet_model(training=True)
+#Set this to True to adapt an existing model (e.g. on new data)
+adaptation = False
 
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.summary()
+if adaptation:
+    lr = 0.0001
+    decay = 0
+else:
+    lr = 0.001
+    decay = 2.5e-5
+
+opt = Adam(lr, decay=decay, beta_2=0.99)
+strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
+
+with strategy.scope():
+    model, _, _ = lpcnet.new_lpcnet_model(training=True)
+    model.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
+    model.summary()
 
 feature_file = sys.argv[1]
 pcm_file = sys.argv[2]     # 16 bit unsigned short PCM samples
@@ -65,7 +78,7 @@ pcm_chunk_size = frame_size*feature_chunk_size
 # u for unquantised, load 16 bit PCM samples and convert to mu-law
 
 data = np.fromfile(pcm_file, dtype='uint8')
-nb_frames = len(data)//(4*pcm_chunk_size)
+nb_frames = len(data)//(4*pcm_chunk_size)//batch_size*batch_size
 
 features = np.fromfile(feature_file, dtype='float32')
 
@@ -102,23 +115,15 @@ del pred
 del in_exc
 
 # dump models to disk as we go
-checkpoint = ModelCheckpoint('lpcnet33_384_{epoch:02d}.h5')
-
-#Set this to True to adapt an existing model (e.g. on new data)
-adaptation = False
+checkpoint = ModelCheckpoint('lpcnet33e_384_{epoch:02d}.h5')
 
 if adaptation:
     #Adapting from an existing model
-    model.load_weights('lpcnet32v_384_100.h5')
+    model.load_weights('lpcnet33a_384_100.h5')
     sparsify = lpcnet.Sparsify(0, 0, 1, (0.05, 0.05, 0.2))
-    lr = 0.0001
-    decay = 0
 else:
     #Training from scratch
     sparsify = lpcnet.Sparsify(2000, 40000, 400, (0.05, 0.05, 0.2))
-    lr = 0.001
-    decay = 5e-5
 
-model.compile(optimizer=Adam(lr, decay=decay, beta_2=0.99), loss='sparse_categorical_crossentropy')
-model.save_weights('lpcnet33_384_00.h5');
+model.save_weights('lpcnet33e_384_00.h5');
 model.fit([in_data, features, periods], out_exc, batch_size=batch_size, epochs=nb_epochs, validation_split=0.0, callbacks=[checkpoint, sparsify])

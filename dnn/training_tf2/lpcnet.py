@@ -26,8 +26,10 @@
 '''
 
 import math
+import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, GRU, Dense, Embedding, Reshape, Concatenate, Lambda, Conv1D, Multiply, Add, Bidirectional, MaxPooling1D, Activation
+from tensorflow.compat.v1.keras.layers import CuDNNGRU
 from tensorflow.keras import backend as K
 from tensorflow.keras.constraints import Constraint
 from tensorflow.keras.initializers import Initializer
@@ -41,6 +43,12 @@ frame_size = 160
 pcm_bits = 8
 embed_size = 128
 pcm_levels = 2**pcm_bits
+
+def quant_regularizer(x):
+    Q = 128
+    Q_1 = 1./Q
+    #return .01 * tf.reduce_mean(1 - tf.math.cos(2*3.1415926535897931*(Q*x-tf.round(Q*x))))
+    return .01 * tf.reduce_mean(K.sqrt(K.sqrt(1.0001 - tf.math.cos(2*3.1415926535897931*(Q*x-tf.round(Q*x))))))
 
 class Sparsify(Callback):
     def __init__(self, t_start, t_end, interval, density):
@@ -129,9 +137,9 @@ class WeightClip(Constraint):
         return {'name': self.__class__.__name__,
             'c': self.c}
 
-constraint = WeightClip(0.999)
+constraint = WeightClip(0.992)
 
-def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, training=False, adaptation=False):
+def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, training=False, adaptation=False, quantize=False):
     pcm = Input(shape=(None, 3))
     feat = Input(shape=(None, nb_used_features))
     pitch = Input(shape=(None, 1))
@@ -158,10 +166,18 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, train
     
     rep = Lambda(lambda x: K.repeat_elements(x, frame_size, 1))
 
-    rnn = GRU(rnn_units1, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_a',
-              recurrent_constraint = constraint)
-    rnn2 = GRU(rnn_units2, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_b',
-               kernel_constraint=constraint)
+    quant = quant_regularizer if quantize else None
+
+    if training:
+        rnn = CuDNNGRU(rnn_units1, return_sequences=True, return_state=True, name='gru_a',
+              recurrent_constraint = constraint, recurrent_regularizer=quant)
+        rnn2 = CuDNNGRU(rnn_units2, return_sequences=True, return_state=True, name='gru_b',
+               kernel_constraint=constraint, kernel_regularizer=quant)
+    else:
+        rnn = GRU(rnn_units1, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_a',
+              recurrent_constraint = constraint, recurrent_regularizer=quant)
+        rnn2 = GRU(rnn_units2, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_b',
+               kernel_constraint=constraint, kernel_regularizer=quant)
 
     rnn_in = Concatenate()([cpcm, rep(cfeat)])
     md = MDense(pcm_levels, activation='softmax', name='dual_fc')
