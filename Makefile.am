@@ -9,12 +9,27 @@ lib_LTLIBRARIES = libopus.la
 
 DIST_SUBDIRS = doc
 
+AM_LDFLAGS =
+AM_CFLAGS =
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/celt -I$(top_srcdir)/silk \
               -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed $(NE10_CFLAGS)
 
 include celt_sources.mk
 include silk_sources.mk
 include opus_sources.mk
+
+# Pass x86_64 in compiler and linker flags if asked
+if CLANG_ARCH_X86_64
+AM_CFLAGS += -arch x86_64
+AM_LDFLAGS += -arch x86_64
+endif
+
+# Pass arm64 in compiler and linker flags if asked
+# (Note - may be additive to the above)
+if CLANG_ARCH_ARM64
+AM_CFLAGS += -arch arm64
+AM_LDFLAGS += -arch arm64
+endif
 
 if FIXED_POINT
 SILK_SOURCES += $(SILK_SOURCES_FIXED)

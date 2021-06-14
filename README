@@ -66,6 +66,8 @@ On Apple macOS, install Xcode and brew.sh, then in the Terminal enter:
 
     % brew install autoconf automake libtool
 
+    (See the Apple Cross-Compilation section for more info)
+
 1) Clone the repository:
 
     % git clone https://gitlab.xiph.org/xiph/opus.git
@@ -159,3 +161,18 @@ o The result of integer division of a negative value is truncated
 
 o The compiler provides a 64-bit integer type (a C99 requirement
   which is supported by most C89 compilers).
+
+== Apple Cross-Compilation ==
+
+When building for Apple platforms it's possible to cross-compile to a different architecture by using automake's --host argument. E.g. to compile Opus for Apple silicon -
+
+    % ./configure --host=aarch64-apple-macos 
+    % make
+
+Universal binaries can be created by compiling twice to different locations then using lipo to create a univeral library 
+
+    % ./configure --host=aarch64-apple-macos --prefix=$PWD/mac/arm64 && make && make install
+    % make clean
+    % ./configure --host=x86_64-apple-macos --prefix=$PWD/mac/x86_64 && make && make install
+    % lipo -create ./mac/x86_64/lib/libopus.a ./mac/arm64/lib/libopus.a -output ./mac/libopus.a
+    % lipo -info ./mac/libopus.a
