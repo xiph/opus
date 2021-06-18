@@ -131,7 +131,10 @@ class WeightClip(Constraint):
         self.c = c
 
     def __call__(self, p):
-        return K.clip(p, -self.c, self.c)
+        # Ensure that abs of adjacent weights don't sum to more than 127. Otherwise there's a risk of
+        # saturation when implementing dot products with SSSE3 or AVX2.
+        return self.c*p/tf.maximum(self.c, tf.repeat(tf.abs(p[:, 1::2])+tf.abs(p[:, 0::2]), 2, axis=1))
+        #return K.clip(p, -self.c, self.c)
 
     def get_config(self):
         return {'name': self.__class__.__name__,
