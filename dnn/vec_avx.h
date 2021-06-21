@@ -47,7 +47,6 @@ static inline __m256 exp8_approx(__m256 X)
    const __m256 log2_E = _mm256_set1_ps(1.44269504);
    const __m256 max_in = _mm256_set1_ps(50.f);
    const __m256 min_in = _mm256_set1_ps(-50.f);
-   const __m256i mask = _mm256_set1_epi32(0x7fffffff);
    __m256 XF, Y;
    __m256i I;
    X = _mm256_mul_ps(X, log2_E);
@@ -57,7 +56,7 @@ static inline __m256 exp8_approx(__m256 X)
    X = _mm256_sub_ps(X, XF);
    Y = _mm256_fmadd_ps(_mm256_fmadd_ps(_mm256_fmadd_ps(K3, X, K2), X, K1), X, K0);
    I = _mm256_slli_epi32(I, 23);
-   Y = _mm256_castsi256_ps(_mm256_and_si256(mask, _mm256_add_epi32(I, _mm256_castps_si256(Y))));
+   Y = _mm256_castsi256_ps(_mm256_add_epi32(I, _mm256_castps_si256(Y)));
    return Y;
 }
 #else
