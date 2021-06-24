@@ -30,7 +30,9 @@
 
 #include <arm_neon.h>
 
+#ifndef DISABLE_DOT_PROD
 #define DOT_PROD
+#endif
 typedef signed char qweight;
 
 

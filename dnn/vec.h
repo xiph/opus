@@ -45,8 +45,10 @@
 
 #define NO_OPTIMIZATIONS
 
+#ifndef DISABLE_DOT_PROD
 #define DOT_PROD
 //#define USE_SU_BIAS
+#endif
 
 #ifdef DOT_PROD
 typedef signed char qweight;

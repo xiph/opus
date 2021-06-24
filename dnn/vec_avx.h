@@ -34,8 +34,10 @@
 
 #include <immintrin.h>
 
+#ifndef DISABLE_DOT_PROD
 #define DOT_PROD
 #define USE_SU_BIAS
+#endif
 
 #ifdef __AVX2__
 static inline __m256 exp8_approx(__m256 X)
