@@ -82,7 +82,8 @@ class Sparsify(Callback):
                     density = 1 - (1-self.final_density[k])*(1 - r*r*r)
                 A = p[:, k*N:(k+1)*N]
                 A = A - np.diag(np.diag(A))
-                #A = np.transpose(A, (1, 0))
+                #This is needed because of the CuDNNGRU strange weight ordering
+                A = np.transpose(A, (1, 0))
                 L=np.reshape(A, (N//4, 4, N//8, 8))
                 S=np.sum(L*L, axis=-1)
                 S=np.sum(S, axis=1)
@@ -92,7 +93,8 @@ class Sparsify(Callback):
                 mask = np.repeat(mask, 4, axis=0)
                 mask = np.repeat(mask, 8, axis=1)
                 mask = np.minimum(1, mask + np.diag(np.ones((N,))))
-                #mask = np.transpose(mask, (1, 0))
+                #This is needed because of the CuDNNGRU strange weight ordering
+                mask = np.transpose(mask, (1, 0))
                 p[:, k*N:(k+1)*N] = p[:, k*N:(k+1)*N]*mask
                 #print(thresh, np.mean(mask))
             w[1] = p
