@@ -281,46 +281,42 @@ void compute_gru3(const GRULayer *gru, float *state, const float *input)
       state[i] = h[i];
 }
 
-void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input)
+/* WARNING: for efficiency reasons, this function overwrites the input vector. */
+void compute_sparse_gru(const SparseGRULayer *gru, float *state, float *input)
 {
    int i, k;
    int N;
-   float zrh[3*MAX_RNN_NEURONS];
    float recur[3*MAX_RNN_NEURONS];
    float *z;
    float *r;
    float *h;
+   const float *bias;
    N = gru->nb_neurons;
-   z = zrh;
-   r = &zrh[N];
-   h = &zrh[2*N];
+   z = input;
+   r = &input[N];
+   h = &input[2*N];
    celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS);
    celt_assert(input != state);
    celt_assert(gru->reset_after);
-   RNN_COPY(zrh, input, 3*N);
 #ifdef USE_SU_BIAS
-   for (i=0;i<3*N;i++)
-      recur[i] = gru->subias[3*N + i];
+   bias = &gru->subias[3*N];
 #else
-   for (i=0;i<3*N;i++)
-      recur[i] = gru->bias[3*N + i];   
+   bias = &gru->bias[3*N];   
 #endif
    for (k=0;k<3;k++)
    {
       for (i=0;i<N;i++)
-         recur[k*N + i] += gru->diag_weights[k*N + i]*state[i];
+         recur[k*N + i] = bias[k*N + i] + gru->diag_weights[k*N + i]*state[i];
    }
    sparse_sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, N, gru->idx, state);
    for (i=0;i<2*N;i++)
-      zrh[i] += recur[i];
-   compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
+      input[i] += recur[i];
+   compute_activation(input, input, 2*N, ACTIVATION_SIGMOID);
    for (i=0;i<N;i++)
       h[i] += recur[2*N+i]*r[i];
    compute_activation(h, h, N, gru->activation);
    for (i=0;i<N;i++)
-      h[i] = z[i]*state[i] + (1-z[i])*h[i];
-   for (i=0;i<N;i++)
-      state[i] = h[i];
+      state[i] = z[i]*state[i] + (1-z[i])*h[i];
 }
 
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)

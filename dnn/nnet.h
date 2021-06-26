@@ -103,7 +103,7 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input);
 
 void compute_gru3(const GRULayer *gru, float *state, const float *input);
 
-void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input);
+void compute_sparse_gru(const SparseGRULayer *gru, float *state, float *input);
 
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input);
 
