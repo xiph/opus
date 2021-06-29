@@ -80,8 +80,9 @@ void compute_activation(float *output, float *input, int N, int activation)
          output[i] = relu(input[i]);
    } else if (activation == ACTIVATION_SOFTMAX) {
 #ifdef SOFTMAX_HACK
-      for (i=0;i<N;i++)
-         output[i] = input[i];
+      RNN_COPY(output, input, N);
+      /*for (i=0;i<N;i++)
+         output[i] = input[i];*/
 #else
       float sum = 0;
       softmax(output, input, N);
