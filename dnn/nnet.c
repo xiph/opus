@@ -399,9 +399,22 @@ int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor)
     }
     /* Do the sampling (from the cdf). */
     r = tmp[N-1] * ((rand()+.5f)/(RAND_MAX+1.f));
+#if 1 /* Bisection search in the CDF (faster than the equivalent linear one below). */
+    {
+        int start=-1;
+        int end = N-1;
+        while (end > start+1) {
+            int mid = (start+end)>>1;
+            if (r <= tmp[mid]) end = mid;
+            else start = mid;
+        }
+        return end;
+    }
+#else
     for (i=0;i<N-1;i++)
     {
         if (r <= tmp[i]) return i;
     }
     return N-1;
+#endif
 }
