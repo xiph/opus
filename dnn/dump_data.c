@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "kiss_fft.h"
 #include "common.h"
 #include <math.h>
@@ -141,6 +142,7 @@ int main(int argc, char **argv) {
   int encode = 0;
   int decode = 0;
   int quantize = 0;
+  srand(getpid());
   st = lpcnet_encoder_create();
   if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
   if (argc == 5 && strcmp(argv[1], "-qtrain")==0) {
@@ -231,14 +233,15 @@ int main(int argc, char **argv) {
     }
     if (count*FRAME_SIZE_5MS>=10000000 && one_pass_completed) break;
     if (training && ++gain_change_count > 2821) {
-      float tmp;
+      float tmp, tmp2;
       speech_gain = pow(10., (-20+(rand()%40))/20.);
       if (rand()%20==0) speech_gain *= .01;
       if (rand()%100==0) speech_gain = 0;
       gain_change_count = 0;
       rand_resp(a_sig, b_sig);
       tmp = (float)rand()/RAND_MAX;
-      noise_std = 10*tmp*tmp;
+      tmp2 = (float)rand()/RAND_MAX;
+      noise_std = -log(tmp)-log(tmp2);
     }
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     biquad(x, mem_resp_x, x, b_sig, a_sig, FRAME_SIZE);

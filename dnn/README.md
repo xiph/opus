@@ -4,6 +4,7 @@ Low complexity implementation of the WaveRNN-based LPCNet algorithm, as describe
 
 - J.-M. Valin, J. Skoglund, [A Real-Time Wideband Neural Vocoder at 1.6 kb/s Using LPCNet](https://jmvalin.ca/papers/lpcnet_codec.pdf), *Submitted for INTERSPEECH 2019*.
 - J.-M. Valin, J. Skoglund, [LPCNet: Improving Neural Speech Synthesis Through Linear Prediction](https://jmvalin.ca/papers/lpcnet_icassp2019.pdf), *Proc. International Conference on Acoustics, Speech and Signal Processing (ICASSP)*, arXiv:1810.11846, 2019.
+- J. Skoglund, J.-M. Valin, [Improving Opus Low Bit Rate Quality with Neural Speech Synthesis](https://jmvalin.ca/papers/opusnet.pdf), *Proc. INTERSPEECH*, arxiv:1905.04628, 2020.
 
 # Introduction
 
@@ -23,7 +24,9 @@ You can build the code using:
 make
 ```
 Note that the autogen.sh script is used when building from Git and will automatically download the latest model
-(models are too large to put in Git).
+(models are too large to put in Git). By default, LPCNet will attempt to use 8-bit dot product instructions on AVX*/Neon to
+speed up inference. To disable that (e.g. to avoid quantization effects when retraining), add --disable-dot-product to the
+configure script.
 
 It is highly recommended to set the CFLAGS environment variable to enable AVX or NEON *prior* to running configure, otherwise
 no vectorization will take place and the code will be very slow. On a recent x86 CPU, something like
@@ -69,14 +72,14 @@ This codebase is also meant for research and it is possible to train new models.
    and it will generate an lpcnet*.h5 file for each iteration. If it stops with a
    "Failed to allocate RNN reserve space" message try reducing the *batch\_size* variable in train_lpcnet.py.
 
-1. You can synthesise speech with Python and your GPU card:
+1. You can synthesise speech with Python and your GPU card (very slow):
    ```
    ./dump_data -test test_input.s16 test_features.f32
    ./src/test_lpcnet.py test_features.f32 test.s16
    ```
    Note the .h5 is hard coded in test_lpcnet.py, modify for your .h5 file.
 
-1. Or with C on a CPU:
+1. Or with C on a CPU (C inference is much faster):
    First extract the model files nnet_data.h and nnet_data.c
    ```
    ./dump_lpcnet.py lpcnet15_384_10_G16_64.h5
@@ -95,6 +98,6 @@ sh /path/to/concat.sh
 # Reading Further
 
 1. [LPCNet: DSP-Boosted Neural Speech Synthesis](https://people.xiph.org/~jm/demo/lpcnet/)
-1. Sample model files:
-https://jmvalin.ca/misc_stuff/lpcnet_models/
+1. [A Real-Time Wideband Neural Vocoder at 1.6 kb/s Using LPCNet](https://people.xiph.org/~jm/demo/lpcnet_codec/)
+1. Sample model files (check compatibility): https://media.xiph.org/lpcnet/data/ 
 

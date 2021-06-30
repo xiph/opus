@@ -29,8 +29,15 @@
 /* NEON support for ARM machines */
 
 #include <arm_neon.h>
+
+#ifndef DISABLE_DOT_PROD
+#define DOT_PROD
+#endif
+typedef signed char qweight;
+
+
 #ifndef LPCNET_TEST
-static OPUS_INLINE float32x4_t exp4_approx(float32x4_t x) {
+static inline OPUS_INLINE float32x4_t exp4_approx(float32x4_t x) {
   int32x4_t i;
   float32x4_t xf;
 
@@ -57,7 +64,7 @@ static OPUS_INLINE float32x4_t exp4_approx(float32x4_t x) {
   return Y;
 }
 
-static OPUS_INLINE float celt_exp(float x)
+static inline float celt_exp(float x)
 {
    float out[4];
    float32x4_t X, Y;
@@ -67,7 +74,7 @@ static OPUS_INLINE float celt_exp(float x)
    return out[0];
 }
 
-static void softmax(float *y, const float *x, int N)
+static inline void softmax(float *y, const float *x, int N)
 {
     int i;
     for (i=0;i<N-3;i+=4)
@@ -81,7 +88,7 @@ static void softmax(float *y, const float *x, int N)
         y[i] = celt_exp(x[i]);
 }
 
-static void vec_tanh(float *y, const float *x, int N)
+static inline void vec_tanh(float *y, const float *x, int N)
 {
     int i;
     for (i=0;i<N-3;i+=4)
@@ -103,7 +110,7 @@ static void vec_tanh(float *y, const float *x, int N)
     }
 }
 
-static void vec_sigmoid(float *y, const float *x, int N)
+static inline void vec_sigmoid(float *y, const float *x, int N)
 {
     int i;
     for (i=0;i<N-3;i+=4)
@@ -124,7 +131,7 @@ static void vec_sigmoid(float *y, const float *x, int N)
 }
 #endif
 
-static void sgemv_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+static inline void sgemv_accum16(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
     int i, j;
     for (i=0;i<rows;i+=16)
@@ -168,7 +175,7 @@ static void sgemv_accum16(float *out, const float *weights, int rows, int cols, 
     }
 }
 
-static void sparse_sgemv_accum16(float *out, const float *w, int rows, const int *idx, const float *x)
+static inline void sparse_sgemv_accum16(float *out, const float *w, int rows, const int *idx, const float *x)
 {
     int i, j;
     for (i=0;i<rows;i+=16)
@@ -206,4 +213,76 @@ static void sparse_sgemv_accum16(float *out, const float *w, int rows, const int
 	vst1q_f32(&y[12], y12_15);
       
     }
+}
+
+#define SCALE (128.f*127.f)
+#define SCALE_1 (1.f/128.f/127.f)
+
+#define MAX_INPUTS 2048
+#define MAX_OUTPUTS 8192
+
+static inline int32x4_t vdotprod(int32x4_t acc, int8x16_t a, int8x16_t b)
+{
+  return vpadalq_s16(acc, vpaddq_s16(vmull_s8(vget_low_s8(a), vget_low_s8(b)),  vmull_high_s8(a, b)));
+}
+
+static inline void sgemv_accum8x4(float *_out, const qweight *w, int rows, int cols, int col_stride, const float *_x)
+{
+   int i, j;
+   signed char x[MAX_INPUTS];
+   int out[MAX_OUTPUTS];
+   (void)col_stride;
+   for (i=0;i<rows;i++) out[i] = (int)floor(.5+SCALE*_out[i]);
+   for (i=0;i<cols;i++) x[i] = (int)floor(.5+127*_x[i]);
+   for (i=0;i<rows;i+=8)
+   {
+      int32x4_t acc0, acc1;
+      acc0 = vld1q_s32(&out[i]);
+      acc1 = vld1q_s32(&out[i+4]);
+      for (j=0;j<cols;j+=4)
+      {
+         int8x16_t vw0, vw1, vx;
+         vx = (int8x16_t)vld1q_dup_s32((int*)&x[j]);
+         vw0 = vld1q_s8(w);
+         vw1 = vld1q_s8(&w[16]);
+         acc0 = vdotprod(acc0, vw0, vx);
+         acc1 = vdotprod(acc1, vw1, vx);
+         w += 32;
+      }
+      vst1q_s32(&out[i], acc0);
+      vst1q_s32(&out[i+4], acc1);
+   }
+   for (i=0;i<rows;i++) _out[i] = SCALE_1*out[i];
+}
+
+static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows, int cols, const int *idx, const float *_x)
+{
+   int i, j;
+   signed char x[MAX_INPUTS];
+   int out[MAX_OUTPUTS];
+   for (i=0;i<rows;i++) out[i] = (int)floor(.5+SCALE*_out[i]);
+   for (i=0;i<cols;i++) x[i] = floor(.5+127*_x[i]);
+   for (i=0;i<rows;i+=8)
+   {
+      int colblocks;
+      int32x4_t acc0, acc1;
+      acc0 = vld1q_s32(&out[i]);
+      acc1 = vld1q_s32(&out[i+4]);
+      colblocks = *idx++;
+      for (j=0;j<colblocks;j++)
+      {
+         int pos;
+         pos = 4 * (*idx++);
+         int8x16_t vw0, vw1, vx;
+         vx = (int8x16_t)vld1q_dup_s32((int*)&x[pos]);
+         vw0 = vld1q_s8(w);
+         vw1 = vld1q_s8(&w[16]);
+         acc0 = vdotprod(acc0, vw0, vx);
+         acc1 = vdotprod(acc1, vw1, vx);
+         w += 32;
+      }
+      vst1q_s32(&out[i], acc0);
+      vst1q_s32(&out[i+4], acc1);
+   }
+   for (i=0;i<rows;i++) _out[i] = SCALE_1*out[i];
 }

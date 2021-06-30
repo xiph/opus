@@ -28,6 +28,8 @@
 #ifndef _NNET_H_
 #define _NNET_H_
 
+#include "vec.h"
+
 #define ACTIVATION_LINEAR  0
 #define ACTIVATION_SIGMOID 1
 #define ACTIVATION_TANH    2
@@ -54,7 +56,8 @@ typedef struct {
 
 typedef struct {
   const float *bias;
-  const float *input_weights;
+  const float *subias;
+  const qweight *input_weights;
   const float *recurrent_weights;
   int nb_inputs;
   int nb_neurons;
@@ -64,8 +67,9 @@ typedef struct {
 
 typedef struct {
   const float *bias;
+  const float *subias;
   const float *diag_weights;
-  const float *recurrent_weights;
+  const qweight *recurrent_weights;
   const int *idx;
   int nb_neurons;
   int activation;
@@ -99,7 +103,7 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input);
 
 void compute_gru3(const GRULayer *gru, float *state, const float *input);
 
-void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input);
+void compute_sparse_gru(const SparseGRULayer *gru, float *state, float *input);
 
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input);
 

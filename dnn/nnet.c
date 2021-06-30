@@ -39,16 +39,13 @@
 #include "nnet.h"
 #include "nnet_data.h"
 
+#ifdef NO_OPTIMIZATIONS
+#warning Compiling without any vectorization. This code will be very slow
+#endif
+
+
 #define SOFTMAX_HACK
 
-#ifdef __AVX__
-#include "vec_avx.h"
-#elif __ARM_NEON__
-#include "vec_neon.h"
-#else
-#warning Compiling without any vectorization. This code will be very slow
-#include "vec.h"
-#endif
 
 static OPUS_INLINE float relu(float x)
 {
@@ -83,8 +80,9 @@ void compute_activation(float *output, float *input, int N, int activation)
          output[i] = relu(input[i]);
    } else if (activation == ACTIVATION_SOFTMAX) {
 #ifdef SOFTMAX_HACK
-      for (i=0;i<N;i++)
-         output[i] = input[i];
+      RNN_COPY(output, input, N);
+      /*for (i=0;i<N;i++)
+         output[i] = input[i];*/
 #else
       float sum = 0;
       softmax(output, input, N);
@@ -143,6 +141,7 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
    compute_activation(output, output, N, layer->activation);
 }
 
+#if 0
 void compute_gru(const GRULayer *gru, float *state, const float *input)
 {
    int i;
@@ -204,6 +203,7 @@ void compute_gru(const GRULayer *gru, float *state, const float *input)
    for (i=0;i<N;i++)
       state[i] = h[i];
 }
+#endif
 
 void compute_gru2(const GRULayer *gru, float *state, const float *input)
 {
@@ -225,9 +225,14 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input)
    celt_assert(gru->reset_after);
    stride = 3*N;
    /* Compute update gate. */
+#ifdef USE_SU_BIAS
+   for (i=0;i<3*N;i++)
+      zrh[i] = gru->subias[i];
+#else
    for (i=0;i<3*N;i++)
       zrh[i] = gru->bias[i];
-   sgemv_accum(zrh, gru->input_weights, 3*N, M, stride, input);
+#endif
+   sgemv_accum8x4(zrh, gru->input_weights, 3*N, M, stride, input);
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
    sgemv_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
@@ -277,41 +282,42 @@ void compute_gru3(const GRULayer *gru, float *state, const float *input)
       state[i] = h[i];
 }
 
-void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input)
+/* WARNING: for efficiency reasons, this function overwrites the input vector. */
+void compute_sparse_gru(const SparseGRULayer *gru, float *state, float *input)
 {
    int i, k;
    int N;
-   float zrh[3*MAX_RNN_NEURONS];
    float recur[3*MAX_RNN_NEURONS];
    float *z;
    float *r;
    float *h;
+   const float *bias;
    N = gru->nb_neurons;
-   z = zrh;
-   r = &zrh[N];
-   h = &zrh[2*N];
+   z = input;
+   r = &input[N];
+   h = &input[2*N];
    celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS);
    celt_assert(input != state);
    celt_assert(gru->reset_after);
-   RNN_COPY(zrh, input, 3*N);
-   for (i=0;i<3*N;i++)
-      recur[i] = gru->bias[3*N + i];
+#ifdef USE_SU_BIAS
+   bias = &gru->subias[3*N];
+#else
+   bias = &gru->bias[3*N];   
+#endif
    for (k=0;k<3;k++)
    {
       for (i=0;i<N;i++)
-         recur[k*N + i] += gru->diag_weights[k*N + i]*state[i];
+         recur[k*N + i] = bias[k*N + i] + gru->diag_weights[k*N + i]*state[i];
    }
-   sparse_sgemv_accum16(recur, gru->recurrent_weights, 3*N, gru->idx, state);
+   sparse_sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, N, gru->idx, state);
    for (i=0;i<2*N;i++)
-      zrh[i] += recur[i];
-   compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
+      input[i] += recur[i];
+   compute_activation(input, input, 2*N, ACTIVATION_SIGMOID);
    for (i=0;i<N;i++)
       h[i] += recur[2*N+i]*r[i];
    compute_activation(h, h, N, gru->activation);
    for (i=0;i<N;i++)
-      h[i] = z[i]*state[i] + (1-z[i])*h[i];
-   for (i=0;i<N;i++)
-      state[i] = h[i];
+      state[i] = z[i]*state[i] + (1-z[i])*h[i];
 }
 
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
@@ -393,9 +399,22 @@ int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor)
     }
     /* Do the sampling (from the cdf). */
     r = tmp[N-1] * ((rand()+.5f)/(RAND_MAX+1.f));
+#if 1 /* Bisection search in the CDF (faster than the equivalent linear one below). */
+    {
+        int start=-1;
+        int end = N-1;
+        while (end > start+1) {
+            int mid = (start+end)>>1;
+            if (r <= tmp[mid]) end = mid;
+            else start = mid;
+        }
+        return end;
+    }
+#else
     for (i=0;i<N-1;i++)
     {
         if (r <= tmp[i]) return i;
     }
     return N-1;
+#endif
 }

@@ -39,7 +39,10 @@ max_rnn_neurons = 1
 max_conv_inputs = 1
 max_mdense_tmp = 1
 
-def printVector(f, vector, name, dtype='float'):
+def printVector(f, vector, name, dtype='float', dotp=False):
+    if dotp:
+        vector = vector.reshape((vector.shape[0]//4, 4, vector.shape[1]//8, 8))
+        vector = vector.transpose((2, 0, 3, 1))
     v = np.reshape(vector, (-1));
     #print('static const float ', name, '[', len(v), '] = \n', file=f)
     f.write('static const {} {}[{}] = {{\n   '.format(dtype, name, len(v)))
@@ -59,27 +62,37 @@ def printVector(f, vector, name, dtype='float'):
 
 def printSparseVector(f, A, name):
     N = A.shape[0]
-    W = np.zeros((0,))
+    W = np.zeros((0,), dtype='int')
+    W0 = np.zeros((0,))
     diag = np.concatenate([np.diag(A[:,:N]), np.diag(A[:,N:2*N]), np.diag(A[:,2*N:])])
     A[:,:N] = A[:,:N] - np.diag(np.diag(A[:,:N]))
     A[:,N:2*N] = A[:,N:2*N] - np.diag(np.diag(A[:,N:2*N]))
     A[:,2*N:] = A[:,2*N:] - np.diag(np.diag(A[:,2*N:]))
+    AQ = np.minimum(127, np.maximum(-128, np.round(A*128))).astype('int')
     printVector(f, diag, name + '_diag')
     idx = np.zeros((0,), dtype='int')
-    for i in range(3*N//16):
+    for i in range(3*N//8):
         pos = idx.shape[0]
         idx = np.append(idx, -1)
         nb_nonzero = 0
-        for j in range(N):
-            if np.sum(np.abs(A[j, i*16:(i+1)*16])) > 1e-10:
+        for j in range(N//4):
+            block = A[j*4:(j+1)*4, i*8:(i+1)*8]
+            qblock = AQ[j*4:(j+1)*4, i*8:(i+1)*8]
+            if np.sum(np.abs(block)) > 1e-10:
                 nb_nonzero = nb_nonzero + 1
                 idx = np.append(idx, j)
-                W = np.concatenate([W, A[j, i*16:(i+1)*16]])
+                vblock = qblock.transpose((1,0)).reshape((-1,))
+                W0 = np.concatenate([W0, block.reshape((-1,))])
+                W = np.concatenate([W, vblock])
         idx[pos] = nb_nonzero
-    printVector(f, W, name)
+    f.write('#ifdef DOT_PROD\n')
+    printVector(f, W, name, dtype='qweight')
+    f.write('#else /*DOT_PROD*/\n')
+    printVector(f, W0, name, dtype='qweight')
+    f.write('#endif /*DOT_PROD*/\n')
     #idx = np.tile(np.concatenate([np.array([N]), np.arange(N)]), 3*N//16)
     printVector(f, idx, name + '_idx', dtype='int')
-    return;
+    return AQ
 
 def dump_layer_ignore(self, f, hf):
     print("ignoring layer " + self.name + " of type " + self.__class__.__name__)
@@ -91,8 +104,11 @@ def dump_sparse_gru(self, f, hf):
     name = 'sparse_' + self.name
     print("printing layer " + name + " of type sparse " + self.__class__.__name__)
     weights = self.get_weights()
-    printSparseVector(f, weights[1], name + '_recurrent_weights')
+    qweights = printSparseVector(f, weights[1], name + '_recurrent_weights')
     printVector(f, weights[-1], name + '_bias')
+    subias = weights[-1].copy()
+    subias[1,:] = subias[1,:] - np.sum(qweights*(1./128),axis=0)
+    printVector(f, subias, name + '_subias')
     if hasattr(self, 'activation'):
         activation = self.activation.__name__.upper()
     else:
@@ -103,8 +119,8 @@ def dump_sparse_gru(self, f, hf):
         reset_after = 1
     neurons = weights[0].shape[1]//3
     max_rnn_neurons = max(max_rnn_neurons, neurons)
-    f.write('const SparseGRULayer {} = {{\n   {}_bias,\n   {}_recurrent_weights_diag,\n   {}_recurrent_weights,\n   {}_recurrent_weights_idx,\n   {}, ACTIVATION_{}, {}\n}};\n\n'
-            .format(name, name, name, name, name, weights[0].shape[1]//3, activation, reset_after))
+    f.write('const SparseGRULayer {} = {{\n   {}_bias,\n   {}_subias,\n   {}_recurrent_weights_diag,\n   {}_recurrent_weights,\n   {}_recurrent_weights_idx,\n   {}, ACTIVATION_{}, {}\n}};\n\n'
+            .format(name, name, name, name, name, name, weights[0].shape[1]//3, activation, reset_after))
     hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('#define {}_STATE_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('extern const SparseGRULayer {};\n\n'.format(name));
@@ -115,9 +131,17 @@ def dump_gru_layer(self, f, hf):
     name = self.name
     print("printing layer " + name + " of type " + self.__class__.__name__)
     weights = self.get_weights()
+    f.write('#ifdef DOT_PROD\n')
+    qweight = np.clip(np.round(128.*weights[0]).astype('int'), -128, 127)
+    printVector(f, qweight, name + '_weights', dotp=True, dtype='qweight')
+    f.write('#else /*DOT_PROD*/\n')
     printVector(f, weights[0], name + '_weights')
+    f.write('#endif /*DOT_PROD*/\n')
     printVector(f, weights[1], name + '_recurrent_weights')
     printVector(f, weights[-1], name + '_bias')
+    subias = weights[-1].copy()
+    subias[0,:] = subias[0,:] - np.sum(qweight*(1./128.),axis=0)
+    printVector(f, subias, name + '_subias')
     if hasattr(self, 'activation'):
         activation = self.activation.__name__.upper()
     else:
@@ -128,8 +152,8 @@ def dump_gru_layer(self, f, hf):
         reset_after = 1
     neurons = weights[0].shape[1]//3
     max_rnn_neurons = max(max_rnn_neurons, neurons)
-    f.write('const GRULayer {} = {{\n   {}_bias,\n   {}_weights,\n   {}_recurrent_weights,\n   {}, {}, ACTIVATION_{}, {}\n}};\n\n'
-            .format(name, name, name, name, weights[0].shape[0], weights[0].shape[1]//3, activation, reset_after))
+    f.write('const GRULayer {} = {{\n   {}_bias,\n   {}_subias,\n   {}_weights,\n   {}_recurrent_weights,\n   {}, {}, ACTIVATION_{}, {}\n}};\n\n'
+            .format(name, name, name, name, name, weights[0].shape[0], weights[0].shape[1]//3, activation, reset_after))
     hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('#define {}_STATE_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('extern const GRULayer {};\n\n'.format(name));
@@ -224,7 +248,8 @@ f = open(cfile, 'w')
 hf = open(hfile, 'w')
 
 
-f.write('/*This file is automatically generated from a Keras model*/\n\n')
+f.write('/*This file is automatically generated from a Keras model*/\n')
+f.write('/*based on model {}*/\n\n'.format(sys.argv[1]))
 f.write('#ifdef HAVE_CONFIG_H\n#include "config.h"\n#endif\n\n#include "nnet.h"\n#include "{}"\n\n'.format(hfile))
 
 hf.write('/*This file is automatically generated from a Keras model*/\n\n')

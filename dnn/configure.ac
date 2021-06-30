@@ -73,6 +73,14 @@ AS_IF([test "$enable_assertions" = "yes"], [
   AC_DEFINE([OP_ENABLE_ASSERTIONS], [1], [Enable assertions in code])
 ])
 
+AC_ARG_ENABLE([dot-product],
+	      AS_HELP_STRING([--disable-dot-product], [Disable dot product implementation]),,
+  enable_dot_product=yes)
+
+AS_IF([test "$enable_dot_product" = "no"], [
+       AC_DEFINE([DISABLE_DOT_PROD], [1], [Disable dot product instructions])
+])
+
 AS_CASE(["$ac_cv_search_lrintf"],
   ["no"],[],
   ["none required"],[],
@@ -114,8 +122,8 @@ AC_MSG_NOTICE([
 ------------------------------------------------------------------------
   $PACKAGE_NAME $PACKAGE_VERSION: Automatic configuration OK.
 
+    Dot product intrinsics ....... ${enable_dot_product}
     Assertions ................... ${enable_assertions}
-
     Hidden visibility ............ ${cc_cv_flag_visibility}
 
     API documentation ............ ${enable_doc}
