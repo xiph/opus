@@ -88,3 +88,4 @@ src/x64
 .vs/
 .vscode/
 CMakeSettings.json
+__pycache__
