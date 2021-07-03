@@ -214,6 +214,26 @@ static inline float celt_exp(float x)
    return out[0];
 }
 
+static inline float tanh_approx(float x)
+{
+   float out[8];
+   __m256 X, Y;
+   X = _mm256_set1_ps(x);
+   Y = tanh8_approx(X);
+   _mm256_storeu_ps(out, Y);
+   return out[0];
+}
+
+static inline float sigmoid_approx(float x)
+{
+   float out[8];
+   __m256 X, Y;
+   X = _mm256_set1_ps(x);
+   Y = sigmoid8_approx(X);
+   _mm256_storeu_ps(out, Y);
+   return out[0];
+}
+
 static inline void softmax(float *y, const float *x, int N)
 {
     int i;
@@ -241,9 +261,7 @@ static inline void vec_tanh(float *y, const float *x, int N)
     }
     for (;i<N;i++)
     {
-        float ex2;
-        ex2 = celt_exp(2*x[i]);
-        y[i] = (ex2-1)/(ex2+1);
+        y[i] = tanh_approx(x[i]);
     }
 }
 
@@ -259,9 +277,7 @@ static inline void vec_sigmoid(float *y, const float *x, int N)
     }
     for (;i<N;i++)
     {
-        float ex;
-        ex = celt_exp(x[i]);
-        y[i] = (ex)/(ex+1);
+        y[i] = sigmoid_approx(x[i]);
     }
 }
 #else
@@ -277,9 +293,7 @@ static inline void vec_tanh(float *y, const float *x, int N)
     }
     for (;i<N;i++)
     {
-        float ex2;
-        ex2 = celt_exp(2*x[i]);
-        y[i] = (ex2-1)/(ex2+1);
+        y[i] = tanh_approx(x[i]);
     }
 }
 
@@ -295,9 +309,7 @@ static inline void vec_sigmoid(float *y, const float *x, int N)
     }
     for (;i<N;i++)
     {
-        float ex;
-        ex = celt_exp(x[i]);
-        y[i] = (ex)/(ex+1);
+        y[i] = sigmoid_approx(x[i]);
     }
 }
 

@@ -183,7 +183,7 @@ def dump_mdense_layer(self, f, hf):
     name = self.name
     print("printing layer " + name + " of type " + self.__class__.__name__)
     weights = self.get_weights()
-    printVector(f, np.transpose(weights[0], (1, 2, 0)), name + '_weights')
+    printVector(f, np.transpose(weights[0], (0, 2, 1)), name + '_weights')
     printVector(f, np.transpose(weights[1], (1, 0)), name + '_bias')
     printVector(f, np.transpose(weights[2], (1, 0)), name + '_factor')
     activation = self.activation.__name__.upper()

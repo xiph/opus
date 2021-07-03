@@ -64,12 +64,73 @@ static inline OPUS_INLINE float32x4_t exp4_approx(float32x4_t x) {
   return Y;
 }
 
+static inline float32x4_t tanh4_approx(float32x4_t X)
+{
+  const float32x4_t N0 = vdupq_n_f32(952.52801514f);
+  const float32x4_t N1 = vdupq_n_f32(96.39235687f);
+  const float32x4_t N2 = vdupq_n_f32(0.60863042f);
+  const float32x4_t D0 = vdupq_n_f32(952.72399902f);
+  const float32x4_t D1 = vdupq_n_f32(413.36801147f);
+  const float32x4_t D2 = vdupq_n_f32(11.88600922f);
+  const float32x4_t max_out = vdupq_n_f32(1.f);
+  const float32x4_t min_out = vdupq_n_f32(-1.f);
+  float32x4_t X2, num, den;
+  X2 = vmulq_f32(X, X);
+  num = vmlaq_f32(N0, X2, vmlaq_f32(N1, N2, X2));
+  den = vmlaq_f32(D0, X2, vmlaq_f32(D1, D2, X2));
+  num = vmulq_f32(num, X);
+  den = vrecpeq_f32(den);
+  num = vmulq_f32(num, den);
+  return vmaxq_f32(min_out, vminq_f32(max_out, num));
+}
+
+static inline float32x4_t sigmoid4_approx(float32x4_t X)
+{
+  const float32x4_t N0 = vdupq_n_f32(238.13200378f);
+  const float32x4_t N1 = vdupq_n_f32(6.02452230f);
+  const float32x4_t N2 = vdupq_n_f32(0.00950985f);
+  const float32x4_t D0 = vdupq_n_f32(952.72399902f);
+  const float32x4_t D1 = vdupq_n_f32(103.34200287f);
+  const float32x4_t D2 = vdupq_n_f32(0.74287558f);
+  const float32x4_t half = vdupq_n_f32(0.5f);
+  const float32x4_t max_out = vdupq_n_f32(1.f);
+  const float32x4_t min_out = vdupq_n_f32(0.f);
+  float32x4_t X2, num, den;
+  X2 = vmulq_f32(X, X);
+  num = vmlaq_f32(N0, X2, vmlaq_f32(N1, N2, X2));
+  den = vmlaq_f32(D0, X2, vmlaq_f32(D1, D2, X2));
+  num = vmulq_f32(num, X);
+  den = vrecpeq_f32(den);
+  num = vmlaq_f32(half, num, den);
+  return vmaxq_f32(min_out, vminq_f32(max_out, num));
+}
+
 static inline float celt_exp(float x)
 {
    float out[4];
    float32x4_t X, Y;
    X = vdupq_n_f32(x);
    Y = exp4_approx(X);
+   vst1q_f32(out, Y);
+   return out[0];
+}
+
+static inline float tanh_approx(float x)
+{
+   float out[4];
+   float32x4_t X, Y;
+   X = vdupq_n_f32(x);
+   Y = tanh4_approx(X);
+   vst1q_f32(out, Y);
+   return out[0];
+}
+
+static inline float sigmoid_approx(float x)
+{
+   float out[4];
+   float32x4_t X, Y;
+   X = vdupq_n_f32(x);
+   Y = sigmoid4_approx(X);
    vst1q_f32(out, Y);
    return out[0];
 }
@@ -93,13 +154,9 @@ static inline void vec_tanh(float *y, const float *x, int N)
     int i;
     for (i=0;i<N-3;i+=4)
     {
-        const float32x4_t two = vdupq_n_f32(2.f);
-        const float32x4_t one = vdupq_n_f32(1.f);
         float32x4_t X, Y;
         X = vld1q_f32(&x[i]);
-        X = vmulq_f32(X, two);
-        Y = exp4_approx(X);
-        Y = vmulq_f32(vsubq_f32(Y, one),  vrecpeq_f32(vaddq_f32(Y, one)));
+        Y = tanh4_approx(X);
         vst1q_f32(&y[i], Y);
     }
     for (;i<N;i++)
@@ -115,11 +172,9 @@ static inline void vec_sigmoid(float *y, const float *x, int N)
     int i;
     for (i=0;i<N-3;i+=4)
     {
-        const float32x4_t one = vdupq_n_f32(1.f);
         float32x4_t X, Y;
         X = vld1q_f32(&x[i]);
-        Y = exp4_approx(X);
-        Y = vmulq_f32(Y,  vrecpeq_f32(vaddq_f32(Y, one)));
+        Y = sigmoid4_approx(X);
         vst1q_f32(&y[i], Y);
     }
     for (;i<N;i++)
@@ -221,10 +276,16 @@ static inline void sparse_sgemv_accum16(float *out, const float *w, int rows, co
 #define MAX_INPUTS 2048
 #define MAX_OUTPUTS 8192
 
+#if __ARM_FEATURE_DOTPROD
+static inline int32x4_t vdotprod(int32x4_t acc, int8x16_t a, int8x16_t b) {
+  return vdotq_s32(acc, a, b);
+}
+#else
 static inline int32x4_t vdotprod(int32x4_t acc, int8x16_t a, int8x16_t b)
 {
   return vpadalq_s16(acc, vpaddq_s16(vmull_s8(vget_low_s8(a), vget_low_s8(b)),  vmull_high_s8(a, b)));
 }
+#endif
 
 static inline void sgemv_accum8x4(float *_out, const qweight *w, int rows, int cols, int col_stride, const float *_x)
 {

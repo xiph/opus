@@ -44,6 +44,15 @@ pcm_bits = 8
 embed_size = 128
 pcm_levels = 2**pcm_bits
 
+def interleave(p):
+    p2=tf.expand_dims(p, 3)
+    nb_repeats = pcm_levels//(2*p.shape[2])
+    p3 = tf.reshape(tf.repeat(tf.concat([1-p2, p2], 3), nb_repeats), (-1, 2400, pcm_levels))
+    return p3
+
+def tree_to_pdf(p):
+    return interleave(p[:,:,1:2]) * interleave(p[:,:,2:4]) * interleave(p[:,:,4:8]) * interleave(p[:,:,8:16]) * interleave(p[:,:,16:32]) * interleave(p[:,:,32:64]) * interleave(p[:,:,64:128]) * interleave(p[:,:,128:256])
+
 def quant_regularizer(x):
     Q = 128
     Q_1 = 1./Q
@@ -185,10 +194,10 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, train
                kernel_constraint=constraint, kernel_regularizer=quant)
 
     rnn_in = Concatenate()([cpcm, rep(cfeat)])
-    md = MDense(pcm_levels, activation='softmax', name='dual_fc')
+    md = MDense(pcm_levels, activation='sigmoid', name='dual_fc')
     gru_out1, _ = rnn(rnn_in)
     gru_out2, _ = rnn2(Concatenate()([gru_out1, rep(cfeat)]))
-    ulaw_prob = md(gru_out2)
+    ulaw_prob = Lambda(tree_to_pdf)(md(gru_out2))
     
     if adaptation:
         rnn.trainable=False
@@ -207,7 +216,7 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 38, train
     dec_rnn_in = Concatenate()([cpcm, dec_feat])
     dec_gru_out1, state1 = rnn(dec_rnn_in, initial_state=dec_state1)
     dec_gru_out2, state2 = rnn2(Concatenate()([dec_gru_out1, dec_feat]), initial_state=dec_state2)
-    dec_ulaw_prob = md(dec_gru_out2)
+    dec_ulaw_prob = Lambda(tree_to_pdf)(md(dec_gru_out2))
 
     decoder = Model([pcm, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
     return model, encoder, decoder
