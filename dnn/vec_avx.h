@@ -419,7 +419,40 @@ static inline void sgemv_accum8x4(float *_out, const qweight *w, int rows, int c
       __m256i vy0;
       y = &out[i];
       vy0 = _mm256_loadu_si256((const __m256i *)&y[0]);
-      for (j=0;j<cols;j+=4)
+      j=0;
+#if 1 /* Unrolling by 4 gives some gain, comment out if it does not. */
+      for (;j<cols-12;j+=16)
+      {
+         __m256i tmp;
+         __m256i vxj;
+         __m256i vw;
+         vxj = _mm256_set1_epi32(*(int*)&x[j]);
+         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
+         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+         vxj = _mm256_set1_epi32(*(int*)&x[j+4]);
+         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
+         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+         vxj = _mm256_set1_epi32(*(int*)&x[j+8]);
+         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
+         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+         vxj = _mm256_set1_epi32(*(int*)&x[j+12]);
+         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
+         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+      }
+#endif
+      for (;j<cols;j+=4)
       {
          __m256i tmp;
          __m256i vxj;
