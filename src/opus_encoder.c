@@ -146,6 +146,8 @@ static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
         11000, 1000, /* WB<->SWB */
         12000, 2000, /* SWB<->FB */
 };
+
+#ifndef FUZZING
 /* Threshold bit-rates for switching between mono and stereo */
 static const opus_int32 stereo_voice_threshold = 19000;
 static const opus_int32 stereo_music_threshold = 17000;
@@ -156,6 +158,7 @@ static const opus_int32 mode_thresholds[2][2] = {
       {  64000,      10000}, /* mono */
       {  44000,      10000}, /* stereo */
 };
+#endif
 
 static const opus_int32 fec_thresholds[] = {
         12000, 1000, /* NB */
@@ -1079,7 +1082,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     opus_val16 HB_gain;
     opus_int32 max_data_bytes; /* Max number of bytes we're allowed to use */
     int total_buffer;
+#ifndef FUZZING
     opus_val16 stereo_width;
+#endif
     const CELTMode *celt_mode;
 #ifndef DISABLE_FLOAT_API
     AnalysisInfo analysis_info;
@@ -1202,10 +1207,12 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     st->voice_ratio = -1;
 #endif
 
+#ifndef FUZZING
     if (st->channels==2 && st->force_channels!=1)
        stereo_width = compute_stereo_width(pcm, frame_size, st->Fs, &st->width_mem);
     else
        stereo_width = 0;
+#endif
     total_buffer = delay_compensation;
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
 
