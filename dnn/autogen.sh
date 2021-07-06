@@ -6,7 +6,7 @@ srcdir=`dirname $0`
 test -n "$srcdir" && cd "$srcdir"
 
 #SHA1 of the first commit compatible with the current model
-commit=d511ff6
+commit=0e434ab
 
 if [ ! -f lpcnet_data-$commit.tar.gz ]; then
 	echo "Downloading latest model"
