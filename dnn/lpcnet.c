@@ -81,10 +81,14 @@ int run_sample_network(NNetState *net, const float *condition, const float *gru_
 {
     float gru_a_input[3*GRU_A_STATE_SIZE];
     float in_b[GRU_A_STATE_SIZE+FEATURE_DENSE2_OUT_SIZE];
+#if 1
+    compute_gru_a_input(gru_a_input, gru_a_condition, GRU_A_STATE_SIZE, &gru_a_embed_sig, last_sig, &gru_a_embed_pred, pred, &gru_a_embed_exc, last_exc);
+#else
     RNN_COPY(gru_a_input, gru_a_condition, 3*GRU_A_STATE_SIZE);
     accum_embedding(&gru_a_embed_sig, gru_a_input, last_sig);
     accum_embedding(&gru_a_embed_pred, gru_a_input, pred);
     accum_embedding(&gru_a_embed_exc, gru_a_input, last_exc);
+#endif
     /*compute_gru3(&gru_a, net->gru_a_state, gru_a_input);*/
     compute_sparse_gru(&sparse_gru_a, net->gru_a_state, gru_a_input);
     RNN_COPY(in_b, net->gru_a_state, GRU_A_STATE_SIZE);

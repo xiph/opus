@@ -113,6 +113,8 @@ void compute_embedding(const EmbeddingLayer *layer, float *output, int input);
 
 void accum_embedding(const EmbeddingLayer *layer, float *output, int input);
 
+void compute_gru_a_input(float *output, const float *input, int N, const EmbeddingLayer *layer1, int val1, const EmbeddingLayer *layer2, int val2, const EmbeddingLayer *layer3, int val3);
+
 int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor);
 
 #endif /* _MLP_H_ */
