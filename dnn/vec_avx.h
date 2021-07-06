@@ -474,9 +474,7 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
    __m256i ones;
    int i, j;
    unsigned char x[MAX_INPUTS];
-   int out[MAX_OUTPUTS];
    ones = _mm256_set1_epi16(1);
-   for (i=0;i<rows;i++) out[i] = SCALE*_out[i];
    //for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);
    __m256 const127 = _mm256_set1_ps(127.f);
    for (i=0;i<cols;i+=8) {
@@ -496,12 +494,13 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
    }
    for (i=0;i<rows;i+=8)
    {
-      int * restrict y;
       int colblocks;
       __m256i vy0;
+      __m256 vout;
       colblocks = *idx++;
-      y = &out[i];
-      vy0 = _mm256_loadu_si256((const __m256i *)&y[0]);
+      vout = _mm256_loadu_ps(&_out[i]);
+      vout = _mm256_mul_ps(vout, _mm256_set1_ps(SCALE));
+      vy0 = _mm256_cvtps_epi32(vout);
       j=0;
 #if 1 /* Unrolling by 4 gives some gain, comment out if it does not. */
       for (;j<colblocks-3;j+=4)
@@ -549,9 +548,10 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
       }
-      _mm256_storeu_si256 ((__m256i *)&y[0], vy0);
+      vout = _mm256_cvtepi32_ps(vy0);
+      vout = _mm256_mul_ps(vout, _mm256_set1_ps(SCALE_1));
+      _mm256_storeu_ps(&_out[i], vout);
    }
-   for (i=0;i<rows;i++) _out[i] = SCALE_1*out[i];
 }
 
 
