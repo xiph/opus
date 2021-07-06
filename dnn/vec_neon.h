@@ -333,7 +333,7 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
       for (j=0;j<colblocks;j++)
       {
          int pos;
-         pos = 4 * (*idx++);
+         pos = (*idx++);
          int8x16_t vw0, vw1, vx;
          vx = (int8x16_t)vld1q_dup_s32((int*)&x[pos]);
          vw0 = vld1q_s8(w);

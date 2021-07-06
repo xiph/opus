@@ -250,7 +250,7 @@ static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows,
          int pos;
          float * restrict y;
          int xj0, xj1, xj2, xj3;
-         pos = 4 * (*idx++);
+         pos = (*idx++);
          xj0 = x[pos+0];
          xj1 = x[pos+1];
          xj2 = x[pos+2];
@@ -318,7 +318,7 @@ static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows,
          int pos;
          float * restrict y;
          int xj0, xj1, xj2, xj3;
-         pos = 4 * (*idx++);
+         pos = (*idx++);
          xj0 = x[pos+0];
          xj1 = x[pos+1];
          xj2 = x[pos+2];
@@ -357,7 +357,7 @@ static inline void sparse_sgemv_accum8x4(float *out, const qweight *w, int rows,
          int pos;
          float * restrict y;
          float xj0, xj1, xj2, xj3;
-         pos = 4 * (*idx++);
+         pos = (*idx++);
          xj0 = x[pos+0];
          xj1 = x[pos+1];
          xj2 = x[pos+2];

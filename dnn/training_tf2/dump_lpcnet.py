@@ -80,7 +80,7 @@ def printSparseVector(f, A, name):
             qblock = AQ[j*4:(j+1)*4, i*8:(i+1)*8]
             if np.sum(np.abs(block)) > 1e-10:
                 nb_nonzero = nb_nonzero + 1
-                idx = np.append(idx, j)
+                idx = np.append(idx, j*4)
                 vblock = qblock.transpose((1,0)).reshape((-1,))
                 W0 = np.concatenate([W0, block.reshape((-1,))])
                 W = np.concatenate([W, vblock])

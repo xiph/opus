@@ -508,7 +508,7 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
          __m256i vxj;
          __m256i vw;
          int pos;
-         pos = 4 * (*idx++);
+         pos = (*idx++);
          vxj = _mm256_set1_epi32(*(int*)&x[pos]);
          vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
          tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
@@ -544,19 +544,19 @@ static inline void sparse_sgemv_accum8x4(float *out, const qweight *weights, int
          __m256 vxj;
          __m256 vw;
          id = *idx++;
-         vxj = _mm256_broadcast_ss(&x[4*id]);
+         vxj = _mm256_broadcast_ss(&x[id]);
          vw = _mm256_loadu_ps(&weights[0]);
          vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
 
-         vxj = _mm256_broadcast_ss(&x[4*id+1]);
+         vxj = _mm256_broadcast_ss(&x[id+1]);
          vw = _mm256_loadu_ps(&weights[8]);
          vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
 
-         vxj = _mm256_broadcast_ss(&x[4*id+2]);
+         vxj = _mm256_broadcast_ss(&x[id+2]);
          vw = _mm256_loadu_ps(&weights[16]);
          vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
 
-         vxj = _mm256_broadcast_ss(&x[4*id+3]);
+         vxj = _mm256_broadcast_ss(&x[id+3]);
          vw = _mm256_loadu_ps(&weights[24]);
          vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
 
