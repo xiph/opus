@@ -81,6 +81,26 @@ On Apple macOS, install Xcode and brew.sh, then in the Terminal enter:
 
     % sudo make install
 
+To build with cmake, follow the steps below:
+
+0) Setup a development environment by installing cmake
+
+1) Generate native makefiles:
+
+    % mkdir build
+    % cd build
+    % cmake ..
+
+3) Compiling the source under build dir:
+
+On Unix-like System:
+
+    % make
+
+On Windows, open your VS then build, or enter:
+
+    % msbuild.exe Opus.sln
+
 Once you have compiled the codec, there will be a opus_demo executable
 in the top directory.
 
