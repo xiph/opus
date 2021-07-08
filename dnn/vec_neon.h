@@ -293,8 +293,16 @@ static inline void sgemv_accum8x4(float *_out, const qweight *w, int rows, int c
    signed char x[MAX_INPUTS];
    const float32x4_t scale = vdupq_n_f32(SCALE);
    const float32x4_t scale_1 = vdupq_n_f32(SCALE_1);
+   const float32x4_t const127 = vdupq_n_f32(127.);
    (void)col_stride;
-   for (i=0;i<cols;i++) x[i] = (int)floor(.5+127*_x[i]);
+   for (i=0;i<cols;i+=8) {
+      int32x4_t xi0, xi4;
+      int16x8_t x_short;
+      xi0 = vcvtnq_s32_f32(vmulq_f32(const127, vld1q_f32(&_x[i])));
+      xi4 = vcvtnq_s32_f32(vmulq_f32(const127, vld1q_f32(&_x[i+4])));
+      x_short = vcombine_s16(vmovn_s32(xi0), vmovn_s32(xi4));
+      vst1_s8(&x[i], vmovn_s16(x_short));
+   }
    for (i=0;i<rows;i+=8)
    {
       int32x4_t acc0, acc1;
@@ -321,7 +329,15 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
    signed char x[MAX_INPUTS];
    const float32x4_t scale = vdupq_n_f32(SCALE);
    const float32x4_t scale_1 = vdupq_n_f32(SCALE_1);
-   for (i=0;i<cols;i++) x[i] = floor(.5+127*_x[i]);
+   const float32x4_t const127 = vdupq_n_f32(127.);
+   for (i=0;i<cols;i+=8) {
+      int32x4_t xi0, xi4;
+      int16x8_t x_short;
+      xi0 = vcvtnq_s32_f32(vmulq_f32(const127, vld1q_f32(&_x[i])));
+      xi4 = vcvtnq_s32_f32(vmulq_f32(const127, vld1q_f32(&_x[i+4])));
+      x_short = vcombine_s16(vmovn_s32(xi0), vmovn_s32(xi4));
+      vst1_s8(&x[i], vmovn_s16(x_short));
+   }
    for (i=0;i<rows;i+=8)
    {
       int colblocks;
