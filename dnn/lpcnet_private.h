@@ -29,6 +29,7 @@ struct LPCNetState {
     float old_input[FEATURES_DELAY][FEATURE_CONV2_OUT_SIZE];
     float old_lpc[FEATURES_DELAY][LPC_ORDER];
     float old_gain[FEATURES_DELAY];
+    float sampling_logit_table[256];
     int frame_count;
     float deemph_mem;
 };

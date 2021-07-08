@@ -141,7 +141,7 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
    compute_activation(output, output, N, layer->activation);
 }
 
-int sample_mdense(const MDenseLayer *layer, const float *input)
+int sample_mdense(const MDenseLayer *layer, const float *input, const float *sampling_logit_table)
 {
    int b, j, N, M, C, stride;
    M = layer->nb_inputs;
@@ -152,7 +152,12 @@ int sample_mdense(const MDenseLayer *layer, const float *input)
    
    celt_assert(N <= DUAL_FC_OUT_SIZE);
    int val=0;
-    
+   float thresholds[8];
+
+   /* Computing all the random thresholds in advance. These thresholds are directly
+      based on the logit to avoid computing the sigmoid.*/
+   for (b=0;b<8;b++) thresholds[b] = sampling_logit_table[rand()&0xFF];
+
    for (b=0;b<8;b++)
    {
       int bit;
@@ -171,9 +176,12 @@ int sample_mdense(const MDenseLayer *layer, const float *input)
       sum2 = layer->factor[N + i]*tanh_approx(sum2);
       sum1 += sum2;
       //sum1 = 1.f/(1 + exp(-sum1));
+#if 1 /* Sample the decision based on the logit. */
+      bit = thresholds[b] < sum1;
+#else
       sum1 = sigmoid_approx(sum1);
-      
       bit = .025+.95*((rand()+.5f)/(RAND_MAX+1.f)) < sum1;
+#endif
       val = (val << 1) | bit;
    }
    return val;
