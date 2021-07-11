@@ -2,13 +2,13 @@
 
 Low complexity implementation of the WaveRNN-based LPCNet algorithm, as described in:
 
-- J.-M. Valin, J. Skoglund, [A Real-Time Wideband Neural Vocoder at 1.6 kb/s Using LPCNet](https://jmvalin.ca/papers/lpcnet_codec.pdf), *Submitted for INTERSPEECH 2019*.
 - J.-M. Valin, J. Skoglund, [LPCNet: Improving Neural Speech Synthesis Through Linear Prediction](https://jmvalin.ca/papers/lpcnet_icassp2019.pdf), *Proc. International Conference on Acoustics, Speech and Signal Processing (ICASSP)*, arXiv:1810.11846, 2019.
+- J.-M. Valin, J. Skoglund, [A Real-Time Wideband Neural Vocoder at 1.6 kb/s Using LPCNet](https://jmvalin.ca/papers/lpcnet_codec.pdf), *Proc. INTERSPEECH*, arxiv:1903.12087, 2019.
 - J. Skoglund, J.-M. Valin, [Improving Opus Low Bit Rate Quality with Neural Speech Synthesis](https://jmvalin.ca/papers/opusnet.pdf), *Proc. INTERSPEECH*, arxiv:1905.04628, 2020.
 
 # Introduction
 
-Work in progress software for researching low CPU complexity algorithms for speech synthesis and compression by applying Linear Prediction techniques to WaveRNN. High quality speech can be synthesised on regular CPUs (around 3 GFLOP) with SIMD support (AVX, AVX2/FMA, NEON currently supported). The code also supports very low bitrate compression at 1.6 kb/s.
+Work in progress software for researching low CPU complexity algorithms for speech synthesis and compression by applying Linear Prediction techniques to WaveRNN. High quality speech can be synthesised on regular CPUs (around 3 GFLOP) with SIMD support (SSE2, SSSE3, AVX, AVX2/FMA, NEON currently supported). The code also supports very low bitrate compression at 1.6 kb/s.
 
 The BSD licensed software is written in C and Python/Keras. For training, a GTX 1080 Ti or better is recommended.
 
@@ -31,12 +31,15 @@ configure script.
 It is highly recommended to set the CFLAGS environment variable to enable AVX or NEON *prior* to running configure, otherwise
 no vectorization will take place and the code will be very slow. On a recent x86 CPU, something like
 ```
-export CFLAGS='-O3 -g -mavx2 -mfma'
+export CFLAGS='-Ofast -g -march=native'
 ```
 should work. On ARM, you can enable Neon with:
 ```
-export CFLAGS='-O3 -g -mfpu=neon'
+export CFLAGS='-Ofast -g -mfpu=neon'
 ```
+While not strictly required, the -Ofast flag will help with auto-vectorization, especially for dot products that
+cannot be optimized without -ffast-math (which -Ofast enables). Additionally, -falign-loops=32 has been shown to
+help on x86.
 
 You can test the capabilities of LPCNet using the lpcnet_demo application. To encode a file:
 ```
@@ -67,7 +70,7 @@ This codebase is also meant for research and it is possible to train new models.
 
 1. Now that you have your files, train with:
    ```
-   ./src/train_lpcnet.py features.f32 data.u8
+   ./training_tf2/train_lpcnet.py features.f32 data.u8
    ```
    and it will generate an lpcnet*.h5 file for each iteration. If it stops with a
    "Failed to allocate RNN reserve space" message try reducing the *batch\_size* variable in train_lpcnet.py.
@@ -75,7 +78,7 @@ This codebase is also meant for research and it is possible to train new models.
 1. You can synthesise speech with Python and your GPU card (very slow):
    ```
    ./dump_data -test test_input.s16 test_features.f32
-   ./src/test_lpcnet.py test_features.f32 test.s16
+   ./training_tf2/test_lpcnet.py test_features.f32 test.s16
    ```
    Note the .h5 is hard coded in test_lpcnet.py, modify for your .h5 file.
 
