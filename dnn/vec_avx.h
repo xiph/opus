@@ -34,10 +34,27 @@
 
 #include <immintrin.h>
 
-#ifndef DISABLE_DOT_PROD
+/* Use 8-bit dot products unless disabled or if stuck with SSE2. */
+#if (defined(__AVX2__) || defined(__SSSE3__)) && !defined(DISABLE_DOT_PROD)
 #define DOT_PROD
 #define USE_SU_BIAS
+
+#else
+
+#warning "Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 using -march= to get better performance"
+
 #endif
+
+
+#ifndef __SSE_4_1__
+static inline __m128 mm_floor_ps(__m128 x) {
+  __m128 half = _mm_set1_ps(0.5);
+  return _mm_cvtepi32_ps(_mm_cvtps_epi32(_mm_sub_ps(x, half)));
+}
+#undef _mm_floor_ps
+#define _mm_floor_ps(x) mm_floor_ps(x)
+#endif
+
 
 /* If we don't have AVX available, emulate what we need with SSE up to 4.1. */
 #ifndef __AVX__
@@ -135,6 +152,7 @@ static inline mm256_emu mm256_rcp_ps(mm256_emu a) {
 static inline __m128 mm256_extractf128_ps(mm256_emu x, int i) {
     return (i==0) ? x.lo : x.hi;
 }
+#undef _mm256_extractf128_ps
 #define _mm256_extractf128_ps(x,i) mm256_extractf128_ps(x,i)
 
 static inline mm256_emu mm256_insertf128_ps(mm256_emu dst, __m128 src, int i) {
@@ -142,6 +160,7 @@ static inline mm256_emu mm256_insertf128_ps(mm256_emu dst, __m128 src, int i) {
     else dst.hi = src;
     return dst;
 }
+#undef _mm256_insertf128_ps
 #define _mm256_insertf128_ps(dst,src,i) mm256_insertf128_ps(dst,src,i)
 
 #endif /* __AVX__ */
