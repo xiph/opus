@@ -229,12 +229,15 @@ def dump_embedding_layer(self, f, hf):
     return False
 Embedding.dump_layer = dump_embedding_layer
 
+filename = sys.argv[1]
+with h5py.File(filename, "r") as f:
+    units = min(f['model_weights']['gru_a']['gru_a']['recurrent_kernel:0'].shape)
 
-model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=384)
+model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=units)
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 #model.summary()
 
-model.load_weights(sys.argv[1])
+model.load_weights(filename)
 
 if len(sys.argv) > 2:
     cfile = sys.argv[2];
