@@ -102,22 +102,20 @@ pcm_chunk_size = frame_size*feature_chunk_size
 
 # u for unquantised, load 16 bit PCM samples and convert to mu-law
 
-data = np.fromfile(pcm_file, dtype='uint8')
+data = np.memmap(pcm_file, dtype='uint8', mode='r')
 nb_frames = len(data)//(4*pcm_chunk_size)//batch_size*batch_size
 
-features = np.fromfile(feature_file, dtype='float32')
+features = np.memmap(feature_file, dtype='float32', mode='r')
 
 # limit to discrete number of frames
 data = data[:nb_frames*4*pcm_chunk_size]
-features = features[:nb_frames*feature_chunk_size*nb_features]
+features = features[:nb_frames*feature_chunk_size*nb_features].copy()
 
 features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
 
-sig = np.reshape(data[0::4], (nb_frames, pcm_chunk_size, 1))
-pred = np.reshape(data[1::4], (nb_frames, pcm_chunk_size, 1))
-in_exc = np.reshape(data[2::4], (nb_frames, pcm_chunk_size, 1))
-out_exc = np.reshape(data[3::4], (nb_frames, pcm_chunk_size, 1))
-del data
+data = np.reshape(data, (nb_frames, pcm_chunk_size, 4))
+in_data = data[:,:,:3]
+out_exc = data[:,:,3:4]
 
 print("ulaw std = ", np.std(out_exc))
 
@@ -132,12 +130,6 @@ features = np.concatenate([fpad1, features, fpad2], axis=1)
 
 periods = (.1 + 50*features[:,:,36:37]+100).astype('int16')
 #periods = np.minimum(periods, 255)
-
-in_data = np.concatenate([sig, pred, in_exc], axis=-1)
-
-del sig
-del pred
-del in_exc
 
 # dump models to disk as we go
 checkpoint = ModelCheckpoint('{}_{}_{}.h5'.format(args.output, args.grua_size, '{epoch:02d}'))
