@@ -103,6 +103,8 @@ void compute_gru(const GRULayer *gru, float *state, const float *input);
 
 void compute_gru2(const GRULayer *gru, float *state, const float *input);
 
+void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input);
+
 void compute_gru3(const GRULayer *gru, float *state, const float *input);
 
 void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input);

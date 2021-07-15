@@ -126,16 +126,16 @@ def dump_sparse_gru(self, f, hf):
     hf.write('extern const SparseGRULayer {};\n\n'.format(name));
     return True
 
-def dump_gru_layer(self, f, hf):
+def dump_grub(self, f, hf, gru_a_size):
     global max_rnn_neurons
     name = self.name
     print("printing layer " + name + " of type " + self.__class__.__name__)
     weights = self.get_weights()
     f.write('#ifdef DOT_PROD\n')
-    qweight = np.clip(np.round(128.*weights[0]).astype('int'), -128, 127)
+    qweight = np.clip(np.round(128.*weights[0][:gru_a_size, :]).astype('int'), -128, 127)
     printVector(f, qweight, name + '_weights', dotp=True, dtype='qweight')
     f.write('#else /*DOT_PROD*/\n')
-    printVector(f, weights[0], name + '_weights')
+    printVector(f, weights[0][:gru_a_size, :], name + '_weights')
     f.write('#endif /*DOT_PROD*/\n')
     printVector(f, weights[1], name + '_recurrent_weights')
     printVector(f, weights[-1], name + '_bias')
@@ -153,12 +153,18 @@ def dump_gru_layer(self, f, hf):
     neurons = weights[0].shape[1]//3
     max_rnn_neurons = max(max_rnn_neurons, neurons)
     f.write('const GRULayer {} = {{\n   {}_bias,\n   {}_subias,\n   {}_weights,\n   {}_recurrent_weights,\n   {}, {}, ACTIVATION_{}, {}\n}};\n\n'
-            .format(name, name, name, name, name, weights[0].shape[0], weights[0].shape[1]//3, activation, reset_after))
-    hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
-    hf.write('#define {}_STATE_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
+            .format(name, name, name, name, name, gru_a_size, weights[0].shape[1]//3, activation, reset_after))
     hf.write('extern const GRULayer {};\n\n'.format(name));
     return True
-GRU.dump_layer = dump_gru_layer
+
+def dump_gru_layer_dummy(self, f, hf):
+    name = self.name
+    weights = self.get_weights()
+    hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
+    hf.write('#define {}_STATE_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
+    return True;
+
+GRU.dump_layer = dump_gru_layer_dummy
 
 def dump_dense_layer_impl(name, weights, bias, activation, f, hf):
     printVector(f, weights, name + '_weights')
@@ -271,6 +277,13 @@ W = model.get_layer('gru_a').get_weights()[0][3*embed_size:,:]
 #FIXME: dump only half the biases
 b = model.get_layer('gru_a').get_weights()[2]
 dump_dense_layer_impl('gru_a_dense_feature', W, b, 'LINEAR', f, hf)
+
+W = model.get_layer('gru_b').get_weights()[0][model.rnn_units1:,:]
+b = model.get_layer('gru_b').get_weights()[2]
+# Set biases to zero because they'll be included in the GRU input part
+# (we need regular and SU biases)
+dump_dense_layer_impl('gru_b_dense_feature', W, 0*b, 'LINEAR', f, hf)
+dump_grub(model.get_layer('gru_b'), f, hf, model.rnn_units1)
 
 layer_list = []
 for i, layer in enumerate(model.layers):

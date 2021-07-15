@@ -54,9 +54,10 @@ static void print_vector(float *x, int N)
 }
 #endif
 
-void run_frame_network(LPCNetState *lpcnet, float *condition, float *gru_a_condition, const float *features, int pitch)
+void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, const float *features, int pitch)
 {
     NNetState *net;
+    float condition[FEATURE_DENSE2_OUT_SIZE];
     float in[FRAME_INPUT_SIZE];
     float conv1_out[FEATURE_CONV1_OUT_SIZE];
     float conv2_out[FEATURE_CONV2_OUT_SIZE];
@@ -74,13 +75,15 @@ void run_frame_network(LPCNetState *lpcnet, float *condition, float *gru_a_condi
     compute_dense(&feature_dense1, dense1_out, conv2_out);
     compute_dense(&feature_dense2, condition, dense1_out);
     compute_dense(&gru_a_dense_feature, gru_a_condition, condition);
+    compute_dense(&gru_b_dense_feature, gru_b_condition, condition);
     if (lpcnet->frame_count < 1000) lpcnet->frame_count++;
 }
 
-int run_sample_network(NNetState *net, const float *condition, const float *gru_a_condition, int last_exc, int last_sig, int pred, const float *sampling_logit_table)
+int run_sample_network(NNetState *net, const float *gru_a_condition, const float *gru_b_condition, int last_exc, int last_sig, int pred, const float *sampling_logit_table)
 {
     float gru_a_input[3*GRU_A_STATE_SIZE];
     float in_b[GRU_A_STATE_SIZE+FEATURE_DENSE2_OUT_SIZE];
+    float gru_b_input[3*GRU_B_STATE_SIZE];
 #if 1
     compute_gru_a_input(gru_a_input, gru_a_condition, GRU_A_STATE_SIZE, &gru_a_embed_sig, last_sig, &gru_a_embed_pred, pred, &gru_a_embed_exc, last_exc);
 #else
@@ -92,8 +95,8 @@ int run_sample_network(NNetState *net, const float *condition, const float *gru_
     /*compute_gru3(&gru_a, net->gru_a_state, gru_a_input);*/
     compute_sparse_gru(&sparse_gru_a, net->gru_a_state, gru_a_input);
     RNN_COPY(in_b, net->gru_a_state, GRU_A_STATE_SIZE);
-    RNN_COPY(&in_b[GRU_A_STATE_SIZE], condition, FEATURE_DENSE2_OUT_SIZE);
-    compute_gru2(&gru_b, net->gru_b_state, in_b);
+    RNN_COPY(gru_b_input, gru_b_condition, 3*GRU_B_STATE_SIZE);
+    compute_gruB(&gru_b, gru_b_input, net->gru_b_state, in_b);
     return sample_mdense(&dual_fc, net->gru_b_state, sampling_logit_table);
 }
 
@@ -131,16 +134,16 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *lpcnet)
 LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features, short *output, int N)
 {
     int i;
-    float condition[FEATURE_DENSE2_OUT_SIZE];
     float lpc[LPC_ORDER];
     float gru_a_condition[3*GRU_A_STATE_SIZE];
+    float gru_b_condition[3*GRU_B_STATE_SIZE];
     int pitch;
     /* Matches the Python code -- the 0.1 avoids rounding issues. */
     pitch = (int)floor(.1 + 50*features[36]+100);
     pitch = IMIN(255, IMAX(33, pitch));
     memmove(&lpcnet->old_gain[1], &lpcnet->old_gain[0], (FEATURES_DELAY-1)*sizeof(lpcnet->old_gain[0]));
     lpcnet->old_gain[0] = features[PITCH_GAIN_FEATURE];
-    run_frame_network(lpcnet, condition, gru_a_condition, features, pitch);
+    run_frame_network(lpcnet, gru_a_condition, gru_b_condition, features, pitch);
     memcpy(lpc, lpcnet->old_lpc[FEATURES_DELAY-1], LPC_ORDER*sizeof(lpc[0]));
     memmove(lpcnet->old_lpc[1], lpcnet->old_lpc[0], (FEATURES_DELAY-1)*LPC_ORDER*sizeof(lpc[0]));
     lpc_from_cepstrum(lpcnet->old_lpc[0], features);
@@ -160,7 +163,7 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features,
         for (j=0;j<LPC_ORDER;j++) pred -= lpcnet->last_sig[j]*lpc[j];
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
-        exc = run_sample_network(&lpcnet->nnet, condition, gru_a_condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw, lpcnet->sampling_logit_table);
+        exc = run_sample_network(&lpcnet->nnet, gru_a_condition, gru_b_condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw, lpcnet->sampling_logit_table);
         pcm = pred + ulaw2lin(exc);
         RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
         lpcnet->last_sig[0] = pcm;
