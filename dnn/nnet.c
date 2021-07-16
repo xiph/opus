@@ -323,7 +323,7 @@ void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *stat
    for (i=0;i<3*N;i++)
       zrh[i] = gru->bias[i] + gru_b_condition[i];
 #endif
-   sgemv_accum8x4(zrh, gru->input_weights, 3*N, M, stride, input);
+   sparse_sgemv_accum8x4(zrh, gru->input_weights, 3*N, M, gru->input_weights_idx, input);
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
    sgemv_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
