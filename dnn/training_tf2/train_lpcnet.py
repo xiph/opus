@@ -38,7 +38,10 @@ parser.add_argument('--model', metavar='<model>', default='lpcnet', help='LPCNet
 parser.add_argument('--quantize', metavar='<input weights>', help='quantize model')
 parser.add_argument('--density', metavar='<global density>', type=float, help='average density of the recurrent weights (default 0.1)')
 parser.add_argument('--density-split', nargs=3, metavar=('<update>', '<reset>', '<state>'), type=float, help='density of each recurrent gate (default 0.05, 0.05, 0.2)')
+parser.add_argument('--grub-density', metavar='<global GRU B density>', type=float, help='average density of the recurrent weights (default 1.0)')
+parser.add_argument('--grub-density-split', nargs=3, metavar=('<update>', '<reset>', '<state>'), type=float, help='density of each GRU B input gate (default 1.0, 1.0, 1.0)')
 parser.add_argument('--grua-size', metavar='<units>', default=384, type=int, help='number of units in GRU A (default 384)')
+parser.add_argument('--grub-size', metavar='<units>', default=16, type=int, help='number of units in GRU B (default 16)')
 parser.add_argument('--epochs', metavar='<epochs>', default=120, type=int, help='number of epochs to train for (default 120)')
 parser.add_argument('--batch-size', metavar='<batch size>', default=128, type=int, help='batch size to use (default 128)')
 
@@ -50,6 +53,12 @@ if args.density_split is not None:
     density = args.density_split
 elif args.density is not None:
     density = [0.5*args.density, 0.5*args.density, 2.0*args.density];
+
+grub_density = (1., 1., 1.)
+if args.grub_density_split is not None:
+    grub_density = args.grub_density_split
+elif args.grub_density is not None:
+    grub_density = [0.5*args.grub_density, 0.5*args.grub_density, 2.0*args.grub_density];
 
 import importlib
 lpcnet = importlib.import_module(args.model)
@@ -138,9 +147,11 @@ if quantize:
     #Adapting from an existing model
     model.load_weights(args.quantize)
     sparsify = lpcnet.Sparsify(0, 0, 1, density)
+    grub_sparsify = lpcnet.SparsifyGRUB(0, 0, 1, args.grua_size, grub_density)
 else:
     #Training from scratch
     sparsify = lpcnet.Sparsify(2000, 40000, 400, density)
+    grub_sparsify = lpcnet.SparsifyGRUB(2000, 40000, 400, args.grua_size, grub_density)
 
 model.save_weights('{}_{}_initial.h5'.format(args.output, args.grua_size))
-model.fit([in_data, features, periods], out_exc, batch_size=batch_size, epochs=nb_epochs, validation_split=0.0, callbacks=[checkpoint, sparsify])
+model.fit([in_data, features, periods], out_exc, batch_size=batch_size, epochs=nb_epochs, validation_split=0.0, callbacks=[checkpoint, sparsify, grub_sparsify])
