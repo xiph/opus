@@ -235,8 +235,9 @@ Embedding.dump_layer = dump_embedding_layer
 filename = sys.argv[1]
 with h5py.File(filename, "r") as f:
     units = min(f['model_weights']['gru_a']['gru_a']['recurrent_kernel:0'].shape)
+    units2 = min(f['model_weights']['gru_b']['gru_b']['recurrent_kernel:0'].shape)
 
-model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=units)
+model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=units, rnn_units2=units2)
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 #model.summary()
 
