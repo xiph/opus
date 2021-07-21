@@ -259,12 +259,12 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features = 20, train
         rnn = CuDNNGRU(rnn_units1, return_sequences=True, return_state=True, name='gru_a',
               recurrent_constraint = constraint, recurrent_regularizer=quant)
         rnn2 = CuDNNGRU(rnn_units2, return_sequences=True, return_state=True, name='gru_b',
-               kernel_constraint=constraint, kernel_regularizer=quant)
+               kernel_constraint=constraint, recurrent_constraint = constraint, kernel_regularizer=quant, recurrent_regularizer=quant)
     else:
         rnn = GRU(rnn_units1, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_a',
               recurrent_constraint = constraint, recurrent_regularizer=quant)
         rnn2 = GRU(rnn_units2, return_sequences=True, return_state=True, recurrent_activation="sigmoid", reset_after='true', name='gru_b',
-               kernel_constraint=constraint, kernel_regularizer=quant)
+               kernel_constraint=constraint, recurrent_constraint = constraint, kernel_regularizer=quant, recurrent_regularizer=quant)
 
     rnn_in = Concatenate()([cpcm, rep(cfeat)])
     md = MDense(pcm_levels, activation='sigmoid', name='dual_fc')
