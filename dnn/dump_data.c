@@ -83,7 +83,7 @@ void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *f
     float p=0;
     float e;
     int j;
-    for (j=0;j<LPC_ORDER;j++) p -= st->features[k][2*NB_BANDS+3+j]*st->sig_mem[j];
+    for (j=0;j<LPC_ORDER;j++) p -= st->features[k][NB_BANDS+2+j]*st->sig_mem[j];
     e = lin2ulaw(pcm[k*FRAME_SIZE+i] - p);
     /* Signal. */
     data[4*i] = lin2ulaw(st->sig_mem[0]);

@@ -124,8 +124,8 @@ void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const un
     float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
     p *= 1 + modulation/16./7.*(2*sub-3);
     p = MIN16(255, MAX16(33, p));
-    features[sub][2*NB_BANDS] = .02*(p-100);
-    features[sub][2*NB_BANDS + 1] = frame_corr-.5;
+    features[sub][NB_BANDS] = .02*(p-100);
+    features[sub][NB_BANDS + 1] = frame_corr-.5;
   }
   
   features[3][0] = (c0_id-64)/4.;

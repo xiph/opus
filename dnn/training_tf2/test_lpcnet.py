@@ -40,7 +40,7 @@ model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=
 feature_file = sys.argv[1]
 out_file = sys.argv[2]
 frame_size = model.frame_size
-nb_features = 55
+nb_features = 36
 nb_used_features = model.nb_used_features
 
 features = np.fromfile(feature_file, dtype='float32')
@@ -50,12 +50,11 @@ feature_chunk_size = features.shape[0]
 pcm_chunk_size = frame_size*feature_chunk_size
 
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
-features[:,:,18:36] = 0
-periods = (.1 + 50*features[:,:,36:37]+100).astype('int16')
+periods = (.1 + 50*features[:,:,18:19]+100).astype('int16')
 
 
 
-model.load_weights('lpcnet34bq17_384_01.h5')
+model.load_weights('lpcnet38Sn_384_02.h5');
 
 order = 16
 
@@ -81,7 +80,7 @@ for c in range(0, nb_frames):
 
             p, state1, state2 = dec.predict([fexc, cfeat[:, fr:fr+1, :], state1, state2])
             #Lower the temperature for voiced frames to reduce noisiness
-            p *= np.power(p, np.maximum(0, 1.5*features[c, fr, 37] - .5))
+            p *= np.power(p, np.maximum(0, 1.5*features[c, fr, 19] - .5))
             p = p/(1e-18 + np.sum(p))
             #Cut off the tail of the remaining distribution
             p = np.maximum(p-0.002, 0).astype('float64')

@@ -43,7 +43,7 @@
 #include "lpcnet.h"
 
 
-//#define NB_FEATURES (2*NB_BANDS+3+LPC_ORDER)
+//#define NB_FEATURES (NB_BANDS+2+LPC_ORDER)
 
 
 #define SURVIVORS 5
@@ -499,7 +499,6 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   float E = 0;
   float Ly[NB_BANDS];
   float follow, logMax;
-  float g;
   kiss_fft_cpx X[FREQ_SIZE];
   float Ex[NB_BANDS];
   float xcorr[PITCH_MAX_PERIOD];
@@ -519,9 +518,8 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   }
   dct(st->features[st->pcount], Ly);
   st->features[st->pcount][0] -= 4;
-  g = lpc_from_cepstrum(st->lpc, st->features[st->pcount]);
-  st->features[st->pcount][2*NB_BANDS+2] = log10(g);
-  for (i=0;i<LPC_ORDER;i++) st->features[st->pcount][2*NB_BANDS+3+i] = st->lpc[i];
+  lpc_from_cepstrum(st->lpc, st->features[st->pcount]);
+  for (i=0;i<LPC_ORDER;i++) st->features[st->pcount][NB_BANDS+2+i] = st->lpc[i];
   RNN_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
   RNN_COPY(&aligned_in[TRAINING_OFFSET], in, FRAME_SIZE-TRAINING_OFFSET);
   for (i=0;i<FRAME_SIZE;i++) {
@@ -663,13 +661,13 @@ void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int
       float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
       p *= 1 + modulation/16./7.*(2*sub-3);
       p = MIN16(255, MAX16(33, p));
-      st->features[sub][2*NB_BANDS] = .02*(p-100);
-      st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
+      st->features[sub][NB_BANDS] = .02*(p-100);
+      st->features[sub][NB_BANDS + 1] = frame_corr-.5;
     } else {
-      st->features[sub][2*NB_BANDS] = .01*(IMAX(66, IMIN(510, best[2+2*sub]+best[2+2*sub+1]))-200);
-      st->features[sub][2*NB_BANDS + 1] = frame_corr-.5;
+      st->features[sub][NB_BANDS] = .01*(IMAX(66, IMIN(510, best[2+2*sub]+best[2+2*sub+1]))-200);
+      st->features[sub][NB_BANDS + 1] = frame_corr-.5;
     }
-    //printf("%f %d %f\n", st->features[sub][2*NB_BANDS], best[2+2*sub], frame_corr);
+    //printf("%f %d %f\n", st->features[sub][NB_BANDS], best[2+2*sub], frame_corr);
   }
   //printf("%d %f %f %f\n", best_period, best_a, best_b, best_corr);
   RNN_COPY(&st->xc[0][0], &st->xc[8][0], PITCH_MAX_PERIOD);
@@ -686,9 +684,8 @@ void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int
     perform_double_interp(st->features, st->vq_mem, interp_id);
   }
   for (sub=0;sub<4;sub++) {
-    float g = lpc_from_cepstrum(st->lpc, st->features[sub]);
-    st->features[sub][2*NB_BANDS+2] = log10(g);
-    for (i=0;i<LPC_ORDER;i++) st->features[sub][2*NB_BANDS+3+i] = st->lpc[i];
+    lpc_from_cepstrum(st->lpc, st->features[sub]);
+    for (i=0;i<LPC_ORDER;i++) st->features[sub][NB_BANDS+2+i] = st->lpc[i];
   }
   //printf("\n");
   RNN_COPY(st->vq_mem, &st->features[3][0], NB_BANDS);

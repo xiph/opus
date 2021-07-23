@@ -59,7 +59,6 @@ int main(int argc, char **argv) {
         fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
         if (feof(fin)) break;
         RNN_COPY(features, in_features, NB_FEATURES);
-        RNN_CLEAR(&features[18], 18);
         lpcnet_synthesize(net, features, pcm, FRAME_SIZE);
         fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
     }

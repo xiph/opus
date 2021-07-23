@@ -104,7 +104,7 @@ with strategy.scope():
 feature_file = args.features
 pcm_file = args.data     # 16 bit unsigned short PCM samples
 frame_size = model.frame_size
-nb_features = 55
+nb_features = 36
 nb_used_features = model.nb_used_features
 feature_chunk_size = 15
 pcm_chunk_size = frame_size*feature_chunk_size
@@ -130,14 +130,13 @@ print("ulaw std = ", np.std(out_exc))
 
 features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
 features = features[:, :, :nb_used_features]
-features[:,:,18:36] = 0
 
 fpad1 = np.concatenate([features[0:1, 0:2, :], features[:-1, -2:, :]], axis=0)
 fpad2 = np.concatenate([features[1:, :2, :], features[0:1, -2:, :]], axis=0)
 features = np.concatenate([fpad1, features, fpad2], axis=1)
 
 
-periods = (.1 + 50*features[:,:,36:37]+100).astype('int16')
+periods = (.1 + 50*features[:,:,18:19]+100).astype('int16')
 #periods = np.minimum(periods, 255)
 
 # dump models to disk as we go

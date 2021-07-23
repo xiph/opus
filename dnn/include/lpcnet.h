@@ -42,8 +42,8 @@
 #endif
 
 
-#define NB_FEATURES 38
-#define NB_TOTAL_FEATURES 55
+#define NB_FEATURES 20
+#define NB_TOTAL_FEATURES 36
 
 /** Number of bytes in a compressed packet. */
 #define LPCNET_COMPRESSED_SIZE 8
