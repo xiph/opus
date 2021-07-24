@@ -49,6 +49,7 @@ class diff_rc2lpc(Layer):
             temp = Concatenate(axis = 2)([temp,input[1]])
             return temp
         Llpc = Lambda(pred_lpc_recursive)
+        inputs = inputs[:,:,:lpcoeffs_N]
         lpc_init = inputs
         for i in range(1,lpcoeffs_N):
             lpc_init = Llpc([lpc_init[:,:,:i],K.expand_dims(inputs[:,:,i],axis = -1)])

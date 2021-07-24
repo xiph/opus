@@ -291,12 +291,6 @@ for i, layer in enumerate(model.layers):
     if layer.dump_layer(f, hf):
         layer_list.append(layer.name)
 
-if flag_e2e:
-    print("-- Weight Dumping for the Differentiable LPC Block --")
-    for i, layer in enumerate(model.get_layer("f2lpc").layers):
-        if layer.dump_layer(f, hf):
-            layer_list.append(layer.name)
-
 dump_sparse_gru(model.get_layer('gru_a'), f, hf)
 
 hf.write('#define MAX_RNN_NEURONS {}\n\n'.format(max_rnn_neurons))
