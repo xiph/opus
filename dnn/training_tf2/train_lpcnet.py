@@ -112,15 +112,14 @@ pcm_chunk_size = frame_size*feature_chunk_size
 # u for unquantised, load 16 bit PCM samples and convert to mu-law
 
 data = np.memmap(pcm_file, dtype='uint8', mode='r')
-nb_frames = len(data)//(4*pcm_chunk_size)//batch_size*batch_size
+nb_frames = (len(data)//(4*pcm_chunk_size)-1)//batch_size*batch_size
 
 features = np.memmap(feature_file, dtype='float32', mode='r')
 
 # limit to discrete number of frames
+data = data[4*2*frame_size:]
 data = data[:nb_frames*4*pcm_chunk_size]
-features = features[:nb_frames*feature_chunk_size*nb_features].copy()
 
-features = np.reshape(features, (nb_frames*feature_chunk_size, nb_features))
 
 data = np.reshape(data, (nb_frames, pcm_chunk_size, 4))
 in_data = data[:,:,:3]
@@ -128,12 +127,10 @@ out_exc = data[:,:,3:4]
 
 print("ulaw std = ", np.std(out_exc))
 
-features = np.reshape(features, (nb_frames, feature_chunk_size, nb_features))
+sizeof = features.strides[-1]
+features = np.lib.stride_tricks.as_strided(features, shape=(nb_frames, feature_chunk_size+4, nb_features),
+                                           strides=(feature_chunk_size*nb_features*sizeof, nb_features*sizeof, sizeof))
 features = features[:, :, :nb_used_features]
-
-fpad1 = np.concatenate([features[0:1, 0:2, :], features[:-1, -2:, :]], axis=0)
-fpad2 = np.concatenate([features[1:, :2, :], features[0:1, -2:, :]], axis=0)
-features = np.concatenate([fpad1, features, fpad2], axis=1)
 
 
 periods = (.1 + 50*features[:,:,18:19]+100).astype('int16')
