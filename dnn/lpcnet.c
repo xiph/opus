@@ -131,6 +131,51 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *lpcnet)
     free(lpcnet);
 }
 
+#ifdef END2END
+void rc2lpc(float *lpc, const float *rc)
+{
+  float tmp[LPC_ORDER];
+  float ntmp[LPC_ORDER] = {0.0};
+  RNN_COPY(tmp, rc, LPC_ORDER);
+  for(int i = 0; i < LPC_ORDER ; i++)
+    { 
+        for(int j = 0; j <= i-1; j++)
+        {
+            ntmp[j] = tmp[j] + tmp[i]*tmp[i - j - 1];
+        }
+        for(int k = 0; k <= i-1; k++)
+        {
+            tmp[k] = ntmp[k];
+        }
+    }
+  for(int i = 0; i < LPC_ORDER ; i++)
+  {
+    lpc[i] = tmp[i];
+  }
+}
+
+void lpc_from_features(LPCNetState *lpcnet,const float *features)
+{
+  NNetState *net;
+  float in[NB_FEATURES];
+  float conv1_out[F2RC_CONV1_OUT_SIZE];
+  float conv2_out[F2RC_CONV2_OUT_SIZE];
+  float dense1_out[F2RC_DENSE3_OUT_SIZE];
+  float rc[LPC_ORDER];
+  net = &lpcnet->nnet;
+  RNN_COPY(in, features, NB_FEATURES);
+  compute_conv1d(&f2rc_conv1, conv1_out, net->f2rc_conv1_state, in);
+  if (lpcnet->frame_count < F2RC_CONV1_DELAY + 1) RNN_CLEAR(conv1_out, F2RC_CONV1_OUT_SIZE);
+  compute_conv1d(&f2rc_conv2, conv2_out, net->f2rc_conv2_state, conv1_out);
+  if (lpcnet->frame_count < (FEATURES_DELAY_F2RC + 1)) RNN_CLEAR(conv2_out, F2RC_CONV2_OUT_SIZE);
+  memmove(lpcnet->old_input_f2rc[1], lpcnet->old_input_f2rc[0], (FEATURES_DELAY_F2RC-1)*NB_FEATURES*sizeof(in[0]));
+  memcpy(lpcnet->old_input_f2rc[0], in, NB_FEATURES*sizeof(in[0]));
+  compute_dense(&f2rc_dense3, dense1_out, conv2_out);
+  compute_dense(&f2rc_dense4_outp_rc, rc, dense1_out);
+  rc2lpc(lpcnet->old_lpc[0], rc);
+}
+#endif
+
 LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features, short *output, int N)
 {
     int i;
@@ -144,9 +189,15 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features,
     memmove(&lpcnet->old_gain[1], &lpcnet->old_gain[0], (FEATURES_DELAY-1)*sizeof(lpcnet->old_gain[0]));
     lpcnet->old_gain[0] = features[PITCH_GAIN_FEATURE];
     run_frame_network(lpcnet, gru_a_condition, gru_b_condition, features, pitch);
+#ifdef END2END
+    lpc_from_features(lpcnet,features);
+    memcpy(lpc, lpcnet->old_lpc[0], LPC_ORDER*sizeof(lpc[0]));
+#else
     memcpy(lpc, lpcnet->old_lpc[FEATURES_DELAY-1], LPC_ORDER*sizeof(lpc[0]));
     memmove(lpcnet->old_lpc[1], lpcnet->old_lpc[0], (FEATURES_DELAY-1)*LPC_ORDER*sizeof(lpc[0]));
     lpc_from_cepstrum(lpcnet->old_lpc[0], features);
+#endif
+
     if (lpcnet->frame_count <= FEATURES_DELAY)
     {
         RNN_CLEAR(output, N);

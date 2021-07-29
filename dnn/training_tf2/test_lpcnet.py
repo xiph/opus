@@ -31,8 +31,10 @@ import numpy as np
 from ulaw import ulaw2lin, lin2ulaw
 import h5py
 
+# Flag for synthesizing e2e (differentiable lpc) model
+flag_e2e = False
 
-model, enc, dec = lpcnet.new_lpcnet_model()
+model, enc, dec = lpcnet.new_lpcnet_model(training = False, flag_e2e = flag_e2e)
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 #model.summary()
@@ -70,10 +72,16 @@ fout = open(out_file, 'wb')
 
 skip = order + 1
 for c in range(0, nb_frames):
-    cfeat = enc.predict([features[c:c+1, :, :nb_used_features], periods[c:c+1, :, :]])
+    if not flag_e2e:
+        cfeat = enc.predict([features[c:c+1, :, :nb_used_features], periods[c:c+1, :, :]])
+    else:
+        cfeat,lpcs = enc.predict([features[c:c+1, :, :nb_used_features], periods[c:c+1, :, :]])
     for fr in range(0, feature_chunk_size):
         f = c*feature_chunk_size + fr
-        a = features[c, fr, nb_features-order:]
+        if not flag_e2e:
+            a = features[c, fr, nb_features-order:]
+        else:
+            a = lpcs[c,fr]
         for i in range(skip, frame_size):
             pred = -sum(a*pcm[f*frame_size + i - 1:f*frame_size + i - order-1:-1])
             fexc[0, 0, 1] = lin2ulaw(pred)

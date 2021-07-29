@@ -22,11 +22,18 @@
 
 #define FEATURES_DELAY (FEATURE_CONV1_DELAY + FEATURE_CONV2_DELAY)
 
+#ifdef END2END
+  #define FEATURES_DELAY_F2RC (F2RC_CONV1_DELAY + F2RC_CONV2_DELAY)
+#endif
+
 struct LPCNetState {
     NNetState nnet;
     int last_exc;
     float last_sig[LPC_ORDER];
     float old_input[FEATURES_DELAY][FEATURE_CONV2_OUT_SIZE];
+#ifdef END2END
+    float old_input_f2rc[FEATURES_DELAY_F2RC][F2RC_CONV2_OUT_SIZE];
+#endif
     float old_lpc[FEATURES_DELAY][LPC_ORDER];
     float old_gain[FEATURES_DELAY];
     float sampling_logit_table[256];

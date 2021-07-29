@@ -35,6 +35,9 @@ from mdense import MDense
 import h5py
 import re
 
+# Flag for dumping e2e (differentiable lpc) network weights
+flag_e2e = False
+
 max_rnn_neurons = 1
 max_conv_inputs = 1
 max_mdense_tmp = 1
@@ -237,7 +240,7 @@ with h5py.File(filename, "r") as f:
     units = min(f['model_weights']['gru_a']['gru_a']['recurrent_kernel:0'].shape)
     units2 = min(f['model_weights']['gru_b']['gru_b']['recurrent_kernel:0'].shape)
 
-model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=units, rnn_units2=units2)
+model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=units, rnn_units2=units2, flag_e2e = flag_e2e)
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 #model.summary()
 
@@ -287,6 +290,12 @@ layer_list = []
 for i, layer in enumerate(model.layers):
     if layer.dump_layer(f, hf):
         layer_list.append(layer.name)
+
+if flag_e2e:
+    print("-- Weight Dumping for the Differentiable LPC Block --")
+    for i, layer in enumerate(model.get_layer("f2lpc").layers):
+        if layer.dump_layer(f, hf):
+            layer_list.append(layer.name)
 
 dump_sparse_gru(model.get_layer('gru_a'), f, hf)
 

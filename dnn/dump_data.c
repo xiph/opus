@@ -92,7 +92,11 @@ void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *f
     /* Excitation in. */
     data[4*i+2] = st->exc_mem;
     /* Excitation out. */
+#ifdef END2END
+    data[4*i+3] = lin2ulaw(pcm[k*FRAME_SIZE+i]);
+#else
     data[4*i+3] = e;
+#endif
     /* Simulate error on excitation. */
     e += noise[k*FRAME_SIZE+i];
     e = IMIN(255, IMAX(0, e));
