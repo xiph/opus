@@ -92,11 +92,7 @@ This codebase is also meant for research and it is possible to train new models.
 
 # Speech Material for Training 
 
-Suitable training material can be obtained from the [McGill University Telecommunications & Signal Processing Laboratory](http://www-mmsp.ece.mcgill.ca/Documents/Data/).  Download the ISO and extract the 16k-LP7 directory, the src/concat.sh script can be used to generate a headerless file of training samples.
-```
-cd 16k-LP7
-sh /path/to/concat.sh
-```
+Suitable training material can be obtained from [Open Speech and Language Resources](https://www.openslr.org/).  See the datasets.txt file for details on suitable training data.
 
 # Reading Further
 
