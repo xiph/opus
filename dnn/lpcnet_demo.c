@@ -75,8 +75,9 @@ int main(int argc, char **argv) {
         while (1) {
             unsigned char buf[LPCNET_COMPRESSED_SIZE];
             short pcm[LPCNET_PACKET_SAMPLES];
-            fread(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fin);
-            if (feof(fin)) break;
+            size_t ret;
+            ret = fread(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fin);
+            if (feof(fin) || ret != LPCNET_PACKET_SAMPLES) break;
             lpcnet_encode(net, pcm, buf);
             fwrite(buf, 1, LPCNET_COMPRESSED_SIZE, fout);
         }
@@ -87,8 +88,9 @@ int main(int argc, char **argv) {
         while (1) {
             unsigned char buf[LPCNET_COMPRESSED_SIZE];
             short pcm[LPCNET_PACKET_SAMPLES];
-            fread(buf, sizeof(buf[0]), LPCNET_COMPRESSED_SIZE, fin);
-            if (feof(fin)) break;
+            size_t ret;
+            ret = fread(buf, sizeof(buf[0]), LPCNET_COMPRESSED_SIZE, fin);
+            if (feof(fin) || ret != LPCNET_COMPRESSED_SIZE) break;
             lpcnet_decode(net, buf, pcm);
             fwrite(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fout);
         }
@@ -99,8 +101,9 @@ int main(int argc, char **argv) {
         while (1) {
             float features[4][NB_TOTAL_FEATURES];
             short pcm[LPCNET_PACKET_SAMPLES];
-            fread(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fin);
-            if (feof(fin)) break;
+            size_t ret;
+            ret = fread(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fin);
+            if (feof(fin) || ret != LPCNET_PACKET_SAMPLES) break;
             lpcnet_compute_features(net, pcm, features);
             fwrite(features, sizeof(float), 4*NB_TOTAL_FEATURES, fout);
         }
@@ -112,8 +115,9 @@ int main(int argc, char **argv) {
             float in_features[NB_TOTAL_FEATURES];
             float features[NB_FEATURES];
             short pcm[LPCNET_FRAME_SIZE];
-            fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
-            if (feof(fin)) break;
+            size_t ret;
+            ret = fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
+            if (feof(fin) || ret != NB_TOTAL_FEATURES) break;
             RNN_COPY(features, in_features, NB_FEATURES);
             lpcnet_synthesize(net, features, pcm, LPCNET_FRAME_SIZE);
             fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);

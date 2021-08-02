@@ -205,12 +205,17 @@ int main(int argc, char **argv) {
   while (1) {
     float E=0;
     int silent;
+    size_t ret;
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
-    fread(tmp, sizeof(short), FRAME_SIZE, f1);
-    if (feof(f1)) {
+    ret = fread(tmp, sizeof(short), FRAME_SIZE, f1);
+    if (feof(f1) || ret != FRAME_SIZE) {
       if (!training) break;
       rewind(f1);
-      fread(tmp, sizeof(short), FRAME_SIZE, f1);
+      ret = fread(tmp, sizeof(short), FRAME_SIZE, f1);
+      if (ret != FRAME_SIZE) {
+        fprintf(stderr, "error reading\n");
+        exit(1);
+      }
       one_pass_completed = 1;
     }
     for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
