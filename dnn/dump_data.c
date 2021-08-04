@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
       one_pass_completed = 1;
     }
     for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
-    if (training) {
+    if (0 && training) {
       silent = E < 5000 || (last_silent && E < 20000);
       if (!last_silent && silent) {
         for (i=0;i<FRAME_SIZE;i++) savedX[i] = x[i];
