@@ -32,6 +32,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Layer, GRU, Dense, Conv1D, Embedding
 from ulaw import ulaw2lin, lin2ulaw
 from mdense import MDense
+from diffembed import diff_Embed
 import h5py
 import re
 
@@ -234,6 +235,7 @@ def dump_embedding_layer(self, f, hf):
     dump_embedding_layer_impl(name, weights, f, hf)
     return False
 Embedding.dump_layer = dump_embedding_layer
+diff_Embed.dump_layer = dump_embedding_layer
 
 filename = sys.argv[1]
 with h5py.File(filename, "r") as f:
@@ -244,7 +246,7 @@ model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=units, rnn_units2=units2, flag_
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 #model.summary()
 
-model.load_weights(filename)
+model.load_weights(filename, by_name=True)
 
 if len(sys.argv) > 2:
     cfile = sys.argv[2];
