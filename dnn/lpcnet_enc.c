@@ -787,14 +787,14 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
   int pitch_prev[2][PITCH_MAX_PERIOD];
   float frame_corr;
   float frame_weight_sum = 1e-15;
-  for(sub=0;sub<2;sub++) frame_weight_sum += st->frame_weight[2+sub];
-  for(sub=0;sub<2;sub++) st->frame_weight[2+sub] *= (2.f/frame_weight_sum);
+  for(sub=0;sub<2;sub++) frame_weight_sum += st->frame_weight[2+2*st->pcount+sub];
+  for(sub=0;sub<2;sub++) st->frame_weight[2+2*st->pcount+sub] *= (2.f/frame_weight_sum);
   for(sub=0;sub<2;sub++) {
     float max_path_all = -1e15;
     best_i = 0;
     for (i=0;i<PITCH_MAX_PERIOD-2*PITCH_MIN_PERIOD;i++) {
-      float xc_half = MAX16(MAX16(st->xc[2+sub][(PITCH_MAX_PERIOD+i)/2], st->xc[2+sub][(PITCH_MAX_PERIOD+i+2)/2]), st->xc[2+sub][(PITCH_MAX_PERIOD+i-1)/2]);
-      if (st->xc[2+sub][i] < xc_half*1.1) st->xc[2+sub][i] *= .8;
+      float xc_half = MAX16(MAX16(st->xc[2+2*st->pcount+sub][(PITCH_MAX_PERIOD+i)/2], st->xc[2+2*st->pcount+sub][(PITCH_MAX_PERIOD+i+2)/2]), st->xc[2+2*st->pcount+sub][(PITCH_MAX_PERIOD+i-1)/2]);
+      if (st->xc[2+2*st->pcount+sub][i] < xc_half*1.1) st->xc[2+2*st->pcount+sub][i] *= .8;
     }
     for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
       int j;
@@ -807,7 +807,7 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
           pitch_prev[sub][i] = i+j;
         }
       }
-      st->pitch_max_path[1][i] = max_prev + st->frame_weight[2+sub]*st->xc[2+sub][i];
+      st->pitch_max_path[1][i] = max_prev + st->frame_weight[2+2*st->pcount+sub]*st->xc[2+2*st->pcount+sub][i];
       if (st->pitch_max_path[1][i] > max_path_all) {
         max_path_all = st->pitch_max_path[1][i];
         best_i = i;
@@ -826,11 +826,11 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
   /* Backward pass. */
   for (sub=1;sub>=0;sub--) {
     best[2+sub] = PITCH_MAX_PERIOD-best_i;
-    frame_corr += st->frame_weight[2+sub]*st->xc[2+sub][best_i];
+    frame_corr += st->frame_weight[2+2*st->pcount+sub]*st->xc[2+2*st->pcount+sub][best_i];
     best_i = pitch_prev[sub][best_i];
   }
   frame_corr /= 2;
-  st->features[st->pcount][NB_BANDS] = .01*(IMAX(66, IMIN(510, 2*best[2]))-200);
+  st->features[st->pcount][NB_BANDS] = .01*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
   st->features[st->pcount][NB_BANDS + 1] = frame_corr-.5;
   if (ffeat) {
     fwrite(st->features[st->pcount], sizeof(float), NB_TOTAL_FEATURES, ffeat);
