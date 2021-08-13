@@ -39,7 +39,6 @@
 
 #define PREEMPH 0.85f
 
-#define PITCH_GAIN_FEATURE 37
 #define PDF_FLOOR 0.002
 
 #define FRAME_INPUT_SIZE (NB_FEATURES + EMBED_PITCH_OUT_SIZE)
@@ -70,8 +69,6 @@ void run_frame_network(LPCNetState *lpcnet, float *rc, float *gru_a_condition, f
     compute_conv1d(&feature_conv2, conv2_out, net->feature_conv2_state, conv1_out);
     celt_assert(FRAME_INPUT_SIZE == FEATURE_CONV2_OUT_SIZE);
     if (lpcnet->frame_count < FEATURES_DELAY) RNN_CLEAR(conv2_out, FEATURE_CONV2_OUT_SIZE);
-    memmove(lpcnet->old_input[1], lpcnet->old_input[0], (FEATURES_DELAY-1)*FRAME_INPUT_SIZE*sizeof(in[0]));
-    memcpy(lpcnet->old_input[0], in, FRAME_INPUT_SIZE*sizeof(in[0]));
     compute_dense(&feature_dense1, dense1_out, conv2_out);
     compute_dense(&feature_dense2, condition, dense1_out);
     RNN_COPY(rc, condition, LPC_ORDER);
@@ -168,8 +165,6 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features,
     /* Matches the Python code -- the 0.1 avoids rounding issues. */
     pitch = (int)floor(.1 + 50*features[18]+100);
     pitch = IMIN(255, IMAX(33, pitch));
-    memmove(&lpcnet->old_gain[1], &lpcnet->old_gain[0], (FEATURES_DELAY-1)*sizeof(lpcnet->old_gain[0]));
-    lpcnet->old_gain[0] = features[PITCH_GAIN_FEATURE];
     run_frame_network(lpcnet, rc, gru_a_condition, gru_b_condition, features, pitch);
 #ifdef END2END
     rc2lpc(lpc, rc);
