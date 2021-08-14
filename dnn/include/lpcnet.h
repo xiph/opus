@@ -58,6 +58,8 @@ typedef struct LPCNetDecState LPCNetDecState;
 
 typedef struct LPCNetEncState LPCNetEncState;
 
+typedef struct LPCNetPLCState LPCNetPLCState;
+
 
 /** Gets the size of an <code>LPCNetDecState</code> structure.
   * @returns The size in bytes.
@@ -173,5 +175,16 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *st);
   * @retval 0 Success
   */
 LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, const float *features, short *output, int N);
+
+
+LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st);
+
+LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create();
+
+LPCNET_EXPORT void lpcnet_plc_destroy(LPCNetPLCState *st);
+
+LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm);
+
+LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm);
 
 #endif

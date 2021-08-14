@@ -894,7 +894,7 @@ LPCNET_EXPORT int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, 
   return 0;
 }
 
-LPCNET_EXPORT int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]) {
+int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]) {
   int i;
   float x[FRAME_SIZE];
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];

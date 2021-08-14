@@ -36,7 +36,8 @@ liblpcnet_la_SOURCES = \
 	pitch.c \
 	freq.c \
 	kiss_fft.c \
-	celt_lpc.c
+	celt_lpc.c \
+	lpcnet_plc.c
 
 liblpcnet_la_LIBADD = $(DEPS_LIBS) $(lrintf_lib) $(LIBM)
 liblpcnet_la_LDFLAGS = -no-undefined \
