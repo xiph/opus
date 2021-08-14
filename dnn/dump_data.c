@@ -75,9 +75,9 @@ void compute_noise(int *noise, float noise_std) {
 }
 
 
-void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file) {
+void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file, int nframes) {
   int i, k;
-  for (k=0;k<4;k++) {
+  for (k=0;k<nframes;k++) {
   unsigned char data[4*FRAME_SIZE];
   for (i=0;i<FRAME_SIZE;i++) {
     float p=0;
@@ -270,12 +270,15 @@ int main(int argc, char **argv) {
     if (fpcm) {
         compute_noise(&noisebuf[st->pcount*FRAME_SIZE], noise_std);
     }
+    process_single_frame(st, ffeat);
+    if (fpcm) write_audio(st, pcm, &noisebuf[st->pcount*FRAME_SIZE], fpcm, 1);
+
     st->pcount++;
     /* Running on groups of 4 frames. */
     if (st->pcount == 4) {
-      unsigned char buf[8];
-      process_superframe(st, buf, ffeat, encode, quantize);
-      if (fpcm) write_audio(st, pcmbuf, noisebuf, fpcm);
+      //unsigned char buf[8];
+      //process_superframe(st, buf, ffeat, encode, quantize);
+      //if (fpcm) write_audio(st, pcmbuf, noisebuf, fpcm, 4);
       st->pcount = 0;
     }
     //if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);

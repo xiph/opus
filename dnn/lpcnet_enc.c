@@ -860,14 +860,6 @@ LPCNET_EXPORT int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned c
   return 0;
 }
 
-void print_vec(float *x, int len) {
-    int i;
-    for (i=0;i<len;i++) {
-        printf("%f ", x[i]);
-    }
-    printf("\n");
-}
-
 LPCNET_EXPORT int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, float features[4][NB_TOTAL_FEATURES]) {
   int i, k;
   for (k=0;k<4;k++) {
@@ -876,13 +868,21 @@ LPCNET_EXPORT int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, 
     preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
     st->pcount = k;
     compute_frame_features(st, x);
-    process_single_frame(st, NULL);
   }
-  //process_superframe(st, NULL, NULL, 0, 0);
-  //process_multi_frame(st, NULL);
+  process_superframe(st, NULL, NULL, 0, 0);
   for (k=0;k<4;k++) {
     RNN_COPY(&features[k][0], &st->features[k][0], NB_TOTAL_FEATURES);
-    //print_vec(&features[k][0], 20);
   }
+  return 0;
+}
+
+LPCNET_EXPORT int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]) {
+  int i;
+  float x[FRAME_SIZE];
+  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+  preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
+  compute_frame_features(st, x);
+  process_single_frame(st, NULL);
+  RNN_COPY(features, &st->features[0][0], NB_TOTAL_FEATURES);
   return 0;
 }
