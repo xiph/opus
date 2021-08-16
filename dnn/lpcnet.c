@@ -53,7 +53,32 @@ static void print_vector(float *x, int N)
 }
 #endif
 
-void run_frame_network(LPCNetState *lpcnet, float *rc, float *gru_a_condition, float *gru_b_condition, const float *features, int pitch)
+#ifdef END2END
+void rc2lpc(float *lpc, const float *rc)
+{
+  float tmp[LPC_ORDER];
+  float ntmp[LPC_ORDER] = {0.0};
+  RNN_COPY(tmp, rc, LPC_ORDER);
+  for(int i = 0; i < LPC_ORDER ; i++)
+    { 
+        for(int j = 0; j <= i-1; j++)
+        {
+            ntmp[j] = tmp[j] + tmp[i]*tmp[i - j - 1];
+        }
+        for(int k = 0; k <= i-1; k++)
+        {
+            tmp[k] = ntmp[k];
+        }
+    }
+  for(int i = 0; i < LPC_ORDER ; i++)
+  {
+    lpc[i] = tmp[i];
+  }
+}
+
+#endif
+
+void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, float *lpc, const float *features)
 {
     NNetState *net;
     float condition[FEATURE_DENSE2_OUT_SIZE];
@@ -61,6 +86,11 @@ void run_frame_network(LPCNetState *lpcnet, float *rc, float *gru_a_condition, f
     float conv1_out[FEATURE_CONV1_OUT_SIZE];
     float conv2_out[FEATURE_CONV2_OUT_SIZE];
     float dense1_out[FEATURE_DENSE1_OUT_SIZE];
+    int pitch;
+    float rc[LPC_ORDER];
+    /* Matches the Python code -- the 0.1 avoids rounding issues. */
+    pitch = (int)floor(.1 + 50*features[18]+100);
+    pitch = IMIN(255, IMAX(33, pitch));
     net = &lpcnet->nnet;
     RNN_COPY(in, features, NB_FEATURES);
     compute_embedding(&embed_pitch, &in[NB_FEATURES], pitch);
@@ -74,6 +104,13 @@ void run_frame_network(LPCNetState *lpcnet, float *rc, float *gru_a_condition, f
     RNN_COPY(rc, condition, LPC_ORDER);
     compute_dense(&gru_a_dense_feature, gru_a_condition, condition);
     compute_dense(&gru_b_dense_feature, gru_b_condition, condition);
+#ifdef END2END
+    rc2lpc(lpc, rc);
+#else
+    memcpy(lpc, lpcnet->old_lpc[FEATURES_DELAY-1], LPC_ORDER*sizeof(lpc[0]));
+    memmove(lpcnet->old_lpc[1], lpcnet->old_lpc[0], (FEATURES_DELAY-1)*LPC_ORDER*sizeof(lpc[0]));
+    lpc_from_cepstrum(lpcnet->old_lpc[0], features);
+#endif
     if (lpcnet->frame_count < 1000) lpcnet->frame_count++;
 }
 
@@ -129,50 +166,14 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *lpcnet)
     free(lpcnet);
 }
 
-#ifdef END2END
-void rc2lpc(float *lpc, const float *rc)
-{
-  float tmp[LPC_ORDER];
-  float ntmp[LPC_ORDER] = {0.0};
-  RNN_COPY(tmp, rc, LPC_ORDER);
-  for(int i = 0; i < LPC_ORDER ; i++)
-    { 
-        for(int j = 0; j <= i-1; j++)
-        {
-            ntmp[j] = tmp[j] + tmp[i]*tmp[i - j - 1];
-        }
-        for(int k = 0; k <= i-1; k++)
-        {
-            tmp[k] = ntmp[k];
-        }
-    }
-  for(int i = 0; i < LPC_ORDER ; i++)
-  {
-    lpc[i] = tmp[i];
-  }
-}
-
-#endif
 
 LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features, short *output, int N)
 {
     int i;
     float lpc[LPC_ORDER];
-    float rc[LPC_ORDER];
     float gru_a_condition[3*GRU_A_STATE_SIZE];
     float gru_b_condition[3*GRU_B_STATE_SIZE];
-    int pitch;
-    /* Matches the Python code -- the 0.1 avoids rounding issues. */
-    pitch = (int)floor(.1 + 50*features[18]+100);
-    pitch = IMIN(255, IMAX(33, pitch));
-    run_frame_network(lpcnet, rc, gru_a_condition, gru_b_condition, features, pitch);
-#ifdef END2END
-    rc2lpc(lpc, rc);
-#else
-    memcpy(lpc, lpcnet->old_lpc[FEATURES_DELAY-1], LPC_ORDER*sizeof(lpc[0]));
-    memmove(lpcnet->old_lpc[1], lpcnet->old_lpc[0], (FEATURES_DELAY-1)*LPC_ORDER*sizeof(lpc[0]));
-    lpc_from_cepstrum(lpcnet->old_lpc[0], features);
-#endif
+    run_frame_network(lpcnet, gru_a_condition, gru_b_condition, lpc, features);
 
     if (lpcnet->frame_count <= FEATURES_DELAY)
     {
