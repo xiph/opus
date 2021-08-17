@@ -244,13 +244,14 @@ int main(int argc, char **argv) {
     if (training && ++gain_change_count > 2821) {
       float tmp, tmp2;
       speech_gain = pow(10., (-20+(rand()%40))/20.);
+      if (rand()&1) speech_gain = -speech_gain;
       if (rand()%20==0) speech_gain *= .01;
       if (rand()%100==0) speech_gain = 0;
       gain_change_count = 0;
       rand_resp(a_sig, b_sig);
       tmp = (float)rand()/RAND_MAX;
       tmp2 = (float)rand()/RAND_MAX;
-      noise_std = -log(tmp)-log(tmp2);
+      noise_std = ABS16(-1.5*log(1e-4+tmp)-.5*log(1e-4+tmp2));
     }
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     biquad(x, mem_resp_x, x, b_sig, a_sig, FRAME_SIZE);
