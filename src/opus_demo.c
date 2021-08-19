@@ -56,6 +56,7 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-cvbr                : enable constrained variable bitrate; default: unconstrained\n" );
     fprintf(stderr, "-delayed-decision    : use look-ahead for speech/music detection (experts only); default: disabled\n" );
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB> : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
+    fprintf(stderr, "-signal <music|speech|auto> : audio signal type; default: auto\n" );
     fprintf(stderr, "-framesize <2.5|5|10|20|40|60|80|100|120> : frame size in ms; default: 20 \n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
     fprintf(stderr, "-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10\n" );
@@ -242,6 +243,8 @@ int main(int argc, char *argv[])
     opus_uint64 tot_in, tot_out;
     int bandwidth=OPUS_AUTO;
     const char *bandwidth_string;
+    int signal_type=OPUS_AUTO;
+    const char *signal_type_string;
     int lost = 0, lost_prev = 1;
     int toggle = 0;
     opus_uint32 enc_final_range[2];
@@ -361,6 +364,23 @@ int main(int argc, char *argv[])
             else {
                 fprintf(stderr, "Unknown bandwidth %s. "
                                 "Supported are NB, MB, WB, SWB, FB.\n",
+                                argv[ args + 1 ]);
+                goto failure;
+            }
+            args += 2;
+        } else if( strcmp( argv[ args ], "-signal" ) == 0 ) {
+            check_encoder_option(decode_only, "-signal");
+            if (strcmp(argv[ args + 1 ], "music")==0)
+                signal_type = OPUS_SIGNAL_MUSIC;
+            else if (strcmp(argv[ args + 1 ], "speech")==0)
+                signal_type = OPUS_SIGNAL_VOICE;
+            else if (strcmp(argv[ args + 1 ], "voice")==0)
+                signal_type = OPUS_SIGNAL_VOICE;
+            else if (strcmp(argv[ args + 1 ], "auto")==0)
+                signal_type = OPUS_AUTO;
+            else {
+                fprintf(stderr, "Unknown signal type %s. "
+                                "Supported are music, speech, auto.\n",
                                 argv[ args + 1 ]);
                 goto failure;
             }
@@ -526,6 +546,7 @@ int main(int argc, char *argv[])
        }
        opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
        opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
+       opus_encoder_ctl(enc, OPUS_SET_SIGNAL(signal_type));
        opus_encoder_ctl(enc, OPUS_SET_VBR(use_vbr));
        opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(cvbr));
        opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
@@ -574,14 +595,30 @@ int main(int argc, char *argv[])
          break;
     }
 
+    switch(signal_type)
+    {
+    case OPUS_SIGNAL_VOICE:
+         signal_type_string = "speech";
+         break;
+    case OPUS_SIGNAL_MUSIC:
+         signal_type_string = "music";
+         break;
+    case OPUS_AUTO:
+         signal_type_string = "auto";
+         break;
+    default:
+         signal_type_string = "unknown";
+         break;
+    }
+
     if (decode_only)
        fprintf(stderr, "Decoding with %ld Hz output (%d channels)\n",
                        (long)sampling_rate, channels);
     else
        fprintf(stderr, "Encoding %ld Hz input at %.3f kb/s "
-                       "in %s with %d-sample frames.\n",
+                       "in %s with %d-sample frames, signal: %s.\n",
                        (long)sampling_rate, bitrate_bps*0.001,
-                       bandwidth_string, frame_size);
+                       bandwidth_string, frame_size, signal_type_string);
 
     in = (short*)malloc(max_frame_size*channels*sizeof(short));
     out = (short*)malloc(max_frame_size*channels*sizeof(short));
