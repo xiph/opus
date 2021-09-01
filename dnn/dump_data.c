@@ -244,7 +244,6 @@ int main(int argc, char **argv) {
     if (training && ++gain_change_count > 2821) {
       float tmp, tmp2;
       speech_gain = pow(10., (-20+(rand()%40))/20.);
-      if (rand()&1) speech_gain = -speech_gain;
       if (rand()%20==0) speech_gain *= .01;
       if (rand()%100==0) speech_gain = 0;
       gain_change_count = 0;
