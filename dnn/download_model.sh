@@ -1,0 +1,11 @@
+#!/bin/sh
+
+model=lpcnet_data-$1.tar.gz
+
+if [ ! -f $model ]; then
+        echo "Downloading latest model"
+        wget https://media.xiph.org/lpcnet/data/$model
+fi
+tar xvf $model
+
+mv src/*.[ch] .

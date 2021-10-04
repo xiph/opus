@@ -7,12 +7,7 @@ test -n "$srcdir" && cd "$srcdir"
 
 #SHA1 of the first commit compatible with the current model
 commit=b7d25ac
-
-if [ ! -f lpcnet_data-$commit.tar.gz ]; then
-	echo "Downloading latest model"
-	wget https://media.xiph.org/lpcnet/data/lpcnet_data-$commit.tar.gz
-fi
-tar xvf lpcnet_data-$commit.tar.gz
+./download_model.sh $commit
 
 echo "Updating build configuration files for lpcnet, please wait...."
 
