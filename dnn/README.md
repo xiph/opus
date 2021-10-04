@@ -26,7 +26,8 @@ make
 Note that the autogen.sh script is used when building from Git and will automatically download the latest model
 (models are too large to put in Git). By default, LPCNet will attempt to use 8-bit dot product instructions on AVX*/Neon to
 speed up inference. To disable that (e.g. to avoid quantization effects when retraining), add --disable-dot-product to the
-configure script.
+configure script. LPCNet does not yet have a complete implementation for some of the integer operations on the ARMv7
+architecture so for now you will also need --disable-dot-product to successfully compile on 32-bit ARM.
 
 It is highly recommended to set the CFLAGS environment variable to enable AVX or NEON *prior* to running configure, otherwise
 no vectorization will take place and the code will be very slow. On a recent x86 CPU, something like
@@ -70,10 +71,10 @@ This codebase is also meant for research and it is possible to train new models.
 
 1. Now that you have your files, train with:
    ```
-   ./training_tf2/train_lpcnet.py features.f32 data.u8
+   ./training_tf2/train_lpcnet.py features.f32 data.u8 model_name
    ```
-   and it will generate an lpcnet*.h5 file for each iteration. If it stops with a
-   "Failed to allocate RNN reserve space" message try reducing the *batch\_size* variable in train_lpcnet.py.
+   and it will generate an h5 file for each iteration, with model\_name as prefix. If it stops with a
+   "Failed to allocate RNN reserve space" message try specifying a smaller --batch-size for  train\_lpcnet.py.
 
 1. You can synthesise speech with Python and your GPU card (very slow):
    ```
