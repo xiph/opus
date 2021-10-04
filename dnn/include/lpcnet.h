@@ -86,7 +86,7 @@ LPCNET_EXPORT void lpcnet_decoder_destroy(LPCNetDecState *st);
 /** Decodes a packet of LPCNET_COMPRESSED_SIZE bytes (currently 8) into LPCNET_PACKET_SAMPLES samples (currently 640).
   * @param [in] st <tt>LPCNetDecState*</tt>: Decoder state
   * @param [in] buf <tt>const unsigned char *</tt>: Compressed packet
-  * @param [out] pcm <tt>short **</tt>: Decoded audio
+  * @param [out] pcm <tt>short *</tt>: Decoded audio
   * @retval 0 Success
   */
 LPCNET_EXPORT int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm);
@@ -119,7 +119,7 @@ LPCNET_EXPORT void lpcnet_encoder_destroy(LPCNetEncState *st);
 
 /** Encodes LPCNET_PACKET_SAMPLES speech samples (currently 640) into a packet of LPCNET_COMPRESSED_SIZE bytes (currently 8).
   * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
-  * @param [in] pcm <tt>short **</tt>: Input speech to be encoded
+  * @param [in] pcm <tt>short *</tt>: Input speech to be encoded
   * @param [out] buf <tt>const unsigned char *</tt>: Compressed packet
   * @retval 0 Success
   */
@@ -127,12 +127,19 @@ LPCNET_EXPORT int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned c
 
 /** Compute features on LPCNET_PACKET_SAMPLES speech samples (currently 640) and output features for 4 10-ms frames at once.
   * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
-  * @param [in] pcm <tt>short **</tt>: Input speech to be analyzed
+  * @param [in] pcm <tt>short *</tt>: Input speech to be analyzed
   * @param [out] features <tt>float[4][NB_TOTAL_FEATURES]</tt>: Four feature vectors
   * @retval 0 Success
   */
 LPCNET_EXPORT int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, float features[4][NB_TOTAL_FEATURES]);
 
+/** Compute features on LPCNET_FRAME_SIZE speech samples (currently 160) and output features for one 10-ms frame.
+  * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
+  * @param [in] pcm <tt>short *</tt>: Input speech to be analyzed
+  * @param [out] features <tt>float[NB_TOTAL_FEATURES]</tt>: Four feature vectors
+  * @retval 0 Success
+  */
+LPCNET_EXPORT int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]);
 
 /** Gets the size of an <code>LPCNetState</code> structure.
   * @returns The size in bytes.
