@@ -1,6 +1,7 @@
 #ifndef LPCNET_PRIVATE_H
 #define LPCNET_PRIVATE_H
 
+#include <stdio.h>
 #include "common.h"
 #include "freq.h"
 #include "lpcnet.h"
@@ -73,6 +74,8 @@ void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int
 void compute_frame_features(LPCNetEncState *st, const float *in);
 
 void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const unsigned char buf[8]);
+
+void process_single_frame(LPCNetEncState *st, FILE *ffeat);
 
 void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, float *lpc, const float *features);
 #endif

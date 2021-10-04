@@ -75,9 +75,9 @@ void compute_noise(int *noise, float noise_std) {
 }
 
 
-void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file) {
+void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file, int nframes) {
   int i, k;
-  for (k=0;k<4;k++) {
+  for (k=0;k<nframes;k++) {
   unsigned char data[4*FRAME_SIZE];
   for (i=0;i<FRAME_SIZE;i++) {
     float p=0;
@@ -250,7 +250,7 @@ int main(int argc, char **argv) {
       rand_resp(a_sig, b_sig);
       tmp = (float)rand()/RAND_MAX;
       tmp2 = (float)rand()/RAND_MAX;
-      noise_std = -log(tmp)-log(tmp2);
+      noise_std = ABS16(-1.5*log(1e-4+tmp)-.5*log(1e-4+tmp2));
     }
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     biquad(x, mem_resp_x, x, b_sig, a_sig, FRAME_SIZE);
@@ -270,12 +270,19 @@ int main(int argc, char **argv) {
     if (fpcm) {
         compute_noise(&noisebuf[st->pcount*FRAME_SIZE], noise_std);
     }
+    
+    if (!quantize) {
+      process_single_frame(st, ffeat);
+      if (fpcm) write_audio(st, pcm, &noisebuf[st->pcount*FRAME_SIZE], fpcm, 1);
+    }
     st->pcount++;
     /* Running on groups of 4 frames. */
     if (st->pcount == 4) {
-      unsigned char buf[8];
-      process_superframe(st, buf, ffeat, encode, quantize);
-      if (fpcm) write_audio(st, pcmbuf, noisebuf, fpcm);
+      if (quantize) {
+        unsigned char buf[8];
+        process_superframe(st, buf, ffeat, encode, quantize);
+        if (fpcm) write_audio(st, pcmbuf, noisebuf, fpcm, 4);
+      }
       st->pcount = 0;
     }
     //if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);

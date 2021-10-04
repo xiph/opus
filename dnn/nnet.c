@@ -283,7 +283,7 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input)
    sgemv_accum8x4(zrh, gru->input_weights, 3*N, M, stride, input);
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
-   sgemv_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
+   sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, N, stride, state);
    for (i=0;i<2*N;i++)
       zrh[i] += recur[i];
    compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
@@ -324,9 +324,14 @@ void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *stat
       zrh[i] = gru->bias[i] + gru_b_condition[i];
 #endif
    sparse_sgemv_accum8x4(zrh, gru->input_weights, 3*N, M, gru->input_weights_idx, input);
+#ifdef USE_SU_BIAS
+   for (i=0;i<3*N;i++)
+      recur[i] = gru->subias[3*N + i];
+#else
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
-   sgemv_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
+#endif
+   sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, N, stride, state);
    for (i=0;i<2*N;i++)
       zrh[i] += recur[i];
    compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
@@ -361,7 +366,7 @@ void compute_gru3(const GRULayer *gru, float *state, const float *input)
    RNN_COPY(zrh, input, 3*N);
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
-   sgemv_accum(recur, gru->recurrent_weights, 3*N, N, stride, state);
+   sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, N, stride, state);
    for (i=0;i<2*N;i++)
       zrh[i] += recur[i];
    compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);

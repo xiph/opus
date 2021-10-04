@@ -59,7 +59,7 @@ typedef struct {
   const float *subias;
   const qweight *input_weights;
   const int *input_weights_idx;
-  const float *recurrent_weights;
+  const qweight *recurrent_weights;
   int nb_inputs;
   int nb_neurons;
   int activation;
