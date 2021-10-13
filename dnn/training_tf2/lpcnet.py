@@ -230,24 +230,24 @@ class WeightClip(Constraint):
 
 constraint = WeightClip(0.992)
 
-def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_size=128, training=False, adaptation=False, quantize=False, flag_e2e = False):
+def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_size=128, training=False, adaptation=False, quantize=False, flag_e2e = False, cond_size=128):
     pcm = Input(shape=(None, 3), batch_size=batch_size)
     feat = Input(shape=(None, nb_used_features), batch_size=batch_size)
     pitch = Input(shape=(None, 1), batch_size=batch_size)
-    dec_feat = Input(shape=(None, 128))
+    dec_feat = Input(shape=(None, cond_size))
     dec_state1 = Input(shape=(rnn_units1,))
     dec_state2 = Input(shape=(rnn_units2,))
 
     padding = 'valid' if training else 'same'
-    fconv1 = Conv1D(128, 3, padding=padding, activation='tanh', name='feature_conv1')
-    fconv2 = Conv1D(128, 3, padding=padding, activation='tanh', name='feature_conv2')
+    fconv1 = Conv1D(cond_size, 3, padding=padding, activation='tanh', name='feature_conv1')
+    fconv2 = Conv1D(cond_size, 3, padding=padding, activation='tanh', name='feature_conv2')
     pembed = Embedding(256, 64, name='embed_pitch')
     cat_feat = Concatenate()([feat, Reshape((-1, 64))(pembed(pitch))])
 
     cfeat = fconv2(fconv1(cat_feat))
 
-    fdense1 = Dense(128, activation='tanh', name='feature_dense1')
-    fdense2 = Dense(128, activation='tanh', name='feature_dense2')
+    fdense1 = Dense(cond_size, activation='tanh', name='feature_dense1')
+    fdense2 = Dense(cond_size, activation='tanh', name='feature_dense2')
 
     if flag_e2e and quantize:
         fconv1.trainable = False
