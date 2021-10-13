@@ -83,3 +83,13 @@ def metric_exc_sd(y_true,y_pred):
     e_gt = tf_l2u(tf_u2l(y_true) - tf_u2l(p))
     sd_egt = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)(e_gt,128)
     return sd_egt
+
+def loss_matchlar():
+    def loss(y_true,y_pred):
+        model_rc = y_pred[:,:,:16]
+        #y_true = lpc2rc(y_true)
+        loss_lar_diff = K.log((1.01 + model_rc)/(1.01 - model_rc)) - K.log((1.01 + y_true)/(1.01 - y_true))
+        loss_lar_diff = tf.square(loss_lar_diff)
+        return tf.reduce_mean(loss_lar_diff, axis=-1)
+    return loss
+

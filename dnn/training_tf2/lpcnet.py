@@ -304,8 +304,8 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
     if not flag_e2e:
         model = Model([pcm, feat, pitch], ulaw_prob)
     else:
-        m_out = Concatenate()([tensor_preds,ulaw_prob])
-        model = Model([pcm, feat, pitch], m_out)
+        m_out = Concatenate(name='pdf')([tensor_preds,ulaw_prob])
+        model = Model([pcm, feat, pitch], [m_out, cfeat])
     model.rnn_units1 = rnn_units1
     model.rnn_units2 = rnn_units2
     model.nb_used_features = nb_used_features

@@ -125,7 +125,7 @@ with strategy.scope():
     if not flag_e2e:
         model.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics='sparse_categorical_crossentropy')
     else:
-        model.compile(optimizer=opt, loss = interp_mulaw(gamma=gamma),metrics=[metric_cel,metric_icel,metric_exc_sd,metric_oginterploss])
+        model.compile(optimizer=opt, loss = [interp_mulaw(gamma=gamma), loss_matchlar()], loss_weights = [1.0, 2.0], metrics={'pdf':[metric_cel,metric_icel,metric_exc_sd,metric_oginterploss]})
     model.summary()
 
 feature_file = args.features
@@ -157,7 +157,7 @@ data = np.reshape(data, (nb_frames, pcm_chunk_size, 4))
 sizeof = features.strides[-1]
 features = np.lib.stride_tricks.as_strided(features, shape=(nb_frames, feature_chunk_size+4, nb_features),
                                            strides=(feature_chunk_size*nb_features*sizeof, nb_features*sizeof, sizeof))
-features = features[:, :, :nb_used_features]
+#features = features[:, :, :nb_used_features]
 
 
 periods = (.1 + 50*features[:,:,18:19]+100).astype('int16')
@@ -185,5 +185,5 @@ else:
 
 model.save_weights('{}_{}_initial.h5'.format(args.output, args.grua_size))
 csv_logger = CSVLogger('training_vals.log')
-loader = LPCNetLoader(data, features, periods, batch_size)
+loader = LPCNetLoader(data, features, periods, batch_size, lpc_out=flag_e2e)
 model.fit(loader, epochs=nb_epochs, validation_split=0.0, callbacks=[checkpoint, sparsify, grub_sparsify, csv_logger])
