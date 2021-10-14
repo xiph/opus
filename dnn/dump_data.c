@@ -75,7 +75,7 @@ void compute_noise(int *noise, float noise_std) {
 }
 
 
-void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file, int nframes) {
+void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file, int nframes, int e2e) {
   int i, k;
   for (k=0;k<nframes;k++) {
   unsigned char data[4*FRAME_SIZE];
@@ -92,11 +92,11 @@ void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *f
     /* Excitation in. */
     data[4*i+2] = st->exc_mem;
     /* Excitation out. */
-#ifdef END2END
-    data[4*i+3] = lin2ulaw(pcm[k*FRAME_SIZE+i]);
-#else
-    data[4*i+3] = e;
-#endif
+    if (e2e) {
+      data[4*i+3] = lin2ulaw(pcm[k*FRAME_SIZE+i]);
+    } else {
+      data[4*i+3] = e;
+    }
     /* Simulate error on excitation. */
     e += noise[k*FRAME_SIZE+i];
     e = IMIN(255, IMAX(0, e));
@@ -118,6 +118,8 @@ static short float2short(float x)
 
 int main(int argc, char **argv) {
   int i;
+  char *argv0;
+  int e2e=0;
   int count=0;
   static const float a_hp[2] = {-1.99599, 0.99600};
   static const float b_hp[2] = {-2, 1};
@@ -148,6 +150,12 @@ int main(int argc, char **argv) {
   int quantize = 0;
   srand(getpid());
   st = lpcnet_encoder_create();
+  argv0=argv[0];
+  if (argc > 2 && strcmp(argv[1], "-end2end")==0) {
+      e2e = 1;
+      argv++;
+      argc--;
+  }
   if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
   if (argc == 5 && strcmp(argv[1], "-qtrain")==0) {
       training = 1;
@@ -168,8 +176,8 @@ int main(int argc, char **argv) {
       decode = 1;
   }
   if (training == -1) {
-    fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv[0]);
-    fprintf(stderr, "  or   %s -test <speech> <features out>\n", argv[0]);
+    fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv0);
+    fprintf(stderr, "  or   %s -test <speech> <features out>\n", argv0);
     return 1;
   }
   f1 = fopen(argv[2], "r");
@@ -273,7 +281,7 @@ int main(int argc, char **argv) {
     
     if (!quantize) {
       process_single_frame(st, ffeat);
-      if (fpcm) write_audio(st, pcm, &noisebuf[st->pcount*FRAME_SIZE], fpcm, 1);
+      if (fpcm) write_audio(st, pcm, &noisebuf[st->pcount*FRAME_SIZE], fpcm, 1, e2e);
     }
     st->pcount++;
     /* Running on groups of 4 frames. */
@@ -281,7 +289,7 @@ int main(int argc, char **argv) {
       if (quantize) {
         unsigned char buf[8];
         process_superframe(st, buf, ffeat, encode, quantize);
-        if (fpcm) write_audio(st, pcmbuf, noisebuf, fpcm, 4);
+        if (fpcm) write_audio(st, pcmbuf, noisebuf, fpcm, 4, e2e);
       }
       st->pcount = 0;
     }
