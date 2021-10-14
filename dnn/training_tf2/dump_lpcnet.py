@@ -252,7 +252,7 @@ with h5py.File(filename, "r") as f:
     cond_size = min(f['model_weights']['feature_dense1']['feature_dense1']['kernel:0'].shape)
     e2e = 'rc2lpc' in f['model_weights']
 
-model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=units, rnn_units2=units2, flag_e2e = flag_e2e, cond_size=cond_size)
+model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=units, rnn_units2=units2, flag_e2e = e2e, cond_size=cond_size)
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
 #model.summary()
 

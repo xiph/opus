@@ -125,7 +125,7 @@ strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
 with strategy.scope():
     model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=args.grua_size, rnn_units2=args.grub_size, batch_size=batch_size, training=True, quantize=quantize, flag_e2e = flag_e2e, cond_size=args.cond_size)
     if not flag_e2e:
-        model.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics='sparse_categorical_crossentropy')
+        model.compile(optimizer=opt, loss=metric_cel, metrics=metric_cel)
     else:
         model.compile(optimizer=opt, loss = [interp_mulaw(gamma=gamma), loss_matchlar()], loss_weights = [1.0, 2.0], metrics={'pdf':[metric_cel,metric_icel,metric_exc_sd,metric_oginterploss]})
     model.summary()
@@ -140,19 +140,17 @@ pcm_chunk_size = frame_size*feature_chunk_size
 
 # u for unquantised, load 16 bit PCM samples and convert to mu-law
 
-data = np.memmap(pcm_file, dtype='uint8', mode='r')
-nb_frames = (len(data)//(4*pcm_chunk_size)-1)//batch_size*batch_size
+data = np.memmap(pcm_file, dtype='int16', mode='r')
+nb_frames = (len(data)//(2*pcm_chunk_size)-1)//batch_size*batch_size
 
 features = np.memmap(feature_file, dtype='float32', mode='r')
 
 # limit to discrete number of frames
-data = data[4*2*frame_size:]
-data = data[:nb_frames*4*pcm_chunk_size]
+data = data[2*2*frame_size:]
+data = data[:nb_frames*2*pcm_chunk_size]
 
 
-data = np.reshape(data, (nb_frames, pcm_chunk_size, 4))
-#in_data = data[:,:,:3]
-#out_exc = data[:,:,3:4]
+data = np.reshape(data, (nb_frames, pcm_chunk_size, 2))
 
 #print("ulaw std = ", np.std(out_exc))
 
@@ -187,7 +185,7 @@ else:
 
 model.save_weights('{}_{}_initial.h5'.format(args.output, args.grua_size))
 
-loader = LPCNetLoader(data, features, periods, batch_size, lpc_out=flag_e2e)
+loader = LPCNetLoader(data, features, periods, batch_size, e2e=flag_e2e)
 
 callbacks = [checkpoint, sparsify, grub_sparsify]
 if args.logdir is not None:

@@ -1,5 +1,6 @@
 import numpy as np
 from tensorflow.keras.utils import Sequence
+from ulaw import lin2ulaw
 
 def lpc2rc(lpc):
     #print("shape is = ", lpc.shape)
@@ -12,13 +13,13 @@ def lpc2rc(lpc):
     return rc
 
 class LPCNetLoader(Sequence):
-    def __init__(self, data, features, periods, batch_size, lpc_out=False):
+    def __init__(self, data, features, periods, batch_size, e2e=False):
         self.batch_size = batch_size
         self.nb_batches = np.minimum(np.minimum(data.shape[0], features.shape[0]), periods.shape[0])//self.batch_size
         self.data = data[:self.nb_batches*self.batch_size, :]
         self.features = features[:self.nb_batches*self.batch_size, :]
         self.periods = periods[:self.nb_batches*self.batch_size, :]
-        self.lpc_out = lpc_out
+        self.e2e = e2e
         self.on_epoch_end()
 
     def on_epoch_end(self):
@@ -27,15 +28,18 @@ class LPCNetLoader(Sequence):
 
     def __getitem__(self, index):
         data = self.data[self.indices[index*self.batch_size:(index+1)*self.batch_size], :, :]
-        in_data = data[: , :, :3]
-        out_data = data[: , :, 3:4]
+        in_data = data[: , :, :1]
+        out_data = data[: , :, 1:]
         features = self.features[self.indices[index*self.batch_size:(index+1)*self.batch_size], :, :-16]
         periods = self.periods[self.indices[index*self.batch_size:(index+1)*self.batch_size], :, :]
         outputs = [out_data]
-        if self.lpc_out:
-            lpc = self.features[self.indices[index*self.batch_size:(index+1)*self.batch_size], 2:-2, -16:]
+        inputs = [in_data, features, periods]
+        lpc = self.features[self.indices[index*self.batch_size:(index+1)*self.batch_size], 2:-2, -16:]
+        if self.e2e:
             outputs.append(lpc2rc(lpc))
-        return ([in_data, features, periods], outputs)
+        else:
+            inputs.append(lpc)
+        return (inputs, outputs)
 
     def __len__(self):
         return self.nb_batches

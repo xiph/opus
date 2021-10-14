@@ -30,7 +30,7 @@ def tf_u2l(u):
 # The inputs xt and lpc conform with the shapes in lpcnet.py (the '2400' is coded keeping this in mind)
 class diff_pred(Layer):
     def call(self, inputs, lpcoeffs_N = 16, frame_size = 160):
-        xt = tf_u2l(inputs[0])
+        xt = inputs[0]
         lpc = inputs[1]
 
         rept = Lambda(lambda x: K.repeat_elements(x , frame_size, 1))
@@ -39,7 +39,7 @@ class diff_pred(Layer):
         
         pred = -Multiply()([rept(lpc),cX(zpX(xt))])
 
-        return tf_l2u(K.sum(pred,axis = 2,keepdims = True))
+        return K.sum(pred,axis = 2,keepdims = True)
 
 # Differentiable Transformations (RC <-> LPC) computed using the Levinson Durbin Recursion 
 class diff_rc2lpc(Layer):
