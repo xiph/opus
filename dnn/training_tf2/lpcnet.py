@@ -249,6 +249,12 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
     fdense1 = Dense(128, activation='tanh', name='feature_dense1')
     fdense2 = Dense(128, activation='tanh', name='feature_dense2')
 
+    if flag_e2e and quantize:
+        fconv1.trainable = False
+        fconv2.trainable = False
+        fdense1.trainable = False
+        fdense2.trainable = False
+
     cfeat = fdense2(fdense1(cfeat))
 
     if not flag_e2e:
