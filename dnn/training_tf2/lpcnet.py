@@ -313,7 +313,7 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
     
     if not flag_e2e:
         encoder = Model([feat, pitch], cfeat)
-        dec_rnn_in = Concatenate()([cpcm, dec_feat])
+        dec_rnn_in = Concatenate()([cpcm_decoder, dec_feat])
     else:
         encoder = Model([feat, pitch], [cfeat,lpcoeffs])
         dec_rnn_in = Concatenate()([cpcm_decoder, dec_feat])
@@ -324,5 +324,5 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
     if flag_e2e:
         decoder = Model([dpcm, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
     else:
-        decoder = Model([pcm, dec_feat, dec_state1, dec_state2, lpcoeffs], [dec_ulaw_prob, state1, state2])
+        decoder = Model([dpcm, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
     return model, encoder, decoder
