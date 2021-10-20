@@ -89,7 +89,7 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
     int pitch;
     float rc[LPC_ORDER];
     /* Matches the Python code -- the 0.1 avoids rounding issues. */
-    pitch = (int)floor(.1 + 50*features[18]+100);
+    pitch = (int)floor(.1 + 50*features[NB_BANDS]+100);
     pitch = IMIN(255, IMAX(33, pitch));
     net = &lpcnet->nnet;
     RNN_COPY(in, features, NB_FEATURES);
