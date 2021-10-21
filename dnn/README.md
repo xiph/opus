@@ -65,13 +65,13 @@ This codebase is also meant for research and it is possible to train new models.
 
 1. Generate training data:
    ```
-   ./dump_data -train input.s16 features.f32 data.u8
+   ./dump_data -train input.s16 features.f32 data.s16
    ```
    where the first file contains 16 kHz 16-bit raw PCM audio (no header) and the other files are output files. This program makes several passes over the data with different filters to generate a large amount of training data.
 
 1. Now that you have your files, train with:
    ```
-   ./training_tf2/train_lpcnet.py features.f32 data.u8 model_name
+   ./training_tf2/train_lpcnet.py features.f32 data.s16 model_name
    ```
    and it will generate an h5 file for each iteration, with model\_name as prefix. If it stops with a
    "Failed to allocate RNN reserve space" message try specifying a smaller --batch-size for  train\_lpcnet.py.
@@ -79,14 +79,13 @@ This codebase is also meant for research and it is possible to train new models.
 1. You can synthesise speech with Python and your GPU card (very slow):
    ```
    ./dump_data -test test_input.s16 test_features.f32
-   ./training_tf2/test_lpcnet.py test_features.f32 test.s16
+   ./training_tf2/test_lpcnet.py lpcnet_model_name.h5 test_features.f32 test.s16
    ```
-   Note the .h5 is hard coded in test_lpcnet.py, modify for your .h5 file.
 
 1. Or with C on a CPU (C inference is much faster):
    First extract the model files nnet_data.h and nnet_data.c
    ```
-   ./dump_lpcnet.py lpcnet15_384_10_G16_64.h5
+   ./dump_lpcnet.py lpcnet_model_name.h5
    ```
    and move the generated nnet_data.* files to the src/ directory.
    Then you just need to rebuild the software and use lpcnet_demo as explained above.
