@@ -52,6 +52,7 @@ parser.add_argument('--end2end', dest='flag_e2e', action='store_true', help='Ena
 parser.add_argument('--lr', metavar='<learning rate>', type=float, help='learning rate')
 parser.add_argument('--decay', metavar='<decay>', type=float, help='learning rate decay')
 parser.add_argument('--gamma', metavar='<gamma>', type=float, help='adjust u-law compensation (default 2.0, should not be less than 1.0)')
+parser.add_argument('--lookahead', metavar='<nb frames>', default=2, type=int, help='Number of look-ahead frames (default 2)')
 parser.add_argument('--logdir', metavar='<log dir>', help='directory for tensorboard log files')
 
 
@@ -148,7 +149,7 @@ nb_frames = (len(data)//(2*pcm_chunk_size)-1)//batch_size*batch_size
 features = np.memmap(feature_file, dtype='float32', mode='r')
 
 # limit to discrete number of frames
-data = data[2*2*frame_size:]
+data = data[(4-args.lookahead)*2*frame_size:]
 data = data[:nb_frames*2*pcm_chunk_size]
 
 
