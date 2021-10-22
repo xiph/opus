@@ -198,7 +198,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_encoder_get_size(int channels);
  *                                     This must be one of 8000, 12000, 16000,
  *                                     24000, or 48000.
  * @param [in] channels <tt>int</tt>: Number of channels (1 or 2) in input signal
- * @param [in] application <tt>int</tt>: Coding mode (@ref OPUS_APPLICATION_VOIP/@ref OPUS_APPLICATION_AUDIO/@ref OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+ * @param [in] application <tt>int</tt>: Coding mode (@ref OPUS_APPLICATION_VOIP|@ref OPUS_APPLICATION_AUDIO|@ref OPUS_APPLICATION_RESTRICTED_LOWDELAY)
  * @param [out] error <tt>int*</tt>: @ref opus_errorcodes
  * @note Regardless of the sampling rate and number channels selected, the Opus encoder
  * can switch to a lower audio bandwidth or number of channels if the bitrate
