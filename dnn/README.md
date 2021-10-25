@@ -24,7 +24,7 @@ You can build the code using:
 make
 ```
 Note that the autogen.sh script is used when building from Git and will automatically download the latest model
-(models are too large to put in Git). By default, LPCNet will attempt to use 8-bit dot product instructions on AVX*/Neon to
+(models are too large to put in Git). By default, LPCNet will attempt to use 8-bit dot product instructions on AVX\*/Neon to
 speed up inference. To disable that (e.g. to avoid quantization effects when retraining), add --disable-dot-product to the
 configure script. LPCNet does not yet have a complete implementation for some of the integer operations on the ARMv7
 architecture so for now you will also need --disable-dot-product to successfully compile on 32-bit ARM.
@@ -42,7 +42,7 @@ While not strictly required, the -Ofast flag will help with auto-vectorization, 
 cannot be optimized without -ffast-math (which -Ofast enables). Additionally, -falign-loops=32 has been shown to
 help on x86.
 
-You can test the capabilities of LPCNet using the lpcnet_demo application. To encode a file:
+You can test the capabilities of LPCNet using the lpcnet\_demo application. To encode a file:
 ```
 ./lpcnet_demo -encode input.pcm compressed.bin
 ```
@@ -55,6 +55,8 @@ To decode:
 ```
 where output.pcm is also 16-bit, 16 kHz PCM.
 
+Alternatively, you can run the uncompressed analysis/synthesis using -features
+instead of -encode and -synthesis instead of -decode.
 The same functionality is available in the form of a library. See include/lpcnet.h for the API.
 
 # Training a new model
@@ -71,7 +73,7 @@ This codebase is also meant for research and it is possible to train new models.
 
 1. Now that you have your files, train with:
    ```
-   ./training_tf2/train_lpcnet.py features.f32 data.s16 model_name
+   python3 training_tf2/train_lpcnet.py features.f32 data.s16 model_name
    ```
    and it will generate an h5 file for each iteration, with model\_name as prefix. If it stops with a
    "Failed to allocate RNN reserve space" message try specifying a smaller --batch-size for  train\_lpcnet.py.
@@ -83,12 +85,12 @@ This codebase is also meant for research and it is possible to train new models.
    ```
 
 1. Or with C on a CPU (C inference is much faster):
-   First extract the model files nnet_data.h and nnet_data.c
+   First extract the model files nnet\_data.h and nnet\_data.c
    ```
-   ./dump_lpcnet.py lpcnet_model_name.h5
+   ./training_tf2/dump_lpcnet.py lpcnet_model_name.h5
    ```
-   and move the generated nnet_data.* files to the src/ directory.
-   Then you just need to rebuild the software and use lpcnet_demo as explained above.
+   and move the generated nnet\_data.\* files to the src/ directory.
+   Then you just need to rebuild the software and use lpcnet\_demo as explained above.
 
 # Speech Material for Training 
 
