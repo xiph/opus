@@ -74,6 +74,13 @@ void compute_noise(int *noise, float noise_std) {
   }
 }
 
+static short float2short(float x)
+{
+  int i;
+  i = (int)floor(.5+x);
+  return IMAX(-32767, IMIN(32767, i));
+}
+
 
 void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file, int nframes) {
   int i, k;
@@ -86,7 +93,7 @@ void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *f
     for (j=0;j<LPC_ORDER;j++) p -= st->features[k][NB_BANDS+2+j]*st->sig_mem[j];
     e = lin2ulaw(pcm[k*FRAME_SIZE+i] - p);
     /* Signal in. */
-    data[2*i] = st->sig_mem[0];
+    data[2*i] = float2short(st->sig_mem[0]);
     /* Signal out. */
     data[2*i+1] = pcm[k*FRAME_SIZE+i];
     /* Simulate error on excitation. */
@@ -99,13 +106,6 @@ void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *f
   }
   fwrite(data, 4*FRAME_SIZE, 1, file);
   }
-}
-
-static short float2short(float x)
-{
-  int i;
-  i = (int)floor(.5+x);
-  return IMAX(-32767, IMIN(32767, i));
 }
 
 int main(int argc, char **argv) {
