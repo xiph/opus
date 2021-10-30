@@ -27,7 +27,9 @@ struct LPCNetState {
     NNetState nnet;
     int last_exc;
     float last_sig[LPC_ORDER];
+#if FEATURES_DELAY>0
     float old_lpc[FEATURES_DELAY][LPC_ORDER];
+#endif
     float sampling_logit_table[256];
     int frame_count;
     float deemph_mem;
