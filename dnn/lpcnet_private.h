@@ -7,6 +7,7 @@
 #include "lpcnet.h"
 #include "nnet_data.h"
 #include "celt_lpc.h"
+#include "kiss99.h"
 
 #define BITS_PER_CHAR 8
 
@@ -33,6 +34,7 @@ struct LPCNetState {
     float sampling_logit_table[256];
     int frame_count;
     float deemph_mem;
+    kiss99_ctx rng;
 };
 
 struct LPCNetDecState {

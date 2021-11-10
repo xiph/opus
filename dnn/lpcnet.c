@@ -116,7 +116,7 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
     if (lpcnet->frame_count < 1000) lpcnet->frame_count++;
 }
 
-int run_sample_network(NNetState *net, const float *gru_a_condition, const float *gru_b_condition, int last_exc, int last_sig, int pred, const float *sampling_logit_table)
+int run_sample_network(NNetState *net, const float *gru_a_condition, const float *gru_b_condition, int last_exc, int last_sig, int pred, const float *sampling_logit_table, kiss99_ctx *rng)
 {
     float gru_a_input[3*GRU_A_STATE_SIZE];
     float in_b[GRU_A_STATE_SIZE+FEATURE_DENSE2_OUT_SIZE];
@@ -134,7 +134,7 @@ int run_sample_network(NNetState *net, const float *gru_a_condition, const float
     RNN_COPY(in_b, net->gru_a_state, GRU_A_STATE_SIZE);
     RNN_COPY(gru_b_input, gru_b_condition, 3*GRU_B_STATE_SIZE);
     compute_gruB(&gru_b, gru_b_input, net->gru_b_state, in_b);
-    return sample_mdense(&dual_fc, net->gru_b_state, sampling_logit_table);
+    return sample_mdense(&dual_fc, net->gru_b_state, sampling_logit_table, rng);
 }
 
 LPCNET_EXPORT int lpcnet_get_size()
@@ -145,12 +145,14 @@ LPCNET_EXPORT int lpcnet_get_size()
 LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
 {
     int i;
+    const char* rng_string="LPCNet";
     memset(lpcnet, 0, lpcnet_get_size());
     lpcnet->last_exc = lin2ulaw(0.f);
     for (i=0;i<256;i++) {
         float prob = .025+.95*i/255.;
         lpcnet->sampling_logit_table[i] = -log((1-prob)/prob);
     }
+    kiss99_srand(&lpcnet->rng, (const unsigned char *)rng_string, strlen(rng_string));
     return 0;
 }
 
@@ -193,7 +195,7 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features,
         for (j=0;j<LPC_ORDER;j++) pred -= lpcnet->last_sig[j]*lpc[j];
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
-        exc = run_sample_network(&lpcnet->nnet, gru_a_condition, gru_b_condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw, lpcnet->sampling_logit_table);
+        exc = run_sample_network(&lpcnet->nnet, gru_a_condition, gru_b_condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw, lpcnet->sampling_logit_table, &lpcnet->rng);
         pcm = pred + ulaw2lin(exc);
         RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
         lpcnet->last_sig[0] = pcm;

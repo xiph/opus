@@ -141,7 +141,7 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
    compute_activation(output, output, N, layer->activation);
 }
 
-int sample_mdense(const MDenseLayer *layer, const float *input, const float *sampling_logit_table)
+int sample_mdense(const MDenseLayer *layer, const float *input, const float *sampling_logit_table, kiss99_ctx *rng)
 {
    int b, j, N, M, C, stride;
    M = layer->nb_inputs;
@@ -156,7 +156,13 @@ int sample_mdense(const MDenseLayer *layer, const float *input, const float *sam
 
    /* Computing all the random thresholds in advance. These thresholds are directly
       based on the logit to avoid computing the sigmoid.*/
-   for (b=0;b<8;b++) thresholds[b] = sampling_logit_table[rand()&0xFF];
+   for (b=0;b<8;b+=4) {
+       uint32_t val = kiss99_rand(rng);
+       thresholds[b] = sampling_logit_table[val&0xFF];
+       thresholds[b+1] = sampling_logit_table[(val>>8)&0xFF];
+       thresholds[b+2] = sampling_logit_table[(val>>16)&0xFF];
+       thresholds[b+3] = sampling_logit_table[(val>>24)&0xFF];
+   }
 
    for (b=0;b<8;b++)
    {

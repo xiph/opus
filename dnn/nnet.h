@@ -29,6 +29,7 @@
 #define _NNET_H_
 
 #include "vec.h"
+#include "kiss99.h"
 
 #define ACTIVATION_LINEAR  0
 #define ACTIVATION_SIGMOID 1
@@ -98,7 +99,7 @@ void compute_dense(const DenseLayer *layer, float *output, const float *input);
 
 void compute_mdense(const MDenseLayer *layer, float *output, const float *input);
 
-int sample_mdense(const MDenseLayer *layer,  const float *input, const float *sampling_logit_table);
+int sample_mdense(const MDenseLayer *layer,  const float *input, const float *sampling_logit_table, kiss99_ctx *rng);
 
 void compute_gru(const GRULayer *gru, float *state, const float *input);
 

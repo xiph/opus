@@ -13,6 +13,7 @@ noinst_HEADERS = arch.h  \
 		 freq.h  \
 		 _kiss_fft_guts.h  \
 		 kiss_fft.h  \
+		 kiss99.h  \
 		 lpcnet_private.h \
 		 opus_types.h  \
 		 nnet_data.h  \
@@ -25,6 +26,7 @@ noinst_HEADERS = arch.h  \
 
 liblpcnet_la_SOURCES = \
 	common.c \
+	kiss99.c \
 	lpcnet.c \
 	lpcnet_dec.c \
 	lpcnet_enc.c \
