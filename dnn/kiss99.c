@@ -45,6 +45,15 @@ void kiss99_srand(kiss99_ctx *_this,const unsigned char *_data,int _ndata){
   if(i-3<_ndata)_this->z^=_data[i-3];
   if(i-2<_ndata)_this->w^=_data[i-2];
   if(i-1<_ndata)_this->jsr^=_data[i-1];
+  /*Fix any potential short cycles that show up.
+    These are not too likely, given the way we initialize the state, but they
+     are technically possible, so let us go ahead and eliminate that
+     possibility.
+    See Gregory G. Rose: "KISS: A Bit Too Simple", Cryptographic Communications
+     No. 10, pp. 123---137, 2018.*/
+  if(_this->z==0||_this->z==0x9068FFFF)_this->z++;
+  if(_this->w==0||_this->w==0x464FFFFF)_this->w++;
+  if(_this->jsr==0)_this->jsr++;
 }
 
 uint32_t kiss99_rand(kiss99_ctx *_this){
@@ -56,8 +65,12 @@ uint32_t kiss99_rand(kiss99_ctx *_this){
   znew=36969*(_this->z&0xFFFF)+(_this->z>>16);
   wnew=18000*(_this->w&0xFFFF)+(_this->w>>16);
   mwc=(znew<<16)+wnew;
-  shr3=_this->jsr^(_this->jsr<<17);
-  shr3^=shr3>>13;
+  /*We swap the 13 and 17 from the original 1999 algorithm to produce a single
+     cycle of maximal length, matching KISS11.
+    We are not actually using KISS11 because of the impractically large (16 MB)
+     internal state of the full algorithm.*/
+  shr3=_this->jsr^(_this->jsr<<13);
+  shr3^=shr3>>17;
   shr3^=shr3<<5;
   cong=69069*_this->jcong+1234567;
   _this->z=znew;

@@ -27,6 +27,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 # define _kiss99_H (1)
 # include <stdint.h>
 
+/*KISS PRNG from George Marsaglia (1999 version).
+  See https://en.wikipedia.org/wiki/KISS_(algorithm) for details.
+  This is suitable for simulations, but not for use in crytographic contexts.*/
+
 typedef struct kiss99_ctx kiss99_ctx;
 
 struct kiss99_ctx{
