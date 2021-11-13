@@ -587,7 +587,7 @@ void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int
       float max_prev;
       max_prev = st->pitch_max_path_all - 6.f;
       pitch_prev[sub][i] = st->best_i;
-      for (j=IMIN(0, 4-i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
+      for (j=IMAX(-4, -i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
         if (st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j) > max_prev) {
           max_prev = st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j);
           pitch_prev[sub][i] = i+j;
@@ -733,7 +733,7 @@ void process_multi_frame(LPCNetEncState *st, FILE *ffeat) {
       float max_prev;
       max_prev = st->pitch_max_path_all - 6.f;
       pitch_prev[sub][i] = st->best_i;
-      for (j=IMIN(0, 4-i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
+      for (j=IMAX(-4, -i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
         if (st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j) > max_prev) {
           max_prev = st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j);
           pitch_prev[sub][i] = i+j;
@@ -801,7 +801,7 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
       float max_prev;
       max_prev = st->pitch_max_path_all - 6.f;
       pitch_prev[sub][i] = st->best_i;
-      for (j=IMIN(0, 4-i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
+      for (j=IMAX(-4, -i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
         if (st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j) > max_prev) {
           max_prev = st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j);
           pitch_prev[sub][i] = i+j;
