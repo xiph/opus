@@ -544,6 +544,24 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
       ener = (1 + ener0 + celt_inner_prod(&st->exc_buf[i+off], &st->exc_buf[i+off], FRAME_SIZE/2));
       st->xc[2+2*st->pcount+sub][i] = 2*xcorr[i] / ener;
     }
+    if (0) {
+      /* Upsample correlation by 3x and keep the max. */
+      float interpolated[PITCH_MAX_PERIOD]={0};
+      /* interp=sinc([-3:3]+1/3).*(.5+.5*cos(pi*[-3:3]/4.5)); interp=interp/sum(interp); */
+      static const float interp[7] = {0.026184, -0.098339, 0.369938, 0.837891, -0.184969, 0.070242, -0.020947};
+      for (i=4;i<PITCH_MAX_PERIOD-4;i++) {
+        float val1=0, val2=0;
+        int j;
+        for (j=0;j<7;j++) {
+          val1 += st->xc[2+2*st->pcount+sub][i-3+j]*interp[j];
+          val2 += st->xc[2+2*st->pcount+sub][i+3-j]*interp[j];
+          interpolated[i] = MAX16(st->xc[2+2*st->pcount+sub][i], MAX16(val1, val2));
+        }
+      }
+      for (i=4;i<PITCH_MAX_PERIOD-4;i++) {
+        st->xc[2+2*st->pcount+sub][i] = interpolated[i];
+      }
+    }
 #if 0
     for (i=0;i<PITCH_MAX_PERIOD;i++)
       printf("%f ", st->xc[2*st->pcount+sub][i]);
