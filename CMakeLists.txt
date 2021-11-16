@@ -1,3 +1,141 @@
+# Copyright Airtime Media 2021
+
+################### AIRTIME CHANGES ###################
+
+project(opus)
+
+if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+  set(ARCHS ${CMAKE_OSX_ARCHITECTURES})
+else()
+  set(ARCHS ${at_target_arch})
+endif()
+
+set(BUILD_NE10 NO)
+
+if (IOS AND NOT IOS_SIMULATOR)
+  set(BUILD_NE10 YES)
+endif()
+
+if (ANDROID AND (${at_target_arch} STREQUAL "armv7" OR ${at_target_arch} STREQUAL "arm64"))
+  set(BUILD_NE10 YES)
+endif()
+
+if (BUILD_NE10)
+  add_subdirectory_once("${at_media_deps_dir}/Ne10" "${CMAKE_BINARY_DIR}/Ne10")
+endif()
+
+set(libopus_lib_files "")
+set(opus_binary_base_dir "${PROJECT_BINARY_DIR}/build")
+
+# serialize the calls to configure by chaining dependencies since configuring
+# multiple archs in parallel seems to cause issues (at least with Xcode)
+set(last_configure_target "")
+
+if(CMAKE_GENERATOR MATCHES Xcode)
+  file(MAKE_DIRECTORY "${opus_binary_base_dir}/i386")
+  file(MAKE_DIRECTORY "${opus_binary_base_dir}/armv7")
+  file(MAKE_DIRECTORY "${opus_binary_base_dir}/arm64")
+  file(MAKE_DIRECTORY "${opus_binary_base_dir}/x86_64")
+endif()
+
+foreach(ARCH ${ARCHS})
+  set(opus_binary_dir "${opus_binary_base_dir}/${ARCH}")
+  set(libopus_arch_file "${opus_binary_dir}/.libs/libopus.a")
+  set(libopus_makefile "${opus_binary_dir}/Makefile")
+
+  file(MAKE_DIRECTORY "${opus_binary_dir}")
+
+  #include(ExternalProject)
+  #ExternalProject_Add(opus_build
+  #  SOURCE_DIR ${PROJECT_SOURCE_DIR}/src
+  #  CONFIGURE_COMMAND ${PROJECT_SOURCE_DIR}/run_config.sh "${PROJECT_SOURCE_DIR}/src" "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILER_ARG1}" "${CMAKE_C_FLAGS_RELEASE}" "${at_target_os}" "${ARCH}"
+  #  BINARY_DIR ${opus_binary_dir}
+  #  BUILD_COMMAND make # add V=1 for verbose output
+  #  INSTALL_COMMAND ""
+  #)
+
+  # configure
+  add_custom_command(
+    OUTPUT ${libopus_makefile}
+    COMMAND "${PROJECT_SOURCE_DIR}/run_config.sh"
+    ARGS "${PROJECT_SOURCE_DIR}/src"
+      "${AT_CMAKE_C_COMPILER} ${AT_CMAKE_C_COMPILER_ARG1}" "${at_arch_flags} ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE}"
+      "${at_target_os}" "${ARCH}" "${at_ccache}"
+      "${at_ne10_lib_dir}" "${at_ne10_include_dir}"
+      "${ANDROID_TOOLCHAIN_PREFIX}" "${CMAKE_SHARED_LINKER_FLAGS}"
+    WORKING_DIRECTORY ${opus_binary_dir}
+    DEPENDS ${PROJECT_SOURCE_DIR}/run_config.sh ${last_configure_target}
+    VERBATIM
+  )
+
+  add_custom_target(libopus_configure_${ARCH}
+    DEPENDS ${libopus_makefile}
+  )
+  set(last_configure_target libopus_configure_${ARCH})
+
+  if ((TARGET NE10) AND (${ARCH} STREQUAL "armv7" OR ${ARCH} STREQUAL "arm64"))
+    add_dependencies(libopus_configure_${ARCH} NE10)
+  endif()
+
+  # make
+  file(GLOB_RECURSE opus_sources src *.c *.h *.s)
+  add_custom_command(
+    OUTPUT ${libopus_arch_file}
+    COMMAND make V=1 # add V=1 for verbose output
+    DEPENDS libopus_configure_${ARCH} ${opus_sources}
+    WORKING_DIRECTORY ${opus_binary_dir}
+  )
+
+  list(APPEND libopus_lib_files ${libopus_arch_file})
+
+endforeach()
+
+add_custom_target(opus_build
+  DEPENDS ${libopus_lib_files}
+  SOURCES ${opus_sources}
+)
+
+list(LENGTH CMAKE_OSX_ARCHITECTURES num_archs)
+if (APPLE AND num_archs GREATER 1)
+  set(opus_universal_binary_dir "${opus_binary_base_dir}/universal")
+  file(MAKE_DIRECTORY "${opus_universal_binary_dir}")
+  set(libopus_file "${opus_universal_binary_dir}/libopus.a")
+
+  add_custom_command(TARGET opus_build POST_BUILD
+    COMMAND lipo -output ${libopus_file} -create ${libopus_lib_files}
+  )
+else()
+  set(libopus_file ${libopus_lib_files})
+endif()
+
+# NOTE: This doesn't seem to work with ninja and ExternalProject due to this bug:
+# http://public.kitware.com/Bug/view.php?id=13574
+add_library(libopus STATIC IMPORTED GLOBAL)
+set_target_properties(libopus
+  PROPERTIES IMPORTED_LOCATION "${libopus_file}"
+)
+add_dependencies(libopus opus_build)
+if (BUILD_NE10)
+  target_link_libraries(libopus INTERFACE NE10)
+endif()
+
+# NOTE(tom): we can't use target_include_directories on an imported library,
+# so we directly set the properties that match the behavior we want
+#
+# See https://cmake.org/cmake/help/v3.0/command/target_include_directories.html
+# and http://stackoverflow.com/a/28305481/2442139
+set_property(TARGET libopus APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+set_property(TARGET libopus APPEND PROPERTY INCLUDE_DIRECTORIES
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  # These two are "private", but webrtc uses them
+  ${CMAKE_CURRENT_SOURCE_DIR}/celt
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+################### ORIGINAL CMAKELISTS.TXT BELOW ###################
+
 cmake_minimum_required(VERSION 3.1)
 
 include(opus_functions.cmake)
