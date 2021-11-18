@@ -1,0 +1,3 @@
+[submodule "media-deps/Ne10"]
+	path = media-deps/Ne10
+	url = git@github.com:airtimemedia/Ne10.git
