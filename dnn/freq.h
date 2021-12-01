@@ -47,6 +47,7 @@
 
 void compute_band_energy(float *bandE, const kiss_fft_cpx *X);
 void compute_band_corr(float *bandE, const kiss_fft_cpx *X, const kiss_fft_cpx *P);
+void compute_burg_cepstrum(const short *pcm, float *burg_cepstrum, int len, int order);
 
 void apply_window(float *x);
 void dct(float *out, const float *in);

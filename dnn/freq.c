@@ -37,6 +37,7 @@
 #include "freq.h"
 #include "pitch.h"
 #include "arch.h"
+#include "burg.h"
 #include <assert.h>
 
 #define SQUARE(x) ((x)*(x))
@@ -57,6 +58,32 @@ typedef struct {
   float dct_table[NB_BANDS*NB_BANDS];
 } CommonState;
 
+
+void compute_band_energy_inverse(float *bandE, const kiss_fft_cpx *X) {
+  int i;
+  float sum[NB_BANDS] = {0};
+  for (i=0;i<NB_BANDS-1;i++)
+  {
+    int j;
+    int band_size;
+    band_size = (eband5ms[i+1]-eband5ms[i])*WINDOW_SIZE_5MS;
+    for (j=0;j<band_size;j++) {
+      float tmp;
+      float frac = (float)j/band_size;
+      tmp = SQUARE(X[(eband5ms[i]*WINDOW_SIZE_5MS) + j].r);
+      tmp += SQUARE(X[(eband5ms[i]*WINDOW_SIZE_5MS) + j].i);
+      tmp = 1.f/(tmp + 1e-9);
+      sum[i] += (1-frac)*tmp;
+      sum[i+1] += frac*tmp;
+    }
+  }
+  sum[0] *= 2;
+  sum[NB_BANDS-1] *= 2;
+  for (i=0;i<NB_BANDS;i++)
+  {
+    bandE[i] = sum[i];
+  }
+}
 
 float _lpcnet_lpc(
       opus_val16 *lpc, /* out: [0...p-1] LPC coefficients      */
@@ -126,6 +153,41 @@ void compute_band_energy(float *bandE, const kiss_fft_cpx *X) {
   {
     bandE[i] = sum[i];
   }
+}
+
+void compute_burg_cepstrum(const short *pcm, float *burg_cepstrum, int len, int order) {
+  int i;
+  float burg_in[FRAME_SIZE];
+  float burg_lpc[LPC_ORDER];
+  float x[WINDOW_SIZE];
+  float Eburg[NB_BANDS];
+  float g;
+  float E;
+  kiss_fft_cpx LPC[FREQ_SIZE];
+  float Ly[NB_BANDS];
+  assert(order <= LPC_ORDER);
+  assert(len <= FRAME_SIZE);
+  for (i=0;i<len-1;i++) burg_in[i] = pcm[i+1] - PREEMPHASIS*pcm[i];
+  g = silk_burg_analysis(burg_lpc, burg_in, 1e-3, len-1, 1, order);
+  g /= len - 2*(order-1);
+  //printf("%g\n", g);
+  RNN_CLEAR(x, WINDOW_SIZE);
+  x[0] = 1;
+  for (i=0;i<order;i++) x[i+1] = -burg_lpc[i]*pow(.995, i+1);
+  forward_transform(LPC, x);
+  compute_band_energy_inverse(Eburg, LPC);
+  for (i=0;i<NB_BANDS;i++) Eburg[i] *= .45*g*(1.f/((float)WINDOW_SIZE*WINDOW_SIZE*WINDOW_SIZE));
+  float logMax = -2;
+  float follow = -2;
+  for (i=0;i<NB_BANDS;i++) {
+    Ly[i] = log10(1e-2+Eburg[i]);
+    Ly[i] = MAX16(logMax-8, MAX16(follow-2.5, Ly[i]));
+    logMax = MAX16(logMax, Ly[i]);
+    follow = MAX16(follow-2.5, Ly[i]);
+    E += Eburg[i];
+  }
+  dct(burg_cepstrum, Ly);
+  burg_cepstrum[0] += - 4;
 }
 
 void compute_band_corr(float *bandE, const kiss_fft_cpx *X, const kiss_fft_cpx *P) {
