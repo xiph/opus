@@ -118,7 +118,10 @@ void xcorr_kernel_sse4_1(const opus_val16 * x, const opus_val16 * y, opus_val32 
     __m128i initSum;
 
 #ifdef OPUS_CHECK_ASM
-    opus_val32 sum_c[4]={0,0,0,0};
+    opus_val32 sum_c[4];
+    for (j=0;j<4;j++) {
+      sum_c[j] = sum[j];
+    }
     xcorr_kernel_c(x, y, sum_c, len);
 #endif
 
