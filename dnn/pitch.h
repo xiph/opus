@@ -38,16 +38,6 @@
 //#include "cpu_support.h"
 #include "arch.h"
 
-void pitch_downsample(opus_val16 *x_lp,
-      int len);
-
-void pitch_search(const opus_val16 *x_lp, opus_val16 *y,
-                  int len, int max_pitch, int *pitch);
-
-opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
-      int N, int *T0, int prev_period, opus_val16 prev_gain);
-
-
 /* OPT: This is the kernel you really want to optimize. It gets used a lot
    by the prefilter and by the PLC. */
 static OPUS_INLINE void xcorr_kernel(const opus_val16 * x, const opus_val16 * y, opus_val32 sum[4], int len)
@@ -114,21 +104,6 @@ static OPUS_INLINE void xcorr_kernel(const opus_val16 * x, const opus_val16 * y,
       sum[2] = MAC16_16(sum[2],tmp,y_0);
       sum[3] = MAC16_16(sum[3],tmp,y_1);
    }
-}
-
-static OPUS_INLINE void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
-      int N, opus_val32 *xy1, opus_val32 *xy2)
-{
-   int i;
-   opus_val32 xy01=0;
-   opus_val32 xy02=0;
-   for (i=0;i<N;i++)
-   {
-      xy01 = MAC16_16(xy01, x[i], y01[i]);
-      xy02 = MAC16_16(xy02, x[i], y02[i]);
-   }
-   *xy1 = xy01;
-   *xy2 = xy02;
 }
 
 /*We make sure a C version is always available for cases where the overhead of
