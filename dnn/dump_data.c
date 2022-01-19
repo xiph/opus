@@ -182,8 +182,8 @@ int main(int argc, char **argv) {
       int ret;
       unsigned char buf[8];
       float features[4][NB_TOTAL_FEATURES];
-      //int c0_id, main_pitch, modulation, corr_id, vq_end[3], vq_mid, interp_id;
-      //ret = fscanf(f1, "%d %d %d %d %d %d %d %d %d\n", &c0_id, &main_pitch, &modulation, &corr_id, &vq_end[0], &vq_end[1], &vq_end[2], &vq_mid, &interp_id);
+      /*int c0_id, main_pitch, modulation, corr_id, vq_end[3], vq_mid, interp_id;*/
+      /*ret = fscanf(f1, "%d %d %d %d %d %d %d %d %d\n", &c0_id, &main_pitch, &modulation, &corr_id, &vq_end[0], &vq_end[1], &vq_end[2], &vq_mid, &interp_id);*/
       ret = fread(buf, 1, 8, f1);
       if (ret != 8) break;
       decode_packet(features, vq_mem, buf);
@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
       }
       st->pcount = 0;
     }
-    //if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);
+    /*if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);*/
     for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);
     old_speech_gain = speech_gain;
     count++;

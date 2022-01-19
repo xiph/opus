@@ -57,7 +57,7 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   short output[FRAME_SIZE];
   st->enc.pcount = 0;
   if (st->skip_analysis) {
-    //fprintf(stderr, "skip update\n");
+    /*fprintf(stderr, "skip update\n");*/
     if (st->blend) {
       short tmp[FRAME_SIZE-TRAINING_OFFSET];
       lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
@@ -73,10 +73,10 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
       RNN_COPY(&st->pcm[st->pcm_fill], pcm, FRAME_SIZE);
       st->pcm_fill += FRAME_SIZE;
     }
-    //fprintf(stderr, "fill at %d\n", st->pcm_fill);
+    /*fprintf(stderr, "fill at %d\n", st->pcm_fill);*/
   }
   /* Update state. */
-  //fprintf(stderr, "update state\n");
+  /*fprintf(stderr, "update state\n");*/
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
   preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
   compute_frame_features(&st->enc, x);
@@ -105,7 +105,7 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   /* If we concealed the previous frame, finish synthesizing the rest of the samples. */
   /* FIXME: Copy/predict features. */
   while (st->pcm_fill > 0) {
-    //fprintf(stderr, "update state for PLC %d\n", st->pcm_fill);
+    /*fprintf(stderr, "update state for PLC %d\n", st->pcm_fill);*/
     int update_count;
     update_count = IMIN(st->pcm_fill, FRAME_SIZE);
     RNN_COPY(output, &st->pcm[0], update_count);

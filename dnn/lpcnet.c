@@ -56,21 +56,22 @@ static void print_vector(float *x, int N)
 #ifdef END2END
 void rc2lpc(float *lpc, const float *rc)
 {
+  int i, j, k;
   float tmp[LPC_ORDER];
   float ntmp[LPC_ORDER] = {0.0};
   RNN_COPY(tmp, rc, LPC_ORDER);
-  for(int i = 0; i < LPC_ORDER ; i++)
+  for(i = 0; i < LPC_ORDER ; i++)
     { 
-        for(int j = 0; j <= i-1; j++)
+        for(j = 0; j <= i-1; j++)
         {
             ntmp[j] = tmp[j] + tmp[i]*tmp[i - j - 1];
         }
-        for(int k = 0; k <= i-1; k++)
+        for(k = 0; k <= i-1; k++)
         {
             tmp[k] = ntmp[k];
         }
     }
-  for(int i = 0; i < LPC_ORDER ; i++)
+  for(i = 0; i < LPC_ORDER ; i++)
   {
     lpc[i] = tmp[i];
   }

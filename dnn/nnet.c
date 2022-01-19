@@ -144,6 +144,8 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
 int sample_mdense(const MDenseLayer *layer, const float *input, const float *sampling_logit_table, kiss99_ctx *rng)
 {
    int b, j, N, M, C, stride;
+   int val=0;
+   float thresholds[8];
    M = layer->nb_inputs;
    N = layer->nb_neurons;
    C = layer->nb_channels;
@@ -151,8 +153,6 @@ int sample_mdense(const MDenseLayer *layer, const float *input, const float *sam
    stride = M*C;
    
    celt_assert(N <= DUAL_FC_OUT_SIZE);
-   int val=0;
-   float thresholds[8];
 
    /* Computing all the random thresholds in advance. These thresholds are directly
       based on the logit to avoid computing the sigmoid.*/
@@ -181,7 +181,7 @@ int sample_mdense(const MDenseLayer *layer, const float *input, const float *sam
       sum1 = layer->factor[i]*tanh_approx(sum1);
       sum2 = layer->factor[N + i]*tanh_approx(sum2);
       sum1 += sum2;
-      //sum1 = 1.f/(1 + exp(-sum1));
+      /*sum1 = 1.f/(1 + exp(-sum1));*/
 #if 1 /* Sample the decision based on the logit. */
       bit = thresholds[b] < sum1;
 #else

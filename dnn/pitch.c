@@ -37,9 +37,6 @@
 
 #include "pitch.h"
 #include "common.h"
-//#include "modes.h"
-//#include "stack_alloc.h"
-//#include "mathops.h"
 #include "celt_lpc.h"
 #include "math.h"
 

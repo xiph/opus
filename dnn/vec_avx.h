@@ -320,15 +320,12 @@ static inline void vector_ps_to_epi8(unsigned char *x, const float *_x, int len)
        __m256 xf;
        __m256i xi;
        xf = _mm256_loadu_ps(&_x[i]);
-       //xf = _mm256_mul_ps(xf, const127);
-       //xf = _mm256_add_ps(xf, const127);
        xf = _mm256_fmadd_ps(xf, const127, const127);
        xi = _mm256_cvtps_epi32(xf);
        xi = _mm256_packus_epi32(xi,  _mm256_setzero_si256());
        xi = _mm256_permute4x64_epi64(xi, 0xD8);
        xi = _mm256_packus_epi16(xi, _mm256_setzero_si256());
        xi = _mm256_permutevar8x32_epi32(xi, _mm256_setr_epi32(0,1, 0,0, 0,0, 0,0));
-       //xi = _mm256_permute4x64_epi64(xi, 0x);
        _mm256_storeu_si256 ((__m256i *)&x[i], xi);
    }
 }
@@ -618,7 +615,7 @@ static inline void sgemv_accum16(float *out, const float *weights, int rows, int
    int i, j;
    for (i=0;i<rows;i+=16)
    {
-      float * restrict y;
+      float *y;
       __m256 vy0, vy8;
       y = &out[i];
       vy0 = _mm256_loadu_ps(&y[0]);
@@ -644,7 +641,7 @@ static inline void sparse_sgemv_accum16(float *out, const float *weights, int ro
    int i, j;
    for (i=0;i<rows;i+=16)
    {
-      float * restrict y;
+      float *y;
       int cols;
       __m256 vy0, vy8;
       y = &out[i];
@@ -692,7 +689,7 @@ static inline void sgemv_accum8x4(float *_out, const qweight *w, int rows, int c
    unsigned char x[MAX_INPUTS];
    (void)col_stride;
    ones = _mm256_set1_epi16(1);
-   //for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);
+   /*for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);*/
    vector_ps_to_epi8(x, _x, cols);
    for (i=0;i<rows;i+=8)
    {
@@ -709,26 +706,26 @@ static inline void sgemv_accum8x4(float *_out, const qweight *w, int rows, int c
          __m256i vxj;
          __m256i vw;
          vxj = _mm256_set1_epi32(*(int*)&x[j]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
          vxj = _mm256_set1_epi32(*(int*)&x[j+4]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
          vxj = _mm256_set1_epi32(*(int*)&x[j+8]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
          vxj = _mm256_set1_epi32(*(int*)&x[j+12]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
@@ -740,8 +737,8 @@ static inline void sgemv_accum8x4(float *_out, const qweight *w, int rows, int c
          __m256i vxj;
          __m256i vw;
          vxj = _mm256_set1_epi32(*(int*)&x[j]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
@@ -763,7 +760,7 @@ static inline void sgemv_accum8x4(float *out, const qweight *w, int rows, int co
    {
       for (j=0;j<cols;j+=4)
       {
-         float * restrict y;
+         float *y;
          float xj0, xj1, xj2, xj3;
          xj0 = x[j+0];
          xj1 = x[j+1];
@@ -791,7 +788,7 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
    int i, j;
    unsigned char x[MAX_INPUTS];
    ones = _mm256_set1_epi16(1);
-   //for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);
+   /*for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);*/
    vector_ps_to_epi8(x, _x, cols);
    for (i=0;i<rows;i+=8)
    {
@@ -810,26 +807,26 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
          __m256i vxj;
          __m256i vw;
          vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
          vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
          vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
          vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
@@ -843,8 +840,8 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
          int pos;
          pos = (*idx++);
          vxj = _mm256_set1_epi32(*(int*)&x[pos]);
-         vw = _mm256_loadu_si256((const __m256i *)w); //_mm256_lddqu_si256?
-         tmp = _mm256_maddubs_epi16(vxj, vw); //swap?
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
          tmp = _mm256_madd_epi16(tmp, ones);
          vy0 = _mm256_add_epi32(vy0, tmp);
          w += 32;
@@ -866,7 +863,7 @@ static inline void sparse_sgemv_accum8x4(float *out, const qweight *weights, int
    (void)ignore;
    for (i=0;i<rows;i+=8)
    {
-      float * restrict y;
+      float *y;
       int cols;
       __m256 vy0;
       y = &out[i];

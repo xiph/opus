@@ -34,8 +34,6 @@
 #ifndef PITCH_H
 #define PITCH_H
 
-//#include "modes.h"
-//#include "cpu_support.h"
 #include "arch.h"
 
 /* OPT: This is the kernel you really want to optimize. It gets used a lot
