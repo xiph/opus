@@ -74,7 +74,7 @@ void vq_quantize_mbest(const float *codebook, int nb_entries, const float *x, in
 }
 
 
-int vq_quantize(const float *codebook, int nb_entries, const float *x, int ndim, float *dist)
+int vq_quantize(const float *codebook, int nb_entries, const float *x, int ndim, float *dist_out)
 {
   int i, j;
   float min_dist = 1e15;
@@ -91,8 +91,8 @@ int vq_quantize(const float *codebook, int nb_entries, const float *x, int ndim,
       nearest = i;
     }
   }
-  if (dist)
-    *dist = min_dist;
+  if (dist_out)
+    *dist_out = min_dist;
   return nearest;
 }
 
@@ -236,7 +236,7 @@ int quantize_3stage_mbest(float *x, int entry[3])
     return id;
 }
 
-static int find_nearest_multi(const float *codebook, int nb_entries, const float *x, int ndim, float *dist, int sign)
+static int find_nearest_multi(const float *codebook, int nb_entries, const float *x, int ndim, float *dist_out, int sign)
 {
   int i, j;
   float min_dist = 1e15;
@@ -270,8 +270,8 @@ static int find_nearest_multi(const float *codebook, int nb_entries, const float
       }
     }
   }
-  if (dist)
-    *dist = min_dist;
+  if (dist_out)
+    *dist_out = min_dist;
   return nearest;
 }
 

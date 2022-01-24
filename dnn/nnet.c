@@ -170,11 +170,11 @@ int sample_mdense(const MDenseLayer *layer, const float *input, const float *sam
    /* Computing all the random thresholds in advance. These thresholds are directly
       based on the logit to avoid computing the sigmoid.*/
    for (b=0;b<8;b+=4) {
-       uint32_t val = kiss99_rand(rng);
-       thresholds[b] = sampling_logit_table[val&0xFF];
-       thresholds[b+1] = sampling_logit_table[(val>>8)&0xFF];
-       thresholds[b+2] = sampling_logit_table[(val>>16)&0xFF];
-       thresholds[b+3] = sampling_logit_table[(val>>24)&0xFF];
+       uint32_t r = kiss99_rand(rng);
+       thresholds[b] = sampling_logit_table[r&0xFF];
+       thresholds[b+1] = sampling_logit_table[(r>>8)&0xFF];
+       thresholds[b+2] = sampling_logit_table[(r>>16)&0xFF];
+       thresholds[b+3] = sampling_logit_table[(r>>24)&0xFF];
    }
 
    for (b=0;b<8;b++)

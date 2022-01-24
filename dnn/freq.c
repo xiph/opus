@@ -127,7 +127,7 @@ void interp_band_gain(float *g, const float *bandE) {
 
 CommonState common;
 
-static void check_init() {
+static void check_init(void) {
   int i;
   if (common.init) return;
   common.kfft = opus_fft_alloc_twiddles(WINDOW_SIZE, NULL, NULL, NULL, 0);
