@@ -36,6 +36,7 @@
 #define ACTIVATION_TANH    2
 #define ACTIVATION_RELU    3
 #define ACTIVATION_SOFTMAX 4
+#define ACTIVATION_SWISH   5
 
 typedef struct {
   const float *bias;

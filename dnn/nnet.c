@@ -46,6 +46,17 @@
 
 #define SOFTMAX_HACK
 
+#define MAX_ACTIVATIONS (4096)
+
+static OPUS_INLINE void vec_swish(float *y, const float *x, int N)
+{
+   int i;
+   float tmp[MAX_ACTIVATIONS];
+   celt_assert(N <= MAX_ACTIVATIONS);
+   vec_sigmoid(tmp, x, N);
+   for (i=0;i<N;i++)
+      y[i] = x[i]*tmp[i];
+}
 
 static OPUS_INLINE float relu(float x)
 {
@@ -75,6 +86,8 @@ void compute_activation(float *output, const float *input, int N, int activation
       vec_sigmoid(output, input, N);
    } else if (activation == ACTIVATION_TANH) {
       vec_tanh(output, input, N);
+   } else if (activation == ACTIVATION_SWISH) {
+      vec_swish(output, input, N);
    } else if (activation == ACTIVATION_RELU) {
       for (i=0;i<N;i++)
          output[i] = relu(input[i]);
