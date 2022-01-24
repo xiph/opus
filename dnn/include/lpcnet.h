@@ -64,7 +64,7 @@ typedef struct LPCNetPLCState LPCNetPLCState;
 /** Gets the size of an <code>LPCNetDecState</code> structure.
   * @returns The size in bytes.
   */
-LPCNET_EXPORT int lpcnet_decoder_get_size();
+LPCNET_EXPORT int lpcnet_decoder_get_size(void);
 
 /** Initializes a previously allocated decoder state
   * The memory pointed to by st must be at least the size returned by lpcnet_decoder_get_size().
@@ -78,7 +78,7 @@ LPCNET_EXPORT int lpcnet_decoder_init(LPCNetDecState *st);
 /** Allocates and initializes a decoder state.
   *  @returns The newly created state
   */
-LPCNET_EXPORT LPCNetDecState *lpcnet_decoder_create();
+LPCNET_EXPORT LPCNetDecState *lpcnet_decoder_create(void);
 
 /** Frees an <code>LPCNetDecState</code> allocated by lpcnet_decoder_create().
   * @param[in] st <tt>LPCNetDecState*</tt>: State to be freed.
@@ -98,7 +98,7 @@ LPCNET_EXPORT int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, sh
 /** Gets the size of an <code>LPCNetEncState</code> structure.
   * @returns The size in bytes.
   */
-LPCNET_EXPORT int lpcnet_encoder_get_size();
+LPCNET_EXPORT int lpcnet_encoder_get_size(void);
 
 /** Initializes a previously allocated encoder state
   * The memory pointed to by st must be at least the size returned by lpcnet_encoder_get_size().
@@ -112,7 +112,7 @@ LPCNET_EXPORT int lpcnet_encoder_init(LPCNetEncState *st);
 /** Allocates and initializes an encoder state.
   *  @returns The newly created state
   */
-LPCNET_EXPORT LPCNetEncState *lpcnet_encoder_create();
+LPCNET_EXPORT LPCNetEncState *lpcnet_encoder_create(void);
 
 /** Frees an <code>LPCNetEncState</code> allocated by lpcnet_encoder_create().
   * @param[in] st <tt>LPCNetEncState*</tt>: State to be freed.
@@ -146,7 +146,7 @@ LPCNET_EXPORT int lpcnet_compute_single_frame_features(LPCNetEncState *st, const
 /** Gets the size of an <code>LPCNetState</code> structure.
   * @returns The size in bytes.
   */
-LPCNET_EXPORT int lpcnet_get_size();
+LPCNET_EXPORT int lpcnet_get_size(void);
 
 /** Initializes a previously allocated synthesis state
   * The memory pointed to by st must be at least the size returned by lpcnet_get_size().
@@ -160,7 +160,7 @@ LPCNET_EXPORT int lpcnet_init(LPCNetState *st);
 /** Allocates and initializes a synthesis state.
   *  @returns The newly created state
   */
-LPCNET_EXPORT LPCNetState *lpcnet_create();
+LPCNET_EXPORT LPCNetState *lpcnet_create(void);
 
 /** Frees an <code>LPCNetState</code> allocated by lpcnet_create().
   * @param[in] st <tt>LPCNetState*</tt>: State to be freed.
@@ -179,7 +179,7 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, const float *features, sho
 
 LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st);
 
-LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create();
+LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create(void);
 
 LPCNET_EXPORT void lpcnet_plc_destroy(LPCNetPLCState *st);
 
