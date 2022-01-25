@@ -6,7 +6,6 @@
 #include "freq.h"
 #include "lpcnet.h"
 #include "nnet_data.h"
-#include "celt_lpc.h"
 #include "kiss99.h"
 
 #define BITS_PER_CHAR 8

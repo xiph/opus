@@ -26,6 +26,8 @@
 
 #include "kiss_fft.h"
 
+#define LPC_ORDER 16
+
 #define PREEMPHASIS (0.85f)
 
 #define FRAME_SIZE_5MS (2)

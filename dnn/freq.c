@@ -37,7 +37,6 @@
 #include "freq.h"
 #include "pitch.h"
 #include "arch.h"
-#include "celt_lpc.h"
 #include <assert.h>
 
 #define SQUARE(x) ((x)*(x))
@@ -57,6 +56,50 @@ typedef struct {
   float half_window[OVERLAP_SIZE];
   float dct_table[NB_BANDS*NB_BANDS];
 } CommonState;
+
+
+float _lpcnet_lpc(
+      opus_val16 *lpc, /* out: [0...p-1] LPC coefficients      */
+      opus_val16 *rc,
+const opus_val32 *ac,  /* in:  [0...p] autocorrelation values  */
+int          p
+)
+{
+   int i, j;
+   opus_val32 r;
+   opus_val32 error = ac[0];
+
+   RNN_CLEAR(lpc, p);
+   RNN_CLEAR(rc, p);
+   if (ac[0] != 0)
+   {
+      for (i = 0; i < p; i++) {
+         /* Sum up this iteration's reflection coefficient */
+         opus_val32 rr = 0;
+         for (j = 0; j < i; j++)
+            rr += MULT32_32_Q31(lpc[j],ac[i - j]);
+         rr += SHR32(ac[i + 1],3);
+         r = -SHL32(rr,3)/error;
+         rc[i] = r;
+         /*  Update LPC coefficients and total error */
+         lpc[i] = SHR32(r,3);
+         for (j = 0; j < (i+1)>>1; j++)
+         {
+            opus_val32 tmp1, tmp2;
+            tmp1 = lpc[j];
+            tmp2 = lpc[i-1-j];
+            lpc[j]     = tmp1 + MULT32_32_Q31(r,tmp2);
+            lpc[i-1-j] = tmp2 + MULT32_32_Q31(r,tmp1);
+         }
+
+         error = error - MULT32_32_Q31(MULT32_32_Q31(r,r),error);
+         /* Bail out once we get 30 dB gain */
+         if (error<.001f*ac[0])
+            break;
+      }
+   }
+   return error;
+}
 
 
 
@@ -224,7 +267,7 @@ float lpc_from_bands(float *lpc, const float *Ex)
    ac[0] += ac[0]*1e-4 + 320/12/38.;
    /* Lag windowing. */
    for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
-   e = _celt_lpc(lpc, rc, ac, LPC_ORDER);
+   e = _lpcnet_lpc(lpc, rc, ac, LPC_ORDER);
    return e;
 }
 

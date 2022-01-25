@@ -37,7 +37,6 @@
 
 #include "pitch.h"
 #include "common.h"
-#include "celt_lpc.h"
 #include "math.h"
 
 

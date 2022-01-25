@@ -38,7 +38,6 @@
 #include "freq.h"
 #include "pitch.h"
 #include "arch.h"
-#include "celt_lpc.h"
 #include <assert.h>
 #include "lpcnet.h"
 #include "lpcnet_private.h"
