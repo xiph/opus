@@ -10,9 +10,11 @@ lib_LTLIBRARIES = libopus.la
 DIST_SUBDIRS = doc
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/celt -I$(top_srcdir)/silk \
-              -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed $(NE10_CFLAGS)
+              -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed $(NE10_CFLAGS) \
+              -I$(top_srcdir)/lpcnet/include
 
 include celt_sources.mk
+include lpcnet_sources.mk
 include silk_sources.mk
 include opus_sources.mk
 
@@ -75,7 +77,7 @@ include celt_headers.mk
 include silk_headers.mk
 include opus_headers.mk
 
-libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(OPUS_SOURCES)
+libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(LPCNET_SOURCES) $(OPUS_SOURCES)
 libopus_la_LDFLAGS = -no-undefined -version-info @OPUS_LT_CURRENT@:@OPUS_LT_REVISION@:@OPUS_LT_AGE@
 libopus_la_LIBADD = $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
@@ -149,16 +151,17 @@ tests_test_opus_padding_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
 CELT_OBJ = $(CELT_SOURCES:.c=.lo)
 SILK_OBJ = $(SILK_SOURCES:.c=.lo)
+LPCNET_OBJ = $(LPCNET_SOURCES:.c=.lo)
 OPUS_OBJ = $(OPUS_SOURCES:.c=.lo)
 
 tests_test_opus_projection_SOURCES = tests/test_opus_projection.c tests/test_opus_common.h
-tests_test_opus_projection_LDADD = $(OPUS_OBJ) $(SILK_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+tests_test_opus_projection_LDADD = $(OPUS_OBJ) $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 tests_test_opus_projection_LDADD += libarmasm.la
 endif
 
 silk_tests_test_unit_LPC_inv_pred_gain_SOURCES = silk/tests/test_unit_LPC_inv_pred_gain.c
-silk_tests_test_unit_LPC_inv_pred_gain_LDADD = $(SILK_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+silk_tests_test_unit_LPC_inv_pred_gain_LDADD = $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 silk_tests_test_unit_LPC_inv_pred_gain_LDADD += libarmasm.la
 endif

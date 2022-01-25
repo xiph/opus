@@ -33,6 +33,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "stack_alloc.h"
 #include "PLC.h"
 
+#ifdef NEURAL_PLC
+#include "lpcnet.h"
+#endif
+
 #define NB_ATT 2
 static const opus_int16 HARM_ATT_Q15[NB_ATT]              = { 32440, 31130 }; /* 0.99, 0.95 */
 static const opus_int16 PLC_RAND_ATTENUATE_V_Q15[NB_ATT]  = { 31130, 26214 }; /* 0.95, 0.8 */
@@ -60,6 +64,14 @@ void silk_PLC_Reset(
     psDec->sPLC.prevGain_Q16[ 1 ] = SILK_FIX_CONST( 1, 16 );
     psDec->sPLC.subfr_length = 20;
     psDec->sPLC.nb_subfr = 2;
+#ifdef NEURAL_PLC
+    if( psDec->sPLC.lpcnet != NULL ) {
+        lpcnet_plc_init( psDec->sPLC.lpcnet );
+    } else {
+        /* FIXME: This is leaking memory. The right fix is for the LPCNet state to be part of the PLC struct itself. */
+        psDec->sPLC.lpcnet = lpcnet_plc_create();
+    }
+#endif
 }
 
 void silk_PLC(
@@ -88,6 +100,14 @@ void silk_PLC(
         /* Update state             */
         /****************************/
         silk_PLC_update( psDec, psDecCtrl );
+#ifdef NEURAL_PLC
+        if ( psDec->sPLC.fs_kHz == 16 ) {
+            int k;
+            for( k = 0; k < psDec->nb_subfr; k += 2 ) {
+                lpcnet_plc_update( psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
+            }
+        }
+#endif
     }
 }
 
@@ -371,6 +391,17 @@ static OPUS_INLINE void silk_PLC_conceal(
         /* Scale with Gain */
         frame[ i ] = (opus_int16)silk_SAT16( silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], prevGain_Q10[ 1 ] ), 8 ) ) );
     }
+#ifdef NEURAL_PLC
+    if ( psDec->sPLC.fs_kHz == 16 ) {
+        for( k = 0; k < psDec->nb_subfr; k += 2 ) {
+            lpcnet_plc_conceal(psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
+        }
+    }
+    /* We *should* be able to copy only from psDec->frame_length-MAX_LPC_ORDER, i.e. the last MAX_LPC_ORDER samples. */
+    for( i = 0; i < psDec->frame_length; i++ ) {
+        sLPC_Q14_ptr[ MAX_LPC_ORDER + i ] = (int)floor(.5 + frame[ i ] * (float)(1 << 24) / prevGain_Q10[ 1 ] );
+    }
+#endif
 
     /* Save LPC state */
     silk_memcpy( psDec->sLPC_Q14_buf, &sLPC_Q14_ptr[ psDec->frame_length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );

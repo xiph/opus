@@ -34,6 +34,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "entenc.h"
 #include "entdec.h"
 
+#ifdef NEURAL_PLC
+#include "lpcnet.h"
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -243,6 +247,10 @@ typedef struct {
     opus_int                    fs_kHz;
     opus_int                    nb_subfr;
     opus_int                    subfr_length;
+#ifdef NEURAL_PLC
+    /* FIXME: We should include the state struct directly to preserve the state shadow copy property. */
+    LPCNetPLCState              *lpcnet;
+#endif
 } silk_PLC_struct;
 
 /* Struct for CNG */
