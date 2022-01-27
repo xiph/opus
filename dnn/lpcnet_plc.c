@@ -31,6 +31,10 @@
 #include "lpcnet_private.h"
 #include "lpcnet.h"
 
+LPCNET_EXPORT int lpcnet_plc_get_size() {
+  return sizeof(LPCNetPLCState);
+}
+
 LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st) {
   lpcnet_init(&st->lpcnet);
   lpcnet_encoder_init(&st->enc);

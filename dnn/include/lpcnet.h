@@ -176,6 +176,7 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *st);
   */
 LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, const float *features, short *output, int N);
 
+LPCNET_EXPORT int lpcnet_plc_get_size(void);
 
 LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st);
 
