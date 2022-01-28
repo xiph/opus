@@ -28,6 +28,10 @@
 #include "config.h"
 #endif
 
+#ifdef OPUS_BUILD
+#define celt_pitch_xcorr celt_pitch_xcorr_c
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
