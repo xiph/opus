@@ -31,6 +31,9 @@
 #include "lpcnet_private.h"
 #include "lpcnet.h"
 
+#define PLC_DUMP_FEATURES 0
+#define PLC_READ_FEATURES 0
+
 LPCNET_EXPORT int lpcnet_plc_get_size() {
   return sizeof(LPCNetPLCState);
 }
@@ -96,6 +99,13 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE+i] = pcm[i];
     RNN_COPY(output, &st->pcm[0], FRAME_SIZE);
     lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], output, FRAME_SIZE, FRAME_SIZE);
+#if PLC_READ_FEATURES
+    for (i=0;i<NB_FEATURES;i++) scanf("%f", &st->features[i]);
+#endif
+#if PLC_DUMP_FEATURES
+    for (i=0;i<NB_FEATURES;i++) printf("%f ", st->enc.features[0][i]);
+    printf("1\n");
+#endif
 
     RNN_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE);
   }
@@ -104,6 +114,9 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
 }
 
 LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
+#if PLC_READ_FEATURES || PLC_DUMP_FEATURES
+  int i;
+#endif
   short output[FRAME_SIZE];
   st->enc.pcount = 0;
   /* If we concealed the previous frame, finish synthesizing the rest of the samples. */
@@ -113,13 +126,26 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
     int update_count;
     update_count = IMIN(st->pcm_fill, FRAME_SIZE);
     RNN_COPY(output, &st->pcm[0], update_count);
-
+#if PLC_READ_FEATURES
+    for (i=0;i<NB_FEATURES;i++) scanf("%f", &st->features[i]);
+#endif
+#if PLC_DUMP_FEATURES
+    for (i=0;i<NB_FEATURES+1;i++) printf("%f ", 0.);
+    printf("\n");
+#endif
     lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], output, update_count, update_count);
     RNN_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE);
     st->pcm_fill -= update_count;
     st->skip_analysis++;
   }
   lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
+#if PLC_READ_FEATURES
+  for (i=0;i<NB_FEATURES;i++) scanf("%f", &st->features[i]);
+#endif
+#if PLC_DUMP_FEATURES
+  for (i=0;i<NB_FEATURES+1;i++) printf("%f ", 0.);
+  printf("\n");
+#endif
   lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], &pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
   {
     int i;
