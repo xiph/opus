@@ -51,7 +51,7 @@ LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st) {
 
 LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create() {
   LPCNetPLCState *st;
-  st = malloc(sizeof(*st));
+  st = calloc(sizeof(*st), 1);
   lpcnet_plc_init(st);
   return st;
 }
