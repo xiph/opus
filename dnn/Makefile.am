@@ -16,6 +16,7 @@ noinst_HEADERS = arch.h  \
 		 lpcnet_private.h \
 		 opus_types.h  \
 		 nnet_data.h  \
+		 plc_data.h  \
 		 nnet.h  \
 		 pitch.h  \
 		 tansig_table.h \
@@ -31,6 +32,7 @@ liblpcnet_la_SOURCES = \
 	lpcnet_enc.c \
 	nnet.c \
 	nnet_data.c \
+	plc_data.c \
 	ceps_codebooks.c \
 	pitch.c \
 	freq.c \

@@ -30,9 +30,11 @@
 
 #include "lpcnet_private.h"
 #include "lpcnet.h"
+#include "plc_data.h"
 
 #define PLC_DUMP_FEATURES 0
 #define PLC_READ_FEATURES 0
+#define PLC_DNN_PRED 1
 
 LPCNET_EXPORT int lpcnet_plc_get_size() {
   return sizeof(LPCNetPLCState);
@@ -56,6 +58,15 @@ LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create() {
 
 LPCNET_EXPORT void lpcnet_plc_destroy(LPCNetPLCState *st) {
   free(st);
+}
+
+static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
+  float zeros[1024] = {0};
+  float dense_out[PLC_DENSE1_OUT_SIZE];
+  _lpcnet_compute_dense(&plc_dense1, dense_out, in);
+  compute_gruB(&plc_gru1, zeros, net->plc_gru1_state, dense_out);
+  compute_gruB(&plc_gru2, zeros, net->plc_gru2_state, net->plc_gru1_state);
+  if (out != NULL) _lpcnet_compute_dense(&plc_out, out, net->plc_gru2_state);
 }
 
 LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
@@ -99,6 +110,9 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE+i] = pcm[i];
     RNN_COPY(output, &st->pcm[0], FRAME_SIZE);
     lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], output, FRAME_SIZE, FRAME_SIZE);
+#if PLC_DNN_PRED
+    compute_plc_pred(&st->plc_net, NULL, st->enc.features[0]);
+#endif
 #if PLC_READ_FEATURES
     for (i=0;i<NB_FEATURES;i++) scanf("%f", &st->features[i]);
 #endif
@@ -106,7 +120,6 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     for (i=0;i<NB_FEATURES;i++) printf("%f ", st->enc.features[0][i]);
     printf("1\n");
 #endif
-
     RNN_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE);
   }
   RNN_COPY(st->features, st->enc.features[0], NB_TOTAL_FEATURES);
@@ -118,6 +131,7 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   int i;
 #endif
   short output[FRAME_SIZE];
+  float zeros[NB_FEATURES+1] = {0};
   st->enc.pcount = 0;
   /* If we concealed the previous frame, finish synthesizing the rest of the samples. */
   /* FIXME: Copy/predict features. */
@@ -126,6 +140,9 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
     int update_count;
     update_count = IMIN(st->pcm_fill, FRAME_SIZE);
     RNN_COPY(output, &st->pcm[0], update_count);
+#if PLC_DNN_PRED
+    compute_plc_pred(&st->plc_net, st->features, zeros);
+#endif
 #if PLC_READ_FEATURES
     for (i=0;i<NB_FEATURES;i++) scanf("%f", &st->features[i]);
 #endif
@@ -139,6 +156,9 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
     st->skip_analysis++;
   }
   lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
+#if PLC_DNN_PRED
+    compute_plc_pred(&st->plc_net, st->features, zeros);
+#endif
 #if PLC_READ_FEATURES
   for (i=0;i<NB_FEATURES;i++) scanf("%f", &st->features[i]);
 #endif
