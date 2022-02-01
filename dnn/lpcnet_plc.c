@@ -107,11 +107,16 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->enc.features[0]);
     st->skip_analysis--;
   } else {
+#if PLC_DNN_PRED
+    float plc_features[NB_FEATURES+1];
+#endif
     for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE+i] = pcm[i];
     RNN_COPY(output, &st->pcm[0], FRAME_SIZE);
     lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], output, FRAME_SIZE, FRAME_SIZE);
 #if PLC_DNN_PRED
-    compute_plc_pred(&st->plc_net, NULL, st->enc.features[0]);
+    RNN_COPY(plc_features, st->enc.features[0], NB_FEATURES);
+    plc_features[NB_FEATURES] = 1;
+    compute_plc_pred(&st->plc_net, NULL, plc_features);
 #endif
 #if PLC_READ_FEATURES
     for (i=0;i<NB_FEATURES;i++) scanf("%f", &st->features[i]);
