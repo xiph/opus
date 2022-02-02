@@ -99,8 +99,9 @@ if retrain:
 
 def plc_loss(alpha=1.0, bias=0.):
     def loss(y_true,y_pred):
-        mask = y_true[:,:,-1:]
-        y_true = y_true[:,:,:-1]
+        mask = .2 + .8*y_true[:,1:,-1:]
+        y_true = y_true[:,1:,:-1]
+        y_pred = y_pred[:,:-1,:]
         e = (y_pred - y_true)*mask
         e_bands = tf.signal.idct(e[:,:,:-2], norm='ortho')
         l1_loss = K.mean(K.abs(e)) + bias*K.mean(K.maximum(e[:,:,:1], 0.)) + alpha*K.mean(K.abs(e_bands) + bias*K.maximum(e_bands, 0.))
@@ -109,8 +110,9 @@ def plc_loss(alpha=1.0, bias=0.):
 
 def plc_l1_loss():
     def L1_loss(y_true,y_pred):
-        mask = y_true[:,:,-1:]
-        y_true = y_true[:,:,:-1]
+        mask = y_true[:,1:,-1:]
+        y_true = y_true[:,1:,:-1]
+        y_pred = y_pred[:,:-1,:]
         e = (y_pred - y_true)*mask
         l1_loss = K.mean(K.abs(e))
         return l1_loss
@@ -118,8 +120,9 @@ def plc_l1_loss():
 
 def plc_band_loss():
     def L1_band_loss(y_true,y_pred):
-        mask = y_true[:,:,-1:]
-        y_true = y_true[:,:,:-1]
+        mask = y_true[:,1:,-1:]
+        y_true = y_true[:,1:,:-1]
+        y_pred = y_pred[:,:-1,:]
         e = (y_pred - y_true)*mask
         e_bands = tf.signal.idct(e[:,:,:-2], norm='ortho')
         l1_loss = K.mean(K.abs(e_bands))
