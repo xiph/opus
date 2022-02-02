@@ -34,6 +34,7 @@ from plc_loader import PLCLoader
 parser = argparse.ArgumentParser(description='Train a PLC model')
 
 parser.add_argument('features', metavar='<features file>', help='binary features file (float32)')
+parser.add_argument('lost_file', metavar='<packet loss file>', help='packet loss traces (int8)')
 parser.add_argument('output', metavar='<output>', help='trained model file (.h5)')
 parser.add_argument('--model', metavar='<model>', default='lpcnet_plc', help='PLC model python definition (without .py)')
 group1 = parser.add_mutually_exclusive_group()
@@ -151,6 +152,7 @@ features = np.reshape(features, (nb_sequences, sequence_size, nb_features))
 
 features = features[:, :, :nb_used_features]
 
+lost = np.memmap(args.lost_file, dtype='int8', mode='r')
 
 # dump models to disk as we go
 checkpoint = ModelCheckpoint('{}_{}_{}.h5'.format(args.output, args.gru_size, '{epoch:02d}'))
@@ -164,7 +166,7 @@ if quantize or retrain:
 
 model.save_weights('{}_{}_initial.h5'.format(args.output, args.gru_size))
 
-loader = PLCLoader(features, batch_size)
+loader = PLCLoader(features, lost, batch_size)
 
 callbacks = [checkpoint]
 if args.logdir is not None:

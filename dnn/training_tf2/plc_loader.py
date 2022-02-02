@@ -29,19 +29,25 @@ import numpy as np
 from tensorflow.keras.utils import Sequence
 
 class PLCLoader(Sequence):
-    def __init__(self, features, batch_size):
+    def __init__(self, features, lost, batch_size):
         self.batch_size = batch_size
         self.nb_batches = features.shape[0]//self.batch_size
-        self.features = features[:self.nb_batches*self.batch_size, :]
+        self.features = features[:self.nb_batches*self.batch_size, :, :]
+        self.lost = lost.astype('float')
+        self.lost = self.lost[:(len(self.lost)//features.shape[1]-1)*features.shape[1]]
         self.on_epoch_end()
 
     def on_epoch_end(self):
         self.indices = np.arange(self.nb_batches*self.batch_size)
         np.random.shuffle(self.indices)
+        offset = np.random.randint(0, high=self.features.shape[1])
+        self.lost_offset = np.reshape(self.lost[offset:-self.features.shape[1]+offset], (-1, self.features.shape[1]))
+        self.lost_indices = np.random.randint(0, high=self.lost_offset.shape[0], size=self.nb_batches*self.batch_size)
 
     def __getitem__(self, index):
         features = self.features[self.indices[index*self.batch_size:(index+1)*self.batch_size], :, :]
-        lost = (np.random.rand(features.shape[0], features.shape[1]) > .2).astype('float')
+        #lost = (np.random.rand(features.shape[0], features.shape[1]) > .2).astype('float')
+        lost = self.lost_offset[self.lost_indices[index*self.batch_size:(index+1)*self.batch_size], :]
         lost = np.reshape(lost, (features.shape[0], features.shape[1], 1))
         lost_mask = np.tile(lost, (1,1,features.shape[2]))
 
