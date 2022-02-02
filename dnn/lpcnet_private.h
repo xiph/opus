@@ -75,6 +75,7 @@ struct LPCNetPLCState {
   int skip_analysis;
   int blend;
   float features[NB_TOTAL_FEATURES];
+  int loss_count;
   PLCNetState plc_net;
 };
 

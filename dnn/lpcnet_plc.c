@@ -47,6 +47,7 @@ LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st) {
   st->pcm_fill = PLC_BUF_SIZE;
   st->skip_analysis = 0;
   st->blend = 0;
+  st->loss_count = 0;
 }
 
 LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create() {
@@ -128,9 +129,11 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     RNN_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE);
   }
   RNN_COPY(st->features, st->enc.features[0], NB_TOTAL_FEATURES);
+  st->loss_count = 0;
   return 0;
 }
 
+static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6, -1.6};
 LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
 #if PLC_READ_FEATURES || PLC_DUMP_FEATURES
   int i;
@@ -163,6 +166,9 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
 #if PLC_DNN_PRED
     compute_plc_pred(&st->plc_net, st->features, zeros);
+    if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
+    else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
+    if (st->loss_count > 4) st->features[NB_FEATURES-1] = MAX16(-.5, st->features[NB_FEATURES-1]-.1*(st->loss_count-4));
 #endif
 #if PLC_READ_FEATURES
   for (i=0;i<NB_FEATURES;i++) scanf("%f", &st->features[i]);
@@ -181,6 +187,7 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
     compute_frame_features(&st->enc, x);
     process_single_frame(&st->enc, NULL);
   }
+  st->loss_count++;
   st->blend = 1;
   return 0;
 }
