@@ -62,7 +62,7 @@ LPCNET_EXPORT void lpcnet_plc_destroy(LPCNetPLCState *st) {
 }
 
 static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
-  float zeros[1024] = {0};
+  float zeros[3*PLC_MAX_RNN_NEURONS] = {0};
   float dense_out[PLC_DENSE1_OUT_SIZE];
   _lpcnet_compute_dense(&plc_dense1, dense_out, in);
   compute_gruB(&plc_gru1, zeros, net->plc_gru1_state, dense_out);

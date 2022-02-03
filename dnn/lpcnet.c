@@ -98,7 +98,6 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
     compute_conv1d(&feature_conv1, conv1_out, net->feature_conv1_state, in);
     if (lpcnet->frame_count < FEATURE_CONV1_DELAY) RNN_CLEAR(conv1_out, FEATURE_CONV1_OUT_SIZE);
     compute_conv1d(&feature_conv2, conv2_out, net->feature_conv2_state, conv1_out);
-    celt_assert(FRAME_INPUT_SIZE == FEATURE_CONV2_OUT_SIZE);
     if (lpcnet->frame_count < FEATURES_DELAY) RNN_CLEAR(conv2_out, FEATURE_CONV2_OUT_SIZE);
     _lpcnet_compute_dense(&feature_dense1, dense1_out, conv2_out);
     _lpcnet_compute_dense(&feature_dense2, condition, dense1_out);
