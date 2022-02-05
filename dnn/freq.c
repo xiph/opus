@@ -155,7 +155,7 @@ void compute_band_energy(float *bandE, const kiss_fft_cpx *X) {
   }
 }
 
-void compute_burg_cepstrum(const short *pcm, float *burg_cepstrum, int len, int order) {
+void compute_burg_cepstrum(const float *pcm, float *burg_cepstrum, int len, int order) {
   int i;
   float burg_in[FRAME_SIZE];
   float burg_lpc[LPC_ORDER];
@@ -188,6 +188,19 @@ void compute_burg_cepstrum(const short *pcm, float *burg_cepstrum, int len, int 
   }
   dct(burg_cepstrum, Ly);
   burg_cepstrum[0] += - 4;
+}
+
+void burg_cepstral_analysis(float *ceps, const float *x) {
+  int i;
+  compute_burg_cepstrum(x,                &ceps[0       ], FRAME_SIZE/2, LPC_ORDER);
+  compute_burg_cepstrum(&x[FRAME_SIZE/2], &ceps[NB_BANDS], FRAME_SIZE/2, LPC_ORDER);
+  for (i=0;i<NB_BANDS;i++) {
+    float c0, c1;
+    c0 = ceps[i];
+    c1 = ceps[NB_BANDS+i];
+    ceps[i         ] = .5*(c0+c1);
+    ceps[NB_BANDS+i] = (c0-c1);
+  }
 }
 
 void compute_band_corr(float *bandE, const kiss_fft_cpx *X, const kiss_fft_cpx *P) {

@@ -62,8 +62,8 @@ class WeightClip(Constraint):
 
 constraint = WeightClip(0.992)
 
-def new_lpcnet_plc_model(rnn_units=256, nb_used_features=20, batch_size=128, training=False, adaptation=False, quantize=False, cond_size=128):
-    feat = Input(shape=(None, nb_used_features), batch_size=batch_size)
+def new_lpcnet_plc_model(rnn_units=256, nb_used_features=20, nb_burg_features=36, batch_size=128, training=False, adaptation=False, quantize=False, cond_size=128):
+    feat = Input(shape=(None, nb_used_features+nb_burg_features), batch_size=batch_size)
     lost = Input(shape=(None, 1), batch_size=batch_size)
 
     fdense1 = Dense(cond_size, activation='tanh', name='plc_dense1')
@@ -96,5 +96,6 @@ def new_lpcnet_plc_model(rnn_units=256, nb_used_features=20, batch_size=128, tra
     model.rnn_units = rnn_units
     model.cond_size = cond_size
     model.nb_used_features = nb_used_features
+    model.nb_burg_features = nb_burg_features
 
     return model

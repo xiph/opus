@@ -75,7 +75,9 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   float x[FRAME_SIZE];
   short output[FRAME_SIZE];
 #if PLC_DNN_PRED
-  float plc_features[NB_FEATURES+1];
+  float plc_features[2*NB_BANDS+NB_FEATURES+1];
+  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+  burg_cepstral_analysis(plc_features, x);
 #endif
   st->enc.pcount = 0;
   if (st->skip_analysis) {
@@ -105,8 +107,8 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   process_single_frame(&st->enc, NULL);
 #if PLC_DNN_PRED
   if (st->skip_analysis <= 1) {
-    RNN_COPY(plc_features, st->enc.features[0], NB_FEATURES);
-    plc_features[NB_FEATURES] = 1;
+    RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features[0], NB_FEATURES);
+    plc_features[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(&st->plc_net, st->features, plc_features);
   }
 #else
@@ -142,7 +144,7 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   int i;
 #endif
   short output[FRAME_SIZE];
-  float zeros[NB_FEATURES+1] = {0};
+  float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
   st->enc.pcount = 0;
   /* If we concealed the previous frame, finish synthesizing the rest of the samples. */
   /* FIXME: Copy/predict features. */

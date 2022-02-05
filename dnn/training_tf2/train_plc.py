@@ -140,8 +140,9 @@ with strategy.scope():
 lpc_order = 16
 
 feature_file = args.features
-nb_features = model.nb_used_features + lpc_order
+nb_features = model.nb_used_features + lpc_order + model.nb_burg_features
 nb_used_features = model.nb_used_features
+nb_burg_features = model.nb_burg_features
 sequence_size = args.seq_length
 
 # u for unquantised, load 16 bit PCM samples and convert to mu-law
@@ -153,7 +154,7 @@ features = features[:nb_sequences*sequence_size*nb_features]
 
 features = np.reshape(features, (nb_sequences, sequence_size, nb_features))
 
-features = features[:, :, :nb_used_features]
+features = features[:, :, :nb_used_features+model.nb_burg_features]
 
 lost = np.memmap(args.lost_file, dtype='int8', mode='r')
 
@@ -169,7 +170,7 @@ if quantize or retrain:
 
 model.save_weights('{}_{}_initial.h5'.format(args.output, args.gru_size))
 
-loader = PLCLoader(features, lost, batch_size)
+loader = PLCLoader(features, lost, nb_burg_features, batch_size)
 
 callbacks = [checkpoint]
 if args.logdir is not None:

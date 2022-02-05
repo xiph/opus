@@ -29,12 +29,13 @@ import numpy as np
 from tensorflow.keras.utils import Sequence
 
 class PLCLoader(Sequence):
-    def __init__(self, features, lost, batch_size):
+    def __init__(self, features, lost, nb_burg_features, batch_size):
         self.batch_size = batch_size
         self.nb_batches = features.shape[0]//self.batch_size
         self.features = features[:self.nb_batches*self.batch_size, :, :]
         self.lost = lost.astype('float')
         self.lost = self.lost[:(len(self.lost)//features.shape[1]-1)*features.shape[1]]
+        self.nb_burg_features = nb_burg_features
         self.on_epoch_end()
 
     def on_epoch_end(self):
@@ -51,7 +52,7 @@ class PLCLoader(Sequence):
         lost = np.reshape(lost, (features.shape[0], features.shape[1], 1))
         lost_mask = np.tile(lost, (1,1,features.shape[2]))
 
-        out_features = np.concatenate([features, 1.-lost], axis=-1)
+        out_features = np.concatenate([features[:,:,self.nb_burg_features:], 1.-lost], axis=-1)
         inputs = [features*lost_mask, lost]
         outputs = [out_features]
         return (inputs, outputs)

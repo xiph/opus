@@ -64,6 +64,7 @@ struct LPCNetEncState{
   float features[4][NB_TOTAL_FEATURES];
   float sig_mem[LPC_ORDER];
   int exc_mem;
+  float burg_cepstrum[2*NB_BANDS];
 };
 
 #define PLC_BUF_SIZE (FEATURES_DELAY*FRAME_SIZE + TRAINING_OFFSET)
