@@ -49,6 +49,7 @@ parser.add_argument('--lr', metavar='<learning rate>', type=float, help='learnin
 parser.add_argument('--decay', metavar='<decay>', type=float, help='learning rate decay')
 parser.add_argument('--band-loss', metavar='<weight>', default=1.0, type=float, help='weight of band loss (default 1.0)')
 parser.add_argument('--loss-bias', metavar='<bias>', default=0.0, type=float, help='loss bias towards low energy (default 0.0)')
+parser.add_argument('--non-causal', dest='non_causal', action='store_true', help='train non-causal model')
 parser.add_argument('--logdir', metavar='<log dir>', help='directory for tensorboard log files')
 
 
@@ -97,11 +98,18 @@ if args.decay is not None:
 if retrain:
     input_model = args.retrain
 
+delay = not args.non_causal
+
 def plc_loss(alpha=1.0, bias=0.):
     def loss(y_true,y_pred):
-        mask = .2 + .8*y_true[:,1:,-1:]
-        y_true = y_true[:,1:,:-1]
-        y_pred = y_pred[:,:-1,:]
+        if delay:
+            mask = .2 + .8*y_true[:,1:,-1:]
+            y_true = y_true[:,1:,:-1]
+            y_pred = y_pred[:,:-1,:]
+        else:
+            mask = y_true[:,:,-1:]
+            y_true = y_true[:,:,:-1]
+            
         e = (y_pred - y_true)*mask
         e_bands = tf.signal.idct(e[:,:,:-2], norm='ortho')
         l1_loss = K.mean(K.abs(e)) + bias*K.mean(K.maximum(e[:,:,:1], 0.)) + alpha*K.mean(K.abs(e_bands) + bias*K.maximum(e_bands, 0.))
@@ -110,9 +118,13 @@ def plc_loss(alpha=1.0, bias=0.):
 
 def plc_l1_loss():
     def L1_loss(y_true,y_pred):
-        mask = y_true[:,1:,-1:]
-        y_true = y_true[:,1:,:-1]
-        y_pred = y_pred[:,:-1,:]
+        if delay:
+            mask = y_true[:,1:,-1:]
+            y_true = y_true[:,1:,:-1]
+            y_pred = y_pred[:,:-1,:]
+        else:
+            mask = y_true[:,:,-1:]
+            y_true = y_true[:,:,:-1]
         e = (y_pred - y_true)*mask
         l1_loss = K.mean(K.abs(e))
         return l1_loss
@@ -121,8 +133,13 @@ def plc_l1_loss():
 def plc_band_loss():
     def L1_band_loss(y_true,y_pred):
         mask = y_true[:,1:,-1:]
-        y_true = y_true[:,1:,:-1]
-        y_pred = y_pred[:,:-1,:]
+        if delay:
+            mask = y_true[:,1:,-1:]
+            y_true = y_true[:,1:,:-1]
+            y_pred = y_pred[:,:-1,:]
+        else:
+            mask = y_true[:,:,-1:]
+            y_true = y_true[:,:,:-1]
         e = (y_pred - y_true)*mask
         e_bands = tf.signal.idct(e[:,:,:-2], norm='ortho')
         l1_loss = K.mean(K.abs(e_bands))

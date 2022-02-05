@@ -70,6 +70,7 @@ static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
   _lpcnet_compute_dense(&plc_out, out, net->plc_gru2_state);
 }
 
+#if 0
 LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   int i;
   float x[FRAME_SIZE];
@@ -196,3 +197,90 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   st->blend = 1;
   return 0;
 }
+
+#else
+
+LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
+  int i;
+  float x[FRAME_SIZE];
+  short pcm_save[FRAME_SIZE];
+  float plc_features[2*NB_BANDS+NB_FEATURES+1];
+  RNN_COPY(pcm_save, pcm, FRAME_SIZE);
+  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+  burg_cepstral_analysis(plc_features, x);
+  st->enc.pcount = 0;
+  if (st->loss_count > 0) {
+    LPCNetState copy;
+    /* Handle blending. */
+    short tmp[FRAME_SIZE-TRAINING_OFFSET];
+    float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
+    RNN_COPY(zeros, plc_features, 2*NB_BANDS);
+    zeros[2*NB_BANDS+NB_FEATURES] = 1;
+    compute_plc_pred(&st->plc_net, st->features, zeros);
+    lpcnet_synthesize_tail_impl(&st->lpcnet, st->pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
+    lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
+    
+    copy = st->lpcnet;
+    lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
+    st->lpcnet = copy;
+    for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) {
+      float w;
+      w = .5 - .5*cos(M_PI*i/(FRAME_SIZE-TRAINING_OFFSET));
+      pcm_save[i] = (int)floor(.5 + w*pcm_save[i] + (1-w)*tmp[i]);
+    }
+
+    for (i=0;i<FRAME_SIZE;i++) x[i] = st->pcm[i];
+    preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
+    compute_frame_features(&st->enc, x);
+    process_single_frame(&st->enc, NULL);
+    
+  }
+  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+  preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
+  compute_frame_features(&st->enc, x);
+  process_single_frame(&st->enc, NULL);
+  if (st->loss_count == 0) {
+    RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features[0], NB_FEATURES);
+    plc_features[2*NB_BANDS+NB_FEATURES] = 1;
+    compute_plc_pred(&st->plc_net, st->features, plc_features);
+    lpcnet_synthesize_tail_impl(&st->lpcnet, st->pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
+    lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, TRAINING_OFFSET);
+  }
+  RNN_COPY(pcm, st->pcm, FRAME_SIZE);
+  RNN_COPY(st->pcm, pcm_save, FRAME_SIZE);
+  st->loss_count = 0;
+  return 0;
+}
+
+static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6, -1.6};
+LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
+  int i;
+  float x[FRAME_SIZE];
+  float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
+  st->enc.pcount = 0;
+
+  compute_plc_pred(&st->plc_net, st->features, zeros);
+  if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
+  else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
+  if (st->loss_count > 4) st->features[NB_FEATURES-1] = MAX16(-.5, st->features[NB_FEATURES-1]-.1*(st->loss_count-4));
+
+  if (st->loss_count == 0) {
+    RNN_COPY(pcm, st->pcm, FRAME_SIZE);
+    lpcnet_synthesize_tail_impl(&st->lpcnet, st->pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
+    lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, TRAINING_OFFSET);
+  } else {
+    lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
+    lpcnet_synthesize_impl(&st->lpcnet, st->features, &pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
+
+    for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+    preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
+    compute_frame_features(&st->enc, x);
+    process_single_frame(&st->enc, NULL);
+  }
+
+
+  st->loss_count++;
+  return 0;
+}
+
+#endif

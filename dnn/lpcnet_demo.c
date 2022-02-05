@@ -141,6 +141,7 @@ int main(int argc, char **argv) {
             ret = fread(pcm, sizeof(pcm[0]), FRAME_SIZE, fin);
             if (feof(fin) || ret != FRAME_SIZE) break;
             if (count % 2 == 0) loss = rand() < RAND_MAX*(float)plc_percent/100.f;
+            //if (count % 2 == 0) scanf("%d", &loss);
             if (loss) lpcnet_plc_conceal(net, pcm);
             else lpcnet_plc_update(net, pcm);
             fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
