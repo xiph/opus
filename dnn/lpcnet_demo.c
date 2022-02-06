@@ -131,12 +131,12 @@ int main(int argc, char **argv) {
         }
         lpcnet_destroy(net);
     } else if (mode == MODE_PLC) {
+        short pcm[FRAME_SIZE];
         int count=0;
         int loss=0;
         LPCNetPLCState *net;
         net = lpcnet_plc_create();
         while (1) {
-            short pcm[FRAME_SIZE];
             size_t ret;
             ret = fread(pcm, sizeof(pcm[0]), FRAME_SIZE, fin);
             if (feof(fin) || ret != FRAME_SIZE) break;
@@ -144,9 +144,12 @@ int main(int argc, char **argv) {
             //if (count % 2 == 0) scanf("%d", &loss);
             if (loss) lpcnet_plc_conceal(net, pcm);
             else lpcnet_plc_update(net, pcm);
-            fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
+            //if (count)
+              fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
             count++;
         }
+        //lpcnet_plc_conceal(net, pcm);
+        //fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
         lpcnet_plc_destroy(net);
     } else {
         fprintf(stderr, "unknown action\n");

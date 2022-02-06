@@ -70,7 +70,7 @@ static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
   _lpcnet_compute_dense(&plc_out, out, net->plc_gru2_state);
 }
 
-#if 0
+#if 1
 LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   int i;
   float x[FRAME_SIZE];
@@ -221,13 +221,31 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
     
     copy = st->lpcnet;
-    lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
-    st->lpcnet = copy;
-    for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) {
-      float w;
-      w = .5 - .5*cos(M_PI*i/(FRAME_SIZE-TRAINING_OFFSET));
-      pcm_save[i] = (int)floor(.5 + w*pcm_save[i] + (1-w)*tmp[i]);
+    if (0) {
+      lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
+      for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) {
+        float w;
+        w = .5 - .5*cos(M_PI*i/(FRAME_SIZE-TRAINING_OFFSET));
+        pcm_save[i] = (int)floor(.5 + w*pcm_save[i] + (1-w)*tmp[i]);
+      }
+    } else {
+      short rev[FRAME_SIZE];
+      for (i=0;i<FRAME_SIZE;i++) rev[i] = pcm[FRAME_SIZE-i-1];
+      lpcnet_synthesize_tail_impl(&st->lpcnet, rev, FRAME_SIZE, FRAME_SIZE);
+      //for(i=0;i<FRAME_SIZE;i++) printf("%d ", rev[i]);
+      lpcnet_synthesize_tail_impl(&st->lpcnet, rev, FRAME_SIZE, 0);
+      //for(i=0;i<FRAME_SIZE;i++) printf("%d ", rev[i]);
+      //for(i=0;i<FRAME_SIZE;i++) printf("%d ", st->pcm[i]);
+      for (i=0;i<TRAINING_OFFSET*3/2;i++) {
+        float w;
+        w = .5 - .5*cos(M_PI*i/(TRAINING_OFFSET*3/2));
+        st->pcm[FRAME_SIZE-1-i] = (int)floor(.5 + w*st->pcm[FRAME_SIZE-1-i] + (1-w)*rev[i]);
+      }
+      //for(i=0;i<FRAME_SIZE;i++) printf("%d ", st->pcm[i]);
+      //printf("\n");
+      
     }
+    st->lpcnet = copy;
 
     for (i=0;i<FRAME_SIZE;i++) x[i] = st->pcm[i];
     preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
