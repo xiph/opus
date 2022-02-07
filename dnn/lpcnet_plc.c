@@ -217,35 +217,23 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     RNN_COPY(zeros, plc_features, 2*NB_BANDS);
     zeros[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(&st->plc_net, st->features, zeros);
-    lpcnet_synthesize_tail_impl(&st->lpcnet, st->pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
     lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
     
     copy = st->lpcnet;
-    if (0) {
-      lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
-      for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) {
-        float w;
-        w = .5 - .5*cos(M_PI*i/(FRAME_SIZE-TRAINING_OFFSET));
-        pcm_save[i] = (int)floor(.5 + w*pcm_save[i] + (1-w)*tmp[i]);
-      }
-    } else {
+    {
       short rev[FRAME_SIZE];
       for (i=0;i<FRAME_SIZE;i++) rev[i] = pcm[FRAME_SIZE-i-1];
       lpcnet_synthesize_tail_impl(&st->lpcnet, rev, FRAME_SIZE, FRAME_SIZE);
-      //for(i=0;i<FRAME_SIZE;i++) printf("%d ", rev[i]);
-      lpcnet_synthesize_tail_impl(&st->lpcnet, rev, FRAME_SIZE, 0);
-      //for(i=0;i<FRAME_SIZE;i++) printf("%d ", rev[i]);
-      //for(i=0;i<FRAME_SIZE;i++) printf("%d ", st->pcm[i]);
-      for (i=0;i<TRAINING_OFFSET*3/2;i++) {
+      lpcnet_synthesize_tail_impl(&st->lpcnet, rev, TRAINING_OFFSET, 0);
+      for (i=0;i<TRAINING_OFFSET;i++) {
         float w;
-        w = .5 - .5*cos(M_PI*i/(TRAINING_OFFSET*3/2));
+        w = .5 - .5*cos(M_PI*i/(TRAINING_OFFSET));
         st->pcm[FRAME_SIZE-1-i] = (int)floor(.5 + w*st->pcm[FRAME_SIZE-1-i] + (1-w)*rev[i]);
       }
-      //for(i=0;i<FRAME_SIZE;i++) printf("%d ", st->pcm[i]);
-      //printf("\n");
       
     }
     st->lpcnet = copy;
+    lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
 
     for (i=0;i<FRAME_SIZE;i++) x[i] = st->pcm[i];
     preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
@@ -261,10 +249,11 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features[0], NB_FEATURES);
     plc_features[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(&st->plc_net, st->features, plc_features);
-    lpcnet_synthesize_tail_impl(&st->lpcnet, st->pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
     lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, TRAINING_OFFSET);
+    lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
   }
-  RNN_COPY(pcm, st->pcm, FRAME_SIZE);
+  RNN_COPY(&pcm[FRAME_SIZE-TRAINING_OFFSET], pcm, TRAINING_OFFSET);
+  RNN_COPY(pcm, &st->pcm[TRAINING_OFFSET], FRAME_SIZE-TRAINING_OFFSET);
   RNN_COPY(st->pcm, pcm_save, FRAME_SIZE);
   st->loss_count = 0;
   return 0;
@@ -283,18 +272,20 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   if (st->loss_count > 4) st->features[NB_FEATURES-1] = MAX16(-.5, st->features[NB_FEATURES-1]-.1*(st->loss_count-4));
 
   if (st->loss_count == 0) {
-    RNN_COPY(pcm, st->pcm, FRAME_SIZE);
-    lpcnet_synthesize_tail_impl(&st->lpcnet, st->pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
+    RNN_COPY(pcm, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
     lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, TRAINING_OFFSET);
+    lpcnet_synthesize_tail_impl(&st->lpcnet, &pcm[TRAINING_OFFSET], FRAME_SIZE-TRAINING_OFFSET, 0);
   } else {
-    lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
-    lpcnet_synthesize_impl(&st->lpcnet, st->features, &pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
+    lpcnet_synthesize_impl(&st->lpcnet, st->features, pcm, TRAINING_OFFSET, 0);
+    lpcnet_synthesize_tail_impl(&st->lpcnet, &pcm[TRAINING_OFFSET], FRAME_SIZE-TRAINING_OFFSET, 0);
 
-    for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+    RNN_COPY(&st->pcm[FRAME_SIZE-TRAINING_OFFSET], pcm, TRAINING_OFFSET);
+    for (i=0;i<FRAME_SIZE;i++) x[i] = st->pcm[i];
     preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
     compute_frame_features(&st->enc, x);
     process_single_frame(&st->enc, NULL);
   }
+  RNN_COPY(st->pcm, &pcm[TRAINING_OFFSET], FRAME_SIZE-TRAINING_OFFSET);
 
 
   st->loss_count++;
