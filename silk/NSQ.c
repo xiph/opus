@@ -262,7 +262,7 @@ void silk_noise_shape_quantizer(
         tmp1 = silk_SUB32( tmp1, n_LF_Q12 );                                    /* Q12 */
         if( lag > 0 ) {
             /* Symmetric, packed FIR coefficients */
-            n_LTP_Q13 = silk_SMULWB( silk_ADD32( shp_lag_ptr[ 0 ], shp_lag_ptr[ -2 ] ), HarmShapeFIRPacked_Q14 );
+            n_LTP_Q13 = silk_SMULWB( silk_ADD_SAT32( shp_lag_ptr[ 0 ], shp_lag_ptr[ -2 ] ), HarmShapeFIRPacked_Q14 );
             n_LTP_Q13 = silk_SMLAWT( n_LTP_Q13, shp_lag_ptr[ -1 ],                      HarmShapeFIRPacked_Q14 );
             n_LTP_Q13 = silk_LSHIFT( n_LTP_Q13, 1 );
             shp_lag_ptr++;
