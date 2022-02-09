@@ -69,7 +69,7 @@ static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
 #if 1
 
 /* In this causal version of the code, the DNN model implemented by compute_plc_pred()
-   returns the predicted features from frame t+1, using the input features from frame t.*/
+   needs to generate two feature vectors to conceal the first lost packet.*/
 
 LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   int i;
@@ -83,7 +83,11 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     /*fprintf(stderr, "skip update\n");*/
     if (st->blend) {
       short tmp[FRAME_SIZE-TRAINING_OFFSET];
-      lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
+      float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
+      RNN_COPY(zeros, plc_features, 2*NB_BANDS);
+      zeros[2*NB_BANDS+NB_FEATURES] = 1;
+      compute_plc_pred(&st->plc_net, st->features, zeros);
+      lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
       for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) {
         float w;
         w = .5 - .5*cos(M_PI*i/(FRAME_SIZE-TRAINING_OFFSET));
@@ -104,11 +108,6 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
   compute_frame_features(&st->enc, x);
   process_single_frame(&st->enc, NULL);
-  if (st->skip_analysis <= 1) {
-    RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features[0], NB_FEATURES);
-    plc_features[2*NB_BANDS+NB_FEATURES] = 1;
-    compute_plc_pred(&st->plc_net, st->features, plc_features);
-  }
   if (st->skip_analysis) {
     float lpc[LPC_ORDER];
     float gru_a_condition[3*GRU_A_STATE_SIZE];
@@ -117,6 +116,9 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->enc.features[0]);
     st->skip_analysis--;
   } else {
+    RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features[0], NB_FEATURES);
+    plc_features[2*NB_BANDS+NB_FEATURES] = 1;
+    compute_plc_pred(&st->plc_net, st->features, plc_features);
     for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE+i] = pcm[i];
     RNN_COPY(output, &st->pcm[0], FRAME_SIZE);
     lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], output, FRAME_SIZE, FRAME_SIZE);
@@ -138,7 +140,7 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
     int update_count;
     update_count = IMIN(st->pcm_fill, FRAME_SIZE);
     RNN_COPY(output, &st->pcm[0], update_count);
-    if (st->pcm_fill > FRAME_SIZE) compute_plc_pred(&st->plc_net, st->features, zeros);
+    compute_plc_pred(&st->plc_net, st->features, zeros);
     lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], output, update_count, update_count);
     RNN_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE);
     st->pcm_fill -= update_count;
@@ -167,7 +169,7 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
 #else
 
 /* In this non-causal version of the code, the DNN model implemented by compute_plc_pred()
-   returns the predicted features from frame t, using the input features from frame t.*/
+   is always called once per frame. We process audio up to the current position minus TRAINING_OFFSET. */
 
 LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   int i;
