@@ -78,6 +78,7 @@ struct LPCNetPLCState {
   float features[NB_TOTAL_FEATURES];
   int loss_count;
   PLCNetState plc_net;
+  int enable_blending;
 };
 
 extern float ceps_codebook1[];

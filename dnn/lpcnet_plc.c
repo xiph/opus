@@ -44,6 +44,7 @@ LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st) {
   st->skip_analysis = 0;
   st->blend = 0;
   st->loss_count = 0;
+  st->enable_blending = 1;
 }
 
 LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create() {
@@ -87,11 +88,16 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
       RNN_COPY(zeros, plc_features, 2*NB_BANDS);
       zeros[2*NB_BANDS+NB_FEATURES] = 1;
       compute_plc_pred(&st->plc_net, st->features, zeros);
-      lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
-      for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) {
-        float w;
-        w = .5 - .5*cos(M_PI*i/(FRAME_SIZE-TRAINING_OFFSET));
-        pcm[i] = (int)floor(.5 + w*pcm[i] + (1-w)*tmp[i]);
+      if (st->enable_blending) {
+        lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
+        for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) {
+          float w;
+          w = .5 - .5*cos(M_PI*i/(FRAME_SIZE-TRAINING_OFFSET));
+          pcm[i] = (int)floor(.5 + w*pcm[i] + (1-w)*tmp[i]);
+        }
+      } else {
+        RNN_COPY(tmp, pcm, FRAME_SIZE-TRAINING_OFFSET);
+        lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
       }
       st->blend = 0;
       RNN_COPY(st->pcm, &pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
