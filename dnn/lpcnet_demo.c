@@ -44,7 +44,8 @@ int main(int argc, char **argv) {
     int mode;
     int plc_percent=0;
     FILE *fin, *fout;
-    if (argc != 4 && !(argc == 5 && strcmp(argv[1], "-plc") == 0))
+    FILE *plc_file = NULL;
+    if (argc != 4 && !(argc == 5 && (strcmp(argv[1], "-plc") == 0 || strcmp(argv[1], "-plc_file") == 0)))
     {
         fprintf(stderr, "usage: lpcnet_demo -encode <input.pcm> <compressed.lpcnet>\n");
         fprintf(stderr, "       lpcnet_demo -decode <compressed.lpcnet> <output.pcm>\n");
@@ -60,6 +61,10 @@ int main(int argc, char **argv) {
     else if (strcmp(argv[1], "-plc") == 0) {
         mode=MODE_PLC;
         plc_percent = atoi(argv[2]);
+        argv++;
+    } else if (strcmp(argv[1], "-plc_file") == 0) {
+        mode=MODE_PLC;
+        plc_file = fopen(argv[2], "r");
         argv++;
     } else {
         exit(1);
@@ -140,8 +145,10 @@ int main(int argc, char **argv) {
             size_t ret;
             ret = fread(pcm, sizeof(pcm[0]), FRAME_SIZE, fin);
             if (feof(fin) || ret != FRAME_SIZE) break;
-            if (count % 2 == 0) loss = rand() < RAND_MAX*(float)plc_percent/100.f;
-            //if (count % 2 == 0) scanf("%d", &loss);
+            if (count % 2 == 0) {
+              if (plc_file != NULL) fscanf(plc_file, "%d", &loss);
+              else loss = rand() < RAND_MAX*(float)plc_percent/100.f;
+            }
             if (loss) lpcnet_plc_conceal(net, pcm);
             else lpcnet_plc_update(net, pcm);
             //if (count)
