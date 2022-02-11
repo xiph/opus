@@ -103,7 +103,7 @@ def plc_loss(alpha=1.0, bias=0.):
         y_true = y_true[:,:,:-1]
         e = (y_pred - y_true)*mask
         e_bands = tf.signal.idct(e[:,:,:-2], norm='ortho')
-        l1_loss = K.mean(K.abs(e)) + bias*K.mean(K.maximum(e[:,:,:1], 0.)) + alpha*K.mean(K.abs(e_bands) + bias*K.maximum(e_bands, 0.))
+        l1_loss = K.mean(K.abs(e)) + bias*K.mean(K.maximum(e[:,:,:1], 0.)) + alpha*K.mean(K.abs(e_bands) + bias*K.maximum(e_bands, 0.)) + 5*K.mean(K.minimum(K.abs(e[:,:,18:19]),1.))
         return l1_loss
     return loss
 
