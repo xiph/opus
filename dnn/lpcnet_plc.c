@@ -67,6 +67,14 @@ static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
   _lpcnet_compute_dense(&plc_out, out, net->plc_gru2_state);
 }
 
+void clear_state(LPCNetPLCState *st) {
+  RNN_CLEAR(st->lpcnet.last_sig, LPC_ORDER);
+  st->lpcnet.last_exc = lin2ulaw(0.f);;
+  st->lpcnet.deemph_mem = 0;
+  RNN_CLEAR(st->lpcnet.nnet.gru_a_state, GRU_A_STATE_SIZE);
+  RNN_CLEAR(st->lpcnet.nnet.gru_b_state, GRU_B_STATE_SIZE);
+}
+
 #if 1
 
 /* In this causal version of the code, the DNN model implemented by compute_plc_pred()
@@ -89,12 +97,16 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
       zeros[2*NB_BANDS+NB_FEATURES] = 1;
       compute_plc_pred(&st->plc_net, st->features, zeros);
       if (st->enable_blending) {
+        LPCNetState copy;
+        copy = st->lpcnet;
         lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
         for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) {
           float w;
           w = .5 - .5*cos(M_PI*i/(FRAME_SIZE-TRAINING_OFFSET));
           pcm[i] = (int)floor(.5 + w*pcm[i] + (1-w)*tmp[i]);
         }
+        st->lpcnet = copy;
+        lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
       } else {
         RNN_COPY(tmp, pcm, FRAME_SIZE-TRAINING_OFFSET);
         lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
@@ -193,12 +205,12 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     RNN_COPY(zeros, plc_features, 2*NB_BANDS);
     zeros[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(&st->plc_net, st->features, zeros);
-    lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
-    
     copy = st->lpcnet;
+    lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
     {
       short rev[FRAME_SIZE];
       for (i=0;i<FRAME_SIZE;i++) rev[i] = pcm[FRAME_SIZE-i-1];
+      clear_state(st);
       lpcnet_synthesize_tail_impl(&st->lpcnet, rev, FRAME_SIZE, FRAME_SIZE);
       lpcnet_synthesize_tail_impl(&st->lpcnet, rev, TRAINING_OFFSET, 0);
       for (i=0;i<TRAINING_OFFSET;i++) {
@@ -209,6 +221,8 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
       
     }
     st->lpcnet = copy;
+    lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, TRAINING_OFFSET);
+    //clear_state(st);
     lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
 
     for (i=0;i<FRAME_SIZE;i++) x[i] = st->pcm[i];
