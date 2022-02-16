@@ -221,7 +221,7 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   if (st->remove_dc) {
     for (i=0;i<FRAME_SIZE;i++) {
       lp[i] = (int)floor(.5 + st->dc_mem);
-      st->dc_mem += LP_CONST*(pcm[i] - st->dc_mem);
+      st->dc_mem += DC_CONST*(pcm[i] - st->dc_mem);
       pcm[i] -= lp[i];
     }
   }
