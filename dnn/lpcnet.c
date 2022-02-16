@@ -192,8 +192,12 @@ void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int 
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
         exc = run_sample_network(&lpcnet->nnet, lpcnet->gru_a_condition, lpcnet->gru_b_condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw, lpcnet->sampling_logit_table, &lpcnet->rng);
-        if (i < preload) exc = lin2ulaw(output[i]-PREEMPH*lpcnet->deemph_mem - pred);
-        pcm = pred + ulaw2lin(exc);
+        if (i < preload) {
+          exc = lin2ulaw(output[i]-PREEMPH*lpcnet->deemph_mem - pred);
+          pcm = output[i]-PREEMPH*lpcnet->deemph_mem;
+        } else {
+          pcm = pred + ulaw2lin(exc);
+        }
         RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
         lpcnet->last_sig[0] = pcm;
         lpcnet->last_exc = exc;
@@ -201,7 +205,7 @@ void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int 
         lpcnet->deemph_mem = pcm;
         if (pcm<-32767) pcm = -32767;
         if (pcm>32767) pcm = 32767;
-        output[i] = (int)floor(.5 + pcm);
+        if (i >= preload) output[i] = (int)floor(.5 + pcm);
     }
 }
 
