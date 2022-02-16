@@ -45,6 +45,8 @@ LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st) {
   st->blend = 0;
   st->loss_count = 0;
   st->enable_blending = 1;
+  st->dc_mem = 0;
+  st->remove_dc = 1;
 }
 
 LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create() {
@@ -75,6 +77,8 @@ void clear_state(LPCNetPLCState *st) {
   RNN_CLEAR(st->lpcnet.nnet.gru_b_state, GRU_B_STATE_SIZE);
 }
 
+#define DC_CONST 0.003
+
 #if 1
 
 /* In this causal version of the code, the DNN model implemented by compute_plc_pred()
@@ -85,6 +89,14 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   float x[FRAME_SIZE];
   short output[FRAME_SIZE];
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
+  short lp[FRAME_SIZE]={0};
+  if (st->remove_dc) {
+    for (i=0;i<FRAME_SIZE;i++) {
+      lp[i] = (int)floor(.5 + st->dc_mem);
+      st->dc_mem += DC_CONST*(pcm[i] - st->dc_mem);
+      pcm[i] -= lp[i];
+    }
+  }
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
   burg_cepstral_analysis(plc_features, x);
   st->enc.pcount = 0;
@@ -143,11 +155,17 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     RNN_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE);
   }
   st->loss_count = 0;
+  if (st->remove_dc) {
+    for (i=0;i<FRAME_SIZE;i++) {
+      pcm[i] += lp[i];
+    }
+  }
   return 0;
 }
 
 static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6, -1.6};
 LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
+  int i;
   short output[FRAME_SIZE];
   float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
   st->enc.pcount = 0;
@@ -181,6 +199,11 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   }
   st->loss_count++;
   st->blend = 1;
+  if (st->remove_dc) {
+    for (i=0;i<FRAME_SIZE;i++) {
+      pcm[i] += (int)floor(.5 + st->dc_mem);
+    }
+  }
   return 0;
 }
 
@@ -194,6 +217,14 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   float x[FRAME_SIZE];
   short pcm_save[FRAME_SIZE];
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
+  short lp[FRAME_SIZE]={0};
+  if (st->remove_dc) {
+    for (i=0;i<FRAME_SIZE;i++) {
+      lp[i] = (int)floor(.5 + st->dc_mem);
+      st->dc_mem += LP_CONST*(pcm[i] - st->dc_mem);
+      pcm[i] -= lp[i];
+    }
+  }
   RNN_COPY(pcm_save, pcm, FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
   burg_cepstral_analysis(plc_features, x);
@@ -246,6 +277,11 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   RNN_COPY(pcm, &st->pcm[TRAINING_OFFSET], FRAME_SIZE-TRAINING_OFFSET);
   RNN_COPY(st->pcm, pcm_save, FRAME_SIZE);
   st->loss_count = 0;
+  if (st->remove_dc) {
+    for (i=0;i<FRAME_SIZE;i++) {
+      pcm[i] += lp[i];
+    }
+  }
   return 0;
 }
 
@@ -277,7 +313,11 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   }
   RNN_COPY(st->pcm, &pcm[TRAINING_OFFSET], FRAME_SIZE-TRAINING_OFFSET);
 
-
+  if (st->remove_dc) {
+    for (i=0;i<FRAME_SIZE;i++) {
+      pcm[i] += (int)floor(.5 + st->dc_mem);
+    }
+  }
   st->loss_count++;
   return 0;
 }

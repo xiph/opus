@@ -79,6 +79,8 @@ struct LPCNetPLCState {
   int loss_count;
   PLCNetState plc_net;
   int enable_blending;
+  double dc_mem;
+  int remove_dc;
 };
 
 extern float ceps_codebook1[];
