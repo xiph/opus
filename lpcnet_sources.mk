@@ -1,4 +1,5 @@
 LPCNET_SOURCES = \
+lpcnet/src/burg.c \
 lpcnet/src/ceps_codebooks.c \
 lpcnet/src/common.c \
 lpcnet/src/freq.c \
@@ -8,4 +9,5 @@ lpcnet/src/lpcnet_dec.c \
 lpcnet/src/lpcnet_enc.c \
 lpcnet/src/lpcnet_plc.c \
 lpcnet/src/nnet.c \
-lpcnet/src/nnet_data.c
+lpcnet/src/nnet_data.c \
+lpcnet/src/plc_data.c
