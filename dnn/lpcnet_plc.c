@@ -37,6 +37,7 @@ LPCNET_EXPORT int lpcnet_plc_get_size() {
 }
 
 LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st) {
+  RNN_CLEAR(st, 1);
   lpcnet_init(&st->lpcnet);
   lpcnet_encoder_init(&st->enc);
   RNN_CLEAR(st->pcm, PLC_BUF_SIZE);
@@ -47,6 +48,7 @@ LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st) {
   st->enable_blending = 1;
   st->dc_mem = 0;
   st->remove_dc = 1;
+  st->queued_update = 0;
 }
 
 LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create() {
@@ -212,12 +214,20 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
 /* In this non-causal version of the code, the DNN model implemented by compute_plc_pred()
    is always called once per frame. We process audio up to the current position minus TRAINING_OFFSET. */
 
+void process_queued_update(LPCNetPLCState *st) {
+  if (st->queued_update) {
+    lpcnet_synthesize_impl(&st->lpcnet, st->features, st->queued_samples, FRAME_SIZE, FRAME_SIZE);
+    st->queued_update=0;
+  }
+}
+
 LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   int i;
   float x[FRAME_SIZE];
   short pcm_save[FRAME_SIZE];
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
   short lp[FRAME_SIZE]={0};
+  process_queued_update(st);
   if (st->remove_dc) {
     for (i=0;i<FRAME_SIZE;i++) {
       lp[i] = (int)floor(.5 + st->dc_mem);
@@ -252,10 +262,14 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
       
     }
     st->lpcnet = copy;
+#if 1
+    st->queued_update = 1;
+    RNN_COPY(&st->queued_samples[0], &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
+    RNN_COPY(&st->queued_samples[TRAINING_OFFSET], pcm, FRAME_SIZE-TRAINING_OFFSET);
+#else
     lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, TRAINING_OFFSET);
-    //clear_state(st);
     lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
-
+#endif
     for (i=0;i<FRAME_SIZE;i++) x[i] = st->pcm[i];
     preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
     compute_frame_features(&st->enc, x);
@@ -290,6 +304,7 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   int i;
   float x[FRAME_SIZE];
   float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
+  process_queued_update(st);
   st->enc.pcount = 0;
 
   compute_plc_pred(&st->plc_net, st->features, zeros);

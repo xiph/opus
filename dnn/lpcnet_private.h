@@ -81,6 +81,9 @@ struct LPCNetPLCState {
   int enable_blending;
   double dc_mem;
   int remove_dc;
+
+  int queued_update;
+  short queued_samples[FRAME_SIZE];
 };
 
 extern float ceps_codebook1[];
