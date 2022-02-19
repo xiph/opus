@@ -82,6 +82,7 @@ struct LPCNetPLCState {
   double dc_mem;
   int remove_dc;
 
+  short dc_buf[TRAINING_OFFSET];
   int queued_update;
   short queued_samples[FRAME_SIZE];
 };

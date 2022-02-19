@@ -292,9 +292,9 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   RNN_COPY(st->pcm, pcm_save, FRAME_SIZE);
   st->loss_count = 0;
   if (st->remove_dc) {
-    for (i=0;i<FRAME_SIZE;i++) {
-      pcm[i] += lp[i];
-    }
+    for (i=0;i<TRAINING_OFFSET;i++) pcm[i] += st->dc_buf[i];
+    for (;i<FRAME_SIZE;i++) pcm[i] += lp[i-TRAINING_OFFSET];
+    for (i=0;i<TRAINING_OFFSET;i++) st->dc_buf[i] = lp[FRAME_SIZE-TRAINING_OFFSET+i];
   }
   return 0;
 }
@@ -329,9 +329,10 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   RNN_COPY(st->pcm, &pcm[TRAINING_OFFSET], FRAME_SIZE-TRAINING_OFFSET);
 
   if (st->remove_dc) {
-    for (i=0;i<FRAME_SIZE;i++) {
-      pcm[i] += (int)floor(.5 + st->dc_mem);
-    }
+    int dc = (int)floor(.5 + st->dc_mem);
+    for (i=0;i<TRAINING_OFFSET;i++) pcm[i] += st->dc_buf[i];
+    for (;i<FRAME_SIZE;i++) pcm[i] += dc;
+    for (i=0;i<TRAINING_OFFSET;i++) st->dc_buf[i] = dc;
   }
   st->loss_count++;
   return 0;
