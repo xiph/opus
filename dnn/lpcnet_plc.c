@@ -93,6 +93,8 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
   short lp[FRAME_SIZE]={0};
   if (st->remove_dc) {
+    st->dc_mem += st->syn_dc;
+    st->syn_dc = 0;
     for (i=0;i<FRAME_SIZE;i++) {
       lp[i] = (int)floor(.5 + st->dc_mem);
       st->dc_mem += DC_CONST*(pcm[i] - st->dc_mem);
@@ -203,6 +205,7 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   st->blend = 1;
   if (st->remove_dc) {
     for (i=0;i<FRAME_SIZE;i++) {
+      st->syn_dc += DC_CONST*(pcm[i] - st->syn_dc);
       pcm[i] += (int)floor(.5 + st->dc_mem);
     }
   }
@@ -227,8 +230,12 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   short pcm_save[FRAME_SIZE];
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
   short lp[FRAME_SIZE]={0};
+  double mem_bak;
   process_queued_update(st);
   if (st->remove_dc) {
+    st->dc_mem += st->syn_dc;
+    st->syn_dc = 0;
+    mem_bak = st->dc_mem;
     for (i=0;i<FRAME_SIZE;i++) {
       lp[i] = (int)floor(.5 + st->dc_mem);
       st->dc_mem += DC_CONST*(pcm[i] - st->dc_mem);
@@ -248,6 +255,20 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     compute_plc_pred(&st->plc_net, st->features, zeros);
     copy = st->lpcnet;
     lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
+    /* Undo initial DC offset removal so that we can take into accound the last 5ms of synthesis. */
+    if (st->remove_dc) {
+      for (i=0;i<FRAME_SIZE;i++) pcm[i] += lp[i];
+      st->dc_mem = mem_bak;
+      for (i=0;i<TRAINING_OFFSET;i++) st->syn_dc += DC_CONST*(st->pcm[FRAME_SIZE-TRAINING_OFFSET+i] - st->syn_dc);
+      st->dc_mem += st->syn_dc;
+      st->syn_dc = 0;
+      for (i=0;i<FRAME_SIZE;i++) {
+        lp[i] = (int)floor(.5 + st->dc_mem);
+        st->dc_mem += DC_CONST*(pcm[i] - st->dc_mem);
+        pcm[i] -= lp[i];
+      }
+      RNN_COPY(pcm_save, pcm, FRAME_SIZE);
+    }
     {
       short rev[FRAME_SIZE];
       for (i=0;i<FRAME_SIZE;i++) rev[i] = pcm[FRAME_SIZE-i-1];
@@ -330,6 +351,11 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
 
   if (st->remove_dc) {
     int dc = (int)floor(.5 + st->dc_mem);
+    if (st->loss_count == 0) {
+        for (i=FRAME_SIZE-TRAINING_OFFSET;i<FRAME_SIZE;i++) st->syn_dc += DC_CONST*(pcm[i] - st->syn_dc);
+    } else {
+        for (i=0;i<FRAME_SIZE;i++) st->syn_dc += DC_CONST*(pcm[i] - st->syn_dc);
+    }
     for (i=0;i<TRAINING_OFFSET;i++) pcm[i] += st->dc_buf[i];
     for (;i<FRAME_SIZE;i++) pcm[i] += dc;
     for (i=0;i<TRAINING_OFFSET;i++) st->dc_buf[i] = dc;

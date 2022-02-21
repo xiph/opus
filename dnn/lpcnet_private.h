@@ -80,6 +80,7 @@ struct LPCNetPLCState {
   PLCNetState plc_net;
   int enable_blending;
   double dc_mem;
+  double syn_dc;
   int remove_dc;
 
   short dc_buf[TRAINING_OFFSET];
