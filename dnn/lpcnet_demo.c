@@ -164,6 +164,8 @@ int main(int argc, char **argv) {
         short pcm[FRAME_SIZE];
         int count=0;
         int loss=0;
+        int skip=0, extra=0;
+        if ((plc_flags&0x3) == LPCNET_PLC_NONCAUSAL) skip=extra=80;
         LPCNetPLCState *net;
         net = lpcnet_plc_create(plc_flags);
         while (1) {
@@ -176,12 +178,14 @@ int main(int argc, char **argv) {
             }
             if (loss) lpcnet_plc_conceal(net, pcm);
             else lpcnet_plc_update(net, pcm);
-            //if (count)
-              fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
+            fwrite(&pcm[skip], sizeof(pcm[0]), FRAME_SIZE-skip, fout);
+            skip = 0;
             count++;
         }
-        //lpcnet_plc_conceal(net, pcm);
-        //fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
+        if (extra) {
+          lpcnet_plc_conceal(net, pcm);
+          fwrite(pcm, sizeof(pcm[0]), extra, fout);
+        }
         lpcnet_plc_destroy(net);
     } else {
         fprintf(stderr, "unknown action\n");
