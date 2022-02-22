@@ -36,7 +36,7 @@ LPCNET_EXPORT int lpcnet_plc_get_size() {
   return sizeof(LPCNetPLCState);
 }
 
-LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st) {
+LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options) {
   RNN_CLEAR(st, 1);
   lpcnet_init(&st->lpcnet);
   lpcnet_encoder_init(&st->enc);
@@ -45,16 +45,28 @@ LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st) {
   st->skip_analysis = 0;
   st->blend = 0;
   st->loss_count = 0;
-  st->enable_blending = 1;
   st->dc_mem = 0;
-  st->remove_dc = 1;
   st->queued_update = 0;
+  if ((options&0x3) == LPCNET_PLC_CAUSAL) {
+    st->enable_blending = 1;
+    st->non_causal = 0;
+  } else if ((options&0x3) == LPCNET_PLC_NONCAUSAL) {
+    st->enable_blending = 1;
+    st->non_causal = 1;
+  } else if ((options&0x3) == LPCNET_PLC_CODEC) {
+    st->enable_blending = 0;
+    st->non_causal = 0;
+  } else {
+    return -1;
+  }
+  st->remove_dc = !!(options&LPCNET_PLC_DC_FILTER);
+  return 0;
 }
 
-LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create() {
+LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create(int options) {
   LPCNetPLCState *st;
   st = calloc(sizeof(*st), 1);
-  lpcnet_plc_init(st);
+  lpcnet_plc_init(st, options);
   return st;
 }
 
@@ -81,12 +93,10 @@ void clear_state(LPCNetPLCState *st) {
 
 #define DC_CONST 0.003
 
-#if 1
-
 /* In this causal version of the code, the DNN model implemented by compute_plc_pred()
    needs to generate two feature vectors to conceal the first lost packet.*/
 
-LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
+static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
   int i;
   float x[FRAME_SIZE];
   short output[FRAME_SIZE];
@@ -168,7 +178,7 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
 }
 
 static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6, -1.6};
-LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
+static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
   int i;
   short output[FRAME_SIZE];
   float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
@@ -212,8 +222,6 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   return 0;
 }
 
-#else
-
 /* In this non-causal version of the code, the DNN model implemented by compute_plc_pred()
    is always called once per frame. We process audio up to the current position minus TRAINING_OFFSET. */
 
@@ -224,7 +232,7 @@ void process_queued_update(LPCNetPLCState *st) {
   }
 }
 
-LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
+static int lpcnet_plc_update_non_causal(LPCNetPLCState *st, short *pcm) {
   int i;
   float x[FRAME_SIZE];
   short pcm_save[FRAME_SIZE];
@@ -320,8 +328,7 @@ LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   return 0;
 }
 
-static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6, -1.6};
-LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
+static int lpcnet_plc_conceal_non_causal(LPCNetPLCState *st, short *pcm) {
   int i;
   float x[FRAME_SIZE];
   float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
@@ -364,4 +371,13 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   return 0;
 }
 
-#endif
+
+LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
+  if (st->non_causal) return lpcnet_plc_update_non_causal(st, pcm);
+  else return lpcnet_plc_update_causal(st, pcm);
+}
+
+LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
+  if (st->non_causal) return lpcnet_plc_conceal_non_causal(st, pcm);
+  else return lpcnet_plc_conceal_causal(st, pcm);
+}

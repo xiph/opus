@@ -79,6 +79,7 @@ struct LPCNetPLCState {
   int loss_count;
   PLCNetState plc_net;
   int enable_blending;
+  int non_causal;
   double dc_mem;
   double syn_dc;
   int remove_dc;

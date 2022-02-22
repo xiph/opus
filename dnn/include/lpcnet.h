@@ -176,11 +176,18 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *st);
   */
 LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, const float *features, short *output, int N);
 
+
+#define LPCNET_PLC_CAUSAL 0
+#define LPCNET_PLC_NONCAUSAL 1
+#define LPCNET_PLC_CODEC 2
+
+#define LPCNET_PLC_DC_FILTER 4
+
 LPCNET_EXPORT int lpcnet_plc_get_size(void);
 
-LPCNET_EXPORT void lpcnet_plc_init(LPCNetPLCState *st);
+LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options);
 
-LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create(void);
+LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create(int options);
 
 LPCNET_EXPORT void lpcnet_plc_destroy(LPCNetPLCState *st);
 
