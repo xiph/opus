@@ -121,6 +121,7 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
       float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
       RNN_COPY(zeros, plc_features, 2*NB_BANDS);
       zeros[2*NB_BANDS+NB_FEATURES] = 1;
+      st->plc_net = st->plc_copy;
       compute_plc_pred(&st->plc_net, st->features, zeros);
       if (st->enable_blending) {
         LPCNetState copy;
@@ -196,6 +197,7 @@ static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
     st->pcm_fill -= update_count;
     st->skip_analysis++;
   }
+  st->plc_copy = st->plc_net;
   lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
   compute_plc_pred(&st->plc_net, st->features, zeros);
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));

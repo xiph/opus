@@ -78,6 +78,7 @@ struct LPCNetPLCState {
   float features[NB_TOTAL_FEATURES];
   int loss_count;
   PLCNetState plc_net;
+  PLCNetState plc_copy;
   int enable_blending;
   int non_causal;
   double dc_mem;
