@@ -205,7 +205,6 @@ static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
   //if (st->loss_count > 4) st->features[NB_FEATURES-1] = MAX16(-.5, st->features[NB_FEATURES-1]-.1*(st->loss_count-4));
   lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], &pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
   {
-    int i;
     float x[FRAME_SIZE];
     /* FIXME: Can we do better? */
     for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
