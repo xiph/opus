@@ -240,7 +240,7 @@ static int lpcnet_plc_update_non_causal(LPCNetPLCState *st, short *pcm) {
   short pcm_save[FRAME_SIZE];
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
   short lp[FRAME_SIZE]={0};
-  double mem_bak;
+  double mem_bak=0;
   process_queued_update(st);
   if (st->remove_dc) {
     st->dc_mem += st->syn_dc;
