@@ -66,10 +66,10 @@ void silk_PLC_Reset(
     psDec->sPLC.nb_subfr = 2;
 #ifdef NEURAL_PLC
     if( psDec->sPLC.lpcnet != NULL ) {
-        lpcnet_plc_init( psDec->sPLC.lpcnet );
+        lpcnet_plc_init( psDec->sPLC.lpcnet, LPCNET_PLC_CODEC );
     } else {
         /* FIXME: This is leaking memory. The right fix is for the LPCNet state to be part of the PLC struct itself. */
-        psDec->sPLC.lpcnet = lpcnet_plc_create();
+        psDec->sPLC.lpcnet = lpcnet_plc_create(LPCNET_PLC_CODEC);
     }
 #endif
 }
@@ -462,12 +462,16 @@ void silk_PLC_glue_frames(
                 slope_Q16 = silk_DIV32_16( ( (opus_int32)1 << 16 ) - gain_Q16, length );
                 /* Make slope 4x steeper to avoid missing onsets after DTX */
                 slope_Q16 = silk_LSHIFT( slope_Q16, 2 );
-
-                for( i = 0; i < length; i++ ) {
-                    frame[ i ] = silk_SMULWB( gain_Q16, frame[ i ] );
-                    gain_Q16 += slope_Q16;
-                    if( gain_Q16 > (opus_int32)1 << 16 ) {
-                        break;
+#ifdef NEURAL_PLC
+                if ( psDec->sPLC.fs_kHz != 16 )
+#endif
+                {
+                    for( i = 0; i < length; i++ ) {
+                        frame[ i ] = silk_SMULWB( gain_Q16, frame[ i ] );
+                        gain_Q16 += slope_Q16;
+                        if( gain_Q16 > (opus_int32)1 << 16 ) {
+                            break;
+                        }
                     }
                 }
             }
