@@ -102,8 +102,10 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
   short output[FRAME_SIZE];
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
   short lp[FRAME_SIZE]={0};
+  int delta = 0;
   if (st->remove_dc) {
     st->dc_mem += st->syn_dc;
+    delta = st->syn_dc;
     st->syn_dc = 0;
     for (i=0;i<FRAME_SIZE;i++) {
       lp[i] = (int)floor(.5 + st->dc_mem);
@@ -130,7 +132,7 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
         for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) {
           float w;
           w = .5 - .5*cos(M_PI*i/(FRAME_SIZE-TRAINING_OFFSET));
-          pcm[i] = (int)floor(.5 + w*pcm[i] + (1-w)*tmp[i]);
+          pcm[i] = (int)floor(.5 + w*pcm[i] + (1-w)*(tmp[i]-delta));
         }
         st->lpcnet = copy;
         lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
@@ -240,6 +242,7 @@ static int lpcnet_plc_update_non_causal(LPCNetPLCState *st, short *pcm) {
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
   short lp[FRAME_SIZE]={0};
   double mem_bak=0;
+  int delta = st->syn_dc;
   process_queued_update(st);
   if (st->remove_dc) {
     st->dc_mem += st->syn_dc;
@@ -264,12 +267,13 @@ static int lpcnet_plc_update_non_causal(LPCNetPLCState *st, short *pcm) {
     compute_plc_pred(&st->plc_net, st->features, zeros);
     copy = st->lpcnet;
     lpcnet_synthesize_impl(&st->lpcnet, st->features, &st->pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
-    /* Undo initial DC offset removal so that we can take into accound the last 5ms of synthesis. */
+    /* Undo initial DC offset removal so that we can take into account the last 5ms of synthesis. */
     if (st->remove_dc) {
       for (i=0;i<FRAME_SIZE;i++) pcm[i] += lp[i];
       st->dc_mem = mem_bak;
       for (i=0;i<TRAINING_OFFSET;i++) st->syn_dc += DC_CONST*(st->pcm[FRAME_SIZE-TRAINING_OFFSET+i] - st->syn_dc);
       st->dc_mem += st->syn_dc;
+      delta += st->syn_dc;
       st->syn_dc = 0;
       for (i=0;i<FRAME_SIZE;i++) {
         lp[i] = (int)floor(.5 + st->dc_mem);
@@ -287,7 +291,7 @@ static int lpcnet_plc_update_non_causal(LPCNetPLCState *st, short *pcm) {
       for (i=0;i<TRAINING_OFFSET;i++) {
         float w;
         w = .5 - .5*cos(M_PI*i/(TRAINING_OFFSET));
-        st->pcm[FRAME_SIZE-1-i] = (int)floor(.5 + w*st->pcm[FRAME_SIZE-1-i] + (1-w)*rev[i]);
+        st->pcm[FRAME_SIZE-1-i] = (int)floor(.5 + w*st->pcm[FRAME_SIZE-1-i] + (1-w)*(rev[i]+delta));
       }
       
     }
@@ -360,7 +364,7 @@ static int lpcnet_plc_conceal_non_causal(LPCNetPLCState *st, short *pcm) {
   if (st->remove_dc) {
     int dc = (int)floor(.5 + st->dc_mem);
     if (st->loss_count == 0) {
-        for (i=FRAME_SIZE-TRAINING_OFFSET;i<FRAME_SIZE;i++) st->syn_dc += DC_CONST*(pcm[i] - st->syn_dc);
+        for (i=TRAINING_OFFSET;i<FRAME_SIZE;i++) st->syn_dc += DC_CONST*(pcm[i] - st->syn_dc);
     } else {
         for (i=0;i<FRAME_SIZE;i++) st->syn_dc += DC_CONST*(pcm[i] - st->syn_dc);
     }
