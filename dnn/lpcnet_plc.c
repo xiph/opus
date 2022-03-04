@@ -81,6 +81,8 @@ static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
   compute_gruB(&plc_gru1, zeros, net->plc_gru1_state, dense_out);
   compute_gruB(&plc_gru2, zeros, net->plc_gru2_state, net->plc_gru1_state);
   _lpcnet_compute_dense(&plc_out, out, net->plc_gru2_state);
+  /* Artificially boost the correlation to make harmonics cleaner. */
+  out[19] = MIN16(.5f, out[19]+.1f);
 }
 
 void clear_state(LPCNetPLCState *st) {
