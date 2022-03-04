@@ -288,7 +288,7 @@ static int lpcnet_plc_update_non_causal(LPCNetPLCState *st, short *pcm) {
       short rev[FRAME_SIZE];
       for (i=0;i<FRAME_SIZE;i++) rev[i] = pcm[FRAME_SIZE-i-1];
       clear_state(st);
-      lpcnet_synthesize_tail_impl(&st->lpcnet, rev, FRAME_SIZE, FRAME_SIZE);
+      lpcnet_synthesize_impl(&st->lpcnet, st->features, rev, FRAME_SIZE, FRAME_SIZE);
       lpcnet_synthesize_tail_impl(&st->lpcnet, rev, TRAINING_OFFSET, 0);
       for (i=0;i<TRAINING_OFFSET;i++) {
         float w;
