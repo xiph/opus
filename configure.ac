@@ -153,7 +153,7 @@ AS_IF([test "$enable_float_api" = "no"],[
 
 AC_ARG_ENABLE([custom-modes],
     [AS_HELP_STRING([--enable-custom-modes], [enable non-Opus modes, e.g. 44.1 kHz & 2^n frames])],,
-    [enable_custom_modes=no])
+    [enable_custom_modes=yes])
 
 AS_IF([test "$enable_custom_modes" = "yes"],[
   AC_DEFINE([CUSTOM_MODES], [1], [Custom modes])
@@ -161,6 +161,14 @@ AS_IF([test "$enable_custom_modes" = "yes"],[
 ])
 
 AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes"])
+
+AC_ARG_ENABLE([neural-plc],
+    [AS_HELP_STRING([--enable-neural-plc], [Use neural PLC for SILK])],,
+    [enable_neural_plc=yes])
+
+AS_IF([test "$enable_neural_plc" = "yes"],[
+  AC_DEFINE([NEURAL_PLC], [1], [Neural PLC])
+])
 
 has_float_approx=no
 #case "$host_cpu" in
