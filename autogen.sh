@@ -9,6 +9,8 @@ set -e
 srcdir=`dirname $0`
 test -n "$srcdir" && cd "$srcdir"
 
+(cd lpcnet; ./download_model.sh plc_challenge_weights)
+
 echo "Updating build configuration files, please wait...."
 
 autoreconf -isf
