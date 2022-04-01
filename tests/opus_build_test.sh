@@ -18,7 +18,7 @@ fi
 mkdir build_tests
 
 configure_dir=`pwd`
-seq -w $nb_tests | parallel -j +2 "../random_config.sh build_tests/run_{} $configure_dir $oldvectors $newvectors"
+seq -w $nb_tests | parallel --halt now,fail=10 -j +2 "../random_config.sh build_tests/run_{} $configure_dir $oldvectors $newvectors"
 
 if [ $? -ne 0 ]
 then

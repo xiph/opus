@@ -78,7 +78,7 @@ $configure_path/configure $config_opt > configure_output.txt 2>&1
 
 if [ $? -ne 0 ]
 then
-	echo configure error >> $config
+	echo configure FAIL >> $config
 	exit 1
 fi
 
@@ -86,7 +86,7 @@ make > make_output.txt 2>&1
 
 if [ $? -ne 0 ]
 then
-        echo make error >> $config
+        echo make FAIL >> $config
 	exit 1
 fi
 
@@ -100,7 +100,7 @@ fi
 
 if [ $? -ne 0 ]
 then
-        echo check error >> $config
+        echo check FAIL >> $config
 	exit 1
 fi
 
@@ -110,8 +110,13 @@ rate=`echo -e "8000\n12000\n16000\n24000\n48000" | shuf -n1`
 
 if [ $? -ne 0 ]
 then
-        echo testvectors error >> $config
+        echo testvectors FAIL >> $config
         exit 1
 fi
 
-echo all pass >> $config
+echo all tests PASS >> $config
+
+#When everything's good, do some cleaning up to save space
+make distclean > /dev/null 2>&1
+rm -f tmp.out
+gzip make_output.txt
