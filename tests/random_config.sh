@@ -106,7 +106,8 @@ fi
 
 
 rate=`echo -e "8000\n12000\n16000\n24000\n48000" | shuf -n1`
-../../../run_vectors.sh . $vectors $rate > testvectors_output.txt 2>&1
+echo testvectors for $rate Hz > testvectors_output.txt
+../../../run_vectors.sh . $vectors $rate >> testvectors_output.txt 2>&1
 
 if [ $? -ne 0 ]
 then
