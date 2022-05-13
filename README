@@ -73,9 +73,12 @@ On Apple macOS, install Xcode and brew.sh, then in the Terminal enter:
 
 2) Compiling the source
 
+    % git submodule update --init
     % ./autogen.sh
     % ./configure
     % make
+
+On x86, it's a good idea to use a -march= option that allows the use of AVX2.
 
 3) Install the codec libraries (optional)
 
