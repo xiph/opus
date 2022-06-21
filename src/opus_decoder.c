@@ -278,7 +278,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       ec_dec_init(&dec,(unsigned char*)data,len);
    } else {
       audiosize = frame_size;
-      mode = st->prev_mode;
+      /* Run PLC using last used mode (CELT if we ended with CELT redundancy) */
+      mode = st->prev_redundancy ? MODE_CELT_ONLY : st->prev_mode;
       bandwidth = 0;
 
       if (mode == 0)
@@ -419,7 +420,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
    start_band = 0;
    if (!decode_fec && mode != MODE_CELT_ONLY && data != NULL
-    && ec_tell(&dec)+17+20*(st->mode == MODE_HYBRID) <= 8*len)
+    && ec_tell(&dec)+17+20*(mode == MODE_HYBRID) <= 8*len)
    {
       /* Check if we have a redundant 0-8 kHz band */
       if (mode == MODE_HYBRID)
@@ -454,6 +455,10 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    {
       transition = 0;
       pcm_transition_silk_size=ALLOC_NONE;
+      /* don't use stale CELT decoder to decode second redundancy frame if
+         the first redundancy frame for a transition from SILK was lost */
+      if (celt_to_silk && st->prev_mode == MODE_SILK_ONLY && !st->prev_redundancy)
+         redundancy = 0;
    }
 
    ALLOC(pcm_transition_silk, pcm_transition_silk_size, opus_val16);
