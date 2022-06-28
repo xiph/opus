@@ -51,8 +51,8 @@ arithmetic=`echo -e "\n--enable-fixed-point\n--enable-fixed-point --enable-fixed
 
 custom=`echo -e "\n--enable-custom-modes" | shuf -n1`
 
-#asm=`echo -e "\n--disable-asm\n--disable-rtcd\n--disable-intrinsics" | shuf -n1`
-asm=`echo -e "\n--disable-asm\n--disable-intrinsics" | shuf -n1`
+asm=`echo -e "\n--disable-asm\n--disable-rtcd\n--disable-intrinsics" | shuf -n1`
+#asm=`echo -e "\n--disable-asm\n--disable-intrinsics" | shuf -n1`
 
 assert=`echo -e "\n--enable-assertions" | shuf -n1`
 harden=`echo -e "\n--enable-hardening" | shuf -n1`
