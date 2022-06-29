@@ -68,7 +68,8 @@ static void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
         "=r" (CPUInfo[1]),
         "=c" (CPUInfo[2]),
         "=d" (CPUInfo[3]) :
-        "0" (InfoType)
+        /* We clear ECX to avoid a valgrind false-positive prior to v3.17.0. */
+        "0" (InfoType), "2" (0)
     );
 #else
     __asm__ __volatile__ (
@@ -77,12 +78,15 @@ static void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
         "=b" (CPUInfo[1]),
         "=c" (CPUInfo[2]),
         "=d" (CPUInfo[3]) :
-        "0" (InfoType)
+        /* We clear ECX to avoid a valgrind false-positive prior to v3.17.0. */
+        "0" (InfoType), "2" (0)
     );
 #endif
 #elif defined(CPU_INFO_BY_C)
-    if !(__get_cpuid(InfoType, &(CPUInfo[0]), &(CPUInfo[1]), &(CPUInfo[2]), &(CPUInfo[3]))) {
-        /* Our function cannot fail, but __get_cpuid can.
+    /* We use __get_cpuid_count to clear ECX to avoid a valgrind false-positive
+        prior to v3.17.0.*/
+    if (!__get_cpuid_count(InfoType, 0, &(CPUInfo[0]), &(CPUInfo[1]), &(CPUInfo[2]), &(CPUInfo[3]))) {
+        /* Our function cannot fail, but __get_cpuid{_count} can.
            Returning all zeroes will effectively disable all SIMD, which is
             what we want on CPUs that don't support CPUID. */
         CPUInfo[3] = CPUInfo[2] = CPUInfo[1] = CPUInfo[0] = 0;
