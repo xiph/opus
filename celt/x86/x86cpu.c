@@ -81,7 +81,12 @@ static void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
     );
 #endif
 #elif defined(CPU_INFO_BY_C)
-    __get_cpuid(InfoType, &(CPUInfo[0]), &(CPUInfo[1]), &(CPUInfo[2]), &(CPUInfo[3]));
+    if !(__get_cpuid(InfoType, &(CPUInfo[0]), &(CPUInfo[1]), &(CPUInfo[2]), &(CPUInfo[3]))) {
+        /* Our function cannot fail, but __get_cpuid can.
+           Returning all zeroes will effectively disable all SIMD, which is
+            what we want on CPUs that don't support CPUID. */
+        CPUInfo[3] = CPUInfo[2] = CPUInfo[1] = CPUInfo[0] = 0;
+    }
 #endif
 }
 
@@ -98,7 +103,7 @@ typedef struct CPU_Feature{
 
 static void opus_cpu_feature_check(CPU_Feature *cpu_feature)
 {
-    unsigned int info[4] = {0};
+    unsigned int info[4];
     unsigned int nIds = 0;
 
     cpuid(info, 0);
