@@ -311,142 +311,142 @@ jobs:
         working-directory: ./build
         run: ctest -j 2 -C ${{ matrix.config.config }}
 
-  AutoMakeBuild:
-    name: AutoMake/${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-        - {
-            name: "Linux/GCC",
-            os: ubuntu-latest,
-            compiler: gcc,
-            automakeconfig:
-          }
-        - {
-            name: "Linux/GCC/EnableAssertions",
-            os: ubuntu-latest,
-            compiler: gcc,
-            automakeconfig: --enable-assertions
-          }
-        - {
-            name: "Linux/GCC/EnableFixedPoint",
-            os: ubuntu-latest,
-            compiler: gcc,
-            automakeconfig: --enable-fixed-point
-          }
-        - {
-            name: "Linux/GCC/EnableFixedPoint/DisableFloatAPI",
-            os: ubuntu-latest,
-            compiler: gcc,
-            automakeconfig: --enable-assertions --disable-float-api
-          }
-        - {
-            name: "Linux/GCC/EnableFixedPoint/EnableAssertions",
-            os: ubuntu-latest,
-            compiler: gcc,
-            automakeconfig: --enable-fixed-point --enable-assertions
-          }
-        - {
-            name: "Linux/Clang",
-            os: ubuntu-latest,
-            compiler: clang,
-            automakeconfig:
-          }
-        - {
-            name: "Linux/Clang/EnableAssertions",
-            os: ubuntu-latest,
-            compiler: clang,
-            automakeconfig: --enable-assertions
-          }
-        - {
-            name: "Linux/Clang/EnableFixedPoint",
-            os: ubuntu-latest,
-            compiler: clang,
-            automakeconfig: --enable-fixed-point
-          }
-        - {
-            name: "Linux/Clang/EnableFixedPoint/DisableFloatAPI",
-            os: ubuntu-latest,
-            compiler: clang,
-            automakeconfig: --enable-assertions --disable-float-api
-          }
-        - {
-            name: "Linux/Clang/EnableFixedPoint/EnableAssertions",
-            os: ubuntu-latest,
-            compiler: clang,
-            automakeconfig: --enable-fixed-point --enable-assertions
-          }
-        - {
-            name: "MacOSX/GCC",
-            os: macos-latest,
-            compiler: gcc,
-            automakeconfig:
-          }
-        - {
-            name: "MacOSX/GCC/EnableAssertions",
-            os: macos-latest,
-            compiler: gcc,
-            automakeconfig: --enable-assertions
-          }
-        - {
-            name: "MacOSX/GCC/EnableFixedPoint",
-            os: macos-latest,
-            compiler: gcc,
-            automakeconfig: --enable-fixed-point
-          }
-        - {
-            name: "MacOSX/GCC/EnableFixedPoint/DisableFloatAPI",
-            os: macos-latest,
-            compiler: gcc,
-            automakeconfig: --enable-assertions --disable-float-api
-          }
-        - {
-            name: "MacOSX/GCC/EnableFixedPoint/EnableAssertions",
-            os: macos-latest,
-            compiler: gcc,
-            automakeconfig: --enable-fixed-point --enable-assertions
-          }
-        - {
-            name: "MacOSX/Clang",
-            os: macos-latest,
-            compiler: clang,
-            automakeconfig:
-          }
-        - {
-            name: "MacOSX/Clang/EnableAssertions",
-            os: macos-latest,
-            compiler: clang,
-            automakeconfig: --enable-assertions
-          }
-        - {
-            name: "MacOSX/Clang/EnableFixedPoint",
-            os: macos-latest,
-            compiler: clang,
-            automakeconfig: --enable-fixed-point
-          }
-        - {
-            name: "MacOSX/Clang/EnableFixedPoint/DisableFloatAPI",
-            os: macos-latest,
-            compiler: clang,
-            automakeconfig: --enable-assertions --disable-float-api
-          }
-        - {
-            name: "MacOSX/Clang/EnableFixedPoint/EnableAssertions",
-            os: macos-latest,
-            compiler: clang,
-            automakeconfig: --enable-fixed-point --enable-assertions
-          }
-    steps:
-      - uses: actions/checkout@v2
-        # No AutoMake on Mac so let's install it
-      - name: Install AutoConf, AutoMake and LibTool on MacOSX
-        if: matrix.config.os == 'macos-latest'
-        run: brew install autoconf automake libtool
-      - name: Autogen
-        run: CC=${{ matrix.config.compiler }} ./autogen.sh
-      - name: Configure
-        run: ./configure ${{ matrix.config.buildconfig }}
-      - name: DistCheck
-        run: make distcheck -j 2
+  # AutoMakeBuild:
+  #   name: AutoMake/${{ matrix.config.name }}
+  #   runs-on: ${{ matrix.config.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       config:
+  #       - {
+  #           name: "Linux/GCC",
+  #           os: ubuntu-latest,
+  #           compiler: gcc,
+  #           automakeconfig:
+  #         }
+  #       - {
+  #           name: "Linux/GCC/EnableAssertions",
+  #           os: ubuntu-latest,
+  #           compiler: gcc,
+  #           automakeconfig: --enable-assertions
+  #         }
+  #       - {
+  #           name: "Linux/GCC/EnableFixedPoint",
+  #           os: ubuntu-latest,
+  #           compiler: gcc,
+  #           automakeconfig: --enable-fixed-point
+  #         }
+  #       - {
+  #           name: "Linux/GCC/EnableFixedPoint/DisableFloatAPI",
+  #           os: ubuntu-latest,
+  #           compiler: gcc,
+  #           automakeconfig: --enable-assertions --disable-float-api
+  #         }
+  #       - {
+  #           name: "Linux/GCC/EnableFixedPoint/EnableAssertions",
+  #           os: ubuntu-latest,
+  #           compiler: gcc,
+  #           automakeconfig: --enable-fixed-point --enable-assertions
+  #         }
+  #       - {
+  #           name: "Linux/Clang",
+  #           os: ubuntu-latest,
+  #           compiler: clang,
+  #           automakeconfig:
+  #         }
+  #       - {
+  #           name: "Linux/Clang/EnableAssertions",
+  #           os: ubuntu-latest,
+  #           compiler: clang,
+  #           automakeconfig: --enable-assertions
+  #         }
+  #       - {
+  #           name: "Linux/Clang/EnableFixedPoint",
+  #           os: ubuntu-latest,
+  #           compiler: clang,
+  #           automakeconfig: --enable-fixed-point
+  #         }
+  #       - {
+  #           name: "Linux/Clang/EnableFixedPoint/DisableFloatAPI",
+  #           os: ubuntu-latest,
+  #           compiler: clang,
+  #           automakeconfig: --enable-assertions --disable-float-api
+  #         }
+  #       - {
+  #           name: "Linux/Clang/EnableFixedPoint/EnableAssertions",
+  #           os: ubuntu-latest,
+  #           compiler: clang,
+  #           automakeconfig: --enable-fixed-point --enable-assertions
+  #         }
+  #       - {
+  #           name: "MacOSX/GCC",
+  #           os: macos-latest,
+  #           compiler: gcc,
+  #           automakeconfig:
+  #         }
+  #       - {
+  #           name: "MacOSX/GCC/EnableAssertions",
+  #           os: macos-latest,
+  #           compiler: gcc,
+  #           automakeconfig: --enable-assertions
+  #         }
+  #       - {
+  #           name: "MacOSX/GCC/EnableFixedPoint",
+  #           os: macos-latest,
+  #           compiler: gcc,
+  #           automakeconfig: --enable-fixed-point
+  #         }
+  #       - {
+  #           name: "MacOSX/GCC/EnableFixedPoint/DisableFloatAPI",
+  #           os: macos-latest,
+  #           compiler: gcc,
+  #           automakeconfig: --enable-assertions --disable-float-api
+  #         }
+  #       - {
+  #           name: "MacOSX/GCC/EnableFixedPoint/EnableAssertions",
+  #           os: macos-latest,
+  #           compiler: gcc,
+  #           automakeconfig: --enable-fixed-point --enable-assertions
+  #         }
+  #       - {
+  #           name: "MacOSX/Clang",
+  #           os: macos-latest,
+  #           compiler: clang,
+  #           automakeconfig:
+  #         }
+  #       - {
+  #           name: "MacOSX/Clang/EnableAssertions",
+  #           os: macos-latest,
+  #           compiler: clang,
+  #           automakeconfig: --enable-assertions
+  #         }
+  #       - {
+  #           name: "MacOSX/Clang/EnableFixedPoint",
+  #           os: macos-latest,
+  #           compiler: clang,
+  #           automakeconfig: --enable-fixed-point
+  #         }
+  #       - {
+  #           name: "MacOSX/Clang/EnableFixedPoint/DisableFloatAPI",
+  #           os: macos-latest,
+  #           compiler: clang,
+  #           automakeconfig: --enable-assertions --disable-float-api
+  #         }
+  #       - {
+  #           name: "MacOSX/Clang/EnableFixedPoint/EnableAssertions",
+  #           os: macos-latest,
+  #           compiler: clang,
+  #           automakeconfig: --enable-fixed-point --enable-assertions
+  #         }
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       # No AutoMake on Mac so let's install it
+  #     - name: Install AutoConf, AutoMake and LibTool on MacOSX
+  #       if: matrix.config.os == 'macos-latest'
+  #       run: brew install autoconf automake libtool
+  #     - name: Autogen
+  #       run: CC=${{ matrix.config.compiler }} ./autogen.sh
+  #     - name: Configure
+  #       run: ./configure ${{ matrix.config.buildconfig }}
+  #     - name: DistCheck
+  #       run: make distcheck -j 2
