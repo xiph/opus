@@ -128,7 +128,7 @@ static void opus_cpu_feature_check(CPU_Feature *cpu_feature)
     }
 }
 
-int opus_select_arch(void)
+static int opus_select_arch_impl(void)
 {
     CPU_Feature cpu_feature;
     int arch;
@@ -160,6 +160,15 @@ int opus_select_arch(void)
     }
     arch++;
 
+    return arch;
+}
+
+int opus_select_arch(void) {
+    int arch = opus_select_arch_impl();
+#ifdef FUZZING
+    /* Randomly downgrade the architecture. */
+    arch = rand()%(arch+1);
+#endif
     return arch;
 }
 
