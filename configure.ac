@@ -724,7 +724,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
                  unsigned int CPUInfo2;
                  unsigned int CPUInfo3;
                  unsigned int InfoType;
-                 __get_cpuid(InfoType, &CPUInfo0, &CPUInfo1, &CPUInfo2, &CPUInfo3);
+                 __get_cpuid_count(InfoType, 0, &CPUInfo0, &CPUInfo1, &CPUInfo2, &CPUInfo3);
             ]])],
             [AC_MSG_RESULT([C method])
                  AC_DEFINE([CPU_INFO_BY_C], [1], [Get CPU Info by c method])],
