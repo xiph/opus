@@ -167,7 +167,7 @@ static OPUS_INLINE short SHR16_(int a, int shift, char *file, int line)
 #define SHL16(a, shift) SHL16_(a, shift, __FILE__, __LINE__)
 static OPUS_INLINE short SHL16_(int a, int shift, char *file, int line)
 {
-   int res;
+   opus_int32 res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(shift))
    {
       fprintf (stderr, "SHL16: inputs are not short: %d %d in %s: line %d\n", a, shift, file, line);
@@ -175,7 +175,7 @@ static OPUS_INLINE short SHL16_(int a, int shift, char *file, int line)
       celt_assert(0);
 #endif
    }
-   res = a<<shift;
+   res = (opus_int32)((opus_uint32)a<<shift);
    if (!VERIFY_SHORT(res))
    {
       fprintf (stderr, "SHL16: output is not short: %d in %s: line %d\n", res, file, line);
@@ -219,7 +219,7 @@ static OPUS_INLINE int SHL32_(opus_int64 a, int shift, char *file, int line)
       celt_assert(0);
 #endif
    }
-   res = a<<shift;
+   res = (opus_int64)((opus_uint64)a<<shift);
    if (!VERIFY_INT(res))
    {
       fprintf (stderr, "SHL32: output is not int: %lld<<%d = %lld in %s: line %d\n", (long long)a, shift, (long long)res, file, line);
