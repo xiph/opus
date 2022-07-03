@@ -40,8 +40,10 @@ arch=`echo -e "\n-march=core2\n-march=sandybridge\n-march=broadwell\n-march=skyl
 
 footprint=`echo -e "\n-DSMALL_FOOTPRINT" | shuf -n1`
 std=`echo -e "\n-std=c90\n-std=c99\n-std=c11\n-std=c17" | shuf -n1`
+sanitize=`echo -e "\n-fsanitize=address -fno-sanitize-recover=all\n-fsanitize=undefined -fno-sanitize-recover=all -fsanitize-recover=signed-integer-overflow" | shuf -n1`
 
-CFLAGS="$CFLAGS $std $opt $arch $footprint $math"
+
+CFLAGS="$CFLAGS $std $opt $arch $footprint $math $sanitize"
 
 echo CFLAGS=$CFLAGS > $config
 
@@ -90,11 +92,12 @@ then
 	exit 1
 fi
 
-#Run valgrind 10% of the time
-if [ `seq 30 | shuf -n1` -ne 1 ]
+#Run valgrind 5% of the time (minus the asan cases)
+if [ `seq 20 | shuf -n1` -ne 1 -o "$sanitize" = "-fsanitize=address -fno-sanitize-recover=all" ]
 then
 	make check > makecheck_output.txt 2>&1
 else
+	echo valgrind enabled >> $config
 	valgrind --trace-children=yes --error-exitcode=128 make check > makecheck_output.txt 2>&1
 fi
 
