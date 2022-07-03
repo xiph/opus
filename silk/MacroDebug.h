@@ -55,7 +55,7 @@ static OPUS_INLINE opus_int16 silk_ADD16_(opus_int16 a, opus_int16 b, char *file
 static OPUS_INLINE opus_int32 silk_ADD32_(opus_int32 a, opus_int32 b, char *file, int line){
     opus_int32 ret;
 
-    ret = a + b;
+    ret = (opus_int32)((opus_uint32)a + (opus_uint32)b);
     if ( ret != silk_ADD_SAT32( a, b ) )
     {
         fprintf (stderr, "silk_ADD32(%d, %d) in %s: line %d\n", a, b, file, line);
@@ -257,7 +257,7 @@ static OPUS_INLINE opus_int64 silk_SUB_SAT64_( opus_int64 a64, opus_int64 b64, c
 static OPUS_INLINE opus_int32 silk_MUL_(opus_int32 a32, opus_int32 b32, char *file, int line){
     opus_int32 ret;
     opus_int64 ret64;
-    ret = a32 * b32;
+    ret = (opus_int32)((opus_uint32)a32 * (opus_uint32)b32);
     ret64 = (opus_int64)a32 * (opus_int64)b32;
     if ( (opus_int64)ret != ret64 )
     {
