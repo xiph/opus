@@ -1,20 +1,20 @@
 #!/bin/bash
 
-dir=$1
-mkdir $dir
+dir="$1"
+mkdir "$dir"
 if [ $? -ne 0 ]
 then
         exit 1
 fi
 
-cd $dir
+cd "$dir"
 if [ $? -ne 0 ]
 then
         exit 1
 fi
 
 
-configure_path=$2
+configure_path="$2"
 config="random_config.txt"
 
 case `seq 3 | shuf -n1` in
@@ -45,7 +45,7 @@ sanitize=`echo -e "\n-fsanitize=address -fno-sanitize-recover=all\n-fsanitize=un
 
 CFLAGS="$CFLAGS $std $opt $arch $footprint $math $sanitize"
 
-echo CFLAGS=$CFLAGS > $config
+echo "CFLAGS=$CFLAGS" > "$config"
 
 lib=`echo -e "\n--disable-static\n--disable-shared" | shuf -n1`
 
@@ -64,61 +64,61 @@ rfc8251=`echo -e "\n--disable-rfc8251" | shuf -n1`
 
 if [ "$rfc8251" = --disable-rfc8251 ]
 then
-	vectors=$3
+        vectors="$3"
 else
-	vectors=$4
+        vectors="$4"
 fi
-echo using testvectors at $vectors >> $config
+echo using testvectors at "$vectors" >> "$config"
 
 
 config_opt="$lib $arithmetic $custom $asm $assert $harden $fuzz $checkasm $rfc8251 $approx"
 
-echo configure $config_opt >> $config
+echo configure $config_opt >> "$config"
 
 export CFLAGS
-$configure_path/configure $config_opt > configure_output.txt 2>&1
+"$configure_path/configure" $config_opt > configure_output.txt 2>&1
 
 if [ $? -ne 0 ]
 then
-	echo configure FAIL >> $config
-	exit 1
+        echo configure FAIL >> "$config"
+        exit 1
 fi
 
 make > make_output.txt 2>&1
 
 if [ $? -ne 0 ]
 then
-        echo make FAIL >> $config
-	exit 1
+        echo make FAIL >> "$config"
+        exit 1
 fi
 
 #Run valgrind 5% of the time (minus the asan cases)
-if [ `seq 20 | shuf -n1` -ne 1 -o "$sanitize" = "-fsanitize=address -fno-sanitize-recover=all" ]
+if [ "`seq 20 | shuf -n1`" -ne 1 -o "$sanitize" = "-fsanitize=address -fno-sanitize-recover=all" ]
 then
-	make check > makecheck_output.txt 2>&1
+        make check > makecheck_output.txt 2>&1
 else
-	echo valgrind enabled >> $config
-	valgrind --trace-children=yes --error-exitcode=128 make check > makecheck_output.txt 2>&1
+        echo valgrind enabled >> "$config"
+        valgrind --trace-children=yes --error-exitcode=128 make check > makecheck_output.txt 2>&1
 fi
 
 if [ $? -ne 0 ]
 then
-        echo check FAIL >> $config
-	exit 1
+        echo check FAIL >> "$config"
+        exit 1
 fi
 
 
 rate=`echo -e "8000\n12000\n16000\n24000\n48000" | shuf -n1`
-echo testvectors for $rate Hz > testvectors_output.txt
-../../../run_vectors.sh . $vectors $rate >> testvectors_output.txt 2>&1
+echo testvectors for "$rate" Hz > testvectors_output.txt
+../../../run_vectors.sh . "$vectors" "$rate" >> testvectors_output.txt 2>&1
 
 if [ $? -ne 0 ]
 then
-        echo testvectors FAIL >> $config
+        echo testvectors FAIL >> "$config"
         exit 1
 fi
 
-echo all tests PASS >> $config
+echo all tests PASS >> "$config"
 
 #When everything's good, do some cleaning up to save space
 make distclean > /dev/null 2>&1
