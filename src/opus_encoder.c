@@ -1315,6 +1315,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         st->stream_channels = st->force_channels;
     } else {
 #ifdef FUZZING
+        (void)stereo_music_threshold;
+        (void)stereo_voice_threshold;
        /* Random mono/stereo decision */
        if (st->channels == 2 && (rand()&0x1F)==0)
           st->stream_channels = 3-st->stream_channels;
@@ -1353,6 +1355,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     } else if (st->user_forced_mode == OPUS_AUTO)
     {
 #ifdef FUZZING
+        (void)stereo_width;
+        (void)mode_thresholds;
        /* Random mode switching */
        if ((rand()&0xF)==0)
        {
