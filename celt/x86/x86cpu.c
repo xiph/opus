@@ -35,11 +35,11 @@
 #include "pitch.h"
 #include "x86cpu.h"
 
-#if (defined(OPUS_X86_MAY_HAVE_SSE) && !defined(OPUS_X86_PRESUME_SSE)) || \
+#if defined(OPUS_HAVE_RTCD) && \
+  ((defined(OPUS_X86_MAY_HAVE_SSE) && !defined(OPUS_X86_PRESUME_SSE)) || \
   (defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(OPUS_X86_PRESUME_SSE2)) || \
   (defined(OPUS_X86_MAY_HAVE_SSE4_1) && !defined(OPUS_X86_PRESUME_SSE4_1)) || \
-  (defined(OPUS_X86_MAY_HAVE_AVX) && !defined(OPUS_X86_PRESUME_AVX))
-
+  (defined(OPUS_X86_MAY_HAVE_AVX) && !defined(OPUS_X86_PRESUME_AVX)))
 
 #if defined(_MSC_VER)
 
@@ -91,6 +91,9 @@ static void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
             what we want on CPUs that don't support CPUID. */
         CPUInfo[3] = CPUInfo[2] = CPUInfo[1] = CPUInfo[0] = 0;
     }
+#else
+# error "Configured to use x86 RTCD, but no CPU detection method available. " \
+ "Reconfigure with --disable-rtcd (or send patches)."
 #endif
 }
 

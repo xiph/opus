@@ -46,10 +46,12 @@ void silk_burg_modified_sse4_1(
 );
 
 #  if defined(OPUS_X86_PRESUME_SSE4_1)
+
+#   define OVERRIDE_silk_burg_modified
 #   define silk_burg_modified(res_nrg, res_nrg_Q, A_Q16, x, minInvGain_Q30, subfr_length, nb_subfr, D, arch) \
        ((void)(arch), silk_burg_modified_sse4_1(res_nrg, res_nrg_Q, A_Q16, x, minInvGain_Q30, subfr_length, nb_subfr, D, arch))
 
-#  else
+#  elif defined(OPUS_HAVE_RTCD)
 
 extern void (*const SILK_BURG_MODIFIED_IMPL[OPUS_ARCHMASK + 1])(
     opus_int32                  *res_nrg,           /* O    Residual energy                                             */
@@ -62,6 +64,7 @@ extern void (*const SILK_BURG_MODIFIED_IMPL[OPUS_ARCHMASK + 1])(
     const opus_int              D,                  /* I    Order                                                       */
     int                         arch                /* I    Run-time architecture                                       */);
 
+#   define OVERRIDE_silk_burg_modified
 #   define silk_burg_modified(res_nrg, res_nrg_Q, A_Q16, x, minInvGain_Q30, subfr_length, nb_subfr, D, arch) \
      ((*SILK_BURG_MODIFIED_IMPL[(arch) & OPUS_ARCHMASK])(res_nrg, res_nrg_Q, A_Q16, x, minInvGain_Q30, subfr_length, nb_subfr, D, arch))
 
@@ -76,16 +79,18 @@ opus_int64 silk_inner_prod16_sse4_1(
 
 #  if defined(OPUS_X86_PRESUME_SSE4_1)
 
+#   define OVERRIDE_silk_inner_prod16
 #   define silk_inner_prod16(inVec1, inVec2, len, arch) \
        ((void)(arch),silk_inner_prod16_sse4_1(inVec1, inVec2, len))
 
-#  else
+#  elif defined(OPUS_HAVE_RTCD)
 
 extern opus_int64 (*const SILK_INNER_PROD16_IMPL[OPUS_ARCHMASK + 1])(
                     const opus_int16 *inVec1,
                     const opus_int16 *inVec2,
                     const opus_int   len);
 
+#   define OVERRIDE_silk_inner_prod16
 #   define silk_inner_prod16(inVec1, inVec2, len, arch) \
      ((*SILK_INNER_PROD16_IMPL[(arch) & OPUS_ARCHMASK])(inVec1, inVec2, len))
 
