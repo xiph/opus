@@ -565,6 +565,7 @@ if(OPUS_BUILD_PROGRAMS)
     target_include_directories(opus_custom_demo
                                PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_link_libraries(opus_custom_demo PRIVATE opus)
+    target_compile_definitions(opus_custom_demo PRIVATE OPUS_BUILD)
   endif()
 
   add_executable(opus_demo ${opus_demo_sources})
@@ -572,6 +573,7 @@ if(OPUS_BUILD_PROGRAMS)
   target_include_directories(opus_demo PRIVATE silk) # debug.h
   target_include_directories(opus_demo PRIVATE celt) # arch.h
   target_link_libraries(opus_demo PRIVATE opus ${OPUS_REQUIRED_LIBRARIES})
+  target_compile_definitions(opus_demo PRIVATE OPUS_BUILD)
 
   # compare
   add_executable(opus_compare ${opus_compare_sources})
@@ -587,6 +589,7 @@ if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
   target_include_directories(test_opus_decode
                              PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
   target_link_libraries(test_opus_decode PRIVATE opus)
+  target_compile_definitions(test_opus_decode PRIVATE OPUS_BUILD)
   if(OPUS_FIXED_POINT)
     target_compile_definitions(test_opus_decode PRIVATE DISABLE_FLOAT_API)
   endif()
@@ -608,6 +611,7 @@ if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
   target_include_directories(test_opus_api
                             PRIVATE ${CMAKE_CURRENT_BINARY_DIR} celt)
   target_link_libraries(test_opus_api PRIVATE opus)
+  target_compile_definitions(test_opus_api PRIVATE OPUS_BUILD)
   if(OPUS_FIXED_POINT)
     target_compile_definitions(test_opus_api PRIVATE DISABLE_FLOAT_API)
   endif()
@@ -620,6 +624,7 @@ if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
   target_include_directories(test_opus_encode
                             PRIVATE ${CMAKE_CURRENT_BINARY_DIR} celt)
   target_link_libraries(test_opus_encode PRIVATE opus)
+  target_compile_definitions(test_opus_encode PRIVATE OPUS_BUILD)
   add_test(NAME test_opus_encode COMMAND ${CMAKE_COMMAND}
         -DTEST_EXECUTABLE=$<TARGET_FILE:test_opus_encode>
         -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
