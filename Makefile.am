@@ -225,6 +225,8 @@ EXTRA_DIST = opus.pc.in \
              cmake/RunTest.cmake \
              cmake/config.h.cmake.in \
              cmake/vla.c \
+             cmake/cpu_info_by_asm.c \
+             cmake/cpu_info_by_c.c \
              meson/get-version.py \
              meson/read-sources-list.py \
              meson.build \

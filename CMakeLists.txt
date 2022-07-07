@@ -366,11 +366,21 @@ if(NOT OPUS_ENABLE_FLOAT_API)
 endif()
 
 if(NOT OPUS_DISABLE_INTRINSICS)
-  if((OPUS_X86_MAY_HAVE_SSE AND NOT OPUS_X86_PRESUME_SSE) OR
+  if(((OPUS_X86_MAY_HAVE_SSE AND NOT OPUS_X86_PRESUME_SSE) OR
      (OPUS_X86_MAY_HAVE_SSE2 AND NOT OPUS_X86_PRESUME_SSE2) OR
      (OPUS_X86_MAY_HAVE_SSE4_1 AND NOT OPUS_X86_PRESUME_SSE4_1) OR
-     (OPUS_X86_MAY_HAVE_AVX AND NOT OPUS_X86_PRESUME_AVX))
+     (OPUS_X86_MAY_HAVE_AVX AND NOT OPUS_X86_PRESUME_AVX)) AND
+      RUNTIME_CPU_CAPABILITY_DETECTION)
     target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
+    if(NOT MSVC)
+      if(CPU_INFO_BY_ASM_SUPPORTED)
+        target_compile_definitions(opus PRIVATE CPU_INFO_BY_ASM)
+      elseif(CPU_INFO_BY_C_SUPPORTED)
+        target_compile_definitions(opus PRIVATE CPU_INFO_BY_C)
+      else()
+        message(ERROR "Runtime cpu capability detection is enabled while CPU_INFO is not supported")
+      endif()
+    endif()
   endif()
 
   if(SSE1_SUPPORTED)
