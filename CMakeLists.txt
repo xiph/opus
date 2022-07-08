@@ -589,6 +589,10 @@ if(OPUS_BUILD_PROGRAMS)
   add_executable(opus_compare ${opus_compare_sources})
   target_include_directories(opus_compare PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
   target_link_libraries(opus_compare PRIVATE opus ${OPUS_REQUIRED_LIBRARIES})
+  if(MSVC)
+    # move cosmetic warning to level 4 for opus_compare
+    target_compile_options(opus_compare PRIVATE /w44244)
+  endif()
 endif()
 
 if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
