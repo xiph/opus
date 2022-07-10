@@ -258,7 +258,7 @@ celt_pitch_xcorr_c(const opus_val16 *_x, const opus_val16 *_y,
    opus_val32 maxcorr=1;
 #endif
    celt_assert(max_pitch>0);
-   celt_sig_assert((((unsigned char *)_x-(unsigned char *)NULL)&3)==0);
+   celt_sig_assert(((size_t)_x&3)==0);
    for (i=0;i<max_pitch-3;i+=4)
    {
       opus_val32 sum[4]={0,0,0,0};
