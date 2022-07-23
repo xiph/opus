@@ -144,7 +144,7 @@ endfunction()
 function(opus_supports_cpu_detection RUNTIME_CPU_CAPABILITY_DETECTION)
   set(RUNTIME_CPU_CAPABILITY_DETECTION 0 PARENT_SCOPE)
   if(OPUS_CPU_X86 OR OPUS_CPU_X64)
-    if(MSVC)
+    if(MSVC_CL)
       check_include_file(intrin.h HAVE_INTRIN_H)
       if(HAVE_INTRIN_H)
         # if intrin.h is available we assume __cpuid is there

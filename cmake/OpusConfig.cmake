@@ -10,7 +10,7 @@ add_definitions(-DHAVE_CONFIG_H)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-if(MSVC)
+if(MSVC_CL)
   # For compilers that have no notion of a C standard level,
   # such as Microsoft Visual C++ before VS 16.7,
   # this property has no effect.

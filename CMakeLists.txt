@@ -381,7 +381,7 @@ if(NOT OPUS_DISABLE_INTRINSICS)
      (OPUS_X86_MAY_HAVE_AVX AND NOT OPUS_X86_PRESUME_AVX)) AND
       RUNTIME_CPU_CAPABILITY_DETECTION)
     target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
-    if(NOT MSVC)
+    if(NOT MSVC_CL)
       if(CPU_INFO_BY_ASM_SUPPORTED)
         target_compile_definitions(opus PRIVATE CPU_INFO_BY_ASM)
       elseif(CPU_INFO_BY_C_SUPPORTED)
