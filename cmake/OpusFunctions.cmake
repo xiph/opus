@@ -55,7 +55,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
   message(STATUS "Check SIMD support by compiler")
   check_include_file(xmmintrin.h HAVE_XMMINTRIN_H) # SSE1
   if(HAVE_XMMINTRIN_H)
-    if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    if(MSVC_CL)
       # different arch options for 32 and 64 bit target for MSVC
       if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         check_flag(SSE1 /arch:SSE)
@@ -75,7 +75,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
 
   check_include_file(emmintrin.h HAVE_EMMINTRIN_H) # SSE2
   if(HAVE_EMMINTRIN_H)
-    if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    if(MSVC_CL)
       if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         check_flag(SSE2 /arch:SSE2)
       else()
@@ -94,7 +94,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
 
   check_include_file(smmintrin.h HAVE_SMMINTRIN_H) # SSE4.1
   if(HAVE_SMMINTRIN_H)
-    if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    if(MSVC_CL)
       if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         check_flag(SSE4_1 /arch:SSE2) # SSE2 and above
       else()
@@ -113,7 +113,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
 
   check_include_file(immintrin.h HAVE_IMMINTRIN_H) # AVX
   if(HAVE_IMMINTRIN_H)
-    if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    if(MSVC_CL)
       check_flag(AVX /arch:AVX)
     else()
       check_flag(AVX -mavx)
