@@ -456,7 +456,7 @@ if(NOT OPUS_DISABLE_INTRINSICS)
 
   if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "MSVC")
     if(AVX_SUPPORTED AND OPUS_X86_PRESUME_AVX) # on 64 bit and 32 bits
-    target_compile_options(opus PRIVATE /arch:AVX)
+      target_compile_options(opus PRIVATE /arch:AVX)
     elseif(OPUS_CPU_X86) # if AVX not supported then set SSE flag
       if((SSE4_1_SUPPORTED AND OPUS_X86_PRESUME_SSE4_1)
          OR (SSE2_SUPPORTED AND OPUS_X86_PRESUME_SSE2))
