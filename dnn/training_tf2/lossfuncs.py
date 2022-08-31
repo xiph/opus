@@ -11,7 +11,7 @@ import tensorflow as tf
 def res_from_sigloss():
     def loss(y_true,y_pred):
         p = y_pred[:,:,0:1]
-        model_out = y_pred[:,:,1:]
+        model_out = y_pred[:,:,2:]
         e_gt = tf_l2u(y_true - p)
         e_gt = tf.round(e_gt)
         e_gt = tf.cast(e_gt,'int32')
@@ -26,23 +26,26 @@ def interp_mulaw(gamma = 1):
     def loss(y_true,y_pred):
         y_true = tf.cast(y_true, 'float32')
         p = y_pred[:,:,0:1]
-        model_out = y_pred[:,:,1:]
+        real_p = y_pred[:,:,1:2]
+        model_out = y_pred[:,:,2:]
         e_gt = tf_l2u(y_true - p)
+        exc_gt = tf_l2u(y_true - real_p)
         prob_compensation = tf.squeeze((K.abs(e_gt - 128)/128.0)*K.log(256.0))
+        regularization = tf.squeeze((K.abs(exc_gt - 128)/128.0)*K.log(256.0))
         alpha = e_gt - tf.math.floor(e_gt)
         alpha = tf.tile(alpha,[1,1,256])
         e_gt = tf.cast(e_gt,'int32')
         e_gt = tf.clip_by_value(e_gt,0,254) 
         interp_probab = (1 - alpha)*model_out + alpha*tf.roll(model_out,shift = -1,axis = -1)
         sparse_cel = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)(e_gt,interp_probab)
-        loss_mod = sparse_cel + gamma*prob_compensation
+        loss_mod = sparse_cel + prob_compensation + gamma*regularization
         return loss_mod
     return loss
 
 # Same as above, except a metric
 def metric_oginterploss(y_true,y_pred):
     p = y_pred[:,:,0:1]
-    model_out = y_pred[:,:,1:]
+    model_out = y_pred[:,:,2:]
     e_gt = tf_l2u(y_true - p)
     prob_compensation = tf.squeeze((K.abs(e_gt - 128)/128.0)*K.log(256.0))
     alpha = e_gt - tf.math.floor(e_gt)
@@ -57,7 +60,7 @@ def metric_oginterploss(y_true,y_pred):
 # Interpolated cross entropy loss metric
 def metric_icel(y_true, y_pred):
     p = y_pred[:,:,0:1]
-    model_out = y_pred[:,:,1:]
+    model_out = y_pred[:,:,2:]
     e_gt = tf_l2u(y_true - p)
     alpha = e_gt - tf.math.floor(e_gt)
     alpha = tf.tile(alpha,[1,1,256])
@@ -71,7 +74,7 @@ def metric_icel(y_true, y_pred):
 def metric_cel(y_true, y_pred):
     y_true = tf.cast(y_true, 'float32')
     p = y_pred[:,:,0:1]
-    model_out = y_pred[:,:,1:]
+    model_out = y_pred[:,:,2:]
     e_gt = tf_l2u(y_true - p)
     e_gt = tf.round(e_gt)
     e_gt = tf.cast(e_gt,'int32')

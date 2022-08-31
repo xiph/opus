@@ -56,4 +56,4 @@ void inverse_transform(float *out, const kiss_fft_cpx *in);
 float lpc_from_bands(float *lpc, const float *Ex);
 float lpc_from_cepstrum(float *lpc, const float *cepstrum);
 void apply_window(float *x);
-
+void lpc_weighting(float *lpc, float gamma);

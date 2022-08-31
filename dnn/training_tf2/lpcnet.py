@@ -40,6 +40,7 @@ import h5py
 import sys
 from tf_funcs import *
 from diffembed import diff_Embed
+from parameters import set_parameter
 
 frame_size = 160
 pcm_bits = 8
@@ -230,7 +231,7 @@ class WeightClip(Constraint):
 
 constraint = WeightClip(0.992)
 
-def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_size=128, training=False, adaptation=False, quantize=False, flag_e2e = False, cond_size=128, lpc_order=16):
+def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_size=128, training=False, adaptation=False, quantize=False, flag_e2e = False, cond_size=128, lpc_order=16, lpc_gamma=1., lookahead=2):
     pcm = Input(shape=(None, 1), batch_size=batch_size)
     dpcm = Input(shape=(None, 3), batch_size=batch_size)
     feat = Input(shape=(None, nb_used_features), batch_size=batch_size)
@@ -240,14 +241,14 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
     dec_state2 = Input(shape=(rnn_units2,))
 
     padding = 'valid' if training else 'same'
-    fconv1 = Conv1D(cond_size, 3, padding=padding, activation='tanh', name='feature_conv1')
-    fconv2 = Conv1D(cond_size, 3, padding=padding, activation='tanh', name='feature_conv2')
+    fconv1 = Conv1D(cond_size, 3, padding=padding, activation='swish', name='feature_conv1')
+    fconv2 = Conv1D(cond_size, 3, padding=padding, activation='swish', name='feature_conv2')
     pembed = Embedding(256, 64, name='embed_pitch')
     cat_feat = Concatenate()([feat, Reshape((-1, 64))(pembed(pitch))])
 
     cfeat = fconv2(fconv1(cat_feat))
 
-    fdense1 = Dense(cond_size, activation='tanh', name='feature_dense1')
+    fdense1 = Dense(cond_size, activation='swish', name='feature_dense1')
     fdense2 = Dense(cond_size, activation='tanh', name='feature_dense2')
 
     if flag_e2e and quantize:
@@ -263,8 +264,13 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
         lpcoeffs = diff_rc2lpc(name = "rc2lpc")(cfeat)
     else:
         lpcoeffs = Input(shape=(None, lpc_order), batch_size=batch_size)
-    tensor_preds = diff_pred(name = "lpc2preds")([pcm,lpcoeffs])
+        
+    real_preds = diff_pred(name = "real_lpc2preds")([pcm,lpcoeffs])
+    weighting = lpc_gamma ** np.arange(1, 17).astype('float32')
+    weighted_lpcoeffs = Lambda(lambda x: x[0]*x[1])([lpcoeffs, weighting])
+    tensor_preds = diff_pred(name = "lpc2preds")([pcm,weighted_lpcoeffs])
     past_errors = error_calc([pcm,tensor_preds])
+    
     embed = diff_Embed(name='embed_sig',initializer = PCMInit())
     cpcm = Concatenate()([tf_l2u(pcm),tf_l2u(tensor_preds),past_errors])
     cpcm = GaussianNoise(.3)(cpcm)
@@ -300,7 +306,7 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
         md.trainable=False
         embed.Trainable=False
     
-    m_out = Concatenate(name='pdf')([tensor_preds,ulaw_prob])
+    m_out = Concatenate(name='pdf')([tensor_preds,real_preds,ulaw_prob])
     if not flag_e2e:
         model = Model([pcm, feat, pitch, lpcoeffs], m_out)
     else:
@@ -324,4 +330,10 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
         decoder = Model([dpcm, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
     else:
         decoder = Model([dpcm, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
+    
+    # add parameters to model
+    set_parameter(model, 'lpc_gamma', lpc_gamma, dtype='float64')
+    set_parameter(model, 'flag_e2e', flag_e2e, dtype='bool')
+    set_parameter(model, 'lookahead', lookahead, dtype='int32')
+
     return model, encoder, decoder

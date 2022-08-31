@@ -28,6 +28,8 @@
 # Train an LPCNet model
 
 import argparse
+import os
+
 from dataloader import LPCNetLoader
 
 parser = argparse.ArgumentParser(description='Train an LPCNet model')
@@ -54,9 +56,14 @@ parser.add_argument('--decay', metavar='<decay>', type=float, help='learning rat
 parser.add_argument('--gamma', metavar='<gamma>', type=float, help='adjust u-law compensation (default 2.0, should not be less than 1.0)')
 parser.add_argument('--lookahead', metavar='<nb frames>', default=2, type=int, help='Number of look-ahead frames (default 2)')
 parser.add_argument('--logdir', metavar='<log dir>', help='directory for tensorboard log files')
-
+parser.add_argument('--lpc-gamma', type=float, default=1, help='gamma for LPC weighting')
+parser.add_argument('--cuda-devices', metavar='<cuda devices>', type=str, default=None, help='string with comma separated cuda device ids')
 
 args = parser.parse_args()
+
+# set visible cuda devices
+if args.cuda_devices != None:
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda_devices
 
 density = (0.05, 0.05, 0.2)
 if args.density_split is not None:
@@ -109,7 +116,7 @@ if quantize:
     input_model = args.quantize
 else:
     lr = 0.001
-    decay = 2.5e-5
+    decay = 5e-5
 
 if args.lr is not None:
     lr = args.lr
@@ -122,11 +129,19 @@ if retrain:
 
 flag_e2e = args.flag_e2e
 
-opt = Adam(lr, decay=decay, beta_2=0.99)
+opt = Adam(lr, decay=decay, beta_1=0.5, beta_2=0.8)
 strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
 
 with strategy.scope():
-    model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=args.grua_size, rnn_units2=args.grub_size, batch_size=batch_size, training=True, quantize=quantize, flag_e2e = flag_e2e, cond_size=args.cond_size)
+    model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=args.grua_size,
+                                          rnn_units2=args.grub_size, 
+                                          batch_size=batch_size, training=True,
+                                          quantize=quantize,
+                                          flag_e2e=flag_e2e,
+                                          cond_size=args.cond_size,
+                                          lpc_gamma=args.lpc_gamma,
+                                          lookahead=args.lookahead
+                                          )
     if not flag_e2e:
         model.compile(optimizer=opt, loss=metric_cel, metrics=metric_cel)
     else:
@@ -183,7 +198,7 @@ if quantize or retrain:
         grub_sparsify = lpcnet.SparsifyGRUB(0, 0, 1, args.grua_size, grub_density)
 else:
     #Training from scratch
-    sparsify = lpcnet.Sparsify(2000, 40000, 400, density)
+    sparsify = lpcnet.Sparsify(2000, 20000, 400, density)
     grub_sparsify = lpcnet.SparsifyGRUB(2000, 40000, 400, args.grua_size, grub_density)
 
 model.save_weights('{}_{}_initial.h5'.format(args.output, args.grua_size))

@@ -271,6 +271,17 @@ float lpc_from_bands(float *lpc, const float *Ex)
    return e;
 }
 
+void lpc_weighting(float *lpc, float gamma)
+{
+  int i;
+  float gamma_i = gamma;
+  for (i = 0; i < LPC_ORDER; i++)
+  {
+    lpc[i] *= gamma_i;
+    gamma_i *= gamma;
+  }
+}
+
 float lpc_from_cepstrum(float *lpc, const float *cepstrum)
 {
    int i;

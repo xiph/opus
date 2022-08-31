@@ -21,8 +21,6 @@
 
 #define FORBIDDEN_INTERP 7
 
-#define FEATURES_DELAY (FEATURE_CONV1_DELAY + FEATURE_CONV2_DELAY)
-
 struct LPCNetState {
     NNetState nnet;
     int last_exc;

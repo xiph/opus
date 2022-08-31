@@ -24,14 +24,23 @@
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
+import argparse
+import sys
+
+import h5py
+import numpy as np
 
 import lpcnet
-import sys
-import numpy as np
 from ulaw import ulaw2lin, lin2ulaw
-import h5py
 
-filename = sys.argv[1]
+
+parser = argparse.ArgumentParser()
+parser.add_argument('model-file', type=str, help='model weight h5 file')
+parser.add_argument('--lpc-gamma', type=float, help='LPC weighting factor. WARNING: giving an inconsistent value here will severely degrade performance', default=1)
+
+args = parser.parse_args()
+
+filename = args.model_file
 with h5py.File(filename, "r") as f:
     units = min(f['model_weights']['gru_a']['gru_a']['recurrent_kernel:0'].shape)
     units2 = min(f['model_weights']['gru_b']['gru_b']['recurrent_kernel:0'].shape)
@@ -74,6 +83,8 @@ state2 = np.zeros((1, model.rnn_units2), dtype='float32')
 mem = 0
 coef = 0.85
 
+lpc_weights = np.array([args.lpc_gamma ** (i + 1) for i in range(16)])
+
 fout = open(out_file, 'wb')
 
 skip = order + 1
@@ -85,7 +96,7 @@ for c in range(0, nb_frames):
     for fr in range(0, feature_chunk_size):
         f = c*feature_chunk_size + fr
         if not e2e:
-            a = features[c, fr, nb_features-order:]
+            a = features[c, fr, nb_features-order:] * lpc_weights
         else:
             a = lpcs[c,fr]
         for i in range(skip, frame_size):
