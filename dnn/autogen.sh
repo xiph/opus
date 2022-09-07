@@ -6,7 +6,7 @@ srcdir=`dirname $0`
 test -n "$srcdir" && cd "$srcdir"
 
 #SHA1 of the first commit compatible with the current model
-commit=72061bc
+commit=3b1eab4
 ./download_model.sh $commit
 
 echo "Updating build configuration files for lpcnet, please wait...."
