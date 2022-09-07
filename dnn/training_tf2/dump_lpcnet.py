@@ -274,11 +274,7 @@ if __name__ == "__main__":
     model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
     #model.summary()
 
-    print(get_parameter(model, 'lpc_gamma'))
-
     model.load_weights(filename, by_name=True)
-    
-    print(get_parameter(model, 'lpc_gamma'))
 
     cfile = args.nnet_source
     hfile = args.nnet_header
@@ -299,8 +295,6 @@ if __name__ == "__main__":
     else:
         hf.write('/* This is *not* an end-to-end model */\n')
         hf.write('/* #define END2END */\n\n')
-    
-    print([weight.name for weight in model.weights])
     
     # LPC weighting factor
     if type(args.lpc_gamma) == type(None):
