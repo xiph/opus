@@ -8,6 +8,7 @@ include_HEADERS = include/lpcnet.h
 
 lib_LTLIBRARIES = liblpcnet.la
 noinst_HEADERS = arch.h  \
+		 burg.h \
 		 common.h  \
 		 freq.h  \
 		 _kiss_fft_guts.h  \
@@ -16,6 +17,7 @@ noinst_HEADERS = arch.h  \
 		 lpcnet_private.h \
 		 opus_types.h  \
 		 nnet_data.h  \
+		 plc_data.h  \
 		 nnet.h  \
 		 pitch.h  \
 		 tansig_table.h \
@@ -24,6 +26,7 @@ noinst_HEADERS = arch.h  \
 		 vec_neon.h
 
 liblpcnet_la_SOURCES = \
+	burg.c \
 	common.c \
 	kiss99.c \
 	lpcnet.c \
@@ -31,6 +34,7 @@ liblpcnet_la_SOURCES = \
 	lpcnet_enc.c \
 	nnet.c \
 	nnet_data.c \
+	plc_data.c \
 	ceps_codebooks.c \
 	pitch.c \
 	freq.c \
@@ -52,7 +56,7 @@ lpcnet_demo_LDADD = liblpcnet.la
 #dump_data_SOURCES = dump_data.c
 #dump_data_LDADD = $(DUMP_OBJ) $(LIBM)
 
-dump_data_SOURCES = common.c dump_data.c freq.c kiss_fft.c pitch.c lpcnet_dec.c lpcnet_enc.c ceps_codebooks.c
+dump_data_SOURCES = common.c dump_data.c burg.c freq.c kiss_fft.c pitch.c lpcnet_dec.c lpcnet_enc.c ceps_codebooks.c
 dump_data_LDADD = $(LIBM)
 dump_data_CFLAGS = $(AM_CFLAGS)
 

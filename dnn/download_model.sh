@@ -9,4 +9,5 @@ if [ ! -f $model ]; then
 fi
 tar xvf $model
 touch src/nnet_data.[ch]
+touch src/plc_data.[ch]
 mv src/*.[ch] .

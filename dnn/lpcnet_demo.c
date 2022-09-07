@@ -40,40 +40,70 @@
 #define MODE_SYNTHESIS 3
 #define MODE_PLC 4
 
+void usage(void) {
+    fprintf(stderr, "usage: lpcnet_demo -encode <input.pcm> <compressed.lpcnet>\n");
+    fprintf(stderr, "       lpcnet_demo -decode <compressed.lpcnet> <output.pcm>\n");
+    fprintf(stderr, "       lpcnet_demo -features <input.pcm> <features.f32>\n");
+    fprintf(stderr, "       lpcnet_demo -synthesis <features.f32> <output.pcm>\n");
+    fprintf(stderr, "       lpcnet_demo -plc <plc_options> <percent> <input.pcm> <output.pcm>\n");
+    fprintf(stderr, "       lpcnet_demo -plc_file <plc_options> <percent> <input.pcm> <output.pcm>\n\n");
+    fprintf(stderr, "  plc_options:\n");
+    fprintf(stderr, "       causal:       normal (causal) PLC\n");
+    fprintf(stderr, "       causal_dc:    normal (causal) PLC with DC offset compensation\n");
+    fprintf(stderr, "       noncausal:    non-causal PLC\n");
+    fprintf(stderr, "       noncausal_dc: non-causal PLC with DC offset compensation\n");
+    exit(1);
+}
+
 int main(int argc, char **argv) {
     int mode;
     int plc_percent=0;
     FILE *fin, *fout;
-    if (argc != 4 && !(argc == 5 && strcmp(argv[1], "-plc") == 0))
-    {
-        fprintf(stderr, "usage: lpcnet_demo -encode <input.pcm> <compressed.lpcnet>\n");
-        fprintf(stderr, "       lpcnet_demo -decode <compressed.lpcnet> <output.pcm>\n");
-        fprintf(stderr, "       lpcnet_demo -features <input.pcm> <features.f32>\n");
-        fprintf(stderr, "       lpcnet_demo -synthesis <features.f32> <output.pcm>\n");
-        fprintf(stderr, "       lpcnet_demo -plc <percent> <input.pcm> <output.pcm>\n");
-        return 0;
-    }
+    FILE *plc_file = NULL;
+    const char *plc_options;
+    int plc_flags=-1;
+    if (argc < 4) usage();
     if (strcmp(argv[1], "-encode") == 0) mode=MODE_ENCODE;
     else if (strcmp(argv[1], "-decode") == 0) mode=MODE_DECODE;
     else if (strcmp(argv[1], "-features") == 0) mode=MODE_FEATURES;
     else if (strcmp(argv[1], "-synthesis") == 0) mode=MODE_SYNTHESIS;
     else if (strcmp(argv[1], "-plc") == 0) {
         mode=MODE_PLC;
-        plc_percent = atoi(argv[2]);
-        argv++;
+        plc_options = argv[2];
+        plc_percent = atoi(argv[3]);
+        argv+=2;
+        argc-=2;
+    } else if (strcmp(argv[1], "-plc_file") == 0) {
+        mode=MODE_PLC;
+        plc_options = argv[2];
+        plc_file = fopen(argv[3], "r");
+        if (!plc_file) {
+            fprintf(stderr, "Can't open %s\n", argv[3]);
+            exit(1);
+        }
+        argv+=2;
+        argc-=2;
     } else {
-        exit(1);
+        usage();
     }
+    if (mode == MODE_PLC) {
+        if (strcmp(plc_options, "causal")==0) plc_flags = LPCNET_PLC_CAUSAL;
+        else if (strcmp(plc_options, "causal_dc")==0) plc_flags = LPCNET_PLC_CAUSAL | LPCNET_PLC_DC_FILTER;
+        else if (strcmp(plc_options, "noncausal")==0) plc_flags = LPCNET_PLC_NONCAUSAL;
+        else if (strcmp(plc_options, "noncausal_dc")==0) plc_flags = LPCNET_PLC_NONCAUSAL | LPCNET_PLC_DC_FILTER;
+        else usage();
+    }
+    if (argc != 4) usage();
     fin = fopen(argv[2], "rb");
     if (fin == NULL) {
-	fprintf(stderr, "Can't open %s\n", argv[2]);
-	exit(1);
+        fprintf(stderr, "Can't open %s\n", argv[2]);
+        exit(1);
     }
 
     fout = fopen(argv[3], "wb");
     if (fout == NULL) {
-	fprintf(stderr, "Can't open %s\n", argv[3]);
-	exit(1);
+        fprintf(stderr, "Can't open %s\n", argv[3]);
+        exit(1);
     }
 
     if (mode == MODE_ENCODE) {
@@ -131,20 +161,30 @@ int main(int argc, char **argv) {
         }
         lpcnet_destroy(net);
     } else if (mode == MODE_PLC) {
+        short pcm[FRAME_SIZE];
         int count=0;
         int loss=0;
+        int skip=0, extra=0;
+        if ((plc_flags&0x3) == LPCNET_PLC_NONCAUSAL) skip=extra=80;
         LPCNetPLCState *net;
-        net = lpcnet_plc_create();
+        net = lpcnet_plc_create(plc_flags);
         while (1) {
-            short pcm[FRAME_SIZE];
             size_t ret;
             ret = fread(pcm, sizeof(pcm[0]), FRAME_SIZE, fin);
             if (feof(fin) || ret != FRAME_SIZE) break;
-            if (count % 2 == 0) loss = rand() < RAND_MAX*(float)plc_percent/100.f;
+            if (count % 2 == 0) {
+              if (plc_file != NULL) fscanf(plc_file, "%d", &loss);
+              else loss = rand() < RAND_MAX*(float)plc_percent/100.f;
+            }
             if (loss) lpcnet_plc_conceal(net, pcm);
             else lpcnet_plc_update(net, pcm);
-            fwrite(pcm, sizeof(pcm[0]), FRAME_SIZE, fout);
+            fwrite(&pcm[skip], sizeof(pcm[0]), FRAME_SIZE-skip, fout);
+            skip = 0;
             count++;
+        }
+        if (extra) {
+          lpcnet_plc_conceal(net, pcm);
+          fwrite(pcm, sizeof(pcm[0]), extra, fout);
         }
         lpcnet_plc_destroy(net);
     } else {

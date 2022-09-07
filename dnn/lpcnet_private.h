@@ -6,6 +6,7 @@
 #include "freq.h"
 #include "lpcnet.h"
 #include "nnet_data.h"
+#include "plc_data.h"
 #include "kiss99.h"
 
 #define BITS_PER_CHAR 8
@@ -61,6 +62,7 @@ struct LPCNetEncState{
   float features[4][NB_TOTAL_FEATURES];
   float sig_mem[LPC_ORDER];
   int exc_mem;
+  float burg_cepstrum[2*NB_BANDS];
 };
 
 #define PLC_BUF_SIZE (FEATURES_DELAY*FRAME_SIZE + TRAINING_OFFSET)
@@ -72,6 +74,18 @@ struct LPCNetPLCState {
   int skip_analysis;
   int blend;
   float features[NB_TOTAL_FEATURES];
+  int loss_count;
+  PLCNetState plc_net;
+  PLCNetState plc_copy;
+  int enable_blending;
+  int non_causal;
+  double dc_mem;
+  double syn_dc;
+  int remove_dc;
+
+  short dc_buf[TRAINING_OFFSET];
+  int queued_update;
+  short queued_samples[FRAME_SIZE];
 };
 
 extern float ceps_codebook1[];

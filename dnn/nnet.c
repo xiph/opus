@@ -38,6 +38,7 @@
 #include "tansig_table.h"
 #include "nnet.h"
 #include "nnet_data.h"
+#include "plc_data.h"
 
 #ifdef NO_OPTIMIZATIONS
 #warning Compiling without any vectorization. This code will be very slow
@@ -315,13 +316,15 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input)
       state[i] = h[i];
 }
 
+#define MAX_RNN_NEURONS_ALL IMAX(MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS)
+
 void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input)
 {
    int i;
    int N, M;
    int stride;
-   float zrh[3*MAX_RNN_NEURONS];
-   float recur[3*MAX_RNN_NEURONS];
+   float zrh[3*MAX_RNN_NEURONS_ALL];
+   float recur[3*MAX_RNN_NEURONS_ALL];
    float *z;
    float *r;
    float *h;
@@ -330,7 +333,7 @@ void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *stat
    z = zrh;
    r = &zrh[N];
    h = &zrh[2*N];
-   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS);
+   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS_ALL);
    celt_assert(input != state);
    celt_assert(gru->reset_after);
    stride = 3*N;

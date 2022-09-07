@@ -28,6 +28,10 @@
 #include "config.h"
 #endif
 
+#ifdef OPUS_BUILD
+#define celt_pitch_xcorr celt_pitch_xcorr_c
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -540,7 +544,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
       ener = (1 + ener0 + celt_inner_prod(&st->exc_buf[i+off], &st->exc_buf[i+off], FRAME_SIZE/2));
       st->xc[2+2*st->pcount+sub][i] = 2*xcorr[i] / ener;
     }
-    if (0) {
+    if (1) {
       /* Upsample correlation by 3x and keep the max. */
       float interpolated[PITCH_MAX_PERIOD]={0};
       /* interp=sinc([-3:3]+1/3).*(.5+.5*cos(pi*[-3:3]/4.5)); interp=interp/sum(interp); */

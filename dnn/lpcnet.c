@@ -98,7 +98,6 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
     compute_conv1d(&feature_conv1, conv1_out, net->feature_conv1_state, in);
     if (lpcnet->frame_count < FEATURE_CONV1_DELAY) RNN_CLEAR(conv1_out, FEATURE_CONV1_OUT_SIZE);
     compute_conv1d(&feature_conv2, conv2_out, net->feature_conv2_state, conv1_out);
-    celt_assert(FRAME_INPUT_SIZE == FEATURE_CONV2_OUT_SIZE);
     if (lpcnet->frame_count < FEATURES_DELAY) RNN_CLEAR(conv2_out, FEATURE_CONV2_OUT_SIZE);
     _lpcnet_compute_dense(&feature_dense1, dense1_out, conv2_out);
     _lpcnet_compute_dense(&feature_dense2, condition, dense1_out);
@@ -196,8 +195,12 @@ void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int 
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
         exc = run_sample_network(&lpcnet->nnet, lpcnet->gru_a_condition, lpcnet->gru_b_condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw, lpcnet->sampling_logit_table, &lpcnet->rng);
-        if (i < preload) exc = lin2ulaw(output[i]-PREEMPH*lpcnet->deemph_mem - pred);
-        pcm = pred + ulaw2lin(exc);
+        if (i < preload) {
+          exc = lin2ulaw(output[i]-PREEMPH*lpcnet->deemph_mem - pred);
+          pcm = output[i]-PREEMPH*lpcnet->deemph_mem;
+        } else {
+          pcm = pred + ulaw2lin(exc);
+        }
         RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
         lpcnet->last_sig[0] = pcm;
         lpcnet->last_exc = exc;
@@ -205,7 +208,7 @@ void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int 
         lpcnet->deemph_mem = pcm;
         if (pcm<-32767) pcm = -32767;
         if (pcm>32767) pcm = 32767;
-        output[i] = (int)floor(.5 + pcm);
+        if (i >= preload) output[i] = (int)floor(.5 + pcm);
     }
 }
 

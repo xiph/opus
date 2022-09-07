@@ -3,8 +3,14 @@
 Low complexity implementation of the WaveRNN-based LPCNet algorithm, as described in:
 
 - J.-M. Valin, J. Skoglund, [LPCNet: Improving Neural Speech Synthesis Through Linear Prediction](https://jmvalin.ca/papers/lpcnet_icassp2019.pdf), *Proc. International Conference on Acoustics, Speech and Signal Processing (ICASSP)*, arXiv:1810.11846, 2019.
+- J.-M. Valin, U. Isik, P. Smaragdis, A. Krishnaswamy, [Neural Speech Synthesis on a Shoestring: Improving the Efficiency of LPCNet](https://jmvalin.ca/papers/improved_lpcnet.pdf), *Proc. ICASSP*, arxiv:2106.04129, 2022.
+- K. Subramani, J.-M. Valin, U. Isik, P. Smaragdis, A. Krishnaswamy, [End-to-end LPCNet: A Neural Vocoder With Fully-Differentiable LPC Estimation](https://jmvalin.ca/papers/lpcnet_end2end.pdf), *Proc. INTERSPEECH*, arxiv:2106.04129, 2022.
+
+For coding/PLC applications of LPCNet, see:
+
 - J.-M. Valin, J. Skoglund, [A Real-Time Wideband Neural Vocoder at 1.6 kb/s Using LPCNet](https://jmvalin.ca/papers/lpcnet_codec.pdf), *Proc. INTERSPEECH*, arxiv:1903.12087, 2019.
 - J. Skoglund, J.-M. Valin, [Improving Opus Low Bit Rate Quality with Neural Speech Synthesis](https://jmvalin.ca/papers/opusnet.pdf), *Proc. INTERSPEECH*, arxiv:1905.04628, 2020.
+- J.-M. Valin, A. Mustafa, C. Montgomery, T.B. Terriberry, M. Klingbeil, P. Smaragdis, A. Krishnaswamy, [Real-Time Packet Loss Concealment With Mixed Generative and Predictive Model](https://jmvalin.ca/papers/lpcnet_plc.pdf), *Proc. INTERSPEECH*, arxiv:2205.05785, 2022.
 
 # Introduction
 
@@ -58,6 +64,22 @@ where output.pcm is also 16-bit, 16 kHz PCM.
 Alternatively, you can run the uncompressed analysis/synthesis using -features
 instead of -encode and -synthesis instead of -decode.
 The same functionality is available in the form of a library. See include/lpcnet.h for the API.
+
+To try packet loss concealment (PLC), you first need a PLC model, which you can get with:
+```
+./download_model.sh plc-3b1eab4
+```
+or (for the PLC challenge submission):
+```
+./download_model.sh plc_challenge
+```
+PLC can be tested with:
+```
+./lpcnet_demo -plc_file noncausal_dc error_pattern.txt input.pcm output.pcm
+```
+where error_pattern.txt is a text file with one entry per 20-ms packet, with 1 meaning "packet lost" and 0 meaning "packet not lost".
+noncausal_dc is the non-causal (5-ms look-ahead) with special handling for DC offsets. It's also possible to use "noncausal", "causal",
+or "causal_dc".
 
 # Training a new model
 

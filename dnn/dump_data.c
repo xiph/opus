@@ -138,9 +138,18 @@ int main(int argc, char **argv) {
   int encode = 0;
   int decode = 0;
   int quantize = 0;
+  int burg = 0;
   srand(getpid());
   st = lpcnet_encoder_create();
   argv0=argv[0];
+  if (argc == 5 && strcmp(argv[1], "-btrain")==0) {
+      burg = 1;
+      training = 1;
+  }
+  if (argc == 4 && strcmp(argv[1], "-btest")==0) {
+      burg = 1;
+      training = 0;
+  }
   if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
   if (argc == 5 && strcmp(argv[1], "-qtrain")==0) {
       training = 1;
@@ -236,7 +245,8 @@ int main(int argc, char **argv) {
     if (count*FRAME_SIZE_5MS>=10000000 && one_pass_completed) break;
     if (training && ++gain_change_count > 2821) {
       float tmp, tmp2;
-      speech_gain = pow(10., (-20+(rand()%40))/20.);
+      speech_gain = pow(10., (-30+(rand()%40))/20.);
+      if (rand()&1) speech_gain = -speech_gain;
       if (rand()%20==0) speech_gain *= .01;
       if (rand()%100==0) speech_gain = 0;
       gain_change_count = 0;
@@ -247,13 +257,18 @@ int main(int argc, char **argv) {
     }
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     biquad(x, mem_resp_x, x, b_sig, a_sig, FRAME_SIZE);
-    preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
     for (i=0;i<FRAME_SIZE;i++) {
       float g;
       float f = (float)i/FRAME_SIZE;
       g = f*speech_gain + (1-f)*old_speech_gain;
       x[i] *= g;
     }
+    if (burg) {
+      float ceps[2*NB_BANDS];
+      burg_cepstral_analysis(ceps, x);
+      fwrite(ceps, sizeof(float), 2*NB_BANDS, ffeat);
+    }
+    preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
     for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
     /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
     for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
