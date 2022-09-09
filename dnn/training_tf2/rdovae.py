@@ -191,7 +191,7 @@ def pvq_quantize(x, k):
 
 
 def var_repeat(x):
-    return RepeatVector(K.shape(x[1])[1])(x[0])
+    return tf.repeat(tf.expand_dims(x[0], 1), K.shape(x[1])[1], axis=1)
 
 nb_state_dim = 24
 
