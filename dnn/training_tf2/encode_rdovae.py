@@ -109,6 +109,6 @@ np.round(bits).astype('int16').tofile(args.output + "-bits.s16")
 quant_embed_dec.astype('float32').tofile(args.output + "-quant.f32")
 
 gru_state_dec = gru_state_dec[:,-1,:]
-dec_out = decoder([bits, quant_embed_dec, gru_state_dec])
+dec_out = decoder([bits[:,1::2,:], quant_embed_dec[:,1::2,:], gru_state_dec])
 
 dec_out.numpy().astype('float32').tofile(args.output + "-dec_out.f32")

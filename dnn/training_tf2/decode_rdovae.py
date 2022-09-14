@@ -72,17 +72,20 @@ sequence_size = args.seq_length
 
 
 bits = np.memmap(bits_file + "-bits.s16", dtype='int16', mode='r')
-nb_sequences = len(bits)//(20*sequence_size)//batch_size*batch_size
-bits = bits[:nb_sequences*sequence_size*20]
+nb_sequences = len(bits)//(40*sequence_size)//batch_size*batch_size
+bits = bits[:nb_sequences*sequence_size*40]
 
-bits = np.reshape(bits, (nb_sequences, sequence_size//4, 20*4))
+bits = np.reshape(bits, (nb_sequences, sequence_size//2, 20*4))
+bits = bits[:,1::2,:]
 print(bits.shape)
 
 quant = np.memmap(bits_file + "-quant.f32", dtype='float32', mode='r')
 state = np.memmap(bits_file + "-state.f32", dtype='float32', mode='r')
 
-quant = np.reshape(quant, (nb_sequences, sequence_size//4, 6*20*4))
-state = np.reshape(state, (nb_sequences, sequence_size//2, 16))
+quant = np.reshape(quant, (nb_sequences, sequence_size//2, 6*20*4))
+quant = quant[:,1::2,:]
+
+state = np.reshape(state, (nb_sequences, sequence_size//2, 24))
 state = state[:,-1,:]
 
 print("shapes are:")
