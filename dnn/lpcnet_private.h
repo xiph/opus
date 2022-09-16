@@ -26,6 +26,7 @@ struct LPCNetState {
     NNetState nnet;
     int last_exc;
     float last_sig[LPC_ORDER];
+    float last_features[NB_FEATURES];
 #if FEATURES_DELAY>0
     float old_lpc[FEATURES_DELAY][LPC_ORDER];
 #endif
@@ -76,7 +77,7 @@ struct LPCNetPLCState {
   float features[NB_TOTAL_FEATURES];
   int loss_count;
   PLCNetState plc_net;
-  PLCNetState plc_copy;
+  PLCNetState plc_copy[FEATURES_DELAY+1];
   int enable_blending;
   int non_causal;
   double dc_mem;

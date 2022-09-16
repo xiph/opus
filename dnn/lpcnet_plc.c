@@ -37,11 +37,6 @@ LPCNET_EXPORT int lpcnet_plc_get_size() {
 }
 
 LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options) {
-  if (FEATURES_DELAY != 0) {
-    fprintf(stderr, "PLC cannot work with non-zero FEATURES_DELAY\n");
-    fprintf(stderr, "Recompile with a no-lookahead model (see README.md)\n");
-    exit(1);
-  }
   RNN_CLEAR(st, 1);
   lpcnet_init(&st->lpcnet);
   lpcnet_encoder_init(&st->enc);
@@ -130,8 +125,15 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
       float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
       RNN_COPY(zeros, plc_features, 2*NB_BANDS);
       zeros[2*NB_BANDS+NB_FEATURES] = 1;
-      st->plc_net = st->plc_copy;
+      st->plc_net = st->plc_copy[FEATURES_DELAY];
       compute_plc_pred(&st->plc_net, st->features, zeros);
+      for (i=0;i<FEATURES_DELAY;i++) {
+        float lpc[LPC_ORDER];
+        float gru_a_condition[3*GRU_A_STATE_SIZE];
+        float gru_b_condition[3*GRU_B_STATE_SIZE];
+        /* FIXME: backtrack state, replace features. */
+        run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->features);
+      }
       if (st->enable_blending) {
         LPCNetState copy;
         copy = st->lpcnet;
@@ -147,14 +149,12 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
         RNN_COPY(tmp, pcm, FRAME_SIZE-TRAINING_OFFSET);
         lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
       }
-      st->blend = 0;
       RNN_COPY(st->pcm, &pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
       st->pcm_fill = TRAINING_OFFSET;
     } else {
       RNN_COPY(&st->pcm[st->pcm_fill], pcm, FRAME_SIZE);
       st->pcm_fill += FRAME_SIZE;
     }
-    /*fprintf(stderr, "fill at %d\n", st->pcm_fill);*/
   }
   /* Update state. */
   /*fprintf(stderr, "update state\n");*/
@@ -162,6 +162,11 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
   preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
   compute_frame_features(&st->enc, x);
   process_single_frame(&st->enc, NULL);
+  if (!st->blend) {
+    RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features[0], NB_FEATURES);
+    plc_features[2*NB_BANDS+NB_FEATURES] = 1;
+    compute_plc_pred(&st->plc_net, st->features, plc_features);
+  }
   if (st->skip_analysis) {
     float lpc[LPC_ORDER];
     float gru_a_condition[3*GRU_A_STATE_SIZE];
@@ -170,9 +175,6 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
     run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->enc.features[0]);
     st->skip_analysis--;
   } else {
-    RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features[0], NB_FEATURES);
-    plc_features[2*NB_BANDS+NB_FEATURES] = 1;
-    compute_plc_pred(&st->plc_net, st->features, plc_features);
     for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE+i] = pcm[i];
     RNN_COPY(output, &st->pcm[0], FRAME_SIZE);
     lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], output, FRAME_SIZE, FRAME_SIZE);
@@ -184,6 +186,7 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
       pcm[i] += lp[i];
     }
   }
+  st->blend = 0;
   return 0;
 }
 
@@ -206,7 +209,8 @@ static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
     st->pcm_fill -= update_count;
     st->skip_analysis++;
   }
-  st->plc_copy = st->plc_net;
+  RNN_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
+  st->plc_copy[0] = st->plc_net;
   lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
   compute_plc_pred(&st->plc_net, st->features, zeros);
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
@@ -250,6 +254,11 @@ static int lpcnet_plc_update_non_causal(LPCNetPLCState *st, short *pcm) {
   short lp[FRAME_SIZE]={0};
   double mem_bak=0;
   int delta = st->syn_dc;
+  if (FEATURES_DELAY != 0) {
+    fprintf(stderr, "Non-causal PLC cannot work with non-zero FEATURES_DELAY\n");
+    fprintf(stderr, "Recompile with a no-lookahead model (see README.md)\n");
+    exit(1);
+  }
   process_queued_update(st);
   if (st->remove_dc) {
     st->dc_mem += st->syn_dc;
