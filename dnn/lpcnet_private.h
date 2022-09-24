@@ -22,6 +22,8 @@
 
 #define FORBIDDEN_INTERP 7
 
+#define PLC_MAX_FEC 100
+
 struct LPCNetState {
     NNetState nnet;
     int last_exc;
@@ -70,6 +72,11 @@ struct LPCNetEncState{
 struct LPCNetPLCState {
   LPCNetState lpcnet;
   LPCNetEncState enc;
+  float fec[PLC_MAX_FEC][NB_FEATURES];
+  int fec_keep_pos;
+  int fec_read_pos;
+  int fec_fill_pos;
+  int fec_active;
   short pcm[PLC_BUF_SIZE+FRAME_SIZE];
   int pcm_fill;
   int skip_analysis;

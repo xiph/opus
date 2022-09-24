@@ -74,6 +74,21 @@ LPCNET_EXPORT void lpcnet_plc_destroy(LPCNetPLCState *st) {
   free(st);
 }
 
+void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features) {
+  if (st->fec_fill_pos == PLC_MAX_FEC) {
+    if (st->fec_keep_pos == 0) {
+      fprintf(stderr, "FEC buffer full\n");
+      return;
+    }
+    RNN_MOVE(&st->fec[0][0], &st->fec[st->fec_keep_pos][0], (st->fec_fill_pos-st->fec_keep_pos)*NB_FEATURES);
+    st->fec_fill_pos = st->fec_fill_pos-st->fec_keep_pos;
+    st->fec_read_pos -= st->fec_keep_pos;
+    st->fec_keep_pos = 0;
+  }
+  RNN_COPY(&st->fec[st->fec_fill_pos][0], features, NB_FEATURES);
+  st->fec_fill_pos++;
+}
+
 static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
   float zeros[3*PLC_MAX_RNN_NEURONS] = {0};
   float dense_out[PLC_DENSE1_OUT_SIZE];
@@ -83,6 +98,29 @@ static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
   _lpcnet_compute_dense(&plc_out, out, net->plc_gru2_state);
   /* Artificially boost the correlation to make harmonics cleaner. */
   out[19] = MIN16(.5f, out[19]+.1f);
+}
+
+static int get_fec_or_pred(LPCNetPLCState *st, float *out) {
+  if (st->fec_read_pos != st->fec_fill_pos) {
+    RNN_COPY(out, &st->fec[st->fec_read_pos][0], NB_FEATURES);
+    st->fec_read_pos++;
+    /* Make sure we can rewind a few frames back at resync time. */
+    st->fec_keep_pos = IMAX(0, IMAX(st->fec_keep_pos, st->fec_read_pos-FEATURES_DELAY-1));
+    /* FIXME: Figure out how to update compute_plc_pred() without Burg features. */
+    return 1;
+  } else {
+    float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
+    compute_plc_pred(&st->plc_net, out, zeros);
+    return 0;
+  }
+}
+
+static void fec_rewind(LPCNetPLCState *st, int offset) {
+  st->fec_read_pos -= offset;
+  if (st->fec_read_pos < st->fec_keep_pos) {
+    st->fec_read_pos = st->fec_keep_pos;
+    fprintf(stderr, "cannot rewind\n");
+  }
 }
 
 void clear_state(LPCNetPLCState *st) {
@@ -125,14 +163,19 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
       float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
       RNN_COPY(zeros, plc_features, 2*NB_BANDS);
       zeros[2*NB_BANDS+NB_FEATURES] = 1;
-      st->plc_net = st->plc_copy[FEATURES_DELAY];
-      compute_plc_pred(&st->plc_net, st->features, zeros);
-      for (i=0;i<FEATURES_DELAY;i++) {
-        float lpc[LPC_ORDER];
-        float gru_a_condition[3*GRU_A_STATE_SIZE];
-        float gru_b_condition[3*GRU_B_STATE_SIZE];
-        /* FIXME: backtrack state, replace features. */
-        run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->features);
+      if (st->fec_active) {
+        if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
+        fec_rewind(st, FEATURES_DELAY);
+      } else {
+        st->plc_net = st->plc_copy[FEATURES_DELAY];
+        compute_plc_pred(&st->plc_net, st->features, zeros);
+        for (i=0;i<FEATURES_DELAY;i++) {
+          float lpc[LPC_ORDER];
+          float gru_a_condition[3*GRU_A_STATE_SIZE];
+          float gru_b_condition[3*GRU_B_STATE_SIZE];
+          /* FIXME: backtrack state, replace features. */
+          run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->features);
+        }
       }
       if (st->enable_blending) {
         LPCNetState copy;
@@ -166,13 +209,18 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
     RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features[0], NB_FEATURES);
     plc_features[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(&st->plc_net, st->features, plc_features);
+    /* Discard an FEC frame that we know we will no longer need. */
+    if (st->fec_read_pos < st->fec_fill_pos) st->fec_read_pos++;
+    st->fec_keep_pos = IMAX(0, IMAX(st->fec_keep_pos, st->fec_read_pos-FEATURES_DELAY-1));
   }
   if (st->skip_analysis) {
-    float lpc[LPC_ORDER];
-    float gru_a_condition[3*GRU_A_STATE_SIZE];
-    float gru_b_condition[3*GRU_B_STATE_SIZE];
-    /* FIXME: backtrack state, replace features. */
-    run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->enc.features[0]);
+    if (!st->fec_active) {
+      float lpc[LPC_ORDER];
+      float gru_a_condition[3*GRU_A_STATE_SIZE];
+      float gru_b_condition[3*GRU_B_STATE_SIZE];
+      /* FIXME: backtrack state, replace features. */
+      run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->enc.features[0]);
+    }
     st->skip_analysis--;
   } else {
     for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE+i] = pcm[i];
@@ -187,6 +235,7 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
     }
   }
   st->blend = 0;
+  st->fec_active = 0;
   return 0;
 }
 
@@ -194,7 +243,6 @@ static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6,
 static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
   int i;
   short output[FRAME_SIZE];
-  float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
   st->enc.pcount = 0;
   /* If we concealed the previous frame, finish synthesizing the rest of the samples. */
   /* FIXME: Copy/predict features. */
@@ -203,7 +251,9 @@ static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
     int update_count;
     update_count = IMIN(st->pcm_fill, FRAME_SIZE);
     RNN_COPY(output, &st->pcm[0], update_count);
-    compute_plc_pred(&st->plc_net, st->features, zeros);
+    RNN_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
+    st->plc_copy[0] = st->plc_net;
+    st->fec_active = get_fec_or_pred(st, st->features);
     lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], output, update_count, update_count);
     RNN_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE);
     st->pcm_fill -= update_count;
@@ -212,7 +262,7 @@ static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
   RNN_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
   st->plc_copy[0] = st->plc_net;
   lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
-  compute_plc_pred(&st->plc_net, st->features, zeros);
+  st->fec_active = get_fec_or_pred(st, st->features);
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
   else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
   //if (st->loss_count > 4) st->features[NB_FEATURES-1] = MAX16(-.5, st->features[NB_FEATURES-1]-.1*(st->loss_count-4));
@@ -225,7 +275,7 @@ static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
     compute_frame_features(&st->enc, x);
     process_single_frame(&st->enc, NULL);
   }
-  st->loss_count++;
+  if (!st->fec_active) st->loss_count++;
   st->blend = 1;
   if (st->remove_dc) {
     for (i=0;i<FRAME_SIZE;i++) {
