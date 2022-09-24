@@ -241,14 +241,14 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
     dec_state2 = Input(shape=(rnn_units2,))
 
     padding = 'valid' if training else 'same'
-    fconv1 = Conv1D(cond_size, 3, padding=padding, activation='swish', name='feature_conv1')
-    fconv2 = Conv1D(cond_size, 3, padding=padding, activation='swish', name='feature_conv2')
+    fconv1 = Conv1D(cond_size, 3, padding=padding, activation='tanh', name='feature_conv1')
+    fconv2 = Conv1D(cond_size, 3, padding=padding, activation='tanh', name='feature_conv2')
     pembed = Embedding(256, 64, name='embed_pitch')
     cat_feat = Concatenate()([feat, Reshape((-1, 64))(pembed(pitch))])
 
     cfeat = fconv2(fconv1(cat_feat))
 
-    fdense1 = Dense(cond_size, activation='swish', name='feature_dense1')
+    fdense1 = Dense(cond_size, activation='tanh', name='feature_dense1')
     fdense2 = Dense(cond_size, activation='tanh', name='feature_dense2')
 
     if flag_e2e and quantize:
