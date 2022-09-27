@@ -135,7 +135,7 @@ def sq2_rate_loss(y_true,y_pred):
     rate = lambda_val*K.sum(rate, axis=-1)
     return K.mean(rate)
 
-def sq_rate_metric(y_true,y_pred):
+def sq_rate_metric(y_true,y_pred, reduce=True):
     lambda_val = y_pred[:,:,-1]
     y_pred = y_pred[:,:,:-1]
     log2_e = 1.4427
@@ -149,7 +149,9 @@ def sq_rate_metric(y_true,y_pred):
     y0 = K.maximum(0., 1. - K.abs(y_pred))**2
     rate = -y0*safelog2(p0*r**K.abs(y_pred)) - (1-y0)*safelog2(.5*(1-p0)*(1-r)*r**(K.abs(y_pred)-1))
     rate = K.sum(rate, axis=-1)
-    return K.mean(rate)
+    if reduce:
+        rate = K.mean(rate)
+    return rate
 
 def pvq_quant_search(x, k):
     x = x/tf.reduce_sum(tf.abs(x), axis=-1, keepdims=True)
