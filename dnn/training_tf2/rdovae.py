@@ -310,7 +310,7 @@ def tensor_concat(x):
     n=2
     y = []
     for i in range(n-1):
-        offset = n-1-i
+        offset = 2 * (n-1-i)
         tmp = K.concatenate([x[i][:, offset:, :], x[-1][:, -offset:, :]], axis=-2) 
         y.append(tf.expand_dims(tmp, axis=0))
     y.append(tf.expand_dims(x[-1], axis=0))
