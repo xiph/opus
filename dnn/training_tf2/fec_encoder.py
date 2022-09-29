@@ -32,12 +32,12 @@ else:
 
     parser.add_argument('input', metavar='<input signal>', help='audio input (.wav or .raw or .pcm as int16)')
     parser.add_argument('weights', metavar='<weights>', help='trained model file (.h5)')
-    parser.add_argument('enc_lambda', metavar='<lambda>', type=float, help='lambda for controlling encoder rate (default=0.0007)', default=0.0007)
+    parser.add_argument('enc_lambda', metavar='<lambda>', type=float, help='lambda for controlling encoder rate')
     parser.add_argument('output', type=str, help='output file (will be extended with .fec)')
 
     parser.add_argument('--dump-data', type=str, default='./dump_data', help='path to dump data executable (default ./dump_data)')
     parser.add_argument('--cond-size', metavar='<units>', default=1024, type=int, help='number of units in conditioning network (default 1024)')
-    parser.add_argument('--num-redundancy-frames', default=64, type=int, help='number of redundancy frames per packet (default 64)')
+    parser.add_argument('--num-redundancy-frames', default=64, type=int, help='number of redundancy frames (20ms) per packet (default 64)')
     parser.add_argument('--extra-delay', default=0, type=int, help="last features in packet are calculated with the decoder aligned samples, use this option to add extra delay (in samples at 16kHz)")
 
     parser.add_argument('--debug-output', action='store_true', help='if set, differently assembled features are written to disk')
