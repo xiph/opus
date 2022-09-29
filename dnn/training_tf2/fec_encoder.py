@@ -133,9 +133,9 @@ packet_sizes = []
 
 for i in range(offset, num_frames):
     print(f"processing frame {i - offset}...")
-    features = decoder.predict([symbols[:, i - 2 * input_length + 1 : i + 1 : 2, :], quant_embed_dec[:, :input_length, :], quant_gru_state_dec[:, i, :]])
+    features = decoder.predict([symbols[:, i - 2 * input_length + 2 : i + 1 : 2, :], quant_embed_dec[:, i - 2 * input_length + 2 : i + 1 : 2, :], quant_gru_state_dec[:, i, :]])
     packets.append(features)
-    packet_size = 8 * int((np.sum(rates[:, i - 2 * input_length + 1 : i + 1 : 2]) + 7) / 8) + 64
+    packet_size = 8 * int((np.sum(rates[:, i - 2 * input_length + 2 : i + 1 : 2]) + 7) / 8) + 64
     packet_sizes.append(packet_size)
 
 
