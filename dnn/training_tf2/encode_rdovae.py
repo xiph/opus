@@ -58,11 +58,12 @@ import tensorflow.keras.backend as K
 import h5py
 
 import tensorflow as tf
+from rdovae import pvq_quantize
 
 # Try reducing batch_size if you run out of memory on your GPU
 batch_size = args.batch_size
 
-model, encoder, decoder = rdovae.new_rdovae_model(nb_used_features=20, nb_bits=80, batch_size=batch_size, cond_size=args.cond_size)
+model, encoder, decoder, qembedding = rdovae.new_rdovae_model(nb_used_features=20, nb_bits=80, batch_size=batch_size, cond_size=args.cond_size)
 model.load_weights(args.weights)
 
 lpc_order = 16
@@ -84,16 +85,10 @@ print(features.shape)
 features = features[:, :, :nb_used_features]
 #features = np.random.randn(73600, 1000, 17)
 
-lambda_val = 0.001 * np.ones((nb_sequences, sequence_size//2, 1))
-quant_id = np.round(10*np.log(lambda_val/.0007)).astype('int16')
-quant_id = quant_id[:,:,0]
 
-
-bits, quant_embed_dec, gru_state_dec = encoder.predict([features, quant_id, lambda_val], batch_size=batch_size)
+bits, gru_state_dec = encoder.predict([features], batch_size=batch_size)
 (gru_state_dec).astype('float32').tofile(args.output + "-state.f32")
 
-
-#quant_out, _, _, model_bits, _ = model.predict([features, quant_id, lambda_val], batch_size=batch_size)
 
 #dist = rdovae.feat_dist_loss(features, quant_out)
 #rate = rdovae.sq1_rate_loss(features, model_bits)
@@ -102,20 +97,29 @@ bits, quant_embed_dec, gru_state_dec = encoder.predict([features, quant_id, lamb
 
 print("shapes are:")
 print(bits.shape)
-print(quant_embed_dec.shape)
 print(gru_state_dec.shape)
 
 features.astype('float32').tofile(args.output + "-input.f32")
 #quant_out.astype('float32').tofile(args.output + "-enc_dec.f32")
 nbits=80
-dead_zone = tf.math.softplus(quant_embed_dec[:, :, nbits : 2 * nbits])
-symbols = apply_dead_zone([bits, dead_zone]).numpy()
-np.round(bits).astype('int16').tofile(args.output + "-bits.s16")
-quant_embed_dec.astype('float32').tofile(args.output + "-quant.f32")
+bits.astype('float32').tofile(args.output + "-syms.f32")
 
+lambda_val = 0.0007 * np.ones((nb_sequences, sequence_size//2, 1))
+quant_id = np.round(10*np.log(lambda_val/.0007)).astype('int16')
+quant_id = quant_id[:,:,0]
+quant_embed = qembedding(quant_id)
+quant_scale = tf.math.softplus(quant_embed[:,:,:nbits])
+dead_zone = tf.math.softplus(quant_embed[:, :, nbits : 2 * nbits])
+
+bits = bits*quant_scale
+bits = np.round(apply_dead_zone([bits, dead_zone]).numpy())
+bits = bits/quant_scale
+
+gru_state_dec = pvq_quantize(gru_state_dec, 30)
+#gru_state_dec = gru_state_dec/(1e-15+tf.norm(gru_state_dec, axis=-1,keepdims=True))
 gru_state_dec = gru_state_dec[:,-1,:]
-dec_out = decoder([bits[:,1::2,:], quant_embed_dec[:,1::2,:], gru_state_dec])
+dec_out = decoder([bits[:,1::2,:], gru_state_dec])
 
 print(dec_out.shape)
 
-dec_out.numpy().astype('float32').tofile(args.output + "-dec_out.f32")
+dec_out.numpy().astype('float32').tofile(args.output + "-unquant_out.f32")

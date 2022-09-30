@@ -57,14 +57,17 @@ import h5py
 
 import tensorflow as tf
 from rdovae import pvq_quantize
+from rdovae import apply_dead_zone
 
 # Try reducing batch_size if you run out of memory on your GPU
 batch_size = args.batch_size
 
-model, encoder, decoder = rdovae.new_rdovae_model(nb_used_features=20, nb_bits=80, batch_size=batch_size, cond_size=args.cond_size)
+model, encoder, decoder, qembedding = rdovae.new_rdovae_model(nb_used_features=20, nb_bits=80, batch_size=batch_size, cond_size=args.cond_size)
 model.load_weights(args.weights)
 
 lpc_order = 16
+nbits=80
+
 
 bits_file = args.bits
 sequence_size = args.seq_length
@@ -72,30 +75,37 @@ sequence_size = args.seq_length
 # u for unquantised, load 16 bit PCM samples and convert to mu-law
 
 
-bits = np.memmap(bits_file + "-bits.s16", dtype='int16', mode='r')
+bits = np.memmap(bits_file + "-syms.f32", dtype='float32', mode='r')
 nb_sequences = len(bits)//(40*sequence_size)//batch_size*batch_size
 bits = bits[:nb_sequences*sequence_size*40]
 
 bits = np.reshape(bits, (nb_sequences, sequence_size//2, 20*4))
-bits = bits[:,1::2,:]
 print(bits.shape)
 
-quant = np.memmap(bits_file + "-quant.f32", dtype='float32', mode='r')
-state = np.memmap(bits_file + "-state.f32", dtype='float32', mode='r')
+lambda_val = 0.0007 * np.ones((nb_sequences, sequence_size//2, 1))
+quant_id = np.round(10*np.log(lambda_val/.0007)).astype('int16')
+quant_id = quant_id[:,:,0]
+quant_embed = qembedding(quant_id)
+quant_scale = tf.math.softplus(quant_embed[:,:,:nbits])
+dead_zone = tf.math.softplus(quant_embed[:, :, nbits : 2 * nbits])
 
-quant = np.reshape(quant, (nb_sequences, sequence_size//2, 6*20*4))
-quant = quant[:,1::2,:]
+bits = bits*quant_scale
+bits = np.round(apply_dead_zone([bits, dead_zone]).numpy())
+bits = bits/quant_scale
+
+
+state = np.memmap(bits_file + "-state.f32", dtype='float32', mode='r')
 
 state = np.reshape(state, (nb_sequences, sequence_size//2, 24))
 state = state[:,-1,:]
-state = pvq_quantize(state, 30)
-#state = state/(1e-15+tf.norm(state, axis=-1,keepdims=True))
+#state = pvq_quantize(state, 30)
+state = state/(1e-15+tf.norm(state, axis=-1,keepdims=True))
 
 print("shapes are:")
 print(bits.shape)
-print(quant.shape)
 print(state.shape)
 
-features = decoder.predict([bits, quant, state], batch_size=batch_size)
+bits = bits[:,1::2,:]
+features = decoder.predict([bits, state], batch_size=batch_size)
 
 features.astype('float32').tofile(args.output)

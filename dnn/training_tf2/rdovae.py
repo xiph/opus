@@ -200,13 +200,6 @@ nb_state_dim = 24
 def new_rdovae_encoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, batch_size=128, cond_size=128, cond_size2=256, training=False):
     feat = Input(shape=(None, nb_used_features), batch_size=batch_size)
 
-    quant_id = Input(shape=(None,), batch_size=batch_size)
-    lambda_val = Input(shape=(None, 1), batch_size=batch_size)
-    qembedding = Embedding(nb_quant, 6*nb_bits, name='quant_embed', embeddings_initializer='zeros')
-    quant_embed = qembedding(quant_id)
-
-    quant_scale = Activation('softplus')(Lambda(lambda x: x[:,:,:nb_bits], name='quant_scale_embed')(quant_embed))
-
     gru = CuDNNGRU if training else GRU
     enc_dense1 = Dense(cond_size2, activation='tanh', kernel_constraint=constraint, name='enc_dense1')
     enc_dense2 = gru(cond_size, return_sequences=True, kernel_constraint=constraint, recurrent_constraint=constraint, name='enc_dense2')
@@ -221,8 +214,7 @@ def new_rdovae_encoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, ba
     bits_dense = Conv1D(nb_bits, 4, padding='causal', activation='linear', name='bits_dense')
 
     zero_out = Lambda(lambda x: 0*x)
-    inputs = Concatenate()([Reshape((-1, 2*nb_used_features))(feat), tf.stop_gradient(quant_embed), lambda_val])
-    #inputs = Concatenate()([feat, tf.stop_gradient(quant_embed), lambda_val])
+    inputs = Reshape((-1, 2*nb_used_features))(feat)
     d1 = enc_dense1(inputs)
     d2 = enc_dense2(d1)
     d3 = enc_dense3(d2)
@@ -233,18 +225,15 @@ def new_rdovae_encoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, ba
     d8 = enc_dense8(d7)
     pre_out = Concatenate()([d1, d2, d3, d4, d5, d6, d7, d8])
     enc_out = bits_dense(pre_out)
-    #enc_out = Lambda(lambda x: x[:, bunch//2-1::bunch//2])(enc_out)
-    bits = Multiply()([enc_out, quant_scale])
     global_dense1 = Dense(128, activation='tanh', name='gdense1')
     global_dense2 = Dense(nb_state_dim, activation='tanh', name='gdense2')
     global_bits = global_dense2(global_dense1(pre_out))
 
-    encoder = Model([feat, quant_id, lambda_val], [bits, quant_embed, global_bits], name='encoder')
+    encoder = Model([feat], [enc_out, global_bits], name='encoder')
     return encoder
 
 def new_rdovae_decoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, batch_size=128, cond_size=128, cond_size2=256, training=False):
     bits_input = Input(shape=(None, nb_bits), batch_size=batch_size, name="dec_bits")
-    quant_embed_input = Input(shape=(None, 6*nb_bits), batch_size=batch_size, name="dec_embed")
     gru_state_input = Input(shape=(nb_state_dim,), batch_size=batch_size, name="dec_state")
 
     
@@ -260,10 +249,8 @@ def new_rdovae_decoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, ba
 
     dec_final = Dense(bunch*nb_used_features, activation='linear', name='dec_final')
 
-    div = Lambda(lambda x: x[0]/x[1])
     time_reverse = Lambda(lambda x: K.reverse(x, 1))
     #time_reverse = Lambda(lambda x: x)
-    quant_scale_dec = Activation('softplus')(Lambda(lambda x: x[:,:,:nb_bits], name='quant_scale_embed_dec')(quant_embed_input))
     #gru_state_rep = RepeatVector(64//bunch)(gru_state_input)
 
     #gru_state_rep = Lambda(var_repeat, output_shape=(None, nb_state_dim)) ([gru_state_input, bits_input])
@@ -271,8 +258,7 @@ def new_rdovae_decoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, ba
     gru_state2 = Dense(cond_size, name="state2", activation='tanh')(gru_state_input)
     gru_state3 = Dense(cond_size, name="state3", activation='tanh')(gru_state_input)
 
-    dec_inputs = Concatenate()([div([bits_input,quant_scale_dec]), tf.stop_gradient(quant_embed_input)])
-    dec1 = dec_dense1(time_reverse(dec_inputs))
+    dec1 = dec_dense1(time_reverse(bits_input))
     dec2 = dec_dense2(dec1)
     dec3 = dec_dense3(dec2)
     dec4 = dec_dense4(dec3, initial_state=gru_state1)
@@ -281,7 +267,7 @@ def new_rdovae_decoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, ba
     dec7 = dec_dense7(dec6)
     dec8 = dec_dense8(dec7)
     output = Reshape((-1, nb_used_features))(dec_final(Concatenate()([dec1, dec2, dec3, dec4, dec5, dec6, dec7, dec8])))
-    decoder = Model([bits_input, quant_embed_input, gru_state_input], time_reverse(output), name='decoder')
+    decoder = Model([bits_input, gru_state_input], time_reverse(output), name='decoder')
     decoder.nb_bits = nb_bits
     decoder.bunch = bunch
     return decoder
@@ -290,7 +276,6 @@ def new_split_decoder(decoder):
     nb_bits = decoder.nb_bits
     bunch = decoder.bunch
     bits_input = Input(shape=(None, nb_bits), name="split_bits")
-    quant_embed_input = Input(shape=(None, 6*nb_bits), name="split_embed")
     gru_state_input = Input(shape=(None,nb_state_dim), name="split_state")
 
     range_select = Lambda(lambda x: x[0][:,x[1]:x[2],:])
@@ -302,10 +287,9 @@ def new_split_decoder(decoder):
         end = points[i+1]//bunch
         state = elem_select([gru_state_input, end-1])
         bits = range_select([bits_input, begin, end])
-        embed = range_select([quant_embed_input, begin, end])
-        outputs.append(decoder([bits, embed, state]))
+        outputs.append(decoder([bits, state]))
     output = Concatenate(axis=1)(outputs)
-    split = Model([bits_input, quant_embed_input, gru_state_input], output, name="split")
+    split = Model([bits_input, gru_state_input], output, name="split")
     return split
 
 def tensor_concat(x):
@@ -328,8 +312,13 @@ def new_rdovae_model(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, batc
     lambda_val = Input(shape=(None, 1), batch_size=batch_size)
     lambda_bunched = AveragePooling1D(pool_size=bunch//2, strides=bunch//2, padding="valid")(lambda_val)
 
+    qembedding = Embedding(nb_quant, 6*nb_bits, name='quant_embed', embeddings_initializer='zeros')
+    quant_embed_dec = qembedding(quant_id)
+    quant_scale = Activation('softplus')(Lambda(lambda x: x[:,:,:nb_bits], name='quant_scale_embed')(quant_embed_dec))
+
     encoder = new_rdovae_encoder(nb_used_features, nb_bits, bunch, nb_quant, batch_size, cond_size, cond_size2, training=training)
-    ze, quant_embed_dec, gru_state_dec = encoder([feat, quant_id, lambda_val])
+    ze, gru_state_dec = encoder([feat])
+    ze = Multiply()([ze, quant_scale])
 
     decoder = new_rdovae_decoder(nb_used_features, nb_bits, bunch, nb_quant, batch_size, cond_size, cond_size2, training=training)
     split_decoder = new_split_decoder(decoder)
@@ -342,18 +331,22 @@ def new_rdovae_model(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, batc
     hardquant = Lambda(hard_quantize)
     dzone = Lambda(apply_dead_zone)
     dze = dzone([ze,dead_zone])
+    ndze = noisequant(dze)
     
+    div = Lambda(lambda x: x[0]/x[1])
+    dze_unquant = div([dze,quant_scale])
+    ndze_unquant = div([ndze,quant_scale])
+
     mod_select = Lambda(lambda x: x[0][:,x[1]::bunch//2,:])
     gru_state_dec = Lambda(lambda x: pvq_quantize(x, 30))(gru_state_dec)
-    ndze = noisequant(dze)
     combined_output = []
     unquantized_output = []
     for i in range(bunch//2):
-        dze_select = mod_select([dze, i])
-        ndze_select = mod_select([ndze, i])
+        dze_select = mod_select([dze_unquant, i])
+        ndze_select = mod_select([ndze_unquant, i])
         state_select = mod_select([gru_state_dec, i])
-        combined_output.append(split_decoder([hardquant(dze_select), tf.stop_gradient(quant_embed_dec), state_select]))
-        unquantized_output.append(split_decoder([ndze_select, quant_embed_dec, state_select]))
+        combined_output.append(split_decoder([hardquant(dze_select), state_select]))
+        unquantized_output.append(split_decoder([ndze_select, state_select]))
 
     concat = Lambda(tensor_concat, name="output")
     combined_output = concat(combined_output)
@@ -366,5 +359,5 @@ def new_rdovae_model(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, batc
     model = Model([feat, quant_id, lambda_val], [combined_output, unquantized_output, e, e2], name="end2end")
     model.nb_used_features = nb_used_features
 
-    return model, encoder, decoder
+    return model, encoder, decoder, qembedding
 
