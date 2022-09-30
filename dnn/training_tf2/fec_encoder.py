@@ -60,7 +60,10 @@ silk_delay = 91
 # prepend zeros to have enough history to produce the first package
 zero_history = (args.num_redundancy_frames - 1) * frame_size
 
-total_delay = silk_delay + zero_history + args.extra_delay
+# dump data has a (feature) delay of 10ms
+dump_data_delay = 160
+
+total_delay = silk_delay + zero_history + args.extra_delay - dump_data_delay
 
 # load signal
 if args.input.endswith('.raw') or args.input.endswith('.pcm'):
