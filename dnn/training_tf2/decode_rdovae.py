@@ -83,7 +83,7 @@ bits = np.reshape(bits, (nb_sequences, sequence_size//2, 20*4))
 print(bits.shape)
 
 lambda_val = 0.0007 * np.ones((nb_sequences, sequence_size//2, 1))
-quant_id = np.round(10*np.log(lambda_val/.0007)).astype('int16')
+quant_id = np.round(10*np.log(lambda_val/.0002)).astype('int16')
 quant_id = quant_id[:,:,0]
 quant_embed = qembedding(quant_id)
 quant_scale = tf.math.softplus(quant_embed[:,:,:nbits])
@@ -98,8 +98,8 @@ state = np.memmap(bits_file + "-state.f32", dtype='float32', mode='r')
 
 state = np.reshape(state, (nb_sequences, sequence_size//2, 24))
 state = state[:,-1,:]
-#state = pvq_quantize(state, 30)
-state = state/(1e-15+tf.norm(state, axis=-1,keepdims=True))
+state = pvq_quantize(state, 30)
+#state = state/(1e-15+tf.norm(state, axis=-1,keepdims=True))
 
 print("shapes are:")
 print(bits.shape)
