@@ -105,7 +105,7 @@ nbits=80
 bits.astype('float32').tofile(args.output + "-syms.f32")
 
 lambda_val = 0.001 * np.ones((nb_sequences, sequence_size//2, 1))
-quant_id = np.round(10*np.log(lambda_val/.0002)).astype('int16')
+quant_id = np.round(3.8*np.log(lambda_val/.0002)).astype('int16')
 quant_id = quant_id[:,:,0]
 quant_embed = qembedding(quant_id)
 quant_scale = tf.math.softplus(quant_embed[:,:,:nbits])
@@ -115,7 +115,7 @@ bits = bits*quant_scale
 bits = np.round(apply_dead_zone([bits, dead_zone]).numpy())
 bits = bits/quant_scale
 
-gru_state_dec = pvq_quantize(gru_state_dec, 30)
+gru_state_dec = pvq_quantize(gru_state_dec, 82)
 #gru_state_dec = gru_state_dec/(1e-15+tf.norm(gru_state_dec, axis=-1,keepdims=True))
 gru_state_dec = gru_state_dec[:,-1,:]
 dec_out = decoder([bits[:,1::2,:], gru_state_dec])

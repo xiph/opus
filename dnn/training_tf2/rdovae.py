@@ -238,15 +238,15 @@ def new_rdovae_decoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, ba
     gru_state_input = Input(shape=(nb_state_dim,), batch_size=batch_size, name="dec_state")
 
     
-    dec_dense1 = Dense(cond_size2, activation='tanh', kernel_constraint=constraint, name='dec_dense1')
-    dec_dense2 = Dense(cond_size, activation='tanh', kernel_constraint=constraint, name='dec_dense2')
-    dec_dense3 = Dense(cond_size2, activation='tanh', kernel_constraint=constraint, name='dec_dense3')
     gru = CuDNNGRU if training else GRU
+    dec_dense1 = Dense(cond_size2, activation='tanh', kernel_constraint=constraint, name='dec_dense1')
+    dec_dense2 = gru(cond_size, return_sequences=True, kernel_constraint=constraint, recurrent_constraint=constraint, name='dec_dense2')
+    dec_dense3 = Dense(cond_size2, activation='tanh', kernel_constraint=constraint, name='dec_dense3')
     dec_dense4 = gru(cond_size, return_sequences=True, kernel_constraint=constraint, recurrent_constraint=constraint, name='dec_dense4')
-    dec_dense5 = gru(cond_size, return_sequences=True, kernel_constraint=constraint, recurrent_constraint=constraint, name='dec_dense5')
+    dec_dense5 = Dense(cond_size2, activation='tanh', kernel_constraint=constraint, name='dec_dense5')
     dec_dense6 = gru(cond_size, return_sequences=True, kernel_constraint=constraint, recurrent_constraint=constraint, name='dec_dense6')
-    dec_dense7 = Dense(cond_size2, activation='tanh', kernel_constraint=constraint, name='dec_dense7')
-    dec_dense8 = Dense(cond_size2, activation='tanh', kernel_constraint=constraint, name='dec_dense8')
+    dec_dense7 = Dense(cond_size, activation='tanh', kernel_constraint=constraint, name='dec_dense7')
+    dec_dense8 = Dense(cond_size, activation='tanh', kernel_constraint=constraint, name='dec_dense8')
 
     dec_final = Dense(bunch*nb_used_features, activation='linear', name='dec_final')
 
@@ -260,10 +260,10 @@ def new_rdovae_decoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, ba
     gru_state3 = Dense(cond_size, name="state3", activation='tanh')(gru_state_input)
 
     dec1 = dec_dense1(time_reverse(bits_input))
-    dec2 = dec_dense2(dec1)
+    dec2 = dec_dense2(dec1, initial_state=gru_state1)
     dec3 = dec_dense3(dec2)
-    dec4 = dec_dense4(dec3, initial_state=gru_state1)
-    dec5 = dec_dense5(dec4, initial_state=gru_state2)
+    dec4 = dec_dense4(dec3, initial_state=gru_state2)
+    dec5 = dec_dense5(dec4)
     dec6 = dec_dense6(dec5, initial_state=gru_state3)
     dec7 = dec_dense7(dec6)
     dec8 = dec_dense8(dec7)
@@ -340,7 +340,7 @@ def new_rdovae_model(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, batc
     ndze_unquant = div([ndze,quant_scale])
 
     mod_select = Lambda(lambda x: x[0][:,x[1]::bunch//2,:])
-    gru_state_dec = Lambda(lambda x: pvq_quantize(x, 30))(gru_state_dec)
+    gru_state_dec = Lambda(lambda x: pvq_quantize(x, 82))(gru_state_dec)
     combined_output = []
     unquantized_output = []
     cat = Concatenate(name="out_cat")

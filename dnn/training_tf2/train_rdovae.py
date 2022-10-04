@@ -124,8 +124,8 @@ features = features[:, :, :nb_used_features]
 #lambda_val = np.repeat(np.random.uniform(.0007, .002, (features.shape[0], 1, 1)), features.shape[1]//2, axis=1)
 #quant_id = np.round(10*np.log(lambda_val/.0007)).astype('int16')
 #quant_id = quant_id[:,:,0]
-quant_id = np.repeat(np.random.randint(39, size=(features.shape[0], 1, 1), dtype='int16'), features.shape[1]//2, axis=1)
-lambda_val = .0002*np.exp(quant_id/10.)
+quant_id = np.repeat(np.random.randint(16, size=(features.shape[0], 1, 1), dtype='int16'), features.shape[1]//2, axis=1)
+lambda_val = .0002*np.exp(quant_id/3.8)
 quant_id = quant_id[:,:,0]
 
 # dump models to disk as we go
