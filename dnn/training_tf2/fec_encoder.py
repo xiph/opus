@@ -39,6 +39,7 @@ else:
     parser.add_argument('--cond-size', metavar='<units>', default=1024, type=int, help='number of units in conditioning network (default 1024)')
     parser.add_argument('--num-redundancy-frames', default=64, type=int, help='number of redundancy frames (20ms) per packet (default 64)')
     parser.add_argument('--extra-delay', default=0, type=int, help="last features in packet are calculated with the decoder aligned samples, use this option to add extra delay (in samples at 16kHz)")
+    parser.add_argument('--lossfile', type=str, help='file containing loss trace (0 for frame received, 1 for lost)')
 
     parser.add_argument('--debug-output', action='store_true', help='if set, differently assembled features are written to disk')
 
@@ -66,7 +67,7 @@ dump_data_delay = 160
 total_delay = silk_delay + zero_history + args.extra_delay - dump_data_delay
 
 # load signal
-if args.input.endswith('.raw') or args.input.endswith('.pcm'):
+if args.input.endswith('.raw') or args.input.endswith('.pcm') or args.input.endswith('.sw'):
     signal = np.fromfile(args.input, dtype='int16')
     
 elif args.input.endswith('.wav'):
@@ -175,6 +176,28 @@ packet_file = args.output + '.fec' if not args.output.endswith('.fec') else args
 
 #print(f"average redundancy rate: {int(round(sum(packet_sizes) / len(packet_sizes) * 50 / 1000))} kbps")
 
+if args.lossfile != None:
+    loss = np.loadtxt(args.lossfile, dtype='int16')
+    fec_out = np.zeros((features.shape[0]*2, features.shape[-1]), dtype='float32')
+    foffset = -2
+    ptr = 0;
+    count = 2;
+    for i in range(features.shape[0]):
+        if (loss[i] == 0) or (i == features.shape[0]-1):
+            fec_out[ptr:ptr+count,:] = features[i, foffset:, :]
+            #print("filled ", count)
+            foffset = -2
+            ptr = ptr+count
+            count = 2
+        else:
+            count = count + 2
+            foffset = foffset - 2
+
+    fec_out_full = np.zeros((fec_out.shape[0], nb_features), dtype=np.float32)
+    fec_out_full[:, :nb_used_features] = fec_out
+
+    fec_out_full.tofile(packet_file[:-4] + f'_fec.f32')
+    
 
 #create packets array like in the original version for debugging purposes
 for i in range(offset, num_frames):
