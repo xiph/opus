@@ -167,8 +167,8 @@ def pvq_quant_search(x, k):
         abs_kx = tf.abs(kx)
         kk=tf.reduce_sum(abs_y, axis=-1)
         #print("sums = ", kk)
-        plus = 1.0001*tf.reduce_min((abs_y+.5)/(abs_kx+1e-15), axis=-1)
-        minus = .9999*tf.reduce_max((abs_y-.5)/(abs_kx+1e-15), axis=-1)
+        plus = 1.000001*tf.reduce_min((abs_y+.5)/(abs_kx+1e-15), axis=-1)
+        minus = .999999*tf.reduce_max((abs_y-.5)/(abs_kx+1e-15), axis=-1)
         #print("plus = ", plus)
         #print("minus = ", minus)
         factor = tf.where(kk>k, minus, plus)
@@ -183,7 +183,7 @@ def pvq_quant_search(x, k):
         y = tf.round(kx)
 
     #print(y)
-    
+    #print(K.mean(K.sum(K.abs(y), axis=-1)))
     return y
 
 def pvq_quantize(x, k):
@@ -281,7 +281,7 @@ def new_split_decoder(decoder):
 
     range_select = Lambda(lambda x: x[0][:,x[1]:x[2],:])
     elem_select = Lambda(lambda x: x[0][:,x[1],:])
-    points = [0, 64, 128, 192, 256]
+    points = [0, 100, 200, 300, 400]
     outputs = []
     for i in range(len(points)-1):
         begin = points[i]//bunch

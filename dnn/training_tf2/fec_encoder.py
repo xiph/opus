@@ -108,8 +108,8 @@ features = features[:, :, :nb_used_features]
 features = features[:, :num_subframes, :]
 
 #variable quantizer depending on the delay
-q0 = 2
-q1 = 10
+q0 = 3
+q1 = 15
 quant_id = np.round(q1 + (q0-q1)*np.arange(args.num_redundancy_frames//2)/args.num_redundancy_frames).astype('int16')
 #print(quant_id)
 
@@ -154,7 +154,10 @@ hard_distr_embed = np.broadcast_to(hard_distr_embed, (sym_batch.shape[0], sym_ba
 fake_lambda = np.ones((sym_batch.shape[0], sym_batch.shape[1], 1), dtype='float32')
 rate_input = np.concatenate((sym_batch, hard_distr_embed, fake_lambda), axis=-1)
 rates = sq_rate_metric(None, rate_input, reduce=False).numpy()
-print("rate = ", np.mean(rates))
+print(rates.shape)
+print("average rate = ", np.mean(rates[args.num_redundancy_frames:,:]))
+
+#sym_batch.tofile('qsyms.f32')
 
 sym_batch = sym_batch / quant_scale
 print(sym_batch.shape, quant_state.shape)
