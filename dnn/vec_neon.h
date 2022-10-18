@@ -33,7 +33,12 @@
 #ifndef DISABLE_DOT_PROD
 #define DOT_PROD
 #endif
+
+#ifdef DOT_PROD
 typedef signed char qweight;
+#else
+typedef float qweight;
+#endif
 
 
 #ifndef LPCNET_TEST

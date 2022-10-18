@@ -98,6 +98,8 @@ void compute_activation(float *output, const float *input, int N, int activation
 
 void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input);
 
+void compute_dense(const DenseLayer *layer, float *output, const float *input);
+
 void compute_mdense(const MDenseLayer *layer, float *output, const float *input);
 
 int sample_mdense(const MDenseLayer *layer,  const float *input, const float *sampling_logit_table, kiss99_ctx *rng);

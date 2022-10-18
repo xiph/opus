@@ -38,6 +38,7 @@
 #include "tansig_table.h"
 #include "nnet.h"
 #include "nnet_data.h"
+#include "nfec_enc_data.h"
 #include "plc_data.h"
 
 #ifdef NO_OPTIMIZATIONS
@@ -127,6 +128,11 @@ void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *
       output[i] = layer->bias[i];
    sgemv_accum(output, layer->input_weights, N, M, stride, input);
    compute_activation(output, output, N, layer->activation);
+}
+
+void compute_dense(const DenseLayer *layer, float *output, const float *input)
+{
+   return _lpcnet_compute_dense(layer, output, input);
 }
 
 void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
@@ -316,7 +322,7 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input)
       state[i] = h[i];
 }
 
-#define MAX_RNN_NEURONS_ALL IMAX(MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS)
+#define MAX_RNN_NEURONS_ALL IMAX(IMAX(MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), NFEC_ENC_MAX_RNN_NEURONS)
 
 void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input)
 {
@@ -442,12 +448,14 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
       state[i] = z[i]*state[i] + (1-z[i])*h[i];
 }
 
+#define MAX_CONV_INPUTS_ALL IMAX(MAX_CONV_INPUTS, NFEC_ENC_MAX_CONV_INPUTS)
+
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
 {
    int i;
    int N, M;
    int stride;
-   float tmp[MAX_CONV_INPUTS];
+   float tmp[MAX_CONV_INPUTS_ALL];
    celt_assert(input != output);
    celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS);
    RNN_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
