@@ -5,7 +5,7 @@
 
 void usage()
 {
-    printf("nfec_enc_demo <features>");
+    printf("nfec_enc_demo <features> <latents path> <states path>\n");
     exit(1);
 }
 
@@ -17,9 +17,11 @@ int main(int argc, char **argv)
     float latents[80];
     float initial_state[24];
     int index = 0;
-    FILE *fid;
+    FILE *fid, *latents_fid, *states_fid;
 
-    if (argc < 2)
+    memset(&enc_state, 0, sizeof(enc_state));
+
+    if (argc < 4)
     {
         usage();
     }
@@ -31,16 +33,37 @@ int main(int argc, char **argv)
         usage();
     }
 
+    latents_fid = fopen(argv[2], "wb");
+    if (latents_fid == NULL)
+    {
+        fprintf(stderr, "could not open latents file %s\n", argv[2]);
+        usage();
+    }
+
+    states_fid = fopen(argv[3], "wb");
+    if (fid == NULL)
+    {
+        fprintf(stderr, "could not open states file %s\n", argv[3]);
+        usage();
+    }
+
+
     while (fread(feature_buffer, sizeof(float), 32, fid) == 32)
     {
-        memcpy(dframe[16 * index++], feature_buffer, 16*sizeof(float));
+        memcpy(&dframe[16 * index++], feature_buffer, 16*sizeof(float));
 
         if (index == 2)
         {
             nfec_encode_dframe(&enc_state, latents, initial_state, dframe);
             index = 0;
+            fwrite(latents, sizeof(float), NFEC_LATENT_DIM, latents_fid);
+            fwrite(initial_state, sizeof(float), GDENSE2_OUT_SIZE, states_fid);
         }
     }
+
+    fclose(fid);
+    fclose(states_fid);
+    fclose(latents_fid);
 }
 
-/* gcc -DDISABLE_DOT_PROD nfec_enc_demo.c nfec_enc.c nnet.c nfec_enc_data.c -o nfec_enc_demo */
+/* gcc -DDISABLE_DOT_PROD -DDISABLE_NEON nfec_enc_demo.c nfec_enc.c nnet.c nfec_enc_data.c kiss99.c -o nfec_enc_demo */

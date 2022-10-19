@@ -2,8 +2,6 @@
 #include "nnet.h"
 #include "nfec_enc_data.h"
 
-
-
 void nfec_encode_dframe(struct NFECEncState *enc_state, float *latents, float *initial_state, const float *input)
 {
     float buffer[ENC_DENSE1_OUT_SIZE + ENC_DENSE2_OUT_SIZE + ENC_DENSE3_OUT_SIZE + ENC_DENSE4_OUT_SIZE + ENC_DENSE5_OUT_SIZE + ENC_DENSE6_OUT_SIZE + ENC_DENSE7_OUT_SIZE + ENC_DENSE8_OUT_SIZE + GDENSE1_OUT_SIZE];
