@@ -12,8 +12,8 @@ void usage()
 int main(int argc, char **argv)
 {
     struct NFECEncState enc_state;
-    float feature_buffer[32];
-    float dframe[2 * 20];
+    float feature_buffer[36];
+    float dframe[2 * NFEC_NUM_FEATURES];
     float latents[80];
     float initial_state[24];
     int index = 0;
@@ -41,16 +41,16 @@ int main(int argc, char **argv)
     }
 
     states_fid = fopen(argv[3], "wb");
-    if (fid == NULL)
+    if (states_fid == NULL)
     {
         fprintf(stderr, "could not open states file %s\n", argv[3]);
         usage();
     }
 
 
-    while (fread(feature_buffer, sizeof(float), 32, fid) == 32)
+    while (fread(feature_buffer, sizeof(float), 36, fid) == 36)
     {
-        memcpy(&dframe[16 * index++], feature_buffer, 16*sizeof(float));
+        memcpy(&dframe[NFEC_NUM_FEATURES * index++], feature_buffer, NFEC_NUM_FEATURES*sizeof(float));
 
         if (index == 2)
         {
@@ -66,4 +66,4 @@ int main(int argc, char **argv)
     fclose(latents_fid);
 }
 
-/* gcc -DDISABLE_DOT_PROD -DDISABLE_NEON nfec_enc_demo.c nfec_enc.c nnet.c nfec_enc_data.c kiss99.c -o nfec_enc_demo */
+/* gcc -DDISABLE_DOT_PROD -DDISABLE_NEON nfec_enc_demo.c nfec_enc.c nnet.c nfec_enc_data.c kiss99.c -g -o nfec_enc_demo */
