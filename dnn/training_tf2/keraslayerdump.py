@@ -3,13 +3,16 @@
 import numpy as np
 
 
-def printVector(f, vector, name, dtype='float', dotp=False):
+def printVector(f, vector, name, dtype='float', dotp=False, static=True):
     """ prints vector as one-dimensional C array """
     if dotp:
         vector = vector.reshape((vector.shape[0]//4, 4, vector.shape[1]//8, 8))
         vector = vector.transpose((2, 0, 3, 1))
     v = np.reshape(vector, (-1))
-    f.write('static const {} {}[{}] = {{\n   '.format(dtype, name, len(v)))
+    if static:
+        f.write('static const {} {}[{}] = {{\n   '.format(dtype, name, len(v)))
+    else:
+        f.write('const {} {}[{}] = {{\n   '.format(dtype, name, len(v)))
     for i in range(0, len(v)):
         f.write('{}'.format(v[i]))
         if (i!=len(v)-1):

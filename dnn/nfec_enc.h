@@ -11,5 +11,6 @@ struct NFECEncState{
 };
 
 void nfec_encode_dframe(struct NFECEncState *enc_state, float *latents, float *initial_state, const float *input);
+void nfec_quantize_latent_vector(int *z_q, const float *z, int quant_level);
 
 #endif

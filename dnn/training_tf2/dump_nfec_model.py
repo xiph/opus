@@ -1,6 +1,7 @@
 import argparse
 import os
 
+os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
 parser = argparse.ArgumentParser()
 
@@ -59,17 +60,17 @@ def dump_statistical_model(qembedding, f, fh):
     r               = 0.5 + 0.5 * tf.math.sigmoid(w[:, 4 * N : 5 * N]).numpy()
     theta           = tf.math.sigmoid(w[:, 5 * N : 6 * N]).numpy()
 
-    printVector(f, quant_scales[:], 'nfec_stats_quant_scales')
-    printVector(f, dead_zone_theta[:], 'nfec_stats_dead_zone_theta')
-    printVector(f, r, 'nfec_stats_r')
-    printVector(f, theta, 'nfec_stats_theta')
+    printVector(f, quant_scales[:], 'nfec_stats_quant_scales', static=False)
+    printVector(f, dead_zone_theta[:], 'nfec_stats_dead_zone_theta', static=False)
+    printVector(f, r, 'nfec_stats_r', static=False)
+    printVector(f, theta, 'nfec_stats_theta', static=False)
 
     fh.write(
 f"""
-extern float nfec_stats_quant_scales;
-extern float nfec_stats_dead_zone_theta;
-extern float nfec_stats_r;
-extern float nfec_stats_theta;
+extern const float nfec_stats_quant_scales[{levels * N}];
+extern const float nfec_stats_dead_zone_theta[{levels * N}];
+extern const float nfec_stats_r[{levels * N}];
+extern const float nfec_stats_theta[{levels * N}];
 
 """
     )
@@ -159,6 +160,7 @@ f"""
     header_fid.write(
 f"""
 #define NFEC_STATS_NUM_LEVELS {num_levels}
+#define NFEC_STATS_NUM_LATENTS {args.latent_dim}
 
 """
     )
@@ -171,3 +173,60 @@ f"""
     header_fid.close()
     source_fid.close()
 
+    # decoder
+    decoder_dense_names = [
+        'state1',
+        'state2',
+        'state3',
+        'dec_dense1',
+        'dec_dense3',
+        'dec_dense5',
+        'dec_dense7',
+        'dec_dense8',
+        'dec_final'
+    ]   
+
+    decoder_gru_names = [
+        'dec_dense2',
+        'dec_dense4',
+        'dec_dense6'
+    ] 
+
+    source_fid = open("nfec_dec_data.c", 'w')
+    header_fid = open("nfec_dec_data.h", 'w')
+
+    start_header(header_fid, "nfec_dec_data.h")
+    start_source(source_fid, "nfec_dec_data.h", os.path.basename(args.weights))
+
+    # some global constants
+    header_fid.write(
+f"""
+#define NFEC_DEC_NUM_FEATURES 20
+
+#define NFEC_DEC_LATENT_DIM {args.latent_dim}
+
+#define NFEC_DEC_MAX_RNN_NEURONS {max_rnn_neurons}
+
+
+"""
+    )
+
+
+    # dump GRUs
+    max_rnn_neurons = max(
+        [
+            dump_gru_layer(decoder.get_layer(name), source_fid, header_fid)
+            for name in decoder_gru_names
+        ]
+    )
+
+    # dump Dense layers
+    for name in decoder_dense_names:
+        layer = decoder.get_layer(name)
+        dump_dense_layer(layer, source_fid, header_fid)
+
+    finish_header(header_fid)
+    finish_source(source_fid)
+
+    header_fid.close()
+    source_fid.close()

@@ -16,8 +16,9 @@ int main(int argc, char **argv)
     float dframe[2 * NFEC_NUM_FEATURES];
     float latents[80];
     float initial_state[24];
+    int quantized_latents[NFEC_LATENT_DIM];
     int index = 0;
-    FILE *fid, *latents_fid, *states_fid;
+    FILE *fid, *latents_fid, *quantized_latents_fid, *states_fid;
 
     memset(&enc_state, 0, sizeof(enc_state));
 
@@ -40,6 +41,16 @@ int main(int argc, char **argv)
         usage();
     }
 
+    char filename[256];
+    strcpy(filename, argv[2]);
+    strcat(filename, ".quantized.f32");
+    quantized_latents_fid = fopen(filename, "wb");
+    if (latents_fid == NULL)
+    {
+        fprintf(stderr, "could not open latents file %s\n", filename);
+        usage();
+    }
+
     states_fid = fopen(argv[3], "wb");
     if (states_fid == NULL)
     {
@@ -55,8 +66,10 @@ int main(int argc, char **argv)
         if (index == 2)
         {
             nfec_encode_dframe(&enc_state, latents, initial_state, dframe);
+            nfec_quantize_latent_vector(quantized_latents, latents, 0);
             index = 0;
             fwrite(latents, sizeof(float), NFEC_LATENT_DIM, latents_fid);
+            fwrite(quantized_latents, sizeof(int), NFEC_LATENT_DIM, quantized_latents_fid);
             fwrite(initial_state, sizeof(float), GDENSE2_OUT_SIZE, states_fid);
         }
     }
@@ -64,6 +77,9 @@ int main(int argc, char **argv)
     fclose(fid);
     fclose(states_fid);
     fclose(latents_fid);
+    fclose(quantized_latents_fid);
+
+    return 0;
 }
 
-/* gcc -DDISABLE_DOT_PROD -DDISABLE_NEON nfec_enc_demo.c nfec_enc.c nnet.c nfec_enc_data.c kiss99.c -g -o nfec_enc_demo */
+/* gcc -DDISABLE_DOT_PROD -DDISABLE_NEON nfec_enc_demo.c nfec_enc.c nnet.c nfec_enc_data.c nfec_stats_data.c kiss99.c -g -o nfec_enc_demo */
