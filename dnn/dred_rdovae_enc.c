@@ -1,9 +1,7 @@
 #include <math.h>
 
-#include "nfec_enc.h"
-#include "nnet.h"
-#include "nfec_enc_data.h"
-#include "nfec_stats_data.h"
+#include "dred_rdovae_enc.h"
+
 
 //#define DEBUG
 
@@ -11,8 +9,8 @@
 #include <stdio.h>
 #endif
 
-void nfec_encode_dframe(
-    struct NFECEncState *enc_state, /* io: encoder state */
+void dred_rdovae_encode_dframe(
+    RDOVAEEnc *enc_state,           /* io: encoder state */
     float *latents,                 /* o: latent vector */
     float *initial_state,           /* o: initial state */
     const float *input              /* i: double feature frame (concatenated) */
@@ -113,28 +111,4 @@ void nfec_encode_dframe(
     input_index = output_index;
     compute_dense(&gdense2, initial_state, &buffer[input_index]);
 
-}
-
-void nfec_quantize_latent_vector(
-    int *z_q,           /* o: quantized latent vector */
-    const float *z,     /* i: unquantized latent vector */
-    int quant_level     /* i: quantization level */
-    )
-{
-    int i;
-    float delta;
-    float tmp[NFEC_LATENT_DIM];
-
-    for (i = 0; i < NFEC_LATENT_DIM; i ++)
-    {
-        /* dead-zone transform */
-        delta = nfec_stats_dead_zone_theta[quant_level * NFEC_LATENT_DIM + i] - .5f;
-        tmp[i] = z[i] - delta * tanhf(z[i] / (delta + 0.1f));
-
-        /* scaling */
-        tmp[i] *= nfec_stats_quant_scales[quant_level * NFEC_LATENT_DIM + i];
-
-        /* quantization by rounding (CAVE: is there a quantization routine with overlfow check available?) */
-        z_q[i] = (int) roundf(tmp[i]);
-    }
 }

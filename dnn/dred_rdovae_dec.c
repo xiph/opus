@@ -1,13 +1,13 @@
-#include "nfec_dec.h"
-
+#include "dred_rdovae_dec.h"
+#include "dred_rdovae_constants.h"
 //#define DEBUG
 
 #ifdef DEBUG
 #include <stdio.h>
 #endif
 
-void nfec_dec_init_states(
-    NFECDecState *h,            /* io: state buffer handle */
+void dred_rdovae_dec_init_states(
+    RDOVAEDec *h,            /* io: state buffer handle */
     const float *initial_state  /* i: initial state */
     )
 {
@@ -17,22 +17,9 @@ void nfec_dec_init_states(
     compute_dense(&state3, h->dense6_state, initial_state);
 }
 
-void nfec_dec_unquantize_latent_vector(
-    float *z,       /* o: unquantized latent vector */
-    const int *zq,  /* i: quantized latent vector */
-    int quant_level /* i: quantization level */
-    )
-{
-    int i;
-    /* inverse scaling and type conversion */
-    for (i = 0; i < NFEC_STATS_NUM_LATENTS; i ++)
-    {
-        z[i] = (float) zq[i] / nfec_stats_quant_scales[quant_level * NFEC_STATS_NUM_LATENTS + i];
-    }
-}
 
-void nfec_decode_qframe(
-    NFECDecState *dec_state,    /* io: state buffer handle */
+void dred_rdovae_decode_qframe(
+    RDOVAEDec *dec_state,       /* io: state buffer handle */
     float *qframe,              /* o: quadruple feature frame (four concatenated frames) */
     const float *input          /* i: latent vector */
     )

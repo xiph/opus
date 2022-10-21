@@ -1,4 +1,5 @@
 import argparse
+from ftplib import parse150
 import os
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
@@ -13,6 +14,7 @@ args = parser.parse_args()
 
 # now import the heavy stuff
 import tensorflow as tf
+import numpy as np
 from keraslayerdump import dump_conv1d_layer, dump_dense_layer, dump_gru_layer, printVector
 from rdovae import new_rdovae_model
 
@@ -55,15 +57,22 @@ def dump_statistical_model(qembedding, f, fh):
     levels, dim = w.shape
     N = dim // 6
 
+    print("dumping statistical model")
     quant_scales    = tf.math.softplus(w[:, : N]).numpy()
-    dead_zone_theta = 0.5 + 0.05 * tf.math.softplus(w[:, N : 2 * N]).numpy()
+    dead_zone       = 0.05 * tf.math.softplus(w[:, N : 2 * N]).numpy()
     r               = 0.5 + 0.5 * tf.math.sigmoid(w[:, 4 * N : 5 * N]).numpy()
     theta           = tf.math.sigmoid(w[:, 5 * N : 6 * N]).numpy()
+    p0              = 1 - r ** (0.5 + 0.5 * theta)
 
-    printVector(f, quant_scales[:], 'nfec_stats_quant_scales', static=False)
-    printVector(f, dead_zone_theta[:], 'nfec_stats_dead_zone_theta', static=False)
-    printVector(f, r, 'nfec_stats_r', static=False)
-    printVector(f, theta, 'nfec_stats_theta', static=False)
+    quant_scales_q8 = np.round(quant_scales * 2**8).astype(np.int16)
+    dead_zone_q10   = np.round(dead_zone * 2**10).astype(np.int16)
+    r_q15           = np.round(r * 2**15).astype(np.int16)
+    p0_q15          = np.round(p0 * 2**15).astype(np.int16)
+
+    printVector(f, quant_scales_q8, 'dred_quant_scales_q8', dtype='opus_int16', static=False)
+    printVector(f, dead_zone_q10, 'dred_dead_zone_q10', dtype='opus_int16', static=False)
+    printVector(f, r_q15, 'dred_r_q15', dtype='opus_int16', static=False)
+    printVector(f, p0_q15, 'dred_p0_q15', dtype='opus_int16', static=False)
 
     fh.write(
 f"""
@@ -79,6 +88,8 @@ if __name__ == "__main__":
 
     model, encoder, decoder, qembedding = new_rdovae_model(20, args.latent_dim, cond_size=args.cond_size)
     model.load_weights(args.weights)
+
+
 
 
     # encoder
@@ -102,14 +113,14 @@ if __name__ == "__main__":
         'bits_dense'
     ]
 
-    source_fid = open("nfec_enc_data.c", 'w')
-    header_fid = open("nfec_enc_data.h", 'w')
+    source_fid = open("dred_rdovae_enc_data.c", 'w')
+    header_fid = open("dred_rdovae_enc_data.h", 'w')
 
-    start_header(header_fid, "nfec_enc_data.h")
-    start_source(source_fid, "nfec_enc_data.h", os.path.basename(args.weights))
+    start_header(header_fid, "dred_rdovae_enc_data.h")
+    start_source(source_fid, "dred_rdovae_enc_data.h", os.path.basename(args.weights))
 
     # dump GRUs
-    max_rnn_neurons = max(
+    max_rnn_neurons_enc = max(
         [
             dump_gru_layer(encoder.get_layer(name), source_fid, header_fid)
             for name in encoder_gru_names
@@ -132,13 +143,11 @@ if __name__ == "__main__":
     # some global constants
     header_fid.write(
 f"""
-#define NFEC_NUM_FEATURES 20
+#include "dred_rdovae_constants.h"
 
-#define NFEC_LATENT_DIM {args.latent_dim}
+#define DRED_ENC_MAX_RNN_NEURONS {max_rnn_neurons_enc}
 
-#define NFEC_ENC_MAX_RNN_NEURONS {max_rnn_neurons}
-
-#define NFEC_ENC_MAX_CONV_INPUTS {max_conv_inputs}
+#define DRED_ENC_MAX_CONV_INPUTS {max_conv_inputs}
 
 """
     )
@@ -150,17 +159,16 @@ f"""
     source_fid.close()
 
     # statistical model
-    source_fid = open("nfec_stats_data.c", 'w')
-    header_fid = open("nfec_stats_data.h", 'w')
+    source_fid = open("dred_rdovae_stats_data.c", 'w')
+    header_fid = open("dred_rdovae_stats_data.h", 'w')
 
-    start_header(header_fid, "nfec_stats_data.h")
-    start_source(source_fid, "nfec_stats_data.h", os.path.basename(args.weights))
+    start_header(header_fid, "dred_rdovae_stats_data.h")
+    start_source(source_fid, "dred_rdovae_stats_data.h", os.path.basename(args.weights))
 
-    num_levels = qembedding.weights[0].shape[0]
     header_fid.write(
-f"""
-#define NFEC_STATS_NUM_LEVELS {num_levels}
-#define NFEC_STATS_NUM_LATENTS {args.latent_dim}
+"""
+
+#include "opus_types.h"
 
 """
     )
@@ -192,28 +200,17 @@ f"""
         'dec_dense6'
     ] 
 
-    source_fid = open("nfec_dec_data.c", 'w')
-    header_fid = open("nfec_dec_data.h", 'w')
+    source_fid = open("dred_rdovae_dec_data.c", 'w')
+    header_fid = open("dred_rdovae_dec_data.h", 'w')
 
-    start_header(header_fid, "nfec_dec_data.h")
-    start_source(source_fid, "nfec_dec_data.h", os.path.basename(args.weights))
-
-    # some global constants
-    header_fid.write(
-f"""
-#define NFEC_DEC_NUM_FEATURES 20
-
-#define NFEC_DEC_LATENT_DIM {args.latent_dim}
-
-#define NFEC_DEC_MAX_RNN_NEURONS {max_rnn_neurons}
+    start_header(header_fid, "dred_rdovae_dec_data.h")
+    start_source(source_fid, "dred_rdovae_dec_data.h", os.path.basename(args.weights))
 
 
-"""
-    )
 
 
     # dump GRUs
-    max_rnn_neurons = max(
+    max_rnn_neurons_dec = max(
         [
             dump_gru_layer(decoder.get_layer(name), source_fid, header_fid)
             for name in decoder_gru_names
@@ -225,8 +222,38 @@ f"""
         layer = decoder.get_layer(name)
         dump_dense_layer(layer, source_fid, header_fid)
 
+    # some global constants
+    header_fid.write(
+f"""
+#include "dred_rdovae_constants.h"
+
+#define DRED_DEC_MAX_RNN_NEURONS {max_rnn_neurons_dec}
+
+"""
+    )
+
     finish_header(header_fid)
     finish_source(source_fid)
 
     header_fid.close()
     source_fid.close()
+
+    # common constants
+    header_fid = open("dred_rdovae_constants.h", 'w')
+    start_header(header_fid, "dred_rdovae_constants.h")
+
+    header_fid.write(
+f"""
+#define DRED_NUM_FEATURES 20
+
+#define DRED_LATENT_DIM {args.latent_dim}
+
+#define DRED_NUM_QUANTIZATION_LEVELS {qembedding.weights[0].shape[0]}
+
+#define DRED_MAX_RNN_NEURONS {max(max_rnn_neurons_enc, max_rnn_neurons_dec)}
+
+#define DRED_MAX_CONV_INPUTS {max_conv_inputs}
+"""
+    )
+
+    finish_header(header_fid)

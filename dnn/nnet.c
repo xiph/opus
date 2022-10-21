@@ -38,7 +38,7 @@
 #include "tansig_table.h"
 #include "nnet.h"
 #include "nnet_data.h"
-#include "nfec_enc_data.h"
+#include "dred_rdovae_constants.h"
 #include "plc_data.h"
 
 #ifdef NO_OPTIMIZATIONS
@@ -322,7 +322,7 @@ void compute_gru2(const GRULayer *gru, float *state, const float *input)
       state[i] = h[i];
 }
 
-#define MAX_RNN_NEURONS_ALL IMAX(IMAX(MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), NFEC_ENC_MAX_RNN_NEURONS)
+#define MAX_RNN_NEURONS_ALL IMAX(IMAX(MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), DRED_MAX_RNN_NEURONS)
 
 void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input)
 {
@@ -378,8 +378,8 @@ void compute_gru3(const GRULayer *gru, float *state, const float *input)
    int i;
    int N;
    int stride;
-   float zrh[3*MAX_RNN_NEURONS];
-   float recur[3*MAX_RNN_NEURONS];
+   float zrh[3*MAX_RNN_NEURONS_ALL];
+   float recur[3*MAX_RNN_NEURONS_ALL];
    float *z;
    float *r;
    float *h;
@@ -387,7 +387,7 @@ void compute_gru3(const GRULayer *gru, float *state, const float *input)
    z = zrh;
    r = &zrh[N];
    h = &zrh[2*N];
-   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS);
+   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS_ALL);
    celt_assert(input != state);
    celt_assert(gru->reset_after);
    stride = 3*N;
@@ -412,7 +412,7 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
 {
    int i, k;
    int N;
-   float recur[3*MAX_RNN_NEURONS];
+   float recur[3*MAX_RNN_NEURONS_ALL];
    float *z;
    float *r;
    float *h;
@@ -421,7 +421,7 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
    z = recur;
    r = &recur[N];
    h = &recur[2*N];
-   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS);
+   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS_ALL);
    celt_assert(input != state);
    celt_assert(gru->reset_after);
 #ifdef USE_SU_BIAS
@@ -448,7 +448,7 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
       state[i] = z[i]*state[i] + (1-z[i])*h[i];
 }
 
-#define MAX_CONV_INPUTS_ALL IMAX(MAX_CONV_INPUTS, NFEC_ENC_MAX_CONV_INPUTS)
+#define MAX_CONV_INPUTS_ALL IMAX(MAX_CONV_INPUTS, DRED_MAX_CONV_INPUTS)
 
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
 {
@@ -457,7 +457,7 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    int stride;
    float tmp[MAX_CONV_INPUTS_ALL];
    celt_assert(input != output);
-   celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS);
+   celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS_ALL);
    RNN_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
    RNN_COPY(&tmp[layer->nb_inputs*(layer->kernel_size-1)], input, layer->nb_inputs);
    M = layer->nb_inputs*layer->kernel_size;
