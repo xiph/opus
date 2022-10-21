@@ -38,10 +38,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "lpcnet.h"
 #endif
 
+#include "dred_encoder.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+
+
 
 /************************************/
 /* Noise shaping quantization state */
@@ -229,6 +234,7 @@ typedef struct {
     opus_int                     LBRR_GainIncreases;                /* Gains increment for coding LBRR frames                           */
     SideInfoIndices              indices_LBRR[ MAX_FRAMES_PER_PACKET ];
     opus_int8                    pulses_LBRR[ MAX_FRAMES_PER_PACKET ][ MAX_FRAME_LENGTH ];
+    DREDEnc                      dred_encoder;
 } silk_encoder_state;
 
 

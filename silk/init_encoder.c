@@ -36,6 +36,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 #include "cpu_support.h"
 
+#include "dred_encoder.h"
+
 /*********************************/
 /* Initialize Silk Encoder state */
 /*********************************/
@@ -59,6 +61,9 @@ opus_int silk_init_encoder(
 
     /* Initialize Silk VAD */
     ret += silk_VAD_Init( &psEnc->sCmn.sVAD );
+
+    /* Initialize DRED Encoder */
+    init_dred_encoder( &psEnc->sCmn.dred_encoder );
 
     return  ret;
 }

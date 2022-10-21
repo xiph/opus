@@ -41,6 +41,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FLP.h"
 #endif
 
+#include "dred_encoder.h"
+
 /***************************************/
 /* Read control structure from encoder */
 /***************************************/
@@ -463,6 +465,9 @@ opus_int silk_Encode(                                   /* O    Returns error co
                 silk_memcpy( psEnc->sStereo.sMid, &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.frame_length ], 2 * sizeof( opus_int16 ) );
             }
             silk_encode_do_VAD_Fxx( &psEnc->state_Fxx[ 0 ], activity );
+
+            /* DRED Encoder */
+            dred_encode_silk_frame( &psEnc->state_Fxx[ 0 ].sCmn.dred_encoder, &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[0] );
 
             /* Encode */
             for( n = 0; n < encControl->nChannelsInternal; n++ ) {
