@@ -81,7 +81,7 @@ static inline void mm256_storeu_ps(float *dst, mm256_emu src) {
 #define _mm256_storeu_ps(dst, src) mm256_storeu_ps(dst, src)
 
 
-static inline mm256_emu mm256_setzero_ps() {
+static inline mm256_emu mm256_setzero_ps(void) {
   mm256_emu ret;
   ret.lo = _mm_setzero_ps();
   ret.hi = ret.lo;
