@@ -35,7 +35,7 @@
 
 #include <stdlib.h>
 #define opus_alloc(x) malloc(x)
-#define opus_free(x) free(x)
+//#define opus_free(x) free(x)
 
 #ifdef __cplusplus
 extern "C" {

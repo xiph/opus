@@ -25,8 +25,6 @@ f"""
 #ifndef {header_guard}
 #define {header_guard}
 
-#include "nnet.h"
-
 """
     )
 
@@ -119,6 +117,14 @@ if __name__ == "__main__":
     start_header(header_fid, "dred_rdovae_enc_data.h")
     start_source(source_fid, "dred_rdovae_enc_data.h", os.path.basename(args.weights))
 
+    header_fid.write(
+f"""
+#include "dred_rdovae_constants.h"
+
+#include "nnet.h"
+"""
+    )
+
     # dump GRUs
     max_rnn_neurons_enc = max(
         [
@@ -143,7 +149,6 @@ if __name__ == "__main__":
     # some global constants
     header_fid.write(
 f"""
-#include "dred_rdovae_constants.h"
 
 #define DRED_ENC_MAX_RNN_NEURONS {max_rnn_neurons_enc}
 
@@ -206,7 +211,13 @@ f"""
     start_header(header_fid, "dred_rdovae_dec_data.h")
     start_source(source_fid, "dred_rdovae_dec_data.h", os.path.basename(args.weights))
 
+    header_fid.write(
+f"""
+#include "dred_rdovae_constants.h"
 
+#include "nnet.h"
+"""
+    )
 
 
     # dump GRUs
@@ -225,7 +236,6 @@ f"""
     # some global constants
     header_fid.write(
 f"""
-#include "dred_rdovae_constants.h"
 
 #define DRED_DEC_MAX_RNN_NEURONS {max_rnn_neurons_dec}
 
@@ -247,6 +257,8 @@ f"""
 #define DRED_NUM_FEATURES 20
 
 #define DRED_LATENT_DIM {args.latent_dim}
+
+#define DRED_STATE_DIM {24}
 
 #define DRED_NUM_QUANTIZATION_LEVELS {qembedding.weights[0].shape[0]}
 
