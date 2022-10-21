@@ -9,7 +9,7 @@ set -e
 srcdir=`dirname $0`
 test -n "$srcdir" && cd "$srcdir"
 
-(cd lpcnet; ./download_model.sh plc_challenge_weights)
+(cd lpcnet; ./download_model.sh plc_challenge)
 
 echo "Updating build configuration files, please wait...."
 

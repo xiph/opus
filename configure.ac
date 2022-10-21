@@ -821,6 +821,14 @@ AS_IF([test "$enable_doc" = "yes"], [
   HAVE_DOXYGEN=no
 ])
 
+AC_ARG_ENABLE([dot-product],
+	      AS_HELP_STRING([--disable-dot-product], [Disable dot product implementation]),,
+  enable_dot_product=yes)
+
+AS_IF([test "$enable_dot_product" = "no"], [
+       AC_DEFINE([DISABLE_DOT_PROD], [1], [Disable dot product instructions])
+])
+
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "$HAVE_DOXYGEN" = "yes"])
 
 AC_ARG_ENABLE([extra-programs],

@@ -10,4 +10,9 @@ lpcnet/src/lpcnet_enc.c \
 lpcnet/src/lpcnet_plc.c \
 lpcnet/src/nnet.c \
 lpcnet/src/nnet_data.c \
-lpcnet/src/plc_data.c
+lpcnet/src/plc_data.c \
+lpcnet/src/dred_rdovae.c \
+lpcnet/src/dred_rdovae_enc.c \
+lpcnet/src/dred_rdovae_enc_data.c \
+lpcnet/src/dred_rdovae_dec.c \
+lpcnet/src/dred_rdovae_dec_data.c
