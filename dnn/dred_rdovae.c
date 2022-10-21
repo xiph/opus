@@ -37,7 +37,7 @@ RDOVAEEnc * DRED_rdovae_create_decoder()
 {
     RDOVAEDec *dec;
     dec = (RDOVAEDec*) calloc(sizeof(*dec), 1);
-    DRED_rdovae_init_encoder(dec);
+    DRED_rdovae_init_decoder(dec);
     return dec;
 }
 
