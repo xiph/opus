@@ -12,9 +12,9 @@ void dred_rdovae_dec_init_states(
     )
 {
     /* initialize GRU states from initial state */
-    compute_dense(&state1, h->dense2_state, initial_state);
-    compute_dense(&state2, h->dense4_state, initial_state);
-    compute_dense(&state3, h->dense6_state, initial_state);
+    _lpcnet_compute_dense(&state1, h->dense2_state, initial_state);
+    _lpcnet_compute_dense(&state2, h->dense4_state, initial_state);
+    _lpcnet_compute_dense(&state3, h->dense6_state, initial_state);
 }
 
 
@@ -43,7 +43,7 @@ void dred_rdovae_decode_qframe(
 #endif
 
     /* run encoder stack and concatenate output in buffer*/
-    compute_dense(&dec_dense1, &buffer[output_index], input);
+    _lpcnet_compute_dense(&dec_dense1, &buffer[output_index], input);
 #ifdef DEBUG
     fwrite(&buffer[output_index], sizeof(buffer[0]), DEC_DENSE1_OUT_SIZE, fids[0]);
 #endif
@@ -58,7 +58,7 @@ void dred_rdovae_decode_qframe(
     input_index = output_index;
     output_index += DEC_DENSE2_OUT_SIZE;
 
-    compute_dense(&dec_dense3, &buffer[output_index], &buffer[input_index]);
+    _lpcnet_compute_dense(&dec_dense3, &buffer[output_index], &buffer[input_index]);
 #ifdef DEBUG
     fwrite(&buffer[output_index], sizeof(buffer[0]), DEC_DENSE3_OUT_SIZE, fids[2]);
 #endif
@@ -73,7 +73,7 @@ void dred_rdovae_decode_qframe(
     input_index = output_index;
     output_index += DEC_DENSE4_OUT_SIZE;
 
-    compute_dense(&dec_dense5, &buffer[output_index], &buffer[input_index]);
+    _lpcnet_compute_dense(&dec_dense5, &buffer[output_index], &buffer[input_index]);
 #ifdef DEBUG
     fwrite(&buffer[output_index], sizeof(buffer[0]), DEC_DENSE5_OUT_SIZE, fids[4]);
 #endif
@@ -88,18 +88,18 @@ void dred_rdovae_decode_qframe(
     input_index = output_index;
     output_index += DEC_DENSE6_OUT_SIZE;
 
-    compute_dense(&dec_dense7, &buffer[output_index], &buffer[input_index]);
+    _lpcnet_compute_dense(&dec_dense7, &buffer[output_index], &buffer[input_index]);
 #ifdef DEBUG
     fwrite(&buffer[output_index], sizeof(buffer[0]), DEC_DENSE7_OUT_SIZE, fids[6]);
 #endif
     input_index = output_index;
     output_index += DEC_DENSE7_OUT_SIZE;
 
-    compute_dense(&dec_dense8, &buffer[output_index], &buffer[input_index]);
+    _lpcnet_compute_dense(&dec_dense8, &buffer[output_index], &buffer[input_index]);
 #ifdef DEBUG
     fwrite(&buffer[output_index], sizeof(buffer[0]), DEC_DENSE8_OUT_SIZE, fids[7]);
 #endif
     output_index += DEC_DENSE8_OUT_SIZE;
 
-    compute_dense(&dec_final, qframe, buffer);
+    _lpcnet_compute_dense(&dec_final, qframe, buffer);
 }

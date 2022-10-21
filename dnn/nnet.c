@@ -130,11 +130,6 @@ void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *
    compute_activation(output, output, N, layer->activation);
 }
 
-void compute_dense(const DenseLayer *layer, float *output, const float *input)
-{
-   return _lpcnet_compute_dense(layer, output, input);
-}
-
 void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
 {
    int i, c;
