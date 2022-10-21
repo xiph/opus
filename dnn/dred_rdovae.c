@@ -33,7 +33,7 @@ RDOVAEEnc * DRED_rdovae_create_encoder()
     return enc;
 }
 
-RDOVAEEnc * DRED_rdovae_create_decoder()
+RDOVAEDec * DRED_rdovae_create_decoder()
 {
     RDOVAEDec *dec;
     dec = (RDOVAEDec*) calloc(sizeof(*dec), 1);
