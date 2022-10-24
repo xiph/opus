@@ -76,10 +76,10 @@ def dump_statistical_model(qembedding, f, fh):
 
     fh.write(
 f"""
-extern const float nfec_stats_quant_scales[{levels * N}];
-extern const float nfec_stats_dead_zone_theta[{levels * N}];
-extern const float nfec_stats_r[{levels * N}];
-extern const float nfec_stats_theta[{levels * N}];
+extern const opus_int16 dred_quant_scales_q8[{levels * N}];
+extern const opus_int16 dred_dead_zone_q10[{levels * N}];
+extern const opus_int16 dred_r_q15[{levels * N}];
+extern const opus_int16 dred_p0_q15[{levels * N}];
 
 """
     )
