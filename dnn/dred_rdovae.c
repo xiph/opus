@@ -2,6 +2,7 @@
 
 #include "dred_rdovae_enc.h"
 #include "dred_rdovae_dec.h"
+#include "dred_rdovae_stats_data.h"
 
 size_t DRED_rdovae_get_enc_size()
 {
@@ -54,4 +55,25 @@ void DRED_rdovae_dec_init_states(RDOVAEDec *h, const float * initial_state)
 void DRED_rdovae_decode_qframe(RDOVAEDec *h, float *qframe, const float *z)
 {
     dred_rdovae_decode_qframe(h, qframe, z);
+}
+
+
+const opus_int16 * DRED_rdovae_get_p0_pointer(void)
+{
+    return &dred_p0_q15[0];
+}
+
+const opus_int16 * DRED_rdovae_get_dead_zone_pointer(void)
+{
+    return &dred_dead_zone_q10[0];
+}
+
+const opus_int16 * DRED_rdovae_get_r_pointer(void)
+{
+    return &dred_r_q15[0];
+}
+
+const opus_int16 * DRED_rdovae_get_quant_scales_pointer(void)
+{
+    return &dred_quant_scales_q8[0];
 }
