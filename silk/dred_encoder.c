@@ -97,6 +97,8 @@ void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
     ec_dec_init(&ec_dec, ec_get_buffer(&enc->ec_encoder), bytes);
     dred_decode_state(&ec_dec, state);
 
+    q_level = DRED_ENC_Q0;
+    offset = q_level * DRED_LATENT_DIM;
     dred_decode_latents(
         &ec_dec,
         latents,
