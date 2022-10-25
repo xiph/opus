@@ -42,6 +42,16 @@ RDOVAEDec * DRED_rdovae_create_decoder()
     return dec;
 }
 
+void DRED_rdovae_destroy_decoder(RDOVAEDec* dec)
+{
+    free(dec);
+}
+
+void DRED_rdovae_destroy_encoder(RDOVAEEnc* enc)
+{
+    free(enc);
+}
+
 void DRED_rdovae_encode_dframe(RDOVAEEnc *enc_state, float *latents, float *initial_state, const float *input)
 {
     dred_rdovae_encode_dframe(enc_state, latents, initial_state, input);

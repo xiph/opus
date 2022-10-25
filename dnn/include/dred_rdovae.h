@@ -10,8 +10,10 @@ size_t DRED_rdovae_get_enc_size(void);
 size_t DRED_rdovae_get_dec_size(void);
 
 RDOVAEDec * DRED_rdovae_create_decoder(void);
-
 RDOVAEEnc * DRED_rdovae_create_encoder(void);
+void DRED_rdovae_destroy_decoder(RDOVAEDec* h);
+void DRED_rdovae_destroy_encoder(RDOVAEEnc* h);
+
 
 void DRED_rdovae_init_encoder(RDOVAEEnc *enc_state);
 
