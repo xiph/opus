@@ -76,7 +76,8 @@ silk/stereo_encode_pred.c \
 silk/stereo_find_predictor.c \
 silk/stereo_quant_pred.c \
 silk/LPC_fit.c \
-silk/dred_encoder.c 
+silk/dred_encoder.c \
+silk/dred_coding.c
 
 SILK_SOURCES_X86_RTCD = \
 silk/x86/x86_silk_map.c
