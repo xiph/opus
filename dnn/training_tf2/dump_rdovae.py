@@ -58,8 +58,8 @@ def dump_statistical_model(qembedding, f, fh):
     print("dumping statistical model")
     quant_scales    = tf.math.softplus(w[:, : N]).numpy()
     dead_zone       = 0.05 * tf.math.softplus(w[:, N : 2 * N]).numpy()
-    r               = 0.5 + 0.5 * tf.math.sigmoid(w[:, 4 * N : 5 * N]).numpy()
-    theta           = tf.math.sigmoid(w[:, 5 * N : 6 * N]).numpy()
+    theta           = 0.5 + 0.5 * tf.math.sigmoid(w[:, 4 * N : 5 * N]).numpy()
+    r               = tf.math.sigmoid(w[:, 5 * N : 6 * N]).numpy()
     p0              = 1 - r ** (0.5 + 0.5 * theta)
 
     quant_scales_q8 = np.round(quant_scales * 2**8).astype(np.int16)
