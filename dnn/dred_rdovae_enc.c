@@ -1,5 +1,10 @@
 #include <math.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
 #include "dred_rdovae_enc.h"
 
 

@@ -1,5 +1,9 @@
-#include "dred_rdovae.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+
+#include "dred_rdovae.h"
 #include "dred_rdovae_enc.h"
 #include "dred_rdovae_dec.h"
 #include "dred_rdovae_stats_data.h"
