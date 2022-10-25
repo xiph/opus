@@ -9,7 +9,7 @@
 
 #include "dred_encoder.h"
 #include "dred_coding.h"
-
+#include "celt/entenc.h"
 
 void init_dred_encoder(DREDEnc* enc)
 {
@@ -20,10 +20,10 @@ void init_dred_encoder(DREDEnc* enc)
 
 void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
 {
-    opus_int16 *dead_zone       = DRED_rdovae_get_dead_zone_pointer();
-    opus_int16 *p0              = DRED_rdovae_get_p0_pointer();
-    opus_int16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
-    opus_int16 *r               = DRED_rdovae_get_r_pointer();
+    const opus_int16 *dead_zone       = DRED_rdovae_get_dead_zone_pointer();
+    const opus_int16 *p0              = DRED_rdovae_get_p0_pointer();
+    const opus_int16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
+    const opus_int16 *r               = DRED_rdovae_get_r_pointer();
     
     float input_buffer[2*DRED_NUM_FEATURES] = {0};
 
