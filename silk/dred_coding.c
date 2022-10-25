@@ -32,6 +32,7 @@
 #include "config.h"
 #endif
 
+#include "celt/entenc.h"
 #include "celt/vq.h"
 #include "celt/cwrs.h"
 #include "celt/laplace.h"
@@ -60,7 +61,6 @@ static void encode_pvq(const int *iy, int N, int K, ec_enc *enc) {
 }
 
 void dred_encode_state(ec_enc *enc, float *x) {
-    int k;
     int iy[PVQ_DIM];
     op_pvq_search_c(x, iy, PVQ_K, PVQ_DIM, 0);
     encode_pvq(iy, PVQ_DIM, PVQ_K, enc);
@@ -69,7 +69,6 @@ void dred_encode_state(ec_enc *enc, float *x) {
 void dred_encode_latents(ec_enc *enc, const float *x, const opus_int16 *scale, const opus_int16 *dzone, const opus_int16 *r, const opus_int16 *p0) {
     int i;
     float eps = .1f;
-    int tell1 = ec_tell(enc);
     for (i=0;i<LATENT_DIM;i++) {
         float delta;
         float xq;
@@ -105,7 +104,6 @@ void dred_decode_state(ec_enc *dec, float *x) {
     int k;
     int iy[PVQ_DIM];
     float norm = 0;
-    int tell1 = ec_tell(dec);
     decode_pvq(iy, PVQ_DIM, PVQ_K, dec);
     /*printf("tell: %d\n", ec_tell(dec)-tell1);*/
     for (k = 0; k < PVQ_DIM; k++)
@@ -123,7 +121,6 @@ void dred_decode_state(ec_enc *dec, float *x) {
 void dred_decode_latents(ec_dec *dec, float *x, const opus_int16 *scale, const opus_int16 *r, const opus_int16 *p0) {
     int i;
     for (i=0;i<LATENT_DIM;i++) {
-        float xq;
         int q;
         q = ec_laplace_decode_p0(dec, p0[i], r[i]);
         x[i] = q*256.f/(scale[i] == 0 ? 1 : scale[i]);
