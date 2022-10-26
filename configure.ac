@@ -162,6 +162,15 @@ AS_IF([test "$enable_custom_modes" = "yes"],[
 
 AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes"])
 
+AC_ARG_ENABLE([neural-fec],
+    [AS_HELP_STRING([--enable-neural-fec], [Use neural FEC for SILK])],,
+    [enable_neural_fec=yes])
+
+AS_IF([test "$enable_neural_fec" = "yes"],[
+  AC_DEFINE([ENABLE_NEURAL_FEC], [1], [Neural FEC])
+  AC_DEFINE([DISABLE_DOT_PROD], [1], [Disable dot product])
+])  
+
 AC_ARG_ENABLE([neural-plc],
     [AS_HELP_STRING([--enable-neural-plc], [Use neural PLC for SILK])],,
     [enable_neural_plc=yes])

@@ -234,7 +234,9 @@ typedef struct {
     opus_int                     LBRR_GainIncreases;                /* Gains increment for coding LBRR frames                           */
     SideInfoIndices              indices_LBRR[ MAX_FRAMES_PER_PACKET ];
     opus_int8                    pulses_LBRR[ MAX_FRAMES_PER_PACKET ][ MAX_FRAME_LENGTH ];
+#ifdef ENABLE_NEURAL_FEC
     DREDEnc                      dred_encoder;
+#endif
 } silk_encoder_state;
 
 
