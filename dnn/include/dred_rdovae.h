@@ -51,7 +51,7 @@ void DRED_rdovae_dec_init_states(RDOVAEDec *h, const float * initial_state);
 
 void DRED_rdovae_decode_qframe(RDOVAEDec *h, float *qframe, const float * z);
 
-const opus_int16 * DRED_rdovae_get_p0_pointer(void);
-const opus_int16 * DRED_rdovae_get_dead_zone_pointer(void);
-const opus_int16 * DRED_rdovae_get_r_pointer(void);
-const opus_int16 * DRED_rdovae_get_quant_scales_pointer(void);
+const opus_uint16 * DRED_rdovae_get_p0_pointer(void);
+const opus_uint16 * DRED_rdovae_get_dead_zone_pointer(void);
+const opus_uint16 * DRED_rdovae_get_r_pointer(void);
+const opus_uint16 * DRED_rdovae_get_quant_scales_pointer(void);

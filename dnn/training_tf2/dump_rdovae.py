@@ -92,22 +92,22 @@ def dump_statistical_model(qembedding, f, fh):
     p0              = tf.math.sigmoid(w[:, 4 * N : 5 * N]).numpy()
     p0              = 1 - r ** (0.5 + 0.5 * p0)
 
-    quant_scales_q8 = np.round(quant_scales * 2**8).astype(np.int16)
-    dead_zone_q10   = np.round(dead_zone * 2**10).astype(np.int16)
-    r_q15           = np.round(r * 2**15).astype(np.int16)
-    p0_q15          = np.round(p0 * 2**15).astype(np.int16)
+    quant_scales_q8 = np.round(quant_scales * 2**8).astype(np.uint16)
+    dead_zone_q10   = np.round(dead_zone * 2**10).astype(np.uint16)
+    r_q15           = np.round(r * 2**15).astype(np.uint16)
+    p0_q15          = np.round(p0 * 2**15).astype(np.uint16)
 
-    printVector(f, quant_scales_q8, 'dred_quant_scales_q8', dtype='opus_int16', static=False)
-    printVector(f, dead_zone_q10, 'dred_dead_zone_q10', dtype='opus_int16', static=False)
-    printVector(f, r_q15, 'dred_r_q15', dtype='opus_int16', static=False)
-    printVector(f, p0_q15, 'dred_p0_q15', dtype='opus_int16', static=False)
+    printVector(f, quant_scales_q8, 'dred_quant_scales_q8', dtype='opus_uint16', static=False)
+    printVector(f, dead_zone_q10, 'dred_dead_zone_q10', dtype='opus_uint16', static=False)
+    printVector(f, r_q15, 'dred_r_q15', dtype='opus_uint16', static=False)
+    printVector(f, p0_q15, 'dred_p0_q15', dtype='opus_uint16', static=False)
 
     fh.write(
 f"""
-extern const opus_int16 dred_quant_scales_q8[{levels * N}];
-extern const opus_int16 dred_dead_zone_q10[{levels * N}];
-extern const opus_int16 dred_r_q15[{levels * N}];
-extern const opus_int16 dred_p0_q15[{levels * N}];
+extern const opus_uint16 dred_quant_scales_q8[{levels * N}];
+extern const opus_uint16 dred_dead_zone_q10[{levels * N}];
+extern const opus_uint16 dred_r_q15[{levels * N}];
+extern const opus_uint16 dred_p0_q15[{levels * N}];
 
 """
     )
