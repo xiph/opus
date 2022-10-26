@@ -66,7 +66,7 @@ void dred_encode_state(ec_enc *enc, float *x) {
     encode_pvq(iy, PVQ_DIM, PVQ_K, enc);
 }
 
-void dred_encode_latents(ec_enc *enc, const float *x, const opus_int16 *scale, const opus_int16 *dzone, const opus_int16 *r, const opus_int16 *p0) {
+void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, const opus_uint16 *dzone, const opus_uint16 *r, const opus_uint16 *p0) {
     int i;
     float eps = .1f;
     for (i=0;i<LATENT_DIM;i++) {
@@ -118,7 +118,7 @@ void dred_decode_state(ec_enc *dec, float *x) {
     
 }
 
-void dred_decode_latents(ec_dec *dec, float *x, const opus_int16 *scale, const opus_int16 *r, const opus_int16 *p0) {
+void dred_decode_latents(ec_dec *dec, float *x, const opus_uint16 *scale, const opus_uint16 *r, const opus_uint16 *p0) {
     int i;
     for (i=0;i<LATENT_DIM;i++) {
         int q;
