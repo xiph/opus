@@ -30,11 +30,13 @@
 #include "entcode.h"
 
 typedef struct {
-    ec_enc ec_encoder;
+    ec_dec ec_dec;
     RDOVAEDec *rdovae_dec;
 } DREDDec;
 
 
 void init_dred_decoder(DREDDec *dec);
+
+void dred_deinit_decoder(DREDDec *dec);
 
 void dred_decode_redundancy_package(DREDDec *dec, float *features, opus_uint8 *bytes, int num_bytes);
