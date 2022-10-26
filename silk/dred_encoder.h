@@ -49,6 +49,8 @@ typedef struct {
 
 void init_dred_encoder(DREDEnc* enc);
 
+void dred_deinit_encoder(DREDEnc *enc);
+
 void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame);
 
 #endif
