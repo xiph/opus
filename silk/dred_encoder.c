@@ -75,6 +75,14 @@ void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
 
 #if 1
     printf("packet size: %d\n", bytes*8);
+
+    static FILE *fbs = NULL;
+    if (fbs == NULL)
+    {
+        fbs = fopen("dred_bitstream.bin", "wb");
+    }
+    fwrite(&bytes, sizeof(bytes), 1, fbs);
+    fwrite(ec_get_buffer(&enc->ec_encoder), 1, bytes, fbs);
 #endif
 
 
