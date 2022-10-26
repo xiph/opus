@@ -140,47 +140,4 @@ void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
     dred_deinit_decoder(&dec);
 #endif
 
-#if 0
-    /* trial decoding */
-    float state[24];
-    float features[4 * 20];
-    float latents[80];
-    float zeros[36 - 20] = {0};
-    static FILE *fid;
-    RDOVAEDec *rdovae_dec = DRED_rdovae_create_decoder();
-
-    if (fid == NULL)
-    {
-        fid = fopen("features_last.f32", "wb");
-    }
-
-    /* decode state */
-    ec_enc ec_dec;
-    ec_dec_init(&ec_dec, ec_get_buffer(&enc->ec_encoder), bytes);
-    dred_decode_state(&ec_dec, state);
-
-    q_level = DRED_ENC_Q0;
-    offset = q_level * DRED_LATENT_DIM;
-    dred_decode_latents(
-        &ec_dec,
-        latents,
-        quant_scales + offset,
-        r + offset,
-        p0 + offset
-        );
-
-    DRED_rdovae_dec_init_states(rdovae_dec, state);
-
-    DRED_rdovae_decode_qframe(rdovae_dec, features, latents);
-
-    DRED_rdovae_destroy_decoder(rdovae_dec);
-
-    fwrite(features + 40, sizeof(float), 20, fid);
-    fwrite(zeros, sizeof(float), 16, fid);
-    fwrite(features + 60, sizeof(float), 20, fid);
-    fwrite(zeros, sizeof(float), 16, fid);
-
-#endif
-
-
 }
