@@ -1,3 +1,30 @@
+/* Copyright (c) 2022 Amazon
+   Written by Jan Buethe */
+/*
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
+
+   - Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+   - Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+   OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include <string.h>
 
 #include <stdio.h>
@@ -20,10 +47,10 @@ void init_dred_encoder(DREDEnc* enc)
 
 void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
 {
-    const opus_int16 *dead_zone       = DRED_rdovae_get_dead_zone_pointer();
-    const opus_int16 *p0              = DRED_rdovae_get_p0_pointer();
-    const opus_int16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
-    const opus_int16 *r               = DRED_rdovae_get_r_pointer();
+    const opus_uint16 *dead_zone       = DRED_rdovae_get_dead_zone_pointer();
+    const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
+    const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
+    const opus_uint16 *r               = DRED_rdovae_get_r_pointer();
     
     float input_buffer[2*DRED_NUM_FEATURES] = {0};
 

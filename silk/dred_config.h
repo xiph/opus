@@ -25,12 +25,16 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "dred_decoder.h"
-
-void init_dred_decoder(DREDDec *dec);
-
-void dred_decode_redundancy_package(DREDDec *dec, float *features, opus_uint8 *bytes, int num_bytes);
+/* these are inpart duplicates to the values defined in dred_rdovae_constants.h */
+#define DRED_NUM_FEATURES 20
+#define DRED_LATENT_DIM 80
+#define DRED_STATE_DIM 24
+#define DRED_NUM_QUANTIZATION_LEVELS 40
+#define DRED_MAX_FRAMES 100
+#define DRED_SILK_ENCODER_DELAY 79
+#define DRED_FRAME_SIZE 160
+#define DRED_DFRAME_SIZE (2 * (DRED_FRAME_SIZE))
+#define DRED_MAX_DATA_SIZE 1000
+#define DRED_ENC_Q0 9
+#define DRED_ENC_Q1 15
+#define DRED_NUM_REDUNDANCY_FRAMES 50

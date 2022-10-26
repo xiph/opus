@@ -25,11 +25,15 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "dred_config.h"
+#include "dred_rdovae.h"
+#include "entcode.h"
 
-#include "dred_decoder.h"
+typedef struct {
+    ec_enc ec_encoder;
+    RDOVAEDec *rdovae_dec;
+} DREDDec;
+
 
 void init_dred_decoder(DREDDec *dec);
 
