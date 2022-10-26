@@ -41,7 +41,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FLP.h"
 #endif
 
+#ifdef ENABLE_NEURAL_FEC
 #include "dred_encoder.h"
+#endif
 
 /***************************************/
 /* Read control structure from encoder */
@@ -466,8 +468,10 @@ opus_int silk_Encode(                                   /* O    Returns error co
             }
             silk_encode_do_VAD_Fxx( &psEnc->state_Fxx[ 0 ], activity );
 
+#ifdef ENABLE_NEURAL_FEC
             /* DRED Encoder */
             dred_encode_silk_frame( &psEnc->state_Fxx[ 0 ].sCmn.dred_encoder, &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[0] );
+#endif
 
             /* Encode */
             for( n = 0; n < encControl->nChannelsInternal; n++ ) {

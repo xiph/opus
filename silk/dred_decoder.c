@@ -73,7 +73,6 @@ void dred_decode_redundancy_package(DREDDec *dec, float *features, opus_uint8 *b
     {
         q_level = (int) round(DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
         offset = q_level * DRED_LATENT_DIM;
-
         dred_decode_latents(
             &dec->ec_dec,
             latents,
