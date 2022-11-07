@@ -99,8 +99,8 @@ if retrain:
 opt = Adam(lr, decay=decay, beta_2=0.99)
 
 with strategy.scope():
-    model, encoder, decoder, _ = rdovae.new_rdovae_model(nb_used_features=20, nb_bits=80, batch_size=batch_size, cond_size=args.cond_size)
-    model.compile(optimizer=opt, loss=[rdovae.feat_dist_loss, rdovae.feat_dist_loss, rdovae.sq1_rate_loss, rdovae.sq2_rate_loss], loss_weights=[.1, .9, 1., .1], metrics={'hard_bits':rdovae.sq_rate_metric})
+    model, encoder, decoder, _ = rdovae.new_rdovae_model(nb_used_features=20, nb_bits=80, batch_size=batch_size, cond_size=args.cond_size, nb_quant=16)
+    model.compile(optimizer=opt, loss=[rdovae.feat_dist_loss, rdovae.feat_dist_loss, rdovae.sq1_rate_loss, rdovae.sq2_rate_loss], loss_weights=[.5, .5, 1., .1], metrics={'hard_bits':rdovae.sq_rate_metric})
     model.summary()
 
 lpc_order = 16

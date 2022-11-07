@@ -104,7 +104,7 @@ features.astype('float32').tofile(args.output + "-input.f32")
 nbits=80
 bits.astype('float32').tofile(args.output + "-syms.f32")
 
-lambda_val = 0.001 * np.ones((nb_sequences, sequence_size//2, 1))
+lambda_val = 0.0002 * np.ones((nb_sequences, sequence_size//2, 1))
 quant_id = np.round(3.8*np.log(lambda_val/.0002)).astype('int16')
 quant_id = quant_id[:,:,0]
 quant_embed = qembedding(quant_id)
