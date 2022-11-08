@@ -40,6 +40,7 @@ parser.add_argument('weights', metavar="<weight file>", type=str, help='model we
 parser.add_argument('output', metavar="<output folder>", type=str, help='output exchange folder')
 parser.add_argument('--cond-size', type=int, help="conditioning size (default: 256)", default=256)
 parser.add_argument('--latent-dim', type=int, help="dimension of latent space (default: 80)", default=80)
+parser.add_argument('--quant-levels', type=int, help="number of quantization steps (default: 16)", default=16)
 
 args = parser.parse_args()
 
@@ -78,7 +79,7 @@ exchange_name = {
 
 if __name__ == "__main__":
 
-    model, encoder, decoder, qembedding = new_rdovae_model(20, args.latent_dim, cond_size=args.cond_size)
+    model, encoder, decoder, qembedding = new_rdovae_model(20, args.latent_dim, cond_size=args.cond_size, nb_quant=args.quant_levels)
     model.load_weights(args.weights)
 
     os.makedirs(args.output, exist_ok=True)
