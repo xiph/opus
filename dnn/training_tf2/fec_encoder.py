@@ -64,6 +64,7 @@ else:
 
     parser.add_argument('--dump-data', type=str, default='./dump_data', help='path to dump data executable (default ./dump_data)')
     parser.add_argument('--cond-size', metavar='<units>', default=1024, type=int, help='number of units in conditioning network (default 1024)')
+    parser.add_argument('--quant-levels', type=int, help="number of quantization steps (default: 40)", default=40)
     parser.add_argument('--num-redundancy-frames', default=64, type=int, help='number of redundancy frames (20ms) per packet (default 64)')
     parser.add_argument('--extra-delay', default=0, type=int, help="last features in packet are calculated with the decoder aligned samples, use this option to add extra delay (in samples at 16kHz)")
     parser.add_argument('--lossfile', type=str, help='file containing loss trace (0 for frame received, 1 for lost)')
