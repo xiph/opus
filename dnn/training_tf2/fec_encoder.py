@@ -73,7 +73,7 @@ else:
 
     args = parser.parse_args()
 
-model, encoder, decoder, qembedding = new_rdovae_model(nb_used_features=20, nb_bits=80, batch_size=1, cond_size=args.cond_size)
+model, encoder, decoder, qembedding = new_rdovae_model(nb_used_features=20, nb_bits=80, batch_size=1, nb_quant=args.quant_levels, cond_size=args.cond_size)
 model.load_weights(args.weights)
 
 lpc_order = 16
