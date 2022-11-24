@@ -264,6 +264,7 @@ int main(int argc, char *argv[])
     int variable_duration=OPUS_FRAMESIZE_ARG;
     int delayed_decision=0;
     int ret = EXIT_FAILURE;
+    FILE *packet_loss_file=NULL;
 
     if (argc < 5 )
     {
@@ -420,7 +421,12 @@ int main(int argc, char *argv[])
             use_dtx = 1;
             args++;
         } else if( strcmp( argv[ args ], "-loss" ) == 0 ) {
-            packet_loss_perc = atoi( argv[ args + 1 ] );
+            packet_loss_perc = 20;
+            packet_loss_file = fopen(argv[ args + 1 ], "r");
+            if (packet_loss_file == NULL) {
+                fprintf(stderr, "failed to open loss file\n");
+                exit(1);
+            }
             args += 2;
         } else if( strcmp( argv[ args ], "-sweep" ) == 0 ) {
             check_encoder_option(decode_only, "-sweep");
@@ -614,6 +620,12 @@ int main(int argc, char *argv[])
        opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
        frame_size = 2*48000;
     }
+    if (1) {
+       int i;
+       for (i=0;i<max_frame_size;i++) in[i] = 0;
+       len[0] = opus_encode(enc, in, frame_size, data[0], max_payload_bytes);
+       opus_decode(dec, data[0], len[0], out, max_frame_size, 0);
+    }
     while (!stop)
     {
         if (delayed_celt)
@@ -763,8 +775,12 @@ int main(int argc, char *argv[])
         } else {
             opus_int32 output_samples;
             lost = len[toggle]==0 || (packet_loss_perc>0 && rand()%100 < packet_loss_perc);
+            //printf("%d\n", lost);
+            //scanf("%d", &lost);
+            fscanf(packet_loss_file, "%d", &lost);
             if (lost)
-               opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
+               //opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
+                output_samples=320;
             else
                output_samples = max_frame_size;
             if( count >= use_inbandfec ) {
@@ -781,6 +797,13 @@ int main(int argc, char *argv[])
                     }
                 } else {
                     output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, output_samples, 0);
+                    if (output_samples<0) {
+                        int i;
+                        output_samples = 320;
+                        for (i=0;i<output_samples;i++) {
+                            out[i] = 0;
+                        }
+                    }
                 }
                 if (output_samples>0)
                 {

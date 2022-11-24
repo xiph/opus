@@ -1410,7 +1410,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     } else {
        st->mode = st->user_forced_mode;
     }
-
+    st->mode = MODE_SILK_ONLY;
     /* Override the chosen mode to make sure we meet the requested frame size */
     if (st->mode != MODE_CELT_ONLY && frame_size < st->Fs/100)
        st->mode = MODE_CELT_ONLY;

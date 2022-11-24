@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef NEURAL_PLC
 #include "lpcnet.h"
+#include <stdio.h>
 #endif
 
 #define NB_ATT 2
@@ -54,6 +55,7 @@ static OPUS_INLINE void silk_PLC_conceal(
     int                                 arch                /* I  Run-time architecture */
 );
 
+int plc_init = 0;
 
 void silk_PLC_Reset(
     silk_decoder_state                  *psDec              /* I/O Decoder state        */
@@ -71,6 +73,7 @@ void silk_PLC_Reset(
         /* FIXME: This is leaking memory. The right fix is for the LPCNet state to be part of the PLC struct itself. */
         psDec->sPLC.lpcnet = lpcnet_plc_create(LPCNET_PLC_CODEC);
     }
+    celt_assert(plc_init==0);
 #endif
 }
 
@@ -87,7 +90,31 @@ void silk_PLC(
         silk_PLC_Reset( psDec );
         psDec->sPLC.fs_kHz = psDec->fs_kHz;
     }
-
+#ifdef NEURAL_PLC
+    if (!plc_init)
+    {
+        int i;
+        size_t ret;
+        float in_features[NB_TOTAL_FEATURES];
+        for (i=0;i<4;i++) {
+            ret = fread(in_features, sizeof(in_features[0]), NB_TOTAL_FEATURES, stdin);
+            if (i==0) {
+                lpcnet_plc_fec_add(psDec->sPLC.lpcnet, in_features);
+                lpcnet_plc_fec_add(psDec->sPLC.lpcnet, in_features);
+            }
+            lpcnet_plc_fec_add(psDec->sPLC.lpcnet, in_features);
+        }
+        plc_init = 1;
+    }
+    {
+        size_t ret;
+        float in_features[NB_TOTAL_FEATURES];
+        ret = fread(in_features, sizeof(in_features[0]), NB_TOTAL_FEATURES, stdin);
+        lpcnet_plc_fec_add(psDec->sPLC.lpcnet, in_features);
+        ret = fread(in_features, sizeof(in_features[0]), NB_TOTAL_FEATURES, stdin);
+        lpcnet_plc_fec_add(psDec->sPLC.lpcnet, in_features);
+    }
+#endif
     if( lost ) {
         /****************************/
         /* Generate Signal          */
