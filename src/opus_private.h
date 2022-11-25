@@ -44,6 +44,13 @@ struct OpusRepacketizer {
    int framesize;
 };
 
+typedef struct {
+   int id;
+   int frame;
+   const unsigned char *data;
+   opus_int32 len;
+} opus_extension_data;
+
 typedef struct ChannelLayout {
    int nb_channels;
    int nb_streams;
@@ -168,7 +175,8 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       int *payload_offset, opus_int32 *packet_offset);
 
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end,
-      unsigned char *data, opus_int32 maxlen, int self_delimited, int pad);
+      unsigned char *data, opus_int32 maxlen, int self_delimited, int pad,
+      const opus_extension_data *extensions, int nb_extensions);
 
 int pad_frame(unsigned char *data, opus_int32 len, opus_int32 new_len);
 
@@ -197,5 +205,9 @@ int opus_multistream_decode_native(
   int soft_clip,
   void *user_data
 );
+
+opus_int32 opus_packet_extensions_parse(const unsigned char *data, opus_int32 len, opus_extension_data *extensions, opus_int32 *nb_extensions);
+
+opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, const opus_extension_data  *extensions, int nb_extensions, int pad);
 
 #endif /* OPUS_PRIVATE_H */
