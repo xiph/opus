@@ -100,7 +100,7 @@ int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp)
 }
 
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end,
-      unsigned char *data, opus_int32 maxlen, int self_delimited, int pad)
+      unsigned char *data, opus_int32 maxlen, int self_delimited, int pad, const opus_extension_data *extensions, int nb_extensions)
 {
    int i, count;
    opus_int32 tot_size;
@@ -148,11 +148,12 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
          ptr += encode_size(len[0], ptr);
       }
    }
-   if (count > 2 || (pad && tot_size < maxlen))
+   if (count > 2 || (pad && tot_size < maxlen) || nb_extensions > 0)
    {
       /* Code 3 */
       int vbr;
       int pad_amount=0;
+      int ext_len=0;
 
       /* Restart the process for the padding case */
       ptr = data;
@@ -188,11 +189,24 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
          *ptr++ = count;
       }
       pad_amount = pad ? (maxlen-tot_size) : 0;
+      if (nb_extensions>0)
+      {
+         ext_len = opus_packet_extensions_generate(&data[tot_size], maxlen-tot_size, extensions, nb_extensions, 0);
+         if (ext_len < 0) return ext_len;
+         if (!pad)
+            pad_amount = ext_len + ext_len/254 + 1;
+      }
       if (pad_amount != 0)
       {
          int nb_255s;
          data[1] |= 0x40;
          nb_255s = (pad_amount-1)/255;
+         if (tot_size + ext_len + nb_255s + 1 > maxlen)
+            return OPUS_BUFFER_TOO_SMALL;
+         OPUS_MOVE(&data[tot_size+pad_amount-ext_len], &data[tot_size], ext_len);
+         /* Prepend 0x01 padding */
+         for (i=tot_size+nb_255s+1;i<tot_size+pad_amount-ext_len;i++)
+            data[i] = 0x01;
          for (i=0;i<nb_255s;i++)
             *ptr++ = 255;
          *ptr++ = pad_amount-255*nb_255s-1;
@@ -218,7 +232,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       OPUS_MOVE(ptr, frames[i], len[i]);
       ptr += len[i];
    }
-   if (pad)
+   if (pad && nb_extensions==0)
    {
       /* Fill padding with zeros. */
       while (ptr<data+maxlen)
@@ -229,12 +243,12 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
 
 opus_int32 opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen)
 {
-   return opus_repacketizer_out_range_impl(rp, begin, end, data, maxlen, 0, 0);
+   return opus_repacketizer_out_range_impl(rp, begin, end, data, maxlen, 0, 0, NULL, 0);
 }
 
 opus_int32 opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, opus_int32 maxlen)
 {
-   return opus_repacketizer_out_range_impl(rp, 0, rp->nb_frames, data, maxlen, 0, 0);
+   return opus_repacketizer_out_range_impl(rp, 0, rp->nb_frames, data, maxlen, 0, 0, NULL, 0);
 }
 
 int opus_packet_pad(unsigned char *data, opus_int32 len, opus_int32 new_len)
@@ -253,7 +267,7 @@ int opus_packet_pad(unsigned char *data, opus_int32 len, opus_int32 new_len)
    ret = opus_repacketizer_cat(&rp, data+new_len-len, len);
    if (ret != OPUS_OK)
       return ret;
-   ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, data, new_len, 0, 1);
+   ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, data, new_len, 0, 1, NULL, 0);
    if (ret > 0)
       return OPUS_OK;
    else
@@ -270,7 +284,7 @@ opus_int32 opus_packet_unpad(unsigned char *data, opus_int32 len)
    ret = opus_repacketizer_cat(&rp, data, len);
    if (ret < 0)
       return ret;
-   ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, data, len, 0, 0);
+   ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, data, len, 0, 0, NULL, 0);
    celt_assert(ret > 0 && ret <= len);
    return ret;
 }
@@ -335,7 +349,7 @@ opus_int32 opus_multistream_packet_unpad(unsigned char *data, opus_int32 len, in
       ret = opus_repacketizer_cat_impl(&rp, data, packet_offset, self_delimited);
       if (ret < 0)
          return ret;
-      ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, dst, len, self_delimited, 0);
+      ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, dst, len, self_delimited, 0, NULL, 0);
       if (ret < 0)
          return ret;
       else
