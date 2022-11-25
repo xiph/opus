@@ -1003,7 +1003,7 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
       }
    }
 
-   ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr);
+   ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr, NULL, 0);
 
    if (ret<0)
    {
