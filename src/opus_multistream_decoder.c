@@ -162,7 +162,7 @@ static int opus_multistream_packet_validate(const unsigned char *data,
       if (len<=0)
          return OPUS_INVALID_PACKET;
       count = opus_packet_parse_impl(data, len, s!=nb_streams-1, &toc, NULL,
-                                     size, NULL, &packet_offset);
+                                     size, NULL, &packet_offset, NULL, NULL);
       if (count<0)
          return count;
       tmp_samples = opus_packet_get_nb_samples(data, packet_offset, Fs);

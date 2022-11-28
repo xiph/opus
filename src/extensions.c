@@ -38,7 +38,7 @@
 
 /* Given an extension payload, advance data to the next extension and return the
    length of the remaining extensions. */
-static opus_int32 skip_extension(const unsigned char **data, opus_int32 len, opus_int32 *header_size)
+opus_int32 skip_extension(const unsigned char **data, opus_int32 len, opus_int32 *header_size)
 {
    int id, L;
    if (len==0)

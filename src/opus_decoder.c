@@ -672,7 +672,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    packet_stream_channels = opus_packet_get_nb_channels(data);
 
    count = opus_packet_parse_impl(data, len, self_delimited, &toc, NULL,
-                                  size, &offset, packet_offset);
+                                  size, &offset, packet_offset, NULL, NULL);
    if (count<0)
       return count;
 
@@ -1038,4 +1038,55 @@ int opus_decoder_get_nb_samples(const OpusDecoder *dec,
       const unsigned char packet[], opus_int32 len)
 {
    return opus_packet_get_nb_samples(packet, len, dec->Fs);
+}
+
+int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
+      opus_int32 len, int offset)
+{
+   const unsigned char *data0;
+   int len0;
+   const unsigned char *payload = NULL;
+   opus_int32 payload_len;
+   int frame = 0;
+   int ret;
+   const unsigned char *frames[48];
+   opus_int16 size[48];
+   
+   /* Get the padding section of the packet. */
+   ret = opus_packet_parse_impl(data, len, 0, NULL, frames, size, NULL, NULL, &data0, &len0);
+   data = data0;
+   len = len0;
+   /* Scan extensions in order until we find the earliest frame with DRED data. */
+   while (len > 0)
+   {
+      opus_int32 header_size;
+      int id, L;
+      len0 = len;
+      data0 = data;
+      id = *data0 >> 1;
+      L = *data0 & 0x1;
+      len = skip_extension(&data, len, &header_size);
+      if (len < 0)
+         break;
+      if (id == 1)
+      {
+         if (L==0)
+         {
+            frame++;
+         } else {
+            frame += data[1];
+         }
+      } else if (id == 127)
+      {
+         payload = data0+header_size;
+         payload_len = (data-data0)-header_size;
+         break;
+      }
+   }
+   if (payload != NULL)
+   {
+      /* Found something -- do the decoding. */
+      return 1;
+   }
+   return 0;
 }
