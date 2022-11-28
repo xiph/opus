@@ -1003,6 +1003,7 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
       }
    }
 
+   /* FIXME: Handle extensions here. */
    ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr, NULL, 0);
 
    if (ret<0)
@@ -2178,7 +2179,15 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     /* Count ToC and redundancy */
     ret += 1+redundancy_bytes;
-    if (!st->use_vbr)
+    if (1) {
+       opus_extension_data extension = {33, 0, (const unsigned char *)"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", 50};
+       ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
+       if (ret < 0)
+       {
+          RESTORE_STACK;
+          return OPUS_INTERNAL_ERROR;
+       }
+    } else if (!st->use_vbr)
     {
        if (opus_packet_pad(data, ret, max_data_bytes) != OPUS_OK)
        {
