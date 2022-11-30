@@ -82,7 +82,7 @@ static int opus_repacketizer_cat_impl(OpusRepacketizer *rp, const unsigned char 
       return OPUS_INVALID_PACKET;
    }
 
-   ret=opus_packet_parse_impl(data, len, self_delimited, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL, NULL);
+   ret=opus_packet_parse_impl(data, len, self_delimited, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL, NULL, NULL, NULL);
    if(ret<1)return ret;
 
    rp->nb_frames += curr_nb_frames;
@@ -316,7 +316,7 @@ int opus_multistream_packet_pad(unsigned char *data, opus_int32 len, opus_int32 
       if (len<=0)
          return OPUS_INVALID_PACKET;
       count = opus_packet_parse_impl(data, len, 1, &toc, NULL,
-                                     size, NULL, &packet_offset);
+                                     size, NULL, &packet_offset, NULL, NULL);
       if (count<0)
          return count;
       data += packet_offset;
@@ -348,7 +348,7 @@ opus_int32 opus_multistream_packet_unpad(unsigned char *data, opus_int32 len, in
          return OPUS_INVALID_PACKET;
       opus_repacketizer_init(&rp);
       ret = opus_packet_parse_impl(data, len, self_delimited, &toc, NULL,
-                                     size, NULL, &packet_offset);
+                                     size, NULL, &packet_offset, NULL, NULL);
       if (ret<0)
          return ret;
       ret = opus_repacketizer_cat_impl(&rp, data, packet_offset, self_delimited);

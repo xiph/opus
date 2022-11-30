@@ -2179,9 +2179,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     /* Count ToC and redundancy */
     ret += 1+redundancy_bytes;
-    if (1) {
-       opus_extension_data extension = {33, 0, (const unsigned char *)"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", 50};
-       ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
+    if (0) {
+       opus_extension_data extension = {127, 0, (const unsigned char *)"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", 50};
+       ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, extension, 1);
        if (ret < 0)
        {
           RESTORE_STACK;

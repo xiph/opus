@@ -169,10 +169,14 @@ static OPUS_INLINE int align(int i)
     return ((i + alignment - 1) / alignment) * alignment;
 }
 
+/* More than that is ridiculous for now (3 * max frames per packet)*/
+opus_int32 skip_extension(const unsigned char **data, opus_int32 len, opus_int32 *header_size);
+
 int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       int self_delimited, unsigned char *out_toc,
       const unsigned char *frames[48], opus_int16 size[48],
-      int *payload_offset, opus_int32 *packet_offset);
+      int *payload_offset, opus_int32 *packet_offset,
+      const unsigned char **padding, opus_int32 *padding_len);
 
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end,
       unsigned char *data, opus_int32 maxlen, int self_delimited, int pad,

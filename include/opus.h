@@ -511,6 +511,9 @@ OPUS_EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...) OPUS_ARG_NON
   */
 OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
 
+OPUS_EXPORT int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
+      opus_int32 len, int offset) OPUS_ARG_NONNULL(1);
+
 /** Parse an opus packet into one or more frames.
   * Opus_decode will perform this operation internally so most applications do
   * not need to use this function.
