@@ -77,6 +77,8 @@ void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, 
         xq = x[i]*scale[i]*(1.f/256.f);
         xq = xq - delta*tanh(xq/(delta+eps));
         q = (int)floor(.5f+xq);
+        /* Make the impossible actually impossible. */
+        if (r[i] == 0 || p0[i] >= 32768) q = 0;
         ec_laplace_encode_p0(enc, q, p0[i], r[i]);
     }
 }
