@@ -25,8 +25,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _DRED_CODING_H
-#define _DRED_CODING_H
+#ifndef DRED_CODING_H
+#define DRED_CODING_H
 
 #include "opus_types.h"
 #include "entcode.h"
