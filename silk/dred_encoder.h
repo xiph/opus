@@ -25,8 +25,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _DRED_ENCODER_H
-#define _DRED_ENCODER_H
+#ifndef DRED_ENCODER_H
+#define DRED_ENCODER_H
 
 #include "lpcnet.h"
 #include "dred_config.h"

@@ -25,12 +25,12 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <math.h>
-#include <stdio.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <math.h>
+#include <stdio.h>
 
 #include "celt/entenc.h"
 #include "celt/vq.h"
