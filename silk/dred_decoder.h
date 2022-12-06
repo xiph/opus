@@ -30,7 +30,6 @@
 #include "entcode.h"
 
 typedef struct {
-    ec_dec ec_dec;
     RDOVAEDec *rdovae_dec;
 } DREDDec;
 

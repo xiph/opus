@@ -37,11 +37,11 @@
 
 typedef struct {
     opus_int16 input_buffer[DRED_DFRAME_SIZE + DRED_SILK_ENCODER_DELAY];
-    float feature_buffer[2 * 36];
     float latents_buffer[DRED_MAX_FRAMES * DRED_LATENT_DIM];
+    int latents_buffer_fill;
     float state_buffer[24];
     unsigned char ec_buffer[DRED_MAX_DATA_SIZE];
-    ec_enc ec_encoder;
+    int ec_buffer_fill;
     LPCNetEncState *lpcnet_enc_state;
     RDOVAEEnc *rdovae_enc;
 } DREDEnc;
