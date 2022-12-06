@@ -150,6 +150,9 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
 
    celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));
 
+#ifdef ENABLE_NEURAL_FEC
+   init_dred_decoder(&((silk_decoder_state*)silk_dec)->sPLC.dred_decoder);
+#endif
    st->prev_mode = 0;
    st->frame_size = Fs/400;
    st->arch = opus_select_arch();
@@ -1089,6 +1092,7 @@ int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
    {
       silk_decoder_state *silk_dec;
       silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
+      /*printf("Found: %p of size %d\n", payload, payload_len);*/
       dred_decode_redundancy_package(&silk_dec->sPLC.dred_decoder, silk_dec->sPLC.fec_features, payload, payload_len);
       /* Found something -- do the decoding. */
       return 1;

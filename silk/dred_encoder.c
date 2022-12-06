@@ -55,10 +55,11 @@ void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
     const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
     const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
     const opus_uint16 *r               = DRED_rdovae_get_r_pointer();
-    
-    float input_buffer[2*DRED_NUM_FEATURES] = {0};
+    float feature_buffer[2 * 36];
 
-    int bytes;
+    float input_buffer[2*DRED_NUM_FEATURES] = {0};
+    ec_enc ec_encoder;
+
     int q_level;
     int i;
     int offset;
@@ -71,27 +72,28 @@ void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
     memmove(enc->latents_buffer + DRED_LATENT_DIM, enc->latents_buffer, (DRED_MAX_FRAMES - 1) * DRED_LATENT_DIM * sizeof(*enc->latents_buffer));
 
     /* calculate LPCNet features */
-    lpcnet_compute_single_frame_features(enc->lpcnet_enc_state, enc->input_buffer, enc->feature_buffer);
-    lpcnet_compute_single_frame_features(enc->lpcnet_enc_state, enc->input_buffer + DRED_FRAME_SIZE, enc->feature_buffer + 36);
+    lpcnet_compute_single_frame_features(enc->lpcnet_enc_state, enc->input_buffer, feature_buffer);
+    lpcnet_compute_single_frame_features(enc->lpcnet_enc_state, enc->input_buffer + DRED_FRAME_SIZE, feature_buffer + 36);
 
     /* prepare input buffer (discard LPC coefficients) */
-    memcpy(input_buffer, enc->feature_buffer, DRED_NUM_FEATURES * sizeof(input_buffer[0]));
-    memcpy(input_buffer + DRED_NUM_FEATURES, enc->feature_buffer + 36, DRED_NUM_FEATURES * sizeof(input_buffer[0]));
+    memcpy(input_buffer, feature_buffer, DRED_NUM_FEATURES * sizeof(input_buffer[0]));
+    memcpy(input_buffer + DRED_NUM_FEATURES, feature_buffer + 36, DRED_NUM_FEATURES * sizeof(input_buffer[0]));
 
     /* run RDOVAE encoder */
     DRED_rdovae_encode_dframe(enc->rdovae_enc, enc->latents_buffer, enc->state_buffer, input_buffer);
+    enc->latents_buffer_fill = IMIN(enc->latents_buffer_fill+1, DRED_NUM_REDUNDANCY_FRAMES);
 
     /* entropy coding of state and latents */
-    ec_enc_init(&enc->ec_encoder, enc->ec_buffer, DRED_MAX_DATA_SIZE);
-    dred_encode_state(&enc->ec_encoder, enc->state_buffer);   
+    ec_enc_init(&ec_encoder, enc->ec_buffer, DRED_MAX_DATA_SIZE);
+    dred_encode_state(&ec_encoder, enc->state_buffer);
 
-    for (i = 0; i < DRED_NUM_REDUNDANCY_FRAMES; i += 2)
+    for (i = 0; i < enc->latents_buffer_fill-1; i += 2)
     {
-        q_level = (int) round(DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
+        q_level = (int) floor(0.5f + DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
         offset = q_level * DRED_LATENT_DIM;
 
         dred_encode_latents(
-            &enc->ec_encoder,
+            &ec_encoder,
             enc->latents_buffer + i * DRED_LATENT_DIM,
             quant_scales + offset,
             dead_zone + offset,
@@ -100,20 +102,20 @@ void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
         );
     }
 
-    bytes = (ec_tell(&enc->ec_encoder)+7)/8;
-    ec_enc_shrink(&enc->ec_encoder, bytes);
-    ec_enc_done(&enc->ec_encoder);
+    enc->ec_buffer_fill = (ec_tell(&ec_encoder)+7)/8;
+    ec_enc_shrink(&ec_encoder, enc->ec_buffer_fill);
+    ec_enc_done(&ec_encoder);
 
-#if 1
-    printf("packet size: %d\n", bytes*8);
+#if 0
+    printf("packet size: %d\n", enc->ec_buffer_fill*8);
 
     static FILE *fbs = NULL;
     if (fbs == NULL)
     {
         fbs = fopen("dred_bitstream.bin", "wb");
     }
-    fwrite(&bytes, sizeof(bytes), 1, fbs);
-    fwrite(ec_get_buffer(&enc->ec_encoder), 1, bytes, fbs);
+    fwrite(&enc->ec_buffer_fill, sizeof(enc->ec_buffer_fill), 1, fbs);
+    fwrite(ec_get_buffer(&ec_encoder), 1, enc->ec_buffer_fill, fbs);
 #endif
 
 #if 0

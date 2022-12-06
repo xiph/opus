@@ -53,6 +53,7 @@ void dred_decode_redundancy_package(DREDDec *dec, float *features, const opus_ui
     const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
     const opus_uint16 *r               = DRED_rdovae_get_r_pointer();
 
+    ec_dec ec;
     int q_level;
     int i;
     int offset;
@@ -64,17 +65,20 @@ void dred_decode_redundancy_package(DREDDec *dec, float *features, const opus_ui
     celt_assert(DRED_NUM_REDUNDANCY_FRAMES % 2 == 0);
 
     /* decode initial state and initialize RDOVAE decoder */
-    ec_dec_init(&dec->ec_dec, (unsigned char*)bytes, num_bytes);
-    dred_decode_state(&dec->ec_dec, state);
+    ec_dec_init(&ec, (unsigned char*)bytes, num_bytes);
+    dred_decode_state(&ec, state);
     DRED_rdovae_dec_init_states(dec->rdovae_dec, state);
 
     /* decode newest to oldest and store oldest to newest */
     for (i = 0; i < DRED_NUM_REDUNDANCY_FRAMES; i += 2)
     {
+        /* FIXME: Figure out how to avoid missing a last frame that would take up < 8 bits. */
+        if (8*num_bytes - ec_tell(&ec) <= 7)
+           break;
         q_level = (int) round(DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
         offset = q_level * DRED_LATENT_DIM;
         dred_decode_latents(
-            &dec->ec_dec,
+            &ec,
             latents,
             quant_scales + offset,
             r + offset,
