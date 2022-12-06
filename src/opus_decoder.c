@@ -1054,6 +1054,8 @@ int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
    
    /* Get the padding section of the packet. */
    ret = opus_packet_parse_impl(data, len, 0, NULL, frames, size, NULL, NULL, &data0, &len0);
+   if (ret < 0)
+      return ret;
    data = data0;
    len = len0;
    /* Scan extensions in order until we find the earliest frame with DRED data. */
@@ -1085,6 +1087,9 @@ int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
    }
    if (payload != NULL)
    {
+      silk_decoder_state *silk_dec;
+      silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
+      dred_decode_redundancy_package(&silk_dec->sPLC.dred_decoder, silk_dec->sPLC.fec_features, payload, payload_len);
       /* Found something -- do the decoding. */
       return 1;
    }

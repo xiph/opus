@@ -47,7 +47,7 @@ void dred_deinit_decoder(DREDDec *dec)
     DRED_rdovae_destroy_decoder(dec->rdovae_dec);
 }
 
-void dred_decode_redundancy_package(DREDDec *dec, float *features, opus_uint8 *bytes, int num_bytes)
+void dred_decode_redundancy_package(DREDDec *dec, float *features, const opus_uint8 *bytes, int num_bytes)
 {
     const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
     const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
@@ -64,7 +64,7 @@ void dred_decode_redundancy_package(DREDDec *dec, float *features, opus_uint8 *b
     celt_assert(DRED_NUM_REDUNDANCY_FRAMES % 2 == 0);
 
     /* decode initial state and initialize RDOVAE decoder */
-    ec_dec_init(&dec->ec_dec, bytes, num_bytes);
+    ec_dec_init(&dec->ec_dec, (unsigned char*)bytes, num_bytes);
     dred_decode_state(&dec->ec_dec, state);
     DRED_rdovae_dec_init_states(dec->rdovae_dec, state);
 

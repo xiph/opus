@@ -38,7 +38,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "lpcnet.h"
 #endif
 
+#ifdef ENABLE_NEURAL_FEC
 #include "dred_encoder.h"
+#include "dred_decoder.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"
@@ -258,6 +261,10 @@ typedef struct {
 #ifdef NEURAL_PLC
     /* FIXME: We should include the state struct directly to preserve the state shadow copy property. */
     LPCNetPLCState              *lpcnet;
+#ifdef ENABLE_NEURAL_FEC
+    DREDDec                     dred_decoder;
+    float                       fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];
+#endif
 #endif
 } silk_PLC_struct;
 
