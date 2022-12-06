@@ -2179,15 +2179,19 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     /* Count ToC and redundancy */
     ret += 1+redundancy_bytes;
-    if (0) {
-       opus_extension_data extension = {127, 0, (const unsigned char *)"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", 50};
+#ifdef ENABLE_NEURAL_FEC
+    if (1) {
+       DREDEnc *dred = &((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.dred_encoder;
+       opus_extension_data extension = {127, 0, dred->ec_buffer, dred->ec_encoder.storage};
        ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
        if (ret < 0)
        {
           RESTORE_STACK;
           return OPUS_INTERNAL_ERROR;
        }
-    } else if (!st->use_vbr)
+    } else
+#endif
+    if (!st->use_vbr)
     {
        if (opus_packet_pad(data, ret, max_data_bytes) != OPUS_OK)
        {
