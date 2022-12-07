@@ -118,28 +118,4 @@ void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
     fwrite(ec_get_buffer(&ec_encoder), 1, enc->ec_buffer_fill, fbs);
 #endif
 
-#if 0
-    DREDDec dec;
-    float dec_features[2 * DRED_NUM_REDUNDANCY_FRAMES * DRED_NUM_FEATURES];
-    float zeros[36 - 20] = {0};
-
-    init_dred_decoder(&dec);
-    dred_decode_redundancy_package(&dec, dec_features, ec_get_buffer(&enc->ec_encoder), bytes);
-
-    static FILE *fid;
-    if (fid == NULL)
-    {
-        fid = fopen("features_rdovae.f32", "wb");
-    }
-
-    int foffset = (2*DRED_NUM_REDUNDANCY_FRAMES - 2) * DRED_NUM_FEATURES;
-    foffset = 0;
-    fwrite(&dec_features[foffset], sizeof(float), DRED_NUM_FEATURES, fid);
-    fwrite(zeros, sizeof(float), 16, fid);
-    fwrite(&dec_features[foffset + DRED_NUM_FEATURES], sizeof(float), DRED_NUM_FEATURES, fid);
-    fwrite(zeros, sizeof(float), 16, fid);
-
-    dred_deinit_decoder(&dec);
-#endif
-
 }
