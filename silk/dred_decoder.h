@@ -38,4 +38,4 @@ void init_dred_decoder(DREDDec *dec);
 
 void dred_deinit_decoder(DREDDec *dec);
 
-int dred_decode_redundancy_package(DREDDec *dec, float *features, const opus_uint8 *bytes, int num_bytes, int max_fec_frames);
+int dred_decode_redundancy_package(DREDDec *dec, float *features, const opus_uint8 *bytes, int num_bytes, int min_feature_frames);
