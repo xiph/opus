@@ -48,7 +48,7 @@ void dred_rdovae_dec_init_states(
 
 void dred_rdovae_decode_qframe(
     RDOVAEDec *dec_state,       /* io: state buffer handle */
-    float *qframe,              /* o: quadruple feature frame (four concatenated frames) */
+    float *qframe,              /* o: quadruple feature frame (four concatenated frames in reverse order) */
     const float *input          /* i: latent vector */
     )
 {
@@ -92,11 +92,4 @@ void dred_rdovae_decode_qframe(
     output_index += DEC_DENSE8_OUT_SIZE;
 
     _lpcnet_compute_dense(&dec_final, qframe, buffer);
-
-    /* restore correct order of frames */
-    memmove(buffer, qframe, 4 * DRED_NUM_FEATURES * sizeof(*qframe));
-    memmove(qframe + 0 * DRED_NUM_FEATURES, buffer + 3 * DRED_NUM_FEATURES, DRED_NUM_FEATURES * sizeof(*qframe));
-    memmove(qframe + 1 * DRED_NUM_FEATURES, buffer + 2 * DRED_NUM_FEATURES, DRED_NUM_FEATURES * sizeof(*qframe));
-    memmove(qframe + 2 * DRED_NUM_FEATURES, buffer + 1 * DRED_NUM_FEATURES, DRED_NUM_FEATURES * sizeof(*qframe));
-    memmove(qframe + 3 * DRED_NUM_FEATURES, buffer + 0 * DRED_NUM_FEATURES, DRED_NUM_FEATURES * sizeof(*qframe));
 }
