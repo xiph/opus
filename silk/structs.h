@@ -264,6 +264,7 @@ typedef struct {
 #ifdef ENABLE_NEURAL_FEC
     DREDDec                     dred_decoder;
     float                       fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];
+    int                         nb_fec_frames;
 #endif
 #endif
 } silk_PLC_struct;
