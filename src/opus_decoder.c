@@ -1090,12 +1090,12 @@ int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
    }
    if (payload != NULL)
    {
-      int max_fec_frames;
+      int min_feature_frames;
       silk_decoder_state *silk_dec;
       silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
       /*printf("Found: %p of size %d\n", payload, payload_len);*/
-      max_fec_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
-      silk_dec->sPLC.nb_fec_frames = dred_decode_redundancy_package(&silk_dec->sPLC.dred_decoder, silk_dec->sPLC.fec_features, payload, payload_len, max_fec_frames);
+      min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
+      silk_dec->sPLC.nb_fec_frames = dred_decode_redundancy_package(&silk_dec->sPLC.dred_decoder, silk_dec->sPLC.fec_features, payload, payload_len, min_feature_frames);
       /*printf("%d\n", silk_dec->sPLC.nb_fec_frames);*/
       return 1;
    }
