@@ -770,12 +770,15 @@ int main(int argc, char *argv[])
             }
             if (run_decoder)
                 run_decoder += lost_count;
+            if (!lost && lost_count > 0) {
+                opus_decoder_dred_input(dec, data, len, 100);
+            }
             /* FIXME: Figure out how to trigger the decoder when the last packet of the file is lost. */
             for (fr=0;fr<run_decoder;fr++) {
                 opus_int32 output_samples=0;
                 if (fr < lost_count-1) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
-                   output_samples = opus_decode(dec, NULL, 0, out, output_samples, 1);
+                   output_samples = opus_decode(dec, NULL, 0, out, output_samples, lost_count-fr);
                 } else if (fr == lost_count-1) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                    output_samples = opus_decode(dec, data, len, out, output_samples, 1);

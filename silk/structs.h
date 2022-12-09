@@ -265,6 +265,7 @@ typedef struct {
     DREDDec                     dred_decoder;
     float                       fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];
     int                         nb_fec_frames;
+    int                         pre_filled;
 #endif
 #endif
 } silk_PLC_struct;

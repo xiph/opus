@@ -398,7 +398,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         }
      }
 
-     lost_flag = data == NULL ? 1 : 2 * decode_fec;
+     lost_flag = data == NULL ? 1 : 2 * !!decode_fec;
      decoded_samples = 0;
      do {
         /* Call SILK decoder */
@@ -643,14 +643,32 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    int count, offset;
    unsigned char toc;
    int packet_frame_size, packet_bandwidth, packet_mode, packet_stream_channels;
+   silk_decoder_state *silk_dec;
    /* 48 x 2.5 ms = 120 ms */
    opus_int16 size[48];
    VALIDATE_OPUS_DECODER(st);
-   if (decode_fec<0 || decode_fec>1)
+   silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
+   if (decode_fec<0 || (decode_fec>1 && data!=NULL))
       return OPUS_BAD_ARG;
    /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
+   if (decode_fec > 0) {
+      int features_per_frame;
+      int needed_feature_frames;
+      features_per_frame = frame_size/(st->Fs/100);
+      needed_feature_frames = features_per_frame;
+      if (!silk_dec->sPLC.pre_filled) needed_feature_frames+=2;
+      silk_dec->sPLC.pre_filled = 1;
+      for (i=0;i<needed_feature_frames;i++) {
+         int feature_offset = (needed_feature_frames-i-1 + (decode_fec-1)*features_per_frame);
+         /* FIXME: Find something better than that (involving actual PLC) */
+         feature_offset = IMIN(feature_offset, silk_dec->sPLC.nb_fec_frames-1);
+         lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, silk_dec->sPLC.fec_features+feature_offset*DRED_NUM_FEATURES);
+      }
+   } else {
+     silk_dec->sPLC.pre_filled = 0;
+   }
    if (len==0 || data==NULL)
    {
       int pcm_count=0;
