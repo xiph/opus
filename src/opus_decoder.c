@@ -653,7 +653,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
-   if (decode_fec > 0) {
+   if (decode_fec > 0 && silk_dec->sPLC.nb_fec_frames > 0) {
       int features_per_frame;
       int needed_feature_frames;
       features_per_frame = frame_size/(st->Fs/100);
