@@ -62,7 +62,8 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-inbandfec           : enable SILK inband FEC\n" );
     fprintf(stderr, "-forcemono           : force mono encoding, even for stereo input\n" );
     fprintf(stderr, "-dtx                 : enable SILK DTX\n" );
-    fprintf(stderr, "-loss <perc>         : simulate packet loss, in percent (0-100); default: 0\n" );
+    fprintf(stderr, "-loss <perc>         : optimize for loss percentage and simulate packet loss, in percent (0-100); default: 0\n" );
+    fprintf(stderr, "-lossfile <file>     : simulate packet loss, reading loss from file\n" );
 }
 
 static void int_to_char(opus_uint32 i, unsigned char ch[4])
@@ -264,6 +265,7 @@ int main(int argc, char *argv[])
     int delayed_decision=0;
     int ret = EXIT_FAILURE;
     int lost_count=0;
+    FILE *packet_loss_file=NULL;
 
     if (argc < 5 )
     {
@@ -421,6 +423,13 @@ int main(int argc, char *argv[])
             args++;
         } else if( strcmp( argv[ args ], "-loss" ) == 0 ) {
             packet_loss_perc = atoi( argv[ args + 1 ] );
+            args += 2;
+        } else if( strcmp( argv[ args ], "-lossfile" ) == 0 ) {
+            packet_loss_file = fopen( argv[ args + 1 ], "r" );
+            if (packet_loss_file == NULL) {
+                fprintf(stderr, "failed to open loss file %s\n", argv[ args + 1 ] );
+                exit(1);
+            }
             args += 2;
         } else if( strcmp( argv[ args ], "-sweep" ) == 0 ) {
             check_encoder_option(decode_only, "-sweep");
@@ -760,7 +769,14 @@ int main(int argc, char *argv[])
         } else {
             int fr;
             int run_decoder;
-            lost = len==0 || (packet_loss_perc>0 && rand()%100 < packet_loss_perc);
+            if (packet_loss_file != NULL) {
+                if ( fscanf(packet_loss_file, "%d", &lost) != 1) {
+                    lost = 0;
+                }
+            } else {
+              lost = (packet_loss_perc>0) && (rand()%100 < packet_loss_perc);
+            }
+            if (len == 0) lost = 1;
             if (lost)
             {
                lost_count++;
