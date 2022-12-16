@@ -75,6 +75,10 @@ LPCNET_EXPORT void lpcnet_plc_destroy(LPCNetPLCState *st) {
 }
 
 void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features) {
+  if (features == NULL) {
+    st->fec_skip++;
+    return;
+  }
   if (st->fec_fill_pos == PLC_MAX_FEC) {
     if (st->fec_keep_pos == 0) {
       fprintf(stderr, "FEC buffer full\n");
@@ -101,16 +105,22 @@ static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
 }
 
 static int get_fec_or_pred(LPCNetPLCState *st, float *out) {
-  if (st->fec_read_pos != st->fec_fill_pos) {
+  if (st->fec_read_pos != st->fec_fill_pos && st->fec_skip==0) {
+    float plc_features[2*NB_BANDS+NB_FEATURES+1] = {0};
+    float discard[NB_FEATURES];
     RNN_COPY(out, &st->fec[st->fec_read_pos][0], NB_FEATURES);
     st->fec_read_pos++;
     /* Make sure we can rewind a few frames back at resync time. */
     st->fec_keep_pos = IMAX(0, IMAX(st->fec_keep_pos, st->fec_read_pos-FEATURES_DELAY-1));
-    /* FIXME: Figure out how to update compute_plc_pred() without Burg features. */
+    /* Update PLC state using FEC, so without Burg features. */
+    RNN_COPY(&plc_features[2*NB_BANDS], out, NB_FEATURES);
+    plc_features[2*NB_BANDS+NB_FEATURES] = -1;
+    compute_plc_pred(&st->plc_net, discard, plc_features);
     return 1;
   } else {
     float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
     compute_plc_pred(&st->plc_net, out, zeros);
+    if (st->fec_skip > 0) st->fec_skip--;
     return 0;
   }
 }
@@ -263,6 +273,8 @@ static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
   st->plc_copy[0] = st->plc_net;
   lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
   st->fec_active = get_fec_or_pred(st, st->features);
+  if (st->fec_active) st->loss_count = 0;
+  else st->loss_count++;
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
   else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
   //if (st->loss_count > 4) st->features[NB_FEATURES-1] = MAX16(-.5, st->features[NB_FEATURES-1]-.1*(st->loss_count-4));
@@ -275,7 +287,6 @@ static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
     compute_frame_features(&st->enc, x);
     process_single_frame(&st->enc, NULL);
   }
-  if (!st->fec_active) st->loss_count++;
   st->blend = 1;
   if (st->remove_dc) {
     for (i=0;i<FRAME_SIZE;i++) {

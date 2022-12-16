@@ -76,6 +76,7 @@ struct LPCNetPLCState {
   int fec_keep_pos;
   int fec_read_pos;
   int fec_fill_pos;
+  int fec_skip;
   int fec_active;
   short pcm[PLC_BUF_SIZE+FRAME_SIZE];
   int pcm_fill;
