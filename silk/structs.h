@@ -261,11 +261,11 @@ typedef struct {
 #ifdef NEURAL_PLC
     /* FIXME: We should include the state struct directly to preserve the state shadow copy property. */
     LPCNetPLCState              *lpcnet;
+    int                         pre_filled;
 #ifdef ENABLE_NEURAL_FEC
     DREDDec                     dred_decoder;
     float                       fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];
     int                         nb_fec_frames;
-    int                         pre_filled;
 #endif
 #endif
 } silk_PLC_struct;
