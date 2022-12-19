@@ -659,15 +659,15 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       features_per_frame = frame_size/(st->Fs/100);
       needed_feature_frames = features_per_frame;
       if (!silk_dec->sPLC.pre_filled) needed_feature_frames+=2;
-      silk_dec->sPLC.pre_filled = 1;
       for (i=0;i<needed_feature_frames;i++) {
          int feature_offset = (needed_feature_frames-i-1 + (decode_fec-1)*features_per_frame);
-         /* FIXME: Find something better than that (involving actual PLC) */
-         feature_offset = IMIN(feature_offset, silk_dec->sPLC.nb_fec_frames-1);
-         lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, silk_dec->sPLC.fec_features+feature_offset*DRED_NUM_FEATURES);
+         if (feature_offset <= silk_dec->sPLC.nb_fec_frames-1) {
+           lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, silk_dec->sPLC.fec_features+feature_offset*DRED_NUM_FEATURES);
+         } else {
+           lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, NULL);
+         }
+
       }
-   } else {
-     silk_dec->sPLC.pre_filled = 0;
    }
    if (len==0 || data==NULL)
    {
@@ -1114,7 +1114,6 @@ int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
       /*printf("Found: %p of size %d\n", payload, payload_len);*/
       min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
       silk_dec->sPLC.nb_fec_frames = dred_decode_redundancy_package(&silk_dec->sPLC.dred_decoder, silk_dec->sPLC.fec_features, payload, payload_len, min_feature_frames);
-      /*printf("%d\n", silk_dec->sPLC.nb_fec_frames);*/
       return 1;
    }
    return 0;

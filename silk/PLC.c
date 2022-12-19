@@ -103,6 +103,7 @@ void silk_PLC(
 #ifdef NEURAL_PLC
         if ( psDec->sPLC.fs_kHz == 16 ) {
             int k;
+            psDec->sPLC.pre_filled = 0;
             for( k = 0; k < psDec->nb_subfr; k += 2 ) {
                 lpcnet_plc_update( psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
             }
@@ -393,6 +394,7 @@ static OPUS_INLINE void silk_PLC_conceal(
     }
 #ifdef NEURAL_PLC
     if ( psDec->sPLC.fs_kHz == 16 ) {
+        psDec->sPLC.pre_filled = 1;
         for( k = 0; k < psDec->nb_subfr; k += 2 ) {
             lpcnet_plc_conceal(psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
         }
