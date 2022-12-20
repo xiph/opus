@@ -787,7 +787,7 @@ int main(int argc, char *argv[])
             if (run_decoder)
                 run_decoder += lost_count;
             if (!lost && lost_count > 0) {
-                opus_decoder_dred_input(dec, data, len, 2);
+                opus_decoder_dred_input(dec, data, len, 100);
             }
             /* FIXME: Figure out how to trigger the decoder when the last packet of the file is lost. */
             for (fr=0;fr<run_decoder;fr++) {
