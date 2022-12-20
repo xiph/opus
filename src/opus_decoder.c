@@ -74,6 +74,11 @@ struct OpusDecoder {
 #ifndef FIXED_POINT
    opus_val16   softclip_mem[2];
 #endif
+#ifdef ENABLE_NEURAL_FEC
+   DREDDec      dred_decoder;
+   float        fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];
+   int          nb_fec_frames;
+#endif
 
    opus_uint32  rangeFinal;
 };
@@ -151,7 +156,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
    celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));
 
 #ifdef ENABLE_NEURAL_FEC
-   init_dred_decoder(&((silk_decoder_state*)silk_dec)->sPLC.dred_decoder);
+   init_dred_decoder(&st->dred_decoder);
 #endif
    st->prev_mode = 0;
    st->frame_size = Fs/400;
@@ -653,7 +658,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
-   if (decode_fec > 0 && silk_dec->sPLC.nb_fec_frames > 0) {
+   if (decode_fec > 0 && st->nb_fec_frames > 0) {
       int features_per_frame;
       int needed_feature_frames;
       features_per_frame = frame_size/(st->Fs/100);
@@ -661,8 +666,8 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       if (!silk_dec->sPLC.pre_filled) needed_feature_frames+=2;
       for (i=0;i<needed_feature_frames;i++) {
          int feature_offset = (needed_feature_frames-i-1 + (decode_fec-1)*features_per_frame);
-         if (feature_offset <= silk_dec->sPLC.nb_fec_frames-1) {
-           lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, silk_dec->sPLC.fec_features+feature_offset*DRED_NUM_FEATURES);
+         if (feature_offset <= st->nb_fec_frames-1) {
+           lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, st->fec_features+feature_offset*DRED_NUM_FEATURES);
          } else {
            lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, NULL);
          }
@@ -897,6 +902,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    break;
    case OPUS_RESET_STATE:
    {
+      dred_deinit_decoder(&st->dred_decoder);
       OPUS_CLEAR((char*)&st->OPUS_DECODER_RESET_START,
             sizeof(OpusDecoder)-
             ((char*)&st->OPUS_DECODER_RESET_START - (char*)st));
@@ -905,6 +911,9 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       silk_InitDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
+#ifdef ENABLE_NEURAL_FEC
+      init_dred_decoder(&st->dred_decoder);
+#endif
    }
    break;
    case OPUS_GET_SAMPLE_RATE_REQUEST:
@@ -1109,11 +1118,9 @@ int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
    if (payload != NULL)
    {
       int min_feature_frames;
-      silk_decoder_state *silk_dec;
-      silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
       /*printf("Found: %p of size %d\n", payload, payload_len);*/
       min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
-      silk_dec->sPLC.nb_fec_frames = dred_decode_redundancy_package(&silk_dec->sPLC.dred_decoder, silk_dec->sPLC.fec_features, payload, payload_len, min_feature_frames);
+      st->nb_fec_frames = dred_decode_redundancy_package(&st->dred_decoder, st->fec_features, payload, payload_len, min_feature_frames);
       return 1;
    }
    return 0;
