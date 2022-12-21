@@ -116,6 +116,9 @@ struct OpusEncoder {
     int          nb_no_activity_ms_Q1;
     opus_val32   peak_signal_energy;
 #endif
+#ifdef ENABLE_NEURAL_FEC
+    int          dred_duration;
+#endif
     int          nonfinal_frame; /* current frame is not the final in a packet */
     opus_uint32  rangeFinal;
 };
@@ -2180,13 +2183,15 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     /* Count ToC and redundancy */
     ret += 1+redundancy_bytes;
 #ifdef ENABLE_NEURAL_FEC
-    if (1) {
+    if (st->dred_duration > 0) {
        opus_extension_data extension;
        unsigned char buf[DRED_MAX_DATA_SIZE];
+       int dred_chunks;
        int dred_bytes;
        DREDEnc *dred = &((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.dred_encoder;
+       dred_chunks = IMIN(st->dred_duration/4, DRED_NUM_REDUNDANCY_FRAMES/2);
        dred_bytes = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-2);
-       dred_bytes = dred_encode_silk_frame(dred, buf, DRED_NUM_REDUNDANCY_FRAMES/2, dred_bytes);
+       dred_bytes = dred_encode_silk_frame(dred, buf, dred_chunks, dred_bytes);
        extension.id = 127;
        extension.frame = 0;
        extension.data = buf;
@@ -2698,6 +2703,28 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             celt_encoder_ctl(celt_enc, OPUS_GET_PHASE_INVERSION_DISABLED(value));
         }
         break;
+#ifdef ENABLE_NEURAL_FEC
+        case OPUS_SET_DRED_DURATION_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if(value<0 || value>DRED_MAX_FRAMES)
+            {
+               goto bad_arg;
+            }
+            st->dred_duration = value;
+        }
+        break;
+        case OPUS_GET_DRED_DURATION_REQUEST:
+        {
+            opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value)
+            {
+               goto bad_arg;
+            }
+            *value = st->dred_duration;
+        }
+        break;
+#endif
         case OPUS_RESET_STATE:
         {
            void *silk_enc;

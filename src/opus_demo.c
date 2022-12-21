@@ -64,6 +64,7 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-dtx                 : enable SILK DTX\n" );
     fprintf(stderr, "-loss <perc>         : optimize for loss percentage and simulate packet loss, in percent (0-100); default: 0\n" );
     fprintf(stderr, "-lossfile <file>     : simulate packet loss, reading loss from file\n" );
+    fprintf(stderr, "-dred <frames>       : add Deep REDundancy (in units of 10-ms frames)\n" );
 }
 
 static void int_to_char(opus_uint32 i, unsigned char ch[4])
@@ -266,6 +267,7 @@ int main(int argc, char *argv[])
     int ret = EXIT_FAILURE;
     int lost_count=0;
     FILE *packet_loss_file=NULL;
+    int dred_duration=0;
 
     if (argc < 5 )
     {
@@ -431,6 +433,9 @@ int main(int argc, char *argv[])
                 exit(1);
             }
             args += 2;
+        } else if( strcmp( argv[ args ], "-dred" ) == 0 ) {
+            dred_duration = atoi( argv[ args + 1 ] );
+            args += 2;
         } else if( strcmp( argv[ args ], "-sweep" ) == 0 ) {
             check_encoder_option(decode_only, "-sweep");
             sweep_bps = atoi( argv[ args + 1 ] );
@@ -546,6 +551,10 @@ int main(int argc, char *argv[])
        opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
        opus_encoder_ctl(enc, OPUS_SET_LSB_DEPTH(16));
        opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
+       if (dred_duration > 0)
+       {
+          opus_encoder_ctl(enc, OPUS_SET_DRED_DURATION(dred_duration));
+       }
     }
     if (!encode_only)
     {

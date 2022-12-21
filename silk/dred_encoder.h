@@ -51,6 +51,6 @@ void dred_deinit_encoder(DREDEnc *enc);
 
 void dred_process_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame);
 
-int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_frames, int max_bytes);
+int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes);
 
 #endif

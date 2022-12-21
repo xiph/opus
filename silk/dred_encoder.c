@@ -74,7 +74,7 @@ void dred_process_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
     enc->latents_buffer_fill = IMIN(enc->latents_buffer_fill+1, DRED_NUM_REDUNDANCY_FRAMES);
 }
 
-int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_frames, int max_bytes) {
+int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes) {
     const opus_uint16 *dead_zone       = DRED_rdovae_get_dead_zone_pointer();
     const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
     const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
@@ -90,7 +90,7 @@ int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_frames, int
     ec_enc_init(&ec_encoder, buf, max_bytes);
     dred_encode_state(&ec_encoder, enc->state_buffer);
 
-    for (i = 0; i < enc->latents_buffer_fill-1; i += 2)
+    for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-1); i += 2)
     {
         q_level = (int) floor(0.5f + DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
         offset = q_level * DRED_LATENT_DIM;
