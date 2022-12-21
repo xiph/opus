@@ -197,4 +197,6 @@ LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm);
 
 LPCNET_EXPORT void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features);
 
+LPCNET_EXPORT void lpcnet_plc_fec_clear(LPCNetPLCState *st);
+
 #endif

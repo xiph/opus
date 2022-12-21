@@ -93,6 +93,11 @@ void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features) {
   st->fec_fill_pos++;
 }
 
+void lpcnet_plc_fec_clear(LPCNetPLCState *st) {
+  st->fec_keep_pos = st->fec_read_pos = st->fec_fill_pos = st-> fec_skip = 0;
+}
+
+
 static void compute_plc_pred(PLCNetState *net, float *out, const float *in) {
   float zeros[3*PLC_MAX_RNN_NEURONS] = {0};
   float dense_out[PLC_DENSE1_OUT_SIZE];
