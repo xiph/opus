@@ -92,6 +92,9 @@ int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int
 
     for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-1); i += 2)
     {
+        ec_enc ec_bak;
+        ec_bak = ec_encoder;
+
         q_level = (int) floor(0.5f + DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
         offset = q_level * DRED_LATENT_DIM;
 
@@ -103,6 +106,10 @@ int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int
             r + offset,
             p0 + offset
         );
+        if (ec_tell(&ec_encoder) > 8*max_bytes) {
+          ec_encoder = ec_bak;
+          break;
+        }
     }
 
     ec_buffer_fill = (ec_tell(&ec_encoder)+7)/8;
