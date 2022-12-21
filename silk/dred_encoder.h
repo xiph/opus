@@ -40,8 +40,6 @@ typedef struct {
     float latents_buffer[DRED_MAX_FRAMES * DRED_LATENT_DIM];
     int latents_buffer_fill;
     float state_buffer[24];
-    unsigned char ec_buffer[DRED_MAX_DATA_SIZE];
-    int ec_buffer_fill;
     LPCNetEncState *lpcnet_enc_state;
     RDOVAEEnc *rdovae_enc;
 } DREDEnc;
@@ -51,6 +49,8 @@ void init_dred_encoder(DREDEnc* enc);
 
 void dred_deinit_encoder(DREDEnc *enc);
 
-void dred_encode_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame);
+void dred_process_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame);
+
+int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_frames, int max_bytes);
 
 #endif

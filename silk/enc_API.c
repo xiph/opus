@@ -470,7 +470,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
 
 #ifdef ENABLE_NEURAL_FEC
             /* DRED Encoder */
-            dred_encode_silk_frame( &psEnc->state_Fxx[ 0 ].sCmn.dred_encoder, &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[0] );
+            dred_process_silk_frame( &psEnc->state_Fxx[ 0 ].sCmn.dred_encoder, &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[0] );
 #endif
 
             /* Encode */

@@ -2181,8 +2181,16 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     ret += 1+redundancy_bytes;
 #ifdef ENABLE_NEURAL_FEC
     if (1) {
+       opus_extension_data extension;
+       unsigned char buf[DRED_MAX_DATA_SIZE];
+       int dred_bytes;
        DREDEnc *dred = &((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.dred_encoder;
-       opus_extension_data extension = {127, 0, dred->ec_buffer, dred->ec_buffer_fill};
+       dred_bytes = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-2);
+       dred_bytes = dred_encode_silk_frame(dred, buf, DRED_NUM_REDUNDANCY_FRAMES/2, dred_bytes);
+       extension.id = 127;
+       extension.frame = 0;
+       extension.data = buf;
+       extension.len = dred_bytes;
        ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
        if (ret < 0)
        {
