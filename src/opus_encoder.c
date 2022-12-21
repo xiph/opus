@@ -1883,6 +1883,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            celt_to_silk = 0;
            st->silk_bw_switch = 1;
         }
+    } else {
+        /* If we're not in SILK mode, delete all the processed DRED.
+           TODO: Remove this if/when DRED gets encoded for CELT. */
+        DREDEnc *dred = &((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.dred_encoder;
+        dred->latents_buffer_fill = 0;
     }
 
     /* CELT processing */
@@ -2191,12 +2196,17 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        DREDEnc *dred = &((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.dred_encoder;
        dred_chunks = IMIN(st->dred_duration/4, DRED_NUM_REDUNDANCY_FRAMES/2);
        dred_bytes = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-2);
-       dred_bytes = dred_encode_silk_frame(dred, buf, dred_chunks, dred_bytes);
-       extension.id = 127;
-       extension.frame = 0;
-       extension.data = buf;
-       extension.len = dred_bytes;
-       ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
+       /* Check whether we actually have something to encode. */
+       if (dred_chunks >= 1 && dred_bytes >= 3) {
+           dred_bytes = dred_encode_silk_frame(dred, buf, dred_chunks, dred_bytes);
+           extension.id = 127;
+           extension.frame = 0;
+           extension.data = buf;
+           extension.len = dred_bytes;
+           ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
+       } else if (!st->use_vbr) {
+           ret = opus_packet_pad(data, ret, max_data_bytes);
+       }
        if (ret < 0)
        {
           RESTORE_STACK;
