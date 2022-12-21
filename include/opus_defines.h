@@ -169,6 +169,8 @@ extern "C" {
 #define OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST 4046
 #define OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST 4047
 #define OPUS_GET_IN_DTX_REQUEST              4049
+#define OPUS_SET_DRED_DURATION_REQUEST 4050
+#define OPUS_GET_DRED_DURATION_REQUEST 4051
 
 /** Defines for the presence of extended APIs. */
 #define OPUS_HAVE_OPUS_PROJECTION_H
@@ -619,6 +621,14 @@ extern "C" {
   * </dl>
   * @hideinitializer */
 #define OPUS_GET_PREDICTION_DISABLED(x) OPUS_GET_PREDICTION_DISABLED_REQUEST, __opus_check_int_ptr(x)
+
+/** If non-zero, enables Deep Redundancy (DRED) and use the specified maximum number of 10-ms redundant frames
+  * @hideinitializer */
+#define OPUS_SET_DRED_DURATION(x) OPUS_SET_DRED_DURATION_REQUEST, __opus_check_int(x)
+/** Gets the encoder's configured Deep Redundancy (DRED) maximum number of frames.
+  * @hideinitializer */
+#define OPUS_GET_DRED_DURATION(x) OPUS_GET_DRED_DURATION_REQUEST, __opus_check_int_ptr(x)
+
 
 /**@}*/
 
