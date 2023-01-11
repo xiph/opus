@@ -1884,10 +1884,12 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            st->silk_bw_switch = 1;
         }
     } else {
+#ifdef ENABLE_NEURAL_FEC
         /* If we're not in SILK mode, delete all the processed DRED.
            TODO: Remove this if/when DRED gets encoded for CELT. */
         DREDEnc *dred = &((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.dred_encoder;
         dred->latents_buffer_fill = 0;
+#endif
     }
 
     /* CELT processing */

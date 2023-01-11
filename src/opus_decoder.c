@@ -904,7 +904,6 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    break;
    case OPUS_RESET_STATE:
    {
-      dred_deinit_decoder(&st->dred_decoder);
       OPUS_CLEAR((char*)&st->OPUS_DECODER_RESET_START,
             sizeof(OpusDecoder)-
             ((char*)&st->OPUS_DECODER_RESET_START - (char*)st));
@@ -1075,6 +1074,7 @@ int opus_decoder_get_nb_samples(const OpusDecoder *dec,
 int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, int offset)
 {
+#ifdef ENABLE_NEURAL_FEC
    const unsigned char *data0;
    int len0;
    const unsigned char *payload = NULL;
@@ -1128,5 +1128,6 @@ int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
       lpcnet_plc_fec_clear(silk_dec->sPLC.lpcnet);
       return st->nb_fec_frames;
    }
+#endif
    return 0;
 }
