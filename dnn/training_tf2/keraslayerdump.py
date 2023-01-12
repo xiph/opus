@@ -149,8 +149,8 @@ def dump_gru_layer(self, f, hf, dotp=False, sparse=False):
         reset_after = 1
     neurons = weights[0].shape[1]//3
     max_rnn_neurons = neurons
-    f.write('const GRULayer {} = {{\n   {}_bias,\n   {}_subias,\n   {}_weights,\n   NULL,\n   {}_recurrent_weights,\n   {}, {}, ACTIVATION_{}, {}\n}};\n\n'
-            .format(name, name, name, name, name, weights[0].shape[0], weights[0].shape[1]//3, activation, reset_after))
+    f.write('const GRULayer {} = {{\n   {}_bias,\n   {}_subias,\n   {}_weights,\n   {},\n   {}_recurrent_weights,\n   {}, {}, ACTIVATION_{}, {}\n}};\n\n'
+            .format(name, name, name, name, name + "_weights_idx" if sparse else "NULL", name, weights[0].shape[0], weights[0].shape[1]//3, activation, reset_after))
     hf.write('#define {}_OUT_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('#define {}_STATE_SIZE {}\n'.format(name.upper(), weights[0].shape[1]//3))
     hf.write('extern const GRULayer {};\n\n'.format(name));

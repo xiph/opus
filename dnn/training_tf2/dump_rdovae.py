@@ -50,7 +50,7 @@ from keraslayerdump import dump_conv1d_layer, dump_dense_layer, dump_gru_layer, 
 from rdovae import new_rdovae_model
 
 def start_header(header_fid, header_name):
-    header_guard = "_" + os.path.basename(header_name)[:-2].upper() + "_H"
+    header_guard = os.path.basename(header_name)[:-2].upper() + "_H"
     header_fid.write(
 f"""
 #ifndef {header_guard}
@@ -71,6 +71,10 @@ def start_source(source_fid, header_name, weight_file):
     source_fid.write(
 f"""
 /* this source file was automatically generated from weight file {weight_file} */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "{header_name}"
 
@@ -159,7 +163,7 @@ f"""
     # dump GRUs
     max_rnn_neurons_enc = max(
         [
-            dump_gru_layer(encoder.get_layer(name), source_fid, header_fid)
+            dump_gru_layer(encoder.get_layer(name), source_fid, header_fid, dotp=True, sparse=True)
             for name in encoder_gru_names
         ]
     )
@@ -254,7 +258,7 @@ f"""
     # dump GRUs
     max_rnn_neurons_dec = max(
         [
-            dump_gru_layer(decoder.get_layer(name), source_fid, header_fid)
+            dump_gru_layer(decoder.get_layer(name), source_fid, header_fid, dotp=True, sparse=True)
             for name in decoder_gru_names
         ]
     )

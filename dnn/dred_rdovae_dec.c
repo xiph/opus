@@ -55,13 +55,14 @@ void dred_rdovae_decode_qframe(
     float buffer[DEC_DENSE1_OUT_SIZE + DEC_DENSE2_OUT_SIZE + DEC_DENSE3_OUT_SIZE + DEC_DENSE4_OUT_SIZE + DEC_DENSE5_OUT_SIZE + DEC_DENSE6_OUT_SIZE + DEC_DENSE7_OUT_SIZE + DEC_DENSE8_OUT_SIZE];
     int output_index = 0;
     int input_index = 0;
+    float zero_vector[1024] = {0};
 
     /* run encoder stack and concatenate output in buffer*/
     _lpcnet_compute_dense(&dec_dense1, &buffer[output_index], input);
     input_index = output_index;
     output_index += DEC_DENSE1_OUT_SIZE;
 
-    compute_gru2(&dec_dense2, dec_state->dense2_state, &buffer[input_index]);
+    compute_gruB(&dec_dense2, zero_vector, dec_state->dense2_state, &buffer[input_index]);
     memcpy(&buffer[output_index], dec_state->dense2_state, DEC_DENSE2_OUT_SIZE * sizeof(float));
     input_index = output_index;
     output_index += DEC_DENSE2_OUT_SIZE;
@@ -70,7 +71,7 @@ void dred_rdovae_decode_qframe(
     input_index = output_index;
     output_index += DEC_DENSE3_OUT_SIZE;
 
-    compute_gru2(&dec_dense4, dec_state->dense4_state, &buffer[input_index]);
+    compute_gruB(&dec_dense4, zero_vector, dec_state->dense4_state, &buffer[input_index]);
     memcpy(&buffer[output_index], dec_state->dense4_state, DEC_DENSE4_OUT_SIZE * sizeof(float));
     input_index = output_index;
     output_index += DEC_DENSE4_OUT_SIZE;
@@ -79,7 +80,7 @@ void dred_rdovae_decode_qframe(
     input_index = output_index;
     output_index += DEC_DENSE5_OUT_SIZE;
 
-    compute_gru2(&dec_dense6, dec_state->dense6_state, &buffer[input_index]);
+    compute_gruB(&dec_dense6, zero_vector, dec_state->dense6_state, &buffer[input_index]);
     memcpy(&buffer[output_index], dec_state->dense6_state, DEC_DENSE6_OUT_SIZE * sizeof(float));
     input_index = output_index;
     output_index += DEC_DENSE6_OUT_SIZE;
