@@ -85,7 +85,7 @@ def c_export(args, model):
     
     enc_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_enc_data"), message=message)
     dec_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_dec_data"), message=message)
-    stats_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_stats"), message=message)
+    stats_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_stats_data"), message=message)
     constants_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_constants"), message=message, header_only=True)
     
     # some custom includes
@@ -99,7 +99,7 @@ f"""
 #include "nnet.h"
 """
         )
-
+        
     # encoder
     encoder_dense_layers = [
         ('core_encoder.module.dense_1'       , 'enc_dense1',   'TANH'), 
@@ -122,7 +122,8 @@ f"""
         ('core_encoder.module.gru_3'         , 'enc_dense6',   'TANH')
     ]
  
-    enc_max_rnn_units = max([dump_torch_weights(enc_writer, model.get_submodule(name), export_name, activation, verbose=True) for name, export_name, activation in encoder_gru_layers])
+    enc_max_rnn_units = max([dump_torch_weights(enc_writer, model.get_submodule(name), export_name, activation, verbose=True, input_sparse=True, dotp=True)
+                             for name, export_name, activation in encoder_gru_layers])
  
     
     encoder_conv_layers = [   
@@ -158,7 +159,8 @@ f"""
         ('core_decoder.module.gru_3'         , 'dec_dense6',    'TANH')
     ]
     
-    dec_max_rnn_units = max([dump_torch_weights(dec_writer, model.get_submodule(name), export_name, activation, verbose=True) for name, export_name, activation in decoder_gru_layers])
+    dec_max_rnn_units = max([dump_torch_weights(dec_writer, model.get_submodule(name), export_name, activation, verbose=True, input_sparse=True, dotp=True)
+                             for name, export_name, activation in decoder_gru_layers])
         
     del dec_writer
     
