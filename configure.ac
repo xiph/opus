@@ -168,7 +168,6 @@ AC_ARG_ENABLE([neural-fec],
 
 AS_IF([test "$enable_neural_fec" = "yes"],[
   AC_DEFINE([ENABLE_NEURAL_FEC], [1], [Neural FEC])
-  AC_DEFINE([DISABLE_DOT_PROD], [1], [Disable dot product])
 ])  
 
 AC_ARG_ENABLE([neural-plc],
