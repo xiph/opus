@@ -796,7 +796,12 @@ int main(int argc, char *argv[])
             if (run_decoder)
                 run_decoder += lost_count;
             if (!lost && lost_count > 0) {
-                opus_decoder_dred_input(dec, data, len, 100);
+                opus_int32 output_samples=0;
+                int dred_input;
+                opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
+                dred_input = lost_count*output_samples*100/sampling_rate;
+                /* Only decode the amount we need to fill in the gap. */
+                opus_decoder_dred_input(dec, data, len, IMIN(100, IMAX(0, dred_input)));
             }
             /* FIXME: Figure out how to trigger the decoder when the last packet of the file is lost. */
             for (fr=0;fr<run_decoder;fr++) {
