@@ -107,6 +107,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    opus_int16 *len;
    const unsigned char **frames;
    unsigned char * ptr;
+   int ones_begin=0, ones_end=0;
 
    if (begin<0 || begin>=end || end>rp->nb_frames)
    {
@@ -205,8 +206,8 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
             return OPUS_BUFFER_TOO_SMALL;
          OPUS_MOVE(&data[tot_size+pad_amount-ext_len], &data[tot_size], ext_len);
          /* Prepend 0x01 padding */
-         for (i=tot_size+nb_255s+1;i<tot_size+pad_amount-ext_len;i++)
-            data[i] = 0x01;
+         ones_begin = tot_size+nb_255s+1;
+         ones_end = tot_size+pad_amount-ext_len;
          for (i=0;i<nb_255s;i++)
             *ptr++ = 255;
          *ptr++ = pad_amount-255*nb_255s-1;
@@ -232,6 +233,8 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       OPUS_MOVE(ptr, frames[i], len[i]);
       ptr += len[i];
    }
+   for (i=ones_begin;i<ones_end;i++)
+      data[i] = 0x01;
    if (pad && nb_extensions==0)
    {
       /* Fill padding with zeros. */
