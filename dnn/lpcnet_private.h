@@ -111,6 +111,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in);
 
 void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const unsigned char buf[8]);
 
+void lpcnet_reset_signal(LPCNetState *lpcnet);
 void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, float *lpc, const float *features);
 void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int preload);
 void lpcnet_synthesize_impl(LPCNetState *lpcnet, const float *features, short *output, int N, int preload);

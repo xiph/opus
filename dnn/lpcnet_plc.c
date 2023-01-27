@@ -32,6 +32,9 @@
 #include "lpcnet.h"
 #include "plc_data.h"
 
+/* Comment this out to have LPCNet update its state on every good packet (slow). */
+#define PLC_SKIP_UPDATES
+
 LPCNET_EXPORT int lpcnet_plc_get_size() {
   return sizeof(LPCNetPLCState);
 }
@@ -200,8 +203,12 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
       } else {
         if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
         fec_rewind(st, FEATURES_DELAY);
+#ifdef PLC_SKIP_UPDATES
+        lpcnet_reset_signal(&st->lpcnet);
+#else
         RNN_COPY(tmp, pcm, FRAME_SIZE-TRAINING_OFFSET);
         lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
+#endif
       }
       RNN_COPY(st->pcm, &pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
       st->pcm_fill = TRAINING_OFFSET;
@@ -237,7 +244,16 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
   } else {
     for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE+i] = pcm[i];
     RNN_COPY(output, &st->pcm[0], FRAME_SIZE);
+#ifdef PLC_SKIP_UPDATES
+    {
+      float lpc[LPC_ORDER];
+      float gru_a_condition[3*GRU_A_STATE_SIZE];
+      float gru_b_condition[3*GRU_B_STATE_SIZE];
+      run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->enc.features[0]);
+    }
+#else
     lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], output, FRAME_SIZE, FRAME_SIZE);
+#endif
     RNN_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE);
   }
   st->loss_count = 0;

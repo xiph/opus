@@ -176,6 +176,14 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *lpcnet)
     free(lpcnet);
 }
 
+void lpcnet_reset_signal(LPCNetState *lpcnet)
+{
+    lpcnet->deemph_mem = 0;
+    lpcnet->last_exc = lin2ulaw(0.f);
+    RNN_CLEAR(lpcnet->last_sig, LPC_ORDER);
+    RNN_CLEAR(lpcnet->nnet.gru_a_state, GRU_A_STATE_SIZE);
+    RNN_CLEAR(lpcnet->nnet.gru_b_state, GRU_B_STATE_SIZE);
+}
 
 void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int preload)
 {
