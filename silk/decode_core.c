@@ -148,7 +148,7 @@ void silk_decode_core(
             }
 
             /* periods */
-            itmp = signalType == TYPE_VOICED ? lag = psDecCtrl->pitchL[ k ] : 0;
+            itmp = signalType == TYPE_VOICED ? psDecCtrl->pitchL[ k ] : 0;
             fwrite(&itmp, sizeof(itmp), 1, fperiod);
 
         }
