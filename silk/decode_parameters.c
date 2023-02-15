@@ -46,6 +46,8 @@ void silk_decode_parameters(
     silk_gains_dequant( psDecCtrl->Gains_Q16, psDec->indices.GainsIndices,
         &psDec->LastGainIndex, condCoding == CODE_CONDITIONALLY, psDec->nb_subfr );
 
+    // FEATURES: gain
+
     /****************/
     /* Decode NLSFs */
     /****************/
@@ -53,6 +55,8 @@ void silk_decode_parameters(
 
     /* Convert NLSF parameters to AR prediction filter coefficients */
     silk_NLSF2A( psDecCtrl->PredCoef_Q12[ 1 ], pNLSF_Q15, psDec->LPC_order, psDec->arch );
+
+    // FEATURES: LPC on 20ms frame
 
     /* If just reset, e.g., because internal Fs changed, do not allow interpolation */
     /* improves the case of packet loss in the first frame after a switch           */

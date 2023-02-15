@@ -265,6 +265,8 @@ int main(int argc, char *argv[])
     int delayed_decision=0;
     int ret = EXIT_FAILURE;
 
+    OPUS_SET_FORCE_MODE(MODE_SILK_ONLY);
+
     if (argc < 5 )
     {
        print_usage( argv );
