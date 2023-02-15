@@ -29,9 +29,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #endif
 
-#define FEATURES
 #ifdef FEATURES
 #include <stdio.h>
+#include <inttypes.h>
 #endif
 
 #include "main.h"
@@ -53,10 +53,12 @@ void silk_decode_core(
     static FILE *flpc = NULL;
     static FILE *fgain = NULL;
     static FILE *fltp = NULL;
+    static FILE *fperiod = NULL;
 
     if (flpc == NULL) {flpc = fopen("features_lpc.f32", "wb");}
     if (fgain == NULL) {fgain = fopen("features_gain.f32", "wb");}
     if (fltp == NULL) {fltp = fopen("features_ltp.f32", "wb");}
+    if (fperiod == NULL) {fperiod = fopen("features_period.s16", "wb");}
 
 #endif
     opus_int   i, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
@@ -125,19 +127,17 @@ void silk_decode_core(
 #ifdef FEATURES
         {
             float tmp;
+            int16_t itmp;
             
             /* gain */
             tmp = (float) psDecCtrl->Gains_Q16[k] / (1UL << 16);
             fwrite(&tmp, sizeof(tmp), 1, fgain);
             
             /* LPC */
-            if (k % 2 == 0)
+            for (i = 0; i < psDec->LPC_order; i++)
             {
-                for (i = 0; i < psDec->LPC_order; i++)
-                {
-                    tmp = (float) A_Q12[i] / (1U << 12);
-                    fwrite(&tmp, sizeof(tmp), 1, flpc);
-                }
+                tmp = (float) A_Q12[i] / (1U << 12);
+                fwrite(&tmp, sizeof(tmp), 1, flpc);
             }
 
             /* LTP */
@@ -146,6 +146,10 @@ void silk_decode_core(
                 tmp = (float) B_Q14[i] / (1U << 14);
                 fwrite(&tmp, sizeof(tmp), 1, fltp);
             }
+
+            /* periods */
+            itmp = signalType == TYPE_VOICED ? lag = psDecCtrl->pitchL[ k ] : 0;
+            fwrite(&itmp, sizeof(itmp), 1, fperiod);
 
         }
 #endif

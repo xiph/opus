@@ -831,6 +831,15 @@ AS_IF([test "$enable_rfc8251" = "no"], [
 ])
 
 
+AC_ARG_ENABLE([features],
+  AS_HELP_STRING([--enable-features], [enables feature output for SILK enhancement]),,
+  [enable_features=yes]
+)
+
+AS_IF([test "$enable_features" = "yes"], [
+       AC_DEFINE([FEATURES], [1], [Disable bitstream fixes from RFC 8251])
+])
+
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden"
 AC_MSG_CHECKING([if ${CC} supports -fvisibility=hidden])
