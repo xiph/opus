@@ -207,6 +207,48 @@ static OpusDecoder *ms_opus_decoder_create(opus_int32 Fs, int channels, int *err
 }
 #endif
 
+#define BITRATE_MIN 8000
+#define BITRATE_MAX 24000
+#define BITRATE_STEP 400
+
+#define COMPLEXITY_MIN 10
+#define COMPLEXITY_MAX 10
+
+#define PACKET_LOSS_PERC_MIN 0
+#define PACKET_LOSS_PERC_MAX 50
+#define PACKET_LOSS_PERC_STEP 5
+
+
+static int randint(int min, int max, int step)
+{
+    double r = ((double) rand())/ (RAND_MAX + 1.);
+    int d;
+
+    d = ((int) ((max + 1 - min) * r / step) * step) + min;
+
+    return d;
+}
+
+static void new_random_setting(OpusEncoder *enc)
+{
+    int bitrate_bps;
+    int complexity;
+    int packet_loss_perc;
+
+    bitrate_bps = randint(BITRATE_MIN, BITRATE_MAX, BITRATE_STEP);
+    complexity  = randint(COMPLEXITY_MIN, COMPLEXITY_MAX, 1);
+    packet_loss_perc = randint(PACKET_LOSS_PERC_MIN, PACKET_LOSS_PERC_MAX, PACKET_LOSS_PERC_STEP);
+
+    if (0)
+    {
+        printf("changing settings to %d\t%d\t%d\n", bitrate_bps, complexity, packet_loss_perc);
+    }
+
+    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
+    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
+    opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
+}
+
 int main(int argc, char *argv[])
 {
     int err;
@@ -263,6 +305,9 @@ int main(int argc, char *argv[])
     int remaining=0;
     int variable_duration=OPUS_FRAMESIZE_ARG;
     int delayed_decision=0;
+    int silk_random_switching = 0;
+    int silk_frame_counter = 0;
+    FILE *silk_bitrate_file = NULL;
     int ret = EXIT_FAILURE;
 
     OPUS_SET_FORCE_MODE(MODE_SILK_ONLY);
@@ -475,6 +520,11 @@ int main(int argc, char *argv[])
             mode_list = celt_hq_test;
             nb_modes_in_list = 4;
             args++;
+        } else if( strcmp( argv[ args ], "-silk_random_switching" ) == 0 ){
+            silk_random_switching = atoi( argv[ args + 1 ] );
+            printf("switching encoding parameters every %dth frame\n", silk_random_switching);
+            silk_bitrate_file = fopen("bitrate.s32", "wb");
+            args += 2;
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
             print_usage( argv );
@@ -681,6 +731,19 @@ int main(int argc, char *argv[])
                 opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(mode_list[curr_mode][3]));
                 frame_size = mode_list[curr_mode][2];
             }
+            if (silk_random_switching)
+            {
+                int bitrate;
+                silk_frame_counter += 1;
+                if (silk_frame_counter % silk_random_switching == 0) {
+                    new_random_setting(enc);
+                }
+
+                opus_encoder_ctl(enc, OPUS_GET_BITRATE_REQUEST, &bitrate);
+                fwrite(&bitrate, sizeof(bitrate), 1, silk_bitrate_file);
+
+            }
+
             num_read = fread(fbytes, sizeof(short)*channels, frame_size-remaining, fin);
             curr_read = (int)num_read;
             tot_in += curr_read;
@@ -887,6 +950,8 @@ failure:
         fclose(fin);
     if (fout)
         fclose(fout);
+    if (silk_bitrate_file)
+        fclose(silk_bitrate_file);
     free(in);
     free(out);
     free(fbytes);
