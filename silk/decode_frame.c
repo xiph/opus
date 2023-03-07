@@ -80,7 +80,6 @@ opus_int silk_decode_frame(
                        ~(SHELL_CODEC_FRAME_LENGTH - 1), opus_int16 );
 #ifdef FEATURES
         num_bits = ec_tell(psRangeDec);
-        printf("numbits: %d\n", num_bits);
 #endif
         /*********************************************/
         /* Decode quantization indices of side info  */
