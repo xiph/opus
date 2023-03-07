@@ -128,8 +128,8 @@ struct OpusEncoder {
    middle (memoriless) threshold. The second column is the hysteresis
    (difference with the middle) */
 static const opus_int32 mono_voice_bandwidth_thresholds[8] = {
-         9000,  700, /* NB<->MB */
-         9000,  700, /* MB<->WB */
+         1000,  700, /* NB<->MB */
+         1000,  700, /* MB<->WB */
         13500, 1000, /* WB<->SWB */
         14000, 2000, /* SWB<->FB */
 };

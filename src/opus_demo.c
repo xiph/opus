@@ -307,7 +307,6 @@ int main(int argc, char *argv[])
     int delayed_decision=0;
     int silk_random_switching = 0;
     int silk_frame_counter = 0;
-    FILE *silk_bitrate_file = NULL;
     int ret = EXIT_FAILURE;
 
     OPUS_SET_FORCE_MODE(MODE_SILK_ONLY);
@@ -523,7 +522,6 @@ int main(int argc, char *argv[])
         } else if( strcmp( argv[ args ], "-silk_random_switching" ) == 0 ){
             silk_random_switching = atoi( argv[ args + 1 ] );
             printf("switching encoding parameters every %dth frame\n", silk_random_switching);
-            silk_bitrate_file = fopen("bitrate.s32", "wb");
             args += 2;
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
@@ -740,7 +738,6 @@ int main(int argc, char *argv[])
                 }
 
                 opus_encoder_ctl(enc, OPUS_GET_BITRATE_REQUEST, &bitrate);
-                fwrite(&bitrate, sizeof(bitrate), 1, silk_bitrate_file);
 
             }
 
@@ -950,8 +947,6 @@ failure:
         fclose(fin);
     if (fout)
         fclose(fout);
-    if (silk_bitrate_file)
-        fclose(silk_bitrate_file);
     free(in);
     free(out);
     free(fbytes);

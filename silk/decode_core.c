@@ -54,11 +54,13 @@ void silk_decode_core(
     static FILE *fgain = NULL;
     static FILE *fltp = NULL;
     static FILE *fperiod = NULL;
+    static FILE *foffset = NULL;
 
     if (flpc == NULL) {flpc = fopen("features_lpc.f32", "wb");}
     if (fgain == NULL) {fgain = fopen("features_gain.f32", "wb");}
     if (fltp == NULL) {fltp = fopen("features_ltp.f32", "wb");}
     if (fperiod == NULL) {fperiod = fopen("features_period.s16", "wb");}
+    if (foffset == NULL) {foffset = fopen("features_offset.f32", "wb");}
 
 #endif
     opus_int   i, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
