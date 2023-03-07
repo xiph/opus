@@ -130,6 +130,7 @@ void silk_decode_core(
         {
             float tmp;
             int16_t itmp;
+            float lpc_buffer[16] = {0};
             
             /* gain */
             tmp = (float) psDecCtrl->Gains_Q16[k] / (1UL << 16);
@@ -138,9 +139,9 @@ void silk_decode_core(
             /* LPC */
             for (i = 0; i < psDec->LPC_order; i++)
             {
-                tmp = (float) A_Q12[i] / (1U << 12);
-                fwrite(&tmp, sizeof(tmp), 1, flpc);
+                lpc_buffer[i] = (float) A_Q12[i] / (1U << 12);
             }
+            fwrite(lpc_buffer, sizeof(lpc_buffer[0]), 16, flpc);
 
             /* LTP */
             for (i = 0; i < 5; i++)
