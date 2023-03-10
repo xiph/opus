@@ -207,10 +207,6 @@ static OpusDecoder *ms_opus_decoder_create(opus_int32 Fs, int channels, int *err
 }
 #endif
 
-#define BITRATE_MIN 6000
-#define BITRATE_MAX 20000
-#define BITRATE_STEP 100
-
 #define COMPLEXITY_MIN 10
 #define COMPLEXITY_MAX 10
 
@@ -218,6 +214,21 @@ static OpusDecoder *ms_opus_decoder_create(opus_int32 Fs, int channels, int *err
 #define PACKET_LOSS_PERC_MAX 0
 #define PACKET_LOSS_PERC_STEP 5
 
+#define NUM_BITRATES 100
+static int bitrates[NUM_BITRATES] = {
+        6000,  6060,  6120,  6180,  6240,  6300,  6360,  6420,  6480,
+        6525,  6561,  6598,  6634,  6670,  6707,  6743,  6780,  6816,
+        6853,  6889,  6926,  6962,  6999,  7042,  7085,  7128,  7171,
+        7215,  7258,  7301,  7344,  7388,  7431,  7474,  7512,  7541,
+        7570,  7599,  7628,  7657,  7686,  7715,  7744,  7773,  7802,
+        7831,  7860,  7889,  7918,  7947,  7976,  8013,  8096,  8179,
+        8262,  8344,  8427,  8511,  8605,  8699,  8792,  8886,  8980,
+        9100,  9227,  9354,  9480,  9561,  9634,  9706,  9779,  9851,
+        9924,  9996, 10161, 10330, 10499, 10698, 10898, 11124, 11378,
+       11575, 11719, 11862, 12014, 12345, 12751, 13195, 13561, 13795,
+       14069, 14671, 15403, 15790, 16371, 17399, 17968, 19382, 20468,
+       22000
+};
 
 static int randint(int min, int max, int step)
 {
@@ -235,11 +246,11 @@ static void new_random_setting(OpusEncoder *enc)
     int complexity;
     int packet_loss_perc;
 
-    bitrate_bps = randint(BITRATE_MIN, BITRATE_MAX, BITRATE_STEP);
+    bitrate_bps = bitrates[randint(0, NUM_BITRATES - 1, 1)];
     complexity  = randint(COMPLEXITY_MIN, COMPLEXITY_MAX, 1);
     packet_loss_perc = randint(PACKET_LOSS_PERC_MIN, PACKET_LOSS_PERC_MAX, PACKET_LOSS_PERC_STEP);
 
-    if (0)
+    if (1)
     {
         printf("changing settings to %d\t%d\t%d\n", bitrate_bps, complexity, packet_loss_perc);
     }
@@ -309,7 +320,6 @@ int main(int argc, char *argv[])
     int silk_frame_counter = 0;
     int ret = EXIT_FAILURE;
 
-    OPUS_SET_FORCE_MODE(MODE_SILK_ONLY);
     //srand(0);
 
     if (argc < 5 )
@@ -588,6 +598,8 @@ int main(int argc, char *argv[])
        opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
        opus_encoder_ctl(enc, OPUS_SET_LSB_DEPTH(16));
        opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
+
+       opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY));
     }
     if (!encode_only)
     {
