@@ -52,6 +52,11 @@
 #include "mathops.h"
 #include "cpu_support.h"
 
+#if 1
+#include <stdlib.h>
+#include <stdio.h>
+#endif
+
 struct OpusDecoder {
    int          celt_dec_offset;
    int          silk_dec_offset;
@@ -269,6 +274,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       data = NULL;
       /* In that case, don't conceal more than what the ToC says */
       frame_size = IMIN(frame_size, st->frame_size);
+      printf("data len <= 1\n"); exit(1);
    }
    if (data != NULL)
    {
@@ -276,7 +282,13 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       mode = st->mode;
       bandwidth = st->bandwidth;
       ec_dec_init(&dec,(unsigned char*)data,len);
+      if (mode != MODE_SILK_ONLY)
+      {
+         printf("mode is %d\n", mode);
+         return -9999;
+      }
    } else {
+      printf("data is NULL\n"); exit(1);
       audiosize = frame_size;
       /* Run PLC using last used mode (CELT if we ended with CELT redundancy) */
       mode = st->prev_redundancy ? MODE_CELT_ONLY : st->prev_mode;

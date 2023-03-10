@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef FEATURES
 #include <stdio.h>
+#include <stdlib.h>
 #endif
 
 #include "main.h"
@@ -93,12 +94,7 @@ opus_int silk_decode_frame(
                 psDec->indices.quantOffsetType, psDec->frame_length );
 #ifdef FEATURES
         num_bits = ec_tell(psRangeDec) - num_bits;
-        if (num_bits_smooth < 0) {
-            num_bits_smooth = num_bits;
-        }
-        else {
-            num_bits_smooth = 0.9 * num_bits_smooth + 0.1 * num_bits;
-        }
+        num_bits_smooth = 0.9 * num_bits_smooth + 0.1 * num_bits;
         fwrite(&num_bits, sizeof(num_bits), 1, f_numbits);
         fwrite(&num_bits_smooth, sizeof(num_bits_smooth), 1, f_numbits_smooth);
 #endif
@@ -126,6 +122,8 @@ opus_int silk_decode_frame(
         psDec->first_frame_after_reset = 0;
     } else {
         /* Handle packet loss by extrapolation */
+        printf("packet lost!");
+        exit(1);
         silk_PLC( psDec, psDecCtrl, pOut, 1, arch );
     }
 

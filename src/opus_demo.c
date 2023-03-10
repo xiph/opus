@@ -207,15 +207,15 @@ static OpusDecoder *ms_opus_decoder_create(opus_int32 Fs, int channels, int *err
 }
 #endif
 
-#define BITRATE_MIN 8000
-#define BITRATE_MAX 24000
-#define BITRATE_STEP 400
+#define BITRATE_MIN 6000
+#define BITRATE_MAX 20000
+#define BITRATE_STEP 100
 
 #define COMPLEXITY_MIN 10
 #define COMPLEXITY_MAX 10
 
 #define PACKET_LOSS_PERC_MIN 0
-#define PACKET_LOSS_PERC_MAX 50
+#define PACKET_LOSS_PERC_MAX 0
 #define PACKET_LOSS_PERC_STEP 5
 
 
@@ -310,6 +310,7 @@ int main(int argc, char *argv[])
     int ret = EXIT_FAILURE;
 
     OPUS_SET_FORCE_MODE(MODE_SILK_ONLY);
+    //srand(0);
 
     if (argc < 5 )
     {
@@ -836,13 +837,16 @@ int main(int argc, char *argv[])
                         /* attempt to decode with in-band FEC from next packet */
                         opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                         output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, output_samples, 1);
+                        if (output_samples != 320) {printf("[frame %d] decoder return value %d\n", silk_frame_counter, output_samples); exit(1);}
                     } else {
                         /* regular decode */
                         output_samples = max_frame_size;
                         output_samples = opus_decode(dec, data[1-toggle], len[1-toggle], out, output_samples, 0);
+                        if (output_samples != 320) {printf("[frame %d] decoder return value %d\n", silk_frame_counter, output_samples); exit(1);}
                     }
                 } else {
                     output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, output_samples, 0);
+                    if (output_samples != 320) {printf("[frame %d] decoder return value %d\n", silk_frame_counter, output_samples); exit(1);}
                 }
                 if (output_samples>0)
                 {
