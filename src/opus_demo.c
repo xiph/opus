@@ -207,11 +207,11 @@ static OpusDecoder *ms_opus_decoder_create(opus_int32 Fs, int channels, int *err
 }
 #endif
 
-#define COMPLEXITY_MIN 10
+#define COMPLEXITY_MIN 0
 #define COMPLEXITY_MAX 10
 
 #define PACKET_LOSS_PERC_MIN 0
-#define PACKET_LOSS_PERC_MAX 0
+#define PACKET_LOSS_PERC_MAX 50
 #define PACKET_LOSS_PERC_STEP 5
 
 #define NUM_BITRATES 100

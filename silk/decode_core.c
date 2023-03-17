@@ -155,7 +155,7 @@ void silk_decode_core(
             fwrite(&itmp, sizeof(itmp), 1, fperiod);
 
             /* offset */
-            tmp = offset_Q10 / (1U << 10);
+            tmp = (float) offset_Q10 / (1U << 10);
             fwrite(&tmp, sizeof(tmp), 1, foffset);
 
         }
