@@ -207,14 +207,14 @@ static OpusDecoder *ms_opus_decoder_create(opus_int32 Fs, int channels, int *err
 }
 #endif
 
-#define COMPLEXITY_MIN 0
+#define COMPLEXITY_MIN 10
 #define COMPLEXITY_MAX 10
 
 #define PACKET_LOSS_PERC_MIN 0
-#define PACKET_LOSS_PERC_MAX 50
-#define PACKET_LOSS_PERC_STEP 5
+#define PACKET_LOSS_PERC_MAX 0
+#define PACKET_LOSS_PERC_STEP 1
 
-#define NUM_BITRATES 100
+#define NUM_BITRATES 102
 static int bitrates[NUM_BITRATES] = {
         6000,  6060,  6120,  6180,  6240,  6300,  6360,  6420,  6480,
         6525,  6561,  6598,  6634,  6670,  6707,  6743,  6780,  6816,
@@ -227,7 +227,7 @@ static int bitrates[NUM_BITRATES] = {
         9924,  9996, 10161, 10330, 10499, 10698, 10898, 11124, 11378,
        11575, 11719, 11862, 12014, 12345, 12751, 13195, 13561, 13795,
        14069, 14671, 15403, 15790, 16371, 17399, 17968, 19382, 20468,
-       22000
+       22000, 32000, 64000
 };
 
 static int randint(int min, int max, int step)
