@@ -1112,9 +1112,17 @@ int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
          }
       } else if (id == 127)
       {
-         payload = data0+header_size;
-         payload_len = (data-data0)-header_size;
-         break;
+         const unsigned char *curr_payload;
+         opus_int32 curr_payload_len;
+         curr_payload = data0+header_size;
+         curr_payload_len = (data-data0)-header_size;
+         /* Check that temporary extension type and version match.
+            This check will be removed once extension is finalized. */
+         if (curr_payload_len > 2 && curr_payload[0] == 'D' && curr_payload[1] == DRED_VERSION) {
+            payload = curr_payload+2;
+            payload_len = curr_payload_len-2;
+            break;
+         }
       }
    }
    if (payload != NULL)
