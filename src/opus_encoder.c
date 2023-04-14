@@ -2199,8 +2199,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        dred_chunks = IMIN(st->dred_duration/4, DRED_NUM_REDUNDANCY_FRAMES/2);
        dred_bytes = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-2);
        /* Check whether we actually have something to encode. */
-       if (dred_chunks >= 1 && dred_bytes >= 3) {
-           dred_bytes = dred_encode_silk_frame(dred, buf, dred_chunks, dred_bytes);
+       if (dred_chunks >= 1 && dred_bytes >= 5) {
+           /* Add temporary extension type and version.
+              These bytes will be removed once extension is finalized. */
+           buf[0] = 'D';
+           buf[1] = DRED_VERSION;
+           dred_bytes = dred_encode_silk_frame(dred, buf+2, dred_chunks, dred_bytes-2);
+           dred_bytes += 2;
            extension.id = 127;
            extension.frame = 0;
            extension.data = buf;

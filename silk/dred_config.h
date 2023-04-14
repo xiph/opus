@@ -25,6 +25,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#define DRED_VERSION 0
+
 /* these are inpart duplicates to the values defined in dred_rdovae_constants.h */
 #define DRED_NUM_FEATURES 20
 #define DRED_LATENT_DIM 80
