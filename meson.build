@@ -574,8 +574,8 @@ foreach l : lines
 endforeach
 
 subdir('include')
-subdir('silk')
 subdir('celt')
+subdir('silk')
 subdir('src')
 
 configure_file(output: 'config.h', configuration: opus_conf)
