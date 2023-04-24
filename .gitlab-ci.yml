@@ -7,6 +7,18 @@ default:
   # Image from https://hub.docker.com/_/gcc/ based on Debian
   image: gcc:9
 
+# https://docs.gitlab.com/ee/ci/yaml/yaml_optimization.html#reference-tags
+.snippets:
+  git_prep:
+    # Make sure we have a recent annotated tag, otherwise meson/get-version.py
+    # might fail later (e.g. shallow clone without enough history) or return
+    # a bogus version based on a much older tag. This can happen in merge request
+    # pipelines from a personal fork, as the fork might not have the latest
+    # upstream tags if it has been forked a long time ago. Also affects the
+    # git version picked up by autotools and cmake, not just meson.
+    - git fetch https://gitlab.xiph.org/xiph/opus.git refs/tags/v1.4:refs/tags/v1.4
+    - git describe
+
 whitespace:
   stage: test
   script:
@@ -16,7 +28,8 @@ autoconf:
   stage: build
   before_script:
     - apt-get update &&
-      apt-get install -y zip doxygen
+      apt-get install -y zip doxygen git
+    - !reference [.snippets, git_prep]
   script:
     - ./autogen.sh
     - ./configure
@@ -36,26 +49,36 @@ cmake:
   before_script:
     - apt-get update &&
       apt-get install -y cmake ninja-build
+    - !reference [.snippets, git_prep]
   script:
     - mkdir build
     - cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DOPUS_BUILD_TESTING=ON -DOPUS_BUILD_PROGRAMS=ON
     - cmake --build build
     - cd build && ctest --output-on-failure
 
-meson:
+.meson:
+  image: 'debian:bookworm-slim'
   stage: build
   before_script:
     - apt-get update &&
-      apt-get install -y python3-pip ninja-build doxygen
-    - export XDG_CACHE_HOME=$PWD/pip-cache
-    - pip3 install --user meson
+      apt-get install -y ninja-build doxygen meson git
+    - !reference [.snippets, git_prep]
   script:
-    - export PATH=$PATH:$HOME/.local/bin
     - mkdir builddir
-    - meson setup --werror -Dtests=enabled -Ddocs=enabled -Dbuildtype=release builddir
+    - meson setup -Dtests=enabled -Ddocs=enabled -Dbuildtype=release builddir ${MESON_EXTRA_ARGS}
     - meson compile -C builddir
     - meson test -C builddir
     #- meson dist --no-tests -C builddir
-  cache:
-    paths:
-      - 'pip-cache/*'
+
+meson x86_64:
+  extends: '.meson'
+  variables:
+    MESON_EXTRA_ARGS: '--werror'
+
+meson arm64:
+  extends: '.meson'
+  tags:
+    - 'gstreamer-arm64-linux-docker'
+  variables:
+    # arm64 build has a compiler warning still, so let's not use --werror for now
+    MESON_EXTRA_ARGS: '-Dwerror=false'
