@@ -1,6 +1,15 @@
 include:
   - template: 'Workflows/Branch-Pipelines.gitlab-ci.yml'
 
+# https://docs.gitlab.com/ee/ci/yaml/workflow.html#switch-between-branch-pipelines-and-merge-request-pipelines
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
 default:
   tags:
     - docker
@@ -23,6 +32,26 @@ whitespace:
   stage: test
   script:
     - git diff-tree --check origin/master HEAD
+
+# Make sure commits are GPG signed
+ci-fairy:
+  image: 'debian:bookworm-slim'
+  stage: test
+  script:
+    - apt update
+    - apt install -y python3-pip git
+    - pip3 install --break-system-packages git+https://gitlab.freedesktop.org/freedesktop/ci-templates@7811ba9814a3bad379377241c6c6b62d78b20eac
+    - echo Checking commits $CI_FAIRY_BASE_COMMIT..HEAD
+    - ci-fairy check-commits --gpg-signed-commit $CI_FAIRY_BASE_COMMIT..HEAD
+  tags:
+    - 'docker'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables:
+        CI_FAIRY_BASE_COMMIT: $CI_MERGE_REQUEST_DIFF_BASE_SHA
+    - if: $CI_PIPELINE_SOURCE != "merge_request_event"
+      variables:
+        CI_FAIRY_BASE_COMMIT: 'HEAD^1'
 
 autoconf:
   stage: build
