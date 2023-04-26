@@ -597,7 +597,11 @@ pkgconf.set('VERSION', opus_version)
 pkgconf.set('PC_BUILD', pc_build)
 pkgconf.set('LIBM', libm.found() ? '-lm' : '')
 
-pkg_install_dir = '@0@/pkgconfig'.format(get_option('libdir'))
+if (host_machine.system() == 'freebsd')
+  pkg_install_dir = '@0@/pkgconfig'.format('libdata')
+else
+  pkg_install_dir = '@0@/pkgconfig'.format(get_option('libdir'))
+endif
 
 configure_file(input : 'opus.pc.in',
   output : 'opus.pc',
