@@ -712,6 +712,11 @@ int main(int argc, char *argv[])
                    stop = 1;
             }
             len = opus_encode(enc, in, frame_size, data, max_payload_bytes);
+            if (len < 0)
+            {
+                fprintf (stderr, "opus_encode() returned %d\n", len);
+                goto failure;
+            }
             nb_encoded = opus_packet_get_samples_per_frame(data, sampling_rate)*opus_packet_get_nb_frames(data, len);
             remaining = frame_size-nb_encoded;
             for(i=0;i<remaining*channels;i++)
@@ -732,11 +737,6 @@ int main(int argc, char *argv[])
                opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
             }
             opus_encoder_ctl(enc, OPUS_GET_FINAL_RANGE(&enc_final_range));
-            if (len < 0)
-            {
-                fprintf (stderr, "opus_encode() returned %d\n", len);
-                goto failure;
-            }
             curr_mode_count += frame_size;
             if (curr_mode_count > mode_switch_time && curr_mode < nb_modes_in_list-1)
             {
