@@ -2194,18 +2194,20 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        opus_extension_data extension;
        unsigned char buf[DRED_MAX_DATA_SIZE];
        int dred_chunks;
-       int dred_bytes;
+       int dred_bytes_left;
        DREDEnc *dred = &((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.dred_encoder;
        dred_chunks = IMIN(st->dred_duration/4, DRED_NUM_REDUNDANCY_FRAMES/2);
-       dred_bytes = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-2);
+       dred_bytes_left = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-2);
        /* Check whether we actually have something to encode. */
-       if (dred_chunks >= 1 && dred_bytes >= 5) {
+       if (dred_chunks >= 1 && dred_bytes_left >= DRED_MIN_BYTES+2) {
+           int dred_bytes;
            /* Add temporary extension type and version.
               These bytes will be removed once extension is finalized. */
            buf[0] = 'D';
            buf[1] = DRED_VERSION;
-           dred_bytes = dred_encode_silk_frame(dred, buf+2, dred_chunks, dred_bytes-2);
+           dred_bytes = dred_encode_silk_frame(dred, buf+2, dred_chunks, dred_bytes_left-2);
            dred_bytes += 2;
+           celt_assert(dred_bytes <= dred_bytes_left);
            extension.id = 127;
            extension.frame = 0;
            extension.data = buf;
