@@ -2213,6 +2213,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
        } else if (!st->use_vbr) {
            ret = opus_packet_pad(data, ret, max_data_bytes);
+           if (ret == OPUS_OK)
+              ret = max_data_bytes;
        }
        if (ret < 0)
        {
