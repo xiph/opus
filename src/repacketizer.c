@@ -108,6 +108,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    const unsigned char **frames;
    unsigned char * ptr;
    int ones_begin=0, ones_end=0;
+   int ext_begin=0, ext_len=0;
 
    if (begin<0 || begin>=end || end>rp->nb_frames)
    {
@@ -154,7 +155,6 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       /* Code 3 */
       int vbr;
       int pad_amount=0;
-      int ext_len=0;
 
       /* Restart the process for the padding case */
       ptr = data;
@@ -192,7 +192,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       pad_amount = pad ? (maxlen-tot_size) : 0;
       if (nb_extensions>0)
       {
-         ext_len = opus_packet_extensions_generate(&data[tot_size], maxlen-tot_size, extensions, nb_extensions, 0);
+         ext_len = opus_packet_extensions_generate(NULL, maxlen-tot_size, extensions, nb_extensions, 0);
          if (ext_len < 0) return ext_len;
          if (!pad)
             pad_amount = ext_len + ext_len/254 + 1;
@@ -204,7 +204,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
          nb_255s = (pad_amount-1)/255;
          if (tot_size + ext_len + nb_255s + 1 > maxlen)
             return OPUS_BUFFER_TOO_SMALL;
-         OPUS_MOVE(&data[tot_size+pad_amount-ext_len], &data[tot_size], ext_len);
+         ext_begin = tot_size+pad_amount-ext_len;
          /* Prepend 0x01 padding */
          ones_begin = tot_size+nb_255s+1;
          ones_end = tot_size+pad_amount-ext_len;
@@ -232,6 +232,10 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       /* celt_assert(frames[i] + len[i] <= data || ptr <= frames[i]); */
       OPUS_MOVE(ptr, frames[i], len[i]);
       ptr += len[i];
+   }
+   if (ext_len > 0) {
+      int ret = opus_packet_extensions_generate(&data[ext_begin], ext_len, extensions, nb_extensions, 0);
+      celt_assert(ret == ext_len);
    }
    for (i=ones_begin;i<ones_end;i++)
       data[i] = 0x01;

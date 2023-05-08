@@ -199,11 +199,14 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, 
                int diff = frame - curr_frame;
                if (len-pos < 2)
                   return OPUS_BUFFER_TOO_SMALL;
-               if (diff == 1)
-                  data[pos++] = 0x02;
-               else {
-                  data[pos++] = 0x03;
-                  data[pos++] = diff;
+               if (diff == 1) {
+                  if (data) data[pos] = 0x02;
+                  pos++;
+               } else {
+                  if (data) data[pos] = 0x03;
+                  pos++;
+                  if (data) data[pos] = diff;
+                  pos++;
                }
                curr_frame = frame;
             }
@@ -213,9 +216,12 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, 
                   return OPUS_BAD_ARG;
                if (len-pos < extensions[i].len+1)
                   return OPUS_BUFFER_TOO_SMALL;
-               data[pos++] = (extensions[i].id<<1) + extensions[i].len;
-               if (extensions[i].len > 0)
-                  data[pos++] = extensions[i].data[0];
+               if (data) data[pos] = (extensions[i].id<<1) + extensions[i].len;
+               pos++;
+               if (extensions[i].len > 0) {
+                  data[pos] = extensions[i].data[0];
+                  pos++;
+               }
             } else {
                int last;
                opus_int32 length_bytes;
@@ -225,15 +231,19 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, 
                   length_bytes = 0;
                if (len-pos < 1 + length_bytes + extensions[i].len)
                   return OPUS_BUFFER_TOO_SMALL;
-               data[pos++] = (extensions[i].id<<1) + !last;
+               if (data) data[pos] = (extensions[i].id<<1) + !last;
+               pos++;
                if (!last)
                {
                   opus_int32 j;
-                  for (j=0;j<extensions[i].len/255;j++)
-                     data[pos++] = 255;
-                  data[pos++] = extensions[i].len % 255;
+                  for (j=0;j<extensions[i].len/255;j++) {
+                     if (data) data[pos] = 255;
+                     pos++;
+                  }
+                  if (data) data[pos] = extensions[i].len % 255;
+                  pos++;
                }
-               OPUS_COPY(&data[pos], extensions[i].data, extensions[i].len);
+               if (data) OPUS_COPY(&data[pos], extensions[i].data, extensions[i].len);
                pos += extensions[i].len;
             }
             written++;
@@ -246,9 +256,11 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, 
    if (pad && pos < len)
    {
       opus_int32 padding = len - pos;
-      OPUS_MOVE(data+padding, data, pos);
-      for (i=0;i<padding;i++)
-         data[i] = 0x01;
+      if (data) {
+         OPUS_MOVE(data+padding, data, pos);
+         for (i=0;i<padding;i++)
+            data[i] = 0x01;
+      }
       pos += padding;
    }
    return pos;
