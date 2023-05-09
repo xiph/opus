@@ -36,6 +36,7 @@
 #include "celt/vq.h"
 #include "celt/cwrs.h"
 #include "celt/laplace.h"
+#include "os_support.h"
 
 #define LATENT_DIM 80
 #define PVQ_DIM 24
@@ -46,7 +47,10 @@ static void encode_pvq(const int *iy, int N, int K, ec_enc *enc) {
     celt_assert(N==24 || N==12 || N==6);
     fits = (N==24 && K<=9) || (N==12 && K<=16) || (N==6);
     /*printf("encode(%d,%d), fits=%d\n", N, K, fits);*/
-    if (fits) encode_pulses(iy, N, K, enc);
+    if (fits) {
+      if (K > 0)
+        encode_pulses(iy, N, K, enc);
+    }
     else {
         int N2 = N/2;
         int K0=0;
@@ -90,7 +94,12 @@ static void decode_pvq(int *iy, int N, int K, ec_dec *dec) {
     celt_assert(N==24 || N==12 || N==6);
     fits = (N==24 && K<=9) || (N==12 && K<=16) || (N==6);
     /*printf("encode(%d,%d), fits=%d\n", N, K, fits);*/
-    if (fits) decode_pulses(iy, N, K, dec);
+    if (fits) {
+      if (K > 0)
+        decode_pulses(iy, N, K, dec);
+      else
+        OPUS_CLEAR(iy, N);
+    }
     else {
         int N2 = N/2;
         int K0;
