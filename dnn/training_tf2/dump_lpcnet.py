@@ -39,6 +39,7 @@ import h5py
 import re
 import argparse
 
+array_list = []
 
 # no cuda devices needed
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
@@ -52,11 +53,19 @@ max_conv_inputs = 1
 max_mdense_tmp = 1
 
 def printVector(f, vector, name, dtype='float', dotp=False):
+    global array_list
     if dotp:
         vector = vector.reshape((vector.shape[0]//4, 4, vector.shape[1]//8, 8))
         vector = vector.transpose((2, 0, 3, 1))
     v = np.reshape(vector, (-1));
     #print('static const float ', name, '[', len(v), '] = \n', file=f)
+    if name not in array_list:
+        array_list.append(name)
+    f.write('#ifdef USE_WEIGHTS_FILE\n')
+    f.write('static const {} *{} = NULL;\n'.format(dtype, name, len(v)))
+    f.write('#else\n')
+    f.write('#define WEIGHTS_{}_DEFINED\n'.format(name))
+    f.write('#define WEIGHTS_{}_TYPE WEIGHT_TYPE_{}\n'.format(name, dtype))
     f.write('static const {} {}[{}] = {{\n   '.format(dtype, name, len(v)))
     for i in range(0, len(v)):
         f.write('{}'.format(v[i]))
@@ -69,7 +78,8 @@ def printVector(f, vector, name, dtype='float', dotp=False):
         else:
             f.write(" ")
     #print(v, file=f)
-    f.write('\n};\n\n')
+    f.write('\n};\n')
+    f.write('#endif\n\n')
     return;
 
 def printSparseVector(f, A, name, have_diag=True):
@@ -341,6 +351,15 @@ if __name__ == "__main__":
             layer_list.append(layer.name)
 
     dump_sparse_gru(model.get_layer('gru_a'), f, hf)
+
+    f.write('#ifdef DUMP_BINARY_WEIGHTS\n')
+    f.write('const WeightArray lpcnet_arrays[] = {\n')
+    for name in array_list:
+        f.write('#ifdef WEIGHTS_{}_DEFINED\n'.format(name))
+        f.write('  {{"{}", WEIGHTS_{}_TYPE, sizeof({}), {}}},\n'.format(name, name, name, name))
+        f.write('#endif\n')
+    f.write('  {NULL, 0, 0}\n};\n')
+    f.write('#endif\n')
 
     hf.write('#define MAX_RNN_NEURONS {}\n\n'.format(max_rnn_neurons))
     hf.write('#define MAX_CONV_INPUTS {}\n\n'.format(max_conv_inputs))

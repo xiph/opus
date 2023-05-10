@@ -38,6 +38,29 @@
 #define ACTIVATION_SOFTMAX 4
 #define ACTIVATION_SWISH   5
 
+#define WEIGHT_BLOB_VERSION 0
+#define WEIGHT_BLOCK_SIZE 64
+typedef struct {
+  const char *name;
+  int type;
+  int size;
+  const void *data;
+} WeightArray;
+
+#define WEIGHT_TYPE_float 0
+#define WEIGHT_TYPE_int 1
+#define WEIGHT_TYPE_qweight 2
+
+typedef struct {
+  char head[4];
+  int version;
+  int type;
+  int size;
+  int block_size;
+  char name[44];
+} WeightHead;
+
+
 typedef struct {
   const float *bias;
   const float *input_weights;
