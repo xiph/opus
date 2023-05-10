@@ -162,7 +162,6 @@ void compute_burg_cepstrum(const float *pcm, float *burg_cepstrum, int len, int 
   float x[WINDOW_SIZE];
   float Eburg[NB_BANDS];
   float g;
-  float E;
   kiss_fft_cpx LPC[FREQ_SIZE];
   float Ly[NB_BANDS];
   assert(order <= LPC_ORDER);
@@ -184,7 +183,6 @@ void compute_burg_cepstrum(const float *pcm, float *burg_cepstrum, int len, int 
     Ly[i] = MAX16(logMax-8, MAX16(follow-2.5, Ly[i]));
     logMax = MAX16(logMax, Ly[i]);
     follow = MAX16(follow-2.5, Ly[i]);
-    E += Eburg[i];
   }
   dct(burg_cepstrum, Ly);
   burg_cepstrum[0] += - 4;
