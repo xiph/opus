@@ -398,6 +398,9 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
   */
 typedef struct OpusDecoder OpusDecoder;
 
+
+typedef struct OpusDRED OpusDRED;
+
 /** Gets the size of an <code>OpusDecoder</code> structure.
   * @param [in] channels <tt>int</tt>: Number of channels.
   *                                    This must be 1 or 2.
@@ -511,7 +514,15 @@ OPUS_EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...) OPUS_ARG_NON
   */
 OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
 
-OPUS_EXPORT int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
+OPUS_EXPORT int opus_dred_get_size(void);
+
+OPUS_EXPORT int opus_dred_init(OpusDRED *dec);
+
+OPUS_EXPORT OpusDRED *opus_dred_create(int *error);
+
+OPUS_EXPORT void opus_dred_destroy(OpusDRED *dec);
+
+OPUS_EXPORT int opus_dred_parse(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, int offset) OPUS_ARG_NONNULL(1);
 
 /** Parse an opus packet into one or more frames.

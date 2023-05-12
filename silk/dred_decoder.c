@@ -31,23 +31,53 @@
 #include "config.h"
 #endif
 
+#include "os_support.h"
 #include "dred_decoder.h"
 #include "dred_coding.h"
 #include "celt/entdec.h"
 
 
-void init_dred_decoder(DREDDec *dec)
+int opus_dred_init(OpusDRED *dec)
 {
     memset(dec, 0, sizeof(*dec));
     dec->rdovae_dec = DRED_rdovae_create_decoder();
+    return OPUS_OK;
 }
 
-void dred_deinit_decoder(DREDDec *dec)
+int opus_dred_get_size(void)
+{
+  return sizeof(OpusDRED);
+}
+
+OpusDRED *opus_dred_create(int *error)
+{
+  int ret;
+  OpusDRED *dec;
+  dec = (OpusDRED *)opus_alloc(opus_dred_get_size());
+  if (dec == NULL)
+  {
+    if (error)
+      *error = OPUS_ALLOC_FAIL;
+    return NULL;
+  }
+  ret = opus_dred_init(dec);
+  if (error)
+    *error = ret;
+  if (ret != OPUS_OK)
+  {
+    opus_free(dec);
+    dec = NULL;
+  }
+  return dec;
+
+}
+
+void opus_dred_destroy(OpusDRED *dec)
 {
     DRED_rdovae_destroy_decoder(dec->rdovae_dec);
 }
 
-int dred_decode_redundancy_package(DREDDec *dec, float *features, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
+int dred_decode_redundancy_package(OpusDRED *dec, float *features, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
 {
     const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
     const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();

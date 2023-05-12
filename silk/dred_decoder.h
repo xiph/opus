@@ -25,17 +25,16 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "opus.h"
 #include "dred_config.h"
 #include "dred_rdovae.h"
 #include "entcode.h"
 
-typedef struct {
+struct OpusDRED {
     RDOVAEDec *rdovae_dec;
-} DREDDec;
+    float        fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];
+    int          nb_fec_frames;
+};
 
 
-void init_dred_decoder(DREDDec *dec);
-
-void dred_deinit_decoder(DREDDec *dec);
-
-int dred_decode_redundancy_package(DREDDec *dec, float *features, const opus_uint8 *bytes, int num_bytes, int min_feature_frames);
+int dred_decode_redundancy_package(OpusDRED *dec, float *features, const opus_uint8 *bytes, int num_bytes, int min_feature_frames);

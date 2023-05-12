@@ -75,7 +75,7 @@ struct OpusDecoder {
    opus_val16   softclip_mem[2];
 #endif
 #ifdef ENABLE_NEURAL_FEC
-   DREDDec      dred_decoder;
+   OpusDRED      dred_decoder;
    float        fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];
    int          nb_fec_frames;
 #endif
@@ -156,7 +156,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
    celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));
 
 #ifdef ENABLE_NEURAL_FEC
-   init_dred_decoder(&st->dred_decoder);
+   opus_dred_init(&st->dred_decoder);
 #endif
    st->prev_mode = 0;
    st->frame_size = Fs/400;
@@ -913,7 +913,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
 #ifdef ENABLE_NEURAL_FEC
-      init_dred_decoder(&st->dred_decoder);
+      opus_dred_init(&st->dred_decoder);
 #endif
    }
    break;
@@ -1071,7 +1071,7 @@ int opus_decoder_get_nb_samples(const OpusDecoder *dec,
    return opus_packet_get_nb_samples(packet, len, dec->Fs);
 }
 
-int opus_decoder_dred_input(OpusDecoder *st, const unsigned char *data,
+int opus_dred_parse(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, int offset)
 {
 #ifdef ENABLE_NEURAL_FEC
