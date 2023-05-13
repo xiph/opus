@@ -40,7 +40,6 @@
 int opus_dred_init(OpusDRED *dec)
 {
     memset(dec, 0, sizeof(*dec));
-    dec->rdovae_dec = DRED_rdovae_create_decoder();
     return OPUS_OK;
 }
 
@@ -74,52 +73,47 @@ OpusDRED *opus_dred_create(int *error)
 
 void opus_dred_destroy(OpusDRED *dec)
 {
-    DRED_rdovae_destroy_decoder(dec->rdovae_dec);
 }
 
-int dred_decode_redundancy_package(OpusDRED *dec, float *features, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
+int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
 {
-    const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
-    const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
-    const opus_uint16 *r               = DRED_rdovae_get_r_pointer();
+  const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
+  const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
+  const opus_uint16 *r               = DRED_rdovae_get_r_pointer();
+  ec_dec ec;
+  int q_level;
+  int i;
+  int offset;
 
-    ec_dec ec;
-    int q_level;
-    int i;
-    int offset;
 
-    float state[DRED_STATE_DIM];
-    float latents[DRED_LATENT_DIM];
+  /* since features are decoded in quadruples, it makes no sense to go with an uneven number of redundancy frames */
+  celt_assert(DRED_NUM_REDUNDANCY_FRAMES % 2 == 0);
 
-    /* since features are decoded in quadruples, it makes no sense to go with an uneven number of redundancy frames */
-    celt_assert(DRED_NUM_REDUNDANCY_FRAMES % 2 == 0);
+  /* decode initial state and initialize RDOVAE decoder */
+  ec_dec_init(&ec, (unsigned char*)bytes, num_bytes);
+  dred_decode_state(&ec, dec->state);
 
-    /* decode initial state and initialize RDOVAE decoder */
-    ec_dec_init(&ec, (unsigned char*)bytes, num_bytes);
-    dred_decode_state(&ec, state);
-    DRED_rdovae_dec_init_states(dec->rdovae_dec, state);
+  /* decode newest to oldest and store oldest to newest */
+  for (i = 0; i < IMIN(DRED_NUM_REDUNDANCY_FRAMES, (min_feature_frames+1)/2); i += 2)
+  {
+      /* FIXME: Figure out how to avoid missing a last frame that would take up < 8 bits. */
+      if (8*num_bytes - ec_tell(&ec) <= 7)
+         break;
+      q_level = (int) round(DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
+      offset = q_level * DRED_LATENT_DIM;
+      dred_decode_latents(
+          &ec,
+          &dec->latents[(i/2)*DRED_LATENT_DIM],
+          quant_scales + offset,
+          r + offset,
+          p0 + offset
+          );
 
-    /* decode newest to oldest and store oldest to newest */
-    for (i = 0; i < IMIN(DRED_NUM_REDUNDANCY_FRAMES, (min_feature_frames+1)/2); i += 2)
-    {
-        /* FIXME: Figure out how to avoid missing a last frame that would take up < 8 bits. */
-        if (8*num_bytes - ec_tell(&ec) <= 7)
-           break;
-        q_level = (int) round(DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
-        offset = q_level * DRED_LATENT_DIM;
-        dred_decode_latents(
-            &ec,
-            latents,
-            quant_scales + offset,
-            r + offset,
-            p0 + offset
-            );
-
-        offset = 2 * i * DRED_NUM_FEATURES;
-        DRED_rdovae_decode_qframe(
-            dec->rdovae_dec,
-            features + offset,
-            latents);
-    }
-    return 2*i;
+      offset = 2 * i * DRED_NUM_FEATURES;
+  }
+  dec->process_stage = 1;
+  dec->nb_latents = i/2;
+  return i/2;
 }
+
+

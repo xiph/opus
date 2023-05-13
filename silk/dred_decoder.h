@@ -31,10 +31,12 @@
 #include "entcode.h"
 
 struct OpusDRED {
-    RDOVAEDec *rdovae_dec;
     float        fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];
-    int          nb_fec_frames;
+    float        state[DRED_STATE_DIM];
+    float        latents[(DRED_NUM_REDUNDANCY_FRAMES/2)*DRED_LATENT_DIM];
+    int          nb_latents;
+    int          process_stage;
 };
 
 
-int dred_decode_redundancy_package(OpusDRED *dec, float *features, const opus_uint8 *bytes, int num_bytes, int min_feature_frames);
+int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames);

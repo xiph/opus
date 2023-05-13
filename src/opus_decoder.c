@@ -1071,19 +1071,17 @@ int opus_decoder_get_nb_samples(const OpusDecoder *dec,
    return opus_packet_get_nb_samples(packet, len, dec->Fs);
 }
 
-int opus_dred_parse(OpusDecoder *st, const unsigned char *data,
-      opus_int32 len, int offset)
-{
 #ifdef ENABLE_NEURAL_FEC
+static int dred_find_payload(const unsigned char *data, opus_int32 len, const unsigned char **payload)
+{
    const unsigned char *data0;
    int len0;
-   const unsigned char *payload = NULL;
-   opus_int32 payload_len;
+   *payload = NULL;
    int frame = 0;
    int ret;
    const unsigned char *frames[48];
    opus_int16 size[48];
-   
+
    /* Get the padding section of the packet. */
    ret = opus_packet_parse_impl(data, len, 0, NULL, frames, size, NULL, NULL, &data0, &len0);
    if (ret < 0)
@@ -1119,12 +1117,22 @@ int opus_dred_parse(OpusDecoder *st, const unsigned char *data,
          /* Check that temporary extension type and version match.
             This check will be removed once extension is finalized. */
          if (curr_payload_len > 2 && curr_payload[0] == 'D' && curr_payload[1] == DRED_VERSION) {
-            payload = curr_payload+2;
-            payload_len = curr_payload_len-2;
-            break;
+            *payload = curr_payload+2;
+            return curr_payload_len-2;
          }
       }
    }
+   *payload = NULL;
+   return 0;
+}
+#endif
+
+int opus_decoder_dred_parse(OpusDecoder *st, const unsigned char *data, opus_int32 len, int offset)
+{
+#ifdef ENABLE_NEURAL_FEC
+   const unsigned char *payload;
+   opus_int32 payload_len;
+   payload_len = dred_find_payload(data, len, &payload);
    if (payload != NULL)
    {
       int min_feature_frames;
@@ -1132,10 +1140,26 @@ int opus_dred_parse(OpusDecoder *st, const unsigned char *data,
       silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
       /*printf("Found: %p of size %d\n", payload, payload_len);*/
       min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
-      st->nb_fec_frames = dred_decode_redundancy_package(&st->dred_decoder, st->fec_features, payload, payload_len, min_feature_frames);
+      dred_ec_decode(&st->dred_decoder, payload, payload_len, min_feature_frames);
+      opus_dred_process(&st->dred_decoder);
+      OPUS_COPY(st->fec_features, st->dred_decoder.fec_features, 4*st->dred_decoder.nb_latents*DRED_NUM_FEATURES);
+      st->nb_fec_frames = 4*st->dred_decoder.nb_latents;
       lpcnet_plc_fec_clear(silk_dec->sPLC.lpcnet);
       return st->nb_fec_frames;
    }
 #endif
    return 0;
+}
+
+
+int opus_dred_process(OpusDRED *dred)
+{
+   DRED_rdovae_decode_all(dred->fec_features, dred->state, dred->latents, dred->nb_latents);
+   dred->process_stage = 2;
+   return OPUS_OK;
+}
+
+int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, int dred_offset, opus_int16 *pcm, int frame_size)
+{
+   return OPUS_OK;
 }
