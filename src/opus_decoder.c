@@ -155,9 +155,6 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
 
    celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));
 
-#ifdef ENABLE_NEURAL_FEC
-   opus_dred_init(&st->dred_decoder);
-#endif
    st->prev_mode = 0;
    st->frame_size = Fs/400;
    st->arch = opus_select_arch();
@@ -912,9 +909,6 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       silk_InitDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
-#ifdef ENABLE_NEURAL_FEC
-      opus_dred_init(&st->dred_decoder);
-#endif
    }
    break;
    case OPUS_GET_SAMPLE_RATE_REQUEST:

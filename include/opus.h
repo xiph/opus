@@ -516,8 +516,6 @@ OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
 
 OPUS_EXPORT int opus_dred_get_size(void);
 
-OPUS_EXPORT int opus_dred_init(OpusDRED *dec);
-
 OPUS_EXPORT OpusDRED *opus_dred_create(int *error);
 
 OPUS_EXPORT void opus_dred_destroy(OpusDRED *dec);

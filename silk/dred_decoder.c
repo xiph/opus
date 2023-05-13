@@ -37,12 +37,6 @@
 #include "celt/entdec.h"
 
 
-int opus_dred_init(OpusDRED *dec)
-{
-    memset(dec, 0, sizeof(*dec));
-    return OPUS_OK;
-}
-
 int opus_dred_get_size(void)
 {
   return sizeof(OpusDRED);
@@ -50,7 +44,6 @@ int opus_dred_get_size(void)
 
 OpusDRED *opus_dred_create(int *error)
 {
-  int ret;
   OpusDRED *dec;
   dec = (OpusDRED *)opus_alloc(opus_dred_get_size());
   if (dec == NULL)
@@ -58,14 +51,6 @@ OpusDRED *opus_dred_create(int *error)
     if (error)
       *error = OPUS_ALLOC_FAIL;
     return NULL;
-  }
-  ret = opus_dred_init(dec);
-  if (error)
-    *error = ret;
-  if (ret != OPUS_OK)
-  {
-    opus_free(dec);
-    dec = NULL;
   }
   return dec;
 
