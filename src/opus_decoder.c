@@ -639,7 +639,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec,
-      int self_delimited, opus_int32 *packet_offset, int soft_clip)
+      int self_delimited, opus_int32 *packet_offset, int soft_clip, OpusDRED *dred, opus_int32 dred_offset)
 {
    int i, nb_samples;
    int count, offset;
@@ -656,16 +656,17 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
 #ifdef ENABLE_NEURAL_FEC
-   if (decode_fec > 0 && st->nb_fec_frames > 0) {
+   if (dred != NULL) {
       int features_per_frame;
       int needed_feature_frames;
+      lpcnet_plc_fec_clear(silk_dec->sPLC.lpcnet);
       features_per_frame = frame_size/(st->Fs/100);
       needed_feature_frames = features_per_frame;
       if (!silk_dec->sPLC.pre_filled) needed_feature_frames+=2;
       for (i=0;i<needed_feature_frames;i++) {
-         int feature_offset = (needed_feature_frames-i-1 + (decode_fec-1)*features_per_frame);
-         if (feature_offset <= st->nb_fec_frames-1) {
-           lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, st->fec_features+feature_offset*DRED_NUM_FEATURES);
+         int feature_offset = (needed_feature_frames-i-1 + (dred_offset-1)*features_per_frame);
+         if (feature_offset <= 4*dred->nb_latents-1) {
+           lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
          } else {
            lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, NULL);
          }
@@ -709,12 +710,12 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       int ret;
       /* If no FEC can be present, run the PLC (recursive call) */
       if (frame_size < packet_frame_size || packet_mode == MODE_CELT_ONLY || st->mode == MODE_CELT_ONLY)
-         return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL, soft_clip);
+         return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL, soft_clip, NULL, 0);
       /* Otherwise, run the PLC on everything except the size for which we might have FEC */
       duration_copy = st->last_packet_duration;
       if (frame_size-packet_frame_size!=0)
       {
-         ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL, soft_clip);
+         ret = opus_decode_native(st, NULL, 0, pcm, frame_size-packet_frame_size, 0, 0, NULL, soft_clip, NULL, 0);
          if (ret<0)
          {
             st->last_packet_duration = duration_copy;
@@ -778,7 +779,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 {
    if(frame_size<=0)
       return OPUS_BAD_ARG;
-   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0);
+   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0, NULL, 0);
 }
 
 #ifndef DISABLE_FLOAT_API
@@ -806,7 +807,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
    celt_assert(st->channels == 1 || st->channels == 2);
    ALLOC(out, frame_size*st->channels, opus_int16);
 
-   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0);
+   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0, NULL, 0);
    if (ret > 0)
    {
       for (i=0;i<ret*st->channels;i++)
@@ -844,7 +845,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
    celt_assert(st->channels == 1 || st->channels == 2);
    ALLOC(out, frame_size*st->channels, float);
 
-   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 1);
+   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 1, NULL, 0);
    if (ret > 0)
    {
       for (i=0;i<ret*st->channels;i++)
@@ -859,7 +860,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 {
    if(frame_size<=0)
       return OPUS_BAD_ARG;
-   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0);
+   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0, NULL, 0);
 }
 
 #endif
@@ -1059,6 +1060,31 @@ int opus_packet_get_nb_samples(const unsigned char packet[], opus_int32 len,
       return samples;
 }
 
+int opus_packet_has_fec(const unsigned char packet[], opus_int32 len)
+{
+   int ret;
+   const unsigned char *frames[48];
+   opus_int16 size[48];
+   int packet_mode, packet_frame_size, packet_stream_channels;
+   int nb_frames=1;
+   int lbrr;
+
+   packet_mode = opus_packet_get_mode(packet);
+   if (packet_mode == MODE_CELT_ONLY)
+      return 0;
+   packet_frame_size = opus_packet_get_samples_per_frame(packet, 48000);
+   if (packet_frame_size > 960)
+      nb_frames = packet_frame_size/960;
+   packet_stream_channels = opus_packet_get_nb_channels(packet);
+   ret = opus_packet_parse(packet, len, NULL, frames, size, NULL);
+   if (ret <= 0)
+      return 0;
+   lbrr = (frames[0][0] >> (7-nb_frames)) & 0x1;
+   if (packet_stream_channels == 2)
+      lbrr = lbrr || ((frames[0][0] >> (6-2*nb_frames)) & 0x1);
+   return lbrr;
+}
+
 int opus_decoder_get_nb_samples(const OpusDecoder *dec,
       const unsigned char packet[], opus_int32 len)
 {
@@ -1130,21 +1156,38 @@ int opus_decoder_dred_parse(OpusDecoder *st, const unsigned char *data, opus_int
    if (payload != NULL)
    {
       int min_feature_frames;
-      silk_decoder_state *silk_dec;
-      silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
       /*printf("Found: %p of size %d\n", payload, payload_len);*/
       min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
       dred_ec_decode(&st->dred_decoder, payload, payload_len, min_feature_frames);
       opus_dred_process(&st->dred_decoder);
       OPUS_COPY(st->fec_features, st->dred_decoder.fec_features, 4*st->dred_decoder.nb_latents*DRED_NUM_FEATURES);
       st->nb_fec_frames = 4*st->dred_decoder.nb_latents;
-      lpcnet_plc_fec_clear(silk_dec->sPLC.lpcnet);
       return st->nb_fec_frames;
    }
 #endif
    return 0;
 }
 
+int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int defer_processing)
+{
+#ifdef ENABLE_NEURAL_FEC
+   const unsigned char *payload;
+   opus_int32 payload_len;
+   payload_len = dred_find_payload(data, len, &payload);
+   if (payload != NULL)
+   {
+      int offset;
+      int min_feature_frames;
+      offset = 100*max_dred_samples/sampling_rate;
+      min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
+      dred_ec_decode(dred, payload, payload_len, min_feature_frames);
+      if (!defer_processing)
+         opus_dred_process(dred);
+      return dred->nb_latents*sampling_rate/25 - sampling_rate/50;
+   }
+#endif
+   return 0;
+}
 
 int opus_dred_process(OpusDRED *dred)
 {
@@ -1155,5 +1198,32 @@ int opus_dred_process(OpusDRED *dred)
 
 int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, int dred_offset, opus_int16 *pcm, int frame_size)
 {
-   return OPUS_OK;
+   VARDECL(float, out);
+   int ret, i;
+   ALLOC_STACK;
+
+   if(frame_size<=0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+
+   celt_assert(st->channels == 1 || st->channels == 2);
+   ALLOC(out, frame_size*st->channels, float);
+
+   ret = opus_decode_native(st, NULL, 0, out, frame_size, 0, 0, NULL, 1, dred, dred_offset);
+   if (ret > 0)
+   {
+      for (i=0;i<ret*st->channels;i++)
+         pcm[i] = FLOAT2INT16(out[i]);
+   }
+   RESTORE_STACK;
+   return ret;
+}
+
+int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, int dred_offset, float *pcm, int frame_size)
+{
+   if(frame_size<=0)
+      return OPUS_BAD_ARG;
+   return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL, 0, dred, dred_offset);
 }
