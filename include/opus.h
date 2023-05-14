@@ -520,12 +520,9 @@ OPUS_EXPORT OpusDRED *opus_dred_create(int *error);
 
 OPUS_EXPORT void opus_dred_destroy(OpusDRED *dec);
 
-OPUS_EXPORT int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int defer_processing);
+OPUS_EXPORT int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int defer_processing) OPUS_ARG_NONNULL(1);
 
 OPUS_EXPORT int opus_dred_process(OpusDRED *dred);
-
-OPUS_EXPORT int opus_decoder_dred_parse(OpusDecoder *st, const unsigned char *data,
-      opus_int32 len, int offset) OPUS_ARG_NONNULL(1);
 
 OPUS_EXPORT int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, int dred_offset, opus_int16 *pcm, int frame_size);
 OPUS_EXPORT int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, int dred_offset, float *pcm, int frame_size);
