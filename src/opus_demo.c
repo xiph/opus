@@ -808,15 +808,12 @@ int main(int argc, char *argv[])
             /* FIXME: Figure out how to trigger the decoder when the last packet of the file is lost. */
             for (fr=0;fr<run_decoder;fr++) {
                 opus_int32 output_samples=0;
-                if (fr < lost_count-1) {
-                   opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
-                   output_samples = opus_decoder_dred_output(dec, dred, lost_count-fr, out, output_samples);
-                } else if (fr == lost_count-1 && opus_packet_has_fec(data, len)) {
+                if (fr == lost_count-1 && opus_packet_has_lbrr(data, len)) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                    output_samples = opus_decode(dec, data, len, out, output_samples, 1);
-                } else if (fr == lost_count-1) {
+                } else if (fr < lost_count) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
-                   output_samples = opus_decoder_dred_output(dec, dred, 1, out, output_samples);
+                   output_samples = opus_decoder_dred_output(dec, dred, (lost_count-fr)*sampling_rate/100, out, output_samples);
                 } else {
                    output_samples = max_frame_size;
                    output_samples = opus_decode(dec, data, len, out, output_samples, 0);
