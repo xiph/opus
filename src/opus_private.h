@@ -155,7 +155,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
       opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited,
-      opus_int32 *packet_offset, int soft_clip);
+      opus_int32 *packet_offset, int soft_clip, OpusDRED *dred, opus_int32 dred_offset);
 
 /* Make sure everything is properly aligned. */
 static OPUS_INLINE int align(int i)

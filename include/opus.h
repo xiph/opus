@@ -527,6 +527,10 @@ OPUS_EXPORT int opus_dred_process(OpusDRED *dred);
 OPUS_EXPORT int opus_decoder_dred_parse(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, int offset) OPUS_ARG_NONNULL(1);
 
+OPUS_EXPORT int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, int dred_offset, opus_int16 *pcm, int frame_size);
+OPUS_EXPORT int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, int dred_offset, float *pcm, int frame_size);
+
+
 /** Parse an opus packet into one or more frames.
   * Opus_decode will perform this operation internally so most applications do
   * not need to use this function.
@@ -598,6 +602,8 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_get_nb_frames(const unsigned
   * @retval OPUS_INVALID_PACKET The compressed data passed is corrupted or of an unsupported type
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_get_nb_samples(const unsigned char packet[], opus_int32 len, opus_int32 Fs) OPUS_ARG_NONNULL(1);
+
+OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_has_fec(const unsigned char packet[], opus_int32 len);
 
 /** Gets the number of samples of an Opus packet.
   * @param [in] dec <tt>OpusDecoder*</tt>: Decoder state

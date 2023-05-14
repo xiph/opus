@@ -217,6 +217,7 @@ int main(int argc, char *argv[])
     FILE *fout=NULL;
     OpusEncoder *enc=NULL;
     OpusDecoder *dec=NULL;
+    OpusDRED *dred=NULL;
     int args;
     int len;
     int frame_size, channels;
@@ -629,6 +630,7 @@ int main(int argc, char *argv[])
        opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
        frame_size = 2*48000;
     }
+    dred = opus_dred_create(&err);
     while (!stop)
     {
         if (delayed_celt)
@@ -801,17 +803,20 @@ int main(int argc, char *argv[])
                 opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                 dred_input = lost_count*output_samples*100/sampling_rate;
                 /* Only decode the amount we need to fill in the gap. */
-                opus_decoder_dred_parse(dec, data, len, IMIN(100, IMAX(0, dred_input)));
+                opus_dred_parse(dred, data, len, IMIN(100, IMAX(0, dred_input))*480, 48000, 0);
             }
             /* FIXME: Figure out how to trigger the decoder when the last packet of the file is lost. */
             for (fr=0;fr<run_decoder;fr++) {
                 opus_int32 output_samples=0;
                 if (fr < lost_count-1) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
-                   output_samples = opus_decode(dec, NULL, 0, out, output_samples, lost_count-fr);
-                } else if (fr == lost_count-1) {
+                   output_samples = opus_decoder_dred_output(dec, dred, lost_count-fr, out, output_samples);
+                } else if (fr == lost_count-1 && opus_packet_has_fec(data, len)) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                    output_samples = opus_decode(dec, data, len, out, output_samples, 1);
+                } else if (fr == lost_count-1) {
+                   opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
+                   output_samples = opus_decoder_dred_output(dec, dred, 1, out, output_samples);
                 } else {
                    output_samples = max_frame_size;
                    output_samples = opus_decode(dec, data, len, out, output_samples, 0);
