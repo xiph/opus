@@ -74,11 +74,6 @@ struct OpusDecoder {
 #ifndef FIXED_POINT
    opus_val16   softclip_mem[2];
 #endif
-#ifdef ENABLE_NEURAL_FEC
-   OpusDRED      dred_decoder;
-   float        fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];
-   int          nb_fec_frames;
-#endif
 
    opus_uint32  rangeFinal;
 };
@@ -656,7 +651,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
 #ifdef ENABLE_NEURAL_FEC
-   if (dred != NULL) {
+   if (dred != NULL && dred->process_stage == 2) {
       int features_per_frame;
       int needed_feature_frames;
       lpcnet_plc_fec_clear(silk_dec->sPLC.lpcnet);
@@ -1146,27 +1141,6 @@ static int dred_find_payload(const unsigned char *data, opus_int32 len, const un
    return 0;
 }
 #endif
-
-int opus_decoder_dred_parse(OpusDecoder *st, const unsigned char *data, opus_int32 len, int offset)
-{
-#ifdef ENABLE_NEURAL_FEC
-   const unsigned char *payload;
-   opus_int32 payload_len;
-   payload_len = dred_find_payload(data, len, &payload);
-   if (payload != NULL)
-   {
-      int min_feature_frames;
-      /*printf("Found: %p of size %d\n", payload, payload_len);*/
-      min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
-      dred_ec_decode(&st->dred_decoder, payload, payload_len, min_feature_frames);
-      opus_dred_process(&st->dred_decoder);
-      OPUS_COPY(st->fec_features, st->dred_decoder.fec_features, 4*st->dred_decoder.nb_latents*DRED_NUM_FEATURES);
-      st->nb_fec_frames = 4*st->dred_decoder.nb_latents;
-      return st->nb_fec_frames;
-   }
-#endif
-   return 0;
-}
 
 int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int defer_processing)
 {

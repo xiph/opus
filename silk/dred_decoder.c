@@ -58,6 +58,7 @@ OpusDRED *opus_dred_create(int *error)
 
 void opus_dred_destroy(OpusDRED *dec)
 {
+  free(dec);
 }
 
 int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
