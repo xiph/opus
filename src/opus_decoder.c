@@ -659,7 +659,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       needed_feature_frames = features_per_frame;
       if (!silk_dec->sPLC.pre_filled) needed_feature_frames+=2;
       for (i=0;i<needed_feature_frames;i++) {
-         int feature_offset = (needed_feature_frames-i-1 + (dred_offset-1)*features_per_frame);
+         int feature_offset = (needed_feature_frames-i-1 + (dred_offset/(st->Fs/100)-1)*features_per_frame);
          if (feature_offset <= 4*dred->nb_latents-1) {
            lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
          } else {
@@ -1055,7 +1055,7 @@ int opus_packet_get_nb_samples(const unsigned char packet[], opus_int32 len,
       return samples;
 }
 
-int opus_packet_has_fec(const unsigned char packet[], opus_int32 len)
+int opus_packet_has_lbrr(const unsigned char packet[], opus_int32 len)
 {
    int ret;
    const unsigned char *frames[48];
@@ -1073,7 +1073,7 @@ int opus_packet_has_fec(const unsigned char packet[], opus_int32 len)
    packet_stream_channels = opus_packet_get_nb_channels(packet);
    ret = opus_packet_parse(packet, len, NULL, frames, size, NULL);
    if (ret <= 0)
-      return 0;
+      return ret;
    lbrr = (frames[0][0] >> (7-nb_frames)) & 0x1;
    if (packet_stream_channels == 2)
       lbrr = lbrr || ((frames[0][0] >> (6-2*nb_frames)) & 0x1);
@@ -1165,12 +1165,14 @@ int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, o
 
 int opus_dred_process(OpusDRED *dred)
 {
+   if (dred->process_stage == 2)
+      return OPUS_OK;
    DRED_rdovae_decode_all(dred->fec_features, dred->state, dred->latents, dred->nb_latents);
    dred->process_stage = 2;
    return OPUS_OK;
 }
 
-int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, int dred_offset, opus_int16 *pcm, int frame_size)
+int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_offset, opus_int16 *pcm, opus_int32 frame_size)
 {
    VARDECL(float, out);
    int ret, i;
@@ -1195,7 +1197,7 @@ int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, int dred_offset, o
    return ret;
 }
 
-int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, int dred_offset, float *pcm, int frame_size)
+int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_offset, float *pcm, opus_int32 frame_size)
 {
    if(frame_size<=0)
       return OPUS_BAD_ARG;

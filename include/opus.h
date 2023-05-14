@@ -399,6 +399,11 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...) OPUS_ARG_NON
 typedef struct OpusDecoder OpusDecoder;
 
 
+/** Opus DRED state.
+  * This contains the complete state of an Opus DRED packet.
+  * It is position independent and can be freely copied.
+  * @see opus_dred_create,opus_dred_init
+  */
 typedef struct OpusDRED OpusDRED;
 
 /** Gets the size of an <code>OpusDecoder</code> structure.
@@ -514,18 +519,62 @@ OPUS_EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...) OPUS_ARG_NON
   */
 OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
 
+
+/** Gets the size of an <code>OpusDRED</code> structure.
+  * @returns The size in bytes.
+  */
 OPUS_EXPORT int opus_dred_get_size(void);
 
+/** Allocates and initializes a DRED state.
+  * @param [out] error <tt>int*</tt>: #OPUS_OK Success or @ref opus_errorcodes
+  */
 OPUS_EXPORT OpusDRED *opus_dred_create(int *error);
 
+/** Frees an <code>OpusDRED</code> allocated by opus_dred_create().
+  * @param[in] st <tt>OpusDRED*</tt>: State to be freed.
+  */
 OPUS_EXPORT void opus_dred_destroy(OpusDRED *dec);
 
+/** Decode an Opus DRED packet.
+  * @param [in] dred <tt>OpusDRED*</tt>: DRED state
+  * @param [in] data <tt>char*</tt>: Input payload
+  * @param [in] len <tt>opus_int32</tt>: Number of bytes in payload
+  * @param [in] max_dred_samples <tt>opus_int32</tt>: Maximum number of DRED samples that may be needed (if available in the packet).
+  * @param [in] sampling_rate <tt>opus_int32</tt>: Sampling rate used for max_dred_samples argument. Needs not match the actual sampling rate of the decoder.
+  * @param [in] defer_processing <tt>int</tt>: Flag (0 or 1). If set to one, the CPU-intensive part of the DRED decoding is deferred until opus_dred_process() is called.
+  * @returns Number of decoded DRED samples or @ref opus_errorcodes
+  */
 OPUS_EXPORT int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int defer_processing) OPUS_ARG_NONNULL(1);
 
+/** Finish decoding an Opus DRED packet. The function only needs to be called if opus_dred_parse() was called with defer_processing=1.
+  * @param [in] dred <tt>OpusDRED*</tt>: DRED state
+  * @returns @ref opus_errorcodes
+  */
 OPUS_EXPORT int opus_dred_process(OpusDRED *dred);
 
-OPUS_EXPORT int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, int dred_offset, opus_int16 *pcm, int frame_size);
-OPUS_EXPORT int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, int dred_offset, float *pcm, int frame_size);
+/** Decode audio from an Opus DRED packet with floating point output.
+  * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
+  * @param [in] dred <tt>OpusDRED*</tt>: DRED state
+  * @param [in] dred_offset <tt>opus_int32</tt>: position of the redundancy to decode (in samples before the beginning of the real audio data in the packet).
+  * @param [out] pcm <tt>opus_int16*</tt>: Output signal (interleaved if 2 channels). length
+  *  is frame_size*channels*sizeof(opus_int16)
+  * @param [in] frame_size Number of samples per channel to decode in \a pcm.
+  *  frame_size <b>must</b> be a multiple of 2.5 ms.
+  * @returns Number of decoded samples or @ref opus_errorcodes
+  */
+OPUS_EXPORT int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_offset, opus_int16 *pcm, opus_int32 frame_size);
+
+/** Decode audio from an Opus DRED packet with floating point output.
+  * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
+  * @param [in] dred <tt>OpusDRED*</tt>: DRED state
+  * @param [in] dred_offset <tt>opus_int32</tt>: position of the redundancy to decode (in samples before the beginning of the real audio data in the packet).
+  * @param [out] pcm <tt>float*</tt>: Output signal (interleaved if 2 channels). length
+  *  is frame_size*channels*sizeof(float)
+  * @param [in] frame_size Number of samples per channel to decode in \a pcm.
+  *  frame_size <b>must</b> be a multiple of 2.5 ms.
+  * @returns Number of decoded samples or @ref opus_errorcodes
+  */
+OPUS_EXPORT int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_offset, float *pcm, opus_int32 frame_size);
 
 
 /** Parse an opus packet into one or more frames.
@@ -600,7 +649,12 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_get_nb_frames(const unsigned
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_get_nb_samples(const unsigned char packet[], opus_int32 len, opus_int32 Fs) OPUS_ARG_NONNULL(1);
 
-OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_has_fec(const unsigned char packet[], opus_int32 len);
+/** Checks whether an Opus packet has LBRR.
+  * @param [in] data <tt>char*</tt>: Opus packet
+  * @returns 1 is LBRR is present, 0 otherwise
+  * @retval OPUS_INVALID_PACKET The compressed data passed is corrupted or of an unsupported type
+  */
+OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_has_lbrr(const unsigned char packet[], opus_int32 len);
 
 /** Gets the number of samples of an Opus packet.
   * @param [in] dec <tt>OpusDecoder*</tt>: Decoder state
