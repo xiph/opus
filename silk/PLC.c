@@ -65,12 +65,7 @@ void silk_PLC_Reset(
     psDec->sPLC.subfr_length = 20;
     psDec->sPLC.nb_subfr = 2;
 #ifdef NEURAL_PLC
-    if( psDec->sPLC.lpcnet != NULL ) {
-        lpcnet_plc_init( psDec->sPLC.lpcnet, LPCNET_PLC_CODEC );
-    } else {
-        /* FIXME: This is leaking memory. The right fix is for the LPCNet state to be part of the PLC struct itself. */
-        psDec->sPLC.lpcnet = lpcnet_plc_create(LPCNET_PLC_CODEC);
-    }
+    lpcnet_plc_init( &psDec->sPLC.lpcnet, LPCNET_PLC_CODEC );
 #endif
 }
 
@@ -105,7 +100,7 @@ void silk_PLC(
             int k;
             psDec->sPLC.pre_filled = 0;
             for( k = 0; k < psDec->nb_subfr; k += 2 ) {
-                lpcnet_plc_update( psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
+                lpcnet_plc_update( &psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
             }
         }
 #endif
@@ -396,7 +391,7 @@ static OPUS_INLINE void silk_PLC_conceal(
     if ( psDec->sPLC.fs_kHz == 16 ) {
         psDec->sPLC.pre_filled = 1;
         for( k = 0; k < psDec->nb_subfr; k += 2 ) {
-            lpcnet_plc_conceal(psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
+            lpcnet_plc_conceal( &psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
         }
     }
     /* We *should* be able to copy only from psDec->frame_length-MAX_LPC_ORDER, i.e. the last MAX_LPC_ORDER samples. */
