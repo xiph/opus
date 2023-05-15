@@ -916,6 +916,7 @@ int main(int argc, char *argv[])
 failure:
     opus_encoder_destroy(enc);
     opus_decoder_destroy(dec);
+    opus_dred_destroy(dred);
     free(data);
     if (fin)
         fclose(fin);
