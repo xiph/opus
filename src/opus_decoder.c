@@ -668,6 +668,9 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 
       }
    }
+#else
+   (void)dred;
+   (void)dred_offset;
 #endif
    if (len==0 || data==NULL)
    {
@@ -1162,6 +1165,12 @@ int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, o
    }
    return 0;
 #else
+   (void)dred;
+   (void)data;
+   (void)len;
+   (void)max_dred_samples;
+   (void)sampling_rate;
+   (void)defer_processing;
    return OPUS_UNIMPLEMENTED;
 #endif
 }
@@ -1175,6 +1184,7 @@ int opus_dred_process(OpusDRED *dred)
    dred->process_stage = 2;
    return OPUS_OK;
 #else
+   (void)dred;
    return OPUS_UNIMPLEMENTED;
 #endif
 }
@@ -1204,6 +1214,11 @@ int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_of
    RESTORE_STACK;
    return ret;
 #else
+   (void)st;
+   (void)dred;
+   (void)dred_offset;
+   (void)pcm;
+   (void)frame_size;
    return OPUS_UNIMPLEMENTED;
 #endif
 }
@@ -1215,6 +1230,11 @@ int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, opus_int32 d
       return OPUS_BAD_ARG;
    return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL, 0, dred, dred_offset);
 #else
+   (void)st;
+   (void)dred;
+   (void)dred_offset;
+   (void)pcm;
+   (void)frame_size;
    return OPUS_UNIMPLEMENTED;
 #endif
 }
