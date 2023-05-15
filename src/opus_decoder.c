@@ -640,12 +640,10 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    int count, offset;
    unsigned char toc;
    int packet_frame_size, packet_bandwidth, packet_mode, packet_stream_channels;
-   silk_decoder_state *silk_dec;
    /* 48 x 2.5 ms = 120 ms */
    opus_int16 size[48];
    VALIDATE_OPUS_DECODER(st);
-   silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
-   if (decode_fec<0 || (decode_fec>1 && data!=NULL))
+   if (decode_fec<0 || decode_fec>1)
       return OPUS_BAD_ARG;
    /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
@@ -654,6 +652,8 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    if (dred != NULL && dred->process_stage == 2) {
       int features_per_frame;
       int needed_feature_frames;
+      silk_decoder_state *silk_dec;
+      silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
       lpcnet_plc_fec_clear(silk_dec->sPLC.lpcnet);
       features_per_frame = frame_size/(st->Fs/100);
       needed_feature_frames = features_per_frame;
@@ -1137,7 +1137,6 @@ static int dred_find_payload(const unsigned char *data, opus_int32 len, const un
          }
       }
    }
-   *payload = NULL;
    return 0;
 }
 #endif
@@ -1148,6 +1147,8 @@ int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, o
    const unsigned char *payload;
    opus_int32 payload_len;
    payload_len = dred_find_payload(data, len, &payload);
+   if (payload_len < 0)
+      return payload_len;
    if (payload != NULL)
    {
       int offset;
@@ -1159,21 +1160,28 @@ int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, o
          opus_dred_process(dred);
       return dred->nb_latents*sampling_rate/25 - sampling_rate/50;
    }
-#endif
    return 0;
+#else
+   return OPUS_UNIMPLEMENTED;
+#endif
 }
 
 int opus_dred_process(OpusDRED *dred)
 {
+#ifdef ENABLE_NEURAL_FEC
    if (dred->process_stage == 2)
       return OPUS_OK;
    DRED_rdovae_decode_all(dred->fec_features, dred->state, dred->latents, dred->nb_latents);
    dred->process_stage = 2;
    return OPUS_OK;
+#else
+   return OPUS_UNIMPLEMENTED;
+#endif
 }
 
 int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_offset, opus_int16 *pcm, opus_int32 frame_size)
 {
+#ifdef ENABLE_NEURAL_FEC
    VARDECL(float, out);
    int ret, i;
    ALLOC_STACK;
@@ -1195,11 +1203,18 @@ int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_of
    }
    RESTORE_STACK;
    return ret;
+#else
+   return OPUS_UNIMPLEMENTED;
+#endif
 }
 
 int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_offset, float *pcm, opus_int32 frame_size)
 {
+#ifdef ENABLE_NEURAL_FEC
    if(frame_size<=0)
       return OPUS_BAD_ARG;
    return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL, 0, dred, dred_offset);
+#else
+   return OPUS_UNIMPLEMENTED;
+#endif
 }
