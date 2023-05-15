@@ -79,7 +79,7 @@ static void gemm_accum(float *out, const opus_int8 *weights, int rows, int cols,
    }
 }
 
-void compute_dense(const DenseLayer *layer, float *output, const float *input)
+void analysis_compute_dense(const AnalysisDenseLayer *layer, float *output, const float *input)
 {
    int i;
    int N, M;
@@ -101,7 +101,7 @@ void compute_dense(const DenseLayer *layer, float *output, const float *input)
    }
 }
 
-void compute_gru(const GRULayer *gru, float *state, const float *input)
+void analysis_compute_gru(const AnalysisGRULayer *gru, float *state, const float *input)
 {
    int i;
    int N, M;
