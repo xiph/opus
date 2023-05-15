@@ -32,7 +32,8 @@
 #include "dred_config.h"
 #include "dred_rdovae.h"
 #include "entcode.h"
-
+#include "lpcnet/src/lpcnet_private.h"
+#include "lpcnet/src/dred_rdovae_enc.h"
 
 
 typedef struct {
@@ -40,8 +41,8 @@ typedef struct {
     float latents_buffer[DRED_MAX_FRAMES * DRED_LATENT_DIM];
     int latents_buffer_fill;
     float state_buffer[24];
-    LPCNetEncState *lpcnet_enc_state;
-    RDOVAEEnc *rdovae_enc;
+    LPCNetEncState lpcnet_enc_state;
+    RDOVAEEnc rdovae_enc;
 } DREDEnc;
 
 

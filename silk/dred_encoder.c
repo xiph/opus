@@ -45,8 +45,8 @@
 void init_dred_encoder(DREDEnc* enc)
 {
     memset(enc, 0, sizeof(*enc));
-    enc->lpcnet_enc_state = lpcnet_encoder_create();
-    enc->rdovae_enc = DRED_rdovae_create_encoder();
+    lpcnet_encoder_init(&enc->lpcnet_enc_state);
+    DRED_rdovae_init_encoder(&enc->rdovae_enc);
 }
 
 void dred_process_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
@@ -62,15 +62,15 @@ void dred_process_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
     memmove(enc->latents_buffer + DRED_LATENT_DIM, enc->latents_buffer, (DRED_MAX_FRAMES - 1) * DRED_LATENT_DIM * sizeof(*enc->latents_buffer));
 
     /* calculate LPCNet features */
-    lpcnet_compute_single_frame_features(enc->lpcnet_enc_state, enc->input_buffer, feature_buffer);
-    lpcnet_compute_single_frame_features(enc->lpcnet_enc_state, enc->input_buffer + DRED_FRAME_SIZE, feature_buffer + 36);
+    lpcnet_compute_single_frame_features(&enc->lpcnet_enc_state, enc->input_buffer, feature_buffer);
+    lpcnet_compute_single_frame_features(&enc->lpcnet_enc_state, enc->input_buffer + DRED_FRAME_SIZE, feature_buffer + 36);
 
     /* prepare input buffer (discard LPC coefficients) */
     memcpy(input_buffer, feature_buffer, DRED_NUM_FEATURES * sizeof(input_buffer[0]));
     memcpy(input_buffer + DRED_NUM_FEATURES, feature_buffer + 36, DRED_NUM_FEATURES * sizeof(input_buffer[0]));
 
     /* run RDOVAE encoder */
-    DRED_rdovae_encode_dframe(enc->rdovae_enc, enc->latents_buffer, enc->state_buffer, input_buffer);
+    DRED_rdovae_encode_dframe(&enc->rdovae_enc, enc->latents_buffer, enc->state_buffer, input_buffer);
     enc->latents_buffer_fill = IMIN(enc->latents_buffer_fill+1, DRED_NUM_REDUNDANCY_FRAMES);
 }
 
