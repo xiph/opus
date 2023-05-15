@@ -654,16 +654,16 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       int needed_feature_frames;
       silk_decoder_state *silk_dec;
       silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
-      lpcnet_plc_fec_clear(silk_dec->sPLC.lpcnet);
+      lpcnet_plc_fec_clear(&silk_dec->sPLC.lpcnet);
       features_per_frame = frame_size/(st->Fs/100);
       needed_feature_frames = features_per_frame;
       if (!silk_dec->sPLC.pre_filled) needed_feature_frames+=2;
       for (i=0;i<needed_feature_frames;i++) {
          int feature_offset = (needed_feature_frames-i-1 + (dred_offset/(st->Fs/100)-1)*features_per_frame);
          if (feature_offset <= 4*dred->nb_latents-1) {
-           lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
+           lpcnet_plc_fec_add(&silk_dec->sPLC.lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
          } else {
-           lpcnet_plc_fec_add(silk_dec->sPLC.lpcnet, NULL);
+           lpcnet_plc_fec_add(&silk_dec->sPLC.lpcnet, NULL);
          }
 
       }
