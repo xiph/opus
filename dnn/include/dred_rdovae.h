@@ -33,6 +33,9 @@
 typedef struct RDOVAEDecStruct RDOVAEDec;
 typedef struct RDOVAEEncStruct RDOVAEEnc;
 
+void DRED_rdovae_decode_all(float *features, const float *state, const float *latents, int nb_latents);
+
+
 size_t DRED_rdovae_get_enc_size(void);
 
 size_t DRED_rdovae_get_dec_size(void);

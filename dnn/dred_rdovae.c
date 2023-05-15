@@ -35,6 +35,21 @@
 #include "dred_rdovae_dec.h"
 #include "dred_rdovae_stats_data.h"
 
+void DRED_rdovae_decode_all(float *features, const float *state, const float *latents, int nb_latents)
+{
+    int i;
+    RDOVAEDec dec;
+    memset(&dec, 0, sizeof(dec));
+    DRED_rdovae_dec_init_states(&dec, state);
+    for (i = 0; i < 2*nb_latents; i += 2)
+    {
+        DRED_rdovae_decode_qframe(
+            &dec,
+            &features[2*i*DRED_NUM_FEATURES],
+            &latents[(i/2)*DRED_LATENT_DIM]);
+    }
+}
+
 size_t DRED_rdovae_get_enc_size()
 {
     return sizeof(RDOVAEEnc);
