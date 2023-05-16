@@ -8,6 +8,7 @@ lpcnet/src/lpcnet.c \
 lpcnet/src/lpcnet_dec.c \
 lpcnet/src/lpcnet_enc.c \
 lpcnet/src/lpcnet_plc.c \
+lpcnet/src/lpcnet_tables.c \
 lpcnet/src/nnet.c \
 lpcnet/src/nnet_data.c \
 lpcnet/src/plc_data.c \
