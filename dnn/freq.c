@@ -51,12 +51,10 @@ static const float compensation[] = {
     0.8f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 0.666667f, 0.5f, 0.5f, 0.5f, 0.333333f, 0.25f, 0.25f, 0.2f, 0.166667f, 0.173913f
 };
 
-typedef struct {
-  int init;
-  kiss_fft_state *kfft;
-  float half_window[OVERLAP_SIZE];
-  float dct_table[NB_BANDS*NB_BANDS];
-} CommonState;
+
+extern const kiss_fft_state kfft;
+extern const float half_window[OVERLAP_SIZE];
+extern const float dct_table[NB_BANDS*NB_BANDS];
 
 
 void compute_band_energy_inverse(float *bandE, const kiss_fft_cpx *X) {
@@ -241,32 +239,14 @@ void interp_band_gain(float *g, const float *bandE) {
   }
 }
 
-CommonState common;
-
-static void check_init(void) {
-  int i;
-  if (common.init) return;
-  common.kfft = opus_fft_alloc_twiddles(WINDOW_SIZE, NULL, NULL, NULL, 0);
-  for (i=0;i<OVERLAP_SIZE;i++)
-    common.half_window[i] = sin(.5*M_PI*sin(.5*M_PI*(i+.5)/OVERLAP_SIZE) * sin(.5*M_PI*(i+.5)/OVERLAP_SIZE));
-  for (i=0;i<NB_BANDS;i++) {
-    int j;
-    for (j=0;j<NB_BANDS;j++) {
-      common.dct_table[i*NB_BANDS + j] = cos((i+.5)*j*M_PI/NB_BANDS);
-      if (j==0) common.dct_table[i*NB_BANDS + j] *= sqrt(.5);
-    }
-  }
-  common.init = 1;
-}
 
 void dct(float *out, const float *in) {
   int i;
-  check_init();
   for (i=0;i<NB_BANDS;i++) {
     int j;
     float sum = 0;
     for (j=0;j<NB_BANDS;j++) {
-      sum += in[j] * common.dct_table[j*NB_BANDS + i];
+      sum += in[j] * dct_table[j*NB_BANDS + i];
     }
     out[i] = sum*sqrt(2./NB_BANDS);
   }
@@ -274,12 +254,11 @@ void dct(float *out, const float *in) {
 
 void idct(float *out, const float *in) {
   int i;
-  check_init();
   for (i=0;i<NB_BANDS;i++) {
     int j;
     float sum = 0;
     for (j=0;j<NB_BANDS;j++) {
-      sum += in[j] * common.dct_table[i*NB_BANDS + j];
+      sum += in[j] * dct_table[i*NB_BANDS + j];
     }
     out[i] = sum*sqrt(2./NB_BANDS);
   }
@@ -289,12 +268,11 @@ void forward_transform(kiss_fft_cpx *out, const float *in) {
   int i;
   kiss_fft_cpx x[WINDOW_SIZE];
   kiss_fft_cpx y[WINDOW_SIZE];
-  check_init();
   for (i=0;i<WINDOW_SIZE;i++) {
     x[i].r = in[i];
     x[i].i = 0;
   }
-  opus_fft(common.kfft, x, y, 0);
+  opus_fft(&kfft, x, y, 0);
   for (i=0;i<FREQ_SIZE;i++) {
     out[i] = y[i];
   }
@@ -304,7 +282,6 @@ void inverse_transform(float *out, const kiss_fft_cpx *in) {
   int i;
   kiss_fft_cpx x[WINDOW_SIZE];
   kiss_fft_cpx y[WINDOW_SIZE];
-  check_init();
   for (i=0;i<FREQ_SIZE;i++) {
     x[i] = in[i];
   }
@@ -312,7 +289,7 @@ void inverse_transform(float *out, const kiss_fft_cpx *in) {
     x[i].r = x[WINDOW_SIZE - i].r;
     x[i].i = -x[WINDOW_SIZE - i].i;
   }
-  opus_fft(common.kfft, x, y, 0);
+  opus_fft(&kfft, x, y, 0);
   /* output in reverse order for IFFT. */
   out[0] = WINDOW_SIZE*y[0].r;
   for (i=1;i<WINDOW_SIZE;i++) {
@@ -369,10 +346,9 @@ float lpc_from_cepstrum(float *lpc, const float *cepstrum)
 
 void apply_window(float *x) {
   int i;
-  check_init();
   for (i=0;i<OVERLAP_SIZE;i++) {
-    x[i] *= common.half_window[i];
-    x[WINDOW_SIZE - 1 - i] *= common.half_window[i];
+    x[i] *= half_window[i];
+    x[WINDOW_SIZE - 1 - i] *= half_window[i];
   }
 }
 

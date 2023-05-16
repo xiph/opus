@@ -32,6 +32,7 @@ liblpcnet_la_SOURCES = \
 	lpcnet.c \
 	lpcnet_dec.c \
 	lpcnet_enc.c \
+	lpcnet_tables.c \
 	nnet.c \
 	nnet_data.c \
 	plc_data.c \
@@ -56,7 +57,7 @@ lpcnet_demo_LDADD = liblpcnet.la
 #dump_data_SOURCES = dump_data.c
 #dump_data_LDADD = $(DUMP_OBJ) $(LIBM)
 
-dump_data_SOURCES = common.c dump_data.c burg.c freq.c kiss_fft.c pitch.c lpcnet_dec.c lpcnet_enc.c ceps_codebooks.c
+dump_data_SOURCES = common.c dump_data.c burg.c freq.c kiss_fft.c pitch.c lpcnet_dec.c lpcnet_enc.c lpcnet_tables.c ceps_codebooks.c
 dump_data_LDADD = $(LIBM)
 dump_data_CFLAGS = $(AM_CFLAGS)
 
