@@ -82,6 +82,7 @@ CLEANFILES = $(CELT_SOURCES_ARM_ASM:.s=-gnu.S) \
  $(CELT_AM_SOURCES_ARM_ASM:.s.in=-gnu.S)
 
 include celt_headers.mk
+include lpcnet_headers.mk
 include silk_headers.mk
 include opus_headers.mk
 
@@ -94,7 +95,7 @@ endif
 
 pkginclude_HEADERS = include/opus.h include/opus_multistream.h include/opus_types.h include/opus_defines.h include/opus_projection.h
 
-noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD)
+noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD) $(LPCNET_HEAD)
 
 if EXTRA_PROGRAMS
 noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
