@@ -39,6 +39,7 @@ struct LPCNetState {
     float deemph_mem;
     float lpc[LPC_ORDER];
     kiss99_ctx rng;
+    LPCNetModel model;
 };
 
 struct LPCNetDecState {

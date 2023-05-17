@@ -96,16 +96,16 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
     pitch = IMIN(255, IMAX(33, pitch));
     net = &lpcnet->nnet;
     RNN_COPY(in, features, NB_FEATURES);
-    compute_embedding(&embed_pitch, &in[NB_FEATURES], pitch);
-    compute_conv1d(&feature_conv1, conv1_out, net->feature_conv1_state, in);
+    compute_embedding(&lpcnet->model.embed_pitch, &in[NB_FEATURES], pitch);
+    compute_conv1d(&lpcnet->model.feature_conv1, conv1_out, net->feature_conv1_state, in);
     if (lpcnet->frame_count < FEATURE_CONV1_DELAY) RNN_CLEAR(conv1_out, FEATURE_CONV1_OUT_SIZE);
-    compute_conv1d(&feature_conv2, conv2_out, net->feature_conv2_state, conv1_out);
+    compute_conv1d(&lpcnet->model.feature_conv2, conv2_out, net->feature_conv2_state, conv1_out);
     if (lpcnet->frame_count < FEATURES_DELAY) RNN_CLEAR(conv2_out, FEATURE_CONV2_OUT_SIZE);
-    _lpcnet_compute_dense(&feature_dense1, dense1_out, conv2_out);
-    _lpcnet_compute_dense(&feature_dense2, condition, dense1_out);
+    _lpcnet_compute_dense(&lpcnet->model.feature_dense1, dense1_out, conv2_out);
+    _lpcnet_compute_dense(&lpcnet->model.feature_dense2, condition, dense1_out);
     RNN_COPY(rc, condition, LPC_ORDER);
-    _lpcnet_compute_dense(&gru_a_dense_feature, gru_a_condition, condition);
-    _lpcnet_compute_dense(&gru_b_dense_feature, gru_b_condition, condition);
+    _lpcnet_compute_dense(&lpcnet->model.gru_a_dense_feature, gru_a_condition, condition);
+    _lpcnet_compute_dense(&lpcnet->model.gru_b_dense_feature, gru_b_condition, condition);
 #ifdef END2END
     rc2lpc(lpc, rc);
 #elif FEATURES_DELAY>0    
@@ -122,25 +122,27 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
     if (lpcnet->frame_count < 1000) lpcnet->frame_count++;
 }
 
-int run_sample_network(NNetState *net, const float *gru_a_condition, const float *gru_b_condition, int last_exc, int last_sig, int pred, const float *sampling_logit_table, kiss99_ctx *rng)
+int run_sample_network(LPCNetState *lpcnet, const float *gru_a_condition, const float *gru_b_condition, int last_exc, int last_sig, int pred, const float *sampling_logit_table, kiss99_ctx *rng)
 {
+    NNetState *net;
     float gru_a_input[3*GRU_A_STATE_SIZE];
     float in_b[GRU_A_STATE_SIZE+FEATURE_DENSE2_OUT_SIZE];
     float gru_b_input[3*GRU_B_STATE_SIZE];
+    net = &lpcnet->nnet;
 #if 1
-    compute_gru_a_input(gru_a_input, gru_a_condition, GRU_A_STATE_SIZE, &gru_a_embed_sig, last_sig, &gru_a_embed_pred, pred, &gru_a_embed_exc, last_exc);
+    compute_gru_a_input(gru_a_input, gru_a_condition, GRU_A_STATE_SIZE, &lpcnet->model.gru_a_embed_sig, last_sig, &lpcnet->model.gru_a_embed_pred, pred, &lpcnet->model.gru_a_embed_exc, last_exc);
 #else
     RNN_COPY(gru_a_input, gru_a_condition, 3*GRU_A_STATE_SIZE);
-    accum_embedding(&gru_a_embed_sig, gru_a_input, last_sig);
-    accum_embedding(&gru_a_embed_pred, gru_a_input, pred);
-    accum_embedding(&gru_a_embed_exc, gru_a_input, last_exc);
+    accum_embedding(&lpcnet->model.gru_a_embed_sig, gru_a_input, last_sig);
+    accum_embedding(&lpcnet->model.gru_a_embed_pred, gru_a_input, pred);
+    accum_embedding(&lpcnet->model.gru_a_embed_exc, gru_a_input, last_exc);
 #endif
     /*compute_gru3(&gru_a, net->gru_a_state, gru_a_input);*/
-    compute_sparse_gru(&sparse_gru_a, net->gru_a_state, gru_a_input);
+    compute_sparse_gru(&lpcnet->model.sparse_gru_a, net->gru_a_state, gru_a_input);
     RNN_COPY(in_b, net->gru_a_state, GRU_A_STATE_SIZE);
     RNN_COPY(gru_b_input, gru_b_condition, 3*GRU_B_STATE_SIZE);
-    compute_gruB(&gru_b, gru_b_input, net->gru_b_state, in_b);
-    return sample_mdense(&dual_fc, net->gru_b_state, sampling_logit_table, rng);
+    compute_gruB(&lpcnet->model.gru_b, gru_b_input, net->gru_b_state, in_b);
+    return sample_mdense(&lpcnet->model.dual_fc, net->gru_b_state, sampling_logit_table, rng);
 }
 
 LPCNET_EXPORT int lpcnet_get_size()
@@ -159,6 +161,7 @@ LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
         lpcnet->sampling_logit_table[i] = -log((1-prob)/prob);
     }
     kiss99_srand(&lpcnet->rng, (const unsigned char *)rng_string, strlen(rng_string));
+    init_lpcnet_model(&lpcnet->model, lpcnet_arrays);
     return 0;
 }
 
@@ -205,7 +208,7 @@ void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int 
         for (j=0;j<LPC_ORDER;j++) pred -= lpcnet->last_sig[j]*lpcnet->lpc[j];
         last_sig_ulaw = lin2ulaw(lpcnet->last_sig[0]);
         pred_ulaw = lin2ulaw(pred);
-        exc = run_sample_network(&lpcnet->nnet, lpcnet->gru_a_condition, lpcnet->gru_b_condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw, lpcnet->sampling_logit_table, &lpcnet->rng);
+        exc = run_sample_network(lpcnet, lpcnet->gru_a_condition, lpcnet->gru_b_condition, lpcnet->last_exc, last_sig_ulaw, pred_ulaw, lpcnet->sampling_logit_table, &lpcnet->rng);
         if (i < preload) {
           exc = lin2ulaw(output[i]-PREEMPH*lpcnet->deemph_mem - pred);
           pcm = output[i]-PREEMPH*lpcnet->deemph_mem;
