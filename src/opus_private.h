@@ -214,6 +214,8 @@ opus_int32 opus_packet_extensions_parse(const unsigned char *data, opus_int32 le
 
 opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, const opus_extension_data  *extensions, int nb_extensions, int pad);
 
+opus_int32 opus_packet_extensions_count(const unsigned char *data, opus_int32 len);
+
 opus_int32 opus_packet_pad_impl(unsigned char *data, opus_int32 len, opus_int32 new_len, int pad, const opus_extension_data  *extensions, int nb_extensions);
 
 #endif /* OPUS_PRIVATE_H */

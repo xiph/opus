@@ -99,15 +99,21 @@ opus_int32 opus_packet_extensions_count(const unsigned char *data, opus_int32 le
    opus_int32 curr_len;
    opus_int32 count=0;
    const unsigned char *curr_data = data;
+
+   celt_assert(len >= 0);
+   celt_assert(data != NULL || len == 0);
+
    curr_len = len;
    while (curr_len > 0)
    {
       int id;
       opus_int32 header_size;
       id = *curr_data>>1;
+      curr_len = skip_extension(&curr_data, curr_len, &header_size);
+      if (curr_len < 0)
+         return OPUS_INVALID_PACKET;
       if (id > 1)
          count++;
-      curr_len = skip_extension(&curr_data, curr_len, &header_size);
    }
    return count;
 }
@@ -119,6 +125,11 @@ opus_int32 opus_packet_extensions_parse(const unsigned char *data, opus_int32 le
    opus_int32 curr_len;
    int curr_frame=0;
    opus_int32 count=0;
+
+   celt_assert(len >= 0);
+   celt_assert(data != NULL || len == 0);
+   celt_assert(nb_extensions != NULL);
+   celt_assert(extensions != NULL || *nb_extensions == 0);
 
    curr_data = data;
    curr_len = len;
@@ -181,10 +192,14 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, 
    int curr_frame = 0;
    opus_int32 pos = 0;
    opus_int32 written = 0;
+
+   celt_assert(len >= 0);
+   celt_assert(data != NULL || len == 0);
+
    for (i=0;i<nb_extensions;i++)
    {
       max_frame = IMAX(max_frame, extensions[i].frame);
-      if (extensions[i].id < 2)
+      if (extensions[i].id < 2 || extensions[i].id > 127)
          return OPUS_BAD_ARG;
    }
    if (max_frame >= 48) return OPUS_BAD_ARG;
@@ -225,6 +240,8 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, 
             } else {
                int last;
                opus_int32 length_bytes;
+               if (extensions[i].len < 0)
+                  return OPUS_BAD_ARG;
                last = (written == nb_extensions - 1);
                length_bytes = 1 + extensions[i].len/255;
                if (last)

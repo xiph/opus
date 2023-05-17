@@ -274,6 +274,7 @@ target_include_directories(
          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/opus>
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
           ${CMAKE_CURRENT_SOURCE_DIR}
+          ${CMAKE_CURRENT_SOURCE_DIR}/lpcnet/include
           celt
           silk)
 
@@ -351,6 +352,7 @@ endif()
 
 add_sources_group(opus silk ${silk_headers} ${silk_sources})
 add_sources_group(opus celt ${celt_headers} ${celt_sources})
+add_sources_group(opus lpcnet ${lpcnet_headers} ${lpcnet_sources})
 
 if(OPUS_FIXED_POINT)
   add_sources_group(opus silk ${silk_sources_fixed})
@@ -641,6 +643,16 @@ if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
   target_compile_definitions(test_opus_encode PRIVATE OPUS_BUILD)
   add_test(NAME test_opus_encode COMMAND ${CMAKE_COMMAND}
         -DTEST_EXECUTABLE=$<TARGET_FILE:test_opus_encode>
+        -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+        -P "${PROJECT_SOURCE_DIR}/cmake/RunTest.cmake")
+
+  add_executable(test_opus_extensions ${test_opus_extensions_sources})
+  target_include_directories(test_opus_extensions
+                            PRIVATE ${CMAKE_CURRENT_BINARY_DIR} celt)
+  target_link_libraries(test_opus_extensions PRIVATE opus)
+  target_compile_definitions(test_opus_extensions PRIVATE OPUS_BUILD)
+  add_test(NAME test_opus_extensions COMMAND ${CMAKE_COMMAND}
+        -DTEST_EXECUTABLE=$<TARGET_FILE:test_opus_extensions>
         -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
         -P "${PROJECT_SOURCE_DIR}/cmake/RunTest.cmake")
 endif()
