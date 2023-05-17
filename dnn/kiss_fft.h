@@ -35,7 +35,6 @@
 
 #include <stdlib.h>
 #define lpcnet_alloc(x) malloc(x)
-//#define opus_free(x) free(x)
 
 #ifdef __cplusplus
 extern "C" {

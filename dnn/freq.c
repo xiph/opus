@@ -162,20 +162,19 @@ void compute_burg_cepstrum(const float *pcm, float *burg_cepstrum, int len, int 
   float g;
   kiss_fft_cpx LPC[FREQ_SIZE];
   float Ly[NB_BANDS];
+  float logMax = -2;
+  float follow = -2;
   assert(order <= LPC_ORDER);
   assert(len <= FRAME_SIZE);
   for (i=0;i<len-1;i++) burg_in[i] = pcm[i+1] - PREEMPHASIS*pcm[i];
   g = silk_burg_analysis(burg_lpc, burg_in, 1e-3, len-1, 1, order);
   g /= len - 2*(order-1);
-  //printf("%g\n", g);
   RNN_CLEAR(x, WINDOW_SIZE);
   x[0] = 1;
   for (i=0;i<order;i++) x[i+1] = -burg_lpc[i]*pow(.995, i+1);
   forward_transform(LPC, x);
   compute_band_energy_inverse(Eburg, LPC);
   for (i=0;i<NB_BANDS;i++) Eburg[i] *= .45*g*(1.f/((float)WINDOW_SIZE*WINDOW_SIZE*WINDOW_SIZE));
-  float logMax = -2;
-  float follow = -2;
   for (i=0;i<NB_BANDS;i++) {
     Ly[i] = log10(1e-2+Eburg[i]);
     Ly[i] = MAX16(logMax-8, MAX16(follow-2.5, Ly[i]));

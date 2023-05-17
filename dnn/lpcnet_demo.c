@@ -169,8 +169,8 @@ int main(int argc, char **argv) {
         int count=0;
         int loss=0;
         int skip=0, extra=0;
-        if ((plc_flags&0x3) == LPCNET_PLC_NONCAUSAL) skip=extra=80;
         LPCNetPLCState *net;
+        if ((plc_flags&0x3) == LPCNET_PLC_NONCAUSAL) skip=extra=80;
         net = lpcnet_plc_create(plc_flags);
         while (1) {
             size_t ret;

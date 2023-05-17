@@ -33,8 +33,8 @@
 extern const WeightArray lpcnet_arrays[];
 
 int parse_record(const unsigned char **data, int *len, WeightArray *array) {
-  if (*len < WEIGHT_BLOCK_SIZE) return -1;
   WeightHead *h = (WeightHead *)*data;
+  if (*len < WEIGHT_BLOCK_SIZE) return -1;
   if (h->block_size < h->size) return -1;
   if (*len < h->block_size+WEIGHT_BLOCK_SIZE) return -1;
   if (h->name[sizeof(h->name)-1] != 0) return -1;

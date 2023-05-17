@@ -89,8 +89,6 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
     float dense1_out[FEATURE_DENSE1_OUT_SIZE];
     int pitch;
     float rc[LPC_ORDER];
-    //static float features[NB_FEATURES];
-    //RNN_COPY(features, lpcnet->last_features, NB_FEATURES);
     /* Matches the Python code -- the 0.1 avoids rounding issues. */
     pitch = (int)floor(.1 + 50*features[NB_BANDS]+100);
     pitch = IMIN(255, IMAX(33, pitch));
@@ -118,7 +116,6 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
 #ifdef LPC_GAMMA
     lpc_weighting(lpc, LPC_GAMMA);
 #endif
-    //RNN_COPY(lpcnet->last_features, _features, NB_FEATURES);
     if (lpcnet->frame_count < 1000) lpcnet->frame_count++;
 }
 
