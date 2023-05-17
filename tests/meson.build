@@ -3,6 +3,7 @@ opus_tests = [
   ['test_opus_api'],
   ['test_opus_decode', [], 60],
   ['test_opus_encode', 'opus_encode_regressions.c', 120],
+  ['test_opus_extensions'],
   ['test_opus_padding'],
   ['test_opus_projection'],
 ]
