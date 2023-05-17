@@ -145,4 +145,57 @@ void compute_gru_a_input(float *output, const float *input, int N, const Embeddi
 
 int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor);
 
+
+
+int mdense_init(MDenseLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *input_weights,
+  const char *factor,
+  int nb_inputs,
+  int nb_neurons,
+  int nb_channels,
+  int activation);
+
+int dense_init(DenseLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *input_weights,
+  int nb_inputs,
+  int nb_neurons,
+  int activation);
+
+int gru_init(GRULayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *subias,
+  const char *input_weights,
+  const char *input_weights_idx,
+  const char *recurrent_weights,
+  int nb_inputs,
+  int nb_neurons,
+  int activation,
+  int reset_after);
+
+int sparse_gru_init(SparseGRULayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *subias,
+  const char *diag_weights,
+  const char *recurrent_weights,
+  const char *idx,
+  int nb_neurons,
+  int activation,
+  int reset_after);
+
+int conv1d_init(Conv1DLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *input_weights,
+  int nb_inputs,
+  int kernel_size,
+  int nb_neurons,
+  int activation);
+
+int embedding_init(EmbeddingLayer *layer, const WeightArray *arrays,
+  const char *embedding_weights,
+  int nb_inputs,
+  int dim);
+
+
 #endif /* _MLP_H_ */

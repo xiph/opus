@@ -39,7 +39,7 @@ void write_weights(const WeightArray *list, FILE *fout)
   unsigned char zeros[WEIGHT_BLOCK_SIZE] = {0};
   while (list[i].name != NULL) {
     WeightHead h;
-    strcpy(h.head, "DNNw");
+    memcpy(h.head, "DNNw", 4);
     h.version = WEIGHT_BLOB_VERSION;
     h.type = list[i].type;
     h.size = list[i].size;

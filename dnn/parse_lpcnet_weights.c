@@ -71,6 +71,120 @@ int parse_weights(WeightArray **list, const unsigned char *data, int len)
   return nb_arrays;
 }
 
+static const void *find_array(const WeightArray *arrays, const char *name) {
+  while (arrays->name && strcmp(arrays->name, name) != 0) arrays++;
+  return arrays->data;
+}
+
+int mdense_init(MDenseLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *input_weights,
+  const char *factor,
+  int nb_inputs,
+  int nb_neurons,
+  int nb_channels,
+  int activation)
+{
+  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
+  if ((layer->input_weights = find_array(arrays, input_weights)) == NULL) return 1;
+  if ((layer->factor = find_array(arrays, factor)) == NULL) return 1;
+  layer->nb_inputs = nb_inputs;
+  layer->nb_neurons = nb_neurons;
+  layer->nb_channels = nb_channels;
+  layer->activation = activation;
+  return 0;
+}
+
+int dense_init(DenseLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *input_weights,
+  int nb_inputs,
+  int nb_neurons,
+  int activation)
+{
+  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
+  if ((layer->input_weights = find_array(arrays, input_weights)) == NULL) return 1;
+  layer->nb_inputs = nb_inputs;
+  layer->nb_neurons = nb_neurons;
+  layer->activation = activation;
+  return 0;
+}
+
+int gru_init(GRULayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *subias,
+  const char *input_weights,
+  const char *input_weights_idx,
+  const char *recurrent_weights,
+  int nb_inputs,
+  int nb_neurons,
+  int activation,
+  int reset_after)
+{
+  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
+  if ((layer->subias = find_array(arrays, subias)) == NULL) return 1;
+  if ((layer->input_weights = find_array(arrays, input_weights)) == NULL) return 1;
+  if ((layer->input_weights_idx = find_array(arrays, input_weights_idx)) == NULL) return 1;
+  if ((layer->recurrent_weights = find_array(arrays, recurrent_weights)) == NULL) return 1;
+  layer->nb_inputs = nb_inputs;
+  layer->nb_neurons = nb_neurons;
+  layer->activation = activation;
+  layer->reset_after = reset_after;
+  return 0;
+}
+
+int sparse_gru_init(SparseGRULayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *subias,
+  const char *diag_weights,
+  const char *recurrent_weights,
+  const char *idx,
+  int nb_neurons,
+  int activation,
+  int reset_after)
+{
+  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
+  if ((layer->subias = find_array(arrays, subias)) == NULL) return 1;
+  if ((layer->diag_weights = find_array(arrays, diag_weights)) == NULL) return 1;
+  if ((layer->recurrent_weights = find_array(arrays, recurrent_weights)) == NULL) return 1;
+  if ((layer->idx = find_array(arrays, idx)) == NULL) return 1;
+  layer->nb_neurons = nb_neurons;
+  layer->activation = activation;
+  layer->reset_after = reset_after;
+  return 0;
+}
+
+int conv1d_init(Conv1DLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *input_weights,
+  int nb_inputs,
+  int kernel_size,
+  int nb_neurons,
+  int activation)
+{
+  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
+  if ((layer->input_weights = find_array(arrays, input_weights)) == NULL) return 1;
+  layer->nb_inputs = nb_inputs;
+  layer->kernel_size = kernel_size;
+  layer->nb_neurons = nb_neurons;
+  layer->activation = activation;
+  return 0;
+}
+
+int embedding_init(EmbeddingLayer *layer, const WeightArray *arrays,
+  const char *embedding_weights,
+  int nb_inputs,
+  int dim)
+{
+  if ((layer->embedding_weights = find_array(arrays, embedding_weights)) == NULL) return 1;
+  layer->nb_inputs = nb_inputs;
+  layer->dim = dim;
+  return 0;
+}
+
+
+
+#if 0
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -102,3 +216,4 @@ int main()
   close(fd);
   return 0;
 }
+#endif
