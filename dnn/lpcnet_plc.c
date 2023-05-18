@@ -32,6 +32,10 @@
 #include "lpcnet.h"
 #include "plc_data.h"
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
 /* Comment this out to have LPCNet update its state on every good packet (slow). */
 #define PLC_SKIP_UPDATES
 
