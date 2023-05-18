@@ -155,7 +155,7 @@ tests_test_opus_encode_SOURCES = tests/test_opus_encode.c tests/opus_encode_regr
 tests_test_opus_encode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
 tests_test_opus_extensions_SOURCES = tests/test_opus_extensions.c tests/test_opus_common.h
-tests_test_opus_extensions_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+tests_test_opus_extensions_LDADD = $(NE10_LIBS) $(LIBM)
 
 tests_test_opus_decode_SOURCES = tests/test_opus_decode.c tests/test_opus_common.h
 tests_test_opus_decode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
