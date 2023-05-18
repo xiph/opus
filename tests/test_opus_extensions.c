@@ -37,6 +37,11 @@
 #include "../src/extensions.c"
 #include "test_opus_common.h"
 
+const char *opus_get_version_string(void)
+{
+   return "unknown";
+}
+
 void test_extensions_generate_success(void)
 {
    static const opus_extension_data ext[] = {
