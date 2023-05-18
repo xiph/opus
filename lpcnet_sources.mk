@@ -12,6 +12,7 @@ lpcnet/src/lpcnet_tables.c \
 lpcnet/src/nnet.c \
 lpcnet/src/nnet_data.c \
 lpcnet/src/plc_data.c \
+lpcnet/src/parse_lpcnet_weights.c \
 lpcnet/src/dred_rdovae.c \
 lpcnet/src/dred_rdovae_enc.c \
 lpcnet/src/dred_rdovae_enc_data.c \
