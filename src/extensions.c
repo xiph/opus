@@ -194,7 +194,6 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, 
    opus_int32 written = 0;
 
    celt_assert(len >= 0);
-   celt_assert(data != NULL || len == 0);
 
    for (i=0;i<nb_extensions;i++)
    {
