@@ -1126,7 +1126,7 @@ OpusDREDDecoder *opus_dred_decoder_create(int *error)
 {
    int ret;
    OpusDREDDecoder *dec;
-   dec = (OpusDREDDecoder *)opus_alloc(opus_dred_get_size());
+   dec = (OpusDREDDecoder *)opus_alloc(opus_dred_decoder_get_size());
    if (dec == NULL)
    {
       if (error)
