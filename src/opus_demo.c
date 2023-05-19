@@ -218,6 +218,7 @@ int main(int argc, char *argv[])
     OpusEncoder *enc=NULL;
     OpusDecoder *dec=NULL;
     OpusDRED *dred=NULL;
+    OpusDREDDecoder *dred_dec=NULL;
     int args;
     int len;
     int frame_size, channels;
@@ -630,6 +631,7 @@ int main(int argc, char *argv[])
        opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
        frame_size = 2*48000;
     }
+    dred_dec = opus_dred_decoder_create(&err);
     dred = opus_dred_create(&err);
     while (!stop)
     {
@@ -803,7 +805,7 @@ int main(int argc, char *argv[])
                 opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                 dred_input = lost_count*output_samples*100/sampling_rate;
                 /* Only decode the amount we need to fill in the gap. */
-                opus_dred_parse(dred, data, len, IMIN(100, IMAX(0, dred_input))*480, 48000, 0);
+                opus_dred_parse(dred_dec, dred, data, len, IMIN(100, IMAX(0, dred_input))*480, 48000, 0);
             }
             /* FIXME: Figure out how to trigger the decoder when the last packet of the file is lost. */
             for (fr=0;fr<run_decoder;fr++) {
@@ -917,6 +919,7 @@ failure:
     opus_encoder_destroy(enc);
     opus_decoder_destroy(dec);
     opus_dred_destroy(dred);
+    opus_dred_decoder_destroy(dred_dec);
     free(data);
     if (fin)
         fclose(fin);
