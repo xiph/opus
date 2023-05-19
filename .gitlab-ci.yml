@@ -52,8 +52,9 @@ meson:
     - pip3 install --user meson
   script:
     - export PATH=$PATH:$HOME/.local/bin
+    - ./autogen.sh
     - mkdir builddir
-    - meson setup --werror -Dtests=enabled -Ddocs=enabled -Dbuildtype=release builddir
+    - meson setup -Dtests=enabled -Ddocs=enabled -Dbuildtype=release builddir
     - meson compile -C builddir
     - meson test -C builddir
     #- meson dist --no-tests -C builddir

@@ -54,10 +54,30 @@ if host_machine.system() == 'windows'
   silk_c_args += ['-DDLL_EXPORT']
 endif
 
+# ----------------------- lpcnet ---------------------------------------------
+# Perhaps this should be moved into lpcnet itself
+lpcnet_sources = sources['LPCNET_SOURCES']
+
+lpcnet_includes = [opus_includes, include_directories('../lpcnet/include')]
+
+lpcnet_c_args = []
+if host_machine.system() == 'windows'
+  lpcnet_c_args += ['-DDLL_EXPORT']
+endif
+
+lpcnet_lib = static_library('silk-lpcnet',
+  lpcnet_sources,
+  c_args: lpcnet_c_args,
+  include_directories: lpcnet_includes,
+  dependencies: libm,
+  install: false)
+
+# ----------------------- lpcnet ---------------------------------------------
+
 silk_lib = static_library('opus-silk',
   silk_sources,
   c_args: silk_c_args,
   include_directories: silk_includes,
-  link_whole: silk_static_libs,
+  link_whole: [silk_static_libs, lpcnet_lib],
   dependencies: libm,
   install: false)

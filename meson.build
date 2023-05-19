@@ -14,7 +14,7 @@ host_cpu_family = host_machine.cpu_family()
 top_srcdir = meson.current_source_dir()
 top_builddir = meson.current_build_dir()
 
-opus_includes = include_directories('.', 'include', 'celt', 'silk')
+opus_includes = include_directories('.', 'include', 'celt', 'silk', 'lpcnet/include')
 opus_public_includes = include_directories('include')
 
 add_project_arguments('-DOPUS_BUILD', language: 'c')
@@ -563,7 +563,12 @@ else
 endif
 
 # extract source file lists from .mk files
-mk_files = ['silk_sources.mk', 'opus_headers.mk', 'opus_sources.mk', 'silk_headers.mk', 'celt_sources.mk', 'celt_headers.mk']
+mk_files = [
+  'opus_headers.mk', 'opus_sources.mk',
+  'silk_headers.mk', 'silk_sources.mk',
+  'celt_sources.mk', 'celt_headers.mk',
+  'lpcnet_headers.mk', 'lpcnet_sources.mk',
+]
 lines = run_command('meson/read-sources-list.py', mk_files, check: true).stdout().strip().split('\n')
 sources = {}
 foreach l : lines
