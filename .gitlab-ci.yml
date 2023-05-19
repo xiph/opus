@@ -95,8 +95,9 @@ cmake:
       apt-get install -y ninja-build doxygen meson git
     - !reference [.snippets, git_prep]
   script:
+    - ./autogen.sh
     - mkdir builddir
-    - meson setup -Dtests=enabled -Ddocs=enabled -Dbuildtype=release builddir ${MESON_EXTRA_ARGS}
+    - meson setup -Dtests=enabled -Ddocs=enabled -Dbuildtype=release builddir
     - meson compile -C builddir
     - meson test -C builddir
     #- meson dist --no-tests -C builddir
