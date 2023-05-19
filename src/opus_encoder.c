@@ -227,6 +227,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->silk_mode.packetLossPercentage      = 0;
     st->silk_mode.complexity                = 9;
     st->silk_mode.useInBandFEC              = 0;
+    st->silk_mode.useDRED                   = 0;
     st->silk_mode.useDTX                    = 0;
     st->silk_mode.useCBR                    = 0;
     st->silk_mode.reducedDependency         = 0;
@@ -2733,6 +2734,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                goto bad_arg;
             }
             st->dred_duration = value;
+            st->silk_mode.useDRED = !!value;
         }
         break;
         case OPUS_GET_DRED_DURATION_REQUEST:
