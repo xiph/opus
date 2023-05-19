@@ -23,11 +23,14 @@
 #define FORBIDDEN_INTERP 7
 
 #define PLC_MAX_FEC 100
+#define MAX_FEATURE_BUFFER_SIZE 4
 
 struct LPCNetState {
     NNetState nnet;
     int last_exc;
     float last_sig[LPC_ORDER];
+    float feature_buffer[NB_FEATURES*MAX_FEATURE_BUFFER_SIZE];
+    int feature_buffer_fill;
     float last_features[NB_FEATURES];
 #if FEATURES_DELAY>0
     float old_lpc[FEATURES_DELAY][LPC_ORDER];
@@ -114,6 +117,10 @@ void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const un
 
 void lpcnet_reset_signal(LPCNetState *lpcnet);
 void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, float *lpc, const float *features);
+void run_frame_network_deferred(LPCNetState *lpcnet, const float *features);
+void run_frame_network_flush(LPCNetState *lpcnet);
+
+
 void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int preload);
 void lpcnet_synthesize_impl(LPCNetState *lpcnet, const float *features, short *output, int N, int preload);
 void lpcnet_synthesize_blend_impl(LPCNetState *lpcnet, const short *pcm_in, short *output, int N);

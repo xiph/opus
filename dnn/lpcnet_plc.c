@@ -189,11 +189,8 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
         st->plc_net = st->plc_copy[FEATURES_DELAY];
         compute_plc_pred(&st->plc_net, st->features, zeros);
         for (i=0;i<FEATURES_DELAY;i++) {
-          float lpc[LPC_ORDER];
-          float gru_a_condition[3*GRU_A_STATE_SIZE];
-          float gru_b_condition[3*GRU_B_STATE_SIZE];
           /* FIXME: backtrack state, replace features. */
-          run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->features);
+          run_frame_network_deferred(&st->lpcnet, st->features);
         }
         copy = st->lpcnet;
         lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], tmp, FRAME_SIZE-TRAINING_OFFSET, 0);
@@ -238,11 +235,8 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
   }
   if (st->skip_analysis) {
     if (st->enable_blending) {
-      float lpc[LPC_ORDER];
-      float gru_a_condition[3*GRU_A_STATE_SIZE];
-      float gru_b_condition[3*GRU_B_STATE_SIZE];
       /* FIXME: backtrack state, replace features. */
-      run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->enc.features[0]);
+      run_frame_network_deferred(&st->lpcnet, st->enc.features[0]);
     }
     st->skip_analysis--;
   } else {
@@ -250,10 +244,7 @@ static int lpcnet_plc_update_causal(LPCNetPLCState *st, short *pcm) {
     RNN_COPY(output, &st->pcm[0], FRAME_SIZE);
 #ifdef PLC_SKIP_UPDATES
     {
-      float lpc[LPC_ORDER];
-      float gru_a_condition[3*GRU_A_STATE_SIZE];
-      float gru_b_condition[3*GRU_B_STATE_SIZE];
-      run_frame_network(&st->lpcnet, gru_a_condition, gru_b_condition, lpc, st->enc.features[0]);
+      run_frame_network_deferred(&st->lpcnet, st->enc.features[0]);
     }
 #else
     lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], output, FRAME_SIZE, FRAME_SIZE);
@@ -274,6 +265,7 @@ static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6,
 static int lpcnet_plc_conceal_causal(LPCNetPLCState *st, short *pcm) {
   int i;
   short output[FRAME_SIZE];
+  run_frame_network_flush(&st->lpcnet);
   st->enc.pcount = 0;
   /* If we concealed the previous frame, finish synthesizing the rest of the samples. */
   /* FIXME: Copy/predict features. */
