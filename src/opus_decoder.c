@@ -1094,7 +1094,7 @@ struct OpusDREDDecoder {
    opus_uint32 magic;
 };
 
-#if defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS)
+#if defined(ENABLE_NEURAL_FEC) && (defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS))
 static void validate_dred_decoder(OpusDREDDecoder *st)
 {
    celt_assert(st->magic == 0xD8EDDEC0);
@@ -1229,6 +1229,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
    }
    return 0;
 #else
+   (void)dred_dec;
    (void)dred;
    (void)data;
    (void)len;
@@ -1253,7 +1254,9 @@ int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *
    dst->process_stage = 2;
    return OPUS_OK;
 #else
-   (void)dred;
+   (void)dred_dec;
+   (void)src;
+   (void)dst;
    return OPUS_UNIMPLEMENTED;
 #endif
 }
