@@ -1089,6 +1089,69 @@ int opus_decoder_get_nb_samples(const OpusDecoder *dec,
    return opus_packet_get_nb_samples(packet, len, dec->Fs);
 }
 
+struct OpusDREDDecoder {
+   int arch;
+   opus_uint32 magic;
+};
+
+#if defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS)
+static void validate_dred_decoder(OpusDREDDecoder *st)
+{
+   celt_assert(st->magic == 0xD8EDDEC0);
+#ifdef OPUS_ARCHMASK
+   celt_assert(st->arch >= 0);
+   celt_assert(st->arch <= OPUS_ARCHMASK);
+#endif
+}
+#define VALIDATE_DRED_DECODER(st) validate_dred_decoder(st)
+#else
+#define VALIDATE_DRED_DECODER(st)
+#endif
+
+
+int opus_dred_decoder_get_size(void)
+{
+  return sizeof(OpusDREDDecoder);
+}
+
+int opus_dred_decoder_init(OpusDREDDecoder *dec)
+{
+   dec->arch = opus_select_arch();
+   /* To make sure nobody forgets to init, use a magic number. */
+   dec->magic = 0xD8EDDEC0;
+   return OPUS_OK;
+}
+
+OpusDREDDecoder *opus_dred_decoder_create(int *error)
+{
+   int ret;
+   OpusDREDDecoder *dec;
+   dec = (OpusDREDDecoder *)opus_alloc(opus_dred_get_size());
+   if (dec == NULL)
+   {
+      if (error)
+         *error = OPUS_ALLOC_FAIL;
+      return NULL;
+   }
+   ret = opus_dred_decoder_init(dec);
+   if (error)
+      *error = ret;
+   if (ret != OPUS_OK)
+   {
+      opus_free(dec);
+      dec = NULL;
+   }
+   return dec;
+}
+
+void opus_dred_decoder_destroy(OpusDREDDecoder *dec)
+{
+   dec->magic = 0xDE57801D;
+   free(dec);
+}
+
+
+
 #ifdef ENABLE_NEURAL_FEC
 static int dred_find_payload(const unsigned char *data, opus_int32 len, const unsigned char **payload)
 {
@@ -1144,11 +1207,12 @@ static int dred_find_payload(const unsigned char *data, opus_int32 len, const un
 }
 #endif
 
-int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int defer_processing)
+int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int defer_processing)
 {
 #ifdef ENABLE_NEURAL_FEC
    const unsigned char *payload;
    opus_int32 payload_len;
+   VALIDATE_DRED_DECODER(dred_dec);
    payload_len = dred_find_payload(data, len, &payload);
    if (payload_len < 0)
       return payload_len;
@@ -1160,7 +1224,7 @@ int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, o
       min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
       dred_ec_decode(dred, payload, payload_len, min_feature_frames);
       if (!defer_processing)
-         opus_dred_process(dred);
+         opus_dred_process(dred_dec, dred, dred);
       return dred->nb_latents*sampling_rate/25 - sampling_rate/50;
    }
    return 0;
@@ -1175,13 +1239,18 @@ int opus_dred_parse(OpusDRED *dred, const unsigned char *data, opus_int32 len, o
 #endif
 }
 
-int opus_dred_process(OpusDRED *dred)
+int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *dst)
 {
 #ifdef ENABLE_NEURAL_FEC
-   if (dred->process_stage == 2)
+   if (dred_dec == NULL)
+      return OPUS_BAD_ARG;
+   VALIDATE_DRED_DECODER(dred_dec);
+   if (src != dst)
+      OPUS_COPY(dst, src, 1);
+   if (dst->process_stage == 2)
       return OPUS_OK;
-   DRED_rdovae_decode_all(dred->fec_features, dred->state, dred->latents, dred->nb_latents);
-   dred->process_stage = 2;
+   DRED_rdovae_decode_all(dst->fec_features, dst->state, dst->latents, dst->nb_latents);
+   dst->process_stage = 2;
    return OPUS_OK;
 #else
    (void)dred;
