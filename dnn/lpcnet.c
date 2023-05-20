@@ -174,6 +174,7 @@ LPCNET_EXPORT int lpcnet_get_size()
 LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
 {
     int i;
+    int ret;
     const char* rng_string="LPCNet";
     memset(lpcnet, 0, lpcnet_get_size());
     lpcnet->last_exc = lin2ulaw(0.f);
@@ -182,8 +183,9 @@ LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
         lpcnet->sampling_logit_table[i] = -log((1-prob)/prob);
     }
     kiss99_srand(&lpcnet->rng, (const unsigned char *)rng_string, strlen(rng_string));
-    init_lpcnet_model(&lpcnet->model, lpcnet_arrays);
-    return 0;
+    ret = init_lpcnet_model(&lpcnet->model, lpcnet_arrays);
+    celt_assert(ret == 0);
+    return ret;
 }
 
 

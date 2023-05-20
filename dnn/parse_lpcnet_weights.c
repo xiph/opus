@@ -30,6 +30,8 @@
 
 #include "nnet.h"
 
+#define SPARSE_BLOCK_SIZE 32
+
 extern const WeightArray lpcnet_arrays[];
 
 int parse_record(const unsigned char **data, int *len, WeightArray *array) {
@@ -71,9 +73,40 @@ int parse_weights(WeightArray **list, const unsigned char *data, int len)
   return nb_arrays;
 }
 
-static const void *find_array(const WeightArray *arrays, const char *name) {
+static const void *find_array_entry(const WeightArray *arrays, const char *name) {
   while (arrays->name && strcmp(arrays->name, name) != 0) arrays++;
-  return arrays->data;
+  return arrays;
+}
+
+static const void *find_array_check(const WeightArray *arrays, const char *name, int size) {
+  const WeightArray *a = find_array_entry(arrays, name);
+  if (a && a->size == size) return a->data;
+  else return NULL;
+}
+
+static const void *find_idx_check(const WeightArray *arrays, const char *name, int nb_in, int nb_out, int *total_blocks) {
+  int remain;
+  const int *idx;
+  const WeightArray *a = find_array_entry(arrays, name);
+  *total_blocks = 0;
+  if (a == NULL) return NULL;
+  idx = a->data;
+  remain = a->size/sizeof(int);
+  while (remain > 0) {
+    int nb_blocks;
+    int i;
+    nb_blocks = *idx++;
+    if (remain < nb_blocks+1) return NULL;
+    for (i=0;i<nb_blocks;i++) {
+      int pos = *idx++;
+      if (pos+3 >= nb_in || (pos&0x3)) return NULL; 
+    }
+    nb_out -= 8;
+    remain -= nb_blocks+1;
+    *total_blocks += nb_blocks;
+  }
+  if (nb_out != 0) return NULL;
+  return a->data;
 }
 
 int mdense_init(MDenseLayer *layer, const WeightArray *arrays,
@@ -85,9 +118,9 @@ int mdense_init(MDenseLayer *layer, const WeightArray *arrays,
   int nb_channels,
   int activation)
 {
-  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
-  if ((layer->input_weights = find_array(arrays, input_weights)) == NULL) return 1;
-  if ((layer->factor = find_array(arrays, factor)) == NULL) return 1;
+  if ((layer->bias = find_array_check(arrays, bias, nb_neurons*nb_channels*sizeof(layer->bias[0]))) == NULL) return 1;
+  if ((layer->input_weights = find_array_check(arrays, input_weights, nb_inputs*nb_channels*nb_neurons*sizeof(layer->input_weights[0]))) == NULL) return 1;
+  if ((layer->factor = find_array_check(arrays, factor, nb_channels*nb_neurons*sizeof(layer->factor[0]))) == NULL) return 1;
   layer->nb_inputs = nb_inputs;
   layer->nb_neurons = nb_neurons;
   layer->nb_channels = nb_channels;
@@ -102,8 +135,8 @@ int dense_init(DenseLayer *layer, const WeightArray *arrays,
   int nb_neurons,
   int activation)
 {
-  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
-  if ((layer->input_weights = find_array(arrays, input_weights)) == NULL) return 1;
+  if ((layer->bias = find_array_check(arrays, bias, nb_neurons*sizeof(layer->bias[0]))) == NULL) return 1;
+  if ((layer->input_weights = find_array_check(arrays, input_weights, nb_inputs*nb_neurons*sizeof(layer->input_weights[0]))) == NULL) return 1;
   layer->nb_inputs = nb_inputs;
   layer->nb_neurons = nb_neurons;
   layer->activation = activation;
@@ -121,11 +154,12 @@ int gru_init(GRULayer *layer, const WeightArray *arrays,
   int activation,
   int reset_after)
 {
-  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
-  if ((layer->subias = find_array(arrays, subias)) == NULL) return 1;
-  if ((layer->input_weights = find_array(arrays, input_weights)) == NULL) return 1;
-  if ((layer->input_weights_idx = find_array(arrays, input_weights_idx)) == NULL) return 1;
-  if ((layer->recurrent_weights = find_array(arrays, recurrent_weights)) == NULL) return 1;
+  int total_blocks;
+  if ((layer->bias = find_array_check(arrays, bias, 6*nb_neurons*sizeof(layer->bias[0]))) == NULL) return 1;
+  if ((layer->subias = find_array_check(arrays, subias, 6*nb_neurons*sizeof(layer->subias[0]))) == NULL) return 1;
+  if ((layer->input_weights_idx = find_idx_check(arrays, input_weights_idx, nb_inputs, 3*nb_neurons, &total_blocks)) == NULL) return 1;
+  if ((layer->input_weights = find_array_check(arrays, input_weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->input_weights[0]))) == NULL) return 1;
+  if ((layer->recurrent_weights = find_array_check(arrays, recurrent_weights, 3*nb_neurons*nb_neurons*sizeof(layer->recurrent_weights[0]))) == NULL) return 1;
   layer->nb_inputs = nb_inputs;
   layer->nb_neurons = nb_neurons;
   layer->activation = activation;
@@ -143,11 +177,12 @@ int sparse_gru_init(SparseGRULayer *layer, const WeightArray *arrays,
   int activation,
   int reset_after)
 {
-  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
-  if ((layer->subias = find_array(arrays, subias)) == NULL) return 1;
-  if ((layer->diag_weights = find_array(arrays, diag_weights)) == NULL) return 1;
-  if ((layer->recurrent_weights = find_array(arrays, recurrent_weights)) == NULL) return 1;
-  if ((layer->idx = find_array(arrays, idx)) == NULL) return 1;
+  int total_blocks;
+  if ((layer->bias = find_array_check(arrays, bias, 6*nb_neurons*sizeof(layer->bias[0]))) == NULL) return 1;
+  if ((layer->subias = find_array_check(arrays, subias, 6*nb_neurons*sizeof(layer->subias[0]))) == NULL) return 1;
+  if ((layer->diag_weights = find_array_check(arrays, diag_weights, 3*nb_neurons*sizeof(layer->diag_weights[0]))) == NULL) return 1;
+  if ((layer->idx = find_idx_check(arrays, idx, nb_neurons, 3*nb_neurons, &total_blocks)) == NULL) return 1;
+  if ((layer->recurrent_weights = find_array_check(arrays, recurrent_weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->recurrent_weights[0]))) == NULL) return 1;
   layer->nb_neurons = nb_neurons;
   layer->activation = activation;
   layer->reset_after = reset_after;
@@ -162,8 +197,8 @@ int conv1d_init(Conv1DLayer *layer, const WeightArray *arrays,
   int nb_neurons,
   int activation)
 {
-  if ((layer->bias = find_array(arrays, bias)) == NULL) return 1;
-  if ((layer->input_weights = find_array(arrays, input_weights)) == NULL) return 1;
+  if ((layer->bias = find_array_check(arrays, bias, nb_neurons*sizeof(layer->bias[0]))) == NULL) return 1;
+  if ((layer->input_weights = find_array_check(arrays, input_weights, kernel_size*nb_inputs*nb_neurons*sizeof(layer->input_weights[0]))) == NULL) return 1;
   layer->nb_inputs = nb_inputs;
   layer->kernel_size = kernel_size;
   layer->nb_neurons = nb_neurons;
@@ -176,7 +211,7 @@ int embedding_init(EmbeddingLayer *layer, const WeightArray *arrays,
   int nb_inputs,
   int dim)
 {
-  if ((layer->embedding_weights = find_array(arrays, embedding_weights)) == NULL) return 1;
+  if ((layer->embedding_weights = find_array_check(arrays, embedding_weights, nb_inputs*dim*sizeof(layer->embedding_weights[0]))) == NULL) return 1;
   layer->nb_inputs = nb_inputs;
   layer->dim = dim;
   return 0;
