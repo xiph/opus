@@ -10,7 +10,7 @@ srcdir=`dirname $0`
 test -n "$srcdir" && cd "$srcdir"
 
 git submodule update --init
-(cd lpcnet; ./download_model.sh 301a9fb)
+(cd lpcnet; ./download_model.sh f1071fa)
 
 echo "Updating build configuration files, please wait...."
 
