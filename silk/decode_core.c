@@ -55,12 +55,14 @@ void silk_decode_core(
     static FILE *fltp = NULL;
     static FILE *fperiod = NULL;
     static FILE *foffset = NULL;
+    static FILE *fnoisy16k = NULL;
 
     if (flpc == NULL) {flpc = fopen("features_lpc.f32", "wb");}
     if (fgain == NULL) {fgain = fopen("features_gain.f32", "wb");}
     if (fltp == NULL) {fltp = fopen("features_ltp.f32", "wb");}
     if (fperiod == NULL) {fperiod = fopen("features_period.s16", "wb");}
     if (foffset == NULL) {foffset = fopen("features_offset.f32", "wb");}
+    if (fnoisy16k == NULL) {fnoisy16k = fopen("noisy_16k.s16", "wb");}
 
 #endif
     opus_int   i, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
@@ -280,11 +282,16 @@ void silk_decode_core(
             pxq[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14[ MAX_LPC_ORDER + i ], Gain_Q10 ), 8 ) );
         }
 
+
         /* Update LPC filter state */
         silk_memcpy( sLPC_Q14, &sLPC_Q14[ psDec->subfr_length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
         pexc_Q14 += psDec->subfr_length;
         pxq      += psDec->subfr_length;
     }
+
+#ifdef FEATURES
+        fwrite(xq, psDec->nb_subfr * psDec->subfr_length, sizeof(xq[0]), fnoisy16k);
+#endif
 
     /* Save LPC state */
     silk_memcpy( psDec->sLPC_Q14_buf, sLPC_Q14, MAX_LPC_ORDER * sizeof( opus_int32 ) );

@@ -207,12 +207,12 @@ static OpusDecoder *ms_opus_decoder_create(opus_int32 Fs, int channels, int *err
 }
 #endif
 
-#define COMPLEXITY_MIN 10
+#define COMPLEXITY_MIN 0
 #define COMPLEXITY_MAX 10
 
 #define PACKET_LOSS_PERC_MIN 0
-#define PACKET_LOSS_PERC_MAX 0
-#define PACKET_LOSS_PERC_STEP 1
+#define PACKET_LOSS_PERC_MAX 50
+#define PACKET_LOSS_PERC_STEP 5
 
 #define NUM_BITRATES 102
 static int bitrates[NUM_BITRATES] = {
@@ -849,16 +849,16 @@ int main(int argc, char *argv[])
                         /* attempt to decode with in-band FEC from next packet */
                         opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                         output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, output_samples, 1);
-                        if (output_samples != 320) {printf("[frame %d] decoder return value %d\n", silk_frame_counter, output_samples); exit(1);}
+                        //if (output_samples != 320) {printf("[frame %d] decoder return value %d\n", silk_frame_counter, output_samples); exit(1);}
                     } else {
                         /* regular decode */
                         output_samples = max_frame_size;
                         output_samples = opus_decode(dec, data[1-toggle], len[1-toggle], out, output_samples, 0);
-                        if (output_samples != 320) {printf("[frame %d] decoder return value %d\n", silk_frame_counter, output_samples); exit(1);}
+                        //if (output_samples != 320) {printf("[frame %d] decoder return value %d\n", silk_frame_counter, output_samples); exit(1);}
                     }
                 } else {
                     output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, output_samples, 0);
-                    if (output_samples != 320) {printf("[frame %d] decoder return value %d\n", silk_frame_counter, output_samples); exit(1);}
+                    //if (output_samples != 320) {printf("[frame %d] decoder return value %d\n", silk_frame_counter, output_samples); exit(1);}
                 }
                 if (output_samples>0)
                 {
