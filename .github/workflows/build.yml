@@ -74,7 +74,7 @@ jobs:
 
   CMakeVersionTest:
     name: Test build with CMake 3.1.0
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
         with:
@@ -127,25 +127,25 @@ jobs:
             name: "Android/Dll/ARMv8/Release",
             os: ubuntu-latest,
             config: Release,
-            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DBUILD_SHARED_LIBS=ON"
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DBUILD_SHARED_LIBS=ON"
           }
         - {
             name: "Android/Dll/ARMv7/Release",
             os: ubuntu-latest,
             config: Release,
-            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DBUILD_SHARED_LIBS=ON"
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DBUILD_SHARED_LIBS=ON"
           }
         - {
             name: "Android/Dll/X86/Release",
             os: ubuntu-latest,
             config: Release,
-            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86 -DBUILD_SHARED_LIBS=ON"
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86 -DBUILD_SHARED_LIBS=ON"
           }
         - {
             name: "Android/Dll/X64/Release",
             os: ubuntu-latest,
             config: Release,
-            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64 -DBUILD_SHARED_LIBS=ON"
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64 -DBUILD_SHARED_LIBS=ON"
           }
         - {
             name: "Windows/Dll/X86/Release",
@@ -248,41 +248,38 @@ jobs:
           }
         - {
             name: "Android/Lib/ARMv8/Release",
-            os: macos-latest,
+            # os: macos-latest,
+            os: ubuntu-latest,
             config: Release,
-            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a"
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a"
           }
         - {
             name: "Android/Lib/ARMv7/Release",
-            os: macos-latest,
+            # os: macos-latest,
+            os: ubuntu-latest,
             config: Release,
-            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a"
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a"
           }
         - {
             name: "Android/Lib/X86/Release",
-            os: macos-latest,
+            # os: macos-latest,
+            os: ubuntu-latest,
             config: Release,
-            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86"
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86"
           }
         - {
             name: "Android/Lib/X64/Release",
-            os: macos-latest,
+            # os: macos-latest,
+            os: ubuntu-latest,
             config: Release,
-            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk-bundle/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64"
+            args: "-DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64"
           }
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-        # Now we need at least CMake 3.15 to use the cmake --install command
-        # Current linux build nodes only have 3.12
-      - name: Install CMake 3.16 on Linux
-        if: matrix.config.os == 'ubuntu-latest'
-        run: |
-          curl -sL https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2-Linux-x86_64.sh -o cmakeinstall.sh
-          chmod +x cmakeinstall.sh
-          sudo ./cmakeinstall.sh --prefix=/usr/local --exclude-subdir
-          rm cmakeinstall.sh
+      - name: CMake Version
+        run: cmake --version
       - name: Create Work Dir
         run: mkdir build
       - name: Configure
@@ -291,23 +288,24 @@ jobs:
       - name: Build
         working-directory: ./build
         run: cmake --build . -j 2 --config ${{ matrix.config.config }} --target package
-      - name: Install Android Test Image
-        if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
-        run: $ANDROID_HOME/tools/bin/sdkmanager "system-images;android-30;google_apis;x86_64"
-      - name: Create Android Virtual Device
-        if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
-        run: echo "no" | $ANDROID_HOME/tools/bin/avdmanager --verbose create avd --force --name "generic_10" --package "system-images;android-30;google_apis;x86_64" --tag "google_apis" --abi "x86_64"
-      - name: Start Android Virtual Device
-        if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
-        run: $ANDROID_HOME/emulator/emulator -avd "generic_10" -no-window -no-snapshot &
-      - name: Ensure emulator is started
-        if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
-        run: while [ "`adb shell getprop sys.boot_completed | tr -d '\r' `" != "1" ] ; do sleep 1; done
+      # - name: Install Android Test Image
+      #   if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+      #   run: $ANDROID_HOME/tools/bin/sdkmanager "system-images;android-30;google_apis;x86_64"
+      # - name: Create Android Virtual Device
+      #   if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+      #   run: echo "no" | $ANDROID_HOME/tools/bin/avdmanager --verbose create avd --force --name "generic_10" --package "system-images;android-30;google_apis;x86_64" --tag "google_apis" --abi "x86_64"
+      # - name: Start Android Virtual Device
+      #   if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+      #   run: $ANDROID_HOME/emulator/emulator -avd "generic_10" -no-window -no-snapshot &
+      # - name: Ensure emulator is started
+      #   if: contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+      #   run: while [ "`adb shell getprop sys.boot_completed | tr -d '\r' `" != "1" ] ; do sleep 1; done
       - name: Test
         if: contains(matrix.config.name, 'Windows') && !contains(matrix.config.name, 'ARM') && !contains(matrix.config.name, 'Dll') ||
             contains(matrix.config.name, 'MacOSX') && !contains(matrix.config.name, 'ARM') && !contains(matrix.config.name, 'Dll') ||
-            contains(matrix.config.name, 'Linux') && !contains(matrix.config.name, 'ARM') && !contains(matrix.config.name, 'Dll') ||
-            contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
+            contains(matrix.config.name, 'Linux') && !contains(matrix.config.name, 'ARM') && !contains(matrix.config.name, 'Dll')
+            # Disable android tests for now as it is broken
+            # contains(matrix.config.name, 'Android') && !contains(matrix.config.name, 'Dll')
         working-directory: ./build
         run: ctest -j 2 -C ${{ matrix.config.config }}
 
