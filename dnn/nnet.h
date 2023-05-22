@@ -147,7 +147,7 @@ int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor);
 
 
 extern const WeightArray lpcnet_arrays[];
-
+extern const WeightArray lpcnet_plc_arrays[];
 
 int mdense_init(MDenseLayer *layer, const WeightArray *arrays,
   const char *bias,

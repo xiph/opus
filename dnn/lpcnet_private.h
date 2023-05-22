@@ -98,6 +98,7 @@ struct LPCNetPLCState {
   short dc_buf[TRAINING_OFFSET];
   int queued_update;
   short queued_samples[FRAME_SIZE];
+  PLCModel model;
 };
 
 extern float ceps_codebook1[];
