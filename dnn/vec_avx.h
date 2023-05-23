@@ -33,6 +33,7 @@
 #define VEC_AVX_H
 
 #include <immintrin.h>
+#include <math.h>
 
 /* Use 8-bit dot products unless disabled or if stuck with SSE2. */
 #if (defined(__AVX2__) || defined(__SSSE3__)) && !defined(DISABLE_DOT_PROD)
