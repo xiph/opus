@@ -32,6 +32,7 @@
 #include "nnet.h"
 
 extern const WeightArray lpcnet_arrays[];
+extern const WeightArray lpcnet_plc_arrays[];
 
 void write_weights(const WeightArray *list, FILE *fout)
 {
@@ -59,6 +60,7 @@ int main()
 {
   FILE *fout = fopen("weights_blob.bin", "w");
   write_weights(lpcnet_arrays, fout);
+  write_weights(lpcnet_plc_arrays, fout);
   fclose(fout);
   return 0;
 }
