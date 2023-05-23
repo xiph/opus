@@ -41,7 +41,11 @@
 
 #else
 
+#if defined(_MSC_VER)
+#pragma message ("Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 to get better performance")
+#else
 #warning "Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 using -march= to get better performance"
+#endif
 
 #endif
 

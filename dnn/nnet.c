@@ -42,7 +42,11 @@
 #include "plc_data.h"
 
 #ifdef NO_OPTIMIZATIONS
+#if defined(_MSC_VER)
+#pragma message ("Compiling without any vectorization. This code will be very slow")
+#else
 #warning Compiling without any vectorization. This code will be very slow
+#endif
 #endif
 
 
