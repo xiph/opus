@@ -632,7 +632,7 @@ int main(int argc, char *argv[])
        frame_size = 2*48000;
     }
     dred_dec = opus_dred_decoder_create(&err);
-    dred = opus_dred_create(&err);
+    dred = opus_dred_alloc(&err);
     while (!stop)
     {
         if (delayed_celt)
@@ -815,7 +815,7 @@ int main(int argc, char *argv[])
                    output_samples = opus_decode(dec, data, len, out, output_samples, 1);
                 } else if (fr < lost_count) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
-                   output_samples = opus_decoder_dred_output(dec, dred, (lost_count-fr)*sampling_rate/100, out, output_samples);
+                   output_samples = opus_decoder_dred_decode(dec, dred, (lost_count-fr)*sampling_rate/100, out, output_samples);
                 } else {
                    output_samples = max_frame_size;
                    output_samples = opus_decode(dec, data, len, out, output_samples, 0);
@@ -918,7 +918,7 @@ int main(int argc, char *argv[])
 failure:
     opus_encoder_destroy(enc);
     opus_decoder_destroy(dec);
-    opus_dred_destroy(dred);
+    opus_dred_free(dred);
     opus_dred_decoder_destroy(dred_dec);
     free(data);
     if (fin)

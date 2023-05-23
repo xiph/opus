@@ -557,12 +557,12 @@ OPUS_EXPORT int opus_dred_get_size(void);
 /** Allocates and initializes a DRED state.
   * @param [out] error <tt>int*</tt>: #OPUS_OK Success or @ref opus_errorcodes
   */
-OPUS_EXPORT OpusDRED *opus_dred_create(int *error);
+OPUS_EXPORT OpusDRED *opus_dred_alloc(int *error);
 
 /** Frees an <code>OpusDRED</code> allocated by opus_dred_create().
   * @param[in] st <tt>OpusDRED*</tt>: State to be freed.
   */
-OPUS_EXPORT void opus_dred_destroy(OpusDRED *dec);
+OPUS_EXPORT void opus_dred_free(OpusDRED *dec);
 
 /** Decode an Opus DRED packet.
   * @param [in] dred <tt>OpusDRED*</tt>: DRED state
@@ -592,7 +592,7 @@ OPUS_EXPORT int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src
   *  frame_size <b>must</b> be a multiple of 2.5 ms.
   * @returns Number of decoded samples or @ref opus_errorcodes
   */
-OPUS_EXPORT int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_offset, opus_int16 *pcm, opus_int32 frame_size);
+OPUS_EXPORT int opus_decoder_dred_decode(OpusDecoder *st, const OpusDRED *dred, opus_int32 dred_offset, opus_int16 *pcm, opus_int32 frame_size);
 
 /** Decode audio from an Opus DRED packet with floating point output.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
@@ -604,7 +604,7 @@ OPUS_EXPORT int opus_decoder_dred_output(OpusDecoder *st, OpusDRED *dred, opus_i
   *  frame_size <b>must</b> be a multiple of 2.5 ms.
   * @returns Number of decoded samples or @ref opus_errorcodes
   */
-OPUS_EXPORT int opus_decoder_dred_output_float(OpusDecoder *st, OpusDRED *dred, opus_int32 dred_offset, float *pcm, opus_int32 frame_size);
+OPUS_EXPORT int opus_decoder_dred_decode_float(OpusDecoder *st, const OpusDRED *dred, opus_int32 dred_offset, float *pcm, opus_int32 frame_size);
 
 
 /** Parse an opus packet into one or more frames.
