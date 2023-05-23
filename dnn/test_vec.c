@@ -10,7 +10,7 @@
 // we need to call two versions of each functions that have the same
 // name, so use #defines to temp rename them
 
-#define celt_exp2 celt_exp2_fast
+#define lpcnet_exp2 lpcnet_exp2_fast
 #define tansig_approx tansig_approx_fast
 #define sigmoid_approx sigmoid_approx_fast
 #define softmax softmax_fast
@@ -34,7 +34,7 @@ const char simd[]="none";
 
 #endif
 
-#undef celt_exp2
+#undef lpcnet_exp2
 #undef tansig_approx
 #undef sigmoid_approx
 #undef softmax
