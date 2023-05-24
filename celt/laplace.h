@@ -26,6 +26,9 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef LAPLACE_H
+#define LAPLACE_H
+
 #include "entenc.h"
 #include "entdec.h"
 
@@ -50,3 +53,5 @@ int ec_laplace_decode(ec_dec *dec, unsigned fs, int decay);
 
 int ec_laplace_decode_p0(ec_dec *dec, opus_uint16 p0, opus_uint16 decay);
 void ec_laplace_encode_p0(ec_enc *enc, int value, opus_uint16 p0, opus_uint16 decay);
+
+#endif
