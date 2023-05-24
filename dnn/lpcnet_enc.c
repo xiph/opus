@@ -511,9 +511,9 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   follow = -2;
   for (i=0;i<NB_BANDS;i++) {
     Ly[i] = log10(1e-2+Ex[i]);
-    Ly[i] = MAX16(logMax-8, MAX16(follow-2.5, Ly[i]));
+    Ly[i] = MAX16(logMax-8, MAX16(follow-2.5f, Ly[i]));
     logMax = MAX16(logMax, Ly[i]);
-    follow = MAX16(follow-2.5, Ly[i]);
+    follow = MAX16(follow-2.5f, Ly[i]);
     E += Ex[i];
   }
   dct(st->features[st->pcount], Ly);
@@ -529,7 +529,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
       sum += st->lpc[j]*st->pitch_mem[j];
     RNN_MOVE(st->pitch_mem+1, st->pitch_mem, LPC_ORDER-1);
     st->pitch_mem[0] = aligned_in[i];
-    st->exc_buf[PITCH_MAX_PERIOD+i] = sum + .7*st->pitch_filt;
+    st->exc_buf[PITCH_MAX_PERIOD+i] = sum + .7f*st->pitch_filt;
     st->pitch_filt = sum;
     /*printf("%f\n", st->exc_buf[PITCH_MAX_PERIOD+i]);*/
   }
@@ -812,7 +812,7 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
     best_i = 0;
     for (i=0;i<PITCH_MAX_PERIOD-2*PITCH_MIN_PERIOD;i++) {
       float xc_half = MAX16(MAX16(st->xc[2+2*st->pcount+sub][(PITCH_MAX_PERIOD+i)/2], st->xc[2+2*st->pcount+sub][(PITCH_MAX_PERIOD+i+2)/2]), st->xc[2+2*st->pcount+sub][(PITCH_MAX_PERIOD+i-1)/2]);
-      if (st->xc[2+2*st->pcount+sub][i] < xc_half*1.1) st->xc[2+2*st->pcount+sub][i] *= .8;
+      if (st->xc[2+2*st->pcount+sub][i] < xc_half*1.1f) st->xc[2+2*st->pcount+sub][i] *= .8f;
     }
     for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
       int j;
@@ -848,8 +848,8 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
     best_i = pitch_prev[sub][best_i];
   }
   frame_corr /= 2;
-  st->features[st->pcount][NB_BANDS] = .01*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
-  st->features[st->pcount][NB_BANDS + 1] = frame_corr-.5;
+  st->features[st->pcount][NB_BANDS] = .01f*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
+  st->features[st->pcount][NB_BANDS + 1] = frame_corr-.5f;
   if (ffeat) {
     fwrite(st->features[st->pcount], sizeof(float), NB_TOTAL_FEATURES, ffeat);
   }
