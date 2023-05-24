@@ -1157,12 +1157,12 @@ static int dred_find_payload(const unsigned char *data, opus_int32 len, const un
 {
    const unsigned char *data0;
    int len0;
-   *payload = NULL;
    int frame = 0;
    int ret;
    const unsigned char *frames[48];
    opus_int16 size[48];
 
+   *payload = NULL;
    /* Get the padding section of the packet. */
    ret = opus_packet_parse_impl(data, len, 0, NULL, frames, size, NULL, NULL, &data0, &len0);
    if (ret < 0)

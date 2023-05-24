@@ -63,7 +63,7 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
       /* FIXME: Figure out how to avoid missing a last frame that would take up < 8 bits. */
       if (8*num_bytes - ec_tell(&ec) <= 7)
          break;
-      q_level = (int) round(DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
+      q_level = (int) floor(.5 + DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
       offset = q_level * DRED_LATENT_DIM;
       dred_decode_latents(
           &ec,
