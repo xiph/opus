@@ -25,6 +25,9 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef DRED_DECODER_H
+#define DRED_DECODER_H
+
 #include "opus.h"
 #include "dred_config.h"
 #include "dred_rdovae.h"
@@ -40,3 +43,5 @@ struct OpusDRED {
 
 
 int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames);
+
+#endif
