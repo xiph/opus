@@ -39,6 +39,7 @@
 #define MODE_FEATURES 2
 #define MODE_SYNTHESIS 3
 #define MODE_PLC 4
+#define MODE_ADDLPC 5
 
 void usage(void) {
     fprintf(stderr, "usage: lpcnet_demo -encode <input.pcm> <compressed.lpcnet>\n");
@@ -46,7 +47,8 @@ void usage(void) {
     fprintf(stderr, "       lpcnet_demo -features <input.pcm> <features.f32>\n");
     fprintf(stderr, "       lpcnet_demo -synthesis <features.f32> <output.pcm>\n");
     fprintf(stderr, "       lpcnet_demo -plc <plc_options> <percent> <input.pcm> <output.pcm>\n");
-    fprintf(stderr, "       lpcnet_demo -plc_file <plc_options> <percent> <input.pcm> <output.pcm>\n\n");
+    fprintf(stderr, "       lpcnet_demo -plc_file <plc_options> <percent> <input.pcm> <output.pcm>\n");
+    fprintf(stderr, "       lpcnet_demo -addlpc <features_without_lpc.f32> <features_with_lpc.lpc>\n\n");
     fprintf(stderr, "  plc_options:\n");
     fprintf(stderr, "       causal:       normal (causal) PLC\n");
     fprintf(stderr, "       causal_dc:    normal (causal) PLC with DC offset compensation\n");
@@ -83,6 +85,8 @@ int main(int argc, char **argv) {
         }
         argv+=2;
         argc-=2;
+    } else if (strcmp(argv[1], "-addlpc") == 0){
+        mode=MODE_ADDLPC;
     } else {
         usage();
     }
@@ -165,8 +169,8 @@ int main(int argc, char **argv) {
         int count=0;
         int loss=0;
         int skip=0, extra=0;
-        if ((plc_flags&0x3) == LPCNET_PLC_NONCAUSAL) skip=extra=80;
         LPCNetPLCState *net;
+        if ((plc_flags&0x3) == LPCNET_PLC_NONCAUSAL) skip=extra=80;
         net = lpcnet_plc_create(plc_flags);
         while (1) {
             size_t ret;
@@ -187,6 +191,17 @@ int main(int argc, char **argv) {
           fwrite(pcm, sizeof(pcm[0]), extra, fout);
         }
         lpcnet_plc_destroy(net);
+    } else if (mode == MODE_ADDLPC) {
+        float features[36];
+        size_t ret;
+
+        while (1) {
+            ret = fread(features, sizeof(features[0]), 36, fin);
+            if (ret != 36 || feof(fin)) break;
+            lpc_from_cepstrum(&features[20], &features[0]);
+            fwrite(features, sizeof(features[0]), 36, fout);
+        }
+
     } else {
         fprintf(stderr, "unknown action\n");
     }

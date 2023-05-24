@@ -34,8 +34,7 @@
 #include "arch.h"
 
 #include <stdlib.h>
-#define opus_alloc(x) malloc(x)
-#define opus_free(x) free(x)
+#define lpcnet_alloc(x) malloc(x)
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +45,7 @@ extern "C" {
 # define kiss_fft_scalar __m128
 #define KISS_FFT_MALLOC(nbytes) memalign(16,nbytes)
 #else
-#define KISS_FFT_MALLOC opus_alloc
+#define KISS_FFT_MALLOC lpcnet_alloc
 #endif
 
 #ifdef FIXED_POINT

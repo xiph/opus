@@ -51,12 +51,10 @@ static const float compensation[] = {
     0.8f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 0.666667f, 0.5f, 0.5f, 0.5f, 0.333333f, 0.25f, 0.25f, 0.2f, 0.166667f, 0.173913f
 };
 
-typedef struct {
-  int init;
-  kiss_fft_state *kfft;
-  float half_window[OVERLAP_SIZE];
-  float dct_table[NB_BANDS*NB_BANDS];
-} CommonState;
+
+extern const kiss_fft_state kfft;
+extern const float half_window[OVERLAP_SIZE];
+extern const float dct_table[NB_BANDS*NB_BANDS];
 
 
 void compute_band_energy_inverse(float *bandE, const kiss_fft_cpx *X) {
@@ -162,29 +160,26 @@ void compute_burg_cepstrum(const float *pcm, float *burg_cepstrum, int len, int 
   float x[WINDOW_SIZE];
   float Eburg[NB_BANDS];
   float g;
-  float E;
   kiss_fft_cpx LPC[FREQ_SIZE];
   float Ly[NB_BANDS];
+  float logMax = -2;
+  float follow = -2;
   assert(order <= LPC_ORDER);
   assert(len <= FRAME_SIZE);
   for (i=0;i<len-1;i++) burg_in[i] = pcm[i+1] - PREEMPHASIS*pcm[i];
   g = silk_burg_analysis(burg_lpc, burg_in, 1e-3, len-1, 1, order);
   g /= len - 2*(order-1);
-  //printf("%g\n", g);
   RNN_CLEAR(x, WINDOW_SIZE);
   x[0] = 1;
   for (i=0;i<order;i++) x[i+1] = -burg_lpc[i]*pow(.995, i+1);
   forward_transform(LPC, x);
   compute_band_energy_inverse(Eburg, LPC);
   for (i=0;i<NB_BANDS;i++) Eburg[i] *= .45*g*(1.f/((float)WINDOW_SIZE*WINDOW_SIZE*WINDOW_SIZE));
-  float logMax = -2;
-  float follow = -2;
   for (i=0;i<NB_BANDS;i++) {
     Ly[i] = log10(1e-2+Eburg[i]);
     Ly[i] = MAX16(logMax-8, MAX16(follow-2.5, Ly[i]));
     logMax = MAX16(logMax, Ly[i]);
     follow = MAX16(follow-2.5, Ly[i]);
-    E += Eburg[i];
   }
   dct(burg_cepstrum, Ly);
   burg_cepstrum[0] += - 4;
@@ -243,32 +238,14 @@ void interp_band_gain(float *g, const float *bandE) {
   }
 }
 
-CommonState common;
-
-static void check_init(void) {
-  int i;
-  if (common.init) return;
-  common.kfft = opus_fft_alloc_twiddles(WINDOW_SIZE, NULL, NULL, NULL, 0);
-  for (i=0;i<OVERLAP_SIZE;i++)
-    common.half_window[i] = sin(.5*M_PI*sin(.5*M_PI*(i+.5)/OVERLAP_SIZE) * sin(.5*M_PI*(i+.5)/OVERLAP_SIZE));
-  for (i=0;i<NB_BANDS;i++) {
-    int j;
-    for (j=0;j<NB_BANDS;j++) {
-      common.dct_table[i*NB_BANDS + j] = cos((i+.5)*j*M_PI/NB_BANDS);
-      if (j==0) common.dct_table[i*NB_BANDS + j] *= sqrt(.5);
-    }
-  }
-  common.init = 1;
-}
 
 void dct(float *out, const float *in) {
   int i;
-  check_init();
   for (i=0;i<NB_BANDS;i++) {
     int j;
     float sum = 0;
     for (j=0;j<NB_BANDS;j++) {
-      sum += in[j] * common.dct_table[j*NB_BANDS + i];
+      sum += in[j] * dct_table[j*NB_BANDS + i];
     }
     out[i] = sum*sqrt(2./NB_BANDS);
   }
@@ -276,12 +253,11 @@ void dct(float *out, const float *in) {
 
 void idct(float *out, const float *in) {
   int i;
-  check_init();
   for (i=0;i<NB_BANDS;i++) {
     int j;
     float sum = 0;
     for (j=0;j<NB_BANDS;j++) {
-      sum += in[j] * common.dct_table[i*NB_BANDS + j];
+      sum += in[j] * dct_table[i*NB_BANDS + j];
     }
     out[i] = sum*sqrt(2./NB_BANDS);
   }
@@ -291,12 +267,11 @@ void forward_transform(kiss_fft_cpx *out, const float *in) {
   int i;
   kiss_fft_cpx x[WINDOW_SIZE];
   kiss_fft_cpx y[WINDOW_SIZE];
-  check_init();
   for (i=0;i<WINDOW_SIZE;i++) {
     x[i].r = in[i];
     x[i].i = 0;
   }
-  opus_fft(common.kfft, x, y, 0);
+  opus_fft(&kfft, x, y, 0);
   for (i=0;i<FREQ_SIZE;i++) {
     out[i] = y[i];
   }
@@ -306,7 +281,6 @@ void inverse_transform(float *out, const kiss_fft_cpx *in) {
   int i;
   kiss_fft_cpx x[WINDOW_SIZE];
   kiss_fft_cpx y[WINDOW_SIZE];
-  check_init();
   for (i=0;i<FREQ_SIZE;i++) {
     x[i] = in[i];
   }
@@ -314,7 +288,7 @@ void inverse_transform(float *out, const kiss_fft_cpx *in) {
     x[i].r = x[WINDOW_SIZE - i].r;
     x[i].i = -x[WINDOW_SIZE - i].i;
   }
-  opus_fft(common.kfft, x, y, 0);
+  opus_fft(&kfft, x, y, 0);
   /* output in reverse order for IFFT. */
   out[0] = WINDOW_SIZE*y[0].r;
   for (i=1;i<WINDOW_SIZE;i++) {
@@ -371,10 +345,9 @@ float lpc_from_cepstrum(float *lpc, const float *cepstrum)
 
 void apply_window(float *x) {
   int i;
-  check_init();
   for (i=0;i<OVERLAP_SIZE;i++) {
-    x[i] *= common.half_window[i];
-    x[WINDOW_SIZE - 1 - i] *= common.half_window[i];
+    x[i] *= half_window[i];
+    x[WINDOW_SIZE - 1 - i] *= half_window[i];
   }
 }
 

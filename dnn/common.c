@@ -40,7 +40,7 @@ static void single_interp(float *x, const float *left, const float *right, int i
     float ref[NB_BANDS];
     float pred[3*NB_BANDS];
     RNN_COPY(ref, x, NB_BANDS);
-    for (i=0;i<NB_BANDS;i++) pred[i] = .5*(left[i] + right[i]);
+    for (i=0;i<NB_BANDS;i++) pred[i] = .5f*(left[i] + right[i]);
     for (i=0;i<NB_BANDS;i++) pred[NB_BANDS+i] = left[i];
     for (i=0;i<NB_BANDS;i++) pred[2*NB_BANDS+i] = right[i];
     for (i=0;i<NB_BANDS;i++) {

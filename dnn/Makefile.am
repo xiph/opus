@@ -32,11 +32,13 @@ liblpcnet_la_SOURCES = \
 	lpcnet.c \
 	lpcnet_dec.c \
 	lpcnet_enc.c \
+	lpcnet_tables.c \
 	nnet.c \
 	nnet_data.c \
 	plc_data.c \
 	ceps_codebooks.c \
 	pitch.c \
+	parse_lpcnet_weights.c \
 	freq.c \
 	kiss_fft.c \
 	lpcnet_plc.c
@@ -45,7 +47,7 @@ liblpcnet_la_LIBADD = $(DEPS_LIBS) $(lrintf_lib) $(LIBM)
 liblpcnet_la_LDFLAGS = -no-undefined \
  -version-info @OP_LT_CURRENT@:@OP_LT_REVISION@:@OP_LT_AGE@
 
-noinst_PROGRAMS = lpcnet_demo dump_data
+noinst_PROGRAMS = lpcnet_demo dump_data dump_weights_blob
 
 lpcnet_demo_SOURCES = lpcnet_demo.c
 lpcnet_demo_LDADD = liblpcnet.la
@@ -56,9 +58,13 @@ lpcnet_demo_LDADD = liblpcnet.la
 #dump_data_SOURCES = dump_data.c
 #dump_data_LDADD = $(DUMP_OBJ) $(LIBM)
 
-dump_data_SOURCES = common.c dump_data.c burg.c freq.c kiss_fft.c pitch.c lpcnet_dec.c lpcnet_enc.c ceps_codebooks.c
+dump_data_SOURCES = common.c dump_data.c burg.c freq.c kiss_fft.c pitch.c lpcnet_dec.c lpcnet_enc.c lpcnet_tables.c ceps_codebooks.c
 dump_data_LDADD = $(LIBM)
 dump_data_CFLAGS = $(AM_CFLAGS)
+
+dump_weights_blob_SOURCES = nnet_data.c plc_data.c write_lpcnet_weights.c
+dump_weights_blob_LDADD = $(LIBM)
+dump_weights_blob_CFLAGS = $(AM_CFLAGS) -DDUMP_BINARY_WEIGHTS
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = lpcnet.pc

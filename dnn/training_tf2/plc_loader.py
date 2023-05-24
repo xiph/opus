@@ -47,19 +47,25 @@ class PLCLoader(Sequence):
 
     def __getitem__(self, index):
         features = self.features[self.indices[index*self.batch_size:(index+1)*self.batch_size], :, :]
-        #lost = (np.random.rand(features.shape[0], features.shape[1]) > .2).astype('float')
+        burg_lost = (np.random.rand(features.shape[0], features.shape[1]) > .1).astype('float')
+        burg_lost = np.reshape(burg_lost, (features.shape[0], features.shape[1], 1))
+        burg_mask = np.tile(burg_lost, (1,1,self.nb_burg_features))
+
         lost = self.lost_offset[self.lost_indices[index*self.batch_size:(index+1)*self.batch_size], :]
         lost = np.reshape(lost, (features.shape[0], features.shape[1], 1))
         lost_mask = np.tile(lost, (1,1,features.shape[2]))
         in_features = features*lost_mask
+        in_features[:,:,:self.nb_burg_features] = in_features[:,:,:self.nb_burg_features]*burg_mask
         
         #For the first frame after a loss, we don't have valid features, but the Burg estimate is valid.
-        in_features[:,1:,self.nb_burg_features:] = in_features[:,1:,self.nb_burg_features:]*lost_mask[:,:-1,self.nb_burg_features:]
+        #in_features[:,1:,self.nb_burg_features:] = in_features[:,1:,self.nb_burg_features:]*lost_mask[:,:-1,self.nb_burg_features:]
         out_lost = np.copy(lost)
-        out_lost[:,1:,:] = out_lost[:,1:,:]*out_lost[:,:-1,:]
+        #out_lost[:,1:,:] = out_lost[:,1:,:]*out_lost[:,:-1,:]
 
         out_features = np.concatenate([features[:,:,self.nb_burg_features:], 1.-out_lost], axis=-1)
-        inputs = [in_features*lost_mask, lost]
+        burg_sign = 2*burg_lost - 1
+        # last dim is 1 for received packet, 0 for lost packet, and -1 when just the Burg info is missing
+        inputs = [in_features*lost_mask, lost*burg_sign]
         outputs = [out_features]
         return (inputs, outputs)
 

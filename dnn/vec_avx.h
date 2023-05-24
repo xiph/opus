@@ -33,6 +33,7 @@
 #define VEC_AVX_H
 
 #include <immintrin.h>
+#include <math.h>
 
 /* Use 8-bit dot products unless disabled or if stuck with SSE2. */
 #if (defined(__AVX2__) || defined(__SSSE3__)) && !defined(DISABLE_DOT_PROD)
@@ -41,7 +42,11 @@
 
 #else
 
+#if defined(_MSC_VER)
+#pragma message ("Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 to get better performance")
+#else
 #warning "Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 using -march= to get better performance"
+#endif
 
 #endif
 
@@ -81,7 +86,7 @@ static inline void mm256_storeu_ps(float *dst, mm256_emu src) {
 #define _mm256_storeu_ps(dst, src) mm256_storeu_ps(dst, src)
 
 
-static inline mm256_emu mm256_setzero_ps() {
+static inline mm256_emu mm256_setzero_ps(void) {
   mm256_emu ret;
   ret.lo = _mm_setzero_ps();
   ret.hi = ret.lo;
@@ -297,7 +302,7 @@ static inline __m256 exp8_approx(__m256 X)
    const __m256 K1 = _mm256_set1_ps(0.69583354f);
    const __m256 K2 = _mm256_set1_ps(0.22606716f);
    const __m256 K3 = _mm256_set1_ps(0.078024523f);
-   const __m256 log2_E = _mm256_set1_ps(1.44269504);
+   const __m256 log2_E = _mm256_set1_ps(1.44269504f);
    const __m256 max_in = _mm256_set1_ps(50.f);
    const __m256 min_in = _mm256_set1_ps(-50.f);
    __m256 XF, Y;
@@ -519,7 +524,7 @@ static inline float sigmoid_approx(float x)
 
 #endif
 
-static inline float celt_exp(float x)
+static inline float lpcnet_exp(float x)
 {
    float out[8];
    __m256 X, Y;
@@ -540,7 +545,7 @@ static inline void softmax(float *y, const float *x, int N)
         _mm256_storeu_ps(&y[i], Y);
     }
     for (;i<N;i++)
-        y[i] = celt_exp(x[i]);
+        y[i] = lpcnet_exp(x[i]);
 }
 
 #ifdef __AVX__

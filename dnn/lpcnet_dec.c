@@ -121,13 +121,13 @@ void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const un
   }
   for (sub=0;sub<4;sub++) {
     float p = pow(2.f, main_pitch/21.)*PITCH_MIN_PERIOD;
-    p *= 1 + modulation/16./7.*(2*sub-3);
+    p *= 1.f + modulation/16.f/7.f*(2*sub-3);
     p = MIN16(255, MAX16(33, p));
-    features[sub][NB_BANDS] = .02*(p-100);
-    features[sub][NB_BANDS + 1] = frame_corr-.5;
+    features[sub][NB_BANDS] = .02f*(p-100.f);
+    features[sub][NB_BANDS + 1] = frame_corr-.5f;
   }
   
-  features[3][0] = (c0_id-64)/4.;
+  features[3][0] = (c0_id-64)/4.f;
   for (i=0;i<NB_BANDS_1;i++) {
     features[3][i+1] = ceps_codebook1[vq_end[0]*NB_BANDS_1 + i] + ceps_codebook2[vq_end[1]*NB_BANDS_1 + i] + ceps_codebook3[vq_end[2]*NB_BANDS_1 + i];
   }
@@ -141,7 +141,7 @@ void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const un
     features[1][i] = sign*ceps_codebook_diff4[vq_mid*NB_BANDS + i];
   }
   if ((vq_mid&MULTI_MASK) < 2) {
-    for (i=0;i<NB_BANDS;i++) features[1][i] += .5*(vq_mem[i] + features[3][i]);
+    for (i=0;i<NB_BANDS;i++) features[1][i] += .5f*(vq_mem[i] + features[3][i]);
   } else if ((vq_mid&MULTI_MASK) == 2) {
     for (i=0;i<NB_BANDS;i++) features[1][i] += vq_mem[i];
   } else {

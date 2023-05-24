@@ -37,7 +37,7 @@
 
 #if defined(__AVX__) || defined(__SSE2__)
 #include "vec_avx.h"
-#elif defined(__ARM_NEON__) || defined(__ARM_NEON)
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON)) && !defined(DISABLE_NEON)
 #include "vec_neon.h"
 #else
 
@@ -59,7 +59,7 @@ typedef float qweight;
 
 /* No AVX2/FMA support */
 #ifndef LPCNET_TEST
-static inline float celt_exp2(float x)
+static inline float lpcnet_exp2(float x)
 {
    int integer;
    float frac;
@@ -77,7 +77,7 @@ static inline float celt_exp2(float x)
    res.i = (res.i + (integer<<23)) & 0x7fffffff;
    return res.f;
 }
-#define celt_exp(x) celt_exp2((x)*1.44269504f)
+#define lpcnet_exp(x) lpcnet_exp2((x)*1.44269504f)
 
 static inline float tanh_approx(float x)
 {
@@ -107,7 +107,7 @@ static inline void softmax(float *y, const float *x, int N)
 {
     int i;
     for (i=0;i<N;i++)
-        y[i] = celt_exp(x[i]);
+        y[i] = lpcnet_exp(x[i]);
 }
 
 static inline void vec_tanh(float *y, const float *x, int N)

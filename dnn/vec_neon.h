@@ -33,7 +33,12 @@
 #ifndef DISABLE_DOT_PROD
 #define DOT_PROD
 #endif
+
+#ifdef DOT_PROD
 typedef signed char qweight;
+#else
+typedef float qweight;
+#endif
 
 
 #ifndef LPCNET_TEST
@@ -105,7 +110,7 @@ static inline float32x4_t sigmoid4_approx(float32x4_t X)
   return vmaxq_f32(min_out, vminq_f32(max_out, num));
 }
 
-static inline float celt_exp(float x)
+static inline float lpcnet_exp(float x)
 {
    float out[4];
    float32x4_t X, Y;
@@ -146,7 +151,7 @@ static inline void softmax(float *y, const float *x, int N)
         vst1q_f32(&y[i], Y);
     }
     for (;i<N;i++)
-        y[i] = celt_exp(x[i]);
+        y[i] = lpcnet_exp(x[i]);
 }
 
 static inline void vec_tanh(float *y, const float *x, int N)
@@ -162,7 +167,7 @@ static inline void vec_tanh(float *y, const float *x, int N)
     for (;i<N;i++)
     {
         float ex2;
-        ex2 = celt_exp(2*x[i]);
+        ex2 = lpcnet_exp(2*x[i]);
         y[i] = (ex2-1)/(ex2+1);
     }
 }
@@ -180,7 +185,7 @@ static inline void vec_sigmoid(float *y, const float *x, int N)
     for (;i<N;i++)
     {
         float ex;
-        ex = celt_exp(x[i]);
+        ex = lpcnet_exp(x[i]);
         y[i] = (ex)/(ex+1);
     }
 }
