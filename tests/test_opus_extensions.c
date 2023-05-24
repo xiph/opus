@@ -107,7 +107,7 @@ void test_extensions_generate_success(void)
       rest of the padding */
    expect_true((p[0] & 0x01) == 0, "expected L-bit unset");
    p += 1;
-   expect_true(0 == memcmp(p, ext[3].data, ext[3].len), "expected extension content");
+   expect_true(0 == memcmp(p, ext[1].data, ext[1].len), "expected extension content");
 }
 
 void test_extensions_generate_zero(void)
