@@ -168,7 +168,7 @@ AC_ARG_ENABLE([neural-fec],
 
 AS_IF([test "$enable_neural_fec" = "yes"],[
   AC_DEFINE([ENABLE_NEURAL_FEC], [1], [Neural FEC])
-])  
+])
 
 AC_ARG_ENABLE([neural-plc],
     [AS_HELP_STRING([--enable-neural-plc], [Use neural PLC for SILK])],,
