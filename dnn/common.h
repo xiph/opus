@@ -8,7 +8,9 @@
 #include <math.h>
 
 #define RNN_INLINE inline
+#ifndef OPUS_INLINE
 #define OPUS_INLINE inline
+#endif
 
 float lpc_from_cepstrum(float *lpc, const float *cepstrum);
 

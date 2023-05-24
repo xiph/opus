@@ -25,6 +25,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef DRED_RDOVAE_H
+#define DRED_RDOVAE_H
 
 #include <stdlib.h>
 
@@ -58,3 +60,5 @@ const opus_uint16 * DRED_rdovae_get_p0_pointer(void);
 const opus_uint16 * DRED_rdovae_get_dead_zone_pointer(void);
 const opus_uint16 * DRED_rdovae_get_r_pointer(void);
 const opus_uint16 * DRED_rdovae_get_quant_scales_pointer(void);
+
+#endif

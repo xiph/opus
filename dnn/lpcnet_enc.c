@@ -667,7 +667,7 @@ void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int
   best_b = (sy - best_a*sx)/sw;
   /* Quantizing the pitch as "main" pitch + slope. */
   center_pitch = best_b+5.5f*best_a;
-  main_pitch = (int)floor(.5 + 21.*log2(center_pitch/PITCH_MIN_PERIOD));
+  main_pitch = (int)floor(.5 + 21.*1.442695041*log(center_pitch/PITCH_MIN_PERIOD));
   main_pitch = IMAX(0, IMIN(63, main_pitch));
   modulation = (int)floor(.5 + 16*7*best_a/center_pitch);
   modulation = IMAX(-3, IMIN(3, modulation));
