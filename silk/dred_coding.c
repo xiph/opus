@@ -121,7 +121,7 @@ void dred_decode_state(ec_enc *dec, float *x) {
     {
         norm += (float) iy[k] * iy[k];
     }
-    norm = 1.f / sqrtf(norm);
+    norm = 1.f / sqrt(norm);
     for (k = 0; k < PVQ_DIM; k++)
     {
         x[k] = iy[k] * norm;
