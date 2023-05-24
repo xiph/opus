@@ -126,7 +126,6 @@ void dred_decode_state(ec_enc *dec, float *x) {
     {
         x[k] = iy[k] * norm;
     }
-    
 }
 
 void dred_decode_latents(ec_dec *dec, float *x, const opus_uint16 *scale, const opus_uint16 *r, const opus_uint16 *p0) {
@@ -155,7 +154,7 @@ int main()
     opus_int16 p0[LATENT_DIM];
     unsigned char *ptr;
     int k;
-    
+
     for (k=0;k<LATENT_DIM;k++) {
         scale[k] = 256;
         dzone[k] = 0;
@@ -192,7 +191,7 @@ int main()
     ec_dec_init(&dec,ec_get_buffer(&enc),bytes);
     for (iter=0;iter<1;iter++) {
         float x[PVQ_DIM];
-        dred_decode_state(&dec, x);        
+        dred_decode_state(&dec, x);
     }
     for (iter=0;iter<1;iter++) {
         float x[LATENT_DIM];

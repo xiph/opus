@@ -79,5 +79,3 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   dec->nb_latents = i/2;
   return i/2;
 }
-
-

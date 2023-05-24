@@ -87,7 +87,6 @@ opus_int32 skip_extension(const unsigned char **data, opus_int32 len, opus_int32
          } else {
             return -1;
          }
-         
          return len;
       }
    }
