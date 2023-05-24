@@ -302,7 +302,7 @@ static inline __m256 exp8_approx(__m256 X)
    const __m256 K1 = _mm256_set1_ps(0.69583354f);
    const __m256 K2 = _mm256_set1_ps(0.22606716f);
    const __m256 K3 = _mm256_set1_ps(0.078024523f);
-   const __m256 log2_E = _mm256_set1_ps(1.44269504);
+   const __m256 log2_E = _mm256_set1_ps(1.44269504f);
    const __m256 max_in = _mm256_set1_ps(50.f);
    const __m256 min_in = _mm256_set1_ps(-50.f);
    __m256 XF, Y;
