@@ -24,6 +24,9 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef FREQ_H
+#define FREQ_H
+
 #include "kiss_fft.h"
 
 #define LPC_ORDER 16
@@ -59,3 +62,5 @@ float lpc_from_bands(float *lpc, const float *Ex);
 float lpc_from_cepstrum(float *lpc, const float *cepstrum);
 void apply_window(float *x);
 void lpc_weighting(float *lpc, float gamma);
+
+#endif

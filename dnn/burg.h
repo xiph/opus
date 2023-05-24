@@ -25,6 +25,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
+#ifndef BURG_H
+#define BURG_H
+
 
 float silk_burg_analysis(              /* O    returns residual energy                                     */
     float          A[],                /* O    prediction coefficients (length order)                      */
@@ -34,3 +37,5 @@ float silk_burg_analysis(              /* O    returns residual energy          
     const int      nb_subfr,           /* I    number of subframes stacked in x                            */
     const int      D                   /* I    order                                                       */
 );
+
+#endif

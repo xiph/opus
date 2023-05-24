@@ -28,6 +28,9 @@
 */
 /* NEON support for ARM machines */
 
+#ifndef VEC_NEON_H
+#define VEC_NEON_H
+
 #include <arm_neon.h>
 
 #ifndef DISABLE_DOT_PROD
@@ -366,3 +369,5 @@ static inline void sparse_sgemv_accum8x4(float *_out, const qweight *w, int rows
       vst1q_f32(&_out[i+4], vmulq_f32(scale_1, vcvtq_f32_s32(acc1)));
    }
 }
+
+#endif
