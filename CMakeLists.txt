@@ -177,13 +177,13 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
                          OFF)
   add_feature_info(OPUS_X86_MAY_HAVE_SSE4_1 OPUS_X86_MAY_HAVE_SSE4_1 ${OPUS_X86_MAY_HAVE_SSE4_1_HELP_STR})
 
-  set(OPUS_X86_MAY_HAVE_AVX_HELP_STR "does runtime check for AVX support.")
-  cmake_dependent_option(OPUS_X86_MAY_HAVE_AVX
-                         ${OPUS_X86_MAY_HAVE_AVX_HELP_STR}
+  set(OPUS_X86_MAY_HAVE_AVX2_HELP_STR "does runtime check for AVX FMA AVX2 support.")
+  cmake_dependent_option(OPUS_X86_MAY_HAVE_AVX2
+                         ${OPUS_X86_MAY_HAVE_AVX2_HELP_STR}
                          ON
-                         "AVX_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
+                         "AVX2_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
-  add_feature_info(OPUS_X86_MAY_HAVE_AVX OPUS_X86_MAY_HAVE_AVX ${OPUS_X86_MAY_HAVE_AVX_HELP_STR})
+  add_feature_info(OPUS_X86_MAY_HAVE_AVX2 OPUS_X86_MAY_HAVE_AVX2 ${OPUS_X86_MAY_HAVE_AVX2_HELP_STR})
 
   # PRESUME depends on MAY HAVE, but PRESUME will override runtime detection
   set(OPUS_X86_PRESUME_SSE_HELP_STR "assume target CPU has SSE1 support (override runtime check).")
@@ -224,13 +224,13 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
                          OFF)
   add_feature_info(OPUS_X86_PRESUME_SSE4_1 OPUS_X86_PRESUME_SSE4_1 ${OPUS_X86_PRESUME_SSE4_1_HELP_STR})
 
-  set(OPUS_X86_PRESUME_AVX_HELP_STR "assume target CPU has AVX support (override runtime check).")
-  cmake_dependent_option(OPUS_X86_PRESUME_AVX
-                         ${OPUS_X86_PRESUME_AVX_HELP_STR}
+  set(OPUS_X86_PRESUME_AVX2_HELP_STR "assume target CPU has AVX FMA AVX2 support (override runtime check).")
+  cmake_dependent_option(OPUS_X86_PRESUME_AVX2
+                         ${OPUS_X86_PRESUME_AVX2_HELP_STR}
                          OFF
-                         "OPUS_X86_MAY_HAVE_AVX; NOT OPUS_DISABLE_INTRINSICS"
+                         "OPUS_X86_MAY_HAVE_AVX2; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
-  add_feature_info(OPUS_X86_PRESUME_AVX OPUS_X86_PRESUME_AVX ${OPUS_X86_PRESUME_AVX_HELP_STR})
+  add_feature_info(OPUS_X86_PRESUME_AVX2 OPUS_X86_PRESUME_AVX2 ${OPUS_X86_PRESUME_AVX2_HELP_STR})
 endif()
 
 feature_summary(WHAT ALL)
@@ -382,7 +382,7 @@ if(NOT OPUS_DISABLE_INTRINSICS)
   if(((OPUS_X86_MAY_HAVE_SSE AND NOT OPUS_X86_PRESUME_SSE) OR
      (OPUS_X86_MAY_HAVE_SSE2 AND NOT OPUS_X86_PRESUME_SSE2) OR
      (OPUS_X86_MAY_HAVE_SSE4_1 AND NOT OPUS_X86_PRESUME_SSE4_1) OR
-     (OPUS_X86_MAY_HAVE_AVX AND NOT OPUS_X86_PRESUME_AVX)) AND
+     (OPUS_X86_MAY_HAVE_AVX2 AND NOT OPUS_X86_PRESUME_AVX2)) AND
       RUNTIME_CPU_CAPABILITY_DETECTION)
     target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
     if(NOT MSVC)
@@ -454,22 +454,28 @@ if(NOT OPUS_DISABLE_INTRINSICS)
     endif()
   endif()
 
-  if(AVX_SUPPORTED)
-    # mostly placeholder in case of avx intrinsics is added
-    if(OPUS_X86_MAY_HAVE_AVX)
-      target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_AVX)
+  if(AVX2_SUPPORTED)
+    if(OPUS_X86_MAY_HAVE_AVX2)
+      add_sources_group(opus celt ${celt_sources_avx2})
+      target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_AVX2)
+      if(MSVC)
+        set(AVX2_FLAGS "${AVX2_FLAGS} /arch:AVX2")
+      else()
+        set(AVX2_FLAGS "${AVX2_FLAGS} -mavx2 -mfma -mavx")
+      endif()
+      set_source_files_properties(${celt_sources_avx2} PROPERTIES COMPILE_FLAGS ${AVX2_FLAGS})
     endif()
-    if(OPUS_X86_PRESUME_AVX)
-      target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_AVX)
+    if(OPUS_X86_PRESUME_AVX2)
+      target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_AVX2)
       if(NOT MSVC)
-        target_compile_options(opus PRIVATE -mavx)
+        target_compile_options(opus PRIVATE -mavx2 -mfma -mavx)
       endif()
     endif()
   endif()
 
   if(MSVC)
-    if(AVX_SUPPORTED AND OPUS_X86_PRESUME_AVX) # on 64 bit and 32 bits
-      add_definitions(/arch:AVX)
+    if(AVX2_SUPPORTED AND OPUS_X86_PRESUME_AVX2) # on 64 bit and 32 bits
+      add_definitions(/arch:AVX2)
     elseif(OPUS_CPU_X86) # if AVX not supported then set SSE flag
       if((SSE4_1_SUPPORTED AND OPUS_X86_PRESUME_SSE4_1)
          OR (SSE2_SUPPORTED AND OPUS_X86_PRESUME_SSE2))
@@ -602,10 +608,6 @@ if(OPUS_BUILD_PROGRAMS)
   add_executable(opus_compare ${opus_compare_sources})
   target_include_directories(opus_compare PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
   target_link_libraries(opus_compare PRIVATE opus ${OPUS_REQUIRED_LIBRARIES})
-  if(MSVC)
-    # move cosmetic warning to level 4 for opus_compare
-    target_compile_options(opus_compare PRIVATE /w44244)
-  endif()
 endif()
 
 if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
