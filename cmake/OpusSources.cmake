@@ -29,6 +29,7 @@ get_opus_sources(CELT_SOURCES_X86_RTCD celt_sources.mk celt_sources_x86_rtcd)
 get_opus_sources(CELT_SOURCES_SSE celt_sources.mk celt_sources_sse)
 get_opus_sources(CELT_SOURCES_SSE2 celt_sources.mk celt_sources_sse2)
 get_opus_sources(CELT_SOURCES_SSE4_1 celt_sources.mk celt_sources_sse4_1)
+get_opus_sources(CELT_SOURCES_AVX2 celt_sources.mk celt_sources_avx2)
 get_opus_sources(CELT_SOURCES_ARM_RTCD celt_sources.mk celt_sources_arm_rtcd)
 get_opus_sources(CELT_SOURCES_ARM_ASM celt_sources.mk celt_sources_arm_asm)
 get_opus_sources(CELT_AM_SOURCES_ARM_ASM celt_sources.mk
