@@ -28,11 +28,10 @@
 #include "config.h"
 #endif
 
+#include <string.h>
 #include "nnet.h"
 
 #define SPARSE_BLOCK_SIZE 32
-
-extern const WeightArray lpcnet_arrays[];
 
 int parse_record(const unsigned char **data, int *len, WeightArray *array) {
   WeightHead *h = (WeightHead *)*data;
