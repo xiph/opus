@@ -32,6 +32,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#ifndef _WIN32
+#include <unistd.h>
+#else
+#include <process.h>
+#define getpid _getpid
+#endif
+
 /* including sources directly to test internal APIs */
 #define CELT_C /* to make celt_assert work */
 #include "../src/extensions.c"
@@ -304,8 +312,55 @@ void test_extensions_parse_fail(void)
    expect_true(result == OPUS_BUFFER_TOO_SMALL, "expected OPUS_BUFFER_TOO_SMALL");
 }
 
-int main(void)
+#define NB_RANDOM_EXTENSIONS 1000000000
+#define MAX_EXTENSION_SIZE 200
+#define MAX_NB_EXTENSIONS 100
+
+void test_random_extensions_parse(void)
 {
+   int i;
+   for (i=0;i<NB_RANDOM_EXTENSIONS;i++)
+   {
+      opus_extension_data ext_out[MAX_NB_EXTENSIONS];
+      int nb_ext;
+      unsigned char payload[MAX_EXTENSION_SIZE];
+      int len;
+      int j;
+      int result;
+      len = fast_rand()%(MAX_EXTENSION_SIZE+1);
+      for (j=0;j<len;j++)
+         payload[j] = fast_rand()&0xFF;
+      nb_ext = fast_rand()%(MAX_NB_EXTENSIONS+1);
+      result = opus_packet_extensions_parse(payload, len, ext_out, &nb_ext);
+      expect_true(result == OPUS_OK || result == OPUS_BUFFER_TOO_SMALL || result == OPUS_INVALID_PACKET, "expected OPUS_OK, OPUS_BUFFER_TOO_SMALL or OPUS_INVALID_PACKET");
+      /* Even if parsing fails, check that the extensions that got extracted make sense. */
+      for (j=0;j<nb_ext;j++)
+      {
+         expect_true(ext_out[j].frame >= 0 && ext_out[j].frame < 48, "expected frame between 0 and 47");
+         expect_true(ext_out[j].id >= 2 && ext_out[j].id <= 127, "expected id between 2 and 127");
+         expect_true(ext_out[j].data >= payload && ext_out[j].data+ext_out[j].len <= payload+len, "expected data to be within packet");
+      }
+   }
+}
+
+int main(int argc, char **argv)
+{
+   int env_used;
+   char *env_seed;
+   env_used=0;
+   env_seed=getenv("SEED");
+   if(argc>1)iseed=atoi(argv[1]);
+   else if(env_seed)
+   {
+      iseed=atoi(env_seed);
+      env_used=1;
+   }
+   else iseed=(opus_uint32)time(NULL)^(((opus_uint32)getpid()&65535)<<16);
+   Rw=Rz=iseed;
+
+   fprintf(stderr,"Testing extensions. Random seed: %u (%.4X)\n", iseed, fast_rand() % 65535);
+   if(env_used)fprintf(stderr,"  Random seed set from the environment (SEED=%s).\n", env_seed);
+
    test_extensions_generate_success();
    test_extensions_generate_zero();
    test_extensions_generate_no_padding();
@@ -313,6 +368,7 @@ int main(void)
    test_extensions_parse_success();
    test_extensions_parse_zero();
    test_extensions_parse_fail();
+   test_random_extensions_parse();
    fprintf(stderr,"Tests completed successfully.\n");
    return 0;
 }
