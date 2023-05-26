@@ -112,6 +112,7 @@ noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
                   silk/tests/test_unit_LPC_inv_pred_gain \
                   tests/test_opus_api \
                   tests/test_opus_decode \
+                  tests/test_opus_dred \
                   tests/test_opus_encode \
                   tests/test_opus_extensions \
                   tests/test_opus_padding \
@@ -129,6 +130,7 @@ TESTS = celt/tests/test_unit_cwrs32 \
         silk/tests/test_unit_LPC_inv_pred_gain \
         tests/test_opus_api \
         tests/test_opus_decode \
+        tests/test_opus_dred \
         tests/test_opus_encode \
         tests/test_opus_extensions \
         tests/test_opus_padding \
@@ -162,6 +164,9 @@ tests_test_opus_decode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
 tests_test_opus_padding_SOURCES = tests/test_opus_padding.c tests/test_opus_common.h
 tests_test_opus_padding_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+
+tests_test_opus_dred_SOURCES = tests/test_opus_dred.c tests/test_opus_common.h
+tests_test_opus_dred_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
 CELT_OBJ = $(CELT_SOURCES:.c=.lo)
 SILK_OBJ = $(SILK_SOURCES:.c=.lo)

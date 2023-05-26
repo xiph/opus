@@ -1239,6 +1239,8 @@ void opus_dred_free(OpusDRED *dec)
 {
 #ifdef ENABLE_NEURAL_FEC
   free(dec);
+#else
+  (void)dec;
 #endif
 }
 
@@ -1248,6 +1250,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
    const unsigned char *payload;
    opus_int32 payload_len;
    VALIDATE_DRED_DECODER(dred_dec);
+   dred->process_stage = -1;
    payload_len = dred_find_payload(data, len, &payload);
    if (payload_len < 0)
       return payload_len;
@@ -1278,7 +1281,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
 int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *dst)
 {
 #ifdef ENABLE_NEURAL_FEC
-   if (dred_dec == NULL)
+   if (dred_dec == NULL || src == NULL || dst == NULL || (src->process_stage != 1 && src->process_stage != 2))
       return OPUS_BAD_ARG;
    VALIDATE_DRED_DECODER(dred_dec);
    if (src != dst)
