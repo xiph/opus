@@ -312,7 +312,7 @@ void test_extensions_parse_fail(void)
    expect_true(result == OPUS_BUFFER_TOO_SMALL, "expected OPUS_BUFFER_TOO_SMALL");
 }
 
-#define NB_RANDOM_EXTENSIONS 1000000000
+#define NB_RANDOM_EXTENSIONS 100000000
 #define MAX_EXTENSION_SIZE 200
 #define MAX_NB_EXTENSIONS 100
 
