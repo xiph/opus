@@ -31,8 +31,14 @@
 #include <stdio.h>
 #include "nnet.h"
 
-extern const WeightArray lpcnet_arrays[];
-extern const WeightArray lpcnet_plc_arrays[];
+/* This is a bit of a hack because we need to build nnet_data.c and plc_data.c without USE_WEIGHTS_FILE,
+   but USE_WEIGHTS_FILE is defined in config.h. */
+#undef HAVE_CONFIG_H
+#ifdef USE_WEIGHTS_FILE
+#undef USE_WEIGHTS_FILE
+#endif
+#include "nnet_data.c"
+#include "plc_data.c"
 
 void write_weights(const WeightArray *list, FILE *fout)
 {

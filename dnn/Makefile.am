@@ -62,7 +62,7 @@ dump_data_SOURCES = common.c dump_data.c burg.c freq.c kiss_fft.c pitch.c lpcnet
 dump_data_LDADD = $(LIBM)
 dump_data_CFLAGS = $(AM_CFLAGS)
 
-dump_weights_blob_SOURCES = nnet_data.c plc_data.c write_lpcnet_weights.c
+dump_weights_blob_SOURCES = write_lpcnet_weights.c
 dump_weights_blob_LDADD = $(LIBM)
 dump_weights_blob_CFLAGS = $(AM_CFLAGS) -DDUMP_BINARY_WEIGHTS
 

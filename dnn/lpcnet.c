@@ -183,9 +183,23 @@ LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
         lpcnet->sampling_logit_table[i] = -log((1-prob)/prob);
     }
     kiss99_srand(&lpcnet->rng, (const unsigned char *)rng_string, strlen(rng_string));
+#ifndef USE_WEIGHTS_FILE
     ret = init_lpcnet_model(&lpcnet->model, lpcnet_arrays);
+#else
+    ret = 0;
+#endif
     celt_assert(ret == 0);
     return ret;
+}
+
+LPCNET_EXPORT int lpcnet_load_model(LPCNetState *st, const unsigned char *data, int len) {
+  WeightArray *list;
+  int ret;
+  parse_weights(&list, data, len);
+  ret = init_lpcnet_model(&st->model, list);
+  free(list);
+  if (ret == 0) return 0;
+  else return -1;
 }
 
 

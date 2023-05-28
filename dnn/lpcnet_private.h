@@ -131,4 +131,6 @@ int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, f
 void process_single_frame(LPCNetEncState *st, FILE *ffeat);
 
 void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, float *lpc, const float *features);
+
+int parse_weights(WeightArray **list, const unsigned char *data, int len);
 #endif

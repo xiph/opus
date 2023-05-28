@@ -68,9 +68,23 @@ LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options) {
     return -1;
   }
   st->remove_dc = !!(options&LPCNET_PLC_DC_FILTER);
+#ifndef USE_WEIGHTS_FILE
   ret = init_plc_model(&st->model, lpcnet_plc_arrays);
+#else
+  ret = 0;
+#endif
   celt_assert(ret == 0);
   return ret;
+}
+
+LPCNET_EXPORT int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len) {
+  WeightArray *list;
+  int ret;
+  parse_weights(&list, data, len);
+  ret = init_plc_model(&st->model, list);
+  free(list);
+  if (ret == 0) return 0;
+  else return -1;
 }
 
 LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create(int options) {

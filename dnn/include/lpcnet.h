@@ -199,4 +199,7 @@ LPCNET_EXPORT void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features)
 
 LPCNET_EXPORT void lpcnet_plc_fec_clear(LPCNetPLCState *st);
 
+LPCNET_EXPORT int lpcnet_load_model(LPCNetState *st, const unsigned char *data, int len);
+LPCNET_EXPORT int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len);
+
 #endif
