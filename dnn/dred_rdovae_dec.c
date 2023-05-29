@@ -29,7 +29,7 @@
 #include "config.h"
 #endif
 
-
+#include "common.h"
 #include "dred_rdovae_dec.h"
 #include "dred_rdovae_constants.h"
 
@@ -63,7 +63,7 @@ void dred_rdovae_decode_qframe(
     output_index += DEC_DENSE1_OUT_SIZE;
 
     compute_gruB(&dec_dense2, zero_vector, dec_state->dense2_state, &buffer[input_index]);
-    memcpy(&buffer[output_index], dec_state->dense2_state, DEC_DENSE2_OUT_SIZE * sizeof(float));
+    RNN_COPY(&buffer[output_index], dec_state->dense2_state, DEC_DENSE2_OUT_SIZE);
     input_index = output_index;
     output_index += DEC_DENSE2_OUT_SIZE;
 
@@ -72,7 +72,7 @@ void dred_rdovae_decode_qframe(
     output_index += DEC_DENSE3_OUT_SIZE;
 
     compute_gruB(&dec_dense4, zero_vector, dec_state->dense4_state, &buffer[input_index]);
-    memcpy(&buffer[output_index], dec_state->dense4_state, DEC_DENSE4_OUT_SIZE * sizeof(float));
+    RNN_COPY(&buffer[output_index], dec_state->dense4_state, DEC_DENSE4_OUT_SIZE);
     input_index = output_index;
     output_index += DEC_DENSE4_OUT_SIZE;
 
@@ -81,7 +81,7 @@ void dred_rdovae_decode_qframe(
     output_index += DEC_DENSE5_OUT_SIZE;
 
     compute_gruB(&dec_dense6, zero_vector, dec_state->dense6_state, &buffer[input_index]);
-    memcpy(&buffer[output_index], dec_state->dense6_state, DEC_DENSE6_OUT_SIZE * sizeof(float));
+    RNN_COPY(&buffer[output_index], dec_state->dense6_state, DEC_DENSE6_OUT_SIZE);
     input_index = output_index;
     output_index += DEC_DENSE6_OUT_SIZE;
 

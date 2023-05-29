@@ -29,6 +29,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include "nnet.h"
 
 /* This is a bit of a hack because we need to build nnet_data.c and plc_data.c without USE_WEIGHTS_FILE,
@@ -62,7 +63,7 @@ void write_weights(const WeightArray *list, FILE *fout)
   }
 }
 
-int main()
+int main(void)
 {
   FILE *fout = fopen("weights_blob.bin", "w");
   write_weights(lpcnet_arrays, fout);

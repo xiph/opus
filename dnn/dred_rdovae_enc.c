@@ -33,7 +33,7 @@
 
 
 #include "dred_rdovae_enc.h"
-
+#include "common.h"
 
 void dred_rdovae_encode_dframe(
     RDOVAEEnc *enc_state,           /* io: encoder state */
@@ -53,7 +53,7 @@ void dred_rdovae_encode_dframe(
     output_index += ENC_DENSE1_OUT_SIZE;
 
     compute_gruB(&enc_dense2, zero_vector, enc_state->dense2_state, &buffer[input_index]);
-    memcpy(&buffer[output_index], enc_state->dense2_state, ENC_DENSE2_OUT_SIZE * sizeof(float));
+    RNN_COPY(&buffer[output_index], enc_state->dense2_state, ENC_DENSE2_OUT_SIZE);
     input_index = output_index;
     output_index += ENC_DENSE2_OUT_SIZE;
 
@@ -62,7 +62,7 @@ void dred_rdovae_encode_dframe(
     output_index += ENC_DENSE3_OUT_SIZE;
 
     compute_gruB(&enc_dense4, zero_vector, enc_state->dense4_state, &buffer[input_index]);
-    memcpy(&buffer[output_index], enc_state->dense4_state, ENC_DENSE4_OUT_SIZE * sizeof(float));
+    RNN_COPY(&buffer[output_index], enc_state->dense4_state, ENC_DENSE4_OUT_SIZE);
     input_index = output_index;
     output_index += ENC_DENSE4_OUT_SIZE;
 
@@ -71,7 +71,7 @@ void dred_rdovae_encode_dframe(
     output_index += ENC_DENSE5_OUT_SIZE;
 
     compute_gruB(&enc_dense6, zero_vector, enc_state->dense6_state, &buffer[input_index]);
-    memcpy(&buffer[output_index], enc_state->dense6_state, ENC_DENSE6_OUT_SIZE * sizeof(float));
+    RNN_COPY(&buffer[output_index], enc_state->dense6_state, ENC_DENSE6_OUT_SIZE);
     input_index = output_index;
     output_index += ENC_DENSE6_OUT_SIZE;
 
