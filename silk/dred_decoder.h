@@ -39,6 +39,7 @@ struct OpusDRED {
     float        latents[(DRED_NUM_REDUNDANCY_FRAMES/2)*DRED_LATENT_DIM];
     int          nb_latents;
     int          process_stage;
+    int          dred_offset;
 };
 
 

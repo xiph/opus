@@ -85,9 +85,18 @@ int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int
     int i;
     int offset;
     int ec_buffer_fill;
+    int dred_offset;
+    int q0;
+    int dQ;
 
     /* entropy coding of state and latents */
     ec_enc_init(&ec_encoder, buf, max_bytes);
+    dred_offset = 8; /* 20 ms */
+    q0 = DRED_ENC_Q0;
+    dQ = 3;
+    ec_enc_uint(&ec_encoder, dred_offset, 32);
+    ec_enc_uint(&ec_encoder, q0, 16);
+    ec_enc_uint(&ec_encoder, dQ, 8);
     dred_encode_state(&ec_encoder, enc->state_buffer);
 
     for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-1); i += 2)
@@ -95,7 +104,7 @@ int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int
         ec_enc ec_bak;
         ec_bak = ec_encoder;
 
-        q_level = (int) floor(0.5f + DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
+        q_level = compute_quantizer(q0, dQ, i/2);
         offset = q_level * DRED_LATENT_DIM;
 
         dred_encode_latents(
