@@ -117,7 +117,8 @@ noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
                   tests/test_opus_extensions \
                   tests/test_opus_padding \
                   tests/test_opus_projection \
-                  trivial_example
+                  trivial_example \
+                  dump_weights_blob
 
 TESTS = celt/tests/test_unit_cwrs32 \
         celt/tests/test_unit_dft \
@@ -149,6 +150,10 @@ opus_compare_LDADD = $(LIBM)
 
 trivial_example_SOURCES = doc/trivial_example.c
 trivial_example_LDADD = libopus.la $(LIBM)
+
+dump_weights_blob_SOURCES = lpcnet/src/write_lpcnet_weights.c
+dump_weights_blob_LDADD = $(LIBM)
+dump_weights_blob_CFLAGS = $(AM_CFLAGS) -DDUMP_BINARY_WEIGHTS
 
 tests_test_opus_api_SOURCES = tests/test_opus_api.c tests/test_opus_common.h
 tests_test_opus_api_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
