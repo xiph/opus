@@ -48,6 +48,8 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   int q_level;
   int i;
   int offset;
+  int q0;
+  int dQ;
 
 
   /* since features are decoded in quadruples, it makes no sense to go with an uneven number of redundancy frames */
@@ -55,6 +57,11 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
 
   /* decode initial state and initialize RDOVAE decoder */
   ec_dec_init(&ec, (unsigned char*)bytes, num_bytes);
+  dec->dred_offset = ec_dec_uint(&ec, 32);
+  q0 = ec_dec_uint(&ec, 16);
+  dQ = ec_dec_uint(&ec, 8);
+  /*printf("%d %d %d\n", dred_offset, q0, dQ);*/
+
   dred_decode_state(&ec, dec->state);
 
   /* decode newest to oldest and store oldest to newest */
@@ -63,7 +70,7 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
       /* FIXME: Figure out how to avoid missing a last frame that would take up < 8 bits. */
       if (8*num_bytes - ec_tell(&ec) <= 7)
          break;
-      q_level = (int) floor(.5 + DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
+      q_level = compute_quantizer(q0, dQ, i/2);
       offset = q_level * DRED_LATENT_DIM;
       dred_decode_latents(
           &ec,

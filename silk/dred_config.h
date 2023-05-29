@@ -28,7 +28,7 @@
 #ifndef DRED_CONFIG_H
 #define DRED_CONFIG_H
 
-#define DRED_VERSION 0
+#define DRED_VERSION 1
 #define DRED_MIN_BYTES 16
 
 /* these are inpart duplicates to the values defined in dred_rdovae_constants.h */
