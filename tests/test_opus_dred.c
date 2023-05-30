@@ -96,7 +96,7 @@ int main(int argc, char **argv)
    else iseed=(opus_uint32)time(NULL)^(((opus_uint32)getpid()&65535)<<16);
    Rw=Rz=iseed;
 
-   fprintf(stderr,"Testing extensions. Random seed: %u (%.4X)\n", iseed, fast_rand() % 65535);
+   fprintf(stderr,"Testing dred. Random seed: %u (%.4X)\n", iseed, fast_rand() % 65535);
    if(env_used)fprintf(stderr,"  Random seed set from the environment (SEED=%s).\n", env_seed);
 
    test_random_dred();
