@@ -86,6 +86,9 @@ opus_int silk_Decode(                                   /* O    Returns error co
     ec_dec                          *psRangeDec,        /* I/O  Compressor data structure                       */
     opus_int16                      *samplesOut,        /* O    Decoded output speech vector                    */
     opus_int32                      *nSamplesOut,       /* O    Number of samples decoded                       */
+#ifdef NEURAL_PLC
+    LPCNetPLCState                  *lpcnet,
+#endif
     int                             arch                /* I    Run-time architecture                           */
 )
 {
@@ -297,7 +300,11 @@ opus_int silk_Decode(                                   /* O    Returns error co
             } else {
                 condCoding = CODE_CONDITIONALLY;
             }
-            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding, arch);
+            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding,
+#ifdef NEURAL_PLC
+                lpcnet,
+#endif
+                arch);
         } else {
             silk_memset( &samplesOut1_tmp[ n ][ 2 ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
         }

@@ -51,6 +51,9 @@ static OPUS_INLINE void silk_PLC_conceal(
     silk_decoder_state                  *psDec,             /* I/O Decoder state        */
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
     opus_int16                          frame[],            /* O LPC residual signal    */
+#ifdef NEURAL_PLC
+    LPCNetPLCState                      *lpcnet,
+#endif
     int                                 arch                /* I  Run-time architecture */
 );
 
@@ -64,9 +67,6 @@ void silk_PLC_Reset(
     psDec->sPLC.prevGain_Q16[ 1 ] = SILK_FIX_CONST( 1, 16 );
     psDec->sPLC.subfr_length = 20;
     psDec->sPLC.nb_subfr = 2;
-#ifdef NEURAL_PLC
-    lpcnet_plc_init( &psDec->sPLC.lpcnet, LPCNET_PLC_CODEC );
-#endif
 }
 
 void silk_PLC(
@@ -74,6 +74,9 @@ void silk_PLC(
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
     opus_int16                          frame[],            /* I/O  signal              */
     opus_int                            lost,               /* I Loss flag              */
+#ifdef NEURAL_PLC
+    LPCNetPLCState                      *lpcnet,
+#endif
     int                                 arch                /* I Run-time architecture  */
 )
 {
@@ -87,7 +90,11 @@ void silk_PLC(
         /****************************/
         /* Generate Signal          */
         /****************************/
-        silk_PLC_conceal( psDec, psDecCtrl, frame, arch );
+        silk_PLC_conceal( psDec, psDecCtrl, frame,
+#ifdef NEURAL_PLC
+            lpcnet,
+#endif
+            arch );
 
         psDec->lossCnt++;
     } else {
@@ -99,7 +106,7 @@ void silk_PLC(
         if ( psDec->sPLC.fs_kHz == 16 ) {
             int k;
             for( k = 0; k < psDec->nb_subfr; k += 2 ) {
-                lpcnet_plc_update( &psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
+                lpcnet_plc_update( lpcnet, frame + k * psDec->subfr_length );
             }
         }
 #endif
@@ -210,6 +217,9 @@ static OPUS_INLINE void silk_PLC_conceal(
     silk_decoder_state                  *psDec,             /* I/O Decoder state        */
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
     opus_int16                          frame[],            /* O LPC residual signal    */
+#ifdef NEURAL_PLC
+    LPCNetPLCState                      *lpcnet,
+#endif
     int                                 arch                /* I Run-time architecture  */
 )
 {
@@ -389,7 +399,7 @@ static OPUS_INLINE void silk_PLC_conceal(
 #ifdef NEURAL_PLC
     if ( psDec->sPLC.fs_kHz == 16 ) {
         for( k = 0; k < psDec->nb_subfr; k += 2 ) {
-            lpcnet_plc_conceal( &psDec->sPLC.lpcnet, frame + k * psDec->subfr_length );
+            lpcnet_plc_conceal( lpcnet, frame + k * psDec->subfr_length );
         }
     }
     /* We *should* be able to copy only from psDec->frame_length-MAX_LPC_ORDER, i.e. the last MAX_LPC_ORDER samples. */

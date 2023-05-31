@@ -60,6 +60,9 @@ struct OpusDecoder {
    silk_DecControlStruct DecControl;
    int          decode_gain;
    int          arch;
+#ifdef NEURAL_PLC
+    LPCNetPLCState lpcnet;
+#endif
 
    /* Everything beyond this point gets cleared on a reset */
 #define OPUS_DECODER_RESET_START stream_channels
@@ -152,6 +155,9 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
 
    st->prev_mode = 0;
    st->frame_size = Fs/400;
+#ifdef NEURAL_PLC
+    lpcnet_plc_init( &st->lpcnet, LPCNET_PLC_CODEC );
+#endif
    st->arch = opus_select_arch();
    return OPUS_OK;
 }
@@ -401,7 +407,11 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         /* Call SILK decoder */
         int first_frame = decoded_samples == 0;
         silk_ret = silk_Decode( silk_dec, &st->DecControl,
-                                lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size, st->arch );
+                                lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size,
+#ifdef NEURAL_PLC
+                                &st->lpcnet,
+#endif
+                                st->arch );
         if( silk_ret ) {
            if (lost_flag) {
               /* PLC failure should not be fatal */
@@ -652,19 +662,17 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    if (dred != NULL && dred->process_stage == 2) {
       int features_per_frame;
       int needed_feature_frames;
-      silk_decoder_state *silk_dec;
-      silk_dec = (silk_decoder_state*)((char*)st+st->silk_dec_offset);
-      lpcnet_plc_fec_clear(&silk_dec->sPLC.lpcnet);
+      lpcnet_plc_fec_clear(&st->lpcnet);
       features_per_frame = frame_size/(st->Fs/100);
       needed_feature_frames = features_per_frame;
       /* if blend==0, the last PLC call was "update" and we need to feed two extra 10-ms frames. */
-      if (silk_dec->sPLC.lpcnet.blend == 0) needed_feature_frames+=2;
+      if (st->lpcnet.blend == 0) needed_feature_frames+=2;
       for (i=0;i<needed_feature_frames;i++) {
          int feature_offset = (needed_feature_frames-i-1 + (dred_offset/(st->Fs/100)-1)*features_per_frame);
          if (feature_offset <= 4*dred->nb_latents-1) {
-           lpcnet_plc_fec_add(&silk_dec->sPLC.lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
+           lpcnet_plc_fec_add(&st->lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
          } else {
-           lpcnet_plc_fec_add(&silk_dec->sPLC.lpcnet, NULL);
+           lpcnet_plc_fec_add(&st->lpcnet, NULL);
          }
 
       }
@@ -909,6 +917,9 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       silk_InitDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
+#ifdef NEURAL_PLC
+      lpcnet_plc_init( &st->lpcnet, LPCNET_PLC_CODEC );
+#endif
    }
    break;
    case OPUS_GET_SAMPLE_RATE_REQUEST:
