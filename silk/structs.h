@@ -257,9 +257,7 @@ typedef struct {
     opus_int                    nb_subfr;
     opus_int                    subfr_length;
 #ifdef NEURAL_PLC
-    /* FIXME: We should include the state struct directly to preserve the state shadow copy property. */
     LPCNetPLCState              lpcnet;
-    int                         pre_filled;
 #endif
 } silk_PLC_struct;
 
