@@ -43,6 +43,9 @@ opus_int silk_decode_frame(
     opus_int32                  *pN,                            /* O    Pointer to size of output frame             */
     opus_int                    lostFlag,                       /* I    0: no loss, 1 loss, 2 decode fec            */
     opus_int                    condCoding,                     /* I    The type of conditional coding to use       */
+#ifdef NEURAL_PLC
+    LPCNetPLCState              *lpcnet,
+#endif
     int                         arch                            /* I    Run-time architecture                       */
 )
 {
@@ -87,7 +90,11 @@ opus_int silk_decode_frame(
         /********************************************************/
         /* Update PLC state                                     */
         /********************************************************/
-        silk_PLC( psDec, psDecCtrl, pOut, 0, arch );
+        silk_PLC( psDec, psDecCtrl, pOut, 0,
+#ifdef NEURAL_PLC
+            lpcnet,
+#endif
+            arch );
 
         psDec->lossCnt = 0;
         psDec->prevSignalType = psDec->indices.signalType;
@@ -97,7 +104,11 @@ opus_int silk_decode_frame(
         psDec->first_frame_after_reset = 0;
     } else {
         /* Handle packet loss by extrapolation */
-        silk_PLC( psDec, psDecCtrl, pOut, 1, arch );
+        silk_PLC( psDec, psDecCtrl, pOut, 1,
+#ifdef NEURAL_PLC
+            lpcnet,
+#endif
+            arch );
     }
 
     /*************************/

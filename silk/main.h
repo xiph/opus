@@ -410,6 +410,9 @@ opus_int silk_decode_frame(
     opus_int32                  *pN,                            /* O    Pointer to size of output frame             */
     opus_int                    lostFlag,                       /* I    0: no loss, 1 loss, 2 decode fec            */
     opus_int                    condCoding,                     /* I    The type of conditional coding to use       */
+#ifdef NEURAL_PLC
+    LPCNetPLCState              *lpcnet,
+#endif
     int                         arch                            /* I    Run-time architecture                       */
 );
 

@@ -256,9 +256,6 @@ typedef struct {
     opus_int                    fs_kHz;
     opus_int                    nb_subfr;
     opus_int                    subfr_length;
-#ifdef NEURAL_PLC
-    LPCNetPLCState              lpcnet;
-#endif
 } silk_PLC_struct;
 
 /* Struct for CNG */
