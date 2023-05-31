@@ -83,9 +83,9 @@ cmake:
   script:
     - ./autogen.sh
     - mkdir build
-    - cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DOPUS_BUILD_TESTING=ON -DOPUS_BUILD_PROGRAMS=ON
-    - cmake --build build
-    - cd build && ctest --output-on-failure
+    - cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DOPUS_BUILD_TESTING=ON -DOPUS_BUILD_PROGRAMS=ON -DOPUS_NEURAL_FEC=ON
+    - cmake --build build -j 4
+    - cd build && ctest --output-on-failure -j 4
 
 .meson:
   image: 'debian:bookworm-slim'
