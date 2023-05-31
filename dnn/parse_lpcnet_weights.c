@@ -66,6 +66,10 @@ int parse_weights(WeightArray **list, const unsigned char *data, int len)
         *list = realloc(*list, capacity*sizeof(WeightArray));
       }
       (*list)[nb_arrays++] = array;
+    } else {
+      free(*list);
+      *list = NULL;
+      return -1;
     }
   }
   (*list)[nb_arrays].name=NULL;

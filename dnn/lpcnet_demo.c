@@ -225,6 +225,9 @@ int main(int argc, char **argv) {
         LPCNetPLCState *net;
         if ((plc_flags&0x3) == LPCNET_PLC_NONCAUSAL) skip=extra=80;
         net = lpcnet_plc_create(plc_flags);
+#ifdef USE_WEIGHTS_FILE
+        lpcnet_plc_load_model(net, data, len);
+#endif
         while (1) {
             size_t ret;
             ret = fread(pcm, sizeof(pcm[0]), FRAME_SIZE, fin);
@@ -260,6 +263,7 @@ int main(int argc, char **argv) {
     }
     fclose(fin);
     fclose(fout);
+    if (plc_file) fclose(plc_file);
 #ifdef USE_WEIGHTS_FILE
     free_blob(data, len);
 #endif

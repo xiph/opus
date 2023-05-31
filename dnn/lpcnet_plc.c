@@ -83,7 +83,9 @@ LPCNET_EXPORT int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char 
   parse_weights(&list, data, len);
   ret = init_plc_model(&st->model, list);
   free(list);
-  if (ret == 0) return 0;
+  if (ret == 0) {
+    return lpcnet_load_model(&st->lpcnet, data, len);
+  }
   else return -1;
 }
 
