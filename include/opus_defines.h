@@ -171,6 +171,8 @@ extern "C" {
 #define OPUS_GET_IN_DTX_REQUEST              4049
 #define OPUS_SET_DRED_DURATION_REQUEST 4050
 #define OPUS_GET_DRED_DURATION_REQUEST 4051
+#define OPUS_SET_DNN_BLOB_REQUEST 4052
+/*#define OPUS_GET_DNN_BLOB_REQUEST 4053 */
 
 /** Defines for the presence of extended APIs. */
 #define OPUS_HAVE_OPUS_PROJECTION_H
@@ -179,6 +181,7 @@ extern "C" {
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
 #define __opus_check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
 #define __opus_check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
+#define __opus_check_uint8_ptr(ptr) ((ptr) + ((ptr) - (opus_uint8*)(ptr)))
 #define __opus_check_val16_ptr(ptr) ((ptr) + ((ptr) - (opus_val16*)(ptr)))
 /** @endcond */
 
@@ -628,6 +631,10 @@ extern "C" {
 /** Gets the encoder's configured Deep Redundancy (DRED) maximum number of frames.
   * @hideinitializer */
 #define OPUS_GET_DRED_DURATION(x) OPUS_GET_DRED_DURATION_REQUEST, __opus_check_int_ptr(x)
+
+/** Provide external DNN weights from binary object (only when explicitly built without the weights)
+  * @hideinitializer */
+#define OPUS_SET_DNN_BLOB(data, len) OPUS_SET_DNN_BLOB_REQUEST, __opus_check_uint8_ptr(data), __opus_check_int(len)
 
 
 /**@}*/
