@@ -171,23 +171,30 @@ LPCNET_EXPORT int lpcnet_get_size()
     return sizeof(LPCNetState);
 }
 
+LPCNET_EXPORT void lpcnet_reset(LPCNetState *lpcnet)
+{
+    const char* rng_string="LPCNet";
+    RNN_CLEAR((char*)&lpcnet->LPCNET_RESET_START,
+            sizeof(LPCNetState)-
+            ((char*)&lpcnet->LPCNET_RESET_START - (char*)lpcnet));
+    lpcnet->last_exc = lin2ulaw(0.f);
+    kiss99_srand(&lpcnet->rng, (const unsigned char *)rng_string, strlen(rng_string));
+}
+
 LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
 {
     int i;
     int ret;
-    const char* rng_string="LPCNet";
-    memset(lpcnet, 0, lpcnet_get_size());
-    lpcnet->last_exc = lin2ulaw(0.f);
     for (i=0;i<256;i++) {
         float prob = .025f+.95f*i/255.f;
         lpcnet->sampling_logit_table[i] = -log((1-prob)/prob);
     }
-    kiss99_srand(&lpcnet->rng, (const unsigned char *)rng_string, strlen(rng_string));
 #ifndef USE_WEIGHTS_FILE
     ret = init_lpcnet_model(&lpcnet->model, lpcnet_arrays);
 #else
     ret = 0;
 #endif
+    lpcnet_reset(lpcnet);
     celt_assert(ret == 0);
     return ret;
 }

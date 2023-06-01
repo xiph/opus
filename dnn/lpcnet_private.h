@@ -26,6 +26,11 @@
 #define MAX_FEATURE_BUFFER_SIZE 4
 
 struct LPCNetState {
+    LPCNetModel model;
+    float sampling_logit_table[256];
+    kiss99_ctx rng;
+
+#define LPCNET_RESET_START nnet
     NNetState nnet;
     int last_exc;
     float last_sig[LPC_ORDER];
@@ -35,14 +40,11 @@ struct LPCNetState {
 #if FEATURES_DELAY>0
     float old_lpc[FEATURES_DELAY][LPC_ORDER];
 #endif
-    float sampling_logit_table[256];
     float gru_a_condition[3*GRU_A_STATE_SIZE];
     float gru_b_condition[3*GRU_B_STATE_SIZE];
     int frame_count;
     float deemph_mem;
     float lpc[LPC_ORDER];
-    kiss99_ctx rng;
-    LPCNetModel model;
 };
 
 struct LPCNetDecState {
@@ -74,8 +76,14 @@ struct LPCNetEncState{
 
 #define PLC_BUF_SIZE (FEATURES_DELAY*FRAME_SIZE + TRAINING_OFFSET)
 struct LPCNetPLCState {
+  PLCModel model;
   LPCNetState lpcnet;
   LPCNetEncState enc;
+  int enable_blending;
+  int non_causal;
+  int remove_dc;
+
+#define LPCNET_PLC_RESET_START fec
   float fec[PLC_MAX_FEC][NB_FEATURES];
   int fec_keep_pos;
   int fec_read_pos;
@@ -89,16 +97,12 @@ struct LPCNetPLCState {
   int loss_count;
   PLCNetState plc_net;
   PLCNetState plc_copy[FEATURES_DELAY+1];
-  int enable_blending;
-  int non_causal;
   double dc_mem;
   double syn_dc;
-  int remove_dc;
 
   short dc_buf[TRAINING_OFFSET];
   int queued_update;
   short queued_samples[FRAME_SIZE];
-  PLCModel model;
 };
 
 extern float ceps_codebook1[];

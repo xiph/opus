@@ -75,6 +75,8 @@ LPCNET_EXPORT int lpcnet_decoder_get_size(void);
   */
 LPCNET_EXPORT int lpcnet_decoder_init(LPCNetDecState *st);
 
+LPCNET_EXPORT void lpcnet_reset(LPCNetState *lpcnet);
+
 /** Allocates and initializes a decoder state.
   *  @returns The newly created state
   */
@@ -186,6 +188,7 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, const float *features, sho
 LPCNET_EXPORT int lpcnet_plc_get_size(void);
 
 LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options);
+LPCNET_EXPORT void lpcnet_plc_reset(LPCNetPLCState *st);
 
 LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create(int options);
 

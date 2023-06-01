@@ -43,10 +43,11 @@ LPCNET_EXPORT int lpcnet_plc_get_size() {
   return sizeof(LPCNetPLCState);
 }
 
-LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options) {
-  int ret;
-  RNN_CLEAR(st, 1);
-  lpcnet_init(&st->lpcnet);
+LPCNET_EXPORT void lpcnet_plc_reset(LPCNetPLCState *st) {
+  RNN_CLEAR((char*)&st->LPCNET_PLC_RESET_START,
+          sizeof(LPCNetPLCState)-
+          ((char*)&st->LPCNET_PLC_RESET_START - (char*)st));
+  lpcnet_reset(&st->lpcnet);
   lpcnet_encoder_init(&st->enc);
   RNN_CLEAR(st->pcm, PLC_BUF_SIZE);
   st->pcm_fill = PLC_BUF_SIZE;
@@ -55,6 +56,12 @@ LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options) {
   st->loss_count = 0;
   st->dc_mem = 0;
   st->queued_update = 0;
+}
+
+LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options) {
+  int ret;
+  lpcnet_init(&st->lpcnet);
+  lpcnet_encoder_init(&st->enc);
   if ((options&0x3) == LPCNET_PLC_CAUSAL) {
     st->enable_blending = 1;
     st->non_causal = 0;
@@ -74,6 +81,7 @@ LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options) {
   ret = 0;
 #endif
   celt_assert(ret == 0);
+  lpcnet_plc_reset(st);
   return ret;
 }
 
