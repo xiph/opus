@@ -995,6 +995,19 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
        ret = celt_decoder_ctl(celt_dec, OPUS_GET_PHASE_INVERSION_DISABLED(value));
    }
    break;
+#ifdef USE_WEIGHTS_FILE
+   case OPUS_SET_DNN_BLOB_REQUEST:
+   {
+       const unsigned char *data = va_arg(ap, const unsigned char *);
+       opus_int32 len = va_arg(ap, opus_int32);
+       if(len<0 || data == NULL)
+       {
+          goto bad_arg;
+       }
+       return lpcnet_plc_load_model(&st->lpcnet, data, len);
+   }
+   break;
+#endif
    default:
       /*fprintf(stderr, "unknown opus_decoder_ctl() request: %d", request);*/
       ret = OPUS_UNIMPLEMENTED;

@@ -42,6 +42,50 @@
 
 #define MAX_PACKET 1500
 
+#ifdef USE_WEIGHTS_FILE
+# if __unix__
+#  include <fcntl.h>
+#  include <sys/mman.h>
+#  include <unistd.h>
+#  include <sys/stat.h>
+/* When available, mmap() is preferable to reading the file, as it leads to
+   better resource utilization, especially if multiple processes are using the same
+   file (mapping will be shared in cache). */
+unsigned char *load_blob(const char *filename, int *len) {
+  int fd;
+  unsigned char *data;
+  struct stat st;
+  stat(filename, &st);
+  *len = st.st_size;
+  fd = open(filename, O_RDONLY);
+  data = mmap(NULL, *len, PROT_READ, MAP_SHARED, fd, 0);
+  close(fd);
+  return data;
+}
+void free_blob(unsigned char *blob, int len) {
+  munmap(blob, len);
+}
+# else
+unsigned char *load_blob(const char *filename, int *len) {
+  FILE *file;
+  unsigned char *data;
+  file = fopen(filename, "r");
+  fseek(file, 0L, SEEK_END);
+  *len = ftell(file);
+  fseek(file, 0L, SEEK_SET);
+  if (*len <= 0) return NULL;
+  data = malloc(*len);
+  *len = fread(data, 1, *len, file);
+  return data;
+}
+void free_blob(unsigned char *blob, int len) {
+  free(blob);
+  (void)len;
+}
+# endif
+#endif
+
+
 void print_usage( char* argv[] )
 {
     fprintf(stderr, "Usage: %s [-e] <application> <sampling rate (Hz)> <channels (1/2)> "
@@ -270,6 +314,12 @@ int main(int argc, char *argv[])
     int lost_count=0;
     FILE *packet_loss_file=NULL;
     int dred_duration=0;
+#ifdef USE_WEIGHTS_FILE
+    int blob_len;
+    unsigned char *blob_data;
+    const char *filename = "weights_blob.bin";
+    blob_data = load_blob(filename, &blob_len);
+#endif
 
     if (argc < 5 )
     {
@@ -567,8 +617,9 @@ int main(int argc, char *argv[])
           goto failure;
        }
     }
-
-
+#ifdef USE_WEIGHTS_FILE
+    opus_decoder_ctl(dec, OPUS_SET_DNN_BLOB(blob_data, blob_len));
+#endif
     switch(bandwidth)
     {
     case OPUS_BANDWIDTH_NARROWBAND:
@@ -928,5 +979,8 @@ failure:
     free(in);
     free(out);
     free(fbytes);
+#ifdef USE_WEIGHTS_FILE
+    free_blob(blob_data, blob_len);
+#endif
     return ret;
 }
