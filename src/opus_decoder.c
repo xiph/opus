@@ -918,7 +918,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
 #ifdef NEURAL_PLC
-      lpcnet_plc_init( &st->lpcnet, LPCNET_PLC_CODEC );
+      lpcnet_plc_reset( &st->lpcnet );
 #endif
    }
    break;
