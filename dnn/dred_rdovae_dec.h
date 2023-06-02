@@ -38,7 +38,7 @@ struct RDOVAEDecStruct {
     float dense6_state[DEC_DENSE2_STATE_SIZE];
 };
 
-void dred_rdovae_dec_init_states(RDOVAEDec *h, const float * initial_state);
-void dred_rdovae_decode_qframe(RDOVAEDec *h, float *qframe, const float * z);
+void dred_rdovae_dec_init_states(RDOVAEDecState *h, const RDOVAEDec *model, const float * initial_state);
+void dred_rdovae_decode_qframe(RDOVAEDecState *h, const RDOVAEDec *model, float *qframe, const float * z);
 
 #endif

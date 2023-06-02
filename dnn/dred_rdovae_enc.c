@@ -36,7 +36,8 @@
 #include "common.h"
 
 void dred_rdovae_encode_dframe(
-    RDOVAEEnc *enc_state,           /* io: encoder state */
+    RDOVAEEncState *enc_state,           /* io: encoder state */
+    const RDOVAEEnc *model,
     float *latents,                 /* o: latent vector */
     float *initial_state,           /* o: initial state */
     const float *input              /* i: double feature frame (concatenated) */
@@ -48,47 +49,47 @@ void dred_rdovae_encode_dframe(
     float zero_vector[1024] = {0};
 
     /* run encoder stack and concatenate output in buffer*/
-    _lpcnet_compute_dense(&enc_dense1, &buffer[output_index], input);
+    _lpcnet_compute_dense(&model->enc_dense1, &buffer[output_index], input);
     input_index = output_index;
     output_index += ENC_DENSE1_OUT_SIZE;
 
-    compute_gruB(&enc_dense2, zero_vector, enc_state->dense2_state, &buffer[input_index]);
+    compute_gruB(&model->enc_dense2, zero_vector, enc_state->dense2_state, &buffer[input_index]);
     RNN_COPY(&buffer[output_index], enc_state->dense2_state, ENC_DENSE2_OUT_SIZE);
     input_index = output_index;
     output_index += ENC_DENSE2_OUT_SIZE;
 
-    _lpcnet_compute_dense(&enc_dense3, &buffer[output_index], &buffer[input_index]);
+    _lpcnet_compute_dense(&model->enc_dense3, &buffer[output_index], &buffer[input_index]);
     input_index = output_index;
     output_index += ENC_DENSE3_OUT_SIZE;
 
-    compute_gruB(&enc_dense4, zero_vector, enc_state->dense4_state, &buffer[input_index]);
+    compute_gruB(&model->enc_dense4, zero_vector, enc_state->dense4_state, &buffer[input_index]);
     RNN_COPY(&buffer[output_index], enc_state->dense4_state, ENC_DENSE4_OUT_SIZE);
     input_index = output_index;
     output_index += ENC_DENSE4_OUT_SIZE;
 
-    _lpcnet_compute_dense(&enc_dense5, &buffer[output_index], &buffer[input_index]);
+    _lpcnet_compute_dense(&model->enc_dense5, &buffer[output_index], &buffer[input_index]);
     input_index = output_index;
     output_index += ENC_DENSE5_OUT_SIZE;
 
-    compute_gruB(&enc_dense6, zero_vector, enc_state->dense6_state, &buffer[input_index]);
+    compute_gruB(&model->enc_dense6, zero_vector, enc_state->dense6_state, &buffer[input_index]);
     RNN_COPY(&buffer[output_index], enc_state->dense6_state, ENC_DENSE6_OUT_SIZE);
     input_index = output_index;
     output_index += ENC_DENSE6_OUT_SIZE;
 
-    _lpcnet_compute_dense(&enc_dense7, &buffer[output_index], &buffer[input_index]);
+    _lpcnet_compute_dense(&model->enc_dense7, &buffer[output_index], &buffer[input_index]);
     input_index = output_index;
     output_index += ENC_DENSE7_OUT_SIZE;
 
-    _lpcnet_compute_dense(&enc_dense8, &buffer[output_index], &buffer[input_index]);
+    _lpcnet_compute_dense(&model->enc_dense8, &buffer[output_index], &buffer[input_index]);
     output_index += ENC_DENSE8_OUT_SIZE;
 
     /* compute latents from concatenated input buffer */
-    compute_conv1d(&bits_dense, latents, enc_state->bits_dense_state, buffer);
+    compute_conv1d(&model->bits_dense, latents, enc_state->bits_dense_state, buffer);
 
 
     /* next, calculate initial state */
-    _lpcnet_compute_dense(&gdense1, &buffer[output_index], buffer);
+    _lpcnet_compute_dense(&model->gdense1, &buffer[output_index], buffer);
     input_index = output_index;
-    _lpcnet_compute_dense(&gdense2, initial_state, &buffer[input_index]);
+    _lpcnet_compute_dense(&model->gdense2, initial_state, &buffer[input_index]);
 
 }

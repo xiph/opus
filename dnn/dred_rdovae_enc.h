@@ -39,7 +39,7 @@ struct RDOVAEEncStruct {
     float bits_dense_state[BITS_DENSE_STATE_SIZE];
 };
 
-void dred_rdovae_encode_dframe(RDOVAEEnc *enc_state, float *latents, float *initial_state, const float *input);
+void dred_rdovae_encode_dframe(RDOVAEEncState *enc_state, const RDOVAEEnc *model, float *latents, float *initial_state, const float *input);
 
 
 #endif

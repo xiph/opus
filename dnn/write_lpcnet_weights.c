@@ -41,6 +41,8 @@
 #endif
 #include "nnet_data.c"
 #include "plc_data.c"
+#include "dred_rdovae_enc_data.c"
+#include "dred_rdovae_dec_data.c"
 
 void write_weights(const WeightArray *list, FILE *fout)
 {
@@ -69,6 +71,8 @@ int main(void)
   FILE *fout = fopen("weights_blob.bin", "w");
   write_weights(lpcnet_arrays, fout);
   write_weights(lpcnet_plc_arrays, fout);
+  write_weights(rdovae_enc_arrays, fout);
+  write_weights(rdovae_dec_arrays, fout);
   fclose(fout);
   return 0;
 }

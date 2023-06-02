@@ -35,16 +35,17 @@
 #include "dred_rdovae_dec.h"
 #include "dred_rdovae_stats_data.h"
 
-void DRED_rdovae_decode_all(float *features, const float *state, const float *latents, int nb_latents)
+void DRED_rdovae_decode_all(const RDOVAEDec *model, float *features, const float *state, const float *latents, int nb_latents)
 {
     int i;
-    RDOVAEDec dec;
+    RDOVAEDecState dec;
     memset(&dec, 0, sizeof(dec));
-    DRED_rdovae_dec_init_states(&dec, state);
+    DRED_rdovae_dec_init_states(&dec, model, state);
     for (i = 0; i < 2*nb_latents; i += 2)
     {
         DRED_rdovae_decode_qframe(
             &dec,
+            model,
             &features[2*i*DRED_NUM_FEATURES],
             &latents[(i/2)*DRED_LATENT_DIM]);
     }
@@ -52,65 +53,65 @@ void DRED_rdovae_decode_all(float *features, const float *state, const float *la
 
 size_t DRED_rdovae_get_enc_size()
 {
-    return sizeof(RDOVAEEnc);
+    return sizeof(RDOVAEEncState);
 }
 
 size_t DRED_rdovae_get_dec_size()
 {
-    return sizeof(RDOVAEDec);
+    return sizeof(RDOVAEDecState);
 }
 
-void DRED_rdovae_init_encoder(RDOVAEEnc *enc_state)
+void DRED_rdovae_init_encoder(RDOVAEEncState *enc_state)
 {
     memset(enc_state, 0, sizeof(*enc_state));
 
 }
 
-void DRED_rdovae_init_decoder(RDOVAEDec *dec_state)
+void DRED_rdovae_init_decoder(RDOVAEDecState *dec_state)
 {
     memset(dec_state, 0, sizeof(*dec_state));
 }
 
 
-RDOVAEEnc * DRED_rdovae_create_encoder()
+RDOVAEEncState * DRED_rdovae_create_encoder()
 {
-    RDOVAEEnc *enc;
-    enc = (RDOVAEEnc*) calloc(sizeof(*enc), 1);
+    RDOVAEEncState *enc;
+    enc = (RDOVAEEncState*) calloc(sizeof(*enc), 1);
     DRED_rdovae_init_encoder(enc);
     return enc;
 }
 
-RDOVAEDec * DRED_rdovae_create_decoder()
+RDOVAEDecState * DRED_rdovae_create_decoder()
 {
-    RDOVAEDec *dec;
-    dec = (RDOVAEDec*) calloc(sizeof(*dec), 1);
+    RDOVAEDecState *dec;
+    dec = (RDOVAEDecState*) calloc(sizeof(*dec), 1);
     DRED_rdovae_init_decoder(dec);
     return dec;
 }
 
-void DRED_rdovae_destroy_decoder(RDOVAEDec* dec)
+void DRED_rdovae_destroy_decoder(RDOVAEDecState* dec)
 {
     free(dec);
 }
 
-void DRED_rdovae_destroy_encoder(RDOVAEEnc* enc)
+void DRED_rdovae_destroy_encoder(RDOVAEEncState* enc)
 {
     free(enc);
 }
 
-void DRED_rdovae_encode_dframe(RDOVAEEnc *enc_state, float *latents, float *initial_state, const float *input)
+void DRED_rdovae_encode_dframe(RDOVAEEncState *enc_state, const RDOVAEEnc *model, float *latents, float *initial_state, const float *input)
 {
-    dred_rdovae_encode_dframe(enc_state, latents, initial_state, input);
+    dred_rdovae_encode_dframe(enc_state, model, latents, initial_state, input);
 }
 
-void DRED_rdovae_dec_init_states(RDOVAEDec *h, const float * initial_state)
+void DRED_rdovae_dec_init_states(RDOVAEDecState *h, const RDOVAEDec *model, const float * initial_state)
 {
-    dred_rdovae_dec_init_states(h, initial_state);
+    dred_rdovae_dec_init_states(h, model, initial_state);
 }
 
-void DRED_rdovae_decode_qframe(RDOVAEDec *h, float *qframe, const float *z)
+void DRED_rdovae_decode_qframe(RDOVAEDecState *h, const RDOVAEDec *model, float *qframe, const float *z)
 {
-    dred_rdovae_decode_qframe(h, qframe, z);
+    dred_rdovae_decode_qframe(h, model, qframe, z);
 }
 
 
