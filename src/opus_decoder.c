@@ -51,6 +51,7 @@
 #include "define.h"
 #include "mathops.h"
 #include "cpu_support.h"
+#include "lpcnet/src/dred_rdovae_dec_data.h"
 
 struct OpusDecoder {
    int          celt_dec_offset;
@@ -1115,6 +1116,7 @@ int opus_decoder_get_nb_samples(const OpusDecoder *dec,
 }
 
 struct OpusDREDDecoder {
+   RDOVAEDec model;
    int arch;
    opus_uint32 magic;
 };
@@ -1141,6 +1143,9 @@ int opus_dred_decoder_get_size(void)
 
 int opus_dred_decoder_init(OpusDREDDecoder *dec)
 {
+#ifndef USE_WEIGHTS_FILE
+   init_rdovaedec(&dec->model, rdovae_dec_arrays);
+#endif
    dec->arch = opus_select_arch();
    /* To make sure nobody forgets to init, use a magic number. */
    dec->magic = 0xD8EDDEC0;
@@ -1313,7 +1318,7 @@ int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *
       OPUS_COPY(dst, src, 1);
    if (dst->process_stage == 2)
       return OPUS_OK;
-   DRED_rdovae_decode_all(dst->fec_features, dst->state, dst->latents, dst->nb_latents);
+   DRED_rdovae_decode_all(&dred_dec->model, dst->fec_features, dst->state, dst->latents, dst->nb_latents);
    dst->process_stage = 2;
    return OPUS_OK;
 #else

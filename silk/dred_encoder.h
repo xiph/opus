@@ -34,15 +34,16 @@
 #include "entcode.h"
 #include "lpcnet/src/lpcnet_private.h"
 #include "lpcnet/src/dred_rdovae_enc.h"
-
+#include "lpcnet/src/dred_rdovae_enc_data.h"
 
 typedef struct {
+    RDOVAEEnc model;
     opus_int16 input_buffer[DRED_DFRAME_SIZE + DRED_SILK_ENCODER_DELAY];
     float latents_buffer[DRED_MAX_FRAMES * DRED_LATENT_DIM];
     int latents_buffer_fill;
     float state_buffer[24];
     LPCNetEncState lpcnet_enc_state;
-    RDOVAEEnc rdovae_enc;
+    RDOVAEEncState rdovae_enc;
 } DREDEnc;
 
 

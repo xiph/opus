@@ -45,6 +45,9 @@
 void init_dred_encoder(DREDEnc* enc)
 {
     memset(enc, 0, sizeof(*enc));
+#ifndef USE_WEIGHTS_FILE
+    init_rdovaeenc(&enc->model, rdovae_enc_arrays);
+#endif
     lpcnet_encoder_init(&enc->lpcnet_enc_state);
     DRED_rdovae_init_encoder(&enc->rdovae_enc);
 }
@@ -70,7 +73,7 @@ void dred_process_silk_frame(DREDEnc *enc, const opus_int16 *silk_frame)
     memcpy(input_buffer + DRED_NUM_FEATURES, feature_buffer + 36, DRED_NUM_FEATURES * sizeof(input_buffer[0]));
 
     /* run RDOVAE encoder */
-    DRED_rdovae_encode_dframe(&enc->rdovae_enc, enc->latents_buffer, enc->state_buffer, input_buffer);
+    DRED_rdovae_encode_dframe(&enc->rdovae_enc, &enc->model, enc->latents_buffer, enc->state_buffer, input_buffer);
     enc->latents_buffer_fill = IMIN(enc->latents_buffer_fill+1, DRED_NUM_REDUNDANCY_FRAMES);
 }
 
