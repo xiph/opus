@@ -49,11 +49,12 @@ void dred_encoder_reset(DREDEnc* enc)
     RNN_CLEAR((char*)&enc->DREDENC_RESET_START,
               sizeof(DREDEnc)-
               ((char*)&enc->DREDENC_RESET_START - (char*)enc));
+    enc->input_buffer_fill = DRED_SILK_ENCODER_DELAY;
     lpcnet_encoder_init(&enc->lpcnet_enc_state);
     DRED_rdovae_init_encoder(&enc->rdovae_enc);
 }
 
-void dred_encoder_init(DREDEnc* enc, int Fs, int channels)
+void dred_encoder_init(DREDEnc* enc, opus_int32 Fs, int channels)
 {
     enc->Fs = Fs;
     enc->channels = channels;
@@ -63,15 +64,10 @@ void dred_encoder_init(DREDEnc* enc, int Fs, int channels)
     dred_encoder_reset(enc);
 }
 
-void dred_process_silk_frame(DREDEnc *enc, const float *silk_frame)
+static void dred_process_frame(DREDEnc *enc)
 {
-    int i;
     float feature_buffer[2 * 36];
-
     float input_buffer[2*DRED_NUM_FEATURES] = {0};
-    /* delay signal by 79 samples */
-    OPUS_MOVE(enc->input_buffer, enc->input_buffer + DRED_DFRAME_SIZE, DRED_SILK_ENCODER_DELAY);
-    for (i=0;i<DRED_DFRAME_SIZE;i++) enc->input_buffer[DRED_SILK_ENCODER_DELAY+i] = FLOAT2INT16(silk_frame[i]);
 
     /* shift latents buffer */
     OPUS_MOVE(enc->latents_buffer + DRED_LATENT_DIM, enc->latents_buffer, (DRED_MAX_FRAMES - 1) * DRED_LATENT_DIM);
@@ -87,6 +83,28 @@ void dred_process_silk_frame(DREDEnc *enc, const float *silk_frame)
     /* run RDOVAE encoder */
     DRED_rdovae_encode_dframe(&enc->rdovae_enc, &enc->model, enc->latents_buffer, enc->state_buffer, input_buffer);
     enc->latents_buffer_fill = IMIN(enc->latents_buffer_fill+1, DRED_NUM_REDUNDANCY_FRAMES);
+}
+
+void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size)
+{
+    int frame_size16k = frame_size * 16000 / enc->Fs;
+    while (frame_size16k > 0) {
+        int i;
+        int process_size16k;
+        int process_size;
+        process_size16k = IMIN(2*DRED_FRAME_SIZE - enc->input_buffer_fill, frame_size16k);
+        process_size = process_size16k * enc->Fs / 16000;
+        for (i=0;i<process_size16k;i++) enc->input_buffer[enc->input_buffer_fill+i] = FLOAT2INT16(pcm[i]);
+        enc->input_buffer_fill += process_size16k;
+        if (enc->input_buffer_fill == 2*DRED_FRAME_SIZE)
+        {
+          dred_process_frame(enc);
+          enc->input_buffer_fill = 0;
+        }
+
+        pcm += process_size;
+        frame_size16k -= process_size;
+    }
 }
 
 int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes) {

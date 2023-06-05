@@ -1829,7 +1829,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifdef ENABLE_NEURAL_FEC
             if ( st->dred_duration > 0 ) {
                 /* DRED Encoder */
-                dred_process_silk_frame( &st->dred_encoder, &pcm_buf[total_buffer*st->channels] );
+                dred_compute_latents( &st->dred_encoder, &pcm_buf[total_buffer*st->channels], frame_size );
             } else {
                 st->dred_encoder.latents_buffer_fill = 0;
             }
