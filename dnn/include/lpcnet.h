@@ -145,6 +145,15 @@ LPCNET_EXPORT int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, 
   */
 LPCNET_EXPORT int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]);
 
+
+/** Compute features on LPCNET_FRAME_SIZE speech samples (currently 160) and output features for one 10-ms frame.
+  * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
+  * @param [in] pcm <tt>float *</tt>: Input speech to be analyzed
+  * @param [out] features <tt>float[NB_TOTAL_FEATURES]</tt>: Four feature vectors
+  * @retval 0 Success
+  */
+LPCNET_EXPORT int lpcnet_compute_single_frame_features_float(LPCNetEncState *st, const float *pcm, float features[NB_TOTAL_FEATURES]);
+
 /** Gets the size of an <code>LPCNetState</code> structure.
   * @returns The size in bytes.
   */

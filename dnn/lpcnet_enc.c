@@ -894,13 +894,26 @@ LPCNET_EXPORT int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, 
   return 0;
 }
 
-int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]) {
-  int i;
-  float x[FRAME_SIZE];
-  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+static int lpcnet_compute_single_frame_features_impl(LPCNetEncState *st, float *x, float features[NB_TOTAL_FEATURES]) {
   preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
   compute_frame_features(st, x);
   process_single_frame(st, NULL);
   RNN_COPY(features, &st->features[0][0], NB_TOTAL_FEATURES);
+  return 0;
+}
+
+int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]) {
+  int i;
+  float x[FRAME_SIZE];
+  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+  lpcnet_compute_single_frame_features_impl(st, x, features);
+  return 0;
+}
+
+int lpcnet_compute_single_frame_features_float(LPCNetEncState *st, const float *pcm, float features[NB_TOTAL_FEATURES]) {
+  int i;
+  float x[FRAME_SIZE];
+  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+  lpcnet_compute_single_frame_features_impl(st, x, features);
   return 0;
 }
