@@ -33,7 +33,7 @@
 
 int compute_quantizer(int q0, int dQ, int i);
 
-void dred_encode_state(ec_enc *enc, float *x);
+void dred_encode_state(ec_enc *enc, const float *x);
 
 void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, const opus_uint16 *dzone, const opus_uint16 *r, const opus_uint16 *p0);
 
