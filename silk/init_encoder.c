@@ -64,9 +64,5 @@ opus_int silk_init_encoder(
     /* Initialize Silk VAD */
     ret += silk_VAD_Init( &psEnc->sCmn.sVAD );
 
-#ifdef ENABLE_NEURAL_FEC
-    /* Initialize DRED Encoder */
-    init_dred_encoder( &psEnc->sCmn.dred_encoder );
-#endif
     return  ret;
 }

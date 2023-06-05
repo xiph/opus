@@ -67,6 +67,9 @@ struct OpusEncoder {
     int          celt_enc_offset;
     int          silk_enc_offset;
     silk_EncControlStruct silk_mode;
+#ifdef ENABLE_NEURAL_FEC
+    DREDEnc      dred_encoder;
+#endif
     int          application;
     int          channels;
     int          delay_compensation;
@@ -239,6 +242,11 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
 
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
     celt_encoder_ctl(celt_enc, OPUS_SET_COMPLEXITY(st->silk_mode.complexity));
+
+#ifdef ENABLE_NEURAL_FEC
+    /* Initialize DRED Encoder */
+    dred_encoder_init( &st->dred_encoder, Fs, channels );
+#endif
 
     st->use_vbr = 1;
     /* Makes constrained VBR the default (safer for real-time use) */
@@ -1461,6 +1469,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     {
         silk_EncControlStruct dummy;
         silk_InitEncoder( silk_enc, st->arch, &dummy);
+#ifdef ENABLE_NEURAL_FEC
+        /* Initialize DRED Encoder */
+        dred_encoder_reset( &st->dred_encoder );
+#endif
         prefill=1;
     }
 
@@ -1814,6 +1826,15 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            }
         }
 
+#ifdef ENABLE_NEURAL_FEC
+            if ( st->dred_duration > 0 ) {
+                /* DRED Encoder */
+                dred_process_silk_frame( &st->dred_encoder, &pcm_buf[total_buffer*st->channels] );
+            } else {
+                st->dred_encoder.latents_buffer_fill = 0;
+            }
+#endif
+
         if (prefill)
         {
             opus_int32 zero=0;
@@ -1888,7 +1909,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifdef ENABLE_NEURAL_FEC
         /* If we're not in SILK mode, delete all the processed DRED.
            TODO: Remove this if/when DRED gets encoded for CELT. */
-        DREDEnc *dred = &((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.dred_encoder;
+        DREDEnc *dred = &st->dred_encoder;
         dred->latents_buffer_fill = 0;
 #endif
     }
@@ -2196,7 +2217,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        unsigned char buf[DRED_MAX_DATA_SIZE];
        int dred_chunks;
        int dred_bytes_left;
-       DREDEnc *dred = &((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.dred_encoder;
        dred_chunks = IMIN(st->dred_duration/4, DRED_NUM_REDUNDANCY_FRAMES/2);
        dred_bytes_left = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-2);
        /* Check whether we actually have something to encode. */
@@ -2206,7 +2226,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
               These bytes will be removed once extension is finalized. */
            buf[0] = 'D';
            buf[1] = DRED_VERSION;
-           dred_bytes = dred_encode_silk_frame(dred, buf+2, dred_chunks, dred_bytes_left-2);
+           dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+2, dred_chunks, dred_bytes_left-2);
            dred_bytes += 2;
            celt_assert(dred_bytes <= dred_bytes_left);
            extension.id = 127;
@@ -2763,6 +2783,10 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
 
            celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
            silk_InitEncoder( silk_enc, st->arch, &dummy );
+#ifdef ENABLE_NEURAL_FEC
+           /* Initialize DRED Encoder */
+           dred_encoder_reset( &st->dred_encoder );
+#endif
            st->stream_channels = st->channels;
            st->hybrid_stereo_width_Q14 = 1 << 14;
            st->prev_HB_gain = Q15ONE;

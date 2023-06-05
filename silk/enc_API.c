@@ -468,15 +468,6 @@ opus_int silk_Encode(                                   /* O    Returns error co
             }
             silk_encode_do_VAD_Fxx( &psEnc->state_Fxx[ 0 ], activity );
 
-#ifdef ENABLE_NEURAL_FEC
-            if ( encControl->useDRED ) {
-                /* DRED Encoder */
-                dred_process_silk_frame( &psEnc->state_Fxx[ 0 ].sCmn.dred_encoder, &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[0] );
-            } else {
-                psEnc->state_Fxx[ 0 ].sCmn.dred_encoder.latents_buffer_fill = 0;
-            }
-#endif
-
             /* Encode */
             for( n = 0; n < encControl->nChannelsInternal; n++ ) {
                 opus_int maxBits, useCBR;
