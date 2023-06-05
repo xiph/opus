@@ -107,7 +107,7 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size)
     }
 }
 
-int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes) {
+int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes) {
     const opus_uint16 *dead_zone       = DRED_rdovae_get_dead_zone_pointer();
     const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
     const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();

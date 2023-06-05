@@ -670,7 +670,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       if (st->lpcnet.blend == 0) needed_feature_frames+=2;
       for (i=0;i<needed_feature_frames;i++) {
          int feature_offset = (needed_feature_frames-i-1 + (dred_offset/(st->Fs/100)-2));
-         if (feature_offset <= 4*dred->nb_latents-1) {
+         if (feature_offset <= 4*dred->nb_latents-1 && feature_offset >= 0) {
            lpcnet_plc_fec_add(&st->lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
          } else {
            lpcnet_plc_fec_add(&st->lpcnet, NULL);
