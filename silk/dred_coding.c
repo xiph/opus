@@ -38,6 +38,7 @@
 #include "celt/laplace.h"
 #include "os_support.h"
 #include "dred_config.h"
+#include "dred_coding.h"
 
 #define LATENT_DIM 80
 #define PVQ_DIM 24
@@ -74,9 +75,12 @@ static void encode_pvq(const int *iy, int N, int K, ec_enc *enc) {
     }
 }
 
-void dred_encode_state(ec_enc *enc, float *x) {
+void dred_encode_state(ec_enc *enc, const float *x) {
     int iy[PVQ_DIM];
-    op_pvq_search_c(x, iy, PVQ_K, PVQ_DIM, 0);
+    float x0[PVQ_DIM];
+    /* Copy state because the PVQ search will trash it. */
+    OPUS_COPY(x0, x, PVQ_DIM);
+    op_pvq_search_c(x0, iy, PVQ_K, PVQ_DIM, 0);
     encode_pvq(iy, PVQ_DIM, PVQ_K, enc);
 }
 
