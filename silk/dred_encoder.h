@@ -38,11 +38,12 @@
 
 typedef struct {
     RDOVAEEnc model;
-    int Fs;
+    opus_int32 Fs;
     int channels;
 
 #define DREDENC_RESET_START input_buffer
-    float input_buffer[DRED_DFRAME_SIZE + DRED_SILK_ENCODER_DELAY];
+    float input_buffer[DRED_DFRAME_SIZE];
+    int input_buffer_fill;
     float latents_buffer[DRED_MAX_FRAMES * DRED_LATENT_DIM];
     int latents_buffer_fill;
     float state_buffer[24];
@@ -51,12 +52,12 @@ typedef struct {
 } DREDEnc;
 
 
-void dred_encoder_init(DREDEnc* enc, int Fs, int channels);
+void dred_encoder_init(DREDEnc* enc, opus_int32 Fs, int channels);
 void dred_encoder_reset(DREDEnc* enc);
 
 void dred_deinit_encoder(DREDEnc *enc);
 
-void dred_process_silk_frame(DREDEnc *enc, const float *silk_frame);
+void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size);
 
 int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes);
 
