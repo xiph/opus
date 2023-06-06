@@ -44,6 +44,16 @@
 #include "float_cast.h"
 #include "os_support.h"
 
+int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len)
+{
+    WeightArray *list;
+    int ret;
+    parse_weights(&list, data, len);
+    ret = init_rdovaeenc(&enc->model, list);
+    free(list);
+    return (ret == 0) ? OPUS_OK : OPUS_BAD_ARG;
+}
+
 void dred_encoder_reset(DREDEnc* enc)
 {
     RNN_CLEAR((char*)&enc->DREDENC_RESET_START,

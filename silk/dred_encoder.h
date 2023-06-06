@@ -54,7 +54,7 @@ typedef struct {
     RDOVAEEncState rdovae_enc;
 } DREDEnc;
 
-
+int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len);
 void dred_encoder_init(DREDEnc* enc, opus_int32 Fs, int channels);
 void dred_encoder_reset(DREDEnc* enc);
 
