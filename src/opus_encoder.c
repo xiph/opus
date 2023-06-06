@@ -2847,6 +2847,19 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             }
         }
         break;
+#ifdef USE_WEIGHTS_FILE
+   case OPUS_SET_DNN_BLOB_REQUEST:
+   {
+       const unsigned char *data = va_arg(ap, const unsigned char *);
+       opus_int32 len = va_arg(ap, opus_int32);
+       if(len<0 || data == NULL)
+       {
+          goto bad_arg;
+       }
+       return dred_encoder_load_model(&st->dred_encoder, data, len);
+   }
+   break;
+#endif
         case CELT_GET_MODE_REQUEST:
         {
            const CELTMode ** value = va_arg(ap, const CELTMode**);

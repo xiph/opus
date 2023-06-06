@@ -547,7 +547,18 @@ OPUS_EXPORT int opus_dred_decoder_init(OpusDREDDecoder *dec);
   */
 OPUS_EXPORT void opus_dred_decoder_destroy(OpusDREDDecoder *dec);
 
-
+/** Perform a CTL function on an Opus DRED decoder.
+  *
+  * Generally the request and subsequent arguments are generated
+  * by a convenience macro.
+  * @param st <tt>OpusDREDDecoder*</tt>: DRED Decoder state.
+  * @param request This and all remaining parameters should be replaced by one
+  *                of the convenience macros in @ref opus_genericctls or
+  *                @ref opus_decoderctls.
+  * @see opus_genericctls
+  * @see opus_decoderctls
+  */
+OPUS_EXPORT int opus_dred_decoder_ctl(OpusDREDDecoder *dred_dec, int request, ...);
 
 /** Gets the size of an <code>OpusDRED</code> structure.
   * @returns The size in bytes.
