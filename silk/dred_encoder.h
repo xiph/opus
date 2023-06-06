@@ -36,17 +36,20 @@
 #include "lpcnet/src/dred_rdovae_enc.h"
 #include "lpcnet/src/dred_rdovae_enc_data.h"
 
+#define RESAMPLING_ORDER 8
+
 typedef struct {
     RDOVAEEnc model;
     opus_int32 Fs;
     int channels;
 
 #define DREDENC_RESET_START input_buffer
-    float input_buffer[DRED_DFRAME_SIZE];
+    float input_buffer[2*DRED_DFRAME_SIZE];
     int input_buffer_fill;
     float latents_buffer[DRED_MAX_FRAMES * DRED_LATENT_DIM];
     int latents_buffer_fill;
     float state_buffer[24];
+    float resample_mem[RESAMPLING_ORDER + 1];
     LPCNetEncState lpcnet_enc_state;
     RDOVAEEncState rdovae_enc;
 } DREDEnc;
