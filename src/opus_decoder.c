@@ -1141,6 +1141,16 @@ int opus_dred_decoder_get_size(void)
   return sizeof(OpusDREDDecoder);
 }
 
+int dred_decoder_load_model(OpusDREDDecoder *dec, const unsigned char *data, int len)
+{
+    WeightArray *list;
+    int ret;
+    parse_weights(&list, data, len);
+    ret = init_rdovaedec(&dec->model, list);
+    free(list);
+    return (ret == 0) ? OPUS_OK : OPUS_BAD_ARG;
+}
+
 int opus_dred_decoder_init(OpusDREDDecoder *dec)
 {
 #ifndef USE_WEIGHTS_FILE
@@ -1180,7 +1190,47 @@ void opus_dred_decoder_destroy(OpusDREDDecoder *dec)
    free(dec);
 }
 
+int opus_dred_decoder_ctl(OpusDREDDecoder *dred_dec, int request, ...)
+{
+#ifdef ENABLE_NEURAL_FEC
+   int ret = OPUS_OK;
+   va_list ap;
 
+   va_start(ap, request);
+   (void)dred_dec;
+   switch (request)
+   {
+# ifdef USE_WEIGHTS_FILE
+   case OPUS_SET_DNN_BLOB_REQUEST:
+   {
+      const unsigned char *data = va_arg(ap, const unsigned char *);
+      opus_int32 len = va_arg(ap, opus_int32);
+      if(len<0 || data == NULL)
+      {
+         goto bad_arg;
+      }
+      return dred_decoder_load_model(dred_dec, data, len);
+   }
+   break;
+# endif
+   default:
+     /*fprintf(stderr, "unknown opus_decoder_ctl() request: %d", request);*/
+     ret = OPUS_UNIMPLEMENTED;
+     break;
+  }
+  va_end(ap);
+  return ret;
+# ifdef USE_WEIGHTS_FILE
+bad_arg:
+  va_end(ap);
+  return OPUS_BAD_ARG;
+# endif
+#else
+  (void)dred_dec;
+  (void)request;
+  return OPUS_UNIMPLEMENTED;
+#endif
+}
 
 #ifdef ENABLE_NEURAL_FEC
 static int dred_find_payload(const unsigned char *data, opus_int32 len, const unsigned char **payload)
