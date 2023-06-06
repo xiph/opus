@@ -38,6 +38,7 @@
 #include "celt/laplace.h"
 #include "os_support.h"
 #include "dred_config.h"
+#include "dred_coding.h"
 
 #define LATENT_DIM 80
 #define PVQ_DIM 24
