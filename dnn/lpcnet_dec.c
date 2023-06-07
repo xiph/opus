@@ -77,6 +77,7 @@ unsigned int bits_unpack(unpacker *bits, int nb_bits) {
   return d;
 }
 
+#ifndef OPUS_BUILD
 void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const unsigned char buf[8])
 {
   int c0_id;
@@ -152,3 +153,4 @@ void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const un
 
   RNN_COPY(vq_mem, &features[3][0], NB_BANDS);
 }
+#endif

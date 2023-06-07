@@ -280,6 +280,8 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features,
     lpcnet_synthesize_impl(lpcnet, features, output, N, 0);
 }
 
+#ifndef OPUS_BUILD
+
 LPCNET_EXPORT int lpcnet_decoder_get_size()
 {
   return sizeof(LPCNetDecState);
@@ -316,3 +318,4 @@ LPCNET_EXPORT int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, sh
   return 0;
 }
 
+#endif
