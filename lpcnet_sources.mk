@@ -1,6 +1,5 @@
 LPCNET_SOURCES = \
 lpcnet/src/burg.c \
-lpcnet/src/ceps_codebooks.c \
 lpcnet/src/common.c \
 lpcnet/src/freq.c \
 lpcnet/src/kiss99.c \
