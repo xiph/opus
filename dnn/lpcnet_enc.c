@@ -492,7 +492,7 @@ static void frame_analysis(LPCNetEncState *st, kiss_fft_cpx *X, float *Ex, const
   RNN_COPY(st->analysis_mem, &in[FRAME_SIZE-OVERLAP_SIZE], OVERLAP_SIZE);
   apply_window(x);
   forward_transform(X, x);
-  compute_band_energy(Ex, X);
+  lpcn_compute_band_energy(Ex, X);
 }
 
 void compute_frame_features(LPCNetEncState *st, const float *in) {

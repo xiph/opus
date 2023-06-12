@@ -57,7 +57,7 @@ extern const float half_window[OVERLAP_SIZE];
 extern const float dct_table[NB_BANDS*NB_BANDS];
 
 
-void compute_band_energy_inverse(float *bandE, const kiss_fft_cpx *X) {
+static void compute_band_energy_inverse(float *bandE, const kiss_fft_cpx *X) {
   int i;
   float sum[NB_BANDS] = {0};
   for (i=0;i<NB_BANDS-1;i++)
@@ -83,7 +83,7 @@ void compute_band_energy_inverse(float *bandE, const kiss_fft_cpx *X) {
   }
 }
 
-float _lpcnet_lpc(
+static float lpcn_lpc(
       opus_val16 *lpc, /* out: [0...p-1] LPC coefficients      */
       opus_val16 *rc,
 const opus_val32 *ac,  /* in:  [0...p] autocorrelation values  */
@@ -128,7 +128,7 @@ int          p
 
 
 
-void compute_band_energy(float *bandE, const kiss_fft_cpx *X) {
+void lpcn_compute_band_energy(float *bandE, const kiss_fft_cpx *X) {
   int i;
   float sum[NB_BANDS] = {0};
   for (i=0;i<NB_BANDS-1;i++)
@@ -153,7 +153,7 @@ void compute_band_energy(float *bandE, const kiss_fft_cpx *X) {
   }
 }
 
-void compute_burg_cepstrum(const float *pcm, float *burg_cepstrum, int len, int order) {
+static void compute_burg_cepstrum(const float *pcm, float *burg_cepstrum, int len, int order) {
   int i;
   float burg_in[FRAME_SIZE];
   float burg_lpc[LPC_ORDER];
@@ -198,32 +198,8 @@ void burg_cepstral_analysis(float *ceps, const float *x) {
   }
 }
 
-void compute_band_corr(float *bandE, const kiss_fft_cpx *X, const kiss_fft_cpx *P) {
-  int i;
-  float sum[NB_BANDS] = {0};
-  for (i=0;i<NB_BANDS-1;i++)
-  {
-    int j;
-    int band_size;
-    band_size = (eband5ms[i+1]-eband5ms[i])*WINDOW_SIZE_5MS;
-    for (j=0;j<band_size;j++) {
-      float tmp;
-      float frac = (float)j/band_size;
-      tmp = X[(eband5ms[i]*WINDOW_SIZE_5MS) + j].r * P[(eband5ms[i]*WINDOW_SIZE_5MS) + j].r;
-      tmp += X[(eband5ms[i]*WINDOW_SIZE_5MS) + j].i * P[(eband5ms[i]*WINDOW_SIZE_5MS) + j].i;
-      sum[i] += (1-frac)*tmp;
-      sum[i+1] += frac*tmp;
-    }
-  }
-  sum[0] *= 2;
-  sum[NB_BANDS-1] *= 2;
-  for (i=0;i<NB_BANDS;i++)
-  {
-    bandE[i] = sum[i];
-  }
-}
 
-void interp_band_gain(float *g, const float *bandE) {
+static void interp_band_gain(float *g, const float *bandE) {
   int i;
   memset(g, 0, FREQ_SIZE);
   for (i=0;i<NB_BANDS-1;i++)
@@ -251,7 +227,7 @@ void dct(float *out, const float *in) {
   }
 }
 
-void idct(float *out, const float *in) {
+static void idct(float *out, const float *in) {
   int i;
   for (i=0;i<NB_BANDS;i++) {
     int j;
@@ -277,7 +253,7 @@ void forward_transform(kiss_fft_cpx *out, const float *in) {
   }
 }
 
-void inverse_transform(float *out, const kiss_fft_cpx *in) {
+static void inverse_transform(float *out, const kiss_fft_cpx *in) {
   int i;
   kiss_fft_cpx x[WINDOW_SIZE];
   kiss_fft_cpx y[WINDOW_SIZE];
@@ -296,7 +272,7 @@ void inverse_transform(float *out, const kiss_fft_cpx *in) {
   }
 }
 
-float lpc_from_bands(float *lpc, const float *Ex)
+static float lpc_from_bands(float *lpc, const float *Ex)
 {
    int i;
    float e;
@@ -316,7 +292,7 @@ float lpc_from_bands(float *lpc, const float *Ex)
    ac[0] += ac[0]*1e-4 + 320/12/38.;
    /* Lag windowing. */
    for (i=1;i<LPC_ORDER+1;i++) ac[i] *= (1 - 6e-5*i*i);
-   e = _lpcnet_lpc(lpc, rc, ac, LPC_ORDER);
+   e = lpcn_lpc(lpc, rc, ac, LPC_ORDER);
    return e;
 }
 
