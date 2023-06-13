@@ -17,4 +17,7 @@ lpcnet/src/dred_rdovae_enc.c \
 lpcnet/src/dred_rdovae_enc_data.c \
 lpcnet/src/dred_rdovae_dec.c \
 lpcnet/src/dred_rdovae_dec_data.c \
-lpcnet/src/dred_rdovae_stats_data.c
+lpcnet/src/dred_rdovae_stats_data.c \
+silk/dred_encoder.c \
+silk/dred_coding.c \
+silk/dred_decoder.c
