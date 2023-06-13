@@ -1141,6 +1141,7 @@ int opus_dred_decoder_get_size(void)
   return sizeof(OpusDREDDecoder);
 }
 
+#ifdef ENABLE_NEURAL_FEC
 int dred_decoder_load_model(OpusDREDDecoder *dec, const unsigned char *data, int len)
 {
     WeightArray *list;
@@ -1150,10 +1151,11 @@ int dred_decoder_load_model(OpusDREDDecoder *dec, const unsigned char *data, int
     free(list);
     return (ret == 0) ? OPUS_OK : OPUS_BAD_ARG;
 }
+#endif
 
 int opus_dred_decoder_init(OpusDREDDecoder *dec)
 {
-#ifndef USE_WEIGHTS_FILE
+#if defined(ENABLE_NEURAL_FEC) && !defined(USE_WEIGHTS_FILE)
    init_rdovaedec(&dec->model, rdovae_dec_arrays);
 #endif
    dec->arch = opus_select_arch();
