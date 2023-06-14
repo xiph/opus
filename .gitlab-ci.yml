@@ -13,8 +13,7 @@ workflow:
 default:
   tags:
     - docker
-  # Image from https://hub.docker.com/_/gcc/ based on Debian
-  image: gcc:9
+  image: 'debian:bookworm-slim'
 
 # https://docs.gitlab.com/ee/ci/yaml/yaml_optimization.html#reference-tags
 .snippets:
@@ -30,12 +29,14 @@ default:
 
 whitespace:
   stage: test
+  before_script:
+    - apt-get update &&
+      apt-get install -y git
   script:
     - git diff-tree --check origin/master HEAD
 
 # Make sure commits are GPG signed
 ci-fairy:
-  image: 'debian:bookworm-slim'
   stage: test
   script:
     - apt update
@@ -57,7 +58,7 @@ autoconf:
   stage: build
   before_script:
     - apt-get update &&
-      apt-get install -y zip doxygen git
+      apt-get install -y zip doxygen git automake libtool make
     - !reference [.snippets, git_prep]
   script:
     - ./autogen.sh
@@ -77,7 +78,7 @@ cmake:
   stage: build
   before_script:
     - apt-get update &&
-      apt-get install -y cmake ninja-build
+      apt-get install -y cmake ninja-build git
     - !reference [.snippets, git_prep]
   script:
     - mkdir build
