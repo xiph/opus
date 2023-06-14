@@ -52,6 +52,9 @@ endif
 if HAVE_SSE4_1
 CELT_SOURCES += $(CELT_SOURCES_SSE4_1)
 endif
+if HAVE_AVX
+CELT_SOURCES += $(CELT_SOURCES_AVX)
+endif
 endif
 
 if CPU_ARM
@@ -390,6 +393,11 @@ SSE4_1_OBJ = $(CELT_SOURCES_SSE4_1:.c=.lo) \
              $(SILK_SOURCES_SSE4_1:.c=.lo) \
              $(SILK_SOURCES_FIXED_SSE4_1:.c=.lo)
 $(SSE4_1_OBJ): CFLAGS += $(OPUS_X86_SSE4_1_CFLAGS)
+endif
+
+if HAVE_AVX
+AVX_OBJ = $(CELT_SOURCES_AVX:.c=.lo)
+$(AVX_OBJ): CFLAGS += $(OPUS_X86_AVX_CFLAGS)
 endif
 
 if HAVE_ARM_NEON_INTR
