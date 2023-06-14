@@ -46,10 +46,10 @@
 #  define MAY_HAVE_SSE4_1(name) name ## _c
 # endif
 
-# if defined(OPUS_X86_MAY_HAVE_AVX)
-#  define MAY_HAVE_AVX(name) name ## _avx
+# if defined(OPUS_X86_MAY_HAVE_AVX2)
+#  define MAY_HAVE_AVX2(name) name ## _avx
 # else
-#  define MAY_HAVE_AVX(name) name ## _c
+#  define MAY_HAVE_AVX2(name) name ## _c
 # endif
 
 # if defined(OPUS_HAVE_RTCD)

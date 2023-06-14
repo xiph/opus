@@ -368,12 +368,12 @@ AM_CONDITIONAL([OPUS_ARM_EXTERNAL_ASM],
 AM_CONDITIONAL([HAVE_SSE], [false])
 AM_CONDITIONAL([HAVE_SSE2], [false])
 AM_CONDITIONAL([HAVE_SSE4_1], [false])
-AM_CONDITIONAL([HAVE_AVX], [false])
+AM_CONDITIONAL([HAVE_AVX2], [false])
 
 m4_define([DEFAULT_X86_SSE_CFLAGS], [-msse])
 m4_define([DEFAULT_X86_SSE2_CFLAGS], [-msse2])
 m4_define([DEFAULT_X86_SSE4_1_CFLAGS], [-msse4.1])
-m4_define([DEFAULT_X86_AVX_CFLAGS], [-mavx])
+m4_define([DEFAULT_X86_AVX2_CFLAGS], [-mavx -mfma -avx2])
 m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
 # With GCC on ARM32 softfp architectures (e.g. Android, or older Ubuntu) you need to specify
 # -mfloat-abi=softfp for -mfpu=neon to work.  However, on ARM32 hardfp architectures (e.g. newer Ubuntu),
@@ -390,13 +390,13 @@ AS_CASE([$host],
 AC_ARG_VAR([X86_SSE_CFLAGS], [C compiler flags to compile SSE intrinsics @<:@default=]DEFAULT_X86_SSE_CFLAGS[@:>@])
 AC_ARG_VAR([X86_SSE2_CFLAGS], [C compiler flags to compile SSE2 intrinsics @<:@default=]DEFAULT_X86_SSE2_CFLAGS[@:>@])
 AC_ARG_VAR([X86_SSE4_1_CFLAGS], [C compiler flags to compile SSE4.1 intrinsics @<:@default=]DEFAULT_X86_SSE4_1_CFLAGS[@:>@])
-AC_ARG_VAR([X86_AVX_CFLAGS], [C compiler flags to compile AVX intrinsics @<:@default=]DEFAULT_X86_AVX_CFLAGS[@:>@])
+AC_ARG_VAR([X86_AVX2_CFLAGS], [C compiler flags to compile AVX2 intrinsics @<:@default=]DEFAULT_X86_AVX2_CFLAGS[@:>@])
 AC_ARG_VAR([ARM_NEON_INTR_CFLAGS], [C compiler flags to compile ARM NEON intrinsics @<:@default=]DEFAULT_ARM_NEON_INTR_CFLAGS / DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS[@:>@])
 
 AS_VAR_SET_IF([X86_SSE_CFLAGS], [], [AS_VAR_SET([X86_SSE_CFLAGS], "DEFAULT_X86_SSE_CFLAGS")])
 AS_VAR_SET_IF([X86_SSE2_CFLAGS], [], [AS_VAR_SET([X86_SSE2_CFLAGS], "DEFAULT_X86_SSE2_CFLAGS")])
 AS_VAR_SET_IF([X86_SSE4_1_CFLAGS], [], [AS_VAR_SET([X86_SSE4_1_CFLAGS], "DEFAULT_X86_SSE4_1_CFLAGS")])
-AS_VAR_SET_IF([X86_AVX_CFLAGS], [], [AS_VAR_SET([X86_AVX_CFLAGS], "DEFAULT_X86_AVX_CFLAGS")])
+AS_VAR_SET_IF([X86_AVX2_CFLAGS], [], [AS_VAR_SET([X86_AVX2_CFLAGS], "DEFAULT_X86_AVX2_CFLAGS")])
 AS_VAR_SET_IF([ARM_NEON_INTR_CFLAGS], [], [AS_VAR_SET([ARM_NEON_INTR_CFLAGS], ["$RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS"])])
 
 AC_DEFUN([OPUS_PATH_NE10],
@@ -617,10 +617,10 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
           ]
       )
       OPUS_CHECK_INTRINSICS(
-         [AVX],
-         [$X86_AVX_CFLAGS],
-         [OPUS_X86_MAY_HAVE_AVX],
-         [OPUS_X86_PRESUME_AVX],
+         [AVX2],
+         [$X86_AVX2_CFLAGS],
+         [OPUS_X86_MAY_HAVE_AVX2],
+         [OPUS_X86_PRESUME_AVX2],
          [[#include <immintrin.h>
            #include <time.h>
          ]],
@@ -631,10 +631,10 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
              return _mm_cvtss_si32(_mm256_extractf128_ps(mtest, 0));
          ]]
       )
-      AS_IF([test x"$OPUS_X86_MAY_HAVE_AVX" = x"1" && test x"$OPUS_X86_PRESUME_AVX" != x"1"],
+      AS_IF([test x"$OPUS_X86_MAY_HAVE_AVX2" = x"1" && test x"$OPUS_X86_PRESUME_AVX2" != x"1"],
           [
-             OPUS_X86_AVX_CFLAGS="$X86_AVX_CFLAGS"
-             AC_SUBST([OPUS_X86_AVX_CFLAGS])
+             OPUS_X86_AVX2_CFLAGS="$X86_AVX2_CFLAGS"
+             AC_SUBST([OPUS_X86_AVX2_CFLAGS])
           ]
       )
          AS_IF([test x"$rtcd_support" = x"no"], [rtcd_support=""])
@@ -676,17 +676,17 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
          [
             AC_MSG_WARN([Compiler does not support SSE4.1 intrinsics])
          ])
-         AS_IF([test x"$OPUS_X86_MAY_HAVE_AVX" = x"1"],
+         AS_IF([test x"$OPUS_X86_MAY_HAVE_AVX2" = x"1"],
          [
-            AC_DEFINE([OPUS_X86_MAY_HAVE_AVX], 1, [Compiler supports X86 AVX Intrinsics])
-            intrinsics_support="$intrinsics_support AVX"
+            AC_DEFINE([OPUS_X86_MAY_HAVE_AVX2], 1, [Compiler supports X86 AVX2 Intrinsics])
+            intrinsics_support="$intrinsics_support AVX2"
 
-            AS_IF([test x"$OPUS_X86_PRESUME_AVX" = x"1"],
-               [AC_DEFINE([OPUS_X86_PRESUME_AVX], 1, [Define if binary requires AVX intrinsics support])],
-               [rtcd_support="$rtcd_support AVX"])
+            AS_IF([test x"$OPUS_X86_PRESUME_AVX2" = x"1"],
+               [AC_DEFINE([OPUS_X86_PRESUME_AVX2], 1, [Define if binary requires AVX2 intrinsics support])],
+               [rtcd_support="$rtcd_support AVX2"])
          ],
          [
-            AC_MSG_WARN([Compiler does not support AVX intrinsics])
+            AC_MSG_WARN([Compiler does not support AVX2 intrinsics])
          ])
 
          AS_IF([test x"$intrinsics_support" = x""],
@@ -769,8 +769,8 @@ AM_CONDITIONAL([HAVE_SSE2],
     [test x"$OPUS_X86_MAY_HAVE_SSE2" = x"1"])
 AM_CONDITIONAL([HAVE_SSE4_1],
     [test x"$OPUS_X86_MAY_HAVE_SSE4_1" = x"1"])
-AM_CONDITIONAL([HAVE_AVX],
-    [test x"$OPUS_X86_MAY_HAVE_AVX" = x"1"])
+AM_CONDITIONAL([HAVE_AVX2],
+    [test x"$OPUS_X86_MAY_HAVE_AVX2" = x"1"])
 
 AM_CONDITIONAL([HAVE_RTCD],
  [test x"$enable_rtcd" = x"yes" -a x"$rtcd_support" != x"no"])
