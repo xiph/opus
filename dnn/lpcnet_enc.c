@@ -538,13 +538,17 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   /* Cross-correlation on half-frames. */
   for (sub=0;sub<2;sub++) {
     int off = sub*FRAME_SIZE/2;
+    double ener1;
     celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD);
     ener0 = celt_inner_prod(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE/2);
+    ener1 = celt_inner_prod(&st->exc_buf[off], &st->exc_buf[off], FRAME_SIZE/2-1);
     st->frame_weight[2+2*st->pcount+sub] = ener0;
     /*printf("%f\n", st->frame_weight[2+2*st->pcount+sub]);*/
     for (i=0;i<PITCH_MAX_PERIOD;i++) {
-      ener = (1 + ener0 + celt_inner_prod(&st->exc_buf[i+off], &st->exc_buf[i+off], FRAME_SIZE/2));
+      ener1 += st->exc_buf[i+off+FRAME_SIZE/2-1]*st->exc_buf[i+off+FRAME_SIZE/2-1];
+      ener = 1 + ener0 + ener1;
       st->xc[2+2*st->pcount+sub][i] = 2*xcorr[i] / ener;
+      ener1 -= st->exc_buf[i+off]*st->exc_buf[i+off];
     }
     if (1) {
       /* Upsample correlation by 3x and keep the max. */
