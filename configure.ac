@@ -373,7 +373,7 @@ AM_CONDITIONAL([HAVE_AVX2], [false])
 m4_define([DEFAULT_X86_SSE_CFLAGS], [-msse])
 m4_define([DEFAULT_X86_SSE2_CFLAGS], [-msse2])
 m4_define([DEFAULT_X86_SSE4_1_CFLAGS], [-msse4.1])
-m4_define([DEFAULT_X86_AVX2_CFLAGS], [-mavx -mfma -avx2])
+m4_define([DEFAULT_X86_AVX2_CFLAGS], [-mavx -mfma -mavx2])
 m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
 # With GCC on ARM32 softfp architectures (e.g. Android, or older Ubuntu) you need to specify
 # -mfloat-abi=softfp for -mfpu=neon to work.  However, on ARM32 hardfp architectures (e.g. newer Ubuntu),
