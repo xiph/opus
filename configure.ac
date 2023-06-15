@@ -627,8 +627,8 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
          [[
              __m256 mtest;
              mtest = _mm256_set1_ps((float)time(NULL));
-             mtest = _mm256_addsub_ps(mtest, mtest);
-             return _mm_cvtss_si32(_mm256_extractf128_ps(mtest, 0));
+             mtest = _mm256_fmadd_ps(mtest, mtest, mtest);
+             return _mm256_extract_epi16(_mm256_cvttps_epi32(mtest), 0);
          ]]
       )
       AS_IF([test x"$OPUS_X86_MAY_HAVE_AVX2" = x"1" && test x"$OPUS_X86_PRESUME_AVX2" != x"1"],
