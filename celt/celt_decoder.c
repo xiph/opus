@@ -102,7 +102,7 @@ struct OpusCustomDecoder {
    celt_sig preemph_memD[2];
 
    celt_sig _decode_mem[1]; /* Size = channels*(DECODE_BUFFER_SIZE+mode->overlap) */
-   /* opus_val16 lpc[],  Size = channels*LPC_ORDER */
+   /* opus_val16 lpc[],  Size = channels*CELT_LPC_ORDER */
    /* opus_val16 oldEBands[], Size = 2*mode->nbEBands */
    /* opus_val16 oldLogE[], Size = 2*mode->nbEBands */
    /* opus_val16 oldLogE2[], Size = 2*mode->nbEBands */
@@ -157,7 +157,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_get_size(const CELTMode *mode, int 
 {
    int size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
-            + channels*LPC_ORDER*sizeof(opus_val16)
+            + channels*CELT_LPC_ORDER*sizeof(opus_val16)
             + 4*2*mode->nbEBands*sizeof(opus_val16);
    return size;
 }
@@ -527,7 +527,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
       out_syn[c] = decode_mem[c]+DECODE_BUFFER_SIZE-N;
    } while (++c<C);
    lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+overlap)*C);
-   oldBandE = lpc+C*LPC_ORDER;
+   oldBandE = lpc+C*CELT_LPC_ORDER;
    oldLogE = oldBandE + 2*nbEBands;
    oldLogE2 = oldLogE + 2*nbEBands;
    backgroundLogE = oldLogE2  + 2*nbEBands;
@@ -614,9 +614,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
       exc_length = IMIN(2*pitch_index, MAX_PERIOD);
 
       ALLOC(etmp, overlap, opus_val32);
-      ALLOC(_exc, MAX_PERIOD+LPC_ORDER, opus_val16);
+      ALLOC(_exc, MAX_PERIOD+CELT_LPC_ORDER, opus_val16);
       ALLOC(fir_tmp, exc_length, opus_val16);
-      exc = _exc+LPC_ORDER;
+      exc = _exc+CELT_LPC_ORDER;
       window = mode->window;
       c=0; do {
          opus_val16 decay;
@@ -628,16 +628,16 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          int j;
 
          buf = decode_mem[c];
-         for (i=0;i<MAX_PERIOD+LPC_ORDER;i++)
-            exc[i-LPC_ORDER] = SROUND16(buf[DECODE_BUFFER_SIZE-MAX_PERIOD-LPC_ORDER+i], SIG_SHIFT);
+         for (i=0;i<MAX_PERIOD+CELT_LPC_ORDER;i++)
+            exc[i-CELT_LPC_ORDER] = SROUND16(buf[DECODE_BUFFER_SIZE-MAX_PERIOD-CELT_LPC_ORDER+i], SIG_SHIFT);
 
          if (loss_duration == 0)
          {
-            opus_val32 ac[LPC_ORDER+1];
+            opus_val32 ac[CELT_LPC_ORDER+1];
             /* Compute LPC coefficients for the last MAX_PERIOD samples before
                the first loss so we can work in the excitation-filter domain. */
             _celt_autocorr(exc, ac, window, overlap,
-                   LPC_ORDER, MAX_PERIOD, st->arch);
+                   CELT_LPC_ORDER, MAX_PERIOD, st->arch);
             /* Add a noise floor of -40 dB. */
 #ifdef FIXED_POINT
             ac[0] += SHR32(ac[0],13);
@@ -645,7 +645,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
             ac[0] *= 1.0001f;
 #endif
             /* Use lag windowing to stabilize the Levinson-Durbin recursion. */
-            for (i=1;i<=LPC_ORDER;i++)
+            for (i=1;i<=CELT_LPC_ORDER;i++)
             {
                /*ac[i] *= exp(-.5*(2*M_PI*.002*i)*(2*M_PI*.002*i));*/
 #ifdef FIXED_POINT
@@ -654,7 +654,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
                ac[i] -= ac[i]*(0.008f*0.008f)*i*i;
 #endif
             }
-            _celt_lpc(lpc+c*LPC_ORDER, ac, LPC_ORDER);
+            _celt_lpc(lpc+c*CELT_LPC_ORDER, ac, CELT_LPC_ORDER);
 #ifdef FIXED_POINT
          /* For fixed-point, apply bandwidth expansion until we can guarantee that
             no overflow can happen in the IIR filter. This means:
@@ -662,13 +662,13 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          while (1) {
             opus_val16 tmp=Q15ONE;
             opus_val32 sum=QCONST16(1., SIG_SHIFT);
-            for (i=0;i<LPC_ORDER;i++)
-               sum += ABS16(lpc[c*LPC_ORDER+i]);
+            for (i=0;i<CELT_LPC_ORDER;i++)
+               sum += ABS16(lpc[c*CELT_LPC_ORDER+i]);
             if (sum < 65535) break;
-            for (i=0;i<LPC_ORDER;i++)
+            for (i=0;i<CELT_LPC_ORDER;i++)
             {
                tmp = MULT16_16_Q15(QCONST16(.99f,15), tmp);
-               lpc[c*LPC_ORDER+i] = MULT16_16_Q15(lpc[c*LPC_ORDER+i], tmp);
+               lpc[c*CELT_LPC_ORDER+i] = MULT16_16_Q15(lpc[c*CELT_LPC_ORDER+i], tmp);
             }
          }
 #endif
@@ -678,8 +678,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          {
             /* Compute the excitation for exc_length samples before the loss. We need the copy
                because celt_fir() cannot filter in-place. */
-            celt_fir(exc+MAX_PERIOD-exc_length, lpc+c*LPC_ORDER,
-                  fir_tmp, exc_length, LPC_ORDER, st->arch);
+            celt_fir(exc+MAX_PERIOD-exc_length, lpc+c*CELT_LPC_ORDER,
+                  fir_tmp, exc_length, CELT_LPC_ORDER, st->arch);
             OPUS_COPY(exc+MAX_PERIOD-exc_length, fir_tmp, exc_length);
          }
 
@@ -737,15 +737,15 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
             S1 += SHR32(MULT16_16(tmp, tmp), 10);
          }
          {
-            opus_val16 lpc_mem[LPC_ORDER];
+            opus_val16 lpc_mem[CELT_LPC_ORDER];
             /* Copy the last decoded samples (prior to the overlap region) to
                synthesis filter memory so we can have a continuous signal. */
-            for (i=0;i<LPC_ORDER;i++)
+            for (i=0;i<CELT_LPC_ORDER;i++)
                lpc_mem[i] = SROUND16(buf[DECODE_BUFFER_SIZE-N-1-i], SIG_SHIFT);
             /* Apply the synthesis filter to convert the excitation back into
                the signal domain. */
-            celt_iir(buf+DECODE_BUFFER_SIZE-N, lpc+c*LPC_ORDER,
-                  buf+DECODE_BUFFER_SIZE-N, extrapolation_len, LPC_ORDER,
+            celt_iir(buf+DECODE_BUFFER_SIZE-N, lpc+c*CELT_LPC_ORDER,
+                  buf+DECODE_BUFFER_SIZE-N, extrapolation_len, CELT_LPC_ORDER,
                   lpc_mem, st->arch);
 #ifdef FIXED_POINT
             for (i=0; i < extrapolation_len; i++)
@@ -881,7 +881,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    frame_size *= st->downsample;
 
    lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+overlap)*CC);
-   oldBandE = lpc+CC*LPC_ORDER;
+   oldBandE = lpc+CC*CELT_LPC_ORDER;
    oldLogE = oldBandE + 2*nbEBands;
    oldLogE2 = oldLogE + 2*nbEBands;
    backgroundLogE = oldLogE2  + 2*nbEBands;
@@ -1300,7 +1300,7 @@ int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
          int i;
          opus_val16 *lpc, *oldBandE, *oldLogE, *oldLogE2;
          lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*st->channels);
-         oldBandE = lpc+st->channels*LPC_ORDER;
+         oldBandE = lpc+st->channels*CELT_LPC_ORDER;
          oldLogE = oldBandE + 2*st->mode->nbEBands;
          oldLogE2 = oldLogE + 2*st->mode->nbEBands;
          OPUS_CLEAR((char*)&st->DECODER_RESET_START,

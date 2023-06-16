@@ -44,7 +44,7 @@ int          p
    opus_val32 r;
    opus_val32 error = ac[0];
 #ifdef FIXED_POINT
-   opus_val32 lpc[LPC_ORDER];
+   opus_val32 lpc[CELT_LPC_ORDER];
 #else
    float *lpc = _lpc;
 #endif
