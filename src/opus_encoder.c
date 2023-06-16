@@ -1469,10 +1469,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     {
         silk_EncControlStruct dummy;
         silk_InitEncoder( silk_enc, st->arch, &dummy);
-#ifdef ENABLE_NEURAL_FEC
-        /* Initialize DRED Encoder */
-        dred_encoder_reset( &st->dred_encoder );
-#endif
         prefill=1;
     }
 
@@ -1686,6 +1682,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
 #endif
 
+#ifdef ENABLE_NEURAL_FEC
+    if ( st->dred_duration > 0 ) {
+        /* DRED Encoder */
+        dred_compute_latents( &st->dred_encoder, &pcm_buf[total_buffer*st->channels], frame_size );
+    } else {
+        st->dred_encoder.latents_buffer_fill = 0;
+    }
+#endif
 
     /* SILK processing */
     HB_gain = Q15ONE;
@@ -1826,15 +1830,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            }
         }
 
-#ifdef ENABLE_NEURAL_FEC
-            if ( st->dred_duration > 0 ) {
-                /* DRED Encoder */
-                dred_compute_latents( &st->dred_encoder, &pcm_buf[total_buffer*st->channels], frame_size );
-            } else {
-                st->dred_encoder.latents_buffer_fill = 0;
-            }
-#endif
-
         if (prefill)
         {
             opus_int32 zero=0;
@@ -1905,13 +1900,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            celt_to_silk = 0;
            st->silk_bw_switch = 1;
         }
-    } else {
-#ifdef ENABLE_NEURAL_FEC
-        /* If we're not in SILK mode, delete all the processed DRED.
-           TODO: Remove this if/when DRED gets encoded for CELT. */
-        DREDEnc *dred = &st->dred_encoder;
-        dred->latents_buffer_fill = 0;
-#endif
     }
 
     /* CELT processing */
