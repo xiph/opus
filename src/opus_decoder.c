@@ -532,8 +532,12 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       if (mode != st->prev_mode && st->prev_mode > 0 && !st->prev_redundancy)
          MUST_SUCCEED(celt_decoder_ctl(celt_dec, OPUS_RESET_STATE));
       /* Decode CELT */
-      celt_ret = celt_decode_with_ec(celt_dec, decode_fec ? NULL : data,
-                                     len, pcm, celt_frame_size, &dec, celt_accum);
+      celt_ret = celt_decode_with_ec_dred(celt_dec, decode_fec ? NULL : data,
+                                     len, pcm, celt_frame_size, &dec, celt_accum
+#ifdef ENABLE_NEURAL_FEC
+                                     , &st->lpcnet
+#endif
+                                     );
    } else {
       unsigned char silence[2] = {0xFF, 0xFF};
       if (!celt_accum)

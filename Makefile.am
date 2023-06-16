@@ -197,7 +197,7 @@ celt_tests_test_unit_cwrs32_SOURCES = celt/tests/test_unit_cwrs32.c
 celt_tests_test_unit_cwrs32_LDADD = $(LIBM)
 
 celt_tests_test_unit_dft_SOURCES = celt/tests/test_unit_dft.c
-celt_tests_test_unit_dft_LDADD = $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_dft_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_dft_LDADD += libarmasm.la
 endif
@@ -209,19 +209,19 @@ celt_tests_test_unit_laplace_SOURCES = celt/tests/test_unit_laplace.c
 celt_tests_test_unit_laplace_LDADD = $(LIBM)
 
 celt_tests_test_unit_mathops_SOURCES = celt/tests/test_unit_mathops.c
-celt_tests_test_unit_mathops_LDADD = $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_mathops_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_mathops_LDADD += libarmasm.la
 endif
 
 celt_tests_test_unit_mdct_SOURCES = celt/tests/test_unit_mdct.c
-celt_tests_test_unit_mdct_LDADD = $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_mdct_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_mdct_LDADD += libarmasm.la
 endif
 
 celt_tests_test_unit_rotation_SOURCES = celt/tests/test_unit_rotation.c
-celt_tests_test_unit_rotation_LDADD = $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_rotation_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_rotation_LDADD += libarmasm.la
 endif
