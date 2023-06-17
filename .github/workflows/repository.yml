@@ -1,0 +1,16 @@
+name: Repository
+
+on: [push, pull_request]
+
+jobs:
+  CheckTrailingWhiteSpaces:
+    name: Check trailing white spaces
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Check Whitespaces
+        run: |
+          git diff-tree --check origin/opus-ng HEAD
