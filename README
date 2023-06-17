@@ -136,6 +136,10 @@ To run compare the code to these test vectors:
     % tar -zxf opus_testvectors-rfc8251.tar.gz
     % ./tests/run_vectors.sh ./ opus_newvectors 48000
 
+== Compiling libopus for Windows and alternative build systems ==
+
+See cmake/README.md or meson/README.md.
+
 == Portability notes ==
 
 This implementation uses floating-point by default but can be compiled to
