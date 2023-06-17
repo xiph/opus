@@ -78,7 +78,7 @@ cmake:
   stage: build
   before_script:
     - apt-get update &&
-      apt-get install -y cmake ninja-build git
+      apt-get install -y cmake ninja-build git automake libtool
     - !reference [.snippets, git_prep]
   script:
     - ./autogen.sh
@@ -92,7 +92,7 @@ cmake:
   stage: build
   before_script:
     - apt-get update &&
-      apt-get install -y ninja-build doxygen meson git
+      apt-get install -y ninja-build doxygen meson git automake libtool wget
     - !reference [.snippets, git_prep]
   script:
     - ./autogen.sh
