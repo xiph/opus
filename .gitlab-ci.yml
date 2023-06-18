@@ -58,7 +58,7 @@ autoconf:
   stage: build
   before_script:
     - apt-get update &&
-      apt-get install -y zip doxygen git automake libtool make
+      apt-get install -y zip doxygen git automake libtool make wget
     - !reference [.snippets, git_prep]
   script:
     - ./autogen.sh
@@ -78,7 +78,7 @@ cmake:
   stage: build
   before_script:
     - apt-get update &&
-      apt-get install -y cmake ninja-build git automake libtool
+      apt-get install -y cmake ninja-build git automake libtool wget
     - !reference [.snippets, git_prep]
   script:
     - ./autogen.sh
