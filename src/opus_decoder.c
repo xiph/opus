@@ -664,7 +664,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       int features_per_frame;
       int needed_feature_frames;
       lpcnet_plc_fec_clear(&st->lpcnet);
-      features_per_frame = frame_size/(st->Fs/100);
+      features_per_frame = IMAX(1, frame_size/(st->Fs/100));
       needed_feature_frames = features_per_frame;
       /* if blend==0, the last PLC call was "update" and we need to feed two extra 10-ms frames. */
       if (st->lpcnet.blend == 0) needed_feature_frames+=2;
