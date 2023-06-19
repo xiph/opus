@@ -98,6 +98,7 @@ struct OpusCustomDecoder {
    opus_val16 postfilter_gain_old;
    int postfilter_tapset;
    int postfilter_tapset_old;
+   int prefilter_and_fold;
 
    celt_sig preemph_memD[2];
 
@@ -499,6 +500,43 @@ static int celt_plc_pitch_search(celt_sig *decode_mem[2], int C, int arch)
    return pitch_index;
 }
 
+static void prefilter_and_fold(CELTDecoder * OPUS_RESTRICT st, int N)
+{
+   int c;
+   int CC;
+   int i;
+   int overlap;
+   celt_sig *decode_mem[2];
+   const OpusCustomMode *mode;
+   VARDECL(opus_val32, etmp);
+   mode = st->mode;
+   overlap = st->overlap;
+   CC = st->channels;
+   ALLOC(etmp, overlap, opus_val32);
+   c=0; do {
+      decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+overlap);
+   } while (++c<CC);
+
+   c=0; do {
+      /* Apply the pre-filter to the MDCT overlap for the next frame because
+         the post-filter will be re-applied in the decoder after the MDCT
+         overlap. */
+      comb_filter(etmp, decode_mem[c]+DECODE_BUFFER_SIZE-N,
+         st->postfilter_period_old, st->postfilter_period, overlap,
+         -st->postfilter_gain_old, -st->postfilter_gain,
+         st->postfilter_tapset_old, st->postfilter_tapset, NULL, 0, st->arch);
+
+      /* Simulate TDAC on the concealed audio so that it blends with the
+         MDCT of the next frame. */
+      for (i=0;i<overlap/2;i++)
+      {
+         decode_mem[c][DECODE_BUFFER_SIZE-N+i] =
+            MULT16_32_Q15(mode->window[i], etmp[overlap-1-i])
+            + MULT16_32_Q15(mode->window[overlap-i-1], etmp[i]);
+      }
+   } while (++c<CC);
+}
+
 static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
 {
    int c;
@@ -559,8 +597,12 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
 #endif
       c=0; do {
          OPUS_MOVE(decode_mem[c], decode_mem[c]+N,
-               DECODE_BUFFER_SIZE-N+(overlap>>1));
+               DECODE_BUFFER_SIZE-N+overlap);
       } while (++c<C);
+
+      if (st->prefilter_and_fold) {
+         prefilter_and_fold(st, N);
+      }
 
       /* Energy decay */
       decay = loss_duration==0 ? QCONST16(1.5f, DB_SHIFT) : QCONST16(.5f, DB_SHIFT);
@@ -590,6 +632,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
       st->rng = seed;
 
       celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch);
+      st->prefilter_and_fold = 0;
    } else {
       int exc_length;
       /* Pitch-based PLC */
@@ -597,7 +640,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
       opus_val16 *exc;
       opus_val16 fade = Q15ONE;
       int pitch_index;
-      VARDECL(opus_val32, etmp);
       VARDECL(opus_val16, _exc);
       VARDECL(opus_val16, fir_tmp);
 
@@ -613,7 +655,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          decaying signal, but we can't get more than MAX_PERIOD. */
       exc_length = IMIN(2*pitch_index, MAX_PERIOD);
 
-      ALLOC(etmp, overlap, opus_val32);
       ALLOC(_exc, MAX_PERIOD+CELT_LPC_ORDER, opus_val16);
       ALLOC(fir_tmp, exc_length, opus_val16);
       exc = _exc+CELT_LPC_ORDER;
@@ -792,23 +833,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
             }
          }
 
-         /* Apply the pre-filter to the MDCT overlap for the next frame because
-            the post-filter will be re-applied in the decoder after the MDCT
-            overlap. */
-         comb_filter(etmp, buf+DECODE_BUFFER_SIZE,
-              st->postfilter_period, st->postfilter_period, overlap,
-              -st->postfilter_gain, -st->postfilter_gain,
-              st->postfilter_tapset, st->postfilter_tapset, NULL, 0, st->arch);
-
-         /* Simulate TDAC on the concealed audio so that it blends with the
-            MDCT of the next frame. */
-         for (i=0;i<overlap/2;i++)
-         {
-            buf[DECODE_BUFFER_SIZE+i] =
-               MULT16_32_Q15(window[i], etmp[overlap-1-i])
-               + MULT16_32_Q15(window[overlap-i-1], etmp[i]);
-         }
       } while (++c<C);
+      st->prefilter_and_fold = 1;
    }
 
    /* Saturate to soemthing large to avoid wrap-around. */
@@ -1073,7 +1099,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    unquant_fine_energy(mode, start, end, oldBandE, fine_quant, dec, C);
 
    c=0; do {
-      OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap/2);
+      OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);
    } while (++c<CC);
 
    /* Decode fixed codebook */
@@ -1109,7 +1135,9 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       for (i=0;i<C*nbEBands;i++)
          oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
    }
-
+   if (st->prefilter_and_fold) {
+      prefilter_and_fold(st, N);
+   }
    celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd,
                   C, CC, isTransient, LM, st->downsample, silence, st->arch);
 
@@ -1173,6 +1201,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
    deemphasis(out_syn, pcm, N, CC, st->downsample, mode->preemph, st->preemph_memD, accum);
    st->loss_duration = 0;
+   st->prefilter_and_fold = 0;
    RESTORE_STACK;
    if (ec_tell(dec) > 8*len)
       return OPUS_INTERNAL_ERROR;
