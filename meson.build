@@ -586,29 +586,11 @@ if not opt_tests.disabled()
   subdir('tests')
 endif
 
-# pkg-config files (not using pkg module so we can use the existing .pc.in file)
-pkgconf = configuration_data()
-
-pkgconf.set('prefix', join_paths(get_option('prefix')))
-pkgconf.set('exec_prefix', '${prefix}')
-pkgconf.set('libdir', '${prefix}/@0@'.format(get_option('libdir')))
-pkgconf.set('includedir', '${prefix}/@0@'.format(get_option('includedir')))
-pkgconf.set('VERSION', opus_version)
-pkgconf.set('PC_BUILD', pc_build)
-pkgconf.set('LIBM', libm.found() ? '-lm' : '')
-
-pkg_install_dir = '@0@/pkgconfig'.format(get_option('libdir'))
-
-configure_file(input : 'opus.pc.in',
-  output : 'opus.pc',
-  configuration : pkgconf,
-  install_dir : pkg_install_dir)
-
-# The uninstalled one has hardcoded libtool + static lib stuff, skip it for now
-#configure_file(input : 'opus-uninstalled.pc.in',
-#  output : 'opus-uninstalled.pc',
-#  configuration : pkgconf,
-#  install : false)
+pkg = import('pkgconfig')
+pkg.generate(opus_lib,
+  description: 'Opus IETF audio codec (floating-point build)',
+  subdirs: 'opus',
+)
 
 doxygen = find_program('doxygen', required: get_option('docs'))
 if doxygen.found()
