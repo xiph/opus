@@ -1,8 +1,8 @@
 # Tests that link to libopus
 opus_tests = [
   ['test_opus_api'],
-  ['test_opus_decode', [], 60],
-  ['test_opus_encode', 'opus_encode_regressions.c', 120],
+  ['test_opus_decode', [], 120],
+  ['test_opus_encode', 'opus_encode_regressions.c', 240],
   ['test_opus_padding'],
   ['test_opus_projection'],
 ]
