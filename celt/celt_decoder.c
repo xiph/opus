@@ -1111,7 +1111,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 #ifdef ENABLE_NEURAL_FEC
    else {
       /* FIXME: This is a bit of a hack just to make sure opus_decode_native() knows we're no longer in PLC. */
-      lpcnet->blend = 0;
+      if (lpcnet) lpcnet->blend = 0;
    }
 #endif
 
