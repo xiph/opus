@@ -601,6 +601,7 @@ if(OPUS_BUILD_PROGRAMS)
   target_include_directories(opus_demo PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
   target_include_directories(opus_demo PRIVATE silk) # debug.h
   target_include_directories(opus_demo PRIVATE celt) # arch.h
+  target_include_directories(opus_demo PRIVATE lpcnet/include)
   target_link_libraries(opus_demo PRIVATE opus ${OPUS_REQUIRED_LIBRARIES})
   target_compile_definitions(opus_demo PRIVATE OPUS_BUILD)
 
@@ -651,7 +652,7 @@ if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
 
   add_executable(test_opus_encode ${test_opus_encode_sources})
   target_include_directories(test_opus_encode
-                            PRIVATE ${CMAKE_CURRENT_BINARY_DIR} celt)
+                            PRIVATE ${CMAKE_CURRENT_BINARY_DIR} celt lpcnet/include)
   target_link_libraries(test_opus_encode PRIVATE opus)
   target_compile_definitions(test_opus_encode PRIVATE OPUS_BUILD)
   add_test(NAME test_opus_encode COMMAND ${CMAKE_COMMAND}
@@ -661,7 +662,7 @@ if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
 
   add_executable(test_opus_extensions ${test_opus_extensions_sources})
   target_include_directories(test_opus_extensions
-                            PRIVATE ${CMAKE_CURRENT_BINARY_DIR} celt)
+                            PRIVATE ${CMAKE_CURRENT_BINARY_DIR} celt lpcnet/include)
   target_link_libraries(test_opus_extensions PRIVATE opus)
   target_compile_definitions(test_opus_extensions PRIVATE OPUS_BUILD)
   add_test(NAME test_opus_extensions COMMAND ${CMAKE_COMMAND}
