@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "errors.h"
 #include "entenc.h"
 #include "entdec.h"
-#include "lpcnet/src/lpcnet_private.h"
+#include "dnn/lpcnet_private.h"
 
 #ifdef __cplusplus
 extern "C"

@@ -51,7 +51,7 @@
 #include "celt_lpc.h"
 #include "vq.h"
 #include "lpcnet.h"
-#include "lpcnet/src/lpcnet_private.h"
+#include "dnn/lpcnet_private.h"
 
 /* The maximum pitch lag to allow in the pitch-based PLC. It's possible to save
    CPU time in the PLC pitch search by making this smaller than MAX_PERIOD. The

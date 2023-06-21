@@ -14,7 +14,7 @@ host_cpu_family = host_machine.cpu_family()
 top_srcdir = meson.current_source_dir()
 top_builddir = meson.current_build_dir()
 
-opus_includes = include_directories('.', 'include', 'celt', 'silk', 'lpcnet/include')
+opus_includes = include_directories('.', 'include', 'celt', 'silk', 'dnn/include')
 opus_public_includes = include_directories('include')
 
 add_project_arguments('-DOPUS_BUILD', language: 'c')

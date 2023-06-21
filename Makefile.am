@@ -11,7 +11,7 @@ DIST_SUBDIRS = doc
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/celt -I$(top_srcdir)/silk \
               -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed $(NE10_CFLAGS) \
-              -I$(top_srcdir)/lpcnet/include
+              -I$(top_srcdir)/dnn/include
 
 include celt_sources.mk
 include lpcnet_sources.mk
@@ -154,7 +154,7 @@ opus_compare_LDADD = $(LIBM)
 trivial_example_SOURCES = doc/trivial_example.c
 trivial_example_LDADD = libopus.la $(LIBM)
 
-dump_weights_blob_SOURCES = lpcnet/src/write_lpcnet_weights.c
+dump_weights_blob_SOURCES = dnn/write_lpcnet_weights.c
 dump_weights_blob_LDADD = $(LIBM)
 dump_weights_blob_CFLAGS = $(AM_CFLAGS) -DDUMP_BINARY_WEIGHTS
 

@@ -58,7 +58,7 @@ endif
 # Perhaps this should be moved into lpcnet itself
 lpcnet_sources = sources['LPCNET_SOURCES']
 
-lpcnet_includes = [opus_includes, include_directories('../lpcnet/include')]
+lpcnet_includes = [opus_includes, include_directories('../dnn/include')]
 
 lpcnet_c_args = []
 if host_machine.system() == 'windows'

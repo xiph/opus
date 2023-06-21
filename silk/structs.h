@@ -36,7 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef NEURAL_PLC
 #include "lpcnet.h"
-#include "lpcnet/src/lpcnet_private.h"
+#include "dnn/lpcnet_private.h"
 #endif
 
 #ifdef ENABLE_NEURAL_FEC

@@ -32,9 +32,9 @@
 #include "dred_config.h"
 #include "dred_rdovae.h"
 #include "entcode.h"
-#include "lpcnet/src/lpcnet_private.h"
-#include "lpcnet/src/dred_rdovae_enc.h"
-#include "lpcnet/src/dred_rdovae_enc_data.h"
+#include "dnn/lpcnet_private.h"
+#include "dnn/dred_rdovae_enc.h"
+#include "dnn/dred_rdovae_enc_data.h"
 
 #define RESAMPLING_ORDER 8
 

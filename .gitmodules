@@ -1,3 +1,0 @@
-[submodule "lpcnet"]
-	path = lpcnet
-	url = https://github.com/xiph/LPCNet
