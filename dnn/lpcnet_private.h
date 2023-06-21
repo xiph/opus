@@ -80,8 +80,6 @@ struct LPCNetPLCState {
   LPCNetState lpcnet;
   LPCNetEncState enc;
   int enable_blending;
-  int non_causal;
-  int remove_dc;
 
 #define LPCNET_PLC_RESET_START fec
   float fec[PLC_MAX_FEC][NB_FEATURES];
@@ -97,12 +95,6 @@ struct LPCNetPLCState {
   int loss_count;
   PLCNetState plc_net;
   PLCNetState plc_copy[FEATURES_DELAY+1];
-  double dc_mem;
-  double syn_dc;
-
-  short dc_buf[TRAINING_OFFSET];
-  int queued_update;
-  short queued_samples[FRAME_SIZE];
 };
 
 void preemphasis(float *y, float *mem, const float *x, float coef, int N);

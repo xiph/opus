@@ -90,9 +90,7 @@ void usage(void) {
     fprintf(stderr, "       lpcnet_demo -addlpc <features_without_lpc.f32> <features_with_lpc.lpc>\n\n");
     fprintf(stderr, "  plc_options:\n");
     fprintf(stderr, "       causal:       normal (causal) PLC\n");
-    fprintf(stderr, "       causal_dc:    normal (causal) PLC with DC offset compensation\n");
-    fprintf(stderr, "       noncausal:    non-causal PLC\n");
-    fprintf(stderr, "       noncausal_dc: non-causal PLC with DC offset compensation\n");
+    fprintf(stderr, "       codec:        normal (causal) PLC without cross-fade (will glitch)\n");
     exit(1);
 }
 
@@ -134,9 +132,7 @@ int main(int argc, char **argv) {
     }
     if (mode == MODE_PLC) {
         if (strcmp(plc_options, "causal")==0) plc_flags = LPCNET_PLC_CAUSAL;
-        else if (strcmp(plc_options, "causal_dc")==0) plc_flags = LPCNET_PLC_CAUSAL | LPCNET_PLC_DC_FILTER;
-        else if (strcmp(plc_options, "noncausal")==0) plc_flags = LPCNET_PLC_NONCAUSAL;
-        else if (strcmp(plc_options, "noncausal_dc")==0) plc_flags = LPCNET_PLC_NONCAUSAL | LPCNET_PLC_DC_FILTER;
+        else if (strcmp(plc_options, "codec")==0) plc_flags = LPCNET_PLC_CODEC;
         else usage();
     }
     if (argc != 4) usage();
@@ -191,7 +187,6 @@ int main(int argc, char **argv) {
         int loss=0;
         int skip=0, extra=0;
         LPCNetPLCState *net;
-        if ((plc_flags&0x3) == LPCNET_PLC_NONCAUSAL) skip=extra=80;
         net = lpcnet_plc_create(plc_flags);
 #ifdef USE_WEIGHTS_FILE
         lpcnet_plc_load_model(net, data, len);

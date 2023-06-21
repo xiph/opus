@@ -189,10 +189,8 @@ LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, const float *features, sho
 
 
 #define LPCNET_PLC_CAUSAL 0
-#define LPCNET_PLC_NONCAUSAL 1
 #define LPCNET_PLC_CODEC 2
 
-#define LPCNET_PLC_DC_FILTER 4
 
 LPCNET_EXPORT int lpcnet_plc_get_size(void);
 
