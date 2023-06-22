@@ -183,7 +183,6 @@ int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   int delta = 0;
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
   burg_cepstral_analysis(plc_features, x);
-  st->enc.pcount = 0;
   if (st->skip_analysis) {
     /*fprintf(stderr, "skip update\n");*/
     if (st->blend) {
@@ -232,7 +231,7 @@ int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   compute_frame_features(&st->enc, x);
   process_single_frame(&st->enc, NULL);
   if (!st->blend) {
-    RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features[0], NB_FEATURES);
+    RNN_COPY(&plc_features[2*NB_BANDS], st->enc.features, NB_FEATURES);
     plc_features[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(st, st->features, plc_features);
     /* Discard an FEC frame that we know we will no longer need. */
@@ -243,7 +242,7 @@ int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   if (st->skip_analysis) {
     if (st->enable_blending) {
       /* FIXME: backtrack state, replace features. */
-      run_frame_network_deferred(&st->lpcnet, st->enc.features[0]);
+      run_frame_network_deferred(&st->lpcnet, st->enc.features);
     }
     st->skip_analysis--;
   } else {
@@ -251,10 +250,10 @@ int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
     RNN_COPY(output, &st->pcm[0], FRAME_SIZE);
 #ifdef PLC_SKIP_UPDATES
     {
-      run_frame_network_deferred(&st->lpcnet, st->enc.features[0]);
+      run_frame_network_deferred(&st->lpcnet, st->enc.features);
     }
 #else
-    lpcnet_synthesize_impl(&st->lpcnet, st->enc.features[0], output, FRAME_SIZE, FRAME_SIZE);
+    lpcnet_synthesize_impl(&st->lpcnet, st->enc.features, output, FRAME_SIZE, FRAME_SIZE);
 #endif
     RNN_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE);
   }
@@ -268,7 +267,6 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
   int i;
   short output[FRAME_SIZE];
   run_frame_network_flush(&st->lpcnet);
-  st->enc.pcount = 0;
   /* If we concealed the previous frame, finish synthesizing the rest of the samples. */
   /* FIXME: Copy/predict features. */
   while (st->pcm_fill > 0) {

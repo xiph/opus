@@ -45,11 +45,10 @@ struct LPCNetEncState{
   int arch;
   float analysis_mem[OVERLAP_SIZE];
   float mem_preemph;
-  int pcount;
   float pitch_mem[LPC_ORDER];
   float pitch_filt;
-  float xc[10][PITCH_MAX_PERIOD+1];
-  float frame_weight[10];
+  float xc[2][PITCH_MAX_PERIOD+1];
+  float frame_weight[2];
   float exc_buf[PITCH_BUF_SIZE];
   float pitch_max_path[2][PITCH_MAX_PERIOD];
   float pitch_max_path_all;
@@ -58,7 +57,7 @@ struct LPCNetEncState{
   int last_period;
   float lpc[LPC_ORDER];
   float vq_mem[NB_BANDS];
-  float features[4][NB_TOTAL_FEATURES];
+  float features[NB_TOTAL_FEATURES];
   float sig_mem[LPC_ORDER];
   int exc_mem;
   float burg_cepstrum[2*NB_BANDS];

@@ -99,10 +99,10 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
     follow = MAX16(follow-2.5f, Ly[i]);
     E += Ex[i];
   }
-  dct(st->features[st->pcount], Ly);
-  st->features[st->pcount][0] -= 4;
-  lpc_from_cepstrum(st->lpc, st->features[st->pcount]);
-  for (i=0;i<LPC_ORDER;i++) st->features[st->pcount][NB_BANDS+2+i] = st->lpc[i];
+  dct(st->features, Ly);
+  st->features[0] -= 4;
+  lpc_from_cepstrum(st->lpc, st->features);
+  for (i=0;i<LPC_ORDER;i++) st->features[NB_BANDS+2+i] = st->lpc[i];
   RNN_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
   RNN_COPY(&aligned_in[TRAINING_OFFSET], in, FRAME_SIZE-TRAINING_OFFSET);
   for (i=0;i<FRAME_SIZE;i++) {
@@ -123,12 +123,12 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
     celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD, st->arch);
     ener0 = celt_inner_prod_c(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE/2);
     ener1 = celt_inner_prod_c(&st->exc_buf[off], &st->exc_buf[off], FRAME_SIZE/2-1);
-    st->frame_weight[2+2*st->pcount+sub] = ener0;
-    /*printf("%f\n", st->frame_weight[2+2*st->pcount+sub]);*/
+    st->frame_weight[sub] = ener0;
+    /*printf("%f\n", st->frame_weight[sub]);*/
     for (i=0;i<PITCH_MAX_PERIOD;i++) {
       ener1 += st->exc_buf[i+off+FRAME_SIZE/2-1]*st->exc_buf[i+off+FRAME_SIZE/2-1];
       ener = 1 + ener0 + ener1;
-      st->xc[2+2*st->pcount+sub][i] = 2*xcorr[i] / ener;
+      st->xc[sub][i] = 2*xcorr[i] / ener;
       ener1 -= st->exc_buf[i+off]*st->exc_buf[i+off];
     }
     if (1) {
@@ -140,18 +140,18 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
         float val1=0, val2=0;
         int j;
         for (j=0;j<7;j++) {
-          val1 += st->xc[2+2*st->pcount+sub][i-3+j]*interp[j];
-          val2 += st->xc[2+2*st->pcount+sub][i+3-j]*interp[j];
-          interpolated[i] = MAX16(st->xc[2+2*st->pcount+sub][i], MAX16(val1, val2));
+          val1 += st->xc[sub][i-3+j]*interp[j];
+          val2 += st->xc[sub][i+3-j]*interp[j];
+          interpolated[i] = MAX16(st->xc[sub][i], MAX16(val1, val2));
         }
       }
       for (i=4;i<PITCH_MAX_PERIOD-4;i++) {
-        st->xc[2+2*st->pcount+sub][i] = interpolated[i];
+        st->xc[sub][i] = interpolated[i];
       }
     }
 #if 0
     for (i=0;i<PITCH_MAX_PERIOD;i++)
-      printf("%f ", st->xc[2*st->pcount+sub][i]);
+      printf("%f ", st->xc[sub][i]);
     printf("\n");
 #endif
   }
@@ -165,14 +165,14 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
   int pitch_prev[2][PITCH_MAX_PERIOD];
   float frame_corr;
   float frame_weight_sum = 1e-15f;
-  for(sub=0;sub<2;sub++) frame_weight_sum += st->frame_weight[2+2*st->pcount+sub];
-  for(sub=0;sub<2;sub++) st->frame_weight[2+2*st->pcount+sub] *= (2.f/frame_weight_sum);
+  for(sub=0;sub<2;sub++) frame_weight_sum += st->frame_weight[sub];
+  for(sub=0;sub<2;sub++) st->frame_weight[sub] *= (2.f/frame_weight_sum);
   for(sub=0;sub<2;sub++) {
     float max_path_all = -1e15f;
     best_i = 0;
     for (i=0;i<PITCH_MAX_PERIOD-2*PITCH_MIN_PERIOD;i++) {
-      float xc_half = MAX16(MAX16(st->xc[2+2*st->pcount+sub][(PITCH_MAX_PERIOD+i)/2], st->xc[2+2*st->pcount+sub][(PITCH_MAX_PERIOD+i+2)/2]), st->xc[2+2*st->pcount+sub][(PITCH_MAX_PERIOD+i-1)/2]);
-      if (st->xc[2+2*st->pcount+sub][i] < xc_half*1.1f) st->xc[2+2*st->pcount+sub][i] *= .8f;
+      float xc_half = MAX16(MAX16(st->xc[sub][(PITCH_MAX_PERIOD+i)/2], st->xc[sub][(PITCH_MAX_PERIOD+i+2)/2]), st->xc[sub][(PITCH_MAX_PERIOD+i-1)/2]);
+      if (st->xc[sub][i] < xc_half*1.1f) st->xc[sub][i] *= .8f;
     }
     for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
       int j;
@@ -185,7 +185,7 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
           pitch_prev[sub][i] = i+j;
         }
       }
-      st->pitch_max_path[1][i] = max_prev + st->frame_weight[2+2*st->pcount+sub]*st->xc[2+2*st->pcount+sub][i];
+      st->pitch_max_path[1][i] = max_prev + st->frame_weight[sub]*st->xc[sub][i];
       if (st->pitch_max_path[1][i] > max_path_all) {
         max_path_all = st->pitch_max_path[1][i];
         best_i = i;
@@ -204,14 +204,14 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
   /* Backward pass. */
   for (sub=1;sub>=0;sub--) {
     best[2+sub] = PITCH_MAX_PERIOD-best_i;
-    frame_corr += st->frame_weight[2+2*st->pcount+sub]*st->xc[2+2*st->pcount+sub][best_i];
+    frame_corr += st->frame_weight[sub]*st->xc[sub][best_i];
     best_i = pitch_prev[sub][best_i];
   }
   frame_corr /= 2;
-  st->features[st->pcount][NB_BANDS] = .01f*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
-  st->features[st->pcount][NB_BANDS + 1] = frame_corr-.5f;
+  st->features[NB_BANDS] = .01f*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
+  st->features[NB_BANDS + 1] = frame_corr-.5f;
   if (ffeat) {
-    fwrite(st->features[st->pcount], sizeof(float), NB_TOTAL_FEATURES, ffeat);
+    fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
   }
 }
 
@@ -229,7 +229,7 @@ static int lpcnet_compute_single_frame_features_impl(LPCNetEncState *st, float *
   preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
   compute_frame_features(st, x);
   process_single_frame(st, NULL);
-  RNN_COPY(features, &st->features[0][0], NB_TOTAL_FEATURES);
+  RNN_COPY(features, &st->features[0], NB_TOTAL_FEATURES);
   return 0;
 }
 

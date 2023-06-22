@@ -81,22 +81,21 @@ static short float2short(float x)
 }
 
 
-void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file, int nframes) {
-  int i, k;
-  for (k=0;k<nframes;k++) {
+void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file) {
+  int i;
   short data[2*FRAME_SIZE];
   for (i=0;i<FRAME_SIZE;i++) {
     float p=0;
     float e;
     int j;
-    for (j=0;j<LPC_ORDER;j++) p -= st->features[k][NB_BANDS+2+j]*st->sig_mem[j];
-    e = lin2ulaw(pcm[k*FRAME_SIZE+i] - p);
+    for (j=0;j<LPC_ORDER;j++) p -= st->features[NB_BANDS+2+j]*st->sig_mem[j];
+    e = lin2ulaw(pcm[i] - p);
     /* Signal in. */
     data[2*i] = float2short(st->sig_mem[0]);
     /* Signal out. */
-    data[2*i+1] = pcm[k*FRAME_SIZE+i];
+    data[2*i+1] = pcm[i];
     /* Simulate error on excitation. */
-    e += noise[k*FRAME_SIZE+i];
+    e += noise[i];
     e = IMIN(255, IMAX(0, e));
 
     RNN_MOVE(&st->sig_mem[1], &st->sig_mem[0], LPC_ORDER-1);
@@ -104,7 +103,6 @@ void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *f
     st->exc_mem = e;
   }
   fwrite(data, 4*FRAME_SIZE, 1, file);
-  }
 }
 
 int main(int argc, char **argv) {
@@ -124,8 +122,7 @@ int main(int argc, char **argv) {
   FILE *ffeat;
   FILE *fpcm=NULL;
   short pcm[FRAME_SIZE]={0};
-  short pcmbuf[FRAME_SIZE*4]={0};
-  int noisebuf[FRAME_SIZE*4]={0};
+  int noisebuf[FRAME_SIZE]={0};
   short tmp[FRAME_SIZE] = {0};
   float savedX[FRAME_SIZE] = {0};
   float speech_gain=1;
@@ -237,18 +234,12 @@ int main(int argc, char **argv) {
     for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
     compute_frame_features(st, x);
 
-    RNN_COPY(&pcmbuf[st->pcount*FRAME_SIZE], pcm, FRAME_SIZE);
     if (fpcm) {
-        compute_noise(&noisebuf[st->pcount*FRAME_SIZE], noise_std);
+        compute_noise(noisebuf, noise_std);
     }
 
     process_single_frame(st, ffeat);
-    if (fpcm) write_audio(st, pcm, &noisebuf[st->pcount*FRAME_SIZE], fpcm, 1);
-    st->pcount++;
-    /* Running on groups of 4 frames. */
-    if (st->pcount == 4) {
-      st->pcount = 0;
-    }
+    if (fpcm) write_audio(st, pcm, noisebuf, fpcm);
     /*if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);*/
     for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);
     old_speech_gain = speech_gain;
