@@ -5,7 +5,6 @@ silk/dred_decoder.h \
 silk/dred_encoder.h \
 dnn/include/dred_rdovae.h \
 dnn/include/lpcnet.h \
-dnn/arch.h \
 dnn/burg.h \
 dnn/common.h \
 dnn/freq.h \

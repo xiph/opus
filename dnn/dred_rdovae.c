@@ -29,7 +29,7 @@
 #include "config.h"
 #endif
 
-
+#include <string.h>
 #include "dred_rdovae.h"
 #include "dred_rdovae_enc.h"
 #include "dred_rdovae_dec.h"
