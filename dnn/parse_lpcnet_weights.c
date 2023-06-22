@@ -29,6 +29,7 @@
 #endif
 
 #include <string.h>
+#include <stdlib.h>
 #include "nnet.h"
 
 #define SPARSE_BLOCK_SIZE 32

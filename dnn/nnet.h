@@ -28,6 +28,7 @@
 #ifndef _NNET_H_
 #define _NNET_H_
 
+#include <stddef.h>
 #include "vec.h"
 #include "kiss99.h"
 
