@@ -9,4 +9,3 @@ if not exist %model% (
 tar -xvzf %model%
 move .\src\*.c .
 move .\src\*.h .
-

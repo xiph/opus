@@ -326,4 +326,3 @@ void apply_window(float *x) {
     x[WINDOW_SIZE - 1 - i] *= half_window[i];
   }
 }
-

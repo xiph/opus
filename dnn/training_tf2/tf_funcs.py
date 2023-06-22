@@ -36,12 +36,12 @@ class diff_pred(Layer):
         rept = Lambda(lambda x: K.repeat_elements(x , frame_size, 1))
         zpX = Lambda(lambda x: K.concatenate([0*x[:,0:lpcoeffs_N,:], x],axis = 1))
         cX = Lambda(lambda x: K.concatenate([x[:,(lpcoeffs_N - i):(lpcoeffs_N - i + 2400),:] for i in range(lpcoeffs_N)],axis = 2))
-        
+
         pred = -Multiply()([rept(lpc),cX(zpX(xt))])
 
         return K.sum(pred,axis = 2,keepdims = True)
 
-# Differentiable Transformations (RC <-> LPC) computed using the Levinson Durbin Recursion 
+# Differentiable Transformations (RC <-> LPC) computed using the Levinson Durbin Recursion
 class diff_rc2lpc(Layer):
     def call(self, inputs, lpcoeffs_N = 16):
         def pred_lpc_recursive(input):

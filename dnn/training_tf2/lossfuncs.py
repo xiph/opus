@@ -35,7 +35,7 @@ def interp_mulaw(gamma = 1):
         alpha = e_gt - tf.math.floor(e_gt)
         alpha = tf.tile(alpha,[1,1,256])
         e_gt = tf.cast(e_gt,'int32')
-        e_gt = tf.clip_by_value(e_gt,0,254) 
+        e_gt = tf.clip_by_value(e_gt,0,254)
         interp_probab = (1 - alpha)*model_out + alpha*tf.roll(model_out,shift = -1,axis = -1)
         sparse_cel = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)(e_gt,interp_probab)
         loss_mod = sparse_cel + prob_compensation + gamma*regularization
@@ -51,7 +51,7 @@ def metric_oginterploss(y_true,y_pred):
     alpha = e_gt - tf.math.floor(e_gt)
     alpha = tf.tile(alpha,[1,1,256])
     e_gt = tf.cast(e_gt,'int32')
-    e_gt = tf.clip_by_value(e_gt,0,254) 
+    e_gt = tf.clip_by_value(e_gt,0,254)
     interp_probab = (1 - alpha)*model_out + alpha*tf.roll(model_out,shift = -1,axis = -1)
     sparse_cel = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)(e_gt,interp_probab)
     loss_mod = sparse_cel + prob_compensation
@@ -78,7 +78,7 @@ def metric_cel(y_true, y_pred):
     e_gt = tf_l2u(y_true - p)
     e_gt = tf.round(e_gt)
     e_gt = tf.cast(e_gt,'int32')
-    e_gt = tf.clip_by_value(e_gt,0,255) 
+    e_gt = tf.clip_by_value(e_gt,0,255)
     sparse_cel = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)(e_gt,model_out)
     return sparse_cel
 
@@ -97,4 +97,3 @@ def loss_matchlar():
         loss_lar_diff = tf.square(loss_lar_diff)
         return tf.reduce_mean(loss_lar_diff, axis=-1)
     return loss
-

@@ -63,7 +63,7 @@ int test_sgemv_accum16() {
 	out[i] = 0;
 	out_fast[i] = 0;
     }
-  
+
     for(i=0; i<COLS; i++) {
 	x[i] = i+1;
     }
@@ -101,7 +101,7 @@ int test_sparse_sgemv_accum16() {
 	out[i] = 0;
 	out_fast[i] = 0;
     }
-  
+
     sparse_sgemv_accum16(out, w, rows, indx, x);
     sparse_sgemv_accum16_fast(out_fast, w, rows, indx, x);
 
@@ -126,5 +126,3 @@ int main() {
     int test2 = test_sparse_sgemv_accum16();
     return test1 || test2;
 }
-
-  

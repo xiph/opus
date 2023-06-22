@@ -113,7 +113,7 @@ if __name__ == "__main__":
     # qembedding
     print(f"writing layer {exchange_name['qembedding']}...")
     dump_tf_weights(os.path.join(args.output, exchange_name['qembedding']), qembedding)
-   
+
     # decoder
     decoder_dense_names = [
         'state1',
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         'dec_dense7',
         'dec_dense8',
         'dec_final'
-    ]   
+    ]
 
     decoder_gru_names = [
         'dec_dense2',

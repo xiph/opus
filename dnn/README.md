@@ -115,7 +115,7 @@ This codebase is also meant for research and it is possible to train new models.
    and move the generated nnet\_data.\* files to the src/ directory.
    Then you just need to rebuild the software and use lpcnet\_demo as explained above.
 
-# Speech Material for Training 
+# Speech Material for Training
 
 Suitable training material can be obtained from [Open Speech and Language Resources](https://www.openslr.org/).  See the datasets.txt file for details on suitable training data.
 
@@ -123,5 +123,4 @@ Suitable training material can be obtained from [Open Speech and Language Resour
 
 1. [LPCNet: DSP-Boosted Neural Speech Synthesis](https://people.xiph.org/~jm/demo/lpcnet/)
 1. [A Real-Time Wideband Neural Vocoder at 1.6 kb/s Using LPCNet](https://people.xiph.org/~jm/demo/lpcnet_codec/)
-1. Sample model files (check compatibility): https://media.xiph.org/lpcnet/data/ 
-
+1. Sample model files (check compatibility): https://media.xiph.org/lpcnet/data/

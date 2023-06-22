@@ -61,7 +61,7 @@ def soft_quantize(x):
     #x = 4*x
     #x = x - (.25/np.math.pi)*tf.math.sin(2*np.math.pi*x)
     #x = x - (.25/np.math.pi)*tf.math.sin(2*np.math.pi*x)
-    #x = x - (.25/np.math.pi)*tf.math.sin(2*np.math.pi*x)    
+    #x = x - (.25/np.math.pi)*tf.math.sin(2*np.math.pi*x)
     return x
 
 def noise_quantize(x):
@@ -237,7 +237,7 @@ def new_rdovae_decoder(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, ba
     bits_input = Input(shape=(None, nb_bits), batch_size=batch_size, name="dec_bits")
     gru_state_input = Input(shape=(nb_state_dim,), batch_size=batch_size, name="dec_state")
 
-    
+
     gru = CuDNNGRU if training else GRU
     dec_dense1 = Dense(cond_size2, activation='tanh', kernel_constraint=constraint, name='dec_dense1')
     dec_dense2 = gru(cond_size, return_sequences=True, kernel_constraint=constraint, recurrent_constraint=constraint, name='dec_dense2')
@@ -300,7 +300,7 @@ def tensor_concat(x):
     y = []
     for i in range(n-1):
         offset = 2 * (n-1-i)
-        tmp = K.concatenate([x[i][:, offset:, :], x[-1][:, -offset:, :]], axis=-2) 
+        tmp = K.concatenate([x[i][:, offset:, :], x[-1][:, -offset:, :]], axis=-2)
         y.append(tf.expand_dims(tmp, axis=0))
     y.append(tf.expand_dims(x[-1], axis=0))
     return Concatenate(axis=0)(y)
@@ -335,7 +335,7 @@ def new_rdovae_model(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, batc
     dze = dzone([ze,dead_zone])
     ndze = noisequant(dze)
     dze_quant = hardquant(dze)
-    
+
     div = Lambda(lambda x: x[0]/x[1])
     dze_quant = div([dze_quant,quant_scale])
     ndze_unquant = div([ndze,quant_scale])
@@ -355,13 +355,13 @@ def new_rdovae_model(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, batc
         combined_output.append(tmp)
 
         tmp = split_decoder([ndze_select, state_select])
-        tmp = cat([tmp, lambda_up])        
+        tmp = cat([tmp, lambda_up])
         unquantized_output.append(tmp)
 
     concat = Lambda(tensor_concat, name="output")
     combined_output = concat(combined_output)
     unquantized_output = concat(unquantized_output)
-    
+
     e2 = Concatenate(name="hard_bits")([dze, hard_distr_embed, lambda_val])
     e = Concatenate(name="soft_bits")([dze, soft_distr_embed, lambda_val])
 
@@ -370,4 +370,3 @@ def new_rdovae_model(nb_used_features=20, nb_bits=17, bunch=4, nb_quant=40, batc
     model.nb_used_features = nb_used_features
 
     return model, encoder, decoder, qembedding
-

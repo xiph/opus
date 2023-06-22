@@ -6,7 +6,7 @@ import numpy as np
 import math
 
 class MDense(Layer):
-    
+
     def __init__(self, outputs,
                  channels=2,
                  activation=None,

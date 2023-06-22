@@ -200,14 +200,14 @@ static inline void sgemv_accum16(float *out, const float *weights, int rows, int
     for (i=0;i<rows;i+=16)
     {
 	float * restrict y = &out[i];
-      
+
 	/* keep y[0..15] in registers for duration of inner loop */
-      
+
 	float32x4_t y0_3 = vld1q_f32(&y[0]);
 	float32x4_t y4_7 = vld1q_f32(&y[4]);
 	float32x4_t y8_11 = vld1q_f32(&y[8]);
 	float32x4_t y12_15 = vld1q_f32(&y[12]);
-      
+
 	for (j=0;j<cols;j++)
 	{
 	    const float * restrict w;
@@ -219,9 +219,9 @@ static inline void sgemv_accum16(float *out, const float *weights, int rows, int
 	    wvec4_7 = vld1q_f32(&w[4]);
 	    wvec8_11 = vld1q_f32(&w[8]);
 	    wvec12_15 = vld1q_f32(&w[12]);
-	    
+
 	    xj = vld1q_dup_f32(&x[j]);
-	 
+
 	    y0_3 = vmlaq_f32(y0_3, wvec0_3, xj);
 	    y4_7 = vmlaq_f32(y4_7, wvec4_7, xj);
 	    y8_11 = vmlaq_f32(y8_11, wvec8_11, xj);
@@ -229,12 +229,12 @@ static inline void sgemv_accum16(float *out, const float *weights, int rows, int
 	}
 
 	/* save y[0..15] back to memory */
-      
+
 	vst1q_f32(&y[0], y0_3);
 	vst1q_f32(&y[4], y4_7);
 	vst1q_f32(&y[8], y8_11);
 	vst1q_f32(&y[12], y12_15);
-      
+
     }
 }
 
@@ -249,32 +249,32 @@ static inline void sparse_sgemv_accum16(float *out, const float *w, int rows, co
 	y = &out[i];
 
 	/* keep y[0..15] in registers for duration of inner loop */
-      
+
 	float32x4_t y0_3 = vld1q_f32(&y[0]);
 	float32x4_t y4_7 = vld1q_f32(&y[4]);
 	float32x4_t y8_11 = vld1q_f32(&y[8]);
 	float32x4_t y12_15 = vld1q_f32(&y[12]);
-      
+
 	for (j=0;j<cols;j++)
 	{
 	    float32x4_t xj= vld1q_dup_f32(&x[*idx++]);
 	    float32x4_t wvec;
-	 
+
 	    wvec = vld1q_f32(&w[0]); y0_3 = vmlaq_f32(y0_3, wvec, xj);
 	    wvec = vld1q_f32(&w[4]); y4_7 = vmlaq_f32(y4_7, wvec, xj);
 	    wvec = vld1q_f32(&w[8]); y8_11 = vmlaq_f32(y8_11, wvec, xj);
 	    wvec = vld1q_f32(&w[12]); y12_15 = vmlaq_f32(y12_15, wvec, xj);
-	 
+
 	    w += 16;
 	}
 
 	/* save y[0..15] back to memory */
-      
+
 	vst1q_f32(&y[0], y0_3);
 	vst1q_f32(&y[4], y4_7);
 	vst1q_f32(&y[8], y8_11);
 	vst1q_f32(&y[12], y12_15);
-      
+
     }
 }
 

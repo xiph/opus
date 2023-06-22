@@ -97,7 +97,7 @@ total_delay = silk_delay + zero_history + args.extra_delay - dump_data_delay
 # load signal
 if args.input.endswith('.raw') or args.input.endswith('.pcm') or args.input.endswith('.sw'):
     signal = np.fromfile(args.input, dtype='int16')
-    
+
 elif args.input.endswith('.wav'):
     fs, signal = wavfile.read(args.input)
 else:
@@ -107,7 +107,7 @@ else:
 padded_signal_length = len(signal) + total_delay
 tail = padded_signal_length % frame_size
 right_padding = (frame_size - tail) % frame_size
-    
+
 signal = np.concatenate((np.zeros(total_delay, dtype=np.int16), signal, np.zeros(right_padding, dtype=np.int16)))
 
 padded_signal_file  = os.path.splitext(args.input)[0] + '_padded.raw'
@@ -228,7 +228,7 @@ if args.lossfile != None:
     fec_out_full[:, :nb_used_features] = fec_out
 
     fec_out_full.tofile(packet_file[:-4] + f'_fec.f32')
-    
+
 
 #create packets array like in the original version for debugging purposes
 for i in range(offset, num_frames):
@@ -254,4 +254,3 @@ if args.debug_output:
 
         print(f"writing debug output {packet_file[:-4] + f'_tf_batch{batch}_offset{offset}.f32'}")
         test_features_full.tofile(packet_file[:-4] + f'_tf_batch{batch}_offset{offset}.f32')
-

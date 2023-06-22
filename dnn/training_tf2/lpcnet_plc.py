@@ -88,10 +88,10 @@ def new_lpcnet_plc_model(rnn_units=256, nb_used_features=20, nb_burg_features=36
     gru_out1, _ = rnn(cfeat)
     gru_out1 = GaussianNoise(.005)(gru_out1)
     gru_out2, _ = rnn2(gru_out1)
-    
+
     out_dense = Dense(nb_used_features, activation='linear', name='plc_out')
     plc_out = out_dense(gru_out2)
-    
+
     model = Model([feat, lost], plc_out)
     model.rnn_units = rnn_units
     model.cond_size = cond_size

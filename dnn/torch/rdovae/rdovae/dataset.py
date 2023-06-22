@@ -40,7 +40,7 @@ class RDOVAEDataset(torch.utils.data.Dataset):
                 lambda_max=0.0135,
                 quant_levels=16,
                 enc_stride=2):
-        
+
         self.sequence_length = sequence_length
         self.lambda_min = lambda_min
         self.lambda_max = lambda_max
@@ -50,7 +50,7 @@ class RDOVAEDataset(torch.utils.data.Dataset):
 
         if sequence_length % enc_stride:
             raise ValueError(f"RDOVAEDataset.__init__: enc_stride {enc_stride} does not divide sequence length {sequence_length}")
-        
+
         self.features = np.reshape(np.fromfile(feature_file, dtype=np.float32), (-1, num_features))
         self.features = self.features[:, :num_used_features]
         self.num_sequences = self.features.shape[0] // sequence_length
@@ -65,4 +65,3 @@ class RDOVAEDataset(torch.utils.data.Dataset):
         rate_lambda = self.lambda_min * np.exp(q_ids.astype(np.float32) / self.denominator).astype(np.float32)
 
         return features, rate_lambda, q_ids
-

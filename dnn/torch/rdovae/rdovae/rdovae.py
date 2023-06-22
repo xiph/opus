@@ -42,7 +42,7 @@ def soft_pvq(x, k):
 
     # L2 normalization
     x_norm2 = x / (1e-15 + torch.norm(x, dim=-1, keepdim=True))
-    
+
 
     with torch.no_grad():
         # quantization loop, no need to track gradients here
@@ -84,19 +84,19 @@ def cache_parameters(func):
             return cache[args]
         else:
             cache[args] = func(*args)
-        
+
         return cache[args]
     return cached_func
-        
+
 @cache_parameters
 def pvq_codebook_size(n, k):
-    
+
     if k == 0:
         return 1
-    
+
     if n == 0:
         return 0
-    
+
     return pvq_codebook_size(n - 1, k) + pvq_codebook_size(n, k - 1) + pvq_codebook_size(n - 1, k - 1)
 
 
@@ -121,7 +121,7 @@ def hard_rate_estimate(z, r, theta, reduce=True):
     p0 = 1 - r ** (0.5 + 0.5 * theta)
     alpha = torch.relu(1 - torch.abs(z_q)) ** 2
     rate = - torch.sum(
-        (alpha * torch.log2(p0 * r ** torch.abs(z_q) + 1e-6) 
+        (alpha * torch.log2(p0 * r ** torch.abs(z_q) + 1e-6)
         + (1 - alpha) * torch.log2(0.5 * (1 - p0) * (1 - r) * r ** (torch.abs(z_q) - 1) + 1e-6)),
         dim=-1
     )
@@ -154,7 +154,7 @@ def noise_quantize(x):
 
 def distortion_loss(y_true, y_pred, rate_lambda=None):
     """ custom distortion loss for LPCNet features """
-    
+
     if y_true.size(-1) != 20:
         raise ValueError('distortion loss is designed to work with 20 features')
 
@@ -169,7 +169,7 @@ def distortion_loss(y_true, y_pred, rate_lambda=None):
         loss = loss / torch.sqrt(rate_lambda)
 
     loss = torch.mean(loss)
-        
+
     return loss
 
 
@@ -181,23 +181,23 @@ import random
 def random_split(start, stop, num_splits=3, min_len=3):
     get_min_len = lambda x : min([x[i+1] - x[i] for i in range(len(x) - 1)])
     candidate = [start] + sorted([random.randint(start, stop-1) for i in range(num_splits)]) + [stop]
-    
-    while get_min_len(candidate) < min_len: 
+
+    while get_min_len(candidate) < min_len:
         candidate = [start] + sorted([random.randint(start, stop-1) for i in range(num_splits)]) + [stop]
-    
+
     return candidate
 
 
 
 # weight initialization and clipping
 def init_weights(module):
-    
+
     if isinstance(module, nn.GRU):
         for p in module.named_parameters():
             if p[0].startswith('weight_hh_'):
                 nn.init.orthogonal_(p[1])
 
-    
+
 def weight_clip_factory(max_value):
     """ weight clipping function concerning sum of abs values of adjecent weights """
     def clip_weight_(w):
@@ -213,13 +213,13 @@ def weight_clip_factory(max_value):
                                      1))
         with torch.no_grad():
             w[:, :stop] *= factor
-    
+
     def clip_weights(module):
         if isinstance(module, nn.GRU) or isinstance(module, nn.Linear):
             for name, w in module.named_parameters():
                 if name.startswith('weight'):
                     clip_weight_(w)
-    
+
     return clip_weights
 
 # RDOVAE module and submodules
@@ -229,12 +229,12 @@ class CoreEncoder(nn.Module):
     STATE_HIDDEN = 128
     FRAMES_PER_STEP = 2
     CONV_KERNEL_SIZE = 4
-    
+
     def __init__(self, feature_dim, output_dim, cond_size, cond_size2, state_size=24):
         """ core encoder for RDOVAE
-        
+
             Computes latents, initial states, and rate estimates from features and lambda parameter
-        
+
         """
 
         super(CoreEncoder, self).__init__()
@@ -289,7 +289,7 @@ class CoreEncoder(nn.Module):
 
         # concatenation of all hidden layer outputs
         x9 = torch.cat((x1, x2, x3, x4, x5, x6, x7, x8), dim=-1)
-        
+
         # init state for decoder
         states = torch.tanh(self.state_dense_1(x9))
         states = torch.tanh(self.state_dense_2(states))
@@ -309,9 +309,9 @@ class CoreDecoder(nn.Module):
 
     def __init__(self, input_dim, output_dim, cond_size, cond_size2, state_size=24):
         """ core decoder for RDOVAE
-        
+
             Computes features from latents, initial state, and quantization index
-        
+
         """
 
         super(CoreDecoder, self).__init__()
@@ -324,7 +324,7 @@ class CoreDecoder(nn.Module):
         self.state_size = state_size
 
         self.input_size = self.input_dim
-        
+
         self.concat_size = 4 * self.cond_size + 4 * self.cond_size2
 
         # layers
@@ -348,7 +348,7 @@ class CoreDecoder(nn.Module):
         self.apply(init_weights)
 
     def forward(self, z, initial_state):
-        
+
         gru_1_state = torch.tanh(self.gru_1_init(initial_state).permute(1, 0, 2))
         gru_2_state = torch.tanh(self.gru_2_init(initial_state).permute(1, 0, 2))
         gru_3_state = torch.tanh(self.gru_3_init(initial_state).permute(1, 0, 2))
@@ -374,9 +374,9 @@ class CoreDecoder(nn.Module):
 class StatisticalModel(nn.Module):
     def __init__(self, quant_levels, latent_dim):
         """ Statistical model for latent space
-        
-            Computes scaling, deadzone, r, and theta 
-        
+
+            Computes scaling, deadzone, r, and theta
+
         """
 
         super(StatisticalModel, self).__init__()
@@ -388,7 +388,7 @@ class StatisticalModel(nn.Module):
 
         # quantization embedding
         self.quant_embedding    = nn.Embedding(quant_levels, self.embedding_dim)
-        
+
         # initialize embedding to 0
         with torch.no_grad():
             self.quant_embedding.weight[:] = 0
@@ -406,7 +406,7 @@ class StatisticalModel(nn.Module):
         r_soft      = torch.sigmoid(x[..., 3 * self.latent_dim : 4 * self.latent_dim])
         theta_hard  = torch.sigmoid(x[..., 4 * self.latent_dim : 5 * self.latent_dim])
         r_hard      = torch.sigmoid(x[..., 5 * self.latent_dim : 6 * self.latent_dim])
-        
+
 
         return {
             'quant_embedding'   : x,
@@ -443,34 +443,34 @@ class RDOVAE(nn.Module):
         self.state_dim      = state_dim
         self.pvq_num_pulses = pvq_num_pulses
         self.state_dropout_rate = state_dropout_rate
-        
+
         # submodules encoder and decoder share the statistical model
         self.statistical_model = StatisticalModel(quant_levels, latent_dim)
         self.core_encoder = nn.DataParallel(CoreEncoder(feature_dim, latent_dim, cond_size, cond_size2, state_size=state_dim))
         self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim, feature_dim, cond_size, cond_size2, state_size=state_dim))
-        
+
         self.enc_stride = CoreEncoder.FRAMES_PER_STEP
         self.dec_stride = CoreDecoder.FRAMES_PER_STEP
-       
+
         if clip_weights:
             self.weight_clip_fn = weight_clip_factory(0.496)
         else:
             self.weight_clip_fn = None
-        
+
         if self.dec_stride % self.enc_stride != 0:
             raise ValueError(f"get_decoder_chunks_generic: encoder stride does not divide decoder stride")
-    
+
     def clip_weights(self):
         if not type(self.weight_clip_fn) == type(None):
             self.apply(self.weight_clip_fn)
-            
+
     def get_decoder_chunks(self, z_frames, mode='split', chunks_per_offset = 4):
-        
+
         enc_stride = self.enc_stride
         dec_stride = self.dec_stride
 
         stride = dec_stride // enc_stride
-        
+
         chunks = []
 
         for offset in range(stride):
@@ -529,7 +529,7 @@ class RDOVAE(nn.Module):
         z_q = hard_quantize(z) / statistical_model['quant_scale']
         z_n = noise_quantize(z) / statistical_model['quant_scale']
         states_q = soft_pvq(states, self.pvq_num_pulses)
-        
+
         if self.state_dropout_rate > 0:
             drop = torch.rand(states_q.size(0)) < self.state_dropout_rate
             mask = torch.ones_like(states_q)
@@ -552,7 +552,7 @@ class RDOVAE(nn.Module):
             # decoder with soft quantized input
             z_dec_reverse       = torch.flip(z_n[..., chunk['z_start'] : chunk['z_stop'] : chunk['z_stride'], :],  [1])
             features_reverse    = self.core_decoder(z_dec_reverse, dec_initial_state)
-            outputs_sq.append((torch.flip(features_reverse, [1]), chunk['features_start'], chunk['features_stop']))          
+            outputs_sq.append((torch.flip(features_reverse, [1]), chunk['features_start'], chunk['features_stop']))
 
         return {
             'outputs_hard_quant' : outputs_hq,
@@ -563,24 +563,24 @@ class RDOVAE(nn.Module):
 
     def encode(self, features):
         """ encoder with quantization and rate estimation """
-        
+
         z, states = self.core_encoder(features)
-        
+
         # quantization of initial states
-        states = soft_pvq(states, self.pvq_num_pulses)     
+        states = soft_pvq(states, self.pvq_num_pulses)
         state_size = m.log2(pvq_codebook_size(self.state_dim, self.pvq_num_pulses))
-        
+
         return z, states, state_size
 
     def decode(self, z, initial_state):
         """ decoder (flips sequences by itself) """
-        
+
         z_reverse       = torch.flip(z, [1])
         features_reverse = self.core_decoder(z_reverse, initial_state)
         features = torch.flip(features_reverse, [1])
-        
+
         return features
-        
+
     def quantize(self, z, q_ids):
         """ quantization of latent vectors """
 
@@ -602,13 +602,12 @@ class RDOVAE(nn.Module):
         z = zq / stats['quant_scale']
 
         return z
-    
+
     def freeze_model(self):
 
         # freeze all parameters
         for p in self.parameters():
             p.requires_grad = False
-        
+
         for p in self.statistical_model.parameters():
             p.requires_grad = True
-

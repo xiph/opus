@@ -186,7 +186,7 @@ class SparsifyGRUB(Callback):
 
             w[0] = p
             layer.set_weights(w)
-            
+
 
 class PCMInit(Initializer):
     def __init__(self, gain=.1, seed=None):
@@ -264,20 +264,20 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
         lpcoeffs = diff_rc2lpc(name = "rc2lpc")(cfeat)
     else:
         lpcoeffs = Input(shape=(None, lpc_order), batch_size=batch_size)
-        
+
     real_preds = diff_pred(name = "real_lpc2preds")([pcm,lpcoeffs])
     weighting = lpc_gamma ** np.arange(1, 17).astype('float32')
     weighted_lpcoeffs = Lambda(lambda x: x[0]*x[1])([lpcoeffs, weighting])
     tensor_preds = diff_pred(name = "lpc2preds")([pcm,weighted_lpcoeffs])
     past_errors = error_calc([pcm,tensor_preds])
-    
+
     embed = diff_Embed(name='embed_sig',initializer = PCMInit())
     cpcm = Concatenate()([tf_l2u(pcm),tf_l2u(tensor_preds),past_errors])
     cpcm = GaussianNoise(.3)(cpcm)
     cpcm = Reshape((-1, embed_size*3))(embed(cpcm))
     cpcm_decoder = Reshape((-1, embed_size*3))(embed(dpcm))
 
-    
+
     rep = Lambda(lambda x: K.repeat_elements(x, frame_size, 1))
 
     quant = quant_regularizer if quantize else None
@@ -305,7 +305,7 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
         rnn2.trainable=False
         md.trainable=False
         embed.Trainable=False
-    
+
     m_out = Concatenate(name='pdf')([tensor_preds,real_preds,ulaw_prob])
     if not flag_e2e:
         model = Model([pcm, feat, pitch, lpcoeffs], m_out)
@@ -315,7 +315,7 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
     model.rnn_units2 = rnn_units2
     model.nb_used_features = nb_used_features
     model.frame_size = frame_size
-    
+
     if not flag_e2e:
         encoder = Model([feat, pitch], cfeat)
         dec_rnn_in = Concatenate()([cpcm_decoder, dec_feat])
@@ -330,7 +330,7 @@ def new_lpcnet_model(rnn_units1=384, rnn_units2=16, nb_used_features=20, batch_s
         decoder = Model([dpcm, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
     else:
         decoder = Model([dpcm, dec_feat, dec_state1, dec_state2], [dec_ulaw_prob, state1, state2])
-    
+
     # add parameters to model
     set_parameter(model, 'lpc_gamma', lpc_gamma, dtype='float64')
     set_parameter(model, 'flag_e2e', flag_e2e, dtype='bool')

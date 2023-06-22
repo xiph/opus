@@ -134,7 +134,7 @@ strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
 
 with strategy.scope():
     model, _, _ = lpcnet.new_lpcnet_model(rnn_units1=args.grua_size,
-                                          rnn_units2=args.grub_size, 
+                                          rnn_units2=args.grub_size,
                                           batch_size=batch_size, training=True,
                                           quantize=quantize,
                                           flag_e2e=flag_e2e,

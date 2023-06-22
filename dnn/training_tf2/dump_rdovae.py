@@ -173,7 +173,7 @@ f"""
         [
             dump_conv1d_layer(encoder.get_layer(name), source_fid, header_fid)
             for name in encoder_conv1d_names
-        ] 
+        ]
     )
 
     # dump Dense layers
@@ -232,13 +232,13 @@ f"""
         'dec_dense7',
         'dec_dense8',
         'dec_final'
-    ]   
+    ]
 
     decoder_gru_names = [
         'dec_dense2',
         'dec_dense4',
         'dec_dense6'
-    ] 
+    ]
 
     source_fid = open("dred_rdovae_dec_data.c", 'w')
     header_fid = open("dred_rdovae_dec_data.h", 'w')

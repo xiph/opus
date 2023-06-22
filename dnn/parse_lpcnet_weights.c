@@ -45,7 +45,7 @@ int parse_record(const unsigned char **data, int *len, WeightArray *array) {
   array->type = h->type;
   array->size = h->size;
   array->data = (*data)+WEIGHT_BLOCK_SIZE;
-  
+
   *data += h->block_size+WEIGHT_BLOCK_SIZE;
   *len -= h->block_size+WEIGHT_BLOCK_SIZE;
   return array->size;
@@ -103,7 +103,7 @@ static const void *find_idx_check(const WeightArray *arrays, const char *name, i
     if (remain < nb_blocks+1) return NULL;
     for (i=0;i<nb_blocks;i++) {
       int pos = *idx++;
-      if (pos+3 >= nb_in || (pos&0x3)) return NULL; 
+      if (pos+3 >= nb_in || (pos&0x3)) return NULL;
     }
     nb_out -= 8;
     remain -= nb_blocks+1;

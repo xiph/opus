@@ -283,7 +283,7 @@ hf.write('#define PLC_MAX_RNN_NEURONS {}\n\n'.format(max_rnn_neurons))
 
 hf.write('typedef struct {\n')
 for i, name in enumerate(layer_list):
-    hf.write('  float {}_state[{}_STATE_SIZE];\n'.format(name, name.upper())) 
+    hf.write('  float {}_state[{}_STATE_SIZE];\n'.format(name, name.upper()))
 hf.write('} PLCNetState;\n\n')
 
 model_struct.write('} PLCModel;\n\n')

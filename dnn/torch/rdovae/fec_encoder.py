@@ -84,7 +84,7 @@ total_delay = silk_delay + zero_history + args.extra_delay - dump_data_delay
 # load signal
 if args.input.endswith('.raw') or args.input.endswith('.pcm'):
     signal = np.fromfile(args.input, dtype='int16')
-    
+
 elif args.input.endswith('.wav'):
     fs, signal = wavfile.read(args.input)
 else:
@@ -94,7 +94,7 @@ else:
 padded_signal_length = len(signal) + total_delay
 tail = padded_signal_length % frame_size
 right_padding = (frame_size - tail) % frame_size
-    
+
 signal = np.concatenate((np.zeros(total_delay, dtype=np.int16), signal, np.zeros(right_padding, dtype=np.int16)))
 
 padded_signal_file  = os.path.splitext(args.input)[0] + '_padded.raw'
@@ -152,7 +152,7 @@ with torch.no_grad():
         zi = torch.clone(z[:, i - 2 * input_length + 2: i + 1 : 2, :])
         zi, rates = model.quantize(zi, quant_ids)
         zi = model.unquantize(zi, quant_ids)
-        
+
         features = model.decode(zi, states[:, i : i + 1, :])
         packets.append(features.squeeze(0).numpy())
         packet_size = 8 * int((torch.sum(rates) + 7 + state_size) / 8)
@@ -176,7 +176,7 @@ if args.lossfile != None:
     count = 2
     for i in range(num_packets):
         if (loss[i] == 0) or (i == num_packets - 1):
-            
+
             fec_out[ptr:ptr+count,:] = packets[i][foffset:, :]
 
             ptr    += count
@@ -190,14 +190,14 @@ if args.lossfile != None:
     fec_out_full[:, : fec_out.shape[-1]] = fec_out
 
     fec_out_full.tofile(packet_file[:-4] + f'_fec.f32')
-    
-    
+
+
 if args.debug_output:
     import itertools
 
     batches = [4]
     offsets = [0, 2 * args.num_redundancy_frames - 4]
-        
+
     # sanity checks
     # 1. concatenate features at offset 0
     for batch, offset in itertools.product(batches, offsets):
@@ -210,4 +210,3 @@ if args.debug_output:
 
         print(f"writing debug output {packet_file[:-4] + f'_torch_batch{batch}_offset{offset}.f32'}")
         test_features_full.tofile(packet_file[:-4] + f'_torch_batch{batch}_offset{offset}.f32')
-

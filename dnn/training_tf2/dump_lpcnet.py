@@ -309,13 +309,13 @@ if __name__ == "__main__":
     else:
         hf.write('/* This is *not* an end-to-end model */\n')
         hf.write('/* #define END2END */\n\n')
-    
+
     # LPC weighting factor
     if type(args.lpc_gamma) == type(None):
         lpc_gamma = get_parameter(model, 'lpc_gamma', 1)
     else:
         lpc_gamma = args.lpc_gamma
-    
+
     hf.write('/* LPC weighting factor */\n')
     hf.write('#define LPC_GAMMA ' + str(lpc_gamma) +'f\n\n')
 
@@ -376,7 +376,7 @@ if __name__ == "__main__":
 
     hf.write('typedef struct {\n')
     for i, name in enumerate(layer_list):
-        hf.write('  float {}_state[{}_STATE_SIZE];\n'.format(name, name.upper())) 
+        hf.write('  float {}_state[{}_STATE_SIZE];\n'.format(name, name.upper()))
     hf.write('} NNetState;\n\n')
 
     model_struct.write('} LPCNetModel;\n\n')

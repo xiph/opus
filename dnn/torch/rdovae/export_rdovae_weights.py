@@ -80,14 +80,14 @@ extern const opus_uint16 dred_p0_q15[{levels * N}];
 
 
 def c_export(args, model):
-    
+
     message = f"Auto generated from checkpoint {os.path.basename(args.checkpoint)}"
-    
+
     enc_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_enc_data"), message=message)
     dec_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_dec_data"), message=message)
     stats_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_stats_data"), message=message)
     constants_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_constants"), message=message, header_only=True)
-    
+
     # some custom includes
     for writer in [enc_writer, dec_writer, stats_writer]:
         writer.header.write(
@@ -99,10 +99,10 @@ f"""
 #include "nnet.h"
 """
         )
-        
+
     # encoder
     encoder_dense_layers = [
-        ('core_encoder.module.dense_1'       , 'enc_dense1',   'TANH'), 
+        ('core_encoder.module.dense_1'       , 'enc_dense1',   'TANH'),
         ('core_encoder.module.dense_2'       , 'enc_dense3',   'TANH'),
         ('core_encoder.module.dense_3'       , 'enc_dense5',   'TANH'),
         ('core_encoder.module.dense_4'       , 'enc_dense7',   'TANH'),
@@ -110,31 +110,31 @@ f"""
         ('core_encoder.module.state_dense_1' , 'gdense1'    ,   'TANH'),
         ('core_encoder.module.state_dense_2' , 'gdense2'    ,   'TANH')
     ]
-    
+
     for name, export_name, activation in encoder_dense_layers:
         layer = model.get_submodule(name)
         dump_torch_weights(enc_writer, layer, name=export_name, activation=activation, verbose=True)
-  
-  
-    encoder_gru_layers = [    
+
+
+    encoder_gru_layers = [
         ('core_encoder.module.gru_1'         , 'enc_dense2',   'TANH'),
         ('core_encoder.module.gru_2'         , 'enc_dense4',   'TANH'),
         ('core_encoder.module.gru_3'         , 'enc_dense6',   'TANH')
     ]
- 
+
     enc_max_rnn_units = max([dump_torch_weights(enc_writer, model.get_submodule(name), export_name, activation, verbose=True, input_sparse=True, dotp=True)
                              for name, export_name, activation in encoder_gru_layers])
- 
-    
-    encoder_conv_layers = [   
-        ('core_encoder.module.conv1'         , 'bits_dense' ,   'LINEAR') 
-    ]
-    
-    enc_max_conv_inputs = max([dump_torch_weights(enc_writer, model.get_submodule(name), export_name, activation, verbose=True) for name, export_name, activation in encoder_conv_layers])    
 
-    
+
+    encoder_conv_layers = [
+        ('core_encoder.module.conv1'         , 'bits_dense' ,   'LINEAR')
+    ]
+
+    enc_max_conv_inputs = max([dump_torch_weights(enc_writer, model.get_submodule(name), export_name, activation, verbose=True) for name, export_name, activation in encoder_conv_layers])
+
+
     del enc_writer
-    
+
     # decoder
     decoder_dense_layers = [
         ('core_decoder.module.gru_1_init'    , 'state1',        'TANH'),
@@ -151,25 +151,25 @@ f"""
     for name, export_name, activation in decoder_dense_layers:
         layer = model.get_submodule(name)
         dump_torch_weights(dec_writer, layer, name=export_name, activation=activation, verbose=True)
-        
+
 
     decoder_gru_layers = [
         ('core_decoder.module.gru_1'         , 'dec_dense2',    'TANH'),
         ('core_decoder.module.gru_2'         , 'dec_dense4',    'TANH'),
         ('core_decoder.module.gru_3'         , 'dec_dense6',    'TANH')
     ]
-    
+
     dec_max_rnn_units = max([dump_torch_weights(dec_writer, model.get_submodule(name), export_name, activation, verbose=True, input_sparse=True, dotp=True)
                              for name, export_name, activation in decoder_gru_layers])
-        
+
     del dec_writer
-    
+
     # statistical model
     qembedding = model.statistical_model.quant_embedding
     dump_statistical_model(stats_writer, qembedding)
-    
+
     del stats_writer
-    
+
     # constants
     constants_writer.header.write(
 f"""
@@ -193,12 +193,12 @@ f"""
 
 """
     )
-    
+
     del constants_writer
 
 
 def numpy_export(args, model):
-    
+
     exchange_name_to_name = {
         'encoder_stack_layer1_dense'    : 'core_encoder.module.dense_1',
         'encoder_stack_layer3_dense'    : 'core_encoder.module.dense_2',
@@ -225,20 +225,20 @@ def numpy_export(args, model):
         'decoder_stack_layer4_gru'      : 'core_decoder.module.gru_2',
         'decoder_stack_layer6_gru'      : 'core_decoder.module.gru_3'
     }
-    
+
     name_to_exchange_name = {value : key for key, value in exchange_name_to_name.items()}
-    
+
     for name, exchange_name in name_to_exchange_name.items():
         print(f"printing layer {name}...")
         dump_torch_weights(os.path.join(args.output_dir, exchange_name), model.get_submodule(name))
 
 
 if __name__ == "__main__":
-    
-    
+
+
     os.makedirs(args.output_dir, exist_ok=True)
-    
-    
+
+
     # load model from checkpoint
     checkpoint = torch.load(args.checkpoint, map_location='cpu')
     model = RDOVAE(*checkpoint['model_args'], **checkpoint['model_kwargs'])
@@ -249,7 +249,7 @@ if __name__ == "__main__":
 
     if len(unmatched_keys) > 0:
         print(f"warning: the following keys were unmatched {unmatched_keys}")
-    
+
     if args.format == 'C':
         c_export(args, model)
     elif args.format == 'numpy':

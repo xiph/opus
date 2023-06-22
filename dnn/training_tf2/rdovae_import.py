@@ -79,7 +79,7 @@ exchange_name = {
 if __name__ == "__main__":
 
     model, encoder, decoder, qembedding = new_rdovae_model(20, args.latent_dim, cond_size=args.cond_size, nb_quant=args.quant_levels)
-    
+
     encoder_layers = [
         'enc_dense1',
         'enc_dense3',
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         'enc_dense6',
         'bits_dense'
     ]
-    
+
     decoder_layers = [
         'state1',
         'state2',
@@ -108,16 +108,16 @@ if __name__ == "__main__":
         'dec_dense4',
         'dec_dense6'
     ]
-    
+
     for name in encoder_layers:
         print(f"loading weight for layer {name}...")
         load_tf_weights(os.path.join(args.input, exchange_name[name]), encoder.get_layer(name))
-    
+
     print(f"loading weight for layer qembedding...")
     load_tf_weights(os.path.join(args.input, exchange_name['qembedding']), qembedding)
-    
+
     for name in decoder_layers:
         print(f"loading weight for layer {name}...")
         load_tf_weights(os.path.join(args.input, exchange_name[name]), decoder.get_layer(name))
-        
+
     model.save(args.weights)

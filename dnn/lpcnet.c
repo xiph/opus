@@ -61,7 +61,7 @@ void rc2lpc(float *lpc, const float *rc)
   float ntmp[LPC_ORDER] = {0.0};
   RNN_COPY(tmp, rc, LPC_ORDER);
   for(i = 0; i < LPC_ORDER ; i++)
-    { 
+    {
         for(j = 0; j <= i-1; j++)
         {
             ntmp[j] = tmp[j] + tmp[i]*tmp[i - j - 1];
@@ -106,7 +106,7 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
     _lpcnet_compute_dense(&lpcnet->model.gru_b_dense_feature, gru_b_condition, condition);
 #ifdef END2END
     rc2lpc(lpc, rc);
-#elif FEATURES_DELAY>0    
+#elif FEATURES_DELAY>0
     memcpy(lpc, lpcnet->old_lpc[FEATURES_DELAY-1], LPC_ORDER*sizeof(lpc[0]));
     memmove(lpcnet->old_lpc[1], lpcnet->old_lpc[0], (FEATURES_DELAY-1)*LPC_ORDER*sizeof(lpc[0]));
     lpc_from_cepstrum(lpcnet->old_lpc[0], features);

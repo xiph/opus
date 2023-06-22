@@ -43,7 +43,7 @@ int get_fec_frame(const char * const filename, float *features, int packet_index
     long offset;
 
     FILE *fid = fopen(filename, "rb");
-    
+
     /* read header */
     if (fread(&version, sizeof(version), 1, fid) != 1) goto error;
     if (fread(&header_size, sizeof(header_size), 1, fid) != 1) goto error;
@@ -88,7 +88,7 @@ int get_fec_rate(const char * const filename, int packet_index)
     int16_t rate;
 
     FILE *fid = fopen(filename, "rb");
-    
+
     /* read header */
     if (fread(&version, sizeof(version), 1, fid) != 1) goto error;
     if (fread(&header_size, sizeof(header_size), 1, fid) != 1) goto error;

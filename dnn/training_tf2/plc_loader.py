@@ -56,7 +56,7 @@ class PLCLoader(Sequence):
         lost_mask = np.tile(lost, (1,1,features.shape[2]))
         in_features = features*lost_mask
         in_features[:,:,:self.nb_burg_features] = in_features[:,:,:self.nb_burg_features]*burg_mask
-        
+
         #For the first frame after a loss, we don't have valid features, but the Burg estimate is valid.
         #in_features[:,1:,self.nb_burg_features:] = in_features[:,1:,self.nb_burg_features:]*lost_mask[:,:-1,self.nb_burg_features:]
         out_lost = np.copy(lost)

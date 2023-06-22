@@ -90,7 +90,7 @@ if __name__ == "__main__":
     cond_size       = args.cond_size
     cond_size2      = args.cond_size2
     state_dim       = args.state_dim
-    
+
 
     # model
     checkpoint['model_args']    = (num_features, latent_dim, quant_levels, cond_size, cond_size2)
@@ -105,9 +105,9 @@ if __name__ == "__main__":
         'encoder_stack_layer8_dense',
         'encoder_state_layer1_dense',
         'encoder_state_layer2_dense',
-        'decoder_state1_dense',      
-        'decoder_state2_dense',      
-        'decoder_state3_dense',      
+        'decoder_state1_dense',
+        'decoder_state2_dense',
+        'decoder_state3_dense',
         'decoder_stack_layer1_dense',
         'decoder_stack_layer3_dense',
         'decoder_stack_layer5_dense',
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         'encoder_stack_layer6_gru',
         'decoder_stack_layer2_gru',
         'decoder_stack_layer4_gru',
-        'decoder_stack_layer6_gru' 
+        'decoder_stack_layer6_gru'
     ]
 
     conv1d_layer_names = [

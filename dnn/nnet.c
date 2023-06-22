@@ -170,7 +170,7 @@ int sample_mdense(const MDenseLayer *layer, const float *input, const float *sam
    C = layer->nb_channels;
    celt_assert(N*C <= MAX_MDENSE_TMP);
    stride = M*C;
-   
+
    celt_assert(N <= DUAL_FC_OUT_SIZE);
 
    /* Computing all the random thresholds in advance. These thresholds are directly
@@ -188,7 +188,7 @@ int sample_mdense(const MDenseLayer *layer, const float *input, const float *sam
       int bit;
       int i;
       float sum1, sum2;
-      
+
       i = (1<<b) | val;
 
       sum1 = layer->bias[i];
@@ -426,7 +426,7 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
 #ifdef USE_SU_BIAS
    bias = &gru->subias[3*N];
 #else
-   bias = &gru->bias[3*N];   
+   bias = &gru->bias[3*N];
 #endif
    for (k=0;k<2;k++)
    {
@@ -478,7 +478,7 @@ void compute_embedding(const EmbeddingLayer *layer, float *output, int input)
    for (i=0;i<layer->dim;i++)
    {
       output[i] = layer->embedding_weights[input*layer->dim + i];
-   }    
+   }
 }
 
 void compute_gru_a_input(float *output, const float *input, int N, const EmbeddingLayer *layer1, int val1, const EmbeddingLayer *layer2, int val2, const EmbeddingLayer *layer3, int val3) {
@@ -499,5 +499,5 @@ void accum_embedding(const EmbeddingLayer *layer, float *output, int input)
    for (i=0;i<layer->dim;i++)
    {
       output[i] += layer->embedding_weights[input*layer->dim + i];
-   }    
+   }
 }

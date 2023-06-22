@@ -89,7 +89,7 @@ adam_eps = 1e-8
 
 checkpoint['batch_size'] = batch_size
 checkpoint['lr'] = lr
-checkpoint['lr_decay_factor'] = lr_decay_factor 
+checkpoint['lr_decay_factor'] = lr_decay_factor
 checkpoint['split_mode'] = split_mode
 checkpoint['epochs'] = epochs
 checkpoint['sequence_length'] = sequence_length
@@ -130,10 +130,10 @@ checkpoint['state_dict']    = model.state_dict()
 if args.train_decoder_only:
     if args.initial_checkpoint is None:
         print("warning: training decoder only without providing initial checkpoint")
-        
+
     for p in model.core_encoder.module.parameters():
         p.requires_grad = False
-        
+
     for p in model.statistical_model.parameters():
         p.requires_grad = False
 
@@ -180,15 +180,15 @@ if __name__ == '__main__':
 
                 # zero out gradients
                 optimizer.zero_grad()
-                
+
                 # push inputs to device
                 features    = features.to(device)
                 q_ids       = q_ids.to(device)
                 rate_lambda = rate_lambda.to(device)
 
-                
+
                 rate_lambda_upsamp = torch.repeat_interleave(rate_lambda, 2, 1)
-                
+
                 # run model
                 model_output = model(features, q_ids)
 
@@ -224,17 +224,17 @@ if __name__ == '__main__':
 
                 # total loss
                 total_loss = rate_loss + (distortion_loss_hard_quant + distortion_loss_soft_quant) / 2
-                
+
                 if args.enable_first_frame_loss:
                     total_loss = total_loss + 0.5 * torch.relu(first_frame_loss - distortion_loss_hard_quant)
-                
+
 
                 total_loss.backward()
-                
+
                 optimizer.step()
-                
+
                 model.clip_weights()
-                
+
                 scheduler.step()
 
                 # collect running stats
