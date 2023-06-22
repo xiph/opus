@@ -27,19 +27,6 @@
 #ifndef _LPCNET_H_
 #define _LPCNET_H_
 
-#ifndef LPCNET_EXPORT
-# if defined(WIN32)
-#  if defined(LPCNET_BUILD) && defined(DLL_EXPORT)
-#   define LPCNET_EXPORT __declspec(dllexport)
-#  else
-#   define LPCNET_EXPORT
-#  endif
-# elif defined(__GNUC__) && defined(LPCNET_BUILD)
-#  define LPCNET_EXPORT __attribute__ ((visibility ("default")))
-# else
-#  define LPCNET_EXPORT
-# endif
-#endif
 
 
 #define NB_FEATURES 20
@@ -64,7 +51,7 @@ typedef struct LPCNetPLCState LPCNetPLCState;
 /** Gets the size of an <code>LPCNetDecState</code> structure.
   * @returns The size in bytes.
   */
-LPCNET_EXPORT int lpcnet_decoder_get_size(void);
+int lpcnet_decoder_get_size(void);
 
 /** Initializes a previously allocated decoder state
   * The memory pointed to by st must be at least the size returned by lpcnet_decoder_get_size().
@@ -73,19 +60,19 @@ LPCNET_EXPORT int lpcnet_decoder_get_size(void);
   * @param [in] st <tt>LPCNetDecState*</tt>: Decoder state
   * @retval 0 Success
   */
-LPCNET_EXPORT int lpcnet_decoder_init(LPCNetDecState *st);
+int lpcnet_decoder_init(LPCNetDecState *st);
 
-LPCNET_EXPORT void lpcnet_reset(LPCNetState *lpcnet);
+void lpcnet_reset(LPCNetState *lpcnet);
 
 /** Allocates and initializes a decoder state.
   *  @returns The newly created state
   */
-LPCNET_EXPORT LPCNetDecState *lpcnet_decoder_create(void);
+LPCNetDecState *lpcnet_decoder_create(void);
 
 /** Frees an <code>LPCNetDecState</code> allocated by lpcnet_decoder_create().
   * @param[in] st <tt>LPCNetDecState*</tt>: State to be freed.
   */
-LPCNET_EXPORT void lpcnet_decoder_destroy(LPCNetDecState *st);
+void lpcnet_decoder_destroy(LPCNetDecState *st);
 
 /** Decodes a packet of LPCNET_COMPRESSED_SIZE bytes (currently 8) into LPCNET_PACKET_SAMPLES samples (currently 640).
   * @param [in] st <tt>LPCNetDecState*</tt>: Decoder state
@@ -93,14 +80,14 @@ LPCNET_EXPORT void lpcnet_decoder_destroy(LPCNetDecState *st);
   * @param [out] pcm <tt>short *</tt>: Decoded audio
   * @retval 0 Success
   */
-LPCNET_EXPORT int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm);
+int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm);
 
 
 
 /** Gets the size of an <code>LPCNetEncState</code> structure.
   * @returns The size in bytes.
   */
-LPCNET_EXPORT int lpcnet_encoder_get_size(void);
+int lpcnet_encoder_get_size(void);
 
 /** Initializes a previously allocated encoder state
   * The memory pointed to by st must be at least the size returned by lpcnet_encoder_get_size().
@@ -109,17 +96,17 @@ LPCNET_EXPORT int lpcnet_encoder_get_size(void);
   * @param [in] st <tt>LPCNetEncState*</tt>: Encoder state
   * @retval 0 Success
   */
-LPCNET_EXPORT int lpcnet_encoder_init(LPCNetEncState *st);
+int lpcnet_encoder_init(LPCNetEncState *st);
 
 /** Allocates and initializes an encoder state.
   *  @returns The newly created state
   */
-LPCNET_EXPORT LPCNetEncState *lpcnet_encoder_create(void);
+LPCNetEncState *lpcnet_encoder_create(void);
 
 /** Frees an <code>LPCNetEncState</code> allocated by lpcnet_encoder_create().
   * @param[in] st <tt>LPCNetEncState*</tt>: State to be freed.
   */
-LPCNET_EXPORT void lpcnet_encoder_destroy(LPCNetEncState *st);
+void lpcnet_encoder_destroy(LPCNetEncState *st);
 
 /** Encodes LPCNET_PACKET_SAMPLES speech samples (currently 640) into a packet of LPCNET_COMPRESSED_SIZE bytes (currently 8).
   * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
@@ -127,7 +114,7 @@ LPCNET_EXPORT void lpcnet_encoder_destroy(LPCNetEncState *st);
   * @param [out] buf <tt>const unsigned char *</tt>: Compressed packet
   * @retval 0 Success
   */
-LPCNET_EXPORT int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf);
+int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf);
 
 /** Compute features on LPCNET_PACKET_SAMPLES speech samples (currently 640) and output features for 4 10-ms frames at once.
   * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
@@ -135,7 +122,7 @@ LPCNET_EXPORT int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned c
   * @param [out] features <tt>float[4][NB_TOTAL_FEATURES]</tt>: Four feature vectors
   * @retval 0 Success
   */
-LPCNET_EXPORT int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, float features[4][NB_TOTAL_FEATURES]);
+int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, float features[4][NB_TOTAL_FEATURES]);
 
 /** Compute features on LPCNET_FRAME_SIZE speech samples (currently 160) and output features for one 10-ms frame.
   * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
@@ -143,7 +130,7 @@ LPCNET_EXPORT int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, 
   * @param [out] features <tt>float[NB_TOTAL_FEATURES]</tt>: Four feature vectors
   * @retval 0 Success
   */
-LPCNET_EXPORT int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]);
+int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]);
 
 
 /** Compute features on LPCNET_FRAME_SIZE speech samples (currently 160) and output features for one 10-ms frame.
@@ -152,12 +139,12 @@ LPCNET_EXPORT int lpcnet_compute_single_frame_features(LPCNetEncState *st, const
   * @param [out] features <tt>float[NB_TOTAL_FEATURES]</tt>: Four feature vectors
   * @retval 0 Success
   */
-LPCNET_EXPORT int lpcnet_compute_single_frame_features_float(LPCNetEncState *st, const float *pcm, float features[NB_TOTAL_FEATURES]);
+int lpcnet_compute_single_frame_features_float(LPCNetEncState *st, const float *pcm, float features[NB_TOTAL_FEATURES]);
 
 /** Gets the size of an <code>LPCNetState</code> structure.
   * @returns The size in bytes.
   */
-LPCNET_EXPORT int lpcnet_get_size(void);
+int lpcnet_get_size(void);
 
 /** Initializes a previously allocated synthesis state
   * The memory pointed to by st must be at least the size returned by lpcnet_get_size().
@@ -166,17 +153,17 @@ LPCNET_EXPORT int lpcnet_get_size(void);
   * @param [in] st <tt>LPCNetState*</tt>: Synthesis state
   * @retval 0 Success
   */
-LPCNET_EXPORT int lpcnet_init(LPCNetState *st);
+int lpcnet_init(LPCNetState *st);
 
 /** Allocates and initializes a synthesis state.
   *  @returns The newly created state
   */
-LPCNET_EXPORT LPCNetState *lpcnet_create(void);
+LPCNetState *lpcnet_create(void);
 
 /** Frees an <code>LPCNetState</code> allocated by lpcnet_create().
   * @param[in] st <tt>LPCNetState*</tt>: State to be freed.
   */
-LPCNET_EXPORT void lpcnet_destroy(LPCNetState *st);
+void lpcnet_destroy(LPCNetState *st);
 
 /** Synthesizes speech from an LPCNet feature vector.
   * @param [in] st <tt>LPCNetState*</tt>: Synthesis state
@@ -185,31 +172,31 @@ LPCNET_EXPORT void lpcnet_destroy(LPCNetState *st);
   * @param [in] N <tt>int</tt>: Number of samples to generate
   * @retval 0 Success
   */
-LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *st, const float *features, short *output, int N);
+void lpcnet_synthesize(LPCNetState *st, const float *features, short *output, int N);
 
 
 #define LPCNET_PLC_CAUSAL 0
 #define LPCNET_PLC_CODEC 2
 
 
-LPCNET_EXPORT int lpcnet_plc_get_size(void);
+int lpcnet_plc_get_size(void);
 
-LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options);
-LPCNET_EXPORT void lpcnet_plc_reset(LPCNetPLCState *st);
+int lpcnet_plc_init(LPCNetPLCState *st, int options);
+void lpcnet_plc_reset(LPCNetPLCState *st);
 
-LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create(int options);
+LPCNetPLCState *lpcnet_plc_create(int options);
 
-LPCNET_EXPORT void lpcnet_plc_destroy(LPCNetPLCState *st);
+void lpcnet_plc_destroy(LPCNetPLCState *st);
 
-LPCNET_EXPORT int lpcnet_plc_update(LPCNetPLCState *st, short *pcm);
+int lpcnet_plc_update(LPCNetPLCState *st, short *pcm);
 
-LPCNET_EXPORT int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm);
+int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm);
 
-LPCNET_EXPORT void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features);
+void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features);
 
-LPCNET_EXPORT void lpcnet_plc_fec_clear(LPCNetPLCState *st);
+void lpcnet_plc_fec_clear(LPCNetPLCState *st);
 
-LPCNET_EXPORT int lpcnet_load_model(LPCNetState *st, const unsigned char *data, int len);
-LPCNET_EXPORT int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len);
+int lpcnet_load_model(LPCNetState *st, const unsigned char *data, int len);
+int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len);
 
 #endif

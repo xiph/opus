@@ -39,11 +39,11 @@
 /* Comment this out to have LPCNet update its state on every good packet (slow). */
 #define PLC_SKIP_UPDATES
 
-LPCNET_EXPORT int lpcnet_plc_get_size() {
+int lpcnet_plc_get_size() {
   return sizeof(LPCNetPLCState);
 }
 
-LPCNET_EXPORT void lpcnet_plc_reset(LPCNetPLCState *st) {
+void lpcnet_plc_reset(LPCNetPLCState *st) {
   RNN_CLEAR((char*)&st->LPCNET_PLC_RESET_START,
           sizeof(LPCNetPLCState)-
           ((char*)&st->LPCNET_PLC_RESET_START - (char*)st));
@@ -56,7 +56,7 @@ LPCNET_EXPORT void lpcnet_plc_reset(LPCNetPLCState *st) {
   st->loss_count = 0;
 }
 
-LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options) {
+int lpcnet_plc_init(LPCNetPLCState *st, int options) {
   int ret;
   lpcnet_init(&st->lpcnet);
   lpcnet_encoder_init(&st->enc);
@@ -77,7 +77,7 @@ LPCNET_EXPORT int lpcnet_plc_init(LPCNetPLCState *st, int options) {
   return ret;
 }
 
-LPCNET_EXPORT int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len) {
+int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len) {
   WeightArray *list;
   int ret;
   parse_weights(&list, data, len);
@@ -89,14 +89,14 @@ LPCNET_EXPORT int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char 
   else return -1;
 }
 
-LPCNET_EXPORT LPCNetPLCState *lpcnet_plc_create(int options) {
+LPCNetPLCState *lpcnet_plc_create(int options) {
   LPCNetPLCState *st;
   st = calloc(sizeof(*st), 1);
   lpcnet_plc_init(st, options);
   return st;
 }
 
-LPCNET_EXPORT void lpcnet_plc_destroy(LPCNetPLCState *st) {
+void lpcnet_plc_destroy(LPCNetPLCState *st) {
   free(st);
 }
 

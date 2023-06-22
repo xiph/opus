@@ -166,12 +166,12 @@ int run_sample_network(LPCNetState *lpcnet, const float *gru_a_condition, const 
     return sample_mdense(&lpcnet->model.dual_fc, net->gru_b_state, sampling_logit_table, rng);
 }
 
-LPCNET_EXPORT int lpcnet_get_size()
+int lpcnet_get_size()
 {
     return sizeof(LPCNetState);
 }
 
-LPCNET_EXPORT void lpcnet_reset(LPCNetState *lpcnet)
+void lpcnet_reset(LPCNetState *lpcnet)
 {
     const char* rng_string="LPCNet";
     RNN_CLEAR((char*)&lpcnet->LPCNET_RESET_START,
@@ -181,7 +181,7 @@ LPCNET_EXPORT void lpcnet_reset(LPCNetState *lpcnet)
     kiss99_srand(&lpcnet->rng, (const unsigned char *)rng_string, strlen(rng_string));
 }
 
-LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
+int lpcnet_init(LPCNetState *lpcnet)
 {
     int i;
     int ret;
@@ -199,7 +199,7 @@ LPCNET_EXPORT int lpcnet_init(LPCNetState *lpcnet)
     return ret;
 }
 
-LPCNET_EXPORT int lpcnet_load_model(LPCNetState *st, const unsigned char *data, int len) {
+int lpcnet_load_model(LPCNetState *st, const unsigned char *data, int len) {
   WeightArray *list;
   int ret;
   parse_weights(&list, data, len);
@@ -210,7 +210,7 @@ LPCNET_EXPORT int lpcnet_load_model(LPCNetState *st, const unsigned char *data, 
 }
 
 
-LPCNET_EXPORT LPCNetState *lpcnet_create()
+LPCNetState *lpcnet_create()
 {
     LPCNetState *lpcnet;
     lpcnet = (LPCNetState *)calloc(lpcnet_get_size(), 1);
@@ -218,7 +218,7 @@ LPCNET_EXPORT LPCNetState *lpcnet_create()
     return lpcnet;
 }
 
-LPCNET_EXPORT void lpcnet_destroy(LPCNetState *lpcnet)
+void lpcnet_destroy(LPCNetState *lpcnet)
 {
     free(lpcnet);
 }
@@ -276,6 +276,6 @@ void lpcnet_synthesize_impl(LPCNetState *lpcnet, const float *features, short *o
     lpcnet_synthesize_tail_impl(lpcnet, output, N, preload);
 }
 
-LPCNET_EXPORT void lpcnet_synthesize(LPCNetState *lpcnet, const float *features, short *output, int N) {
+void lpcnet_synthesize(LPCNetState *lpcnet, const float *features, short *output, int N) {
     lpcnet_synthesize_impl(lpcnet, features, output, N, 0);
 }

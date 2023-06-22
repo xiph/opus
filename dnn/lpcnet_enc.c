@@ -45,24 +45,24 @@
 #include "lpcnet.h"
 
 
-LPCNET_EXPORT int lpcnet_encoder_get_size() {
+int lpcnet_encoder_get_size() {
   return sizeof(LPCNetEncState);
 }
 
-LPCNET_EXPORT int lpcnet_encoder_init(LPCNetEncState *st) {
+int lpcnet_encoder_init(LPCNetEncState *st) {
   memset(st, 0, sizeof(*st));
   st->exc_mem = lin2ulaw(0.f);
   return 0;
 }
 
-LPCNET_EXPORT LPCNetEncState *lpcnet_encoder_create() {
+LPCNetEncState *lpcnet_encoder_create() {
   LPCNetEncState *st;
   st = malloc(lpcnet_encoder_get_size());
   lpcnet_encoder_init(st);
   return st;
 }
 
-LPCNET_EXPORT void lpcnet_encoder_destroy(LPCNetEncState *st) {
+void lpcnet_encoder_destroy(LPCNetEncState *st) {
   free(st);
 }
 
