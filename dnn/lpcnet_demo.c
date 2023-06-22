@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
         net = lpcnet_encoder_create();
         while (1) {
             float features[NB_TOTAL_FEATURES];
-            short pcm[LPCNET_FRAME_SIZE];
+            opus_int16 pcm[LPCNET_FRAME_SIZE];
             size_t ret;
             ret = fread(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fin);
             if (feof(fin) || ret != LPCNET_FRAME_SIZE) break;
@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
         while (1) {
             float in_features[NB_TOTAL_FEATURES];
             float features[NB_FEATURES];
-            short pcm[LPCNET_FRAME_SIZE];
+            opus_int16 pcm[LPCNET_FRAME_SIZE];
             size_t ret;
             ret = fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
             if (feof(fin) || ret != NB_TOTAL_FEATURES) break;
@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
         }
         lpcnet_destroy(net);
     } else if (mode == MODE_PLC) {
-        short pcm[FRAME_SIZE];
+        opus_int16 pcm[FRAME_SIZE];
         int count=0;
         int loss=0;
         int skip=0, extra=0;

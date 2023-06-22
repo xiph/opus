@@ -175,10 +175,10 @@ void clear_state(LPCNetPLCState *st) {
 /* In this causal version of the code, the DNN model implemented by compute_plc_pred()
    needs to generate two feature vectors to conceal the first lost packet.*/
 
-int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
+int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
   float x[FRAME_SIZE];
-  short output[FRAME_SIZE];
+  opus_int16 output[FRAME_SIZE];
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
   int delta = 0;
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
@@ -186,7 +186,7 @@ int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
   if (st->skip_analysis) {
     /*fprintf(stderr, "skip update\n");*/
     if (st->blend) {
-      short tmp[FRAME_SIZE-TRAINING_OFFSET];
+      opus_int16 tmp[FRAME_SIZE-TRAINING_OFFSET];
       float zeros[2*NB_BANDS+NB_FEATURES+1] = {0};
       RNN_COPY(zeros, plc_features, 2*NB_BANDS);
       zeros[2*NB_BANDS+NB_FEATURES] = 1;
@@ -263,9 +263,9 @@ int lpcnet_plc_update(LPCNetPLCState *st, short *pcm) {
 }
 
 static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6, -1.6};
-int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm) {
+int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
-  short output[FRAME_SIZE];
+  opus_int16 output[FRAME_SIZE];
   run_frame_network_flush(&st->lpcnet);
   /* If we concealed the previous frame, finish synthesizing the rest of the samples. */
   /* FIXME: Copy/predict features. */

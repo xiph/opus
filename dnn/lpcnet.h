@@ -27,7 +27,7 @@
 #ifndef _LPCNET_H_
 #define _LPCNET_H_
 
-
+#include "opus_types.h"
 
 #define NB_FEATURES 20
 #define NB_TOTAL_FEATURES 36
@@ -73,10 +73,10 @@ void lpcnet_decoder_destroy(LPCNetDecState *st);
 /** Decodes a packet of LPCNET_COMPRESSED_SIZE bytes (currently 8) into LPCNET_PACKET_SAMPLES samples (currently 640).
   * @param [in] st <tt>LPCNetDecState*</tt>: Decoder state
   * @param [in] buf <tt>const unsigned char *</tt>: Compressed packet
-  * @param [out] pcm <tt>short *</tt>: Decoded audio
+  * @param [out] pcm <tt>opus_int16 *</tt>: Decoded audio
   * @retval 0 Success
   */
-int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, short *pcm);
+int lpcnet_decode(LPCNetDecState *st, const unsigned char *buf, opus_int16 *pcm);
 
 
 
@@ -106,27 +106,19 @@ void lpcnet_encoder_destroy(LPCNetEncState *st);
 
 /** Encodes LPCNET_PACKET_SAMPLES speech samples (currently 640) into a packet of LPCNET_COMPRESSED_SIZE bytes (currently 8).
   * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
-  * @param [in] pcm <tt>short *</tt>: Input speech to be encoded
+  * @param [in] pcm <tt>opus_int16 *</tt>: Input speech to be encoded
   * @param [out] buf <tt>const unsigned char *</tt>: Compressed packet
   * @retval 0 Success
   */
-int lpcnet_encode(LPCNetEncState *st, const short *pcm, unsigned char *buf);
-
-/** Compute features on LPCNET_PACKET_SAMPLES speech samples (currently 640) and output features for 4 10-ms frames at once.
-  * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
-  * @param [in] pcm <tt>short *</tt>: Input speech to be analyzed
-  * @param [out] features <tt>float[4][NB_TOTAL_FEATURES]</tt>: Four feature vectors
-  * @retval 0 Success
-  */
-int lpcnet_compute_features(LPCNetEncState *st, const short *pcm, float features[4][NB_TOTAL_FEATURES]);
+int lpcnet_encode(LPCNetEncState *st, const opus_int16 *pcm, unsigned char *buf);
 
 /** Compute features on LPCNET_FRAME_SIZE speech samples (currently 160) and output features for one 10-ms frame.
   * @param [in] st <tt>LPCNetDecState*</tt>: Encoder state
-  * @param [in] pcm <tt>short *</tt>: Input speech to be analyzed
+  * @param [in] pcm <tt>opus_int16 *</tt>: Input speech to be analyzed
   * @param [out] features <tt>float[NB_TOTAL_FEATURES]</tt>: Four feature vectors
   * @retval 0 Success
   */
-int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]);
+int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *pcm, float features[NB_TOTAL_FEATURES]);
 
 
 /** Compute features on LPCNET_FRAME_SIZE speech samples (currently 160) and output features for one 10-ms frame.
@@ -164,11 +156,11 @@ void lpcnet_destroy(LPCNetState *st);
 /** Synthesizes speech from an LPCNet feature vector.
   * @param [in] st <tt>LPCNetState*</tt>: Synthesis state
   * @param [in] features <tt>const float *</tt>: Compressed packet
-  * @param [out] output <tt>short **</tt>: Synthesized speech
+  * @param [out] output <tt>opus_int16 **</tt>: Synthesized speech
   * @param [in] N <tt>int</tt>: Number of samples to generate
   * @retval 0 Success
   */
-void lpcnet_synthesize(LPCNetState *st, const float *features, short *output, int N);
+void lpcnet_synthesize(LPCNetState *st, const float *features, opus_int16 *output, int N);
 
 
 #define LPCNET_PLC_CAUSAL 0
@@ -184,9 +176,9 @@ LPCNetPLCState *lpcnet_plc_create(int options);
 
 void lpcnet_plc_destroy(LPCNetPLCState *st);
 
-int lpcnet_plc_update(LPCNetPLCState *st, short *pcm);
+int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm);
 
-int lpcnet_plc_conceal(LPCNetPLCState *st, short *pcm);
+int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm);
 
 void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features);
 

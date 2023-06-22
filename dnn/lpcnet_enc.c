@@ -233,7 +233,7 @@ static int lpcnet_compute_single_frame_features_impl(LPCNetEncState *st, float *
   return 0;
 }
 
-int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]) {
+int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *pcm, float features[NB_TOTAL_FEATURES]) {
   int i;
   float x[FRAME_SIZE];
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];

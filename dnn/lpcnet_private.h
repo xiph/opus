@@ -77,7 +77,7 @@ struct LPCNetPLCState {
   int fec_read_pos;
   int fec_fill_pos;
   int fec_skip;
-  short pcm[PLC_BUF_SIZE+FRAME_SIZE];
+  opus_int16 pcm[PLC_BUF_SIZE+FRAME_SIZE];
   int pcm_fill;
   int skip_analysis;
   int blend;
@@ -91,19 +91,17 @@ void preemphasis(float *y, float *mem, const float *x, float coef, int N);
 
 void compute_frame_features(LPCNetEncState *st, const float *in);
 
-void decode_packet(float features[4][NB_TOTAL_FEATURES], float *vq_mem, const unsigned char buf[8]);
-
 void lpcnet_reset_signal(LPCNetState *lpcnet);
 void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, float *lpc, const float *features);
 void run_frame_network_deferred(LPCNetState *lpcnet, const float *features);
 void run_frame_network_flush(LPCNetState *lpcnet);
 
 
-void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int preload);
-void lpcnet_synthesize_impl(LPCNetState *lpcnet, const float *features, short *output, int N, int preload);
-void lpcnet_synthesize_blend_impl(LPCNetState *lpcnet, const short *pcm_in, short *output, int N);
+void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, opus_int16 *output, int N, int preload);
+void lpcnet_synthesize_impl(LPCNetState *lpcnet, const float *features, opus_int16 *output, int N, int preload);
+void lpcnet_synthesize_blend_impl(LPCNetState *lpcnet, const opus_int16 *pcm_in, opus_int16 *output, int N);
 void process_single_frame(LPCNetEncState *st, FILE *ffeat);
-int lpcnet_compute_single_frame_features(LPCNetEncState *st, const short *pcm, float features[NB_TOTAL_FEATURES]);
+int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *pcm, float features[NB_TOTAL_FEATURES]);
 
 void process_single_frame(LPCNetEncState *st, FILE *ffeat);
 

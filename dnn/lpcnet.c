@@ -232,7 +232,7 @@ void lpcnet_reset_signal(LPCNetState *lpcnet)
     RNN_CLEAR(lpcnet->nnet.gru_b_state, GRU_B_STATE_SIZE);
 }
 
-void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int preload)
+void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, opus_int16 *output, int N, int preload)
 {
     int i;
 
@@ -270,12 +270,12 @@ void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, short *output, int N, int 
     }
 }
 
-void lpcnet_synthesize_impl(LPCNetState *lpcnet, const float *features, short *output, int N, int preload)
+void lpcnet_synthesize_impl(LPCNetState *lpcnet, const float *features, opus_int16 *output, int N, int preload)
 {
     run_frame_network(lpcnet, lpcnet->gru_a_condition, lpcnet->gru_b_condition, lpcnet->lpc, features);
     lpcnet_synthesize_tail_impl(lpcnet, output, N, preload);
 }
 
-void lpcnet_synthesize(LPCNetState *lpcnet, const float *features, short *output, int N) {
+void lpcnet_synthesize(LPCNetState *lpcnet, const float *features, opus_int16 *output, int N) {
     lpcnet_synthesize_impl(lpcnet, features, output, N, 0);
 }

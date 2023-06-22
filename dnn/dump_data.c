@@ -73,7 +73,7 @@ void compute_noise(int *noise, float noise_std) {
   }
 }
 
-static short float2short(float x)
+static opus_int16 float2short(float x)
 {
   int i;
   i = (int)floor(.5+x);
@@ -81,9 +81,9 @@ static short float2short(float x)
 }
 
 
-void write_audio(LPCNetEncState *st, const short *pcm, const int *noise, FILE *file) {
+void write_audio(LPCNetEncState *st, const opus_int16 *pcm, const int *noise, FILE *file) {
   int i;
-  short data[2*FRAME_SIZE];
+  opus_int16 data[2*FRAME_SIZE];
   for (i=0;i<FRAME_SIZE;i++) {
     float p=0;
     float e;
@@ -121,9 +121,9 @@ int main(int argc, char **argv) {
   FILE *f1;
   FILE *ffeat;
   FILE *fpcm=NULL;
-  short pcm[FRAME_SIZE]={0};
+  opus_int16 pcm[FRAME_SIZE]={0};
   int noisebuf[FRAME_SIZE]={0};
-  short tmp[FRAME_SIZE] = {0};
+  opus_int16 tmp[FRAME_SIZE] = {0};
   float savedX[FRAME_SIZE] = {0};
   float speech_gain=1;
   int last_silent = 1;
@@ -173,11 +173,11 @@ int main(int argc, char **argv) {
     int silent;
     size_t ret;
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
-    ret = fread(tmp, sizeof(short), FRAME_SIZE, f1);
+    ret = fread(tmp, sizeof(opus_int16), FRAME_SIZE, f1);
     if (feof(f1) || ret != FRAME_SIZE) {
       if (!training) break;
       rewind(f1);
-      ret = fread(tmp, sizeof(short), FRAME_SIZE, f1);
+      ret = fread(tmp, sizeof(opus_int16), FRAME_SIZE, f1);
       if (ret != FRAME_SIZE) {
         fprintf(stderr, "error reading\n");
         exit(1);
@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
 
     process_single_frame(st, ffeat);
     if (fpcm) write_audio(st, pcm, noisebuf, fpcm);
-    /*if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);*/
+    /*if (fpcm) fwrite(pcm, sizeof(opus_int16), FRAME_SIZE, fpcm);*/
     for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);
     old_speech_gain = speech_gain;
     count++;
