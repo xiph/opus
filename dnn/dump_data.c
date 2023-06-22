@@ -55,7 +55,7 @@ static void biquad(float *y, float mem[2], const float *x, const float *b, const
   }
 }
 
-static float uni_rand() {
+static float uni_rand(void) {
   return rand()/(double)RAND_MAX-.5;
 }
 
@@ -135,9 +135,6 @@ int main(int argc, char **argv) {
   LPCNetEncState *st;
   float noise_std=0;
   int training = -1;
-  int encode = 0;
-  int decode = 0;
-  int quantize = 0;
   int burg = 0;
   srand(getpid());
   st = lpcnet_encoder_create();
@@ -151,24 +148,7 @@ int main(int argc, char **argv) {
       training = 0;
   }
   if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
-  if (argc == 5 && strcmp(argv[1], "-qtrain")==0) {
-      training = 1;
-      quantize = 1;
-  }
   if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
-  if (argc == 4 && strcmp(argv[1], "-qtest")==0) {
-      training = 0;
-      quantize = 1;
-  }
-  if (argc == 4 && strcmp(argv[1], "-encode")==0) {
-      training = 0;
-      quantize = 1;
-      encode = 1;
-  }
-  if (argc == 4 && strcmp(argv[1], "-decode")==0) {
-      training = 0;
-      decode = 1;
-  }
   if (training == -1) {
     fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv0);
     fprintf(stderr, "  or   %s -test <speech> <features out>\n", argv0);
@@ -183,23 +163,6 @@ int main(int argc, char **argv) {
   if (ffeat == NULL) {
     fprintf(stderr,"Error opening output feature file: %s\n", argv[3]);
     exit(1);
-  }
-  if (decode) {
-    float vq_mem[NB_BANDS] = {0};
-    while (1) {
-      int ret;
-      unsigned char buf[8];
-      float features[4][NB_TOTAL_FEATURES];
-      /*int c0_id, main_pitch, modulation, corr_id, vq_end[3], vq_mid, interp_id;*/
-      /*ret = fscanf(f1, "%d %d %d %d %d %d %d %d %d\n", &c0_id, &main_pitch, &modulation, &corr_id, &vq_end[0], &vq_end[1], &vq_end[2], &vq_mid, &interp_id);*/
-      ret = fread(buf, 1, 8, f1);
-      if (ret != 8) break;
-      decode_packet(features, vq_mem, buf);
-      for (i=0;i<4;i++) {
-        fwrite(features[i], sizeof(float), NB_TOTAL_FEATURES, ffeat);
-      }
-    }
-    return 0;
   }
   if (training) {
     fpcm = fopen(argv[4], "wb");
@@ -279,18 +242,11 @@ int main(int argc, char **argv) {
         compute_noise(&noisebuf[st->pcount*FRAME_SIZE], noise_std);
     }
     
-    if (!quantize) {
-      process_single_frame(st, ffeat);
-      if (fpcm) write_audio(st, pcm, &noisebuf[st->pcount*FRAME_SIZE], fpcm, 1);
-    }
+    process_single_frame(st, ffeat);
+    if (fpcm) write_audio(st, pcm, &noisebuf[st->pcount*FRAME_SIZE], fpcm, 1);
     st->pcount++;
     /* Running on groups of 4 frames. */
     if (st->pcount == 4) {
-      if (quantize) {
-        unsigned char buf[8];
-        process_superframe(st, buf, ffeat, encode, quantize);
-        if (fpcm) write_audio(st, pcmbuf, noisebuf, fpcm, 4);
-      }
       st->pcount = 0;
     }
     /*if (fpcm) fwrite(pcm, sizeof(short), FRAME_SIZE, fpcm);*/

@@ -4,7 +4,6 @@ dnn/common.c \
 dnn/freq.c \
 dnn/kiss99.c \
 dnn/lpcnet.c \
-dnn/lpcnet_dec.c \
 dnn/lpcnet_enc.c \
 dnn/lpcnet_plc.c \
 dnn/lpcnet_tables.c \

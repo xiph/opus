@@ -105,18 +105,9 @@ struct LPCNetPLCState {
   short queued_samples[FRAME_SIZE];
 };
 
-#ifndef OPUS_BUILD
-extern float ceps_codebook1[];
-extern float ceps_codebook2[];
-extern float ceps_codebook3[];
-extern float ceps_codebook_diff4[];
-#endif
-
 void preemphasis(float *y, float *mem, const float *x, float coef, int N);
 
 void perform_double_interp(float features[4][NB_TOTAL_FEATURES], const float *mem, int best_id);
-
-void process_superframe(LPCNetEncState *st, unsigned char *buf, FILE *ffeat, int encode, int quantize);
 
 void compute_frame_features(LPCNetEncState *st, const float *in);
 

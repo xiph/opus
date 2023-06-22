@@ -77,17 +77,13 @@ void free_blob(unsigned char *blob, int len) {
 # endif
 #endif
 
-#define MODE_ENCODE 0
-#define MODE_DECODE 1
 #define MODE_FEATURES 2
 #define MODE_SYNTHESIS 3
 #define MODE_PLC 4
 #define MODE_ADDLPC 5
 
 void usage(void) {
-    fprintf(stderr, "usage: lpcnet_demo -encode <input.pcm> <compressed.lpcnet>\n");
-    fprintf(stderr, "       lpcnet_demo -decode <compressed.lpcnet> <output.pcm>\n");
-    fprintf(stderr, "       lpcnet_demo -features <input.pcm> <features.f32>\n");
+    fprintf(stderr, "usage: lpcnet_demo -features <input.pcm> <features.f32>\n");
     fprintf(stderr, "       lpcnet_demo -synthesis <features.f32> <output.pcm>\n");
     fprintf(stderr, "       lpcnet_demo -plc <plc_options> <percent> <input.pcm> <output.pcm>\n");
     fprintf(stderr, "       lpcnet_demo -plc_file <plc_options> <percent> <input.pcm> <output.pcm>\n");
@@ -113,9 +109,7 @@ int main(int argc, char **argv) {
     const char *filename = "weights_blob.bin";
 #endif
     if (argc < 4) usage();
-    if (strcmp(argv[1], "-encode") == 0) mode=MODE_ENCODE;
-    else if (strcmp(argv[1], "-decode") == 0) mode=MODE_DECODE;
-    else if (strcmp(argv[1], "-features") == 0) mode=MODE_FEATURES;
+    if (strcmp(argv[1], "-features") == 0) mode=MODE_FEATURES;
     else if (strcmp(argv[1], "-synthesis") == 0) mode=MODE_SYNTHESIS;
     else if (strcmp(argv[1], "-plc") == 0) {
         mode=MODE_PLC;
@@ -160,33 +154,7 @@ int main(int argc, char **argv) {
 #ifdef USE_WEIGHTS_FILE
     data = load_blob(filename, &len);
 #endif
-    if (mode == MODE_ENCODE) {
-        LPCNetEncState *net;
-        net = lpcnet_encoder_create();
-        while (1) {
-            unsigned char buf[LPCNET_COMPRESSED_SIZE];
-            short pcm[LPCNET_PACKET_SAMPLES];
-            size_t ret;
-            ret = fread(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fin);
-            if (feof(fin) || ret != LPCNET_PACKET_SAMPLES) break;
-            lpcnet_encode(net, pcm, buf);
-            fwrite(buf, 1, LPCNET_COMPRESSED_SIZE, fout);
-        }
-        lpcnet_encoder_destroy(net);
-    } else if (mode == MODE_DECODE) {
-        LPCNetDecState *net;
-        net = lpcnet_decoder_create();
-        while (1) {
-            unsigned char buf[LPCNET_COMPRESSED_SIZE];
-            short pcm[LPCNET_PACKET_SAMPLES];
-            size_t ret;
-            ret = fread(buf, sizeof(buf[0]), LPCNET_COMPRESSED_SIZE, fin);
-            if (feof(fin) || ret != LPCNET_COMPRESSED_SIZE) break;
-            lpcnet_decode(net, buf, pcm);
-            fwrite(pcm, sizeof(pcm[0]), LPCNET_PACKET_SAMPLES, fout);
-        }
-        lpcnet_decoder_destroy(net);
-    } else if (mode == MODE_FEATURES) {
+    if (mode == MODE_FEATURES) {
         LPCNetEncState *net;
         net = lpcnet_encoder_create();
         while (1) {
