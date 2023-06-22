@@ -51,7 +51,7 @@
 #include "define.h"
 #include "mathops.h"
 #include "cpu_support.h"
-#include "dnn/dred_rdovae_dec_data.h"
+#include "dred_rdovae_dec_data.h"
 
 struct OpusDecoder {
    int          celt_dec_offset;
