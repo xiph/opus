@@ -20,6 +20,7 @@
 
 struct LPCNetState {
     LPCNetModel model;
+    int arch;
     float sampling_logit_table[256];
     kiss99_ctx rng;
 
@@ -40,12 +41,8 @@ struct LPCNetState {
     float lpc[LPC_ORDER];
 };
 
-struct LPCNetDecState {
-    LPCNetState lpcnet_state;
-    float vq_mem[NB_BANDS];
-};
-
 struct LPCNetEncState{
+  int arch;
   float analysis_mem[OVERLAP_SIZE];
   float mem_preemph;
   int pcount;
@@ -72,6 +69,7 @@ struct LPCNetPLCState {
   PLCModel model;
   LPCNetState lpcnet;
   LPCNetEncState enc;
+  int arch;
   int enable_blending;
 
 #define LPCNET_PLC_RESET_START fec

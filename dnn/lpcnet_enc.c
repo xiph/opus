@@ -120,9 +120,9 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   for (sub=0;sub<2;sub++) {
     int off = sub*FRAME_SIZE/2;
     double ener1;
-    celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD);
-    ener0 = celt_inner_prod(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE/2);
-    ener1 = celt_inner_prod(&st->exc_buf[off], &st->exc_buf[off], FRAME_SIZE/2-1);
+    celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD, st->arch);
+    ener0 = celt_inner_prod_c(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE/2);
+    ener1 = celt_inner_prod_c(&st->exc_buf[off], &st->exc_buf[off], FRAME_SIZE/2-1);
     st->frame_weight[2+2*st->pcount+sub] = ener0;
     /*printf("%f\n", st->frame_weight[2+2*st->pcount+sub]);*/
     for (i=0;i<PITCH_MAX_PERIOD;i++) {
