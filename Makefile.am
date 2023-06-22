@@ -11,7 +11,7 @@ DIST_SUBDIRS = doc
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/celt -I$(top_srcdir)/silk \
               -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed $(NE10_CFLAGS) \
-              -I$(top_srcdir)/dnn/include
+              -I$(top_srcdir)/dnn
 
 include celt_sources.mk
 include lpcnet_sources.mk

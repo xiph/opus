@@ -3,8 +3,8 @@ silk/dred_coding.h \
 silk/dred_config.h \
 silk/dred_decoder.h \
 silk/dred_encoder.h \
-dnn/include/dred_rdovae.h \
-dnn/include/lpcnet.h \
+dnn/dred_rdovae.h \
+dnn/lpcnet.h \
 dnn/burg.h \
 dnn/common.h \
 dnn/freq.h \
