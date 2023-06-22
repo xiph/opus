@@ -28,9 +28,6 @@
 #include "config.h"
 #endif
 
-/* FIXME: Use the optimized celt_pitch_xcorr() */
-#define celt_pitch_xcorr celt_pitch_xcorr_c
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
