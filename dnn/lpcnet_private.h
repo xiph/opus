@@ -9,18 +9,11 @@
 #include "plc_data.h"
 #include "kiss99.h"
 
-#define BITS_PER_CHAR 8
-
 #define PITCH_MIN_PERIOD 32
 #define PITCH_MAX_PERIOD 256
 
 #define PITCH_FRAME_SIZE 320
 #define PITCH_BUF_SIZE (PITCH_MAX_PERIOD+PITCH_FRAME_SIZE)
-
-#define MULTI 4
-#define MULTI_MASK (MULTI-1)
-
-#define FORBIDDEN_INTERP 7
 
 #define PLC_MAX_FEC 100
 #define MAX_FEATURE_BUFFER_SIZE 4
@@ -98,8 +91,6 @@ struct LPCNetPLCState {
 };
 
 void preemphasis(float *y, float *mem, const float *x, float coef, int N);
-
-void perform_double_interp(float features[4][NB_TOTAL_FEATURES], const float *mem, int best_id);
 
 void compute_frame_features(LPCNetEncState *st, const float *in);
 

@@ -1,6 +1,5 @@
 LPCNET_SOURCES = \
 dnn/burg.c \
-dnn/common.c \
 dnn/freq.c \
 dnn/kiss99.c \
 dnn/lpcnet.c \
