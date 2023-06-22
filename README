@@ -73,7 +73,6 @@ On Apple macOS, install Xcode and brew.sh, then in the Terminal enter:
 
 2) Compiling the source
 
-    % git submodule update --init
     % ./autogen.sh
     % ./configure
     % make

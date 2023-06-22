@@ -31,8 +31,6 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v3
-      - name: Pull git submodules
-        run: git submodule update --init --recursive
         # No AutoMake on Mac so let's install it
       - name: Install AutoConf, AutoMake and LibTool on MacOSX
         if: matrix.config.os == 'macos-latest'
