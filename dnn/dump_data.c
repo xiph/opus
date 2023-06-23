@@ -41,6 +41,7 @@
 #include <assert.h>
 #include "lpcnet.h"
 #include "lpcnet_private.h"
+#include "os_support.h"
 
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
@@ -98,7 +99,7 @@ void write_audio(LPCNetEncState *st, const opus_int16 *pcm, const int *noise, FI
     e += noise[i];
     e = IMIN(255, IMAX(0, e));
 
-    RNN_MOVE(&st->sig_mem[1], &st->sig_mem[0], LPC_ORDER-1);
+    OPUS_MOVE(&st->sig_mem[1], &st->sig_mem[0], LPC_ORDER-1);
     st->sig_mem[0] = p + ulaw2lin(e);
     st->exc_mem = e;
   }

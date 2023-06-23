@@ -39,6 +39,7 @@
 #include "arch.h"
 #include "burg.h"
 #include <assert.h>
+#include "os_support.h"
 
 #define SQUARE(x) ((x)*(x))
 
@@ -94,8 +95,8 @@ int          p
    opus_val32 r;
    opus_val32 error = ac[0];
 
-   RNN_CLEAR(lpc, p);
-   RNN_CLEAR(rc, p);
+   OPUS_CLEAR(lpc, p);
+   OPUS_CLEAR(rc, p);
    if (ac[0] != 0)
    {
       for (i = 0; i < p; i++) {
@@ -169,7 +170,7 @@ static void compute_burg_cepstrum(const float *pcm, float *burg_cepstrum, int le
   for (i=0;i<len-1;i++) burg_in[i] = pcm[i+1] - PREEMPHASIS*pcm[i];
   g = silk_burg_analysis(burg_lpc, burg_in, 1e-3, len-1, 1, order);
   g /= len - 2*(order-1);
-  RNN_CLEAR(x, WINDOW_SIZE);
+  OPUS_CLEAR(x, WINDOW_SIZE);
   x[0] = 1;
   for (i=0;i<order;i++) x[i+1] = -burg_lpc[i]*pow(.995, i+1);
   forward_transform(LPC, x);
@@ -283,7 +284,7 @@ static float lpc_from_bands(float *lpc, const float *Ex)
    float x_auto[WINDOW_SIZE];
    interp_band_gain(Xr, Ex);
    Xr[FREQ_SIZE-1] = 0;
-   RNN_CLEAR(X_auto, FREQ_SIZE);
+   OPUS_CLEAR(X_auto, FREQ_SIZE);
    for (i=0;i<FREQ_SIZE;i++) X_auto[i].r = Xr[i];
    inverse_transform(x_auto, X_auto);
    for (i=0;i<LPC_ORDER+1;i++) ac[i] = x_auto[i];
@@ -312,7 +313,7 @@ float lpc_from_cepstrum(float *lpc, const float *cepstrum)
    int i;
    float Ex[NB_BANDS];
    float tmp[NB_BANDS];
-   RNN_COPY(tmp, cepstrum, NB_BANDS);
+   OPUS_COPY(tmp, cepstrum, NB_BANDS);
    tmp[0] += 4;
    idct(Ex, tmp);
    for (i=0;i<NB_BANDS;i++) Ex[i] = pow(10.f, Ex[i])*compensation[i];

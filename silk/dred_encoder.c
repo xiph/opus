@@ -56,7 +56,7 @@ int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len)
 
 void dred_encoder_reset(DREDEnc* enc)
 {
-    RNN_CLEAR((char*)&enc->DREDENC_RESET_START,
+    OPUS_CLEAR((char*)&enc->DREDENC_RESET_START,
               sizeof(DREDEnc)-
               ((char*)&enc->DREDENC_RESET_START - (char*)enc));
     enc->input_buffer_fill = DRED_SILK_ENCODER_DELAY;

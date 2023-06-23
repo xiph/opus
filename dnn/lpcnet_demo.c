@@ -36,6 +36,7 @@
 #include "arch.h"
 #include "lpcnet.h"
 #include "freq.h"
+#include "os_support.h"
 
 #ifdef USE_WEIGHTS_FILE
 # if __unix__
@@ -179,7 +180,7 @@ int main(int argc, char **argv) {
             size_t ret;
             ret = fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
             if (feof(fin) || ret != NB_TOTAL_FEATURES) break;
-            RNN_COPY(features, in_features, NB_FEATURES);
+            OPUS_COPY(features, in_features, NB_FEATURES);
             lpcnet_synthesize(net, features, pcm, LPCNET_FRAME_SIZE);
             fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
         }

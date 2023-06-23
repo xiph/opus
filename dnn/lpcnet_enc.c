@@ -40,6 +40,7 @@
 #include <assert.h>
 #include "lpcnet_private.h"
 #include "lpcnet.h"
+#include "os_support.h"
 
 
 int lpcnet_encoder_get_size() {
@@ -65,9 +66,9 @@ void lpcnet_encoder_destroy(LPCNetEncState *st) {
 
 static void frame_analysis(LPCNetEncState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
   float x[WINDOW_SIZE];
-  RNN_COPY(x, st->analysis_mem, OVERLAP_SIZE);
-  RNN_COPY(&x[OVERLAP_SIZE], in, FRAME_SIZE);
-  RNN_COPY(st->analysis_mem, &in[FRAME_SIZE-OVERLAP_SIZE], OVERLAP_SIZE);
+  OPUS_COPY(x, st->analysis_mem, OVERLAP_SIZE);
+  OPUS_COPY(&x[OVERLAP_SIZE], in, FRAME_SIZE);
+  OPUS_COPY(st->analysis_mem, &in[FRAME_SIZE-OVERLAP_SIZE], OVERLAP_SIZE);
   apply_window(x);
   forward_transform(X, x);
   lpcn_compute_band_energy(Ex, X);
@@ -85,7 +86,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   float ener0;
   int sub;
   float ener;
-  RNN_COPY(aligned_in, &st->analysis_mem[OVERLAP_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
+  OPUS_COPY(aligned_in, &st->analysis_mem[OVERLAP_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
   frame_analysis(st, X, Ex, in);
   logMax = -2;
   follow = -2;
@@ -100,14 +101,14 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   st->features[0] -= 4;
   lpc_from_cepstrum(st->lpc, st->features);
   for (i=0;i<LPC_ORDER;i++) st->features[NB_BANDS+2+i] = st->lpc[i];
-  RNN_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
-  RNN_COPY(&aligned_in[TRAINING_OFFSET], in, FRAME_SIZE-TRAINING_OFFSET);
+  OPUS_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
+  OPUS_COPY(&aligned_in[TRAINING_OFFSET], in, FRAME_SIZE-TRAINING_OFFSET);
   for (i=0;i<FRAME_SIZE;i++) {
     int j;
     float sum = aligned_in[i];
     for (j=0;j<LPC_ORDER;j++)
       sum += st->lpc[j]*st->pitch_mem[j];
-    RNN_MOVE(st->pitch_mem+1, st->pitch_mem, LPC_ORDER-1);
+    OPUS_MOVE(st->pitch_mem+1, st->pitch_mem, LPC_ORDER-1);
     st->pitch_mem[0] = aligned_in[i];
     st->exc_buf[PITCH_MAX_PERIOD+i] = sum + .7f*st->pitch_filt;
     st->pitch_filt = sum;
@@ -192,7 +193,7 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
     for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) st->pitch_max_path[1][i] -= max_path_all;
     /*for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) printf("%f ", st->pitch_max_path[1][i]);
     printf("\n");*/
-    RNN_COPY(&st->pitch_max_path[0][0], &st->pitch_max_path[1][0], PITCH_MAX_PERIOD);
+    OPUS_COPY(&st->pitch_max_path[0][0], &st->pitch_max_path[1][0], PITCH_MAX_PERIOD);
     st->pitch_max_path_all = max_path_all;
     st->best_i = best_i;
   }
@@ -226,7 +227,7 @@ static int lpcnet_compute_single_frame_features_impl(LPCNetEncState *st, float *
   preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
   compute_frame_features(st, x);
   process_single_frame(st, NULL);
-  RNN_COPY(features, &st->features[0], NB_TOTAL_FEATURES);
+  OPUS_COPY(features, &st->features[0], NB_TOTAL_FEATURES);
   return 0;
 }
 

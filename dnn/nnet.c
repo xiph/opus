@@ -40,6 +40,7 @@
 #include "nnet_data.h"
 #include "dred_rdovae_constants.h"
 #include "plc_data.h"
+#include "os_support.h"
 
 #ifdef NO_OPTIMIZATIONS
 #if defined(_MSC_VER)
@@ -99,7 +100,7 @@ void compute_activation(float *output, const float *input, int N, int activation
          output[i] = relu(input[i]);
    } else if (activation == ACTIVATION_SOFTMAX) {
 #ifdef SOFTMAX_HACK
-      RNN_COPY(output, input, N);
+      OPUS_COPY(output, input, N);
       /*for (i=0;i<N;i++)
          output[i] = input[i];*/
 #else
@@ -390,7 +391,7 @@ void compute_gru3(const GRULayer *gru, float *state, const float *input)
    celt_assert(input != state);
    celt_assert(gru->reset_after);
    stride = 3*N;
-   RNN_COPY(zrh, input, 3*N);
+   OPUS_COPY(zrh, input, 3*N);
    for (i=0;i<3*N;i++)
       recur[i] = gru->bias[3*N + i];
    sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, N, stride, state);
@@ -457,8 +458,8 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    float tmp[MAX_CONV_INPUTS_ALL];
    celt_assert(input != output);
    celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS_ALL);
-   RNN_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
-   RNN_COPY(&tmp[layer->nb_inputs*(layer->kernel_size-1)], input, layer->nb_inputs);
+   OPUS_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
+   OPUS_COPY(&tmp[layer->nb_inputs*(layer->kernel_size-1)], input, layer->nb_inputs);
    M = layer->nb_inputs*layer->kernel_size;
    N = layer->nb_neurons;
    stride = N;
@@ -466,7 +467,7 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
       output[i] = layer->bias[i];
    sgemv_accum(output, layer->input_weights, N, M, stride, tmp);
    compute_activation(output, output, N, layer->activation);
-   RNN_COPY(mem, &tmp[layer->nb_inputs], layer->nb_inputs*(layer->kernel_size-1));
+   OPUS_COPY(mem, &tmp[layer->nb_inputs], layer->nb_inputs*(layer->kernel_size-1));
 }
 
 void compute_embedding(const EmbeddingLayer *layer, float *output, int input)

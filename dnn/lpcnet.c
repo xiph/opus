@@ -36,6 +36,7 @@
 #include "arch.h"
 #include "lpcnet.h"
 #include "lpcnet_private.h"
+#include "os_support.h"
 
 #define PREEMPH 0.85f
 
@@ -59,7 +60,7 @@ void rc2lpc(float *lpc, const float *rc)
   int i, j, k;
   float tmp[LPC_ORDER];
   float ntmp[LPC_ORDER] = {0.0};
-  RNN_COPY(tmp, rc, LPC_ORDER);
+  OPUS_COPY(tmp, rc, LPC_ORDER);
   for(i = 0; i < LPC_ORDER ; i++)
     {
         for(j = 0; j <= i-1; j++)
@@ -93,15 +94,15 @@ void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b
     pitch = (int)floor(.1 + 50*features[NB_BANDS]+100);
     pitch = IMIN(255, IMAX(33, pitch));
     net = &lpcnet->nnet;
-    RNN_COPY(in, features, NB_FEATURES);
+    OPUS_COPY(in, features, NB_FEATURES);
     compute_embedding(&lpcnet->model.embed_pitch, &in[NB_FEATURES], pitch);
     compute_conv1d(&lpcnet->model.feature_conv1, conv1_out, net->feature_conv1_state, in);
-    if (lpcnet->frame_count < FEATURE_CONV1_DELAY) RNN_CLEAR(conv1_out, FEATURE_CONV1_OUT_SIZE);
+    if (lpcnet->frame_count < FEATURE_CONV1_DELAY) OPUS_CLEAR(conv1_out, FEATURE_CONV1_OUT_SIZE);
     compute_conv1d(&lpcnet->model.feature_conv2, conv2_out, net->feature_conv2_state, conv1_out);
-    if (lpcnet->frame_count < FEATURES_DELAY) RNN_CLEAR(conv2_out, FEATURE_CONV2_OUT_SIZE);
+    if (lpcnet->frame_count < FEATURES_DELAY) OPUS_CLEAR(conv2_out, FEATURE_CONV2_OUT_SIZE);
     _lpcnet_compute_dense(&lpcnet->model.feature_dense1, dense1_out, conv2_out);
     _lpcnet_compute_dense(&lpcnet->model.feature_dense2, condition, dense1_out);
-    RNN_COPY(rc, condition, LPC_ORDER);
+    OPUS_COPY(rc, condition, LPC_ORDER);
     _lpcnet_compute_dense(&lpcnet->model.gru_a_dense_feature, gru_a_condition, condition);
     _lpcnet_compute_dense(&lpcnet->model.gru_b_dense_feature, gru_b_condition, condition);
 #ifdef END2END
@@ -124,11 +125,11 @@ void run_frame_network_deferred(LPCNetState *lpcnet, const float *features)
     int max_buffer_size = lpcnet->model.feature_conv1.kernel_size + lpcnet->model.feature_conv2.kernel_size - 2;
     celt_assert(max_buffer_size <= MAX_FEATURE_BUFFER_SIZE);
     if (lpcnet->feature_buffer_fill == max_buffer_size) {
-        RNN_MOVE(lpcnet->feature_buffer, &lpcnet->feature_buffer[NB_FEATURES],  (max_buffer_size-1)*NB_FEATURES);
+        OPUS_MOVE(lpcnet->feature_buffer, &lpcnet->feature_buffer[NB_FEATURES],  (max_buffer_size-1)*NB_FEATURES);
     } else {
       lpcnet->feature_buffer_fill++;
     }
-    RNN_COPY(&lpcnet->feature_buffer[(lpcnet->feature_buffer_fill-1)*NB_FEATURES], features, NB_FEATURES);
+    OPUS_COPY(&lpcnet->feature_buffer[(lpcnet->feature_buffer_fill-1)*NB_FEATURES], features, NB_FEATURES);
 }
 
 void run_frame_network_flush(LPCNetState *lpcnet)
@@ -153,15 +154,15 @@ int run_sample_network(LPCNetState *lpcnet, const float *gru_a_condition, const 
 #if 1
     compute_gru_a_input(gru_a_input, gru_a_condition, GRU_A_STATE_SIZE, &lpcnet->model.gru_a_embed_sig, last_sig, &lpcnet->model.gru_a_embed_pred, pred, &lpcnet->model.gru_a_embed_exc, last_exc);
 #else
-    RNN_COPY(gru_a_input, gru_a_condition, 3*GRU_A_STATE_SIZE);
+    OPUS_COPY(gru_a_input, gru_a_condition, 3*GRU_A_STATE_SIZE);
     accum_embedding(&lpcnet->model.gru_a_embed_sig, gru_a_input, last_sig);
     accum_embedding(&lpcnet->model.gru_a_embed_pred, gru_a_input, pred);
     accum_embedding(&lpcnet->model.gru_a_embed_exc, gru_a_input, last_exc);
 #endif
     /*compute_gru3(&gru_a, net->gru_a_state, gru_a_input);*/
     compute_sparse_gru(&lpcnet->model.sparse_gru_a, net->gru_a_state, gru_a_input);
-    RNN_COPY(in_b, net->gru_a_state, GRU_A_STATE_SIZE);
-    RNN_COPY(gru_b_input, gru_b_condition, 3*GRU_B_STATE_SIZE);
+    OPUS_COPY(in_b, net->gru_a_state, GRU_A_STATE_SIZE);
+    OPUS_COPY(gru_b_input, gru_b_condition, 3*GRU_B_STATE_SIZE);
     compute_gruB(&lpcnet->model.gru_b, gru_b_input, net->gru_b_state, in_b);
     return sample_mdense(&lpcnet->model.dual_fc, net->gru_b_state, sampling_logit_table, rng);
 }
@@ -174,7 +175,7 @@ int lpcnet_get_size()
 void lpcnet_reset(LPCNetState *lpcnet)
 {
     const char* rng_string="LPCNet";
-    RNN_CLEAR((char*)&lpcnet->LPCNET_RESET_START,
+    OPUS_CLEAR((char*)&lpcnet->LPCNET_RESET_START,
             sizeof(LPCNetState)-
             ((char*)&lpcnet->LPCNET_RESET_START - (char*)lpcnet));
     lpcnet->last_exc = lin2ulaw(0.f);
@@ -227,9 +228,9 @@ void lpcnet_reset_signal(LPCNetState *lpcnet)
 {
     lpcnet->deemph_mem = 0;
     lpcnet->last_exc = lin2ulaw(0.f);
-    RNN_CLEAR(lpcnet->last_sig, LPC_ORDER);
-    RNN_CLEAR(lpcnet->nnet.gru_a_state, GRU_A_STATE_SIZE);
-    RNN_CLEAR(lpcnet->nnet.gru_b_state, GRU_B_STATE_SIZE);
+    OPUS_CLEAR(lpcnet->last_sig, LPC_ORDER);
+    OPUS_CLEAR(lpcnet->nnet.gru_a_state, GRU_A_STATE_SIZE);
+    OPUS_CLEAR(lpcnet->nnet.gru_b_state, GRU_B_STATE_SIZE);
 }
 
 void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, opus_int16 *output, int N, int preload)
@@ -238,7 +239,7 @@ void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, opus_int16 *output, int N,
 
     if (lpcnet->frame_count <= FEATURES_DELAY)
     {
-        RNN_CLEAR(output, N);
+        OPUS_CLEAR(output, N);
         return;
     }
     for (i=0;i<N;i++)
@@ -259,7 +260,7 @@ void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, opus_int16 *output, int N,
         } else {
           pcm = pred + ulaw2lin(exc);
         }
-        RNN_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
+        OPUS_MOVE(&lpcnet->last_sig[1], &lpcnet->last_sig[0], LPC_ORDER-1);
         lpcnet->last_sig[0] = pcm;
         lpcnet->last_exc = exc;
         pcm += PREEMPH*lpcnet->deemph_mem;

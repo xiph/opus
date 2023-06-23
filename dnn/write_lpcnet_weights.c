@@ -33,6 +33,7 @@
 #include <stddef.h>
 #include "nnet.h"
 #include "common.h"
+#include "os_support.h"
 
 /* This is a bit of a hack because we need to build nnet_data.c and plc_data.c without USE_WEIGHTS_FILE,
    but USE_WEIGHTS_FILE is defined in config.h. */
@@ -56,7 +57,7 @@ void write_weights(const WeightArray *list, FILE *fout)
     h.type = list[i].type;
     h.size = list[i].size;
     h.block_size = (h.size+WEIGHT_BLOCK_SIZE-1)/WEIGHT_BLOCK_SIZE*WEIGHT_BLOCK_SIZE;
-    RNN_CLEAR(h.name, sizeof(h.name));
+    OPUS_CLEAR(h.name, sizeof(h.name));
     strncpy(h.name, list[i].name, sizeof(h.name));
     h.name[sizeof(h.name)-1] = 0;
     celt_assert(sizeof(h) == WEIGHT_BLOCK_SIZE);
