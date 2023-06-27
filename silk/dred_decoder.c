@@ -36,7 +36,11 @@
 #include "dred_coding.h"
 #include "celt/entdec.h"
 
-
+/* From http://graphics.stanford.edu/~seander/bithacks.html#FixedSignExtend */
+static int sign_extend(int x, int b) {
+  int m = 1U << (b - 1);
+  return (x ^ m) - m;
+}
 
 
 int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
@@ -57,7 +61,7 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
 
   /* decode initial state and initialize RDOVAE decoder */
   ec_dec_init(&ec, (unsigned char*)bytes, num_bytes);
-  dec->dred_offset = ec_dec_uint(&ec, 32);
+  dec->dred_offset = sign_extend(ec_dec_uint(&ec, 32), 5);
   q0 = ec_dec_uint(&ec, 16);
   dQ = ec_dec_uint(&ec, 8);
   /*printf("%d %d %d\n", dred_offset, q0, dQ);*/
