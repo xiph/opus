@@ -34,7 +34,6 @@
 #include <math.h>
 #include "opus_types.h"
 #include "arch.h"
-#include "common.h"
 #include "tansig_table.h"
 #include "nnet.h"
 #include "nnet_data.h"

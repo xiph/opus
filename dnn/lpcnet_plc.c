@@ -32,6 +32,7 @@
 #include "lpcnet.h"
 #include "plc_data.h"
 #include "os_support.h"
+#include "common.h"
 
 #ifndef M_PI
 #define M_PI 3.141592653

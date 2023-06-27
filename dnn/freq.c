@@ -32,7 +32,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "kiss_fft.h"
-#include "common.h"
 #include <math.h>
 #include "freq.h"
 #include "pitch.h"

@@ -33,7 +33,6 @@
 
 
 #include "dred_rdovae_enc.h"
-#include "common.h"
 #include "os_support.h"
 
 void dred_rdovae_encode_dframe(

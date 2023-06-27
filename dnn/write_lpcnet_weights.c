@@ -32,7 +32,6 @@
 #include <string.h>
 #include <stddef.h>
 #include "nnet.h"
-#include "common.h"
 #include "os_support.h"
 
 /* This is a bit of a hack because we need to build nnet_data.c and plc_data.c without USE_WEIGHTS_FILE,

@@ -29,7 +29,6 @@
 #include "config.h"
 #endif
 
-#include "common.h"
 #include "dred_rdovae_dec.h"
 #include "dred_rdovae_constants.h"
 #include "os_support.h"

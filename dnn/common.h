@@ -8,8 +8,6 @@
 #include <math.h>
 #include "opus_defines.h"
 
-float lpc_from_cepstrum(float *lpc, const float *cepstrum);
-
 #define LOG256 5.5451774445f
 static OPUS_INLINE float log2_approx(float x)
 {

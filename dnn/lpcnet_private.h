@@ -2,7 +2,6 @@
 #define LPCNET_PRIVATE_H
 
 #include <stdio.h>
-#include "common.h"
 #include "freq.h"
 #include "lpcnet.h"
 #include "nnet_data.h"
