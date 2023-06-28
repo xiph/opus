@@ -62,7 +62,7 @@ struct LPCNetEncState{
   float burg_cepstrum[2*NB_BANDS];
 };
 
-#define PLC_BUF_SIZE (FEATURES_DELAY*FRAME_SIZE + TRAINING_OFFSET)
+#define PLC_BUF_SIZE (FEATURES_DELAY*FRAME_SIZE + FRAME_SIZE)
 struct LPCNetPLCState {
   PLCModel model;
   LPCNetState lpcnet;

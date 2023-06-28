@@ -208,7 +208,7 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
           pcm[i] = (int)floor(.5 + w*pcm[i] + (1-w)*(tmp[i]-delta));
         }
         st->lpcnet = copy;
-        lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
+        /*lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], pcm, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);*/
       } else {
         if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
         fec_rewind(st, FEATURES_DELAY);
@@ -219,8 +219,8 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
         lpcnet_synthesize_tail_impl(&st->lpcnet, tmp, FRAME_SIZE-TRAINING_OFFSET, FRAME_SIZE-TRAINING_OFFSET);
 #endif
       }
-      OPUS_COPY(st->pcm, &pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
-      st->pcm_fill = TRAINING_OFFSET;
+      OPUS_COPY(st->pcm, pcm, FRAME_SIZE);
+      st->pcm_fill = FRAME_SIZE;
     } else {
       OPUS_COPY(&st->pcm[st->pcm_fill], pcm, FRAME_SIZE);
       st->pcm_fill += FRAME_SIZE;
@@ -286,12 +286,12 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   }
   OPUS_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
   st->plc_copy[0] = st->plc_net;
-  lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);
+  /*lpcnet_synthesize_tail_impl(&st->lpcnet, pcm, FRAME_SIZE-TRAINING_OFFSET, 0);*/
   if (get_fec_or_pred(st, st->features)) st->loss_count = 0;
   else st->loss_count++;
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
   else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
-  lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], &pcm[FRAME_SIZE-TRAINING_OFFSET], TRAINING_OFFSET, 0);
+  lpcnet_synthesize_impl(&st->lpcnet, &st->features[0], pcm, FRAME_SIZE, 0);
   {
     float x[FRAME_SIZE];
     /* FIXME: Can we do better? */

@@ -35,13 +35,16 @@
 #define DRED_NUM_FEATURES 20
 #define DRED_LATENT_DIM 80
 #define DRED_STATE_DIM 24
-#define DRED_MAX_FRAMES 100
-#define DRED_SILK_ENCODER_DELAY (79+12)
+#define DRED_SILK_ENCODER_DELAY (79+12-80)
 #define DRED_FRAME_SIZE 160
 #define DRED_DFRAME_SIZE (2 * (DRED_FRAME_SIZE))
 #define DRED_MAX_DATA_SIZE 1000
 #define DRED_ENC_Q0 9
 #define DRED_ENC_Q1 15
-#define DRED_NUM_REDUNDANCY_FRAMES 50
+
+/* Covers 1.04 second so we can cover one second, after the lookahead. */
+#define DRED_MAX_LATENTS 26
+#define DRED_NUM_REDUNDANCY_FRAMES (2*DRED_MAX_LATENTS)
+#define DRED_MAX_FRAMES (4*DRED_MAX_LATENTS)
 
 #endif
