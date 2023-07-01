@@ -665,15 +665,20 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       return OPUS_BAD_ARG;
 #ifdef ENABLE_NEURAL_FEC
    if (dred != NULL && dred->process_stage == 2) {
+      int F10;
       int features_per_frame;
       int needed_feature_frames;
+      int init_frames;
       lpcnet_plc_fec_clear(&st->lpcnet);
-      features_per_frame = IMAX(1, frame_size/(st->Fs/100));
-      needed_feature_frames = features_per_frame;
+      F10 = st->Fs/100;
       /* if blend==0, the last PLC call was "update" and we need to feed two extra 10-ms frames. */
-      if (st->lpcnet.blend == 0) needed_feature_frames+=2;
+      init_frames = (st->lpcnet.blend == 0) ? 2 : 0;
+      features_per_frame = IMAX(1, frame_size/F10);
+      needed_feature_frames = init_frames + features_per_frame;
       for (i=0;i<needed_feature_frames;i++) {
-         int feature_offset = (needed_feature_frames-i-1 + (dred_offset/(st->Fs/100)-1));
+         int feature_offset;
+         /* We floor instead of rounding because 5-ms overlap compensates for the missing 0.5 rounding offset. */
+         feature_offset = init_frames - i - 2 + (int)floor(((float)dred_offset + dred->dred_offset*F10/4)/F10);
          if (feature_offset <= 4*dred->nb_latents-1 && feature_offset >= 0) {
            lpcnet_plc_fec_add(&st->lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
          } else {

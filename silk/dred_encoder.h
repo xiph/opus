@@ -46,9 +46,12 @@ typedef struct {
 #define DREDENC_RESET_START input_buffer
     float input_buffer[2*DRED_DFRAME_SIZE];
     int input_buffer_fill;
+    int dred_offset;
+    int latent_offset;
     float latents_buffer[DRED_MAX_FRAMES * DRED_LATENT_DIM];
     int latents_buffer_fill;
     float state_buffer[24];
+    float initial_state[24];
     float resample_mem[RESAMPLING_ORDER + 1];
     LPCNetEncState lpcnet_enc_state;
     RDOVAEEncState rdovae_enc;
@@ -60,7 +63,7 @@ void dred_encoder_reset(DREDEnc* enc);
 
 void dred_deinit_encoder(DREDEnc *enc);
 
-void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size);
+void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int extra_delay);
 
 int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes);
 

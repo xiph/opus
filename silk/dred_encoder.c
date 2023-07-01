@@ -174,9 +174,13 @@ static void dred_convert_to_16k(DREDEnc *enc, const float *in, int in_len, float
     }
 }
 
-void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size)
+void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int extra_delay)
 {
+    int curr_offset16k;
     int frame_size16k = frame_size * 16000 / enc->Fs;
+    curr_offset16k = 40 + extra_delay*16000/enc->Fs - enc->input_buffer_fill;
+    enc->dred_offset = (int)floor((curr_offset16k+20.f)/40.f);
+    enc->latent_offset = 0;
     while (frame_size16k > 0) {
         int process_size16k;
         int process_size;
@@ -186,9 +190,17 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size)
         enc->input_buffer_fill += process_size16k;
         if (enc->input_buffer_fill >= 2*DRED_FRAME_SIZE)
         {
-          dred_process_frame(enc);
-          enc->input_buffer_fill -= 2*DRED_FRAME_SIZE;
-          OPUS_MOVE(&enc->input_buffer[0], &enc->input_buffer[2*DRED_FRAME_SIZE], enc->input_buffer_fill);
+            curr_offset16k += 320;
+            dred_process_frame(enc);
+            enc->input_buffer_fill -= 2*DRED_FRAME_SIZE;
+            OPUS_MOVE(&enc->input_buffer[0], &enc->input_buffer[2*DRED_FRAME_SIZE], enc->input_buffer_fill);
+            /* 15 ms (6*2.5 ms) is the ideal offset for DRED because it corresponds to our vocoder look-ahead. */
+            if (enc->dred_offset < 6) {
+                enc->dred_offset += 8;
+                OPUS_COPY(enc->initial_state, enc->state_buffer, 24);
+            } else {
+                enc->latent_offset++;
+            }
         }
 
         pcm += process_size;
@@ -207,21 +219,19 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
     int i;
     int offset;
     int ec_buffer_fill;
-    int dred_offset;
     int q0;
     int dQ;
 
     /* entropy coding of state and latents */
     ec_enc_init(&ec_encoder, buf, max_bytes);
-    dred_offset = 8; /* 20 ms */
     q0 = DRED_ENC_Q0;
     dQ = 3;
-    ec_enc_uint(&ec_encoder, dred_offset, 32);
+    ec_enc_uint(&ec_encoder, enc->dred_offset, 32);
     ec_enc_uint(&ec_encoder, q0, 16);
     ec_enc_uint(&ec_encoder, dQ, 8);
-    dred_encode_state(&ec_encoder, enc->state_buffer);
+    dred_encode_state(&ec_encoder, enc->initial_state);
 
-    for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-1); i += 2)
+    for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-enc->latent_offset-1); i += 2)
     {
         ec_enc ec_bak;
         ec_bak = ec_encoder;
@@ -231,7 +241,7 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
 
         dred_encode_latents(
             &ec_encoder,
-            enc->latents_buffer + i * DRED_LATENT_DIM,
+            enc->latents_buffer + (i+enc->latent_offset) * DRED_LATENT_DIM,
             quant_scales + offset,
             dead_zone + offset,
             r + offset,
