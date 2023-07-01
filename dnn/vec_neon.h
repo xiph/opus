@@ -45,7 +45,7 @@ typedef float qweight;
 
 
 #ifndef LPCNET_TEST
-static inline OPUS_INLINE float32x4_t exp4_approx(float32x4_t x) {
+static inline float32x4_t exp4_approx(float32x4_t x) {
   int32x4_t i;
   float32x4_t xf;
 
