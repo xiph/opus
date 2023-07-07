@@ -1,10 +1,9 @@
 .gitignore		export-ignore
 .gitattributes		export-ignore
-
 update_version		export-ignore
-
 *.bat eol=crlf
 *.sln eol=crlf
 *.vcxproj eol=crlf
 *.vcxproj.filters eol=crlf
 common.props eol=crlf
+dnn/models/*.h5 filter=lfs diff=lfs merge=lfs -text
