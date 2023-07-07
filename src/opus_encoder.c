@@ -556,6 +556,24 @@ OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int application, i
    return st;
 }
 
+#ifdef ENABLE_NEURAL_FEC
+static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, int frame_size)
+{
+   float dred_frac;
+   int bitrate_offset;
+   opus_int32 dred_bitrate;
+   opus_int32 target_dred_bitrate;
+   opus_int32 max_dred_bitrate;
+   if (st->dred_duration > 0) max_dred_bitrate = (120 + 6*st->dred_duration)*st->Fs/frame_size;
+   else max_dred_bitrate = 0;
+   dred_frac = MIN16(.75f, 3.f*st->silk_mode.packetLossPercentage/100.f);
+   bitrate_offset = st->silk_mode.useInBandFEC ? 18000 : 12000;
+   target_dred_bitrate = IMAX(0, (int)(dred_frac*(bitrate_bps-bitrate_offset)));
+   dred_bitrate = IMIN(target_dred_bitrate, max_dred_bitrate);
+   return dred_bitrate;
+}
+#endif
+
 static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int max_data_bytes)
 {
   if(!frame_size)frame_size=st->Fs/400;
@@ -1101,6 +1119,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     int analysis_read_subframe_bak=-1;
     int is_silence = 0;
 #endif
+#ifdef ENABLE_NEURAL_FEC
+    opus_int32 dred_bitrate_bps;
+#endif
     opus_int activity = VAD_NO_DECISION;
 
     VARDECL(opus_val16, tmp_prefill);
@@ -1235,6 +1256,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        /* Make sure we provide at least one byte to avoid failing. */
        max_data_bytes = IMAX(1, cbrBytes);
     }
+#ifdef ENABLE_NEURAL_FEC
+    /* Allocate some of the bits to DRED if needed. */
+    dred_bitrate_bps = compute_dred_bitrate(st, st->bitrate_bps, frame_size);
+    st->bitrate_bps -= dred_bitrate_bps;
+#endif
     if (max_data_bytes<3 || st->bitrate_bps < 3*frame_rate*8
        || (frame_rate<50 && (max_data_bytes*frame_rate<300 || st->bitrate_bps < 2400)))
     {
