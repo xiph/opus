@@ -2209,7 +2209,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        int dred_chunks;
        int dred_bytes_left;
        dred_chunks = IMIN((st->dred_duration+5)/4, DRED_NUM_REDUNDANCY_FRAMES/2);
-       dred_bytes_left = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-2);
+       /* Remaining space for DRED, accounting for cost the 3 extra bytes for code 3, padding length, and extension number. */
+       dred_bytes_left = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-3);
        /* Check whether we actually have something to encode. */
        if (dred_chunks >= 1 && dred_bytes_left >= DRED_MIN_BYTES+2) {
            int dred_bytes;
