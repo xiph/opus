@@ -686,6 +686,12 @@ int main(int argc, char *argv[])
     opus_decoder_ctl(dec, OPUS_SET_DNN_BLOB(blob_data, blob_len));
     opus_dred_decoder_ctl(dred_dec, OPUS_SET_DNN_BLOB(blob_data, blob_len));
 #endif
+    if (1) {
+       int i;
+       for (i=0;i<max_frame_size;i++) in[i] = 0;
+       len = opus_encode(enc, in, frame_size, data, max_payload_bytes);
+       opus_decode(dec, data, len, out, max_frame_size, 0);
+    }
     while (!stop)
     {
         if (delayed_celt)
