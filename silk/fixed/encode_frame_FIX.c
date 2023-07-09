@@ -105,8 +105,11 @@ opus_int silk_encode_frame_FIX(
     opus_int     gain_lock[ MAX_NB_SUBFR ] = {0};
     opus_int16   best_gain_mult[ MAX_NB_SUBFR ];
     opus_int     best_sum[ MAX_NB_SUBFR ];
+    opus_int     bits_margin;
     SAVE_STACK;
 
+    /* For CBR, 5 bits below budget is close enough. For VBR, allow up to 25% below the cap if we initially busted the budget. */
+    bits_margin = useCBR ? 5 : maxBits/4;
     /* This is totally unnecessary but many compilers (including gcc) are too dumb to realise it */
     LastGainIndex_copy2 = nBits_lower = nBits_upper = gainMult_lower = gainMult_upper = 0;
 
@@ -282,7 +285,7 @@ opus_int silk_encode_frame_FIX(
                     gainMult_upper = gainMult_Q8;
                     gainsID_upper = gainsID;
                 }
-            } else if( nBits < maxBits - 5 ) {
+            } else if( nBits < maxBits - bits_margin ) {
                 found_lower = 1;
                 nBits_lower = nBits;
                 gainMult_lower = gainMult_Q8;
@@ -296,7 +299,7 @@ opus_int silk_encode_frame_FIX(
                     LastGainIndex_copy2 = psEnc->sShape.LastGainIndex;
                 }
             } else {
-                /* Within 5 bits of budget: close enough */
+                /* Close enough */
                 break;
             }
 
