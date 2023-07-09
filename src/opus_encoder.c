@@ -1842,7 +1842,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         {
            if (st->mode == MODE_HYBRID)
            {
-              st->silk_mode.maxBits = IMIN(st->silk_mode.maxBits, st->silk_mode.bitRate * frame_size / st->Fs);
+              /* Allow SILK to steal up to 25% of the remaining bits */
+              opus_int16 other_bits = IMAX(0, st->silk_mode.maxBits - st->silk_mode.bitRate * frame_size / st->Fs);
+              st->silk_mode.maxBits = IMAX(0, st->silk_mode.maxBits - other_bits*3/4);
+              st->silk_mode.useCBR = 0;
            }
         } else {
            /* Constrained VBR. */
