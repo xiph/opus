@@ -1565,7 +1565,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       vbr_rate = 0;
       tmp = st->bitrate*frame_size;
       if (tell>1)
-         tmp += tell;
+         tmp += tell*mode->Fs;
       if (st->bitrate!=OPUS_BITRATE_MAX)
          nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
                (tmp+4*mode->Fs)/(8*mode->Fs)-!!st->signalling));
