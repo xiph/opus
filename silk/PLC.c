@@ -103,7 +103,7 @@ void silk_PLC(
         /****************************/
         silk_PLC_update( psDec, psDecCtrl );
 #ifdef NEURAL_PLC
-        if ( psDec->sPLC.fs_kHz == 16 ) {
+        if ( lpcnet != NULL && psDec->sPLC.fs_kHz == 16 ) {
             int k;
             for( k = 0; k < psDec->nb_subfr; k += 2 ) {
                 lpcnet_plc_update( lpcnet, frame + k * psDec->subfr_length );
@@ -397,14 +397,14 @@ static OPUS_INLINE void silk_PLC_conceal(
         frame[ i ] = (opus_int16)silk_SAT16( silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], prevGain_Q10[ 1 ] ), 8 ) ) );
     }
 #ifdef NEURAL_PLC
-    if ( psDec->sPLC.fs_kHz == 16 ) {
+    if ( lpcnet != NULL && psDec->sPLC.fs_kHz == 16 ) {
         for( k = 0; k < psDec->nb_subfr; k += 2 ) {
             lpcnet_plc_conceal( lpcnet, frame + k * psDec->subfr_length );
         }
-    }
-    /* We *should* be able to copy only from psDec->frame_length-MAX_LPC_ORDER, i.e. the last MAX_LPC_ORDER samples. */
-    for( i = 0; i < psDec->frame_length; i++ ) {
-        sLPC_Q14_ptr[ MAX_LPC_ORDER + i ] = (int)floor(.5 + frame[ i ] * (float)(1 << 24) / prevGain_Q10[ 1 ] );
+        /* We *should* be able to copy only from psDec->frame_length-MAX_LPC_ORDER, i.e. the last MAX_LPC_ORDER samples. */
+        for( i = 0; i < psDec->frame_length; i++ ) {
+            sLPC_Q14_ptr[ MAX_LPC_ORDER + i ] = (int)floor(.5 + frame[ i ] * (float)(1 << 24) / prevGain_Q10[ 1 ] );
+        }
     }
 #endif
 

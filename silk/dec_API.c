@@ -302,7 +302,7 @@ opus_int silk_Decode(                                   /* O    Returns error co
             }
             ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding,
 #ifdef NEURAL_PLC
-                lpcnet,
+                n == 0 ? lpcnet : NULL,
 #endif
                 arch);
         } else {
