@@ -61,6 +61,18 @@ typedef struct {
   char name[44];
 } WeightHead;
 
+/* Generic sparse affine transformation. */
+typedef struct {
+  const float *bias;
+  const float *subias;
+  const opus_int8 *weights;
+  const float *float_weights;
+  const int *weights_idx;
+  const float *diag;
+  const float *scale;
+  int nb_inputs;
+  int nb_outputs;
+} LinearLayer;
 
 typedef struct {
   const float *bias;

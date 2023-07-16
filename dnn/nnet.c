@@ -85,6 +85,73 @@ static void sgemv_accum(float *out, const float *weights, int rows, int cols, in
    }
 }
 
+void compute_linear(const LinearLayer *linear, float *out, const float *in)
+{
+   int i, M, N;
+   const float *bias;
+   bias = linear->bias;
+   M = linear->nb_inputs;
+   N = linear->nb_outputs;
+   if (linear->float_weights != NULL) {
+     if (linear->weights_idx != NULL) sparse_sgemv8x4(out, linear->float_weights, linear->weights_idx, N, in);
+     else sgemv16x1(out, linear->float_weights, N, M, N, in);
+   } else if (linear->weights != NULL) {
+     if (linear->weights_idx != NULL) sparse_cgemv8x4(out, linear->weights, linear->weights_idx, linear->scale, N, M, in);
+     else cgemv8x4(out, linear->weights, linear->scale, N, M, in);
+     /* Only use SU biases on for integer matrices on SU archs. */
+#ifdef USE_SU_BIAS
+     bias = linear->subias;
+#endif
+   }
+   else OPUS_CLEAR(out, N);
+   if (bias != NULL) {
+      for (i=0;i<N;i++) out[i] += bias[i];
+   }
+   if (linear->diag) {
+      /* Diag is only used for GRU recurrent weights. */
+      celt_assert(3*M == N);
+      for (i=0;i<M;i++) {
+         out[i] += linear->diag[i]*in[i];
+         out[i+M] += linear->diag[i+M]*in[i];
+         out[i+2*M] += linear->diag[i+2*M]*in[i];
+      }
+   }
+}
+
+#define MAX_RNN_NEURONS_ALL IMAX(IMAX(MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), DRED_MAX_RNN_NEURONS)
+
+
+void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in)
+{
+  int i;
+  int N;
+  float zrh[3*MAX_RNN_NEURONS_ALL];
+  float recur[3*MAX_RNN_NEURONS_ALL];
+  float *z;
+  float *r;
+  float *h;
+  celt_assert(3*recurrent_weights->nb_inputs == recurrent_weights->nb_outputs);
+  celt_assert(input_weights->nb_outputs == recurrent_weights->nb_outputs);
+  N = recurrent_weights->nb_inputs;
+  z = zrh;
+  r = &zrh[N];
+  h = &zrh[2*N];
+  celt_assert(recurrent_weights->nb_outputs <= 3*MAX_RNN_NEURONS_ALL);
+  celt_assert(in != state);
+  compute_linear(input_weights, zrh, in);
+  compute_linear(recurrent_weights, recur, state);
+  for (i=0;i<2*N;i++)
+     zrh[i] += recur[i];
+  compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
+  for (i=0;i<N;i++)
+     h[i] += recur[2*N+i]*r[i];
+  compute_activation(h, h, N, ACTIVATION_TANH);
+  for (i=0;i<N;i++)
+     h[i] = z[i]*state[i] + (1-z[i])*h[i];
+  for (i=0;i<N;i++)
+     state[i] = h[i];
+}
+
 void compute_activation(float *output, const float *input, int N, int activation)
 {
    int i;
@@ -119,6 +186,7 @@ void compute_activation(float *output, const float *input, int N, int activation
    }
 }
 
+#if 1
 void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input)
 {
    int i;
@@ -133,7 +201,24 @@ void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *
    sgemv_accum(output, layer->input_weights, N, M, stride, input);
    compute_activation(output, output, N, layer->activation);
 }
-
+#else
+void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input)
+{
+   LinearLayer matrix;
+   celt_assert(input != output);
+   matrix.bias = layer->bias;
+   matrix.subias = NULL;
+   matrix.float_weights = layer->input_weights;
+   matrix.weights = NULL;
+   matrix.weights_idx = NULL;
+   matrix.diag = NULL;
+   matrix.nb_inputs = layer->nb_inputs;
+   matrix.nb_outputs = layer->nb_neurons;
+   matrix.scale = NULL;
+   compute_linear(&matrix, output, input);
+   compute_activation(output, output, layer->nb_neurons, layer->activation);
+}
+#endif
 
 int sample_mdense(const MDenseLayer *layer, const float *input, const float *sampling_logit_table, kiss99_ctx *rng)
 {
@@ -188,9 +273,15 @@ int sample_mdense(const MDenseLayer *layer, const float *input, const float *sam
 
 }
 
+#ifdef USE_SU_BIAS
+#define bias_type subias
+#else
+#define bias_type bias
+#endif
+#define MAX_IDX_SIZE 8192
 
-#define MAX_RNN_NEURONS_ALL IMAX(IMAX(MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), DRED_MAX_RNN_NEURONS)
 
+#if 1
 void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input)
 {
    int i;
@@ -239,7 +330,59 @@ void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *stat
       state[i] = h[i];
 }
 
+#else
 
+
+void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input)
+{
+  LinearLayer in_matrix, rec_matrix;
+  int i, M, N;
+  float bias[3*MAX_RNN_NEURONS_ALL];
+  float scale[3*MAX_RNN_NEURONS_ALL];
+  M = gru->nb_inputs;
+  N = gru->nb_neurons;
+
+  in_matrix.bias = bias;
+  in_matrix.diag = NULL;
+  in_matrix.nb_inputs = M;
+  in_matrix.nb_outputs = 3*N;
+  in_matrix.subias = bias;
+#ifdef DISABLE_DOT_PROD
+  for (i=0;i<3*N;i++) bias[i] = gru->bias[i] + gru_b_condition[i];
+  in_matrix.scale = NULL;
+  in_matrix.float_weights = gru->input_weights;
+  in_matrix.weights = NULL;
+#else
+  for (i=0;i<3*N;i++) bias[i] = gru->bias_type[i] + gru_b_condition[i];
+  for (i=0;i<3*N;i++) scale[i] = SCALE_1;
+  in_matrix.scale = scale;
+  in_matrix.weights = gru->input_weights;
+  in_matrix.float_weights = NULL;
+#endif
+  in_matrix.weights_idx = gru->input_weights_idx;
+
+  rec_matrix.bias = &gru->bias[3*N];
+  rec_matrix.diag = NULL;
+  rec_matrix.nb_inputs = N;
+  rec_matrix.nb_outputs = 3*N;
+  rec_matrix.scale = scale;
+  rec_matrix.subias = &gru->subias[3*N];
+#ifdef DISABLE_DOT_PROD
+  rec_matrix.scale = NULL;
+  rec_matrix.float_weights = gru->recurrent_weights;
+  rec_matrix.weights = NULL;
+#else
+  rec_matrix.scale = scale;
+  rec_matrix.weights = gru->recurrent_weights;
+  rec_matrix.float_weights = NULL;
+#endif
+  rec_matrix.weights_idx = NULL;
+  compute_generic_gru(&in_matrix, &rec_matrix, state, input);
+}
+#endif
+
+
+#if 1
 /* The input of this GRU is after the input matrix multiply. */
 void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input)
 {
@@ -280,9 +423,49 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
    for (i=0;i<N;i++)
       state[i] = z[i]*state[i] + (1-z[i])*h[i];
 }
+#else
+/* The input of this GRU is after the input matrix multiply. */
+void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input)
+{
+  LinearLayer in_matrix, rec_matrix;
+  int i, N;
+  float scale[3*MAX_RNN_NEURONS_ALL];
+  N = gru->nb_neurons;
+
+  in_matrix.bias = input;
+  in_matrix.diag = NULL;
+  in_matrix.nb_inputs = N;
+  in_matrix.nb_outputs = 3*N;
+  in_matrix.subias = input;
+  in_matrix.scale = NULL;
+  in_matrix.float_weights = NULL;
+  in_matrix.weights = NULL;
+  in_matrix.weights_idx = NULL;
+
+  rec_matrix.bias = &gru->bias[3*N];
+  rec_matrix.diag = gru->diag_weights;
+  rec_matrix.nb_inputs = N;
+  rec_matrix.nb_outputs = 3*N;
+  rec_matrix.subias = &gru->subias[3*N];
+#ifdef DISABLE_DOT_PROD
+  rec_matrix.scale = NULL;
+  rec_matrix.float_weights = gru->recurrent_weights;
+  rec_matrix.weights = NULL;
+#else
+  for (i=0;i<3*N;i++) scale[i] = SCALE_1;
+  rec_matrix.scale = scale;
+  rec_matrix.weights = gru->recurrent_weights;
+  rec_matrix.float_weights = NULL;
+#endif
+  rec_matrix.weights_idx = gru->idx;
+  compute_generic_gru(&in_matrix, &rec_matrix, state, input);
+}
+#endif
+
 
 #define MAX_CONV_INPUTS_ALL IMAX(MAX_CONV_INPUTS, DRED_MAX_CONV_INPUTS)
 
+#if 1
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
 {
    int i;
@@ -302,6 +485,32 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    compute_activation(output, output, N, layer->activation);
    OPUS_COPY(mem, &tmp[layer->nb_inputs], layer->nb_inputs*(layer->kernel_size-1));
 }
+#else
+void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
+{
+   LinearLayer matrix;
+   int N, M;
+   float tmp[MAX_CONV_INPUTS_ALL];
+   celt_assert(input != output);
+   celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS_ALL);
+   OPUS_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
+   OPUS_COPY(&tmp[layer->nb_inputs*(layer->kernel_size-1)], input, layer->nb_inputs);
+   M = layer->nb_inputs*layer->kernel_size;
+   N = layer->nb_neurons;
+   matrix.bias = layer->bias;
+   matrix.subias = NULL;
+   matrix.float_weights = layer->input_weights;
+   matrix.weights = NULL;
+   matrix.weights_idx = NULL;
+   matrix.diag = NULL;
+   matrix.nb_inputs = M;
+   matrix.nb_outputs = N;
+   matrix.scale = NULL;
+   compute_linear(&matrix, output, tmp);
+   compute_activation(output, output, N, layer->activation);
+   OPUS_COPY(mem, &tmp[layer->nb_inputs], layer->nb_inputs*(layer->kernel_size-1));
+}
+#endif
 
 void compute_embedding(const EmbeddingLayer *layer, float *output, int input)
 {

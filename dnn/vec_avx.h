@@ -35,6 +35,10 @@
 #include <immintrin.h>
 #include <math.h>
 
+
+#define MAX_INPUTS (2048)
+
+
 /* Use 8-bit dot products unless disabled or if stuck with SSE2. */
 #if (defined(__AVX2__) || defined(__SSSE3__)) && !defined(DISABLE_DOT_PROD)
 #define DOT_PROD
@@ -673,13 +677,209 @@ static inline void sparse_sgemv_accum16(float *out, const float *weights, int ro
    }
 }
 
+static inline void sgemv16x1(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+{
+   int i, j;
+   for (i=0;i<rows;i+=16)
+   {
+      float *y;
+      __m256 vy0, vy8;
+      y = &out[i];
+      vy0 = _mm256_setzero_ps();
+      vy8 = _mm256_setzero_ps();
+      for (j=0;j<cols;j++)
+      {
+         __m256 vxj;
+         __m256 vw;
+         vxj = _mm256_broadcast_ss(&x[j]);
+
+         vw = _mm256_loadu_ps(&weights[j*col_stride + i]);
+         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
+
+         vw = _mm256_loadu_ps(&weights[j*col_stride + i + 8]);
+         vy8 = _mm256_fmadd_ps(vw, vxj, vy8);
+      }
+      _mm256_storeu_ps (&y[0], vy0);
+      _mm256_storeu_ps (&y[8], vy8);
+   }
+}
+
+static inline void sparse_sgemv8x4(float *out, const float *weights, const int *idx, int rows, const float *x)
+{
+   int i, j;
+   for (i=0;i<rows;i+=8)
+   {
+      float *y;
+      int cols;
+      __m256 vy0;
+      y = &out[i];
+      vy0 = _mm256_setzero_ps();
+      cols = *idx++;
+      for (j=0;j<cols;j++)
+      {
+         int id;
+         __m256 vxj;
+         __m256 vw;
+         id = *idx++;
+         vxj = _mm256_broadcast_ss(&x[id]);
+         vw = _mm256_loadu_ps(&weights[0]);
+         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
+
+         vxj = _mm256_broadcast_ss(&x[id+1]);
+         vw = _mm256_loadu_ps(&weights[8]);
+         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
+
+         vxj = _mm256_broadcast_ss(&x[id+2]);
+         vw = _mm256_loadu_ps(&weights[16]);
+         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
+
+         vxj = _mm256_broadcast_ss(&x[id+3]);
+         vw = _mm256_loadu_ps(&weights[24]);
+         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
+
+         weights += 32;
+      }
+      _mm256_storeu_ps (&y[0], vy0);
+   }
+}
+
+static inline void sparse_cgemv8x4(float *_out, const opus_int8 *w, const int *idx, const float *scale, int rows, int cols, const float *_x)
+{
+   __m256i ones;
+   int i, j;
+   unsigned char x[MAX_INPUTS];
+   ones = _mm256_set1_epi16(1);
+   /*for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);*/
+   vector_ps_to_epi8(x, _x, cols);
+   for (i=0;i<rows;i+=8)
+   {
+      int colblocks;
+      __m256i vy0;
+      __m256 vout;
+      colblocks = *idx++;
+      vy0 = _mm256_setzero_si256();
+      j=0;
+#if 1 /* Unrolling by 4 gives some gain, comment out if it does not. */
+      for (;j<colblocks-3;j+=4)
+      {
+         __m256i tmp;
+         __m256i vxj;
+         __m256i vw;
+         vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+         vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+         vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+         vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+      }
+#endif
+      for (;j<colblocks;j++)
+      {
+         __m256i tmp;
+         __m256i vxj;
+         __m256i vw;
+         int pos;
+         pos = (*idx++);
+         vxj = _mm256_set1_epi32(*(int*)&x[pos]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+      }
+      vout = _mm256_cvtepi32_ps(vy0);
+      vout = _mm256_mul_ps(vout, _mm256_loadu_ps(&scale[i]));
+      _mm256_storeu_ps(&_out[i], vout);
+   }
+}
+static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale, int rows, int cols, const float *_x)
+{
+   __m256i ones;
+   int i, j;
+   unsigned char x[MAX_INPUTS];
+   ones = _mm256_set1_epi16(1);
+   /*for (i=0;i<cols;i++) x[i] = 127+floor(.5+127*_x[i]);*/
+   vector_ps_to_epi8(x, _x, cols);
+   for (i=0;i<rows;i+=8)
+   {
+      __m256i vy0;
+      __m256 vout;
+      vy0 = _mm256_setzero_si256();
+      j=0;
+#if 1 /* Unrolling by 4 gives some gain, comment out if it does not. */
+      for (;j<cols-12;j+=16)
+      {
+         __m256i tmp;
+         __m256i vxj;
+         __m256i vw;
+         vxj = _mm256_set1_epi32(*(int*)&x[j]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+         vxj = _mm256_set1_epi32(*(int*)&x[j+4]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+         vxj = _mm256_set1_epi32(*(int*)&x[j+8]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+         vxj = _mm256_set1_epi32(*(int*)&x[j+12]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+      }
+#endif
+      for (;j<cols;j+=4)
+      {
+         __m256i tmp;
+         __m256i vxj;
+         __m256i vw;
+         vxj = _mm256_set1_epi32(*(int*)&x[j]);
+         vw = _mm256_loadu_si256((const __m256i *)w);
+         tmp = _mm256_maddubs_epi16(vxj, vw);
+         tmp = _mm256_madd_epi16(tmp, ones);
+         vy0 = _mm256_add_epi32(vy0, tmp);
+         w += 32;
+      }
+      vout = _mm256_cvtepi32_ps(vy0);
+      vout = _mm256_mul_ps(vout, _mm256_loadu_ps(&scale[i]));
+      _mm256_storeu_ps(&_out[i], vout);
+   }
+}
+
+
 #ifdef DOT_PROD
 #define USE_SU_BIAS
 
 typedef signed char qweight;
 
-
-#define MAX_INPUTS (2048)
 #define MAX_OUTPUTS (8192)
 
 

@@ -43,6 +43,9 @@ typedef signed char qweight;
 typedef float qweight;
 #endif
 
+/* Just so it compiles when those functions aren't needed. */
+static inline void sgemv16x1(float *, const float *, int , int , int , const float *) {}
+static inline void sparse_sgemv8x4(float *, const float *, const int *, int , const float *) {}
 
 #ifndef LPCNET_TEST
 static inline float32x4_t exp4_approx(float32x4_t x) {
@@ -294,6 +297,76 @@ static inline int32x4_t vdotprod(int32x4_t acc, int8x16_t a, int8x16_t b)
   return vpadalq_s16(acc, vpaddq_s16(vmull_s8(vget_low_s8(a), vget_low_s8(b)),  vmull_high_s8(a, b)));
 }
 #endif
+
+static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale, int rows, int cols, const float *_x)
+{
+   int i, j;
+   opus_int8 x[MAX_INPUTS];
+   const float32x4_t const127 = vdupq_n_f32(127.);
+   for (i=0;i<cols;i+=8) {
+      int32x4_t xi0, xi4;
+      int16x8_t x_short;
+      xi0 = vcvtnq_s32_f32(vmulq_f32(const127, vld1q_f32(&_x[i])));
+      xi4 = vcvtnq_s32_f32(vmulq_f32(const127, vld1q_f32(&_x[i+4])));
+      x_short = vcombine_s16(vmovn_s32(xi0), vmovn_s32(xi4));
+      vst1_s8(&x[i], vmovn_s16(x_short));
+   }
+   for (i=0;i<rows;i+=8)
+   {
+      int32x4_t acc0, acc1;
+      acc0 = vdupq_n_s32(0);
+      acc1 = vdupq_n_s32(0);
+      for (j=0;j<cols;j+=4)
+      {
+         int8x16_t vw0, vw1, vx;
+         vx = (int8x16_t)vld1q_dup_s32((int*)&x[j]);
+         vw0 = vld1q_s8(w);
+         vw1 = vld1q_s8(&w[16]);
+         acc0 = vdotprod(acc0, vw0, vx);
+         acc1 = vdotprod(acc1, vw1, vx);
+         w += 32;
+      }
+      vst1q_f32(&_out[i], vmulq_f32(vld1q_f32(&scale[i]), vcvtq_f32_s32(acc0)));
+      vst1q_f32(&_out[i+4], vmulq_f32(vld1q_f32(&scale[i+4]), vcvtq_f32_s32(acc1)));
+   }
+}
+
+static inline void sparse_cgemv8x4(float *_out, const opus_int8 *w, const int *idx, const float *scale, int rows, int cols, const float *_x)
+{
+   int i, j;
+   opus_int8 x[MAX_INPUTS];
+   const float32x4_t const127 = vdupq_n_f32(127.);
+   for (i=0;i<cols;i+=8) {
+      int32x4_t xi0, xi4;
+      int16x8_t x_short;
+      xi0 = vcvtnq_s32_f32(vmulq_f32(const127, vld1q_f32(&_x[i])));
+      xi4 = vcvtnq_s32_f32(vmulq_f32(const127, vld1q_f32(&_x[i+4])));
+      x_short = vcombine_s16(vmovn_s32(xi0), vmovn_s32(xi4));
+      vst1_s8(&x[i], vmovn_s16(x_short));
+   }
+   for (i=0;i<rows;i+=8)
+   {
+      int colblocks;
+      int32x4_t acc0, acc1;
+      acc0 = vdupq_n_s32(0);
+      acc1 = vdupq_n_s32(0);
+      colblocks = *idx++;
+      for (j=0;j<colblocks;j++)
+      {
+         int pos;
+         pos = (*idx++);
+         int8x16_t vw0, vw1, vx;
+         vx = (int8x16_t)vld1q_dup_s32((int*)&x[pos]);
+         vw0 = vld1q_s8(w);
+         vw1 = vld1q_s8(&w[16]);
+         acc0 = vdotprod(acc0, vw0, vx);
+         acc1 = vdotprod(acc1, vw1, vx);
+         w += 32;
+      }
+      vst1q_f32(&_out[i], vmulq_f32(vld1q_f32(&scale[i]), vcvtq_f32_s32(acc0)));
+      vst1q_f32(&_out[i+4], vmulq_f32(vld1q_f32(&scale[i+4]), vcvtq_f32_s32(acc1)));
+   }
+}
 
 static inline void sgemv_accum8x4(float *_out, const qweight *w, int rows, int cols, int col_stride, const float *_x)
 {
