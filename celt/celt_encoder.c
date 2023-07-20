@@ -1565,10 +1565,13 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       vbr_rate = 0;
       tmp = st->bitrate*frame_size;
       if (tell>1)
-         tmp += tell;
+         tmp += tell*mode->Fs;
       if (st->bitrate!=OPUS_BITRATE_MAX)
+      {
          nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
                (tmp+4*mode->Fs)/(8*mode->Fs)-!!st->signalling));
+         ec_enc_shrink(enc, nbCompressedBytes);
+      }
       effectiveBytes = nbCompressedBytes - nbFilledBytes;
    }
    equiv_rate = ((opus_int32)nbCompressedBytes*8*50 << (3-LM)) - (40*C+20)*((400>>LM) - 50);
