@@ -69,22 +69,6 @@ static OPUS_INLINE float relu(float x)
    return x < 0 ? 0 : x;
 }
 
-
-static void sgemv_accum(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
-{
-   int i, j;
-   if (rows % 16 == 0)
-   {
-      sgemv_accum16(out, weights, rows, cols, col_stride, x);
-   } else {
-      for (i=0;i<rows;i++)
-      {
-         for (j=0;j<cols;j++)
-            out[i] += weights[j*col_stride + i]*x[j];
-      }
-   }
-}
-
 void compute_linear(const LinearLayer *linear, float *out, const float *in)
 {
    int i, M, N;
@@ -186,22 +170,6 @@ void compute_activation(float *output, const float *input, int N, int activation
    }
 }
 
-#if 1
-void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input)
-{
-   int i;
-   int N, M;
-   int stride;
-   M = layer->nb_inputs;
-   N = layer->nb_neurons;
-   stride = N;
-   celt_assert(input != output);
-   for (i=0;i<N;i++)
-      output[i] = layer->bias[i];
-   sgemv_accum(output, layer->input_weights, N, M, stride, input);
-   compute_activation(output, output, N, layer->activation);
-}
-#else
 void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input)
 {
    LinearLayer matrix;
@@ -218,7 +186,6 @@ void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *
    compute_linear(&matrix, output, input);
    compute_activation(output, output, layer->nb_neurons, layer->activation);
 }
-#endif
 
 int sample_mdense(const MDenseLayer *layer, const float *input, const float *sampling_logit_table, kiss99_ctx *rng)
 {
@@ -280,59 +247,6 @@ int sample_mdense(const MDenseLayer *layer, const float *input, const float *sam
 #endif
 #define MAX_IDX_SIZE 8192
 
-
-#if 1
-void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input)
-{
-   int i;
-   int N, M;
-   int stride;
-   float zrh[3*MAX_RNN_NEURONS_ALL];
-   float recur[3*MAX_RNN_NEURONS_ALL];
-   float *z;
-   float *r;
-   float *h;
-   M = gru->nb_inputs;
-   N = gru->nb_neurons;
-   z = zrh;
-   r = &zrh[N];
-   h = &zrh[2*N];
-   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS_ALL);
-   celt_assert(input != state);
-   celt_assert(gru->reset_after);
-   stride = 3*N;
-   /* Compute update gate. */
-#ifdef USE_SU_BIAS
-   for (i=0;i<3*N;i++)
-      zrh[i] = gru->subias[i] + gru_b_condition[i];
-#else
-   for (i=0;i<3*N;i++)
-      zrh[i] = gru->bias[i] + gru_b_condition[i];
-#endif
-   sparse_sgemv_accum8x4(zrh, gru->input_weights, 3*N, M, gru->input_weights_idx, input);
-#ifdef USE_SU_BIAS
-   for (i=0;i<3*N;i++)
-      recur[i] = gru->subias[3*N + i];
-#else
-   for (i=0;i<3*N;i++)
-      recur[i] = gru->bias[3*N + i];
-#endif
-   sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, N, stride, state);
-   for (i=0;i<2*N;i++)
-      zrh[i] += recur[i];
-   compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
-   for (i=0;i<N;i++)
-      h[i] += recur[2*N+i]*r[i];
-   compute_activation(h, h, N, gru->activation);
-   for (i=0;i<N;i++)
-      h[i] = z[i]*state[i] + (1-z[i])*h[i];
-   for (i=0;i<N;i++)
-      state[i] = h[i];
-}
-
-#else
-
-
 void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input)
 {
   LinearLayer in_matrix, rec_matrix;
@@ -379,51 +293,7 @@ void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *stat
   rec_matrix.weights_idx = NULL;
   compute_generic_gru(&in_matrix, &rec_matrix, state, input);
 }
-#endif
 
-
-#if 1
-/* The input of this GRU is after the input matrix multiply. */
-void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input)
-{
-   int i, k;
-   int N;
-   float recur[3*MAX_RNN_NEURONS_ALL];
-   float *z;
-   float *r;
-   float *h;
-   const float *bias;
-   N = gru->nb_neurons;
-   z = recur;
-   r = &recur[N];
-   h = &recur[2*N];
-   celt_assert(gru->nb_neurons <= MAX_RNN_NEURONS_ALL);
-   celt_assert(input != state);
-   celt_assert(gru->reset_after);
-#ifdef USE_SU_BIAS
-   bias = &gru->subias[3*N];
-#else
-   bias = &gru->bias[3*N];
-#endif
-   for (k=0;k<2;k++)
-   {
-      for (i=0;i<N;i++)
-         recur[k*N + i] = bias[k*N + i] + gru->diag_weights[k*N + i]*state[i] + input[k*N + i];
-   }
-   for (;k<3;k++)
-   {
-      for (i=0;i<N;i++)
-         recur[k*N + i] = bias[k*N + i] + gru->diag_weights[k*N + i]*state[i];
-   }
-   sparse_sgemv_accum8x4(recur, gru->recurrent_weights, 3*N, N, gru->idx, state);
-   compute_activation(recur, recur, 2*N, ACTIVATION_SIGMOID);
-   for (i=0;i<N;i++)
-      h[i] = h[i]*r[i] + input[2*N+i];
-   compute_activation(h, h, N, gru->activation);
-   for (i=0;i<N;i++)
-      state[i] = z[i]*state[i] + (1-z[i])*h[i];
-}
-#else
 /* The input of this GRU is after the input matrix multiply. */
 void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input)
 {
@@ -460,32 +330,9 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
   rec_matrix.weights_idx = gru->idx;
   compute_generic_gru(&in_matrix, &rec_matrix, state, input);
 }
-#endif
-
 
 #define MAX_CONV_INPUTS_ALL IMAX(MAX_CONV_INPUTS, DRED_MAX_CONV_INPUTS)
 
-#if 1
-void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
-{
-   int i;
-   int N, M;
-   int stride;
-   float tmp[MAX_CONV_INPUTS_ALL];
-   celt_assert(input != output);
-   celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS_ALL);
-   OPUS_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
-   OPUS_COPY(&tmp[layer->nb_inputs*(layer->kernel_size-1)], input, layer->nb_inputs);
-   M = layer->nb_inputs*layer->kernel_size;
-   N = layer->nb_neurons;
-   stride = N;
-   for (i=0;i<N;i++)
-      output[i] = layer->bias[i];
-   sgemv_accum(output, layer->input_weights, N, M, stride, tmp);
-   compute_activation(output, output, N, layer->activation);
-   OPUS_COPY(mem, &tmp[layer->nb_inputs], layer->nb_inputs*(layer->kernel_size-1));
-}
-#else
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
 {
    LinearLayer matrix;
@@ -510,7 +357,6 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    compute_activation(output, output, N, layer->activation);
    OPUS_COPY(mem, &tmp[layer->nb_inputs], layer->nb_inputs*(layer->kernel_size-1));
 }
-#endif
 
 void compute_embedding(const EmbeddingLayer *layer, float *output, int input)
 {
