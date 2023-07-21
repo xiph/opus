@@ -1611,7 +1611,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        redundancy = 1;
        celt_to_silk = 1;
        st->silk_bw_switch = 0;
-       /* Do a prefill without reseting the sampling rate control. */
+       /* Do a prefill without resetting the sampling rate control. */
        prefill=2;
     }
 
