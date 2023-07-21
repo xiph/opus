@@ -217,7 +217,7 @@ function(get_opus_sources SOURCE_GROUP MAKE_FILE SOURCES)
   if(${list_length} LESS 1)
     message(
       FATAL_ERROR
-        "No files parsed succesfully from ${SOURCE_GROUP} in ${MAKE_FILE}")
+        "No files parsed successfully from ${SOURCE_GROUP} in ${MAKE_FILE}")
   endif()
 
   # remove trailing whitespaces
