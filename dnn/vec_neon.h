@@ -320,7 +320,8 @@ static inline int32x4_t vdotprod(int32x4_t acc, int8x16_t a, int8x16_t b)
 static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale, int rows, int cols, const float *_x)
 {
    int i, j;
-   opus_int8 x[MAX_INPUTS];
+   opus_int32 x_int[MAX_INPUTS/4];
+   opus_int8 *x = (opus_int8*) x_int;
    const float32x4_t const127 = vdupq_n_f32(127.);
    for (i=0;i<cols;i+=8) {
       int32x4_t xi0, xi4;
@@ -338,7 +339,7 @@ static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale,
       for (j=0;j<cols;j+=4)
       {
          int8x16_t vw0, vw1, vx;
-         vx = (int8x16_t)vld1q_dup_s32((int*)&x[j]);
+         vx = (int8x16_t)vld1q_dup_s32((int*)(void*)&x[j]);
          vw0 = vld1q_s8(w);
          vw1 = vld1q_s8(&w[16]);
          acc0 = vdotprod(acc0, vw0, vx);
@@ -353,7 +354,8 @@ static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale,
 static inline void sparse_cgemv8x4(float *_out, const opus_int8 *w, const int *idx, const float *scale, int rows, int cols, const float *_x)
 {
    int i, j;
-   opus_int8 x[MAX_INPUTS];
+   opus_int32 x_int[MAX_INPUTS/4];
+   opus_int8 *x = (opus_int8*) x_int;
    const float32x4_t const127 = vdupq_n_f32(127.);
    for (i=0;i<cols;i+=8) {
       int32x4_t xi0, xi4;
@@ -375,7 +377,7 @@ static inline void sparse_cgemv8x4(float *_out, const opus_int8 *w, const int *i
          int pos;
          pos = (*idx++);
          int8x16_t vw0, vw1, vx;
-         vx = (int8x16_t)vld1q_dup_s32((int*)&x[pos]);
+         vx = (int8x16_t)vld1q_dup_s32((int*)(void*)&x[pos]);
          vw0 = vld1q_s8(w);
          vw1 = vld1q_s8(&w[16]);
          acc0 = vdotprod(acc0, vw0, vx);
