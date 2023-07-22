@@ -38,11 +38,12 @@
 
 #define MAX_INPUTS (2048)
 
+#define USE_SU_BIAS
+
 
 /* Use 8-bit dot products unless disabled or if stuck with SSE2. */
 #ifndef DISABLE_DOT_PROD
 #define DOT_PROD
-#define USE_SU_BIAS
 #endif
 
 
