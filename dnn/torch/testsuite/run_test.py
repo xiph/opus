@@ -23,6 +23,7 @@ parser.add_argument('--fs', type=int, help="sampling rate at which input is pres
 parser.add_argument('--num-workers', type=int, help="number of subprocesses to be used (default=4)", default=4)
 parser.add_argument('--plc-suffix', type=str, default="_is_lost.txt", help="suffix of plc error pattern file: only relevant if command chain uses PLCFILE (default=_is_lost.txt)")
 parser.add_argument('--metrics', type=str, default='warpq', help='comma separated string of metrics, supported: {{"warpq", "pesq"}}, default="warpq"')
+parser.add_argument('--verbose', action='store_true', help='enables printouts of all commands run in the pipeline')
 
 def check_for_sox_in_path():
     r = subprocess.run("sox -h", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -321,7 +322,7 @@ if __name__ == "__main__":
         output_path = get_output_path(args.input_folder, input_path, args.output_folder)
 
         try:
-            rval = run_processing_chain(input_path, output_path, model_commands, args.fs, metrics=metrics, plc_suffix=args.plc_suffix, verbose=False)
+            rval = run_processing_chain(input_path, output_path, model_commands, args.fs, metrics=metrics, plc_suffix=args.plc_suffix, verbose=args.verbose)
         except:
             rval = (input_path, -1)
 
