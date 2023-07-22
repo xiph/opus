@@ -8,3 +8,4 @@ soundfile
 pyyaml
 pesq
 AMFM_decompy
+matplotlib
