@@ -37,7 +37,6 @@ import shutil
 import yaml
 
 from utils.files import get_wave_file_list
-from utils.warpq import compute_WAPRQ
 from utils.pesq import compute_PESQ
 from utils.pitch import compute_pitch_error
 
@@ -51,7 +50,7 @@ parser.add_argument('--seed', type=int, help='seed for random item selection', d
 parser.add_argument('--fs', type=int, help="sampling rate at which input is presented as wave file (defaults to 16000)", default=16000)
 parser.add_argument('--num-workers', type=int, help="number of subprocesses to be used (default=4)", default=4)
 parser.add_argument('--plc-suffix', type=str, default="_is_lost.txt", help="suffix of plc error pattern file: only relevant if command chain uses PLCFILE (default=_is_lost.txt)")
-parser.add_argument('--metrics', type=str, default='warpq', help='comma separated string of metrics, supported: {{"warpq", "pesq"}}, default="warpq"')
+parser.add_argument('--metrics', type=str, default='pesq', help='comma separated string of metrics, supported: {{"pesq", "pitch_error", "voicing_error"}}, default="pesq"')
 parser.add_argument('--verbose', action='store_true', help='enables printouts of all commands run in the pipeline')
 
 def check_for_sox_in_path():
@@ -69,7 +68,7 @@ def run_save_sh(command, verbose=False):
         raise RuntimeError(f"command '{command}' failed with exit code {r.returncode}")
 
 
-def run_processing_chain(input_path, output_path, model_commands, fs, metrics={'warpq'}, plc_suffix="_is_lost.txt", verbose=False):
+def run_processing_chain(input_path, output_path, model_commands, fs, metrics={'pesq'}, plc_suffix="_is_lost.txt", verbose=False):
 
     # prepare model input
     model_input = output_path + ".resamp.wav"
@@ -86,10 +85,7 @@ def run_processing_chain(input_path, output_path, model_commands, fs, metrics={'
     scores = dict()
     cache = dict()
     for metric in metrics:
-        if metric == 'warpq':
-            # run warpq
-            score = compute_WAPRQ(input_path, output_path, sr=fs)
-        elif metric == 'pesq':
+        if metric == 'pesq':
             # run pesq
             score = compute_PESQ(input_path, output_path, fs=fs)
         elif metric == 'pitch_error':
@@ -241,7 +237,6 @@ def create_html(output_folder, results, title, metric):
                 """)
 
 metric_sorting_signs = {
-    'warpq'         : -1,
     'pesq'          : 1,
     'pitch_error'   : -1,
     'voicing_error' : -1
