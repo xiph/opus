@@ -9,3 +9,4 @@ pyyaml
 pesq
 AMFM_decompy
 matplotlib
+multiprocess

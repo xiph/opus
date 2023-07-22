@@ -1,7 +1,5 @@
-
-from genericpath import isfile
 import os
-import multiprocessing
+import multiprocess as multiprocessing
 import random
 import subprocess
 import argparse
@@ -25,7 +23,6 @@ parser.add_argument('--fs', type=int, help="sampling rate at which input is pres
 parser.add_argument('--num-workers', type=int, help="number of subprocesses to be used (default=4)", default=4)
 parser.add_argument('--plc-suffix', type=str, default="_is_lost.txt", help="suffix of plc error pattern file: only relevant if command chain uses PLCFILE (default=_is_lost.txt)")
 parser.add_argument('--metrics', type=str, default='warpq', help='comma separated string of metrics, supported: {{"warpq", "pesq"}}, default="warpq"')
-
 
 def check_for_sox_in_path():
     r = subprocess.run("sox -h", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
