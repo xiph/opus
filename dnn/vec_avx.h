@@ -40,18 +40,9 @@
 
 
 /* Use 8-bit dot products unless disabled or if stuck with SSE2. */
-#if (defined(__AVX2__) || defined(__SSSE3__)) && !defined(DISABLE_DOT_PROD)
+#ifndef DISABLE_DOT_PROD
 #define DOT_PROD
 #define USE_SU_BIAS
-
-#else
-
-#if defined(_MSC_VER)
-#pragma message ("Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 to get better performance")
-#else
-#warning "Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 using -march= to get better performance"
-#endif
-
 #endif
 
 
@@ -652,6 +643,34 @@ static inline mm256i_emu mm256_dpbusds_epi32(mm256i_emu src, mm256i_emu a, mm256
 #define _mm256_dpbusds_epi32(src, a, b) mm256_dpbusds_epi32(src, a, b)
 
 #elif defined(__SSE2__)
+
+static inline __m128i mm_dpbusds_epi32(__m128i src, __m128i a, __m128i b) {
+  __m128i ah, al, bh, bl, tmp;
+  ah = _mm_srli_epi16(a, 8);
+  bh = _mm_srai_epi16(b, 8);
+  al = _mm_srli_epi16(_mm_slli_epi16(a, 8), 8);
+  bl = _mm_srai_epi16(_mm_slli_epi16(b, 8), 8);
+  tmp = _mm_add_epi32(_mm_madd_epi16(ah, bh), _mm_madd_epi16(al, bl));
+  return _mm_add_epi32(src, tmp);
+}
+
+static inline mm256i_emu mm256_dpbusds_epi32(mm256i_emu src, mm256i_emu a, mm256i_emu b) {
+  mm256i_emu res;
+  res.hi = mm_dpbusds_epi32(src.hi, a.hi, b.hi);
+  res.lo = mm_dpbusds_epi32(src.lo, a.lo, b.lo);
+  return res;
+}
+#define _mm256_dpbusds_epi32(src, a, b) mm256_dpbusds_epi32(src, a, b)
+
+#if defined(_MSC_VER)
+#pragma message ("Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 to get better performance")
+#else
+#warning "Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 using -march= to get better performance"
+#endif
+
+#else
+
+#error "No optimizations in vec_avx.h. This should never happen. "
 #endif
 
 static inline void sgemv16x1(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
