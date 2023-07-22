@@ -311,5 +311,3 @@ const GRULayer {name} = {{
 
 
     return N
-
-
