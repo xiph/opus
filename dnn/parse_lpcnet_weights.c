@@ -88,6 +88,13 @@ static const void *find_array_check(const WeightArray *arrays, const char *name,
   else return NULL;
 }
 
+static const void *opt_array_check(const WeightArray *arrays, const char *name, int size, int *error) {
+  const WeightArray *a = find_array_entry(arrays, name);
+  *error = (a != NULL && a->size != size);
+  if (a && a->size == size) return a->data;
+  else return NULL;
+}
+
 static const void *find_idx_check(const WeightArray *arrays, const char *name, int nb_in, int nb_out, int *total_blocks) {
   int remain;
   const int *idx;
@@ -124,6 +131,7 @@ int linear_init(LinearLayer *layer, const WeightArray *arrays,
   int nb_inputs,
   int nb_outputs)
 {
+  int err;
   layer->bias = NULL;
   layer->subias = NULL;
   layer->weights = NULL;
@@ -144,14 +152,16 @@ int linear_init(LinearLayer *layer, const WeightArray *arrays,
       if ((layer->weights = find_array_check(arrays, weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->weights[0]))) == NULL) return 1;
     }
     if (float_weights != NULL) {
-      if ((layer->float_weights = find_array_check(arrays, float_weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->float_weights[0]))) == NULL) return 1;
+      layer->float_weights = opt_array_check(arrays, float_weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->float_weights[0]), &err);
+      if (err) return 1;
     }
   } else {
     if (weights != NULL) {
       if ((layer->weights = find_array_check(arrays, weights, nb_inputs*nb_outputs*sizeof(layer->weights[0]))) == NULL) return 1;
     }
     if (float_weights != NULL) {
-      if ((layer->float_weights = find_array_check(arrays, float_weights, nb_inputs*nb_outputs*sizeof(layer->float_weights[0]))) == NULL) return 1;
+      layer->float_weights = opt_array_check(arrays, float_weights, nb_inputs*nb_outputs*sizeof(layer->float_weights[0]), &err);
+      if (err) return 1;
     }
   }
   if (diag != NULL) {
