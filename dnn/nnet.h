@@ -158,6 +158,17 @@ extern const WeightArray lpcnet_plc_arrays[];
 extern const WeightArray rdovae_enc_arrays[];
 extern const WeightArray rdovae_dec_arrays[];
 
+int linear_init(LinearLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *subias,
+  const char *weights,
+  const char *float_weights,
+  const char *weights_idx,
+  const char *diag,
+  const char *scale,
+  int nb_inputs,
+  int nb_outputs);
+
 int mdense_init(MDenseLayer *layer, const WeightArray *arrays,
   const char *bias,
   const char *input_weights,
