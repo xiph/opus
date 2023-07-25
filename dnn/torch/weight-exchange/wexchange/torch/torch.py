@@ -32,7 +32,7 @@ import os
 import torch
 import numpy as np
 
-from wexchange.c_export import CWriter, print_gru_layer2, print_dense_layer, print_conv1d_layer
+from wexchange.c_export import CWriter, print_gru_layer, print_dense_layer, print_conv1d_layer
 
 def dump_torch_gru_weights(where, gru, name='gru', input_sparse=False, recurrent_sparse=False, quantize=False, scale=1/128, recurrent_scale=1/128):
 
@@ -45,7 +45,7 @@ def dump_torch_gru_weights(where, gru, name='gru', input_sparse=False, recurrent
     b_hh = gru.bias_hh_l0.detach().cpu().numpy()
 
     if isinstance(where, CWriter):
-        return print_gru_layer2(where, name, w_ih, w_hh, b_ih, b_hh, format='torch', input_sparse=input_sparse, recurrent_sparse=recurrent_sparse, quantize=quantize, scale=scale)
+        return print_gru_layer(where, name, w_ih, w_hh, b_ih, b_hh, format='torch', input_sparse=input_sparse, recurrent_sparse=recurrent_sparse, quantize=quantize, scale=scale, recurrent_scale=recurrent_scale)
     else:
         os.makedirs(where, exist_ok=True)
 
@@ -73,7 +73,7 @@ def load_torch_gru_weights(where, gru):
         gru.bias_hh_l0.set_(torch.from_numpy(b_hh))
 
 
-def dump_torch_dense_weights(where, dense, name=None, activation="LINEAR"):
+def dump_torch_dense_weights(where, dense, name='dense', scale=1/128, sparse=False, diagonal=False, quantize=False):
 
     w = dense.weight.detach().cpu().numpy()
     if dense.bias is None:
@@ -82,7 +82,7 @@ def dump_torch_dense_weights(where, dense, name=None, activation="LINEAR"):
         b = dense.bias.detach().cpu().numpy()
 
     if isinstance(where, CWriter):
-        return print_dense_layer(where, name, w, b, activation, format='torch')
+        return print_dense_layer(where, name, w, b, scale=scale, format='torch', sparse=sparse, diagonal=diagonal, quantize=quantize)
 
     else:
         os.makedirs(where, exist_ok=True)
@@ -102,7 +102,7 @@ def load_torch_dense_weights(where, dense):
             dense.bias.set_(torch.from_numpy(b))
 
 
-def dump_torch_conv1d_weights(where, conv, name=None, activation="LINEAR"):
+def dump_torch_conv1d_weights(where, conv, name='conv', scale=1/128, quantize=False):
 
     w = conv.weight.detach().cpu().numpy()
     if conv.bias is None:
@@ -112,7 +112,7 @@ def dump_torch_conv1d_weights(where, conv, name=None, activation="LINEAR"):
 
     if isinstance(where, CWriter):
 
-        return print_conv1d_layer(where, name, w, b, activation, format='torch')
+        return print_conv1d_layer(where, name, w, b, scale=scale, format='torch', quantize=quantize)
     else:
         os.makedirs(where, exist_ok=True)
 

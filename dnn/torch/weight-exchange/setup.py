@@ -39,7 +39,7 @@ with open(os.path.join(lib_folder, 'requirements.txt'), 'r') as f:
 print(install_requires)
 
 setup(name='wexchange',
-      version='1.4',
+      version='1.5',
       author='Jan Buethe',
       author_email='jbuethe@amazon.de',
       description='Weight-exchange library between Pytorch and Tensorflow',
