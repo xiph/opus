@@ -34,7 +34,7 @@ import numpy as np
 
 from wexchange.c_export import CWriter, print_gru_layer, print_dense_layer, print_conv1d_layer
 
-def dump_tf_gru_weights(where, gru, name=None, input_sparse=False, dotp=False):
+def dump_tf_gru_weights(where, gru, name='gru', input_sparse=False, recurrent_sparse=False, quantize=False, scale=1/128, recurrent_scale=1/128):
 
 
     assert gru.activation == tf.keras.activations.tanh
@@ -47,7 +47,7 @@ def dump_tf_gru_weights(where, gru, name=None, input_sparse=False, dotp=False):
     b_hh = gru.weights[2].numpy()[1].copy()
 
     if isinstance(where, CWriter):
-        return print_gru_layer(where, name, w_ih, w_hh, b_ih, b_hh, 'TANH', format='tf', reset_after=1, input_sparse=input_sparse, dotp=dotp)
+        return print_gru_layer(where, name, w_ih, w_hh, b_ih, b_hh, format='tf', input_sparse=input_sparse, recurrent_sparse=recurrent_sparse, quantize=quantize, scale=scale, recurrent_scale=recurrent_scale)
     else:
         os.makedirs(where, exist_ok=True)
 
@@ -87,7 +87,7 @@ def load_tf_gru_weights(path, gru):
     gru.weights[2].assign(tf.convert_to_tensor(np.vstack((b_ih, b_hh))))
 
 
-def dump_tf_dense_weights(where, dense, name=None):
+def dump_tf_dense_weights(where, dense, name='dense', scale=1/128, sparse=False, diagonal=False, quantize=False):
 
     w = dense.weights[0].numpy()
     if dense.bias is None:
@@ -98,12 +98,7 @@ def dump_tf_dense_weights(where, dense, name=None):
 
 
     if isinstance(where, CWriter):
-        try:
-            activation = dense.activation.__name__.upper()
-        except:
-            activation = "LINEAR"
-
-        return print_dense_layer(where, name, w, b, activation, format='tf')
+        return print_dense_layer(where, name, w, b, scale=scale, format='tf', sparse=sparse, diagonal=diagonal, quantize=quantize)
 
     else:
         os.makedirs(where, exist_ok=True)
@@ -122,7 +117,7 @@ def load_tf_dense_weights(path, dense):
         dense.weights[1].assign(tf.convert_to_tensor(b))
 
 
-def dump_tf_conv1d_weights(where, conv, name=None):
+def dump_tf_conv1d_weights(where, conv, name='conv', scale=1/128, quantize=False):
 
     assert conv.data_format == 'channels_last'
 
@@ -133,12 +128,7 @@ def dump_tf_conv1d_weights(where, conv, name=None):
         b = conv.bias.numpy()
 
     if isinstance(where, CWriter):
-        try:
-            activation = conv.activation.__name__.upper()
-        except:
-            activation = "LINEAR"
-
-        return print_conv1d_layer(where, name, w, b, activation, format='tf')
+        return print_conv1d_layer(where, name, w, b, scale=scale, format='tf', quantize=quantize)
     else:
         os.makedirs(where, exist_ok=True)
 

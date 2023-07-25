@@ -35,8 +35,8 @@ class CWriter:
                  filename_without_extension,
                  message=None,
                  header_only=False,
-                 enable_binary_blob=False,
                  create_state_struct=False,
+                 enable_binary_blob=True,
                  model_struct_name="Model",
                  nnet_header="nnet.h"):
         """
@@ -78,7 +78,7 @@ class CWriter:
         self.layer_dict = OrderedDict()
 
         # for binary blob format, format is key=<layer name>, value=<layer type>
-        self.weight_arrays = set()
+        self.weight_arrays = []
 
         # form model struct, format is key=<layer name>, value=<number of elements>
         self.state_dict = OrderedDict()
@@ -134,6 +134,8 @@ f"""
 
         if self.enable_binary_blob:
             # create weight array
+            if len(set(self.weight_arrays)) != len(self.weight_arrays):
+                raise ValueError("error: detected duplicates in weight arrays")
             self.source.write("\n#ifndef USE_WEIGHTS_FILE\n")
             self.source.write(f"const WeightArray {self.model_struct_name.lower()}_arrays[] = {{\n")
             for name in self.weight_arrays:

@@ -2,4 +2,3 @@ numpy
 scipy
 torch
 tqdm
-libs/wexchange-1.2-py3-none-any.whl

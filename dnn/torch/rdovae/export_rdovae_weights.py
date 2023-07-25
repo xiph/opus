@@ -29,6 +29,9 @@
 
 import os
 import argparse
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../weight-exchange'))
 
 parser = argparse.ArgumentParser()
 
@@ -83,20 +86,30 @@ def c_export(args, model):
 
     message = f"Auto generated from checkpoint {os.path.basename(args.checkpoint)}"
 
-    enc_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_enc_data"), message=message)
-    dec_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_dec_data"), message=message)
-    stats_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_stats_data"), message=message)
-    constants_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_constants"), message=message, header_only=True)
+    enc_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_enc_data"), message=message, model_struct_name='RDOVAEEnc')
+    dec_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_dec_data"), message=message, model_struct_name='RDOVAEDec')
+    stats_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_stats_data"), message=message, enable_binary_blob=False)
+    constants_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_constants"), message=message, header_only=True, enable_binary_blob=False)
 
     # some custom includes
-    for writer in [enc_writer, dec_writer, stats_writer]:
+    for writer in [enc_writer, dec_writer]:
         writer.header.write(
+f"""
+#include "opus_types.h"
+
+#include "dred_rdovae.h"
+
+#include "dred_rdovae_constants.h"
+
+"""
+        )
+
+    stats_writer.header.write(
 f"""
 #include "opus_types.h"
 
 #include "dred_rdovae_constants.h"
 
-#include "nnet.h"
 """
         )
 
@@ -111,9 +124,9 @@ f"""
         ('core_encoder.module.state_dense_2' , 'gdense2'    ,   'TANH')
     ]
 
-    for name, export_name, activation in encoder_dense_layers:
+    for name, export_name, _ in encoder_dense_layers:
         layer = model.get_submodule(name)
-        dump_torch_weights(enc_writer, layer, name=export_name, activation=activation, verbose=True)
+        dump_torch_weights(enc_writer, layer, name=export_name, verbose=True)
 
 
     encoder_gru_layers = [
@@ -122,15 +135,15 @@ f"""
         ('core_encoder.module.gru_3'         , 'enc_dense6',   'TANH')
     ]
 
-    enc_max_rnn_units = max([dump_torch_weights(enc_writer, model.get_submodule(name), export_name, activation, verbose=True, input_sparse=True, dotp=True)
-                             for name, export_name, activation in encoder_gru_layers])
+    enc_max_rnn_units = max([dump_torch_weights(enc_writer, model.get_submodule(name), export_name, verbose=True, input_sparse=True, quantize=True)
+                             for name, export_name, _ in encoder_gru_layers])
 
 
     encoder_conv_layers = [
         ('core_encoder.module.conv1'         , 'bits_dense' ,   'LINEAR')
     ]
 
-    enc_max_conv_inputs = max([dump_torch_weights(enc_writer, model.get_submodule(name), export_name, activation, verbose=True) for name, export_name, activation in encoder_conv_layers])
+    enc_max_conv_inputs = max([dump_torch_weights(enc_writer, model.get_submodule(name), export_name, verbose=True, quantize=False) for name, export_name, _ in encoder_conv_layers])
 
 
     del enc_writer
@@ -148,9 +161,9 @@ f"""
         ('core_decoder.module.output'        , 'dec_final',     'LINEAR')
     ]
 
-    for name, export_name, activation in decoder_dense_layers:
+    for name, export_name, _ in decoder_dense_layers:
         layer = model.get_submodule(name)
-        dump_torch_weights(dec_writer, layer, name=export_name, activation=activation, verbose=True)
+        dump_torch_weights(dec_writer, layer, name=export_name, verbose=True)
 
 
     decoder_gru_layers = [
@@ -159,8 +172,8 @@ f"""
         ('core_decoder.module.gru_3'         , 'dec_dense6',    'TANH')
     ]
 
-    dec_max_rnn_units = max([dump_torch_weights(dec_writer, model.get_submodule(name), export_name, activation, verbose=True, input_sparse=True, dotp=True)
-                             for name, export_name, activation in decoder_gru_layers])
+    dec_max_rnn_units = max([dump_torch_weights(dec_writer, model.get_submodule(name), export_name, verbose=True, input_sparse=True, quantize=True)
+                             for name, export_name, _ in decoder_gru_layers])
 
     del dec_writer
 
