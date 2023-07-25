@@ -51,6 +51,7 @@ typedef struct {
 #define WEIGHT_TYPE_float 0
 #define WEIGHT_TYPE_int 1
 #define WEIGHT_TYPE_qweight 2
+#define WEIGHT_TYPE_int8 3
 
 typedef struct {
   char head[4];
