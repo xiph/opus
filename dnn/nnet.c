@@ -333,15 +333,22 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
 
 #define MAX_CONV_INPUTS_ALL IMAX(MAX_CONV_INPUTS, DRED_MAX_CONV_INPUTS)
 
+void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int activation)
+{
+   float tmp[MAX_CONV_INPUTS_ALL];
+   celt_assert(input != output);
+   celt_assert(layer->nb_inputs <= MAX_CONV_INPUTS_ALL);
+   OPUS_COPY(tmp, mem, layer->nb_inputs-input_size);
+   OPUS_COPY(&tmp[layer->nb_inputs-input_size], input, input_size);
+   compute_linear(layer, output, tmp);
+   compute_activation(output, output, layer->nb_outputs, activation);
+   OPUS_COPY(mem, &tmp[input_size], layer->nb_inputs-input_size);
+}
+
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
 {
    LinearLayer matrix;
    int N, M;
-   float tmp[MAX_CONV_INPUTS_ALL];
-   celt_assert(input != output);
-   celt_assert(layer->nb_inputs*layer->kernel_size <= MAX_CONV_INPUTS_ALL);
-   OPUS_COPY(tmp, mem, layer->nb_inputs*(layer->kernel_size-1));
-   OPUS_COPY(&tmp[layer->nb_inputs*(layer->kernel_size-1)], input, layer->nb_inputs);
    M = layer->nb_inputs*layer->kernel_size;
    N = layer->nb_neurons;
    matrix.bias = layer->bias;
@@ -353,9 +360,7 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    matrix.nb_inputs = M;
    matrix.nb_outputs = N;
    matrix.scale = NULL;
-   compute_linear(&matrix, output, tmp);
-   compute_activation(output, output, N, layer->activation);
-   OPUS_COPY(mem, &tmp[layer->nb_inputs], layer->nb_inputs*(layer->kernel_size-1));
+   compute_generic_conv1d(&matrix, output, mem, input, layer->nb_inputs, layer->activation);
 }
 
 void compute_embedding(const EmbeddingLayer *layer, float *output, int input)
