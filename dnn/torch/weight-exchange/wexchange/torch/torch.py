@@ -146,12 +146,12 @@ def load_torch_embedding_weights(where, emb):
     with torch.no_grad():
         emb.weight.set_(torch.from_numpy(w))
 
-def dump_torch_weights(where, module, name=None, activation="LINEAR", verbose=False, **kwargs):
+def dump_torch_weights(where, module, name=None, verbose=False, **kwargs):
     """ generic function for dumping weights of some torch.nn.Module """
     if verbose and name is not None:
         print(f"printing layer {name} of type {type(module)}...")
     if isinstance(module, torch.nn.Linear):
-        return dump_torch_dense_weights(where, module, name, activation, **kwargs)
+        return dump_torch_dense_weights(where, module, name, **kwargs)
     elif isinstance(module, torch.nn.GRU):
         return dump_torch_gru_weights(where, module, name, **kwargs)
     elif isinstance(module, torch.nn.Conv1d):

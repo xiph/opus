@@ -31,12 +31,18 @@ from .c_writer import CWriter
 
 def print_vector(writer, vector, name, dtype='float', reshape_8x4=False, static=True, debug_float=False):
 
-    f = writer.source
-    binary_blob = writer.enable_binary_blob
+    if isinstance(writer, CWriter):
+        f = writer.source
+        binary_blob = writer.enable_binary_blob
+    else:
+        f = writer
+        binary_blob = False
 
     dtype_suffix = {
         'float' : 'float',
         'opus_int8' : 'int8',
+        'opus_uint16' : 'uint16',
+        'opus_int16' : 'int16',
         'int' : 'int',
         'qweight': 'qweight'
     }
@@ -58,13 +64,13 @@ f'''
 
     if debug_float:
         f.write('#ifndef DISABLE_DEBUG_FLOAT\n')
-
-    f.write(
+    if binary_blob:
+        f.write(
 f'''
 #define WEIGHTS_{name}_DEFINED
 #define WEIGHTS_{name}_TYPE WEIGHT_TYPE_{dtype_suffix[dtype]}
 '''
-    )
+        )
 
     if static:
         f.write('static ')
@@ -135,7 +141,10 @@ def print_sparse_weight(writer, A, name, scale=1/128, have_diag=True, quantize=F
         diag, A = extract_diagonal(A)
         print_vector(writer, diag, name + '_diag')
 
-    Aq = quantize_weight(A, scale)
+    if quantize:
+        Aq = quantize_weight(A, scale)
+    else:
+        Aq = A
 
     # extract blocks
     idx = np.zeros((0,), dtype='int')
@@ -209,12 +218,12 @@ def print_linear_layer(writer : CWriter,
         raise ValueError("None scale case not implemented yet.")
 
 
+
     if sparse:
         weight_q = print_sparse_weight(writer, weight, name + "_weights", scale=scale, have_diag=diagonal, quantize=quantize)
     else:
-        weight_q = quantize_weight(weight, scale)
-
         if quantize:
+            weight_q = quantize_weight(weight, scale)
             print_vector(writer, weight_q, name + "_weights_int8", dtype='opus_int8', reshape_8x4=True)
 
         print_vector(writer, weight, name + "_weights_float", dtype='float', reshape_8x4=False, debug_float=quantize)
@@ -307,3 +316,5 @@ def print_gru_layer(writer : CWriter,
     # wrapping it up
     writer.header.write(f"\n#define {name.upper()}_OUT_SIZE {N}\n")
     writer.header.write(f"\n#define {name.upper()}_STATE_SIZE {N}\n")
+
+    return N
