@@ -32,9 +32,9 @@ import os
 import torch
 import numpy as np
 
-from wexchange.c_export import CWriter, print_gru_layer, print_dense_layer, print_conv1d_layer
+from wexchange.c_export import CWriter, print_gru_layer2, print_dense_layer, print_conv1d_layer
 
-def dump_torch_gru_weights(where, gru, name=None, input_sparse=False, dotp=False):
+def dump_torch_gru_weights(where, gru, name='gru', input_sparse=False, recurrent_sparse=False, quantize=False, scale=1/128, recurrent_scale=1/128):
 
     assert gru.num_layers == 1
     assert gru.bidirectional == False
@@ -45,7 +45,7 @@ def dump_torch_gru_weights(where, gru, name=None, input_sparse=False, dotp=False
     b_hh = gru.bias_hh_l0.detach().cpu().numpy()
 
     if isinstance(where, CWriter):
-        return print_gru_layer(where, name, w_ih, w_hh, b_ih, b_hh, 'TANH', format='torch', reset_after=1, input_sparse=input_sparse, dotp=dotp)
+        return print_gru_layer2(where, name, w_ih, w_hh, b_ih, b_hh, format='torch', input_sparse=input_sparse, recurrent_sparse=recurrent_sparse, quantize=quantize, scale=scale)
     else:
         os.makedirs(where, exist_ok=True)
 
