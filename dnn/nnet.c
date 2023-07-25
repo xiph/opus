@@ -102,6 +102,12 @@ void compute_linear(const LinearLayer *linear, float *out, const float *in)
    }
 }
 
+void compute_generic_dense(const LinearLayer *layer, float *output, const float *input, int activation)
+{
+   compute_linear(layer, output, input);
+   compute_activation(output, output, layer->nb_outputs, activation);
+}
+
 #define MAX_RNN_NEURONS_ALL IMAX(IMAX(MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), DRED_MAX_RNN_NEURONS)
 
 
