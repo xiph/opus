@@ -147,7 +147,7 @@ int linear_init(LinearLayer *layer, const WeightArray *arrays,
   }
   if (weights_idx != NULL) {
     int total_blocks;
-    if ((layer->weights_idx = find_idx_check(arrays, weights_idx, nb_outputs, nb_inputs, &total_blocks)) == NULL) return 1;
+    if ((layer->weights_idx = find_idx_check(arrays, weights_idx, nb_inputs, nb_outputs, &total_blocks)) == NULL) return 1;
     if (weights != NULL) {
       if ((layer->weights = find_array_check(arrays, weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->weights[0]))) == NULL) return 1;
     }
