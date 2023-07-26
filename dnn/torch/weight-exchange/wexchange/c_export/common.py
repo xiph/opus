@@ -255,10 +255,6 @@ def print_dense_layer(writer : CWriter,
                       diagonal=False,
                       quantize=False):
 
-
-    if format == 'torch':
-        weight = weight.transpose()
-
     print_linear_layer(writer, name, weight, bias, scale=scale, format=format, sparse=sparse, diagonal=diagonal, quantize=quantize)
 
     writer.header.write(f"\n#define {name.upper()}_OUT_SIZE {weight.shape[1]}\n")
@@ -277,7 +273,7 @@ def print_conv1d_layer(writer : CWriter,
         # convert to channels last
         weight = np.transpose(weight, (2, 1, 0))
 
-    lin_weight = np.reshape(weight, (-1, weight.shape[-1]))
+    lin_weight = np.reshape(weight, (-1, weight.shape[-1])).transpose()
     print_linear_layer(writer, name, lin_weight, bias, scale=scale, format=format, sparse=False, diagonal=False, quantize=quantize)
 
     writer.header.write(f"\n#define {name.upper()}_OUT_SIZE {weight.shape[2]}\n")

@@ -36,6 +36,7 @@ class CWriter:
                  message=None,
                  header_only=False,
                  create_state_struct=False,
+                 enable_binary_blob=True,
                  model_struct_name="Model",
                  nnet_header="nnet.h"):
         """
@@ -69,7 +70,7 @@ class CWriter:
 
 
         self.header_only = header_only
-        self.enable_binary_blob = True
+        self.enable_binary_blob = enable_binary_blob
         self.create_state_struct = create_state_struct
         self.model_struct_name = model_struct_name
 
@@ -118,11 +119,11 @@ f"""
 
         # create model type
         if self.enable_binary_blob:
-            self.header.write(f"\ntypedef struct {{")
+            self.header.write(f"\nstruct {self.model_struct_name} {{")
             for name, data in self.layer_dict.items():
                 layer_type = data[0]
                 self.header.write(f"\n    {layer_type} {name};")
-            self.header.write(f"\n}} {self.model_struct_name};\n")
+            self.header.write(f"\n}};\n")
 
             init_prototype = f"int init_{self.model_struct_name.lower()}({self.model_struct_name} *model, const WeightArray *arrays)"
             self.header.write(f"\n{init_prototype};\n")

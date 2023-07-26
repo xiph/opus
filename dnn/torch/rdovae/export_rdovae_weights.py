@@ -85,18 +85,28 @@ def c_export(args, model):
 
     enc_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_enc_data"), message=message, model_struct_name='RDOVAEEnc')
     dec_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_dec_data"), message=message, model_struct_name='RDOVAEDec')
-    stats_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_stats_data"), message=message)
-    constants_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_constants"), message=message, header_only=True)
+    stats_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_stats_data"), message=message, enable_binary_blob=False)
+    constants_writer = CWriter(os.path.join(args.output_dir, "dred_rdovae_constants"), message=message, header_only=True, enable_binary_blob=False)
 
     # some custom includes
-    for writer in [enc_writer, dec_writer, stats_writer]:
+    for writer in [enc_writer, dec_writer]:
         writer.header.write(
+f"""
+#include "opus_types.h"
+
+#include "dred_rdovae.h"
+
+#include "dred_rdovae_constants.h"
+
+"""
+        )
+
+    stats_writer.header.write(
 f"""
 #include "opus_types.h"
 
 #include "dred_rdovae_constants.h"
 
-#include "nnet.h"
 """
         )
 
