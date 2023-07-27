@@ -179,7 +179,6 @@ def print_linear_layer(writer : CWriter,
                        weight : np.ndarray,
                        bias : np.ndarray,
                        scale : np.ndarray = None,
-                       format : str = 'torch',
                        sparse : bool = False,
                        diagonal : bool = False,
                        quantize : bool = True):
@@ -201,8 +200,6 @@ def print_linear_layer(writer : CWriter,
     if len(weight.shape) != 2:
         raise ValueError('expecting 2-dim weight array in print_linear_layer')
 
-    if format == 'torch':
-        weight = weight.transpose()
 
     bias_name           = "NULL" if bias is None else name + "_bias"
     subias_name         = name + "_subias" if quantize else "NULL"
@@ -255,7 +252,10 @@ def print_dense_layer(writer : CWriter,
                       diagonal=False,
                       quantize=False):
 
-    print_linear_layer(writer, name, weight, bias, scale=scale, format=format, sparse=sparse, diagonal=diagonal, quantize=quantize)
+    if format == 'torch':
+        weight = weight.transpose()
+
+    print_linear_layer(writer, name, weight, bias, scale=scale, sparse=sparse, diagonal=diagonal, quantize=quantize)
 
     writer.header.write(f"\n#define {name.upper()}_OUT_SIZE {weight.shape[1]}\n")
 
@@ -273,10 +273,11 @@ def print_conv1d_layer(writer : CWriter,
         # convert to channels last
         weight = np.transpose(weight, (2, 1, 0))
 
-    lin_weight = np.reshape(weight, (-1, weight.shape[-1])).transpose()
-    print_linear_layer(writer, name, lin_weight, bias, scale=scale, format=format, sparse=False, diagonal=False, quantize=quantize)
+    lin_weight = np.reshape(weight, (-1, weight.shape[-1]))
+    print_linear_layer(writer, name, lin_weight, bias, scale=scale, sparse=False, diagonal=False, quantize=quantize)
 
     writer.header.write(f"\n#define {name.upper()}_OUT_SIZE {weight.shape[2]}\n")
+    writer.header.write(f"\n#define {name.upper()}_IN_SIZE {weight.shape[1]}\n")
     writer.header.write(f"\n#define {name.upper()}_STATE_SIZE ({weight.shape[1]} * ({weight.shape[0] - 1}))\n")
     writer.header.write(f"\n#define {name.upper()}_DELAY {(weight.shape[0] - 1) // 2}\n") # CAVE: delay is not a property of the conv layer
 
@@ -306,8 +307,13 @@ def print_gru_layer(writer : CWriter,
             x[0:N] = x[N:2*N]
             x[N:2*N] = tmp
 
-    print_linear_layer(writer, name + "_input", weight, bias, scale=scale, format=format, sparse=input_sparse, quantize=quantize)
-    print_linear_layer(writer, name + "_recurrent", recurrent_weight, recurrent_bias, scale=recurrent_scale, format=format, sparse=recurrent_sparse, diagonal=recurrent_sparse, quantize=quantize)
+        weight = weight.transpose()
+        recurrent_weight = recurrent_weight.transpose()
+    else:
+        N = weight.shape[1] // 3
+
+    print_linear_layer(writer, name + "_input", weight, bias, scale=scale, sparse=input_sparse, quantize=quantize)
+    print_linear_layer(writer, name + "_recurrent", recurrent_weight, recurrent_bias, scale=recurrent_scale, sparse=recurrent_sparse, diagonal=recurrent_sparse, quantize=quantize)
 
     # wrapping it up
     writer.header.write(f"\n#define {name.upper()}_OUT_SIZE {N}\n")
