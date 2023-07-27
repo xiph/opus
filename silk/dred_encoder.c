@@ -69,7 +69,7 @@ void dred_encoder_init(DREDEnc* enc, opus_int32 Fs, int channels)
     enc->Fs = Fs;
     enc->channels = channels;
 #ifndef USE_WEIGHTS_FILE
-    init_rdovaeenc(&enc->model, rdovae_enc_arrays);
+    init_rdovaeenc(&enc->model, rdovaeenc_arrays);
 #endif
     dred_encoder_reset(enc);
 }

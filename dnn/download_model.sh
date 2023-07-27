@@ -8,6 +8,4 @@ if [ ! -f $model ]; then
         wget https://media.xiph.org/lpcnet/data/$model
 fi
 tar xvof $model
-touch src/nnet_data.[ch]
-touch src/plc_data.[ch]
-mv src/*.[ch] .
+touch *_data.[ch]
