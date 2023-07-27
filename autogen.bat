@@ -10,8 +10,6 @@ for /F "tokens=4 delims= " %%A in ('findstr "download_model.sh" autogen.sh') do 
 REM Remove trailing ")" character from the model variable
 set "model=%model:~0,-1%"
 
-cd dnn
-call download_model.bat %model%
-cd ..
+call dnn\download_model.bat %model%
 
 echo Updating build configuration files, please wait....
