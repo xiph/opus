@@ -1165,7 +1165,7 @@ int dred_decoder_load_model(OpusDREDDecoder *dec, const unsigned char *data, int
 int opus_dred_decoder_init(OpusDREDDecoder *dec)
 {
 #if defined(ENABLE_NEURAL_FEC) && !defined(USE_WEIGHTS_FILE)
-   init_rdovaedec(&dec->model, rdovae_dec_arrays);
+   init_rdovaedec(&dec->model, rdovaedec_arrays);
 #endif
    dec->arch = opus_select_arch();
    /* To make sure nobody forgets to init, use a magic number. */

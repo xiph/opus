@@ -162,7 +162,7 @@ int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor);
 extern const WeightArray lpcnet_arrays[];
 extern const WeightArray lpcnet_plc_arrays[];
 extern const WeightArray rdovaeenc_arrays[];
-extern const WeightArray rdovae_dec_arrays[];
+extern const WeightArray rdovaedec_arrays[];
 
 int linear_init(LinearLayer *layer, const WeightArray *arrays,
   const char *bias,

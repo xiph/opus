@@ -73,7 +73,7 @@ int main(void)
   write_weights(lpcnet_arrays, fout);
   write_weights(lpcnet_plc_arrays, fout);
   write_weights(rdovaeenc_arrays, fout);
-  write_weights(rdovae_dec_arrays, fout);
+  write_weights(rdovaedec_arrays, fout);
   fclose(fout);
   return 0;
 }
