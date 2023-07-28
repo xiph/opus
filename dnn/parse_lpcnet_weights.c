@@ -84,14 +84,14 @@ static const void *find_array_entry(const WeightArray *arrays, const char *name)
 
 static const void *find_array_check(const WeightArray *arrays, const char *name, int size) {
   const WeightArray *a = find_array_entry(arrays, name);
-  if (a && a->size == size) return a->data;
+  if (a->name && a->size == size) return a->data;
   else return NULL;
 }
 
 static const void *opt_array_check(const WeightArray *arrays, const char *name, int size, int *error) {
   const WeightArray *a = find_array_entry(arrays, name);
-  *error = (a != NULL && a->size != size);
-  if (a && a->size == size) return a->data;
+  *error = (a->name != NULL && a->size != size);
+  if (a->name && a->size == size) return a->data;
   else return NULL;
 }
 
