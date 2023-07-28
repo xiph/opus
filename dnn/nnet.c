@@ -142,6 +142,17 @@ void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *re
      state[i] = h[i];
 }
 
+void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation)
+{
+   int i;
+   float act1[MAX_INPUTS];
+   celt_assert(layer->nb_inputs == layer->nb_outputs);
+   compute_linear(layer, output, input);
+   compute_activation(output, output, layer->nb_outputs, ACTIVATION_SIGMOID);
+   compute_activation(act1, input, layer->nb_outputs, activation);
+   for (i=0;i<layer->nb_outputs;i++) output[i] *= act1[i];
+}
+
 void compute_activation(float *output, const float *input, int N, int activation)
 {
    int i;
