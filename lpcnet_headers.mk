@@ -8,6 +8,7 @@ dnn/lpcnet.h \
 dnn/burg.h \
 dnn/common.h \
 dnn/freq.h \
+dnn/fwgan.h \
 dnn/kiss99.h \
 dnn/lpcnet_private.h \
 dnn/nnet_data.h \
