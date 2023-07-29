@@ -303,6 +303,7 @@ def print_gru_layer(writer : CWriter,
 
         N = weight.shape[0] // 3
         for x in [weight, recurrent_weight, bias, recurrent_bias]:
+            if x is None: continue
             tmp = x[0:N].copy()
             x[0:N] = x[N:2*N]
             x[N:2*N] = tmp

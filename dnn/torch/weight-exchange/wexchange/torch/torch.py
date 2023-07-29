@@ -41,8 +41,14 @@ def dump_torch_gru_weights(where, gru, name='gru', input_sparse=False, recurrent
 
     w_ih = gru.weight_ih_l0.detach().cpu().numpy()
     w_hh = gru.weight_hh_l0.detach().cpu().numpy()
-    b_ih = gru.bias_ih_l0.detach().cpu().numpy()
-    b_hh = gru.bias_hh_l0.detach().cpu().numpy()
+    if hasattr(gru, 'bias_ih_l0'):
+        b_ih = gru.bias_ih_l0.detach().cpu().numpy()
+    else:
+        b_ih = None
+    if hasattr(gru, 'bias_hh_l0'):
+        b_hh = gru.bias_hh_l0.detach().cpu().numpy()
+    else:
+        b_hh = None
 
     if isinstance(where, CWriter):
         return print_gru_layer(where, name, w_ih, w_hh, b_ih, b_hh, format='torch', input_sparse=input_sparse, recurrent_sparse=recurrent_sparse, quantize=quantize, scale=scale, recurrent_scale=recurrent_scale)
