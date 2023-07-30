@@ -73,6 +73,7 @@ void compute_linear(const LinearLayer *linear, float *out, const float *in)
 {
    int i, M, N;
    const float *bias;
+   celt_assert(in != out);
    bias = linear->bias;
    M = linear->nb_inputs;
    N = linear->nb_outputs;
@@ -146,11 +147,12 @@ void compute_gated_activation(const LinearLayer *layer, float *output, const flo
 {
    int i;
    float act1[MAX_INPUTS];
+   float act2[MAX_INPUTS];
    celt_assert(layer->nb_inputs == layer->nb_outputs);
-   compute_linear(layer, output, input);
-   compute_activation(output, output, layer->nb_outputs, ACTIVATION_SIGMOID);
    compute_activation(act1, input, layer->nb_outputs, activation);
-   for (i=0;i<layer->nb_outputs;i++) output[i] *= act1[i];
+   compute_linear(layer, act2, input);
+   compute_activation(act2, act2, layer->nb_outputs, ACTIVATION_SIGMOID);
+   for (i=0;i<layer->nb_outputs;i++) output[i] = act1[i]*act2[i];
 }
 
 void compute_activation(float *output, const float *input, int N, int activation)
