@@ -2,6 +2,7 @@ LPCNET_SOURCES = \
 dnn/burg.c \
 dnn/freq.c \
 dnn/fwgan.c \
+dnn/fwgan_data.c \
 dnn/kiss99.c \
 dnn/lpcnet.c \
 dnn/lpcnet_enc.c \

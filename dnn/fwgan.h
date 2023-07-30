@@ -28,15 +28,39 @@
 #define FWGAN_H
 
 #include "freq.h"
+#include "fwgan_data.h"
 
 #define FWGAN_CONT_SAMPLES 320
 
+#define FWC1_STATE_SIZE 1
+#define FWC2_STATE_SIZE 1
+#define FWC3_STATE_SIZE 1
+#define FWC4_STATE_SIZE 1
+#define FWC5_STATE_SIZE 1
+#define FWC6_STATE_SIZE 1
+#define FWC7_STATE_SIZE 1
+
 typedef struct {
+  FWGAN model;
+  int arch;
+  float embed_phase;
   float syn_mem[LPC_ORDER];
+  float deemph_mem;
+  float cont_conv1_mem[FEAT_IN_CONV1_CONV_STATE_SIZE];
+  float cont[FEAT_IN_NL1_GATE_OUT_SIZE];
+  float rnn_state[RNN_GRU_STATE_SIZE];
+  float fwc1_state[FWC1_STATE_SIZE];
+  float fwc2_state[FWC2_STATE_SIZE];
+  float fwc3_state[FWC3_STATE_SIZE];
+  float fwc4_state[FWC4_STATE_SIZE];
+  float fwc5_state[FWC5_STATE_SIZE];
+  float fwc6_state[FWC6_STATE_SIZE];
+  float fwc7_state[FWC7_STATE_SIZE];
 } FWGANState;
 
-void fwgan_init(FWGANState *st, const float *pcm);
+void fwgan_init(FWGANState *st);
 
+void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0);
 
 void fwgan_synthesize(FWGANState *st, float *pcm, const float *features);
 
