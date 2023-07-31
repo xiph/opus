@@ -32,13 +32,14 @@
 
 #define FWGAN_CONT_SAMPLES 320
 
-#define FWC1_STATE_SIZE 1
-#define FWC2_STATE_SIZE 1
-#define FWC3_STATE_SIZE 1
-#define FWC4_STATE_SIZE 1
-#define FWC5_STATE_SIZE 1
-#define FWC6_STATE_SIZE 1
-#define FWC7_STATE_SIZE 1
+/* FIXME: Derive those from the model rather than hardcoding. */
+#define FWC1_STATE_SIZE 512
+#define FWC2_STATE_SIZE 512
+#define FWC3_STATE_SIZE 256
+#define FWC4_STATE_SIZE 256
+#define FWC5_STATE_SIZE 128
+#define FWC6_STATE_SIZE 128
+#define FWC7_STATE_SIZE 80
 
 typedef struct {
   FWGAN model;
