@@ -48,7 +48,7 @@
 
 #define FWGAN_FEATURES (NB_FEATURES-1)
 
-static void pitch_embeddings(float *pembed, float *phase, float w0) {
+static void pitch_embeddings(float *pembed, double *phase, double w0) {
   int i;
   /* FIXME: This could be speeded up by making phase a unit-norm complex value, rotating it
      by exp(-i*w0) each sample, and renormalizing once in while.  */
@@ -137,7 +137,7 @@ static void fwgan_deemphasis(float *pcm, float *deemph_mem) {
   }
 }
 
-static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, float w0)
+static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, double w0)
 {
   float tmp1[FWC1_FC_0_OUT_SIZE];
   float tmp2[IMAX(RNN_GRU_STATE_SIZE, FWC2_FC_0_OUT_SIZE)];
@@ -199,7 +199,7 @@ void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
   int subframe;
   float lpc[LPC_ORDER];
   float cond[BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE];
-  float w0;
+  double w0;
   int period;
   float lpc_weight;
   float fwgan_features[NB_FEATURES-1];

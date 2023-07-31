@@ -45,7 +45,7 @@ typedef struct {
   FWGAN model;
   int arch;
   int cont_initialized;
-  float embed_phase;
+  double embed_phase;
   float syn_mem[LPC_ORDER];
   float deemph_mem;
   float cont_conv1_mem[FEAT_IN_CONV1_CONV_STATE_SIZE];
