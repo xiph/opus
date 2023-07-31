@@ -140,7 +140,7 @@ static void fwgan_deemphasis(float *pcm, float *deemph_mem) {
 static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, float w0)
 {
   float tmp1[FWC1_FC_0_OUT_SIZE];
-  float tmp2[FWC2_FC_0_OUT_SIZE];
+  float tmp2[IMAX(RNN_GRU_STATE_SIZE, FWC2_FC_0_OUT_SIZE)];
   float feat_in[FEAT_IN_SIZE];
   float rnn_in[FEAT_IN_CONV1_CONV_OUT_SIZE];
   float pembed[FWGAN_FRAME_SIZE/2];
@@ -158,6 +158,7 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, fl
 
 
   compute_generic_gru(&model->rnn_gru_input, &model->rnn_gru_recurrent, st->rnn_state, rnn_in);
+  celt_assert(IMAX(RNN_GRU_STATE_SIZE, FWC2_FC_0_OUT_SIZE) >= model->rnn_nl_gate.nb_outputs);
   compute_gated_activation(&model->rnn_nl_gate, tmp2, st->rnn_state, ACTIVATION_TANH);
 
   compute_generic_conv1d(&model->fwc1_fc_0, tmp1, st->fwc1_state, tmp2, RNN_GRU_STATE_SIZE, ACTIVATION_TANH);
