@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
             if (feof(fin) || ret != NB_TOTAL_FEATURES) break;
             OPUS_COPY(features, in_features, NB_FEATURES);
             fwgan_synthesize(&fwgan, fpcm, features);
-            for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + fpcm[i]);
+            for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + MIN32(32767, MAX32(-32767, 32768.f*fpcm[i])));
             fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
         }
     } else if (mode == MODE_PLC) {
