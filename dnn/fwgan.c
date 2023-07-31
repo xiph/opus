@@ -64,9 +64,8 @@ static void run_fwgan_upsampler(FWGANState *st, float *cond, const float *featur
   FWGAN *model;
   model = &st->model;
   celt_assert(FWGAN_FEATURES == model->bfcc_with_corr_upsampler_fc.nb_inputs);
-  celt_assert(BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE == NB_SUBFRAMES*model->bfcc_with_corr_upsampler_fc.nb_outputs);
+  celt_assert(BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE == model->bfcc_with_corr_upsampler_fc.nb_outputs);
   compute_generic_dense(&model->bfcc_with_corr_upsampler_fc, cond, features, ACTIVATION_TANH);
-
 }
 
 void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
