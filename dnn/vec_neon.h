@@ -239,6 +239,55 @@ static inline void sgemv16x1(float *out, const float *weights, int rows, int col
     }
 }
 
+static inline void sgemv8x1(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+{
+    int i, j;
+    for (i=0;i<rows;i+=8)
+    {
+    float * restrict y = &out[i];
+
+    /* keep y[0..15] in registers for duration of inner loop */
+
+    float32x4_t y0_3 = vdupq_n_f32(0);
+    float32x4_t y4_7 = vdupq_n_f32(0);
+
+    for (j=0;j<cols;j++)
+    {
+        const float * restrict w;
+        float32x4_t wvec0_3, wvec4_7;
+        float32x4_t xj;
+
+        w = &weights[j*col_stride + i];
+        wvec0_3 = vld1q_f32(&w[0]);
+        wvec4_7 = vld1q_f32(&w[4]);
+
+        xj = vld1q_dup_f32(&x[j]);
+
+        y0_3 = vmlaq_f32(y0_3, wvec0_3, xj);
+        y4_7 = vmlaq_f32(y4_7, wvec4_7, xj);
+    }
+
+    /* save y[0..15] back to memory */
+
+    vst1q_f32(&y[0], y0_3);
+    vst1q_f32(&y[4], y4_7);
+    }
+}
+
+static inline void sgemv(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+{
+   if ((rows&0xf) == 0) sgemv16x1(out, weights, rows, cols, col_stride, x);
+   else if ((rows&0x7) == 0) sgemv8x1(out, weights, rows, cols, col_stride, x);
+   else {
+      int i, j;
+      for (i=0;i<rows;i++)
+      {
+         out[i] = 0;
+         for (j=0;j<cols;j++) out[i] += weights[j*col_stride + i]*x[j];
+      }
+   }
+}
+
 /* Temporarily use unoptimized version */
 static inline void sparse_sgemv8x4(float *out, const float *w, const int *idx, int rows, const float *x)
 {

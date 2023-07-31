@@ -92,6 +92,46 @@ static inline void sgemv16x1(float *out, const float *weights, int rows, int col
    }
 }
 
+static inline void sgemv16x1(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+{
+   int i, j;
+   OPUS_CLEAR(out, rows);
+   for (i=0;i<rows;i+=8)
+   {
+      for (j=0;j<cols;j++)
+      {
+         const float * restrict w;
+         float * restrict y;
+         float xj;
+         w = &weights[j*col_stride + i];
+         xj = x[j];
+         y = &out[i];
+         y[0] += w[0]*xj;
+         y[1] += w[1]*xj;
+         y[2] += w[2]*xj;
+         y[3] += w[3]*xj;
+         y[4] += w[4]*xj;
+         y[5] += w[5]*xj;
+         y[6] += w[6]*xj;
+         y[7] += w[7]*xj;
+      }
+   }
+}
+
+static inline void sgemv(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+{
+   if ((rows&0xf) == 0) sgemv16x1(out, weights, rows, cols, col_stride, x);
+   else if ((rows&0x7) == 0) sgemv8x1(out, weights, rows, cols, col_stride, x);
+   else {
+      int i, j;
+      for (i=0;i<rows;i++)
+      {
+         out[i] = 0;
+         for (j=0;j<cols;j++) out[i] += weights[j*col_stride + i]*x[j];
+      }
+   }
+}
+
 static inline void sparse_sgemv8x4(float *out, const float *w, const int *idx, int rows, const float *x)
 {
    int i, j;
