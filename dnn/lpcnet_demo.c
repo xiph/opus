@@ -189,7 +189,9 @@ int main(int argc, char **argv) {
         lpcnet_destroy(net);
     } else if (mode == MODE_FWGAN_SYNTHESIS) {
         FWGANState fwgan;
+        float zeros[320];
         fwgan_init(&fwgan);
+        fwgan_cont(&fwgan, zeros, NULL);
 #ifdef USE_WEIGHTS_FILE
         fwgan_load_model(fwgan, data, len);
 #endif
