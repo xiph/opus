@@ -185,7 +185,10 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, fl
 
 void fwgan_init(FWGANState *st)
 {
+  int ret;
   OPUS_CLEAR(st, 1);
+  ret = init_fwgan(&st->model, fwgan_arrays);
+  celt_assert(ret == 0);
   /* FIXME: perform arch detection. */
 }
 
