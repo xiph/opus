@@ -701,6 +701,35 @@ static inline void sgemv16x1(float *out, const float *weights, int rows, int col
    }
 }
 
+static inline void sgemv8x1(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+{
+   int i, j;
+   for (i=0;i<rows;i+=8)
+   {
+      float *y;
+      __m256 vy0;
+      y = &out[i];
+      vy0 = _mm256_setzero_ps();
+      for (j=0;j<cols;j++)
+      {
+         __m256 vxj;
+         __m256 vw;
+         vxj = _mm256_broadcast_ss(&x[j]);
+
+         vw = _mm256_loadu_ps(&weights[j*col_stride + i]);
+         vy0 = _mm256_fmadd_ps(vw, vxj, vy0);
+      }
+      _mm256_storeu_ps (&y[0], vy0);
+   }
+}
+
+static inline void sgemv(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+{
+   celt_assert((rows&7) == 0);
+   if ((rows&0xf) == 0) sgemv16x1(out, weights, rows, cols, col_stride, x);
+   else sgemv8x1(out, weights, rows, cols, col_stride, x);
+}
+
 static inline void sparse_sgemv8x4(float *out, const float *weights, const int *idx, int rows, const float *x)
 {
    int i, j;
