@@ -215,7 +215,7 @@ void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
   run_fwgan_upsampler(st, cond, features);
   for (subframe=0;subframe<NB_SUBFRAMES;subframe++) {
     float *sub_cond;
-    sub_cond = &cond[subframe*FEAT_IN_SIZE/4];
+    sub_cond = &cond[subframe*BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4];
     run_fwgan_subframe(st, &pcm[subframe*SUBFRAME_SIZE], sub_cond, w0);
   }
   apply_gain(pcm, features[0]);
