@@ -205,7 +205,7 @@ void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
   float fwgan_features[NB_FEATURES-1];
   int i;
   OPUS_COPY(fwgan_features, features, NB_FEATURES-2);
-  fwgan_features[NB_FEATURES-2] = features[NB_FEATURES-1];
+  fwgan_features[NB_FEATURES-2] = features[NB_FEATURES-1]+.5;
 
   celt_assert(st->cont_initialized);
   period = (int)floor(.1 + 50*features[NB_BANDS]+100);
