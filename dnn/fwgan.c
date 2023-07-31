@@ -149,8 +149,8 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, fl
 
   pitch_embeddings(pembed, &st->embed_phase, w0);
   /* Interleave bfcc_cond and pembed for each subframe in feat_in. */
-  OPUS_COPY(&feat_in[0], &cond[0], BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4);
-  OPUS_COPY(&feat_in[BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4], &pembed[0], FWGAN_FRAME_SIZE/2);
+  OPUS_COPY(&feat_in[BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4], &cond[0], BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4);
+  OPUS_COPY(&feat_in[0], &pembed[0], FWGAN_FRAME_SIZE/2);
 
   compute_generic_conv1d(&model->feat_in_conv1_conv, rnn_in, st->cont_conv1_mem, feat_in, FEAT_IN_CONV1_CONV_IN_SIZE, ACTIVATION_LINEAR);
   celt_assert(FEAT_IN_NL1_GATE_OUT_SIZE == model->feat_in_nl1_gate.nb_outputs);
