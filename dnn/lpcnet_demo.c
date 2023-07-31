@@ -36,6 +36,7 @@
 #include "lpcnet.h"
 #include "freq.h"
 #include "os_support.h"
+#include "fwgan.h"
 
 #ifdef USE_WEIGHTS_FILE
 # if __unix__
@@ -84,6 +85,7 @@ void free_blob(unsigned char *blob, int len) {
 #define MODE_SYNTHESIS 3
 #define MODE_PLC 4
 #define MODE_ADDLPC 5
+#define MODE_FWGAN_SYNTHESIS 6
 
 void usage(void) {
     fprintf(stderr, "usage: lpcnet_demo -features <input.pcm> <features.f32>\n");
@@ -112,6 +114,7 @@ int main(int argc, char **argv) {
     if (argc < 4) usage();
     if (strcmp(argv[1], "-features") == 0) mode=MODE_FEATURES;
     else if (strcmp(argv[1], "-synthesis") == 0) mode=MODE_SYNTHESIS;
+    else if (strcmp(argv[1], "-fwgan-synthesis") == 0) mode=MODE_FWGAN_SYNTHESIS;
     else if (strcmp(argv[1], "-plc") == 0) {
         mode=MODE_PLC;
         plc_options = argv[2];
@@ -184,6 +187,28 @@ int main(int argc, char **argv) {
             fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
         }
         lpcnet_destroy(net);
+    } else if (mode == MODE_FWGAN_SYNTHESIS) {
+        FWGANState fwgan;
+        float zeros[320] = {0};
+        fwgan_init(&fwgan);
+        fwgan_cont(&fwgan, zeros, NULL);
+#ifdef USE_WEIGHTS_FILE
+        fwgan_load_model(fwgan, data, len);
+#endif
+        while (1) {
+            int i;
+            float in_features[NB_TOTAL_FEATURES];
+            float features[NB_FEATURES];
+            float fpcm[LPCNET_FRAME_SIZE];
+            opus_int16 pcm[LPCNET_FRAME_SIZE];
+            size_t ret;
+            ret = fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
+            if (feof(fin) || ret != NB_TOTAL_FEATURES) break;
+            OPUS_COPY(features, in_features, NB_FEATURES);
+            fwgan_synthesize(&fwgan, fpcm, features);
+            for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + MIN32(32767, MAX32(-32767, 32768.f*fpcm[i])));
+            fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
+        }
     } else if (mode == MODE_PLC) {
         opus_int16 pcm[FRAME_SIZE];
         int count=0;
