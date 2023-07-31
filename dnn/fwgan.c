@@ -161,25 +161,25 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
   celt_assert(IMAX(RNN_GRU_STATE_SIZE, FWC2_FC_0_OUT_SIZE) >= model->rnn_nl_gate.nb_outputs);
   compute_gated_activation(&model->rnn_nl_gate, tmp2, st->rnn_state, ACTIVATION_TANH);
 
-  compute_generic_conv1d(&model->fwc1_fc_0, tmp1, st->fwc1_state, tmp2, RNN_GRU_STATE_SIZE, ACTIVATION_TANH);
+  compute_generic_conv1d(&model->fwc1_fc_0, tmp1, st->fwc1_state, tmp2, RNN_GRU_STATE_SIZE, ACTIVATION_LINEAR);
   compute_gated_activation(&model->fwc1_fc_1_gate, tmp1, tmp1, ACTIVATION_TANH);
 
-  compute_generic_conv1d(&model->fwc2_fc_0, tmp2, st->fwc2_state, tmp1, FWC1_FC_0_OUT_SIZE, ACTIVATION_TANH);
+  compute_generic_conv1d(&model->fwc2_fc_0, tmp2, st->fwc2_state, tmp1, FWC1_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
   compute_gated_activation(&model->fwc2_fc_1_gate, tmp2, tmp2, ACTIVATION_TANH);
 
-  compute_generic_conv1d(&model->fwc3_fc_0, tmp1, st->fwc3_state, tmp2, FWC2_FC_0_OUT_SIZE, ACTIVATION_TANH);
+  compute_generic_conv1d(&model->fwc3_fc_0, tmp1, st->fwc3_state, tmp2, FWC2_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
   compute_gated_activation(&model->fwc3_fc_1_gate, tmp1, tmp1, ACTIVATION_TANH);
 
-  compute_generic_conv1d(&model->fwc4_fc_0, tmp2, st->fwc4_state, tmp1, FWC3_FC_0_OUT_SIZE, ACTIVATION_TANH);
+  compute_generic_conv1d(&model->fwc4_fc_0, tmp2, st->fwc4_state, tmp1, FWC3_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
   compute_gated_activation(&model->fwc4_fc_1_gate, tmp2, tmp2, ACTIVATION_TANH);
 
-  compute_generic_conv1d(&model->fwc5_fc_0, tmp1, st->fwc5_state, tmp2, FWC4_FC_0_OUT_SIZE, ACTIVATION_TANH);
+  compute_generic_conv1d(&model->fwc5_fc_0, tmp1, st->fwc5_state, tmp2, FWC4_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
   compute_gated_activation(&model->fwc5_fc_1_gate, tmp1, tmp1, ACTIVATION_TANH);
 
-  compute_generic_conv1d(&model->fwc6_fc_0, tmp2, st->fwc6_state, tmp1, FWC5_FC_0_OUT_SIZE, ACTIVATION_TANH);
+  compute_generic_conv1d(&model->fwc6_fc_0, tmp2, st->fwc6_state, tmp1, FWC5_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
   compute_gated_activation(&model->fwc6_fc_1_gate, tmp2, tmp2, ACTIVATION_TANH);
 
-  compute_generic_conv1d(&model->fwc7_fc_0, tmp1, st->fwc7_state, tmp2, FWC6_FC_0_OUT_SIZE, ACTIVATION_TANH);
+  compute_generic_conv1d(&model->fwc7_fc_0, tmp1, st->fwc7_state, tmp2, FWC6_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
   compute_gated_activation(&model->fwc7_fc_1_gate, pcm, tmp1, ACTIVATION_TANH);
 }
 
