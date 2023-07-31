@@ -109,6 +109,8 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   compute_generic_dense(&model->fwc7_cont_fc_0, st->fwc7_state, cont_inputs, ACTIVATION_TANH);
 
   /* FIXME: Do we need to handle initial features? How? */
+
+  st->cont_initialized = 1;
 }
 
 static void apply_gain(float *pcm, float c0, float *last_gain) {
@@ -213,6 +215,7 @@ void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
   float lpc_weight;
   float fwgan_features[NB_FEATURES-1];
   int i;
+  celt_assert(st->cont_initialized);
   OPUS_COPY(fwgan_features, features, NB_FEATURES-2);
   fwgan_features[NB_FEATURES-2] = features[NB_FEATURES-1]+.5;
 
