@@ -46,6 +46,7 @@ typedef struct {
   int arch;
   int cont_initialized;
   double embed_phase;
+  float last_gain;
   float syn_mem[LPC_ORDER];
   float deemph_mem;
   float cont_conv1_mem[FEAT_IN_CONV1_CONV_STATE_SIZE];

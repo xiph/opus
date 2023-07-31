@@ -113,10 +113,11 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   st->cont_initialized = 1;
 }
 
-static void apply_gain(float *pcm, float c0) {
+static void apply_gain(float *pcm, float c0, float *last_gain) {
   int i;
   float gain = pow(10.f, (0.5f*c0/sqrt(18.f)));
-  for (i=0;i<FWGAN_FRAME_SIZE;i++) pcm[i] *= gain;
+  for (i=0;i<SUBFRAME_SIZE;i++) pcm[i] *= *last_gain;
+  *last_gain = gain;
 }
 
 static void fwgan_lpc_syn(float *pcm, float *mem, const float *lpc) {
@@ -221,8 +222,8 @@ void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
     float *sub_cond;
     sub_cond = &cond[subframe*BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4];
     run_fwgan_subframe(st, &pcm[subframe*SUBFRAME_SIZE], sub_cond, w0);
+    apply_gain(&pcm[subframe*SUBFRAME_SIZE], features[0], &st->last_gain);
   }
-  apply_gain(pcm, features[0]);
   fwgan_lpc_syn(pcm, st->syn_mem, lpc);
   fwgan_deemphasis(pcm, &st->deemph_mem);
 }
