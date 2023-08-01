@@ -276,9 +276,16 @@ static inline void sgemv8x1(float *out, const float *weights, int rows, int cols
 
 static inline void sgemv(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
-   celt_assert((rows&7) == 0);
    if ((rows&0xf) == 0) sgemv16x1(out, weights, rows, cols, col_stride, x);
-   else sgemv8x1(out, weights, rows, cols, col_stride, x);
+   else if ((rows&0x7) == 0) sgemv8x1(out, weights, rows, cols, col_stride, x);
+   else {
+      int i, j;
+      for (i=0;i<rows;i++)
+      {
+         out[i] = 0;
+         for (j=0;j<cols;j++) out[i] += weights[j*col_stride + i]*x[j];
+      }
+   }
 }
 
 /* Temporarily use unoptimized version */
