@@ -12,7 +12,6 @@ import wexchange.torch
 from models import model_dict
 
 unquantized = [
-    'feat_in_conv1.conv',
     'bfcc_with_corr_upsampler.fc',
     'cont_net.0',
     'fwc6.cont_fc.0',
