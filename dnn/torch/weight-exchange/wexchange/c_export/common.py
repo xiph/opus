@@ -170,6 +170,21 @@ def print_sparse_weight(writer, A, name, scale=1/128, have_diag=True, quantize=F
     return Aq
 
 
+
+def compute_scaling(weight):
+    """ computes optimal scaling vector for weight of shape (features_in, features_out) """
+
+    n_in, _ = weight.shape
+    n_in2 = 2 * (n_in // 2)
+
+    weight_sums = np.abs(weight[: n_in2 : 2]) + np.abs(weight[1 : n_in : 2])
+    weight_max = weight_sums.max(axis=0)
+    if n_in % 2: weight_max = np.maximum(weight_max, np.abs(weight[-1]))
+
+    scale = weight_max / 127
+
+    return scale
+
 def qn(string):
     if string == "NULL": return string
     else: return '"' + string + '"'
@@ -212,8 +227,7 @@ def print_linear_layer(writer : CWriter,
     nb_inputs, nb_outputs = weight.shape
 
     if scale is None:
-        raise ValueError("None scale case not implemented yet.")
-
+        scale = compute_scaling(weight)
 
 
     if sparse:
