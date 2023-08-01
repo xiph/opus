@@ -120,13 +120,23 @@ static void apply_gain(float *pcm, float c0, float *last_gain) {
   *last_gain = gain;
 }
 
-static void fwgan_lpc_syn(float *pcm, float *mem, const float *lpc) {
+static void fwgan_lpc_syn(float *pcm, float *mem, const float *lpc, float last_lpc[LPC_ORDER]) {
   int i;
-  for (i=0;i<FWGAN_FRAME_SIZE;i++) {
+  for (i=0;i<SUBFRAME_SIZE;i++) {
     int j;
-    for (j=0;j<LPC_ORDER;j++) pcm[i] -= mem[j]*lpc[j];
+    for (j=0;j<LPC_ORDER;j++) pcm[i] -= mem[j]*last_lpc[j];
     OPUS_MOVE(&mem[1], &mem[0], LPC_ORDER-1);
     mem[0] = pcm[i];
+  }
+  OPUS_COPY(last_lpc, lpc, LPC_ORDER);
+}
+
+static void fwgan_preemphasis(float *pcm, float *preemph_mem) {
+  int i;
+  for (i=0;i<SUBFRAME_SIZE;i++) {
+    float tmp = pcm[i];
+    pcm[i] -= FWGAN_DEEMPHASIS * *preemph_mem;
+    *preemph_mem = tmp;
   }
 }
 
@@ -223,7 +233,8 @@ void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
     sub_cond = &cond[subframe*BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4];
     run_fwgan_subframe(st, &pcm[subframe*SUBFRAME_SIZE], sub_cond, w0);
     apply_gain(&pcm[subframe*SUBFRAME_SIZE], features[0], &st->last_gain);
+    fwgan_preemphasis(&pcm[subframe*SUBFRAME_SIZE], &st->preemph_mem);
+    fwgan_lpc_syn(&pcm[subframe*SUBFRAME_SIZE], st->syn_mem, lpc, st->last_lpc);
   }
-  fwgan_lpc_syn(pcm, st->syn_mem, lpc);
   fwgan_deemphasis(pcm, &st->deemph_mem);
 }
