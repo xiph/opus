@@ -45,7 +45,7 @@ typedef struct {
   FWGAN model;
   int arch;
   int cont_initialized;
-  double embed_phase;
+  float embed_phase[2];
   float last_gain;
   float last_lpc[LPC_ORDER];
   float syn_mem[LPC_ORDER];

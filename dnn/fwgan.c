@@ -48,14 +48,33 @@
 
 #define FWGAN_FEATURES (NB_FEATURES-1)
 
-static void pitch_embeddings(float *pembed, double *phase, double w0) {
+static void pitch_embeddings(float *pembed, float *phase, double w0) {
   int i;
-  /* FIXME: This could be speeded up by making phase a unit-norm complex value, rotating it
-     by exp(-i*w0) each sample, and renormalizing once in while.  */
+  float wreal, wimag;
+#if 1
+  /* This Taylor expansion should be good enough since w0 is always small. */
+  float w2 = w0*w0;
+  wreal = 1 - .5*w2*(1.f - 0.083333333f*w2);
+  wimag = w0*(1 - 0.166666667f*w2*(1.f - 0.05f*w2));
+#else
+  wreal = cos(w0);
+  wimag = sin(w0);
+#endif
+  /* Speed-up phase reference by making phase a unit-norm complex value and rotating it
+     by exp(-i*w0) each sample.  */
   for (i=0;i<SUBFRAME_SIZE;i++) {
-    *phase += w0;
-    pembed[i] = sin(*phase);
-    pembed[SUBFRAME_SIZE+i] = cos(*phase);
+    float tmp;
+    tmp = phase[0]*wreal - phase[1]*wimag;
+    phase[1] = phase[0]*wimag + phase[1]*wreal;
+    phase[0] = tmp;
+    pembed[i] = phase[1];
+    pembed[SUBFRAME_SIZE+i] = phase[0];
+  }
+  /* Renormalize once per sub-frame, though we could probably do it even less frequently. */
+  {
+    float r = 1.f/sqrt(phase[0]*phase[0] + phase[1]*phase[1]);
+    phase[0] *= r;
+    phase[1] *= r;
   }
 }
 
@@ -76,6 +95,7 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   float tmp1[MAX_CONT_SIZE];
   float tmp2[MAX_CONT_SIZE];
   FWGAN *model;
+  st->embed_phase[0] = 1;
   model = &st->model;
   norm2 = celt_inner_prod(pcm0, pcm0, CONT_PCM_INPUTS, st->arch);
   norm_1 = 1.f/sqrt(1e-8f + norm2);
@@ -158,7 +178,7 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
   FWGAN *model;
   model = &st->model;
 
-  pitch_embeddings(pembed, &st->embed_phase, w0);
+  pitch_embeddings(pembed, st->embed_phase, w0);
   /* Interleave bfcc_cond and pembed for each subframe in feat_in. */
   OPUS_COPY(&feat_in[BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4], &cond[0], BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4);
   OPUS_COPY(&feat_in[0], &pembed[0], FWGAN_FRAME_SIZE/2);
