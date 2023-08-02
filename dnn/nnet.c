@@ -184,8 +184,10 @@ void compute_activation(float *output, const float *input, int N, int activation
 #endif
    } else {
       celt_assert(activation == ACTIVATION_LINEAR);
-      for (i=0;i<N;i++)
-         output[i] = input[i];
+      if (input != output) {
+         for (i=0;i<N;i++)
+            output[i] = input[i];
+      }
    }
 }
 
