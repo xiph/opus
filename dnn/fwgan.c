@@ -78,6 +78,17 @@ static void pitch_embeddings(float *pembed, float *phase, double w0) {
   }
 }
 
+static void compute_wlpc(float lpc[LPC_ORDER], const float *features) {
+  float lpc_weight;
+  int i;
+  lpc_from_cepstrum(lpc, features);
+  lpc_weight = 1.f;
+  for (i=0;i<LPC_ORDER;i++) {
+    lpc_weight *= FWGAN_GAMMA;
+    lpc[i] *= lpc_weight;
+  }
+}
+
 static void run_fwgan_upsampler(FWGANState *st, float *cond, const float *features)
 {
   FWGAN *model;
@@ -228,28 +239,19 @@ void fwgan_init(FWGANState *st)
   /* FIXME: perform arch detection. */
 }
 
-void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
+static void fwgan_synthesize_impl(FWGANState *st, float *pcm, const float *lpc, const float *features)
 {
   int subframe;
-  float lpc[LPC_ORDER];
   float cond[BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE];
   double w0;
   int period;
-  float lpc_weight;
   float fwgan_features[NB_FEATURES-1];
-  int i;
   celt_assert(st->cont_initialized);
   OPUS_COPY(fwgan_features, features, NB_FEATURES-2);
   fwgan_features[NB_FEATURES-2] = features[NB_FEATURES-1]+.5;
 
   period = (int)floor(.1 + 50*features[NB_BANDS]+100);
   w0 = 2*M_PI/period;
-  lpc_from_cepstrum(lpc, features);
-  lpc_weight = 1.f;
-  for (i=0;i<LPC_ORDER;i++) {
-    lpc_weight *= FWGAN_GAMMA;
-    lpc[i] *= lpc_weight;
-  }
   run_fwgan_upsampler(st, cond, fwgan_features);
   for (subframe=0;subframe<NB_SUBFRAMES;subframe++) {
     float *sub_cond;
@@ -260,4 +262,11 @@ void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
     fwgan_lpc_syn(&pcm[subframe*SUBFRAME_SIZE], st->syn_mem, lpc, st->last_lpc);
   }
   fwgan_deemphasis(pcm, &st->deemph_mem);
+}
+
+void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
+{
+  float lpc[LPC_ORDER];
+  compute_wlpc(lpc, features);
+  fwgan_synthesize_impl(st, pcm, lpc, features);
 }
