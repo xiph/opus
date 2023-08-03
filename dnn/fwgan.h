@@ -51,8 +51,8 @@ typedef struct {
   float syn_mem[LPC_ORDER];
   float preemph_mem;
   float deemph_mem;
+  float cont[CONT_NET_10_OUT_SIZE];
   float cont_conv1_mem[FEAT_IN_CONV1_CONV_STATE_SIZE];
-  float cont[FEAT_IN_NL1_GATE_OUT_SIZE];
   float rnn_state[RNN_GRU_STATE_SIZE];
   float fwc1_state[FWC1_STATE_SIZE];
   float fwc2_state[FWC2_STATE_SIZE];
