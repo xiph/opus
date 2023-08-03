@@ -121,6 +121,24 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   celt_assert(CONT_NET_10_OUT_SIZE == model->cont_net_10.nb_outputs);
   compute_generic_dense(&model->cont_net_10, st->cont, tmp1, ACTIVATION_TANH);
 
+  celt_assert(RNN_GRU_STATE_SIZE == model->rnn_cont_fc_0.nb_outputs);
+  compute_generic_dense(&model->rnn_cont_fc_0, st->rnn_state, st->cont, ACTIVATION_TANH);
+
+  celt_assert(FWC1_STATE_SIZE == model->fwc1_cont_fc_0.nb_outputs);
+  compute_generic_dense(&model->fwc1_cont_fc_0, st->fwc1_state, st->cont, ACTIVATION_TANH);
+  celt_assert(FWC2_STATE_SIZE == model->fwc2_cont_fc_0.nb_outputs);
+  compute_generic_dense(&model->fwc2_cont_fc_0, st->fwc2_state, st->cont, ACTIVATION_TANH);
+  celt_assert(FWC3_STATE_SIZE == model->fwc3_cont_fc_0.nb_outputs);
+  compute_generic_dense(&model->fwc3_cont_fc_0, st->fwc3_state, st->cont, ACTIVATION_TANH);
+  celt_assert(FWC4_STATE_SIZE == model->fwc4_cont_fc_0.nb_outputs);
+  compute_generic_dense(&model->fwc4_cont_fc_0, st->fwc4_state, st->cont, ACTIVATION_TANH);
+  celt_assert(FWC5_STATE_SIZE == model->fwc5_cont_fc_0.nb_outputs);
+  compute_generic_dense(&model->fwc5_cont_fc_0, st->fwc5_state, st->cont, ACTIVATION_TANH);
+  celt_assert(FWC6_STATE_SIZE == model->fwc6_cont_fc_0.nb_outputs);
+  compute_generic_dense(&model->fwc6_cont_fc_0, st->fwc6_state, st->cont, ACTIVATION_TANH);
+  celt_assert(FWC7_STATE_SIZE == model->fwc7_cont_fc_0.nb_outputs);
+  compute_generic_dense(&model->fwc7_cont_fc_0, st->fwc7_state, st->cont, ACTIVATION_TANH);
+
   st->cont_initialized = 1;
 }
 
@@ -153,7 +171,7 @@ static void fwgan_preemphasis(float *pcm, float *preemph_mem) {
 
 static void fwgan_deemphasis(float *pcm, float *deemph_mem) {
   int i;
-  for (i=0;i<FWGAN_FRAME_SIZE;i++) {
+  for (i=0;i<SUBFRAME_SIZE;i++) {
     pcm[i] += FWGAN_DEEMPHASIS * *deemph_mem;
     *deemph_mem = pcm[i];
   }
@@ -178,6 +196,12 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
   celt_assert(FEAT_IN_NL1_GATE_OUT_SIZE == model->feat_in_nl1_gate.nb_outputs);
   compute_gated_activation(&model->feat_in_nl1_gate, rnn_in, rnn_in, ACTIVATION_TANH);
 
+  if (st->cont_initialized == 1) {
+    OPUS_CLEAR(pcm, SUBFRAME_SIZE);
+    /* FIXME: Do we need to handle initial features? How? */
+    st->cont_initialized = 2;
+    return;
+  }
 
   compute_generic_gru(&model->rnn_gru_input, &model->rnn_gru_recurrent, st->rnn_state, rnn_in);
   celt_assert(IMAX(RNN_GRU_STATE_SIZE, FWC2_FC_0_OUT_SIZE) >= model->rnn_nl_gate.nb_outputs);
@@ -203,29 +227,6 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
 
   compute_generic_conv1d(&model->fwc7_fc_0, tmp1, st->fwc7_state, tmp2, FWC6_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
   compute_gated_activation(&model->fwc7_fc_1_gate, pcm, tmp1, ACTIVATION_TANH);
-
-  if (st->cont_initialized == 1) {
-    celt_assert(RNN_GRU_STATE_SIZE == model->rnn_cont_fc_0.nb_outputs);
-    compute_generic_dense(&model->rnn_cont_fc_0, st->rnn_state, st->cont, ACTIVATION_TANH);
-
-    celt_assert(FWC1_STATE_SIZE == model->fwc1_cont_fc_0.nb_outputs);
-    compute_generic_dense(&model->fwc1_cont_fc_0, st->fwc1_state, st->cont, ACTIVATION_TANH);
-    celt_assert(FWC2_STATE_SIZE == model->fwc2_cont_fc_0.nb_outputs);
-    compute_generic_dense(&model->fwc2_cont_fc_0, st->fwc2_state, st->cont, ACTIVATION_TANH);
-    celt_assert(FWC3_STATE_SIZE == model->fwc3_cont_fc_0.nb_outputs);
-    compute_generic_dense(&model->fwc3_cont_fc_0, st->fwc3_state, st->cont, ACTIVATION_TANH);
-    celt_assert(FWC4_STATE_SIZE == model->fwc4_cont_fc_0.nb_outputs);
-    compute_generic_dense(&model->fwc4_cont_fc_0, st->fwc4_state, st->cont, ACTIVATION_TANH);
-    celt_assert(FWC5_STATE_SIZE == model->fwc5_cont_fc_0.nb_outputs);
-    compute_generic_dense(&model->fwc5_cont_fc_0, st->fwc5_state, st->cont, ACTIVATION_TANH);
-    celt_assert(FWC6_STATE_SIZE == model->fwc6_cont_fc_0.nb_outputs);
-    compute_generic_dense(&model->fwc6_cont_fc_0, st->fwc6_state, st->cont, ACTIVATION_TANH);
-    celt_assert(FWC7_STATE_SIZE == model->fwc7_cont_fc_0.nb_outputs);
-    compute_generic_dense(&model->fwc7_cont_fc_0, st->fwc7_state, st->cont, ACTIVATION_TANH);
-    /* FIXME: Do we need to handle initial features? How? */
-    st->cont_initialized = 2;
-  }
-
 }
 
 
@@ -260,8 +261,8 @@ static void fwgan_synthesize_impl(FWGANState *st, float *pcm, const float *lpc, 
     apply_gain(&pcm[subframe*SUBFRAME_SIZE], features[0], &st->last_gain);
     fwgan_preemphasis(&pcm[subframe*SUBFRAME_SIZE], &st->preemph_mem);
     fwgan_lpc_syn(&pcm[subframe*SUBFRAME_SIZE], st->syn_mem, lpc, st->last_lpc);
+    fwgan_deemphasis(&pcm[subframe*SUBFRAME_SIZE], &st->deemph_mem);
   }
-  fwgan_deemphasis(pcm, &st->deemph_mem);
 }
 
 void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
