@@ -177,7 +177,7 @@ static void fwgan_deemphasis(float *pcm, float *deemph_mem) {
   }
 }
 
-static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, double w0)
+static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, double w0, const float *lpc, float c0)
 {
   float tmp1[FWC1_FC_0_OUT_SIZE];
   float tmp2[IMAX(RNN_GRU_STATE_SIZE, FWC2_FC_0_OUT_SIZE)];
@@ -200,6 +200,8 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
     OPUS_CLEAR(pcm, SUBFRAME_SIZE);
     /* FIXME: Do we need to handle initial features? How? */
     st->cont_initialized = 2;
+    apply_gain(pcm, c0, &st->last_gain);
+    OPUS_COPY(st->last_lpc, lpc, LPC_ORDER);
     return;
   }
 
@@ -227,6 +229,12 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
 
   compute_generic_conv1d(&model->fwc7_fc_0, tmp1, st->fwc7_state, tmp2, FWC6_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
   compute_gated_activation(&model->fwc7_fc_1_gate, pcm, tmp1, ACTIVATION_TANH);
+
+  apply_gain(pcm, c0, &st->last_gain);
+  fwgan_preemphasis(pcm, &st->preemph_mem);
+  fwgan_lpc_syn(pcm, st->syn_mem, lpc, st->last_lpc);
+  fwgan_deemphasis(pcm, &st->deemph_mem);
+
 }
 
 
@@ -257,11 +265,7 @@ static void fwgan_synthesize_impl(FWGANState *st, float *pcm, const float *lpc, 
   for (subframe=0;subframe<NB_SUBFRAMES;subframe++) {
     float *sub_cond;
     sub_cond = &cond[subframe*BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4];
-    run_fwgan_subframe(st, &pcm[subframe*SUBFRAME_SIZE], sub_cond, w0);
-    apply_gain(&pcm[subframe*SUBFRAME_SIZE], features[0], &st->last_gain);
-    fwgan_preemphasis(&pcm[subframe*SUBFRAME_SIZE], &st->preemph_mem);
-    fwgan_lpc_syn(&pcm[subframe*SUBFRAME_SIZE], st->syn_mem, lpc, st->last_lpc);
-    fwgan_deemphasis(&pcm[subframe*SUBFRAME_SIZE], &st->deemph_mem);
+    run_fwgan_subframe(st, &pcm[subframe*SUBFRAME_SIZE], sub_cond, w0, lpc, features[0]);
   }
 }
 
