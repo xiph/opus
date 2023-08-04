@@ -7,6 +7,7 @@
 #include "nnet_data.h"
 #include "plc_data.h"
 #include "kiss99.h"
+#include "fwgan.h"
 
 #define PITCH_MIN_PERIOD 32
 #define PITCH_MAX_PERIOD 256
@@ -65,7 +66,7 @@ struct LPCNetEncState{
 #define PLC_BUF_SIZE (FEATURES_DELAY*FRAME_SIZE + FRAME_SIZE)
 struct LPCNetPLCState {
   PLCModel model;
-  LPCNetState lpcnet;
+  FWGANState fwgan;
   LPCNetEncState enc;
   int arch;
   int enable_blending;
@@ -76,9 +77,7 @@ struct LPCNetPLCState {
   int fec_read_pos;
   int fec_fill_pos;
   int fec_skip;
-  opus_int16 pcm[PLC_BUF_SIZE+FRAME_SIZE];
-  int pcm_fill;
-  int skip_analysis;
+  float pcm[FWGAN_CONT_SAMPLES];
   int blend;
   float features[NB_TOTAL_FEATURES];
   int loss_count;
