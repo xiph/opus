@@ -301,3 +301,11 @@ void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
   OPUS_COPY(&pcm[FWGAN_FRAME_SIZE-SUBFRAME_SIZE], new_pcm, SUBFRAME_SIZE);
   OPUS_COPY(st->pcm_buf, &new_pcm[SUBFRAME_SIZE], FWGAN_FRAME_SIZE-SUBFRAME_SIZE);
 }
+
+void fwgan_synthesize_int(FWGANState *st, opus_int16 *pcm, const float *features)
+{
+  int i;
+  float fpcm[FWGAN_FRAME_SIZE];
+  fwgan_synthesize(st, fpcm, features);
+  for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + MIN32(32767, MAX32(-32767, 32768.f*fpcm[i])));
+}
