@@ -31,6 +31,13 @@
 #include "fwgan_data.h"
 
 #define FWGAN_CONT_SAMPLES 320
+#define NB_SUBFRAMES 4
+#define SUBFRAME_SIZE 40
+#define FWGAN_FRAME_SIZE (NB_SUBFRAMES*SUBFRAME_SIZE)
+#define CONT_PCM_INPUTS 320
+#define MAX_CONT_SIZE CONT_NET_0_OUT_SIZE
+#define FWGAN_GAMMA 0.92f
+#define FWGAN_DEEMPHASIS 0.85f
 
 /* FIXME: Derive those from the model rather than hardcoding. */
 #define FWC1_STATE_SIZE 512
@@ -51,6 +58,7 @@ typedef struct {
   float syn_mem[LPC_ORDER];
   float preemph_mem;
   float deemph_mem;
+  float pcm_buf[FWGAN_FRAME_SIZE];
   float cont[CONT_NET_10_OUT_SIZE];
   float cont_conv1_mem[FEAT_IN_CONV1_CONV_STATE_SIZE];
   float rnn_state[RNN_GRU_STATE_SIZE];

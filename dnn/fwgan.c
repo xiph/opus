@@ -36,14 +36,6 @@
 #include "pitch.h"
 #include "nnet.h"
 
-#define NB_SUBFRAMES 4
-#define SUBFRAME_SIZE 40
-#define FWGAN_FRAME_SIZE (NB_SUBFRAMES*SUBFRAME_SIZE)
-#define CONT_PCM_INPUTS 320
-#define MAX_CONT_SIZE CONT_NET_0_OUT_SIZE
-#define FWGAN_GAMMA 0.92f
-#define FWGAN_DEEMPHASIS 0.85f
-
 #define FEAT_IN_SIZE (BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4 + FWGAN_FRAME_SIZE/2)
 
 #define FWGAN_FEATURES (NB_FEATURES-1)
@@ -98,19 +90,37 @@ static void run_fwgan_upsampler(FWGANState *st, float *cond, const float *featur
   compute_generic_dense(&model->bfcc_with_corr_upsampler_fc, cond, features, ACTIVATION_TANH);
 }
 
+static void fwgan_synthesize_impl(FWGANState *st, float *pcm, const float *lpc, const float *features);
 void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
 {
   int i;
   float norm2, norm_1;
+  float wpcm0[CONT_PCM_INPUTS];
   float cont_inputs[CONT_PCM_INPUTS+1];
   float tmp1[MAX_CONT_SIZE];
   float tmp2[MAX_CONT_SIZE];
+  float lpc[LPC_ORDER];
+  float new_pcm[FWGAN_FRAME_SIZE];
   FWGAN *model;
   st->embed_phase[0] = 1;
   model = &st->model;
-  norm2 = celt_inner_prod(pcm0, pcm0, CONT_PCM_INPUTS, st->arch);
+  compute_wlpc(lpc, features0);
+  st->deemph_mem = pcm0[CONT_PCM_INPUTS-1];
+
+  for (i=LPC_ORDER;i<CONT_PCM_INPUTS;i++) {
+    int j;
+    wpcm0[i] = pcm0[i];
+    for (j=0;j<LPC_ORDER;j++) wpcm0[i] += lpc[j]*pcm0[i-j-1];
+  }
+  /* FIXME: Make this less stupid. */
+  for (i=0;i<LPC_ORDER;i++) wpcm0[i] = wpcm0[LPC_ORDER];
+
+  st->preemph_mem = wpcm0[CONT_PCM_INPUTS-1];
+  for (i=0;i<LPC_ORDER;i++) st->syn_mem[i] = pcm0[CONT_PCM_INPUTS-1-i] - FWGAN_DEEMPHASIS*pcm0[CONT_PCM_INPUTS-2-i];
+
+  norm2 = celt_inner_prod(wpcm0, wpcm0, CONT_PCM_INPUTS, st->arch);
   norm_1 = 1.f/sqrt(1e-8f + norm2);
-  for (i=0;i<CONT_PCM_INPUTS;i++) cont_inputs[i+1] = norm_1*pcm0[i];
+  for (i=0;i<CONT_PCM_INPUTS;i++) cont_inputs[i+1] = norm_1*wpcm0[i];
   cont_inputs[0] = log(sqrt(norm2) + 1e-7f);
 
   compute_generic_dense(&model->cont_net_0, tmp1, cont_inputs, ACTIVATION_TANH);
@@ -140,6 +150,8 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   compute_generic_dense(&model->fwc7_cont_fc_0, st->fwc7_state, st->cont, ACTIVATION_TANH);
 
   st->cont_initialized = 1;
+  fwgan_synthesize_impl(st, new_pcm, lpc, features0);
+  OPUS_COPY(st->pcm_buf, &new_pcm[SUBFRAME_SIZE], FWGAN_FRAME_SIZE-SUBFRAME_SIZE);
 }
 
 static void apply_gain(float *pcm, float c0, float *last_gain) {
@@ -198,7 +210,6 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
 
   if (st->cont_initialized == 1) {
     OPUS_CLEAR(pcm, SUBFRAME_SIZE);
-    /* FIXME: Do we need to handle initial features? How? */
     st->cont_initialized = 2;
     apply_gain(pcm, c0, &st->last_gain);
     OPUS_COPY(st->last_lpc, lpc, LPC_ORDER);
@@ -234,7 +245,6 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
   fwgan_preemphasis(pcm, &st->preemph_mem);
   fwgan_lpc_syn(pcm, st->syn_mem, lpc, st->last_lpc);
   fwgan_deemphasis(pcm, &st->deemph_mem);
-
 }
 
 
@@ -272,6 +282,10 @@ static void fwgan_synthesize_impl(FWGANState *st, float *pcm, const float *lpc, 
 void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
 {
   float lpc[LPC_ORDER];
+  float new_pcm[FWGAN_FRAME_SIZE];
   compute_wlpc(lpc, features);
-  fwgan_synthesize_impl(st, pcm, lpc, features);
+  fwgan_synthesize_impl(st, new_pcm, lpc, features);
+  OPUS_COPY(pcm, st->pcm_buf, FWGAN_FRAME_SIZE-SUBFRAME_SIZE);
+  OPUS_COPY(&pcm[FWGAN_FRAME_SIZE-SUBFRAME_SIZE], new_pcm, SUBFRAME_SIZE);
+  OPUS_COPY(st->pcm_buf, &new_pcm[SUBFRAME_SIZE], FWGAN_FRAME_SIZE-SUBFRAME_SIZE);
 }
