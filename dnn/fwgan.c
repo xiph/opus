@@ -35,6 +35,7 @@
 #include "lpcnet.h"
 #include "pitch.h"
 #include "nnet.h"
+#include "lpcnet_private.h"
 
 #define FEAT_IN_SIZE (BFCC_WITH_CORR_UPSAMPLER_FC_OUT_SIZE/4 + FWGAN_FRAME_SIZE/2)
 
@@ -267,6 +268,16 @@ void fwgan_init(FWGANState *st)
   ret = init_fwgan(&st->model, fwgan_arrays);
   celt_assert(ret == 0);
   /* FIXME: perform arch detection. */
+}
+
+int fwgan_load_model(FWGANState *st, const unsigned char *data, int len) {
+  WeightArray *list;
+  int ret;
+  parse_weights(&list, data, len);
+  ret = init_fwgan(&st->model, list);
+  free(list);
+  if (ret == 0) return 0;
+  else return -1;
 }
 
 static void fwgan_synthesize_impl(FWGANState *st, float *pcm, const float *lpc, const float *features)

@@ -72,6 +72,7 @@ typedef struct {
 } FWGANState;
 
 void fwgan_init(FWGANState *st);
+int fwgan_load_model(FWGANState *st, const unsigned char *data, int len);
 
 void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0);
 
