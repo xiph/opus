@@ -105,8 +105,12 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   st->embed_phase[0] = 1;
   model = &st->model;
   compute_wlpc(lpc, features0);
+  /* Deemphasis memory is just the last continuation sample. */
   st->deemph_mem = pcm0[CONT_PCM_INPUTS-1];
 
+  /* Apply analysis filter, considering that the preemphasis and deemphasis filter
+     cancel each other in this case since the LPC filter is constant across that boundary.
+     */
   for (i=LPC_ORDER;i<CONT_PCM_INPUTS;i++) {
     int j;
     wpcm0[i] = pcm0[i];
@@ -115,7 +119,10 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   /* FIXME: Make this less stupid. */
   for (i=0;i<LPC_ORDER;i++) wpcm0[i] = wpcm0[LPC_ORDER];
 
+  /* The memory of the pre-empahsis is the last sample of the weighted signal
+     (ignoring preemphasis+deemphasis combination). */
   st->preemph_mem = wpcm0[CONT_PCM_INPUTS-1];
+  /* The memory of the synthesis filter is the pre-emphasized continuation. */
   for (i=0;i<LPC_ORDER;i++) st->syn_mem[i] = pcm0[CONT_PCM_INPUTS-1-i] - FWGAN_DEEMPHASIS*pcm0[CONT_PCM_INPUTS-2-i];
 
   norm2 = celt_inner_prod(wpcm0, wpcm0, CONT_PCM_INPUTS, st->arch);
@@ -123,6 +130,7 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   for (i=0;i<CONT_PCM_INPUTS;i++) cont_inputs[i+1] = norm_1*wpcm0[i];
   cont_inputs[0] = log(sqrt(norm2) + 1e-7f);
 
+  /* Continuation network */
   compute_generic_dense(&model->cont_net_0, tmp1, cont_inputs, ACTIVATION_TANH);
   compute_generic_dense(&model->cont_net_2, tmp2, tmp1, ACTIVATION_TANH);
   compute_generic_dense(&model->cont_net_4, tmp1, tmp2, ACTIVATION_TANH);
@@ -131,6 +139,7 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   celt_assert(CONT_NET_10_OUT_SIZE == model->cont_net_10.nb_outputs);
   compute_generic_dense(&model->cont_net_10, st->cont, tmp1, ACTIVATION_TANH);
 
+  /* Computing continuation for each layer. */
   celt_assert(RNN_GRU_STATE_SIZE == model->rnn_cont_fc_0.nb_outputs);
   compute_generic_dense(&model->rnn_cont_fc_0, st->rnn_state, st->cont, ACTIVATION_TANH);
 
@@ -150,6 +159,8 @@ void fwgan_cont(FWGANState *st, const float *pcm0, const float *features0)
   compute_generic_dense(&model->fwc7_cont_fc_0, st->fwc7_state, st->cont, ACTIVATION_TANH);
 
   st->cont_initialized = 1;
+  /* Process the first frame, discard the first subframe, and keep the rest for the first
+     synthesis call. */
   fwgan_synthesize_impl(st, new_pcm, lpc, features0);
   OPUS_COPY(st->pcm_buf, &new_pcm[SUBFRAME_SIZE], FWGAN_FRAME_SIZE-SUBFRAME_SIZE);
 }
@@ -209,6 +220,8 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
   compute_gated_activation(&model->feat_in_nl1_gate, rnn_in, rnn_in, ACTIVATION_TANH);
 
   if (st->cont_initialized == 1) {
+    /* On the very first subframe we stop here. We only want to run the feat_in layer since the
+       others are initialized via the continuation network. */
     OPUS_CLEAR(pcm, SUBFRAME_SIZE);
     st->cont_initialized = 2;
     apply_gain(pcm, c0, &st->last_gain);
@@ -247,8 +260,6 @@ static void run_fwgan_subframe(FWGANState *st, float *pcm, const float *cond, do
   fwgan_deemphasis(pcm, &st->deemph_mem);
 }
 
-
-
 void fwgan_init(FWGANState *st)
 {
   int ret;
@@ -285,6 +296,7 @@ void fwgan_synthesize(FWGANState *st, float *pcm, const float *features)
   float new_pcm[FWGAN_FRAME_SIZE];
   compute_wlpc(lpc, features);
   fwgan_synthesize_impl(st, new_pcm, lpc, features);
+  /* Handle buffering. */
   OPUS_COPY(pcm, st->pcm_buf, FWGAN_FRAME_SIZE-SUBFRAME_SIZE);
   OPUS_COPY(&pcm[FWGAN_FRAME_SIZE-SUBFRAME_SIZE], new_pcm, SUBFRAME_SIZE);
   OPUS_COPY(st->pcm_buf, &new_pcm[SUBFRAME_SIZE], FWGAN_FRAME_SIZE-SUBFRAME_SIZE);
