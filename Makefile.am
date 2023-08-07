@@ -113,6 +113,7 @@ noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
                   opus_demo \
                   lpcnet_demo \
                   dump_data \
+                  nnpitch_demo \
                   repacketizer_demo \
                   silk/tests/test_unit_LPC_inv_pred_gain \
                   tests/test_opus_api \
@@ -246,6 +247,9 @@ lpcnet_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 
 dump_data_SOURCES = dnn/dump_data.c
 dump_data_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
+
+nnpitch_demo_SOURCES = dnn/nnpitch_demo.c
+nnpitch_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 
 EXTRA_DIST = opus.pc.in \
              opus-uninstalled.pc.in \

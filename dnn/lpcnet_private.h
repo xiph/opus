@@ -7,6 +7,7 @@
 #include "nnet_data.h"
 #include "plc_data.h"
 #include "kiss99.h"
+#include "neural_pitch.h"
 
 #define PITCH_MIN_PERIOD 32
 #define PITCH_MAX_PERIOD 256
@@ -103,6 +104,7 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat);
 int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *pcm, float features[NB_TOTAL_FEATURES]);
 
 void process_single_frame(LPCNetEncState *st, FILE *ffeat);
+void process_single_frame_neuralpitch(LPCNetEncState *st, FILE *ffeat, neural_pitch_model *npm, float *input);
 
 void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, float *lpc, const float *features);
 

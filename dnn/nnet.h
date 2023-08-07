@@ -165,6 +165,7 @@ extern const WeightArray lpcnet_plc_arrays[];
 extern const WeightArray rdovaeenc_arrays[];
 extern const WeightArray rdovaedec_arrays[];
 extern const WeightArray fwgan_arrays[];
+extern const WeightArray nnpitch_arrays[];
 
 int linear_init(LinearLayer *layer, const WeightArray *arrays,
   const char *bias,

@@ -41,6 +41,7 @@
 #include "lpcnet_private.h"
 #include "lpcnet.h"
 #include "os_support.h"
+#include "neural_pitch.h"
 
 
 int lpcnet_encoder_get_size() {
@@ -207,6 +208,79 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
   }
   frame_corr /= 2;
   st->features[NB_BANDS] = .01f*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
+  st->features[NB_BANDS + 1] = frame_corr-.5f;
+  if (ffeat) {
+    fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
+  }
+}
+
+void process_single_frame_neuralpitch(LPCNetEncState *st, FILE *ffeat, neural_pitch_model *npm, float *input) {
+  int i;
+  int sub;
+  int best_i;
+  int best[4];
+  int pitch_prev[2][PITCH_MAX_PERIOD];
+  float frame_corr;
+  float frame_weight_sum = 1e-15f;
+  for(sub=0;sub<2;sub++) frame_weight_sum += st->frame_weight[sub];
+  for(sub=0;sub<2;sub++) st->frame_weight[sub] *= (2.f/frame_weight_sum);
+  for(sub=0;sub<2;sub++) {
+    float max_path_all = -1e15f;
+    best_i = 0;
+    for (i=0;i<PITCH_MAX_PERIOD-2*PITCH_MIN_PERIOD;i++) {
+      float xc_half = MAX16(MAX16(st->xc[sub][(PITCH_MAX_PERIOD+i)/2], st->xc[sub][(PITCH_MAX_PERIOD+i+2)/2]), st->xc[sub][(PITCH_MAX_PERIOD+i-1)/2]);
+      if (st->xc[sub][i] < xc_half*1.1f) st->xc[sub][i] *= .8f;
+    }
+    for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
+      int j;
+      float max_prev;
+      max_prev = st->pitch_max_path_all - 6.f;
+      pitch_prev[sub][i] = st->best_i;
+      for (j=IMAX(-4, -i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
+        if (st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j) > max_prev) {
+          max_prev = st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j);
+          pitch_prev[sub][i] = i+j;
+        }
+      }
+      st->pitch_max_path[1][i] = max_prev + st->frame_weight[sub]*st->xc[sub][i];
+      if (st->pitch_max_path[1][i] > max_path_all) {
+        max_path_all = st->pitch_max_path[1][i];
+        best_i = i;
+      }
+    }
+    /* Renormalize. */
+    for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) st->pitch_max_path[1][i] -= max_path_all;
+    /*for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) printf("%f ", st->pitch_max_path[1][i]);
+    printf("\n");*/
+    OPUS_COPY(&st->pitch_max_path[0][0], &st->pitch_max_path[1][0], PITCH_MAX_PERIOD);
+    st->pitch_max_path_all = max_path_all;
+    st->best_i = best_i;
+  }
+  best_i = st->best_i;
+  frame_corr = 0;
+  /* Backward pass. */
+  for (sub=1;sub>=0;sub--) {
+    best[2+sub] = PITCH_MAX_PERIOD-best_i;
+    frame_corr += st->frame_weight[sub]*st->xc[sub][best_i];
+    best_i = pitch_prev[sub][best_i];
+  }
+  frame_corr /= 2;
+  // st->features[NB_BANDS] = .01f*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
+  // Compute Neural Pitch from input and replace features[NB_BANDS]
+  float output[PITCH_NET_OUTPUT] = {0.0};
+  float temp;
+  pitch_model(npm,output,input);
+  temp = 20.0*argmax(output);
+  temp = 62.5*pow(2,temp/1200.0);
+  temp = 16000/temp;
+  if (temp > 256){
+    temp = 256;
+  } 
+  if (temp < 32){
+    temp = 32;
+  } 
+  temp = (temp - 100)/50.0;
+  st->features[NB_BANDS] = temp;
   st->features[NB_BANDS + 1] = frame_corr-.5f;
   if (ffeat) {
     fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);

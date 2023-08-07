@@ -24,4 +24,6 @@ dnn/dred_rdovae_enc.h \
 dnn/dred_rdovae_enc_data.h \
 dnn/dred_rdovae_dec.h \
 dnn/dred_rdovae_dec_data.h \
-dnn/dred_rdovae_stats_data.h
+dnn/dred_rdovae_stats_data.h \
+dnn/neural_pitch.h \
+dnn/neural_pitch_data.h

@@ -42,6 +42,7 @@
 #include "lpcnet.h"
 #include "lpcnet_private.h"
 #include "os_support.h"
+#include "neural_pitch.h"
 
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
@@ -134,6 +135,9 @@ int main(int argc, char **argv) {
   float noise_std=0;
   int training = -1;
   int burg = 0;
+  // State struct for the neural pitch model
+  neural_pitch_model net;
+  npm_init(&net);
   srand(getpid());
   st = lpcnet_encoder_create();
   argv0=argv[0];
@@ -239,7 +243,12 @@ int main(int argc, char **argv) {
         compute_noise(noisebuf, noise_std);
     }
 
-    process_single_frame(st, ffeat);
+    // process_single_frame(st, ffeat); // Original LPCNet pitch
+    float input[NEURAL_PITCH_FRAME_SIZE]; //Input to neural pitch model
+    for(int z =0;z<NEURAL_PITCH_FRAME_SIZE;z++){
+      input[z] = x[z]/(32767.0);
+    }
+    process_single_frame_neuralpitch(st, ffeat,&net, input); // Original LPCNet pitch
     if (fpcm) write_audio(st, pcm, noisebuf, fpcm);
     /*if (fpcm) fwrite(pcm, sizeof(opus_int16), FRAME_SIZE, fpcm);*/
     for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);

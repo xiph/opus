@@ -20,4 +20,6 @@ dnn/dred_rdovae_dec_data.c \
 dnn/dred_rdovae_stats_data.c \
 silk/dred_encoder.c \
 silk/dred_coding.c \
-silk/dred_decoder.c
+silk/dred_decoder.c \
+dnn/neural_pitch.c \
+dnn/neural_pitch_data.c
