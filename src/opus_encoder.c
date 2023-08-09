@@ -2259,16 +2259,18 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        /* Remaining space for DRED, accounting for cost the 3 extra bytes for code 3, padding length, and extension number. */
        dred_bytes_left = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-3);
        /* Check whether we actually have something to encode. */
-       if (dred_chunks >= 1 && dred_bytes_left >= DRED_MIN_BYTES+2) {
+       if (dred_chunks >= 1 && dred_bytes_left >= DRED_MIN_BYTES+DRED_EXPERIMENTAL_BYTES) {
            int dred_bytes;
+#ifdef DRED_EXPERIMENTAL_VERSION
            /* Add temporary extension type and version.
               These bytes will be removed once extension is finalized. */
            buf[0] = 'D';
-           buf[1] = DRED_VERSION;
-           dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+2, dred_chunks, dred_bytes_left-2);
-           dred_bytes += 2;
+           buf[1] = DRED_EXPERIMENTAL_VERSION;
+#endif
+           dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+DRED_EXPERIMENTAL_BYTES, dred_chunks, dred_bytes_left-DRED_EXPERIMENTAL_BYTES);
+           dred_bytes += DRED_EXPERIMENTAL_BYTES;
            celt_assert(dred_bytes <= dred_bytes_left);
-           extension.id = 127;
+           extension.id = DRED_EXTENSION_ID;
            extension.frame = 0;
            extension.data = buf;
            extension.len = dred_bytes;

@@ -28,7 +28,14 @@
 #ifndef DRED_CONFIG_H
 #define DRED_CONFIG_H
 
-#define DRED_VERSION 1
+/* Change this once DRED gets an extension number assigned. */
+#define DRED_EXTENSION_ID 127
+
+/* Remove these two completely once DRED gets an extension number assigned. */
+#define DRED_EXPERIMENTAL_VERSION 1
+#define DRED_EXPERIMENTAL_BYTES 2
+
+
 #define DRED_MIN_BYTES 16
 
 /* these are inpart duplicates to the values defined in dred_rdovae_constants.h */

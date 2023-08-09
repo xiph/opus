@@ -1280,18 +1280,25 @@ static int dred_find_payload(const unsigned char *data, opus_int32 len, const un
          } else {
             frame += data[1];
          }
-      } else if (id == 127)
+      } else if (id == DRED_EXTENSION_ID)
       {
          const unsigned char *curr_payload;
          opus_int32 curr_payload_len;
          curr_payload = data0+header_size;
          curr_payload_len = (data-data0)-header_size;
+#ifdef DRED_EXPERIMENTAL_VERSION
          /* Check that temporary extension type and version match.
             This check will be removed once extension is finalized. */
-         if (curr_payload_len > 2 && curr_payload[0] == 'D' && curr_payload[1] == DRED_VERSION) {
+         if (curr_payload_len > DRED_EXPERIMENTAL_BYTES && curr_payload[0] == 'D' && curr_payload[1] == DRED_EXPERIMENTAL_VERSION) {
             *payload = curr_payload+2;
             return curr_payload_len-2;
          }
+#else
+         if (curr_payload_len > 0) {
+            *payload = curr_payload;
+            return curr_payload_len;
+         }
+#endif
       }
    }
    return 0;
