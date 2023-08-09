@@ -15,14 +15,15 @@ import argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument('data', type=str, help='input raw audio data')
-parser.add_argument('output', type=str, help='output IF features')
-parser.add_argument('crepe_pitch', type=str, help='.npy file output containing target Pitch')
+parser.add_argument('output', type=str, help='output directory')
+parser.add_argument('path_lpcnet_extractor', type=str, help='path to LPCNet extractor object file (generated on compilation)')
 parser.add_argument('noise_dataset', type=str, help='Location of the Demand Datset')
+parser.add_argument('--flag_xcorr', type=bool, help='Flag to additionally dump xcorr features',choices=[True,False],default = False,required = False)
 parser.add_argument('--fraction_input_use', type=float, help='Fraction of input data to consider',default = 0.3,required = False)
 parser.add_argument('--gpu_index', type=int, help='GPU index to use if multiple GPUs',default = 0,required = False)
 parser.add_argument('--choice_augment', type=str, help='Choice of noise augmentation, either use additive synthetic noise or add noise from the demand dataset',choices = ['demand','synthetic'],default = "demand",required = False)
 parser.add_argument('--fraction_clean', type=float, help='Fraction of data to keep clean (that is not augment with anything)',default = 0.2,required = False)
-parser.add_argument('--chunk_size', type=int, help='Number of samples to augment with for each iteration',default = 16000,required = False)
+parser.add_argument('--chunk_size', type=int, help='Number of samples to augment with for each iteration',default = 80000,required = False)
 parser.add_argument('--N', type=int, help='STFT window size',default = 320,required = False)
 parser.add_argument('--H', type=int, help='STFT Hop size',default = 160,required = False)
 parser.add_argument('--freq_keep', type=int, help='Number of Frequencies to keep',default = 30,required = False)
@@ -39,6 +40,7 @@ import tqdm
 import crepe
 import random
 import glob
+import subprocess
 
 data_full = np.memmap(args.data, dtype=np.int16,mode = 'r')
 data = data_full[:(int)(args.fraction_input_use*data_full.shape[0])]
@@ -58,12 +60,13 @@ chunk_size = args.chunk_size
 num_frames_chunk = chunk_size//H
 list_indices_keep = np.concatenate([np.arange(freq_keep), (N//2 + 1) + np.arange(freq_keep), 2*(N//2 + 1) + np.arange(freq_keep)])
 
-output  = np.memmap(args.output, dtype=np.float32, shape=(((data.shape[0]//chunk_size - 1)//1)*num_frames_chunk,list_indices_keep.shape[0]), mode='w+')
+output_IF  = np.memmap(args.output + '_iffeat.f32', dtype=np.float32, shape=(((data.shape[0]//chunk_size - 1)//1)*num_frames_chunk,list_indices_keep.shape[0]), mode='w+')
+if args.flag_xcorr:
+    output_xcorr  = np.memmap(args.output + '_xcorr.f32', dtype=np.float32, shape=(((data.shape[0]//chunk_size - 1)//1)*num_frames_chunk,257), mode='w+')
 
 fraction_clean = args.fraction_clean
 
 noise_dataset = args.noise_dataset
-list_nfiles = ['DKITCHEN','NFIELD','OHALLWAY','PCAFETER','SPSQUARE','TCAR','DLIVING','NPARK','OMEETING','PRESTO','STRAFFIC','TMETRO','DWASHING','NRIVER','OOFFICE','PSTATION','TBUS']
 
 for i in tqdm.trange((data.shape[0]//chunk_size - 1)//1):
     chunk = data[i*chunk_size:(i + 1)*chunk_size]/(2**15 - 1)
@@ -95,14 +98,17 @@ for i in tqdm.trange((data.shape[0]//chunk_size - 1)//1):
         if args.choice_augment == 'synthetic':
             n = np.random.randn(chunk_size)
         else:
-            list_noisefiles = noise_dataset + random.choice(list_nfiles) + '/ch*.wav'
+            list_noisefiles = noise_dataset + '*.wav'
             noise_file = random.choice(glob.glob(list_noisefiles))
-            n = np.memmap(noise_file, dtype=np.int16)/(2**15 - 1)
-            rand_range = np.random.randint(low = 0, high = (n.shape[0] - 16000 - chunk.shape[0])//2) # 16000 is subtracted because we will use the last 16000 minutes of noise for testing
+            n = np.memmap(noise_file, dtype=np.int16,mode = 'r')/(2**15 - 1)
+            rand_range = np.random.randint(low = 0, high = (n.shape[0] - 16000*60 - chunk.shape[0])) # 16000 is subtracted because we will use the last 1 minutes of noise for testing
             n = n[rand_range:rand_range + chunk.shape[0]]
         
         # Randomly filter the sampled noise as well
         n = random_filter(n)
+        # generate random prime number between 0,500 and make those samples of noise 0 (to prevent GRU from picking up temporal patterns)
+        Nprime = random.choice([2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541])
+        n[chunk_size - Nprime:] = np.zeros(Nprime)
         snr_multiplier = np.sqrt((np.sum(np.abs(chunk)**2)/np.sum(np.abs(n)**2))*10**(-snr_dB/10))
 
         chunk = g*(chunk + snr_multiplier*n)
@@ -114,18 +120,33 @@ for i in tqdm.trange((data.shape[0]//chunk_size - 1)//1):
     feature = np.concatenate([np.log(np.abs(spec) + 1.0e-8),np.real(phase_diff),np.imag(phase_diff)],axis = 0).T
     feature = feature[:,list_indices_keep]
 
-    num_frames = min(cent.shape[0],feature.shape[0],num_frames_chunk)
+    if args.flag_xcorr:
+        # Dump noisy audio into temp file
+        data_temp = np.memmap('./temp_augment.raw', dtype=np.int16, shape=(chunk.shape[0]), mode='w+')
+        # data_temp[:chunk.shape[0]] = (chunk/(np.max(np.abs(chunk)))*(2**15 - 1)).astype(np.int16)
+        data_temp[:chunk.shape[0]] = ((chunk)*(2**15 - 1)).astype(np.int16)
+
+        subprocess.run([args.path_lpcnet_extractor, './temp_augment.raw', './temp_augment_xcorr.f32'])
+        feature_xcorr = np.flip(np.fromfile('./temp_augment_xcorr.f32', dtype='float32').reshape((-1,256),order = 'C'),axis = 1)
+        ones_zero_lag = np.expand_dims(np.ones(feature_xcorr.shape[0]),-1)
+        feature_xcorr = np.concatenate([ones_zero_lag,feature_xcorr],axis = -1)
+
+        os.remove('./temp_augment.raw')
+        os.remove('./temp_augment_xcorr.f32')
+    num_frames = min(cent.shape[0],feature.shape[0],feature_xcorr.shape[0],num_frames_chunk)
     feature = feature[:num_frames,:]
     cent = cent[:num_frames]
     confidence = confidence[:num_frames]
-    output[i*num_frames_chunk:(i + 1)*num_frames_chunk,:] = feature
+    feature_xcorr = feature_xcorr[:num_frames]
+    output_IF[i*num_frames_chunk:(i + 1)*num_frames_chunk,:] = feature
+    output_xcorr[i*num_frames_chunk:(i + 1)*num_frames_chunk,:] = feature_xcorr
     list_cents.append(cent)
     list_confidences.append(confidence)
 
 list_cents = np.hstack(list_cents)
 list_confidences = np.hstack(list_confidences)
 
-np.save(args.crepe_pitch,np.vstack([list_cents,list_confidences]))
+np.save(args.output + '_pitches',np.vstack([list_cents,list_confidences]))
 
 
 

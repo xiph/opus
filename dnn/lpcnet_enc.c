@@ -320,3 +320,98 @@ int lpcnet_compute_single_frame_features_float(LPCNetEncState *st, const float *
   lpcnet_compute_single_frame_features_impl(st, x, features);
   return 0;
 }
+
+void compute_frame_features_xcorronly(LPCNetEncState *st, const float *in) {
+  float aligned_in[FRAME_SIZE];
+  int i;
+  float E = 0;
+  float Ly[NB_BANDS];
+  float follow, logMax;
+  kiss_fft_cpx X[FREQ_SIZE];
+  float Ex[NB_BANDS];
+  float xcorr[PITCH_MAX_PERIOD];
+  float ener0;
+  int sub;
+  float ener;
+  OPUS_COPY(aligned_in, &st->analysis_mem[OVERLAP_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
+  frame_analysis(st, X, Ex, in);
+  logMax = -2;
+  follow = -2;
+  for (i=0;i<NB_BANDS;i++) {
+    Ly[i] = log10(1e-2+Ex[i]);
+    Ly[i] = MAX16(logMax-8, MAX16(follow-2.5f, Ly[i]));
+    logMax = MAX16(logMax, Ly[i]);
+    follow = MAX16(follow-2.5f, Ly[i]);
+    E += Ex[i];
+  }
+  dct(st->features, Ly);
+  st->features[0] -= 4;
+  lpc_from_cepstrum(st->lpc, st->features);
+  for (i=0;i<LPC_ORDER;i++) st->features[NB_BANDS+2+i] = st->lpc[i];
+  OPUS_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
+  OPUS_COPY(&aligned_in[TRAINING_OFFSET], in, FRAME_SIZE-TRAINING_OFFSET);
+  for (i=0;i<FRAME_SIZE;i++) {
+    int j;
+    float sum = aligned_in[i];
+    for (j=0;j<LPC_ORDER;j++)
+      sum += st->lpc[j]*st->pitch_mem[j];
+    OPUS_MOVE(st->pitch_mem+1, st->pitch_mem, LPC_ORDER-1);
+    st->pitch_mem[0] = aligned_in[i];
+    st->exc_buf[PITCH_MAX_PERIOD+i] = sum + .7f*st->pitch_filt;
+    st->pitch_filt = sum;
+    /*printf("%f\n", st->exc_buf[PITCH_MAX_PERIOD+i]);*/
+  }
+  /* Cross-correlation on half-frames. */
+  for (sub=0;sub<1;sub++) {
+    int off = sub*FRAME_SIZE;
+    double ener1;
+    celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE, PITCH_MAX_PERIOD, st->arch);
+    ener0 = celt_inner_prod_c(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE);
+    ener1 = celt_inner_prod_c(&st->exc_buf[off], &st->exc_buf[off], FRAME_SIZE-1);
+    st->frame_weight[sub] = ener0;
+    /*printf("%f\n", st->frame_weight[sub]);*/
+    for (i=0;i<PITCH_MAX_PERIOD;i++) {
+      ener1 += st->exc_buf[i+off+FRAME_SIZE-1]*st->exc_buf[i+off+FRAME_SIZE-1];
+      ener = 1 + ener0 + ener1;
+      st->xc[sub][i] = 2*xcorr[i] / ener;
+      ener1 -= st->exc_buf[i+off]*st->exc_buf[i+off];
+    }
+    if (0) {
+      /* Upsample correlation by 3x and keep the max. */
+      float interpolated[PITCH_MAX_PERIOD]={0};
+      /* interp=sinc([-3:3]+1/3).*(.5+.5*cos(pi*[-3:3]/4.5)); interp=interp/sum(interp); */
+      static const float interp[7] = {0.026184f, -0.098339f, 0.369938f, 0.837891f, -0.184969f, 0.070242f, -0.020947f};
+      for (i=4;i<PITCH_MAX_PERIOD-4;i++) {
+        float val1=0, val2=0;
+        int j;
+        for (j=0;j<7;j++) {
+          val1 += st->xc[sub][i-3+j]*interp[j];
+          val2 += st->xc[sub][i+3-j]*interp[j];
+          interpolated[i] = MAX16(st->xc[sub][i], MAX16(val1, val2));
+        }
+      }
+      for (i=4;i<PITCH_MAX_PERIOD-4;i++) {
+        st->xc[sub][i] = interpolated[i];
+      }
+    }
+#if 0
+    for (i=0;i<PITCH_MAX_PERIOD;i++)
+      printf("%f ", st->xc[sub][i]);
+    printf("\n");
+#endif
+  }
+}
+
+int lpcnet_compute_single_frame_features_dump(LPCNetEncState *st, const short *pcm, FILE *fout) {
+    int i;
+    float x[FRAME_SIZE];
+    for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
+    preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
+    compute_frame_features_xcorronly(st, x);
+    fwrite(st->xc[0], sizeof(float),PITCH_MAX_PERIOD, fout);
+    // For pitch
+    // process_single_frame(st, NULL);
+    // OPUS_COPY(features, &st->features[0], NB_TOTAL_FEATURES);
+    
+    return 0;
+    }

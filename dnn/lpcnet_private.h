@@ -90,6 +90,8 @@ struct LPCNetPLCState {
 void preemphasis(float *y, float *mem, const float *x, float coef, int N);
 
 void compute_frame_features(LPCNetEncState *st, const float *in);
+void compute_frame_features_xcorronly(LPCNetEncState *st, const float *in);
+int lpcnet_compute_single_frame_features_dump(LPCNetEncState *st, const short *pcm, FILE *fout);
 
 void lpcnet_reset_signal(LPCNetState *lpcnet);
 void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, float *lpc, const float *features);
