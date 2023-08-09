@@ -29,7 +29,7 @@
 #define DRED_CONFIG_H
 
 /* Change this once DRED gets an extension number assigned. */
-#define DRED_EXTENSION_ID 127
+#define DRED_EXTENSION_ID 126
 
 /* Remove these two completely once DRED gets an extension number assigned. */
 #define DRED_EXPERIMENTAL_VERSION 1
