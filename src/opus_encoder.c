@@ -570,6 +570,9 @@ static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, 
    bitrate_offset = st->silk_mode.useInBandFEC ? 18000 : 12000;
    target_dred_bitrate = IMAX(0, (int)(dred_frac*(bitrate_bps-bitrate_offset)));
    dred_bitrate = IMIN(target_dred_bitrate, max_dred_bitrate);
+   /* If we can't afford enough bits, don't bother with DRED at all. */
+   if (dred_bitrate <= (DRED_MIN_BYTES+DRED_EXPERIMENTAL_BYTES)*8*st->Fs/frame_size)
+      dred_bitrate = 0;
    return dred_bitrate;
 }
 #endif
