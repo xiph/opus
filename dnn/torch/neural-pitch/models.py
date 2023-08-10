@@ -97,7 +97,7 @@ class large_joint(torch.nn.Module):
         self.if_upsample = torch.nn.Sequential(
             torch.nn.Linear(input_IF_dim,64),
             self.activation,
-            torch.nn.Linear(64,input_xcorr_dim),
+            torch.nn.Linear(64,64),
             self.activation,
         )
 
@@ -112,7 +112,7 @@ class large_joint(torch.nn.Module):
 
         self.conv = torch.nn.Sequential(
             torch.nn.ZeroPad2d((2,0,1,1)),
-            torch.nn.Conv2d(2, 8, 3, bias = True),
+            torch.nn.Conv2d(1, 8, 3, bias = True),
             self.activation,
             torch.nn.ZeroPad2d((2,0,1,1)),
             torch.nn.Conv2d(8, 8, 3, bias = True),
@@ -132,7 +132,7 @@ class large_joint(torch.nn.Module):
         # )
 
         self.downsample = torch.nn.Sequential(
-            torch.nn.Linear(input_xcorr_dim,gru_dim),
+            torch.nn.Linear(64 + input_xcorr_dim,gru_dim),
             self.activation
         )
         self.GRU = torch.nn.GRU(input_size = gru_dim,hidden_size = gru_dim,num_layers = 1,batch_first = True)
@@ -144,9 +144,12 @@ class large_joint(torch.nn.Module):
     def forward(self, x):
         xcorr_feat = x[:,:,:257]
         if_feat = x[:,:,257:]
-        x = torch.cat([xcorr_feat.unsqueeze(-1),self.if_upsample(if_feat).unsqueeze(-1)],axis = -1)
-        x = self.conv(x.permute(0,3,2,1)).squeeze(1)
-        x,_ = self.GRU(self.downsample(x.permute(0,2,1)))
+        # x = torch.cat([xcorr_feat.unsqueeze(-1),self.if_upsample(if_feat).unsqueeze(-1)],axis = -1)
+        xcorr_feat = self.conv(xcorr_feat.unsqueeze(-1).permute(0,3,2,1)).squeeze(1).permute(0,2,1)
+        if_feat = self.if_upsample(if_feat)
+        x = torch.cat([xcorr_feat,if_feat],axis = - 1)
+        # x = self.conv(x.permute(0,3,2,1)).squeeze(1)
+        x,_ = self.GRU(self.downsample(x))
         x = self.upsample(x).permute(0,2,1)
 
         return x
