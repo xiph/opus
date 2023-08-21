@@ -313,7 +313,7 @@ if not opt_asm.disabled()
         endif
       endif
 
-      if cc.get_define('__APPLE__')
+      if cc.get_define('__APPLE__') != ''
         arm2gnu_args = ['--apple']
       else
         arm2gnu_args = []
