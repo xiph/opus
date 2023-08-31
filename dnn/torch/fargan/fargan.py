@@ -9,7 +9,7 @@ Fs = 16000
 
 fid_dict = {}
 def dump_signal(x, filename):
-    return
+    #return
     if filename in fid_dict:
         fid = fid_dict[filename]
     else:
@@ -162,7 +162,7 @@ class FARGANSub(nn.Module):
 
         self.apply(init_weights)
 
-    def forward(self, cond, prev, exc_mem, phase, period, states):
+    def forward(self, cond, prev, exc_mem, phase, period, states, gain=None):
         device = exc_mem.device
         #print(cond.shape, prev.shape)
         
@@ -176,7 +176,7 @@ class FARGANSub(nn.Module):
         dump_signal(prev, 'pitch_exc.f32')
         dump_signal(exc_mem, 'exc_mem.f32')
         if self.has_gain:
-            gain = torch.norm(prev, dim=1, p=2, keepdim=True)
+            #gain = torch.norm(prev, dim=1, p=2, keepdim=True)
             prev = prev/(1e-5+gain)
             prev = torch.cat([prev, torch.log(1e-5+gain)], 1)
 
@@ -193,10 +193,10 @@ class FARGANSub(nn.Module):
         if self.passthrough_size != 0:
             passthrough = sig_out[:,self.subframe_size:]
             sig_out = sig_out[:,:self.subframe_size]
-        if self.has_gain:
-            out_gain = torch.exp(self.gain_dense_out(gru3_out))
-            sig_out = sig_out * out_gain
         dump_signal(sig_out, 'exc_out.f32')
+        if self.has_gain:
+            pitch_gain = torch.exp(self.gain_dense_out(gru3_out))
+            sig_out = (sig_out + pitch_gain*prev[:,:-1]) * gain
         exc_mem = torch.cat([exc_mem[:,self.subframe_size:], sig_out], 1)
         dump_signal(sig_out, 'sig_out.f32')
         return sig_out, exc_mem, (gru1_state, gru2_state, gru3_state, passthrough)
@@ -246,7 +246,9 @@ class FARGAN(nn.Module):
                 phase = torch.cat([preal, pimag], 1)
                 #print("now: ", preal.shape, prev.shape, sig_in.shape)
                 pitch = period[:, 3+n]
-                out, exc_mem, states = self.sig_net(cond[:, n, :], prev, exc_mem, phase, pitch, states)
+                gain = .03*10**(0.5*features[:, 3+n, 0:1]/np.sqrt(18.0))
+                #gain = gain[:,:,None]
+                out, exc_mem, states = self.sig_net(cond[:, n, :], prev, exc_mem, phase, pitch, states, gain=gain)
 
                 if n < nb_pre_frames:
                     out = pre[:, pos:pos+self.subframe_size]
