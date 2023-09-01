@@ -54,7 +54,7 @@ epochs = args.epochs
 sequence_length = args.sequence_length
 lr_decay = args.lr_decay
 
-adam_betas = [0.9, 0.99]
+adam_betas = [0.8, 0.99]
 adam_eps = 1e-8
 features_file = args.features
 signal_file = args.signal
@@ -92,7 +92,7 @@ dataset = FARGANDataset(features_file, signal_file, sequence_length=sequence_len
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
 
 
-optimizer = torch.optim.Adam(model.parameters(), lr=lr, betas=adam_betas, eps=adam_eps)
+optimizer = torch.optim.AdamW(model.parameters(), lr=lr, betas=adam_betas, eps=adam_eps)
 
 
 # learning rate scheduler

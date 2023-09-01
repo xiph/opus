@@ -9,7 +9,7 @@ Fs = 16000
 
 fid_dict = {}
 def dump_signal(x, filename):
-    #return
+    return
     if filename in fid_dict:
         fid = fid_dict[filename]
     else:
@@ -143,7 +143,7 @@ class FARGANSub(nn.Module):
         
         gain_param = 1 if self.has_gain else 0
 
-        self.sig_dense1 = nn.Linear(3*self.subframe_size+self.passthrough_size+self.cond_size+gain_param, self.cond_size, bias=False)
+        self.sig_dense1 = nn.Linear(4*self.subframe_size+self.passthrough_size+self.cond_size+gain_param, self.cond_size, bias=False)
         self.sig_dense2 = nn.Linear(self.cond_size, self.cond_size, bias=False)
         self.gru1 = nn.GRUCell(self.cond_size, self.cond_size, bias=False)
         self.gru2 = nn.GRUCell(self.cond_size, self.cond_size, bias=False)
@@ -171,7 +171,8 @@ class FARGANSub(nn.Module):
         idx = 256-torch.maximum(torch.tensor(self.subframe_size, device=device), period[:,None])
         rng = torch.arange(self.subframe_size, device=device)
         idx = idx + rng[None,:]
-        prev = torch.gather(exc_mem, 1, idx)
+        pred = torch.gather(exc_mem, 1, idx)
+        prev = torch.cat([pred, prev], 1) 
         #prev = prev*0
         dump_signal(prev, 'pitch_exc.f32')
         dump_signal(exc_mem, 'exc_mem.f32')
@@ -196,7 +197,7 @@ class FARGANSub(nn.Module):
         dump_signal(sig_out, 'exc_out.f32')
         if self.has_gain:
             pitch_gain = torch.exp(self.gain_dense_out(gru3_out))
-            sig_out = (sig_out + pitch_gain*prev[:,:-1]) * gain
+            sig_out = (sig_out + pitch_gain*prev[:,:self.subframe_size]) * gain
         exc_mem = torch.cat([exc_mem[:,self.subframe_size:], sig_out], 1)
         dump_signal(sig_out, 'sig_out.f32')
         return sig_out, exc_mem, (gru1_state, gru2_state, gru3_state, passthrough)
