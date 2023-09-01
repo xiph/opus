@@ -44,8 +44,8 @@ from models.silk_feature_net_pl import SilkFeatureNetPL
 from models.silk_feature_net import SilkFeatureNet
 from .scale_embedding import ScaleEmbedding
 
-class ShapeNet(NNSBase):
-    """ Adaptive Noise Re-Shaping """
+class NoLACE(NNSBase):
+    """ Non-Linear Adaptive Coding Enhancer """
     FRAME_SIZE=80
 
     def __init__(self,
