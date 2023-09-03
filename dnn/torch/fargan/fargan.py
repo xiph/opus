@@ -140,10 +140,7 @@ class FARGANSub(nn.Module):
         
         print("has_gain:", self.has_gain)
         print("passthrough_size:", self.passthrough_size)
-        
-        gain_param = 1 if self.has_gain else 0
-
-        self.sig_dense1 = nn.Linear(4*self.subframe_size+self.passthrough_size+self.cond_size+gain_param, self.cond_size, bias=False)
+        self.sig_dense1 = nn.Linear(4*self.subframe_size+self.passthrough_size+self.cond_size+4, self.cond_size, bias=False)
         self.sig_dense2 = nn.Linear(self.cond_size, self.cond_size, bias=False)
         self.gru1 = nn.GRUCell(self.cond_size, self.cond_size, bias=False)
         self.gru2 = nn.GRUCell(self.cond_size, self.cond_size, bias=False)
@@ -154,6 +151,7 @@ class FARGANSub(nn.Module):
         self.gru1_glu = GLU(self.cond_size)
         self.gru2_glu = GLU(self.cond_size)
         self.gru3_glu = GLU(self.cond_size)
+        self.ptaps_dense = nn.Linear(self.cond_size, 5)
         
         self.sig_dense_out = nn.Linear(self.cond_size, self.subframe_size+self.passthrough_size, bias=False)
         if self.has_gain:
@@ -168,21 +166,19 @@ class FARGANSub(nn.Module):
         
         dump_signal(prev, 'prev_in.f32')
 
-        idx = 256-torch.maximum(torch.tensor(self.subframe_size, device=device), period[:,None])
-        rng = torch.arange(self.subframe_size, device=device)
-        idx = idx + rng[None,:]
+        idx = 256-torch.clamp(period[:,None], min=self.subframe_size+2, max=254)
+        rng = torch.arange(self.subframe_size+4, device=device)
+        idx = idx + rng[None,:] - 2
         pred = torch.gather(exc_mem, 1, idx)
-        prev = torch.cat([pred, prev], 1) 
+        pred = pred/(1e-5+gain)
+
+        prev = prev/(1e-5+gain)
         #prev = prev*0
         dump_signal(prev, 'pitch_exc.f32')
         dump_signal(exc_mem, 'exc_mem.f32')
-        if self.has_gain:
-            #gain = torch.norm(prev, dim=1, p=2, keepdim=True)
-            prev = prev/(1e-5+gain)
-            prev = torch.cat([prev, torch.log(1e-5+gain)], 1)
 
         passthrough = states[3]
-        tmp = torch.cat((cond, prev, passthrough, phase), 1)
+        tmp = torch.cat((cond, pred, prev, passthrough, phase), 1)
 
         tmp = self.dense1_glu(torch.tanh(self.sig_dense1(tmp)))
         tmp = self.dense2_glu(torch.tanh(self.sig_dense2(tmp)))
@@ -196,8 +192,14 @@ class FARGANSub(nn.Module):
             sig_out = sig_out[:,:self.subframe_size]
         dump_signal(sig_out, 'exc_out.f32')
         if self.has_gain:
+            taps = self.ptaps_dense(gru3_out)
+            taps = .2*taps + torch.exp(taps)
+            taps = taps / (1e-2 + torch.sum(torch.abs(taps), dim=-1, keepdim=True))
+            dump_signal(taps, 'taps.f32')
+            fpitch = taps[:,0:1]*pred[:,:-4] + taps[:,1:2]*pred[:,1:-3] + taps[:,2:3]*pred[:,2:-2] + taps[:,3:4]*pred[:,3:-1] + taps[:,4:]*pred[:,4:]
             pitch_gain = torch.exp(self.gain_dense_out(gru3_out))
-            sig_out = (sig_out + pitch_gain*prev[:,:self.subframe_size]) * gain
+            dump_signal(pitch_gain, 'pgain.f32')
+            sig_out = (sig_out + pitch_gain*fpitch) * gain
         exc_mem = torch.cat([exc_mem[:,self.subframe_size:], sig_out], 1)
         dump_signal(sig_out, 'sig_out.f32')
         return sig_out, exc_mem, (gru1_state, gru2_state, gru3_state, passthrough)
