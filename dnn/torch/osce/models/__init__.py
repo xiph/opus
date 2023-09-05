@@ -28,9 +28,11 @@
 """
 
 from .lace import LACE
+from .no_lace import NoLACE
 
 
 
 model_dict = {
-    'lace': LACE
+    'lace': LACE,
+    'nolace': NoLACE
 }

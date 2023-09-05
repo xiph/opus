@@ -36,7 +36,7 @@ from utils.templates import setup_dict
 parser = argparse.ArgumentParser()
 
 parser.add_argument('name', type=str, help='name of default setup file')
-parser.add_argument('--model', choices=['lace'], help='model name', default='lace')
+parser.add_argument('--model', choices=['lace', 'nolace'], help='model name', default='lace')
 parser.add_argument('--path2dataset', type=str, help='dataset path', default=None)
 
 args = parser.parse_args()
