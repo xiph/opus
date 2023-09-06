@@ -118,6 +118,14 @@ if __name__ == '__main__':
                 features = features.to(device)
                 lpc = lpc.to(device)
                 periods = periods.to(device)
+                if (np.random.rand() > 0.1):
+                    target = target[:, :sequence_length*160]
+                    lpc = lpc[:,:sequence_length,:]
+                else:
+                    target=target[::2, :]
+                    lpc=lpc[::2,:]
+                    features=features[::2,:]
+                    periods=periods[::2,:]
                 target = target.to(device)
                 target = fargan.analysis_filter(target, lpc[:,:,:], gamma=args.gamma)
 

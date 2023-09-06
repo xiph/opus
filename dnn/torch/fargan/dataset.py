@@ -20,16 +20,19 @@ class FARGANDataset(torch.utils.data.Dataset):
 
         self.data = np.memmap(signal_file, dtype='int16', mode='r')
         #self.data = self.data[1::2]
-        self.nb_sequences = len(self.data)//(pcm_chunk_size)-1
+        self.nb_sequences = len(self.data)//(pcm_chunk_size)-4
         self.data = self.data[(4-self.lookahead)*self.frame_size:]
         self.data = self.data[:self.nb_sequences*pcm_chunk_size]
 
 
-        self.data = np.reshape(self.data, (self.nb_sequences, pcm_chunk_size))
+        #self.data = np.reshape(self.data, (self.nb_sequences, pcm_chunk_size))
+        sizeof = self.data.strides[-1]
+        self.data = np.lib.stride_tricks.as_strided(self.data, shape=(self.nb_sequences, pcm_chunk_size*2),
+                                           strides=(pcm_chunk_size*sizeof, sizeof))
 
         self.features = np.reshape(np.memmap(feature_file, dtype='float32', mode='r'), (-1, nb_features))
         sizeof = self.features.strides[-1]
-        self.features = np.lib.stride_tricks.as_strided(self.features, shape=(self.nb_sequences, self.sequence_length+4, nb_features),
+        self.features = np.lib.stride_tricks.as_strided(self.features, shape=(self.nb_sequences, self.sequence_length*2+4, nb_features),
                                            strides=(self.sequence_length*self.nb_features*sizeof, self.nb_features*sizeof, sizeof))
         self.periods = np.round(50*self.features[:,:,self.nb_used_features-2]+100).astype('int')
 
