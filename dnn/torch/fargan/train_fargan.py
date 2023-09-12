@@ -121,6 +121,8 @@ if __name__ == '__main__':
                 if (np.random.rand() > 0.1):
                     target = target[:, :sequence_length*160]
                     lpc = lpc[:,:sequence_length,:]
+                    features = features[:,:sequence_length+4,:]
+                    periods = periods[:,:sequence_length+4]
                 else:
                     target=target[::2, :]
                     lpc=lpc[::2,:]
