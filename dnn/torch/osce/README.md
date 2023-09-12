@@ -5,6 +5,10 @@ for feature generation.
 
 ## Environment setup
 The code is tested with python 3.11. Conda setup is done via
+
+
 `conda create -n osce python=3.11`
+
 `conda activate osce`
-`python -m pip install -r requirements`
+
+`python -m pip install -r requirements.txt`
