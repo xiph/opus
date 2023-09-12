@@ -11,7 +11,8 @@ class TDShaper(nn.Module):
                  feature_dim,
                  frame_size=160,
                  avg_pool_k=4,
-                 innovate=False
+                 innovate=False,
+                 pool_after=False
     ):
         """
 
@@ -39,6 +40,7 @@ class TDShaper(nn.Module):
         self.frame_size     = frame_size
         self.avg_pool_k     = avg_pool_k
         self.innovate       = innovate
+        self.pool_after     = pool_after
 
         assert frame_size % avg_pool_k == 0
         self.env_dim = frame_size // avg_pool_k + 1
@@ -71,8 +73,12 @@ class TDShaper(nn.Module):
     def envelope_transform(self, x):
 
         x = torch.abs(x)
-        x = F.avg_pool1d(x, self.avg_pool_k, self.avg_pool_k)
-        x = torch.log(x + .5**16)
+        if self.pool_after:
+            x = torch.log(x + .5**16)
+            x = F.avg_pool1d(x, self.avg_pool_k, self.avg_pool_k)
+        else:
+            x = F.avg_pool1d(x, self.avg_pool_k, self.avg_pool_k)
+            x = torch.log(x + .5**16)
 
         x = x.reshape(x.size(0), -1, self.env_dim - 1)
         avg_x = torch.mean(x, -1, keepdim=True)

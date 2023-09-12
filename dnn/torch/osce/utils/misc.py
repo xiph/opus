@@ -40,3 +40,26 @@ def count_parameters(model, verbose=False):
         total += count
 
     return total
+
+
+def retain_grads(module):
+    for p in module.parameters():
+        if p.requires_grad:
+            p.retain_grad()
+
+def get_grad_norm(module, p=2):
+    norm = 0
+    for param in module.parameters():
+        if param.requires_grad:
+            norm = norm + (torch.abs(param.grad) ** p).sum()
+
+    return norm ** (1/p)
+
+def create_weights(s_real, s_gen, alpha):
+    weights = []
+    with torch.no_grad():
+        for sr, sg in zip(s_real, s_gen):
+            weight = torch.exp(alpha * (sr[-1] - sg[-1]))
+            weights.append(weight)
+
+    return weights

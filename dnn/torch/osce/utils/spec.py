@@ -30,6 +30,7 @@
 import math as m
 import numpy as np
 import scipy
+import torch
 
 def erb(f):
     return 24.7 * (4.37 * f + 1)
@@ -48,6 +49,20 @@ scale_dict = {
     'bark': [bark, inv_bark],
     'erb': [erb, inv_erb]
 }
+
+def gen_filterbank(N, Fs=16000, keep_size=False):
+    in_freq = (np.arange(N+1, dtype='float32')/N*Fs/2)[None,:]
+    M = N + 1 if keep_size else N
+    out_freq = (np.arange(M, dtype='float32')/N*Fs/2)[:,None]
+    #ERB from B.C.J Moore, An Introduction to the Psychology of Hearing, 5th Ed., page 73.
+    ERB_N = 24.7 + .108*in_freq
+    delta = np.abs(in_freq-out_freq)/ERB_N
+    center = (delta<.5).astype('float32')
+    R = -12*center*delta**2 + (1-center)*(3-12*delta)
+    RE = 10.**(R/10.)
+    norm = np.sum(RE, axis=1)
+    RE = RE/norm[:, np.newaxis]
+    return torch.from_numpy(RE)
 
 def create_filter_bank(num_bands, n_fft=320, fs=16000, scale='bark', round_center_bins=False, return_upper=False, normalize=False):
 

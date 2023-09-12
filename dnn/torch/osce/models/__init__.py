@@ -29,10 +29,12 @@
 
 from .lace import LACE
 from .no_lace import NoLACE
-
-
+from .lavoce import LaVoce
+from .fd_discriminator import TFDMultiResolutionDiscriminator as FDMResDisc
 
 model_dict = {
     'lace': LACE,
-    'nolace': NoLACE
+    'nolace': NoLACE,
+    'lavoce': LaVoce,
+    'fdmresdisc': FDMResDisc,
 }

@@ -50,7 +50,7 @@ class SilkEnhancementSet(Dataset):
                  noisy_spec_scale='opus',
                  noisy_apply_dct=True,
                  add_offset=False,
-                 add_double_lag_acorr=False
+                 add_double_lag_acorr=False,
                  ):
 
         assert frames_per_sample % 4 == 0
@@ -75,8 +75,9 @@ class SilkEnhancementSet(Dataset):
         self.num_bits_smooth = np.fromfile(os.path.join(path, 'features_num_bits_smooth.f32'), dtype=np.float32)
         self.offsets = np.fromfile(os.path.join(path, 'features_offset.f32'), dtype=np.float32)
 
-        self.clean_signal = np.fromfile(os.path.join(path, 'clean_hp.s16'), dtype=np.int16)
-        self.coded_signal = np.fromfile(os.path.join(path, 'coded.s16'), dtype=np.int16)
+        self.clean_signal_hp = np.fromfile(os.path.join(path, 'clean_hp.s16'), dtype=np.int16)
+        self.clean_signal    = np.fromfile(os.path.join(path, 'clean.s16'), dtype=np.int16)
+        self.coded_signal    = np.fromfile(os.path.join(path, 'coded.s16'), dtype=np.int16)
 
         self.create_features = silk_feature_factory(no_pitch_value,
                                                     acorr_radius,
@@ -92,7 +93,7 @@ class SilkEnhancementSet(Dataset):
         # discard some frames to have enough signal history
         self.skip_frames = 4 * ((skip + self.history_len + 319) // 320 + 2)
 
-        num_frames = self.clean_signal.shape[0] // 80 - self.skip_frames
+        num_frames = self.clean_signal_hp.shape[0] // 80 - self.skip_frames
 
         self.len = num_frames // frames_per_sample
 
@@ -107,8 +108,9 @@ class SilkEnhancementSet(Dataset):
         signal_start = frame_start * self.frame_size - self.skip
         signal_stop  = frame_stop  * self.frame_size - self.skip
 
-        clean_signal = self.clean_signal[signal_start : signal_stop].astype(np.float32) / 2**15
-        coded_signal = self.coded_signal[signal_start : signal_stop].astype(np.float32) / 2**15
+        clean_signal_hp = self.clean_signal_hp[signal_start : signal_stop].astype(np.float32) / 2**15
+        clean_signal    = self.clean_signal[signal_start : signal_stop].astype(np.float32) / 2**15
+        coded_signal    = self.coded_signal[signal_start : signal_stop].astype(np.float32) / 2**15
 
         coded_signal_history = self.coded_signal[signal_start - self.history_len : signal_start].astype(np.float32) / 2**15
 
@@ -124,6 +126,7 @@ class SilkEnhancementSet(Dataset):
 
         if self.preemph > 0:
             clean_signal[1:] -= self.preemph * clean_signal[: -1]
+            clean_signal_hp[1:] -= self.preemph * clean_signal_hp[: -1]
             coded_signal[1:] -= self.preemph * coded_signal[: -1]
 
         num_bits        = np.repeat(self.num_bits[frame_start // 4 : frame_stop // 4], 4).astype(np.float32).reshape(-1, 1)
@@ -132,9 +135,10 @@ class SilkEnhancementSet(Dataset):
         numbits = np.concatenate((num_bits, num_bits_smooth), axis=-1)
 
         return {
-            'features'  : features,
-            'periods'   : periods.astype(np.int64),
-            'target'    : clean_signal.astype(np.float32),
-            'signals'   : coded_signal.reshape(-1, 1).astype(np.float32),
-            'numbits'   : numbits.astype(np.float32)
+            'features'    : features,
+            'periods'     : periods.astype(np.int64),
+            'target_orig' : clean_signal.astype(np.float32),
+            'target'      : clean_signal_hp.astype(np.float32),
+            'signals'     : coded_signal.reshape(-1, 1).astype(np.float32),
+            'numbits'     : numbits.astype(np.float32)
             }
