@@ -141,9 +141,9 @@ if __name__ == '__main__':
 
                 loss.backward()
                 optimizer.step()
-                
+
                 #model.clip_weights()
-                
+
                 scheduler.step()
 
                 running_specc += specc_loss.detach().cpu().item()

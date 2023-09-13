@@ -55,35 +55,35 @@ nb_frames = features.shape[1]
 gamma = checkpoint['model_kwargs']['gamma']
 
 def lpc_synthesis_one_frame(frame, filt, buffer, weighting_vector=np.ones(16)):
-    
+
     out = np.zeros_like(frame)
     filt = np.flip(filt)
-    
+
     inp = frame[:]
-    
-    
+
+
     for i in range(0, inp.shape[0]):
-        
+
         s = inp[i] - np.dot(buffer*weighting_vector, filt)
-        
+
         buffer[0] = s
-        
+
         buffer = np.roll(buffer, -1)
-        
+
         out[i] = s
-        
+
     return out
 
 def inverse_perceptual_weighting (pw_signal, filters, weighting_vector):
-    
+
     #inverse perceptual weighting= H_preemph / W(z/gamma)
-    
+
     signal = np.zeros_like(pw_signal)
     buffer = np.zeros(16)
     num_frames = pw_signal.shape[0] //160
     assert num_frames == filters.shape[0]
     for frame_idx in range(0, num_frames):
-        
+
         in_frame = pw_signal[frame_idx*160: (frame_idx+1)*160][:]
         out_sig_frame = lpc_synthesis_one_frame(in_frame, filters[frame_idx, :], buffer, weighting_vector)
         signal[frame_idx*160: (frame_idx+1)*160] = out_sig_frame[:]
@@ -97,11 +97,11 @@ if __name__ == '__main__':
     features = torch.tensor(features).to(device)
     #lpc = torch.tensor(lpc).to(device)
     periods = torch.tensor(periods).to(device)
-    
+
     sig, _ = model(features, periods, nb_frames - 4)
     weighting_vector = np.array([gamma**i for i in range(16,0,-1)])
     sig = sig.detach().numpy().flatten()
     sig = inverse_perceptual_weighting(sig, lpc[0,:,:], weighting_vector)
-    
+
     pcm = np.round(32768*np.clip(sig, a_max=.99, a_min=-.99)).astype('int16')
     pcm.tofile(signal_file)

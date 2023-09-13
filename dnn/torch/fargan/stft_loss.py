@@ -17,7 +17,7 @@ def stft(x, fft_size, hop_size, win_length, window):
     Returns:
         Tensor: Magnitude spectrogram (B, #frames, fft_size // 2 + 1).
     """
-    
+
     #x_stft = torch.stft(x, fft_size, hop_size, win_length, window, return_complex=False)
     #real = x_stft[..., 0]
     #imag = x_stft[..., 1]
@@ -83,26 +83,26 @@ class LogSTFTMagnitudeLoss(torch.nn.Module):
 
         var_x = torch.var(x, dim=1, keepdim=True)
         var_y = torch.var(y, dim=1, keepdim=True)
-        
+
         std_x = torch.std(x, dim=1, keepdim=True)
         std_y = torch.std(y, dim=1, keepdim=True)
-        
+
         x_minus_mean = x - mean_x
         y_minus_mean = y - mean_y
-        
+
         pearson_corr = torch.sum(x_minus_mean * y_minus_mean, dim=1, keepdim=True) / \
                     (torch.sqrt(torch.sum(x_minus_mean ** 2, dim=1, keepdim=True) + 1e-7) * \
                     torch.sqrt(torch.sum(y_minus_mean ** 2, dim=1, keepdim=True) + 1e-7))
-        
+
         numerator = 2.0 * pearson_corr * std_x * std_y
         denominator = var_x + var_y + (mean_y - mean_x)**2
-        
+
         ccc = numerator/denominator
-     
+
         ccc_loss = F.l1_loss(1.0 - ccc, torch.zeros_like(ccc))'''
 
         return error_loss #+ ccc_loss#+ ccc_loss
-        
+
 
 class STFTLoss(torch.nn.Module):
     """STFT loss module."""

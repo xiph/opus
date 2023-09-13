@@ -41,6 +41,6 @@ if __name__ == '__main__':
     A = toeplitz_from_filter(a)
     #print(A)
     R = filter_iir_response(a, 5)
-    
+
     RA = toeplitz_from_filter(R)
     print(RA)
