@@ -33,6 +33,9 @@ import torch.nn.functional as F
 
 from utils.endoscopy import write_data
 
+from utils.ada_conv import adaconv_kernel
+
+
 class LimitedAdaptiveConv1d(nn.Module):
     COUNTER = 1
 
@@ -184,39 +187,19 @@ class LimitedAdaptiveConv1d(nn.Module):
             conv_biases  = self.conv_bias(features).permute(0, 2, 1)
 
         # calculate gains
-        conv_gains   = torch.exp(self.filter_gain_a * torch.tanh(self.filter_gain(features).permute(0, 2, 1)) + self.filter_gain_b)
+        conv_gains   = torch.exp(self.filter_gain_a * torch.tanh(self.filter_gain(features)) + self.filter_gain_b)
         if debug and batch_size == 1:
             key = self.name + "_gains"
-            write_data(key, conv_gains.detach().squeeze().cpu().numpy(), 16000 // self.frame_size)
+            write_data(key, conv_gains.permute(0, 2, 1).detach().squeeze().cpu().numpy(), 16000 // self.frame_size)
             key = self.name + "_kernels"
             write_data(key, conv_kernels.detach().squeeze().cpu().numpy(), 16000 // self.frame_size)
 
 
-        # frame-wise convolution with overlap-add
-        output_frames = []
-        overlap_mem = torch.zeros((batch_size, self.out_channels, self.overlap_size), device=x.device)
-        x = F.pad(x, self.padding)
-        x = F.pad(x, [0, self.overlap_size])
+        conv_kernels = conv_kernels * conv_gains.view(batch_size, num_frames, self.out_channels, 1, 1)
 
-        for i in range(num_frames):
-            xx = x[:, :, i * frame_size : (i + 1) * frame_size + kernel_size - 1 + overlap_size].reshape((1, batch_size * self.in_channels, -1))
-            new_chunk = torch.conv1d(xx, conv_kernels[:, i, ...].reshape((batch_size * self.out_channels, self.in_channels, self.kernel_size)), groups=batch_size).reshape(batch_size, self.out_channels, -1)
+        conv_kernels = conv_kernels.permute(0, 2, 3, 1, 4)
 
-            if self.use_bias:
-                new_chunk = new_chunk + conv_biases[:, :, i : i + 1]
+        output = adaconv_kernel(x, conv_kernels, win1, fft_size=256)
 
-            new_chunk = new_chunk * conv_gains[:, :, i : i + 1]
-
-            # overlapping part
-            output_frames.append(new_chunk[:, :, : overlap_size] * win1 + overlap_mem * win2)
-
-            # non-overlapping part
-            output_frames.append(new_chunk[:, :, overlap_size : frame_size])
-
-            # mem for next frame
-            overlap_mem = new_chunk[:, :, frame_size :]
-
-        # concatenate chunks
-        output = torch.cat(output_frames, dim=-1)
 
         return output
