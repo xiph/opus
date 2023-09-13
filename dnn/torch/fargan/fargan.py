@@ -154,17 +154,13 @@ class FARGANCond(nn.Module):
         return tmp
 
 class FARGANSub(nn.Module):
-    def __init__(self, subframe_size=40, nb_subframes=4, cond_size=256, passthrough_size=0, has_gain=False):
+    def __init__(self, subframe_size=40, nb_subframes=4, cond_size=256):
         super(FARGANSub, self).__init__()
 
         self.subframe_size = subframe_size
         self.nb_subframes = nb_subframes
         self.cond_size = cond_size
-        self.has_gain = has_gain
-        self.passthrough_size = passthrough_size
         
-        #print("has_gain:", self.has_gain)
-        #print("passthrough_size:", self.passthrough_size)
         #self.sig_dense1 = nn.Linear(4*self.subframe_size+self.passthrough_size+self.cond_size, self.cond_size, bias=False)
         self.fwc0 = FWConv(4*self.subframe_size+80, self.cond_size)
         self.sig_dense2 = nn.Linear(self.cond_size, self.cond_size, bias=False)
@@ -179,9 +175,8 @@ class FARGANSub(nn.Module):
         self.gru3_glu = GLU(self.cond_size)
         self.ptaps_dense = nn.Linear(4*self.cond_size, 5)
         
-        self.sig_dense_out = nn.Linear(4*self.cond_size, self.subframe_size+self.passthrough_size, bias=False)
-        if self.has_gain:
-            self.gain_dense_out = nn.Linear(4*self.cond_size, 1)
+        self.sig_dense_out = nn.Linear(4*self.cond_size, self.subframe_size, bias=False)
+        self.gain_dense_out = nn.Linear(4*self.cond_size, 1)
 
 
         self.apply(init_weights)
@@ -223,10 +218,9 @@ class FARGANSub(nn.Module):
         #fpitch = taps[:,0:1]*pred[:,:-4] + taps[:,1:2]*pred[:,1:-3] + taps[:,2:3]*pred[:,2:-2] + taps[:,3:4]*pred[:,3:-1] + taps[:,4:]*pred[:,4:]
         fpitch = pred[:,2:-2]
 
-        if self.has_gain:
-            pitch_gain = torch.exp(self.gain_dense_out(gru3_out))
-            dump_signal(pitch_gain, 'pgain.f32')
-            sig_out = (sig_out + pitch_gain*fpitch) * gain
+        pitch_gain = torch.exp(self.gain_dense_out(gru3_out))
+        dump_signal(pitch_gain, 'pgain.f32')
+        sig_out = (sig_out + pitch_gain*fpitch) * gain
         exc_mem = torch.cat([exc_mem[:,self.subframe_size:], sig_out], 1)
         dump_signal(sig_out, 'sig_out.f32')
         return sig_out, exc_mem, (gru1_state, gru2_state, gru3_state, fwc0_state)
@@ -240,11 +234,9 @@ class FARGAN(nn.Module):
         self.frame_size = self.subframe_size*self.nb_subframes
         self.feature_dim = feature_dim
         self.cond_size = cond_size
-        self.has_gain = has_gain
-        self.passthrough_size = passthrough_size
 
         self.cond_net = FARGANCond(feature_dim=feature_dim, cond_size=cond_size)
-        self.sig_net = FARGANSub(subframe_size=subframe_size, nb_subframes=nb_subframes, cond_size=cond_size, has_gain=has_gain, passthrough_size=passthrough_size)
+        self.sig_net = FARGANSub(subframe_size=subframe_size, nb_subframes=nb_subframes, cond_size=cond_size)
 
     def forward(self, features, period, nb_frames, pre=None, states=None):
         device = features.device
@@ -266,7 +258,6 @@ class FARGAN(nn.Module):
 
         sig = torch.zeros((batch_size, 0), device=device)
         cond = self.cond_net(features, period)
-        passthrough = torch.zeros(batch_size, self.passthrough_size, device=device)
         if pre is not None:
             prev[:,:] = pre[:, self.frame_size-self.subframe_size : self.frame_size]
             exc_mem[:,-self.frame_size:] = pre[:, :self.frame_size]

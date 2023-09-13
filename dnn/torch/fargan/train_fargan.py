@@ -24,8 +24,6 @@ parser.add_argument('--cuda-visible-devices', type=str, help="comma separates li
 
 model_group = parser.add_argument_group(title="model parameters")
 model_group.add_argument('--cond-size', type=int, help="first conditioning size, default: 256", default=256)
-model_group.add_argument('--has-gain', action='store_true', help="use gain-shape network")
-model_group.add_argument('--passthrough-size', type=int, help="state passing through in addition to audio, default: 0", default=0)
 model_group.add_argument('--gamma', type=float, help="Use A(z/gamma), default: 0.9", default=0.9)
 
 training_group = parser.add_argument_group(title="training parameters")
@@ -74,7 +72,7 @@ checkpoint['adam_betas'] = adam_betas
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 checkpoint['model_args']    = ()
-checkpoint['model_kwargs']  = {'cond_size': cond_size, 'has_gain': args.has_gain, 'passthrough_size': args.passthrough_size, 'gamma': args.gamma}
+checkpoint['model_kwargs']  = {'cond_size': cond_size, 'gamma': args.gamma}
 print(checkpoint['model_kwargs'])
 model = fargan.FARGAN(*checkpoint['model_args'], **checkpoint['model_kwargs'])
 
