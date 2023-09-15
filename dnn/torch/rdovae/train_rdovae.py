@@ -172,6 +172,7 @@ if __name__ == '__main__':
         running_soft_rate_loss  = 0
         running_total_loss      = 0
         running_rate_metric     = 0
+        running_states_rate_metric     = 0
         previous_total_loss     = 0
         running_first_frame_loss = 0
 
@@ -194,17 +195,21 @@ if __name__ == '__main__':
 
                 # collect outputs
                 z                   = model_output['z']
+                states              = model_output['states']
                 outputs_hard_quant  = model_output['outputs_hard_quant']
                 outputs_soft_quant  = model_output['outputs_soft_quant']
                 statistical_model   = model_output['statistical_model']
 
                 # rate loss
-                hard_rate = hard_rate_estimate(z, statistical_model['r_hard'], statistical_model['theta_hard'], reduce=False)
-                soft_rate = soft_rate_estimate(z, statistical_model['r_soft'], reduce=False)
-                soft_rate_loss = torch.mean(torch.sqrt(rate_lambda) * soft_rate)
-                hard_rate_loss = torch.mean(torch.sqrt(rate_lambda) * hard_rate)
+                hard_rate = hard_rate_estimate(z, statistical_model['r_hard'][:,:,:latent_dim], statistical_model['theta_hard'][:,:,:latent_dim], reduce=False)
+                soft_rate = soft_rate_estimate(z, statistical_model['r_soft'][:,:,:latent_dim], reduce=False)
+                states_hard_rate = hard_rate_estimate(states, statistical_model['r_hard'][:,:,latent_dim:], statistical_model['theta_hard'][:,:,latent_dim:], reduce=False)
+                states_soft_rate = soft_rate_estimate(states, statistical_model['r_soft'][:,:,latent_dim:], reduce=False)
+                soft_rate_loss = torch.mean(torch.sqrt(rate_lambda) * (soft_rate + .02*states_soft_rate))
+                hard_rate_loss = torch.mean(torch.sqrt(rate_lambda) * (hard_rate + .02*states_hard_rate))
                 rate_loss = (soft_rate_loss + 0.1 * hard_rate_loss)
                 hard_rate_metric = torch.mean(hard_rate)
+                states_rate_metric = torch.mean(states_hard_rate)
 
                 ## distortion losses
 
@@ -242,6 +247,7 @@ if __name__ == '__main__':
                 running_soft_dist_loss  += float(distortion_loss_soft_quant.detach().cpu())
                 running_rate_loss       += float(rate_loss.detach().cpu())
                 running_rate_metric     += float(hard_rate_metric.detach().cpu())
+                running_states_rate_metric     += float(states_rate_metric.detach().cpu())
                 running_total_loss      += float(total_loss.detach().cpu())
                 running_first_frame_loss += float(first_frame_loss.detach().cpu())
                 running_soft_rate_loss += float(soft_rate_loss.detach().cpu())
@@ -256,6 +262,7 @@ if __name__ == '__main__':
                         dist_sq=running_soft_dist_loss / (i + 1),
                         rate_loss=running_rate_loss / (i + 1),
                         rate=running_rate_metric / (i + 1),
+                        states_rate=running_states_rate_metric / (i + 1),
                         ffloss=running_first_frame_loss / (i + 1),
                         rateloss_hard=running_hard_rate_loss / (i + 1),
                         rateloss_soft=running_soft_rate_loss / (i + 1)

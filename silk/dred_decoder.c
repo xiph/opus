@@ -54,6 +54,7 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   int offset;
   int q0;
   int dQ;
+  int state_qoffset;
 
 
   /* since features are decoded in quadruples, it makes no sense to go with an uneven number of redundancy frames */
@@ -66,7 +67,14 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   dQ = ec_dec_uint(&ec, 8);
   /*printf("%d %d %d\n", dred_offset, q0, dQ);*/
 
-  dred_decode_state(&ec, dec->state);
+  //dred_decode_state(&ec, dec->state);
+  state_qoffset = q0*(DRED_LATENT_DIM+DRED_STATE_DIM) + DRED_STATE_DIM;
+  dred_decode_latents(
+      &ec,
+      dec->state,
+      quant_scales + state_qoffset,
+      r + state_qoffset,
+      p0 + state_qoffset);
 
   /* decode newest to oldest and store oldest to newest */
   for (i = 0; i < IMIN(DRED_NUM_REDUNDANCY_FRAMES, (min_feature_frames+1)/2); i += 2)
@@ -75,7 +83,7 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
       if (8*num_bytes - ec_tell(&ec) <= 7)
          break;
       q_level = compute_quantizer(q0, dQ, i/2);
-      offset = q_level * DRED_LATENT_DIM;
+      offset = q_level * (DRED_LATENT_DIM+DRED_STATE_DIM);
       dred_decode_latents(
           &ec,
           &dec->latents[(i/2)*DRED_LATENT_DIM],

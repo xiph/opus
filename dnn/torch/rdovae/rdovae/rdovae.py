@@ -372,7 +372,7 @@ class CoreDecoder(nn.Module):
 
 
 class StatisticalModel(nn.Module):
-    def __init__(self, quant_levels, latent_dim):
+    def __init__(self, quant_levels, latent_dim, state_dim):
         """ Statistical model for latent space
 
             Computes scaling, deadzone, r, and theta
@@ -383,8 +383,10 @@ class StatisticalModel(nn.Module):
 
         # copy parameters
         self.latent_dim     = latent_dim
+        self.state_dim      = state_dim
+        self.total_dim      = latent_dim + state_dim
         self.quant_levels   = quant_levels
-        self.embedding_dim  = 6 * latent_dim
+        self.embedding_dim  = 6 * self.total_dim
 
         # quantization embedding
         self.quant_embedding    = nn.Embedding(quant_levels, self.embedding_dim)
@@ -400,12 +402,12 @@ class StatisticalModel(nn.Module):
         x = self.quant_embedding(quant_ids)
 
         # CAVE: theta_soft is not used anymore. Kick it out?
-        quant_scale = F.softplus(x[..., 0 * self.latent_dim : 1 * self.latent_dim])
-        dead_zone   = F.softplus(x[..., 1 * self.latent_dim : 2 * self.latent_dim])
-        theta_soft  = torch.sigmoid(x[..., 2 * self.latent_dim : 3 * self.latent_dim])
-        r_soft      = torch.sigmoid(x[..., 3 * self.latent_dim : 4 * self.latent_dim])
-        theta_hard  = torch.sigmoid(x[..., 4 * self.latent_dim : 5 * self.latent_dim])
-        r_hard      = torch.sigmoid(x[..., 5 * self.latent_dim : 6 * self.latent_dim])
+        quant_scale = F.softplus(x[..., 0 * self.total_dim : 1 * self.total_dim])
+        dead_zone   = F.softplus(x[..., 1 * self.total_dim : 2 * self.total_dim])
+        theta_soft  = torch.sigmoid(x[..., 2 * self.total_dim : 3 * self.total_dim])
+        r_soft      = torch.sigmoid(x[..., 3 * self.total_dim : 4 * self.total_dim])
+        theta_hard  = torch.sigmoid(x[..., 4 * self.total_dim : 5 * self.total_dim])
+        r_hard      = torch.sigmoid(x[..., 5 * self.total_dim : 6 * self.total_dim])
 
 
         return {
@@ -445,7 +447,7 @@ class RDOVAE(nn.Module):
         self.state_dropout_rate = state_dropout_rate
 
         # submodules encoder and decoder share the statistical model
-        self.statistical_model = StatisticalModel(quant_levels, latent_dim)
+        self.statistical_model = StatisticalModel(quant_levels, latent_dim, state_dim)
         self.core_encoder = nn.DataParallel(CoreEncoder(feature_dim, latent_dim, cond_size, cond_size2, state_size=state_dim))
         self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim, feature_dim, cond_size, cond_size2, state_size=state_dim))
 
@@ -522,13 +524,18 @@ class RDOVAE(nn.Module):
         z, states = self.core_encoder(features)
 
         # scaling, dead-zone and quantization
-        z = z * statistical_model['quant_scale']
-        z = soft_dead_zone(z, statistical_model['dead_zone'])
+        z = z * statistical_model['quant_scale'][:,:,:self.latent_dim]
+        z = soft_dead_zone(z, statistical_model['dead_zone'][:,:,:self.latent_dim])
 
         # quantization
-        z_q = hard_quantize(z) / statistical_model['quant_scale']
-        z_n = noise_quantize(z) / statistical_model['quant_scale']
-        states_q = soft_pvq(states, self.pvq_num_pulses)
+        z_q = hard_quantize(z) / statistical_model['quant_scale'][:,:,:self.latent_dim]
+        z_n = noise_quantize(z) / statistical_model['quant_scale'][:,:,:self.latent_dim]
+        #states_q = soft_pvq(states, self.pvq_num_pulses)
+        states = states * statistical_model['quant_scale'][:,:,self.latent_dim:]
+        states = soft_dead_zone(states, statistical_model['dead_zone'][:,:,self.latent_dim:])
+
+        states_q = hard_quantize(states) / statistical_model['quant_scale'][:,:,self.latent_dim:]
+        states_n = noise_quantize(states) / statistical_model['quant_scale'][:,:,self.latent_dim:]
 
         if self.state_dropout_rate > 0:
             drop = torch.rand(states_q.size(0)) < self.state_dropout_rate
@@ -551,6 +558,7 @@ class RDOVAE(nn.Module):
 
             # decoder with soft quantized input
             z_dec_reverse       = torch.flip(z_n[..., chunk['z_start'] : chunk['z_stop'] : chunk['z_stride'], :],  [1])
+            dec_initial_state   = states_n[..., chunk['z_stop'] - 1 : chunk['z_stop'], :]
             features_reverse    = self.core_decoder(z_dec_reverse, dec_initial_state)
             outputs_sq.append((torch.flip(features_reverse, [1]), chunk['features_start'], chunk['features_stop']))
 
@@ -558,6 +566,7 @@ class RDOVAE(nn.Module):
             'outputs_hard_quant' : outputs_hq,
             'outputs_soft_quant' : outputs_sq,
             'z'                 : z,
+            'states'            : states,
             'statistical_model' : statistical_model
         }
 
@@ -586,11 +595,11 @@ class RDOVAE(nn.Module):
 
         stats = self.statistical_model(q_ids)
 
-        zq = z * stats['quant_scale']
-        zq = soft_dead_zone(zq, stats['dead_zone'])
+        zq = z * stats['quant_scale'][:self.latent_dim]
+        zq = soft_dead_zone(zq, stats['dead_zone'][:self.latent_dim])
         zq = torch.round(zq)
 
-        sizes = hard_rate_estimate(zq, stats['r_hard'], stats['theta_hard'], reduce=False)
+        sizes = hard_rate_estimate(zq, stats['r_hard'][:,:,:self.latent_dim], stats['theta_hard'][:,:,:self.latent_dim], reduce=False)
 
         return zq, sizes
 
@@ -599,7 +608,7 @@ class RDOVAE(nn.Module):
 
         stats = self.statistical_model(q_ids)
 
-        z = zq / stats['quant_scale']
+        z = zq / stats['quant_scale'][:,:,:self.latent_dim]
 
         return z
 

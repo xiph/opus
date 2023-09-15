@@ -33,16 +33,13 @@
 #include <stdio.h>
 
 #include "celt/entenc.h"
-#include "celt/vq.h"
-#include "celt/cwrs.h"
 #include "celt/laplace.h"
 #include "os_support.h"
 #include "dred_config.h"
 #include "dred_coding.h"
 
 #define LATENT_DIM 80
-#define PVQ_DIM 24
-#define PVQ_K 82
+#define STATE_DIM 80
 
 int compute_quantizer(int q0, int dQ, int i) {
   int quant;
@@ -51,37 +48,6 @@ int compute_quantizer(int q0, int dQ, int i) {
   quant = q0 + (dQ_table[dQ]*i + 8)/16;
   return quant > 15 ? 15 : quant;
   return (int) floor(0.5f + DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
-}
-
-static void encode_pvq(const int *iy, int N, int K, ec_enc *enc) {
-    int fits;
-    celt_assert(N==24 || N==12 || N==6);
-    fits = (N==24 && K<=9) || (N==12 && K<=16) || (N==6);
-    /*printf("encode(%d,%d), fits=%d\n", N, K, fits);*/
-    if (fits) {
-      if (K > 0)
-        encode_pulses(iy, N, K, enc);
-    }
-    else {
-        int N2 = N/2;
-        int K0=0;
-        int i;
-        for (i=0;i<N2;i++) K0 += abs(iy[i]);
-        /* FIXME: Don't use uniform probability for K0. */
-        ec_enc_uint(enc, K0, K+1);
-        /*printf("K0 = %d\n", K0);*/
-        encode_pvq(iy, N2, K0, enc);
-        encode_pvq(&iy[N2], N2, K-K0, enc);
-    }
-}
-
-void dred_encode_state(ec_enc *enc, const float *x) {
-    int iy[PVQ_DIM];
-    float x0[PVQ_DIM];
-    /* Copy state because the PVQ search will trash it. */
-    OPUS_COPY(x0, x, PVQ_DIM);
-    op_pvq_search_c(x0, iy, PVQ_K, PVQ_DIM, 0);
-    encode_pvq(iy, PVQ_DIM, PVQ_K, enc);
 }
 
 void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, const opus_uint16 *dzone, const opus_uint16 *r, const opus_uint16 *p0) {
@@ -98,47 +64,6 @@ void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, 
         /* Make the impossible actually impossible. */
         if (r[i] == 0 || p0[i] >= 32768) q = 0;
         ec_laplace_encode_p0(enc, q, p0[i], r[i]);
-    }
-}
-
-
-
-static void decode_pvq(int *iy, int N, int K, ec_dec *dec) {
-    int fits;
-    celt_assert(N==24 || N==12 || N==6);
-    fits = (N==24 && K<=9) || (N==12 && K<=16) || (N==6);
-    /*printf("encode(%d,%d), fits=%d\n", N, K, fits);*/
-    if (fits) {
-      if (K > 0)
-        decode_pulses(iy, N, K, dec);
-      else
-        OPUS_CLEAR(iy, N);
-    }
-    else {
-        int N2 = N/2;
-        int K0;
-        /* FIXME: Don't use uniform probability for K0. */
-        K0 = ec_dec_uint(dec, K+1);
-        /*printf("K0 = %d\n", K0);*/
-        decode_pvq(iy, N2, K0, dec);
-        decode_pvq(&iy[N2], N2, K-K0, dec);
-    }
-}
-
-void dred_decode_state(ec_enc *dec, float *x) {
-    int k;
-    int iy[PVQ_DIM];
-    float norm = 0;
-    decode_pvq(iy, PVQ_DIM, PVQ_K, dec);
-    /*printf("tell: %d\n", ec_tell(dec)-tell1);*/
-    for (k = 0; k < PVQ_DIM; k++)
-    {
-        norm += (float) iy[k] * iy[k];
-    }
-    norm = 1.f / sqrt(norm);
-    for (k = 0; k < PVQ_DIM; k++)
-    {
-        x[k] = iy[k] * norm;
     }
 }
 

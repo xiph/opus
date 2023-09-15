@@ -197,7 +197,7 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int ex
             /* 15 ms (6*2.5 ms) is the ideal offset for DRED because it corresponds to our vocoder look-ahead. */
             if (enc->dred_offset < 6) {
                 enc->dred_offset += 8;
-                OPUS_COPY(enc->initial_state, enc->state_buffer, 24);
+                OPUS_COPY(enc->initial_state, enc->state_buffer, DRED_STATE_DIM);
             } else {
                 enc->latent_offset++;
             }
@@ -221,6 +221,7 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
     int ec_buffer_fill;
     int q0;
     int dQ;
+    int state_qoffset;
 
     /* entropy coding of state and latents */
     ec_enc_init(&ec_encoder, buf, max_bytes);
@@ -229,15 +230,21 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
     ec_enc_uint(&ec_encoder, enc->dred_offset, 32);
     ec_enc_uint(&ec_encoder, q0, 16);
     ec_enc_uint(&ec_encoder, dQ, 8);
-    dred_encode_state(&ec_encoder, enc->initial_state);
-
+    state_qoffset = q0*(DRED_LATENT_DIM+DRED_STATE_DIM) + DRED_STATE_DIM;
+    dred_encode_latents(
+        &ec_encoder,
+        enc->initial_state,
+        quant_scales + state_qoffset,
+        dead_zone + state_qoffset,
+        r + state_qoffset,
+        p0 + state_qoffset);
     for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-enc->latent_offset-1); i += 2)
     {
         ec_enc ec_bak;
         ec_bak = ec_encoder;
 
         q_level = compute_quantizer(q0, dQ, i/2);
-        offset = q_level * DRED_LATENT_DIM;
+        offset = q_level * (DRED_LATENT_DIM+DRED_STATE_DIM);
 
         dred_encode_latents(
             &ec_encoder,
