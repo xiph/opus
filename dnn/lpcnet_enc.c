@@ -74,6 +74,19 @@ static void frame_analysis(LPCNetEncState *st, kiss_fft_cpx *X, float *Ex, const
   lpcn_compute_band_energy(Ex, X);
 }
 
+static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
+  int i;
+  for (i=0;i<N;i++) {
+    float xi, yi;
+    xi = x[i];
+    yi = x[i] + mem[0];
+    mem[0] = mem[1] + (b[0]*(double)xi - a[0]*(double)yi);
+    mem[1] = (b[1]*(double)xi - a[1]*(double)yi);
+    y[i] = yi;
+  }
+}
+
+
 void compute_frame_features(LPCNetEncState *st, const float *in) {
   float aligned_in[FRAME_SIZE];
   int i;
@@ -86,6 +99,9 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   float ener0;
   int sub;
   float ener;
+  /* [b,a]=ellip(2, 2, 20, 1200/8000); */
+  static const float lp_b[2] = {-0.84946f, 1.f};
+  static const float lp_a[2] = {-1.54220f, 0.70781f};
   OPUS_COPY(aligned_in, &st->analysis_mem[OVERLAP_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
   frame_analysis(st, X, Ex, in);
   logMax = -2;
@@ -102,6 +118,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   lpc_from_cepstrum(st->lpc, st->features);
   for (i=0;i<LPC_ORDER;i++) st->features[NB_BANDS+2+i] = st->lpc[i];
   OPUS_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
+  OPUS_MOVE(st->lp_buf, &st->lp_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
   OPUS_COPY(&aligned_in[TRAINING_OFFSET], in, FRAME_SIZE-TRAINING_OFFSET);
   for (i=0;i<FRAME_SIZE;i++) {
     int j;
@@ -110,10 +127,12 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
       sum += st->lpc[j]*st->pitch_mem[j];
     OPUS_MOVE(st->pitch_mem+1, st->pitch_mem, LPC_ORDER-1);
     st->pitch_mem[0] = aligned_in[i];
+    st->lp_buf[PITCH_MAX_PERIOD+i] = sum;
     st->exc_buf[PITCH_MAX_PERIOD+i] = sum + .7f*st->pitch_filt;
     st->pitch_filt = sum;
     /*printf("%f\n", st->exc_buf[PITCH_MAX_PERIOD+i]);*/
   }
+  biquad(&st->lp_buf[PITCH_MAX_PERIOD], st->lp_mem, &st->lp_buf[PITCH_MAX_PERIOD], lp_b, lp_a, FRAME_SIZE);
   /* Cross-correlation on half-frames. */
   for (sub=0;sub<2;sub++) {
     int off = sub*FRAME_SIZE/2;
@@ -206,6 +225,17 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
     best_i = pitch_prev[sub][best_i];
   }
   frame_corr /= 2;
+  if (0) {
+    float xy, xx, yy;
+    int pitch = (best[2]+best[3])/2;
+    xx = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
+    yy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD-pitch], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
+    xy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
+    //printf("%f %f\n", frame_corr, xy/sqrt(1e-15+xx*yy));
+    frame_corr = xy/sqrt(1+xx*yy);
+    //frame_corr = MAX32(0, xy/sqrt(1+xx*yy));
+    frame_corr = log(1.f+exp(5.f*frame_corr))/log(1+exp(5.f));
+  }
   st->features[NB_BANDS] = .01f*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
   st->features[NB_BANDS + 1] = frame_corr-.5f;
   if (ffeat) {

@@ -49,6 +49,8 @@ struct LPCNetEncState{
   float xc[2][PITCH_MAX_PERIOD+1];
   float frame_weight[2];
   float exc_buf[PITCH_BUF_SIZE];
+  float lp_buf[PITCH_BUF_SIZE];
+  float lp_mem[4];
   float pitch_max_path[2][PITCH_MAX_PERIOD];
   float pitch_max_path_all;
   int best_i;
