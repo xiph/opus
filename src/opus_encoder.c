@@ -1122,6 +1122,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     int analysis_read_subframe_bak=-1;
     int is_silence = 0;
 #endif
+    int apply_padding;
 #ifdef ENABLE_NEURAL_FEC
     opus_int32 dred_bitrate_bps;
 #endif
@@ -2252,6 +2253,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     /* Count ToC and redundancy */
     ret += 1+redundancy_bytes;
+    apply_padding = !st->use_vbr;
 #ifdef ENABLE_NEURAL_FEC
     if (st->dred_duration > 0) {
        opus_extension_data extension;
@@ -2271,26 +2273,25 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            buf[1] = DRED_EXPERIMENTAL_VERSION;
 #endif
            dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+DRED_EXPERIMENTAL_BYTES, dred_chunks, dred_bytes_left-DRED_EXPERIMENTAL_BYTES);
-           dred_bytes += DRED_EXPERIMENTAL_BYTES;
-           celt_assert(dred_bytes <= dred_bytes_left);
-           extension.id = DRED_EXTENSION_ID;
-           extension.frame = 0;
-           extension.data = buf;
-           extension.len = dred_bytes;
-           ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
-       } else if (!st->use_vbr) {
-           ret = opus_packet_pad(data, ret, max_data_bytes);
-           if (ret == OPUS_OK)
-              ret = max_data_bytes;
+           if (dred_bytes > 0) {
+              dred_bytes += DRED_EXPERIMENTAL_BYTES;
+              celt_assert(dred_bytes <= dred_bytes_left);
+              extension.id = DRED_EXTENSION_ID;
+              extension.frame = 0;
+              extension.data = buf;
+              extension.len = dred_bytes;
+              ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
+              if (ret < 0)
+              {
+                 RESTORE_STACK;
+                 return OPUS_INTERNAL_ERROR;
+              }
+              apply_padding = 0;
+           }
        }
-       if (ret < 0)
-       {
-          RESTORE_STACK;
-          return OPUS_INTERNAL_ERROR;
-       }
-    } else
+    }
 #endif
-    if (!st->use_vbr)
+    if (apply_padding)
     {
        if (opus_packet_pad(data, ret, max_data_bytes) != OPUS_OK)
        {
