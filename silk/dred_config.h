@@ -41,7 +41,7 @@
 /* these are inpart duplicates to the values defined in dred_rdovae_constants.h */
 #define DRED_NUM_FEATURES 20
 #define DRED_LATENT_DIM 80
-#define DRED_STATE_DIM 24
+#define DRED_STATE_DIM 80
 #define DRED_SILK_ENCODER_DELAY (79+12-80)
 #define DRED_FRAME_SIZE 160
 #define DRED_DFRAME_SIZE (2 * (DRED_FRAME_SIZE))
