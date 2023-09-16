@@ -238,6 +238,9 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
         dead_zone + state_qoffset,
         r + state_qoffset,
         p0 + state_qoffset);
+    if (ec_tell(&ec_encoder) > 8*max_bytes) {
+      return 0;
+    }
     for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-enc->latent_offset-1); i += 2)
     {
         ec_enc ec_bak;
@@ -256,6 +259,8 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
         );
         if (ec_tell(&ec_encoder) > 8*max_bytes) {
           ec_encoder = ec_bak;
+          /* If we haven't been able to code one chunk, give up on DRED completely. */
+          if (i==0) return 0;
           break;
         }
     }
