@@ -90,7 +90,7 @@ def inverse_perceptual_weighting (pw_signal, filters, weighting_vector):
         buffer[:] = out_sig_frame[-16:]
     return signal
 
-
+from scipy.signal import lfilter
 
 if __name__ == '__main__':
     model.to(device)
@@ -99,9 +99,10 @@ if __name__ == '__main__':
     periods = torch.tensor(periods).to(device)
     
     sig, _ = model(features, periods, nb_frames - 4)
-    weighting_vector = np.array([gamma**i for i in range(16,0,-1)])
+    #weighting_vector = np.array([gamma**i for i in range(16,0,-1)])
     sig = sig.detach().numpy().flatten()
-    sig = inverse_perceptual_weighting(sig, lpc[0,:,:], weighting_vector)
+    sig = lfilter(np.array([1.]), np.array([1., -.85]), sig)
+    #sig = inverse_perceptual_weighting(sig, lpc[0,:,:], weighting_vector)
     
     pcm = np.round(32768*np.clip(sig, a_max=.99, a_min=-.99)).astype('int16')
     pcm.tofile(signal_file)

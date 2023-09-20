@@ -44,7 +44,9 @@ class SpectralConvergenceLoss(torch.nn.Module):
         Returns:
             Tensor: Spectral convergence loss value.
         """
-        return torch.norm(y_mag - x_mag, p="fro") / torch.norm(y_mag, p="fro")
+        y_mag = torch.sqrt(1e-7+y_mag)
+        x_mag = torch.sqrt(1e-7+x_mag)
+        return torch.norm(y_mag - x_mag, p=1) / torch.norm(y_mag, p=1)
 
 class LogSTFTMagnitudeLoss(torch.nn.Module):
     """Log STFT magnitude loss module."""

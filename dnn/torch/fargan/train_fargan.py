@@ -127,7 +127,7 @@ if __name__ == '__main__':
                     features=features[::2,:]
                     periods=periods[::2,:]
                 target = target.to(device)
-                target = fargan.analysis_filter(target, lpc[:,:,:], gamma=args.gamma)
+                #target = fargan.analysis_filter(target, lpc[:,:,:], gamma=args.gamma)
 
                 #nb_pre = random.randrange(1, 6)
                 nb_pre = 2
@@ -135,9 +135,9 @@ if __name__ == '__main__':
                 sig, states = model(features, periods, target.size(1)//160 - nb_pre, pre=pre, states=None)
                 sig = torch.cat([pre, sig], -1)
 
-                cont_loss = fargan.sig_loss(target[:, nb_pre*160:nb_pre*160+80], sig[:, nb_pre*160:nb_pre*160+80])
+                cont_loss = fargan.sig_loss(target[:, nb_pre*160:nb_pre*160+320], sig[:, nb_pre*160:nb_pre*160+320])
                 specc_loss = spect_loss(sig, target.detach())
-                loss = .00*cont_loss + specc_loss
+                loss = .05*cont_loss + specc_loss
 
                 loss.backward()
                 optimizer.step()
@@ -150,7 +150,8 @@ if __name__ == '__main__':
                 running_cont_loss += cont_loss.detach().cpu().item()
 
                 running_loss += loss.detach().cpu().item()
-                tepoch.set_postfix(loss=f"{running_loss/(i+1):8.5f}",
+                if (i%4) == 0:
+                    tepoch.set_postfix(loss=f"{running_loss/(i+1):8.5f}",
                                    cont_loss=f"{running_cont_loss/(i+1):8.5f}",
                                    specc=f"{running_specc/(i+1):8.5f}",
                                    )
