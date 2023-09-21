@@ -45,21 +45,10 @@ from models.nns_base import NNSBase
 from models.lpcnet_feature_net import LPCNetFeatureNet
 from .scale_embedding import ScaleEmbedding
 
-def print_channels(y, prefix="", name="", rate=16000):
-    num_channels = y.size(1)
-    for i in range(num_channels):
-        channel_name = f"{prefix}_c{i:02d}"
-        if len(name) > 0: channel_name += "_" + name
-        ch =  y[0,i,:].detach().cpu().numpy()
-        ch = ((2**14) * ch / np.max(ch)).astype(np.int16)
-        write_data(channel_name, ch, rate)
-
-
-
-class LaVoce(nn.Module):
+class LaVoce400(nn.Module):
     """ Linear-Adaptive VOCodEr """
     FEATURE_FRAME_SIZE=160
-    FRAME_SIZE=80
+    FRAME_SIZE=40
 
     def __init__(self,
                  num_features=20,
@@ -73,11 +62,7 @@ class LaVoce(nn.Module):
                  conv_gain_limits_db=[-6, 6],
                  norm_p=2,
                  avg_pool_k=4,
-                 pulses=False,
-                 innovate1=True,
-                 innovate2=False,
-                 innovate3=False,
-                 ftrans_k=2):
+                 pulses=False):
 
         super().__init__()
 
@@ -105,8 +90,8 @@ class LaVoce(nn.Module):
         # comb filters
         left_pad = self.kernel_size // 2
         right_pad = self.kernel_size - 1 - left_pad
-        self.cf1 = LimitedAdaptiveComb1d(self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, overlap_size=40, use_bias=False, padding=[left_pad, right_pad], max_lag=pitch_max + 1, gain_limit_db=comb_gain_limit_db, global_gain_limits_db=global_gain_limits_db, norm_p=norm_p)
-        self.cf2 = LimitedAdaptiveComb1d(self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, overlap_size=40, use_bias=False, padding=[left_pad, right_pad], max_lag=pitch_max + 1, gain_limit_db=comb_gain_limit_db, global_gain_limits_db=global_gain_limits_db, norm_p=norm_p)
+        self.cf1 = LimitedAdaptiveComb1d(self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, overlap_size=20, use_bias=False, padding=[left_pad, right_pad], max_lag=pitch_max + 1, gain_limit_db=comb_gain_limit_db, global_gain_limits_db=global_gain_limits_db, norm_p=norm_p)
+        self.cf2 = LimitedAdaptiveComb1d(self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, overlap_size=20, use_bias=False, padding=[left_pad, right_pad], max_lag=pitch_max + 1, gain_limit_db=comb_gain_limit_db, global_gain_limits_db=global_gain_limits_db, norm_p=norm_p)
 
 
         self.af_prescale = LimitedAdaptiveConv1d(2, 1, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
@@ -116,9 +101,9 @@ class LaVoce(nn.Module):
         self.af1 = LimitedAdaptiveConv1d(1, 2, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
 
         # non-linear transforms
-        self.tdshape1 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=innovate1)
-        self.tdshape2 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=innovate2)
-        self.tdshape3 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=innovate3)
+        self.tdshape1 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=True)
+        self.tdshape2 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k)
+        self.tdshape3 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k)
 
         # combinators
         self.af2 = LimitedAdaptiveConv1d(2, 2, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
@@ -126,11 +111,11 @@ class LaVoce(nn.Module):
         self.af4 = LimitedAdaptiveConv1d(2, 1, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
 
         # feature transforms
-        self.post_cf1 = nn.Conv1d(cond_dim, cond_dim, ftrans_k)
-        self.post_cf2 = nn.Conv1d(cond_dim, cond_dim, ftrans_k)
-        self.post_af1 = nn.Conv1d(cond_dim, cond_dim, ftrans_k)
-        self.post_af2 = nn.Conv1d(cond_dim, cond_dim, ftrans_k)
-        self.post_af3 = nn.Conv1d(cond_dim, cond_dim, ftrans_k)
+        self.post_cf1 = nn.Conv1d(cond_dim, cond_dim, 2)
+        self.post_cf2 = nn.Conv1d(cond_dim, cond_dim, 2)
+        self.post_af1 = nn.Conv1d(cond_dim, cond_dim, 2)
+        self.post_af2 = nn.Conv1d(cond_dim, cond_dim, 2)
+        self.post_af3 = nn.Conv1d(cond_dim, cond_dim, 2)
 
 
     def create_phase_signals(self, periods, pulses=False):
@@ -203,50 +188,46 @@ class LaVoce(nn.Module):
 
         # pre-net
         ref_phase = torch.tanh(self.create_phase_signals(periods))
-        if debug: print_channels(ref_phase, prefix="lavoce_01", name="pulse")
         x = self.af_prescale(ref_phase, cf)
         noise = self.noise_shaper(cf)
-        if debug: print_channels(torch.cat((x, noise), dim=1), prefix="lavoce_02", name="inputs")
         y = self.af_mix(torch.cat((x, noise), dim=1), cf)
-        if debug: print_channels(y, prefix="lavoce_03", name="postselect1")
+
+        if debug:
+            ch0 = y[0,0,:].detach().cpu().numpy()
+            ch1 = y[0,1,:].detach().cpu().numpy()
+            ch0 = (2**15 * ch0 / np.max(ch0)).astype(np.int16)
+            ch1 = (2**15 * ch1 / np.max(ch1)).astype(np.int16)
+            write_data('prior_channel0', ch0, 16000)
+            write_data('prior_channel1', ch1, 16000)
 
         # temporal shaping + innovating
         y1 = y[:, 0:1, :]
         y2 = self.tdshape1(y[:, 1:2, :], cf)
-        if debug: print_channels(y2, prefix="lavoce_04", name="postshape1")
         y = torch.cat((y1, y2), dim=1)
         y = self.af2(y, cf, debug=debug)
-        if debug: print_channels(y, prefix="lavoce_05", name="postselect2")
         cf = self.feature_transform(cf, self.post_af2)
 
         y1 = y[:, 0:1, :]
         y2 = self.tdshape2(y[:, 1:2, :], cf)
-        if debug: print_channels(y2, prefix="lavoce_06", name="postshape2")
         y = torch.cat((y1, y2), dim=1)
         y = self.af3(y, cf, debug=debug)
-        if debug: print_channels(y, prefix="lavoce_07", name="postmix1")
         cf = self.feature_transform(cf, self.post_af3)
 
         # spectral shaping
         y = self.cf1(y, cf, periods, debug=debug)
-        if debug: print_channels(y, prefix="lavoce_08", name="postcomb1")
         cf = self.feature_transform(cf, self.post_cf1)
 
         y = self.cf2(y, cf, periods, debug=debug)
-        if debug: print_channels(y, prefix="lavoce_09", name="postcomb2")
         cf = self.feature_transform(cf, self.post_cf2)
 
         y = self.af1(y, cf, debug=debug)
-        if debug: print_channels(y, prefix="lavoce_10", name="postselect3")
         cf = self.feature_transform(cf, self.post_af1)
 
         # final temporal env adjustment
         y1 = y[:, 0:1, :]
         y2 = self.tdshape3(y[:, 1:2, :], cf)
-        if debug: print_channels(y2, prefix="lavoce_11", name="postshape3")
         y = torch.cat((y1, y2), dim=1)
         y = self.af4(y, cf, debug=debug)
-        if debug: print_channels(y, prefix="lavoce_12", name="postmix2")
 
         return y
 
