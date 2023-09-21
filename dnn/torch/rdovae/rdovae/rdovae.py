@@ -224,6 +224,17 @@ def weight_clip_factory(max_value):
 
 # RDOVAE module and submodules
 
+class MyConv(nn.Module):
+    def __init__(self, input_dim, output_dim, dilation=1):
+        super(MyConv, self).__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.dilation=dilation
+        self.conv = nn.Conv1d(input_dim, output_dim, kernel_size=2, padding='valid', dilation=dilation)
+    def forward(self, x, state=None):
+        device = x.device
+        conv_in = torch.cat([torch.zeros_like(x[:,0:self.dilation,:], device=device), x], -2).permute(0, 2, 1)
+        return torch.tanh(self.conv(conv_in)).permute(0, 2, 1)
 
 class CoreEncoder(nn.Module):
     STATE_HIDDEN = 128
@@ -248,22 +259,28 @@ class CoreEncoder(nn.Module):
 
         # derived parameters
         self.input_dim = self.FRAMES_PER_STEP * self.feature_dim
-        self.conv_input_channels =  5 * cond_size + 3 * cond_size2
 
         # layers
-        self.dense_1 = nn.Linear(self.input_dim, self.cond_size2)
-        self.gru_1   = nn.GRU(self.cond_size2, self.cond_size, batch_first=True)
-        self.dense_2 = nn.Linear(self.cond_size, self.cond_size2)
-        self.gru_2   = nn.GRU(self.cond_size2, self.cond_size, batch_first=True)
-        self.dense_3 = nn.Linear(self.cond_size, self.cond_size2)
-        self.gru_3   = nn.GRU(self.cond_size2, self.cond_size, batch_first=True)
-        self.dense_4 = nn.Linear(self.cond_size, self.cond_size)
-        self.dense_5 = nn.Linear(self.cond_size, self.cond_size)
-        self.conv1   = nn.Conv1d(self.conv_input_channels, self.output_dim, kernel_size=self.CONV_KERNEL_SIZE, padding='valid')
+        self.dense_1 = nn.Linear(self.input_dim, 64)
+        self.gru1 = nn.GRU(64, 64, batch_first=True)
+        self.conv1 = MyConv(128, 96)
+        self.gru2 = nn.GRU(224, 64, batch_first=True)
+        self.conv2 = MyConv(288, 96, dilation=2)
+        self.gru3 = nn.GRU(384, 64, batch_first=True)
+        self.conv3 = MyConv(448, 96, dilation=2)
+        self.gru4 = nn.GRU(544, 64, batch_first=True)
+        self.conv4 = MyConv(608, 96, dilation=2)
+        self.gru5 = nn.GRU(704, 64, batch_first=True)
+        self.conv5 = MyConv(768, 96, dilation=2)
 
-        self.state_dense_1 = nn.Linear(self.conv_input_channels, self.STATE_HIDDEN)
+        self.z_dense = nn.Linear(864, self.output_dim)
+
+
+        self.state_dense_1 = nn.Linear(864, self.STATE_HIDDEN)
 
         self.state_dense_2 = nn.Linear(self.STATE_HIDDEN, self.state_size)
+        nb_params = sum(p.numel() for p in self.parameters())
+        print(f"encoder: {nb_params} weights")
 
         # initialize weights
         self.apply(init_weights)
@@ -278,25 +295,22 @@ class CoreEncoder(nn.Module):
         device = x.device
 
         # run encoding layer stack
-        x1      = torch.tanh(self.dense_1(x))
-        x2, _   = self.gru_1(x1, torch.zeros((1, batch, self.cond_size)).to(device))
-        x3      = torch.tanh(self.dense_2(x2))
-        x4, _   = self.gru_2(x3, torch.zeros((1, batch, self.cond_size)).to(device))
-        x5      = torch.tanh(self.dense_3(x4))
-        x6, _   = self.gru_3(x5, torch.zeros((1, batch, self.cond_size)).to(device))
-        x7      = torch.tanh(self.dense_4(x6))
-        x8      = torch.tanh(self.dense_5(x7))
-
-        # concatenation of all hidden layer outputs
-        x9 = torch.cat((x1, x2, x3, x4, x5, x6, x7, x8), dim=-1)
+        x = torch.tanh(self.dense_1(x))
+        x = torch.cat([x, self.gru1(x)[0]], -1)
+        x = torch.cat([x, self.conv1(x)], -1)
+        x = torch.cat([x, self.gru2(x)[0]], -1)
+        x = torch.cat([x, self.conv2(x)], -1)
+        x = torch.cat([x, self.gru3(x)[0]], -1)
+        x = torch.cat([x, self.conv3(x)], -1)
+        x = torch.cat([x, self.gru4(x)[0]], -1)
+        x = torch.cat([x, self.conv4(x)], -1)
+        x = torch.cat([x, self.gru5(x)[0]], -1)
+        x = torch.cat([x, self.conv5(x)], -1)
+        z = self.z_dense(x)
 
         # init state for decoder
-        states = torch.tanh(self.state_dense_1(x9))
-        states = torch.tanh(self.state_dense_2(states))
-
-        # latent representation via convolution
-        x9 = F.pad(x9.permute(0, 2, 1), [self.CONV_KERNEL_SIZE - 1, 0])
-        z = self.conv1(x9).permute(0, 2, 1)
+        states = torch.tanh(self.state_dense_1(x))
+        states = self.state_dense_2(states)
 
         return z, states
 
@@ -325,47 +339,54 @@ class CoreDecoder(nn.Module):
 
         self.input_size = self.input_dim
 
-        self.concat_size = 4 * self.cond_size + 4 * self.cond_size2
-
         # layers
-        self.dense_1    = nn.Linear(self.input_size, cond_size2)
-        self.gru_1      = nn.GRU(cond_size2, cond_size, batch_first=True)
-        self.dense_2    = nn.Linear(cond_size, cond_size2)
-        self.gru_2      = nn.GRU(cond_size2, cond_size, batch_first=True)
-        self.dense_3    = nn.Linear(cond_size, cond_size2)
-        self.gru_3      = nn.GRU(cond_size2, cond_size, batch_first=True)
-        self.dense_4    = nn.Linear(cond_size, cond_size2)
-        self.dense_5    = nn.Linear(cond_size2, cond_size2)
+        self.dense_1    = nn.Linear(self.input_size, 96)
+        self.gru1 = nn.GRU(96, 96, batch_first=True)
+        self.conv1 = MyConv(192, 32)
+        self.gru2 = nn.GRU(224, 96, batch_first=True)
+        self.conv2 = MyConv(320, 32)
+        self.gru3 = nn.GRU(352, 96, batch_first=True)
+        self.conv3 = MyConv(448, 32)
+        self.gru4 = nn.GRU(480, 96, batch_first=True)
+        self.conv4 = MyConv(576, 32)
+        self.gru5 = nn.GRU(608, 96, batch_first=True)
+        self.conv5 = MyConv(704, 32)
+        self.output  = nn.Linear(736, self.FRAMES_PER_STEP * self.output_dim)
 
-        self.output  = nn.Linear(self.concat_size, self.FRAMES_PER_STEP * self.output_dim)
+        self.hidden_init = nn.Linear(self.state_size, 128)
+        self.gru_init = nn.Linear(128, 480)
 
-
-        self.gru_1_init = nn.Linear(self.state_size, self.cond_size)
-        self.gru_2_init = nn.Linear(self.state_size, self.cond_size)
-        self.gru_3_init = nn.Linear(self.state_size, self.cond_size)
-
+        nb_params = sum(p.numel() for p in self.parameters())
+        print(f"decoder: {nb_params} weights")
         # initialize weights
         self.apply(init_weights)
 
     def forward(self, z, initial_state):
 
-        gru_1_state = torch.tanh(self.gru_1_init(initial_state).permute(1, 0, 2))
-        gru_2_state = torch.tanh(self.gru_2_init(initial_state).permute(1, 0, 2))
-        gru_3_state = torch.tanh(self.gru_3_init(initial_state).permute(1, 0, 2))
+        hidden = torch.tanh(self.hidden_init(initial_state))
+        gru_state = torch.tanh(self.gru_init(hidden).permute(1, 0, 2))
+        h1_state = gru_state[:,:,:96].contiguous()
+        h2_state = gru_state[:,:,96:192].contiguous()
+        h3_state = gru_state[:,:,192:288].contiguous()
+        h4_state = gru_state[:,:,288:384].contiguous()
+        h5_state = gru_state[:,:,384:].contiguous()
 
         # run decoding layer stack
-        x1  = torch.tanh(self.dense_1(z))
-        x2, _ = self.gru_1(x1, gru_1_state)
-        x3  = torch.tanh(self.dense_2(x2))
-        x4, _ = self.gru_2(x3, gru_2_state)
-        x5  = torch.tanh(self.dense_3(x4))
-        x6, _ = self.gru_3(x5, gru_3_state)
-        x7  = torch.tanh(self.dense_4(x6))
-        x8  = torch.tanh(self.dense_5(x7))
-        x9 = torch.cat((x1, x2, x3, x4, x5, x6, x7, x8), dim=-1)
+        x = torch.tanh(self.dense_1(z))
+
+        x = torch.cat([x, self.gru1(x, h1_state)[0]], -1)
+        x = torch.cat([x, self.conv1(x)], -1)
+        x = torch.cat([x, self.gru2(x, h2_state)[0]], -1)
+        x = torch.cat([x, self.conv2(x)], -1)
+        x = torch.cat([x, self.gru3(x, h3_state)[0]], -1)
+        x = torch.cat([x, self.conv3(x)], -1)
+        x = torch.cat([x, self.gru4(x, h4_state)[0]], -1)
+        x = torch.cat([x, self.conv4(x)], -1)
+        x = torch.cat([x, self.gru5(x, h5_state)[0]], -1)
+        x = torch.cat([x, self.conv5(x)], -1)
 
         # output layer and reshaping
-        x10 = self.output(x9)
+        x10 = self.output(x)
         features = torch.reshape(x10, (x10.size(0), x10.size(1) * self.FRAMES_PER_STEP, x10.size(2) // self.FRAMES_PER_STEP))
 
         return features
@@ -466,7 +487,7 @@ class RDOVAE(nn.Module):
         if not type(self.weight_clip_fn) == type(None):
             self.apply(self.weight_clip_fn)
 
-    def get_decoder_chunks(self, z_frames, mode='split', chunks_per_offset = 4):
+    def get_decoder_chunks(self, z_frames, mode='split', chunks_per_offset = 24):
 
         enc_stride = self.enc_stride
         dec_stride = self.dec_stride

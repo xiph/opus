@@ -35,6 +35,15 @@
 #include "dred_rdovae_enc.h"
 #include "os_support.h"
 
+static void conv1_cond_init(float *mem, int len, int dilation, int *init)
+{
+    if (!*init) {
+        int i;
+        for (i=0;i<dilation;i++) OPUS_CLEAR(&mem[i*len], len);
+    }
+    *init = 1;
+}
+
 void dred_rdovae_encode_dframe(
     RDOVAEEncState *enc_state,           /* io: encoder state */
     const RDOVAEEnc *model,
@@ -43,52 +52,53 @@ void dred_rdovae_encode_dframe(
     const float *input              /* i: double feature frame (concatenated) */
     )
 {
-    float buffer[ENC_DENSE1_OUT_SIZE + ENC_DENSE2_OUT_SIZE + ENC_DENSE3_OUT_SIZE + ENC_DENSE4_OUT_SIZE + ENC_DENSE5_OUT_SIZE + ENC_DENSE6_OUT_SIZE + ENC_DENSE7_OUT_SIZE + ENC_DENSE8_OUT_SIZE + GDENSE1_OUT_SIZE];
+    float buffer[ENC_DENSE1_OUT_SIZE + ENC_GRU1_OUT_SIZE + ENC_GRU2_OUT_SIZE + ENC_GRU3_OUT_SIZE + ENC_GRU4_OUT_SIZE + ENC_GRU5_OUT_SIZE
+               + ENC_CONV1_OUT_SIZE + ENC_CONV2_OUT_SIZE + ENC_CONV3_OUT_SIZE + ENC_CONV4_OUT_SIZE + ENC_CONV5_OUT_SIZE];
+    float state_hidden[GDENSE1_OUT_SIZE];
     int output_index = 0;
-    int input_index = 0;
 
     /* run encoder stack and concatenate output in buffer*/
     compute_generic_dense(&model->enc_dense1, &buffer[output_index], input, ACTIVATION_TANH);
-    input_index = output_index;
     output_index += ENC_DENSE1_OUT_SIZE;
 
-    compute_generic_gru(&model->enc_dense2_input, &model->enc_dense2_recurrent, enc_state->dense2_state, &buffer[input_index]);
-    OPUS_COPY(&buffer[output_index], enc_state->dense2_state, ENC_DENSE2_OUT_SIZE);
-    input_index = output_index;
-    output_index += ENC_DENSE2_OUT_SIZE;
+    compute_generic_gru(&model->enc_gru1_input, &model->enc_gru1_recurrent, enc_state->gru1_state, buffer);
+    OPUS_COPY(&buffer[output_index], enc_state->gru1_state, ENC_GRU1_OUT_SIZE);
+    output_index += ENC_GRU1_OUT_SIZE;
+    conv1_cond_init(enc_state->conv1_state, output_index, 1, &enc_state->initialized);
+    compute_generic_conv1d(&model->enc_conv1, &buffer[output_index], enc_state->conv1_state, buffer, output_index, ACTIVATION_TANH);
+    output_index += ENC_CONV1_OUT_SIZE;
 
-    compute_generic_dense(&model->enc_dense3, &buffer[output_index], &buffer[input_index], ACTIVATION_TANH);
-    input_index = output_index;
-    output_index += ENC_DENSE3_OUT_SIZE;
+    compute_generic_gru(&model->enc_gru2_input, &model->enc_gru2_recurrent, enc_state->gru2_state, buffer);
+    OPUS_COPY(&buffer[output_index], enc_state->gru2_state, ENC_GRU2_OUT_SIZE);
+    output_index += ENC_GRU2_OUT_SIZE;
+    conv1_cond_init(enc_state->conv2_state, output_index, 2, &enc_state->initialized);
+    compute_generic_conv1d_dilation(&model->enc_conv2, &buffer[output_index], enc_state->conv2_state, buffer, output_index, 2, ACTIVATION_TANH);
+    output_index += ENC_CONV2_OUT_SIZE;
 
-    compute_generic_gru(&model->enc_dense4_input, &model->enc_dense4_recurrent, enc_state->dense4_state, &buffer[input_index]);
-    OPUS_COPY(&buffer[output_index], enc_state->dense4_state, ENC_DENSE4_OUT_SIZE);
-    input_index = output_index;
-    output_index += ENC_DENSE4_OUT_SIZE;
+    compute_generic_gru(&model->enc_gru3_input, &model->enc_gru3_recurrent, enc_state->gru3_state, buffer);
+    OPUS_COPY(&buffer[output_index], enc_state->gru3_state, ENC_GRU3_OUT_SIZE);
+    output_index += ENC_GRU3_OUT_SIZE;
+    conv1_cond_init(enc_state->conv3_state, output_index, 2, &enc_state->initialized);
+    compute_generic_conv1d_dilation(&model->enc_conv3, &buffer[output_index], enc_state->conv3_state, buffer, output_index, 2, ACTIVATION_TANH);
+    output_index += ENC_CONV3_OUT_SIZE;
 
-    compute_generic_dense(&model->enc_dense5, &buffer[output_index], &buffer[input_index], ACTIVATION_TANH);
-    input_index = output_index;
-    output_index += ENC_DENSE5_OUT_SIZE;
+    compute_generic_gru(&model->enc_gru4_input, &model->enc_gru4_recurrent, enc_state->gru4_state, buffer);
+    OPUS_COPY(&buffer[output_index], enc_state->gru4_state, ENC_GRU4_OUT_SIZE);
+    output_index += ENC_GRU4_OUT_SIZE;
+    conv1_cond_init(enc_state->conv4_state, output_index, 2, &enc_state->initialized);
+    compute_generic_conv1d_dilation(&model->enc_conv4, &buffer[output_index], enc_state->conv4_state, buffer, output_index, 2, ACTIVATION_TANH);
+    output_index += ENC_CONV4_OUT_SIZE;
 
-    compute_generic_gru(&model->enc_dense6_input, &model->enc_dense6_recurrent, enc_state->dense6_state, &buffer[input_index]);
-    OPUS_COPY(&buffer[output_index], enc_state->dense6_state, ENC_DENSE6_OUT_SIZE);
-    input_index = output_index;
-    output_index += ENC_DENSE6_OUT_SIZE;
+    compute_generic_gru(&model->enc_gru5_input, &model->enc_gru5_recurrent, enc_state->gru5_state, buffer);
+    OPUS_COPY(&buffer[output_index], enc_state->gru5_state, ENC_GRU5_OUT_SIZE);
+    output_index += ENC_GRU5_OUT_SIZE;
+    conv1_cond_init(enc_state->conv5_state, output_index, 2, &enc_state->initialized);
+    compute_generic_conv1d_dilation(&model->enc_conv5, &buffer[output_index], enc_state->conv5_state, buffer, output_index, 2, ACTIVATION_TANH);
+    output_index += ENC_CONV5_OUT_SIZE;
 
-    compute_generic_dense(&model->enc_dense7, &buffer[output_index], &buffer[input_index], ACTIVATION_TANH);
-    input_index = output_index;
-    output_index += ENC_DENSE7_OUT_SIZE;
-
-    compute_generic_dense(&model->enc_dense8, &buffer[output_index], &buffer[input_index], ACTIVATION_TANH);
-    output_index += ENC_DENSE8_OUT_SIZE;
-
-    /* compute latents from concatenated input buffer */
-    compute_generic_conv1d(&model->bits_dense, latents, enc_state->bits_dense_state, buffer, BITS_DENSE_IN_SIZE, ACTIVATION_LINEAR);
-
+    compute_generic_dense(&model->enc_zdense, latents, buffer, ACTIVATION_LINEAR);
 
     /* next, calculate initial state */
-    compute_generic_dense(&model->gdense1, &buffer[output_index], buffer, ACTIVATION_TANH);
-    input_index = output_index;
-    compute_generic_dense(&model->gdense2, initial_state, &buffer[input_index], ACTIVATION_TANH);
-
+    compute_generic_dense(&model->gdense1, state_hidden, buffer, ACTIVATION_TANH);
+    compute_generic_dense(&model->gdense2, initial_state, state_hidden, ACTIVATION_LINEAR);
 }

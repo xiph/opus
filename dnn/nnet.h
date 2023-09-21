@@ -145,6 +145,7 @@ void compute_linear(const LinearLayer *linear, float *out, const float *in);
 void compute_generic_dense(const LinearLayer *layer, float *output, const float *input, int activation);
 void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in);
 void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int activation);
+void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int dilation, int activation);
 void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation);
 
 void compute_activation(float *output, const float *input, int N, int activation);
