@@ -33,9 +33,17 @@
 #include "dred_rdovae_stats_data.h"
 
 struct RDOVAEDecStruct {
-    float dense2_state[DEC_DENSE2_STATE_SIZE];
-    float dense4_state[DEC_DENSE2_STATE_SIZE];
-    float dense6_state[DEC_DENSE2_STATE_SIZE];
+  int initialized;
+  float gru1_state[DEC_GRU1_STATE_SIZE];
+  float gru2_state[DEC_GRU2_STATE_SIZE];
+  float gru3_state[DEC_GRU3_STATE_SIZE];
+  float gru4_state[DEC_GRU4_STATE_SIZE];
+  float gru5_state[DEC_GRU5_STATE_SIZE];
+  float conv1_state[DEC_CONV1_STATE_SIZE];
+  float conv2_state[DEC_CONV2_STATE_SIZE];
+  float conv3_state[DEC_CONV3_STATE_SIZE];
+  float conv4_state[DEC_CONV4_STATE_SIZE];
+  float conv5_state[DEC_CONV5_STATE_SIZE];
 };
 
 void dred_rdovae_dec_init_states(RDOVAEDecState *h, const RDOVAEDec *model, const float * initial_state);

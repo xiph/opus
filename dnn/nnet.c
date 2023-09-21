@@ -366,6 +366,25 @@ void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem,
    OPUS_COPY(mem, &tmp[input_size], layer->nb_inputs-input_size);
 }
 
+void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int dilation, int activation)
+{
+   float tmp[MAX_CONV_INPUTS_ALL];
+   int ksize = layer->nb_inputs/input_size;
+   int i;
+   celt_assert(input != output);
+   celt_assert(layer->nb_inputs <= MAX_CONV_INPUTS_ALL);
+   if (dilation==1) OPUS_COPY(tmp, mem, layer->nb_inputs-input_size);
+   else for (i=0;i<ksize-1;i++) OPUS_COPY(&tmp[i*input_size], &mem[i*input_size*dilation], input_size);
+   OPUS_COPY(&tmp[layer->nb_inputs-input_size], input, input_size);
+   compute_linear(layer, output, tmp);
+   compute_activation(output, output, layer->nb_outputs, activation);
+   if (dilation==1) OPUS_COPY(mem, &tmp[input_size], layer->nb_inputs-input_size);
+   else {
+     OPUS_COPY(mem, &mem[input_size], input_size*dilation*(ksize-1)-input_size);
+     OPUS_COPY(&mem[input_size*dilation*(ksize-1)-input_size], input, input_size);
+   }
+}
+
 void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
 {
    LinearLayer matrix;
