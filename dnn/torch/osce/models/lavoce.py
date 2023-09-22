@@ -89,6 +89,7 @@ class LaVoce(nn.Module):
         self.kernel_size            = kernel_size
         self.preemph                = preemph
         self.pulses                 = pulses
+        self.ftrans_k               = ftrans_k
 
         assert self.FEATURE_FRAME_SIZE % self.FRAME_SIZE == 0
         self.upsamp_factor =  self.FEATURE_FRAME_SIZE // self.FRAME_SIZE
@@ -145,7 +146,7 @@ class LaVoce(nn.Module):
             f = (2.0 * torch.pi / periods[:, sframe]).unsqueeze(-1)
 
             if self.pulses:
-                alpha = torch.cos(f)
+                alpha = torch.cos(f).view(batch_size, 1, 1)
                 chunk_sin = torch.sin(f  * progression + phase0).view(batch_size, 1, self.FRAME_SIZE)
                 pulse_a = torch.relu(chunk_sin - alpha) / (1 - alpha)
                 pulse_b = torch.relu(-chunk_sin - alpha) / (1 - alpha)
@@ -186,7 +187,7 @@ class LaVoce(nn.Module):
 
     def feature_transform(self, f, layer):
         f = f.permute(0, 2, 1)
-        f = F.pad(f, [1, 0])
+        f = F.pad(f, [self.ftrans_k - 1, 0])
         f = torch.tanh(layer(f))
         return f.permute(0, 2, 1)
 

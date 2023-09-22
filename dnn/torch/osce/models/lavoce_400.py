@@ -130,7 +130,7 @@ class LaVoce400(nn.Module):
             f = (2.0 * torch.pi / periods[:, sframe]).unsqueeze(-1)
 
             if self.pulses:
-                alpha = torch.cos(f)
+                alpha = torch.cos(f).view(batch_size, 1, 1)
                 chunk_sin = torch.sin(f  * progression + phase0).view(batch_size, 1, self.FRAME_SIZE)
                 pulse_a = torch.relu(chunk_sin - alpha) / (1 - alpha)
                 pulse_b = torch.relu(-chunk_sin - alpha) / (1 - alpha)
