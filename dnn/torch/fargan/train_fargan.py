@@ -135,9 +135,9 @@ if __name__ == '__main__':
                 sig, states = model(features, periods, target.size(1)//160 - nb_pre, pre=pre, states=None)
                 sig = torch.cat([pre, sig], -1)
 
-                cont_loss = fargan.sig_loss(target[:, nb_pre*160:nb_pre*160+80], sig[:, nb_pre*160:nb_pre*160+80])
+                cont_loss = fargan.sig_loss(target[:, nb_pre*160:nb_pre*160+160], sig[:, nb_pre*160:nb_pre*160+160])
                 specc_loss = spect_loss(sig, target.detach())
-                loss = .00*cont_loss + specc_loss
+                loss = .03*cont_loss + specc_loss
 
                 loss.backward()
                 optimizer.step()
