@@ -118,7 +118,7 @@ class LaVoce400(nn.Module):
         self.post_af3 = nn.Conv1d(cond_dim, cond_dim, 2)
 
 
-    def create_phase_signals(self, periods, pulses=False):
+    def create_phase_signals(self, periods):
 
         batch_size = periods.size(0)
         progression = torch.arange(1, self.FRAME_SIZE + 1, dtype=periods.dtype, device=periods.device).view((1, -1))
@@ -129,7 +129,7 @@ class LaVoce400(nn.Module):
         for sframe in range(periods.size(1)):
             f = (2.0 * torch.pi / periods[:, sframe]).unsqueeze(-1)
 
-            if pulses:
+            if self.pulses:
                 alpha = torch.cos(f)
                 chunk_sin = torch.sin(f  * progression + phase0).view(batch_size, 1, self.FRAME_SIZE)
                 pulse_a = torch.relu(chunk_sin - alpha) / (1 - alpha)
