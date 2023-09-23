@@ -138,26 +138,26 @@ class STFTLoss(torch.nn.Module):
 
 class MultiResolutionSTFTLoss(torch.nn.Module):
 
-    def __init__(self,
+    '''def __init__(self,
                  device,
                  fft_sizes=[2048, 1024, 512, 256, 128, 64],
                  hop_sizes=[512, 256, 128, 64, 32, 16],
                  win_lengths=[2048, 1024, 512, 256, 128, 64],
-                 window="hann_window"):
+                 window="hann_window"):'''
 
-        '''def __init__(self,
+    '''def __init__(self,
                  device,
                  fft_sizes=[2048, 1024, 512, 256, 128, 64],
                  hop_sizes=[256, 128, 64, 32, 16, 8],
                  win_lengths=[1024, 512, 256, 128, 64, 32],
                  window="hann_window"):'''
 
-        '''def __init__(self,
+    def __init__(self,
                  device,
                  fft_sizes=[2560, 1280, 640, 320, 160, 80],
                  hop_sizes=[640, 320, 160, 80, 40, 20],
                  win_lengths=[2560, 1280, 640, 320, 160, 80],
-                 window="hann_window"):'''
+                 window="hann_window"):
 
         super(MultiResolutionSTFTLoss, self).__init__()
         assert len(fft_sizes) == len(hop_sizes) == len(win_lengths)
