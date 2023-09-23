@@ -4,6 +4,8 @@ from torch import nn
 import torch.nn.functional as F
 import filters
 from torch.nn.utils import weight_norm
+from convert_lsp import lpc_to_lsp, lsp_to_lpc
+from rc import lpc2rc, rc2lpc
 
 Fs = 16000
 
@@ -27,6 +29,27 @@ def sig_loss(y_true, y_pred):
     p = y_pred/(1e-15+torch.norm(y_pred, dim=-1, p=2, keepdim=True))
     return torch.mean(1.-torch.sum(p*t, dim=-1))
 
+def interp_lpc(lpc, factor):
+    #print(lpc.shape)
+    f = (np.arange(factor)+.5*((factor+1)%2))/factor
+    lsp = lpc_to_lsp(lpc)
+    #print("lsp0:")
+    #print(lsp)
+    shape = lsp.shape
+    #print("shape is", shape)
+    shape = (shape[0], shape[1]*factor, shape[2])
+    interp_lsp = np.zeros(shape, dtype='float32')
+    for k in range(factor):
+        f = (k+.5*((factor+1)%2))/factor
+        interp = (1-f)*lsp[:,:-1,:] + f*lsp[:,1:,:]
+        interp_lsp[:,factor//2+k:-(factor//2):factor,:] = interp
+    for k in range(factor//2):
+        interp_lsp[:,k,:] = interp_lsp[:,factor//2,:]
+    for k in range((factor+1)//2):
+        interp_lsp[:,-k-1,:] = interp_lsp[:,-(factor+3)//2,:]
+    #print("lsp:")
+    #print(interp_lsp)
+    return lsp_to_lpc(interp_lsp)
 
 def analysis_filter(x, lpc, nb_subframes=4, subframe_size=40, gamma=.9):
     device = x.device
@@ -39,9 +62,9 @@ def analysis_filter(x, lpc, nb_subframes=4, subframe_size=40, gamma=.9):
     x = torch.reshape(x, (batch_size, nb_frames*nb_subframes, subframe_size))
     out = torch.zeros((batch_size, 0), device=device)
 
-    if gamma is not None:
-        bw = gamma**(torch.arange(1, 17, device=device))
-        lpc = lpc*bw[None,None,:]
+    #if gamma is not None:
+    #    bw = gamma**(torch.arange(1, 17, device=device))
+    #    lpc = lpc*bw[None,None,:]
     ones = torch.ones((*(lpc.shape[:-1]), 1), device=device)
     zeros = torch.zeros((*(lpc.shape[:-1]), subframe_size-1), device=device)
     a = torch.cat([ones, lpc], -1)
