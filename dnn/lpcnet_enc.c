@@ -41,6 +41,7 @@
 #include "lpcnet_private.h"
 #include "lpcnet.h"
 #include "os_support.h"
+#include "_kiss_fft_guts.h"
 
 
 int lpcnet_encoder_get_size() {
@@ -104,6 +105,19 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   static const float lp_a[2] = {-1.54220f, 0.70781f};
   OPUS_COPY(aligned_in, &st->analysis_mem[OVERLAP_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
   frame_analysis(st, X, Ex, in);
+  st->if_features[0] = MAX16(-1, MIN16(1, (1.f/64)*(10.f*log10(1e-15 + X[0].r*X[0].r)-6)));
+  for (i=1;i<PITCH_IF_MAX_FREQ;i++) {
+    kiss_fft_cpx prod;
+    float norm_1;
+    C_MULC(prod, X[i], st->prev_if[i]);
+    norm_1 = 1.f/sqrt(1e-15 + prod.r*prod.r + prod.i*prod.i);
+    C_MULBYSCALAR(prod, norm_1);
+    st->if_features[3*i-2] = prod.r;
+    st->if_features[3*i-1] = prod.i;
+    st->if_features[3*i] = MAX16(-1, MIN16(1, (1.f/64)*(10.f*log10(1e-15 + X[i].r*X[i].r + X[i].i*X[i].i)-6)));
+  }
+  OPUS_COPY(st->prev_if, X, PITCH_IF_MAX_FREQ);
+  /*for (i=0;i<88;i++) printf("%f ", st->if_features[i]);printf("\n");*/
   logMax = -2;
   follow = -2;
   for (i=0;i<NB_BANDS;i++) {
@@ -133,6 +147,22 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
     /*printf("%f\n", st->exc_buf[PITCH_MAX_PERIOD+i]);*/
   }
   biquad(&st->lp_buf[PITCH_MAX_PERIOD], st->lp_mem, &st->lp_buf[PITCH_MAX_PERIOD], lp_b, lp_a, FRAME_SIZE);
+  {
+    double ener1;
+    float *buf = st->exc_buf;
+    celt_pitch_xcorr(&buf[PITCH_MAX_PERIOD], buf, xcorr, FRAME_SIZE, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD, st->arch);
+    ener0 = celt_inner_prod_c(&buf[PITCH_MAX_PERIOD], &buf[PITCH_MAX_PERIOD], FRAME_SIZE);
+    ener1 = celt_inner_prod_c(&buf[0], &buf[0], FRAME_SIZE-1);
+    /*printf("%f\n", st->frame_weight[sub]);*/
+    for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
+      ener1 += buf[i+FRAME_SIZE-1]*buf[i+FRAME_SIZE-1];
+      ener = 1 + ener0 + ener1;
+      st->xcorr_features[i] = 2*xcorr[i] / ener;
+      ener1 -= buf[i]*buf[i];
+      /*printf("%f ", st->xcorr_features[i]);*/
+    }
+    /*printf("\n");*/
+  }
   /* Cross-correlation on half-frames. */
   for (sub=0;sub<2;sub++) {
     int off = sub*FRAME_SIZE/2;

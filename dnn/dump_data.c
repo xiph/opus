@@ -134,6 +134,7 @@ int main(int argc, char **argv) {
   float noise_std=0;
   int training = -1;
   int burg = 0;
+  int pitch = 0;
   srand(getpid());
   st = lpcnet_encoder_create();
   argv0=argv[0];
@@ -143,6 +144,14 @@ int main(int argc, char **argv) {
   }
   if (argc == 4 && strcmp(argv[1], "-btest")==0) {
       burg = 1;
+      training = 0;
+  }
+  if (argc == 5 && strcmp(argv[1], "-ptrain")==0) {
+      pitch = 1;
+      training = 1;
+  }
+  if (argc == 4 && strcmp(argv[1], "-ptest")==0) {
+      pitch = 1;
       training = 0;
   }
   if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
@@ -239,7 +248,18 @@ int main(int argc, char **argv) {
         compute_noise(noisebuf, noise_std);
     }
 
-    process_single_frame(st, ffeat);
+    if (pitch) {
+      signed char pitch_features[PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES];
+      for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
+        pitch_features[i] = floor(.5 + 127.f*st->xcorr_features[i]);
+      }
+      for (i=0;i<PITCH_IF_FEATURES;i++) {
+        pitch_features[i+PITCH_MAX_PERIOD-PITCH_MIN_PERIOD] = floor(.5 + 127.f*st->if_features[i]);
+      }
+      fwrite(pitch_features, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES, 1, ffeat);
+    } else {
+      process_single_frame(st, ffeat);
+    }
     if (fpcm) write_audio(st, pcm, noisebuf, fpcm);
     /*if (fpcm) fwrite(pcm, sizeof(opus_int16), FRAME_SIZE, fpcm);*/
     for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);
