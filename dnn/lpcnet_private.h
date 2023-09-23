@@ -17,6 +17,9 @@
 #define PLC_MAX_FEC 100
 #define MAX_FEATURE_BUFFER_SIZE 4
 
+#define PITCH_IF_MAX_FREQ 30
+#define PITCH_IF_FEATURES (3*PITCH_IF_MAX_FREQ - 2)
+
 struct LPCNetState {
     LPCNetModel model;
     int arch;
@@ -44,6 +47,9 @@ struct LPCNetEncState{
   int arch;
   float analysis_mem[OVERLAP_SIZE];
   float mem_preemph;
+  kiss_fft_cpx prev_if[PITCH_IF_MAX_FREQ];
+  float if_features[PITCH_IF_FEATURES];
+  float xcorr_features[PITCH_MAX_PERIOD - PITCH_MIN_PERIOD];
   float pitch_mem[LPC_ORDER];
   float pitch_filt;
   float xc[2][PITCH_MAX_PERIOD+1];
