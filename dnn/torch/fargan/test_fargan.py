@@ -114,7 +114,7 @@ if __name__ == '__main__':
     periods = torch.tensor(periods).to(device)
     weighting = gamma**np.arange(1, 17)
     lpc = lpc*weighting
-    lpc = fargan.interp_lpc(lpc, 4)
+    lpc = fargan.interp_lpc(torch.tensor(lpc), 4).numpy()
     
     sig, _ = model(features, periods, nb_frames - 4)
     #weighting_vector = np.array([gamma**i for i in range(16,0,-1)])

@@ -4,7 +4,7 @@ from torch import nn
 import torch.nn.functional as F
 import filters
 from torch.nn.utils import weight_norm
-from convert_lsp import lpc_to_lsp, lsp_to_lpc
+#from convert_lsp import lpc_to_lsp, lsp_to_lpc
 from rc import lpc2rc, rc2lpc
 
 Fs = 16000
@@ -31,14 +31,14 @@ def sig_loss(y_true, y_pred):
 
 def interp_lpc(lpc, factor):
     #print(lpc.shape)
-    f = (np.arange(factor)+.5*((factor+1)%2))/factor
-    lsp = lpc_to_lsp(lpc)
+    #f = (np.arange(factor)+.5*((factor+1)%2))/factor
+    lsp = torch.atanh(lpc2rc(lpc))
     #print("lsp0:")
     #print(lsp)
     shape = lsp.shape
     #print("shape is", shape)
     shape = (shape[0], shape[1]*factor, shape[2])
-    interp_lsp = np.zeros(shape, dtype='float32')
+    interp_lsp = torch.zeros(shape, device=lpc.device)
     for k in range(factor):
         f = (k+.5*((factor+1)%2))/factor
         interp = (1-f)*lsp[:,:-1,:] + f*lsp[:,1:,:]
@@ -49,7 +49,7 @@ def interp_lpc(lpc, factor):
         interp_lsp[:,-k-1,:] = interp_lsp[:,-(factor+3)//2,:]
     #print("lsp:")
     #print(interp_lsp)
-    return lsp_to_lpc(interp_lsp)
+    return rc2lpc(torch.tanh(interp_lsp))
 
 def analysis_filter(x, lpc, nb_subframes=4, subframe_size=40, gamma=.9):
     device = x.device

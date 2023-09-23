@@ -52,8 +52,9 @@ class FARGANDataset(torch.utils.data.Dataset):
             lpc = self.lpc[index, 4:, :].copy()
         data = self.data[index, :].copy().astype(np.float32) / 2**15
         periods = self.periods[index, :].copy()
-        lpc=lpc[None,:,:]
-        lpc = fargan.interp_lpc(lpc*(.92**np.arange(1,17)), 4)
-        lpc=lpc[0,:,:]
+        lpc = lpc*(.92**np.arange(1,17))
+        #lpc=lpc[None,:,:]
+        #lpc = fargan.interp_lpc(lpc, 4)
+        #lpc=lpc[0,:,:]
 
         return features, periods, data, lpc
