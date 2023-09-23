@@ -117,6 +117,7 @@ if __name__ == '__main__':
                 #lpc = torch.tensor(fargan.interp_lpc(lpc.numpy(), 4))
                 #print("interp size", lpc.shape)
                 lpc = lpc.to(device)
+                lpc = lpc*(args.gamma**torch.arange(1,17, device=device))
                 lpc = fargan.interp_lpc(lpc, 4)
                 periods = periods.to(device)
                 if (np.random.rand() > 0.1):
