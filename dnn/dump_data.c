@@ -70,7 +70,7 @@ static void rand_resp(float *a, float *b) {
 void compute_noise(int *noise, float noise_std) {
   int i;
   for (i=0;i<FRAME_SIZE;i++) {
-    noise[i] = (int)floor(.5 + noise_std*.707*(log_approx((float)rand()/RAND_MAX)-log_approx((float)rand()/RAND_MAX)));
+    noise[i] = (int)floor(.5 + noise_std*.707*(log_approx(rand()/(float)RAND_MAX)-log_approx(rand()/(float)RAND_MAX)));
   }
 }
 
@@ -135,6 +135,9 @@ int main(int argc, char **argv) {
   int training = -1;
   int burg = 0;
   int pitch = 0;
+  FILE *fnoise = NULL;
+  float noise_gain = 0;
+  long noise_size;
   srand(getpid());
   st = lpcnet_encoder_create();
   argv0=argv[0];
@@ -142,20 +145,25 @@ int main(int argc, char **argv) {
       burg = 1;
       training = 1;
   }
-  if (argc == 4 && strcmp(argv[1], "-btest")==0) {
+  else if (argc == 4 && strcmp(argv[1], "-btest")==0) {
       burg = 1;
       training = 0;
   }
-  if (argc == 5 && strcmp(argv[1], "-ptrain")==0) {
+  else if (argc == 5 && strcmp(argv[1], "-ptrain")==0) {
       pitch = 1;
       training = 1;
+      fnoise = fopen(argv[2], "rb");
+      fseek(fnoise, 0, SEEK_END);
+      noise_size = ftell(fnoise);
+      fseek(fnoise, 0, SEEK_SET);
+      argv++;
   }
-  if (argc == 4 && strcmp(argv[1], "-ptest")==0) {
+  else if (argc == 4 && strcmp(argv[1], "-ptest")==0) {
       pitch = 1;
       training = 0;
   }
-  if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
-  if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
+  else if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
+  else if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
   if (training == -1) {
     fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv0);
     fprintf(stderr, "  or   %s -test <speech> <features out>\n", argv0);
@@ -171,7 +179,7 @@ int main(int argc, char **argv) {
     fprintf(stderr,"Error opening output feature file: %s\n", argv[3]);
     exit(1);
   }
-  if (training) {
+  if (training && !pitch) {
     fpcm = fopen(argv[4], "wb");
     if (fpcm == NULL) {
       fprintf(stderr,"Error opening output PCM file: %s\n", argv[4]);
@@ -218,12 +226,29 @@ int main(int argc, char **argv) {
       speech_gain = pow(10., (-30+(rand()%40))/20.);
       if (rand()&1) speech_gain = -speech_gain;
       if (rand()%20==0) speech_gain *= .01;
-      if (rand()%100==0) speech_gain = 0;
+      if (!pitch && rand()%100==0) speech_gain = 0;
       gain_change_count = 0;
       rand_resp(a_sig, b_sig);
-      tmp1 = (float)rand()/RAND_MAX;
-      tmp2 = (float)rand()/RAND_MAX;
+      tmp1 = rand()/(float)RAND_MAX;
+      tmp2 = rand()/(float)RAND_MAX;
       noise_std = ABS16(-1.5*log(1e-4+tmp1)-.5*log(1e-4+tmp2));
+      if (fnoise != NULL) {
+        long pos;
+        /* Randomize the fraction because rand() only gives us 31 bits. */
+        float frac_pos = rand()/(float)RAND_MAX;
+        pos = (frac_pos*noise_size);
+        /* 32-bit alignment. */
+        pos = pos/4 * 4;
+        if (pos > noise_size-500000) pos = noise_size-500000;
+        noise_gain = pow(10., (-15+(rand()%40))/20.);
+        if (rand()%10==0) noise_gain = 0;
+        fseek(fnoise, pos, SEEK_SET);
+      }
+    }
+    if (fnoise != NULL) {
+      opus_int16 noise[FRAME_SIZE];
+      ret = fread(noise, sizeof(opus_int16), FRAME_SIZE, fnoise);
+      for (i=0;i<FRAME_SIZE;i++) x[i] += noise[i]*noise_gain;
     }
     biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
     biquad(x, mem_resp_x, x, b_sig, a_sig, FRAME_SIZE);
@@ -260,6 +285,7 @@ int main(int argc, char **argv) {
     } else {
       process_single_frame(st, ffeat);
     }
+    /*if(pitch) fwrite(pcm, FRAME_SIZE, 2, stdout);*/
     if (fpcm) write_audio(st, pcm, noisebuf, fpcm);
     /*if (fpcm) fwrite(pcm, sizeof(opus_int16), FRAME_SIZE, fpcm);*/
     for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);
