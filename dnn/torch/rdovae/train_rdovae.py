@@ -231,7 +231,7 @@ if __name__ == '__main__':
                 total_loss = rate_loss + (distortion_loss_hard_quant + distortion_loss_soft_quant) / 2
 
                 if args.enable_first_frame_loss:
-                    total_loss = total_loss + 0.5 * torch.relu(first_frame_loss - distortion_loss_hard_quant)
+                    total_loss = .97*total_loss + 0.03 * first_frame_loss
 
 
                 total_loss.backward()

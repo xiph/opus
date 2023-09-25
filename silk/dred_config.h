@@ -32,7 +32,7 @@
 #define DRED_EXTENSION_ID 126
 
 /* Remove these two completely once DRED gets an extension number assigned. */
-#define DRED_EXPERIMENTAL_VERSION 2
+#define DRED_EXPERIMENTAL_VERSION 3
 #define DRED_EXPERIMENTAL_BYTES 2
 
 
