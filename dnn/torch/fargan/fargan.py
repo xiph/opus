@@ -151,29 +151,28 @@ class FWConv(nn.Module):
         return out, xcat[:,self.in_size:]
 
 class FARGANCond(nn.Module):
-    def __init__(self, feature_dim=20, cond_size=256, pembed_dims=64):
+    def __init__(self, feature_dim=20, cond_size=256, pembed_dims=12):
         super(FARGANCond, self).__init__()
 
         self.feature_dim = feature_dim
         self.cond_size = cond_size
 
-        self.pembed = nn.Embedding(256, pembed_dims)
-        self.fdense1 = nn.Linear(self.feature_dim + pembed_dims, self.cond_size, bias=False)
-        self.fconv1 = nn.Conv1d(self.cond_size, self.cond_size, kernel_size=3, padding='valid', bias=False)
-        self.fconv2 = nn.Conv1d(self.cond_size, self.cond_size, kernel_size=3, padding='valid', bias=False)
-        self.fdense2 = nn.Linear(self.cond_size, 80*4, bias=False)
+        self.pembed = nn.Embedding(224, pembed_dims)
+        self.fdense1 = nn.Linear(self.feature_dim + pembed_dims, 64, bias=False)
+        self.fconv1 = nn.Conv1d(64, 128, kernel_size=3, padding='valid', bias=False)
+        self.fconv2 = nn.Conv1d(128, 80*4, kernel_size=3, padding='valid', bias=False)
 
         self.apply(init_weights)
 
     def forward(self, features, period):
-        p = self.pembed(period)
+        p = self.pembed(period-32)
         features = torch.cat((features, p), -1)
         tmp = torch.tanh(self.fdense1(features))
         tmp = tmp.permute(0, 2, 1)
         tmp = torch.tanh(self.fconv1(tmp))
         tmp = torch.tanh(self.fconv2(tmp))
         tmp = tmp.permute(0, 2, 1)
-        tmp = torch.tanh(self.fdense2(tmp))
+        #tmp = torch.tanh(self.fdense2(tmp))
         return tmp
 
 class FARGANSub(nn.Module):
