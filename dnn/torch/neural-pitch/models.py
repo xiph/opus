@@ -8,7 +8,7 @@ import numpy as np
 
 class large_if_ccode(torch.nn.Module):
 
-    def __init__(self,input_dim = 90,gru_dim = 64,output_dim = 192):
+    def __init__(self,input_dim = 88,gru_dim = 64,output_dim = 192):
         super(large_if_ccode,self).__init__()
 
         self.activation = torch.nn.Tanh()
@@ -89,11 +89,12 @@ class large_joint(torch.nn.Module):
     1D CNN on IF, merge with xcorr, 2D CNN on merged + GRU
     """
 
-    def __init__(self,input_IF_dim = 90,input_xcorr_dim = 257,gru_dim = 64,output_dim = 192):
+    def __init__(self,input_IF_dim = 88,input_xcorr_dim = 224,gru_dim = 64,output_dim = 192):
         super(large_joint,self).__init__()
 
         self.activation = torch.nn.Tanh()
 
+        print("dim=", input_IF_dim)
         self.if_upsample = torch.nn.Sequential(
             torch.nn.Linear(input_IF_dim,64),
             self.activation,
@@ -142,8 +143,8 @@ class large_joint(torch.nn.Module):
         )
 
     def forward(self, x):
-        xcorr_feat = x[:,:,:257]
-        if_feat = x[:,:,257:]
+        xcorr_feat = x[:,:,:224]
+        if_feat = x[:,:,224:]
         # x = torch.cat([xcorr_feat.unsqueeze(-1),self.if_upsample(if_feat).unsqueeze(-1)],axis = -1)
         xcorr_feat = self.conv(xcorr_feat.unsqueeze(-1).permute(0,3,2,1)).squeeze(1).permute(0,2,1)
         if_feat = self.if_upsample(if_feat)
@@ -186,22 +187,29 @@ class loader(torch.utils.data.Dataset):
             return torch.from_numpy(self.if_feat[index,:,:]),torch.from_numpy(self.cents[index]),torch.from_numpy(self.confidence[index])
 
 class loader_joint(torch.utils.data.Dataset):
-      def __init__(self, features_if, file_pitch, features_xcorr,confidence_threshold = 0.4,context = 100, choice_data = 'both'):
-            self.if_feat = np.memmap(features_if, dtype=np.float32).reshape(-1,90)
-            self.xcorr = np.memmap(features_xcorr, dtype=np.float32).reshape(-1,257)
-            self.cents = np.rint(np.load(file_pitch)[0,:]/20)
+      def __init__(self, features, file_pitch, confidence_threshold = 0.4,context = 100, choice_data = 'both'):
+            self.feat = np.memmap(features, mode='r', dtype=np.int8).reshape(-1,312)
+            #Skip first first two frames for dump_data to sync with CREPE
+            self.feat = self.feat[2:,:]
+
+            self.xcorr = self.feat[:,:224]
+            self.if_feat = self.feat[:,224:]
+            ground_truth = np.memmap(file_pitch, mode='r', dtype=np.float32).reshape(-1,2)
+            self.cents = np.rint(60*np.log2(ground_truth[:,0]/62.5))
+            mask = (self.cents>=0).astype('float32') * (self.cents<=180).astype('float32')
             self.cents = np.clip(self.cents,0,179)
-            self.confidence = np.load(file_pitch)[1,:]
+            self.confidence = ground_truth[:,1] * mask
             # Filter confidence for CREPE
             self.confidence[self.confidence < confidence_threshold] = 0
             self.context = context
+            print(np.mean(self.confidence), np.mean(self.cents))
 
             self.choice_data = choice_data
 
             frame_max = self.if_feat.shape[0]//context
-            self.if_feat = np.reshape(self.if_feat[:frame_max*context,:],(frame_max,context,90))
+            self.if_feat = np.reshape(self.if_feat[:frame_max*context,:],(frame_max,context,88))
             self.cents = np.reshape(self.cents[:frame_max*context],(frame_max,context))
-            self.xcorr = np.reshape(self.xcorr[:frame_max*context,:],(frame_max,context,257))
+            self.xcorr = np.reshape(self.xcorr[:frame_max*context,:],(frame_max,context,224))
             # self.cents = np.rint(60*np.log2(256/(self.periods + 1.0e-8))).astype('int')
             # self.cents = np.clip(self.cents,0,239)
             self.confidence = np.reshape(self.confidence[:frame_max*context],(frame_max,context))
@@ -211,8 +219,8 @@ class loader_joint(torch.utils.data.Dataset):
 
       def __getitem__(self, index):
             if self.choice_data == 'both':
-                return torch.cat([torch.from_numpy(self.xcorr[index,:,:]),torch.from_numpy(self.if_feat[index,:,:])],dim=-1),torch.from_numpy(self.cents[index]),torch.from_numpy(self.confidence[index])
+                return torch.cat([torch.from_numpy((1./127)*self.xcorr[index,:,:]),torch.from_numpy((1./127)*self.if_feat[index,:,:])],dim=-1),torch.from_numpy(self.cents[index]),torch.from_numpy(self.confidence[index])
             elif self.choice_data == 'if':
-                return torch.from_numpy(self.if_feat[index,:,:]),torch.from_numpy(self.cents[index]),torch.from_numpy(self.confidence[index])
+                return torch.from_numpy((1./127)*self.if_feat[index,:,:]),torch.from_numpy(self.cents[index]),torch.from_numpy(self.confidence[index])
             else:
-                return torch.from_numpy(self.xcorr[index,:,:]),torch.from_numpy(self.cents[index]),torch.from_numpy(self.confidence[index])
+                return torch.from_numpy((1./127)*self.xcorr[index,:,:]),torch.from_numpy(self.cents[index]),torch.from_numpy(self.confidence[index])
