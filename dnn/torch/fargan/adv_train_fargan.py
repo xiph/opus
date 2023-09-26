@@ -48,11 +48,11 @@ model_group.add_argument('--gamma', type=float, help="Use A(z/gamma), default: 0
 training_group = parser.add_argument_group(title="training parameters")
 training_group.add_argument('--batch-size', type=int, help="batch size, default: 128", default=128)
 training_group.add_argument('--lr', type=float, help='learning rate, default: 5e-4', default=5e-4)
-training_group.add_argument('--epochs', type=int, help='number of training epochs, default: 20', default=20)
+training_group.add_argument('--epochs', type=int, help='number of training epochs, default: 50', default=50)
 training_group.add_argument('--sequence-length', type=int, help='sequence length, default: 60', default=60)
 training_group.add_argument('--lr-decay', type=float, help='learning rate decay factor, default: 0.0', default=0.0)
 training_group.add_argument('--initial-checkpoint', type=str, help='initial checkpoint to start training from, default: None', default=None)
-training_group.add_argument('--reg-weight', type=float, help='regression loss weight, default: 0.6', default=0.6)
+training_group.add_argument('--reg-weight', type=float, help='regression loss weight, default: 1.0', default=1.0)
 training_group.add_argument('--fmap-weight', type=float, help='feature matchin loss weight, default: 1.0', default=1.)
 
 args = parser.parse_args()
