@@ -36,7 +36,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../weight-exchange'))
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('checkpoint', type=str, help='rdovae model checkpoint')
+parser.add_argument('checkpoint', type=str, help='model checkpoint')
 parser.add_argument('output_dir', type=str, help='output folder')
 
 args = parser.parse_args()
@@ -85,5 +85,6 @@ if __name__ == "__main__":
 
     os.makedirs(args.output_dir, exist_ok=True)
     model = large_if_ccode()
-    model.load_state_dict(torch.load(args.checkpoint,map_location='cpu'))
+    checkpoint = torch.load(args.checkpoint ,map_location='cpu')
+    model.load_state_dict(checkpoint['state_dict'])
     c_export(args, model)
