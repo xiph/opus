@@ -4,7 +4,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('features', type=str, help='Features generated from dump_data')
 parser.add_argument('data', type=str, help='Data generated from dump_data (offset by 5ms)')
 parser.add_argument('output', type=str, help='output .f32 feature file with replaced neural pitch')
-parser.add_argument('pth_file', type=str, help='.pth file to use for pitch')
+parser.add_argument('checkpoint', type=str, help='model checkpoint file')
 parser.add_argument('path_lpcnet_extractor', type=str, help='path to LPCNet extractor object file (generated on compilation)')
 parser.add_argument('--device', type=str, help='compute device',default = None,required = False)
 parser.add_argument('--replace_xcorr', type = bool, default = False, help='Replace LPCNet xcorr with updated one')
@@ -26,21 +26,20 @@ if device is not None:
     device = torch.device(args.device)
 
 # Loading the appropriate model
-config_path = os.path.dirname(args.pth_file) + '/' + os.path.basename(args.pth_file).split('_')[0] + '_' + 'config_' + os.path.basename(args.pth_file).split('_')[-1][:-4] + '.json'
-with open(config_path) as json_file:
-    dict_params = json.load(json_file)
+checkpoint = torch.load(args.checkpoint, map_location='cpu')
+dict_params = checkpoint['config']
 
 if dict_params['data_format'] == 'if':
     from models import large_if_ccode as model
-    pitch_nn = model(dict_params['freq_keep']*3,dict_params['gru_dim'],dict_params['output_dim']).to(device)
+    pitch_nn = model(dict_params['freq_keep']*3,dict_params['gru_dim'],dict_params['output_dim'])
 elif dict_params['data_format'] == 'xcorr':
     from models import large_xcorr as model
-    pitch_nn = model(dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim']).to(device)
+    pitch_nn = model(dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim'])
 else:
     from models import large_joint as model
-    pitch_nn = model(dict_params['freq_keep']*3,dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim']).to(device)
+    pitch_nn = model(dict_params['freq_keep']*3,dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim'])
 
-pitch_nn.load_state_dict(torch.load(args.pth_file))
+pitch_nn.load_state_dict(checkpoint['state_dict'])
 pitch_nn = pitch_nn.to(device)
 
 N = dict_params['window_size']
