@@ -326,10 +326,124 @@ lavoce_setup_adv = {
 }
 
 
+lavocecont_setup = {
+    'data': {
+        'frames_per_sample': 100,
+        'target': 'signal'
+    },
+    'dataset': '/local/datasets/lpcnet_large/training',
+    'model': {
+        'args': [],
+        'kwargs': {
+            'comb_gain_limit_db': 10,
+            'cond_dim': 256,
+            'conv_gain_limits_db': [-12, 12],
+            'global_gain_limits_db': [-6, 6],
+            'kernel_size': 15,
+            'num_features': 19,
+            'pitch_embedding_dim': 64,
+            'pitch_max': 300,
+            'preemph': 0.85,
+            'pulses': True
+            },
+        'name': 'lavocecont'
+    },
+    'training': {
+        'batch_size': 256,
+        'epochs': 50,
+        'loss': {
+            'w_l1': 0,
+            'w_l2': 0,
+            'w_lm': 0,
+            'w_logmel': 0,
+            'w_sc': 0,
+            'w_slm': 2,
+            'w_sxcorr': 1,
+            'w_wsc': 0,
+            'w_xcorr': 0
+        },
+        'lr': 0.0005,
+        'lr_decay_factor': 2.5e-05,
+        'cont_ratio': 0.8,
+        'pre_frames_min': 8,
+        'pre_frames_max': 64
+    },
+    'validation_dataset': '/local/datasets/lpcnet_large/validation'
+}
+
+lavocecont_setup_adv = {
+    'data': {
+        'frames_per_sample': 100,
+        'target': 'signal'
+    },
+    'dataset': '/local/datasets/lpcnet_large/training',
+    'discriminator': {
+        'args': [],
+        'kwargs': {
+            'architecture': 'free',
+            'design': 'f_down',
+            'fft_sizes_16k': [
+                64,
+                128,
+                256,
+                512,
+                1024,
+                2048,
+            ],
+            'freq_roi': [0, 7400],
+            'fs': 16000,
+            'max_channels': 256,
+            'noise_gain': 0.0,
+        },
+        'name': 'fdmresdisc',
+    },
+    'model': {
+        'args': [],
+        'kwargs': {
+            'comb_gain_limit_db': 10,
+            'cond_dim': 256,
+            'conv_gain_limits_db': [-12, 12],
+            'global_gain_limits_db': [-6, 6],
+            'kernel_size': 15,
+            'num_features': 19,
+            'pitch_embedding_dim': 64,
+            'pitch_max': 300,
+            'preemph': 0.85,
+            'pulses': True
+            },
+        'name': 'lavocecont'
+    },
+    'training': {
+        'batch_size': 64,
+        'epochs': 50,
+        'gen_lr_reduction': 1,
+        'lambda_feat': 1.0,
+        'lambda_reg': 0.6,
+        'loss': {
+            'w_l1': 0,
+            'w_l2': 0,
+            'w_lm': 0,
+            'w_logmel': 0,
+            'w_sc': 0,
+            'w_slm': 2,
+            'w_sxcorr': 1,
+            'w_wsc': 0,
+            'w_xcorr': 0
+        },
+        'lr': 0.0001,
+        'lr_decay_factor': 2.5e-09,
+        'cont_ratio': 0.8,
+        'pre_frames_min': 8,
+        'pre_frames_max': 50
+    },
+}
+
 setup_dict = {
     'lace': lace_setup,
     'nolace': nolace_setup,
     'nolace_adv': nolace_setup_adv,
     'lavoce': lavoce_setup,
-    'lavoce_adv': lavoce_setup_adv
+    'lavoce_adv': lavoce_setup_adv,
+    'lavocecont': lavocecont_setup,
+    'lavocecont_adv': lavocecont_setup_adv
 }

@@ -205,9 +205,9 @@ class LaVoceCont(nn.Module):
 
         batch_size = features.size(0)
         num_frames = features.size(1)
-        if len(signal.shape) < 3: signal = signal.unsqueeze(1)
 
         if signal is not None:
+            if len(signal.shape) < 3: signal = signal.unsqueeze(1)
             pre_frames     = signal.size(-1) // self.FEATURE_FRAME_SIZE
             phase_features = calculate_phase_features(signal, periods[:, :pre_frames].squeeze(-1))
             full_phase_features = torch.cat(

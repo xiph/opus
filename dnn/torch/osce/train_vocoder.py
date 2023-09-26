@@ -143,6 +143,9 @@ batch_size      = setup['training']['batch_size']
 epochs          = setup['training']['epochs']
 lr              = setup['training']['lr']
 lr_decay_factor = setup['training']['lr_decay_factor']
+cont_ratio      = setup['training'].get('cont_ratio', 0)
+pre_frames_min  = setup['training'].get('pre_frames_min', 8)
+pre_frames_max  = setup['training'].get('pre_frames_max', 50)
 
 # load training dataset
 data_config = setup['data']
@@ -253,7 +256,15 @@ best_loss = 1e9
 
 for ep in range(1, epochs + 1):
     print(f"training epoch {ep}...")
-    new_loss = train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler)
+    new_loss = train_one_epoch(model,
+                               criterion,
+                               optimizer,
+                               dataloader,
+                               device,
+                               scheduler,
+                               cont_ratio=cont_ratio,
+                               pre_frames_min=pre_frames_min,
+                               pre_frames_max=pre_frames_max)
 
 
     # save checkpoint

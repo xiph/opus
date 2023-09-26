@@ -152,7 +152,9 @@ lr_gen          = lr * setup['training']['gen_lr_reduction']
 lambda_feat     =  setup['training']['lambda_feat']
 lambda_reg      = setup['training']['lambda_reg']
 adv_target      = setup['training'].get('adv_target', 'target')
-
+cont_ratio      = setup['training'].get('cont_ratio', 0)
+pre_frames_min  = setup['training'].get('pre_frames_min', 8)
+pre_frames_max  = setup['training'].get('pre_frames_max', 50)
 
 # load training dataset
 data_config = setup['data']
@@ -355,7 +357,14 @@ for ep in range(1, epochs + 1):
             disc_target = batch[adv_target].to(device)
 
             # calculate model output
-            output = model(batch['features'], batch['periods'])
+            if random.random() < cont_ratio:
+                pre_frames = random.randint(pre_frames_min // 2, pre_frames_max // 2) * 2
+                pre_sig = target[:, :pre_frames * model.FEATURE_FRAME_SIZE]
+            else:
+                pre_frames = 0
+                pre_sig = None
+
+            output = model(batch['features'], batch['periods'], signal=pre_sig)
 
             # discriminator update
             scores_gen = disc(output.detach())

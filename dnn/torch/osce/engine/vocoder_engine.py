@@ -1,8 +1,9 @@
 import torch
 from tqdm import tqdm
 import sys
+import random
 
-def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, pre_frames=4, log_interval=10):
+def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, cont_ratio=0.5, pre_frames_min=8, pre_frames_max=64, log_interval=10):
 
     model.to(device)
     model.train()
@@ -26,10 +27,13 @@ def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, 
             target = batch['target']
 
             # calculate model output
-            if pre_frames > 0:
+            if random.random() < cont_ratio:
+                pre_frames = random.randint(pre_frames_min // 2, pre_frames_max // 2) * 2
                 pre_sig = target[:, :pre_frames * model.FEATURE_FRAME_SIZE]
             else:
+                pre_frames = 0
                 pre_sig = None
+
             output = model(batch['features'], batch['periods'], signal=pre_sig)
 
             # calculate loss
