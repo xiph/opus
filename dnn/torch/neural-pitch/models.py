@@ -189,9 +189,6 @@ class loader(torch.utils.data.Dataset):
 class loader_joint(torch.utils.data.Dataset):
       def __init__(self, features, file_pitch, confidence_threshold = 0.4,context = 100, choice_data = 'both'):
             self.feat = np.memmap(features, mode='r', dtype=np.int8).reshape(-1,312)
-            #Skip first first two frames for dump_data to sync with CREPE
-            self.feat = self.feat[2:,:]
-
             self.xcorr = self.feat[:,:224]
             self.if_feat = self.feat[:,224:]
             ground_truth = np.memmap(file_pitch, mode='r', dtype=np.float32).reshape(-1,2)
