@@ -125,9 +125,7 @@ int main(int argc, char **argv) {
   opus_int16 pcm[FRAME_SIZE]={0};
   int noisebuf[FRAME_SIZE]={0};
   opus_int16 tmp[FRAME_SIZE] = {0};
-  float savedX[FRAME_SIZE] = {0};
   float speech_gain=1;
-  int last_silent = 1;
   float old_speech_gain = 1;
   int one_pass_completed = 0;
   LPCNetEncState *st;
@@ -137,7 +135,7 @@ int main(int argc, char **argv) {
   int pitch = 0;
   FILE *fnoise = NULL;
   float noise_gain = 0;
-  long noise_size;
+  long noise_size=0;
   srand(getpid());
   st = lpcnet_encoder_create();
   argv0=argv[0];
@@ -187,10 +185,7 @@ int main(int argc, char **argv) {
     }
   }
   while (1) {
-    float E=0;
-    int silent;
     size_t ret;
-    for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
     ret = fread(tmp, sizeof(opus_int16), FRAME_SIZE, f1);
     if (feof(f1) || ret != FRAME_SIZE) {
       if (!training) break;
@@ -202,24 +197,7 @@ int main(int argc, char **argv) {
       }
       one_pass_completed = 1;
     }
-    for (i=0;i<FRAME_SIZE;i++) E += tmp[i]*(float)tmp[i];
-    if (0 && training) {
-      silent = E < 5000 || (last_silent && E < 20000);
-      if (!last_silent && silent) {
-        for (i=0;i<FRAME_SIZE;i++) savedX[i] = x[i];
-      }
-      if (last_silent && !silent) {
-          for (i=0;i<FRAME_SIZE;i++) {
-            float f = (float)i/FRAME_SIZE;
-            tmp[i] = (int)floor(.5 + f*tmp[i] + (1-f)*savedX[i]);
-          }
-      }
-      if (last_silent) {
-        last_silent = silent;
-        continue;
-      }
-      last_silent = silent;
-    }
+    for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
     if (count*FRAME_SIZE_5MS>=10000000 && one_pass_completed) break;
     if (training && ++gain_change_count > 2821) {
       float tmp1, tmp2;
