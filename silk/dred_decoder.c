@@ -68,7 +68,7 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   /*printf("%d %d %d\n", dred_offset, q0, dQ);*/
 
   //dred_decode_state(&ec, dec->state);
-  state_qoffset = q0*(DRED_LATENT_DIM+DRED_STATE_DIM) + DRED_STATE_DIM;
+  state_qoffset = q0*(DRED_LATENT_DIM+DRED_STATE_DIM) + DRED_LATENT_DIM;
   dred_decode_latents(
       &ec,
       dec->state,
