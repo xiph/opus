@@ -32,6 +32,7 @@ from .no_lace import NoLACE
 from .lavoce import LaVoce
 from .lavoce_cont import LaVoceCont
 from .lavoce_400 import LaVoce400
+from .lavoce_400_ar import LaVoce400AR
 from .fd_discriminator import TFDMultiResolutionDiscriminator as FDMResDisc
 
 model_dict = {
@@ -41,4 +42,5 @@ model_dict = {
     'lavocecont': LaVoceCont,
     'lavoce400': LaVoce400,
     'fdmresdisc': FDMResDisc,
+    'lavoce400ar': LaVoce400AR
 }

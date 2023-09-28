@@ -30,6 +30,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+import math as m
 
 from utils.endoscopy import write_data
 
@@ -121,6 +122,8 @@ class LimitedAdaptiveConv1d(nn.Module):
 
         self.overlap_win = nn.Parameter(.5 + .5 * torch.cos((torch.arange(self.overlap_size) + 0.5) * torch.pi / overlap_size), requires_grad=False)
 
+        self.fft_size = 256
+
 
     def flop_count(self, rate):
         frame_rate = rate / self.frame_size
@@ -146,7 +149,7 @@ class LimitedAdaptiveConv1d(nn.Module):
 
         return count
 
-    def forward(self, x, features, debug=False):
+    def forward(self, x, features, state=None, return_state=False, debug=False):
         """ adaptive 1d convolution
 
 
@@ -197,9 +200,21 @@ class LimitedAdaptiveConv1d(nn.Module):
 
         conv_kernels = conv_kernels * conv_gains.view(batch_size, num_frames, self.out_channels, 1, 1)
 
+        if state is not None:
+            last_kernel, last_x_frame = state
+            conv_kernels = torch.cat((last_kernel, conv_kernels), dim=1)
+            x = torch.cat((last_x_frame, x), dim=-1)
+
+        new_state = (conv_kernels[:, -1:, :, :, :], x[:, :, -self.frame_size:])
+
         conv_kernels = conv_kernels.permute(0, 2, 3, 1, 4)
 
-        output = adaconv_kernel(x, conv_kernels, win1, fft_size=256)
+        output = adaconv_kernel(x, conv_kernels, win1, fft_size=self.fft_size)
 
+        if state is not None:
+            output = output[..., self.frame_size:]
 
-        return output
+        if return_state:
+            return output, new_state
+        else:
+            return output

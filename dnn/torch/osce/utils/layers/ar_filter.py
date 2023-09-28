@@ -33,7 +33,7 @@ import torch.nn.functional as F
 
 from utils.endoscopy import write_data
 
-class LimitedAdaptiveComb1d(nn.Module):
+class ARFilter(nn.Module):
     COUNTER = 1
 
     def __init__(self,
@@ -41,12 +41,10 @@ class LimitedAdaptiveComb1d(nn.Module):
                  feature_dim,
                  frame_size=160,
                  overlap_size=40,
-                 use_bias=True,
                  padding=None,
                  max_lag=256,
                  name=None,
                  gain_limit_db=10,
-                 global_gain_limits_db=[-6, 6],
                  norm_p=2):
         """
 
@@ -62,24 +60,18 @@ class LimitedAdaptiveComb1d(nn.Module):
         overlap_size : int, optional
             overlap size for filter cross-fade. Cross-fade is done on the first overlap_size samples of every frame, defaults to 40
 
-        use_bias : bool, optional
-            if true, biases will be added to output channels. Defaults to True
-
         padding : List[int, int], optional
             left and right padding. Defaults to [(kernel_size - 1) // 2, kernel_size - 1 - (kernel_size - 1) // 2]
 
         max_lag : int, optional
             maximal pitch lag, defaults to 256
 
-        have_a0 : bool, optional
-            If true, the filter coefficient a0 will be learned as a positive gain (requires in_channels == out_channels). Otherwise, a0 is set to 0. Defaults to False
-
         name: str or None, optional
             specifies a name attribute for the module. If None the name is auto generated as comb_1d_COUNT, where COUNT is an instance counter for LimitedAdaptiveComb1d
 
         """
 
-        super(LimitedAdaptiveComb1d, self).__init__()
+        super().__init__()
 
         self.in_channels   = 1
         self.out_channels  = 1
@@ -87,33 +79,24 @@ class LimitedAdaptiveComb1d(nn.Module):
         self.kernel_size   = kernel_size
         self.frame_size    = frame_size
         self.overlap_size  = overlap_size
-        self.use_bias      = use_bias
         self.max_lag       = max_lag
         self.limit_db      = gain_limit_db
         self.norm_p        = norm_p
 
         if name is None:
-            self.name = "limited_adaptive_comb1d_" + str(LimitedAdaptiveComb1d.COUNTER)
-            LimitedAdaptiveComb1d.COUNTER += 1
+            self.name = "ar_filter_" + str(self.COUNTER)
+            self.COUNTER += 1
         else:
             self.name = name
 
         # network for generating convolution weights
         self.conv_kernel = nn.Linear(feature_dim, kernel_size)
 
-        if self.use_bias:
-            self.conv_bias = nn.Linear(feature_dim,1)
-
         # comb filter gain
         self.filter_gain = nn.Linear(feature_dim, 1)
         self.log_gain_limit = gain_limit_db * 0.11512925464970229
         with torch.no_grad():
-            self.filter_gain.bias[:] = max(0.1, 4 + self.log_gain_limit)
-
-        self.global_filter_gain = nn.Linear(feature_dim, 1)
-        log_min, log_max = global_gain_limits_db[0] * 0.11512925464970229, global_gain_limits_db[1] * 0.11512925464970229
-        self.filter_gain_a = (log_max - log_min) / 2
-        self.filter_gain_b = (log_max + log_min) / 2
+            self.filter_gain.bias[:] = max(0.1, 0.7 + self.log_gain_limit)
 
         if type(padding) == type(None):
             self.padding = [kernel_size // 2, kernel_size - 1 - kernel_size // 2]
@@ -149,17 +132,14 @@ class LimitedAdaptiveComb1d(nn.Module):
         win2 = self.overlap_win
 
         if num_samples // self.frame_size != num_frames:
-            raise ValueError('non matching sizes in AdaptiveComb1d.forward')
+            raise ValueError('non matching sizes in ARFilter.forward')
 
         conv_kernels = self.conv_kernel(features).reshape((batch_size, num_frames, self.out_channels, self.in_channels, self.kernel_size))
         conv_kernels = conv_kernels / (1e-6 + torch.norm(conv_kernels, p=self.norm_p, dim=-1, keepdim=True))
 
-        if self.use_bias:
-            conv_biases  = self.conv_bias(features).permute(0, 2, 1)
 
         conv_gains   = torch.exp(- torch.relu(self.filter_gain(features).permute(0, 2, 1)) + self.log_gain_limit)
-        # calculate gains
-        global_conv_gains   = torch.exp(self.filter_gain_a * torch.tanh(self.global_filter_gain(features).permute(0, 2, 1)) + self.filter_gain_b)
+
 
         if debug and batch_size == 1:
             key = self.name + "_gains"
@@ -168,18 +148,15 @@ class LimitedAdaptiveComb1d(nn.Module):
             write_data(key, conv_kernels.detach().squeeze().cpu().numpy(), 16000 // self.frame_size)
             key = self.name + "_lags"
             write_data(key, lags.detach().squeeze().cpu().numpy(), 16000 // self.frame_size)
-            key = self.name + "_global_conv_gains"
-            write_data(key, global_conv_gains.detach().squeeze().cpu().numpy(), 16000 // self.frame_size)
 
 
         # frame-wise convolution with overlap-add
         output_frames = []
         overlap_mem = torch.zeros((batch_size, self.out_channels, self.overlap_size), device=x.device)
         if state is not None:
-            last_kernel, last_gain, last_global_gain, last_lag, last_x = state
+            last_kernel, last_gain, last_lag, last_x = state
             conv_kernels = torch.cat((last_kernel, conv_kernels), dim=1)
             conv_gains = torch.cat((last_gain, conv_gains), dim=-1)
-            global_conv_gains = torch.cat((last_global_gain, global_conv_gains), dim=-1)
             lags = torch.cat((last_lag, lags), dim=-1)
 
             x = torch.cat((last_x, x), dim=-1)
@@ -192,7 +169,7 @@ class LimitedAdaptiveComb1d(nn.Module):
             x = F.pad(x, [self.max_lag, self.overlap_size])
 
 
-        new_state = (conv_kernels[:, -1:, ...], conv_gains[..., -1:], global_conv_gains[..., -1:], lags[..., -1:], x[..., -(self.max_lag + self.padding[0] + self.frame_size + self.padding[1] + self.overlap_size) : -(self.padding[1] + self.overlap_size)])
+        new_state = (conv_kernels[:, -1:, ...], conv_gains[..., -1:], lags[..., -1:], x[..., -(self.max_lag + self.padding[0] + self.frame_size + self.padding[1] + self.overlap_size) : -(self.padding[1] + self.overlap_size)])
 
         idx = torch.arange(frame_size + kernel_size - 1 + overlap_size).to(x.device).view(1, 1, -1)
         idx = torch.repeat_interleave(idx, batch_size, 0)
@@ -201,17 +178,10 @@ class LimitedAdaptiveComb1d(nn.Module):
 
         for i in range(num_frames):
 
-            cidx = idx + i * frame_size + self.max_lag - lags[..., i].view(batch_size, 1, 1)
+            cidx = idx + i * frame_size + self.max_lag - (lags[..., i].view(batch_size, 1, 1) - frame_size)
             xx = torch.gather(x, -1, cidx).reshape((1, batch_size * self.in_channels, -1))
 
-            new_chunk = torch.conv1d(xx, conv_kernels[:, i, ...].reshape((batch_size * self.out_channels, self.in_channels, self.kernel_size)), groups=batch_size).reshape(batch_size, self.out_channels, -1)
-
-
-            if self.use_bias:
-                new_chunk = new_chunk + conv_biases[:, :, i : i + 1]
-
-            offset = self.max_lag + self.padding[0]
-            new_chunk = global_conv_gains[:, :, i : i + 1] * (new_chunk * conv_gains[:, :, i : i + 1] + x[..., offset + i * frame_size : offset + (i + 1) * frame_size + overlap_size])
+            new_chunk = torch.conv1d(xx, conv_kernels[:, i, ...].reshape((batch_size * self.out_channels, self.in_channels, self.kernel_size)), groups=batch_size).reshape(batch_size, self.out_channels, -1) * conv_gains[:, :, i : i + 1]
 
             # overlapping part
             output_frames.append(new_chunk[:, :, : overlap_size] * win1 + overlap_mem * win2)
@@ -246,9 +216,6 @@ class LimitedAdaptiveComb1d(nn.Module):
         count += 2 * (self.in_channels * self.out_channels * self.kernel_size * (1 + overhead) * rate)
         count += 2 * (frame_rate * self.feature_dim * self.out_channels) + rate * (1 + overhead) * self.out_channels
 
-        # bias computation
-        if self.use_bias:
-            count += 2 * (frame_rate * self.feature_dim) + rate * (1 + overhead)
 
         # a0 computation
         count += 2 * (frame_rate * self.feature_dim * self.out_channels) + rate * (1 + overhead) * self.out_channels

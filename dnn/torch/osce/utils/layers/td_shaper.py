@@ -87,7 +87,7 @@ class TDShaper(nn.Module):
 
         return x
 
-    def forward(self, x, features, debug=False):
+    def forward(self, x, features, state=None, return_state=False, debug=False):
         """ innovate signal parts with temporal shaping
 
 
@@ -101,28 +101,31 @@ class TDShaper(nn.Module):
 
         """
 
+
         batch_size = x.size(0)
         num_frames = features.size(1)
         num_samples = x.size(2)
-        frame_size = self.frame_size
 
         # generate temporal envelope
         tenv = self.envelope_transform(x)
 
         # feature path
-        f = torch.cat((features, tenv), dim=-1)
-        f = F.pad(f.permute(0, 2, 1), [1, 0])
+        f = torch.cat((features, tenv), dim=-1).permute(0, 2, 1)
+        if state is not None:
+            f = torch.cat((state, f), dim=-1)
+        else:
+            f = F.pad(f, [2, 0])
         alpha = F.leaky_relu(self.feature_alpha1(f), 0.2)
-        alpha = torch.exp(self.feature_alpha2(F.pad(alpha, [1, 0])))
+        alpha = torch.exp(self.feature_alpha2(alpha))
         alpha = alpha.permute(0, 2, 1)
 
         if self.innovate:
             inno_alpha = F.leaky_relu(self.feature_alpha1b(f), 0.2)
-            inno_alpha = torch.exp(self.feature_alpha2b(F.pad(inno_alpha, [1, 0])))
+            inno_alpha = torch.exp(self.feature_alpha2b(inno_alpha))
             inno_alpha = inno_alpha.permute(0, 2, 1)
 
             inno_x = F.leaky_relu(self.feature_alpha1c(f), 0.2)
-            inno_x = torch.tanh(self.feature_alpha2c(F.pad(inno_x, [1, 0])))
+            inno_x = torch.tanh(self.feature_alpha2c(inno_x))
             inno_x = inno_x.permute(0, 2, 1)
 
         # signal path
@@ -132,4 +135,10 @@ class TDShaper(nn.Module):
         if self.innovate:
             y = y + inno_alpha * inno_x
 
-        return y.reshape(batch_size, 1, num_samples)
+        y = y.reshape(batch_size, 1, num_samples)
+
+        if return_state:
+            new_state = f[..., -2:]
+            return y, new_state
+        else:
+            return y
