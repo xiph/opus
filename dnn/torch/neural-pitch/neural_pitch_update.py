@@ -20,6 +20,7 @@ import json
 import torch
 import tqdm
 
+from models import PitchDNNIF, PitchDNNXcorr, PitchDNN
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if device is not None:
@@ -30,14 +31,11 @@ checkpoint = torch.load(args.checkpoint, map_location='cpu')
 dict_params = checkpoint['config']
 
 if dict_params['data_format'] == 'if':
-    from models import large_if_ccode as model
-    pitch_nn = model(dict_params['freq_keep']*3,dict_params['gru_dim'],dict_params['output_dim'])
+    pitch_nn = PitchDNNIF(dict_params['freq_keep']*3, dict_params['gru_dim'], dict_params['output_dim'])
 elif dict_params['data_format'] == 'xcorr':
-    from models import large_xcorr as model
-    pitch_nn = model(dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim'])
+    pitch_nn = PitchDNNXcorr(dict_params['xcorr_dim'], dict_params['gru_dim'], dict_params['output_dim'])
 else:
-    from models import large_joint as model
-    pitch_nn = model(dict_params['freq_keep']*3,dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim'])
+    pitch_nn = PitchDNN(dict_params['freq_keep']*3, dict_params['xcorr_dim'], dict_params['gru_dim'], dict_params['output_dim'])
 
 pitch_nn.load_state_dict(checkpoint['state_dict'])
 pitch_nn = pitch_nn.to(device)
@@ -46,21 +44,7 @@ N = dict_params['window_size']
 H = dict_params['hop_factor']
 freq_keep = dict_params['freq_keep']
 
-# import os
-# import argparse
-
-
-
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["OMP_NUM_THREADS"] = "16"
-
-# parser = argparse.ArgumentParser()
-
-# parser.add_argument('features', type=str, help='input features')
-# parser.add_argument('data', type=str, help='input data')
-# parser.add_argument('output', type=str, help='output features')
-# parser.add_argument('--add-confidence', action='store_true', help='add CREPE confidence to features')
-# parser.add_argument('--viterbi', action='store_true', help='enable viterbi algo for pitch tracking')
 
 
 def run_lpc(signal, lpcs, frame_length=160):
@@ -85,9 +69,6 @@ if __name__ == "__main__":
 
     assert feature_dim == 36
 
-    # if args.add_confidence:
-        # feature_dim += 1
-
     output  = np.memmap(args.output, dtype=np.float32, shape=(num_frames, feature_dim), mode='w+')
     output[:, :36] = features
 
@@ -96,7 +77,6 @@ if __name__ == "__main__":
     sig = data[:, 1]
 
     # parameters
-    # use_viterbi=args.viterbi
 
     # constants
     pitch_min = 32
@@ -125,7 +105,6 @@ if __name__ == "__main__":
             break
         chunk = np.concatenate((history, sig[signal_start:signal_stop]))
         chunk_la = np.concatenate((history, sig[signal_start:signal_stop + 80]))
-        # time, frequency, confidence, _ = crepe.predict(chunk, fs, center=True, viterbi=True,verbose=0)
 
         # Feature computation
         spec = stft(x = np.concatenate([np.zeros(80),chunk_la/(2**15 - 1)]), w = 'boxcar', N = N, H = H).T
@@ -160,20 +139,14 @@ if __name__ == "__main__":
         frequency = 62.5*2**(model_cents/1200)
 
         frequency  = frequency[overlap_frames : overlap_frames + frame_stop - frame_start]
-        # confidence = confidence[overlap_frames : overlap_frames + frame_stop - frame_start]
 
         # convert frequencies to periods
         periods    = np.round(fs / frequency)
 
-        # adjust to pitch range
-        # confidence[periods < pitch_min] = 0
-        # confidence[periods > pitch_max] = 0
         periods = np.clip(periods, pitch_min, pitch_max)
 
         output[frame_start:frame_stop, pitch_position] = (periods - 100) / 50
 
-        # if args.replace_xcorr:
-            # re-calculate xcorr
         frame_offset = (pitch_max + frame_length - 1) // frame_length
         offset = frame_offset * frame_length
         padding = lpc_order

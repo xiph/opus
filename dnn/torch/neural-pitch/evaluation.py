@@ -21,6 +21,8 @@ from utils import stft, random_filter, feature_xform
 import subprocess
 import crepe
 
+from models import PitchDNN, PitchDNNIF, PitchDNNXcorr
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def rca(reference,input,voicing,thresh = 25):
@@ -42,20 +44,6 @@ def rpa(model,device = 'cpu',data_format = 'if'):
     # random_shuffle = list(np.random.permutation(len(list_files)))
     random.shuffle(list_files)
     list_files = list_files[:1000]
-
-    # C_lp = 0
-    # C_lp_m = 0
-    # C_lp_f = 0
-    # list_rca_model_lp = []
-    # list_rca_male_lp = []
-    # list_rca_female_lp = []
-
-    # C_hp = 0
-    # C_hp_m = 0
-    # C_hp_f = 0
-    # list_rca_model_hp = []
-    # list_rca_male_hp = []
-    # list_rca_female_hp = []
 
     C_all = 0
     C_all_m = 0
@@ -180,16 +168,15 @@ def cycle_eval(checkpoint_list, noise_type = 'synthetic', noise_dataset = None, 
 
             checkpoint = torch.load(f, map_location='cpu')
             dict_params = checkpoint['config']
-
             if dict_params['data_format'] == 'if':
                 from models import large_if_ccode as model
-                pitch_nn = model(dict_params['freq_keep']*3,dict_params['gru_dim'],dict_params['output_dim'])
+                pitch_nn = PitchDNNIF(dict_params['freq_keep']*3,dict_params['gru_dim'],dict_params['output_dim'])
             elif dict_params['data_format'] == 'xcorr':
                 from models import large_xcorr as model
-                pitch_nn = model(dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim'])
+                pitch_nn = PitchDNNXcorr(dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim'])
             else:
                 from models import large_joint as model
-                pitch_nn = model(dict_params['freq_keep']*3,dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim'])
+                pitch_nn = PitchDNN(dict_params['freq_keep']*3,dict_params['xcorr_dim'],dict_params['gru_dim'],dict_params['output_dim'])
 
             pitch_nn.load_state_dict(checkpoint['state_dict'])
 
