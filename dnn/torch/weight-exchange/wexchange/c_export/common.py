@@ -291,12 +291,36 @@ def print_conv1d_layer(writer : CWriter,
     lin_weight = np.reshape(weight, (-1, weight.shape[-1]))
     print_linear_layer(writer, name, lin_weight, bias, scale=scale, sparse=False, diagonal=False, quantize=quantize)
 
+
     writer.header.write(f"\n#define {name.upper()}_OUT_SIZE {weight.shape[2]}\n")
     writer.header.write(f"\n#define {name.upper()}_IN_SIZE {weight.shape[1]}\n")
     writer.header.write(f"\n#define {name.upper()}_STATE_SIZE ({weight.shape[1]} * ({weight.shape[0] - 1}))\n")
     writer.header.write(f"\n#define {name.upper()}_DELAY {(weight.shape[0] - 1) // 2}\n") # CAVE: delay is not a property of the conv layer
 
     return weight.shape[0] * weight.shape[1]
+
+def print_conv2d_layer(writer : CWriter,
+                       name : str,
+                       weight : np.ndarray,
+                       bias : np.ndarray,
+                       scale : float=1/128,
+                       quantize : bool=False):
+
+    if quantize:
+        print("[print_conv2d_layer] warning: quantize argument ignored")
+
+    bias_name = name + "_bias"
+    float_weight_name = name + "_weight_float"
+
+    print_vector(writer, weight, float_weight_name)
+    print_vector(writer, bias, bias_name)
+
+    # init function
+    out_channels, in_channels, ksize1, ksize2 = weight.shape
+    init_call = f'conv2d_init(&model->{name}, arrays, "{bias_name}", "{float_weight_name}", {in_channels}, {out_channels}, {ksize1}, {ksize2})'
+
+    writer.layer_dict[name] = ('Conv2dLayer', init_call)
+
 
 
 def print_gru_layer(writer : CWriter,
