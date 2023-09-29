@@ -194,7 +194,7 @@ def dump_torch_weights(where, module, name=None, verbose=False, **kwargs):
     elif isinstance(module, torch.nn.Embedding):
         return dump_torch_embedding_weights(where, module)
     else:
-        raise ValueError(f'dump_tf_weights: layer of type {type(module)} not supported')
+        raise ValueError(f'dump_torch_weights: layer of type {type(module)} not supported')
 
 def load_torch_weights(where, module):
     """ generic function for loading weights of some torch.nn.Module """
@@ -209,4 +209,4 @@ def load_torch_weights(where, module):
     elif isinstance(module, torch.nn.Embedding):
         load_torch_embedding_weights(where, module)
     else:
-        raise ValueError(f'dump_tf_weights: layer of type {type(module)} not supported')
+        raise ValueError(f'dump_torch_weights: layer of type {type(module)} not supported')
