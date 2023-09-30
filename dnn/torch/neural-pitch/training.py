@@ -148,7 +148,7 @@ config = dict(
     context=args.context,
 )
 
-model_save_path = os.path.join(args.output, f"{args.prefix}_{args.data_format}.pth")
+model_save_path = os.path.join(args.output_folder, f"{args.prefix}_{args.data_format}.pth")
 checkpoint = {
     'state_dict': pitch_nn.state_dict(),
     'config': config
