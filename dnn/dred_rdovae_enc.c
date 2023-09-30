@@ -39,7 +39,7 @@ static void conv1_cond_init(float *mem, const float *input, int len, int dilatio
 {
     if (!*init) {
         int i;
-        for (i=0;i<dilation;i++) OPUS_COPY(&mem[i*len], input, len);
+        for (i=0;i<dilation;i++) OPUS_CLEAR(&mem[i*len], len);
     }
     *init = 1;
 }
