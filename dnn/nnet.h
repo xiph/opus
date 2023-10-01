@@ -83,7 +83,7 @@ typedef struct {
   int out_channels;
   int ktime;
   int kheight;
-} Conv2DLayer;
+} Conv2dLayer;
 
 typedef struct {
   const float *bias;
@@ -175,6 +175,7 @@ extern const WeightArray lpcnet_plc_arrays[];
 extern const WeightArray rdovaeenc_arrays[];
 extern const WeightArray rdovaedec_arrays[];
 extern const WeightArray fwgan_arrays[];
+extern const WeightArray pitchdnn_arrays[];
 
 int linear_init(LinearLayer *layer, const WeightArray *arrays,
   const char *bias,
@@ -231,6 +232,8 @@ int conv1d_init(Conv1DLayer *layer, const WeightArray *arrays,
   int kernel_size,
   int nb_neurons,
   int activation);
+
+void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int len2, int activation);
 
 int embedding_init(EmbeddingLayer *layer, const WeightArray *arrays,
   const char *embedding_weights,

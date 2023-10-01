@@ -415,7 +415,7 @@ void conv2d_float(float *out, const float *weights, int in_channels, int out_cha
 
 #define MAX_CONV2D_INPUTS 2048
 
-void compute_conv2d(const Conv2DLayer *conv, float *out, float *mem, const float *in, int len2, int activation)
+void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int len2, int activation)
 {
    int i;
    const float *bias;

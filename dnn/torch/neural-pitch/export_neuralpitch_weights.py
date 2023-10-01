@@ -52,7 +52,7 @@ def c_export(args, model):
 
     message = f"Auto generated from checkpoint {os.path.basename(args.checkpoint)}"
 
-    writer = CWriter(os.path.join(args.output_dir, "neural_pitch_data"), message=message, model_struct_name='PitchDNN')
+    writer = CWriter(os.path.join(args.output_dir, "pitchdnn_data"), message=message, model_struct_name='PitchDNN')
     writer.header.write(
 f"""
 #include "opus_types.h"
