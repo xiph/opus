@@ -75,6 +75,16 @@ typedef struct {
   int nb_outputs;
 } LinearLayer;
 
+/* Generic sparse affine transformation. */
+typedef struct {
+  const float *bias;
+  const float *float_weights;
+  int in_channels;
+  int out_channels;
+  int ktime;
+  int kheight;
+} Conv2DLayer;
+
 typedef struct {
   const float *bias;
   const float *input_weights;
