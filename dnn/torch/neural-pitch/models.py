@@ -102,8 +102,7 @@ class PitchDNN(torch.nn.Module):
         )
         self.GRU = torch.nn.GRU(input_size=gru_dim, hidden_size=gru_dim, num_layers=1, batch_first=True)
         self.upsample = torch.nn.Sequential(
-            torch.nn.Linear(gru_dim, output_dim),
-            self.activation
+            torch.nn.Linear(gru_dim, output_dim)
         )
 
     def forward(self, x):
