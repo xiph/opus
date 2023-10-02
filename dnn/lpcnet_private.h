@@ -7,9 +7,8 @@
 #include "nnet_data.h"
 #include "plc_data.h"
 #include "kiss99.h"
+#include "pitchdnn.h"
 
-#define PITCH_MIN_PERIOD 32
-#define PITCH_MAX_PERIOD 256
 
 #define PITCH_FRAME_SIZE 320
 #define PITCH_BUF_SIZE (PITCH_MAX_PERIOD+PITCH_FRAME_SIZE)
@@ -44,6 +43,7 @@ struct LPCNetState {
 };
 
 struct LPCNetEncState{
+  PitchDNNState pitchdnn;
   int arch;
   float analysis_mem[OVERLAP_SIZE];
   float mem_preemph;

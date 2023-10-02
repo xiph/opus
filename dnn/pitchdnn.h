@@ -5,7 +5,9 @@
 typedef struct PitchDNN PitchDNN;
 
 #include "pitchdnn_data.h"
-#include "lpcnet_private.h"
+
+#define PITCH_MIN_PERIOD 32
+#define PITCH_MAX_PERIOD 256
 
 #define NB_XCORR_FEATURES (PITCH_MAX_PERIOD-PITCH_MIN_PERIOD)
 
@@ -21,7 +23,7 @@ typedef struct {
 
 void pitchdnn_init(PitchDNNState *st);
 
-int compute_pitchdnn(
+float compute_pitchdnn(
     PitchDNNState *st,
     const float *if_features,
     const float *xcorr_features

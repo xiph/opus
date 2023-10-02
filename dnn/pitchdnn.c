@@ -9,7 +9,7 @@
 #include "lpcnet_private.h"
 
 
-int compute_pitchdnn(
+float compute_pitchdnn(
     PitchDNNState *st,
     const float *if_features,
     const float *xcorr_features
@@ -55,7 +55,11 @@ void pitchdnn_init(PitchDNNState *st)
 {
   int ret;
   OPUS_CLEAR(st, 1);
+#ifndef USE_WEIGHTS_FILE
   ret = init_pitchdnn(&st->model, pitchdnn_arrays);
+#else
+  ret = 0;
+#endif
   celt_assert(ret == 0);
   /* FIXME: perform arch detection. */
 }
