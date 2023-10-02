@@ -50,6 +50,7 @@ struct LPCNetEncState{
   kiss_fft_cpx prev_if[PITCH_IF_MAX_FREQ];
   float if_features[PITCH_IF_FEATURES];
   float xcorr_features[PITCH_MAX_PERIOD - PITCH_MIN_PERIOD];
+  float dnn_pitch;
   float pitch_mem[LPC_ORDER];
   float pitch_filt;
   float xc[2][PITCH_MAX_PERIOD+1];

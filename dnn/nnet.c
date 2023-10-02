@@ -408,22 +408,22 @@ void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const f
    storing the output as [ out_channels x len2 ].
    We assume that the output dimension along the ksize1 axis is 1,
    i.e. processing one frame at a time. */
-void conv2d_float(float *out, const float *weights, int in_channels, int out_channels, int ktime, int kheight, const float *in, int len2)
+void conv2d_float(float *out, const float *weights, int in_channels, int out_channels, int ktime, int kheight, const float *in, int height, int hstride)
 {
    int i;
    int in_stride;
-   in_stride = len2+kheight-1;
-   OPUS_CLEAR(out, out_channels*len2);
+   in_stride = height+kheight-1;
    for (i=0;i<out_channels;i++) {
       int m;
+      OPUS_CLEAR(&out[i*hstride], height);
       for (m=0;m<in_channels;m++) {
          int t;
          for (t=0;t<ktime;t++) {
             int h;
             for (h=0;h<kheight;h++) {
                int j;
-               for (j=0;j<len2;j++) {
-                  out[i*len2 + j] += weights[i*in_channels*ktime*kheight + m*ktime*kheight + t*kheight + h] *
+               for (j=0;j<height;j++) {
+                  out[i*hstride + j] += weights[i*in_channels*ktime*kheight + m*ktime*kheight + t*kheight + h] *
                                      in[t*in_channels*in_stride + m*in_stride + j + h];
                }
             }
@@ -434,24 +434,29 @@ void conv2d_float(float *out, const float *weights, int in_channels, int out_cha
 
 #define MAX_CONV2D_INPUTS 8192
 
-void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int len2, int activation)
+void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation)
 {
    int i;
    const float *bias;
    float in_buf[MAX_CONV2D_INPUTS];
    int time_stride;
    celt_assert(in != out);
-   time_stride = conv->in_channels*(len2+conv->kheight-1);
+   time_stride = conv->in_channels*(height+conv->kheight-1);
    celt_assert(conv->ktime*time_stride <= MAX_CONV2D_INPUTS);
    OPUS_COPY(in_buf, mem, (conv->ktime-1)*time_stride);
    OPUS_COPY(&in_buf[(conv->ktime-1)*time_stride], in, time_stride);
    OPUS_COPY(mem, &in_buf[time_stride], (conv->ktime-1)*time_stride);
    bias = conv->bias;
-   conv2d_float(out, conv->float_weights, conv->in_channels, conv->out_channels, conv->ktime, conv->kheight, in_buf, len2);
+   conv2d_float(out, conv->float_weights, conv->in_channels, conv->out_channels, conv->ktime, conv->kheight, in_buf, height, hstride);
    if (bias != NULL) {
-      for (i=0;i<conv->out_channels*len2;i++) out[i] += bias[i];
+     for (i=0;i<conv->out_channels;i++) {
+       int j;
+       for (j=0;j<height;j++) out[i*hstride+j] += bias[i];
+     }
    }
-   compute_activation(out, out, conv->out_channels*len2, activation);
+   for (i=0;i<conv->out_channels;i++) {
+     compute_activation(&out[i*hstride], &out[i*hstride], height, activation);
+   }
 }
 
 

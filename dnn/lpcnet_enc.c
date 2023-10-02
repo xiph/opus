@@ -101,7 +101,6 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   float ener0;
   int sub;
   float ener;
-  float dnn_pitch;
   /* [b,a]=ellip(2, 2, 20, 1200/8000); */
   static const float lp_b[2] = {-0.84946f, 1.f};
   static const float lp_a[2] = {-1.54220f, 0.70781f};
@@ -165,8 +164,8 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
     }
     /*printf("\n");*/
   }
-  dnn_pitch = compute_pitchdnn(&st->pitchdnn, st->if_features, st->xcorr_features);
-  /*printf("%f\n", dnn_pitch);*/
+  st->dnn_pitch = compute_pitchdnn(&st->pitchdnn, st->if_features, st->xcorr_features);
+  /*printf("%f\n", st->dnn_pitch);*/
   /* Cross-correlation on half-frames. */
   for (sub=0;sub<2;sub++) {
     int off = sub*FRAME_SIZE/2;
@@ -259,7 +258,7 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
     best_i = pitch_prev[sub][best_i];
   }
   frame_corr /= 2;
-  if (0) {
+  if (1) {
     float xy, xx, yy;
     int pitch = (best[2]+best[3])/2;
     xx = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
@@ -271,6 +270,7 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
     frame_corr = log(1.f+exp(5.f*frame_corr))/log(1+exp(5.f));
   }
   st->features[NB_BANDS] = .01f*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
+  st->features[NB_BANDS] = st->dnn_pitch;
   st->features[NB_BANDS + 1] = frame_corr-.5f;
   if (ffeat) {
     fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
