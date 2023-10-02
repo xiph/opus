@@ -6,17 +6,6 @@ Pitch Estimation Models and dataloaders
 import torch
 import numpy as np
 
-fid_dict = {}
-def dump_signal(x, filename):
-    #return
-    if filename in fid_dict:
-        fid = fid_dict[filename]
-    else:
-        fid = open(filename, "w")
-        fid_dict[filename] = fid
-    x = x.detach().numpy().astype('float32')
-    x.tofile(fid)
-
 class PitchDNNIF(torch.nn.Module):
 
     def __init__(self, input_dim=88, gru_dim=64, output_dim=192):
@@ -119,26 +108,10 @@ class PitchDNN(torch.nn.Module):
     def forward(self, x):
         xcorr_feat = x[:,:,:224]
         if_feat = x[:,:,224:]
-        dump_signal(if_feat, 'if_feat.f32')
-        dump_signal(xcorr_feat, 'xcorr_feat.f32')
-        xcorr1 = xcorr_feat.unsqueeze(-1).permute(0,3,2,1)
-        #xcorr1 = self.conv[2](self.conv[1](self.conv[0](xcorr1))).squeeze(1).permute(0,2,1)
-        xcorr1 = self.conv[0](xcorr1)
-        xcorr1 = self.conv[1](xcorr1)
-        xcorr1 = self.conv[2](xcorr1)
-        xcorr1 = xcorr1.permute(0, 3, 1, 2)
-        print(xcorr1.shape)
-        #xcorr1 = xcorr1.squeeze(1).permute(0,2,1)
-        dump_signal(xcorr1, 'xcorr1_out.f32')
         xcorr_feat = self.conv(xcorr_feat.unsqueeze(-1).permute(0,3,2,1)).squeeze(1).permute(0,2,1)
-        dump_signal(xcorr_feat, 'xcorr_out.f32')
-        if1 = torch.tanh(self.if_upsample[0](if_feat))
-        dump_signal(if1, 'if1_out.f32')
         if_feat = self.if_upsample(if_feat)
         x = torch.cat([xcorr_feat,if_feat],axis = - 1)
         x,_ = self.GRU(self.downsample(x))
-        dump_signal(x, 'gru_out.f32')
-        dump_signal(self.upsample(x), 'prob.f32')
         x = self.upsample(x).permute(0,2,1)
 
         return x
