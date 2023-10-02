@@ -441,7 +441,7 @@ void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float
    float in_buf[MAX_CONV2D_INPUTS];
    int time_stride;
    celt_assert(in != out);
-   time_stride = conv->in_channels*(len2+conv->kheight);
+   time_stride = conv->in_channels*(len2+conv->kheight-1);
    celt_assert(conv->ktime*time_stride <= MAX_CONV2D_INPUTS);
    OPUS_COPY(in_buf, mem, (conv->ktime-1)*time_stride);
    OPUS_COPY(&in_buf[(conv->ktime-1)*time_stride], in, time_stride);
