@@ -24,6 +24,8 @@ float compute_pitchdnn(
   int i;
   int pos=0;
   float maxval=-1;
+  float sum=0;
+  float count=0;
   PitchDNN *model = &st->model;
   /* IF */
   compute_generic_dense(&model->dense_if_upsampler_1, if1_out, if_features, ACTIVATION_TANH);
@@ -43,7 +45,13 @@ float compute_pitchdnn(
       maxval = output[i];
     }
   }
-  return (1.f/60.f)*pos - 1.5;
+  for (i=IMAX(0, pos-2); i<=IMIN(179, pos+2); i++) {
+    float p = exp(output[i]);
+    sum += p*i;
+    count += p;
+  }
+  /*printf("%d %f\n", pos, sum/count);*/
+  return (1.f/60.f)*(sum/count) - 1.5;
   /*return 256.f/pow(2.f, (1.f/60.f)*i);*/
 }
 
