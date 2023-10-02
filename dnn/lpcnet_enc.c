@@ -166,7 +166,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
     /*printf("\n");*/
   }
   dnn_pitch = compute_pitchdnn(&st->pitchdnn, st->if_features, st->xcorr_features);
-  /*printf("%f\n", pitch);*/
+  /*printf("%f\n", dnn_pitch);*/
   /* Cross-correlation on half-frames. */
   for (sub=0;sub<2;sub++) {
     int off = sub*FRAME_SIZE/2;
