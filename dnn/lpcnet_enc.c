@@ -168,19 +168,15 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
 
 void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
   float frame_corr;
-
-  if (1) {
-    float xy, xx, yy;
-    /*int pitch = (best[2]+best[3])/2;*/
-    int pitch = (int)floor(.5+256./pow(2.f,((1./60.)*((st->dnn_pitch+1.5)*60))));
-    xx = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
-    yy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD-pitch], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
-    xy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
-    /*printf("%f %f\n", frame_corr, xy/sqrt(1e-15+xx*yy));*/
-    frame_corr = xy/sqrt(1+xx*yy);
-    //frame_corr = MAX32(0, xy/sqrt(1+xx*yy));
-    frame_corr = log(1.f+exp(5.f*frame_corr))/log(1+exp(5.f));
-  }
+  float xy, xx, yy;
+  /*int pitch = (best[2]+best[3])/2;*/
+  int pitch = (int)floor(.5+256./pow(2.f,((1./60.)*((st->dnn_pitch+1.5)*60))));
+  xx = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
+  yy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD-pitch], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
+  xy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
+  /*printf("%f %f\n", frame_corr, xy/sqrt(1e-15+xx*yy));*/
+  frame_corr = xy/sqrt(1+xx*yy);
+  frame_corr = log(1.f+exp(5.f*frame_corr))/log(1+exp(5.f));
   st->features[NB_BANDS] = st->dnn_pitch;
   st->features[NB_BANDS + 1] = frame_corr-.5f;
   if (ffeat) {
