@@ -272,6 +272,31 @@ int conv1d_init(Conv1DLayer *layer, const WeightArray *arrays,
   return 0;
 }
 
+int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *float_weights,
+  int in_channels,
+  int out_channels,
+  int ktime,
+  int kheight)
+{
+  int err;
+  layer->bias = NULL;
+  layer->float_weights = NULL;
+  if (bias != NULL) {
+    if ((layer->bias = find_array_check(arrays, bias, out_channels*sizeof(layer->bias[0]))) == NULL) return 1;
+  }
+  if (float_weights != NULL) {
+    layer->float_weights = opt_array_check(arrays, float_weights, in_channels*out_channels*ktime*kheight*sizeof(layer->float_weights[0]), &err);
+    if (err) return 1;
+  }
+  layer->in_channels = in_channels;
+  layer->out_channels = out_channels;
+  layer->ktime = ktime;
+  layer->kheight = kheight;
+  return 0;
+}
+
 int embedding_init(EmbeddingLayer *layer, const WeightArray *arrays,
   const char *embedding_weights,
   int nb_inputs,

@@ -189,6 +189,14 @@ int linear_init(LinearLayer *layer, const WeightArray *arrays,
   int nb_inputs,
   int nb_outputs);
 
+int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *float_weights,
+  int in_channels,
+  int out_channels,
+  int ktime,
+  int kheight);
+
 int mdense_init(MDenseLayer *layer, const WeightArray *arrays,
   const char *bias,
   const char *input_weights,
@@ -234,7 +242,7 @@ int conv1d_init(Conv1DLayer *layer, const WeightArray *arrays,
   int nb_neurons,
   int activation);
 
-void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int len2, int activation);
+void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation);
 
 int embedding_init(EmbeddingLayer *layer, const WeightArray *arrays,
   const char *embedding_weights,

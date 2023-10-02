@@ -51,6 +51,7 @@ int lpcnet_encoder_get_size() {
 int lpcnet_encoder_init(LPCNetEncState *st) {
   memset(st, 0, sizeof(*st));
   st->exc_mem = lin2ulaw(0.f);
+  pitchdnn_init(&st->pitchdnn);
   return 0;
 }
 
@@ -98,7 +99,6 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   float Ex[NB_BANDS];
   float xcorr[PITCH_MAX_PERIOD];
   float ener0;
-  int sub;
   float ener;
   /* [b,a]=ellip(2, 2, 20, 1200/8000); */
   static const float lp_b[2] = {-0.84946f, 1.f};
@@ -163,110 +163,21 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
     }
     /*printf("\n");*/
   }
-  /* Cross-correlation on half-frames. */
-  for (sub=0;sub<2;sub++) {
-    int off = sub*FRAME_SIZE/2;
-    double ener1;
-    celt_pitch_xcorr(&st->exc_buf[PITCH_MAX_PERIOD+off], st->exc_buf+off, xcorr, FRAME_SIZE/2, PITCH_MAX_PERIOD, st->arch);
-    ener0 = celt_inner_prod_c(&st->exc_buf[PITCH_MAX_PERIOD+off], &st->exc_buf[PITCH_MAX_PERIOD+off], FRAME_SIZE/2);
-    ener1 = celt_inner_prod_c(&st->exc_buf[off], &st->exc_buf[off], FRAME_SIZE/2-1);
-    st->frame_weight[sub] = ener0;
-    /*printf("%f\n", st->frame_weight[sub]);*/
-    for (i=0;i<PITCH_MAX_PERIOD;i++) {
-      ener1 += st->exc_buf[i+off+FRAME_SIZE/2-1]*st->exc_buf[i+off+FRAME_SIZE/2-1];
-      ener = 1 + ener0 + ener1;
-      st->xc[sub][i] = 2*xcorr[i] / ener;
-      ener1 -= st->exc_buf[i+off]*st->exc_buf[i+off];
-    }
-    if (1) {
-      /* Upsample correlation by 3x and keep the max. */
-      float interpolated[PITCH_MAX_PERIOD]={0};
-      /* interp=sinc([-3:3]+1/3).*(.5+.5*cos(pi*[-3:3]/4.5)); interp=interp/sum(interp); */
-      static const float interp[7] = {0.026184f, -0.098339f, 0.369938f, 0.837891f, -0.184969f, 0.070242f, -0.020947f};
-      for (i=4;i<PITCH_MAX_PERIOD-4;i++) {
-        float val1=0, val2=0;
-        int j;
-        for (j=0;j<7;j++) {
-          val1 += st->xc[sub][i-3+j]*interp[j];
-          val2 += st->xc[sub][i+3-j]*interp[j];
-          interpolated[i] = MAX16(st->xc[sub][i], MAX16(val1, val2));
-        }
-      }
-      for (i=4;i<PITCH_MAX_PERIOD-4;i++) {
-        st->xc[sub][i] = interpolated[i];
-      }
-    }
-#if 0
-    for (i=0;i<PITCH_MAX_PERIOD;i++)
-      printf("%f ", st->xc[sub][i]);
-    printf("\n");
-#endif
-  }
+  st->dnn_pitch = compute_pitchdnn(&st->pitchdnn, st->if_features, st->xcorr_features);
 }
 
 void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
-  int i;
-  int sub;
-  int best_i;
-  int best[4];
-  int pitch_prev[2][PITCH_MAX_PERIOD];
   float frame_corr;
-  float frame_weight_sum = 1e-15f;
-  for(sub=0;sub<2;sub++) frame_weight_sum += st->frame_weight[sub];
-  for(sub=0;sub<2;sub++) st->frame_weight[sub] *= (2.f/frame_weight_sum);
-  for(sub=0;sub<2;sub++) {
-    float max_path_all = -1e15f;
-    best_i = 0;
-    for (i=0;i<PITCH_MAX_PERIOD-2*PITCH_MIN_PERIOD;i++) {
-      float xc_half = MAX16(MAX16(st->xc[sub][(PITCH_MAX_PERIOD+i)/2], st->xc[sub][(PITCH_MAX_PERIOD+i+2)/2]), st->xc[sub][(PITCH_MAX_PERIOD+i-1)/2]);
-      if (st->xc[sub][i] < xc_half*1.1f) st->xc[sub][i] *= .8f;
-    }
-    for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
-      int j;
-      float max_prev;
-      max_prev = st->pitch_max_path_all - 6.f;
-      pitch_prev[sub][i] = st->best_i;
-      for (j=IMAX(-4, -i);j<=4 && i+j<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;j++) {
-        if (st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j) > max_prev) {
-          max_prev = st->pitch_max_path[0][i+j] - .02f*abs(j)*abs(j);
-          pitch_prev[sub][i] = i+j;
-        }
-      }
-      st->pitch_max_path[1][i] = max_prev + st->frame_weight[sub]*st->xc[sub][i];
-      if (st->pitch_max_path[1][i] > max_path_all) {
-        max_path_all = st->pitch_max_path[1][i];
-        best_i = i;
-      }
-    }
-    /* Renormalize. */
-    for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) st->pitch_max_path[1][i] -= max_path_all;
-    /*for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) printf("%f ", st->pitch_max_path[1][i]);
-    printf("\n");*/
-    OPUS_COPY(&st->pitch_max_path[0][0], &st->pitch_max_path[1][0], PITCH_MAX_PERIOD);
-    st->pitch_max_path_all = max_path_all;
-    st->best_i = best_i;
-  }
-  best_i = st->best_i;
-  frame_corr = 0;
-  /* Backward pass. */
-  for (sub=1;sub>=0;sub--) {
-    best[2+sub] = PITCH_MAX_PERIOD-best_i;
-    frame_corr += st->frame_weight[sub]*st->xc[sub][best_i];
-    best_i = pitch_prev[sub][best_i];
-  }
-  frame_corr /= 2;
-  if (0) {
-    float xy, xx, yy;
-    int pitch = (best[2]+best[3])/2;
-    xx = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
-    yy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD-pitch], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
-    xy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
-    //printf("%f %f\n", frame_corr, xy/sqrt(1e-15+xx*yy));
-    frame_corr = xy/sqrt(1+xx*yy);
-    //frame_corr = MAX32(0, xy/sqrt(1+xx*yy));
-    frame_corr = log(1.f+exp(5.f*frame_corr))/log(1+exp(5.f));
-  }
-  st->features[NB_BANDS] = .01f*(IMAX(66, IMIN(510, best[2]+best[3]))-200);
+  float xy, xx, yy;
+  /*int pitch = (best[2]+best[3])/2;*/
+  int pitch = (int)floor(.5+256./pow(2.f,((1./60.)*((st->dnn_pitch+1.5)*60))));
+  xx = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
+  yy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD-pitch], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
+  xy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
+  /*printf("%f %f\n", frame_corr, xy/sqrt(1e-15+xx*yy));*/
+  frame_corr = xy/sqrt(1+xx*yy);
+  frame_corr = log(1.f+exp(5.f*frame_corr))/log(1+exp(5.f));
+  st->features[NB_BANDS] = st->dnn_pitch;
   st->features[NB_BANDS + 1] = frame_corr-.5f;
   if (ffeat) {
     fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
