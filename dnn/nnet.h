@@ -189,6 +189,14 @@ int linear_init(LinearLayer *layer, const WeightArray *arrays,
   int nb_inputs,
   int nb_outputs);
 
+int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
+  const char *bias,
+  const char *float_weights,
+  int in_channels,
+  int out_channels,
+  int ktime,
+  int kheight);
+
 int mdense_init(MDenseLayer *layer, const WeightArray *arrays,
   const char *bias,
   const char *input_weights,
