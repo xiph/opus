@@ -157,7 +157,7 @@ class FARGANCond(nn.Module):
         self.feature_dim = feature_dim
         self.cond_size = cond_size
 
-        self.pembed = nn.Embedding(225, pembed_dims)
+        self.pembed = nn.Embedding(224, pembed_dims)
         self.fdense1 = nn.Linear(self.feature_dim + pembed_dims, 64, bias=False)
         self.fconv1 = nn.Conv1d(64, 128, kernel_size=3, padding='valid', bias=False)
         self.fconv2 = nn.Conv1d(128, 80*4, kernel_size=3, padding='valid', bias=False)
