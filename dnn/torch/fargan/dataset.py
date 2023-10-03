@@ -35,7 +35,8 @@ class FARGANDataset(torch.utils.data.Dataset):
         sizeof = self.features.strides[-1]
         self.features = np.lib.stride_tricks.as_strided(self.features, shape=(self.nb_sequences, self.sequence_length*2+4, nb_features),
                                            strides=(self.sequence_length*self.nb_features*sizeof, self.nb_features*sizeof, sizeof))
-        self.periods = np.round(50*self.features[:,:,self.nb_used_features-2]+100).astype('int')
+        #self.periods = np.round(50*self.features[:,:,self.nb_used_features-2]+100).astype('int')
+        self.periods = np.round(256./2**(self.features[:,:,self.nb_used_features-2]+1.5)).astype('int')
 
         self.lpc = self.features[:, :, self.nb_used_features:]
         self.features = self.features[:, :, :self.nb_used_features]

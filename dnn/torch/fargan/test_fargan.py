@@ -48,7 +48,9 @@ model.load_state_dict(checkpoint['state_dict'], strict=False)
 features = np.reshape(np.memmap(features_file, dtype='float32', mode='r'), (1, -1, nb_features))
 lpc = features[:,4-1:-1,nb_used_features:]
 features = features[:, :, :nb_used_features]
-periods = np.round(50*features[:,:,nb_used_features-2]+100).astype('int')
+#periods = np.round(50*features[:,:,nb_used_features-2]+100).astype('int')
+periods = np.round(256./2**(features[:,:,nb_used_features-2]+1.5)).astype('int')
+
 
 nb_frames = features.shape[1]
 #nb_frames = 1000
