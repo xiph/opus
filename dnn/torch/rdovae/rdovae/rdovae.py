@@ -159,7 +159,7 @@ def distortion_loss(y_true, y_pred, rate_lambda=None):
         raise ValueError('distortion loss is designed to work with 20 features')
 
     ceps_error   = y_pred[..., :18] - y_true[..., :18]
-    pitch_error  = 2 * (y_pred[..., 18:19] - y_true[..., 18:19]) / (2 + y_true[..., 18:19])
+    pitch_error  = 2*(y_pred[..., 18:19] - y_true[..., 18:19])
     corr_error   = y_pred[..., 19:] - y_true[..., 19:]
     pitch_weight = torch.relu(y_true[..., 19:] + 0.5) ** 2
 
