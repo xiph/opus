@@ -32,7 +32,7 @@
 #define DRED_EXTENSION_ID 126
 
 /* Remove these two completely once DRED gets an extension number assigned. */
-#define DRED_EXPERIMENTAL_VERSION 5
+#define DRED_EXPERIMENTAL_VERSION 6
 #define DRED_EXPERIMENTAL_BYTES 2
 
 
@@ -46,7 +46,7 @@
 #define DRED_FRAME_SIZE 160
 #define DRED_DFRAME_SIZE (2 * (DRED_FRAME_SIZE))
 #define DRED_MAX_DATA_SIZE 1000
-#define DRED_ENC_Q0 9
+#define DRED_ENC_Q0 6
 #define DRED_ENC_Q1 15
 
 /* Covers 1.04 second so we can cover one second, after the lookahead. */
