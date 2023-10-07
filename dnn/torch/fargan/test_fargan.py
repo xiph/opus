@@ -108,6 +108,7 @@ def inverse_perceptual_weighting40 (pw_signal, filters):
         buffer[:] = out_sig_frame[-16:]
     return signal
 
+from scipy.signal import lfilter
 
 if __name__ == '__main__':
     model.to(device)
@@ -121,7 +122,8 @@ if __name__ == '__main__':
     sig, _ = model(features, periods, nb_frames - 4)
     #weighting_vector = np.array([gamma**i for i in range(16,0,-1)])
     sig = sig.detach().numpy().flatten()
-    sig = inverse_perceptual_weighting40(sig, lpc[0,:,:])
+    sig = lfilter(np.array([1.]), np.array([1., -.85]), sig)
+    #sig = inverse_perceptual_weighting40(sig, lpc[0,:,:])
 
     pcm = np.round(32768*np.clip(sig, a_max=.99, a_min=-.99)).astype('int16')
     pcm.tofile(signal_file)

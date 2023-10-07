@@ -132,6 +132,9 @@ states = None
 
 spect_loss =  MultiResolutionSTFTLoss(device).to(device)
 
+for param in model.parameters():
+    param.requires_grad = False
+
 if __name__ == '__main__':
     model.to(device)
     disc.to(device)
@@ -153,24 +156,28 @@ if __name__ == '__main__':
         print(f"training epoch {epoch}...")
         with tqdm.tqdm(dataloader, unit='batch') as tepoch:
             for i, (features, periods, target, lpc) in enumerate(tepoch):
+                if epoch == 1 and i == 100:
+                    for param in model.parameters():
+                        param.requires_grad = True
+
                 optimizer.zero_grad()
                 features = features.to(device)
-                lpc = lpc.to(device)
-                lpc = lpc*(args.gamma**torch.arange(1,17, device=device))
-                lpc = fargan.interp_lpc(lpc, 4)
+                #lpc = lpc.to(device)
+                #lpc = lpc*(args.gamma**torch.arange(1,17, device=device))
+                #lpc = fargan.interp_lpc(lpc, 4)
                 periods = periods.to(device)
                 if True:
                     target = target[:, :sequence_length*160]
-                    lpc = lpc[:,:sequence_length*4,:]
+                    #lpc = lpc[:,:sequence_length*4,:]
                     features = features[:,:sequence_length+4,:]
                     periods = periods[:,:sequence_length+4]
                 else:
                     target=target[::2, :]
-                    lpc=lpc[::2,:]
+                    #lpc=lpc[::2,:]
                     features=features[::2,:]
                     periods=periods[::2,:]
                 target = target.to(device)
-                target = fargan.analysis_filter(target, lpc[:,:,:], nb_subframes=1, gamma=args.gamma)
+                #target = fargan.analysis_filter(target, lpc[:,:,:], nb_subframes=1, gamma=args.gamma)
 
                 #nb_pre = random.randrange(1, 6)
                 nb_pre = 2
@@ -210,7 +217,7 @@ if __name__ == '__main__':
 
                 cont_loss = fargan.sig_loss(target[:, nb_pre*160:nb_pre*160+80], output[:, nb_pre*160:nb_pre*160+80])
                 specc_loss = spect_loss(output, target.detach())
-                reg_loss = args.reg_weight * (.00*cont_loss + specc_loss)
+                reg_loss = (.00*cont_loss + specc_loss)
 
                 loss_gen = 0
                 for scale in scores_gen:
@@ -218,7 +225,7 @@ if __name__ == '__main__':
 
                 feat_loss = args.fmap_weight * fmap_loss(scores_real, scores_gen)
 
-                gen_loss = reg_loss +  feat_loss + loss_gen
+                gen_loss = args.reg_weight * reg_loss +  feat_loss + loss_gen
 
                 model.zero_grad()
 

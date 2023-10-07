@@ -116,23 +116,23 @@ if __name__ == '__main__':
                 features = features.to(device)
                 #lpc = torch.tensor(fargan.interp_lpc(lpc.numpy(), 4))
                 #print("interp size", lpc.shape)
-                lpc = lpc.to(device)
-                lpc = lpc*(args.gamma**torch.arange(1,17, device=device))
-                lpc = fargan.interp_lpc(lpc, 4)
+                #lpc = lpc.to(device)
+                #lpc = lpc*(args.gamma**torch.arange(1,17, device=device))
+                #lpc = fargan.interp_lpc(lpc, 4)
                 periods = periods.to(device)
                 if (np.random.rand() > 0.1):
                     target = target[:, :sequence_length*160]
-                    lpc = lpc[:,:sequence_length*4,:]
+                    #lpc = lpc[:,:sequence_length*4,:]
                     features = features[:,:sequence_length+4,:]
                     periods = periods[:,:sequence_length+4]
                 else:
                     target=target[::2, :]
-                    lpc=lpc[::2,:]
+                    #lpc=lpc[::2,:]
                     features=features[::2,:]
                     periods=periods[::2,:]
                 target = target.to(device)
                 #print(target.shape, lpc.shape)
-                target = fargan.analysis_filter(target, lpc[:,:,:], nb_subframes=1, gamma=args.gamma)
+                #target = fargan.analysis_filter(target, lpc[:,:,:], nb_subframes=1, gamma=args.gamma)
 
                 #nb_pre = random.randrange(1, 6)
                 nb_pre = 2
