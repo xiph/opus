@@ -56,7 +56,7 @@ static void xcorr_kernel_avx(const float *x, const float *y, float sum[8], int l
     if (i != len) {
         static const int mask[15] = {-1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0};
         __m256i m;
-        m = _mm256_loadu_si256((__m256i*)(mask + 7+i-len));
+        m = _mm256_loadu_si256((__m256i*)(void*)(mask + 7+i-len));
         x0 = _mm256_maskload_ps(x+i, m);
         xsum0 = _mm256_fmadd_ps(x0, _mm256_maskload_ps(y+i  , m), xsum0);
         xsum1 = _mm256_fmadd_ps(x0, _mm256_maskload_ps(y+i+1, m), xsum1);

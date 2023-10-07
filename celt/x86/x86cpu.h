@@ -68,6 +68,6 @@ int opus_select_arch(void);
  (_mm_cvtepi8_epi32(_mm_cvtsi32_si128(OP_LOADU_EPI32(x))))
 
 #define OP_CVTEPI16_EPI32_M64(x) \
- (_mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i *)(x))))
+ (_mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i *)(void*)(x))))
 
 #endif

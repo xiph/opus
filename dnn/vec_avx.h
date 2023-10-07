@@ -335,7 +335,7 @@ static inline void vector_ps_to_epi8(unsigned char *x, const float *_x, int len)
        xi = _mm256_permute4x64_epi64(xi, 0xD8);
        xi = _mm256_packus_epi16(xi, _mm256_setzero_si256());
        xi = _mm256_permutevar8x32_epi32(xi, _mm256_setr_epi32(0,1, 0,0, 0,0, 0,0));
-       _mm256_storeu_si256 ((__m256i *)&x[i], xi);
+       _mm256_storeu_si256 ((__m256i *)(void*)&x[i], xi);
    }
 }
 
@@ -794,20 +794,20 @@ static inline void sparse_cgemv8x4(float *_out, const opus_int8 *w, const int *i
       {
          __m256i vxj;
          __m256i vw;
-         vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[*idx++]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
-         vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[*idx++]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
-         vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[*idx++]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
-         vxj = _mm256_set1_epi32(*(int*)&x[*idx++]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[*idx++]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
       }
@@ -818,8 +818,8 @@ static inline void sparse_cgemv8x4(float *_out, const opus_int8 *w, const int *i
          __m256i vw;
          int pos;
          pos = (*idx++);
-         vxj = _mm256_set1_epi32(*(int*)&x[pos]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[pos]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
       }
@@ -845,20 +845,20 @@ static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale,
       {
          __m256i vxj;
          __m256i vw;
-         vxj = _mm256_set1_epi32(*(int*)&x[j]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[j]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
-         vxj = _mm256_set1_epi32(*(int*)&x[j+4]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[j+4]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
-         vxj = _mm256_set1_epi32(*(int*)&x[j+8]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[j+8]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
-         vxj = _mm256_set1_epi32(*(int*)&x[j+12]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[j+12]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
       }
@@ -867,8 +867,8 @@ static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale,
       {
          __m256i vxj;
          __m256i vw;
-         vxj = _mm256_set1_epi32(*(int*)&x[j]);
-         vw = _mm256_loadu_si256((const __m256i *)w);
+         vxj = _mm256_set1_epi32(*(int*)(void*)&x[j]);
+         vw = _mm256_loadu_si256((const __m256i *)(void*)w);
          vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
          w += 32;
       }
