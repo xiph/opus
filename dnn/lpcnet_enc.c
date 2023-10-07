@@ -92,7 +92,6 @@ static void biquad(float *y, float mem[2], const float *x, const float *b, const
 void compute_frame_features(LPCNetEncState *st, const float *in) {
   float aligned_in[FRAME_SIZE];
   int i;
-  float E = 0;
   float Ly[NB_BANDS];
   float follow, logMax;
   kiss_fft_cpx X[FREQ_SIZE];
@@ -125,7 +124,6 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
     Ly[i] = MAX16(logMax-8, MAX16(follow-2.5f, Ly[i]));
     logMax = MAX16(logMax, Ly[i]);
     follow = MAX16(follow-2.5f, Ly[i]);
-    E += Ex[i];
   }
   dct(st->features, Ly);
   st->features[0] -= 4;
