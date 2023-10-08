@@ -208,15 +208,17 @@ class FARGANSub(nn.Module):
         #print(cond.shape, prev.shape)
 
 
-        idx = 256-torch.clamp(period[:,None], min=self.subframe_size+2, max=254)
+        idx = 256-period[:,None]
         rng = torch.arange(self.subframe_size+4, device=device)
         idx = idx + rng[None,:] - 2
+        mask = idx >= 256
+        idx = idx - mask*period[:,None]
         pred = torch.gather(exc_mem, 1, idx)
-        pred = pred/(1e-5+gain)
+        pred = torch.clamp(pred/(1e-5+gain), min=-1, max=1)
 
         prev = exc_mem[:,-self.subframe_size:]
         dump_signal(prev, 'prev_in.f32')
-        prev = prev/(1e-5+gain)
+        prev = torch.clamp(prev/(1e-5+gain), min=-1, max=1)
         dump_signal(prev, 'pitch_exc.f32')
         dump_signal(exc_mem, 'exc_mem.f32')
 
