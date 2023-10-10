@@ -1,6 +1,8 @@
 LPCNET_SOURCES = \
 dnn/burg.c \
 dnn/freq.c \
+dnn/fargan.c \
+dnn/fargan_data.c \
 dnn/fwgan.c \
 dnn/fwgan_data.c \
 dnn/kiss99.c \

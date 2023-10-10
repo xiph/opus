@@ -61,6 +61,30 @@ def dump_torch_gru_weights(where, gru, name='gru', input_sparse=False, recurrent
         np.save(os.path.join(where, 'bias_hh_rzn.npy'), b_hh)
 
 
+def dump_torch_grucell_weights(where, gru, name='gru', input_sparse=False, recurrent_sparse=False, quantize=False, scale=1/128, recurrent_scale=1/128):
+
+    w_ih = gru.weight_ih.detach().cpu().numpy().copy()
+    w_hh = gru.weight_hh.detach().cpu().numpy().copy()
+    if hasattr(gru, 'bias_ih') and gru.bias_ih is not None:
+        b_ih = gru.bias_ih.detach().cpu().numpy().copy()
+    else:
+        b_ih = None
+    if hasattr(gru, 'bias_hh') and gru.bias_hh is not None:
+        b_hh = gru.bias_hh.detach().cpu().numpy().copy()
+    else:
+        b_hh = None
+
+    if isinstance(where, CWriter):
+        return print_gru_layer(where, name, w_ih, w_hh, b_ih, b_hh, format='torch', input_sparse=input_sparse, recurrent_sparse=recurrent_sparse, quantize=quantize, scale=scale, recurrent_scale=recurrent_scale)
+    else:
+        os.makedirs(where, exist_ok=True)
+
+        np.save(os.path.join(where, 'weight_ih_rzn.npy'), w_ih)
+        np.save(os.path.join(where, 'weight_hh_rzn.npy'), w_hh)
+        np.save(os.path.join(where, 'bias_ih_rzn.npy'), b_ih)
+        np.save(os.path.join(where, 'bias_hh_rzn.npy'), b_hh)
+
+
 
 def load_torch_gru_weights(where, gru):
 
@@ -165,11 +189,20 @@ def load_torch_conv2d_weights(where, conv):
                 conv.bias.set_(torch.from_numpy(b))
 
 
-def dump_torch_embedding_weights(where, emb):
-    os.makedirs(where, exist_ok=True)
+def dump_torch_embedding_weights(where, embed, name='embed', scale=1/128, sparse=False, diagonal=False, quantize=False):
 
-    w = emb.weight.detach().cpu().numpy().copy()
-    np.save(os.path.join(where, 'weight.npy'), w)
+    print("quantize = ", quantize)
+    w = embed.weight.detach().cpu().numpy().copy().transpose()
+    b = np.zeros(w.shape[0], dtype=w.dtype)
+
+    if isinstance(where, CWriter):
+        return print_dense_layer(where, name, w, b, scale=scale, format='torch', sparse=sparse, diagonal=diagonal, quantize=quantize)
+
+    else:
+        os.makedirs(where, exist_ok=True)
+
+        np.save(os.path.join(where, 'weight.npy'), w)
+        np.save(os.path.join(where, 'bias.npy'), b)
 
 
 def load_torch_embedding_weights(where, emb):
@@ -187,6 +220,8 @@ def dump_torch_weights(where, module, name=None, verbose=False, **kwargs):
         return dump_torch_dense_weights(where, module, name, **kwargs)
     elif isinstance(module, torch.nn.GRU):
         return dump_torch_gru_weights(where, module, name, **kwargs)
+    elif isinstance(module, torch.nn.GRUCell):
+        return dump_torch_grucell_weights(where, module, name, **kwargs)
     elif isinstance(module, torch.nn.Conv1d):
         return dump_torch_conv1d_weights(where, module, name, **kwargs)
     elif isinstance(module, torch.nn.Conv2d):
