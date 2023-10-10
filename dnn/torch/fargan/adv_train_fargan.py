@@ -132,6 +132,10 @@ states = None
 
 spect_loss =  MultiResolutionSTFTLoss(device).to(device)
 
+for param in model.parameters():
+    param.requires_grad = False
+
+batch_count = 0
 if __name__ == '__main__':
     model.to(device)
     disc.to(device)
@@ -153,22 +157,28 @@ if __name__ == '__main__':
         print(f"training epoch {epoch}...")
         with tqdm.tqdm(dataloader, unit='batch') as tepoch:
             for i, (features, periods, target, lpc) in enumerate(tepoch):
+                if epoch == 1 and i == 400:
+                    for param in model.parameters():
+                        param.requires_grad = True
+
                 optimizer.zero_grad()
                 features = features.to(device)
-                lpc = lpc.to(device)
+                #lpc = lpc.to(device)
+                #lpc = lpc*(args.gamma**torch.arange(1,17, device=device))
+                #lpc = fargan.interp_lpc(lpc, 4)
                 periods = periods.to(device)
                 if True:
                     target = target[:, :sequence_length*160]
-                    lpc = lpc[:,:sequence_length,:]
+                    #lpc = lpc[:,:sequence_length*4,:]
                     features = features[:,:sequence_length+4,:]
                     periods = periods[:,:sequence_length+4]
                 else:
                     target=target[::2, :]
-                    lpc=lpc[::2,:]
+                    #lpc=lpc[::2,:]
                     features=features[::2,:]
                     periods=periods[::2,:]
                 target = target.to(device)
-                target = fargan.analysis_filter(target, lpc[:,:,:], gamma=args.gamma)
+                #target = fargan.analysis_filter(target, lpc[:,:,:], nb_subframes=1, gamma=args.gamma)
 
                 #nb_pre = random.randrange(1, 6)
                 nb_pre = 2
@@ -208,7 +218,7 @@ if __name__ == '__main__':
 
                 cont_loss = fargan.sig_loss(target[:, nb_pre*160:nb_pre*160+80], output[:, nb_pre*160:nb_pre*160+80])
                 specc_loss = spect_loss(output, target.detach())
-                reg_loss = args.reg_weight * (.00*cont_loss + specc_loss)
+                reg_loss = (.00*cont_loss + specc_loss)
 
                 loss_gen = 0
                 for scale in scores_gen:
@@ -216,7 +226,8 @@ if __name__ == '__main__':
 
                 feat_loss = args.fmap_weight * fmap_loss(scores_real, scores_gen)
 
-                gen_loss = reg_loss +  feat_loss + loss_gen
+                reg_weight = args.reg_weight + 15./(1 + (batch_count/7600.))
+                gen_loss = reg_weight * reg_loss +  feat_loss + loss_gen
 
                 model.zero_grad()
 
@@ -238,12 +249,14 @@ if __name__ == '__main__':
 
 
                 tepoch.set_postfix(cont_loss=f"{running_cont_loss/(i+1):8.5f}",
+                                   reg_weight=f"{reg_weight:8.5f}",
                                    gen_loss=f"{running_gen_loss/(i+1):8.5f}",
                                    disc_loss=f"{running_disc_loss/(i+1):8.5f}",
                                    fmap_loss=f"{running_fmap_loss/(i+1):8.5f}",
                                    reg_loss=f"{running_reg_loss/(i+1):8.5f}",
                                    wc = f"{running_wc/(i+1):8.5f}",
                                    )
+                batch_count = batch_count + 1
 
         # save checkpoint
         checkpoint_path = os.path.join(checkpoint_dir, f'fargan{args.suffix}_adv_{epoch}.pth')

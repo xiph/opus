@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import fargan
 
 class FARGANDataset(torch.utils.data.Dataset):
     def __init__(self,
@@ -34,7 +35,8 @@ class FARGANDataset(torch.utils.data.Dataset):
         sizeof = self.features.strides[-1]
         self.features = np.lib.stride_tricks.as_strided(self.features, shape=(self.nb_sequences, self.sequence_length*2+4, nb_features),
                                            strides=(self.sequence_length*self.nb_features*sizeof, self.nb_features*sizeof, sizeof))
-        self.periods = np.round(50*self.features[:,:,self.nb_used_features-2]+100).astype('int')
+        #self.periods = np.round(50*self.features[:,:,self.nb_used_features-2]+100).astype('int')
+        self.periods = np.round(np.clip(256./2**(self.features[:,:,self.nb_used_features-2]+1.5), 32, 255)).astype('int')
 
         self.lpc = self.features[:, :, self.nb_used_features:]
         self.features = self.features[:, :, :self.nb_used_features]
@@ -51,5 +53,9 @@ class FARGANDataset(torch.utils.data.Dataset):
             lpc = self.lpc[index, 4:, :].copy()
         data = self.data[index, :].copy().astype(np.float32) / 2**15
         periods = self.periods[index, :].copy()
+        #lpc = lpc*(self.gamma**np.arange(1,17))
+        #lpc=lpc[None,:,:]
+        #lpc = fargan.interp_lpc(lpc, 4)
+        #lpc=lpc[0,:,:]
 
         return features, periods, data, lpc
