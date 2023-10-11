@@ -132,8 +132,9 @@ static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, 
 
   OPUS_COPY(skip_cat, gru2_in, SIG_NET_GRU1_OUT_SIZE);
   OPUS_COPY(&skip_cat[SIG_NET_GRU1_OUT_SIZE], gru3_in, SIG_NET_GRU2_OUT_SIZE);
-  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) skip_cat[SIG_NET_GRU1_OUT_SIZE+SIG_NET_GRU2_OUT_SIZE+SIG_NET_GRU3_OUT_SIZE+i] = pitch_gate[3]*pred[i+2];
-  OPUS_COPY(&skip_cat[SIG_NET_GRU1_OUT_SIZE+SIG_NET_GRU2_OUT_SIZE+SIG_NET_GRU3_OUT_SIZE+FARGAN_SUBFRAME_SIZE], prev, FARGAN_SUBFRAME_SIZE);
+  OPUS_COPY(&skip_cat[SIG_NET_GRU1_OUT_SIZE+SIG_NET_GRU2_OUT_SIZE+SIG_NET_GRU3_OUT_SIZE], gru1_in, SIG_NET_FWC0_CONV_OUT_SIZE);
+  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) skip_cat[SIG_NET_GRU1_OUT_SIZE+SIG_NET_GRU2_OUT_SIZE+SIG_NET_GRU3_OUT_SIZE+SIG_NET_FWC0_CONV_OUT_SIZE+i] = pitch_gate[3]*pred[i+2];
+  OPUS_COPY(&skip_cat[SIG_NET_GRU1_OUT_SIZE+SIG_NET_GRU2_OUT_SIZE+SIG_NET_GRU3_OUT_SIZE+SIG_NET_FWC0_CONV_OUT_SIZE+FARGAN_SUBFRAME_SIZE], prev, FARGAN_SUBFRAME_SIZE);
 
   compute_generic_dense(&model->sig_net_skip_dense, skip_out, skip_cat, ACTIVATION_TANH);
   compute_glu(&model->sig_net_skip_glu_gate, skip_out, skip_out);
@@ -141,7 +142,7 @@ static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, 
   compute_generic_dense(&model->sig_net_sig_dense_out, pcm, skip_out, ACTIVATION_TANH);
   for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) pcm[i] *= gain;
 
-  OPUS_MOVE(st->pitch_buf, &st->pitch_buf[FARGAN_SUBFRAME_SIZE], FARGAN_SUBFRAME_SIZE);
+  OPUS_MOVE(st->pitch_buf, &st->pitch_buf[FARGAN_SUBFRAME_SIZE], PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE);
   OPUS_COPY(&st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE], pcm, FARGAN_SUBFRAME_SIZE);
   fargan_deemphasis(pcm, &st->deemph_mem);
 }
