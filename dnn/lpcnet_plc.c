@@ -57,7 +57,7 @@ void lpcnet_plc_reset(LPCNetPLCState *st) {
 
 int lpcnet_plc_init(LPCNetPLCState *st, int options) {
   int ret;
-  fwgan_init(&st->fwgan);
+  fargan_init(&st->fargan);
   lpcnet_encoder_init(&st->enc);
   if ((options&0x3) == LPCNET_PLC_CAUSAL) {
     st->enable_blending = 1;
@@ -83,7 +83,7 @@ int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len
   ret = init_plc_model(&st->model, list);
   free(list);
   if (ret == 0) {
-    return fwgan_load_model(&st->fwgan, data, len);
+    return fargan_load_model(&st->fargan, data, len);
   }
   else return -1;
 }
@@ -191,8 +191,8 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
     else if (st->fec_read_pos < st->fec_fill_pos) st->fec_read_pos++;
     st->fec_keep_pos = IMAX(0, IMAX(st->fec_keep_pos, st->fec_read_pos-FEATURES_DELAY-1));
   }
-  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FWGAN_CONT_SAMPLES-FRAME_SIZE);
-  for (i=0;i<FRAME_SIZE;i++) st->pcm[FWGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
+  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FARGAN_CONT_SAMPLES-FRAME_SIZE);
+  for (i=0;i<FRAME_SIZE;i++) st->pcm[FARGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->loss_count = 0;
   st->blend = 0;
   return 0;
@@ -202,8 +202,12 @@ static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6,
 int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
   if (st->blend == 0) {
+    float f0[NB_FEATURES*5];
     get_fec_or_pred(st, st->features);
-    fwgan_cont(&st->fwgan, st->pcm, &st->features[0]);
+    for (i=0;i<5;i++) {
+      OPUS_COPY(&f0[i*NB_FEATURES], &st->features[0], NB_FEATURES);
+    }
+    fargan_cont(&st->fargan, st->pcm, f0);
   }
   OPUS_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
   st->plc_copy[0] = st->plc_net;
@@ -211,7 +215,7 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   else st->loss_count++;
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
   else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
-  fwgan_synthesize_int(&st->fwgan, pcm, &st->features[0]);
+  fargan_synthesize_int(&st->fargan, pcm, &st->features[0]);
   {
     float x[FRAME_SIZE];
     /* FIXME: Can we do better? */
@@ -220,8 +224,8 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
     compute_frame_features(&st->enc, x);
     process_single_frame(&st->enc, NULL);
   }
-  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FWGAN_CONT_SAMPLES-FRAME_SIZE);
-  for (i=0;i<FRAME_SIZE;i++) st->pcm[FWGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
+  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FARGAN_CONT_SAMPLES-FRAME_SIZE);
+  for (i=0;i<FRAME_SIZE;i++) st->pcm[FARGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->blend = 1;
   return 0;
 }

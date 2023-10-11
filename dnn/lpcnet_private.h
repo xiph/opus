@@ -8,7 +8,7 @@
 #include "plc_data.h"
 #include "kiss99.h"
 #include "pitchdnn.h"
-#include "fwgan.h"
+#include "fargan.h"
 
 
 #define PITCH_FRAME_SIZE 320
@@ -70,7 +70,7 @@ struct LPCNetEncState{
 #define PLC_BUF_SIZE (FEATURES_DELAY*FRAME_SIZE + FRAME_SIZE)
 struct LPCNetPLCState {
   PLCModel model;
-  FWGANState fwgan;
+  FARGANState fargan;
   LPCNetEncState enc;
   int arch;
   int enable_blending;
@@ -81,7 +81,7 @@ struct LPCNetPLCState {
   int fec_read_pos;
   int fec_fill_pos;
   int fec_skip;
-  float pcm[FWGAN_CONT_SAMPLES];
+  float pcm[FARGAN_CONT_SAMPLES];
   int blend;
   float features[NB_TOTAL_FEATURES];
   int loss_count;
