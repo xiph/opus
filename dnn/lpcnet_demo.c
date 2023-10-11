@@ -37,6 +37,7 @@
 #include "freq.h"
 #include "os_support.h"
 #include "fwgan.h"
+#include "fargan.h"
 
 #ifdef USE_WEIGHTS_FILE
 # if __unix__
@@ -86,6 +87,7 @@ void free_blob(unsigned char *blob, int len) {
 #define MODE_PLC 4
 #define MODE_ADDLPC 5
 #define MODE_FWGAN_SYNTHESIS 6
+#define MODE_FARGAN_SYNTHESIS 7
 
 void usage(void) {
     fprintf(stderr, "usage: lpcnet_demo -features <input.pcm> <features.f32>\n");
@@ -115,6 +117,7 @@ int main(int argc, char **argv) {
     if (strcmp(argv[1], "-features") == 0) mode=MODE_FEATURES;
     else if (strcmp(argv[1], "-synthesis") == 0) mode=MODE_SYNTHESIS;
     else if (strcmp(argv[1], "-fwgan-synthesis") == 0) mode=MODE_FWGAN_SYNTHESIS;
+    else if (strcmp(argv[1], "-fargan-synthesis") == 0) mode=MODE_FARGAN_SYNTHESIS;
     else if (strcmp(argv[1], "-plc") == 0) {
         mode=MODE_PLC;
         plc_options = argv[2];
@@ -207,6 +210,29 @@ int main(int argc, char **argv) {
             if (feof(fin) || ret != NB_TOTAL_FEATURES) break;
             OPUS_COPY(features, in_features, NB_FEATURES);
             fwgan_synthesize(&fwgan, fpcm, features);
+            for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + MIN32(32767, MAX32(-32767, 32768.f*fpcm[i])));
+            fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
+        }
+    } else if (mode == MODE_FARGAN_SYNTHESIS) {
+        FARGANState fargan;
+        size_t ret;
+        float in_features[NB_FEATURES*5]={0};
+        float zeros[320] = {0};
+        fargan_init(&fargan);
+#ifdef USE_WEIGHTS_FILE
+        fargan_load_model(fwgan, data, len);
+#endif
+        //ret = fread(in_features, sizeof(in_features[0]), NB_TOTAL_FEATURES, fin);
+        fargan_cont(&fargan, zeros, in_features);
+        while (1) {
+            int i;
+            float features[NB_FEATURES];
+            float fpcm[LPCNET_FRAME_SIZE];
+            opus_int16 pcm[LPCNET_FRAME_SIZE];
+            ret = fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
+            if (feof(fin) || ret != NB_TOTAL_FEATURES) break;
+            OPUS_COPY(features, in_features, NB_FEATURES);
+            fargan_synthesize(&fargan, fpcm, features);
             for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + MIN32(32767, MAX32(-32767, 32768.f*fpcm[i])));
             fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
         }

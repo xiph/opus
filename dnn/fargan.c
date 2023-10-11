@@ -81,7 +81,6 @@ static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, 
   float gru1_in[SIG_NET_FWC0_CONV_OUT_SIZE+2*FARGAN_SUBFRAME_SIZE];
   float gru2_in[SIG_NET_GRU1_OUT_SIZE+2*FARGAN_SUBFRAME_SIZE];
   float gru3_in[SIG_NET_GRU2_OUT_SIZE+2*FARGAN_SUBFRAME_SIZE];
-  float pembed[FARGAN_FRAME_SIZE/2];
   float pred[FARGAN_SUBFRAME_SIZE+4];
   float prev[FARGAN_SUBFRAME_SIZE];
   float pitch_gate[4];
@@ -89,8 +88,9 @@ static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, 
   float gain_1;
   float skip_cat[10000];
   float skip_out[SIG_NET_SKIP_DENSE_OUT_SIZE];
-
   FARGAN *model;
+
+  celt_assert(st->cont_initialized);
   model = &st->model;
 
   compute_generic_dense(&model->sig_net_cond_gain_dense, &gain, cond, ACTIVATION_LINEAR);
@@ -125,7 +125,7 @@ static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, 
   compute_generic_gru(&model->sig_net_gru2_input, &model->sig_net_gru2_recurrent, st->gru2_state, gru2_in);
   compute_glu(&model->sig_net_gru2_glu_gate, gru3_in, st->gru2_state);
 
-  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) gru3_in[SIG_NET_GRU1_OUT_SIZE+i] = pitch_gate[2]*pred[i+2];
+  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) gru3_in[SIG_NET_GRU2_OUT_SIZE+i] = pitch_gate[2]*pred[i+2];
   OPUS_COPY(&gru3_in[SIG_NET_GRU2_OUT_SIZE+FARGAN_SUBFRAME_SIZE], prev, FARGAN_SUBFRAME_SIZE);
   compute_generic_gru(&model->sig_net_gru3_input, &model->sig_net_gru3_recurrent, st->gru3_state, gru3_in);
   compute_glu(&model->sig_net_gru3_glu_gate, &skip_cat[SIG_NET_GRU1_OUT_SIZE+SIG_NET_GRU2_OUT_SIZE], st->gru3_state);
@@ -149,18 +149,14 @@ static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, 
 void fargan_cont(FARGANState *st, const float *pcm0, const float *features0)
 {
   int i;
-  float norm2, norm_1;
-  float new_pcm[FARGAN_FRAME_SIZE];
-  FARGAN *model;
   float cond[COND_NET_FCONV2_OUT_SIZE];
   float x0[FARGAN_CONT_SAMPLES];
   float dummy[FARGAN_SUBFRAME_SIZE];
-  int period;
-  model = &st->model;
+  int period=0;
 
   /* Pre-load features. */
   for (i=0;i<5;i++) {
-    float *features = &features0[i*NB_FEATURES];
+    const float *features = &features0[i*NB_FEATURES];
     st->last_period = period;
     period = (int)floor(.5+256./pow(2.f,((1./60.)*((features[NB_BANDS]+1.5)*60))));
     compute_fargan_cond(st, cond, features, period);
@@ -171,11 +167,11 @@ void fargan_cont(FARGANState *st, const float *pcm0, const float *features0)
     x0[i] = pcm0[i] - FARGAN_DEEMPHASIS*pcm0[i-1];
   }
 
-  OPUS_COPY(st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_FRAME_SIZE], x0, FARGAN_FRAME_SIZE);
+  OPUS_COPY(&st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_FRAME_SIZE], x0, FARGAN_FRAME_SIZE);
 
   for (i=0;i<FARGAN_NB_SUBFRAMES;i++) {
     run_fargan_subframe(st, dummy, &cond[i*FARGAN_COND_SIZE], st->last_period);
-    OPUS_COPY(&st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE], x0[FARGAN_FRAME_SIZE+i*FARGAN_SUBFRAME_SIZE], FARGAN_SUBFRAME_SIZE);
+    OPUS_COPY(&st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE], &x0[FARGAN_FRAME_SIZE+i*FARGAN_SUBFRAME_SIZE], FARGAN_SUBFRAME_SIZE);
   }
   st->cont_initialized = 1;
 }
