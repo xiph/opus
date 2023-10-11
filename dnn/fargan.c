@@ -168,12 +168,12 @@ void fargan_cont(FARGANState *st, const float *pcm0, const float *features0)
   }
 
   OPUS_COPY(&st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_FRAME_SIZE], x0, FARGAN_FRAME_SIZE);
+  st->cont_initialized = 1;
 
   for (i=0;i<FARGAN_NB_SUBFRAMES;i++) {
     run_fargan_subframe(st, dummy, &cond[i*FARGAN_COND_SIZE], st->last_period);
     OPUS_COPY(&st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE], &x0[FARGAN_FRAME_SIZE+i*FARGAN_SUBFRAME_SIZE], FARGAN_SUBFRAME_SIZE);
   }
-  st->cont_initialized = 1;
 }
 
 
@@ -181,7 +181,7 @@ void fargan_init(FARGANState *st)
 {
   int ret;
   OPUS_CLEAR(st, 1);
-  ret = init_fargan(&st->model, fwgan_arrays);
+  ret = init_fargan(&st->model, fargan_arrays);
   celt_assert(ret == 0);
   /* FIXME: perform arch detection. */
 }

@@ -193,7 +193,7 @@ def dump_torch_embedding_weights(where, embed, name='embed', scale=1/128, sparse
 
     print("quantize = ", quantize)
     w = embed.weight.detach().cpu().numpy().copy().transpose()
-    b = np.zeros(1, dtype=w.dtype)
+    b = np.zeros(w.shape[0], dtype=w.dtype)
 
     if isinstance(where, CWriter):
         return print_dense_layer(where, name, w, b, scale=scale, format='torch', sparse=sparse, diagonal=diagonal, quantize=quantize)
