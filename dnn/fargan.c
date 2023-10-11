@@ -103,7 +103,7 @@ static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, 
     pos++;
     if (pos == PITCH_MAX_PERIOD) pos -= period;
   }
-  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) prev[i] = gain_1*st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE+i];
+  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) prev[i] = MAX32(-1.f, MIN16(1.f, gain_1*st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE+i]));
 
   OPUS_COPY(&fwc0_in[0], &cond[0], FARGAN_COND_SIZE);
   OPUS_COPY(&fwc0_in[FARGAN_COND_SIZE], pred, FARGAN_SUBFRAME_SIZE+4);
