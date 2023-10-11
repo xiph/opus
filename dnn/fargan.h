@@ -38,6 +38,8 @@
 #define FARGAN_COND_SIZE (COND_NET_FCONV2_OUT_SIZE/FARGAN_SUBFRAME_SIZE)
 #define FARGAN_DEEMPHASIS 0.85f
 
+#define SIG_NET_INPUT_SIZE (FARGAN_COND_SIZE+2*FARGAN_SUBFRAME_SIZE+4)
+#define SIG_NET_FWC0_STATE_SIZE (2*SIG_NET_INPUT_SIZE)
 
 typedef struct {
   FARGAN model;
@@ -48,9 +50,11 @@ typedef struct {
   float pitch_buf[PITCH_MAX_PERIOD];
   float cond_conv1_state[COND_NET_FCONV1_STATE_SIZE];
   float cond_conv2_state[COND_NET_FCONV2_STATE_SIZE];
+  float fwc0_mem[SIG_NET_FWC0_STATE_SIZE];
   float gru1_state[SIG_NET_GRU1_STATE_SIZE];
   float gru2_state[SIG_NET_GRU2_STATE_SIZE];
   float gru3_state[SIG_NET_GRU3_STATE_SIZE];
+  int last_period;
 } FARGANState;
 
 void fargan_init(FARGANState *st);

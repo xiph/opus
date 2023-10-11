@@ -189,11 +189,20 @@ def load_torch_conv2d_weights(where, conv):
                 conv.bias.set_(torch.from_numpy(b))
 
 
-def dump_torch_embedding_weights(where, emb):
-    os.makedirs(where, exist_ok=True)
+def dump_torch_embedding_weights(where, embed, name='embed', scale=1/128, sparse=False, diagonal=False, quantize=False):
 
-    w = emb.weight.detach().cpu().numpy().copy()
-    np.save(os.path.join(where, 'weight.npy'), w)
+    print("quantize = ", quantize)
+    w = embed.weight.detach().cpu().numpy().copy().transpose()
+    b = np.zeros(1, dtype=w.dtype)
+
+    if isinstance(where, CWriter):
+        return print_dense_layer(where, name, w, b, scale=scale, format='torch', sparse=sparse, diagonal=diagonal, quantize=quantize)
+
+    else:
+        os.makedirs(where, exist_ok=True)
+
+        np.save(os.path.join(where, 'weight.npy'), w)
+        np.save(os.path.join(where, 'bias.npy'), b)
 
 
 def load_torch_embedding_weights(where, emb):

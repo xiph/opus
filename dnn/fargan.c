@@ -39,17 +39,20 @@
 
 #define FARGAN_FEATURES (NB_FEATURES)
 
-static void compute_fargan_cond(FARGANState *st, float *cond, const float *features)
+static void compute_fargan_cond(FARGANState *st, float *cond, const float *features, int period)
 {
   FARGAN *model;
+  float dense_in[NB_FEATURES+COND_NET_PEMBED_OUT_SIZE];
   float conv1_in[COND_NET_FCONV1_IN_SIZE];
   float conv2_in[COND_NET_FCONV2_IN_SIZE];
   model = &st->model;
-  celt_assert(FARGAN_FEATURES == model->cond_net_fdense1.nb_inputs);
+  celt_assert(FARGAN_FEATURES+COND_NET_PEMBED_OUT_SIZE == model->cond_net_fdense1.nb_inputs);
   celt_assert(COND_NET_FCONV1_IN_SIZE == model->cond_net_fdense1.nb_outputs);
   celt_assert(COND_NET_FCONV2_IN_SIZE == model->cond_net_fconv1.nb_outputs);
+  OPUS_COPY(&dense_in[NB_FEATURES], &model->cond_net_pembed.float_weights[IMIN(period, 224)*COND_NET_PEMBED_OUT_SIZE], COND_NET_PEMBED_OUT_SIZE);
+  OPUS_COPY(dense_in, features, NB_FEATURES);
 
-  compute_generic_dense(&model->cond_net_fdense1, conv1_in, features, ACTIVATION_TANH);
+  compute_generic_dense(&model->cond_net_fdense1, conv1_in, dense_in, ACTIVATION_TANH);
   compute_generic_conv1d(&model->cond_net_fconv1, conv2_in, st->cond_conv1_state, conv1_in, COND_NET_FCONV1_IN_SIZE, ACTIVATION_TANH);
   compute_generic_conv1d(&model->cond_net_fconv2, cond, st->cond_conv2_state, conv2_in, COND_NET_FCONV2_IN_SIZE, ACTIVATION_TANH);
 }
@@ -74,55 +77,72 @@ static void fargan_deemphasis(float *pcm, float *deemph_mem) {
 static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, int period)
 {
   int i, pos;
-  float tmp1[FWC1_FC_0_OUT_SIZE];
-  float tmp2[IMAX(RNN_GRU_STATE_SIZE, FWC2_FC_0_OUT_SIZE)];
-  float fwc0_in[FARGAN_COND_SIZE+2*FARGAN_SUBFRAME_SIZE];
-  float rnn_in[FEAT_IN_CONV1_CONV_OUT_SIZE];
+  float fwc0_in[SIG_NET_INPUT_SIZE];
+  float gru1_in[SIG_NET_FWC0_CONV_OUT_SIZE+2*FARGAN_SUBFRAME_SIZE];
+  float gru2_in[SIG_NET_GRU1_OUT_SIZE+2*FARGAN_SUBFRAME_SIZE];
+  float gru3_in[SIG_NET_GRU2_OUT_SIZE+2*FARGAN_SUBFRAME_SIZE];
   float pembed[FARGAN_FRAME_SIZE/2];
+  float pred[FARGAN_SUBFRAME_SIZE+4];
+  float prev[FARGAN_SUBFRAME_SIZE];
+  float pitch_gate[4];
+  float gain;
+  float gain_1;
+  float skip_cat[10000];
+  float skip_out[SIG_NET_SKIP_DENSE_OUT_SIZE];
+
   FARGAN *model;
   model = &st->model;
 
-  /* Interleave bfcc_cond and pembed for each subframe in feat_in. */
-  OPUS_COPY(&fwc0_in[0], &cond[0], FARGAN_COND_SIZE);
-  pos = PITCH_MAX_PERIOD-period;
-  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) {
-    fwc0_in[FARGAN_COND_SIZE+i] = st->pitch_buf[pos++];
+  compute_generic_dense(&model->sig_net_cond_gain_dense, &gain, cond, ACTIVATION_LINEAR);
+  gain = exp(gain);
+  gain_1 = 1.f/(1e-5 + gain);
+
+  pos = PITCH_MAX_PERIOD-period-2;
+  for (i=0;i<FARGAN_SUBFRAME_SIZE+4;i++) {
+    pred[i] = MIN32(1.f, MAX32(-1.f, gain_1*st->pitch_buf[IMAX(0, pos)]));
+    pos++;
     if (pos == PITCH_MAX_PERIOD) pos -= period;
   }
-  OPUS_COPY(&fwc0_in[FARGAN_COND_SIZE], st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE], FARGAN_SUBFRAME_SIZE);
+  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) prev[i] = gain_1*st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE+i];
 
-  compute_generic_conv1d(&model->sig_net_fwc0_conv, gru1_in, st->fwc0_mem, fwc0_in, FARGAN_COND_SIZE+2*FARGAN_SUBFRAME_SIZE, ACTIVATION_TANH);
-  celt_assert(FEAT_IN_NL1_GATE_OUT_SIZE == model->feat_in_nl1_gate.nb_outputs);
-  compute_glu(&model->sig_net_fwc0_glu_gate, rnn_in, rnn_in);
+  OPUS_COPY(&fwc0_in[0], &cond[0], FARGAN_COND_SIZE);
+  OPUS_COPY(&fwc0_in[FARGAN_COND_SIZE], pred, FARGAN_SUBFRAME_SIZE+4);
+  OPUS_COPY(&fwc0_in[FARGAN_COND_SIZE+FARGAN_SUBFRAME_SIZE+4], prev, FARGAN_SUBFRAME_SIZE);
 
-  compute_generic_gru(&model->sig_net_gru1_input, &model->sig_net_gru1_recurrent, st->gru1_state, rnn_in);
-  celt_assert(IMAX(RNN_GRU_STATE_SIZE, FWC2_FC_0_OUT_SIZE) >= model->rnn_nl_gate.nb_outputs);
-  compute_glu(&model->rnn_nl_gate, tmp2, st->gru1_state);
+  compute_generic_conv1d(&model->sig_net_fwc0_conv, gru1_in, st->fwc0_mem, fwc0_in, SIG_NET_INPUT_SIZE, ACTIVATION_TANH);
+  celt_assert(SIG_NET_FWC0_GLU_GATE_OUT_SIZE == model->sig_net_fwc0_glu_gate.nb_outputs);
+  compute_glu(&model->sig_net_fwc0_glu_gate, gru1_in, gru1_in);
 
-  compute_generic_conv1d(&model->fwc1_fc_0, tmp1, st->fwc1_state, tmp2, RNN_GRU_STATE_SIZE, ACTIVATION_LINEAR);
-  compute_gated_activation(&model->fwc1_fc_1_gate, tmp1, tmp1, ACTIVATION_TANH);
+  compute_generic_dense(&model->sig_net_gain_dense_out, pitch_gate, gru1_in, ACTIVATION_SIGMOID);
 
-  compute_generic_conv1d(&model->fwc2_fc_0, tmp2, st->fwc2_state, tmp1, FWC1_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
-  compute_gated_activation(&model->fwc2_fc_1_gate, tmp2, tmp2, ACTIVATION_TANH);
+  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) gru1_in[SIG_NET_FWC0_GLU_GATE_OUT_SIZE+i] = pitch_gate[0]*pred[i+2];
+  OPUS_COPY(&gru1_in[SIG_NET_FWC0_GLU_GATE_OUT_SIZE+FARGAN_SUBFRAME_SIZE], prev, FARGAN_SUBFRAME_SIZE);
+  compute_generic_gru(&model->sig_net_gru1_input, &model->sig_net_gru1_recurrent, st->gru1_state, gru1_in);
+  compute_glu(&model->sig_net_gru1_glu_gate, gru2_in, st->gru1_state);
 
-  compute_generic_conv1d(&model->fwc3_fc_0, tmp1, st->fwc3_state, tmp2, FWC2_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
-  compute_gated_activation(&model->fwc3_fc_1_gate, tmp1, tmp1, ACTIVATION_TANH);
+  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) gru2_in[SIG_NET_GRU1_OUT_SIZE+i] = pitch_gate[1]*pred[i+2];
+  OPUS_COPY(&gru2_in[SIG_NET_GRU1_OUT_SIZE+FARGAN_SUBFRAME_SIZE], prev, FARGAN_SUBFRAME_SIZE);
+  compute_generic_gru(&model->sig_net_gru2_input, &model->sig_net_gru2_recurrent, st->gru2_state, gru2_in);
+  compute_glu(&model->sig_net_gru2_glu_gate, gru3_in, st->gru2_state);
 
-  compute_generic_conv1d(&model->fwc4_fc_0, tmp2, st->fwc4_state, tmp1, FWC3_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
-  compute_gated_activation(&model->fwc4_fc_1_gate, tmp2, tmp2, ACTIVATION_TANH);
+  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) gru3_in[SIG_NET_GRU1_OUT_SIZE+i] = pitch_gate[2]*pred[i+2];
+  OPUS_COPY(&gru3_in[SIG_NET_GRU2_OUT_SIZE+FARGAN_SUBFRAME_SIZE], prev, FARGAN_SUBFRAME_SIZE);
+  compute_generic_gru(&model->sig_net_gru3_input, &model->sig_net_gru3_recurrent, st->gru3_state, gru3_in);
+  compute_glu(&model->sig_net_gru3_glu_gate, &skip_cat[SIG_NET_GRU1_OUT_SIZE+SIG_NET_GRU2_OUT_SIZE], st->gru3_state);
 
-  compute_generic_conv1d(&model->fwc5_fc_0, tmp1, st->fwc5_state, tmp2, FWC4_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
-  compute_gated_activation(&model->fwc5_fc_1_gate, tmp1, tmp1, ACTIVATION_TANH);
+  OPUS_COPY(skip_cat, gru2_in, SIG_NET_GRU1_OUT_SIZE);
+  OPUS_COPY(&skip_cat[SIG_NET_GRU1_OUT_SIZE], gru3_in, SIG_NET_GRU2_OUT_SIZE);
+  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) skip_cat[SIG_NET_GRU1_OUT_SIZE+SIG_NET_GRU2_OUT_SIZE+SIG_NET_GRU3_OUT_SIZE+i] = pitch_gate[3]*pred[i+2];
+  OPUS_COPY(&skip_cat[SIG_NET_GRU1_OUT_SIZE+SIG_NET_GRU2_OUT_SIZE+SIG_NET_GRU3_OUT_SIZE+FARGAN_SUBFRAME_SIZE], prev, FARGAN_SUBFRAME_SIZE);
 
-  compute_generic_conv1d(&model->fwc6_fc_0, tmp2, st->fwc6_state, tmp1, FWC5_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
-  compute_gated_activation(&model->fwc6_fc_1_gate, tmp2, tmp2, ACTIVATION_TANH);
+  compute_generic_dense(&model->sig_net_skip_dense, skip_out, skip_cat, ACTIVATION_TANH);
+  compute_glu(&model->sig_net_skip_glu_gate, skip_out, skip_out);
 
-  compute_generic_conv1d(&model->fwc7_fc_0, tmp1, st->fwc7_state, tmp2, FWC6_FC_0_OUT_SIZE, ACTIVATION_LINEAR);
-  compute_gated_activation(&model->fwc7_fc_1_gate, pcm, tmp1, ACTIVATION_TANH);
+  compute_generic_dense(&model->sig_net_sig_dense_out, pcm, skip_out, ACTIVATION_TANH);
+  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) pcm[i] *= gain;
 
-  apply_gain(pcm, c0, &st->last_gain);
-  fargan_preemphasis(pcm, &st->preemph_mem);
-  fargan_lpc_syn(pcm, st->syn_mem, lpc, st->last_lpc);
+  OPUS_MOVE(st->pitch_buf, &st->pitch_buf[FARGAN_SUBFRAME_SIZE], FARGAN_SUBFRAME_SIZE);
+  OPUS_COPY(&st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE], pcm, FARGAN_SUBFRAME_SIZE);
   fargan_deemphasis(pcm, &st->deemph_mem);
 }
 
@@ -130,47 +150,34 @@ void fargan_cont(FARGANState *st, const float *pcm0, const float *features0)
 {
   int i;
   float norm2, norm_1;
-  float wpcm0[CONT_PCM_INPUTS];
-  float cont_inputs[CONT_PCM_INPUTS+1];
-  float tmp1[MAX_CONT_SIZE];
-  float tmp2[MAX_CONT_SIZE];
-  float lpc[LPC_ORDER];
   float new_pcm[FARGAN_FRAME_SIZE];
   FARGAN *model;
-  st->embed_phase[0] = 1;
+  float cond[COND_NET_FCONV2_OUT_SIZE];
+  float x0[FARGAN_CONT_SAMPLES];
+  float dummy[FARGAN_SUBFRAME_SIZE];
+  int period;
   model = &st->model;
-  compute_wlpc(lpc, features0);
-  /* Deemphasis memory is just the last continuation sample. */
-  st->deemph_mem = pcm0[CONT_PCM_INPUTS-1];
 
-  /* Apply analysis filter, considering that the preemphasis and deemphasis filter
-     cancel each other in this case since the LPC filter is constant across that boundary.
-     */
-  for (i=LPC_ORDER;i<CONT_PCM_INPUTS;i++) {
-    int j;
-    wpcm0[i] = pcm0[i];
-    for (j=0;j<LPC_ORDER;j++) wpcm0[i] += lpc[j]*pcm0[i-j-1];
+  /* Pre-load features. */
+  for (i=0;i<5;i++) {
+    float *features = &features0[i*NB_FEATURES];
+    st->last_period = period;
+    period = (int)floor(.5+256./pow(2.f,((1./60.)*((features[NB_BANDS]+1.5)*60))));
+    compute_fargan_cond(st, cond, features, period);
   }
-  /* FIXME: Make this less stupid. */
-  for (i=0;i<LPC_ORDER;i++) wpcm0[i] = wpcm0[LPC_ORDER];
 
-  /* The memory of the pre-empahsis is the last sample of the weighted signal
-     (ignoring preemphasis+deemphasis combination). */
-  st->preemph_mem = wpcm0[CONT_PCM_INPUTS-1];
-  /* The memory of the synthesis filter is the pre-emphasized continuation. */
-  for (i=0;i<LPC_ORDER;i++) st->syn_mem[i] = pcm0[CONT_PCM_INPUTS-1-i] - FARGAN_DEEMPHASIS*pcm0[CONT_PCM_INPUTS-2-i];
+  x0[0] = 0;
+  for (i=1;i<FARGAN_CONT_SAMPLES;i++) {
+    x0[i] = pcm0[i] - FARGAN_DEEMPHASIS*pcm0[i-1];
+  }
 
-  norm2 = celt_inner_prod(wpcm0, wpcm0, CONT_PCM_INPUTS, st->arch);
-  norm_1 = 1.f/sqrt(1e-8f + norm2);
-  for (i=0;i<CONT_PCM_INPUTS;i++) cont_inputs[i+1] = norm_1*wpcm0[i];
-  cont_inputs[0] = log(sqrt(norm2) + 1e-7f);
+  OPUS_COPY(st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_FRAME_SIZE], x0, FARGAN_FRAME_SIZE);
 
-
+  for (i=0;i<FARGAN_NB_SUBFRAMES;i++) {
+    run_fargan_subframe(st, dummy, &cond[i*FARGAN_COND_SIZE], st->last_period);
+    OPUS_COPY(&st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE], x0[FARGAN_FRAME_SIZE+i*FARGAN_SUBFRAME_SIZE], FARGAN_SUBFRAME_SIZE);
+  }
   st->cont_initialized = 1;
-  /* Process the first frame, discard the first subframe, and keep the rest for the first
-     synthesis call. */
-  fargan_synthesize_impl(st, new_pcm, lpc, features0);
-  OPUS_COPY(st->pcm_buf, &new_pcm[SUBFRAME_SIZE], FARGAN_FRAME_SIZE-SUBFRAME_SIZE);
 }
 
 
@@ -201,12 +208,13 @@ static void fargan_synthesize_impl(FARGANState *st, float *pcm, const float *fea
   celt_assert(st->cont_initialized);
 
   period = (int)floor(.5+256./pow(2.f,((1./60.)*((features[NB_BANDS]+1.5)*60))));
-  compute_fargan_cond(st, cond, features);
+  compute_fargan_cond(st, cond, features, period);
   for (subframe=0;subframe<FARGAN_NB_SUBFRAMES;subframe++) {
     float *sub_cond;
     sub_cond = &cond[subframe*FARGAN_COND_SIZE];
-    run_fargan_subframe(st, &pcm[subframe*FARGAN_SUBFRAME_SIZE], sub_cond, period);
+    run_fargan_subframe(st, &pcm[subframe*FARGAN_SUBFRAME_SIZE], sub_cond, st->last_period);
   }
+  st->last_period = period;
 }
 
 void fargan_synthesize(FARGANState *st, float *pcm, const float *features)
