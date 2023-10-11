@@ -49,7 +49,7 @@ static void compute_fargan_cond(FARGANState *st, float *cond, const float *featu
   celt_assert(FARGAN_FEATURES+COND_NET_PEMBED_OUT_SIZE == model->cond_net_fdense1.nb_inputs);
   celt_assert(COND_NET_FCONV1_IN_SIZE == model->cond_net_fdense1.nb_outputs);
   celt_assert(COND_NET_FCONV2_IN_SIZE == model->cond_net_fconv1.nb_outputs);
-  OPUS_COPY(&dense_in[NB_FEATURES], &model->cond_net_pembed.float_weights[IMIN(period, 224)*COND_NET_PEMBED_OUT_SIZE], COND_NET_PEMBED_OUT_SIZE);
+  OPUS_COPY(&dense_in[NB_FEATURES], &model->cond_net_pembed.float_weights[IMAX(0,IMIN(period-32, 224))*COND_NET_PEMBED_OUT_SIZE], COND_NET_PEMBED_OUT_SIZE);
   OPUS_COPY(dense_in, features, NB_FEATURES);
 
   compute_generic_dense(&model->cond_net_fdense1, conv1_in, dense_in, ACTIVATION_TANH);
