@@ -12,7 +12,9 @@ import wexchange.torch
 import fargan
 #from models import model_dict
 
-unquantized = [
+unquantized = [ 'cond_net.pembed', 'cond_net.fdense1', 'sig_net.cond_gain_dense', 'sig_net.gain_dense_out' ]
+
+unquantized2 = [
     'cond_net.pembed',
     'cond_net.fdense1',
     'cond_net.fconv1',
