@@ -222,6 +222,8 @@ int main(int argc, char **argv) {
 #ifdef USE_WEIGHTS_FILE
         fargan_load_model(fwgan, data, len);
 #endif
+        /* uncomment the following to align with Python code */
+        /*ret = fread(&in_features[0], sizeof(in_features[0]), NB_TOTAL_FEATURES, fin);*/
         for (i=0;i<5;i++) {
           ret = fread(&in_features[i*NB_FEATURES], sizeof(in_features[0]), NB_TOTAL_FEATURES, fin);
         }
