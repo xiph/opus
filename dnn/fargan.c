@@ -57,15 +57,6 @@ static void compute_fargan_cond(FARGANState *st, float *cond, const float *featu
   compute_generic_conv1d(&model->cond_net_fconv2, cond, st->cond_conv2_state, conv2_in, COND_NET_FCONV2_IN_SIZE, ACTIVATION_TANH);
 }
 
-static void fargan_preemphasis(float *pcm, float *preemph_mem) {
-  int i;
-  for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) {
-    float tmp = pcm[i];
-    pcm[i] -= FARGAN_DEEMPHASIS * *preemph_mem;
-    *preemph_mem = tmp;
-  }
-}
-
 static void fargan_deemphasis(float *pcm, float *deemph_mem) {
   int i;
   for (i=0;i<FARGAN_SUBFRAME_SIZE;i++) {
@@ -175,6 +166,7 @@ void fargan_cont(FARGANState *st, const float *pcm0, const float *features0)
     run_fargan_subframe(st, dummy, &cond[i*FARGAN_COND_SIZE], st->last_period);
     OPUS_COPY(&st->pitch_buf[PITCH_MAX_PERIOD-FARGAN_SUBFRAME_SIZE], &x0[FARGAN_FRAME_SIZE+i*FARGAN_SUBFRAME_SIZE], FARGAN_SUBFRAME_SIZE);
   }
+  st->deemph_mem = pcm0[FARGAN_CONT_SAMPLES-1];
 }
 
 

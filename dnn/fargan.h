@@ -45,7 +45,6 @@ typedef struct {
   FARGAN model;
   int arch;
   int cont_initialized;
-  float preemph_mem;
   float deemph_mem;
   float pitch_buf[PITCH_MAX_PERIOD];
   float cond_conv1_state[COND_NET_FCONV1_STATE_SIZE];
