@@ -20,6 +20,8 @@
 #define PITCH_IF_MAX_FREQ 30
 #define PITCH_IF_FEATURES (3*PITCH_IF_MAX_FREQ - 2)
 
+#define CONT_VECTORS 5
+
 struct LPCNetState {
     LPCNetModel model;
     int arch;
@@ -84,6 +86,7 @@ struct LPCNetPLCState {
   float pcm[FARGAN_CONT_SAMPLES];
   int blend;
   float features[NB_TOTAL_FEATURES];
+  float cont_features[CONT_VECTORS*NB_FEATURES];
   int loss_count;
   PLCNetState plc_net;
   PLCNetState plc_copy[FEATURES_DELAY+1];

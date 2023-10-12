@@ -131,8 +131,6 @@ static void compute_plc_pred(LPCNetPLCState *st, float *out, const float *in) {
   compute_gruB(&st->model.plc_gru1, zeros, net->plc_gru1_state, dense_out);
   compute_gruB(&st->model.plc_gru2, zeros, net->plc_gru2_state, net->plc_gru1_state);
   _lpcnet_compute_dense(&st->model.plc_out, out, net->plc_gru2_state);
-  /* Artificially boost the correlation to make harmonics cleaner. */
-  out[19] = MIN16(.5f, out[19]+.1f);
 }
 
 static int get_fec_or_pred(LPCNetPLCState *st, float *out) {
@@ -190,7 +188,9 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
     if (st->fec_skip) st->fec_skip--;
     else if (st->fec_read_pos < st->fec_fill_pos) st->fec_read_pos++;
     st->fec_keep_pos = IMAX(0, IMAX(st->fec_keep_pos, st->fec_read_pos-FEATURES_DELAY-1));
+    OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
   }
+  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->enc.features, NB_FEATURES);
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FARGAN_CONT_SAMPLES-FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) st->pcm[FARGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->loss_count = 0;
@@ -202,12 +202,13 @@ static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6,
 int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
   if (st->blend == 0) {
-    float f0[NB_FEATURES*5];
     get_fec_or_pred(st, st->features);
-    for (i=0;i<5;i++) {
-      OPUS_COPY(&f0[i*NB_FEATURES], &st->features[0], NB_FEATURES);
-    }
-    fargan_cont(&st->fargan, st->pcm, f0);
+    OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
+    OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->features, NB_FEATURES);
+    get_fec_or_pred(st, st->features);
+    OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
+    OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->features, NB_FEATURES);
+    fargan_cont(&st->fargan, st->pcm, st->cont_features);
   }
   OPUS_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
   st->plc_copy[0] = st->plc_net;
@@ -224,6 +225,8 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
     compute_frame_features(&st->enc, x);
     process_single_frame(&st->enc, NULL);
   }
+  OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
+  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->enc.features, NB_FEATURES);
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FARGAN_CONT_SAMPLES-FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) st->pcm[FARGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->blend = 1;
