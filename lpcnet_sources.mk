@@ -3,13 +3,10 @@ dnn/burg.c \
 dnn/freq.c \
 dnn/fargan.c \
 dnn/fargan_data.c \
-dnn/kiss99.c \
-dnn/lpcnet.c \
 dnn/lpcnet_enc.c \
 dnn/lpcnet_plc.c \
 dnn/lpcnet_tables.c \
 dnn/nnet.c \
-dnn/nnet_data.c \
 dnn/plc_data.c \
 dnn/parse_lpcnet_weights.c \
 dnn/dred_rdovae.c \

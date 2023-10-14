@@ -82,7 +82,7 @@ void free_blob(unsigned char *blob, int len) {
 #endif
 
 #define MODE_FEATURES 2
-#define MODE_SYNTHESIS 3
+/*#define MODE_SYNTHESIS 3*/
 #define MODE_PLC 4
 #define MODE_ADDLPC 5
 #define MODE_FWGAN_SYNTHESIS 6
@@ -90,7 +90,7 @@ void free_blob(unsigned char *blob, int len) {
 
 void usage(void) {
     fprintf(stderr, "usage: lpcnet_demo -features <input.pcm> <features.f32>\n");
-    fprintf(stderr, "       lpcnet_demo -synthesis <features.f32> <output.pcm>\n");
+    fprintf(stderr, "       lpcnet_demo -fargan_synthesis <features.f32> <output.pcm>\n");
     fprintf(stderr, "       lpcnet_demo -plc <plc_options> <percent> <input.pcm> <output.pcm>\n");
     fprintf(stderr, "       lpcnet_demo -plc_file <plc_options> <percent> <input.pcm> <output.pcm>\n");
     fprintf(stderr, "       lpcnet_demo -addlpc <features_without_lpc.f32> <features_with_lpc.lpc>\n\n");
@@ -114,7 +114,6 @@ int main(int argc, char **argv) {
 #endif
     if (argc < 4) usage();
     if (strcmp(argv[1], "-features") == 0) mode=MODE_FEATURES;
-    else if (strcmp(argv[1], "-synthesis") == 0) mode=MODE_SYNTHESIS;
     else if (strcmp(argv[1], "-fargan-synthesis") == 0) mode=MODE_FARGAN_SYNTHESIS;
     else if (strcmp(argv[1], "-plc") == 0) {
         mode=MODE_PLC;
@@ -170,24 +169,6 @@ int main(int argc, char **argv) {
             fwrite(features, sizeof(float), NB_TOTAL_FEATURES, fout);
         }
         lpcnet_encoder_destroy(net);
-    } else if (mode == MODE_SYNTHESIS) {
-        LPCNetState *net;
-        net = lpcnet_create();
-#ifdef USE_WEIGHTS_FILE
-        lpcnet_load_model(net, data, len);
-#endif
-        while (1) {
-            float in_features[NB_TOTAL_FEATURES];
-            float features[NB_FEATURES];
-            opus_int16 pcm[LPCNET_FRAME_SIZE];
-            size_t ret;
-            ret = fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
-            if (feof(fin) || ret != NB_TOTAL_FEATURES) break;
-            OPUS_COPY(features, in_features, NB_FEATURES);
-            lpcnet_synthesize(net, features, pcm, LPCNET_FRAME_SIZE);
-            fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
-        }
-        lpcnet_destroy(net);
     } else if (mode == MODE_FARGAN_SYNTHESIS) {
         FARGANState fargan;
         size_t ret, i;

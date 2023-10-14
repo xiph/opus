@@ -218,59 +218,6 @@ void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *
    compute_activation(output, output, layer->nb_neurons, layer->activation);
 }
 
-int sample_mdense(const MDenseLayer *layer, const float *input, const float *sampling_logit_table, kiss99_ctx *rng)
-{
-   int b, j, N, M, C, stride;
-   int val=0;
-   float thresholds[8];
-   M = layer->nb_inputs;
-   N = layer->nb_neurons;
-   C = layer->nb_channels;
-   celt_assert(N*C <= MAX_MDENSE_TMP);
-   stride = M*C;
-
-   celt_assert(N <= DUAL_FC_OUT_SIZE);
-
-   /* Computing all the random thresholds in advance. These thresholds are directly
-      based on the logit to avoid computing the sigmoid.*/
-   for (b=0;b<8;b+=4) {
-       uint32_t r = kiss99_rand(rng);
-       thresholds[b] = sampling_logit_table[r&0xFF];
-       thresholds[b+1] = sampling_logit_table[(r>>8)&0xFF];
-       thresholds[b+2] = sampling_logit_table[(r>>16)&0xFF];
-       thresholds[b+3] = sampling_logit_table[(r>>24)&0xFF];
-   }
-
-   for (b=0;b<8;b++)
-   {
-      int bit;
-      int i;
-      float sum1, sum2;
-
-      i = (1<<b) | val;
-
-      sum1 = layer->bias[i];
-      sum2 = layer->bias[i + N];
-      for (j=0;j<M;j++) {
-         sum1 += layer->input_weights[i*stride + j]*input[j];
-         sum2 += layer->input_weights[i*stride + j + M]*input[j];
-      }
-      sum1 = layer->factor[i]*tanh_approx(sum1);
-      sum2 = layer->factor[N + i]*tanh_approx(sum2);
-      sum1 += sum2;
-      /*sum1 = 1.f/(1 + exp(-sum1));*/
-#if 1 /* Sample the decision based on the logit. */
-      bit = thresholds[b] < sum1;
-#else
-      sum1 = sigmoid_approx(sum1);
-      bit = .025+.95*((rand()+.5f)/(RAND_MAX+1.f)) < sum1;
-#endif
-      val = (val << 1) | bit;
-   }
-   return val;
-
-}
-
 #ifdef USE_SU_BIAS
 #define bias_type subias
 #else
