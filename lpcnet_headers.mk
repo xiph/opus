@@ -10,8 +10,6 @@ dnn/common.h \
 dnn/freq.h \
 dnn/fargan.h \
 dnn/fargan_data.h \
-dnn/fwgan.h \
-dnn/fwgan_data.h \
 dnn/kiss99.h \
 dnn/lpcnet_private.h \
 dnn/nnet_data.h \
