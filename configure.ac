@@ -164,7 +164,7 @@ AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes"])
 
 AC_ARG_ENABLE([dred],
     [AS_HELP_STRING([--enable-dred], [Use Deep REDundancy (DRED)])],,
-    [enable_dred=yes])
+    [enable_dred=no])
 
 AS_IF([test "$enable_dred" = "yes"],[
   AC_DEFINE([ENABLE_DRED], [1], [DRED])
@@ -173,7 +173,7 @@ AM_CONDITIONAL([ENABLE_DRED], [test "$enable_dred" = "yes"])
 
 AC_ARG_ENABLE([deep-plc],
     [AS_HELP_STRING([--enable-deep-plc], [Use deep PLC for SILK])],,
-    [enable_deep_plc=yes])
+    [enable_deep_plc=no])
 
 AS_IF([test "$enable_deep_plc" = "yes"],[
   AC_DEFINE([ENABLE_DEEP_PLC], [1], [Deep PLC])
