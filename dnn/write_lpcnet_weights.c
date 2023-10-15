@@ -40,7 +40,7 @@
 #ifdef USE_WEIGHTS_FILE
 #undef USE_WEIGHTS_FILE
 #endif
-#include "nnet_data.c"
+#include "fargan_data.c"
 #include "plc_data.c"
 #include "dred_rdovae_enc_data.c"
 #include "dred_rdovae_dec_data.c"
@@ -70,7 +70,7 @@ void write_weights(const WeightArray *list, FILE *fout)
 int main(void)
 {
   FILE *fout = fopen("weights_blob.bin", "w");
-  write_weights(lpcnet_arrays, fout);
+  write_weights(fargan_arrays, fout);
   write_weights(lpcnet_plc_arrays, fout);
   write_weights(rdovaeenc_arrays, fout);
   write_weights(rdovaedec_arrays, fout);
