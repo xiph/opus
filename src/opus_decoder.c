@@ -61,7 +61,7 @@ struct OpusDecoder {
    silk_DecControlStruct DecControl;
    int          decode_gain;
    int          arch;
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
     LPCNetPLCState lpcnet;
 #endif
 
@@ -156,7 +156,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
 
    st->prev_mode = 0;
    st->frame_size = Fs/400;
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
     lpcnet_plc_init( &st->lpcnet, LPCNET_PLC_CODEC );
 #endif
    st->arch = opus_select_arch();
@@ -409,7 +409,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         int first_frame = decoded_samples == 0;
         silk_ret = silk_Decode( silk_dec, &st->DecControl,
                                 lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size,
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
                                 &st->lpcnet,
 #endif
                                 st->arch );
@@ -927,7 +927,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       silk_InitDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
       lpcnet_plc_reset( &st->lpcnet );
 #endif
    }

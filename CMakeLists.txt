@@ -373,8 +373,8 @@ endif()
 
 if (OPUS_NEURAL_FEC)
   target_compile_definitions(opus PRIVATE ENABLE_NEURAL_FEC)
-  if(NOT OPUS_NEURAL_PLC)
-    target_compile_definitions(opus PRIVATE NEURAL_PLC)
+  if(NOT OPUS_DEEP_PLC)
+	  target_compile_definitions(opus PRIVATE ENABLE_DEEP_PLC)
   endif()
 endif()
 

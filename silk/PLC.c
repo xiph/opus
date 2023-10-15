@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "stack_alloc.h"
 #include "PLC.h"
 
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
 #include "lpcnet.h"
 #endif
 
@@ -51,7 +51,7 @@ static OPUS_INLINE void silk_PLC_conceal(
     silk_decoder_state                  *psDec,             /* I/O Decoder state        */
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
     opus_int16                          frame[],            /* O LPC residual signal    */
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
     LPCNetPLCState                      *lpcnet,
 #endif
     int                                 arch                /* I  Run-time architecture */
@@ -74,7 +74,7 @@ void silk_PLC(
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
     opus_int16                          frame[],            /* I/O  signal              */
     opus_int                            lost,               /* I Loss flag              */
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
     LPCNetPLCState                      *lpcnet,
 #endif
     int                                 arch                /* I Run-time architecture  */
@@ -91,7 +91,7 @@ void silk_PLC(
         /* Generate Signal          */
         /****************************/
         silk_PLC_conceal( psDec, psDecCtrl, frame,
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
             lpcnet,
 #endif
             arch );
@@ -102,7 +102,7 @@ void silk_PLC(
         /* Update state             */
         /****************************/
         silk_PLC_update( psDec, psDecCtrl );
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
         if ( lpcnet != NULL && psDec->sPLC.fs_kHz == 16 ) {
             int k;
             for( k = 0; k < psDec->nb_subfr; k += 2 ) {
@@ -217,7 +217,7 @@ static OPUS_INLINE void silk_PLC_conceal(
     silk_decoder_state                  *psDec,             /* I/O Decoder state        */
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
     opus_int16                          frame[],            /* O LPC residual signal    */
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
     LPCNetPLCState                      *lpcnet,
 #endif
     int                                 arch                /* I Run-time architecture  */
@@ -396,7 +396,7 @@ static OPUS_INLINE void silk_PLC_conceal(
         /* Scale with Gain */
         frame[ i ] = (opus_int16)silk_SAT16( silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], prevGain_Q10[ 1 ] ), 8 ) ) );
     }
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
     if ( lpcnet != NULL && psDec->sPLC.fs_kHz == 16 ) {
         for( k = 0; k < psDec->nb_subfr; k += 2 ) {
             lpcnet_plc_conceal( lpcnet, frame + k * psDec->subfr_length );
@@ -467,7 +467,7 @@ void silk_PLC_glue_frames(
                 slope_Q16 = silk_DIV32_16( ( (opus_int32)1 << 16 ) - gain_Q16, length );
                 /* Make slope 4x steeper to avoid missing onsets after DTX */
                 slope_Q16 = silk_LSHIFT( slope_Q16, 2 );
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
                 if ( psDec->sPLC.fs_kHz != 16 )
 #endif
                 {

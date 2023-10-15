@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "entenc.h"
 #include "entdec.h"
 
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
 #include "lpcnet.h"
 #include "lpcnet_private.h"
 #endif

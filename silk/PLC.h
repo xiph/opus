@@ -49,7 +49,7 @@ void silk_PLC(
     silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
     opus_int16                          frame[],            /* I/O  signal              */
     opus_int                            lost,               /* I Loss flag              */
-#ifdef NEURAL_PLC
+#ifdef ENABLE_DEEP_PLC
     LPCNetPLCState                      *lpcnet,
 #endif
     int                                 arch                /* I Run-time architecture  */

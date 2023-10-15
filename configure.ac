@@ -170,12 +170,12 @@ AS_IF([test "$enable_neural_fec" = "yes"],[
   AC_DEFINE([ENABLE_NEURAL_FEC], [1], [Neural FEC])
 ])
 
-AC_ARG_ENABLE([neural-plc],
-    [AS_HELP_STRING([--enable-neural-plc], [Use neural PLC for SILK])],,
-    [enable_neural_plc=yes])
+AC_ARG_ENABLE([deep-plc],
+    [AS_HELP_STRING([--enable-deep-plc], [Use deep PLC for SILK])],,
+    [enable_deep_plc=yes])
 
-AS_IF([test "$enable_neural_plc" = "yes"],[
-  AC_DEFINE([NEURAL_PLC], [1], [Neural PLC])
+AS_IF([test "$enable_deep_plc" = "yes"],[
+  AC_DEFINE([ENABLE_DEEP_PLC], [1], [Deep PLC])
 ])
 
 has_float_approx=no
