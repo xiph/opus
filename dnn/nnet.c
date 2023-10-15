@@ -150,7 +150,12 @@ void compute_glu(const LinearLayer *layer, float *output, const float *input)
    celt_assert(layer->nb_inputs == layer->nb_outputs);
    compute_linear(layer, act2, input);
    compute_activation(act2, act2, layer->nb_outputs, ACTIVATION_SIGMOID);
-   for (i=0;i<layer->nb_outputs;i++) output[i] = input[i]*act2[i];
+   if (input == output) {
+     /* Give a vectorization hint to the compiler for the in-place case. */
+     for (i=0;i<layer->nb_outputs;i++) output[i] = output[i]*act2[i];
+   } else {
+     for (i=0;i<layer->nb_outputs;i++) output[i] = input[i]*act2[i];
+   }
 }
 
 void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation)

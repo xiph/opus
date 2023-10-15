@@ -86,7 +86,7 @@ static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, 
 
   compute_generic_dense(&model->sig_net_cond_gain_dense, &gain, cond, ACTIVATION_LINEAR);
   gain = exp(gain);
-  gain_1 = 1.f/(1e-5 + gain);
+  gain_1 = 1.f/(1e-5f + gain);
 
   pos = PITCH_MAX_PERIOD-period-2;
   for (i=0;i<FARGAN_SUBFRAME_SIZE+4;i++) {
