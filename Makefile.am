@@ -18,6 +18,14 @@ include lpcnet_sources.mk
 include silk_sources.mk
 include opus_sources.mk
 
+LPCNET_SOURCES =
+if ENABLE_DEEP_PLC
+LPCNET_SOURCES += $(DEEP_PLC_SOURCES)
+endif
+if ENABLE_DRED
+LPCNET_SOURCES += $(DRED_SOURCES)
+endif
+
 if FIXED_POINT
 SILK_SOURCES += $(SILK_SOURCES_FIXED)
 if HAVE_SSE4_1
@@ -111,8 +119,6 @@ noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
                   celt/tests/test_unit_types \
                   opus_compare \
                   opus_demo \
-                  lpcnet_demo \
-                  dump_data \
                   repacketizer_demo \
                   silk/tests/test_unit_LPC_inv_pred_gain \
                   tests/test_opus_api \
@@ -122,8 +128,7 @@ noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
                   tests/test_opus_extensions \
                   tests/test_opus_padding \
                   tests/test_opus_projection \
-                  trivial_example \
-                  dump_weights_blob
+                  trivial_example
 
 TESTS = celt/tests/test_unit_cwrs32 \
         celt/tests/test_unit_dft \
@@ -155,10 +160,6 @@ opus_compare_LDADD = $(LIBM)
 
 trivial_example_SOURCES = doc/trivial_example.c
 trivial_example_LDADD = libopus.la $(LIBM)
-
-dump_weights_blob_SOURCES = dnn/write_lpcnet_weights.c
-dump_weights_blob_LDADD = $(LIBM)
-dump_weights_blob_CFLAGS = $(AM_CFLAGS) -DDUMP_BINARY_WEIGHTS
 
 tests_test_opus_api_SOURCES = tests/test_opus_api.c tests/test_opus_common.h
 tests_test_opus_api_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
@@ -241,11 +242,20 @@ opus_custom_demo_LDADD = libopus.la $(LIBM)
 endif
 endif
 
+if EXTRA_PROGRAMS
+if ENABLE_DEEP_PLC
+noinst_PROGRAMS += lpcnet_demo dump_data dump_weights_blob
 lpcnet_demo_SOURCES = dnn/lpcnet_demo.c
 lpcnet_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 
 dump_data_SOURCES = dnn/dump_data.c
 dump_data_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
+
+dump_weights_blob_SOURCES = dnn/write_lpcnet_weights.c
+dump_weights_blob_LDADD = $(LIBM)
+dump_weights_blob_CFLAGS = $(AM_CFLAGS) -DDUMP_BINARY_WEIGHTS
+endif
+endif
 
 EXTRA_DIST = opus.pc.in \
              opus-uninstalled.pc.in \
