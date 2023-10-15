@@ -107,7 +107,7 @@ struct OpusCustomDecoder {
 
    celt_sig preemph_memD[2];
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
    opus_int16 plc_pcm[PLC_UPDATE_SAMPLES];
    int plc_fill;
    float plc_preemphasis_mem;
@@ -548,7 +548,7 @@ static void prefilter_and_fold(CELTDecoder * OPUS_RESTRICT st, int N)
    } while (++c<CC);
 }
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
 
 #define SINC_ORDER 48
 /* h=cos(pi/2*abs(sin([-24:24]/48*pi*23./24)).^2);
@@ -600,7 +600,7 @@ void update_plc_state(LPCNetPLCState *lpcnet, celt_sig *decode_mem[2], int CC)
 #endif
 
 static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
       ,LPCNetPLCState *lpcnet
 #endif
       )
@@ -638,7 +638,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
    loss_duration = st->loss_duration;
    start = st->start;
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
    noise_based = start != 0 || (lpcnet->fec_fill_pos == 0 && (st->skip_plc || loss_duration >= 80));
 #else
    noise_based = loss_duration >= 40 || start != 0 || st->skip_plc;
@@ -715,7 +715,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
       if (loss_duration == 0)
       {
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
          update_plc_state(lpcnet, decode_mem, C);
 #endif
          st->last_pitch_index = pitch_index = celt_plc_pitch_search(decode_mem, C, st->arch);
@@ -908,7 +908,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
       } while (++c<C);
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
       {
          float overlap_mem;
          int samples_needed16k;
@@ -979,7 +979,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
 int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data,
       int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
       ,LPCNetPLCState *lpcnet
 #endif
       )
@@ -1100,7 +1100,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    if (data == NULL || len<=1)
    {
       celt_decode_lost(st, N, LM
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
       , lpcnet
 #endif
                       );
@@ -1108,7 +1108,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       RESTORE_STACK;
       return frame_size/st->downsample;
    }
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
    else {
       /* FIXME: This is a bit of a hack just to make sure opus_decode_native() knows we're no longer in PLC. */
       if (lpcnet) lpcnet->blend = 0;
@@ -1362,7 +1362,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum)
 {
    return celt_decode_with_ec_dred(st, data, len, pcm, frame_size, dec, accum
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
        , NULL
 #endif
        );

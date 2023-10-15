@@ -534,7 +534,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       /* Decode CELT */
       celt_ret = celt_decode_with_ec_dred(celt_dec, decode_fec ? NULL : data,
                                      len, pcm, celt_frame_size, &dec, celt_accum
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
                                      , &st->lpcnet
 #endif
                                      );
@@ -663,7 +663,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
    if (dred != NULL && dred->process_stage == 2) {
       int F10;
       int features_per_frame;
@@ -1130,7 +1130,7 @@ struct OpusDREDDecoder {
    opus_uint32 magic;
 };
 
-#if defined(ENABLE_NEURAL_FEC) && (defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS))
+#if defined(ENABLE_DRED) && (defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS))
 static void validate_dred_decoder(OpusDREDDecoder *st)
 {
    celt_assert(st->magic == 0xD8EDDEC0);
@@ -1150,7 +1150,7 @@ int opus_dred_decoder_get_size(void)
   return sizeof(OpusDREDDecoder);
 }
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
 int dred_decoder_load_model(OpusDREDDecoder *dec, const unsigned char *data, int len)
 {
     WeightArray *list;
@@ -1164,7 +1164,7 @@ int dred_decoder_load_model(OpusDREDDecoder *dec, const unsigned char *data, int
 
 int opus_dred_decoder_init(OpusDREDDecoder *dec)
 {
-#if defined(ENABLE_NEURAL_FEC) && !defined(USE_WEIGHTS_FILE)
+#if defined(ENABLE_DRED) && !defined(USE_WEIGHTS_FILE)
    init_rdovaedec(&dec->model, rdovaedec_arrays);
 #endif
    dec->arch = opus_select_arch();
@@ -1203,7 +1203,7 @@ void opus_dred_decoder_destroy(OpusDREDDecoder *dec)
 
 int opus_dred_decoder_ctl(OpusDREDDecoder *dred_dec, int request, ...)
 {
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
    int ret = OPUS_OK;
    va_list ap;
 
@@ -1243,7 +1243,7 @@ bad_arg:
 #endif
 }
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
 static int dred_find_payload(const unsigned char *data, opus_int32 len, const unsigned char **payload)
 {
    const unsigned char *data0;
@@ -1307,7 +1307,7 @@ static int dred_find_payload(const unsigned char *data, opus_int32 len, const un
 
 int opus_dred_get_size(void)
 {
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
   return sizeof(OpusDRED);
 #else
   return 0;
@@ -1316,7 +1316,7 @@ int opus_dred_get_size(void)
 
 OpusDRED *opus_dred_alloc(int *error)
 {
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
   OpusDRED *dec;
   dec = (OpusDRED *)opus_alloc(opus_dred_get_size());
   if (dec == NULL)
@@ -1335,7 +1335,7 @@ OpusDRED *opus_dred_alloc(int *error)
 
 void opus_dred_free(OpusDRED *dec)
 {
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
   free(dec);
 #else
   (void)dec;
@@ -1344,7 +1344,7 @@ void opus_dred_free(OpusDRED *dec)
 
 int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int defer_processing)
 {
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
    const unsigned char *payload;
    opus_int32 payload_len;
    VALIDATE_DRED_DECODER(dred_dec);
@@ -1378,7 +1378,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
 
 int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *dst)
 {
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
    if (dred_dec == NULL || src == NULL || dst == NULL || (src->process_stage != 1 && src->process_stage != 2))
       return OPUS_BAD_ARG;
    VALIDATE_DRED_DECODER(dred_dec);
@@ -1399,7 +1399,7 @@ int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *
 
 int opus_decoder_dred_decode(OpusDecoder *st, const OpusDRED *dred, opus_int32 dred_offset, opus_int16 *pcm, opus_int32 frame_size)
 {
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
    VARDECL(float, out);
    int ret, i;
    ALLOC_STACK;
@@ -1433,7 +1433,7 @@ int opus_decoder_dred_decode(OpusDecoder *st, const OpusDRED *dred, opus_int32 d
 
 int opus_decoder_dred_decode_float(OpusDecoder *st, const OpusDRED *dred, opus_int32 dred_offset, float *pcm, opus_int32 frame_size)
 {
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
    if(frame_size<=0)
       return OPUS_BAD_ARG;
    return opus_decode_native(st, NULL, 0, pcm, frame_size, 0, 0, NULL, 0, dred, dred_offset);

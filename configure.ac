@@ -162,12 +162,12 @@ AS_IF([test "$enable_custom_modes" = "yes"],[
 
 AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes"])
 
-AC_ARG_ENABLE([neural-fec],
-    [AS_HELP_STRING([--enable-neural-fec], [Use neural FEC for SILK])],,
-    [enable_neural_fec=yes])
+AC_ARG_ENABLE([dred],
+    [AS_HELP_STRING([--enable-dred], [Use Deep REDundancy (DRED)])],,
+    [enable_dred=yes])
 
-AS_IF([test "$enable_neural_fec" = "yes"],[
-  AC_DEFINE([ENABLE_NEURAL_FEC], [1], [Neural FEC])
+AS_IF([test "$enable_dred" = "yes"],[
+  AC_DEFINE([ENABLE_DRED], [1], [DRED])
 ])
 
 AC_ARG_ENABLE([deep-plc],

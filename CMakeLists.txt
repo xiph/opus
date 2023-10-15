@@ -79,9 +79,9 @@ set(OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR "install CMake package config modu
 option(OPUS_INSTALL_CMAKE_CONFIG_MODULE ${OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR} ON)
 add_feature_info(OPUS_INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE ${OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR})
 
-set(OPUS_NEURAL_FEC_HELP_STR "enable neural FEC.")
-option(OPUS_NEURAL_FEC ${OPUS_NEURAL_FEC_HELP_STR} OFF)
-add_feature_info(OPUS_NEURAL_FEC OPUS_NEURAL_FEC ${OPUS_NEURAL_FEC_HELP_STR})
+set(OPUS_DRED_HELP_STR "enable DRED.")
+option(OPUS_DRED ${OPUS_DRED_HELP_STR} OFF)
+add_feature_info(OPUS_DRED OPUS_DRED ${OPUS_DRED_HELP_STR})
 
 if(APPLE)
   set(OPUS_BUILD_FRAMEWORK_HELP_STR "build Framework bundle for Apple systems.")
@@ -371,8 +371,8 @@ if(NOT OPUS_ENABLE_FLOAT_API)
   target_compile_definitions(opus PRIVATE DISABLE_FLOAT_API)
 endif()
 
-if (OPUS_NEURAL_FEC)
-  target_compile_definitions(opus PRIVATE ENABLE_NEURAL_FEC)
+if (OPUS_DRED)
+  target_compile_definitions(opus PRIVATE ENABLE_DRED)
   if(NOT OPUS_DEEP_PLC)
 	  target_compile_definitions(opus PRIVATE ENABLE_DEEP_PLC)
   endif()
@@ -669,7 +669,7 @@ if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
         -DTEST_EXECUTABLE=$<TARGET_FILE:test_opus_extensions>
         -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
         -P "${PROJECT_SOURCE_DIR}/cmake/RunTest.cmake")
-  if(OPUS_NEURAL_FEC)
+  if(OPUS_DRED)
     add_executable(test_opus_dred ${test_opus_dred_sources})
     target_include_directories(test_opus_dred
                               PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

@@ -67,7 +67,7 @@ struct OpusEncoder {
     int          celt_enc_offset;
     int          silk_enc_offset;
     silk_EncControlStruct silk_mode;
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
     DREDEnc      dred_encoder;
 #endif
     int          application;
@@ -119,7 +119,7 @@ struct OpusEncoder {
     int          nb_no_activity_ms_Q1;
     opus_val32   peak_signal_energy;
 #endif
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
     int          dred_duration;
 #endif
     int          nonfinal_frame; /* current frame is not the final in a packet */
@@ -243,7 +243,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
     celt_encoder_ctl(celt_enc, OPUS_SET_COMPLEXITY(st->silk_mode.complexity));
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
     /* Initialize DRED Encoder */
     dred_encoder_init( &st->dred_encoder, Fs, channels );
 #endif
@@ -556,7 +556,7 @@ OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int application, i
    return st;
 }
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
 static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, int frame_size)
 {
    float dred_frac;
@@ -1123,7 +1123,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     int is_silence = 0;
 #endif
     int apply_padding;
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
     opus_int32 dred_bitrate_bps;
 #endif
     opus_int activity = VAD_NO_DECISION;
@@ -1260,7 +1260,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        /* Make sure we provide at least one byte to avoid failing. */
        max_data_bytes = IMAX(1, cbrBytes);
     }
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
     /* Allocate some of the bits to DRED if needed. */
     dred_bitrate_bps = compute_dred_bitrate(st, st->bitrate_bps, frame_size);
     st->bitrate_bps -= dred_bitrate_bps;
@@ -1712,7 +1712,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
 #endif
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
     if ( st->dred_duration > 0 ) {
         /* DRED Encoder */
         dred_compute_latents( &st->dred_encoder, &pcm_buf[total_buffer*st->channels], frame_size, total_buffer );
@@ -2060,7 +2060,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         nb_compr_bytes = ret;
     } else {
         nb_compr_bytes = (max_data_bytes-1)-redundancy_bytes;
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
         if (st->dred_duration > 0)
         {
             int max_celt_bytes;
@@ -2123,7 +2123,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                 celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps));
             }
         }
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
         /* When Using DRED CBR, we can actually make the CELT part VBR and have DRED pick up the slack. */
         if (!st->use_vbr && st->dred_duration > 0)
         {
@@ -2254,7 +2254,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     /* Count ToC and redundancy */
     ret += 1+redundancy_bytes;
     apply_padding = !st->use_vbr;
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
     if (st->dred_duration > 0) {
        opus_extension_data extension;
        unsigned char buf[DRED_MAX_DATA_SIZE];
@@ -2790,7 +2790,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             celt_encoder_ctl(celt_enc, OPUS_GET_PHASE_INVERSION_DISABLED(value));
         }
         break;
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
         case OPUS_SET_DRED_DURATION_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
@@ -2828,7 +2828,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
 
            celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
            silk_InitEncoder( silk_enc, st->arch, &dummy );
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
            /* Initialize DRED Encoder */
            dred_encoder_reset( &st->dred_encoder );
 #endif

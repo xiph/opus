@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "lpcnet_private.h"
 #endif
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
 #include "dred_encoder.h"
 #include "dred_decoder.h"
 #endif

@@ -152,7 +152,7 @@ int celt_decoder_init(CELTDecoder *st, opus_int32 sampling_rate, int channels);
 
 int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data,
       int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
       ,LPCNetPLCState *lpcnet
 #endif
       );

@@ -41,7 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FLP.h"
 #endif
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
 #include "dred_encoder.h"
 #endif
 

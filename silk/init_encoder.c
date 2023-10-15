@@ -36,7 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 #include "cpu_support.h"
 
-#ifdef ENABLE_NEURAL_FEC
+#ifdef ENABLE_DRED
 #include "dred_encoder.h"
 #endif
 
