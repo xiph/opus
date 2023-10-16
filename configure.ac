@@ -175,10 +175,10 @@ AC_ARG_ENABLE([deep-plc],
     [AS_HELP_STRING([--enable-deep-plc], [Use deep PLC for SILK])],,
     [enable_deep_plc=no])
 
-AS_IF([test "$enable_deep_plc" = "yes"],[
+AS_IF([test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes"],[
   AC_DEFINE([ENABLE_DEEP_PLC], [1], [Deep PLC])
 ])
-AM_CONDITIONAL([ENABLE_DEEP_PLC], [test "$enable_deep_plc" = "yes"])
+AM_CONDITIONAL([ENABLE_DEEP_PLC], [test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes"])
 
 has_float_approx=no
 #case "$host_cpu" in
