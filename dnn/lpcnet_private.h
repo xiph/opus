@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include "freq.h"
 #include "lpcnet.h"
-#include "nnet_data.h"
 #include "plc_data.h"
 #include "kiss99.h"
 #include "pitchdnn.h"
@@ -22,28 +21,7 @@
 
 #define CONT_VECTORS 5
 
-struct LPCNetState {
-    LPCNetModel model;
-    int arch;
-    float sampling_logit_table[256];
-    kiss99_ctx rng;
-
-#define LPCNET_RESET_START nnet
-    NNetState nnet;
-    int last_exc;
-    float last_sig[LPC_ORDER];
-    float feature_buffer[NB_FEATURES*MAX_FEATURE_BUFFER_SIZE];
-    int feature_buffer_fill;
-    float last_features[NB_FEATURES];
-#if FEATURES_DELAY>0
-    float old_lpc[FEATURES_DELAY][LPC_ORDER];
-#endif
-    float gru_a_condition[3*GRU_A_STATE_SIZE];
-    float gru_b_condition[3*GRU_B_STATE_SIZE];
-    int frame_count;
-    float deemph_mem;
-    float lpc[LPC_ORDER];
-};
+#define FEATURES_DELAY 1
 
 struct LPCNetEncState{
   PitchDNNState pitchdnn;

@@ -36,7 +36,6 @@
 #include "arch.h"
 #include "tansig_table.h"
 #include "nnet.h"
-#include "nnet_data.h"
 #include "dred_rdovae_constants.h"
 #include "plc_data.h"
 #include "os_support.h"
@@ -109,7 +108,7 @@ void compute_generic_dense(const LinearLayer *layer, float *output, const float 
    compute_activation(output, output, layer->nb_outputs, activation);
 }
 
-#define MAX_RNN_NEURONS_ALL IMAX(IMAX(MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), DRED_MAX_RNN_NEURONS)
+#define MAX_RNN_NEURONS_ALL IMAX(PLC_MAX_RNN_NEURONS, DRED_MAX_RNN_NEURONS)
 
 
 void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in)
@@ -314,7 +313,7 @@ void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *in
   compute_generic_gru(&in_matrix, &rec_matrix, state, input);
 }
 
-#define MAX_CONV_INPUTS_ALL IMAX(MAX_CONV_INPUTS, DRED_MAX_CONV_INPUTS)
+#define MAX_CONV_INPUTS_ALL DRED_MAX_CONV_INPUTS
 
 void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int activation)
 {
