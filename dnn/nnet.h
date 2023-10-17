@@ -30,7 +30,6 @@
 
 #include <stddef.h>
 #include "vec.h"
-#include "kiss99.h"
 
 #define ACTIVATION_LINEAR  0
 #define ACTIVATION_SIGMOID 1
@@ -154,8 +153,6 @@ void compute_activation(float *output, const float *input, int N, int activation
 void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input);
 
 void compute_mdense(const MDenseLayer *layer, float *output, const float *input);
-
-int sample_mdense(const MDenseLayer *layer,  const float *input, const float *sampling_logit_table, kiss99_ctx *rng);
 
 void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input);
 

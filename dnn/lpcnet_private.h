@@ -5,7 +5,6 @@
 #include "freq.h"
 #include "lpcnet.h"
 #include "plc_data.h"
-#include "kiss99.h"
 #include "pitchdnn.h"
 #include "fargan.h"
 
