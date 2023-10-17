@@ -38,6 +38,7 @@
 #include "nnet.h"
 #include "dred_rdovae_constants.h"
 #include "plc_data.h"
+#include "fargan.h"
 #include "os_support.h"
 
 #ifdef NO_OPTIMIZATIONS
@@ -108,7 +109,7 @@ void compute_generic_dense(const LinearLayer *layer, float *output, const float 
    compute_activation(output, output, layer->nb_outputs, activation);
 }
 
-#define MAX_RNN_NEURONS_ALL IMAX(PLC_MAX_RNN_NEURONS, DRED_MAX_RNN_NEURONS)
+#define MAX_RNN_NEURONS_ALL IMAX(IMAX(FARGAN_MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), DRED_MAX_RNN_NEURONS)
 
 
 void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in)
