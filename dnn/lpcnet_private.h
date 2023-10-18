@@ -60,6 +60,7 @@ struct LPCNetPLCState {
   int fec_read_pos;
   int fec_fill_pos;
   int fec_skip;
+  int analysis_pos;
   float pcm[PLC_BUF_SIZE];
   int blend;
   float features[NB_TOTAL_FEATURES];
