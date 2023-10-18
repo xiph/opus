@@ -154,13 +154,6 @@ static int get_fec_or_pred(LPCNetPLCState *st, float *out) {
   }
 }
 
-static void fec_rewind(LPCNetPLCState *st, int offset) {
-  st->fec_read_pos -= offset;
-  if (st->fec_read_pos < st->fec_keep_pos) {
-    st->fec_read_pos = st->fec_keep_pos;
-  }
-}
-
 /* In this causal version of the code, the DNN model implemented by compute_plc_pred()
    needs to generate two feature vectors to conceal the first lost packet.*/
 
@@ -172,7 +165,6 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
   burg_cepstral_analysis(plc_features, x);
   if (st->blend) {
     if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
-    fec_rewind(st, FEATURES_DELAY);
   }
   /* Update state. */
   /*fprintf(stderr, "update state\n");*/
@@ -185,9 +177,6 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
     plc_features[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(st, st->features, plc_features);
     /* Discard an FEC frame that we know we will no longer need. */
-    if (st->fec_skip) st->fec_skip--;
-    else if (st->fec_read_pos < st->fec_fill_pos) st->fec_read_pos++;
-    st->fec_keep_pos = IMAX(0, IMAX(st->fec_keep_pos, st->fec_read_pos-FEATURES_DELAY-1));
     OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
   }
   OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->enc.features, NB_FEATURES);
