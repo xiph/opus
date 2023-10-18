@@ -178,16 +178,14 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
   /* Update state. */
   /*fprintf(stderr, "update state\n");*/
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
-  preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
-  compute_frame_features(&st->enc, x);
-  process_single_frame(&st->enc, NULL);
+  lpcnet_compute_single_frame_features_float(&st->enc, x, st->features);
   if (!st->blend) {
-    OPUS_COPY(&plc_features[2*NB_BANDS], st->enc.features, NB_FEATURES);
+    queue_features(st, st->features);
+    OPUS_COPY(&plc_features[2*NB_BANDS], st->features, NB_FEATURES);
     plc_features[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(st, st->features, plc_features);
-    queue_features(st, st->enc.features);
   } else {
-    replace_features(st, st->enc.features);
+    replace_features(st, st->features);
   }
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
@@ -213,16 +211,9 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
   else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
   fargan_synthesize_int(&st->fargan, pcm, &st->features[0]);
-  {
-    float x[FRAME_SIZE];
-    /* FIXME: Can we do better? */
-    for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
-    preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
-    compute_frame_features(&st->enc, x);
-    process_single_frame(&st->enc, NULL);
-  }
+  lpcnet_compute_single_frame_features(&st->enc, pcm, st->features);
   OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
-  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->enc.features, NB_FEATURES);
+  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->features, NB_FEATURES);
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->blend = 1;
