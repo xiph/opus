@@ -1,9 +1,4 @@
-LPCNET_HEAD = \
-silk/dred_coding.h \
-silk/dred_config.h \
-silk/dred_decoder.h \
-silk/dred_encoder.h \
-dnn/dred_rdovae.h \
+DEEP_PLC_HEAD = \
 dnn/lpcnet.h \
 dnn/burg.h \
 dnn/common.h \
@@ -17,11 +12,18 @@ dnn/tansig_table.h \
 dnn/vec.h \
 dnn/vec_avx.h \
 dnn/vec_neon.h \
+dnn/pitchdnn.h \
+dnn/pitchdnn_data.h
+
+DRED_HEAD = \
+silk/dred_coding.h \
+silk/dred_config.h \
+silk/dred_decoder.h \
+silk/dred_encoder.h \
+dnn/dred_rdovae.h \
 dnn/dred_rdovae_constants.h \
 dnn/dred_rdovae_enc.h \
 dnn/dred_rdovae_enc_data.h \
 dnn/dred_rdovae_dec.h \
 dnn/dred_rdovae_dec_data.h \
-dnn/dred_rdovae_stats_data.h \
-dnn/pitchdnn.h \
-dnn/pitchdnn_data.h
+dnn/dred_rdovae_stats_data.h

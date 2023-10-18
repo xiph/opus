@@ -11,6 +11,7 @@ dnn/plc_data.c \
 dnn/parse_lpcnet_weights.c \
 dnn/pitchdnn.c \
 dnn/pitchdnn_data.c
+
 DRED_SOURCES = \
 dnn/dred_rdovae.c \
 dnn/dred_rdovae_enc.c \

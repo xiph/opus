@@ -51,7 +51,10 @@
 #include "define.h"
 #include "mathops.h"
 #include "cpu_support.h"
+
+#ifdef ENABLE_DEEP_PLC
 #include "dred_rdovae_dec_data.h"
+#endif
 
 struct OpusDecoder {
    int          celt_dec_offset;
@@ -1125,7 +1128,9 @@ int opus_decoder_get_nb_samples(const OpusDecoder *dec,
 }
 
 struct OpusDREDDecoder {
+#ifdef ENABLE_DRED
    RDOVAEDec model;
+#endif
    int arch;
    opus_uint32 magic;
 };

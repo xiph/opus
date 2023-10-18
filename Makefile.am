@@ -97,6 +97,14 @@ include lpcnet_headers.mk
 include silk_headers.mk
 include opus_headers.mk
 
+LPCNET_HEAD =
+if ENABLE_DEEP_PLC
+LPCNET_HEAD += $(DEEP_PLC_HEAD)
+endif
+if ENABLE_DRED
+LPCNET_HEAD += $(DRED_HEAD)
+endif
+
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(LPCNET_SOURCES) $(OPUS_SOURCES)
 libopus_la_LDFLAGS = -no-undefined -version-info @OPUS_LT_CURRENT@:@OPUS_LT_REVISION@:@OPUS_LT_AGE@
 libopus_la_LIBADD = $(NE10_LIBS) $(LIBM)
