@@ -180,8 +180,8 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
     OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
   }
   OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->enc.features, NB_FEATURES);
-  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FARGAN_CONT_SAMPLES-FRAME_SIZE);
-  for (i=0;i<FRAME_SIZE;i++) st->pcm[FARGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
+  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
+  for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->loss_count = 0;
   st->blend = 0;
   return 0;
@@ -197,7 +197,7 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
     get_fec_or_pred(st, st->features);
     OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
     OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->features, NB_FEATURES);
-    fargan_cont(&st->fargan, st->pcm, st->cont_features);
+    fargan_cont(&st->fargan, &st->pcm[PLC_BUF_SIZE-FARGAN_CONT_SAMPLES], st->cont_features);
   }
   OPUS_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
   st->plc_copy[0] = st->plc_net;
@@ -216,8 +216,8 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   }
   OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
   OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->enc.features, NB_FEATURES);
-  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FARGAN_CONT_SAMPLES-FRAME_SIZE);
-  for (i=0;i<FRAME_SIZE;i++) st->pcm[FARGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
+  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
+  for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->blend = 1;
   return 0;
 }
