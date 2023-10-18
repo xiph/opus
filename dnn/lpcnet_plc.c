@@ -154,11 +154,13 @@ static int get_fec_or_pred(LPCNetPLCState *st, float *out) {
   }
 }
 
-static void fec_rewind(LPCNetPLCState *st, int offset) {
-  st->fec_read_pos -= offset;
-  if (st->fec_read_pos < st->fec_keep_pos) {
-    st->fec_read_pos = st->fec_keep_pos;
-  }
+static void queue_features(LPCNetPLCState *st, const float *features) {
+  OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
+  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], features, NB_FEATURES);
+}
+
+static void replace_features(LPCNetPLCState *st, const float *features) {
+  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], features, NB_FEATURES);
 }
 
 /* In this causal version of the code, the DNN model implemented by compute_plc_pred()
@@ -170,29 +172,18 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
   burg_cepstral_analysis(plc_features, x);
+  lpcnet_compute_single_frame_features_float(&st->enc, x, st->features);
   if (st->blend) {
+    replace_features(st, st->features);
     if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
-    fec_rewind(st, FEATURES_DELAY);
-  }
-  /* Update state. */
-  /*fprintf(stderr, "update state\n");*/
-  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
-  preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
-  compute_frame_features(&st->enc, x);
-  process_single_frame(&st->enc, NULL);
-  if (!st->blend) {
-    OPUS_COPY(&plc_features[2*NB_BANDS], st->enc.features, NB_FEATURES);
+  } else {
+    queue_features(st, st->features);
+    OPUS_COPY(&plc_features[2*NB_BANDS], st->features, NB_FEATURES);
     plc_features[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(st, st->features, plc_features);
-    /* Discard an FEC frame that we know we will no longer need. */
-    if (st->fec_skip) st->fec_skip--;
-    else if (st->fec_read_pos < st->fec_fill_pos) st->fec_read_pos++;
-    st->fec_keep_pos = IMAX(0, IMAX(st->fec_keep_pos, st->fec_read_pos-FEATURES_DELAY-1));
-    OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
   }
-  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->enc.features, NB_FEATURES);
-  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FARGAN_CONT_SAMPLES-FRAME_SIZE);
-  for (i=0;i<FRAME_SIZE;i++) st->pcm[FARGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
+  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
+  for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->loss_count = 0;
   st->blend = 0;
   return 0;
@@ -203,12 +194,10 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
   if (st->blend == 0) {
     get_fec_or_pred(st, st->features);
-    OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
-    OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->features, NB_FEATURES);
+    queue_features(st, st->features);
     get_fec_or_pred(st, st->features);
-    OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
-    OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->features, NB_FEATURES);
-    fargan_cont(&st->fargan, st->pcm, st->cont_features);
+    queue_features(st, st->features);
+    fargan_cont(&st->fargan, &st->pcm[PLC_BUF_SIZE-FARGAN_CONT_SAMPLES], st->cont_features);
   }
   OPUS_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
   st->plc_copy[0] = st->plc_net;
@@ -217,18 +206,11 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
   else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
   fargan_synthesize_int(&st->fargan, pcm, &st->features[0]);
-  {
-    float x[FRAME_SIZE];
-    /* FIXME: Can we do better? */
-    for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
-    preemphasis(x, &st->enc.mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
-    compute_frame_features(&st->enc, x);
-    process_single_frame(&st->enc, NULL);
-  }
+  lpcnet_compute_single_frame_features(&st->enc, pcm, st->features);
   OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
-  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->enc.features, NB_FEATURES);
-  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], FARGAN_CONT_SAMPLES-FRAME_SIZE);
-  for (i=0;i<FRAME_SIZE;i++) st->pcm[FARGAN_CONT_SAMPLES-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
+  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->features, NB_FEATURES);
+  OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
+  for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->blend = 1;
   return 0;
 }
