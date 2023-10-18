@@ -253,6 +253,7 @@ typedef struct {
     opus_int                    fs_kHz;
     opus_int                    nb_subfr;
     opus_int                    subfr_length;
+    opus_int                    enable_deep_plc;
 } silk_PLC_struct;
 
 /* Struct for CNG */

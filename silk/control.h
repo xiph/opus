@@ -144,6 +144,9 @@ typedef struct {
 
     /* O:   Pitch lag of previous frame (0 if unvoiced), measured in samples at 48 kHz      */
     opus_int prevPitchLag;
+
+    /* I:   Enable Deep PLC                                                                 */
+    opus_int enable_deep_plc;
 } silk_DecControlStruct;
 
 #ifdef __cplusplus

@@ -126,6 +126,7 @@ static opus_uint32 char_to_int(unsigned char ch[4])
 }
 
 #define check_encoder_option(decode_only, opt) do {if (decode_only) {fprintf(stderr, "option %s is only for encoding\n", opt); goto failure;}} while(0)
+#define check_decoder_option(encode_only, opt) do {if (encode_only) {fprintf(stderr, "option %s is only for decoding\n", opt); goto failure;}} while(0)
 
 static const int silk8_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960*3, 1},
@@ -273,6 +274,7 @@ int main(int argc, char *argv[])
     int use_vbr;
     int max_payload_bytes;
     int complexity;
+    int dec_complexity;
     int use_inbandfec;
     int use_dtx;
     int forcechannels;
@@ -391,6 +393,7 @@ int main(int argc, char *argv[])
     use_vbr = 1;
     max_payload_bytes = MAX_PACKET;
     complexity = 10;
+    dec_complexity = 0;
     use_inbandfec = 0;
     forcechannels = OPUS_AUTO;
     use_dtx = 0;
@@ -455,6 +458,10 @@ int main(int argc, char *argv[])
         } else if( strcmp( argv[ args ], "-complexity" ) == 0 ) {
             check_encoder_option(decode_only, "-complexity");
             complexity = atoi( argv[ args + 1 ] );
+            args += 2;
+        } else if( strcmp( argv[ args ], "-dec_complexity" ) == 0 ) {
+            check_decoder_option(encode_only, "-dec_complexity");
+            dec_complexity = atoi( argv[ args + 1 ] );
             args += 2;
         } else if( strcmp( argv[ args ], "-inbandfec" ) == 0 ) {
             use_inbandfec = 1;
@@ -616,6 +623,7 @@ int main(int argc, char *argv[])
           fprintf(stderr, "Cannot create decoder: %s\n", opus_strerror(err));
           goto failure;
        }
+       opus_decoder_ctl(dec, OPUS_SET_COMPLEXITY(dec_complexity));
     }
     switch(bandwidth)
     {
