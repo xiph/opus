@@ -154,6 +154,15 @@ static int get_fec_or_pred(LPCNetPLCState *st, float *out) {
   }
 }
 
+static void queue_features(LPCNetPLCState *st, const float *features) {
+  OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
+  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], features, NB_FEATURES);
+}
+
+static void replace_features(LPCNetPLCState *st, const float *features) {
+  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], features, NB_FEATURES);
+}
+
 /* In this causal version of the code, the DNN model implemented by compute_plc_pred()
    needs to generate two feature vectors to conceal the first lost packet.*/
 
@@ -176,10 +185,10 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
     OPUS_COPY(&plc_features[2*NB_BANDS], st->enc.features, NB_FEATURES);
     plc_features[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(st, st->features, plc_features);
-    /* Discard an FEC frame that we know we will no longer need. */
-    OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
+    queue_features(st, st->enc.features);
+  } else {
+    replace_features(st, st->enc.features);
   }
-  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->enc.features, NB_FEATURES);
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->loss_count = 0;
@@ -192,11 +201,9 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
   if (st->blend == 0) {
     get_fec_or_pred(st, st->features);
-    OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
-    OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->features, NB_FEATURES);
+    queue_features(st, st->features);
     get_fec_or_pred(st, st->features);
-    OPUS_MOVE(&st->cont_features[0], &st->cont_features[NB_FEATURES], (CONT_VECTORS-1)*NB_FEATURES);
-    OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], st->features, NB_FEATURES);
+    queue_features(st, st->features);
     fargan_cont(&st->fargan, &st->pcm[PLC_BUF_SIZE-FARGAN_CONT_SAMPLES], st->cont_features);
   }
   OPUS_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
