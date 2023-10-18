@@ -63,6 +63,7 @@ struct OpusDecoder {
    opus_int32   Fs;          /** Sampling rate (at the API level) */
    silk_DecControlStruct DecControl;
    int          decode_gain;
+   int          complexity;
    int          arch;
 #ifdef ENABLE_DEEP_PLC
     LPCNetPLCState lpcnet;
@@ -142,6 +143,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
    silk_dec = (char*)st+st->silk_dec_offset;
    celt_dec = (CELTDecoder*)((char*)st+st->celt_dec_offset);
    st->stream_channels = st->channels = channels;
+   st->complexity = 0;
 
    st->Fs = Fs;
    st->DecControl.API_sampleRate = st->Fs;
@@ -404,6 +406,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
            st->DecControl.internalSampleRate = 16000;
         }
      }
+     st->DecControl.enable_deep_plc = st->complexity >= 5;
 
      lost_flag = data == NULL ? 1 : 2 * !!decode_fec;
      decoded_samples = 0;
@@ -537,7 +540,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       /* Decode CELT */
       celt_ret = celt_decode_with_ec_dred(celt_dec, decode_fec ? NULL : data,
                                      len, pcm, celt_frame_size, &dec, celt_accum
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
                                      , &st->lpcnet
 #endif
                                      );
@@ -909,6 +912,27 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
          goto bad_arg;
       }
       *value = st->bandwidth;
+   }
+   break;
+   case OPUS_SET_COMPLEXITY_REQUEST:
+   {
+       opus_int32 value = va_arg(ap, opus_int32);
+       if(value<0 || value>10)
+       {
+          goto bad_arg;
+       }
+       st->complexity = value;
+       celt_decoder_ctl(celt_dec, OPUS_SET_COMPLEXITY(value));
+   }
+   break;
+   case OPUS_GET_COMPLEXITY_REQUEST:
+   {
+       opus_int32 *value = va_arg(ap, opus_int32*);
+       if (!value)
+       {
+          goto bad_arg;
+       }
+       *value = st->complexity;
    }
    break;
    case OPUS_GET_FINAL_RANGE_REQUEST:

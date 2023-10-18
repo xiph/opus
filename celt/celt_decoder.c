@@ -90,6 +90,7 @@ struct OpusCustomDecoder {
    int start, end;
    int signalling;
    int disable_inv;
+   int complexity;
    int arch;
 
    /* Everything beyond this point gets cleared on a reset */
@@ -110,7 +111,7 @@ struct OpusCustomDecoder {
 
    celt_sig preemph_memD[2];
 
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
    opus_int16 plc_pcm[PLC_UPDATE_SAMPLES];
    int plc_fill;
    float plc_preemphasis_mem;
@@ -551,7 +552,7 @@ static void prefilter_and_fold(CELTDecoder * OPUS_RESTRICT st, int N)
    } while (++c<CC);
 }
 
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
 
 #define SINC_ORDER 48
 /* h=cos(pi/2*abs(sin([-24:24]/48*pi*23./24)).^2);
@@ -603,7 +604,7 @@ void update_plc_state(LPCNetPLCState *lpcnet, celt_sig *decode_mem[2], int CC)
 #endif
 
 static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
       ,LPCNetPLCState *lpcnet
 #endif
       )
@@ -641,7 +642,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
    loss_duration = st->loss_duration;
    start = st->start;
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
    noise_based = start != 0 || (lpcnet->fec_fill_pos == 0 && (st->skip_plc || loss_duration >= 80));
 #else
    noise_based = loss_duration >= 40 || start != 0 || st->skip_plc;
@@ -718,7 +719,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
       if (loss_duration == 0)
       {
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
          update_plc_state(lpcnet, decode_mem, C);
 #endif
          st->last_pitch_index = pitch_index = celt_plc_pitch_search(decode_mem, C, st->arch);
@@ -911,8 +912,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
       } while (++c<C);
 
-#ifdef ENABLE_DRED
-      {
+#ifdef ENABLE_DEEP_PLC
+      if (st->complexity >= 5 || lpcnet->fec_fill_pos > 0) {
          float overlap_mem;
          int samples_needed16k;
          int ignored = 0;
@@ -982,7 +983,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
 int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data,
       int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
       ,LPCNetPLCState *lpcnet
 #endif
       )
@@ -1103,7 +1104,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    if (data == NULL || len<=1)
    {
       celt_decode_lost(st, N, LM
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
       , lpcnet
 #endif
                       );
@@ -1111,7 +1112,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       RESTORE_STACK;
       return frame_size/st->downsample;
    }
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
    else {
       /* FIXME: This is a bit of a hack just to make sure opus_decode_native() knows we're no longer in PLC. */
       if (lpcnet) lpcnet->blend = 0;
@@ -1365,7 +1366,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
       int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum)
 {
    return celt_decode_with_ec_dred(st, data, len, pcm, frame_size, dec, accum
-#ifdef ENABLE_DRED
+#ifdef ENABLE_DEEP_PLC
        , NULL
 #endif
        );
@@ -1443,6 +1444,26 @@ int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
    va_start(ap, request);
    switch (request)
    {
+      case OPUS_SET_COMPLEXITY_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          if(value<0 || value>10)
+          {
+             goto bad_arg;
+          }
+          st->complexity = value;
+      }
+      break;
+      case OPUS_GET_COMPLEXITY_REQUEST:
+      {
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          if (!value)
+          {
+             goto bad_arg;
+          }
+          *value = st->complexity;
+      }
+      break;
       case CELT_SET_START_BAND_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);

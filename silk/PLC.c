@@ -398,12 +398,19 @@ static OPUS_INLINE void silk_PLC_conceal(
     }
 #ifdef ENABLE_DEEP_PLC
     if ( lpcnet != NULL && psDec->sPLC.fs_kHz == 16 ) {
-        for( k = 0; k < psDec->nb_subfr; k += 2 ) {
-            lpcnet_plc_conceal( lpcnet, frame + k * psDec->subfr_length );
-        }
-        /* We *should* be able to copy only from psDec->frame_length-MAX_LPC_ORDER, i.e. the last MAX_LPC_ORDER samples. */
-        for( i = 0; i < psDec->frame_length; i++ ) {
-            sLPC_Q14_ptr[ MAX_LPC_ORDER + i ] = (int)floor(.5 + frame[ i ] * (float)(1 << 24) / prevGain_Q10[ 1 ] );
+        int run_deep_plc = psDec->sPLC.enable_deep_plc || lpcnet->fec_fill_pos != 0;
+        if( run_deep_plc ) {
+            for( k = 0; k < psDec->nb_subfr; k += 2 ) {
+                lpcnet_plc_conceal( lpcnet, frame + k * psDec->subfr_length );
+            }
+            /* We *should* be able to copy only from psDec->frame_length-MAX_LPC_ORDER, i.e. the last MAX_LPC_ORDER samples. */
+            for( i = 0; i < psDec->frame_length; i++ ) {
+                sLPC_Q14_ptr[ MAX_LPC_ORDER + i ] = (int)floor(.5 + frame[ i ] * (float)(1 << 24) / prevGain_Q10[ 1 ] );
+            }
+        } else {
+          for( k = 0; k < psDec->nb_subfr; k += 2 ) {
+              lpcnet_plc_update( lpcnet, frame + k * psDec->subfr_length );
+          }
         }
     }
 #endif

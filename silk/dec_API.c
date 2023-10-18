@@ -281,6 +281,7 @@ opus_int silk_Decode(                                   /* O    Returns error co
         has_side = !psDec->prev_decode_only_middle
               || (decControl->nChannelsInternal == 2 && lostFlag == FLAG_DECODE_LBRR && channel_state[1].LBRR_flags[ channel_state[1].nFramesDecoded ] == 1 );
     }
+    channel_state[ 0 ].sPLC.enable_deep_plc = decControl->enable_deep_plc;
     /* Call decoder for one frame */
     for( n = 0; n < decControl->nChannelsInternal; n++ ) {
         if( n == 0 || has_side ) {
