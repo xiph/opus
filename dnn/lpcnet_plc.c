@@ -170,7 +170,7 @@ static void replace_features(LPCNetPLCState *st, const float *features) {
 int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
   if (st->blend) {
-    st->analysis_pos = PLC_BUF_SIZE;
+    st->analysis_pos = PLC_BUF_SIZE-FRAME_SIZE;
   }
   if (st->analysis_pos - FRAME_SIZE >= 0) st->analysis_pos -= FRAME_SIZE;
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
@@ -191,9 +191,7 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
       for (i=0;i<FRAME_SIZE;i++) x[i] = 32768.f*st->pcm[st->analysis_pos+i];
       burg_cepstral_analysis(plc_features, x);
       lpcnet_compute_single_frame_features_float(&st->enc, x, st->features);
-      if (count == 0) {
-        if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
-      } else {
+      if (count > 0) {
         if (count == 1) replace_features(st, st->features);
         else queue_features(st, st->features);
         OPUS_COPY(&plc_features[2*NB_BANDS], st->features, NB_FEATURES);
