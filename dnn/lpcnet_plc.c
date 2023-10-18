@@ -172,20 +172,15 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
   float plc_features[2*NB_BANDS+NB_FEATURES+1];
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
   burg_cepstral_analysis(plc_features, x);
-  if (st->blend) {
-    if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
-  }
-  /* Update state. */
-  /*fprintf(stderr, "update state\n");*/
-  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
   lpcnet_compute_single_frame_features_float(&st->enc, x, st->features);
-  if (!st->blend) {
+  if (st->blend) {
+    replace_features(st, st->features);
+    if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
+  } else {
     queue_features(st, st->features);
     OPUS_COPY(&plc_features[2*NB_BANDS], st->features, NB_FEATURES);
     plc_features[2*NB_BANDS+NB_FEATURES] = 1;
     compute_plc_pred(st, st->features, plc_features);
-  } else {
-    replace_features(st, st->features);
   }
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
