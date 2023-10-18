@@ -37,6 +37,7 @@
 #include "os_support.h"
 #include "dred_config.h"
 #include "dred_coding.h"
+#include "vec.h"
 
 #define LATENT_DIM 80
 #define STATE_DIM 80
@@ -59,7 +60,7 @@ void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, 
         int q;
         delta = dzone[i]*(1.f/1024.f);
         xq = x[i]*scale[i]*(1.f/256.f);
-        xq = xq - delta*tanh(xq/(delta+eps));
+        xq = xq - delta*tanh_approx(xq/(delta+eps));
         q = (int)floor(.5f+xq);
         /* Make the impossible actually impossible. */
         if (r[i] == 0 || p0[i] >= 32767) q = 0;
