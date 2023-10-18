@@ -169,20 +169,8 @@ static void replace_features(LPCNetPLCState *st, const float *features) {
 
 int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
-  float x[FRAME_SIZE];
-  float plc_features[2*NB_BANDS+NB_FEATURES+1];
-  for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
-  //burg_cepstral_analysis(plc_features, x);
-  //lpcnet_compute_single_frame_features_float(&st->enc, x, st->features);
   if (st->blend) {
     st->analysis_pos = PLC_BUF_SIZE;
-    //replace_features(st, st->features);
-    //if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
-  } else {
-    //queue_features(st, st->features);
-    //OPUS_COPY(&plc_features[2*NB_BANDS], st->features, NB_FEATURES);
-    //plc_features[2*NB_BANDS+NB_FEATURES] = 1;
-    //compute_plc_pred(st, st->features, plc_features);
   }
   if (st->analysis_pos - FRAME_SIZE >= 0) st->analysis_pos -= FRAME_SIZE;
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
@@ -204,7 +192,6 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
       burg_cepstral_analysis(plc_features, x);
       lpcnet_compute_single_frame_features_float(&st->enc, x, st->features);
       if (count == 0) {
-        //replace_features(st, st->features);
         if (FEATURES_DELAY > 0) st->plc_net = st->plc_copy[FEATURES_DELAY-1];
       } else {
         if (count == 1) replace_features(st, st->features);
@@ -229,7 +216,6 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
   else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
   fargan_synthesize_int(&st->fargan, pcm, &st->features[0]);
-  //lpcnet_compute_single_frame_features(&st->enc, pcm, st->features);
   queue_features(st, st->features);
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
