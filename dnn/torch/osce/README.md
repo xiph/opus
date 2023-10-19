@@ -26,14 +26,6 @@ Second step is to run a patched version of opus_demo in the dataset folder, whic
 
 The argument to -silk_random_switching specifies the number of frames after which parameters are switched randomly.
 
-## Generating inference data
-Generating inference data is analogous to generating training data. Given an item 'item1.wav' run
-`mkdir item1.se && sox item1.wav -r 16000 -e signed-integer -b 16 item1.raw && cd item1.se && <path_to_patched_opus_demo>/opus_demo voip 16000 1 <bitrate> ../item1.raw noisy.s16`
-
-The folder item1.se then serves as input for the test_model.py script or for the --testdata argument of train_model.py resp. adv_train_model.py
-
-Checkpoints of pre-trained models are located here https://media.xiph.org/lpcnet/models/lace-20231019.tar.gz.
-
 ## Regression loss based training
 Create a default setup for LACE or NoLACE via
 
@@ -63,3 +55,11 @@ for running the training script in foreground or
 `nohup python adv_train_model.py nolace_adv.yml <output folder> &`
 
 to run it in background. In the latter case the output is written to `<output folder>/out.txt`.
+
+## Inference
+Generating inference data is analogous to generating training data. Given an item 'item1.wav' run
+`mkdir item1.se && sox item1.wav -r 16000 -e signed-integer -b 16 item1.raw && cd item1.se && <path_to_patched_opus_demo>/opus_demo voip 16000 1 <bitrate> ../item1.raw noisy.s16`
+
+The folder item1.se then serves as input for the test_model.py script or for the --testdata argument of train_model.py resp. adv_train_model.py
+
+Checkpoints of pre-trained models are located here: https://media.xiph.org/lpcnet/models/lace-20231019.tar.gz
