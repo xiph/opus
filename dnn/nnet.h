@@ -29,7 +29,14 @@
 #define _NNET_H_
 
 #include <stddef.h>
-#include "vec.h"
+#include "opus_types.h"
+
+#ifdef DISABLE_DOT_PROD
+typedef float qweight;
+#else
+typedef signed char qweight;
+#define DOT_PROD
+#endif
 
 #define ACTIVATION_LINEAR  0
 #define ACTIVATION_SIGMOID 1

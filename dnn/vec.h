@@ -47,17 +47,6 @@
 
 #define NO_OPTIMIZATIONS
 
-#ifndef DISABLE_DOT_PROD
-#define DOT_PROD
-/*#define USE_SU_BIAS*/
-#endif
-
-#ifdef DOT_PROD
-typedef signed char qweight;
-#else
-typedef float qweight;
-#endif
-
 static inline void sgemv16x1(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
    int i, j;

@@ -40,13 +40,6 @@
 
 #define USE_SU_BIAS
 
-
-/* Use 8-bit dot products unless disabled or if stuck with SSE2. */
-#ifndef DISABLE_DOT_PROD
-#define DOT_PROD
-#endif
-
-
 #ifndef __SSE_4_1__
 static inline __m128 mm_floor_ps(__m128 x) {
   __m128 half = _mm_set1_ps(0.5);
@@ -881,12 +874,6 @@ static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale,
 #define SCALE (128.f*127.f)
 #define SCALE_1 (1.f/128.f/127.f)
 #define USE_SU_BIAS
-
-#ifdef DOT_PROD
-typedef signed char qweight;
-#else
-typedef float qweight;
-#endif
 
 
 #endif /*VEC_AVX_H*/

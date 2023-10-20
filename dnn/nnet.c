@@ -40,6 +40,7 @@
 #include "plc_data.h"
 #include "fargan.h"
 #include "os_support.h"
+#include "vec.h"
 
 #ifdef NO_OPTIMIZATIONS
 #if defined(_MSC_VER)

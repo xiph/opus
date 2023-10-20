@@ -34,17 +34,6 @@
 #include <arm_neon.h>
 #include "os_support.h"
 
-#ifndef DISABLE_DOT_PROD
-#define DOT_PROD
-#endif
-
-#ifdef DOT_PROD
-typedef signed char qweight;
-#else
-typedef float qweight;
-#endif
-
-
 #ifndef LPCNET_TEST
 static inline float32x4_t exp4_approx(float32x4_t x) {
   int32x4_t i;
