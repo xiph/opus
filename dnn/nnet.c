@@ -394,6 +394,34 @@ void conv2d_float(float *out, const float *weights, int in_channels, int out_cha
    }
 }
 
+void conv2d_3x3_float(float *out, const float *weights, int in_channels, int out_channels, const float *in, int height, int hstride)
+{
+   int i;
+   int in_stride;
+   int kheight, ktime;
+   kheight = ktime = 3;
+   in_stride = height+kheight-1;
+   for (i=0;i<out_channels;i++) {
+      int m;
+      OPUS_CLEAR(&out[i*hstride], height);
+      for (m=0;m<in_channels;m++) {
+         int j;
+         for (j=0;j<height;j++) {
+            /* Unrolled version of previous function -- compiler will figure out the indexing simplifications. */
+            out[i*hstride + j] += weights[i*in_channels*ktime*kheight + m*ktime*kheight + 0*kheight + 0]*in[0*in_channels*in_stride + m*in_stride + j + 0]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 0*kheight + 1]*in[0*in_channels*in_stride + m*in_stride + j + 1]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 0*kheight + 2]*in[0*in_channels*in_stride + m*in_stride + j + 2]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 1*kheight + 0]*in[1*in_channels*in_stride + m*in_stride + j + 0]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 1*kheight + 1]*in[1*in_channels*in_stride + m*in_stride + j + 1]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 1*kheight + 2]*in[1*in_channels*in_stride + m*in_stride + j + 2]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 2*kheight + 0]*in[2*in_channels*in_stride + m*in_stride + j + 0]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 2*kheight + 1]*in[2*in_channels*in_stride + m*in_stride + j + 1]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 2*kheight + 2]*in[2*in_channels*in_stride + m*in_stride + j + 2];
+               }
+      }
+   }
+}
+
 #define MAX_CONV2D_INPUTS 8192
 
 void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation)
@@ -409,7 +437,10 @@ void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float
    OPUS_COPY(&in_buf[(conv->ktime-1)*time_stride], in, time_stride);
    OPUS_COPY(mem, &in_buf[time_stride], (conv->ktime-1)*time_stride);
    bias = conv->bias;
-   conv2d_float(out, conv->float_weights, conv->in_channels, conv->out_channels, conv->ktime, conv->kheight, in_buf, height, hstride);
+   if (conv->kheight == 3 && conv->ktime == 3)
+     conv2d_3x3_float(out, conv->float_weights, conv->in_channels, conv->out_channels, in_buf, height, hstride);
+   else
+     conv2d_float(out, conv->float_weights, conv->in_channels, conv->out_channels, conv->ktime, conv->kheight, in_buf, height, hstride);
    if (bias != NULL) {
      for (i=0;i<conv->out_channels;i++) {
        int j;
