@@ -94,16 +94,6 @@ typedef struct {
 
 typedef struct {
   const float *bias;
-  const float *input_weights;
-  const float *factor;
-  int nb_inputs;
-  int nb_neurons;
-  int nb_channels;
-  int activation;
-} MDenseLayer;
-
-typedef struct {
-  const float *bias;
   const float *subias;
   const qweight *input_weights;
   const int *input_weights_idx;
@@ -113,17 +103,6 @@ typedef struct {
   int activation;
   int reset_after;
 } GRULayer;
-
-typedef struct {
-  const float *bias;
-  const float *subias;
-  const float *diag_weights;
-  const qweight *recurrent_weights;
-  const int *idx;
-  int nb_neurons;
-  int activation;
-  int reset_after;
-} SparseGRULayer;
 
 typedef struct {
   const float *bias;
@@ -150,8 +129,6 @@ void compute_gated_activation(const LinearLayer *layer, float *output, const flo
 void compute_activation(float *output, const float *input, int N, int activation);
 
 void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input);
-
-void compute_mdense(const MDenseLayer *layer, float *output, const float *input);
 
 void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input);
 
@@ -184,15 +161,6 @@ int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
   int ktime,
   int kheight);
 
-int mdense_init(MDenseLayer *layer, const WeightArray *arrays,
-  const char *bias,
-  const char *input_weights,
-  const char *factor,
-  int nb_inputs,
-  int nb_neurons,
-  int nb_channels,
-  int activation);
-
 int dense_init(DenseLayer *layer, const WeightArray *arrays,
   const char *bias,
   const char *input_weights,
@@ -211,30 +179,7 @@ int gru_init(GRULayer *layer, const WeightArray *arrays,
   int activation,
   int reset_after);
 
-int sparse_gru_init(SparseGRULayer *layer, const WeightArray *arrays,
-  const char *bias,
-  const char *subias,
-  const char *diag_weights,
-  const char *recurrent_weights,
-  const char *idx,
-  int nb_neurons,
-  int activation,
-  int reset_after);
-
-int conv1d_init(Conv1DLayer *layer, const WeightArray *arrays,
-  const char *bias,
-  const char *input_weights,
-  int nb_inputs,
-  int kernel_size,
-  int nb_neurons,
-  int activation);
-
 void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation);
-
-int embedding_init(EmbeddingLayer *layer, const WeightArray *arrays,
-  const char *embedding_weights,
-  int nb_inputs,
-  int dim);
 
 
 #endif /* _MLP_H_ */
