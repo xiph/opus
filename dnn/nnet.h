@@ -140,7 +140,6 @@ typedef struct {
   int dim;
 } EmbeddingLayer;
 
-void compute_linear(const LinearLayer *linear, float *out, const float *in);
 void compute_generic_dense(const LinearLayer *layer, float *output, const float *input, int activation);
 void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in);
 void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int activation);
@@ -156,17 +155,6 @@ void compute_mdense(const MDenseLayer *layer, float *output, const float *input)
 
 void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input);
 
-void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input);
-
-void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input);
-
-void compute_embedding(const EmbeddingLayer *layer, float *output, int input);
-
-void accum_embedding(const EmbeddingLayer *layer, float *output, int input);
-
-void compute_gru_a_input(float *output, const float *input, int N, const EmbeddingLayer *layer1, int val1, const EmbeddingLayer *layer2, int val2, const EmbeddingLayer *layer3, int val3);
-
-int sample_from_pdf(const float *pdf, int N, float exp_boost, float pdf_floor);
 
 
 extern const WeightArray lpcnet_arrays[];

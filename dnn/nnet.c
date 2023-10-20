@@ -69,7 +69,7 @@ static OPUS_INLINE float relu(float x)
    return x < 0 ? 0 : x;
 }
 
-void compute_linear(const LinearLayer *linear, float *out, const float *in)
+static void compute_linear(const LinearLayer *linear, float *out, const float *in)
 {
    int i, M, N;
    const float *bias;
@@ -156,18 +156,6 @@ void compute_glu(const LinearLayer *layer, float *output, const float *input)
    } else {
      for (i=0;i<layer->nb_outputs;i++) output[i] = input[i]*act2[i];
    }
-}
-
-void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation)
-{
-   int i;
-   float act1[MAX_INPUTS];
-   float act2[MAX_INPUTS];
-   celt_assert(layer->nb_inputs == layer->nb_outputs);
-   compute_activation(act1, input, layer->nb_outputs, activation);
-   compute_linear(layer, act2, input);
-   compute_activation(act2, act2, layer->nb_outputs, ACTIVATION_SIGMOID);
-   for (i=0;i<layer->nb_outputs;i++) output[i] = act1[i]*act2[i];
 }
 
 void compute_activation(float *output, const float *input, int N, int activation)
@@ -277,42 +265,6 @@ void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *stat
   compute_generic_gru(&in_matrix, &rec_matrix, state, input);
 }
 
-/* The input of this GRU is after the input matrix multiply. */
-void compute_sparse_gru(const SparseGRULayer *gru, float *state, const float *input)
-{
-  LinearLayer in_matrix, rec_matrix;
-  int i, N;
-  float scale[3*MAX_RNN_NEURONS_ALL];
-  N = gru->nb_neurons;
-
-  in_matrix.bias = input;
-  in_matrix.diag = NULL;
-  in_matrix.nb_inputs = N;
-  in_matrix.nb_outputs = 3*N;
-  in_matrix.subias = input;
-  in_matrix.scale = NULL;
-  in_matrix.float_weights = NULL;
-  in_matrix.weights = NULL;
-  in_matrix.weights_idx = NULL;
-
-  rec_matrix.bias = &gru->bias[3*N];
-  rec_matrix.diag = gru->diag_weights;
-  rec_matrix.nb_inputs = N;
-  rec_matrix.nb_outputs = 3*N;
-  rec_matrix.subias = &gru->subias[3*N];
-#ifdef DISABLE_DOT_PROD
-  rec_matrix.scale = NULL;
-  rec_matrix.float_weights = gru->recurrent_weights;
-  rec_matrix.weights = NULL;
-#else
-  for (i=0;i<3*N;i++) scale[i] = SCALE_1;
-  rec_matrix.scale = scale;
-  rec_matrix.weights = gru->recurrent_weights;
-  rec_matrix.float_weights = NULL;
-#endif
-  rec_matrix.weights_idx = gru->idx;
-  compute_generic_gru(&in_matrix, &rec_matrix, state, input);
-}
 
 #define MAX_CONV_INPUTS_ALL DRED_MAX_CONV_INPUTS
 
@@ -347,30 +299,13 @@ void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, fl
    }
 }
 
-void compute_conv1d(const Conv1DLayer *layer, float *output, float *mem, const float *input)
-{
-   LinearLayer matrix;
-   int N, M;
-   M = layer->nb_inputs*layer->kernel_size;
-   N = layer->nb_neurons;
-   matrix.bias = layer->bias;
-   matrix.subias = NULL;
-   matrix.float_weights = layer->input_weights;
-   matrix.weights = NULL;
-   matrix.weights_idx = NULL;
-   matrix.diag = NULL;
-   matrix.nb_inputs = M;
-   matrix.nb_outputs = N;
-   matrix.scale = NULL;
-   compute_generic_conv1d(&matrix, output, mem, input, layer->nb_inputs, layer->activation);
-}
 
 /* Computes non-padded convolution for input [ ksize1 x in_channels x (len2+ksize2) ],
    kernel [ out_channels x in_channels x ksize1 x ksize2 ],
    storing the output as [ out_channels x len2 ].
    We assume that the output dimension along the ksize1 axis is 1,
    i.e. processing one frame at a time. */
-void conv2d_float(float *out, const float *weights, int in_channels, int out_channels, int ktime, int kheight, const float *in, int height, int hstride)
+static void conv2d_float(float *out, const float *weights, int in_channels, int out_channels, int ktime, int kheight, const float *in, int height, int hstride)
 {
    int i;
    int in_stride;
@@ -394,7 +329,7 @@ void conv2d_float(float *out, const float *weights, int in_channels, int out_cha
    }
 }
 
-void conv2d_3x3_float(float *out, const float *weights, int in_channels, int out_channels, const float *in, int height, int hstride)
+static void conv2d_3x3_float(float *out, const float *weights, int in_channels, int out_channels, const float *in, int height, int hstride)
 {
    int i;
    int in_stride;
@@ -449,39 +384,5 @@ void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float
    }
    for (i=0;i<conv->out_channels;i++) {
      compute_activation(&out[i*hstride], &out[i*hstride], height, activation);
-   }
-}
-
-
-void compute_embedding(const EmbeddingLayer *layer, float *output, int input)
-{
-   int i;
-   celt_assert(input >= 0);
-   celt_assert(input < layer->nb_inputs);
-   /*if (layer->dim == 64) printf("%d\n", input);*/
-   for (i=0;i<layer->dim;i++)
-   {
-      output[i] = layer->embedding_weights[input*layer->dim + i];
-   }
-}
-
-void compute_gru_a_input(float *output, const float *input, int N, const EmbeddingLayer *layer1, int val1, const EmbeddingLayer *layer2, int val2, const EmbeddingLayer *layer3, int val3) {
-   int i;
-   for (i=0;i<3*N;i++) {
-      output[i] = input[i] + layer1->embedding_weights[val1*layer1->dim + i]
-                           + layer2->embedding_weights[val2*layer2->dim + i]
-                           + layer3->embedding_weights[val3*layer3->dim + i];
-   }
-}
-
-void accum_embedding(const EmbeddingLayer *layer, float *output, int input)
-{
-   int i;
-   celt_assert(input >= 0);
-   celt_assert(input < layer->nb_inputs);
-   /*if (layer->dim == 64) printf("%d\n", input);*/
-   for (i=0;i<layer->dim;i++)
-   {
-      output[i] += layer->embedding_weights[input*layer->dim + i];
    }
 }
