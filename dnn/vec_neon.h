@@ -383,9 +383,30 @@ static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale,
    for (i=0;i<rows;i+=8)
    {
       int32x4_t acc0, acc1;
+      int32x4_t acc2, acc3;
       acc0 = vdupq_n_s32(0);
       acc1 = vdupq_n_s32(0);
-      for (j=0;j<cols;j+=4)
+      acc2 = vdupq_n_s32(0);
+      acc3 = vdupq_n_s32(0);
+      j=0;
+      for (;j<cols-4;j+=8)
+      {
+         int8x16_t vw0, vw1, vw2, vw3, vx0, vx1;
+         vx0 = (int8x16_t)vld1q_dup_s32((int*)(void*)&x[j]);
+         vw0 = vld1q_s8(w);
+         vw1 = vld1q_s8(&w[16]);
+         acc0 = vdotprod(acc0, vw0, vx0);
+         acc1 = vdotprod(acc1, vw1, vx0);
+         vx1 = (int8x16_t)vld1q_dup_s32((int*)(void*)&x[j+4]);
+         vw2 = vld1q_s8(&w[32]);
+         vw3 = vld1q_s8(&w[48]);
+         acc2 = vdotprod(acc2, vw2, vx1);
+         acc3 = vdotprod(acc3, vw3, vx1);
+         w += 64;
+      }
+      acc0 = vaddq_s32(acc0, acc2);
+      acc1 = vaddq_s32(acc1, acc3);
+      for (;j<cols;j+=4)
       {
          int8x16_t vw0, vw1, vx;
          vx = (int8x16_t)vld1q_dup_s32((int*)(void*)&x[j]);
