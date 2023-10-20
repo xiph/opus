@@ -59,18 +59,26 @@ f"""
 """
         )
 
-    layers = [
+    dense_layers = [
         ('if_upsample.0', "dense_if_upsampler_1"),
         ('if_upsample.2', "dense_if_upsampler_2"),
-        ('conv.1', "conv2d_1"),
-        ('conv.4', "conv2d_2"),
-        ('conv.7', "conv2d_3"),
         ('downsample.0', "dense_downsampler"),
         ("upsample.0", "dense_final_upsampler")
     ]
 
 
-    for name, export_name in layers:
+    for name, export_name in dense_layers:
+        layer = model.get_submodule(name)
+        dump_torch_weights(writer, layer, name=export_name, verbose=True, quantize=True, scale=None)
+
+    conv_layers = [
+        ('conv.1', "conv2d_1"),
+        ('conv.4', "conv2d_2"),
+        ('conv.7', "conv2d_3")
+    ]
+
+
+    for name, export_name in conv_layers:
         layer = model.get_submodule(name)
         dump_torch_weights(writer, layer, name=export_name, verbose=True)
 
@@ -79,7 +87,7 @@ f"""
         ("GRU", "gru_1"),
     ]
 
-    max_rnn_units = max([dump_torch_weights(writer, model.get_submodule(name), export_name, verbose=True, input_sparse=False, quantize=False)
+    max_rnn_units = max([dump_torch_weights(writer, model.get_submodule(name), export_name, verbose=True, input_sparse=False, quantize=True, scale=None, recurrent_scale=None)
                              for name, export_name in gru_layers])
 
     writer.header.write(
