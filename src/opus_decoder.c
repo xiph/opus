@@ -162,7 +162,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
    st->prev_mode = 0;
    st->frame_size = Fs/400;
 #ifdef ENABLE_DEEP_PLC
-    lpcnet_plc_init( &st->lpcnet, LPCNET_PLC_CODEC );
+    lpcnet_plc_init( &st->lpcnet);
 #endif
    st->arch = opus_select_arch();
    return OPUS_OK;

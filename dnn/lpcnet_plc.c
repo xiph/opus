@@ -41,10 +41,6 @@
 /* Comment this out to have LPCNet update its state on every good packet (slow). */
 #define PLC_SKIP_UPDATES
 
-int lpcnet_plc_get_size() {
-  return sizeof(LPCNetPLCState);
-}
-
 void lpcnet_plc_reset(LPCNetPLCState *st) {
   OPUS_CLEAR((char*)&st->LPCNET_PLC_RESET_START,
           sizeof(LPCNetPLCState)-
@@ -55,18 +51,11 @@ void lpcnet_plc_reset(LPCNetPLCState *st) {
   st->loss_count = 0;
 }
 
-int lpcnet_plc_init(LPCNetPLCState *st, int options) {
+int lpcnet_plc_init(LPCNetPLCState *st) {
   int ret;
   fargan_init(&st->fargan);
   lpcnet_encoder_init(&st->enc);
   st->analysis_pos = PLC_BUF_SIZE;
-  if ((options&0x3) == LPCNET_PLC_CAUSAL) {
-    st->enable_blending = 1;
-  } else if ((options&0x3) == LPCNET_PLC_CODEC) {
-    st->enable_blending = 0;
-  } else {
-    return -1;
-  }
 #ifndef USE_WEIGHTS_FILE
   ret = init_plc_model(&st->model, lpcnet_plc_arrays);
 #else
@@ -89,38 +78,22 @@ int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len
   else return -1;
 }
 
-LPCNetPLCState *lpcnet_plc_create(int options) {
-  LPCNetPLCState *st;
-  st = calloc(sizeof(*st), 1);
-  lpcnet_plc_init(st, options);
-  return st;
-}
-
-void lpcnet_plc_destroy(LPCNetPLCState *st) {
-  free(st);
-}
-
 void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features) {
   if (features == NULL) {
     st->fec_skip++;
     return;
   }
   if (st->fec_fill_pos == PLC_MAX_FEC) {
-    if (st->fec_keep_pos == 0) {
-      fprintf(stderr, "FEC buffer full\n");
-      return;
-    }
-    OPUS_MOVE(&st->fec[0][0], &st->fec[st->fec_keep_pos][0], (st->fec_fill_pos-st->fec_keep_pos)*NB_FEATURES);
-    st->fec_fill_pos = st->fec_fill_pos-st->fec_keep_pos;
-    st->fec_read_pos -= st->fec_keep_pos;
-    st->fec_keep_pos = 0;
+    OPUS_MOVE(&st->fec[0][0], &st->fec[st->fec_read_pos][0], (st->fec_fill_pos-st->fec_read_pos)*NB_FEATURES);
+    st->fec_fill_pos = st->fec_fill_pos-st->fec_read_pos;
+    st->fec_read_pos -= st->fec_read_pos;
   }
   OPUS_COPY(&st->fec[st->fec_fill_pos][0], features, NB_FEATURES);
   st->fec_fill_pos++;
 }
 
 void lpcnet_plc_fec_clear(LPCNetPLCState *st) {
-  st->fec_keep_pos = st->fec_read_pos = st->fec_fill_pos = st-> fec_skip = 0;
+  st->fec_read_pos = st->fec_fill_pos = st->fec_skip = 0;
 }
 
 
@@ -140,8 +113,6 @@ static int get_fec_or_pred(LPCNetPLCState *st, float *out) {
     float discard[NB_FEATURES];
     OPUS_COPY(out, &st->fec[st->fec_read_pos][0], NB_FEATURES);
     st->fec_read_pos++;
-    /* Make sure we can rewind a few frames back at resync time. */
-    st->fec_keep_pos = IMAX(0, IMAX(st->fec_keep_pos, st->fec_read_pos-FEATURES_DELAY-1));
     /* Update PLC state using FEC, so without Burg features. */
     OPUS_COPY(&plc_features[2*NB_BANDS], out, NB_FEATURES);
     plc_features[2*NB_BANDS+NB_FEATURES] = -1;
@@ -207,8 +178,6 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
     queue_features(st, st->features);
     fargan_cont(&st->fargan, &st->pcm[PLC_BUF_SIZE-FARGAN_CONT_SAMPLES], st->cont_features);
   }
-  OPUS_MOVE(&st->plc_copy[1], &st->plc_copy[0], FEATURES_DELAY);
-  st->plc_copy[0] = st->plc_net;
   if (get_fec_or_pred(st, st->features)) st->loss_count = 0;
   else st->loss_count++;
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));

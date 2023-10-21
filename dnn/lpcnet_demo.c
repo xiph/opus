@@ -83,7 +83,6 @@ void free_blob(unsigned char *blob, int len) {
 
 #define MODE_FEATURES 2
 /*#define MODE_SYNTHESIS 3*/
-#define MODE_PLC 4
 #define MODE_ADDLPC 5
 #define MODE_FWGAN_SYNTHESIS 6
 #define MODE_FARGAN_SYNTHESIS 7
@@ -91,8 +90,6 @@ void free_blob(unsigned char *blob, int len) {
 void usage(void) {
     fprintf(stderr, "usage: lpcnet_demo -features <input.pcm> <features.f32>\n");
     fprintf(stderr, "       lpcnet_demo -fargan_synthesis <features.f32> <output.pcm>\n");
-    fprintf(stderr, "       lpcnet_demo -plc <plc_options> <percent> <input.pcm> <output.pcm>\n");
-    fprintf(stderr, "       lpcnet_demo -plc_file <plc_options> <percent> <input.pcm> <output.pcm>\n");
     fprintf(stderr, "       lpcnet_demo -addlpc <features_without_lpc.f32> <features_with_lpc.lpc>\n\n");
     fprintf(stderr, "  plc_options:\n");
     fprintf(stderr, "       causal:       normal (causal) PLC\n");
@@ -102,11 +99,7 @@ void usage(void) {
 
 int main(int argc, char **argv) {
     int mode=0;
-    int plc_percent=0;
     FILE *fin, *fout;
-    FILE *plc_file = NULL;
-    const char *plc_options;
-    int plc_flags=-1;
 #ifdef USE_WEIGHTS_FILE
     int len;
     unsigned char *data;
@@ -115,31 +108,10 @@ int main(int argc, char **argv) {
     if (argc < 4) usage();
     if (strcmp(argv[1], "-features") == 0) mode=MODE_FEATURES;
     else if (strcmp(argv[1], "-fargan-synthesis") == 0) mode=MODE_FARGAN_SYNTHESIS;
-    else if (strcmp(argv[1], "-plc") == 0) {
-        mode=MODE_PLC;
-        plc_options = argv[2];
-        plc_percent = atoi(argv[3]);
-        argv+=2;
-        argc-=2;
-    } else if (strcmp(argv[1], "-plc_file") == 0) {
-        mode=MODE_PLC;
-        plc_options = argv[2];
-        plc_file = fopen(argv[3], "r");
-        if (!plc_file) {
-            fprintf(stderr, "Can't open %s\n", argv[3]);
-            exit(1);
-        }
-        argv+=2;
-        argc-=2;
-    } else if (strcmp(argv[1], "-addlpc") == 0){
+    else if (strcmp(argv[1], "-addlpc") == 0){
         mode=MODE_ADDLPC;
     } else {
         usage();
-    }
-    if (mode == MODE_PLC) {
-        if (strcmp(plc_options, "causal")==0) plc_flags = LPCNET_PLC_CAUSAL;
-        else if (strcmp(plc_options, "codec")==0) plc_flags = LPCNET_PLC_CODEC;
-        else usage();
     }
     if (argc != 4) usage();
     fin = fopen(argv[2], "rb");
@@ -195,35 +167,6 @@ int main(int argc, char **argv) {
             for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + MIN32(32767, MAX32(-32767, 32768.f*fpcm[i])));
             fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
         }
-    } else if (mode == MODE_PLC) {
-        opus_int16 pcm[FRAME_SIZE];
-        int count=0;
-        int loss=0;
-        int skip=0, extra=0;
-        LPCNetPLCState *net;
-        net = lpcnet_plc_create(plc_flags);
-#ifdef USE_WEIGHTS_FILE
-        lpcnet_plc_load_model(net, data, len);
-#endif
-        while (1) {
-            size_t ret;
-            ret = fread(pcm, sizeof(pcm[0]), FRAME_SIZE, fin);
-            if (feof(fin) || ret != FRAME_SIZE) break;
-            if (count % 2 == 0) {
-              if (plc_file != NULL) ret = fscanf(plc_file, "%d", &loss);
-              else loss = rand() < (float)RAND_MAX*(float)plc_percent/100.f;
-            }
-            if (loss) lpcnet_plc_conceal(net, pcm);
-            else lpcnet_plc_update(net, pcm);
-            fwrite(&pcm[skip], sizeof(pcm[0]), FRAME_SIZE-skip, fout);
-            skip = 0;
-            count++;
-        }
-        if (extra) {
-          lpcnet_plc_conceal(net, pcm);
-          fwrite(pcm, sizeof(pcm[0]), extra, fout);
-        }
-        lpcnet_plc_destroy(net);
     } else if (mode == MODE_ADDLPC) {
         float features[36];
         size_t ret;
@@ -240,7 +183,6 @@ int main(int argc, char **argv) {
     }
     fclose(fin);
     fclose(fout);
-    if (plc_file) fclose(plc_file);
 #ifdef USE_WEIGHTS_FILE
     free_blob(data, len);
 #endif

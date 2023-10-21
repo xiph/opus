@@ -163,18 +163,9 @@ void lpcnet_destroy(LPCNetState *st);
 void lpcnet_synthesize(LPCNetState *st, const float *features, opus_int16 *output, int N);
 
 
-#define LPCNET_PLC_CAUSAL 0
-#define LPCNET_PLC_CODEC 2
 
-
-int lpcnet_plc_get_size(void);
-
-int lpcnet_plc_init(LPCNetPLCState *st, int options);
+int lpcnet_plc_init(LPCNetPLCState *st);
 void lpcnet_plc_reset(LPCNetPLCState *st);
-
-LPCNetPLCState *lpcnet_plc_create(int options);
-
-void lpcnet_plc_destroy(LPCNetPLCState *st);
 
 int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm);
 

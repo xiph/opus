@@ -52,11 +52,9 @@ struct LPCNetPLCState {
   FARGANState fargan;
   LPCNetEncState enc;
   int arch;
-  int enable_blending;
 
 #define LPCNET_PLC_RESET_START fec
   float fec[PLC_MAX_FEC][NB_FEATURES];
-  int fec_keep_pos;
   int fec_read_pos;
   int fec_fill_pos;
   int fec_skip;
@@ -67,7 +65,6 @@ struct LPCNetPLCState {
   float cont_features[CONT_VECTORS*NB_FEATURES];
   int loss_count;
   PLCNetState plc_net;
-  PLCNetState plc_copy[FEATURES_DELAY+1];
 };
 
 void preemphasis(float *y, float *mem, const float *x, float coef, int N);
