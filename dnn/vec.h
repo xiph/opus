@@ -29,7 +29,6 @@
 #ifndef VEC_H
 #define VEC_H
 
-#include "tansig_table.h"
 #include "opus_types.h"
 #include <math.h>
 #include "arch.h"
@@ -81,7 +80,7 @@ static inline void sgemv16x1(float *out, const float *weights, int rows, int col
    }
 }
 
-static inline void sgemv16x1(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
+static inline void sgemv8x1(float *out, const float *weights, int rows, int cols, int col_stride, const float *x)
 {
    int i, j;
    OPUS_CLEAR(out, rows);
@@ -334,23 +333,21 @@ static inline float lpcnet_exp2(float x)
 }
 #define lpcnet_exp(x) lpcnet_exp2((x)*1.44269504f)
 
-static inline float tanh_approx(float x)
+#define fmadd(a, b, c) ((a)*(b)+(c))
+static OPUS_INLINE float tanh_approx(float x)
 {
-    int i;
-    float y, dy;
-    float sign=1;
-    if (x<0)
-    {
-       x=-x;
-       sign=-1;
-    }
-    i = (int)floor(.5f+25*x);
-    i = IMAX(0, IMIN(200, i));
-    x -= .04f*i;
-    y = tansig_table[i];
-    dy = 1-y*y;
-    y = y + x*dy*(1 - y*x);
-    return sign*y;
+    const float N0 = 952.52801514f;
+    const float N1 = 96.39235687f;
+    const float N2 = 0.60863042f;
+    const float D0 = 952.72399902f;
+    const float D1 = 413.36801147f;
+    const float D2 = 11.88600922f;
+    float X2, num, den;
+    X2 = x*x;
+    num = fmadd(fmadd(N2, X2, N1), X2, N0);
+    den = fmadd(fmadd(D2, X2, D1), X2, D0);
+    num = num*x/den;
+    return MAX32(-1.f, MIN32(1.f, num));
 }
 
 static inline float sigmoid_approx(float x)

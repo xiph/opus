@@ -8,7 +8,6 @@ dnn/fargan_data.h \
 dnn/lpcnet_private.h \
 dnn/nnet.h \
 dnn/plc_data.h \
-dnn/tansig_table.h \
 dnn/vec.h \
 dnn/vec_avx.h \
 dnn/vec_neon.h \

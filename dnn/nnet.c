@@ -34,7 +34,6 @@
 #include <math.h>
 #include "opus_types.h"
 #include "arch.h"
-#include "tansig_table.h"
 #include "nnet.h"
 #include "dred_rdovae_constants.h"
 #include "plc_data.h"
