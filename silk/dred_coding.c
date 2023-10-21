@@ -30,17 +30,11 @@
 #endif
 
 #include <math.h>
-#include <stdio.h>
 
 #include "celt/entenc.h"
-#include "celt/laplace.h"
 #include "os_support.h"
 #include "dred_config.h"
 #include "dred_coding.h"
-#include "vec.h"
-
-#define LATENT_DIM 80
-#define STATE_DIM 80
 
 int compute_quantizer(int q0, int dQ, int i) {
   int quant;
@@ -50,94 +44,3 @@ int compute_quantizer(int q0, int dQ, int i) {
   return quant > 15 ? 15 : quant;
   return (int) floor(0.5f + DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
 }
-
-void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, const opus_uint16 *dzone, const opus_uint16 *r, const opus_uint16 *p0) {
-    int i;
-    float eps = .1f;
-    for (i=0;i<LATENT_DIM;i++) {
-        float delta;
-        float xq;
-        int q;
-        delta = dzone[i]*(1.f/1024.f);
-        xq = x[i]*scale[i]*(1.f/256.f);
-        xq = xq - delta*tanh_approx(xq/(delta+eps));
-        q = (int)floor(.5f+xq);
-        /* Make the impossible actually impossible. */
-        if (r[i] == 0 || p0[i] >= 32767) q = 0;
-        ec_laplace_encode_p0(enc, q, p0[i], r[i]);
-    }
-}
-
-void dred_decode_latents(ec_dec *dec, float *x, const opus_uint16 *scale, const opus_uint16 *r, const opus_uint16 *p0) {
-    int i;
-    for (i=0;i<LATENT_DIM;i++) {
-        int q;
-        q = ec_laplace_decode_p0(dec, p0[i], r[i]);
-        x[i] = q*256.f/(scale[i] == 0 ? 1 : scale[i]);
-    }
-}
-
-#if 0
-#include <stdlib.h>
-
-#define DATA_SIZE 10000
-
-int main()
-{
-    ec_enc enc;
-    ec_dec dec;
-    int iter;
-    int bytes;
-    opus_int16 scale[LATENT_DIM];
-    opus_int16 dzone[LATENT_DIM];
-    opus_int16 r[LATENT_DIM];
-    opus_int16 p0[LATENT_DIM];
-    unsigned char *ptr;
-    int k;
-
-    for (k=0;k<LATENT_DIM;k++) {
-        scale[k] = 256;
-        dzone[k] = 0;
-        r[k] = 12054;
-        p0[k] = 12893;
-    }
-    ptr = (unsigned char *)malloc(DATA_SIZE);
-    ec_enc_init(&enc,ptr,DATA_SIZE);
-    for (iter=0;iter<1;iter++) {
-        float x[PVQ_DIM];
-        float sum=1e-30;
-        for (k=0;k<PVQ_DIM;k++) {
-            x[k] = log(1e-15+(float)rand()/RAND_MAX)-log(1e-15+(float)rand()/RAND_MAX);
-            sum += fabs(x[k]);
-        }
-        for (k=0;k<PVQ_DIM;k++) x[k] *= (1.f/sum);
-        /*for (k=0;k<PVQ_DIM;k++) printf("%f ", x[k]);
-        printf("\n");*/
-        dred_encode_state(&enc, x);
-    }
-    for (iter=0;iter<1;iter++) {
-        float x[LATENT_DIM];
-        for (k=0;k<LATENT_DIM;k++) {
-            x[k] = log(1e-15+(float)rand()/RAND_MAX)-log(1e-15+(float)rand()/RAND_MAX);
-        }
-        for (k=0;k<LATENT_DIM;k++) printf("%f ", x[k]);
-        printf("\n");
-        dred_encode_latents(&enc, x, scale, dzone, r, p0);
-    }
-    bytes = (ec_tell(&enc)+7)/8;
-    ec_enc_shrink(&enc, bytes);
-    ec_enc_done(&enc);
-
-    ec_dec_init(&dec,ec_get_buffer(&enc),bytes);
-    for (iter=0;iter<1;iter++) {
-        float x[PVQ_DIM];
-        dred_decode_state(&dec, x);
-    }
-    for (iter=0;iter<1;iter++) {
-        float x[LATENT_DIM];
-        dred_decode_latents(&dec, x, scale, r, p0);
-        for (k=0;k<LATENT_DIM;k++) printf("%f ", x[k]);
-        printf("\n");
-    }
-}
-#endif

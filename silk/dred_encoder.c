@@ -43,6 +43,9 @@
 #include "dred_decoder.h"
 #include "float_cast.h"
 #include "os_support.h"
+#include "vec.h"
+#include "celt/laplace.h"
+
 
 int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len)
 {
@@ -208,6 +211,23 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int ex
     }
 }
 
+static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, const opus_uint16 *dzone, const opus_uint16 *r, const opus_uint16 *p0, int dim) {
+    int i;
+    float eps = .1f;
+    for (i=0;i<dim;i++) {
+        float delta;
+        float xq;
+        int q;
+        delta = dzone[i]*(1.f/1024.f);
+        xq = x[i]*scale[i]*(1.f/256.f);
+        xq = xq - delta*tanh_approx(xq/(delta+eps));
+        q = (int)floor(.5f+xq);
+        /* Make the impossible actually impossible. */
+        if (r[i] == 0 || p0[i] >= 32767) q = 0;
+        ec_laplace_encode_p0(enc, q, p0[i], r[i]);
+    }
+}
+
 int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes) {
     const opus_uint16 *dead_zone       = DRED_rdovae_get_dead_zone_pointer();
     const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
@@ -237,7 +257,8 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
         quant_scales + state_qoffset,
         dead_zone + state_qoffset,
         r + state_qoffset,
-        p0 + state_qoffset);
+        p0 + state_qoffset,
+        DRED_STATE_DIM);
     if (ec_tell(&ec_encoder) > 8*max_bytes) {
       return 0;
     }
@@ -255,7 +276,8 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
             quant_scales + offset,
             dead_zone + offset,
             r + offset,
-            p0 + offset
+            p0 + offset,
+            DRED_LATENT_DIM
         );
         if (ec_tell(&ec_encoder) > 8*max_bytes) {
           ec_encoder = ec_bak;

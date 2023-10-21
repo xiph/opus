@@ -35,6 +35,7 @@
 #include "dred_decoder.h"
 #include "dred_coding.h"
 #include "celt/entdec.h"
+#include "celt/laplace.h"
 
 /* From http://graphics.stanford.edu/~seander/bithacks.html#FixedSignExtend */
 static int sign_extend(int x, int b) {
@@ -42,6 +43,14 @@ static int sign_extend(int x, int b) {
   return (x ^ m) - m;
 }
 
+static void dred_decode_latents(ec_dec *dec, float *x, const opus_uint16 *scale, const opus_uint16 *r, const opus_uint16 *p0, int dim) {
+    int i;
+    for (i=0;i<dim;i++) {
+        int q;
+        q = ec_laplace_decode_p0(dec, p0[i], r[i]);
+        x[i] = q*256.f/(scale[i] == 0 ? 1 : scale[i]);
+    }
+}
 
 int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
 {
@@ -74,7 +83,8 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
       dec->state,
       quant_scales + state_qoffset,
       r + state_qoffset,
-      p0 + state_qoffset);
+      p0 + state_qoffset,
+      DRED_STATE_DIM);
 
   /* decode newest to oldest and store oldest to newest */
   for (i = 0; i < IMIN(DRED_NUM_REDUNDANCY_FRAMES, (min_feature_frames+1)/2); i += 2)
@@ -89,7 +99,8 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
           &dec->latents[(i/2)*DRED_LATENT_DIM],
           quant_scales + offset,
           r + offset,
-          p0 + offset
+          p0 + offset,
+          DRED_LATENT_DIM
           );
 
       offset = 2 * i * DRED_NUM_FEATURES;
