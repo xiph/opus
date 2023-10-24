@@ -46,7 +46,7 @@ from models.nns_base import NNSBase
 from models.lpcnet_feature_net import LPCNetFeatureNet
 from .scale_embedding import ScaleEmbedding
 
-class LaVoce400AR(nn.Module):
+class LaVoce400AR2(nn.Module):
     """ Linear-Adaptive VOCodEr """
     FEATURE_FRAME_SIZE=160
     FRAME_SIZE=40
@@ -63,7 +63,8 @@ class LaVoce400AR(nn.Module):
                  conv_gain_limits_db=[-6, 6],
                  norm_p=2,
                  avg_pool_k=4,
-                 pulses=False):
+                 pulses=False,
+                 tdshape_kernel_size=4):
 
         super().__init__()
 
@@ -103,14 +104,14 @@ class LaVoce400AR(nn.Module):
         self.af1 = LimitedAdaptiveConv1d(1, 2, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
 
         # non-linear transforms
-        self.tdshape1 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=True, kernel_size=4)
-        self.tdshape2 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, kernel_size=4)
-        self.tdshape3 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, kernel_size=4)
+        self.tdshape1 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=True, kernel_size=tdshape_kernel_size, tanh_activation=True)
+        self.tdshape2 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, kernel_size=tdshape_kernel_size, tanh_activation=True)
+        self.tdshape3 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, kernel_size=tdshape_kernel_size, tanh_activation=True)
 
         # combinators
-        self.af2 = LimitedAdaptiveConv1d(2, 2, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
-        self.af3 = LimitedAdaptiveConv1d(2, 1, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
-        self.af4 = LimitedAdaptiveConv1d(2, 1, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
+        self.af2 = LimitedAdaptiveConv1d(3, 2, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
+        self.af3 = LimitedAdaptiveConv1d(3, 1, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
+        self.af4 = LimitedAdaptiveConv1d(3, 1, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
 
         # feature transforms
         self.post_cf1 = nn.Conv1d(cond_dim, cond_dim, 2)
@@ -158,8 +159,8 @@ class LaVoce400AR(nn.Module):
 
         # feature net
         feature_net_flops = self.feature_net.flop_count(frame_rate)
-        comb_flops = self.cf1.flop_count(rate) + self.cf2.flop_count(rate)
-        af_flops = self.af1.flop_count(rate) + self.af2.flop_count(rate) + self.af3.flop_count(rate) + self.af4.flop_count(rate) + self.af_mix.flop_count(rate)
+        comb_flops = self.cf1.flop_count(rate) + self.cf2.flop_count(rate) + self.cf_ar.flop_count(rate)
+        af_flops = self.af1.flop_count(rate) + self.af2.flop_count(rate) + self.af3.flop_count(rate) + self.af4.flop_count(rate) + self.af_mix.flop_count(rate) + self.af_prescale.flop_count(rate)
         feature_flops = (_conv1d_flop_count(self.post_cf1, frame_rate) + _conv1d_flop_count(self.post_cf2, frame_rate)
                          + _conv1d_flop_count(self.post_af1, frame_rate) + _conv1d_flop_count(self.post_af2, frame_rate) + _conv1d_flop_count(self.post_af3, frame_rate))
 
@@ -234,21 +235,22 @@ class LaVoce400AR(nn.Module):
                     y, state_cf_ar = self.cf_ar(last_frame, cf[:, i:i+1], periods_ar[:, i:i+1], state=state_cf_ar, return_state=True)
                     last_frame = signal[:, :, i * self.FRAME_SIZE : (i + 1) * self.FRAME_SIZE]
 
+
         for i in range(4 if nb_pre_frames > 0 else 0, num_frames):
-            y, state_cf_ar = self.cf_ar(last_frame, cf[:, i:i+1], periods_ar[:, i:i+1], state=state_cf_ar, return_state=True)
-            y = torch.cat((y, prior[..., i * self.FRAME_SIZE : (i+1) * self.FRAME_SIZE]), dim=1)
+            pred, state_cf_ar = self.cf_ar(last_frame, cf[:, i:i+1], periods_ar[:, i:i+1], state=state_cf_ar, return_state=True)
+            y = torch.cat((pred, prior[..., i * self.FRAME_SIZE : (i+1) * self.FRAME_SIZE]), dim=1)
             y, state_af_mix = self.af_mix(y, cf[:, i:i+1], state=state_af_mix, return_state=True)
 
             # temporal shaping + innovating
             y1 = y[:, 0:1, :]
             y2, state_tdshape1 = self.tdshape1(y[:, 1:2, :], cf[:, i:i+1], state=state_tdshape1, return_state=True)
-            y = torch.cat((y1, y2), dim=1)
+            y = torch.cat((y1, y2, pred), dim=1)
             y, state_af2 = self.af2(y, cf[:, i:i+1], state=state_af2, return_state=True, debug=debug)
 
             # second temporal shaping
             y1 = y[:, 0:1, :]
             y2, state_tdshape2 = self.tdshape2(y[:, 1:2, :], cf1[:, i:i+1], state=state_tdshape2, return_state=True)
-            y = torch.cat((y1, y2), dim=1)
+            y = torch.cat((y1, y2, pred), dim=1)
             y, state_af3 = self.af3(y, cf1[:, i:i+1], state=state_af3, return_state=True, debug=debug)
 
             # spectral shaping
@@ -259,7 +261,7 @@ class LaVoce400AR(nn.Module):
             # final temporal env adjustment
             y1 = y[:, 0:1, :]
             y2, state_tdshape3 = self.tdshape3(y[:, 1:2, :], cf5[:, i:i+1], state=state_tdshape3, return_state=True)
-            y = torch.cat((y1, y2), dim=1)
+            y = torch.cat((y1, y2, pred), dim=1)
             y, state_af4 = self.af4(y, cf5[:, i:i+1], state=state_af4, return_state=True, debug=debug)
 
             if i < nb_pre_frames:

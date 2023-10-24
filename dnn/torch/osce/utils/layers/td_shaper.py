@@ -12,7 +12,9 @@ class TDShaper(nn.Module):
                  frame_size=160,
                  avg_pool_k=4,
                  innovate=False,
-                 pool_after=False
+                 pool_after=False,
+                 kernel_size=2,
+                 tanh_activation=False,
     ):
         """
 
@@ -36,25 +38,29 @@ class TDShaper(nn.Module):
         super().__init__()
 
 
-        self.feature_dim    = feature_dim
-        self.frame_size     = frame_size
-        self.avg_pool_k     = avg_pool_k
-        self.innovate       = innovate
-        self.pool_after     = pool_after
+        self.feature_dim        = feature_dim
+        self.frame_size         = frame_size
+        self.avg_pool_k         = avg_pool_k
+        self.innovate           = innovate
+        self.pool_after         = pool_after
+        self.kernel_size        = kernel_size
+        self.tanh_activation    = tanh_activation
 
         assert frame_size % avg_pool_k == 0
         self.env_dim = frame_size // avg_pool_k + 1
 
         # feature transform
-        self.feature_alpha1 = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2)
-        self.feature_alpha2 = nn.Conv1d(frame_size, frame_size, 2)
+        self.feature_alpha1 = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, kernel_size)
+        self.feature_alpha2 = nn.Conv1d(frame_size, frame_size, kernel_size)
 
         if self.innovate:
-            self.feature_alpha1b = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2)
-            self.feature_alpha1c = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2)
+            self.feature_alpha1b = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, kernel_size)
+            self.feature_alpha1c = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, kernel_size)
 
-            self.feature_alpha2b = nn.Conv1d(frame_size, frame_size, 2)
-            self.feature_alpha2c = nn.Conv1d(frame_size, frame_size, 2)
+            self.feature_alpha2b = nn.Conv1d(frame_size, frame_size, kernel_size)
+            self.feature_alpha2c = nn.Conv1d(frame_size, frame_size, kernel_size)
+
+        self.activation = torch.tanh if self.tanh_activation else torch.nn.LeakyReLU(0.2)
 
 
     def flop_count(self, rate):
@@ -105,6 +111,7 @@ class TDShaper(nn.Module):
         batch_size = x.size(0)
         num_frames = features.size(1)
         num_samples = x.size(2)
+        padding = 2 * self.kernel_size - 2
 
         # generate temporal envelope
         tenv = self.envelope_transform(x)
@@ -114,17 +121,17 @@ class TDShaper(nn.Module):
         if state is not None:
             f = torch.cat((state, f), dim=-1)
         else:
-            f = F.pad(f, [2, 0])
-        alpha = F.leaky_relu(self.feature_alpha1(f), 0.2)
+            f = F.pad(f, [padding, 0])
+        alpha = self.activation(self.feature_alpha1(f))
         alpha = torch.exp(self.feature_alpha2(alpha))
         alpha = alpha.permute(0, 2, 1)
 
         if self.innovate:
-            inno_alpha = F.leaky_relu(self.feature_alpha1b(f), 0.2)
+            inno_alpha = self.activation(self.feature_alpha1b(f))
             inno_alpha = torch.exp(self.feature_alpha2b(inno_alpha))
             inno_alpha = inno_alpha.permute(0, 2, 1)
 
-            inno_x = F.leaky_relu(self.feature_alpha1c(f), 0.2)
+            inno_x = self.activation(self.feature_alpha1c(f))
             inno_x = torch.tanh(self.feature_alpha2c(inno_x))
             inno_x = inno_x.permute(0, 2, 1)
 
@@ -138,7 +145,7 @@ class TDShaper(nn.Module):
         y = y.reshape(batch_size, 1, num_samples)
 
         if return_state:
-            new_state = f[..., -2:]
+            new_state = f[..., -padding:]
             return y, new_state
         else:
             return y

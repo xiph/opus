@@ -131,17 +131,6 @@ with open(os.path.join(args.output, setup_name), 'w') as f:
     yaml.dump(setup, f)
 
 
-ref = None
-# prepare inference test if wanted
-inference_test = False
-if type(args.test_features) != type(None):
-    test_features = load_lpcnet_features(args.test_features)
-    features = test_features['features']
-    periods = test_features['periods']
-    inference_folder = os.path.join(args.output, 'inference_test')
-    os.makedirs(inference_folder, exist_ok=True)
-    inference_test = True
-
 
 # training parameters
 batch_size      = setup['training']['batch_size']
@@ -169,6 +158,17 @@ if 'validation_dataset' in setup:
     run_validation = True
 else:
     run_validation = False
+
+ref = None
+# prepare inference test if wanted
+inference_test = False
+if type(args.test_features) != type(None):
+    test_features = load_lpcnet_features(args.test_features, version=data.version)
+    features = test_features['features']
+    periods = test_features['periods']
+    inference_folder = os.path.join(args.output, 'inference_test')
+    os.makedirs(inference_folder, exist_ok=True)
+    inference_test = True
 
 # create model
 model = model_dict[model_name](*setup['model']['args'], **setup['model']['kwargs'])

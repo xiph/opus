@@ -55,6 +55,7 @@ else:
     parser.add_argument('checkpoint', type=str, help='checkpoint file')
     parser.add_argument('output', type=str, help='output file')
     parser.add_argument('--debug', action='store_true', help='enables debug output')
+    parser.add_argument('--feature-version', type=int, help='feature version, default: 3', default=3)
 
 
     args = parser.parse_args()
@@ -85,7 +86,7 @@ model.load_state_dict(checkpoint['state_dict'])
 
 # generate model input
 setup = checkpoint['setup']
-testdata = load_lpcnet_features(input_folder)
+testdata = load_lpcnet_features(input_folder, version=args.feature_version)
 features = testdata['features']
 periods = testdata['periods']
 

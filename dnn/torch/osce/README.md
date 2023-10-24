@@ -12,3 +12,6 @@ The code is tested with python 3.11. Conda setup is done via
 `conda activate osce`
 
 `python -m pip install -r requirements.txt`
+
+
+## Training Data
