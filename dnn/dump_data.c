@@ -101,7 +101,6 @@ void write_audio(LPCNetEncState *st, const opus_int16 *pcm, const int *noise, FI
 
     OPUS_MOVE(&st->sig_mem[1], &st->sig_mem[0], LPC_ORDER-1);
     st->sig_mem[0] = p + ulaw2lin(e);
-    st->exc_mem = e;
   }
   fwrite(data, 4*FRAME_SIZE, 1, file);
 }

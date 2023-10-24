@@ -50,7 +50,6 @@ int lpcnet_encoder_get_size() {
 
 int lpcnet_encoder_init(LPCNetEncState *st) {
   memset(st, 0, sizeof(*st));
-  st->exc_mem = lin2ulaw(0.f);
   pitchdnn_init(&st->pitchdnn);
   return 0;
 }

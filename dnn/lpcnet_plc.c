@@ -132,10 +132,6 @@ static void queue_features(LPCNetPLCState *st, const float *features) {
   OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], features, NB_FEATURES);
 }
 
-static void replace_features(LPCNetPLCState *st, const float *features) {
-  OPUS_COPY(&st->cont_features[(CONT_VECTORS-1)*NB_FEATURES], features, NB_FEATURES);
-}
-
 /* In this causal version of the code, the DNN model implemented by compute_plc_pred()
    needs to generate two feature vectors to conceal the first lost packet.*/
 

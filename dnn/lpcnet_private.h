@@ -36,13 +36,9 @@ struct LPCNetEncState{
   float exc_buf[PITCH_BUF_SIZE];
   float lp_buf[PITCH_BUF_SIZE];
   float lp_mem[4];
-  float last_gain;
-  int last_period;
   float lpc[LPC_ORDER];
-  float vq_mem[NB_BANDS];
   float features[NB_TOTAL_FEATURES];
   float sig_mem[LPC_ORDER];
-  int exc_mem;
   float burg_cepstrum[2*NB_BANDS];
 };
 
