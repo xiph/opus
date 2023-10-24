@@ -55,6 +55,7 @@ struct LPCNetPLCState {
 
 #define LPCNET_PLC_RESET_START fec
   float fec[PLC_MAX_FEC][NB_FEATURES];
+  int analysis_gap;
   int fec_read_pos;
   int fec_fill_pos;
   int fec_skip;
