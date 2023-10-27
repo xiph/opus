@@ -568,7 +568,7 @@ static const float sinc_filter[SINC_ORDER+1] = {
     4.2931e-05f
 };
 
-void update_plc_state(LPCNetPLCState *lpcnet, celt_sig *decode_mem[2], int CC)
+void update_plc_state(LPCNetPLCState *lpcnet, celt_sig *decode_mem[2], float *plc_preemphasis_mem, int CC)
 {
    int i;
    int tmp_read_post, tmp_fec_skip;
@@ -583,6 +583,7 @@ void update_plc_state(LPCNetPLCState *lpcnet, celt_sig *decode_mem[2], int CC)
    }
    /* Down-sample the last 40 ms. */
    for (i=1;i<DECODE_BUFFER_SIZE;i++) buf48k[i] += PREEMPHASIS*buf48k[i-1];
+   *plc_preemphasis_mem = buf48k[DECODE_BUFFER_SIZE-1];
    offset = DECODE_BUFFER_SIZE-SINC_ORDER-1 - 3*(PLC_UPDATE_SAMPLES-1);
    celt_assert(3*(PLC_UPDATE_SAMPLES-1) + SINC_ORDER + offset == DECODE_BUFFER_SIZE-1);
    for (i=0;i<PLC_UPDATE_SAMPLES;i++) {
@@ -720,7 +721,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       if (loss_duration == 0)
       {
 #ifdef ENABLE_DEEP_PLC
-         update_plc_state(lpcnet, decode_mem, C);
+         update_plc_state(lpcnet, decode_mem, &st->plc_preemphasis_mem, C);
 #endif
          st->last_pitch_index = pitch_index = celt_plc_pitch_search(decode_mem, C, st->arch);
       } else {
@@ -916,7 +917,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       if (st->complexity >= 5 || lpcnet->fec_fill_pos > 0) {
          float overlap_mem;
          int samples_needed16k;
-         int ignored = 0;
          celt_sig *buf;
          VARDECL(float, buf_copy);
          buf = decode_mem[0];
@@ -929,9 +929,6 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             and the overlap at the end. */
          samples_needed16k = (N+SINC_ORDER+overlap)/3;
          if (loss_duration == 0) {
-            /* Ignore the first 8 samples due to the update resampling delay. */
-            ignored = SINC_ORDER/6;
-            samples_needed16k += ignored;
             st->plc_fill = 0;
          }
          while (st->plc_fill < samples_needed16k) {
@@ -942,15 +939,15 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          for (i=0;i<(N+overlap)/3;i++) {
             int j;
             float sum;
-            for (sum=0, j=0;j<17;j++) sum += 3*st->plc_pcm[ignored+i+j]*sinc_filter[3*j];
+            for (sum=0, j=0;j<17;j++) sum += 3*st->plc_pcm[i+j]*sinc_filter[3*j];
             buf[DECODE_BUFFER_SIZE-N+3*i] = sum;
-            for (sum=0, j=0;j<16;j++) sum += 3*st->plc_pcm[ignored+i+j+1]*sinc_filter[3*j+2];
+            for (sum=0, j=0;j<16;j++) sum += 3*st->plc_pcm[i+j+1]*sinc_filter[3*j+2];
             buf[DECODE_BUFFER_SIZE-N+3*i+1] = sum;
-            for (sum=0, j=0;j<16;j++) sum += 3*st->plc_pcm[ignored+i+j+1]*sinc_filter[3*j+1];
+            for (sum=0, j=0;j<16;j++) sum += 3*st->plc_pcm[i+j+1]*sinc_filter[3*j+1];
             buf[DECODE_BUFFER_SIZE-N+3*i+1] = sum;
          }
-         OPUS_MOVE(st->plc_pcm, &st->plc_pcm[N/3+ignored], st->plc_fill-N/3-ignored);
-         st->plc_fill -= N/3+ignored;
+         OPUS_MOVE(st->plc_pcm, &st->plc_pcm[N/3], st->plc_fill-N/3);
+         st->plc_fill -= N/3;
          for (i=0;i<N;i++) {
             float tmp = buf[DECODE_BUFFER_SIZE-N+i];
             buf[DECODE_BUFFER_SIZE-N+i] -= PREEMPHASIS*st->plc_preemphasis_mem;
