@@ -43,6 +43,7 @@
 #include "os_support.h"
 #include "_kiss_fft_guts.h"
 #include "celt_lpc.h"
+#include "mathops.h"
 
 
 int lpcnet_encoder_get_size(void) {
@@ -88,6 +89,7 @@ static void biquad(float *y, float mem[2], const float *x, const float *b, const
   }
 }
 
+#define celt_log10(x) (0.3010299957f*celt_log2(x))
 
 void compute_frame_features(LPCNetEncState *st, const float *in) {
   float aligned_in[FRAME_SIZE];
@@ -105,23 +107,23 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   static const float lp_a[2] = {-1.54220f, 0.70781f};
   OPUS_COPY(aligned_in, &st->analysis_mem[OVERLAP_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
   frame_analysis(st, X, Ex, in);
-  st->if_features[0] = MAX16(-1, MIN16(1, (1.f/64)*(10.f*log10(1e-15 + X[0].r*X[0].r)-6)));
+  st->if_features[0] = MAX16(-1.f, MIN16(1.f, (1.f/64)*(10.f*celt_log10(1e-15f + X[0].r*X[0].r)-6.f)));
   for (i=1;i<PITCH_IF_MAX_FREQ;i++) {
     kiss_fft_cpx prod;
     float norm_1;
     C_MULC(prod, X[i], st->prev_if[i]);
-    norm_1 = 1.f/sqrt(1e-15 + prod.r*prod.r + prod.i*prod.i);
+    norm_1 = 1.f/sqrt(1e-15f + prod.r*prod.r + prod.i*prod.i);
     C_MULBYSCALAR(prod, norm_1);
     st->if_features[3*i-2] = prod.r;
     st->if_features[3*i-1] = prod.i;
-    st->if_features[3*i] = MAX16(-1, MIN16(1, (1.f/64)*(10.f*log10(1e-15 + X[i].r*X[i].r + X[i].i*X[i].i)-6)));
+    st->if_features[3*i] = MAX16(-1.f, MIN16(1.f, (1.f/64)*(10.f*celt_log10(1e-15f + X[i].r*X[i].r + X[i].i*X[i].i)-6.f)));
   }
   OPUS_COPY(st->prev_if, X, PITCH_IF_MAX_FREQ);
   /*for (i=0;i<88;i++) printf("%f ", st->if_features[i]);printf("\n");*/
   logMax = -2;
   follow = -2;
   for (i=0;i<NB_BANDS;i++) {
-    Ly[i] = log10(1e-2+Ex[i]);
+    Ly[i] = celt_log10(1e-2f+Ex[i]);
     Ly[i] = MAX16(logMax-8, MAX16(follow-2.5f, Ly[i]));
     logMax = MAX16(logMax, Ly[i]);
     follow = MAX16(follow-2.5f, Ly[i]);
