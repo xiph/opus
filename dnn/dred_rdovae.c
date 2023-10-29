@@ -51,16 +51,6 @@ void DRED_rdovae_decode_all(const RDOVAEDec *model, float *features, const float
     }
 }
 
-size_t DRED_rdovae_get_enc_size()
-{
-    return sizeof(RDOVAEEncState);
-}
-
-size_t DRED_rdovae_get_dec_size()
-{
-    return sizeof(RDOVAEDecState);
-}
-
 void DRED_rdovae_init_encoder(RDOVAEEncState *enc_state)
 {
     memset(enc_state, 0, sizeof(*enc_state));
@@ -72,32 +62,6 @@ void DRED_rdovae_init_decoder(RDOVAEDecState *dec_state)
     memset(dec_state, 0, sizeof(*dec_state));
 }
 
-
-RDOVAEEncState * DRED_rdovae_create_encoder()
-{
-    RDOVAEEncState *enc;
-    enc = (RDOVAEEncState*) calloc(sizeof(*enc), 1);
-    DRED_rdovae_init_encoder(enc);
-    return enc;
-}
-
-RDOVAEDecState * DRED_rdovae_create_decoder()
-{
-    RDOVAEDecState *dec;
-    dec = (RDOVAEDecState*) calloc(sizeof(*dec), 1);
-    DRED_rdovae_init_decoder(dec);
-    return dec;
-}
-
-void DRED_rdovae_destroy_decoder(RDOVAEDecState* dec)
-{
-    free(dec);
-}
-
-void DRED_rdovae_destroy_encoder(RDOVAEEncState* enc)
-{
-    free(enc);
-}
 
 void DRED_rdovae_encode_dframe(RDOVAEEncState *enc_state, const RDOVAEEnc *model, float *latents, float *initial_state, const float *input)
 {

@@ -44,7 +44,7 @@
 #include "_kiss_fft_guts.h"
 
 
-int lpcnet_encoder_get_size() {
+int lpcnet_encoder_get_size(void) {
   return sizeof(LPCNetEncState);
 }
 
@@ -54,7 +54,7 @@ int lpcnet_encoder_init(LPCNetEncState *st) {
   return 0;
 }
 
-LPCNetEncState *lpcnet_encoder_create() {
+LPCNetEncState *lpcnet_encoder_create(void) {
   LPCNetEncState *st;
   st = malloc(lpcnet_encoder_get_size());
   lpcnet_encoder_init(st);
