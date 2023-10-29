@@ -22,6 +22,7 @@ typedef struct {
 
 
 void pitchdnn_init(PitchDNNState *st);
+int pitchdnn_load_model(PitchDNNState *st, const unsigned char *data, int len);
 
 float compute_pitchdnn(
     PitchDNNState *st,

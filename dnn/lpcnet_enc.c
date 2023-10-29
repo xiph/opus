@@ -56,6 +56,10 @@ int lpcnet_encoder_init(LPCNetEncState *st) {
   return 0;
 }
 
+int lpcnet_encoder_load_model(LPCNetEncState *st, const unsigned char *data, int len) {
+  return pitchdnn_load_model(&st->pitchdnn, data, len);
+}
+
 LPCNetEncState *lpcnet_encoder_create(void) {
   LPCNetEncState *st;
   st = malloc(lpcnet_encoder_get_size());

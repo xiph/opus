@@ -74,6 +74,9 @@ int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len
   ret = init_plc_model(&st->model, list);
   free(list);
   if (ret == 0) {
+    ret = lpcnet_encoder_load_model(&st->enc, data, len);
+  } else return -1;
+  if (ret == 0) {
     return fargan_load_model(&st->fargan, data, len);
   }
   else return -1;

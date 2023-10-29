@@ -94,6 +94,8 @@ int lpcnet_encoder_get_size(void);
   */
 int lpcnet_encoder_init(LPCNetEncState *st);
 
+int lpcnet_encoder_load_model(LPCNetEncState *st, const unsigned char *data, int len);
+
 /** Allocates and initializes an encoder state.
   *  @returns The newly created state
   */

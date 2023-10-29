@@ -174,7 +174,11 @@ void fargan_init(FARGANState *st)
 {
   int ret;
   OPUS_CLEAR(st, 1);
+#ifndef USE_WEIGHTS_FILE
   ret = init_fargan(&st->model, fargan_arrays);
+#else
+  ret = 0;
+#endif
   celt_assert(ret == 0);
   /* FIXME: perform arch detection. */
 }

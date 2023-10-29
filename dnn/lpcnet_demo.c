@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
         float zeros[320] = {0};
         fargan_init(&fargan);
 #ifdef USE_WEIGHTS_FILE
-        fargan_load_model(fwgan, data, len);
+        fargan_load_model(&fargan, data, len);
 #endif
         /* uncomment the following to align with Python code */
         /*ret = fread(&in_features[0], sizeof(in_features[0]), NB_TOTAL_FEATURES, fin);*/
