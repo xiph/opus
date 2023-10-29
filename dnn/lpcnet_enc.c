@@ -42,6 +42,7 @@
 #include "lpcnet.h"
 #include "os_support.h"
 #include "_kiss_fft_guts.h"
+#include "celt_lpc.h"
 
 
 int lpcnet_encoder_get_size(void) {
@@ -98,6 +99,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   float xcorr[PITCH_MAX_PERIOD];
   float ener0;
   float ener;
+  float x[FRAME_SIZE+LPC_ORDER];
   /* [b,a]=ellip(2, 2, 20, 1200/8000); */
   static const float lp_b[2] = {-0.84946f, 1.f};
   static const float lp_a[2] = {-1.54220f, 0.70781f};
@@ -131,16 +133,13 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   OPUS_MOVE(st->exc_buf, &st->exc_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
   OPUS_MOVE(st->lp_buf, &st->lp_buf[FRAME_SIZE], PITCH_MAX_PERIOD);
   OPUS_COPY(&aligned_in[TRAINING_OFFSET], in, FRAME_SIZE-TRAINING_OFFSET);
+  OPUS_COPY(&x[0], st->pitch_mem, LPC_ORDER);
+  OPUS_COPY(&x[LPC_ORDER], aligned_in, FRAME_SIZE);
+  OPUS_COPY(st->pitch_mem, &aligned_in[FRAME_SIZE-LPC_ORDER], LPC_ORDER);
+  celt_fir(&x[LPC_ORDER], st->lpc, &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE, LPC_ORDER, st->arch);
   for (i=0;i<FRAME_SIZE;i++) {
-    int j;
-    float sum = aligned_in[i];
-    for (j=0;j<LPC_ORDER;j++)
-      sum += st->lpc[j]*st->pitch_mem[j];
-    OPUS_MOVE(st->pitch_mem+1, st->pitch_mem, LPC_ORDER-1);
-    st->pitch_mem[0] = aligned_in[i];
-    st->lp_buf[PITCH_MAX_PERIOD+i] = sum;
-    st->exc_buf[PITCH_MAX_PERIOD+i] = sum + .7f*st->pitch_filt;
-    st->pitch_filt = sum;
+    st->exc_buf[PITCH_MAX_PERIOD+i] = st->lp_buf[PITCH_MAX_PERIOD+i] + .7f*st->pitch_filt;
+    st->pitch_filt = st->lp_buf[PITCH_MAX_PERIOD+i];
     /*printf("%f\n", st->exc_buf[PITCH_MAX_PERIOD+i]);*/
   }
   biquad(&st->lp_buf[PITCH_MAX_PERIOD], st->lp_mem, &st->lp_buf[PITCH_MAX_PERIOD], lp_b, lp_a, FRAME_SIZE);
