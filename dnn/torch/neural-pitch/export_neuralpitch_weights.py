@@ -73,8 +73,7 @@ f"""
 
     conv_layers = [
         ('conv.1', "conv2d_1"),
-        ('conv.4', "conv2d_2"),
-        ('conv.7', "conv2d_3")
+        ('conv.4', "conv2d_2")
     ]
 
 

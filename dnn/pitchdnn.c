@@ -33,8 +33,7 @@ float compute_pitchdnn(
   /* xcorr*/
   OPUS_COPY(&conv1_tmp1[1], xcorr_features, NB_XCORR_FEATURES);
   compute_conv2d(&model->conv2d_1, &conv1_tmp2[1], st->xcorr_mem1, conv1_tmp1, NB_XCORR_FEATURES, NB_XCORR_FEATURES+2, ACTIVATION_TANH);
-  compute_conv2d(&model->conv2d_2, &conv1_tmp1[1], st->xcorr_mem2, conv1_tmp2, NB_XCORR_FEATURES, NB_XCORR_FEATURES+2, ACTIVATION_TANH);
-  compute_conv2d(&model->conv2d_3, downsampler_in, st->xcorr_mem3, conv1_tmp1, NB_XCORR_FEATURES, NB_XCORR_FEATURES, ACTIVATION_TANH);
+  compute_conv2d(&model->conv2d_2, downsampler_in, st->xcorr_mem2, conv1_tmp2, NB_XCORR_FEATURES, NB_XCORR_FEATURES, ACTIVATION_TANH);
 
   compute_generic_dense(&model->dense_downsampler, downsampler_out, downsampler_in, ACTIVATION_TANH);
   compute_generic_gru(&model->gru_1_input, &model->gru_1_recurrent, st->gru_state, downsampler_out);

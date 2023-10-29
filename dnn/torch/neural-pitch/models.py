@@ -86,13 +86,10 @@ class PitchDNN(torch.nn.Module):
 
         self.conv = torch.nn.Sequential(
             torch.nn.ZeroPad2d((2,0,1,1)),
-            torch.nn.Conv2d(1, 8, 3, bias=True),
+            torch.nn.Conv2d(1, 4, 3, bias=True),
             self.activation,
             torch.nn.ZeroPad2d((2,0,1,1)),
-            torch.nn.Conv2d(8, 8, 3, bias=True),
-            self.activation,
-            torch.nn.ZeroPad2d((2,0,1,1)),
-            torch.nn.Conv2d(8, 1, 3, bias=True),
+            torch.nn.Conv2d(4, 1, 3, bias=True),
             self.activation,
         )
 

@@ -81,8 +81,8 @@ static void biquad(float *y, float mem[2], const float *x, const float *b, const
     float xi, yi;
     xi = x[i];
     yi = x[i] + mem[0];
-    mem[0] = mem[1] + (b[0]*(double)xi - a[0]*(double)yi);
-    mem[1] = (b[1]*(double)xi - a[1]*(double)yi);
+    mem[0] = mem[1] + (b[0]*xi - a[0]*yi);
+    mem[1] = (b[1]*xi - a[1]*yi);
     y[i] = yi;
   }
 }
