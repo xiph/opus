@@ -25,8 +25,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _NNET_H_
-#define _NNET_H_
+#ifndef NNET_H_
+#define NNET_H_
 
 #include <stddef.h>
 #include "opus_types.h"
@@ -189,4 +189,4 @@ int gru_init(GRULayer *layer, const WeightArray *arrays,
 void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation);
 
 
-#endif /* _MLP_H_ */
+#endif /* NNET_H_ */

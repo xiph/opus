@@ -24,8 +24,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _LPCNET_H_
-#define _LPCNET_H_
+#ifndef LPCNET_H_
+#define LPCNET_H_
 
 #include "opus_types.h"
 

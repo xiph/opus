@@ -25,8 +25,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _DRED_RDOVAE_ENC_H
-#define _DRED_RDOVAE_ENC_H
+#ifndef DRED_RDOVAE_ENC_H
+#define DRED_RDOVAE_ENC_H
 
 #include "dred_rdovae.h"
 

@@ -24,8 +24,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _MLP_H_
-#define _MLP_H_
+#ifndef MLP_H_
+#define MLP_H_
 
 #include "opus_types.h"
 
@@ -57,4 +57,4 @@ void analysis_compute_dense(const AnalysisDenseLayer *layer, float *output, cons
 
 void analysis_compute_gru(const AnalysisGRULayer *gru, float *state, const float *input);
 
-#endif /* _MLP_H_ */
+#endif /* MLP_H_ */
