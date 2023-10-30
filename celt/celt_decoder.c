@@ -708,6 +708,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
       celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch);
       st->prefilter_and_fold = 0;
+      /* Skip regular PLC until we get two consecutive packets. */
+      st->skip_plc = 1;
    } else {
       int exc_length;
       /* Pitch-based PLC */
@@ -1118,7 +1120,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 
    /* Check if there are at least two packets received consecutively before
     * turning on the pitch-based PLC */
-   st->skip_plc = st->loss_duration != 0;
+   if (st->loss_duration == 0) st->skip_plc = 0;
 
    if (dec == NULL)
    {
