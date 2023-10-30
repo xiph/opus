@@ -57,6 +57,7 @@ int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len)
     if (ret == 0) {
       ret = lpcnet_encoder_load_model(&enc->lpcnet_enc_state, data, len);
     }
+    if (ret == 0) enc->loaded = 1;
     return (ret == 0) ? OPUS_OK : OPUS_BAD_ARG;
 }
 
@@ -74,8 +75,9 @@ void dred_encoder_init(DREDEnc* enc, opus_int32 Fs, int channels)
 {
     enc->Fs = Fs;
     enc->channels = channels;
+    enc->loaded = 0;
 #ifndef USE_WEIGHTS_FILE
-    init_rdovaeenc(&enc->model, rdovaeenc_arrays);
+    if (init_rdovaeenc(&enc->model, rdovaeenc_arrays) == 0) enc->loaded = 1;
 #endif
     dred_encoder_reset(enc);
 }
@@ -85,6 +87,7 @@ static void dred_process_frame(DREDEnc *enc)
     float feature_buffer[2 * 36];
     float input_buffer[2*DRED_NUM_FEATURES] = {0};
 
+    celt_assert(enc->loaded);
     /* shift latents buffer */
     OPUS_MOVE(enc->latents_buffer + DRED_LATENT_DIM, enc->latents_buffer, (DRED_MAX_FRAMES - 1) * DRED_LATENT_DIM);
 
@@ -184,6 +187,7 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int ex
 {
     int curr_offset16k;
     int frame_size16k = frame_size * 16000 / enc->Fs;
+    celt_assert(enc->loaded);
     curr_offset16k = 40 + extra_delay*16000/enc->Fs - enc->input_buffer_fill;
     enc->dred_offset = (int)floor((curr_offset16k+20.f)/40.f);
     enc->latent_offset = 0;

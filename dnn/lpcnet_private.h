@@ -47,6 +47,7 @@ struct LPCNetPLCState {
   PLCModel model;
   FARGANState fargan;
   LPCNetEncState enc;
+  int loaded;
   int arch;
 
 #define LPCNET_PLC_RESET_START fec

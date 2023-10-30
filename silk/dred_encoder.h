@@ -40,6 +40,9 @@
 
 typedef struct {
     RDOVAEEnc model;
+    LPCNetEncState lpcnet_enc_state;
+    RDOVAEEncState rdovae_enc;
+    int loaded;
     opus_int32 Fs;
     int channels;
 
@@ -53,8 +56,6 @@ typedef struct {
     float state_buffer[DRED_STATE_DIM];
     float initial_state[DRED_STATE_DIM];
     float resample_mem[RESAMPLING_ORDER + 1];
-    LPCNetEncState lpcnet_enc_state;
-    RDOVAEEncState rdovae_enc;
 } DREDEnc;
 
 int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len);

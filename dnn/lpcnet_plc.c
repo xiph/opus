@@ -57,8 +57,10 @@ int lpcnet_plc_init(LPCNetPLCState *st) {
   fargan_init(&st->fargan);
   lpcnet_encoder_init(&st->enc);
   st->analysis_pos = PLC_BUF_SIZE;
+  st->loaded = 0;
 #ifndef USE_WEIGHTS_FILE
   ret = init_plc_model(&st->model, lpcnet_plc_arrays);
+  if (ret == 0) st->loaded = 1;
 #else
   ret = 0;
 #endif
@@ -75,11 +77,12 @@ int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len
   free(list);
   if (ret == 0) {
     ret = lpcnet_encoder_load_model(&st->enc, data, len);
-  } else return -1;
-  if (ret == 0) {
-    return fargan_load_model(&st->fargan, data, len);
   }
-  else return -1;
+  if (ret == 0) {
+    ret = fargan_load_model(&st->fargan, data, len);
+  }
+  if (ret == 0) st->loaded = 1;
+  return ret;
 }
 
 void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features) {
@@ -105,6 +108,7 @@ static void compute_plc_pred(LPCNetPLCState *st, float *out, const float *in) {
   float zeros[3*PLC_MAX_RNN_NEURONS] = {0};
   float dense_out[PLC_DENSE1_OUT_SIZE];
   PLCNetState *net = &st->plc_net;
+  celt_assert(st->loaded);
   _lpcnet_compute_dense(&st->model.plc_dense1, dense_out, in);
   compute_gruB(&st->model.plc_gru1, zeros, net->plc_gru1_state, dense_out);
   compute_gruB(&st->model.plc_gru2, zeros, net->plc_gru2_state, net->plc_gru1_state);
@@ -152,6 +156,7 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
 static const float att_table[10] = {0, 0,  -.2, -.2,  -.4, -.4,  -.8, -.8, -1.6, -1.6};
 int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
+  celt_assert(st->loaded);
   if (st->blend == 0) {
     int count = 0;
     while (st->analysis_pos + FRAME_SIZE <= PLC_BUF_SIZE) {

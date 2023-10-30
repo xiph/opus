@@ -397,7 +397,7 @@ static OPUS_INLINE void silk_PLC_conceal(
         frame[ i ] = (opus_int16)silk_SAT16( silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], prevGain_Q10[ 1 ] ), 8 ) ) );
     }
 #ifdef ENABLE_DEEP_PLC
-    if ( lpcnet != NULL && psDec->sPLC.fs_kHz == 16 ) {
+    if ( lpcnet != NULL && lpcnet->loaded && psDec->sPLC.fs_kHz == 16 ) {
         int run_deep_plc = psDec->sPLC.enable_deep_plc || lpcnet->fec_fill_pos != 0;
         if( run_deep_plc ) {
             for( k = 0; k < psDec->nb_subfr; k += 2 ) {

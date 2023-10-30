@@ -1042,7 +1042,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
        {
           goto bad_arg;
        }
-       return lpcnet_plc_load_model(&st->lpcnet, data, len);
+       ret = lpcnet_plc_load_model(&st->lpcnet, data, len);
    }
    break;
 #endif
@@ -1156,6 +1156,7 @@ struct OpusDREDDecoder {
 #ifdef ENABLE_DRED
    RDOVAEDec model;
 #endif
+   int loaded;
    int arch;
    opus_uint32 magic;
 };
@@ -1188,19 +1189,23 @@ int dred_decoder_load_model(OpusDREDDecoder *dec, const unsigned char *data, int
     parse_weights(&list, data, len);
     ret = init_rdovaedec(&dec->model, list);
     free(list);
+    if (ret == 0) dec->loaded = 1;
     return (ret == 0) ? OPUS_OK : OPUS_BAD_ARG;
 }
 #endif
 
 int opus_dred_decoder_init(OpusDREDDecoder *dec)
 {
+   int ret = 0;
+   dec->loaded = 0;
 #if defined(ENABLE_DRED) && !defined(USE_WEIGHTS_FILE)
-   init_rdovaedec(&dec->model, rdovaedec_arrays);
+   ret = init_rdovaedec(&dec->model, rdovaedec_arrays);
+   if (ret == 0) dec->loaded = 1;
 #endif
    dec->arch = opus_select_arch();
    /* To make sure nobody forgets to init, use a magic number. */
    dec->magic = 0xD8EDDEC0;
-   return OPUS_OK;
+   return (ret == 0) ? OPUS_OK : OPUS_UNIMPLEMENTED;
 }
 
 OpusDREDDecoder *opus_dred_decoder_create(int *error)
@@ -1378,6 +1383,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
    const unsigned char *payload;
    opus_int32 payload_len;
    VALIDATE_DRED_DECODER(dred_dec);
+   if (!dred_dec->loaded) return OPUS_UNIMPLEMENTED;
    dred->process_stage = -1;
    payload_len = dred_find_payload(data, len, &payload);
    if (payload_len < 0)
@@ -1412,6 +1418,7 @@ int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *
    if (dred_dec == NULL || src == NULL || dst == NULL || (src->process_stage != 1 && src->process_stage != 2))
       return OPUS_BAD_ARG;
    VALIDATE_DRED_DECODER(dred_dec);
+   if (!dred_dec->loaded) return OPUS_UNIMPLEMENTED;
    if (src != dst)
       OPUS_COPY(dst, src, 1);
    if (dst->process_stage == 2)

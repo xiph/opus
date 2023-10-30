@@ -721,7 +721,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       if (loss_duration == 0)
       {
 #ifdef ENABLE_DEEP_PLC
-         update_plc_state(lpcnet, decode_mem, &st->plc_preemphasis_mem, C);
+        if (lpcnet->loaded) update_plc_state(lpcnet, decode_mem, &st->plc_preemphasis_mem, C);
 #endif
          st->last_pitch_index = pitch_index = celt_plc_pitch_search(decode_mem, C, st->arch);
       } else {
@@ -914,7 +914,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       } while (++c<C);
 
 #ifdef ENABLE_DEEP_PLC
-      if (st->complexity >= 5 || lpcnet->fec_fill_pos > 0) {
+      if (lpcnet->loaded && (st->complexity >= 5 || lpcnet->fec_fill_pos > 0)) {
          float overlap_mem;
          int samples_needed16k;
          celt_sig *buf;

@@ -1713,7 +1713,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #endif
 
 #ifdef ENABLE_DRED
-    if ( st->dred_duration > 0 ) {
+    if ( st->dred_duration > 0 && st->dred_encoder.loaded ) {
         /* DRED Encoder */
         dred_compute_latents( &st->dred_encoder, &pcm_buf[total_buffer*st->channels], frame_size, total_buffer );
     } else {
@@ -2255,7 +2255,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     ret += 1+redundancy_bytes;
     apply_padding = !st->use_vbr;
 #ifdef ENABLE_DRED
-    if (st->dred_duration > 0) {
+    if (st->dred_duration > 0 && st->dred_encoder.loaded) {
        opus_extension_data extension;
        unsigned char buf[DRED_MAX_DATA_SIZE];
        int dred_chunks;
@@ -2893,17 +2893,17 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         }
         break;
 #ifdef USE_WEIGHTS_FILE
-   case OPUS_SET_DNN_BLOB_REQUEST:
-   {
-       const unsigned char *data = va_arg(ap, const unsigned char *);
-       opus_int32 len = va_arg(ap, opus_int32);
-       if(len<0 || data == NULL)
-       {
-          goto bad_arg;
-       }
-       return dred_encoder_load_model(&st->dred_encoder, data, len);
-   }
-   break;
+        case OPUS_SET_DNN_BLOB_REQUEST:
+        {
+            const unsigned char *data = va_arg(ap, const unsigned char *);
+            opus_int32 len = va_arg(ap, opus_int32);
+            if(len<0 || data == NULL)
+            {
+               goto bad_arg;
+            }
+            ret = dred_encoder_load_model(&st->dred_encoder, data, len);
+        }
+        break;
 #endif
         case CELT_GET_MODE_REQUEST:
         {
