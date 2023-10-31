@@ -946,7 +946,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             for (sum=0, j=0;j<16;j++) sum += 3*st->plc_pcm[i+j+1]*sinc_filter[3*j+2];
             buf[DECODE_BUFFER_SIZE-N+3*i+1] = sum;
             for (sum=0, j=0;j<16;j++) sum += 3*st->plc_pcm[i+j+1]*sinc_filter[3*j+1];
-            buf[DECODE_BUFFER_SIZE-N+3*i+1] = sum;
+            buf[DECODE_BUFFER_SIZE-N+3*i+2] = sum;
          }
          OPUS_MOVE(st->plc_pcm, &st->plc_pcm[N/3], st->plc_fill-N/3);
          st->plc_fill -= N/3;
