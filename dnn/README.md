@@ -26,8 +26,10 @@ This software is an open source starting point for LPCNet/WaveRNN-based speech s
 You can build the code using:
 
 ```
+cd opus
+git checkout opus-ng
 ./autogen.sh
-./configure
+./configure --enable-dred
 make
 ```
 Note that the autogen.sh script is used when building from Git and will automatically download the latest model
@@ -49,21 +51,19 @@ While not strictly required, the -Ofast flag will help with auto-vectorization, 
 cannot be optimized without -ffast-math (which -Ofast enables). Additionally, -falign-loops=32 has been shown to
 help on x86.
 
-You can test the capabilities of LPCNet using the lpcnet\_demo application. To encode a file:
+You can test the capabilities of LPCNet using the lpcnet\_demo application. To extract features:
 ```
-./lpcnet_demo -encode input.pcm compressed.bin
+./lpcnet_demo -features input.pcm features.f32
 ```
-where input.pcm is a 16-bit (machine endian) PCM file sampled at 16 kHz. The raw compressed data (no header)
-is written to compressed.bin and consists of 8 bytes per 40-ms packet.
+where input.pcm is a 16-bit (machine endian) PCM file sampled at 16 kHz. The features (no header)
+are written to features.f32.
 
 To decode:
 ```
-./lpcnet_demo -decode compressed.bin output.pcm
+/lpcnet_demo -fargan-synthesis features.f32 output.pcm
 ```
 where output.pcm is also 16-bit, 16 kHz PCM.
 
-Alternatively, you can run the uncompressed analysis/synthesis using -features
-instead of -encode and -synthesis instead of -decode.
 The same functionality is available in the form of a library. See include/lpcnet.h for the API.
 
 To try packet loss concealment (PLC), you first need a PLC model, which you can get with:
