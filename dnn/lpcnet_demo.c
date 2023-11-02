@@ -90,9 +90,9 @@ void free_blob(unsigned char *blob, int len) {
 
 void usage(void) {
     fprintf(stderr, "usage: lpcnet_demo -features <input.pcm> <features.f32>\n");
-    fprintf(stderr, "       lpcnet_demo -fargan_synthesis <features.f32> <output.pcm>\n");
+    fprintf(stderr, "       lpcnet_demo -fargan-synthesis <features.f32> <output.pcm>\n");
     fprintf(stderr, "       lpcnet_demo -plc <plc_options> <percent> <input.pcm> <output.pcm>\n");
-    fprintf(stderr, "       lpcnet_demo -plc_file <plc_options> <percent> <input.pcm> <output.pcm>\n");
+    fprintf(stderr, "       lpcnet_demo -plc-file <plc_options> <percent> <input.pcm> <output.pcm>\n");
     fprintf(stderr, "       lpcnet_demo -addlpc <features_without_lpc.f32> <features_with_lpc.lpc>\n\n");
     fprintf(stderr, "  plc_options:\n");
     fprintf(stderr, "       causal:       normal (causal) PLC\n");
@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
         plc_percent = atoi(argv[3]);
         argv+=2;
         argc-=2;
-    } else if (strcmp(argv[1], "-plc_file") == 0) {
+    } else if (strcmp(argv[1], "-plc-file") == 0) {
         mode=MODE_PLC;
         plc_options = argv[2];
         plc_file = fopen(argv[3], "r");
