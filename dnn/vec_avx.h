@@ -709,6 +709,23 @@ static inline void sgemv(float *out, const float *weights, int rows, int cols, i
      }
      _mm256_storeu_ps (&y[0], vy0);
   }
+  for (;i<rows-3;i+=4)
+  {
+     float *y;
+     __m128 vy0;
+     y = &out[i];
+     vy0 = _mm_setzero_ps();
+     for (j=0;j<cols;j++)
+     {
+        __m128 vxj;
+        __m128 vw;
+        vxj = _mm_broadcast_ss(&x[j]);
+
+        vw = _mm_loadu_ps(&weights[j*col_stride + i]);
+        vy0 = _mm_fmadd_ps(vw, vxj, vy0);
+     }
+     _mm_storeu_ps (&y[0], vy0);
+  }
   for (;i<rows;i++)
   {
     out[i] = 0;
