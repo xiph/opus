@@ -31,7 +31,7 @@
 
 #include <string.h>
 
-#if 1
+#if 0
 #include <stdio.h>
 #include <math.h>
 #endif
@@ -43,7 +43,6 @@
 #include "dred_decoder.h"
 #include "float_cast.h"
 #include "os_support.h"
-#include "vec.h"
 #include "celt/laplace.h"
 
 
@@ -220,18 +219,27 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int ex
 
 static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, const opus_uint16 *dzone, const opus_uint16 *r, const opus_uint16 *p0, int dim) {
     int i;
+    int q[IMAX(DRED_LATENT_DIM,DRED_STATE_DIM)];
+    float xq[IMAX(DRED_LATENT_DIM,DRED_STATE_DIM)];
+    float delta[IMAX(DRED_LATENT_DIM,DRED_STATE_DIM)];
+    float deadzone[IMAX(DRED_LATENT_DIM,DRED_STATE_DIM)];
     float eps = .1f;
+    /* This is split into multiple loops (with temporary arrays) so that the compiler
+       can vectorize all of it, and so we can call the vector tanh(). */
     for (i=0;i<dim;i++) {
-        float delta;
-        float xq;
-        int q;
-        delta = dzone[i]*(1.f/1024.f);
-        xq = x[i]*scale[i]*(1.f/256.f);
-        xq = xq - delta*tanh_approx(xq/(delta+eps));
-        q = (int)floor(.5f+xq);
+        delta[i] = dzone[i]*(1.f/1024.f);
+        xq[i] = x[i]*scale[i]*(1.f/256.f);
+        deadzone[i] = xq[i]/(delta[i]+eps);
+    }
+    compute_activation(deadzone, deadzone, dim, ACTIVATION_TANH);
+    for (i=0;i<dim;i++) {
+        xq[i] = xq[i] - delta[i]*deadzone[i];
+        q[i] = (int)floor(.5f+xq[i]);
+    }
+    for (i=0;i<dim;i++) {
         /* Make the impossible actually impossible. */
-        if (r[i] == 0 || p0[i] >= 32767) q = 0;
-        ec_laplace_encode_p0(enc, q, p0[i], r[i]);
+        if (r[i] == 0 || p0[i] >= 32767) q[i] = 0;
+        ec_laplace_encode_p0(enc, q[i], p0[i], r[i]);
     }
 }
 
