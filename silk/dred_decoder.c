@@ -36,6 +36,7 @@
 #include "dred_coding.h"
 #include "celt/entdec.h"
 #include "celt/laplace.h"
+#include "dred_rdovae_stats_data.h"
 
 /* From http://graphics.stanford.edu/~seander/bithacks.html#FixedSignExtend */
 static int sign_extend(int x, int b) {
@@ -55,9 +56,6 @@ static void dred_decode_latents(ec_dec *dec, float *x, const opus_uint16 *scale,
 
 int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
 {
-  const opus_uint8 *p0              = DRED_rdovae_get_p0_pointer();
-  const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
-  const opus_uint8 *r               = DRED_rdovae_get_r_pointer();
   ec_dec ec;
   int q_level;
   int i;
@@ -78,13 +76,13 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   /*printf("%d %d %d\n", dred_offset, q0, dQ);*/
 
   //dred_decode_state(&ec, dec->state);
-  state_qoffset = q0*(DRED_LATENT_DIM+DRED_STATE_DIM) + DRED_LATENT_DIM;
+  state_qoffset = q0*DRED_STATE_DIM;
   dred_decode_latents(
       &ec,
       dec->state,
-      quant_scales + state_qoffset,
-      r + state_qoffset,
-      p0 + state_qoffset,
+      dred_states_quant_scales_q8 + state_qoffset,
+      dred_states_r_q8 + state_qoffset,
+      dred_states_p0_q8 + state_qoffset,
       DRED_STATE_DIM);
 
   /* decode newest to oldest and store oldest to newest */
@@ -94,13 +92,13 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
       if (8*num_bytes - ec_tell(&ec) <= 7)
          break;
       q_level = compute_quantizer(q0, dQ, i/2);
-      offset = q_level * (DRED_LATENT_DIM+DRED_STATE_DIM);
+      offset = q_level*DRED_LATENT_DIM;
       dred_decode_latents(
           &ec,
           &dec->latents[(i/2)*DRED_LATENT_DIM],
-          quant_scales + offset,
-          r + offset,
-          p0 + offset,
+          dred_latents_quant_scales_q8 + offset,
+          dred_latents_r_q8 + offset,
+          dred_latents_p0_q8 + offset,
           DRED_LATENT_DIM
           );
 

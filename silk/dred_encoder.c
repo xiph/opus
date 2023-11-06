@@ -44,6 +44,7 @@
 #include "float_cast.h"
 #include "os_support.h"
 #include "celt/laplace.h"
+#include "dred_rdovae_stats_data.h"
 
 
 int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len)
@@ -244,10 +245,6 @@ static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *
 }
 
 int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes) {
-    const opus_uint16 *dead_zone       = DRED_rdovae_get_dead_zone_pointer();
-    const opus_uint8 *p0              = DRED_rdovae_get_p0_pointer();
-    const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
-    const opus_uint8 *r               = DRED_rdovae_get_r_pointer();
     ec_enc ec_encoder;
 
     int q_level;
@@ -265,14 +262,14 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
     ec_enc_uint(&ec_encoder, enc->dred_offset, 32);
     ec_enc_uint(&ec_encoder, q0, 16);
     ec_enc_uint(&ec_encoder, dQ, 8);
-    state_qoffset = q0*(DRED_LATENT_DIM+DRED_STATE_DIM) + DRED_LATENT_DIM;
+    state_qoffset = q0*DRED_STATE_DIM;
     dred_encode_latents(
         &ec_encoder,
         enc->initial_state,
-        quant_scales + state_qoffset,
-        dead_zone + state_qoffset,
-        r + state_qoffset,
-        p0 + state_qoffset,
+        dred_states_quant_scales_q8 + state_qoffset,
+        dred_states_dead_zone_q10 + state_qoffset,
+        dred_states_r_q8 + state_qoffset,
+        dred_states_p0_q8 + state_qoffset,
         DRED_STATE_DIM);
     if (ec_tell(&ec_encoder) > 8*max_bytes) {
       return 0;
@@ -283,15 +280,15 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
         ec_bak = ec_encoder;
 
         q_level = compute_quantizer(q0, dQ, i/2);
-        offset = q_level * (DRED_LATENT_DIM+DRED_STATE_DIM);
+        offset = q_level * DRED_LATENT_DIM;
 
         dred_encode_latents(
             &ec_encoder,
             enc->latents_buffer + (i+enc->latent_offset) * DRED_LATENT_DIM,
-            quant_scales + offset,
-            dead_zone + offset,
-            r + offset,
-            p0 + offset,
+            dred_latents_quant_scales_q8 + offset,
+            dred_latents_dead_zone_q10 + offset,
+            dred_latents_r_q8 + offset,
+            dred_latents_p0_q8 + offset,
             DRED_LATENT_DIM
         );
         if (ec_tell(&ec_encoder) > 8*max_bytes) {
