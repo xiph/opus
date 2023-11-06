@@ -114,7 +114,7 @@ def compare(x, y, apply_vad=False):
 
     # distortion metric
     re = masked_psd_y / masked_psd_x
-    im = re - np.log(re) - 1
+    im = np.log(re) ** 2
     Eb = ((im @ fb.T) / np.sum(fb, axis=1))
     Ef = np.mean(Eb , axis=1)
 
