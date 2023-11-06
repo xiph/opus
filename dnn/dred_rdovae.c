@@ -77,24 +77,3 @@ void DRED_rdovae_decode_qframe(RDOVAEDecState *h, const RDOVAEDec *model, float 
 {
     dred_rdovae_decode_qframe(h, model, qframe, z);
 }
-
-
-const opus_uint8 * DRED_rdovae_get_p0_pointer(void)
-{
-    return &dred_p0_q8[0];
-}
-
-const opus_uint16 * DRED_rdovae_get_dead_zone_pointer(void)
-{
-    return &dred_dead_zone_q10[0];
-}
-
-const opus_uint8 * DRED_rdovae_get_r_pointer(void)
-{
-    return &dred_r_q8[0];
-}
-
-const opus_uint16 * DRED_rdovae_get_quant_scales_pointer(void)
-{
-    return &dred_quant_scales_q8[0];
-}

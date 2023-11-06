@@ -49,16 +49,15 @@ from wexchange.torch import dump_torch_weights
 from wexchange.c_export import CWriter, print_vector
 
 
-def dump_statistical_model(writer, qembedding):
-    w = qembedding.weight.detach()
-    levels, dim = w.shape
-    N = dim // 6
+def dump_statistical_model(writer, w, name):
+    levels = w.shape[0]
+    N = w.shape[-1]
 
     print("printing statistical model")
-    quant_scales    = torch.nn.functional.softplus(w[:, : N]).numpy()
-    dead_zone       = 0.05 * torch.nn.functional.softplus(w[:, N : 2 * N]).numpy()
-    r               = torch.sigmoid(w[:, 5 * N : 6 * N]).numpy()
-    p0              = torch.sigmoid(w[:, 4 * N : 5 * N]).numpy()
+    quant_scales    = torch.nn.functional.softplus(w[:, 0, :]).numpy()
+    dead_zone       = 0.05 * torch.nn.functional.softplus(w[:, 1, :]).numpy()
+    r               = torch.sigmoid(w[:, 5 , :]).numpy()
+    p0              = torch.sigmoid(w[:, 4 , :]).numpy()
     p0              = 1 - r ** (0.5 + 0.5 * p0)
 
     quant_scales_q8 = np.round(quant_scales * 2**8).astype(np.uint16)
@@ -66,17 +65,17 @@ def dump_statistical_model(writer, qembedding):
     r_q15           = np.clip(np.round(r * 2**8), 0, 255).astype(np.uint8)
     p0_q15          = np.clip(np.round(p0 * 2**8), 0, 255).astype(np.uint16)
 
-    print_vector(writer.source, quant_scales_q8, 'dred_quant_scales_q8', dtype='opus_uint16', static=False)
-    print_vector(writer.source, dead_zone_q10, 'dred_dead_zone_q10', dtype='opus_uint16', static=False)
-    print_vector(writer.source, r_q15, 'dred_r_q8', dtype='opus_uint8', static=False)
-    print_vector(writer.source, p0_q15, 'dred_p0_q8', dtype='opus_uint8', static=False)
+    print_vector(writer.source, quant_scales_q8, f'dred_{name}_quant_scales_q8', dtype='opus_uint16', static=False)
+    print_vector(writer.source, dead_zone_q10, f'dred_{name}_dead_zone_q10', dtype='opus_uint16', static=False)
+    print_vector(writer.source, r_q15, f'dred_{name}_r_q8', dtype='opus_uint8', static=False)
+    print_vector(writer.source, p0_q15, f'dred_{name}_p0_q8', dtype='opus_uint8', static=False)
 
     writer.header.write(
 f"""
-extern const opus_uint16 dred_quant_scales_q8[{levels * N}];
-extern const opus_uint16 dred_dead_zone_q10[{levels * N}];
-extern const opus_uint8 dred_r_q8[{levels * N}];
-extern const opus_uint8 dred_p0_q8[{levels * N}];
+extern const opus_uint16 dred_{name}_quant_scales_q8[{levels * N}];
+extern const opus_uint16 dred_{name}_dead_zone_q10[{levels * N}];
+extern const opus_uint8 dred_{name}_r_q8[{levels * N}];
+extern const opus_uint8 dred_{name}_p0_q8[{levels * N}];
 
 """
     )
@@ -112,6 +111,19 @@ f"""
 
 """
         )
+
+    latent_out = model.get_submodule('core_encoder.module.z_dense').weight
+    states_out = model.get_submodule('core_encoder.module.state_dense_2').weight
+    nb_latents = latent_out.shape[0]
+    nb_states = states_out.shape[0]
+    # statistical model
+    qembedding = model.statistical_model.quant_embedding.weight.detach()
+    levels = qembedding.shape[0]
+    qembedding = torch.reshape(qembedding, (levels, 6, -1))
+
+    dump_statistical_model(stats_writer, qembedding[:, :, :nb_latents], 'latents')
+    dump_statistical_model(stats_writer, qembedding[:, :, nb_latents:], 'states')
+
 
     # encoder
     encoder_dense_layers = [
@@ -186,10 +198,6 @@ f"""
     dec_max_conv_inputs = max([dump_torch_weights(dec_writer, model.get_submodule(name), export_name, verbose=True, quantize=quantize, scale=None) for name, export_name, _, quantize in decoder_conv_layers])
 
     del dec_writer
-
-    # statistical model
-    qembedding = model.statistical_model.quant_embedding
-    dump_statistical_model(stats_writer, qembedding)
 
     del stats_writer
 
