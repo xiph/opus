@@ -124,6 +124,7 @@ def extract_diagonal(A):
     return diag, B
 
 def quantize_weight(weight, scale):
+    scale = scale + 1e-30
     Aq = np.round(weight / scale).astype('int')
     if Aq.max() > 127 or Aq.min() <= -128:
         raise ValueError("value out of bounds in quantize_weight")
@@ -227,7 +228,7 @@ def print_linear_layer(writer : CWriter,
 
     nb_inputs, nb_outputs = weight.shape
 
-    if scale is None:
+    if scale is None and quantize:
         scale = compute_scaling(weight)
 
 
