@@ -43,20 +43,21 @@ static int sign_extend(int x, int b) {
   return (x ^ m) - m;
 }
 
-static void dred_decode_latents(ec_dec *dec, float *x, const opus_uint16 *scale, const opus_uint16 *r, const opus_uint16 *p0, int dim) {
+static void dred_decode_latents(ec_dec *dec, float *x, const opus_uint16 *scale, const opus_uint8 *r, const opus_uint8 *p0, int dim) {
     int i;
     for (i=0;i<dim;i++) {
         int q;
-        q = ec_laplace_decode_p0(dec, p0[i], r[i]);
+        if (r[i] == 0 || p0[i] == 255) q = 0;
+        else q = ec_laplace_decode_p0(dec, p0[i]<<7, r[i]<<7);
         x[i] = q*256.f/(scale[i] == 0 ? 1 : scale[i]);
     }
 }
 
 int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
 {
-  const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
+  const opus_uint8 *p0              = DRED_rdovae_get_p0_pointer();
   const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
-  const opus_uint16 *r               = DRED_rdovae_get_r_pointer();
+  const opus_uint8 *r               = DRED_rdovae_get_r_pointer();
   ec_dec ec;
   int q_level;
   int i;

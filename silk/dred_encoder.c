@@ -217,7 +217,7 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int ex
     }
 }
 
-static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, const opus_uint16 *dzone, const opus_uint16 *r, const opus_uint16 *p0, int dim) {
+static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, const opus_uint16 *dzone, const opus_uint8 *r, const opus_uint8 *p0, int dim) {
     int i;
     int q[IMAX(DRED_LATENT_DIM,DRED_STATE_DIM)];
     float xq[IMAX(DRED_LATENT_DIM,DRED_STATE_DIM)];
@@ -238,16 +238,16 @@ static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *
     }
     for (i=0;i<dim;i++) {
         /* Make the impossible actually impossible. */
-        if (r[i] == 0 || p0[i] >= 32767) q[i] = 0;
-        ec_laplace_encode_p0(enc, q[i], p0[i], r[i]);
+        if (r[i] == 0 || p0[i] == 255) q[i] = 0;
+        else ec_laplace_encode_p0(enc, q[i], p0[i]<<7, r[i]<<7);
     }
 }
 
 int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes) {
     const opus_uint16 *dead_zone       = DRED_rdovae_get_dead_zone_pointer();
-    const opus_uint16 *p0              = DRED_rdovae_get_p0_pointer();
+    const opus_uint8 *p0              = DRED_rdovae_get_p0_pointer();
     const opus_uint16 *quant_scales    = DRED_rdovae_get_quant_scales_pointer();
-    const opus_uint16 *r               = DRED_rdovae_get_r_pointer();
+    const opus_uint8 *r               = DRED_rdovae_get_r_pointer();
     ec_enc ec_encoder;
 
     int q_level;

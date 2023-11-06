@@ -63,20 +63,20 @@ def dump_statistical_model(writer, qembedding):
 
     quant_scales_q8 = np.round(quant_scales * 2**8).astype(np.uint16)
     dead_zone_q10   = np.round(dead_zone * 2**10).astype(np.uint16)
-    r_q15           = np.round(r * 2**15).astype(np.uint16)
-    p0_q15          = np.round(p0 * 2**15).astype(np.uint16)
+    r_q15           = np.clip(np.round(r * 2**8), 0, 255).astype(np.uint8)
+    p0_q15          = np.clip(np.round(p0 * 2**8), 0, 255).astype(np.uint16)
 
     print_vector(writer.source, quant_scales_q8, 'dred_quant_scales_q8', dtype='opus_uint16', static=False)
     print_vector(writer.source, dead_zone_q10, 'dred_dead_zone_q10', dtype='opus_uint16', static=False)
-    print_vector(writer.source, r_q15, 'dred_r_q15', dtype='opus_uint16', static=False)
-    print_vector(writer.source, p0_q15, 'dred_p0_q15', dtype='opus_uint16', static=False)
+    print_vector(writer.source, r_q15, 'dred_r_q8', dtype='opus_uint8', static=False)
+    print_vector(writer.source, p0_q15, 'dred_p0_q8', dtype='opus_uint8', static=False)
 
     writer.header.write(
 f"""
 extern const opus_uint16 dred_quant_scales_q8[{levels * N}];
 extern const opus_uint16 dred_dead_zone_q10[{levels * N}];
-extern const opus_uint16 dred_r_q15[{levels * N}];
-extern const opus_uint16 dred_p0_q15[{levels * N}];
+extern const opus_uint8 dred_r_q8[{levels * N}];
+extern const opus_uint8 dred_p0_q8[{levels * N}];
 
 """
     )

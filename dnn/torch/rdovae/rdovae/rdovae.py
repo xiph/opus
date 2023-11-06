@@ -222,6 +222,9 @@ def weight_clip_factory(max_value):
 
     return clip_weights
 
+def n(x):
+    return torch.clamp(x + (1./127.)*(torch.rand_like(x)-.5), min=-1., max=1.)
+
 # RDOVAE module and submodules
 
 class MyConv(nn.Module):
@@ -295,17 +298,17 @@ class CoreEncoder(nn.Module):
         device = x.device
 
         # run encoding layer stack
-        x = torch.tanh(self.dense_1(x))
-        x = torch.cat([x, self.gru1(x)[0]], -1)
-        x = torch.cat([x, self.conv1(x)], -1)
-        x = torch.cat([x, self.gru2(x)[0]], -1)
-        x = torch.cat([x, self.conv2(x)], -1)
-        x = torch.cat([x, self.gru3(x)[0]], -1)
-        x = torch.cat([x, self.conv3(x)], -1)
-        x = torch.cat([x, self.gru4(x)[0]], -1)
-        x = torch.cat([x, self.conv4(x)], -1)
-        x = torch.cat([x, self.gru5(x)[0]], -1)
-        x = torch.cat([x, self.conv5(x)], -1)
+        x = n(torch.tanh(self.dense_1(x)))
+        x = torch.cat([x, n(self.gru1(x)[0])], -1)
+        x = torch.cat([x, n(self.conv1(x))], -1)
+        x = torch.cat([x, n(self.gru2(x)[0])], -1)
+        x = torch.cat([x, n(self.conv2(x))], -1)
+        x = torch.cat([x, n(self.gru3(x)[0])], -1)
+        x = torch.cat([x, n(self.conv3(x))], -1)
+        x = torch.cat([x, n(self.gru4(x)[0])], -1)
+        x = torch.cat([x, n(self.conv4(x))], -1)
+        x = torch.cat([x, n(self.gru5(x)[0])], -1)
+        x = torch.cat([x, n(self.conv5(x))], -1)
         z = self.z_dense(x)
 
         # init state for decoder
@@ -372,18 +375,18 @@ class CoreDecoder(nn.Module):
         h5_state = gru_state[:,:,384:].contiguous()
 
         # run decoding layer stack
-        x = torch.tanh(self.dense_1(z))
+        x = n(torch.tanh(self.dense_1(z)))
 
-        x = torch.cat([x, self.gru1(x, h1_state)[0]], -1)
-        x = torch.cat([x, self.conv1(x)], -1)
-        x = torch.cat([x, self.gru2(x, h2_state)[0]], -1)
-        x = torch.cat([x, self.conv2(x)], -1)
-        x = torch.cat([x, self.gru3(x, h3_state)[0]], -1)
-        x = torch.cat([x, self.conv3(x)], -1)
-        x = torch.cat([x, self.gru4(x, h4_state)[0]], -1)
-        x = torch.cat([x, self.conv4(x)], -1)
-        x = torch.cat([x, self.gru5(x, h5_state)[0]], -1)
-        x = torch.cat([x, self.conv5(x)], -1)
+        x = torch.cat([x, n(self.gru1(x, h1_state)[0])], -1)
+        x = torch.cat([x, n(self.conv1(x))], -1)
+        x = torch.cat([x, n(self.gru2(x, h2_state)[0])], -1)
+        x = torch.cat([x, n(self.conv2(x))], -1)
+        x = torch.cat([x, n(self.gru3(x, h3_state)[0])], -1)
+        x = torch.cat([x, n(self.conv3(x))], -1)
+        x = torch.cat([x, n(self.gru4(x, h4_state)[0])], -1)
+        x = torch.cat([x, n(self.conv4(x))], -1)
+        x = torch.cat([x, n(self.gru5(x, h5_state)[0])], -1)
+        x = torch.cat([x, n(self.conv5(x))], -1)
 
         # output layer and reshaping
         x10 = self.output(x)
@@ -451,7 +454,7 @@ class RDOVAE(nn.Module):
                  cond_size2,
                  state_dim=24,
                  split_mode='split',
-                 clip_weights=True,
+                 clip_weights=False,
                  pvq_num_pulses=82,
                  state_dropout_rate=0):
 
@@ -487,7 +490,7 @@ class RDOVAE(nn.Module):
         if not type(self.weight_clip_fn) == type(None):
             self.apply(self.weight_clip_fn)
 
-    def get_decoder_chunks(self, z_frames, mode='split', chunks_per_offset = 24):
+    def get_decoder_chunks(self, z_frames, mode='split', chunks_per_offset = 4):
 
         enc_stride = self.enc_stride
         dec_stride = self.dec_stride
