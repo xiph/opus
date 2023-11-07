@@ -13,7 +13,6 @@ dnn/pitchdnn.c \
 dnn/pitchdnn_data.c
 
 DRED_SOURCES = \
-dnn/dred_rdovae.c \
 dnn/dred_rdovae_enc.c \
 dnn/dred_rdovae_enc_data.c \
 dnn/dred_rdovae_dec.c \

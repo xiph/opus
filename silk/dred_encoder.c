@@ -47,6 +47,11 @@
 #include "dred_rdovae_stats_data.h"
 
 
+static void DRED_rdovae_init_encoder(RDOVAEEncState *enc_state)
+{
+    memset(enc_state, 0, sizeof(*enc_state));
+}
+
 int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len)
 {
     WeightArray *list;
@@ -100,7 +105,7 @@ static void dred_process_frame(DREDEnc *enc)
     OPUS_COPY(input_buffer + DRED_NUM_FEATURES, feature_buffer + 36, DRED_NUM_FEATURES);
 
     /* run RDOVAE encoder */
-    DRED_rdovae_encode_dframe(&enc->rdovae_enc, &enc->model, enc->latents_buffer, enc->state_buffer, input_buffer);
+    dred_rdovae_encode_dframe(&enc->rdovae_enc, &enc->model, enc->latents_buffer, enc->state_buffer, input_buffer);
     enc->latents_buffer_fill = IMIN(enc->latents_buffer_fill+1, DRED_NUM_REDUNDANCY_FRAMES);
 }
 

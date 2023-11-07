@@ -42,6 +42,22 @@ static void conv1_cond_init(float *mem, int len, int dilation, int *init)
     *init = 1;
 }
 
+void DRED_rdovae_decode_all(const RDOVAEDec *model, float *features, const float *state, const float *latents, int nb_latents)
+{
+    int i;
+    RDOVAEDecState dec;
+    memset(&dec, 0, sizeof(dec));
+    dred_rdovae_dec_init_states(&dec, model, state);
+    for (i = 0; i < 2*nb_latents; i += 2)
+    {
+        dred_rdovae_decode_qframe(
+            &dec,
+            model,
+            &features[2*i*DRED_NUM_FEATURES],
+            &latents[(i/2)*DRED_LATENT_DIM]);
+    }
+}
+
 void dred_rdovae_dec_init_states(
     RDOVAEDecState *h,            /* io: state buffer handle */
     const RDOVAEDec *model,

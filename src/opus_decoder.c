@@ -54,6 +54,7 @@
 
 #ifdef ENABLE_DEEP_PLC
 #include "dred_rdovae_dec_data.h"
+#include "dred_rdovae_dec.h"
 #endif
 
 struct OpusDecoder {

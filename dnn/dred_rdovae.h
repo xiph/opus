@@ -37,30 +37,6 @@ typedef struct RDOVAEEnc RDOVAEEnc;
 typedef struct RDOVAEDecStruct RDOVAEDecState;
 typedef struct RDOVAEEncStruct RDOVAEEncState;
 
-void DRED_rdovae_decode_all(const RDOVAEDec *model, float *features, const float *state, const float *latents, int nb_latents);
 
-
-size_t DRED_rdovae_get_enc_size(void);
-
-size_t DRED_rdovae_get_dec_size(void);
-
-RDOVAEDecState * DRED_rdovae_create_decoder(void);
-RDOVAEEncState * DRED_rdovae_create_encoder(void);
-void DRED_rdovae_destroy_decoder(RDOVAEDecState* h);
-void DRED_rdovae_destroy_encoder(RDOVAEEncState* h);
-
-
-void DRED_rdovae_init_encoder(RDOVAEEncState *enc_state);
-
-void DRED_rdovae_encode_dframe(RDOVAEEncState *enc_state, const RDOVAEEnc *model, float *latents, float *initial_state, const float *input);
-
-void DRED_rdovae_dec_init_states(RDOVAEDecState *h, const RDOVAEDec *model, const float * initial_state);
-
-void DRED_rdovae_decode_qframe(RDOVAEDecState *h, const RDOVAEDec *model, float *qframe, const float * z);
-
-const opus_uint8 * DRED_rdovae_get_p0_pointer(void);
-const opus_uint16 * DRED_rdovae_get_dead_zone_pointer(void);
-const opus_uint8 * DRED_rdovae_get_r_pointer(void);
-const opus_uint16 * DRED_rdovae_get_quant_scales_pointer(void);
 
 #endif
