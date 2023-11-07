@@ -34,6 +34,7 @@
 
 #include "dred_rdovae_enc.h"
 #include "os_support.h"
+#include "dred_rdovae_constants.h"
 
 static void conv1_cond_init(float *mem, int len, int dilation, int *init)
 {
@@ -52,6 +53,8 @@ void dred_rdovae_encode_dframe(
     const float *input              /* i: double feature frame (concatenated) */
     )
 {
+    float padded_latents[DRED_PADDED_LATENT_DIM];
+    float padded_state[DRED_PADDED_STATE_DIM];
     float buffer[ENC_DENSE1_OUT_SIZE + ENC_GRU1_OUT_SIZE + ENC_GRU2_OUT_SIZE + ENC_GRU3_OUT_SIZE + ENC_GRU4_OUT_SIZE + ENC_GRU5_OUT_SIZE
                + ENC_CONV1_OUT_SIZE + ENC_CONV2_OUT_SIZE + ENC_CONV3_OUT_SIZE + ENC_CONV4_OUT_SIZE + ENC_CONV5_OUT_SIZE];
     float state_hidden[GDENSE1_OUT_SIZE];
@@ -96,9 +99,11 @@ void dred_rdovae_encode_dframe(
     compute_generic_conv1d_dilation(&model->enc_conv5, &buffer[output_index], enc_state->conv5_state, buffer, output_index, 2, ACTIVATION_TANH);
     output_index += ENC_CONV5_OUT_SIZE;
 
-    compute_generic_dense(&model->enc_zdense, latents, buffer, ACTIVATION_LINEAR);
+    compute_generic_dense(&model->enc_zdense, padded_latents, buffer, ACTIVATION_LINEAR);
+    OPUS_COPY(latents, padded_latents, DRED_LATENT_DIM);
 
     /* next, calculate initial state */
     compute_generic_dense(&model->gdense1, state_hidden, buffer, ACTIVATION_TANH);
-    compute_generic_dense(&model->gdense2, initial_state, state_hidden, ACTIVATION_LINEAR);
+    compute_generic_dense(&model->gdense2, padded_state, state_hidden, ACTIVATION_LINEAR);
+    OPUS_COPY(initial_state, padded_state, DRED_STATE_DIM);
 }

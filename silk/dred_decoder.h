@@ -32,6 +32,7 @@
 #include "dred_config.h"
 #include "dred_rdovae.h"
 #include "entcode.h"
+#include "dred_rdovae_constants.h"
 
 struct OpusDRED {
     float        fec_features[2*DRED_NUM_REDUNDANCY_FRAMES*DRED_NUM_FEATURES];

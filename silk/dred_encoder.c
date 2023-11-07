@@ -266,10 +266,10 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
     dred_encode_latents(
         &ec_encoder,
         enc->initial_state,
-        dred_states_quant_scales_q8 + state_qoffset,
-        dred_states_dead_zone_q10 + state_qoffset,
-        dred_states_r_q8 + state_qoffset,
-        dred_states_p0_q8 + state_qoffset,
+        dred_state_quant_scales_q8 + state_qoffset,
+        dred_state_dead_zone_q10 + state_qoffset,
+        dred_state_r_q8 + state_qoffset,
+        dred_state_p0_q8 + state_qoffset,
         DRED_STATE_DIM);
     if (ec_tell(&ec_encoder) > 8*max_bytes) {
       return 0;
@@ -285,10 +285,10 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
         dred_encode_latents(
             &ec_encoder,
             enc->latents_buffer + (i+enc->latent_offset) * DRED_LATENT_DIM,
-            dred_latents_quant_scales_q8 + offset,
-            dred_latents_dead_zone_q10 + offset,
-            dred_latents_r_q8 + offset,
-            dred_latents_p0_q8 + offset,
+            dred_latent_quant_scales_q8 + offset,
+            dred_latent_dead_zone_q10 + offset,
+            dred_latent_r_q8 + offset,
+            dred_latent_p0_q8 + offset,
             DRED_LATENT_DIM
         );
         if (ec_tell(&ec_encoder) > 8*max_bytes) {
