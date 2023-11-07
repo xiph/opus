@@ -223,7 +223,7 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int ex
     }
 }
 
-static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *scale, const opus_uint16 *dzone, const opus_uint8 *r, const opus_uint8 *p0, int dim) {
+static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint8 *scale, const opus_uint8 *dzone, const opus_uint8 *r, const opus_uint8 *p0, int dim) {
     int i;
     int q[IMAX(DRED_LATENT_DIM,DRED_STATE_DIM)];
     float xq[IMAX(DRED_LATENT_DIM,DRED_STATE_DIM)];
@@ -233,7 +233,7 @@ static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint16 *
     /* This is split into multiple loops (with temporary arrays) so that the compiler
        can vectorize all of it, and so we can call the vector tanh(). */
     for (i=0;i<dim;i++) {
-        delta[i] = dzone[i]*(1.f/1024.f);
+        delta[i] = dzone[i]*(1.f/256.f);
         xq[i] = x[i]*scale[i]*(1.f/256.f);
         deadzone[i] = xq[i]/(delta[i]+eps);
     }
@@ -272,7 +272,7 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
         &ec_encoder,
         enc->initial_state,
         dred_state_quant_scales_q8 + state_qoffset,
-        dred_state_dead_zone_q10 + state_qoffset,
+        dred_state_dead_zone_q8 + state_qoffset,
         dred_state_r_q8 + state_qoffset,
         dred_state_p0_q8 + state_qoffset,
         DRED_STATE_DIM);
@@ -291,7 +291,7 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
             &ec_encoder,
             enc->latents_buffer + (i+enc->latent_offset) * DRED_LATENT_DIM,
             dred_latent_quant_scales_q8 + offset,
-            dred_latent_dead_zone_q10 + offset,
+            dred_latent_dead_zone_q8 + offset,
             dred_latent_r_q8 + offset,
             dred_latent_p0_q8 + offset,
             DRED_LATENT_DIM
