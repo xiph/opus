@@ -37,6 +37,7 @@
 #include "celt/entdec.h"
 #include "celt/laplace.h"
 #include "dred_rdovae_stats_data.h"
+#include "dred_rdovae_constants.h"
 
 /* From http://graphics.stanford.edu/~seander/bithacks.html#FixedSignExtend */
 static int sign_extend(int x, int b) {
@@ -80,9 +81,9 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   dred_decode_latents(
       &ec,
       dec->state,
-      dred_states_quant_scales_q8 + state_qoffset,
-      dred_states_r_q8 + state_qoffset,
-      dred_states_p0_q8 + state_qoffset,
+      dred_state_quant_scales_q8 + state_qoffset,
+      dred_state_r_q8 + state_qoffset,
+      dred_state_p0_q8 + state_qoffset,
       DRED_STATE_DIM);
 
   /* decode newest to oldest and store oldest to newest */
@@ -96,9 +97,9 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
       dred_decode_latents(
           &ec,
           &dec->latents[(i/2)*DRED_LATENT_DIM],
-          dred_latents_quant_scales_q8 + offset,
-          dred_latents_r_q8 + offset,
-          dred_latents_p0_q8 + offset,
+          dred_latent_quant_scales_q8 + offset,
+          dred_latent_r_q8 + offset,
+          dred_latent_p0_q8 + offset,
           DRED_LATENT_DIM
           );
 
