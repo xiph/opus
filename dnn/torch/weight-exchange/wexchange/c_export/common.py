@@ -361,3 +361,25 @@ def print_gru_layer(writer : CWriter,
     writer.header.write(f"\n#define {name.upper()}_STATE_SIZE {N}\n")
 
     return N
+
+
+def print_tconv1d_layer(writer : CWriter,
+                       name : str,
+                       weight : np.ndarray,
+                       bias : np.ndarray,
+                       stride: int,
+                       scale=1/128,
+                       quantize=False):
+
+    in_channels, out_channels, kernel_size = weight.shape
+
+
+    linear_weight = weight.transpose(2, 1, 0).reshape(kernel_size * out_channels, in_channels).transpose(1, 0)
+    linear_bias = np.repeat(bias[np.newaxis, :], kernel_size, 0).flatten()
+
+    print_linear_layer(writer, name, linear_weight, linear_bias, scale=scale, quantize=quantize)
+
+    writer.header.write(f"\n#define {name.upper()}_KERNEL_SIZE {kernel_size}\n")
+    writer.header.write(f"\n#define {name.upper()}_STRIDE {stride}\n")
+    writer.header.write(f"\n#define {name.upper()}_IN_CHANNELS {in_channels}\n")
+    writer.header.write(f"\n#define {name.upper()}_OUT_CHANNELS {out_channels}\n")

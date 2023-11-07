@@ -32,7 +32,7 @@ import os
 import torch
 import numpy as np
 
-from wexchange.c_export import CWriter, print_gru_layer, print_dense_layer, print_conv1d_layer, print_conv2d_layer
+from wexchange.c_export import CWriter, print_gru_layer, print_dense_layer, print_conv1d_layer, print_tconv1d_layer, print_conv2d_layer
 
 def dump_torch_gru_weights(where, gru, name='gru', input_sparse=False, recurrent_sparse=False, quantize=False, scale=1/128, recurrent_scale=1/128):
 
@@ -162,6 +162,36 @@ def load_torch_conv1d_weights(where, conv):
                 conv.bias.set_(torch.from_numpy(b))
 
 
+def dump_torch_tconv1d_weights(where, conv, name='conv', scale=1/128, quantize=False):
+
+    w = conv.weight.detach().cpu().numpy().copy()
+    if conv.bias is None:
+        b = np.zeros(conv.out_channels, dtype=w.dtype)
+    else:
+        b = conv.bias.detach().cpu().numpy().copy()
+
+    if isinstance(where, CWriter):
+
+        return print_tconv1d_layer(where, name, w, b, conv.stride[0], scale=scale, quantize=quantize)
+    else:
+        os.makedirs(where, exist_ok=True)
+
+        np.save(os.path.join(where, 'weight_oik.npy'), w)
+
+        np.save(os.path.join(where, 'bias.npy'), b)
+
+
+def load_torch_tconv1d_weights(where, conv):
+
+    with torch.no_grad():
+        w = np.load(os.path.join(where, 'weight_oik.npy'))
+        conv.weight.set_(torch.from_numpy(w))
+        if type(conv.bias) != type(None):
+            b = np.load(os.path.join(where, 'bias.npy'))
+            if conv.bias is not None:
+                conv.bias.set_(torch.from_numpy(b))
+
+
 def dump_torch_conv2d_weights(where, conv, name='conv', scale=1/128, quantize=False):
     w = conv.weight.detach().cpu().permute(0, 1, 3, 2).numpy().copy()
     if conv.bias is None:
@@ -228,6 +258,8 @@ def dump_torch_weights(where, module, name=None, verbose=False, **kwargs):
         return dump_torch_conv2d_weights(where, module, name, **kwargs)
     elif isinstance(module, torch.nn.Embedding):
         return dump_torch_embedding_weights(where, module)
+    elif isinstance(module, torch.nn.ConvTranspose1d):
+        return dump_torch_tconv1d_weights(where, module, name, **kwargs)
     else:
         raise ValueError(f'dump_torch_weights: layer of type {type(module)} not supported')
 
@@ -243,5 +275,7 @@ def load_torch_weights(where, module):
         load_torch_conv2d_weights(where, module)
     elif isinstance(module, torch.nn.Embedding):
         load_torch_embedding_weights(where, module)
+    elif isinstance(module, torch.nn.ConvTranspose1d):
+        return load_torch_tconv1d_weights(where, module)
     else:
-        raise ValueError(f'dump_torch_weights: layer of type {type(module)} not supported')
+        raise ValueError(f'load_torch_weights: layer of type {type(module)} not supported')
