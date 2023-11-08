@@ -44,6 +44,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "dred_decoder.h"
 #endif
 
+#ifdef ENABLE_OSCE
+#include "osce_config.h"
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -238,6 +242,13 @@ typedef struct {
 } silk_encoder_state;
 
 
+#ifdef ENABLE_OSCE
+typedef struct {
+    float               num_bits_smooth;
+    float               signal_history[OSCE_FEATURES_MAX_HISTORY];
+} silk_OSCE_struct;
+#endif
+
 /* Struct for Packet Loss Concealment */
 typedef struct {
     opus_int32                  pitchL_Q8;                          /* Pitch lag to use for voiced concealment                          */
@@ -309,6 +320,10 @@ typedef struct {
 
     /* CNG state */
     silk_CNG_struct             sCNG;
+
+//#ifdef ENABLE_OSCE
+    silk_OSCE_struct            osce;
+//#endif
 
     /* Stuff used for PLC */
     opus_int                    lossCnt;

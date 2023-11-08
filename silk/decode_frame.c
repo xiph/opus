@@ -33,6 +33,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "stack_alloc.h"
 #include "PLC.h"
 
+#ifdef ENABLE_OSCE
+#include "silk_enhancer.h"
+#endif
+
 /****************/
 /* Decode frame */
 /****************/
@@ -51,11 +55,17 @@ opus_int silk_decode_frame(
 {
     VARDECL( silk_decoder_control, psDecCtrl );
     opus_int         L, mv_len, ret = 0;
+#ifdef ENABLE_OSCE
+    opus_int32  ec_start;
+#endif
     SAVE_STACK;
 
     L = psDec->frame_length;
     ALLOC( psDecCtrl, 1, silk_decoder_control );
     psDecCtrl->LTP_scale_Q14 = 0;
+#ifdef ENABLE_OSCE
+    ec_start = ec_tell(psRangeDec);
+#endif
 
     /* Safety checks */
     celt_assert( L > 0 && L <= MAX_FRAME_LENGTH );
@@ -87,6 +97,12 @@ opus_int silk_decode_frame(
         /********************************************************/
         silk_decode_core( psDec, psDecCtrl, pOut, pulses, arch );
 
+#ifdef ENABLE_OSCE
+        /********************************************************/
+        /* Run SILK enhancer                                    */
+        /********************************************************/
+        silk_enhancer( psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
+#endif
         /********************************************************/
         /* Update PLC state                                     */
         /********************************************************/
