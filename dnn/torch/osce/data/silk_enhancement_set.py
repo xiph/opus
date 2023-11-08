@@ -49,7 +49,6 @@ class SilkEnhancementSet(Dataset):
                  num_bands_noisy_spec=18,
                  noisy_spec_scale='opus',
                  noisy_apply_dct=True,
-                 add_offset=False,
                  add_double_lag_acorr=False,
                  ):
 
@@ -73,7 +72,6 @@ class SilkEnhancementSet(Dataset):
         self.gains = np.fromfile(os.path.join(path, 'features_gain.f32'), dtype=np.float32)
         self.num_bits = np.fromfile(os.path.join(path, 'features_num_bits.s32'), dtype=np.int32)
         self.num_bits_smooth = np.fromfile(os.path.join(path, 'features_num_bits_smooth.f32'), dtype=np.float32)
-        self.offsets = np.fromfile(os.path.join(path, 'features_offset.f32'), dtype=np.float32)
 
         self.clean_signal_hp = np.fromfile(os.path.join(path, 'clean_hp.s16'), dtype=np.int16)
         self.clean_signal    = np.fromfile(os.path.join(path, 'clean.s16'), dtype=np.int16)
@@ -86,7 +84,6 @@ class SilkEnhancementSet(Dataset):
                                                     num_bands_noisy_spec,
                                                     noisy_spec_scale,
                                                     noisy_apply_dct,
-                                                    add_offset,
                                                     add_double_lag_acorr)
 
         self.history_len = 700 if add_double_lag_acorr else 350
@@ -120,8 +117,7 @@ class SilkEnhancementSet(Dataset):
               self.lpcs[frame_start : frame_stop],
               self.gains[frame_start : frame_stop],
               self.ltps[frame_start : frame_stop],
-              self.periods[frame_start : frame_stop],
-              self.offsets[frame_start : frame_stop]
+              self.periods[frame_start : frame_stop]
         )
 
         if self.preemph > 0:
