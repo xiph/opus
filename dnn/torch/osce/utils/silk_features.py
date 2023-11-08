@@ -33,6 +33,7 @@ import numpy as np
 import torch
 
 import scipy
+import scipy.signal
 
 from utils.pitch import hangover, calculate_acorr_window
 from utils.spec import create_filter_bank, cepstrum, log_spectrum, log_spectrum_from_lpc
@@ -59,7 +60,6 @@ def silk_feature_factory(no_pitch_value=256,
                          num_bands_noisy_spec=18,
                          noisy_spec_scale='opus',
                          noisy_apply_dct=True,
-                         add_offset=False,
                          add_double_lag_acorr=False
                          ):
 
@@ -67,7 +67,7 @@ def silk_feature_factory(no_pitch_value=256,
     fb_clean_spec = create_filter_bank(num_bands_clean_spec, 320, scale='erb', round_center_bins=True, normalize=True)
     fb_noisy_spec = create_filter_bank(num_bands_noisy_spec, 320, scale=noisy_spec_scale, round_center_bins=True, normalize=True)
 
-    def create_features(noisy, noisy_history, lpcs, gains, ltps, periods, offsets):
+    def create_features(noisy, noisy_history, lpcs, gains, ltps, periods):
 
         periods = periods.copy()
 
@@ -89,10 +89,7 @@ def silk_feature_factory(no_pitch_value=256,
 
         acorr, _ = calculate_acorr_window(noisy, 80, periods, noisy_history, radius=acorr_radius, add_double_lag_acorr=add_double_lag_acorr)
 
-        if add_offset:
-            features = np.concatenate((clean_spectrum, noisy_cepstrum, acorr, ltps, log_gains, offsets.reshape(-1, 1)), axis=-1, dtype=np.float32)
-        else:
-            features = np.concatenate((clean_spectrum, noisy_cepstrum, acorr, ltps, log_gains), axis=-1, dtype=np.float32)
+        features = np.concatenate((clean_spectrum, noisy_cepstrum, acorr, ltps, log_gains), axis=-1, dtype=np.float32)
 
         return features, periods.astype(np.int64)
 
@@ -110,7 +107,6 @@ def load_inference_data(path,
                         num_bands_noisy_spec=18,
                         noisy_spec_scale='opus',
                         noisy_apply_dct=True,
-                        add_offset=False,
                         add_double_lag_acorr=False,
                         **kwargs):
 
@@ -122,13 +118,12 @@ def load_inference_data(path,
     periods = np.fromfile(os.path.join(path, 'features_period.s16'), dtype=np.int16)
     num_bits = np.fromfile(os.path.join(path, 'features_num_bits.s32'), dtype=np.int32).astype(np.float32).reshape(-1, 1)
     num_bits_smooth = np.fromfile(os.path.join(path, 'features_num_bits_smooth.f32'), dtype=np.float32).reshape(-1, 1)
-    offsets = np.fromfile(os.path.join(path, 'features_offset.f32'), dtype=np.float32)
 
     # load signal, add back delay and pre-emphasize
     signal  = np.fromfile(os.path.join(path, 'noisy.s16'), dtype=np.int16).astype(np.float32) / (2 ** 15)
     signal = np.concatenate((np.zeros(skip, dtype=np.float32), signal), dtype=np.float32)
 
-    create_features = silk_feature_factory(no_pitch_value, acorr_radius, pitch_hangover, num_bands_clean_spec, num_bands_noisy_spec, noisy_spec_scale, noisy_apply_dct, add_offset, add_double_lag_acorr)
+    create_features = silk_feature_factory(no_pitch_value, acorr_radius, pitch_hangover, num_bands_clean_spec, num_bands_noisy_spec, noisy_spec_scale, noisy_apply_dct, add_double_lag_acorr)
 
     num_frames = min((len(signal) // 320) * 4, len(lpcs))
     signal = signal[: num_frames * 80]
@@ -138,11 +133,10 @@ def load_inference_data(path,
     periods = periods[: num_frames]
     num_bits = num_bits[: num_frames // 4]
     num_bits_smooth = num_bits[: num_frames // 4]
-    offsets = offsets[: num_frames]
 
     numbits = np.repeat(np.concatenate((num_bits, num_bits_smooth), axis=-1, dtype=np.float32), 4, axis=0)
 
-    features, periods = create_features(signal, np.zeros(350, dtype=signal.dtype), lpcs, gains, ltps, periods, offsets)
+    features, periods = create_features(signal, np.zeros(350, dtype=signal.dtype), lpcs, gains, ltps, periods)
 
     if preemph > 0:
         signal[1:] -= preemph * signal[:-1]
