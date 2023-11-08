@@ -74,7 +74,7 @@ jobs:
         run: mkdir build
       - name: Configure
         working-directory: ./build
-        run: cmake .. ${{ matrix.config.args }} -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON -DOPUS_FAST_MATH=ON -DOPUS_FLOAT_APPROX=ON -DOPUS_DRED=ON
+        run: cmake .. ${{ matrix.config.args }} -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON -DOPUS_FAST_MATH=ON -DOPUS_FLOAT_APPROX=ON -DOPUS_DRED=ON -DOPUS_OSCE=ON
       - name: Build
         working-directory: ./build
         run: cmake --build . -j 2 --config ${{ matrix.config.config }} --target package

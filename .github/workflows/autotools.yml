@@ -29,6 +29,12 @@ jobs:
             compiler: gcc,
             buildconfig: --enable-assertions --enable-custom-modes
           }
+        - {
+            name: "Linux/GCC/EnableDNN",
+            os: ubuntu-latest,
+            compiler: gcc,
+            buildconfig: --enable-assertions --enable-custom-modes --enable-dred --enable-osce
+          }
     steps:
       - uses: actions/checkout@v3
         # No AutoMake on Mac so let's install it

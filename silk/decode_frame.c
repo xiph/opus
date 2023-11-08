@@ -33,6 +33,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "stack_alloc.h"
 #include "PLC.h"
 
+#ifdef ENABLE_OSCE
+#include "osce.h"
+#endif
+
 /****************/
 /* Decode frame */
 /****************/
@@ -46,16 +50,25 @@ opus_int silk_decode_frame(
 #ifdef ENABLE_DEEP_PLC
     LPCNetPLCState              *lpcnet,
 #endif
+#ifdef ENABLE_OSCE
+    OSCEModel                   *osce_model,
+#endif
     int                         arch                            /* I    Run-time architecture                       */
 )
 {
     VARDECL( silk_decoder_control, psDecCtrl );
     opus_int         L, mv_len, ret = 0;
+#ifdef ENABLE_OSCE
+    opus_int32  ec_start;
+#endif
     SAVE_STACK;
 
     L = psDec->frame_length;
     ALLOC( psDecCtrl, 1, silk_decoder_control );
     psDecCtrl->LTP_scale_Q14 = 0;
+#ifdef ENABLE_OSCE
+    ec_start = ec_tell(psRangeDec);
+#endif
 
     /* Safety checks */
     celt_assert( L > 0 && L <= MAX_FRAME_LENGTH );
@@ -87,6 +100,21 @@ opus_int silk_decode_frame(
         /********************************************************/
         silk_decode_core( psDec, psDecCtrl, pOut, pulses, arch );
 
+        /*************************/
+        /* Update output buffer. */
+        /*************************/
+        celt_assert( psDec->ltp_mem_length >= psDec->frame_length );
+        mv_len = psDec->ltp_mem_length - psDec->frame_length;
+        silk_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
+        silk_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
+
+#ifdef ENABLE_OSCE
+        /********************************************************/
+        /* Run SILK enhancer                                    */
+        /********************************************************/
+        osce_enhance_frame( osce_model, psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
+#endif
+
         /********************************************************/
         /* Update PLC state                                     */
         /********************************************************/
@@ -109,15 +137,18 @@ opus_int silk_decode_frame(
             lpcnet,
 #endif
             arch );
-    }
 
-    /*************************/
-    /* Update output buffer. */
-    /*************************/
-    celt_assert( psDec->ltp_mem_length >= psDec->frame_length );
-    mv_len = psDec->ltp_mem_length - psDec->frame_length;
-    silk_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
-    silk_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
+#ifdef ENABLE_OSCE
+        osce_reset( &psDec->osce, psDec->osce.method );
+#endif
+        /*************************/
+        /* Update output buffer. */
+        /*************************/
+        celt_assert( psDec->ltp_mem_length >= psDec->frame_length );
+        mv_len = psDec->ltp_mem_length - psDec->frame_length;
+        silk_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
+        silk_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
+    }
 
     /************************************************/
     /* Comfort noise generation / estimation        */

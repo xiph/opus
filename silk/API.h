@@ -92,6 +92,16 @@ opus_int silk_Encode(                                   /* O    Returns error co
 /* Decoder functions                    */
 /****************************************/
 
+
+/***********************************************/
+/* Load OSCE models from external data pointer */
+/***********************************************/
+opus_int silk_LoadOSCEModels(
+    void *decState,                                     /* O    I/O State                                       */
+    const unsigned char *data,                          /* I    pointer to binary blob                          */
+    int len                                             /* I    length of binary blob data                      */
+);
+
 /***********************************************/
 /* Get size in bytes of the Silk decoder state */
 /***********************************************/
@@ -100,8 +110,12 @@ opus_int silk_Get_Decoder_Size(                         /* O    Returns error co
 );
 
 /*************************/
-/* Init or Reset decoder */
+/* Init and Reset decoder */
 /*************************/
+opus_int silk_ResetDecoder(                              /* O    Returns error code                              */
+    void                            *decState            /* I/O  State                                           */
+);
+
 opus_int silk_InitDecoder(                              /* O    Returns error code                              */
     void                            *decState           /* I/O  State                                           */
 );

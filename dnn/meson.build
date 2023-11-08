@@ -5,6 +5,11 @@ if opt_enable_dred
   dnn_sources += dred_sources
 endif
 
+osce_sources = sources['OSCE_SOURCES']
+if opt_enable_osce
+  dnn_sources += osce_sources
+endif
+
 dnn_sources_sse2 = sources['DNN_SOURCES_SSE2']
 dnn_sources_sse4_1 = sources['DNN_SOURCES_SSE4_1']
 dnn_sources_avx2 = sources['DNN_SOURCES_AVX2']

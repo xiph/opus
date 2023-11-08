@@ -147,6 +147,11 @@ typedef struct {
 
     /* I:   Enable Deep PLC                                                                 */
     opus_int enable_deep_plc;
+
+#ifdef ENABLE_OSCE
+    /* I: OSCE method */
+    opus_int osce_method;
+#endif
 } silk_DecControlStruct;
 
 #ifdef __cplusplus

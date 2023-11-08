@@ -33,6 +33,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "stack_alloc.h"
 #include "os_support.h"
 
+#ifdef ENABLE_OSCE
+#include "osce.h"
+#include "osce_structs.h"
+#endif
+
 /************************/
 /* Decoder Super Struct */
 /************************/
@@ -42,11 +47,32 @@ typedef struct {
     opus_int                         nChannelsAPI;
     opus_int                         nChannelsInternal;
     opus_int                         prev_decode_only_middle;
+#ifdef ENABLE_OSCE
+    OSCEModel                        osce_model;
+#endif
 } silk_decoder;
 
 /*********************/
 /* Decoder functions */
 /*********************/
+
+
+
+opus_int silk_LoadOSCEModels(void *decState, const unsigned char *data, int len)
+{
+#ifdef ENABLE_OSCE
+    opus_int ret = SILK_NO_ERROR;
+
+    ret = osce_load_models(&((silk_decoder *)decState)->osce_model, data, len);
+
+    return ret;
+#else
+    (void) decState;
+    (void) data;
+    (void) len;
+    return SILK_NO_ERROR;
+#endif
+}
 
 opus_int silk_Get_Decoder_Size(                         /* O    Returns error code                              */
     opus_int                        *decSizeBytes       /* O    Number of bytes in SILK decoder state           */
@@ -60,12 +86,35 @@ opus_int silk_Get_Decoder_Size(                         /* O    Returns error co
 }
 
 /* Reset decoder state */
+opus_int silk_ResetDecoder(                              /* O    Returns error code                              */
+    void                            *decState           /* I/O  State                                           */
+)
+{
+    opus_int n, ret = SILK_NO_ERROR;
+    silk_decoder_state *channel_state = ((silk_decoder *)decState)->channel_state;
+
+    for( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
+        ret  = silk_reset_decoder( &channel_state[ n ] );
+    }
+    silk_memset(&((silk_decoder *)decState)->sStereo, 0, sizeof(((silk_decoder *)decState)->sStereo));
+    /* Not strictly needed, but it's cleaner that way */
+    ((silk_decoder *)decState)->prev_decode_only_middle = 0;
+
+    return ret;
+}
+
+
 opus_int silk_InitDecoder(                              /* O    Returns error code                              */
     void                            *decState           /* I/O  State                                           */
 )
 {
     opus_int n, ret = SILK_NO_ERROR;
     silk_decoder_state *channel_state = ((silk_decoder *)decState)->channel_state;
+
+#ifndef USE_WEIGHTS_FILE
+    /* load osce models */
+    silk_LoadOSCEModels(decState, NULL, 0);
+#endif
 
     for( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
         ret  = silk_init_decoder( &channel_state[ n ] );
@@ -301,9 +350,17 @@ opus_int silk_Decode(                                   /* O    Returns error co
             } else {
                 condCoding = CODE_CONDITIONALLY;
             }
+#ifdef ENABLE_OSCE
+            if ( channel_state[n].osce.method != decControl->osce_method ) {
+                osce_reset( &channel_state[n].osce, decControl->osce_method );
+            }
+#endif
             ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding,
 #ifdef ENABLE_DEEP_PLC
                 n == 0 ? lpcnet : NULL,
+#endif
+#ifdef ENABLE_OSCE
+                &psDec->osce_model,
 #endif
                 arch);
         } else {

@@ -29,3 +29,12 @@ dnn/dred_rdovae_enc_data.h \
 dnn/dred_rdovae_dec.h \
 dnn/dred_rdovae_dec_data.h \
 dnn/dred_rdovae_stats_data.h
+
+OSCE_HEAD= \
+dnn/osce.h \
+dnn/osce_config.h \
+dnn/osce_structs.h \
+dnn/osce_features.h \
+dnn/nndsp.h \
+dnn/lace_data.h \
+dnn/nolace_data.h

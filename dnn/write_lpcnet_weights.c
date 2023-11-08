@@ -46,6 +46,10 @@
 #include "plc_data.c"
 #include "dred_rdovae_enc_data.c"
 #include "dred_rdovae_dec_data.c"
+#ifdef ENABLE_OSCE
+#include "lace_data.c"
+#include "nolace_data.c"
+#endif
 
 void write_weights(const WeightArray *list, FILE *fout)
 {
@@ -53,6 +57,9 @@ void write_weights(const WeightArray *list, FILE *fout)
   unsigned char zeros[WEIGHT_BLOCK_SIZE] = {0};
   while (list[i].name != NULL) {
     WeightHead h;
+    if (strlen(list[i].name) >= sizeof(h.name) - 1) {
+      printf("[write_weights] warning: name %s too long\n", list[i].name);
+    }
     memcpy(h.head, "DNNw", 4);
     h.version = WEIGHT_BLOB_VERSION;
     h.type = list[i].type;
@@ -77,6 +84,14 @@ int main(void)
   write_weights(lpcnet_plc_arrays, fout);
   write_weights(rdovaeenc_arrays, fout);
   write_weights(rdovaedec_arrays, fout);
+#ifdef ENABLE_OSCE
+#ifndef DISABLE_LACE
+  write_weights(lacelayers_arrays, fout);
+#endif
+#ifndef DISABLE_NOLACE
+  write_weights(nolacelayers_arrays, fout);
+#endif
+#endif
   fclose(fout);
   return 0;
 }

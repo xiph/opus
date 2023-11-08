@@ -46,12 +46,12 @@ class LimitedAdaptiveConv1d(nn.Module):
                  feature_dim,
                  frame_size=160,
                  overlap_size=40,
-                 use_bias=True,
                  padding=None,
                  name=None,
                  gain_limits_db=[-6, 6],
                  shape_gain_db=0,
-                 norm_p=2):
+                 norm_p=2,
+                 **kwargs):
         """
 
         Parameters:
@@ -90,7 +90,6 @@ class LimitedAdaptiveConv1d(nn.Module):
         self.kernel_size    = kernel_size
         self.frame_size     = frame_size
         self.overlap_size   = overlap_size
-        self.use_bias       = use_bias
         self.gain_limits_db = gain_limits_db
         self.shape_gain_db  = shape_gain_db
         self.norm_p         = norm_p
@@ -103,9 +102,6 @@ class LimitedAdaptiveConv1d(nn.Module):
 
         # network for generating convolution weights
         self.conv_kernel = nn.Linear(feature_dim, in_channels * out_channels * kernel_size)
-
-        if self.use_bias:
-            self.conv_bias = nn.Linear(feature_dim, out_channels)
 
         self.shape_gain = min(1, 10**(shape_gain_db / 20))
 
@@ -132,10 +128,6 @@ class LimitedAdaptiveConv1d(nn.Module):
         # kernel computation and filtering
         count += 2 * (frame_rate * self.feature_dim * self.kernel_size)
         count += 2 * (self.in_channels * self.out_channels * self.kernel_size * (1 + overhead) * rate)
-
-        # bias computation
-        if self.use_bias:
-            count += 2 * (frame_rate * self.feature_dim) + rate * (1 + overhead)
 
         # gain computation
 
@@ -182,9 +174,6 @@ class LimitedAdaptiveConv1d(nn.Module):
         id_kernels[..., self.padding[1]] = 1
 
         conv_kernels = self.shape_gain * conv_kernels + (1 - self.shape_gain) * id_kernels
-
-        if self.use_bias:
-            conv_biases  = self.conv_bias(features).permute(0, 2, 1)
 
         # calculate gains
         conv_gains   = torch.exp(self.filter_gain_a * torch.tanh(self.filter_gain(features)) + self.filter_gain_b)

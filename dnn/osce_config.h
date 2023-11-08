@@ -1,4 +1,3 @@
-"""
 /* Copyright (c) 2023 Amazon
    Written by Jan Buethe */
 /*
@@ -25,13 +24,39 @@
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-"""
 
-from .torch import dump_torch_conv1d_weights, load_torch_conv1d_weights
-from .torch import dump_torch_conv2d_weights, load_torch_conv2d_weights
-from .torch import dump_torch_dense_weights, load_torch_dense_weights
-from .torch import dump_torch_gru_weights, load_torch_gru_weights
-from .torch import dump_torch_grucell_weights
-from .torch import dump_torch_embedding_weights, load_torch_embedding_weights
-from .torch import dump_torch_weights, load_torch_weights
-from .torch import dump_torch_adaptive_conv1d_weights
+#ifndef OSCE_CONFIG
+#define OSCE_CONFIG
+
+#define OSCE_MAX_RNN_NEURONS 256
+
+#define OSCE_FEATURES_MAX_HISTORY 350
+#define OSCE_FEATURE_DIM 93
+#define OSCE_MAX_FEATURE_FRAMES 4
+
+#define OSCE_CLEAN_SPEC_NUM_BANDS 64
+#define OSCE_NOISY_SPEC_NUM_BANDS 18
+
+#define OSCE_NO_PITCH_VALUE 7
+
+#define OSCE_PREEMPH 0.85f
+
+#define OSCE_PITCH_HANGOVER 8
+
+#define OSCE_CLEAN_SPEC_START 0
+#define OSCE_CLEAN_SPEC_LENGTH 64
+
+#define OSCE_NOISY_CEPSTRUM_START 64
+#define OSCE_NOISY_CEPSTRUM_LENGTH 18
+
+#define OSCE_ACORR_START 82
+#define OSCE_ACORR_LENGTH 5
+
+#define OSCE_LTP_START 87
+#define OSCE_LTP_LENGTH 5
+
+#define OSCE_LOG_GAIN_START 92
+#define OSCE_LOG_GAIN_LENGTH 1
+
+
+#endif

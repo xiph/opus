@@ -64,13 +64,29 @@ static OPUS_INLINE float relu(float x)
    return x < 0 ? 0 : x;
 }
 
+/*#define HIGH_ACCURACY */
+
 void RTCD_SUF(compute_activation_)(float *output, const float *input, int N, int activation)
 {
    int i;
    if (activation == ACTIVATION_SIGMOID) {
+#ifdef HIGH_ACCURACY
+      for (int n=0; n<N; n++)
+      {
+         output[n] = 1.f  / (1 + exp(-input[n]));
+      }
+#else
       vec_sigmoid(output, input, N);
+#endif
    } else if (activation == ACTIVATION_TANH) {
+#ifdef HIGH_ACCURACY
+      for (int n=0; n<N; n++)
+      {
+         output[n] = tanh(input[n]);
+      }
+#else
       vec_tanh(output, input, N);
+#endif
    } else if (activation == ACTIVATION_SWISH) {
       vec_swish(output, input, N);
    } else if (activation == ACTIVATION_RELU) {

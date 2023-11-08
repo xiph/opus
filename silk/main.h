@@ -389,6 +389,10 @@ void silk_NLSF_decode(
 /****************************************************/
 /* Decoder Functions                                */
 /****************************************************/
+opus_int silk_reset_decoder(
+    silk_decoder_state          *psDec                          /* I/O  Decoder state pointer                       */
+);
+
 opus_int silk_init_decoder(
     silk_decoder_state          *psDec                          /* I/O  Decoder state pointer                       */
 );
@@ -412,6 +416,9 @@ opus_int silk_decode_frame(
     opus_int                    condCoding,                     /* I    The type of conditional coding to use       */
 #ifdef ENABLE_DEEP_PLC
     LPCNetPLCState              *lpcnet,
+#endif
+#ifdef ENABLE_OSCE
+    OSCEModel                   *osce_model,
 #endif
     int                         arch                            /* I    Run-time architecture                       */
 );
