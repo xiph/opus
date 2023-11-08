@@ -1,8 +1,9 @@
-
+#ifdef ENABLE_OSCE
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #include "main.h"
 #include "stack_alloc.h"
@@ -79,3 +80,5 @@ void silk_enhancer(
     fwrite(xq, psDec->nb_subfr * psDec->subfr_length, sizeof(xq[0]), fnoisy16k);
 
 }
+
+#endif

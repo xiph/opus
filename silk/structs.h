@@ -321,9 +321,9 @@ typedef struct {
     /* CNG state */
     silk_CNG_struct             sCNG;
 
-//#ifdef ENABLE_OSCE
+#ifdef ENABLE_OSCE
     silk_OSCE_struct            osce;
-//#endif
+#endif
 
     /* Stuff used for PLC */
     opus_int                    lossCnt;
