@@ -1,0 +1,7 @@
+#ifndef OSCE_CONFIG
+#define OSCE_CONFIG
+
+
+#define OSCE_FEATURES_MAX_HISTORY 350
+
+#endif

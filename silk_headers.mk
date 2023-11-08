@@ -41,4 +41,5 @@ silk/float/structs_FLP.h \
 silk/float/SigProc_FLP.h \
 silk/mips/macros_mipsr1.h \
 silk/mips/NSQ_del_dec_mipsr1.h \
-silk/mips/sigproc_fix_mipsr1.h
+silk/mips/sigproc_fix_mipsr1.h \
+silk/silk_enhancer.h

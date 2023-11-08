@@ -847,6 +847,15 @@ AS_IF([test "$enable_dnn_debug_float" = "no"], [
        AC_DEFINE([DISABLE_DEBUG_FLOAT], [1], [Disable DNN debug float])
 ])
 
+AC_ARG_ENABLE([osce],
+  AS_HELP_STRING([--enable-osce], [enables feature output for SILK enhancement]),,
+  [enable_osce=no]
+)
+
+AS_IF([test "$enable_osce" = "yes"], [
+       AC_DEFINE([ENABLE_OSCE], [1], [Enable Opus Speech Coding Enhancement])
+])
+
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "$HAVE_DOXYGEN" = "yes"])
 
 AC_ARG_ENABLE([extra-programs],
