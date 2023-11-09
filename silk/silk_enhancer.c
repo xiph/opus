@@ -168,7 +168,7 @@ static void mag_spec_320_onesided_slow(float *out, float *in)
 
     for (k = 0; k < 161; k++)
     {
-        out[k] = sqrtf(buffer[k].re * buffer[k].re + buffer[k].im * buffer[k].im);
+        out[k] = sqrt(buffer[k].re * buffer[k].re + buffer[k].im * buffer[k].im);
     }
 }
 
@@ -185,9 +185,9 @@ static void dct2(float *out, float *in, int size)
         buffer[k] = 0;
         for (n = 0; n < size; n ++)
         {
-            buffer[k] += cosf(M_PI * k * (2 * n + 1) / (2 * size)) * in[n];
+            buffer[k] += cos(M_PI * k * (2 * n + 1) / (2 * size)) * in[n];
         }
-        buffer[k] *= k==0 ? sqrtf(.25 / size) : sqrtf(0.5 / size);
+        buffer[k] *= k==0 ? sqrt(.25 / size) : sqrt(0.5 / size);
     }
     OPUS_COPY(out, buffer, size);
 }
@@ -219,7 +219,7 @@ static void calculate_log_spectrum_from_lpc(float *spec, opus_int16 *a_q12, int 
     /* log and scaling */
     for (i = 0; i < 161; i++)
     {
-        spec[i] = 0.3f * logf(spec[i] + 1e-9f);
+        spec[i] = 0.3f * log(spec[i] + 1e-9f);
     }
 }
 
@@ -245,10 +245,10 @@ static void calculate_cepstrum(float *cepstrum, float *signal)
     /* log domain conversion */
     for (n = 0; n < OSCE_NOISY_SPEC_NUM_BANDS; n++)
     {
-        spec[n] = logf(spec[n] + 1e-9);
+        spec[n] = log(spec[n] + 1e-9);
     }
 
-    /* DCT-II (orthonorma) */
+    /* DCT-II (orthonormal) */
     dct2(spec, spec, OSCE_NOISY_SPEC_NUM_BANDS);
 }
 
@@ -270,14 +270,14 @@ static void calculate_acorr(float *acorr, float *signal, int lag)
             yy += signal[n - lag + k] * signal[n - lag + k];
             xy += signal[n] * signal[n - lag + k];
         }
-        acorr[k+2] = xy / sqrtf(xx * yy + 1e-9);
+        acorr[k+2] = xy / sqrt(xx * yy + 1e-9);
     }
 }
 
 static int pitch_postprocessing(silk_OSCE_struct *psOSCE, int lag, int type)
 {
     int new_lag;
-    //printf("\n[start] lag: %d   type: %s    last_type: %s    hangover: %d  last_lag: %d\n", lag, type==TYPE_VOICED ? "voiced" : "unvoiced", psOSCE->last_type==TYPE_VOICED ? "voiced" : "unvoiced", psOSCE->pitch_hangover_count, psOSCE->last_lag);
+
     if (type != TYPE_VOICED && psOSCE->last_type == TYPE_VOICED)
     /* enter hangover */
     {
@@ -391,7 +391,7 @@ static void calculate_features(
         }
 
         /* frame gain */
-        features[OSCE_LOG_GAIN_START] = logf((float) psDecCtrl->Gains_Q16[k] / (1UL << 16) + 1e-9);
+        features[OSCE_LOG_GAIN_START] = log((float) psDecCtrl->Gains_Q16[k] / (1UL << 16) + 1e-9);
 
 #ifdef WRITE_FEATURES
         fwrite(features, sizeof(*features), 93, f_feat);
