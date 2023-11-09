@@ -4,6 +4,10 @@
 
 #ifdef ENABLE_OSCE
 
+/*DEBUG*/
+//#define WRITE_FEATURES
+/*******/
+
 #include "main.h"
 #include "stack_alloc.h"
 #include "silk_enhancer.h"
@@ -146,7 +150,7 @@ static void apply_filterbank(float *x_out, float *x_in, int *center_bins, float*
 }
 
 
-static void psd_320_onesided_slow(float *out, float *in)
+static void mag_spec_320_onesided_slow(float *out, float *in)
 /* for temporary use only */
 {
     struct {float re; float im;} buffer[320];
@@ -159,13 +163,12 @@ static void psd_320_onesided_slow(float *out, float *in)
         {
             buffer[k].re += cos(- 2 * M_PI * n * k / 320) * in[n];
             buffer[k].im += sin(- 2 * M_PI * n * k / 320) * in[n];
-
         }
     }
 
     for (k = 0; k < 161; k++)
     {
-        out[k] = buffer[k].re * buffer[k].re + buffer[k].im * buffer[k].im;
+        out[k] = sqrtf(buffer[k].re * buffer[k].re + buffer[k].im * buffer[k].im);
     }
 }
 
@@ -202,11 +205,12 @@ static void calculate_log_spectrum_from_lpc(float *spec, opus_int16 *a_q12, int 
         buffer[i+1] = - (float)a_q12[i] / (1U << 12);
     }
 
-    /* calculate and inverst magnitude spectrum */
-    psd_320_onesided_slow(buffer, buffer);
+    /* calculate and invert magnitude spectrum */
+    mag_spec_320_onesided_slow(buffer, buffer);
+
     for (i = 0; i < 161; i++)
     {
-        buffer[i] = 1. / (sqrtf(buffer[i]) + 1e-9f);
+        buffer[i] = 1. / (buffer[i] + 1e-9f);
     }
 
     /* apply filterbank */
@@ -232,10 +236,19 @@ static void calculate_cepstrum(float *cepstrum, float *signal)
         buffer[n] = osce_window[n] * signal[n];
     }
 
-    psd_320_onesided_slow(buffer, buffer);
+    /* calculate magnitude spectrum */
+    mag_spec_320_onesided_slow(buffer, buffer);
 
+    /* accumulate bands */
     apply_filterbank(spec, buffer, center_bins_noisy, band_weights_noisy, OSCE_NOISY_SPEC_NUM_BANDS);
 
+    /* log domain conversion */
+    for (n = 0; n < OSCE_NOISY_SPEC_NUM_BANDS; n++)
+    {
+        spec[n] = logf(spec[n] + 1e-9);
+    }
+
+    /* DCT-II (orthonorma) */
     dct2(spec, spec, OSCE_NOISY_SPEC_NUM_BANDS);
 }
 
@@ -252,7 +265,7 @@ static void calculate_acorr(float *acorr, float *signal, int lag)
         float yy = 0;
         for (n = 0; n < 80; n++)
         {
-            /* obviously wasteful */
+            /* obviously wasteful -> fix later */
             xx += signal[n] * signal[n];
             yy += signal[n - lag + k] * signal[n - lag + k];
             xy += signal[n] * signal[n - lag + k];
@@ -295,8 +308,10 @@ static int pitch_postprocessing(silk_OSCE_struct *psOSCE, int lag, int type)
         psOSCE->pitch_hangover_count = 0;
     }
 
+    /* buffer update */
     psOSCE->last_type = type;
 
+    /* with the current setup this should never happen (but who knows...) */
     celt_assert(new_lag)
 
     return new_lag;
@@ -305,7 +320,7 @@ static int pitch_postprocessing(silk_OSCE_struct *psOSCE, int lag, int type)
 static void calculate_features(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
-    opus_int16                  xq[],                           /* I/O  Decoded speech                              */
+    const opus_int16            xq[],                           /* I    Decoded speech                              */
     opus_int32                  num_bits                        /* I    Size of SILK payload in bits                */
 )
 {
@@ -314,6 +329,15 @@ static void calculate_features(
     float *frame, *features;
     silk_OSCE_struct *psOSCE;
     int i, n, k;
+#ifdef WRITE_FEATURES
+    FILE *f_feat = NULL;
+    if (f_feat == NULL)
+    {
+        f_feat = fopen("assembled_features.f32", "wb");
+    }
+#endif
+
+    (void) num_bits; /* TODO: implement num_bits embedding */
 
     memset(buffer, 0, sizeof(buffer));
 
@@ -368,10 +392,11 @@ static void calculate_features(
 
         /* frame gain */
         features[OSCE_LOG_GAIN_START] = logf((float) psDecCtrl->Gains_Q16[k] / (1UL << 16) + 1e-9);
+
+#ifdef WRITE_FEATURES
+        fwrite(features, sizeof(*features), 93, f_feat);
+#endif
     }
-
-
-
 
     /* buffer update */
     OPUS_COPY(psOSCE->signal_history, &buffer[num_samples], OSCE_FEATURES_MAX_HISTORY);
@@ -387,6 +412,8 @@ void silk_enhancer(
 {
     (void) arch;
     (void) num_bits;
+
+    /* ToDo: decide when to enhance (20 ms frame, 16kHz) */
 
     calculate_features(psDec, psDecCtrl, xq, num_bits);
 
