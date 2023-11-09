@@ -1,9 +1,8 @@
-#ifdef ENABLE_OSCE
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#ifdef ENABLE_OSCE
 
 #include "main.h"
 #include "stack_alloc.h"
