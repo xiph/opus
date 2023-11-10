@@ -6,6 +6,7 @@
 
 /*DEBUG*/
 //#define WRITE_FEATURES
+//#define DEBUG_PRING
 /*******/
 
 #include "main.h"
@@ -147,6 +148,12 @@ static void apply_filterbank(float *x_out, float *x_in, int *center_bins, float*
         }
     }
     x_out[num_bands - 1] += band_weights[num_bands - 1] * x_in[center_bins[num_bands - 1]];
+#ifdef DEBUG_PRINT
+    for (b = 0; b < num_bands; b++)
+    {
+        printf("band[%d]: %f\n", b, x_out[b]);
+    }
+#endif
 }
 
 
@@ -169,6 +176,9 @@ static void mag_spec_320_onesided_slow(float *out, float *in)
     for (k = 0; k < 161; k++)
     {
         out[k] = sqrt(buffer[k].re * buffer[k].re + buffer[k].im * buffer[k].im);
+#ifdef DEBUG_PRINT
+        printf("magspec[%d]: %f\n", k, out[k]);
+#endif
     }
 }
 
@@ -187,7 +197,10 @@ static void dct2(float *out, float *in, int size)
         {
             buffer[k] += cos(M_PI * k * (2 * n + 1) / (2 * size)) * in[n];
         }
-        buffer[k] *= k==0 ? sqrt(.25 / size) : sqrt(0.5 / size);
+        buffer[k] *= k==0 ? sqrt(1. / size) : sqrt(2. / size);
+#ifdef DEBUG_PRINT
+        printf("dct2[%d]: %f\n", k, buffer[k]);
+#endif
     }
     OPUS_COPY(out, buffer, size);
 }
@@ -246,10 +259,13 @@ static void calculate_cepstrum(float *cepstrum, float *signal)
     for (n = 0; n < OSCE_NOISY_SPEC_NUM_BANDS; n++)
     {
         spec[n] = log(spec[n] + 1e-9);
+#ifdef DEBUG_PRINT
+        printf("logspec[%d]: %f\n", n, spec[n]);
+#endif
     }
 
     /* DCT-II (orthonormal) */
-    dct2(spec, spec, OSCE_NOISY_SPEC_NUM_BANDS);
+    dct2(cepstrum, spec, OSCE_NOISY_SPEC_NUM_BANDS);
 }
 
 static void calculate_acorr(float *acorr, float *signal, int lag)
@@ -277,8 +293,8 @@ static void calculate_acorr(float *acorr, float *signal, int lag)
 static int pitch_postprocessing(silk_OSCE_struct *psOSCE, int lag, int type)
 {
     int new_lag;
-
-    if (type != TYPE_VOICED && psOSCE->last_type == TYPE_VOICED)
+    /* hangover is currently disabled to reflect a bug in the python code. ToDo: re-evaluate hangover */
+    if (type != TYPE_VOICED && psOSCE->last_type == TYPE_VOICED && 0)
     /* enter hangover */
     {
         new_lag = OSCE_NO_PITCH_VALUE;
@@ -288,7 +304,7 @@ static int pitch_postprocessing(silk_OSCE_struct *psOSCE, int lag, int type)
             psOSCE->pitch_hangover_count = (psOSCE->pitch_hangover_count + 1) % OSCE_PITCH_HANGOVER;
         }
     }
-    else if (type != TYPE_VOICED && psOSCE->pitch_hangover_count)
+    else if (type != TYPE_VOICED && psOSCE->pitch_hangover_count && 0)
     /* continue hangover */
     {
         new_lag = psOSCE->last_lag;
@@ -330,7 +346,7 @@ static void calculate_features(
     silk_OSCE_struct *psOSCE;
     int i, n, k;
 #ifdef WRITE_FEATURES
-    FILE *f_feat = NULL;
+    static FILE *f_feat = NULL;
     if (f_feat == NULL)
     {
         f_feat = fopen("assembled_features.f32", "wb");
