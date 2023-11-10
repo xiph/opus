@@ -62,6 +62,7 @@ class NoLACE(NNSBase):
                  numbits_embedding_dim=8,
                  hidden_feature_dim=64,
                  partial_lookahead=True,
+                 partial_lookahead_ms=20,
                  norm_p=2,
                  avg_pool_k=4,
                  pool_after=False):
@@ -80,6 +81,11 @@ class NoLACE(NNSBase):
         self.numbits_embedding_dim  = numbits_embedding_dim
         self.hidden_feature_dim     = hidden_feature_dim
         self.partial_lookahead      = partial_lookahead
+        self.partial_lookahead_ms   = partial_lookahead_ms
+
+        if partial_lookahead_ms % 20:
+            raise ValueError("partial_lookahead_ms must be a multiple of 20")
+        self.max_lookahead = (16 * partial_lookahead_ms) // self.FRAME_SIZE
 
         # pitch embedding
         self.pitch_embedding = nn.Embedding(pitch_max + 1, pitch_embedding_dim)
@@ -89,7 +95,7 @@ class NoLACE(NNSBase):
 
         # feature net
         if partial_lookahead:
-            self.feature_net = SilkFeatureNetPL(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim, hidden_feature_dim)
+            self.feature_net = SilkFeatureNetPL(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim, hidden_feature_dim, max_lookahead=self.max_lookahead)
         else:
             self.feature_net = SilkFeatureNet(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim)
 
@@ -147,6 +153,17 @@ class NoLACE(NNSBase):
         return f.permute(0, 2, 1)
 
     def forward(self, x, features, periods, numbits, debug=False):
+
+        if features.size(1) % self.max_lookahead:
+            if self.train:
+                raise ValueError(f"number of frames must be divisible by {self.max_lookahead}")
+            else:
+                # truncate input
+                num_frames = self.max_lookahead * (features.size(1) // self.max_lookahead)
+                features = features[:, :num_frames]
+                periods = periods[:, :num_frames]
+                numbits = numbits[:, :num_frames]
+                x = x[:, :num_frames * self.FRAME_SIZE]
 
         periods         = periods.squeeze(-1)
         pitch_embedding = self.pitch_embedding(periods)

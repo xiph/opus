@@ -39,17 +39,19 @@ class SilkFeatureNetPL(nn.Module):
     def __init__(self,
                  feature_dim=47,
                  num_channels=256,
-                 hidden_feature_dim=64):
+                 hidden_feature_dim=64,
+                 max_lookahead=4):
 
         super(SilkFeatureNetPL, self).__init__()
 
         self.feature_dim = feature_dim
         self.num_channels = num_channels
         self.hidden_feature_dim = hidden_feature_dim
+        self.max_lookahead = max_lookahead
 
         self.conv1 = nn.Conv1d(feature_dim, self.hidden_feature_dim, 1)
-        self.conv2 = nn.Conv1d(4 * self.hidden_feature_dim, num_channels, 2)
-        self.tconv = nn.ConvTranspose1d(num_channels, num_channels, 4, 4)
+        self.conv2 = nn.Conv1d(max_lookahead * self.hidden_feature_dim, num_channels, 2)
+        self.tconv = nn.ConvTranspose1d(num_channels, num_channels, max_lookahead, max_lookahead)
 
         self.gru = nn.GRU(num_channels, num_channels, batch_first=True)
 
@@ -78,7 +80,7 @@ class SilkFeatureNetPL(nn.Module):
 
         # frame accumulation
         c = c.permute(0, 2, 1)
-        c = c.reshape(batch_size, num_frames // 4, -1).permute(0, 2, 1)
+        c = c.reshape(batch_size, num_frames // self.max_lookahead, -1).permute(0, 2, 1)
         c = torch.tanh(self.conv2(F.pad(c, [1, 0])))
 
         # upsampling
