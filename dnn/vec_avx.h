@@ -719,7 +719,7 @@ static inline void sgemv(float *out, const float *weights, int rows, int cols, i
      {
         __m128 vxj;
         __m128 vw;
-        vxj = _mm_broadcast_ss(&x[j]);
+        vxj = _mm_set1_ps(x[j]);
 
         vw = _mm_loadu_ps(&weights[j*col_stride + i]);
         vy0 = _mm_fmadd_ps(vw, vxj, vy0);
