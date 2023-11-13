@@ -1424,7 +1424,7 @@ int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *
       OPUS_COPY(dst, src, 1);
    if (dst->process_stage == 2)
       return OPUS_OK;
-   DRED_rdovae_decode_all(&dred_dec->model, dst->fec_features, dst->state, dst->latents, dst->nb_latents);
+   DRED_rdovae_decode_all(&dred_dec->model, dst->fec_features, dst->state, dst->latents, dst->nb_latents, dred_dec->arch);
    dst->process_stage = 2;
    return OPUS_OK;
 #else
