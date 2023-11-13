@@ -27,7 +27,8 @@ int pitchdnn_load_model(PitchDNNState *st, const unsigned char *data, int len);
 float compute_pitchdnn(
     PitchDNNState *st,
     const float *if_features,
-    const float *xcorr_features
+    const float *xcorr_features,
+    int arch
     );
 
 #endif

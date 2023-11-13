@@ -120,7 +120,7 @@ int lpcnet_encode(LPCNetEncState *st, const opus_int16 *pcm, unsigned char *buf)
   * @param [out] features <tt>float[NB_TOTAL_FEATURES]</tt>: Four feature vectors
   * @retval 0 Success
   */
-int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *pcm, float features[NB_TOTAL_FEATURES]);
+int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *pcm, float features[NB_TOTAL_FEATURES], int arch);
 
 
 /** Compute features on LPCNET_FRAME_SIZE speech samples (currently 160) and output features for one 10-ms frame.
@@ -129,7 +129,7 @@ int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *p
   * @param [out] features <tt>float[NB_TOTAL_FEATURES]</tt>: Four feature vectors
   * @retval 0 Success
   */
-int lpcnet_compute_single_frame_features_float(LPCNetEncState *st, const float *pcm, float features[NB_TOTAL_FEATURES]);
+int lpcnet_compute_single_frame_features_float(LPCNetEncState *st, const float *pcm, float features[NB_TOTAL_FEATURES], int arch);
 
 /** Gets the size of an <code>LPCNetState</code> structure.
   * @returns The size in bytes.

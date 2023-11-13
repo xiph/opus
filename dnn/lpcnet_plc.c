@@ -33,6 +33,7 @@
 #include "plc_data.h"
 #include "os_support.h"
 #include "common.h"
+#include "cpu_support.h"
 
 #ifndef M_PI
 #define M_PI 3.141592653
@@ -54,6 +55,7 @@ void lpcnet_plc_reset(LPCNetPLCState *st) {
 
 int lpcnet_plc_init(LPCNetPLCState *st) {
   int ret;
+  st->arch = opus_select_arch();
   fargan_init(&st->fargan);
   lpcnet_encoder_init(&st->enc);
   st->analysis_pos = PLC_BUF_SIZE;
@@ -109,10 +111,10 @@ static void compute_plc_pred(LPCNetPLCState *st, float *out, const float *in) {
   float dense_out[PLC_DENSE1_OUT_SIZE];
   PLCNetState *net = &st->plc_net;
   celt_assert(st->loaded);
-  _lpcnet_compute_dense(&st->model.plc_dense1, dense_out, in);
-  compute_gruB(&st->model.plc_gru1, zeros, net->plc_gru1_state, dense_out);
-  compute_gruB(&st->model.plc_gru2, zeros, net->plc_gru2_state, net->plc_gru1_state);
-  _lpcnet_compute_dense(&st->model.plc_out, out, net->plc_gru2_state);
+  _lpcnet_compute_dense(&st->model.plc_dense1, dense_out, in, st->arch);
+  compute_gruB(&st->model.plc_gru1, zeros, net->plc_gru1_state, dense_out, st->arch);
+  compute_gruB(&st->model.plc_gru2, zeros, net->plc_gru2_state, net->plc_gru1_state, st->arch);
+  _lpcnet_compute_dense(&st->model.plc_out, out, net->plc_gru2_state, st->arch);
 }
 
 static int get_fec_or_pred(LPCNetPLCState *st, float *out) {
@@ -164,7 +166,7 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
       float plc_features[2*NB_BANDS+NB_FEATURES+1];
       for (i=0;i<FRAME_SIZE;i++) x[i] = 32768.f*st->pcm[st->analysis_pos+i];
       burg_cepstral_analysis(plc_features, x);
-      lpcnet_compute_single_frame_features_float(&st->enc, x, st->features);
+      lpcnet_compute_single_frame_features_float(&st->enc, x, st->features, st->arch);
       if ((st->analysis_gap && count > 0) || count > 1) {
         queue_features(st, st->features);
         OPUS_COPY(&plc_features[2*NB_BANDS], st->features, NB_FEATURES);

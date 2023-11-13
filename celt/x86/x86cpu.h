@@ -47,7 +47,7 @@
 # endif
 
 # if defined(OPUS_X86_MAY_HAVE_AVX2)
-#  define MAY_HAVE_AVX2(name) name ## _avx
+#  define MAY_HAVE_AVX2(name) name ## _avx2
 # else
 #  define MAY_HAVE_AVX2(name) name ## _c
 # endif
