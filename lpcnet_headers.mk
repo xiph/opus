@@ -12,7 +12,9 @@ dnn/vec.h \
 dnn/vec_avx.h \
 dnn/vec_neon.h \
 dnn/pitchdnn.h \
-dnn/pitchdnn_data.h
+dnn/pitchdnn_data.h \
+dnn/x86/dnn_x86.h \
+dnn/nnet_arch.h
 
 DRED_HEAD = \
 silk/dred_coding.h \

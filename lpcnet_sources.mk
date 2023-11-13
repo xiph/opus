@@ -7,6 +7,7 @@ dnn/lpcnet_enc.c \
 dnn/lpcnet_plc.c \
 dnn/lpcnet_tables.c \
 dnn/nnet.c \
+dnn/nnet_default.c \
 dnn/plc_data.c \
 dnn/parse_lpcnet_weights.c \
 dnn/pitchdnn.c \
@@ -21,3 +22,8 @@ dnn/dred_rdovae_stats_data.c \
 silk/dred_encoder.c \
 silk/dred_coding.c \
 silk/dred_decoder.c
+
+DNN_SOURCES_X86_RTCD = dnn/x86/x86_dnn_map.c
+DNN_SOURCES_AVX2 = dnn/x86/nnet_avx2.c
+DNN_SOURCES_SSE4_1 = dnn/x86/nnet_sse4_1.c
+DNN_SOURCES_SSE2 = dnn/x86/nnet_sse2.c

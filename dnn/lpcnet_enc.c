@@ -95,7 +95,7 @@ static void biquad(float *y, float mem[2], const float *x, const float *b, const
 
 #define celt_log10(x) (0.3010299957f*celt_log2(x))
 
-void compute_frame_features(LPCNetEncState *st, const float *in) {
+void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
   float aligned_in[FRAME_SIZE];
   int i;
   float Ly[NB_BANDS];
@@ -142,7 +142,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   OPUS_COPY(&x[0], st->pitch_mem, LPC_ORDER);
   OPUS_COPY(&x[LPC_ORDER], aligned_in, FRAME_SIZE);
   OPUS_COPY(st->pitch_mem, &aligned_in[FRAME_SIZE-LPC_ORDER], LPC_ORDER);
-  celt_fir(&x[LPC_ORDER], st->lpc, &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE, LPC_ORDER, st->arch);
+  celt_fir(&x[LPC_ORDER], st->lpc, &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE, LPC_ORDER, arch);
   for (i=0;i<FRAME_SIZE;i++) {
     st->exc_buf[PITCH_MAX_PERIOD+i] = st->lp_buf[PITCH_MAX_PERIOD+i] + .7f*st->pitch_filt;
     st->pitch_filt = st->lp_buf[PITCH_MAX_PERIOD+i];
@@ -152,7 +152,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
   {
     double ener1;
     float *buf = st->exc_buf;
-    celt_pitch_xcorr(&buf[PITCH_MAX_PERIOD], buf, xcorr, FRAME_SIZE, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD, st->arch);
+    celt_pitch_xcorr(&buf[PITCH_MAX_PERIOD], buf, xcorr, FRAME_SIZE, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD, arch);
     ener0 = celt_inner_prod_c(&buf[PITCH_MAX_PERIOD], &buf[PITCH_MAX_PERIOD], FRAME_SIZE);
     ener1 = celt_inner_prod_c(&buf[0], &buf[0], FRAME_SIZE-1);
     /*printf("%f\n", st->frame_weight[sub]);*/
@@ -165,7 +165,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in) {
     }
     /*printf("\n");*/
   }
-  st->dnn_pitch = compute_pitchdnn(&st->pitchdnn, st->if_features, st->xcorr_features);
+  st->dnn_pitch = compute_pitchdnn(&st->pitchdnn, st->if_features, st->xcorr_features, arch);
 }
 
 void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
@@ -196,26 +196,26 @@ void preemphasis(float *y, float *mem, const float *x, float coef, int N) {
   }
 }
 
-static int lpcnet_compute_single_frame_features_impl(LPCNetEncState *st, float *x, float features[NB_TOTAL_FEATURES]) {
+static int lpcnet_compute_single_frame_features_impl(LPCNetEncState *st, float *x, float features[NB_TOTAL_FEATURES], int arch) {
   preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
-  compute_frame_features(st, x);
+  compute_frame_features(st, x, arch);
   process_single_frame(st, NULL);
   OPUS_COPY(features, &st->features[0], NB_TOTAL_FEATURES);
   return 0;
 }
 
-int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *pcm, float features[NB_TOTAL_FEATURES]) {
+int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *pcm, float features[NB_TOTAL_FEATURES], int arch) {
   int i;
   float x[FRAME_SIZE];
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
-  lpcnet_compute_single_frame_features_impl(st, x, features);
+  lpcnet_compute_single_frame_features_impl(st, x, features, arch);
   return 0;
 }
 
-int lpcnet_compute_single_frame_features_float(LPCNetEncState *st, const float *pcm, float features[NB_TOTAL_FEATURES]) {
+int lpcnet_compute_single_frame_features_float(LPCNetEncState *st, const float *pcm, float features[NB_TOTAL_FEATURES], int arch) {
   int i;
   float x[FRAME_SIZE];
   for (i=0;i<FRAME_SIZE;i++) x[i] = pcm[i];
-  lpcnet_compute_single_frame_features_impl(st, x, features);
+  lpcnet_compute_single_frame_features_impl(st, x, features, arch);
   return 0;
 }

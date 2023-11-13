@@ -87,7 +87,7 @@ void dred_encoder_init(DREDEnc* enc, opus_int32 Fs, int channels)
     dred_encoder_reset(enc);
 }
 
-static void dred_process_frame(DREDEnc *enc)
+static void dred_process_frame(DREDEnc *enc, int arch)
 {
     float feature_buffer[2 * 36];
     float input_buffer[2*DRED_NUM_FEATURES] = {0};
@@ -97,15 +97,15 @@ static void dred_process_frame(DREDEnc *enc)
     OPUS_MOVE(enc->latents_buffer + DRED_LATENT_DIM, enc->latents_buffer, (DRED_MAX_FRAMES - 1) * DRED_LATENT_DIM);
 
     /* calculate LPCNet features */
-    lpcnet_compute_single_frame_features_float(&enc->lpcnet_enc_state, enc->input_buffer, feature_buffer);
-    lpcnet_compute_single_frame_features_float(&enc->lpcnet_enc_state, enc->input_buffer + DRED_FRAME_SIZE, feature_buffer + 36);
+    lpcnet_compute_single_frame_features_float(&enc->lpcnet_enc_state, enc->input_buffer, feature_buffer, arch);
+    lpcnet_compute_single_frame_features_float(&enc->lpcnet_enc_state, enc->input_buffer + DRED_FRAME_SIZE, feature_buffer + 36, arch);
 
     /* prepare input buffer (discard LPC coefficients) */
     OPUS_COPY(input_buffer, feature_buffer, DRED_NUM_FEATURES);
     OPUS_COPY(input_buffer + DRED_NUM_FEATURES, feature_buffer + 36, DRED_NUM_FEATURES);
 
     /* run RDOVAE encoder */
-    dred_rdovae_encode_dframe(&enc->rdovae_enc, &enc->model, enc->latents_buffer, enc->state_buffer, input_buffer);
+    dred_rdovae_encode_dframe(&enc->rdovae_enc, &enc->model, enc->latents_buffer, enc->state_buffer, input_buffer, arch);
     enc->latents_buffer_fill = IMIN(enc->latents_buffer_fill+1, DRED_NUM_REDUNDANCY_FRAMES);
 }
 
@@ -188,7 +188,7 @@ static void dred_convert_to_16k(DREDEnc *enc, const float *in, int in_len, float
     }
 }
 
-void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int extra_delay)
+void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int extra_delay, int arch)
 {
     int curr_offset16k;
     int frame_size16k = frame_size * 16000 / enc->Fs;
@@ -206,7 +206,7 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int ex
         if (enc->input_buffer_fill >= 2*DRED_FRAME_SIZE)
         {
             curr_offset16k += 320;
-            dred_process_frame(enc);
+            dred_process_frame(enc, arch);
             enc->input_buffer_fill -= 2*DRED_FRAME_SIZE;
             OPUS_MOVE(&enc->input_buffer[0], &enc->input_buffer[2*DRED_FRAME_SIZE], enc->input_buffer_fill);
             /* 15 ms (6*2.5 ms) is the ideal offset for DRED because it corresponds to our vocoder look-ahead. */

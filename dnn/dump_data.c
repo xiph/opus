@@ -42,6 +42,7 @@
 #include "lpcnet.h"
 #include "lpcnet_private.h"
 #include "os_support.h"
+#include "cpu_support.h"
 
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
@@ -135,7 +136,9 @@ int main(int argc, char **argv) {
   FILE *fnoise = NULL;
   float noise_gain = 0;
   long noise_size=0;
+  int arch;
   srand(getpid());
+  arch = opus_select_arch();
   st = lpcnet_encoder_create();
   argv0=argv[0];
   if (argc == 5 && strcmp(argv[1], "-btrain")==0) {
@@ -244,7 +247,7 @@ int main(int argc, char **argv) {
     for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
     /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
     for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
-    compute_frame_features(st, x);
+    compute_frame_features(st, x, arch);
 
     if (fpcm) {
         compute_noise(noisebuf, noise_std);

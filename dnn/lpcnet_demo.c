@@ -37,6 +37,7 @@
 #include "freq.h"
 #include "os_support.h"
 #include "fargan.h"
+#include "cpu_support.h"
 
 #ifdef USE_WEIGHTS_FILE
 # if __unix__
@@ -99,12 +100,14 @@ void usage(void) {
 
 int main(int argc, char **argv) {
     int mode=0;
+    int arch;
     FILE *fin, *fout;
 #ifdef USE_WEIGHTS_FILE
     int len;
     unsigned char *data;
     const char *filename = "weights_blob.bin";
 #endif
+    arch = opus_select_arch();
     if (argc < 4) usage();
     if (strcmp(argv[1], "-features") == 0) mode=MODE_FEATURES;
     else if (strcmp(argv[1], "-fargan-synthesis") == 0) mode=MODE_FARGAN_SYNTHESIS;
@@ -137,7 +140,7 @@ int main(int argc, char **argv) {
             size_t ret;
             ret = fread(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fin);
             if (feof(fin) || ret != LPCNET_FRAME_SIZE) break;
-            lpcnet_compute_single_frame_features(net, pcm, features);
+            lpcnet_compute_single_frame_features(net, pcm, features, arch);
             fwrite(features, sizeof(float), NB_TOTAL_FEATURES, fout);
         }
         lpcnet_encoder_destroy(net);

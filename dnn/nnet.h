@@ -126,18 +126,18 @@ typedef struct {
   int dim;
 } EmbeddingLayer;
 
-void compute_generic_dense(const LinearLayer *layer, float *output, const float *input, int activation);
-void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in);
-void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int activation);
-void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int dilation, int activation);
-void compute_glu(const LinearLayer *layer, float *output, const float *input);
-void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation);
+void compute_generic_dense(const LinearLayer *layer, float *output, const float *input, int activation, int arch);
+void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in, int arch);
+void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int activation, int arch);
+void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int dilation, int activation, int arch);
+void compute_glu(const LinearLayer *layer, float *output, const float *input, int arch);
+void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation, int arch);
 
 void compute_activation(float *output, const float *input, int N, int activation);
 
-void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input);
+void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input, int arch);
 
-void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input);
+void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input, int arch);
 
 
 
@@ -187,6 +187,27 @@ int gru_init(GRULayer *layer, const WeightArray *arrays,
   int reset_after);
 
 void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation);
+
+
+
+void compute_linear_c(const LinearLayer *linear, float *out, const float *in);
+
+#if defined(OPUS_X86_MAY_HAVE_SSE2)
+#include "x86/dnn_x86.h"
+#endif
+
+#ifndef OVERRIDE_COMPUTE_LINEAR
+#define compute_linear(linear, out, in, arch) ((void)(arch),compute_linear_c(linear, out, in))
+#endif
+
+#if defined(__x86_64__) && !defined(OPUS_X86_MAY_HAVE_SSE4_1) && !defined(OPUS_X86_MAY_HAVE_AVX2)
+#if defined(_MSC_VER)
+#pragma message ("Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 to get better performance")
+#else
+#warning "Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 using -march= to get better performance"
+#endif
+#endif
+
 
 
 #endif /* NNET_H_ */

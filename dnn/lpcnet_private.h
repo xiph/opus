@@ -24,7 +24,6 @@
 
 struct LPCNetEncState{
   PitchDNNState pitchdnn;
-  int arch;
   float analysis_mem[OVERLAP_SIZE];
   float mem_preemph;
   kiss_fft_cpx prev_if[PITCH_IF_MAX_FREQ];
@@ -67,7 +66,7 @@ struct LPCNetPLCState {
 
 void preemphasis(float *y, float *mem, const float *x, float coef, int N);
 
-void compute_frame_features(LPCNetEncState *st, const float *in);
+void compute_frame_features(LPCNetEncState *st, const float *in, int arch);
 
 void lpcnet_reset_signal(LPCNetState *lpcnet);
 void run_frame_network(LPCNetState *lpcnet, float *gru_a_condition, float *gru_b_condition, float *lpc, const float *features);
@@ -79,7 +78,6 @@ void lpcnet_synthesize_tail_impl(LPCNetState *lpcnet, opus_int16 *output, int N,
 void lpcnet_synthesize_impl(LPCNetState *lpcnet, const float *features, opus_int16 *output, int N, int preload);
 void lpcnet_synthesize_blend_impl(LPCNetState *lpcnet, const opus_int16 *pcm_in, opus_int16 *output, int N);
 void process_single_frame(LPCNetEncState *st, FILE *ffeat);
-int lpcnet_compute_single_frame_features(LPCNetEncState *st, const opus_int16 *pcm, float features[NB_TOTAL_FEATURES]);
 
 void process_single_frame(LPCNetEncState *st, FILE *ffeat);
 

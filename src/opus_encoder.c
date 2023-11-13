@@ -1715,7 +1715,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifdef ENABLE_DRED
     if ( st->dred_duration > 0 && st->dred_encoder.loaded ) {
         /* DRED Encoder */
-        dred_compute_latents( &st->dred_encoder, &pcm_buf[total_buffer*st->channels], frame_size, total_buffer );
+        dred_compute_latents( &st->dred_encoder, &pcm_buf[total_buffer*st->channels], frame_size, total_buffer, st->arch );
     } else {
         st->dred_encoder.latents_buffer_fill = 0;
     }

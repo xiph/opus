@@ -1,5 +1,5 @@
-/* Copyright (c) 2022 Amazon
-   Written by Jan Buethe */
+/* Copyright (c) 2018-2019 Mozilla
+                 2023 Amazon */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -15,8 +15,8 @@
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
-   OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
@@ -25,28 +25,30 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef DRED_RDOVAE_ENC_H
-#define DRED_RDOVAE_ENC_H
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-#include "dred_rdovae.h"
+#include "x86/x86cpu.h"
+#include "nnet.h"
 
-#include "dred_rdovae_enc_data.h"
+#if defined(OPUS_HAVE_RTCD)
 
-struct RDOVAEEncStruct {
-    int initialized;
-    float gru1_state[ENC_GRU1_STATE_SIZE];
-    float gru2_state[ENC_GRU2_STATE_SIZE];
-    float gru3_state[ENC_GRU3_STATE_SIZE];
-    float gru4_state[ENC_GRU4_STATE_SIZE];
-    float gru5_state[ENC_GRU5_STATE_SIZE];
-    float conv1_state[ENC_CONV1_STATE_SIZE];
-    float conv2_state[2*ENC_CONV2_STATE_SIZE];
-    float conv3_state[2*ENC_CONV3_STATE_SIZE];
-    float conv4_state[2*ENC_CONV4_STATE_SIZE];
-    float conv5_state[2*ENC_CONV5_STATE_SIZE];
+#if (defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(OPUS_X86_PRESUME_AVX2))
+
+void (*const DNN_COMPUTE_LINEAR_IMPL[OPUS_ARCHMASK + 1])(
+         const LinearLayer *linear,
+         float *out,
+         const float *in
+) = {
+  compute_linear_c,                /* non-sse */
+  compute_linear_c,
+  MAY_HAVE_SSE2(compute_linear),
+  MAY_HAVE_SSE4_1(compute_linear), /* sse4.1  */
+  MAY_HAVE_AVX2(compute_linear)  /* avx  */
 };
 
-void dred_rdovae_encode_dframe(RDOVAEEncState *enc_state, const RDOVAEEnc *model, float *latents, float *initial_state, const float *input, int arch);
+#endif
 
 
 #endif
