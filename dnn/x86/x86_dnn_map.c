@@ -48,6 +48,19 @@ void (*const DNN_COMPUTE_LINEAR_IMPL[OPUS_ARCHMASK + 1])(
   MAY_HAVE_AVX2(compute_linear)  /* avx  */
 };
 
+void (*const DNN_COMPUTE_ACTIVATION_IMPL[OPUS_ARCHMASK + 1])(
+         float *output,
+         const float *input,
+         int N,
+         int activation
+) = {
+  compute_activation_c,                /* non-sse */
+  compute_activation_c,
+  MAY_HAVE_SSE2(compute_activation),
+  MAY_HAVE_SSE4_1(compute_activation), /* sse4.1  */
+  MAY_HAVE_AVX2(compute_activation)  /* avx  */
+};
+
 #endif
 
 

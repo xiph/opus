@@ -38,6 +38,61 @@
 
 #define RTCD_SUF(name) CAT_SUFFIX(name, RTCD_ARCH)
 
+
+#define MAX_ACTIVATIONS (4096)
+
+static OPUS_INLINE void vec_swish(float *y, const float *x, int N)
+{
+   int i;
+   float tmp[MAX_ACTIVATIONS];
+   celt_assert(N <= MAX_ACTIVATIONS);
+   vec_sigmoid(tmp, x, N);
+   for (i=0;i<N;i++)
+      y[i] = x[i]*tmp[i];
+}
+
+static OPUS_INLINE float relu(float x)
+{
+   return x < 0 ? 0 : x;
+}
+
+void RTCD_SUF(compute_activation_)(float *output, const float *input, int N, int activation)
+{
+   int i;
+   if (activation == ACTIVATION_SIGMOID) {
+      vec_sigmoid(output, input, N);
+   } else if (activation == ACTIVATION_TANH) {
+      vec_tanh(output, input, N);
+   } else if (activation == ACTIVATION_SWISH) {
+      vec_swish(output, input, N);
+   } else if (activation == ACTIVATION_RELU) {
+      for (i=0;i<N;i++)
+         output[i] = relu(input[i]);
+   } else if (activation == ACTIVATION_SOFTMAX) {
+#ifdef SOFTMAX_HACK
+      OPUS_COPY(output, input, N);
+      /*for (i=0;i<N;i++)
+         output[i] = input[i];*/
+#else
+      float sum = 0;
+      softmax(output, input, N);
+      for (i=0;i<N;i++) {
+         sum += output[i];
+      }
+      sum = 1.f/(sum+1e-30);
+      for (i=0;i<N;i++)
+         output[i] = sum*output[i];
+#endif
+   } else {
+      celt_assert(activation == ACTIVATION_LINEAR);
+      if (input != output) {
+         for (i=0;i<N;i++)
+            output[i] = input[i];
+      }
+   }
+}
+
+
 void RTCD_SUF(compute_linear_) (const LinearLayer *linear, float *out, const float *in)
 {
    int i, M, N;

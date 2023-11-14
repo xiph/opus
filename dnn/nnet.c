@@ -52,27 +52,11 @@
 
 #define SOFTMAX_HACK
 
-#define MAX_ACTIVATIONS (4096)
-
-static OPUS_INLINE void vec_swish(float *y, const float *x, int N)
-{
-   int i;
-   float tmp[MAX_ACTIVATIONS];
-   celt_assert(N <= MAX_ACTIVATIONS);
-   vec_sigmoid(tmp, x, N);
-   for (i=0;i<N;i++)
-      y[i] = x[i]*tmp[i];
-}
-
-static OPUS_INLINE float relu(float x)
-{
-   return x < 0 ? 0 : x;
-}
 
 void compute_generic_dense(const LinearLayer *layer, float *output, const float *input, int activation, int arch)
 {
    compute_linear(layer, output, input, arch);
-   compute_activation(output, output, layer->nb_outputs, activation);
+   compute_activation(output, output, layer->nb_outputs, activation, arch);
 }
 
 #define MAX_RNN_NEURONS_ALL IMAX(IMAX(FARGAN_MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), DRED_MAX_RNN_NEURONS)
@@ -99,10 +83,10 @@ void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *re
   compute_linear(recurrent_weights, recur, state, arch);
   for (i=0;i<2*N;i++)
      zrh[i] += recur[i];
-  compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID);
+  compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID, arch);
   for (i=0;i<N;i++)
      h[i] += recur[2*N+i]*r[i];
-  compute_activation(h, h, N, ACTIVATION_TANH);
+  compute_activation(h, h, N, ACTIVATION_TANH, arch);
   for (i=0;i<N;i++)
      h[i] = z[i]*state[i] + (1-z[i])*h[i];
   for (i=0;i<N;i++)
@@ -115,48 +99,12 @@ void compute_glu(const LinearLayer *layer, float *output, const float *input, in
    float act2[MAX_INPUTS];
    celt_assert(layer->nb_inputs == layer->nb_outputs);
    compute_linear(layer, act2, input, arch);
-   compute_activation(act2, act2, layer->nb_outputs, ACTIVATION_SIGMOID);
+   compute_activation(act2, act2, layer->nb_outputs, ACTIVATION_SIGMOID, arch);
    if (input == output) {
      /* Give a vectorization hint to the compiler for the in-place case. */
      for (i=0;i<layer->nb_outputs;i++) output[i] = output[i]*act2[i];
    } else {
      for (i=0;i<layer->nb_outputs;i++) output[i] = input[i]*act2[i];
-   }
-}
-
-void compute_activation(float *output, const float *input, int N, int activation)
-{
-   int i;
-   if (activation == ACTIVATION_SIGMOID) {
-      vec_sigmoid(output, input, N);
-   } else if (activation == ACTIVATION_TANH) {
-      vec_tanh(output, input, N);
-   } else if (activation == ACTIVATION_SWISH) {
-      vec_swish(output, input, N);
-   } else if (activation == ACTIVATION_RELU) {
-      for (i=0;i<N;i++)
-         output[i] = relu(input[i]);
-   } else if (activation == ACTIVATION_SOFTMAX) {
-#ifdef SOFTMAX_HACK
-      OPUS_COPY(output, input, N);
-      /*for (i=0;i<N;i++)
-         output[i] = input[i];*/
-#else
-      float sum = 0;
-      softmax(output, input, N);
-      for (i=0;i<N;i++) {
-         sum += output[i];
-      }
-      sum = 1.f/(sum+1e-30);
-      for (i=0;i<N;i++)
-         output[i] = sum*output[i];
-#endif
-   } else {
-      celt_assert(activation == ACTIVATION_LINEAR);
-      if (input != output) {
-         for (i=0;i<N;i++)
-            output[i] = input[i];
-      }
    }
 }
 
@@ -174,7 +122,7 @@ void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *
    matrix.nb_outputs = layer->nb_neurons;
    matrix.scale = NULL;
    compute_linear(&matrix, output, input, arch);
-   compute_activation(output, output, layer->nb_neurons, layer->activation);
+   compute_activation(output, output, layer->nb_neurons, layer->activation, arch);
 }
 
 #ifdef USE_SU_BIAS
@@ -242,7 +190,7 @@ void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem,
    OPUS_COPY(tmp, mem, layer->nb_inputs-input_size);
    OPUS_COPY(&tmp[layer->nb_inputs-input_size], input, input_size);
    compute_linear(layer, output, tmp, arch);
-   compute_activation(output, output, layer->nb_outputs, activation);
+   compute_activation(output, output, layer->nb_outputs, activation, arch);
    OPUS_COPY(mem, &tmp[input_size], layer->nb_inputs-input_size);
 }
 
@@ -257,7 +205,7 @@ void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, fl
    else for (i=0;i<ksize-1;i++) OPUS_COPY(&tmp[i*input_size], &mem[i*input_size*dilation], input_size);
    OPUS_COPY(&tmp[layer->nb_inputs-input_size], input, input_size);
    compute_linear(layer, output, tmp, arch);
-   compute_activation(output, output, layer->nb_outputs, activation);
+   compute_activation(output, output, layer->nb_outputs, activation, arch);
    if (dilation==1) OPUS_COPY(mem, &tmp[input_size], layer->nb_inputs-input_size);
    else {
      OPUS_COPY(mem, &mem[input_size], input_size*dilation*(ksize-1)-input_size);
@@ -325,7 +273,7 @@ static void conv2d_3x3_float(float *out, const float *weights, int in_channels, 
 
 #define MAX_CONV2D_INPUTS 8192
 
-void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation)
+void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation, int arch)
 {
    int i;
    const float *bias;
@@ -349,6 +297,6 @@ void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float
      }
    }
    for (i=0;i<conv->out_channels;i++) {
-     compute_activation(&out[i*hstride], &out[i*hstride], height, activation);
+     compute_activation(&out[i*hstride], &out[i*hstride], height, activation, arch);
    }
 }

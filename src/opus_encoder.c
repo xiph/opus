@@ -2272,7 +2272,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            buf[0] = 'D';
            buf[1] = DRED_EXPERIMENTAL_VERSION;
 #endif
-           dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+DRED_EXPERIMENTAL_BYTES, dred_chunks, dred_bytes_left-DRED_EXPERIMENTAL_BYTES);
+           dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+DRED_EXPERIMENTAL_BYTES, dred_chunks, dred_bytes_left-DRED_EXPERIMENTAL_BYTES, st->arch);
            if (dred_bytes > 0) {
               dred_bytes += DRED_EXPERIMENTAL_BYTES;
               celt_assert(dred_bytes <= dred_bytes_left);

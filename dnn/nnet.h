@@ -133,7 +133,6 @@ void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, fl
 void compute_glu(const LinearLayer *layer, float *output, const float *input, int arch);
 void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation, int arch);
 
-void compute_activation(float *output, const float *input, int N, int activation);
 
 void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input, int arch);
 
@@ -186,11 +185,12 @@ int gru_init(GRULayer *layer, const WeightArray *arrays,
   int activation,
   int reset_after);
 
-void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation);
+void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation, int arch);
 
 
 
 void compute_linear_c(const LinearLayer *linear, float *out, const float *in);
+void compute_activation_c(float *output, const float *input, int N, int activation);
 
 #if defined(OPUS_X86_MAY_HAVE_SSE2)
 #include "x86/dnn_x86.h"
@@ -199,6 +199,11 @@ void compute_linear_c(const LinearLayer *linear, float *out, const float *in);
 #ifndef OVERRIDE_COMPUTE_LINEAR
 #define compute_linear(linear, out, in, arch) ((void)(arch),compute_linear_c(linear, out, in))
 #endif
+
+#ifndef OVERRIDE_COMPUTE_ACTIVATION
+#define compute_activation(output, input, N, activation, arch) ((void)(arch),compute_activation_c(output, input, N, activation))
+#endif
+
 
 #if !defined(OPUS_X86_MAY_HAVE_SSE4_1) && !defined(OPUS_X86_MAY_HAVE_AVX2)
 #if defined(_MSC_VER)
