@@ -125,7 +125,7 @@ class GLU(nn.Module):
         return out
 
 class FWConv(nn.Module):
-    def __init__(self, in_size, out_size, kernel_size=3):
+    def __init__(self, in_size, out_size, kernel_size=2):
         super(FWConv, self).__init__()
 
         torch.manual_seed(5)
@@ -163,20 +163,22 @@ class FARGANCond(nn.Module):
         self.pembed = nn.Embedding(224, pembed_dims)
         self.fdense1 = nn.Linear(self.feature_dim + pembed_dims, 64, bias=False)
         self.fconv1 = nn.Conv1d(64, 128, kernel_size=3, padding='valid', bias=False)
-        self.fconv2 = nn.Conv1d(128, 80*4, kernel_size=3, padding='valid', bias=False)
+        self.fdense2 = nn.Linear(128, 80*4, bias=False)
 
         self.apply(init_weights)
         nb_params = sum(p.numel() for p in self.parameters())
         print(f"cond model: {nb_params} weights")
 
     def forward(self, features, period):
+        features = features[:,2:,:]
+        period = period[:,2:]
         p = self.pembed(period-32)
         features = torch.cat((features, p), -1)
         tmp = torch.tanh(self.fdense1(features))
         tmp = tmp.permute(0, 2, 1)
         tmp = torch.tanh(self.fconv1(tmp))
-        tmp = torch.tanh(self.fconv2(tmp))
         tmp = tmp.permute(0, 2, 1)
+        tmp = torch.tanh(self.fdense2(tmp))
         #tmp = torch.tanh(self.fdense2(tmp))
         return tmp
 
@@ -190,21 +192,20 @@ class FARGANSub(nn.Module):
         self.cond_gain_dense = nn.Linear(80, 1)
 
         #self.sig_dense1 = nn.Linear(4*self.subframe_size+self.passthrough_size+self.cond_size, self.cond_size, bias=False)
-        self.fwc0 = FWConv(2*self.subframe_size+80+4, self.cond_size)
-        self.gru1 = nn.GRUCell(self.cond_size+2*self.subframe_size, self.cond_size, bias=False)
-        self.gru2 = nn.GRUCell(self.cond_size+2*self.subframe_size, 128, bias=False)
+        self.fwc0 = FWConv(2*self.subframe_size+80+4, 192)
+        self.gru1 = nn.GRUCell(192+2*self.subframe_size, 160, bias=False)
+        self.gru2 = nn.GRUCell(160+2*self.subframe_size, 128, bias=False)
         self.gru3 = nn.GRUCell(128+2*self.subframe_size, 128, bias=False)
 
-        self.dense1_glu = GLU(self.cond_size)
-        self.gru1_glu = GLU(self.cond_size)
+        self.gru1_glu = GLU(160)
         self.gru2_glu = GLU(128)
         self.gru3_glu = GLU(128)
-        self.skip_glu = GLU(self.cond_size)
+        self.skip_glu = GLU(128)
         #self.ptaps_dense = nn.Linear(4*self.cond_size, 5)
 
-        self.skip_dense = nn.Linear(2*128+2*self.cond_size+2*self.subframe_size, self.cond_size, bias=False)
-        self.sig_dense_out = nn.Linear(self.cond_size, self.subframe_size, bias=False)
-        self.gain_dense_out = nn.Linear(self.cond_size, 4)
+        self.skip_dense = nn.Linear(192+160+2*128+2*self.subframe_size, 128, bias=False)
+        self.sig_dense_out = nn.Linear(128, self.subframe_size, bias=False)
+        self.gain_dense_out = nn.Linear(192, 4)
 
 
         self.apply(init_weights)
@@ -291,10 +292,10 @@ class FARGAN(nn.Module):
         nb_pre_frames = pre.size(1)//self.frame_size if pre is not None else 0
 
         states = (
-            torch.zeros(batch_size, self.cond_size, device=device),
+            torch.zeros(batch_size, 160, device=device),
             torch.zeros(batch_size, 128, device=device),
             torch.zeros(batch_size, 128, device=device),
-            torch.zeros(batch_size, (2*self.subframe_size+80+4)*2, device=device)
+            torch.zeros(batch_size, (2*self.subframe_size+80+4)*1, device=device)
         )
 
         sig = torch.zeros((batch_size, 0), device=device)
