@@ -45,17 +45,17 @@ static void compute_fargan_cond(FARGANState *st, float *cond, const float *featu
   FARGAN *model;
   float dense_in[NB_FEATURES+COND_NET_PEMBED_OUT_SIZE];
   float conv1_in[COND_NET_FCONV1_IN_SIZE];
-  float conv2_in[COND_NET_FCONV2_IN_SIZE];
+  float fdense2_in[COND_NET_FCONV1_OUT_SIZE];
   model = &st->model;
   celt_assert(FARGAN_FEATURES+COND_NET_PEMBED_OUT_SIZE == model->cond_net_fdense1.nb_inputs);
   celt_assert(COND_NET_FCONV1_IN_SIZE == model->cond_net_fdense1.nb_outputs);
-  celt_assert(COND_NET_FCONV2_IN_SIZE == model->cond_net_fconv1.nb_outputs);
+  celt_assert(COND_NET_FCONV1_OUT_SIZE == model->cond_net_fconv1.nb_outputs);
   OPUS_COPY(&dense_in[NB_FEATURES], &model->cond_net_pembed.float_weights[IMAX(0,IMIN(period-32, 224))*COND_NET_PEMBED_OUT_SIZE], COND_NET_PEMBED_OUT_SIZE);
   OPUS_COPY(dense_in, features, NB_FEATURES);
 
   compute_generic_dense(&model->cond_net_fdense1, conv1_in, dense_in, ACTIVATION_TANH, st->arch);
-  compute_generic_conv1d(&model->cond_net_fconv1, conv2_in, st->cond_conv1_state, conv1_in, COND_NET_FCONV1_IN_SIZE, ACTIVATION_TANH, st->arch);
-  compute_generic_conv1d(&model->cond_net_fconv2, cond, st->cond_conv2_state, conv2_in, COND_NET_FCONV2_IN_SIZE, ACTIVATION_TANH, st->arch);
+  compute_generic_conv1d(&model->cond_net_fconv1, fdense2_in, st->cond_conv1_state, conv1_in, COND_NET_FCONV1_IN_SIZE, ACTIVATION_TANH, st->arch);
+  compute_generic_dense(&model->cond_net_fdense2, cond, fdense2_in, ACTIVATION_TANH, st->arch);
 }
 
 static void fargan_deemphasis(float *pcm, float *deemph_mem) {
@@ -142,7 +142,7 @@ static void run_fargan_subframe(FARGANState *st, float *pcm, const float *cond, 
 void fargan_cont(FARGANState *st, const float *pcm0, const float *features0)
 {
   int i;
-  float cond[COND_NET_FCONV2_OUT_SIZE];
+  float cond[COND_NET_FDENSE2_OUT_SIZE];
   float x0[FARGAN_CONT_SAMPLES];
   float dummy[FARGAN_SUBFRAME_SIZE];
   int period=0;
@@ -198,7 +198,7 @@ int fargan_load_model(FARGANState *st, const unsigned char *data, int len) {
 static void fargan_synthesize_impl(FARGANState *st, float *pcm, const float *features)
 {
   int subframe;
-  float cond[COND_NET_FCONV2_OUT_SIZE];
+  float cond[COND_NET_FDENSE2_OUT_SIZE];
   int period;
   celt_assert(st->cont_initialized);
 
