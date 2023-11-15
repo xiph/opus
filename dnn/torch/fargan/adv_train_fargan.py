@@ -160,6 +160,10 @@ if __name__ == '__main__':
                 if epoch == 1 and i == 400:
                     for param in model.parameters():
                         param.requires_grad = True
+                    for param in model.cond_net.parameters():
+                        param.requires_grad = False
+                    for param in model.sig_net.cond_gain_dense.parameters():
+                        param.requires_grad = False
 
                 optimizer.zero_grad()
                 features = features.to(device)
@@ -226,7 +230,7 @@ if __name__ == '__main__':
 
                 feat_loss = args.fmap_weight * fmap_loss(scores_real, scores_gen)
 
-                reg_weight = args.reg_weight + 15./(1 + (batch_count/7600.))
+                reg_weight = args.reg_weight# + 15./(1 + (batch_count/7600.))
                 gen_loss = reg_weight * reg_loss +  feat_loss + loss_gen
 
                 model.zero_grad()

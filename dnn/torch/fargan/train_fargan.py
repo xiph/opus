@@ -52,7 +52,7 @@ epochs = args.epochs
 sequence_length = args.sequence_length
 lr_decay = args.lr_decay
 
-adam_betas = [0.8, 0.99]
+adam_betas = [0.8, 0.95]
 adam_eps = 1e-8
 features_file = args.features
 signal_file = args.signal
