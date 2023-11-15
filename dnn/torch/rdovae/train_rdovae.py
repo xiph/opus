@@ -84,7 +84,7 @@ sequence_length = args.sequence_length
 lr_decay_factor = args.lr_decay_factor
 split_mode = args.split_mode
 # not exposed
-adam_betas = [0.9, 0.99]
+adam_betas = [0.8, 0.95]
 adam_eps = 1e-8
 
 checkpoint['batch_size'] = batch_size
@@ -239,6 +239,7 @@ if __name__ == '__main__':
                 optimizer.step()
 
                 model.clip_weights()
+                model.sparsify()
 
                 scheduler.step()
 

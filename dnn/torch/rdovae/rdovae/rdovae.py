@@ -34,6 +34,12 @@ import math as m
 import torch
 from torch import nn
 import torch.nn.functional as F
+import sys
+import os
+source_dir = os.path.split(os.path.abspath(__file__))[0]
+sys.path.append(os.path.join(source_dir, "../../lpcnet/"))
+from utils.sparsification import GRUSparsifier
+from torch.nn.utils import weight_norm
 
 # Quantization and rate related utily functions
 
@@ -227,6 +233,32 @@ def n(x):
 
 # RDOVAE module and submodules
 
+sparsify_start     = 12000
+sparsify_stop      = 24000
+sparsify_interval  = 100
+sparsify_exponent  = 3
+#sparsify_start     = 0
+#sparsify_stop      = 0
+
+sparse_params1 = {
+#                'W_hr' : (1.0, [8, 4], True),
+#                'W_hz' : (1.0, [8, 4], True),
+#                'W_hn' : (1.0, [8, 4], True),
+                'W_ir' : (0.6, [8, 4], False),
+                'W_iz' : (0.4, [8, 4], False),
+                'W_in' : (0.8, [8, 4], False)
+                }
+
+sparse_params2 = {
+#                'W_hr' : (1.0, [8, 4], True),
+#                'W_hz' : (1.0, [8, 4], True),
+#                'W_hn' : (1.0, [8, 4], True),
+                'W_ir' : (0.3, [8, 4], False),
+                'W_iz' : (0.2, [8, 4], False),
+                'W_in' : (0.4, [8, 4], False)
+                }
+
+
 class MyConv(nn.Module):
     def __init__(self, input_dim, output_dim, dilation=1):
         super(MyConv, self).__init__()
@@ -238,6 +270,29 @@ class MyConv(nn.Module):
         device = x.device
         conv_in = torch.cat([torch.zeros_like(x[:,0:self.dilation,:], device=device), x], -2).permute(0, 2, 1)
         return torch.tanh(self.conv(conv_in)).permute(0, 2, 1)
+
+class GLU(nn.Module):
+    def __init__(self, feat_size):
+        super(GLU, self).__init__()
+
+        torch.manual_seed(5)
+
+        self.gate = weight_norm(nn.Linear(feat_size, feat_size, bias=False))
+
+        self.init_weights()
+
+    def init_weights(self):
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv1d) or isinstance(m, nn.ConvTranspose1d)\
+            or isinstance(m, nn.Linear) or isinstance(m, nn.Embedding):
+                nn.init.orthogonal_(m.weight.data)
+
+    def forward(self, x):
+
+        out = x * torch.sigmoid(self.gate(x))
+
+        return out
 
 class CoreEncoder(nn.Module):
     STATE_HIDDEN = 128
@@ -355,7 +410,11 @@ class CoreDecoder(nn.Module):
         self.gru5 = nn.GRU(608, 96, batch_first=True)
         self.conv5 = MyConv(704, 32)
         self.output  = nn.Linear(736, self.FRAMES_PER_STEP * self.output_dim)
-
+        self.glu1 = GLU(96)
+        self.glu2 = GLU(96)
+        self.glu3 = GLU(96)
+        self.glu4 = GLU(96)
+        self.glu5 = GLU(96)
         self.hidden_init = nn.Linear(self.state_size, 128)
         self.gru_init = nn.Linear(128, 480)
 
@@ -363,6 +422,16 @@ class CoreDecoder(nn.Module):
         print(f"decoder: {nb_params} weights")
         # initialize weights
         self.apply(init_weights)
+        self.sparsifier = []
+        self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+
+    def sparsify(self):
+        for sparsifier in self.sparsifier:
+            sparsifier.step()
 
     def forward(self, z, initial_state):
 
@@ -377,15 +446,15 @@ class CoreDecoder(nn.Module):
         # run decoding layer stack
         x = n(torch.tanh(self.dense_1(z)))
 
-        x = torch.cat([x, n(self.gru1(x, h1_state)[0])], -1)
+        x = torch.cat([x, n(self.glu1(n(self.gru1(x, h1_state)[0])))], -1)
         x = torch.cat([x, n(self.conv1(x))], -1)
-        x = torch.cat([x, n(self.gru2(x, h2_state)[0])], -1)
+        x = torch.cat([x, n(self.glu2(n(self.gru2(x, h2_state)[0])))], -1)
         x = torch.cat([x, n(self.conv2(x))], -1)
-        x = torch.cat([x, n(self.gru3(x, h3_state)[0])], -1)
+        x = torch.cat([x, n(self.glu3(n(self.gru3(x, h3_state)[0])))], -1)
         x = torch.cat([x, n(self.conv3(x))], -1)
-        x = torch.cat([x, n(self.gru4(x, h4_state)[0])], -1)
+        x = torch.cat([x, n(self.glu4(n(self.gru4(x, h4_state)[0])))], -1)
         x = torch.cat([x, n(self.conv4(x))], -1)
-        x = torch.cat([x, n(self.gru5(x, h5_state)[0])], -1)
+        x = torch.cat([x, n(self.glu5(n(self.gru5(x, h5_state)[0])))], -1)
         x = torch.cat([x, n(self.conv5(x))], -1)
 
         # output layer and reshaping
@@ -489,6 +558,10 @@ class RDOVAE(nn.Module):
     def clip_weights(self):
         if not type(self.weight_clip_fn) == type(None):
             self.apply(self.weight_clip_fn)
+
+    def sparsify(self):
+        #self.core_encoder.module.sparsify()
+        self.core_decoder.module.sparsify()
 
     def get_decoder_chunks(self, z_frames, mode='split', chunks_per_offset = 4):
 

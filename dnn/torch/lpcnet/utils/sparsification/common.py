@@ -29,7 +29,7 @@
 
 import torch
 
-def sparsify_matrix(matrix : torch.tensor, density : float, block_size : list[int, int], keep_diagonal : bool=False, return_mask : bool=False):
+def sparsify_matrix(matrix : torch.tensor, density : float, block_size, keep_diagonal : bool=False, return_mask : bool=False):
     """ sparsifies matrix with specified block size
 
         Parameters:
