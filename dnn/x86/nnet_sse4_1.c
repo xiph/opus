@@ -29,6 +29,9 @@
 #include "config.h"
 #endif
 
+#ifndef __SSE4_1__
+#error nnet_sse4_1.c is being compiled without SSE4.1 enabled
+#endif
 
 #define RTCD_ARCH sse4_1
 

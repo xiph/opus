@@ -182,7 +182,6 @@ void fargan_init(FARGANState *st)
   ret = 0;
 #endif
   celt_assert(ret == 0);
-  /* FIXME: perform arch detection. */
 }
 
 int fargan_load_model(FARGANState *st, const unsigned char *data, int len) {

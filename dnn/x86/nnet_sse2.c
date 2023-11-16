@@ -29,6 +29,9 @@
 #include "config.h"
 #endif
 
+#ifndef __SSE2__
+#error nnet_sse2.c is being compiled without SSE2 enabled
+#endif
 
 #define RTCD_ARCH sse2
 

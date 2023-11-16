@@ -29,6 +29,9 @@
 #include "config.h"
 #endif
 
+#ifndef __AVX2__
+#error nnet_avx2.c is being compiled without AVX2 enabled
+#endif
 
 #define RTCD_ARCH avx2
 

@@ -66,7 +66,6 @@ void pitchdnn_init(PitchDNNState *st)
   ret = 0;
 #endif
   celt_assert(ret == 0);
-  /* FIXME: perform arch detection. */
 }
 
 int pitchdnn_load_model(PitchDNNState *st, const unsigned char *data, int len) {
