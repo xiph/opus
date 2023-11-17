@@ -127,5 +127,93 @@ void RTCD_SUF(compute_linear_) (const LinearLayer *linear, float *out, const flo
    }
 }
 
+/* Computes non-padded convolution for input [ ksize1 x in_channels x (len2+ksize2) ],
+   kernel [ out_channels x in_channels x ksize1 x ksize2 ],
+   storing the output as [ out_channels x len2 ].
+   We assume that the output dimension along the ksize1 axis is 1,
+   i.e. processing one frame at a time. */
+static void conv2d_float(float *out, const float *weights, int in_channels, int out_channels, int ktime, int kheight, const float *in, int height, int hstride)
+{
+   int i;
+   int in_stride;
+   in_stride = height+kheight-1;
+   for (i=0;i<out_channels;i++) {
+      int m;
+      OPUS_CLEAR(&out[i*hstride], height);
+      for (m=0;m<in_channels;m++) {
+         int t;
+         for (t=0;t<ktime;t++) {
+            int h;
+            for (h=0;h<kheight;h++) {
+               int j;
+               for (j=0;j<height;j++) {
+                  out[i*hstride + j] += weights[i*in_channels*ktime*kheight + m*ktime*kheight + t*kheight + h] *
+                                     in[t*in_channels*in_stride + m*in_stride + j + h];
+               }
+            }
+         }
+      }
+   }
+}
+
+/* There's no intrinsics in this function (or the one above) because the gcc (and hopefully other compiler) auto-vectorizer is smart enough to
+   produce the right code by itself based on the compile flags. */
+static void conv2d_3x3_float(float *out, const float *weights, int in_channels, int out_channels, const float *in, int height, int hstride)
+{
+   int i;
+   int in_stride;
+   int kheight, ktime;
+   kheight = ktime = 3;
+   in_stride = height+kheight-1;
+   for (i=0;i<out_channels;i++) {
+      int m;
+      OPUS_CLEAR(&out[i*hstride], height);
+      for (m=0;m<in_channels;m++) {
+         int j;
+         for (j=0;j<height;j++) {
+            /* Unrolled version of previous function -- compiler will figure out the indexing simplifications. */
+            out[i*hstride + j] += weights[i*in_channels*ktime*kheight + m*ktime*kheight + 0*kheight + 0]*in[0*in_channels*in_stride + m*in_stride + j + 0]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 0*kheight + 1]*in[0*in_channels*in_stride + m*in_stride + j + 1]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 0*kheight + 2]*in[0*in_channels*in_stride + m*in_stride + j + 2]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 1*kheight + 0]*in[1*in_channels*in_stride + m*in_stride + j + 0]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 1*kheight + 1]*in[1*in_channels*in_stride + m*in_stride + j + 1]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 1*kheight + 2]*in[1*in_channels*in_stride + m*in_stride + j + 2]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 2*kheight + 0]*in[2*in_channels*in_stride + m*in_stride + j + 0]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 2*kheight + 1]*in[2*in_channels*in_stride + m*in_stride + j + 1]
+                                + weights[i*in_channels*ktime*kheight + m*ktime*kheight + 2*kheight + 2]*in[2*in_channels*in_stride + m*in_stride + j + 2];
+               }
+      }
+   }
+}
+
+#define MAX_CONV2D_INPUTS 8192
+
+void RTCD_SUF(compute_conv2d_)(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation)
+{
+   int i;
+   const float *bias;
+   float in_buf[MAX_CONV2D_INPUTS];
+   int time_stride;
+   celt_assert(in != out);
+   time_stride = conv->in_channels*(height+conv->kheight-1);
+   celt_assert(conv->ktime*time_stride <= MAX_CONV2D_INPUTS);
+   OPUS_COPY(in_buf, mem, (conv->ktime-1)*time_stride);
+   OPUS_COPY(&in_buf[(conv->ktime-1)*time_stride], in, time_stride);
+   OPUS_COPY(mem, &in_buf[time_stride], (conv->ktime-1)*time_stride);
+   bias = conv->bias;
+   if (conv->kheight == 3 && conv->ktime == 3)
+     conv2d_3x3_float(out, conv->float_weights, conv->in_channels, conv->out_channels, in_buf, height, hstride);
+   else
+     conv2d_float(out, conv->float_weights, conv->in_channels, conv->out_channels, conv->ktime, conv->kheight, in_buf, height, hstride);
+   if (bias != NULL) {
+     for (i=0;i<conv->out_channels;i++) {
+       int j;
+       for (j=0;j<height;j++) out[i*hstride+j] += bias[i];
+     }
+   }
+   for (i=0;i<conv->out_channels;i++) {
+     RTCD_SUF(compute_activation_)(&out[i*hstride], &out[i*hstride], height, activation);
+   }
+}
 
 #endif

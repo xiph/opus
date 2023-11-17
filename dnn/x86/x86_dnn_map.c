@@ -61,6 +61,22 @@ void (*const DNN_COMPUTE_ACTIVATION_IMPL[OPUS_ARCHMASK + 1])(
   MAY_HAVE_AVX2(compute_activation)  /* avx  */
 };
 
+void (*const DNN_COMPUTE_CONV2D_IMPL[OPUS_ARCHMASK + 1])(
+         const Conv2dLayer *conv,
+         float *out,
+         float *mem,
+         const float *in,
+         int height,
+         int hstride,
+         int activation
+) = {
+  compute_conv2d_c,                /* non-sse */
+  compute_conv2d_c,
+  MAY_HAVE_SSE2(compute_conv2d),
+  MAY_HAVE_SSE4_1(compute_conv2d), /* sse4.1  */
+  MAY_HAVE_AVX2(compute_conv2d)  /* avx  */
+};
+
 #endif
 
 

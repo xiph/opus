@@ -185,12 +185,11 @@ int gru_init(GRULayer *layer, const WeightArray *arrays,
   int activation,
   int reset_after);
 
-void compute_conv2d(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation, int arch);
-
-
 
 void compute_linear_c(const LinearLayer *linear, float *out, const float *in);
 void compute_activation_c(float *output, const float *input, int N, int activation);
+void compute_conv2d_c(const Conv2dLayer *conv, float *out, float *mem, const float *in, int height, int hstride, int activation);
+
 
 #if defined(OPUS_X86_MAY_HAVE_SSE2)
 #include "x86/dnn_x86.h"
@@ -204,6 +203,9 @@ void compute_activation_c(float *output, const float *input, int N, int activati
 #define compute_activation(output, input, N, activation, arch) ((void)(arch),compute_activation_c(output, input, N, activation))
 #endif
 
+#ifndef OVERRIDE_COMPUTE_CONV2D
+#define compute_conv2d(conv, out, mem, in, height, hstride, activation, arch) ((void)(arch),compute_conv2d_c(conv, out, mem, in, height, hstride, activation))
+#endif
 
 #if defined(__x86_64__) && !defined(OPUS_X86_MAY_HAVE_SSE4_1) && !defined(OPUS_X86_MAY_HAVE_AVX2)
 #if defined(_MSC_VER)
