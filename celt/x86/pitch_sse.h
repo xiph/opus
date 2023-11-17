@@ -187,6 +187,15 @@ extern void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK + 1])(
 #define NON_STATIC_COMB_FILTER_CONST_C
 
 #endif
-#endif
+
+#if defined(OPUS_X86_PRESUME_AVX2)
+
+void celt_pitch_xcorr_avx2(const float *_x, const float *_y, float *xcorr, int len, int max_pitch, int arch);
+#define OVERRIDE_PITCH_XCORR
+# define celt_pitch_xcorr celt_pitch_xcorr_avx2
+
+#endif /* OPUS_X86_PRESUME_AVX2 */
+
+#endif /* OPUS_X86_MAY_HAVE_SSE && !FIXED_POINT */
 
 #endif

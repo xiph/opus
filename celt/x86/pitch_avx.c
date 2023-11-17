@@ -81,7 +81,7 @@ static void xcorr_kernel_avx(const float *x, const float *y, float sum[8], int l
     _mm256_storeu_ps(sum, xsum0);
 }
 
-void celt_pitch_xcorr_avx(const float *_x, const float *_y, float *xcorr, int len, int max_pitch, int arch)
+void celt_pitch_xcorr_avx2(const float *_x, const float *_y, float *xcorr, int len, int max_pitch, int arch)
 {
    int i;
    celt_assert(max_pitch>0);
