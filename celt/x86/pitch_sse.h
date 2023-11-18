@@ -186,13 +186,30 @@ extern void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK + 1])(
 
 #endif
 
+void celt_pitch_xcorr_avx2(const float *_x, const float *_y, float *xcorr, int len, int max_pitch, int arch);
+
 #if defined(OPUS_X86_PRESUME_AVX2)
 
-void celt_pitch_xcorr_avx2(const float *_x, const float *_y, float *xcorr, int len, int max_pitch, int arch);
 #define OVERRIDE_PITCH_XCORR
 # define celt_pitch_xcorr celt_pitch_xcorr_avx2
 
-#endif /* OPUS_X86_PRESUME_AVX2 */
+#elif defined(OPUS_HAVE_RTCD) && defined(OPUS_X86_MAY_HAVE_AVX2)
+
+#define OVERRIDE_PITCH_XCORR
+extern void (*const PITCH_XCORR_IMPL[OPUS_ARCHMASK + 1])(
+              const float *_x,
+              const float *_y,
+              float *xcorr,
+              int len,
+              int max_pitch,
+              int arch
+              );
+
+#define celt_pitch_xcorr(_x, _y, xcorr, len, max_pitch, arch) \
+    ((*PITCH_XCORR_IMPL[(arch) & OPUS_ARCHMASK])(_x, _y, xcorr, len, max_pitch, arch))
+
+
+#endif /* OPUS_X86_PRESUME_AVX2 && !OPUS_HAVE_RTCD */
 
 #endif /* OPUS_X86_MAY_HAVE_SSE && !FIXED_POINT */
 
