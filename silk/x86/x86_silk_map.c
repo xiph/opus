@@ -132,7 +132,7 @@ void (*const SILK_NSQ_DEL_DEC_IMPL[ OPUS_ARCHMASK + 1 ] )(
   silk_NSQ_del_dec_c,
   silk_NSQ_del_dec_c,
   MAY_HAVE_SSE4_1( silk_NSQ_del_dec ), /* sse4.1 */
-  MAY_HAVE_SSE4_1( silk_NSQ_del_dec )  /* avx */
+  MAY_HAVE_AVX2( silk_NSQ_del_dec )  /* avx */
 };
 
 #if defined(FIXED_POINT)
