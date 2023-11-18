@@ -426,6 +426,7 @@ endif
 
 if HAVE_AVX2
 AVX2_OBJ = $(CELT_SOURCES_AVX2:.c=.lo) \
+           $(SILK_SOURCES_AVX2:.c=.lo) \
            $(DNN_SOURCES_AVX2:.c=.lo)
 $(AVX2_OBJ): CFLAGS += $(OPUS_X86_AVX2_CFLAGS)
 endif
