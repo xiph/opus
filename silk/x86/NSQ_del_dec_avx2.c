@@ -29,10 +29,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #endif
 
-#ifdef OPUS_CHECK_ASM
 #include <string.h>
-#endif
 
+#include "opus_defines.h"
 #include <immintrin.h>
 
 #include "main.h"
@@ -87,12 +86,16 @@ static inline int __builtin_ctz(unsigned int x)
 /*
  * GCC implemented _mm_loadu_si32() since GCC 11; HOWEVER, there is a bug!
  * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99754
+ * Using workaround suggested in
+ * https://stackoverflow.com/questions/72837929/mm-loadu-si32-not-recognized-by-gcc-on-ubuntu
  */
-#if defined(__GNUC__) && !defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && !OPUS_GNUC_PREREQ(11,3)
 #define _mm_loadu_si32 WORKAROUND_mm_loadu_si32
 static inline __m128i WORKAROUND_mm_loadu_si32(void const* mem_addr)
 {
-  return _mm_set_epi32(0, 0, 0, *(int32_t*)mem_addr);
+  int tmp;
+  memcpy(&tmp, mem_addr, sizeof(tmp));
+  return _mm_cvtsi32_si128(tmp);
 }
 #endif
 
