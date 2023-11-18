@@ -33,11 +33,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #endif
 
+#include "opus_defines.h"
 #include <immintrin.h>
 
 #include "main.h"
 #include "stack_alloc.h"
 #include "NSQ.h"
+#include "celt/x86/x86cpu.h"
 
 /* Returns TRUE if all assumptions met */
 static OPUS_INLINE int verify_assumptions(const silk_encoder_state *psEncC)
@@ -88,11 +90,11 @@ static inline int __builtin_ctz(unsigned int x)
  * GCC implemented _mm_loadu_si32() since GCC 11; HOWEVER, there is a bug!
  * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99754
  */
-#if defined(__GNUC__) && !defined(__clang__)
+#if !OPUS_GNUC_PREREQ(11,3) && !(defined(__clang__) && (__clang_major__ >= 8))
 #define _mm_loadu_si32 WORKAROUND_mm_loadu_si32
 static inline __m128i WORKAROUND_mm_loadu_si32(void const* mem_addr)
 {
-  return _mm_set_epi32(0, 0, 0, *(int32_t*)mem_addr);
+  return _mm_cvtsi32_si128(OP_LOADU_EPI32(mem_addr));
 }
 #endif
 
@@ -118,10 +120,16 @@ static OPUS_INLINE opus_int32 silk_sar_round_32(opus_int32 a, int bits)
 static OPUS_INLINE opus_int64 silk_sar_round_smulww(opus_int32 a, opus_int32 b, int bits)
 {
     silk_assert(bits > 0 && bits < 63);
+#ifdef OPUS_CHECK_ASM
+    return silk_RSHIFT_ROUND(silk_SMULWW(a, b), bits);
+#else
+    /* This code is more correct, but it won't overflow like the C code in some rare cases. */
+    silk_assert(bits > 0 && bits < 63);
     opus_int64 t = ((opus_int64)a) * ((opus_int64)b);
     bits += 16;
     t += 1ull << (bits-1);
     return t >> bits;
+#endif
 }
 
 static OPUS_INLINE opus_int32 silk_add_sat32(opus_int32 a, opus_int32 b)
@@ -192,15 +200,16 @@ static OPUS_INLINE __m128i silk_mm_smulww_epi32(__m128i a, opus_int32 b)
 /* (a32 * (opus_int32)((opus_int16)(b32))) >> 16 output have to be 32bit int */
 static OPUS_INLINE __m128i silk_mm_smulwb_epi32(__m128i a, opus_int32 b)
 {
-    return silk_cvtepi64_epi32_high(_mm256_mul_epi32(_mm256_cvtepi32_epi64(a), _mm256_set1_epi32(b << 16)));
+    return silk_cvtepi64_epi32_high(_mm256_mul_epi32(_mm256_cvtepi32_epi64(a), _mm256_set1_epi32(silk_LSHIFT(b, 16))));
 }
 
 /* (opus_int32)((opus_int16)(a3))) * (opus_int32)((opus_int16)(b32)) output have to be 32bit int */
 static OPUS_INLINE __m256i silk_mm256_smulbb_epi32(__m256i a, __m256i b)
 {
+    const char FF = (char)0xFF;
     __m256i msk = _mm256_set_epi8(
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 13, 12, 9, 8, 5, 4, 1, 0,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 13, 12, 9, 8, 5, 4, 1, 0);
+        FF, FF, FF, FF, FF, FF, FF, FF, 13, 12, 9, 8, 5, 4, 1, 0,
+        FF, FF, FF, FF, FF, FF, FF, FF, 13, 12, 9, 8, 5, 4, 1, 0);
     __m256i lo = _mm256_mullo_epi16(a, b);
     __m256i hi = _mm256_mulhi_epi16(a, b);
     lo = _mm256_shuffle_epi8(lo, msk);
@@ -368,7 +377,7 @@ void silk_NSQ_del_dec_avx2(
     SideInfoIndices *psIndices,                                  /* I/O  Quantization Indices        */
     const opus_int16 x16[],                                      /* I    Input                       */
     opus_int8 pulses[],                                          /* O    Quantized pulse signal      */
-    const opus_int16 PredCoef_Q12[2 * MAX_LPC_ORDER],            /* I    Short term prediction coefs */
+    const opus_int16 *PredCoef_Q12,                              /* I    Short term prediction coefs */
     const opus_int16 LTPCoef_Q14[LTP_ORDER * MAX_NB_SUBFR],      /* I    Long term prediction coefs  */
     const opus_int16 AR_Q13[MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER], /* I    Noise shaping coefs         */
     const opus_int HarmShapeGain_Q14[MAX_NB_SUBFR],              /* I    Long term shaping coefs     */
@@ -483,8 +492,8 @@ void silk_NSQ_del_dec_avx2(
 
         /* Noise shape parameters */
         silk_assert(HarmShapeGain_Q14[k] >= 0);
-        HarmShapeFIRPacked_Q14 = HarmShapeGain_Q14[k] >> 2;
-        HarmShapeFIRPacked_Q14 |= ((opus_int32)(HarmShapeGain_Q14[k] >> 1)) << 16;
+        HarmShapeFIRPacked_Q14  =                          silk_RSHIFT( HarmShapeGain_Q14[ k ], 2 );
+        HarmShapeFIRPacked_Q14 |= silk_LSHIFT( (opus_int32)silk_RSHIFT( HarmShapeGain_Q14[ k ], 1 ), 16 );
 
         NSQ->rewhite_flag = 0;
         if (psIndices->signalType == TYPE_VOICED)
@@ -507,7 +516,7 @@ void silk_NSQ_del_dec_avx2(
                         _mm_blendv_epi8(
                             _mm_set1_epi32(silk_int32_MAX >> 4),
                             _mm_setzero_si128(),
-                            _mm_cvtepi8_epi32(_mm_cvtsi32_si128(0xFF << (Winner_ind << 3)))));
+                            _mm_cvtepi8_epi32(_mm_cvtsi32_si128(0xFFU << (unsigned)(Winner_ind << 3)))));
 
                     /* Copy final part of signals from winner state to output and long-term filter states */
                     last_smple_idx = smpl_buf_idx + decisionDelay;
@@ -588,13 +597,14 @@ void silk_NSQ_del_dec_avx2(
     /* Save quantized speech signal */
     silk_memmove(NSQ->xq, &NSQ->xq[psEncC->frame_length], psEncC->ltp_mem_length * sizeof(opus_int16));
     silk_memmove(NSQ->sLTP_shp_Q14, &NSQ->sLTP_shp_Q14[psEncC->frame_length], psEncC->ltp_mem_length * sizeof(opus_int32));
-    RESTORE_STACK;
 
 #ifdef OPUS_CHECK_ASM
     silk_assert(!memcmp(&NSQ_c, NSQ, sizeof(NSQ_c)));
     silk_assert(!memcmp(&psIndices_c, psIndices, sizeof(psIndices_c)));
     silk_assert(!memcmp(pulses_c, pulses_a, sizeof(pulses_c)));
 #endif
+
+    RESTORE_STACK;
 }
 
 static OPUS_INLINE __m128i silk_noise_shape_quantizer_short_prediction_x4(const __m128i *buf32, const opus_int16 *coef16, opus_int order)
@@ -604,25 +614,25 @@ static OPUS_INLINE __m128i silk_noise_shape_quantizer_short_prediction_x4(const 
 
     /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
     out = _mm256_set1_epi32(order >> 1);
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-0]), _mm256_set1_epi32(coef16[0] << 16))); /* High DWORD */
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-1]), _mm256_set1_epi32(coef16[1] << 16))); /* High DWORD */
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-2]), _mm256_set1_epi32(coef16[2] << 16))); /* High DWORD */
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-3]), _mm256_set1_epi32(coef16[3] << 16))); /* High DWORD */
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-4]), _mm256_set1_epi32(coef16[4] << 16))); /* High DWORD */
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-5]), _mm256_set1_epi32(coef16[5] << 16))); /* High DWORD */
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-6]), _mm256_set1_epi32(coef16[6] << 16))); /* High DWORD */
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-7]), _mm256_set1_epi32(coef16[7] << 16))); /* High DWORD */
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-8]), _mm256_set1_epi32(coef16[8] << 16))); /* High DWORD */
-    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-9]), _mm256_set1_epi32(coef16[9] << 16))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-0]), _mm256_set1_epi32(silk_LSHIFT(coef16[0], 16)))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-1]), _mm256_set1_epi32(silk_LSHIFT(coef16[1], 16)))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-2]), _mm256_set1_epi32(silk_LSHIFT(coef16[2], 16)))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-3]), _mm256_set1_epi32(silk_LSHIFT(coef16[3], 16)))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-4]), _mm256_set1_epi32(silk_LSHIFT(coef16[4], 16)))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-5]), _mm256_set1_epi32(silk_LSHIFT(coef16[5], 16)))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-6]), _mm256_set1_epi32(silk_LSHIFT(coef16[6], 16)))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-7]), _mm256_set1_epi32(silk_LSHIFT(coef16[7], 16)))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-8]), _mm256_set1_epi32(silk_LSHIFT(coef16[8], 16)))); /* High DWORD */
+    out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-9]), _mm256_set1_epi32(silk_LSHIFT(coef16[9], 16)))); /* High DWORD */
 
     if (order == 16)
     {
-        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-10]), _mm256_set1_epi32(coef16[10] << 16))); /* High DWORD */
-        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-11]), _mm256_set1_epi32(coef16[11] << 16))); /* High DWORD */
-        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-12]), _mm256_set1_epi32(coef16[12] << 16))); /* High DWORD */
-        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-13]), _mm256_set1_epi32(coef16[13] << 16))); /* High DWORD */
-        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-14]), _mm256_set1_epi32(coef16[14] << 16))); /* High DWORD */
-        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-15]), _mm256_set1_epi32(coef16[15] << 16))); /* High DWORD */
+        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-10]), _mm256_set1_epi32(silk_LSHIFT(coef16[10], 16)))); /* High DWORD */
+        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-11]), _mm256_set1_epi32(silk_LSHIFT(coef16[11], 16)))); /* High DWORD */
+        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-12]), _mm256_set1_epi32(silk_LSHIFT(coef16[12], 16)))); /* High DWORD */
+        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-13]), _mm256_set1_epi32(silk_LSHIFT(coef16[13], 16)))); /* High DWORD */
+        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-14]), _mm256_set1_epi32(silk_LSHIFT(coef16[14], 16)))); /* High DWORD */
+        out = _mm256_add_epi32(out, _mm256_mul_epi32(_mm256_cvtepi32_epi64(buf32[-15]), _mm256_set1_epi32(silk_LSHIFT(coef16[15], 16)))); /* High DWORD */
     }
     return silk_cvtepi64_epi32_high(out);
 }
@@ -700,7 +710,7 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_avx2(
             LTP_pred_Q14 += silk_SMULWB(pred_lag_ptr[-2], b_Q14[2]);
             LTP_pred_Q14 += silk_SMULWB(pred_lag_ptr[-3], b_Q14[3]);
             LTP_pred_Q14 += silk_SMULWB(pred_lag_ptr[-4], b_Q14[4]);
-            LTP_pred_Q14 <<= 1; /* Q13 -> Q14 */
+            LTP_pred_Q14 = silk_LSHIFT(LTP_pred_Q14, 1); /* Q13 -> Q14 */
             pred_lag_ptr++;
         }
         else
@@ -715,7 +725,7 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_avx2(
             n_LTP_Q14 = silk_add_sat32(shp_lag_ptr[0], shp_lag_ptr[-2]);
             n_LTP_Q14 = silk_SMULWB(n_LTP_Q14, HarmShapeFIRPacked_Q14);
             n_LTP_Q14 = n_LTP_Q14 + silk_SMULWT(shp_lag_ptr[-1], HarmShapeFIRPacked_Q14);
-            n_LTP_Q14 = LTP_pred_Q14 - (n_LTP_Q14 << 2); /* Q12 -> Q14 */
+            n_LTP_Q14 = LTP_pred_Q14 - (silk_LSHIFT(n_LTP_Q14, 2)); /* Q12 -> Q14 */
             shp_lag_ptr++;
         }
         else
@@ -825,7 +835,7 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_avx2(
         SS_xq_Q14 = _mm256_add_epi32(exc_Q14, _mm256_broadcastsi128_si256(LPC_pred_Q14));
 
         /* Update states */
-        SS_Diff_Q14 = _mm256_sub_epi32(SS_xq_Q14, _mm256_set1_epi32(x_Q10[i] << 4));
+        SS_Diff_Q14 = _mm256_sub_epi32(SS_xq_Q14, _mm256_set1_epi32(silk_LSHIFT(x_Q10[i], 4)));
         SS_LF_AR_Q14 = _mm256_sub_epi32(SS_Diff_Q14, _mm256_broadcastsi128_si256(n_AR_Q14));
         SS_sLTP_shp_Q14 = silk_mm256_sub_sat_epi32(SS_LF_AR_Q14, _mm256_broadcastsi128_si256(n_LF_Q14));
 
@@ -858,7 +868,7 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_avx2(
         {
             RDmax_ind = silk_index_of_first_equal_epi32(RDmax_Q10, _mm256_extracti128_si256(SS_RD_Q10, 0));
             RDmin_ind = silk_index_of_first_equal_epi32(RDmin_Q10, _mm256_extracti128_si256(SS_RD_Q10, 1));
-            tmp1 = _mm_cvtepi8_epi32(_mm_cvtsi32_si128(0xFF << (RDmax_ind << 3)));
+            tmp1 = _mm_cvtepi8_epi32(_mm_cvtsi32_si128(0xFFU << (unsigned)(RDmax_ind << 3)));
             tmp0 = _mm_blendv_epi8(
                 _mm_set_epi8(0xF, 0xE, 0xD, 0xC, 0xB, 0xA, 0x9, 0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 0x0),
                 silk_index_to_selector(RDmin_ind),
@@ -966,7 +976,7 @@ static OPUS_INLINE void silk_nsq_del_dec_scale_states_avx2(
         if (subfr == 0)
         {
             /* Do LTP downscaling */
-            inv_gain_Q31 = silk_SMULWB(inv_gain_Q31, LTP_scale_Q14) << 2;
+            inv_gain_Q31 = silk_LSHIFT(silk_SMULWB(inv_gain_Q31, LTP_scale_Q14), 2);
         }
         for (int i = NSQ->sLTP_buf_idx - lag - LTP_ORDER / 2; i < NSQ->sLTP_buf_idx; i++)
         {
@@ -1058,7 +1068,7 @@ static OPUS_INLINE void silk_LPC_analysis_filter_avx2(
         out32_Q12 = silk_mm256_hsum_epi32(sum);
 
         /* Subtract prediction */
-        out32_Q12 = (((opus_int32)*in_ptr) << 12 ) - out32_Q12;
+        out32_Q12 = silk_LSHIFT((opus_int32)*in_ptr, 12 ) - out32_Q12;
 
         /* Scale to Q0 */
         out32 = silk_sar_round_32(out32_Q12, 12);
