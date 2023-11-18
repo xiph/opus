@@ -86,6 +86,9 @@ silk/x86/NSQ_del_dec_sse4_1.c \
 silk/x86/VAD_sse4_1.c \
 silk/x86/VQ_WMat_EC_sse4_1.c
 
+SILK_SOURCES_AVX2 =  \
+silk/x86/NSQ_del_dec_avx2.c
+
 SILK_SOURCES_ARM_RTCD = \
 silk/arm/arm_silk_map.c
 
