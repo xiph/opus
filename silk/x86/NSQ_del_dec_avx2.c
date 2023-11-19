@@ -121,10 +121,16 @@ static OPUS_INLINE opus_int32 silk_sar_round_32(opus_int32 a, int bits)
 static OPUS_INLINE opus_int64 silk_sar_round_smulww(opus_int32 a, opus_int32 b, int bits)
 {
     silk_assert(bits > 0 && bits < 63);
+#ifdef OPUS_CHECK_ASM
+    return silk_RSHIFT_ROUND(silk_SMULWW(a, b), bits);
+#else
+    /* This code is more correct, but it won't overflow like the C code in some rare cases. */
+    silk_assert(bits > 0 && bits < 63);
     opus_int64 t = ((opus_int64)a) * ((opus_int64)b);
     bits += 16;
     t += 1ull << (bits-1);
     return t >> bits;
+#endif
 }
 
 static OPUS_INLINE opus_int32 silk_add_sat32(opus_int32 a, opus_int32 b)
@@ -521,8 +527,8 @@ void silk_NSQ_del_dec_avx2(
                         psSample = &psDelDec.Samples[last_smple_idx];
                         pulses[i - decisionDelay] =
                             (opus_int8)silk_sar_round_32(silk_select_winner(psSample->Q_Q10, Winner_selector), 10);
-                        pxq[ i - decisionDelay ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND(
-                                                    silk_SMULWW( silk_select_winner(psSample->Xq_Q14, Winner_selector), Gains_Q16[ 1 ] ), 14 ) );
+                        pxq[i - decisionDelay] =
+                            silk_sat16((opus_int32)silk_sar_round_smulww(silk_select_winner(psSample->Xq_Q14, Winner_selector), Gains_Q16[1], 14));
                         NSQ->sLTP_shp_Q14[NSQ->sLTP_shp_buf_idx - decisionDelay + i] =
                             silk_select_winner(psSample->Shape_Q14, Winner_selector);
                     }
