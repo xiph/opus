@@ -521,8 +521,8 @@ void silk_NSQ_del_dec_avx2(
                         psSample = &psDelDec.Samples[last_smple_idx];
                         pulses[i - decisionDelay] =
                             (opus_int8)silk_sar_round_32(silk_select_winner(psSample->Q_Q10, Winner_selector), 10);
-                        pxq[i - decisionDelay] =
-                            silk_sat16((opus_int32)silk_sar_round_smulww(silk_select_winner(psSample->Xq_Q14, Winner_selector), Gains_Q16[1], 14));
+                        pxq[ i - decisionDelay ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND(
+                                                    silk_SMULWW( silk_select_winner(psSample->Xq_Q14, Winner_selector), Gains_Q16[ 1 ] ), 14 ) );
                         NSQ->sLTP_shp_Q14[NSQ->sLTP_shp_buf_idx - decisionDelay + i] =
                             silk_select_winner(psSample->Shape_Q14, Winner_selector);
                     }
