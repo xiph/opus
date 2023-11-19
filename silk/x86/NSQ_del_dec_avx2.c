@@ -89,8 +89,6 @@ static inline int __builtin_ctz(unsigned int x)
 /*
  * GCC implemented _mm_loadu_si32() since GCC 11; HOWEVER, there is a bug!
  * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99754
- * Using workaround suggested in
- * https://stackoverflow.com/questions/72837929/mm-loadu-si32-not-recognized-by-gcc-on-ubuntu
  */
 #if !OPUS_GNUC_PREREQ(11,3) && !(defined(__clang__) && (__clang_major__ >= 8))
 #define _mm_loadu_si32 WORKAROUND_mm_loadu_si32
