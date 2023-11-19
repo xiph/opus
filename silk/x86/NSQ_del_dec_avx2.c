@@ -1049,13 +1049,13 @@ static OPUS_INLINE void silk_LPC_analysis_filter_avx2(
         /* Allowing wrap around so that two wraps can cancel each other. The rare
            cases where the result wraps around can only be triggered by invalid streams*/
 
-        __m256i in_v = _mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i_u*)(void*)&in_ptr[-8]));
-        __m256i B_v  = _mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i_u*)(void*)&      B[0]));
+        __m256i in_v = _mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i_u*)&in_ptr[-8]));
+        __m256i B_v  = _mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i_u*)&      B[0]));
         __m256i sum = _mm256_mullo_epi32(in_v, silk_mm256_reverse_epi32(B_v));
         if (order > 10)
         {
-            in_v = _mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i_u*)(void*)&in_ptr[-16]));
-            B_v  = _mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i_u*)(void*)&B       [8]));
+            in_v = _mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i_u*)&in_ptr[-16]));
+            B_v  = _mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i_u*)&B       [8]));
             B_v  = silk_mm256_reverse_epi32(B_v);
         }
         else
