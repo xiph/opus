@@ -29,7 +29,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #endif
 
+#ifdef OPUS_CHECK_ASM
 #include <string.h>
+#endif
 
 #include "opus_defines.h"
 #include <immintrin.h>
@@ -37,6 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 #include "stack_alloc.h"
 #include "NSQ.h"
+#include "celt/x86/x86cpu.h"
 
 /* Returns TRUE if all assumptions met */
 static OPUS_INLINE int verify_assumptions(const silk_encoder_state *psEncC)
@@ -89,13 +92,11 @@ static inline int __builtin_ctz(unsigned int x)
  * Using workaround suggested in
  * https://stackoverflow.com/questions/72837929/mm-loadu-si32-not-recognized-by-gcc-on-ubuntu
  */
-#if defined(__GNUC__) && !defined(__clang__) && !OPUS_GNUC_PREREQ(11,3)
+#if !OPUS_GNUC_PREREQ(11,3) && !(defined(__clang__) && (__clang_major__ >= 8))
 #define _mm_loadu_si32 WORKAROUND_mm_loadu_si32
 static inline __m128i WORKAROUND_mm_loadu_si32(void const* mem_addr)
 {
-  int tmp;
-  memcpy(&tmp, mem_addr, sizeof(tmp));
-  return _mm_cvtsi32_si128(tmp);
+  return _mm_cvtsi32_si128(OP_LOADU_EPI32(mem_addr));
 }
 #endif
 
