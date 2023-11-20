@@ -281,6 +281,9 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       /* High-pass filter: (1 - 2*z^-1 + z^-2) / (1 - z^-1 + .5*z^-2) */
       for (i=0;i<len;i++)
       {
+#ifndef FIXED_POINT
+         float mem00;
+#endif
          opus_val32 x,y;
          x = SHR32(in[i+c*len],SIG_SHIFT);
          y = ADD32(mem0, x);
@@ -288,8 +291,13 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          mem0 = mem1 + y - SHL32(x,1);
          mem1 = x - SHR32(y,1);
 #else
+         /* Original code:
          mem0 = mem1 + y - 2*x;
          mem1 = x - .5f*y;
+         Modified code to shorten dependency chains: */
+         mem00=mem0;
+         mem0 = mem0 - x + .5f*mem1;
+         mem1 =  x - mem00;
 #endif
          tmp[i] = SROUND16(y, 2);
          /*printf("%f ", tmp[i]);*/
@@ -322,10 +330,11 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
 #ifdef FIXED_POINT
          /* FIXME: Use PSHR16() instead */
          tmp[i] = mem0 + PSHR32(x2-mem0,forward_shift);
-#else
-         tmp[i] = mem0 + MULT16_16_P15(forward_decay,x2-mem0);
-#endif
          mem0 = tmp[i];
+#else
+         mem0 = x2 + (1.f-forward_decay)*mem0;
+         tmp[i] = forward_decay*mem0;
+#endif
       }
 
       mem0=0;
@@ -337,11 +346,13 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
 #ifdef FIXED_POINT
          /* FIXME: Use PSHR16() instead */
          tmp[i] = mem0 + PSHR32(tmp[i]-mem0,3);
-#else
-         tmp[i] = mem0 + MULT16_16_P15(QCONST16(0.125f,15),tmp[i]-mem0);
-#endif
          mem0 = tmp[i];
          maxE = MAX16(maxE, mem0);
+#else
+         mem0 = tmp[i] + 0.875f*mem0;
+         tmp[i] = 0.125f*mem0;
+         maxE = MAX16(maxE, 0.125f*mem0);
+#endif
       }
       /*for (i=0;i<len2;i++)printf("%f ", tmp[i]/mean);printf("\n");*/
 
