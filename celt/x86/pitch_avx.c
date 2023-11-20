@@ -33,6 +33,8 @@
 #include "x86cpu.h"
 #include "pitch.h"
 
+#if defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(FIXED_POINT)
+
 /* Like the "regular" xcorr_kernel(), but computes 8 results at a time. */
 static void xcorr_kernel_avx(const float *x, const float *y, float sum[8], int len)
 {
@@ -95,3 +97,5 @@ void celt_pitch_xcorr_avx2(const float *_x, const float *_y, float *xcorr, int l
       xcorr[i] = celt_inner_prod(_x, _y+i, len, arch);
    }
 }
+
+#endif
