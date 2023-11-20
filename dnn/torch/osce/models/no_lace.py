@@ -155,7 +155,7 @@ class NoLACE(NNSBase):
     def forward(self, x, features, periods, numbits, debug=False):
 
         if features.size(1) % self.max_lookahead:
-            if self.train:
+            if self.training:
                 raise ValueError(f"number of frames must be divisible by {self.max_lookahead}")
             else:
                 # truncate input
@@ -163,7 +163,7 @@ class NoLACE(NNSBase):
                 features = features[:, :num_frames]
                 periods = periods[:, :num_frames]
                 numbits = numbits[:, :num_frames]
-                x = x[:, :num_frames * self.FRAME_SIZE]
+                x = x[..., :num_frames * self.FRAME_SIZE]
 
         periods         = periods.squeeze(-1)
         pitch_embedding = self.pitch_embedding(periods)
