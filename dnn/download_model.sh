@@ -7,5 +7,4 @@ if [ ! -f $model ]; then
         echo "Downloading latest model"
         wget https://media.xiph.org/lpcnet/data/$model
 fi
-tar xvof $model
-touch *_data.[ch]
+tar xvomf $model
