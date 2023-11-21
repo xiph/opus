@@ -28,11 +28,96 @@
 """
 
 import os
+import sys
 
 import torch
 import numpy as np
 
+sys.path.append(sys.path.append(os.path.join(os.path.dirname(__file__), '../osce')))
+try:
+    import utils.layers as osce_layers
+    from utils.layers.limited_adaptive_conv1d import LimitedAdaptiveConv1d
+    from utils.layers.limited_adaptive_comb1d import LimitedAdaptiveComb1d
+    has_osce=True
+except:
+    has_osce=False
+
 from wexchange.c_export import CWriter, print_gru_layer, print_dense_layer, print_conv1d_layer, print_tconv1d_layer, print_conv2d_layer
+
+def dump_torch_adaptive_conv1d_weights(where, adaconv, name='adaconv', kernel_scale=1/128, kernel_quantize=False, gain_scale=1/128, gain_quantize=False):
+
+
+    w_kernel = adaconv.conv_kernel.weight.detach().cpu().numpy().copy()
+    b_kernel = adaconv.conv_kernel.bias.detach().cpu().numpy().copy()
+    w_gain = adaconv.filter_gain.weight.detach().cpu().numpy().copy()
+    b_gain = adaconv.filter_gain.bias.detach().cpu().numpy().copy()
+
+    if isinstance(where, CWriter):
+        # write relevant scalar parameters to header file
+        where.header.write(f"""
+#define {name.upper()}_FILTER_GAIN_A {adaconv.filter_gain_a}f
+#define {name.upper()}_FILTER_GAIN_B {adaconv.filter_gain_b}f
+#define {name.upper()}_SHAPE_GAIN {adaconv.shape_gain}f
+#define {name.upper()}_KERNEL_SIZE {adaconv.kernel_size}
+#define {name.upper()}_FRAME_SIZE {adaconv.frame_size}
+#define {name.upper()}_LEFT_PADDING {adaconv.padding[0]}
+#define {name.upper()}_OVERLAP_SIZE {adaconv.overlap_size}
+#define {name.upper()}_IN_CHANNELS {adaconv.in_channels}
+#define {name.upper()}_OUT_CHANNELS {adaconv.out_channels}
+#define {name.upper()}_NORM_P {adaconv.norm_p}
+"""
+        )
+
+        print_dense_layer(where, name + "_kernel", w_kernel, b_kernel, scale=kernel_scale, format='torch', sparse=False, diagonal=False, quantize=kernel_quantize)
+        print_dense_layer(where, name + "_gain", w_gain, b_gain, scale=gain_scale, format='torch', sparse=False, diagonal=False, quantize=gain_quantize)
+
+
+    else:
+        np.save(where, 'weight_kernel.npy', w_kernel)
+        np.save(where, 'bias_kernel.npy', b_kernel)
+        np.save(where, 'weight_gain.npy', w_gain)
+        np.save(where, 'bias_gain.npy', b_gain)
+
+
+def dump_torch_adaptive_comb1d_weights(where, adaconv, name='adaconv', kernel_scale=1/128, kernel_quantize=False, gain_scale=1/128, gain_quantize=False, global_gain_scale=1/128, global_gain_quantize=False):
+
+
+    w_kernel = adaconv.conv_kernel.weight.detach().cpu().numpy().copy()
+    b_kernel = adaconv.conv_kernel.bias.detach().cpu().numpy().copy()
+    w_gain = adaconv.filter_gain.weight.detach().cpu().numpy().copy()
+    b_gain = adaconv.filter_gain.bias.detach().cpu().numpy().copy()
+    w_global_gain = adaconv.global_filter_gain.weight.detach().cpu().numpy().copy()
+    b_global_gain = adaconv.global_filter_gain.bias.detach().cpu().numpy().copy()
+
+
+    if isinstance(where, CWriter):
+        # write relevant scalar parameters to header file
+        where.header.write(f"""
+#define {name.upper()}_FILTER_GAIN_A {adaconv.filter_gain_a}f
+#define {name.upper()}_FILTER_GAIN_B {adaconv.filter_gain_b}f
+#define {name.upper()}_LOG_GAIN_LIMIT {adaconv.log_gain_limit}f
+#define {name.upper()}_KERNEL_SIZE {adaconv.kernel_size}
+#define {name.upper()}_LEFT_PADDING {adaconv.padding[0]}
+#define {name.upper()}_FRAME_SIZE {adaconv.frame_size}
+#define {name.upper()}_OVERLAP_SIZE {adaconv.overlap_size}
+#define {name.upper()}_IN_CHANNELS {adaconv.in_channels}
+#define {name.upper()}_OUT_CHANNELS {adaconv.out_channels}
+#define {name.upper()}_NORM_P {adaconv.norm_p}
+"""
+        )
+
+        print_dense_layer(where, name + "_kernel", w_kernel, b_kernel, scale=kernel_scale, format='torch', sparse=False, diagonal=False, quantize=kernel_quantize)
+        print_dense_layer(where, name + "_gain", w_gain, b_gain, scale=gain_scale, format='torch', sparse=False, diagonal=False, quantize=gain_quantize)
+        print_dense_layer(where, name + "_global_gain", w_global_gain, b_global_gain, scale=global_gain_scale, format='torch', sparse=False, diagonal=False, quantize=global_gain_quantize)
+
+
+    else:
+        np.save(where, 'weight_kernel.npy', w_kernel)
+        np.save(where, 'bias_kernel.npy', b_kernel)
+        np.save(where, 'weight_gain.npy', w_gain)
+        np.save(where, 'bias_gain.npy', b_gain)
+        np.save(where, 'weight_global_gain.npy', w_global_gain)
+        np.save(where, 'bias_global_gain.npy', b_global_gain)
 
 def dump_torch_gru_weights(where, gru, name='gru', input_sparse=False, recurrent_sparse=False, quantize=False, scale=1/128, recurrent_scale=1/128):
 
@@ -261,7 +346,15 @@ def dump_torch_weights(where, module, name=None, verbose=False, **kwargs):
     elif isinstance(module, torch.nn.ConvTranspose1d):
         return dump_torch_tconv1d_weights(where, module, name, **kwargs)
     else:
-        raise ValueError(f'dump_torch_weights: layer of type {type(module)} not supported')
+        if has_osce:
+            if isinstance(module, LimitedAdaptiveConv1d):
+                dump_torch_adaptive_conv1d_weights(where, module, name, **kwargs)
+            elif isinstance(module, LimitedAdaptiveComb1d):
+                dump_torch_adaptive_comb1d_weights(where, module, name, **kwargs)
+            else:
+                raise ValueError(f'dump_torch_weights: layer of type {type(module)} not supported')
+        else:
+            raise ValueError(f'dump_torch_weights: layer of type {type(module)} not supported')
 
 def load_torch_weights(where, module):
     """ generic function for loading weights of some torch.nn.Module """

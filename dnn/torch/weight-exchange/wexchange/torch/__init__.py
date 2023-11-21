@@ -34,3 +34,4 @@ from .torch import dump_torch_gru_weights, load_torch_gru_weights
 from .torch import dump_torch_grucell_weights
 from .torch import dump_torch_embedding_weights, load_torch_embedding_weights
 from .torch import dump_torch_weights, load_torch_weights
+from .torch import dump_torch_adaptive_conv1d_weights
