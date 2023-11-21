@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "SigProc_FIX.h"
 #include "float_cast.h"
+#include "main.h"
 #include <math.h>
 
 #ifdef  __cplusplus
@@ -124,11 +125,16 @@ void silk_scale_copy_vector_FLP(
 );
 
 /* inner product of two silk_float arrays, with result as double */
-double silk_inner_product_FLP(
+double silk_inner_product_FLP_c(
     const silk_float    *data1,
     const silk_float    *data2,
     opus_int            dataSize
 );
+
+#ifndef OVERRIDE_inner_product_FLP
+#define silk_inner_product_FLP(data1, data2, dataSize) silk_inner_product_FLP_c(data1, data2, dataSize)
+#endif
+
 
 /* sum of squares of a silk_float array, with result as double */
 double silk_energy_FLP(

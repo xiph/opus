@@ -39,6 +39,9 @@ SILK_SOURCES += $(SILK_SOURCES_FLOAT)
 if HAVE_SSE4_1
 SILK_SOURCES += $(SILK_SOURCES_SSE4_1)
 endif
+if HAVE_AVX2
+SILK_SOURCES += $(SILK_SOURCES_FLOAT_AVX2)
+endif
 endif
 
 if DISABLE_FLOAT_API
@@ -427,6 +430,7 @@ endif
 if HAVE_AVX2
 AVX2_OBJ = $(CELT_SOURCES_AVX2:.c=.lo) \
            $(SILK_SOURCES_AVX2:.c=.lo) \
+           $(SILK_SOURCES_FLOAT_AVX2:.c=.lo) \
            $(DNN_SOURCES_AVX2:.c=.lo)
 $(AVX2_OBJ): CFLAGS += $(OPUS_X86_AVX2_CFLAGS)
 endif

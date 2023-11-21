@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 /* inner product of two silk_float arrays, with result as double */
-double silk_inner_product_FLP(
+double silk_inner_product_FLP_avx2(
     const silk_float    *data1,
     const silk_float    *data2,
     opus_int            dataSize

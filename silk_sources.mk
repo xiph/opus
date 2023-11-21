@@ -159,3 +159,6 @@ silk/float/scale_copy_vector_FLP.c \
 silk/float/scale_vector_FLP.c \
 silk/float/schur_FLP.c \
 silk/float/sort_FLP.c
+
+SILK_SOURCES_FLOAT_AVX2 = \
+silk/float/x86/inner_product_FLP_avx2.c
