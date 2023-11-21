@@ -74,7 +74,8 @@ void silk_autocorrelation_FLP(
     silk_float          *results,           /* O    result (length correlationCount)                            */
     const silk_float    *inputData,         /* I    input data to correlate                                     */
     opus_int            inputDataSize,      /* I    length of input                                             */
-    opus_int            correlationCount    /* I    number of correlation taps to compute                       */
+    opus_int            correlationCount,    /* I    number of correlation taps to compute                       */
+    int                 arch
 );
 
 opus_int silk_pitch_analysis_core_FLP(      /* O    Voicing estimate: 0 voiced, 1 unvoiced                      */
@@ -106,7 +107,8 @@ silk_float silk_burg_modified_FLP(          /* O    returns residual energy     
     const silk_float    minInvGain,         /* I    minimum inverse prediction gain                             */
     const opus_int      subfr_length,       /* I    input signal subframe length (incl. D preceding samples)    */
     const opus_int      nb_subfr,           /* I    number of subframes stacked in x                            */
-    const opus_int      D                   /* I    order                                                       */
+    const opus_int      D,                  /* I    order                                                       */
+    int                 arch
 );
 
 /* multiply a vector by a constant */
@@ -132,7 +134,7 @@ double silk_inner_product_FLP_c(
 );
 
 #ifndef OVERRIDE_inner_product_FLP
-#define silk_inner_product_FLP(data1, data2, dataSize) silk_inner_product_FLP_c(data1, data2, dataSize)
+#define silk_inner_product_FLP(data1, data2, dataSize, arch) ((void)arch,silk_inner_product_FLP_c(data1, data2, dataSize))
 #endif
 
 

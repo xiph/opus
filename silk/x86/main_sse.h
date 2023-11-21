@@ -278,11 +278,18 @@ double silk_inner_product_FLP_avx2(
 #if defined (OPUS_X86_PRESUME_AVX2)
 
 #define OVERRIDE_inner_product_FLP
-#define silk_inner_product_FLP(data1, data2, dataSize) silk_inner_product_FLP_avx2(data1, data2, dataSize)
+#define silk_inner_product_FLP(data1, data2, dataSize, arch) ((void)arch,silk_inner_product_FLP_avx2(data1, data2, dataSize))
 
 #elif defined(OPUS_HAVE_RTCD) && defined(OPUS_X86_MAY_HAVE_AVX2)
 
-/*#define OVERRIDE_inner_product_FLP*/
+#define OVERRIDE_inner_product_FLP
+extern double (*const SILK_INNER_PRODUCT_FLP_IMPL[OPUS_ARCHMASK + 1])(
+    const silk_float    *data1,
+    const silk_float    *data2,
+    opus_int            dataSize
+);
+
+#define silk_inner_product_FLP(data1, data2, dataSize, arch) ((void)arch,(*SILK_INNER_PRODUCT_FLP_IMPL[(arch) & OPUS_ARCHMASK])(data1, data2, dataSize))
 
 #endif
 

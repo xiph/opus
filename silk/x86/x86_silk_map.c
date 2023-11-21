@@ -32,6 +32,7 @@
 #include "celt/x86/x86cpu.h"
 #include "structs.h"
 #include "SigProc_FIX.h"
+#include "SigProc_FLP.h"
 #include "pitch.h"
 #include "main.h"
 
@@ -156,4 +157,21 @@ void (*const SILK_BURG_MODIFIED_IMPL[ OPUS_ARCHMASK + 1 ] )(
 };
 
 #endif
+
+#ifndef FIXED_POINT
+
+double (*const SILK_INNER_PRODUCT_FLP_IMPL[ OPUS_ARCHMASK + 1 ] )(
+    const silk_float    *data1,
+    const silk_float    *data2,
+    opus_int            dataSize
+) = {
+  silk_inner_product_FLP_c,                  /* non-sse */
+  silk_inner_product_FLP_c,
+  silk_inner_product_FLP_c,
+  silk_inner_product_FLP_c, /* sse4.1 */
+  MAY_HAVE_AVX2( silk_inner_product_FLP )  /* avx */
+};
+
+#endif
+
 #endif
