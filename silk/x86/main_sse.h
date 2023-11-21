@@ -180,7 +180,7 @@ void silk_NSQ_del_dec_avx2(
     ((void)(arch),silk_NSQ_del_dec_avx2(psEncC, NSQ, psIndices, x16, pulses, PredCoef_Q12, LTPCoef_Q14, AR_Q13, \
                            HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, pitchL, Lambda_Q10, LTP_scale_Q14))
 
-#  elif defined (OPUS_X86_PRESUME_SSE4_1)
+#  elif defined (OPUS_X86_PRESUME_SSE4_1) && !defined(OPUS_X86_MAY_HAVE_AVX2)
 
 #   define OVERRIDE_silk_NSQ_del_dec
 #   define silk_NSQ_del_dec(psEncC, NSQ, psIndices, x16, pulses, PredCoef_Q12, LTPCoef_Q14, AR_Q13, \
