@@ -1844,7 +1844,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         }
         if (st->silk_mode.useCBR)
         {
+           /* When we're in CBR mode, but we have non-SILK data to encode, switch SILK to VBR with cap to
+              save on complexity. Any variations will be absorbed by CELT and/or DRED and we can still
+              produce a constant bitrate without wasting bits. */
+#ifdef ENABLE_DRED
+           if (st->mode == MODE_HYBRID || dred_bitrate_bps > 0)
+#else
            if (st->mode == MODE_HYBRID)
+#endif
            {
               /* Allow SILK to steal up to 25% of the remaining bits */
               opus_int16 other_bits = IMAX(0, st->silk_mode.maxBits - st->silk_mode.bitRate * frame_size / st->Fs);
