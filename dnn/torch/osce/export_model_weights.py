@@ -40,6 +40,12 @@ import wexchange.torch
 from wexchange.torch import dump_torch_weights
 from models import model_dict
 
+from utils.layers.limited_adaptive_comb1d import LimitedAdaptiveComb1d
+from utils.layers.limited_adaptive_conv1d import LimitedAdaptiveConv1d
+from wexchange.torch import dump_torch_weights
+
+
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('checkpoint', type=str, help='LACE or NoLACE model checkpoint')
@@ -60,8 +66,14 @@ def sha1(filename):
 
     return sha1.hexdigest()
 
-def export_name(name):
-    return name.replace('.', '_')
+def osce_dump_generic(writer, name, module):
+    if isinstance(module, torch.nn.Linear) or isinstance(module, torch.nn.Conv1d) \
+            or isinstance(module, torch.nn.ConvTranspose1d) or isinstance(module, torch.nn.Embedding) \
+                or isinstance(module, LimitedAdaptiveConv1d) or isinstance(module, LimitedAdaptiveComb1d):
+                    dump_torch_weights(cwriter, module, name=name, verbose=True)
+    else:
+        for child_name, child in module.named_children():
+            osce_dump_generic(writer, name + "_" + child_name, child)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -89,9 +101,6 @@ if __name__ == "__main__":
     cwriter.header.write("\n\n")
 
     # dump layers
-    for name, module in model.named_modules():
-        if isinstance(module, torch.nn.Linear) or isinstance(module, torch.nn.Conv1d) \
-            or isinstance(module, torch.nn.ConvTranspose1d) or isinstance(module, torch.nn.Embedding):
-                dump_torch_weights(cwriter, module, name=export_name(name), verbose=True)
+    osce_dump_generic(cwriter, model_name, model)
 
     cwriter.close()
