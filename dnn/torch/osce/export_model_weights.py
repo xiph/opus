@@ -42,6 +42,7 @@ from models import model_dict
 
 from utils.layers.limited_adaptive_comb1d import LimitedAdaptiveComb1d
 from utils.layers.limited_adaptive_conv1d import LimitedAdaptiveConv1d
+from utils.layers.td_shaper import TDShaper
 from wexchange.torch import dump_torch_weights
 
 
@@ -69,8 +70,9 @@ def sha1(filename):
 def osce_dump_generic(writer, name, module):
     if isinstance(module, torch.nn.Linear) or isinstance(module, torch.nn.Conv1d) \
             or isinstance(module, torch.nn.ConvTranspose1d) or isinstance(module, torch.nn.Embedding) \
-                or isinstance(module, LimitedAdaptiveConv1d) or isinstance(module, LimitedAdaptiveComb1d):
-                    dump_torch_weights(cwriter, module, name=name, verbose=True)
+                or isinstance(module, LimitedAdaptiveConv1d) or isinstance(module, LimitedAdaptiveComb1d) \
+                    or isinstance(module, TDShaper):
+                        dump_torch_weights(cwriter, module, name=name, verbose=True)
     else:
         for child_name, child in module.named_children():
             osce_dump_generic(writer, name + "_" + child_name, child)
