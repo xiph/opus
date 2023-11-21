@@ -103,9 +103,6 @@ class LimitedAdaptiveConv1d(nn.Module):
         # network for generating convolution weights
         self.conv_kernel = nn.Linear(feature_dim, in_channels * out_channels * kernel_size)
 
-        if self.use_bias:
-            self.conv_bias = nn.Linear(feature_dim, out_channels)
-
         self.shape_gain = min(1, 10**(shape_gain_db / 20))
 
         self.filter_gain = nn.Linear(feature_dim, out_channels)
