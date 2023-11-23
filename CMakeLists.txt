@@ -524,6 +524,7 @@ if(NOT OPUS_DISABLE_INTRINSICS)
 
     add_sources_group(opus celt ${celt_sources_arm_neon_intr})
     add_sources_group(opus silk ${silk_sources_arm_neon_intr})
+    add_sources_group(opus lpcnet ${dnn_sources_arm_neon})
 
     # silk arm neon depends on main_Fix.h
     target_include_directories(opus PRIVATE silk/fixed)
