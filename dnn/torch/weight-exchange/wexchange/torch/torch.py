@@ -333,7 +333,6 @@ def load_torch_conv2d_weights(where, conv):
 
 def dump_torch_embedding_weights(where, embed, name='embed', scale=1/128, sparse=False, diagonal=False, quantize=False):
 
-    print("quantize = ", quantize)
     w = embed.weight.detach().cpu().numpy().copy().transpose()
     b = np.zeros(w.shape[0], dtype=w.dtype)
 
