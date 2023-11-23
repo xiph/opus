@@ -90,17 +90,14 @@ if __name__ == "__main__":
     # create model and load weights
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
     model = model_dict[checkpoint['setup']['model']['name']](*checkpoint['setup']['model']['args'], **checkpoint['setup']['model']['kwargs'])
+    model.load_state_dict(checkpoint['state_dict'])
 
     # CWriter
     model_name = checkpoint['setup']['model']['name']
     cwriter = wexchange.c_export.CWriter(os.path.join(outdir, model_name + "_data"), message=message, model_struct_name=model_name.upper())
 
-    # dump numbits_embedding parameters by hand
-    numbits_embedding = model.get_submodule('numbits_embedding')
-    weights = next(iter(numbits_embedding.parameters()))
-    for i, c in enumerate(weights):
-        cwriter.header.write(f"\nNUMBITS_COEF_{i} {float(c.detach())}f")
-    cwriter.header.write("\n\n")
+    # Add custom includes
+    cwriter.header.write('\n#include "osce.h"\n')
 
     # dump layers
     osce_dump_generic(cwriter, model_name, model)
