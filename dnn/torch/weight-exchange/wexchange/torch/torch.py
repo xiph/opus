@@ -56,9 +56,9 @@ def dump_torch_adaptive_conv1d_weights(where, adaconv, name='adaconv', kernel_sc
     if isinstance(where, CWriter):
         # write relevant scalar parameters to header file
         where.header.write(f"""
-#define {name.upper()}_FILTER_GAIN_A {adaconv.filter_gain_a}f
-#define {name.upper()}_FILTER_GAIN_B {adaconv.filter_gain_b}f
-#define {name.upper()}_SHAPE_GAIN {adaconv.shape_gain}f
+#define {name.upper()}_FILTER_GAIN_A {adaconv.filter_gain_a:f}f
+#define {name.upper()}_FILTER_GAIN_B {adaconv.filter_gain_b:f}f
+#define {name.upper()}_SHAPE_GAIN {adaconv.shape_gain:f}f
 #define {name.upper()}_KERNEL_SIZE {adaconv.kernel_size}
 #define {name.upper()}_FRAME_SIZE {adaconv.frame_size}
 #define {name.upper()}_LEFT_PADDING {adaconv.padding[0]}
@@ -95,9 +95,9 @@ def dump_torch_adaptive_comb1d_weights(where, adaconv, name='adaconv', kernel_sc
     if isinstance(where, CWriter):
         # write relevant scalar parameters to header file
         where.header.write(f"""
-#define {name.upper()}_FILTER_GAIN_A {adaconv.filter_gain_a}f
-#define {name.upper()}_FILTER_GAIN_B {adaconv.filter_gain_b}f
-#define {name.upper()}_LOG_GAIN_LIMIT {adaconv.log_gain_limit}f
+#define {name.upper()}_FILTER_GAIN_A {adaconv.filter_gain_a:f}f
+#define {name.upper()}_FILTER_GAIN_B {adaconv.filter_gain_b:f}f
+#define {name.upper()}_LOG_GAIN_LIMIT {adaconv.log_gain_limit:f}f
 #define {name.upper()}_KERNEL_SIZE {adaconv.kernel_size}
 #define {name.upper()}_LEFT_PADDING {adaconv.padding[0]}
 #define {name.upper()}_FRAME_SIZE {adaconv.frame_size}
