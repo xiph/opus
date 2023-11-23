@@ -43,6 +43,7 @@
 #define OPUS_CPU_ARM_EDSP_FLAG  (1<<OPUS_ARCH_ARM_EDSP)
 #define OPUS_CPU_ARM_MEDIA_FLAG (1<<OPUS_ARCH_ARM_MEDIA)
 #define OPUS_CPU_ARM_NEON_FLAG  (1<<OPUS_ARCH_ARM_NEON)
+#define OPUS_CPU_ARM_DOTPROD_FLAG  (1<<OPUS_ARCH_ARM_DOTPROD)
 
 #if defined(_MSC_VER)
 /*For GetExceptionCode() and EXCEPTION_ILLEGAL_INSTRUCTION.*/
@@ -127,6 +128,11 @@ opus_uint32 opus_cpu_capabilities(void)
         if(p != NULL && (p[5] == ' ' || p[5] == '\n'))
           flags |= OPUS_CPU_ARM_NEON_FLAG;
 #  endif
+#  if defined(OPUS_ARM_MAY_HAVE_DOTPROD)
+        p = strstr(buf, " asimddp");
+        if(p != NULL && (p[8] == ' ' || p[8] == '\n'))
+          flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
+#  endif
       }
 # endif
 
@@ -143,6 +149,13 @@ opus_uint32 opus_cpu_capabilities(void)
       }
 # endif
     }
+
+#if defined(OPUS_ARM_PRESUME_AARCH64_NEON_INTR)
+    flags |= OPUS_CPU_ARM_EDSP_FLAG | OPUS_CPU_ARM_MEDIA_FLAG | OPUS_CPU_ARM_NEON_FLAG;
+# if defined(OPUS_ARM_PRESUME_DOTPROD)
+    flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
+# endif
+#endif
 
     fclose(cpuinfo);
   }
@@ -180,7 +193,13 @@ static int opus_select_arch_impl(void)
   }
   arch++;
 
-  celt_assert(arch == OPUS_ARCH_ARM_NEON);
+  if(!(flags & OPUS_CPU_ARM_DOTPROD_FLAG)) {
+    celt_assert(arch == OPUS_ARCH_ARM_NEON);
+    return arch;
+  }
+  arch++;
+
+  celt_assert(arch == OPUS_ARCH_ARM_DOTPROD);
   return arch;
 }
 

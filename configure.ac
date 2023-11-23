@@ -334,6 +334,18 @@ AS_IF([test x"${enable_asm}" = x"yes"],[
                     )
                 ])
                 AC_SUBST(OPUS_ARM_MAY_HAVE_NEON)
+                AS_IF([test x"$OPUS_ARM_MAY_HAVE_DOTPROD" = x"1"],[
+                    AC_DEFINE(OPUS_ARM_MAY_HAVE_DOTPROD, 1,
+                      [Define if compiler supports DOTPROD instructions])
+                    AS_IF([test x"$OPUS_ARM_PRESUME_DOTPROD" = x"1"], [
+                        AC_DEFINE(OPUS_ARM_PRESUME_DOTPROD, 1,
+                          [Define if binary requires DOTPROD instruction support])
+                        asm_optimization="$asm_optimization (DOTPROD)"
+                    ],
+                        [rtcd_support="$rtcd_support (DOTPROD)"]
+                    )
+                ])
+                AC_SUBST(OPUS_ARM_MAY_HAVE_DOTPROD)
                 dnl Make sure turning on RTCD gets us at least one
                 dnl instruction set.
                 AS_IF([test x"$rtcd_support" != x""],
@@ -377,6 +389,7 @@ m4_define([DEFAULT_X86_SSE2_CFLAGS], [-msse2])
 m4_define([DEFAULT_X86_SSE4_1_CFLAGS], [-msse4.1])
 m4_define([DEFAULT_X86_AVX2_CFLAGS], [-mavx -mfma -mavx2])
 m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
+m4_define([DEFAULT_ARM_DOTPROD_INTR_CFLAGS], ["-march=armv8.2-a+dotprod"])
 # With GCC on ARM32 softfp architectures (e.g. Android, or older Ubuntu) you need to specify
 # -mfloat-abi=softfp for -mfpu=neon to work.  However, on ARM32 hardfp architectures (e.g. newer Ubuntu),
 # this option will break things.
@@ -394,12 +407,14 @@ AC_ARG_VAR([X86_SSE2_CFLAGS], [C compiler flags to compile SSE2 intrinsics @<:@d
 AC_ARG_VAR([X86_SSE4_1_CFLAGS], [C compiler flags to compile SSE4.1 intrinsics @<:@default=]DEFAULT_X86_SSE4_1_CFLAGS[@:>@])
 AC_ARG_VAR([X86_AVX2_CFLAGS], [C compiler flags to compile AVX2 intrinsics @<:@default=]DEFAULT_X86_AVX2_CFLAGS[@:>@])
 AC_ARG_VAR([ARM_NEON_INTR_CFLAGS], [C compiler flags to compile ARM NEON intrinsics @<:@default=]DEFAULT_ARM_NEON_INTR_CFLAGS / DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS[@:>@])
+AC_ARG_VAR([ARM_DOTPROD_INTR_CFLAGS], [C compiler flags to compile ARM DOTPROD intrinsics @<:@default=]DEFAULT_ARM_DOTPROD_INTR_CFLAGS[@:>@])
 
 AS_VAR_SET_IF([X86_SSE_CFLAGS], [], [AS_VAR_SET([X86_SSE_CFLAGS], "DEFAULT_X86_SSE_CFLAGS")])
 AS_VAR_SET_IF([X86_SSE2_CFLAGS], [], [AS_VAR_SET([X86_SSE2_CFLAGS], "DEFAULT_X86_SSE2_CFLAGS")])
 AS_VAR_SET_IF([X86_SSE4_1_CFLAGS], [], [AS_VAR_SET([X86_SSE4_1_CFLAGS], "DEFAULT_X86_SSE4_1_CFLAGS")])
 AS_VAR_SET_IF([X86_AVX2_CFLAGS], [], [AS_VAR_SET([X86_AVX2_CFLAGS], "DEFAULT_X86_AVX2_CFLAGS")])
 AS_VAR_SET_IF([ARM_NEON_INTR_CFLAGS], [], [AS_VAR_SET([ARM_NEON_INTR_CFLAGS], ["$RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS"])])
+AS_VAR_SET_IF([ARM_DOTPROD_INTR_CFLAGS], [], [AS_VAR_SET([ARM_DOTPROD_INTR_CFLAGS], ["DEFAULT_ARM_DOTPROD_INTR_CFLAGS"])])
 
 AC_DEFUN([OPUS_PATH_NE10],
    [
@@ -542,6 +557,46 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
             AC_DEFINE([OPUS_ARM_PRESUME_AARCH64_NEON_INTR], 1, [Define if binary requires Aarch64 Neon Intrinsics])
             intrinsics_support="$intrinsics_support (NEON [Aarch64])"
          ])
+
+         OPUS_CHECK_INTRINSICS(
+            [Aarch64 dotprod],
+	    [$ARM_DOTPROD_INTR_CFLAGS],
+            [OPUS_ARM_MAY_HAVE_DOTPROD],
+            [OPUS_ARM_PRESUME_DOTPROD],
+            [[#include <arm_neon.h>
+            ]],
+            [[
+               static int32x4_t acc;
+               static int8x16_t a, b;
+               acc = vdotq_s32(acc, a, b);
+            ]]
+         )
+         AS_IF([test x"$OPUS_ARM_MAY_HAVE_DOTPROD" = x"1" && test x"$OPUS_ARM_PRESUME_DOTPROD" != x"1"],
+             [
+                OPUS_ARM_DOTPROD_INTR_CFLAGS="$ARM_NEON_DOTPROD_CFLAGS"
+                AC_SUBST([OPUS_ARM_DOTPROD_INTR_CFLAGS])
+             ]
+         )
+
+         AS_IF([test x"$OPUS_ARM_MAY_HAVE_DOTPROD" = x"1"],
+             [
+                AC_DEFINE([OPUS_ARM_MAY_HAVE_DOTPROD], 1, [Compiler supports Aarch64 DOTPROD Intrinsics])
+                intrinsics_support="$intrinsics_support (DOTPROD)"
+
+                AS_IF([test x"$OPUS_ARM_PRESUME_DOTPROD" = x"1"],
+                [
+                   AC_DEFINE([OPUS_ARM_PRESUME_DOTPROD], 1, [Define if binary requires Aarch64 dotprod Intrinsics])
+                   intrinsics_support="$intrinsics_support (DOTPROD [Aarch64])"
+                ])
+
+                AS_IF([test x"$enable_rtcd" != x"no" && test x"$OPUS_ARM_PRESUME_DOTPROD" != x"1"],
+                   [AS_IF([test x"$rtcd_support" = x"no"],
+                      [rtcd_support="ARM (DOTPROD Intrinsics)"],
+                      [rtcd_support="$rtcd_support (DOTPROD Intrinsics)"])])
+
+             ]
+         )
+
 
          AS_IF([test x"$intrinsics_support" = x""],
             [intrinsics_support=no],
@@ -760,6 +815,8 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
 ])
 
 AM_CONDITIONAL([CPU_ARM], [test "$cpu_arm" = "yes"])
+AM_CONDITIONAL([HAVE_ARM_DOTPROD],
+    [test x"$OPUS_ARM_MAY_HAVE_DOTPROD" = x"1"])
 AM_CONDITIONAL([HAVE_ARM_NEON_INTR],
     [test x"$OPUS_ARM_MAY_HAVE_NEON_INTR" = x"1"])
 AM_CONDITIONAL([HAVE_ARM_NE10],
