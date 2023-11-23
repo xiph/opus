@@ -43,6 +43,7 @@
 #define OPUS_CPU_ARM_EDSP_FLAG  (1<<OPUS_ARCH_ARM_EDSP)
 #define OPUS_CPU_ARM_MEDIA_FLAG (1<<OPUS_ARCH_ARM_MEDIA)
 #define OPUS_CPU_ARM_NEON_FLAG  (1<<OPUS_ARCH_ARM_NEON)
+#define OPUS_CPU_ARM_DOTPROD_FLAG  (1<<OPUS_ARCH_ARM_DOTPROD)
 
 #if defined(_MSC_VER)
 /*For GetExceptionCode() and EXCEPTION_ILLEGAL_INSTRUCTION.*/
@@ -95,6 +96,15 @@ static OPUS_INLINE opus_uint32 opus_cpu_capabilities(void){
 /* Linux based */
 #include <stdio.h>
 
+#if defined(OPUS_ARM_MAY_HAVE_DOTPROD) && !defined(OPUS_ARM_PRESUME_DOTPROD)
+static int dotprod_supported(void)
+{
+  unsigned long long id_aa64isar0;
+  __asm ("MRS %x0, ID_AA64ISAR0_EL1 \n" : "=r" (id_aa64isar0) );
+  return !!(id_aa64isar0 & 0x0000100000000000ULL);
+}
+#endif
+
 opus_uint32 opus_cpu_capabilities(void)
 {
   opus_uint32 flags = 0;
@@ -144,6 +154,18 @@ opus_uint32 opus_cpu_capabilities(void)
 # endif
     }
 
+#if defined(OPUS_ARM_PRESUME_AARCH64_NEON_INTR)
+    flags = OPUS_CPU_ARM_EDSP_FLAG | OPUS_CPU_ARM_MEDIA_FLAG | OPUS_CPU_ARM_NEON_FLAG;
+# if defined(OPUS_ARM_MAY_HAVE_DOTPROD)
+#  if defined(OPUS_ARM_PRESUME_DOTPROD)
+    flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
+#  else
+    if (dotprod_supported())
+      flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
+#  endif
+# endif
+#endif
+
     fclose(cpuinfo);
   }
   return flags;
@@ -180,7 +202,13 @@ static int opus_select_arch_impl(void)
   }
   arch++;
 
-  celt_assert(arch == OPUS_ARCH_ARM_NEON);
+  if(!(flags & OPUS_CPU_ARM_DOTPROD_FLAG)) {
+    celt_assert(arch == OPUS_ARCH_ARM_NEON);
+    return arch;
+  }
+  arch++;
+
+  celt_assert(arch == OPUS_ARCH_ARM_DOTPROD);
   return arch;
 }
 
