@@ -14,7 +14,8 @@ dnn/vec_neon.h \
 dnn/pitchdnn.h \
 dnn/pitchdnn_data.h \
 dnn/x86/dnn_x86.h \
-dnn/nnet_arch.h
+dnn/nnet_arch.h \
+dnn/arm/dnn_arm.h
 
 DRED_HEAD = \
 silk/dred_coding.h \
