@@ -96,15 +96,6 @@ static OPUS_INLINE opus_uint32 opus_cpu_capabilities(void){
 /* Linux based */
 #include <stdio.h>
 
-#if defined(OPUS_ARM_MAY_HAVE_DOTPROD) && !defined(OPUS_ARM_PRESUME_DOTPROD)
-static int dotprod_supported(void)
-{
-  unsigned long long id_aa64isar0;
-  __asm ("MRS %x0, ID_AA64ISAR0_EL1 \n" : "=r" (id_aa64isar0) );
-  return !!(id_aa64isar0 & 0x0000100000000000ULL);
-}
-#endif
-
 opus_uint32 opus_cpu_capabilities(void)
 {
   opus_uint32 flags = 0;
@@ -137,6 +128,11 @@ opus_uint32 opus_cpu_capabilities(void)
         if(p != NULL && (p[5] == ' ' || p[5] == '\n'))
           flags |= OPUS_CPU_ARM_NEON_FLAG;
 #  endif
+#  if defined(OPUS_ARM_MAY_HAVE_DOTPROD)
+        p = strstr(buf, " asimddp");
+        if(p != NULL && (p[8] == ' ' || p[8] == '\n'))
+          flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
+#  endif
       }
 # endif
 
@@ -155,14 +151,9 @@ opus_uint32 opus_cpu_capabilities(void)
     }
 
 #if defined(OPUS_ARM_PRESUME_AARCH64_NEON_INTR)
-    flags = OPUS_CPU_ARM_EDSP_FLAG | OPUS_CPU_ARM_MEDIA_FLAG | OPUS_CPU_ARM_NEON_FLAG;
-# if defined(OPUS_ARM_MAY_HAVE_DOTPROD)
-#  if defined(OPUS_ARM_PRESUME_DOTPROD)
+    flags |= OPUS_CPU_ARM_EDSP_FLAG | OPUS_CPU_ARM_MEDIA_FLAG | OPUS_CPU_ARM_NEON_FLAG;
+# if defined(OPUS_ARM_PRESUME_DOTPROD)
     flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
-#  else
-    if (dotprod_supported())
-      flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
-#  endif
 # endif
 #endif
 
