@@ -106,6 +106,9 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
   float ener0;
   float ener;
   float x[FRAME_SIZE+LPC_ORDER];
+  float frame_corr;
+  float xy, xx, yy;
+  int pitch;
   /* [b,a]=ellip(2, 2, 20, 1200/8000); */
   static const float lp_b[2] = {-0.84946f, 1.f};
   static const float lp_a[2] = {-1.54220f, 0.70781f};
@@ -166,13 +169,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
     /*printf("\n");*/
   }
   st->dnn_pitch = compute_pitchdnn(&st->pitchdnn, st->if_features, st->xcorr_features, arch);
-}
-
-void process_single_frame(LPCNetEncState *st) {
-  float frame_corr;
-  float xy, xx, yy;
-  /*int pitch = (best[2]+best[3])/2;*/
-  int pitch = (int)floor(.5+256./pow(2.f,((1./60.)*((st->dnn_pitch+1.5)*60))));
+  pitch = (int)floor(.5+256./pow(2.f,((1./60.)*((st->dnn_pitch+1.5)*60))));
   xx = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
   yy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD-pitch], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
   xy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
@@ -196,7 +193,6 @@ void preemphasis(float *y, float *mem, const float *x, float coef, int N) {
 static int lpcnet_compute_single_frame_features_impl(LPCNetEncState *st, float *x, float features[NB_TOTAL_FEATURES], int arch) {
   preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
   compute_frame_features(st, x, arch);
-  process_single_frame(st);
   OPUS_COPY(features, &st->features[0], NB_TOTAL_FEATURES);
   return 0;
 }
