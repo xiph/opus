@@ -34,8 +34,8 @@ typedef struct {
 typedef struct {
     float history[ADACOMB_MAX_KERNEL_SIZE + ADACOMB_MAX_LAG];
     float last_kernel[ADACOMB_MAX_KERNEL_SIZE];
-    float last_gain;
     float last_global_gain;
+    int last_pitch_lag;
 } AdaCombState;
 
 
@@ -68,8 +68,14 @@ void adacomb_process_frame(
     float *x_out,
     float *x_in,
     float *features,
+    LinearLayer *kernel_layer,
+    LinearLayer *gain_layer,
+    LinearLayer *global_gain_layer,
+    int pitch_lag,
     int frame_size,
     int overlap_size,
+    int kernel_size,
+    int left_padding,
     float filter_gain_a,
     float filter_gain_b,
     float log_gain_limit,

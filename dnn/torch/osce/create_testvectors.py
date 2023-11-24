@@ -32,6 +32,27 @@ def create_adaconv_testvector(prefix, adaconv, num_frames, debug=False):
     x_in.tofile(prefix + '_x_in.f32')
     x_out.tofile(prefix + '_x_out.f32')
 
+def create_adacomb_testvector(prefix, adacomb, num_frames, debug=False):
+    feature_dim = adacomb.feature_dim
+    in_channels = 1
+    frame_size = adacomb.frame_size
+
+    features = torch.randn((1, num_frames, feature_dim))
+    x_in = torch.randn((1, in_channels, num_frames * frame_size))
+    p_in = torch.randint(adacomb.kernel_size, 250, (1, num_frames))
+
+    x_out = adacomb(x_in, features, p_in, debug=debug)
+
+    features = features[0].detach().numpy()
+    x_in = x_in[0].permute(1, 0).detach().numpy()
+    p_in = p_in[0].detach().numpy().astype(np.int32)
+    x_out = x_out[0].permute(1, 0).detach().numpy()
+
+    features.tofile(prefix + '_features.f32')
+    x_in.tofile(prefix + '_x_in.f32')
+    p_in.tofile(prefix + '_p_in.s32')
+    x_out.tofile(prefix + '_x_out.f32')
+
 if __name__ == "__main__":
     args = parser.parse_args()
 
@@ -52,7 +73,6 @@ if __name__ == "__main__":
     # lace af1, 1 input channel, 1 output channel
     create_adaconv_testvector(os.path.join(args.output_folder, "lace_af1"), lace.af1, 5, debug=args.debug)
 
-
     # nolace af1, 1 input channel, 2 output channels
     create_adaconv_testvector(os.path.join(args.output_folder, "nolace_af1"), nolace.af1, 5, debug=args.debug)
 
@@ -61,6 +81,9 @@ if __name__ == "__main__":
 
     # nolace af2, 2 input channel, 2 output channels
     create_adaconv_testvector(os.path.join(args.output_folder, "nolace_af2"), nolace.af2, 5, debug=args.debug)
+
+    # lace cf1
+    create_adacomb_testvector(os.path.join(args.output_folder, "lace_cf1"), lace.cf1, 5, debug=args.debug)
 
     if args.debug:
         endoscopy.close()
