@@ -83,14 +83,25 @@ static void frame_analysis(LPCNetEncState *st, kiss_fft_cpx *X, float *Ex, const
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
   int i;
+  float mem0, mem1;
+  mem0 = mem[0];
+  mem1 = mem[1];
   for (i=0;i<N;i++) {
-    float xi, yi;
+    float xi, yi, mem00;
     xi = x[i];
-    yi = x[i] + mem[0];
-    mem[0] = mem[1] + (b[0]*xi - a[0]*yi);
-    mem[1] = (b[1]*xi - a[1]*yi);
+    yi = x[i] + mem0;
+    mem00 = mem0;
+    /* Original code:
+    mem0 = mem1 + (b[0]*xi - a[0]*yi);
+    mem1 = (b[1]*xi - a[1]*yi);
+    Modified to reduce dependency chains:
+    */
+    mem0 = (b[0]-a[0])*xi + mem1 - a[0]*mem0;
+    mem1 = (b[1]-a[1])*xi + 1e-30f - a[1]*mem00;
     y[i] = yi;
   }
+  mem[0] = mem0;
+  mem[1] = mem1;
 }
 
 #define celt_log10(x) (0.3010299957f*celt_log2(x))
