@@ -207,7 +207,7 @@ void adacomb_compare(
         }
 
         adacomb_process_frame(hAdaComb, x_out, x_in, features, kernel_layer, gain_layer, global_gain_layer,
-            pitch_lag, frame_size, overlap_size, kernel_size, left_padding, filter_gain_a, filter_gain_b, log_gain_limit, NULL);
+            pitch_lag, feature_dim, frame_size, overlap_size, kernel_size, left_padding, filter_gain_a, filter_gain_b, log_gain_limit, NULL);
 
 
         mse = 0;

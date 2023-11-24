@@ -19,7 +19,7 @@ void init_adacomb_state(AdaCombState *hAdaComb)
 }
 
 #ifdef DEBUG_NNDSP
-void print_float_vector(const char* name, float *vec, int length)
+void print_float_vector(const char* name, const float *vec, int length)
 {
     for (int i = 0; i < length; i ++)
     {
@@ -83,11 +83,11 @@ static void transform_gains(
 void adaconv_process_frame(
     AdaConvState* hAdaConv,
     float *x_out,
-    float *x_in,
-    float *features,
-    LinearLayer *kernel_layer,
-    LinearLayer *gain_layer,
-    int feature_dim, // not strictly necessary
+    const float *x_in,
+    const float *features,
+    const LinearLayer *kernel_layer,
+    const LinearLayer *gain_layer,
+    int feature_dim,
     int frame_size,
     int overlap_size,
     int in_channels,
@@ -198,12 +198,13 @@ void adaconv_process_frame(
 void adacomb_process_frame(
     AdaCombState* hAdaComb,
     float *x_out,
-    float *x_in,
-    float *features,
-    LinearLayer *kernel_layer,
-    LinearLayer *gain_layer,
-    LinearLayer *global_gain_layer,
+    const float *x_in,
+    const float *features,
+    const LinearLayer *kernel_layer,
+    const LinearLayer *gain_layer,
+    const LinearLayer *global_gain_layer,
     int pitch_lag,
+    int feature_dim,
     int frame_size,
     int overlap_size,
     int kernel_size,
