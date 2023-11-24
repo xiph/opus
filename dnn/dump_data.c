@@ -263,7 +263,8 @@ int main(int argc, char **argv) {
       }
       fwrite(pitch_features, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES, 1, ffeat);
     } else {
-      process_single_frame(st, ffeat);
+      process_single_frame(st);
+      fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
     }
     /*if(pitch) fwrite(pcm, FRAME_SIZE, 2, stdout);*/
     if (fpcm) write_audio(st, pcm, noisebuf, fpcm);

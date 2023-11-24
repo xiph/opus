@@ -168,7 +168,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
   st->dnn_pitch = compute_pitchdnn(&st->pitchdnn, st->if_features, st->xcorr_features, arch);
 }
 
-void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
+void process_single_frame(LPCNetEncState *st) {
   float frame_corr;
   float xy, xx, yy;
   /*int pitch = (best[2]+best[3])/2;*/
@@ -181,9 +181,6 @@ void process_single_frame(LPCNetEncState *st, FILE *ffeat) {
   frame_corr = log(1.f+exp(5.f*frame_corr))/log(1+exp(5.f));
   st->features[NB_BANDS] = st->dnn_pitch;
   st->features[NB_BANDS + 1] = frame_corr-.5f;
-  if (ffeat) {
-    fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
-  }
 }
 
 void preemphasis(float *y, float *mem, const float *x, float coef, int N) {
@@ -199,7 +196,7 @@ void preemphasis(float *y, float *mem, const float *x, float coef, int N) {
 static int lpcnet_compute_single_frame_features_impl(LPCNetEncState *st, float *x, float features[NB_TOTAL_FEATURES], int arch) {
   preemphasis(x, &st->mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
   compute_frame_features(st, x, arch);
-  process_single_frame(st, NULL);
+  process_single_frame(st);
   OPUS_COPY(features, &st->features[0], NB_TOTAL_FEATURES);
   return 0;
 }
