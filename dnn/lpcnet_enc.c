@@ -94,7 +94,7 @@ static void biquad(float *y, float mem[2], const float *x, const float *b, const
     /* Original code:
     mem0 = mem1 + (b[0]*xi - a[0]*yi);
     mem1 = (b[1]*xi - a[1]*yi);
-    Modified to reduce dependency chains:
+    Modified to reduce dependency chains: (the +1e-30f forces the ordering and has no effect on the output)
     */
     mem0 = (b[0]-a[0])*xi + mem1 - a[0]*mem0;
     mem1 = (b[1]-a[1])*xi + 1e-30f - a[1]*mem00;
@@ -167,8 +167,8 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
     double ener1;
     float *buf = st->exc_buf;
     celt_pitch_xcorr(&buf[PITCH_MAX_PERIOD], buf, xcorr, FRAME_SIZE, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD, arch);
-    ener0 = celt_inner_prod_c(&buf[PITCH_MAX_PERIOD], &buf[PITCH_MAX_PERIOD], FRAME_SIZE);
-    ener1 = celt_inner_prod_c(&buf[0], &buf[0], FRAME_SIZE-1);
+    ener0 = celt_inner_prod(&buf[PITCH_MAX_PERIOD], &buf[PITCH_MAX_PERIOD], FRAME_SIZE, arch);
+    ener1 = celt_inner_prod(&buf[0], &buf[0], FRAME_SIZE-1, arch);
     /*printf("%f\n", st->frame_weight[sub]);*/
     for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
       ener1 += buf[i+FRAME_SIZE-1]*buf[i+FRAME_SIZE-1];
@@ -181,9 +181,9 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
   }
   st->dnn_pitch = compute_pitchdnn(&st->pitchdnn, st->if_features, st->xcorr_features, arch);
   pitch = (int)floor(.5+256./pow(2.f,((1./60.)*((st->dnn_pitch+1.5)*60))));
-  xx = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE);
-  yy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD-pitch], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
-  xy = celt_inner_prod_c(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE);
+  xx = celt_inner_prod(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD], FRAME_SIZE, arch);
+  yy = celt_inner_prod(&st->lp_buf[PITCH_MAX_PERIOD-pitch], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE, arch);
+  xy = celt_inner_prod(&st->lp_buf[PITCH_MAX_PERIOD], &st->lp_buf[PITCH_MAX_PERIOD-pitch], FRAME_SIZE, arch);
   /*printf("%f %f\n", frame_corr, xy/sqrt(1e-15+xx*yy));*/
   frame_corr = xy/sqrt(1+xx*yy);
   frame_corr = log(1.f+exp(5.f*frame_corr))/log(1+exp(5.f));
