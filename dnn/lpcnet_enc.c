@@ -120,6 +120,7 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
   float frame_corr;
   float xy, xx, yy;
   int pitch;
+  float ener_norm[PITCH_MAX_PERIOD - PITCH_MIN_PERIOD];
   /* [b,a]=ellip(2, 2, 20, 1200/8000); */
   static const float lp_b[2] = {-0.84946f, 1.f};
   static const float lp_a[2] = {-1.54220f, 0.70781f};
@@ -168,14 +169,18 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
     float *buf = st->exc_buf;
     celt_pitch_xcorr(&buf[PITCH_MAX_PERIOD], buf, xcorr, FRAME_SIZE, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD, arch);
     ener0 = celt_inner_prod(&buf[PITCH_MAX_PERIOD], &buf[PITCH_MAX_PERIOD], FRAME_SIZE, arch);
-    ener1 = celt_inner_prod(&buf[0], &buf[0], FRAME_SIZE-1, arch);
+    ener1 = celt_inner_prod(&buf[0], &buf[0], FRAME_SIZE, arch);
     /*printf("%f\n", st->frame_weight[sub]);*/
     for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
-      ener1 += buf[i+FRAME_SIZE-1]*buf[i+FRAME_SIZE-1];
       ener = 1 + ener0 + ener1;
-      st->xcorr_features[i] = 2*xcorr[i] / ener;
-      ener1 -= buf[i]*buf[i];
+      st->xcorr_features[i] = 2*xcorr[i];
+      ener_norm[i] = ener;
+      ener1 += buf[i+FRAME_SIZE]*(double)buf[i+FRAME_SIZE] - buf[i]*(double)buf[i];
       /*printf("%f ", st->xcorr_features[i]);*/
+    }
+    /* Split in a separate loop so the compiler can vectorize it */
+    for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
+      st->xcorr_features[i] /= ener_norm[i];
     }
     /*printf("\n");*/
   }
