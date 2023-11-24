@@ -17,12 +17,12 @@
 #define ADACOMB_MAX_FRAME_SIZE 80
 #define ADACOMB_MAX_OVERLAP_SIZE 40
 
-// #define DEBUG_NNDSP
+//#define DEBUG_NNDSP
 #ifdef DEBUG_NNDSP
 #include <stdio.h>
 #endif
 
-void print_float_vector(const char* name, float *vec, int length);
+void print_float_vector(const char* name, const float *vec, int length);
 
 typedef struct {
     float history[ADACONV_MAX_KERNEL_SIZE * ADACONV_MAX_INPUT_CHANNELS];
@@ -46,10 +46,10 @@ void init_adacomb_state(AdaCombState *hAdaComb);
 void adaconv_process_frame(
     AdaConvState* hAdaConv,
     float *x_out,
-    float *x_in,
-    float *features,
-    LinearLayer *kernel_layer,
-    LinearLayer *gain_layer,
+    const float *x_in,
+    const float *features,
+    const LinearLayer *kernel_layer,
+    const LinearLayer *gain_layer,
     int feature_dim, // not strictly necessary
     int frame_size,
     int overlap_size,
@@ -66,12 +66,13 @@ void adaconv_process_frame(
 void adacomb_process_frame(
     AdaCombState* hAdaComb,
     float *x_out,
-    float *x_in,
-    float *features,
-    LinearLayer *kernel_layer,
-    LinearLayer *gain_layer,
-    LinearLayer *global_gain_layer,
+    const float *x_in,
+    const float *features,
+    const LinearLayer *kernel_layer,
+    const LinearLayer *gain_layer,
+    const LinearLayer *global_gain_layer,
     int pitch_lag,
+    int feature_dim,
     int frame_size,
     int overlap_size,
     int kernel_size,
