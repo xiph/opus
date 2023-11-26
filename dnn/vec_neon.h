@@ -34,6 +34,13 @@
 #include <arm_neon.h>
 #include "os_support.h"
 
+#if defined(__arm__) && !defined(__aarch64__)
+/* Emulate vcvtnq_s32_f32() for ARMv7 Neon. */
+static OPUS_INLINE int32x4_t vcvtnq_s32_f32(float32x4_t x) {
+  return vrshrq_n_s32(vcvtq_n_s32_f32(x, 8), 8);
+}
+#endif
+
 #ifndef LPCNET_TEST
 static inline float32x4_t exp4_approx(float32x4_t x) {
   int32x4_t i;
