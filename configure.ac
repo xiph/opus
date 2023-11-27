@@ -181,11 +181,11 @@ AS_IF([test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes"],[
 AM_CONDITIONAL([ENABLE_DEEP_PLC], [test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes"])
 
 has_float_approx=no
-#case "$host_cpu" in
-#i[[3456]]86 | x86_64 | powerpc64 | powerpc32 | ia64)
-#  has_float_approx=yes
-#  ;;
-#esac
+case "$host_cpu" in
+i[[3456]]86 | x86_64 | arm* | aarch64* | powerpc64 | powerpc32 | ia64)
+  has_float_approx=yes
+  ;;
+esac
 
 AC_ARG_ENABLE([float-approx],
     [AS_HELP_STRING([--enable-float-approx], [enable fast approximations for floating point])],
