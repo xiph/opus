@@ -40,7 +40,8 @@
 
 /* Force vectorization on for DNN code because some of the loops rely on
    compiler vectorization rather than explicitly using intrinsics. */
-#ifdef __GNUC__
+#if OPUS_GNUC_PREREQ(5,1)
+#define GCC_POP_OPTIONS
 #pragma GCC push_options
 #pragma GCC optimize("tree-vectorize")
 #endif
@@ -223,7 +224,7 @@ void RTCD_SUF(compute_conv2d_)(const Conv2dLayer *conv, float *out, float *mem, 
    }
 }
 
-#ifdef __GNUC__
+#ifdef GCC_POP_OPTIONS
 #pragma GCC pop_options
 #endif
 
