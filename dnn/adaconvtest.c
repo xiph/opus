@@ -1,6 +1,6 @@
-#include "lacedump/lace_data.h"
-#include "nolacedump/nolace_data.h"
-#include "osce_private.h"
+#include "lace_data.h"
+#include "nolace_data.h"
+#include "osce.h"
 #include "nndsp.h"
 
 #include <stdlib.h>
@@ -224,16 +224,16 @@ void adacomb_compare(
 
 int main()
 {
-    LACE hLACE;
-    NOLACE hNoLACE;
+    LACELayers hLACE;
+    NOLACELayers hNoLACE;
 
     AdaConvState hAdaConv;
     AdaCombState hAdaComb;
 
     init_adaconv_state(&hAdaConv);
 
-    init_lace(&hLACE, &lace_arrays);
-    init_nolace(&hNoLACE, &nolace_arrays);
+    init_lacelayers(&hLACE, lacelayers_arrays);
+    init_nolacelayers(&hNoLACE, nolacelayers_arrays);
 
     printf("\ntesting lace.af1 (1 in, 1 out)...\n");
     adaconv_compare(
@@ -335,4 +335,4 @@ int main()
 }
 
 
-//gcc  -I ../include -I . -I ../celt adaconvtest.c nndsp.c lacedump/lace_data.c nolacedump/nolace_data.c nnet.c parse_lpcnet_weights.c -lm -o adaconvtest
+//gcc  -I ../include -I . -I ../celt adaconvtest.c nndsp.c lace_data.c nolace_data.c nnet.c parse_lpcnet_weights.c -lm -o adaconvtest
