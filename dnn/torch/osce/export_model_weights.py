@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     # CWriter
     model_name = checkpoint['setup']['model']['name']
-    cwriter = wexchange.c_export.CWriter(os.path.join(outdir, model_name + "_data"), message=message, model_struct_name=model_name.upper())
+    cwriter = wexchange.c_export.CWriter(os.path.join(outdir, model_name + "_data"), message=message, model_struct_name=model_name.upper() + 'Layers', add_typedef=True)
 
     # Add custom includes
     cwriter.header.write('\n#include "osce.h"\n')
