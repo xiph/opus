@@ -38,6 +38,13 @@
 
 #define RTCD_SUF(name) CAT_SUFFIX(name, RTCD_ARCH)
 
+/* Force vectorization on for DNN code because some of the loops rely on
+   compiler vectorization rather than explicitly using intrinsics. */
+#ifdef __GNUC__
+#pragma GCC push_options
+#pragma GCC optimize("tree-vectorize")
+#endif
+
 
 #define MAX_ACTIVATIONS (4096)
 
@@ -215,5 +222,9 @@ void RTCD_SUF(compute_conv2d_)(const Conv2dLayer *conv, float *out, float *mem, 
      RTCD_SUF(compute_activation_)(&out[i*hstride], &out[i*hstride], height, activation);
    }
 }
+
+#ifdef __GNUC__
+#pragma GCC pop_options
+#endif
 
 #endif
