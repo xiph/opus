@@ -50,5 +50,39 @@ void (*const DNN_COMPUTE_LINEAR_IMPL[OPUS_ARCHMASK + 1])(
 
 #endif
 
+#if (defined(OPUS_ARM_MAY_HAVE_DOTPROD) || defined(OPUS_ARM_MAY_HAVE_NEON)) && !defined(OPUS_ARM_PRESUME_NEON)
+
+void (*const DNN_COMPUTE_ACTIVATION_IMPL[OPUS_ARCHMASK + 1])(
+         float *output,
+         const float *input,
+         int N,
+         int activation
+) = {
+    compute_activation_c,                /* default */
+    compute_activation_c,
+    compute_activation_c,
+    MAY_HAVE_NEON(compute_activation),   /* neon  */
+    MAY_HAVE_DOTPROD(compute_activation) /* dotprod  */
+};
+
+void (*const DNN_COMPUTE_CONV2D_IMPL[OPUS_ARCHMASK + 1])(
+         const Conv2dLayer *conv,
+         float *out,
+         float *mem,
+         const float *in,
+         int height,
+         int hstride,
+         int activation
+) = {
+    compute_conv2d_c,                /* default */
+    compute_conv2d_c,
+    compute_conv2d_c,
+    MAY_HAVE_NEON(compute_conv2d),   /* neon  */
+    MAY_HAVE_DOTPROD(compute_conv2d) /* dotprod  */
+};
+
+
+#endif
+
 
 #endif
