@@ -39,6 +39,14 @@
 static OPUS_INLINE int32x4_t vcvtnq_s32_f32(float32x4_t x) {
   return vrshrq_n_s32(vcvtq_n_s32_f32(x, 8), 8);
 }
+
+static OPUS_INLINE int16x8_t vpaddq_s16(int16x8_t a, int16x8_t b) {
+  return vcombine_s16(vpadd_s16(vget_low_s16(a), vget_high_s16(a)), vpadd_s16(vget_low_s16(b), vget_high_s16(b)));
+}
+
+static OPUS_INLINE int16x8_t vmull_high_s8(int8x16_t a, int8x16_t b) {
+  return vmull_s8(vget_high_s8(a), vget_high_s8(b));
+}
 #endif
 
 #ifndef LPCNET_TEST
