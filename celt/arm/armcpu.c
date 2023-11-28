@@ -127,6 +127,9 @@ opus_uint32 opus_cpu_capabilities(void)
         p = strstr(buf, " neon");
         if(p != NULL && (p[5] == ' ' || p[5] == '\n'))
           flags |= OPUS_CPU_ARM_NEON_FLAG;
+        p = strstr(buf, " asimd");
+        if(p != NULL && (p[6] == ' ' || p[6] == '\n'))
+          flags |= OPUS_CPU_ARM_NEON_FLAG | OPUS_CPU_ARM_MEDIA_FLAG | OPUS_CPU_ARM_EDSP_FLAG;
 #  endif
 #  if defined(OPUS_ARM_MAY_HAVE_DOTPROD)
         p = strstr(buf, " asimddp");

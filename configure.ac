@@ -220,7 +220,7 @@ AS_IF([test x"${enable_asm}" = x"yes"],[
     case $host_cpu in
       arm*)
         dnl Currently we only have asm for fixed-point
-        AS_IF([test "$enable_float" != "yes"],[
+        #AS_IF([test "$enable_float" != "yes"],[
             cpu_arm=yes
             AC_DEFINE([OPUS_ARM_ASM], [],  [Make use of ARM asm optimization])
             AS_GCC_INLINE_ASSEMBLY(
@@ -366,7 +366,7 @@ AS_IF([test x"${enable_asm}" = x"yes"],[
                   [*** ARM assembly requires perl -- disabling optimizations])
                 asm_optimization="(missing perl dependency for ARM)"
             ])
-        ])
+        #])
         ;;
     esac
 ],[
