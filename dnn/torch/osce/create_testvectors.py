@@ -53,6 +53,29 @@ def create_adacomb_testvector(prefix, adacomb, num_frames, debug=False):
     p_in.tofile(prefix + '_p_in.s32')
     x_out.tofile(prefix + '_x_out.f32')
 
+def create_feature_net_testvector(prefix, model, num_frames):
+    num_features = model.num_features
+    num_subframes = 4 * num_frames
+
+    input_features = torch.randn((1, num_subframes, num_features))
+    periods = torch.randint(32, 300, (1, num_subframes))
+    numbits = model.numbits_range[0] + torch.rand((1, num_frames, 2)) * (model.numbits_range[1] - model.numbits_range[0])
+
+
+    pembed = model.pitch_embedding(periods)
+    nembed = torch.repeat_interleave(model.numbits_embedding(numbits).flatten(2), 4, dim=1)
+    full_features = torch.cat((input_features, pembed, nembed), dim=-1)
+
+    cf = model.feature_net(full_features)
+
+    input_features.float().numpy().tofile(prefix + "_in_features.f32")
+    periods.numpy().astype(np.int32).tofile(prefix + "_periods.s32")
+    numbits.float().numpy().tofile(prefix + "_numbits.f32")
+    full_features.detach().numpy().tofile(prefix + "_full_features.f32")
+    cf.detach().numpy().tofile(prefix + "_out_features.f32")
+
+
+
 if __name__ == "__main__":
     args = parser.parse_args()
 
@@ -84,6 +107,9 @@ if __name__ == "__main__":
 
     # lace cf1
     create_adacomb_testvector(os.path.join(args.output_folder, "lace_cf1"), lace.cf1, 5, debug=args.debug)
+
+    # lace feature net
+    create_feature_net_testvector(os.path.join(args.output_folder, 'lace'), lace, 5)
 
     if args.debug:
         endoscopy.close()
