@@ -71,7 +71,7 @@ def osce_dump_generic(writer, name, module):
     if isinstance(module, torch.nn.Linear) or isinstance(module, torch.nn.Conv1d) \
             or isinstance(module, torch.nn.ConvTranspose1d) or isinstance(module, torch.nn.Embedding) \
                 or isinstance(module, LimitedAdaptiveConv1d) or isinstance(module, LimitedAdaptiveComb1d) \
-                    or isinstance(module, TDShaper):
+                    or isinstance(module, TDShaper) or isinstance(module, torch.nn.GRU):
                         dump_torch_weights(cwriter, module, name=name, verbose=True)
     else:
         for child_name, child in module.named_children():
@@ -96,8 +96,23 @@ if __name__ == "__main__":
     model_name = checkpoint['setup']['model']['name']
     cwriter = wexchange.c_export.CWriter(os.path.join(outdir, model_name + "_data"), message=message, model_struct_name=model_name.upper() + 'Layers', add_typedef=True)
 
-    # Add custom includes
-    cwriter.header.write('\n#include "osce.h"\n')
+    # Add custom includes and global parameters
+    cwriter.header.write(f'''
+#define {model_name.upper()}_PREEMPH {model.preemph}
+#define {model_name.upper()}_FRAME_SIZE {model.FRAME_SIZE}
+#define {model_name.upper()}_OVERLAP_SIZE 40
+#define {model_name.upper()}_NUM_FEATURES {model.num_features}
+#define {model_name.upper()}_PITCH_MAX {model.pitch_max}
+#define {model_name.upper()}_PITCH_EMBEDDING_DIM {model.pitch_embedding_dim}
+#define {model_name.upper()}_NUMBITS_RANGE_LOW {model.numbits_range[0]}
+#define {model_name.upper()}_NUMBITS_RANGE_HIGH {model.numbits_range[1]}
+#define {model_name.upper()}_NUMBITS_EMBEDDING_DIM {model.numbits_embedding_dim}
+#define {model_name.upper()}_COND_DIM {model.cond_dim}
+#define {model_name.upper()}_HIDDEN_FEATURE_DIM {model.hidden_feature_dim}
+''')
+
+    for i, s in enumerate(model.numbits_embedding.scale_factors):
+        cwriter.header.write(f"#define LACE_NUMBITS_SCALE_{i} {float(s.detach().cpu())}\n")
 
     # dump layers
     osce_dump_generic(cwriter, model_name, model)
