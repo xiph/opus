@@ -49,6 +49,12 @@ static OPUS_INLINE int16x8_t vmull_high_s8(int8x16_t a, int8x16_t b) {
 }
 #endif
 
+#ifdef __ARM_FEATURE_FMA
+/* If we can, force the compiler to use an FMA instruction rather than break
+   vmlaq_f32() into fmul/fadd. */
+#define vmlaq_f32(a,b,c) vfmaq_f32(a,b,c)
+#endif
+
 #ifndef LPCNET_TEST
 static inline float32x4_t exp4_approx(float32x4_t x) {
   int32x4_t i;
