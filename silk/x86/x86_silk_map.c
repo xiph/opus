@@ -32,7 +32,9 @@
 #include "celt/x86/x86cpu.h"
 #include "structs.h"
 #include "SigProc_FIX.h"
+#ifndef FIXED_POINT
 #include "SigProc_FLP.h"
+#endif
 #include "pitch.h"
 #include "main.h"
 

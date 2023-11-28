@@ -269,6 +269,7 @@ extern opus_int (*const SILK_VAD_GETSA_Q8_IMPL[OPUS_ARCHMASK + 1])(
 
 #  endif
 
+#ifndef FIXED_POINT
 double silk_inner_product_FLP_avx2(
     const silk_float    *data1,
     const silk_float    *data2,
@@ -291,6 +292,7 @@ extern double (*const SILK_INNER_PRODUCT_FLP_IMPL[OPUS_ARCHMASK + 1])(
 
 #define silk_inner_product_FLP(data1, data2, dataSize, arch) ((void)arch,(*SILK_INNER_PRODUCT_FLP_IMPL[(arch) & OPUS_ARCHMASK])(data1, data2, dataSize))
 
+#endif
 #endif
 
 # endif
