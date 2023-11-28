@@ -17,7 +17,7 @@
 #define ADACOMB_MAX_FRAME_SIZE 80
 #define ADACOMB_MAX_OVERLAP_SIZE 40
 
-//#define DEBUG_NNDSP
+#define DEBUG_NNDSP
 #ifdef DEBUG_NNDSP
 #include <stdio.h>
 #endif
