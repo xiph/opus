@@ -230,7 +230,7 @@ static void calculate_log_spectrum_from_lpc(float *spec, opus_int16 *a_q12, int 
     apply_filterbank(spec, buffer, center_bins_clean, band_weights_clean, OSCE_CLEAN_SPEC_NUM_BANDS);
 
     /* log and scaling */
-    for (i = 0; i < 161; i++)
+    for (i = 0; i < OSCE_CLEAN_SPEC_NUM_BANDS; i++)
     {
         spec[i] = 0.3f * log(spec[i] + 1e-9f);
     }
@@ -290,42 +290,49 @@ static void calculate_acorr(float *acorr, float *signal, int lag)
     }
 }
 
-static int pitch_postprocessing(silk_OSCE_struct *psOSCE, int lag, int type)
+static int pitch_postprocessing(silk_OSCE_features *psFeatures, int lag, int type)
 {
     int new_lag;
+
+#ifdef OSCE_HANGOVER_BUGFIX
+#define TESTBIT 1
+#else
+#define TESTBIT 0
+#endif
+
     /* hangover is currently disabled to reflect a bug in the python code. ToDo: re-evaluate hangover */
-    if (type != TYPE_VOICED && psOSCE->last_type == TYPE_VOICED && 0)
+    if (type != TYPE_VOICED && psFeatures->last_type == TYPE_VOICED && TESTBIT)
     /* enter hangover */
     {
         new_lag = OSCE_NO_PITCH_VALUE;
-        if (psOSCE->pitch_hangover_count < OSCE_PITCH_HANGOVER)
+        if (psFeatures->pitch_hangover_count < OSCE_PITCH_HANGOVER)
         {
-            new_lag = psOSCE->last_lag;
-            psOSCE->pitch_hangover_count = (psOSCE->pitch_hangover_count + 1) % OSCE_PITCH_HANGOVER;
+            new_lag = psFeatures->last_lag;
+            psFeatures->pitch_hangover_count = (psFeatures->pitch_hangover_count + 1) % OSCE_PITCH_HANGOVER;
         }
     }
-    else if (type != TYPE_VOICED && psOSCE->pitch_hangover_count && 0)
+    else if (type != TYPE_VOICED && psFeatures->pitch_hangover_count && TESTBIT)
     /* continue hangover */
     {
-        new_lag = psOSCE->last_lag;
-        psOSCE->pitch_hangover_count = (psOSCE->pitch_hangover_count + 1) % OSCE_PITCH_HANGOVER;
+        new_lag = psFeatures->last_lag;
+        psFeatures->pitch_hangover_count = (psFeatures->pitch_hangover_count + 1) % OSCE_PITCH_HANGOVER;
     }
     else if (type != TYPE_VOICED)
     /* unvoiced frame after hangover */
     {
         new_lag = OSCE_NO_PITCH_VALUE;
-        psOSCE->pitch_hangover_count = 0;
+        psFeatures->pitch_hangover_count = 0;
     }
     else
     /* voiced frame: update last_lag */
     {
         new_lag = lag;
-        psOSCE->last_lag = lag;
-        psOSCE->pitch_hangover_count = 0;
+        psFeatures->last_lag = lag;
+        psFeatures->pitch_hangover_count = 0;
     }
 
     /* buffer update */
-    psOSCE->last_type = type;
+    psFeatures->last_type = type;
 
     /* with the current setup this should never happen (but who knows...) */
     celt_assert(new_lag)
@@ -343,7 +350,7 @@ static void calculate_features(
     int num_subframes, num_samples;
     float buffer[OSCE_FEATURES_MAX_HISTORY + OSCE_MAX_FEATURE_FRAMES * 80];
     float *frame, *features;
-    silk_OSCE_struct *psOSCE;
+    silk_OSCE_features *psFeatures;
     int i, n, k;
 #ifdef WRITE_FEATURES
     static FILE *f_feat = NULL;
@@ -353,23 +360,30 @@ static void calculate_features(
     }
 #endif
 
-    (void) num_bits; /* TODO: implement num_bits embedding */
-
+    //OPUS_CLEAR(buffer, 1);
     memset(buffer, 0, sizeof(buffer));
 
     num_subframes = psDec->nb_subfr;
     num_samples = num_subframes * 80;
-    psOSCE = &psDec->osce;
+    psFeatures = &psDec->osce.features;
+
+    /* smooth bit count */
+    psFeatures->numbits[0] = num_bits;
+#ifdef OSCE_NUMBITS_BUGFIX
+    psFeatures->numbits[1] = 0.9 * psFeatures->numbits[1] + 0.1 * num_bits;
+#else
+    psFeatures->numbits[1] = num_bits;
+#endif
 
     for (n = 0; n < num_samples; n++)
     {
         buffer[OSCE_FEATURES_MAX_HISTORY + n] = (float) xq[n] / (1U<<15);
     }
-    OPUS_COPY(buffer, psOSCE->signal_history, OSCE_FEATURES_MAX_HISTORY);
+    OPUS_COPY(buffer, psFeatures->signal_history, OSCE_FEATURES_MAX_HISTORY);
 
     for (k = 0; k < num_subframes; k++)
     {
-        features = &psOSCE->features[k * OSCE_FEATURE_DIM];
+        features = &psFeatures->features[k * OSCE_FEATURE_DIM];
         frame = &buffer[OSCE_FEATURES_MAX_HISTORY + k * 80];
         memset(features, 0, OSCE_FEATURE_DIM); /* precaution */
 
@@ -394,10 +408,10 @@ static void calculate_features(
         }
 
         /* pitch hangover and zero value replacement */
-        psOSCE->lags[k] = pitch_postprocessing(psOSCE, psDecCtrl->pitchL[k], psDec->indices.signalType);
+        psFeatures->lags[k] = pitch_postprocessing(psFeatures, psDecCtrl->pitchL[k], psDec->indices.signalType);
 
         /* auto-correlation around pitch lag */
-        calculate_acorr(features + OSCE_ACORR_START, frame, psOSCE->lags[k]);
+        calculate_acorr(features + OSCE_ACORR_START, frame, psFeatures->lags[k]);
 
         /* ltp */
         celt_assert(OSCE_LTP_LENGTH == LTP_ORDER)
@@ -415,7 +429,7 @@ static void calculate_features(
     }
 
     /* buffer update */
-    OPUS_COPY(psOSCE->signal_history, &buffer[num_samples], OSCE_FEATURES_MAX_HISTORY);
+    OPUS_COPY(psFeatures->signal_history, &buffer[num_samples], OSCE_FEATURES_MAX_HISTORY);
 }
 
 void silk_enhancer(
@@ -426,15 +440,27 @@ void silk_enhancer(
     int                         arch                            /* I    Run-time architecture                       */
 )
 {
+    float in_buffer[320];
+    float out_buffer[320];
+    int i;
+
     (void) arch;
-    (void) num_bits;
 
     /* ToDo: decide when to enhance (20 ms frame, 16kHz) */
 
     calculate_features(psDec, psDecCtrl, xq, num_bits);
 
+    /* scale input */
+    for (i = 0; i < 320; i++)
+    {
+        in_buffer[i] = ((float) xq[i]) / (1U<<15);
+    }
+
+    lace_process_20ms_frame(&psDec->osce.model, out_buffer, in_buffer, psDec->osce.features.features, psDec->osce.features.numbits, psDec->osce.features.lags);
+
+
 #ifdef WRITE_FEATURES
-    int i, k;
+    int  k;
 
     static FILE *flpc = NULL;
     static FILE *fgain = NULL;
@@ -443,6 +469,7 @@ void silk_enhancer(
     static FILE *fnoisy16k = NULL;
     static FILE* f_numbits = NULL;
     static FILE* f_numbits_smooth = NULL;
+    static FILE* f_noisy = NULL;
 
     if (flpc == NULL) {flpc = fopen("features_lpc.f32", "wb");}
     if (fgain == NULL) {fgain = fopen("features_gain.f32", "wb");}
@@ -452,10 +479,10 @@ void silk_enhancer(
     if(f_numbits == NULL) {f_numbits = fopen("features_num_bits.s32", "wb");}
     if (f_numbits_smooth == NULL) {f_numbits_smooth = fopen("features_num_bits_smooth.f32", "wb");}
 
-    psDec->osce.num_bits_smooth = 0.9 * psDec->osce.num_bits_smooth + 0.1 * num_bits;
+    psDec->osce.features.num_bits_smooth = 0.9 * psDec->osce.features.num_bits_smooth + 0.1 * num_bits;
 
     fwrite(&num_bits, sizeof(num_bits), 1, f_numbits);
-    fwrite(&(psDec->osce.num_bits_smooth), sizeof(psDec->osce.num_bits_smooth), 1, f_numbits_smooth);
+    fwrite(&(psDec->osce.features.num_bits_smooth), sizeof(psDec->osce.features.num_bits_smooth), 1, f_numbits_smooth);
 
     for (k = 0; k < psDec->nb_subfr; k++)
     {
@@ -494,6 +521,16 @@ void silk_enhancer(
 
     fwrite(xq, psDec->nb_subfr * psDec->subfr_length, sizeof(xq[0]), fnoisy16k);
 #endif
+
+    /* scale output */
+    for (i = 0; i < 320; i++)
+    {
+        float tmp = round((1U<<15) * out_buffer[i]);
+        if (tmp > INT16_MAX) tmp = INT16_MAX;
+        if (tmp < INT16_MIN) tmp = INT16_MIN;
+        xq[i] = (opus_int16) tmp;
+    }
+
 }
 
 #endif

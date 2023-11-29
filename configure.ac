@@ -913,6 +913,8 @@ AS_IF([test "$enable_osce" = "yes"], [
        AC_DEFINE([ENABLE_OSCE], [1], [Enable Opus Speech Coding Enhancement])
 ])
 
+AM_CONDITIONAL([ENABLE_OSCE], [test "$enable_osce" = "yes"])
+
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "$HAVE_DOXYGEN" = "yes"])
 
 AC_ARG_ENABLE([extra-programs],

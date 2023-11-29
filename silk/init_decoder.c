@@ -31,6 +31,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "main.h"
 
+#ifdef ENABLE_OSCE
+#include "osce.h"
+#endif
+
 /************************/
 /* Init Decoder State   */
 /************************/
@@ -51,6 +55,10 @@ opus_int silk_init_decoder(
 
     /* Reset PLC state */
     silk_PLC_Reset( psDec );
+
+#ifdef ENABLE_OSCE
+    init_osce(&psDec->osce.model);
+#endif
 
     return(0);
 }

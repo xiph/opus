@@ -1,11 +1,6 @@
 #ifndef SILK_ENHANCER_H
 #define SILK_ENHANCER_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #include "main.h"
 
 void silk_enhancer(
@@ -16,7 +11,5 @@ void silk_enhancer(
     int                         arch                            /* I    Run-time architecture                       */
 );
 
-#ifdef __cplusplus
-}
-#endif
+
 #endif
