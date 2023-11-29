@@ -87,7 +87,7 @@ cmake:
   script:
     - ./autogen.sh
     - mkdir build
-    - cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON -DOPUS_FAST_MATH=ON -DOPUS_FLOAT_APPROX=ON -DOPUS_NEURAL_FEC=ON -DOPUS_X86_PRESUME_AVX2=ON
+    - cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON -DOPUS_FAST_MATH=ON -DOPUS_FLOAT_APPROX=ON -DOPUS_DRED=ON -DOPUS_X86_PRESUME_AVX2=ON
     - cmake --build build
     - cd build && ctest --output-on-failure -j 16
 
