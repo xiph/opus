@@ -97,7 +97,6 @@ opus_int silk_decode_frame(
         /********************************************************/
         silk_decode_core( psDec, psDecCtrl, pOut, pulses, arch );
 
-
         /********************************************************/
         /* Update PLC state                                     */
         /********************************************************/
@@ -132,10 +131,14 @@ opus_int silk_decode_frame(
 
 
 #ifdef ENABLE_OSCE
+    if(   lostFlag == FLAG_DECODE_NORMAL ||
+        ( lostFlag == FLAG_DECODE_LBRR && psDec->LBRR_flags[ psDec->nFramesDecoded ] == 1 ) )
+    {
         /********************************************************/
         /* Run SILK enhancer                                    */
         /********************************************************/
         silk_enhancer( psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
+    }
 #endif
 
     /************************************************/
