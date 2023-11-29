@@ -46,6 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef ENABLE_OSCE
 #include "osce_config.h"
+#include "osce.h"
 #endif
 
 #ifdef __cplusplus
@@ -249,9 +250,15 @@ typedef struct {
     int                 last_lag;
     int                 last_type;
     int                 lags[OSCE_MAX_FEATURE_FRAMES];
+    float               numbits[2];
     float               signal_history[OSCE_FEATURES_MAX_HISTORY];
     float               features[OSCE_FEATURE_DIM * OSCE_MAX_FEATURE_FRAMES];
 
+} silk_OSCE_features;
+
+typedef struct {
+    silk_OSCE_features features;
+    OSCEModel model;
 } silk_OSCE_struct;
 #endif
 

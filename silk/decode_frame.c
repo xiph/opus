@@ -97,12 +97,7 @@ opus_int silk_decode_frame(
         /********************************************************/
         silk_decode_core( psDec, psDecCtrl, pOut, pulses, arch );
 
-#ifdef ENABLE_OSCE
-        /********************************************************/
-        /* Run SILK enhancer                                    */
-        /********************************************************/
-        silk_enhancer( psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
-#endif
+
         /********************************************************/
         /* Update PLC state                                     */
         /********************************************************/
@@ -134,6 +129,14 @@ opus_int silk_decode_frame(
     mv_len = psDec->ltp_mem_length - psDec->frame_length;
     silk_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
     silk_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
+
+
+#ifdef ENABLE_OSCE
+        /********************************************************/
+        /* Run SILK enhancer                                    */
+        /********************************************************/
+        silk_enhancer( psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
+#endif
 
     /************************************************/
     /* Comfort noise generation / estimation        */

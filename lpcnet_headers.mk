@@ -29,3 +29,7 @@ dnn/dred_rdovae_enc_data.h \
 dnn/dred_rdovae_dec.h \
 dnn/dred_rdovae_dec_data.h \
 dnn/dred_rdovae_stats_data.h
+
+OSCE_HEAD= \
+dnn/osce.h \
+dnn/silk_enhancer.h
