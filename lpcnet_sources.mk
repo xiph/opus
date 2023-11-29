@@ -21,3 +21,11 @@ dnn/dred_rdovae_stats_data.c \
 silk/dred_encoder.c \
 silk/dred_coding.c \
 silk/dred_decoder.c
+
+OSCE_SOURCES = \
+dnn/osce.c \
+dnn/nndsp.c \
+silk/silk_enhancer.c \
+dnn/nnet.c \
+dnn/parse_lpcnet_weights.c \
+dnn/lace_data.c

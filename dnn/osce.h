@@ -28,9 +28,22 @@ typedef struct
     float window[LACE_OVERLAP_SIZE];
 } LACE;
 
+typedef LACE OSCEModel;
+
 typedef struct NOLACE NOLACE;
 typedef struct NoLACEState NoLACEState;
 
 void init_lace(LACE *hLACE);
+
+void lace_process_20ms_frame(
+    LACE* hLACE,
+    float *x_out,
+    const float *x_in,
+    const float *features,
+    const float *numbits,
+    const int *periods
+);
+
+#define init_osce(x) init_lace(x)
 
 #endif
