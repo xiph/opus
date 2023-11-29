@@ -4,7 +4,7 @@ REM Run this to set up the build system: configure, makefiles, etc.
 setlocal enabledelayedexpansion
 
 REM Parse the real autogen.sh script for version
-for /F "tokens=4 delims= " %%A in ('findstr "download_model.sh" autogen.sh') do (
+for /F "tokens=4 delims= " %%A in ('findstr "dnn\download_model.sh" autogen.sh') do (
     set "model=%%A"
 )
 REM Remove trailing ")" character from the model variable
