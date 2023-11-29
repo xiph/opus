@@ -106,7 +106,6 @@ void adaconv_process_frame(
     float window_buffer[ADACONV_MAX_OVERLAP_SIZE];
     float gain_buffer[ADACONV_MAX_OUTPUT_CHANNELS];
     float *p_input;
-    //int offset = kernel_size * input_channels;
     int i_in_channels, i_out_channels, i_sample, i_kernel;
 
     celt_assert(shape_gain == 1);
@@ -191,7 +190,7 @@ void adaconv_process_frame(
 #endif
 
     /* buffer update */
-    OPUS_COPY(hAdaConv->history, &x_in[(frame_size - kernel_size) * in_channels], kernel_size * in_channels);
+    OPUS_COPY(hAdaConv->history, &p_input[(frame_size - kernel_size) * in_channels], kernel_size * in_channels);
     OPUS_COPY(hAdaConv->last_kernel, kernel_buffer, kernel_size * in_channels * out_channels);
 }
 
