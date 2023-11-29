@@ -112,7 +112,7 @@ if __name__ == "__main__":
 ''')
 
     for i, s in enumerate(model.numbits_embedding.scale_factors):
-        cwriter.header.write(f"#define LACE_NUMBITS_SCALE_{i} {float(s.detach().cpu())}\n")
+        cwriter.header.write(f"#define {model_name.upper()}_NUMBITS_SCALE_{i} {float(s.detach().cpu())}\n")
 
     # dump layers
     osce_dump_generic(cwriter, model_name, model)
