@@ -9,6 +9,7 @@ option('intrinsics', type : 'feature', value : 'auto', description : 'Intrinsics
 
 option('enable-deep-plc', type : 'boolean', value : false, description : 'Enable Deep Packet Loss Concealment (PLC)')
 option('enable-dred', type : 'boolean', value : false, description : 'Enable Deep Redundancy (DRED)')
+option('enable-dnn-debug-float', type : 'boolean', value : false, description : 'Compute DNN using float weights')
 
 option('custom-modes', type : 'boolean', value : false, description : 'Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames')
 option('extra-programs', type : 'feature', value : 'auto', description : 'Extra programs (demo and tests)')

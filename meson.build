@@ -174,6 +174,10 @@ if disable_float_api
   opus_conf.set('DISABLE_FLOAT_API', 1)
 endif
 
+if not get_option('enable-dnn-debug-float')
+  opus_conf.set('DISABLE_DEBUG_FLOAT', 1)
+endif
+
 # This is for the description in the pkg-config .pc file
 if opt_fixed_point
   pc_build = 'fixed-point'
@@ -314,6 +318,15 @@ if not opt_asm.disabled()
           rtcd_support += ['NEON']
         endif
       endif
+      if opus_arm_may_have_dotprod
+        opus_conf.set('OPUS_ARM_MAY_HAVE_DOTPROD', 1)
+        if opus_arm_presume_dotprod
+          opus_conf.set('OPUS_ARM_PRESUME_DOTPROD', 1)
+          asm_optimization += ['DOTPROD']
+        else
+          rtcd_support += ['DOTPROD']
+        endif
+      endif
 
       if cc.get_define('__APPLE__')
         arm2gnu_args = ['--apple']
@@ -340,12 +353,14 @@ endif
 # -mfloat-abi=softfp to enable NEON. F.ex., on Android. It should
 # be set in the cross file.
 arm_neon_intr_link_args = ['-mfpu=neon']
+arm_dotprod_intr_link_args = ['-march=armv8.2-a+dotprod']
 
 have_sse = false
 have_sse2 = false
 have_sse4_1 = false
-have_avx2 = false # no avx opus code yet
+have_avx2 = false
 have_neon_intr = false
+have_dotprod_intr = false
 
 intrinsics_support = []
 if not opt_intrinsics.disabled()
@@ -421,6 +436,46 @@ if not opt_intrinsics.disabled()
     else
       message('Compiler does not support @0@ intrinsics'.format(intrin_name))
     endif
+
+    # Check for ARMv8.2 dotprod intrinsics
+    intrin_check = '''
+    #include <arm_neon.h>
+      int main (void) {
+        static int8x16_t a, b;
+        static int32x4_t SUMM;
+        SUMM = vdotq_s32(SUMM, a, b);
+        return (int)vgetq_lane_s32(SUMM, 0);
+      }'''
+    intrin_name = 'AArch64 DOTPROD'
+    if cc.links(intrin_check,
+                name: 'compiler supports @0@ intrinsics'.format(intrin_name))
+      opus_arm_presume_dotprod_intr = opus_can_presume_simd
+      opus_arm_may_have_dotprod_intr = true
+    else
+      opus_arm_presume_dotprod_intr = false
+      if cc.links(intrin_check,
+                  args: arm_dotprod_intr_link_args,
+                  name: 'compiler supports @0@ intrinsics with @1@'.format(intrin_name, ' '.join(arm_dotprod_intr_link_args)))
+        opus_arm_may_have_dotprod_intr = true
+      else
+        opus_arm_may_have_dotprod_intr = false
+      endif
+    endif
+
+    if opus_arm_may_have_dotprod_intr
+      have_dotprod_intr = true
+      intrinsics_support += [intrin_name]
+      opus_conf.set('OPUS_ARM_MAY_HAVE_DOTPROD', 1)
+      if opus_arm_presume_dotprod_intr
+        opus_conf.set('OPUS_ARM_PRESUME_DOTPROD', 1)
+      else
+        rtcd_support += [intrin_name]
+        opus_dotprod_intr_args = arm_dotprod_intr_link_args
+      endif
+    else
+      message('Compiler does not support @0@ intrinsics'.format(intrin_name))
+    endif
+
   elif host_cpu_family in ['x86', 'x86_64']
     # XXX: allow external override/specification of the flags
     x86_intrinsics = [

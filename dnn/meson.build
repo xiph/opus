@@ -10,7 +10,7 @@ dnn_sources_sse4_1 = sources['DNN_SOURCES_SSE4_1']
 dnn_sources_avx2 = sources['DNN_SOURCES_AVX2']
 
 dnn_sources_neon_intr = sources['DNN_SOURCES_NEON']
-dnn_sources_dotprod = sources['DNN_SOURCES_DOTPROD']
+dnn_sources_dotprod_intr = sources['DNN_SOURCES_DOTPROD']
 
 dnn_includes = [opus_includes]
 dnn_static_libs = []
@@ -25,7 +25,7 @@ if host_cpu_family in ['arm', 'aarch64'] and have_arm_intrinsics_or_asm
   endif
 endif
 
-foreach intr_name : ['sse2', 'sse4_1', 'avx2', 'neon_intr']
+foreach intr_name : ['sse2', 'sse4_1', 'avx2', 'neon_intr', 'dotprod_intr']
   have_intr = get_variable('have_' + intr_name)
   if not have_intr
     continue
