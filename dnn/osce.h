@@ -17,6 +17,8 @@ typedef struct {
     AdaCombState cf1_state;
     AdaCombState cf2_state;
     AdaConvState af1_state;
+    float preemph_mem;
+    float deemph_mem;
 } LACEState;
 
 typedef struct
