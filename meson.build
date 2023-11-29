@@ -146,6 +146,8 @@ opts = [
   [ 'fixed-point-debug', 'FIXED_DEBUG' ],
   [ 'custom-modes', 'CUSTOM_MODES' ],
   [ 'float-approx', 'FLOAT_APPROX' ],
+  [ 'enable-deep-plc', 'ENABLE_DEEP_PLC' ],
+  [ 'enable-dred', 'ENABLE_DRED' ],
   [ 'assertions', 'ENABLE_ASSERTIONS' ],
   [ 'hardening', 'ENABLE_HARDENING' ],
   [ 'fuzzing', 'FUZZING' ],
@@ -342,7 +344,7 @@ arm_neon_intr_link_args = ['-mfpu=neon']
 have_sse = false
 have_sse2 = false
 have_sse4_1 = false
-have_avx = false # no avx opus code yet
+have_avx2 = false # no avx opus code yet
 have_neon_intr = false
 
 intrinsics_support = []
@@ -425,7 +427,7 @@ if not opt_intrinsics.disabled()
       [ 'SSE', 'xmmintrin.h', '__m128', '_mm_setzero_ps()', ['-msse'] ],
       [ 'SSE2', 'emmintrin.h', '__m128i', '_mm_setzero_si128()', ['-msse2'] ],
       [ 'SSE4.1', 'smmintrin.h', '__m128i', '_mm_setzero_si128(); mtest = _mm_cmpeq_epi64(mtest, mtest)', ['-msse4.1'] ],
-      [ 'AVX', 'immintrin.h', '__m256', '_mm256_setzero_ps()', ['-mavx'] ],
+      [ 'AVX2', 'immintrin.h', '__m256i', '_mm256_abs_epi32(_mm256_setzero_si256())', ['-mavx', '-mfma', '-mavx2'] ],
     ]
 
     foreach intrin : x86_intrinsics
@@ -581,6 +583,7 @@ endforeach
 subdir('include')
 subdir('celt')
 subdir('silk')
+subdir('dnn')
 subdir('src')
 
 configure_file(output: 'config.h', configuration: opus_conf)

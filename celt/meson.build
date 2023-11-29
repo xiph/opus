@@ -6,6 +6,8 @@ celt_sse2_sources = sources['CELT_SOURCES_SSE2']
 
 celt_sse4_1_sources = sources['CELT_SOURCES_SSE4_1']
 
+celt_avx2_sources = sources['CELT_SOURCES_AVX2']
+
 celt_neon_intr_sources = sources['CELT_SOURCES_ARM_NEON_INTR']
 
 celt_static_libs = []
@@ -14,7 +16,7 @@ if host_cpu_family in ['x86', 'x86_64'] and opus_conf.has('OPUS_HAVE_RTCD')
   celt_sources +=  sources['CELT_SOURCES_X86_RTCD']
 endif
 
-foreach intr_name : ['sse', 'sse2', 'sse4_1', 'neon_intr']
+foreach intr_name : ['sse', 'sse2', 'sse4_1', 'avx2', 'neon_intr']
   have_intr = get_variable('have_' + intr_name)
   if not have_intr
     continue
