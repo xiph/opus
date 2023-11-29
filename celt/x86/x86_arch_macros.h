@@ -1,5 +1,4 @@
-/* Copyright (c) 2018-2019 Mozilla
-                 2023 Amazon */
+/* Copyright (c) 2023 Amazon */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -25,16 +24,24 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _MSC_VER
+
+# ifdef OPUS_X86_MAY_HAVE_SSE
+#  ifndef __SSE__
+#   define __SSE__
+#  endif
+# endif
+
+# ifdef OPUS_X86_MAY_HAVE_SSE2
+#  ifndef __SSE2__
+#   define __SSE2__
+#  endif
+# endif
+
+# ifdef OPUS_X86_MAY_HAVE_SSE4_1
+#  ifndef __SSE4_1__
+#   define __SSE4_1__
+#  endif
+# endif
+
 #endif
-
-#include "x86/x86_arch_macros.h"
-
-#ifndef __SSE4_1__
-#error nnet_sse4_1.c is being compiled without SSE4.1 enabled
-#endif
-
-#define RTCD_ARCH sse4_1
-
-#include "nnet_arch.h"
