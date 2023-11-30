@@ -70,7 +70,8 @@ void adaconv_process_frame(
     float filter_gain_a,
     float filter_gain_b,
     float shape_gain,
-    float *window
+    float *window,
+    int arch
 );
 
 void adacomb_process_frame(
@@ -90,7 +91,8 @@ void adacomb_process_frame(
     float filter_gain_a,
     float filter_gain_b,
     float log_gain_limit,
-    float *window
+    float *window,
+    int arch
 );
 
 void adashape_process_frame(
@@ -106,7 +108,8 @@ void adashape_process_frame(
     int in_stride,
     int in_offset,
     int out_stride,
-    int out_offset
+    int out_offset,
+    int arch
 );
 
 #endif

@@ -58,20 +58,13 @@ void init_lace(LACE *hLACE)
     }
 }
 
-void lace_feature_net(
+static void lace_feature_net(
     LACE *hLACE,
     float *output,
     const float *features,
     const float *numbits,
-    const int *periods
-);
-
-void lace_feature_net(
-    LACE *hLACE,
-    float *output,
-    const float *features,
-    const float *numbits,
-    const int *periods
+    const int *periods,
+    int arch
 )
 {
     float input_buffer[4 * MAX(LACE_COND_DIM, LACE_HIDDEN_FEATURE_DIM)];
@@ -97,7 +90,8 @@ void lace_feature_net(
             NULL,
             input_buffer,
             LACE_NUM_FEATURES + LACE_PITCH_EMBEDDING_DIM + 2 * LACE_NUMBITS_EMBEDDING_DIM,
-            ACTIVATION_TANH);
+            ACTIVATION_TANH,
+            arch);
     }
 
     /* subframe accumulation */
@@ -108,7 +102,8 @@ void lace_feature_net(
         hLACE->state.feature_net_conv2_state,
         input_buffer,
         4 * LACE_HIDDEN_FEATURE_DIM,
-        ACTIVATION_TANH
+        ACTIVATION_TANH,
+        arch
     );
 
     /* tconv upsampling */
@@ -117,7 +112,8 @@ void lace_feature_net(
         &hLACE->layers.lace_feature_net_tconv,
         output_buffer,
         input_buffer,
-        ACTIVATION_LINEAR
+        ACTIVATION_LINEAR,
+        arch
     );
 
     /* GRU */
@@ -128,7 +124,8 @@ void lace_feature_net(
             &hLACE->layers.lace_feature_net_gru_input,
             &hLACE->layers.lace_feature_net_gru_recurrent,
             hLACE->state.feature_net_gru_state,
-            input_buffer + i_subframe * LACE_COND_DIM
+            input_buffer + i_subframe * LACE_COND_DIM,
+            arch
         );
         OPUS_COPY(output + i_subframe * LACE_COND_DIM, hLACE->state.feature_net_gru_state, LACE_COND_DIM);
     }
@@ -141,7 +138,8 @@ void lace_process_20ms_frame(
     const float *x_in,
     const float *features,
     const float *numbits,
-    const int *periods
+    const int *periods,
+    int arch
 )
 {
     float feature_buffer[4 * LACE_COND_DIM];
@@ -177,7 +175,7 @@ void lace_process_20ms_frame(
     }
 
     /* run feature encoder */
-    lace_feature_net(hLACE, feature_buffer, features, numbits, periods);
+    lace_feature_net(hLACE, feature_buffer, features, numbits, periods, arch);
 #ifdef DEBUG_LACE
     fwrite(features, sizeof(*features), 4 * LACE_NUM_FEATURES, f_features);
     fwrite(feature_buffer, sizeof(*feature_buffer), 4 * LACE_COND_DIM, f_encfeatures);
@@ -204,7 +202,8 @@ void lace_process_20ms_frame(
             LACE_CF1_FILTER_GAIN_A,
             LACE_CF1_FILTER_GAIN_B,
             LACE_CF1_LOG_GAIN_LIMIT,
-            hLACE->window);
+            hLACE->window,
+            arch);
     }
 
 #ifdef DEBUG_LACE
@@ -231,7 +230,8 @@ void lace_process_20ms_frame(
             LACE_CF2_FILTER_GAIN_A,
             LACE_CF2_FILTER_GAIN_B,
             LACE_CF2_LOG_GAIN_LIMIT,
-            hLACE->window);
+            hLACE->window,
+            arch);
     }
 #ifdef DEBUG_LACE
     fwrite(output_buffer, sizeof(float), 4 * LACE_FRAME_SIZE, f_postcf2);
@@ -257,7 +257,8 @@ void lace_process_20ms_frame(
             LACE_AF1_FILTER_GAIN_A,
             LACE_AF1_FILTER_GAIN_B,
             LACE_AF1_SHAPE_GAIN,
-            hLACE->window);
+            hLACE->window,
+            arch);
     }
 #ifdef DEBUG_LACE
     fwrite(output_buffer, sizeof(float), 4 * LACE_FRAME_SIZE, f_postaf1);
@@ -324,16 +325,8 @@ static void nolace_feature_net(
     float *output,
     const float *features,
     const float *numbits,
-    const int *periods
-);
-
-
-static void nolace_feature_net(
-    NoLACE *hNoLACE,
-    float *output,
-    const float *features,
-    const float *numbits,
-    const int *periods
+    const int *periods,
+    int arch
 )
 {
     float input_buffer[4 * MAX(NOLACE_COND_DIM, NOLACE_HIDDEN_FEATURE_DIM)];
@@ -359,7 +352,8 @@ static void nolace_feature_net(
             NULL,
             input_buffer,
             NOLACE_NUM_FEATURES + NOLACE_PITCH_EMBEDDING_DIM + 2 * NOLACE_NUMBITS_EMBEDDING_DIM,
-            ACTIVATION_TANH);
+            ACTIVATION_TANH,
+            arch);
     }
 
     /* subframe accumulation */
@@ -370,7 +364,8 @@ static void nolace_feature_net(
         hNoLACE->state.feature_net_conv2_state,
         input_buffer,
         4 * NOLACE_HIDDEN_FEATURE_DIM,
-        ACTIVATION_TANH
+        ACTIVATION_TANH,
+        arch
     );
 
     /* tconv upsampling */
@@ -379,7 +374,8 @@ static void nolace_feature_net(
         &hNoLACE->layers.nolace_feature_net_tconv,
         output_buffer,
         input_buffer,
-        ACTIVATION_LINEAR
+        ACTIVATION_LINEAR,
+        arch
     );
 
     /* GRU */
@@ -390,7 +386,8 @@ static void nolace_feature_net(
             &hNoLACE->layers.nolace_feature_net_gru_input,
             &hNoLACE->layers.nolace_feature_net_gru_recurrent,
             hNoLACE->state.feature_net_gru_state,
-            input_buffer + i_subframe * NOLACE_COND_DIM
+            input_buffer + i_subframe * NOLACE_COND_DIM,
+            arch
         );
         OPUS_COPY(output + i_subframe * NOLACE_COND_DIM, hNoLACE->state.feature_net_gru_state, NOLACE_COND_DIM);
     }
@@ -403,7 +400,8 @@ void nolace_process_20ms_frame(
     const float *x_in,
     const float *features,
     const float *numbits,
-    const int *periods
+    const int *periods,
+    int arch
 )
 {
     float feature_buffer[4 * NOLACE_COND_DIM];
@@ -444,7 +442,7 @@ void nolace_process_20ms_frame(
     }
 
     /* run feature encoder */
-    nolace_feature_net(hNoLACE, feature_buffer, features, numbits, periods);
+    nolace_feature_net(hNoLACE, feature_buffer, features, numbits, periods, arch);
 #ifdef DEBUG_NOLACE
     fwrite(features, sizeof(*features), 4 * NOLACE_NUM_FEATURES, f_features);
     fwrite(feature_buffer, sizeof(*feature_buffer), 4 * NOLACE_COND_DIM, f_encfeatures);
@@ -472,7 +470,8 @@ void nolace_process_20ms_frame(
             NOLACE_CF1_FILTER_GAIN_A,
             NOLACE_CF1_FILTER_GAIN_B,
             NOLACE_CF1_LOG_GAIN_LIMIT,
-            hNoLACE->window);
+            hNoLACE->window,
+            arch);
 
         compute_generic_conv1d(
             &layers->nolace_post_cf1,
@@ -480,7 +479,8 @@ void nolace_process_20ms_frame(
             state->post_cf1_state,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             NOLACE_COND_DIM,
-            ACTIVATION_TANH);
+            ACTIVATION_TANH,
+            arch);
     }
 
     /* update feature buffer */
@@ -511,7 +511,8 @@ void nolace_process_20ms_frame(
             NOLACE_CF2_FILTER_GAIN_A,
             NOLACE_CF2_FILTER_GAIN_B,
             NOLACE_CF2_LOG_GAIN_LIMIT,
-            hNoLACE->window);
+            hNoLACE->window,
+            arch);
 
         compute_generic_conv1d(
             &layers->nolace_post_cf2,
@@ -519,7 +520,8 @@ void nolace_process_20ms_frame(
             state->post_cf2_state,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             NOLACE_COND_DIM,
-            ACTIVATION_TANH);
+            ACTIVATION_TANH,
+            arch);
     }
 
     /* update feature buffer */
@@ -549,7 +551,8 @@ void nolace_process_20ms_frame(
             NOLACE_AF1_FILTER_GAIN_A,
             NOLACE_AF1_FILTER_GAIN_B,
             NOLACE_AF1_SHAPE_GAIN,
-            hNoLACE->window);
+            hNoLACE->window,
+            arch);
 
         compute_generic_conv1d(
             &layers->nolace_post_af1,
@@ -557,7 +560,8 @@ void nolace_process_20ms_frame(
             state->post_af1_state,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             NOLACE_COND_DIM,
-            ACTIVATION_TANH);
+            ACTIVATION_TANH,
+            arch);
     }
 
     /* update feature buffer */
@@ -585,7 +589,8 @@ void nolace_process_20ms_frame(
             2,
             1,
             2,
-            1
+            1,
+            arch
         );
 
         adaconv_process_frame(
@@ -605,7 +610,8 @@ void nolace_process_20ms_frame(
             NOLACE_AF2_FILTER_GAIN_A,
             NOLACE_AF2_FILTER_GAIN_B,
             NOLACE_AF2_SHAPE_GAIN,
-            hNoLACE->window);
+            hNoLACE->window,
+            arch);
 
         compute_generic_conv1d(
             &layers->nolace_post_af2,
@@ -613,7 +619,8 @@ void nolace_process_20ms_frame(
             state->post_af2_state,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             NOLACE_COND_DIM,
-            ACTIVATION_TANH);
+            ACTIVATION_TANH,
+            arch);
     }
 
     /* update feature buffer */
@@ -641,7 +648,8 @@ void nolace_process_20ms_frame(
             2,
             1,
             2,
-            1
+            1,
+            arch
         );
 
         adaconv_process_frame(
@@ -661,7 +669,8 @@ void nolace_process_20ms_frame(
             NOLACE_AF3_FILTER_GAIN_A,
             NOLACE_AF3_FILTER_GAIN_B,
             NOLACE_AF3_SHAPE_GAIN,
-            hNoLACE->window);
+            hNoLACE->window,
+            arch);
 
         compute_generic_conv1d(
             &layers->nolace_post_af3,
@@ -669,7 +678,8 @@ void nolace_process_20ms_frame(
             state->post_af3_state,
             feature_buffer + i_subframe * NOLACE_FRAME_SIZE,
             NOLACE_COND_DIM,
-            ACTIVATION_TANH);
+            ACTIVATION_TANH,
+            arch);
     }
 
     /* update feature buffer */
@@ -693,7 +703,8 @@ void nolace_process_20ms_frame(
             2,
             1,
             2,
-            1
+            1,
+            arch
         );
 
         adaconv_process_frame(
@@ -713,7 +724,8 @@ void nolace_process_20ms_frame(
             NOLACE_AF4_FILTER_GAIN_A,
             NOLACE_AF4_FILTER_GAIN_B,
             NOLACE_AF4_SHAPE_GAIN,
-            hNoLACE->window);
+            hNoLACE->window,
+            arch);
 
     }
 
@@ -758,7 +770,7 @@ void osce_enhance_frame(
         in_buffer[i] = ((float) xq[i]) / (1U<<15);
     }
 
-    lace_process_20ms_frame(&psDec->osce.model.lace, out_buffer, in_buffer, features, numbits, periods);
+    lace_process_20ms_frame(&psDec->osce.model.lace, out_buffer, in_buffer, features, numbits, periods, arch);
 
 
 #ifdef WRITE_FEATURES

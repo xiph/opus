@@ -23,7 +23,8 @@ void lace_process_20ms_frame(
     const float *x_in,
     const float *features,
     const float *numbits,
-    const int *periods
+    const int *periods,
+    int arch
 );
 
 /* API */
