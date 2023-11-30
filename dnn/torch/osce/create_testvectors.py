@@ -53,6 +53,23 @@ def create_adacomb_testvector(prefix, adacomb, num_frames, debug=False):
     p_in.tofile(prefix + '_p_in.s32')
     x_out.tofile(prefix + '_x_out.f32')
 
+def create_adashape_testvector(prefix, adashape, num_frames):
+    feature_dim = adashape.feature_dim
+    frame_size = adashape.frame_size
+
+    features = torch.randn((1, num_frames, feature_dim))
+    x_in = torch.randn((1, 1, num_frames * frame_size))
+
+    x_out = adashape(x_in, features)
+
+    features = features[0].detach().numpy()
+    x_in = x_in.flatten().detach().numpy()
+    x_out = x_out.flatten().detach().numpy()
+
+    features.tofile(prefix + '_features.f32')
+    x_in.tofile(prefix + '_x_in.f32')
+    x_out.tofile(prefix + '_x_out.f32')
+
 def create_feature_net_testvector(prefix, model, num_frames):
     num_features = model.num_features
     num_subframes = 4 * num_frames
@@ -107,6 +124,9 @@ if __name__ == "__main__":
 
     # lace cf1
     create_adacomb_testvector(os.path.join(args.output_folder, "lace_cf1"), lace.cf1, 5, debug=args.debug)
+
+    # nolace tdshape1
+    create_adashape_testvector(os.path.join(args.output_folder, "nolace_tdshape1"), nolace.tdshape1, 5)
 
     # lace feature net
     create_feature_net_testvector(os.path.join(args.output_folder, 'lace'), lace, 5)
