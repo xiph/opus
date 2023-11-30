@@ -1,3 +1,8 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
 #include "nndsp.h"
 #include "arch.h"
 #include "nnet.h"
@@ -107,6 +112,8 @@ void adaconv_process_frame(
     float gain_buffer[ADACONV_MAX_OUTPUT_CHANNELS];
     float *p_input;
     int i_in_channels, i_out_channels, i_sample, i_kernel;
+
+    (void) feature_dim; /* ToDo: figure out whether we might need this information */
 
     celt_assert(shape_gain == 1);
     celt_assert(left_padding == kernel_size - 1); /* currently only supports causal version. Non-causal version not difficult to implement but will require third loop */
@@ -222,8 +229,7 @@ void adacomb_process_frame(
     float *p_input;
     int i_sample, i_kernel;
 
-    celt_assert(shape_gain == 1);
-    celt_assert(left_padding == kernel_size - 1); /* currently only supports causal version. Non-causal version not difficult to implement but will require third loop */
+    (void) feature_dim; /* ToDo: figure out whether we might need this information */
 
     SET_ZERO(output_buffer);
     SET_ZERO(kernel_buffer);
