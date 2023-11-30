@@ -15,12 +15,17 @@
 
 void init_adaconv_state(AdaConvState *hAdaConv)
 {
-    memset(hAdaConv, 0, sizeof(*hAdaConv));
+    OPUS_CLEAR(hAdaConv, 1);
 }
 
 void init_adacomb_state(AdaCombState *hAdaComb)
 {
-    memset(hAdaComb, 0, sizeof(*hAdaComb));
+    OPUS_CLEAR(hAdaComb, 1);
+}
+
+void init_adashape_state(AdaShapeState *hAdaShape)
+{
+    OPUS_CLEAR(hAdaShape, 1);
 }
 
 #ifdef DEBUG_NNDSP
@@ -301,4 +306,80 @@ void adacomb_process_frame(
     OPUS_COPY(hAdaComb->history, p_input + frame_size - kernel_size - ADACOMB_MAX_LAG, kernel_size + ADACOMB_MAX_LAG);
     hAdaComb->last_pitch_lag = pitch_lag;
     hAdaComb->last_global_gain = global_gain;
+}
+
+
+void adashape_process_frame(
+    AdaShapeState *hAdaShape,
+    float *x_out,
+    const float *x_in,
+    const float *features,
+    const LinearLayer *alpha1,
+    const LinearLayer *alpha2,
+    int feature_dim,
+    int frame_size,
+    int avg_pool_k
+)
+{
+    float in_buffer[ADASHAPE_MAX_INPUT_DIM + ADASHAPE_MAX_FRAME_SIZE];
+    float out_buffer[ADASHAPE_MAX_FRAME_SIZE];
+    int i, k;
+    int tenv_size;
+    float mean;
+    float *tenv;
+
+    celt_assert(frame_size % avg_pool_k == 0);
+    celt_assert(feature_dim + frame_size / avg_pool_k + 1 < ADASHAPE_MAX_INPUT_DIM);
+
+    tenv_size = frame_size / avg_pool_k;
+    tenv = in_buffer + feature_dim;
+    OPUS_CLEAR(tenv, tenv_size + 1);
+
+    OPUS_COPY(in_buffer, features, feature_dim);
+
+    /* calculate temporal envelope */
+    mean = 0;
+    for (i = 0; i < tenv_size; i++)
+    {
+        for (k = 0; k < avg_pool_k; k++)
+        {
+            tenv[i] += fabs(x_in[i * avg_pool_k + k]);
+        }
+        tenv[i] = log(tenv[i] / avg_pool_k + 1.52587890625e-05f);
+        mean += tenv[i];
+    }
+    mean /= tenv_size;
+    for (i = 0; i < tenv_size; i++)
+    {
+        tenv[i] -= mean;
+    }
+    tenv[tenv_size] = mean;
+#ifdef DEBUG_NNDSP
+    print_float_vector("tenv", tenv, tenv_size + 1);
+#endif
+
+    /* calculate temporal weights */
+#ifdef DEBUG_NNDSP
+    print_float_vector("alpha1_in", in_buffer, feature_dim + tenv_size + 1);
+#endif
+    compute_generic_conv1d(alpha1, out_buffer, hAdaShape->conv_alpha1_state, in_buffer, feature_dim + tenv_size + 1, ACTIVATION_LINEAR);
+#ifdef DEBUG_NNDSP
+    print_float_vector("alpha1_out", out_buffer, frame_size);
+#endif
+    /* compute leaky ReLU by hand. ToDo: try tanh activation */
+    for (i = 0; i < frame_size; i ++)
+    {
+        in_buffer[i] = out_buffer[i] >= 0 ? out_buffer[i] : 0.2 * out_buffer[i];
+    }
+#ifdef DEBUG_NNDSP
+    print_float_vector("post_alpha1", in_buffer, frame_size);
+#endif
+    compute_generic_conv1d(alpha2, out_buffer, hAdaShape->conv_alpha2_state, in_buffer, frame_size, ACTIVATION_LINEAR);
+
+    /* shape signal */
+    for (i = 0; i < frame_size; i ++)
+    {
+        x_out[i] = exp(out_buffer[i]) * x_in[i];
+    }
+
 }
