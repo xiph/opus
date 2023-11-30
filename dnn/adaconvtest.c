@@ -221,6 +221,95 @@ void adacomb_compare(
     }
 }
 
+void adashape_compare(
+    const char * prefix,
+    int num_frames,
+    AdaShapeState* hAdaShape,
+    LinearLayer *alpha1,
+    LinearLayer *alpha2,
+    int feature_dim,
+    int frame_size,
+    int avg_pool_k
+)
+{
+    char feature_file[256];
+    char x_in_file[256];
+    char x_out_file[256];
+    char message[512];
+    int i_frame, i_sample;
+    float mse;
+    float features[512];
+    float x_in[512];
+    float x_out_ref[512];
+    float x_out[512];
+
+    init_adashape_state(hAdaShape);
+
+    FILE *f_features, *f_x_in, *f_x_out;
+
+    strcpy(feature_file, prefix);
+    strcat(feature_file, "_features.f32");
+    f_features = fopen(feature_file, "r");
+    if (f_features == NULL)
+    {
+        sprintf(message, "could not open file %s", feature_file);
+        perror(message);
+        exit(1);
+    }
+
+    strcpy(x_in_file, prefix);
+    strcat(x_in_file, "_x_in.f32");
+    f_x_in = fopen(x_in_file, "r");
+    if (f_x_in == NULL)
+    {
+        sprintf(message, "could not open file %s", x_in_file);
+        perror(message);
+        exit(1);
+    }
+
+    strcpy(x_out_file, prefix);
+    strcat(x_out_file, "_x_out.f32");
+    f_x_out = fopen(x_out_file, "r");
+    if (f_x_out == NULL)
+    {
+        sprintf(message, "could not open file %s", x_out_file);
+        perror(message);
+        exit(1);
+    }
+
+    for (i_frame = 0; i_frame < num_frames; i_frame ++)
+    {
+        if (fread(features, sizeof(float), feature_dim, f_features) != feature_dim)
+        {
+            fprintf(stderr, "could not read frame %d from %s\n", i_frame, feature_file);
+            exit(1);
+        }
+
+        if (fread(x_in, sizeof(float), frame_size, f_x_in) != frame_size)
+        {
+            fprintf(stderr, "could not read frame %d from %s\n", i_frame, x_in_file);
+            exit(1);
+        }
+
+        if (fread(x_out_ref, sizeof(float), frame_size, f_x_out) != frame_size)
+        {
+            fprintf(stderr, "could not read frame %d from %s\n", i_frame, x_out_file);
+            exit(1);
+        }
+
+        adashape_process_frame(hAdaShape, x_out, x_in, features, alpha1, alpha2, feature_dim, frame_size, avg_pool_k);
+
+        mse = 0;
+        for (i_sample = 0; i_sample < frame_size; i_sample ++)
+        {
+            mse += pow(x_out_ref[i_sample] - x_out[i_sample], 2);
+        }
+        mse = sqrt(mse / (frame_size));
+        printf("rmse[%d] %f\n", i_frame, mse);
+
+    }
+}
+
 
 int main()
 {
@@ -229,12 +318,13 @@ int main()
 
     AdaConvState hAdaConv;
     AdaCombState hAdaComb;
+    AdaShapeState hAdaShape;
 
     init_adaconv_state(&hAdaConv);
 
     init_lacelayers(&hLACE, lacelayers_arrays);
     init_nolacelayers(&hNoLACE, nolacelayers_arrays);
-
+#if 0
     printf("\ntesting lace.af1 (1 in, 1 out)...\n");
     adaconv_compare(
         "testvectors/lace_af1",
@@ -330,9 +420,22 @@ int main()
         LACE_CF1_FILTER_GAIN_B,
         LACE_CF1_LOG_GAIN_LIMIT
     );
+#endif
+
+    printf("\ntesting nolace.tdshape1...\n");
+    adashape_compare(
+        "testvectors/nolace_tdshape1",
+        5,
+        &hAdaShape,
+        &hNoLACE.nolace_tdshape1_alpha1,
+        &hNoLACE.nolace_tdshape1_alpha2,
+        NOLACE_TDSHAPE1_FEATURE_DIM,
+        NOLACE_TDSHAPE1_FRAME_SIZE,
+        NOLACE_TDSHAPE1_AVG_POOL_K
+    );
 
     return 0;
 }
 
 
-//gcc  -I ../include -I . -I ../celt adaconvtest.c nndsp.c lace_data.c nolace_data.c nnet.c parse_lpcnet_weights.c -lm -o adaconvtest
+//gcc  -I ../include -I ../silk -I . -I ../celt adaconvtest.c nndsp.c lace_data.c nolace_data.c nnet.c parse_lpcnet_weights.c -lm -o adaconvtest

@@ -17,6 +17,9 @@
 #define ADACOMB_MAX_FRAME_SIZE 80
 #define ADACOMB_MAX_OVERLAP_SIZE 40
 
+#define ADASHAPE_MAX_INPUT_DIM 512
+#define ADASHAPE_MAX_FRAME_SIZE 160
+
 //#define DEBUG_NNDSP
 #ifdef DEBUG_NNDSP
 #include <stdio.h>
@@ -39,9 +42,16 @@ typedef struct {
 } AdaCombState;
 
 
+typedef struct {
+    float conv_alpha1_state[ADASHAPE_MAX_INPUT_DIM];
+    float conv_alpha2_state[ADASHAPE_MAX_FRAME_SIZE];
+} AdaShapeState;
+
 void init_adaconv_state(AdaConvState *hAdaConv);
 
 void init_adacomb_state(AdaCombState *hAdaComb);
+
+void init_adashape_state(AdaShapeState *hAdaShape);
 
 void adaconv_process_frame(
     AdaConvState* hAdaConv,
@@ -83,6 +93,16 @@ void adacomb_process_frame(
     float *window
 );
 
-void adashape_process_frame(void);
+void adashape_process_frame(
+    AdaShapeState *hAdaShape,
+    float *x_out,
+    const float *x_in,
+    const float *features,
+    const LinearLayer *alpha1,
+    const LinearLayer *alpha2,
+    int feature_dim,
+    int frame_size,
+    int avg_pool_k
+);
 
 #endif
