@@ -32,6 +32,7 @@
 #include "opus_types.h"
 #include <math.h>
 #include "arch.h"
+#include "x86/x86_arch_macros.h"
 
 
 #if defined(__AVX__) || defined(__SSE2__)
