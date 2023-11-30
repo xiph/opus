@@ -297,7 +297,8 @@ void adashape_compare(
             exit(1);
         }
 
-        adashape_process_frame(hAdaShape, x_out, x_in, features, alpha1, alpha2, feature_dim, frame_size, avg_pool_k);
+        adashape_process_frame(hAdaShape, x_out, x_in, features, alpha1, alpha2, feature_dim,
+        frame_size, avg_pool_k, 1, 0, 1, 0);
 
         mse = 0;
         for (i_sample = 0; i_sample < frame_size; i_sample ++)
@@ -324,7 +325,7 @@ int main()
 
     init_lacelayers(&hLACE, lacelayers_arrays);
     init_nolacelayers(&hNoLACE, nolacelayers_arrays);
-#if 0
+
     printf("\ntesting lace.af1 (1 in, 1 out)...\n");
     adaconv_compare(
         "testvectors/lace_af1",
@@ -420,7 +421,6 @@ int main()
         LACE_CF1_FILTER_GAIN_B,
         LACE_CF1_LOG_GAIN_LIMIT
     );
-#endif
 
     printf("\ntesting nolace.tdshape1...\n");
     adashape_compare(
