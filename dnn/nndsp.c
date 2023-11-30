@@ -107,7 +107,8 @@ void adaconv_process_frame(
     float filter_gain_a,
     float filter_gain_b,
     float shape_gain,
-    float *window
+    float *window,
+    int arch
 )
 {
     float output_buffer[ADACONV_MAX_FRAME_SIZE * ADACONV_MAX_OUTPUT_CHANNELS];
@@ -146,8 +147,8 @@ void adaconv_process_frame(
     p_input = input_buffer + kernel_size * in_channels;
 
     /* calculate new kernel and new gain */
-    compute_generic_dense(kernel_layer, kernel_buffer, features, ACTIVATION_LINEAR);
-    compute_generic_dense(gain_layer, gain_buffer, features, ACTIVATION_TANH);
+    compute_generic_dense(kernel_layer, kernel_buffer, features, ACTIVATION_LINEAR, arch);
+    compute_generic_dense(gain_layer, gain_buffer, features, ACTIVATION_TANH, arch);
 #ifdef DEBUG_NNDSP
     print_float_vector("features", features, feature_dim);
     print_float_vector("adaconv_kernel_raw", kernel_buffer, in_channels * out_channels * kernel_size);
@@ -223,7 +224,8 @@ void adacomb_process_frame(
     float filter_gain_a,
     float filter_gain_b,
     float log_gain_limit,
-    float *window
+    float *window,
+    int arch
 )
 {
     float output_buffer[ADACOMB_MAX_FRAME_SIZE];
@@ -255,9 +257,9 @@ void adacomb_process_frame(
     p_input = input_buffer + kernel_size + ADACOMB_MAX_LAG;
 
     /* calculate new kernel and new gain */
-    compute_generic_dense(kernel_layer, kernel_buffer, features, ACTIVATION_LINEAR);
-    compute_generic_dense(gain_layer, &gain, features, ACTIVATION_RELU);
-    compute_generic_dense(global_gain_layer, &global_gain, features, ACTIVATION_TANH);
+    compute_generic_dense(kernel_layer, kernel_buffer, features, ACTIVATION_LINEAR, arch);
+    compute_generic_dense(gain_layer, &gain, features, ACTIVATION_RELU, arch);
+    compute_generic_dense(global_gain_layer, &global_gain, features, ACTIVATION_TANH, arch);
 #ifdef DEBUG_NNDSP
     print_float_vector("features", features, feature_dim);
     print_float_vector("adacomb_kernel_raw", kernel_buffer, kernel_size);
@@ -322,7 +324,8 @@ void adashape_process_frame(
     int in_stride,
     int in_offset,
     int out_stride,
-    int out_offset
+    int out_offset,
+    int arch
 )
 {
     float in_buffer[ADASHAPE_MAX_INPUT_DIM + ADASHAPE_MAX_FRAME_SIZE];
@@ -366,7 +369,7 @@ void adashape_process_frame(
 #ifdef DEBUG_NNDSP
     print_float_vector("alpha1_in", in_buffer, feature_dim + tenv_size + 1);
 #endif
-    compute_generic_conv1d(alpha1, out_buffer, hAdaShape->conv_alpha1_state, in_buffer, feature_dim + tenv_size + 1, ACTIVATION_LINEAR);
+    compute_generic_conv1d(alpha1, out_buffer, hAdaShape->conv_alpha1_state, in_buffer, feature_dim + tenv_size + 1, ACTIVATION_LINEAR, arch);
 #ifdef DEBUG_NNDSP
     print_float_vector("alpha1_out", out_buffer, frame_size);
 #endif
@@ -378,7 +381,7 @@ void adashape_process_frame(
 #ifdef DEBUG_NNDSP
     print_float_vector("post_alpha1", in_buffer, frame_size);
 #endif
-    compute_generic_conv1d(alpha2, out_buffer, hAdaShape->conv_alpha2_state, in_buffer, frame_size, ACTIVATION_LINEAR);
+    compute_generic_conv1d(alpha2, out_buffer, hAdaShape->conv_alpha2_state, in_buffer, frame_size, ACTIVATION_LINEAR, arch);
 
     /* shape signal */
     for (i = 0; i < frame_size; i ++)
