@@ -135,6 +135,9 @@ endif
 if ENABLE_DRED
 LPCNET_HEAD += $(DRED_HEAD)
 endif
+if ENABLE_OSCE
+LPCNET_HEAD += $(OSCE_HEAD)
+endif
 
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(LPCNET_SOURCES) $(OPUS_SOURCES)
 libopus_la_LDFLAGS = -no-undefined -version-info @OPUS_LT_CURRENT@:@OPUS_LT_REVISION@:@OPUS_LT_AGE@
