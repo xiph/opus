@@ -383,7 +383,7 @@ void adashape_process_frame(
     /* shape signal */
     for (i = 0; i < frame_size; i ++)
     {
-        x_out[out_stride * i + out_offset] = exp(out_stride * out_buffer[i] + out_offset) * x_in[in_stride * i + in_offset];
+        x_out[out_stride * i + out_offset] = exp(out_buffer[i]) * x_in[in_stride * i + in_offset];
     }
 
 }
