@@ -2,20 +2,24 @@
 #include "config.h"
 #endif
 
-#ifdef ENABLE_OSCE
+
 
 /*DEBUG*/
 //#define WRITE_FEATURES
 //#define DEBUG_PRING
 /*******/
 
-#include "main.h"
 #include "stack_alloc.h"
-#include "silk_enhancer.h"
+#include "osce_features.h"
 #include "kiss_fft.h"
 #include "os_support.h"
+#include "osce.h"
+
+
+#if defined(WRITE_FEATURES) || defined(DEBUG_PRING)
 #include <stdio.h>
 #include <stdlib.h>
+#endif
 
 static int center_bins_clean[64] = {
       0,      2,      5,      8,     10,     12,     15,     18,
@@ -290,7 +294,7 @@ static void calculate_acorr(float *acorr, float *signal, int lag)
     }
 }
 
-static int pitch_postprocessing(silk_OSCE_features *psFeatures, int lag, int type)
+static int pitch_postprocessing(OSCEFeatureState *psFeatures, int lag, int type)
 {
     int new_lag;
 
@@ -340,17 +344,20 @@ static int pitch_postprocessing(silk_OSCE_features *psFeatures, int lag, int typ
     return new_lag;
 }
 
-static void calculate_features(
+void osce_calculate_features(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
+    float                       *features,                      /* O    input features                              */
+    float                       *numbits,                       /* O    numbits and smoothed numbits                */
+    int                         *periods,                       /* O    pitch lags on subframe basis                */
     const opus_int16            xq[],                           /* I    Decoded speech                              */
     opus_int32                  num_bits                        /* I    Size of SILK payload in bits                */
 )
 {
     int num_subframes, num_samples;
     float buffer[OSCE_FEATURES_MAX_HISTORY + OSCE_MAX_FEATURE_FRAMES * 80];
-    float *frame, *features;
-    silk_OSCE_features *psFeatures;
+    float *frame, *pfeatures;
+    OSCEFeatureState *psFeatures;
     int i, n, k;
 #ifdef WRITE_FEATURES
     static FILE *f_feat = NULL;
@@ -368,11 +375,12 @@ static void calculate_features(
     psFeatures = &psDec->osce.features;
 
     /* smooth bit count */
-    psFeatures->numbits[0] = num_bits;
+    psFeatures->numbits_smooth = 0.9 * psFeatures->numbits_smooth + 0.1 * num_bits;
+    numbits[0] = num_bits;
 #ifdef OSCE_NUMBITS_BUGFIX
-    psFeatures->numbits[1] = 0.9 * psFeatures->numbits[1] + 0.1 * num_bits;
+    numbits[1] = psFeatures->numbits_smooth;
 #else
-    psFeatures->numbits[1] = num_bits;
+    numbits[1] = num_bits;
 #endif
 
     for (n = 0; n < num_samples; n++)
@@ -383,154 +391,51 @@ static void calculate_features(
 
     for (k = 0; k < num_subframes; k++)
     {
-        features = &psFeatures->features[k * OSCE_FEATURE_DIM];
+        pfeatures = features + k * OSCE_FEATURE_DIM;
         frame = &buffer[OSCE_FEATURES_MAX_HISTORY + k * 80];
-        memset(features, 0, OSCE_FEATURE_DIM); /* precaution */
+        memset(pfeatures, 0, OSCE_FEATURE_DIM); /* precaution */
 
         /* clean spectrum from lpcs (update every other frame) */
         if (k % 2 == 0)
         {
-            calculate_log_spectrum_from_lpc(features + OSCE_CLEAN_SPEC_START, psDecCtrl->PredCoef_Q12[k >> 1], psDec->LPC_order);
+            calculate_log_spectrum_from_lpc(pfeatures + OSCE_CLEAN_SPEC_START, psDecCtrl->PredCoef_Q12[k >> 1], psDec->LPC_order);
         }
         else
         {
-            OPUS_COPY(features + OSCE_CLEAN_SPEC_START, features + OSCE_CLEAN_SPEC_START - OSCE_FEATURE_DIM, OSCE_CLEAN_SPEC_LENGTH);
+            OPUS_COPY(pfeatures + OSCE_CLEAN_SPEC_START, pfeatures + OSCE_CLEAN_SPEC_START - OSCE_FEATURE_DIM, OSCE_CLEAN_SPEC_LENGTH);
         }
 
         /* noisy cepstrum from signal (update every other frame) */
         if (k % 2 == 0)
         {
-            calculate_cepstrum(features + OSCE_NOISY_CEPSTRUM_START, frame - 160);
+            calculate_cepstrum(pfeatures + OSCE_NOISY_CEPSTRUM_START, frame - 160);
         }
         else
         {
-            OPUS_COPY(features + OSCE_NOISY_CEPSTRUM_START, features + OSCE_NOISY_CEPSTRUM_START - OSCE_FEATURE_DIM, OSCE_NOISY_CEPSTRUM_LENGTH);
+            OPUS_COPY(pfeatures + OSCE_NOISY_CEPSTRUM_START, pfeatures + OSCE_NOISY_CEPSTRUM_START - OSCE_FEATURE_DIM, OSCE_NOISY_CEPSTRUM_LENGTH);
         }
 
         /* pitch hangover and zero value replacement */
-        psFeatures->lags[k] = pitch_postprocessing(psFeatures, psDecCtrl->pitchL[k], psDec->indices.signalType);
+        periods[k] = pitch_postprocessing(psFeatures, psDecCtrl->pitchL[k], psDec->indices.signalType);
 
         /* auto-correlation around pitch lag */
-        calculate_acorr(features + OSCE_ACORR_START, frame, psFeatures->lags[k]);
+        calculate_acorr(pfeatures + OSCE_ACORR_START, frame, periods[k]);
 
         /* ltp */
         celt_assert(OSCE_LTP_LENGTH == LTP_ORDER)
         for (i = 0; i < OSCE_LTP_LENGTH; i++)
         {
-            features[OSCE_LTP_START + i] = (float) psDecCtrl->LTPCoef_Q14[k * LTP_ORDER + i] / (1U << 14);
+            pfeatures[OSCE_LTP_START + i] = (float) psDecCtrl->LTPCoef_Q14[k * LTP_ORDER + i] / (1U << 14);
         }
 
         /* frame gain */
-        features[OSCE_LOG_GAIN_START] = log((float) psDecCtrl->Gains_Q16[k] / (1UL << 16) + 1e-9);
+        pfeatures[OSCE_LOG_GAIN_START] = log((float) psDecCtrl->Gains_Q16[k] / (1UL << 16) + 1e-9);
 
 #ifdef WRITE_FEATURES
-        fwrite(features, sizeof(*features), 93, f_feat);
+        fwrite(pfeatures, sizeof(*pfeatures), 93, f_feat);
 #endif
     }
 
     /* buffer update */
     OPUS_COPY(psFeatures->signal_history, &buffer[num_samples], OSCE_FEATURES_MAX_HISTORY);
 }
-
-void silk_enhancer(
-    silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
-    silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
-    opus_int16                  xq[],                           /* I/O  Decoded speech                              */
-    opus_int32                  num_bits,                       /* I    Size of SILK payload in bits                */
-    int                         arch                            /* I    Run-time architecture                       */
-)
-{
-    float in_buffer[320];
-    float out_buffer[320];
-    int i;
-
-    (void) arch;
-
-    /* ToDo: decide when to enhance (20 ms frame, 16kHz) */
-
-    calculate_features(psDec, psDecCtrl, xq, num_bits);
-
-    /* scale input */
-    for (i = 0; i < 320; i++)
-    {
-        in_buffer[i] = ((float) xq[i]) / (1U<<15);
-    }
-
-    lace_process_20ms_frame(&psDec->osce.model, out_buffer, in_buffer, psDec->osce.features.features, psDec->osce.features.numbits, psDec->osce.features.lags);
-
-
-#ifdef WRITE_FEATURES
-    int  k;
-
-    static FILE *flpc = NULL;
-    static FILE *fgain = NULL;
-    static FILE *fltp = NULL;
-    static FILE *fperiod = NULL;
-    static FILE *fnoisy16k = NULL;
-    static FILE* f_numbits = NULL;
-    static FILE* f_numbits_smooth = NULL;
-    static FILE* f_noisy = NULL;
-
-    if (flpc == NULL) {flpc = fopen("features_lpc.f32", "wb");}
-    if (fgain == NULL) {fgain = fopen("features_gain.f32", "wb");}
-    if (fltp == NULL) {fltp = fopen("features_ltp.f32", "wb");}
-    if (fperiod == NULL) {fperiod = fopen("features_period.s16", "wb");}
-    if (fnoisy16k == NULL) {fnoisy16k = fopen("noisy_16k.s16", "wb");}
-    if(f_numbits == NULL) {f_numbits = fopen("features_num_bits.s32", "wb");}
-    if (f_numbits_smooth == NULL) {f_numbits_smooth = fopen("features_num_bits_smooth.f32", "wb");}
-
-    psDec->osce.features.num_bits_smooth = 0.9 * psDec->osce.features.num_bits_smooth + 0.1 * num_bits;
-
-    fwrite(&num_bits, sizeof(num_bits), 1, f_numbits);
-    fwrite(&(psDec->osce.features.num_bits_smooth), sizeof(psDec->osce.features.num_bits_smooth), 1, f_numbits_smooth);
-
-    for (k = 0; k < psDec->nb_subfr; k++)
-    {
-        float tmp;
-        int16_t itmp;
-        float lpc_buffer[16] = {0};
-        opus_int16 *A_Q12, *B_Q14;
-
-        (void) num_bits;
-        (void) arch;
-
-        /* gain */
-        tmp = (float) psDecCtrl->Gains_Q16[k] / (1UL << 16);
-        fwrite(&tmp, sizeof(tmp), 1, fgain);
-
-        /* LPC */
-        A_Q12 = psDecCtrl->PredCoef_Q12[ k >> 1 ];
-        for (i = 0; i < psDec->LPC_order; i++)
-        {
-            lpc_buffer[i] = (float) A_Q12[i] / (1U << 12);
-        }
-        fwrite(lpc_buffer, sizeof(lpc_buffer[0]), 16, flpc);
-
-        /* LTP */
-        B_Q14 = &psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER ];
-        for (i = 0; i < 5; i++)
-        {
-            tmp = (float) B_Q14[i] / (1U << 14);
-            fwrite(&tmp, sizeof(tmp), 1, fltp);
-        }
-
-        /* periods */
-        itmp = psDec->indices.signalType == TYPE_VOICED ? psDecCtrl->pitchL[ k ] : 0;
-        fwrite(&itmp, sizeof(itmp), 1, fperiod);
-    }
-
-    fwrite(xq, psDec->nb_subfr * psDec->subfr_length, sizeof(xq[0]), fnoisy16k);
-#endif
-
-    /* scale output */
-    for (i = 0; i < 320; i++)
-    {
-        float tmp = round((1U<<15) * out_buffer[i]);
-        if (tmp > INT16_MAX) tmp = INT16_MAX;
-        if (tmp < INT16_MIN) tmp = INT16_MIN;
-        xq[i] = (opus_int16) tmp;
-    }
-
-}
-
-#endif
