@@ -14,6 +14,7 @@
 #include "kiss_fft.h"
 #include "os_support.h"
 #include "osce.h"
+#include "freq.h"
 
 
 #if defined(WRITE_FEATURES) || defined(DEBUG_PRING)
@@ -164,49 +165,17 @@ static void apply_filterbank(float *x_out, float *x_in, int *center_bins, float*
 static void mag_spec_320_onesided_slow(float *out, float *in)
 /* for temporary use only */
 {
-    struct {float re; float im;} buffer[320];
-    int n, k;
+    kiss_fft_cpx buffer[320];
+    int k;
+    forward_transform(buffer, in);
 
     for (k = 0; k < 161; k++)
     {
-        buffer[k].re = buffer[k].im = 0;
-        for (n = 0; n < 320; n++)
-        {
-            buffer[k].re += cos(- 2 * M_PI * n * k / 320) * in[n];
-            buffer[k].im += sin(- 2 * M_PI * n * k / 320) * in[n];
-        }
-    }
-
-    for (k = 0; k < 161; k++)
-    {
-        out[k] = sqrt(buffer[k].re * buffer[k].re + buffer[k].im * buffer[k].im);
+        out[k] = 320. * sqrt(buffer[k].r * buffer[k].r + buffer[k].i * buffer[k].i);
 #ifdef DEBUG_PRINT
         printf("magspec[%d]: %f\n", k, out[k]);
 #endif
     }
-}
-
-static void dct2(float *out, float *in, int size)
-/* for temporary use only? */
-{
-    float buffer[320];
-    int n, k;
-
-    celt_assert(size <= 320)
-
-    for (k = 0; k < size; k++)
-    {
-        buffer[k] = 0;
-        for (n = 0; n < size; n ++)
-        {
-            buffer[k] += cos(M_PI * k * (2 * n + 1) / (2 * size)) * in[n];
-        }
-        buffer[k] *= k==0 ? sqrt(1. / size) : sqrt(2. / size);
-#ifdef DEBUG_PRINT
-        printf("dct2[%d]: %f\n", k, buffer[k]);
-#endif
-    }
-    OPUS_COPY(out, buffer, size);
 }
 
 
@@ -269,7 +238,8 @@ static void calculate_cepstrum(float *cepstrum, float *signal)
     }
 
     /* DCT-II (orthonormal) */
-    dct2(cepstrum, spec, OSCE_NOISY_SPEC_NUM_BANDS);
+    celt_assert(OSCE_NOISY_SPEC_NUM_BANDS == NB_BANDS);
+    dct(cepstrum, spec);
 }
 
 static void calculate_acorr(float *acorr, float *signal, int lag)

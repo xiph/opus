@@ -26,6 +26,5 @@ OSCE_SOURCES = \
 dnn/osce.c \
 dnn/osce_features.c \
 dnn/nndsp.c \
-dnn/nnet.c \
-dnn/parse_lpcnet_weights.c \
-dnn/lace_data.c
+dnn/lace_data.c \
+dnn/nolace_data.c
