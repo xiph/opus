@@ -32,9 +32,16 @@
 #include "opus_types.h"
 #include <math.h>
 #include "arch.h"
-
+#include "x86/x86_arch_macros.h"
 
 #if defined(__AVX__) || defined(__SSE2__)
+#ifndef __AVX__
+#if defined(_MSC_VER)
+#pragma message ("Compiling without AVX")
+#else
+#warning Compiling without AVX
+#endif
+#endif
 #include "vec_avx.h"
 #elif (defined(__ARM_NEON__) || defined(__ARM_NEON)) && !defined(DISABLE_NEON)
 #include "vec_neon.h"
