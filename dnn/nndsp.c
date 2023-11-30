@@ -318,7 +318,11 @@ void adashape_process_frame(
     const LinearLayer *alpha2,
     int feature_dim,
     int frame_size,
-    int avg_pool_k
+    int avg_pool_k,
+    int in_stride,
+    int in_offset,
+    int out_stride,
+    int out_offset
 )
 {
     float in_buffer[ADASHAPE_MAX_INPUT_DIM + ADASHAPE_MAX_FRAME_SIZE];
@@ -343,7 +347,7 @@ void adashape_process_frame(
     {
         for (k = 0; k < avg_pool_k; k++)
         {
-            tenv[i] += fabs(x_in[i * avg_pool_k + k]);
+            tenv[i] += fabs(x_in[in_stride * (i * avg_pool_k + k) + in_offset]);
         }
         tenv[i] = log(tenv[i] / avg_pool_k + 1.52587890625e-05f);
         mean += tenv[i];
@@ -379,7 +383,7 @@ void adashape_process_frame(
     /* shape signal */
     for (i = 0; i < frame_size; i ++)
     {
-        x_out[i] = exp(out_buffer[i]) * x_in[i];
+        x_out[out_stride * i + out_offset] = exp(out_stride * out_buffer[i] + out_offset) * x_in[in_stride * i + in_offset];
     }
 
 }
