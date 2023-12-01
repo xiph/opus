@@ -20,7 +20,7 @@
 #define ADASHAPE_MAX_INPUT_DIM 512
 #define ADASHAPE_MAX_FRAME_SIZE 160
 
-//#define DEBUG_NNDSP
+/*#define DEBUG_NNDSP*/
 #ifdef DEBUG_NNDSP
 #include <stdio.h>
 #endif
@@ -60,7 +60,7 @@ void adaconv_process_frame(
     const float *features,
     const LinearLayer *kernel_layer,
     const LinearLayer *gain_layer,
-    int feature_dim, // not strictly necessary
+    int feature_dim, /* not strictly necessary */
     int frame_size,
     int overlap_size,
     int in_channels,
