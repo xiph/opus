@@ -14,6 +14,12 @@
 extern const WeightArray lacelayers_arrays[];
 extern const WeightArray nolacelayers_arrays[];
 
+#define OSCE_METHOD_NONE 0
+#define OSCE_METHOD_LACE 1
+#define OSCE_METHOD_NOLACE 2
+
+#define OSCE_DEFAULT_METHOD OSCE_METHOD_NOLACE
+
 
 void init_lace(LACE *hLACE);
 
@@ -37,7 +43,7 @@ void osce_enhance_frame(
     int                         arch                            /* I    Run-time architecture                       */
 );
 
-#define init_osce(x) init_lace(x)
+void osce_init_model(OSCEModel *model, int method);
 
 
 

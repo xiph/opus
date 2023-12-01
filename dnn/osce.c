@@ -9,6 +9,7 @@
 #include "os_support.h"
 #include "nndsp.h"
 
+//#define OSCE_DEBUG
 #ifdef OSCE_DEBUG
 #include <stdio.h>
 //#define WRITE_FEATURES
@@ -54,7 +55,7 @@ void init_lace(LACE *hLACE)
 
     for (i = 0; i < LACE_OVERLAP_SIZE; i ++)
     {
-        hLACE->window[i] = 0.5 + 0.5 * cos(M_PI * (i + 0.5) / LACE_OVERLAP_SIZE);
+        hLACE->window[i] = 0.5f + 0.5f * cos(M_PI * (i + 0.5f) / LACE_OVERLAP_SIZE);
     }
 }
 
@@ -408,33 +409,43 @@ void nolace_process_20ms_frame(
 {
     float feature_buffer[4 * NOLACE_COND_DIM];
     float feature_transform_buffer[4 * NOLACE_COND_DIM];
-    float x_buffer1[2 * NOLACE_FRAME_SIZE];
-    float x_buffer2[2 * NOLACE_FRAME_SIZE];
+    float x_buffer1[8 * NOLACE_FRAME_SIZE];
+    float x_buffer2[8 * NOLACE_FRAME_SIZE];
     int i_subframe, i_sample;
     NOLACELayers *layers = &hNoLACE->layers;
     NoLACEState *state = &hNoLACE->state;
 
 #ifdef DEBUG_NOLACE
     static FILE *f_features=NULL, *f_encfeatures=NULL, *f_xin=NULL, *f_xpreemph=NULL, *f_postcf1=NULL;
-    static FILE *f_postcf2=NULL, *f_postaf1=NULL, *f_xdeemph, *f_numbits, *f_periods;
-    static FILE *f_ffpostcf1, *f_fpostcf2, *f_fpostaf1;
+    static FILE *f_postcf2=NULL, *f_postaf1=NULL, *f_postaf2, *f_postaf3, *f_postaf4, *f_xdeemph, *f_numbits, *f_periods;
+    static FILE *f_fpostcf1, *f_fpostcf2, *f_fpostaf1, *f_fpostaf2, *f_fpostaf3;
+    static FILE *f_posttdsh1;
 
 
-    FINIT(f_features, "debug/c_features.f32", "wb");
-    FINIT(f_encfeatures, "debug/c_encoded_features.f32", "wb");
-    FINIT(f_xin, "debug/c_x_in.f32", "wb");
-    FINIT(f_xpreemph, "debug/c_xpreemph.f32", "wb");
-    FINIT(f_xdeemph, "debug/c_xdeemph.f32", "wb");
-    FINIT(f_postcf1, "debug/c_post_cf1.f32", "wb");
-    FINIT(f_postcf2, "debug/c_post_cf2.f32", "wb");
-    FINIT(f_postaf1, "debug/c_post_af1.f32", "wb");
-    FINIT(f_numbits, "debug/c_numbits.f32", "wb");
-    FINIT(f_periods, "debug/c_periods.s32", "wb");
-
+    FINIT(f_features, "nolacedebug/c_features.f32", "wb");
+    FINIT(f_encfeatures, "nolacedebug/c_encoded_features.f32", "wb");
+    FINIT(f_xin, "nolacedebug/c_x_in.f32", "wb");
+    FINIT(f_xpreemph, "nolacedebug/c_xpreemph.f32", "wb");
+    FINIT(f_xdeemph, "nolacedebug/c_xdeemph.f32", "wb");
+    FINIT(f_postcf1, "nolacedebug/c_post_cf1.f32", "wb");
+    FINIT(f_postcf2, "nolacedebug/c_post_cf2.f32", "wb");
+    FINIT(f_postaf1, "nolacedebug/c_post_af1.f32", "wb");
+    FINIT(f_postaf2, "nolacedebug/c_post_af2.f32", "wb");
+    FINIT(f_postaf3, "nolacedebug/c_post_af3.f32", "wb");
+    FINIT(f_postaf4, "nolacedebug/c_post_af4.f32", "wb");
+    FINIT(f_numbits, "nolacedebug/c_numbits.f32", "wb");
+    FINIT(f_periods, "nolacedebug/c_periods.s32", "wb");
+    FINIT(f_fpostcf1, "nolacedebug/c_features_post_cf1.f32", "wb");
+    FINIT(f_fpostcf2, "nolacedebug/c_features_post_cf2.f32", "wb");
+    FINIT(f_fpostaf1, "nolacedebug/c_features_post_af1.f32", "wb");
+    FINIT(f_fpostaf2, "nolacedebug/c_features_post_af2.f32", "wb");
+    FINIT(f_fpostaf3, "nolacedebug/c_features_post_af3.f32", "wb");
+    FINIT(f_posttdsh1, "nolacedebug/c_post_tdshape1.f32", "wb");
     fwrite(x_in, sizeof(*x_in), 4 * NOLACE_FRAME_SIZE, f_xin);
     fwrite(numbits, sizeof(*numbits), 2, f_numbits);
     fwrite(periods, sizeof(*periods), 4, f_periods);
 #endif
+
 
     /* pre-emphasis */
     for (i_sample = 0; i_sample < 4 * NOLACE_FRAME_SIZE; i_sample ++)
@@ -448,7 +459,7 @@ void nolace_process_20ms_frame(
 #ifdef DEBUG_NOLACE
     fwrite(features, sizeof(*features), 4 * NOLACE_NUM_FEATURES, f_features);
     fwrite(feature_buffer, sizeof(*feature_buffer), 4 * NOLACE_COND_DIM, f_encfeatures);
-    fwrite(output_buffer, sizeof(float), 4 * NOLACE_FRAME_SIZE, f_xpreemph);
+    fwrite(x_buffer1, sizeof(float), 4 * NOLACE_FRAME_SIZE, f_xpreemph);
 #endif
 
     /* 1st comb filtering stage */
@@ -459,7 +470,7 @@ void nolace_process_20ms_frame(
             &hNoLACE->state.cf1_state,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
-            feature_buffer + i_subframe * NOLACE_FRAME_SIZE,
+            feature_buffer + i_subframe * NOLACE_COND_DIM,
             &hNoLACE->layers.nolace_cf1_kernel,
             &hNoLACE->layers.nolace_cf1_gain,
             &hNoLACE->layers.nolace_cf1_global_gain,
@@ -487,6 +498,7 @@ void nolace_process_20ms_frame(
     OPUS_COPY(feature_buffer, feature_transform_buffer, 4 * NOLACE_COND_DIM);
 
 #ifdef DEBUG_NOLACE
+    fwrite(feature_buffer, sizeof(*feature_buffer), 4 * NOLACE_COND_DIM, f_fpostcf1);
     fwrite(x_buffer1, sizeof(float), 4 * NOLACE_FRAME_SIZE, f_postcf1);
 #endif
 
@@ -526,6 +538,7 @@ void nolace_process_20ms_frame(
     OPUS_COPY(feature_buffer, feature_transform_buffer, 4 * NOLACE_COND_DIM);
 
 #ifdef DEBUG_NOLACE
+    fwrite(feature_buffer, sizeof(*feature_buffer), 4 * NOLACE_COND_DIM, f_fpostcf2);
     fwrite(x_buffer1, sizeof(float), 4 * NOLACE_FRAME_SIZE, f_postcf2);
 #endif
 
@@ -534,8 +547,8 @@ void nolace_process_20ms_frame(
     {
         adaconv_process_frame(
             &hNoLACE->state.af1_state,
+            x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF1_OUT_CHANNELS,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
-            x_buffer2 + i_subframe * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             &hNoLACE->layers.nolace_af1_kernel,
             &hNoLACE->layers.nolace_af1_gain,
@@ -564,6 +577,7 @@ void nolace_process_20ms_frame(
     OPUS_COPY(feature_buffer, feature_transform_buffer, 4 * NOLACE_COND_DIM);
 
 #ifdef DEBUG_NOLACE
+    fwrite(feature_buffer, sizeof(*feature_buffer), 4 * NOLACE_COND_DIM, f_fpostaf1);
     fwrite(x_buffer2, sizeof(float), 4 * NOLACE_FRAME_SIZE * NOLACE_AF1_OUT_CHANNELS, f_postaf1);
 #endif
 
@@ -587,6 +601,10 @@ void nolace_process_20ms_frame(
             2,
             1
         );
+
+#ifdef DEBUG_NOLACE
+    fwrite(x_buffer2 + i_subframe * NOLACE_AF1_OUT_CHANNELS * NOLACE_FRAME_SIZE, sizeof(float), NOLACE_FRAME_SIZE * NOLACE_AF1_OUT_CHANNELS, f_posttdsh1);
+#endif
 
         adaconv_process_frame(
             &hNoLACE->state.af2_state,
@@ -620,6 +638,7 @@ void nolace_process_20ms_frame(
     OPUS_COPY(feature_buffer, feature_transform_buffer, 4 * NOLACE_COND_DIM);
 
 #ifdef DEBUG_NOLACE
+    fwrite(feature_buffer, sizeof(*feature_buffer), 4 * NOLACE_COND_DIM, f_fpostaf2);
     fwrite(x_buffer1, sizeof(float), 4 * NOLACE_FRAME_SIZE * NOLACE_AF2_OUT_CHANNELS, f_postaf2);
 #endif
 
@@ -629,7 +648,7 @@ void nolace_process_20ms_frame(
         celt_assert(NOLACE_AF2_OUT_CHANNELS == 2);
         /* modifies second channel in place */
         adashape_process_frame(
-            &state->tdshape1_state,
+            &state->tdshape2_state,
             x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE,
             x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -665,15 +684,19 @@ void nolace_process_20ms_frame(
 
         compute_generic_conv1d(
             &layers->nolace_post_af3,
-            feature_transform_buffer + i_subframe * NOLACE_FRAME_SIZE,
+            feature_transform_buffer + i_subframe * NOLACE_COND_DIM,
             state->post_af3_state,
-            feature_buffer + i_subframe * NOLACE_FRAME_SIZE,
+            feature_buffer + i_subframe * NOLACE_COND_DIM,
             NOLACE_COND_DIM,
             ACTIVATION_TANH);
     }
 
     /* update feature buffer */
     OPUS_COPY(feature_buffer, feature_transform_buffer, 4 * NOLACE_COND_DIM);
+#ifdef DEBUG_NOLACE
+    fwrite(feature_buffer, sizeof(*feature_buffer), 4 * NOLACE_COND_DIM, f_fpostaf3);
+    fwrite(x_buffer2, sizeof(float), 4 * NOLACE_FRAME_SIZE * NOLACE_AF3_OUT_CHANNELS, f_postaf3);
+#endif
 
     /* third shape-mix round */
     for (i_subframe = 0; i_subframe < 4; i_subframe++)
@@ -697,7 +720,7 @@ void nolace_process_20ms_frame(
         );
 
         adaconv_process_frame(
-            &hNoLACE->state.af2_state,
+            &hNoLACE->state.af4_state,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF4_OUT_CHANNELS,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF4_IN_CHANNELS,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -725,12 +748,32 @@ void nolace_process_20ms_frame(
         hNoLACE->state.deemph_mem = x_out[i_sample];
     }
 #ifdef DEBUG_NOLACE
+    fwrite(x_buffer1, sizeof(float), 4 * NOLACE_FRAME_SIZE * NOLACE_AF4_OUT_CHANNELS, f_postaf4);
     fwrite(x_out, sizeof(float), 4 * NOLACE_FRAME_SIZE, f_xdeemph);
 #endif
 }
 
+#ifndef DEMO
 
 /* API */
+
+void osce_init_model(OSCEModel *model, int method)
+{
+    switch(method)
+    {
+        case OSCE_METHOD_NONE:
+            break;
+        case OSCE_METHOD_LACE:
+            init_lace(&model->lace);
+            break;
+        case OSCE_METHOD_NOLACE:
+            init_nolace(&model->nolace);
+            break;
+        default:
+            celt_assert(0 && "method not defined");
+    }
+}
+
 void osce_enhance_frame(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
@@ -758,7 +801,22 @@ void osce_enhance_frame(
         in_buffer[i] = ((float) xq[i]) / (1U<<15);
     }
 
-    lace_process_20ms_frame(&psDec->osce.model.lace, out_buffer, in_buffer, features, numbits, periods);
+    switch(psDec->osce.method)
+    {
+        case OSCE_METHOD_NONE:
+            OPUS_COPY(out_buffer, in_buffer, 320);
+            break;
+        case OSCE_METHOD_LACE:
+            lace_process_20ms_frame(&psDec->osce.model.lace, out_buffer, in_buffer, features, numbits, periods);
+            break;
+        case OSCE_METHOD_NOLACE:
+            nolace_process_20ms_frame(&psDec->osce.model.nolace, out_buffer, in_buffer, features, numbits, periods);
+            break;
+        default:
+            celt_assert(0 && "method not defined");
+    }
+
+
 
 
 #ifdef WRITE_FEATURES
@@ -837,7 +895,7 @@ void osce_enhance_frame(
 
 
 
-#if 0
+#else
 
 #include <stdio.h>
 
@@ -1141,10 +1199,10 @@ void nolace_demo(
 
     printf("processing %s\n", prefix);
 
-    while (fread(x_in, sizeof(float), 4 * LACE_FRAME_SIZE, f_x_in) == 4 * LACE_FRAME_SIZE)
+    while (fread(x_in, sizeof(float), 4 * NOLACE_FRAME_SIZE, f_x_in) == 4 * LACE_FRAME_SIZE)
     {
         printf("\rframe: %d", frame_counter++);
-        if(fread(features, sizeof(float), 4 * LACE_NUM_FEATURES, f_features) != 4 * LACE_NUM_FEATURES)
+        if(fread(features, sizeof(float), 4 * NOLACE_NUM_FEATURES, f_features) != 4 * NOLACE_NUM_FEATURES)
         {
             fprintf(stderr, "could not read frame %d from features\n", i_frame);
             exit(1);
@@ -1203,4 +1261,4 @@ int main()
 }
 #endif
 
-//gcc  -I ../include -I . -I ../silk -I ../celt osce.c nndsp.c lace_data.c nolace_data.c nnet.c parse_lpcnet_weights.c -lm -o lacetest
+//gcc -DDEMO -I ../include -I . -I ../silk -I ../celt osce.c nndsp.c lace_data.c nolace_data.c nnet.c parse_lpcnet_weights.c -lm -o lacetest
