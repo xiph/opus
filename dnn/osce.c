@@ -54,7 +54,7 @@ void init_lace(LACE *hLACE)
 
     for (i = 0; i < LACE_OVERLAP_SIZE; i ++)
     {
-        hLACE->window[i] = 0.5 + 0.5 * cos(M_PI * (i + 0.5) / LACE_OVERLAP_SIZE);
+        hLACE->window[i] = 0.5f + 0.5f * cos(M_PI * (i + 0.5f) / LACE_OVERLAP_SIZE);
     }
 }
 
@@ -406,8 +406,8 @@ void nolace_process_20ms_frame(
 {
     float feature_buffer[4 * NOLACE_COND_DIM];
     float feature_transform_buffer[4 * NOLACE_COND_DIM];
-    float x_buffer1[2 * NOLACE_FRAME_SIZE];
-    float x_buffer2[2 * NOLACE_FRAME_SIZE];
+    float x_buffer1[8 * NOLACE_FRAME_SIZE];
+    float x_buffer2[8 * NOLACE_FRAME_SIZE];
     int i_subframe, i_sample;
     NOLACELayers *layers = &hNoLACE->layers;
     NoLACEState *state = &hNoLACE->state;
@@ -457,7 +457,7 @@ void nolace_process_20ms_frame(
             &hNoLACE->state.cf1_state,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
-            feature_buffer + i_subframe * NOLACE_FRAME_SIZE,
+            feature_buffer + i_subframe * NOLACE_COND_DIM,
             &hNoLACE->layers.nolace_cf1_kernel,
             &hNoLACE->layers.nolace_cf1_gain,
             &hNoLACE->layers.nolace_cf1_global_gain,
@@ -536,8 +536,8 @@ void nolace_process_20ms_frame(
     {
         adaconv_process_frame(
             &hNoLACE->state.af1_state,
+            x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF1_OUT_CHANNELS,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
-            x_buffer2 + i_subframe * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             &hNoLACE->layers.nolace_af1_kernel,
             &hNoLACE->layers.nolace_af1_gain,
@@ -636,7 +636,7 @@ void nolace_process_20ms_frame(
         celt_assert(NOLACE_AF2_OUT_CHANNELS == 2);
         /* modifies second channel in place */
         adashape_process_frame(
-            &state->tdshape1_state,
+            &state->tdshape2_state,
             x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE,
             x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -674,9 +674,9 @@ void nolace_process_20ms_frame(
 
         compute_generic_conv1d(
             &layers->nolace_post_af3,
-            feature_transform_buffer + i_subframe * NOLACE_FRAME_SIZE,
+            feature_transform_buffer + i_subframe * NOLACE_COND_DIM,
             state->post_af3_state,
-            feature_buffer + i_subframe * NOLACE_FRAME_SIZE,
+            feature_buffer + i_subframe * NOLACE_COND_DIM,
             NOLACE_COND_DIM,
             ACTIVATION_TANH,
             arch);
@@ -708,7 +708,7 @@ void nolace_process_20ms_frame(
         );
 
         adaconv_process_frame(
-            &hNoLACE->state.af2_state,
+            &hNoLACE->state.af4_state,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF4_OUT_CHANNELS,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF4_IN_CHANNELS,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -743,6 +743,25 @@ void nolace_process_20ms_frame(
 
 
 /* API */
+/* API */
+
+void osce_init_model(OSCEModel *model, int method)
+{
+    switch(method)
+    {
+        case OSCE_METHOD_NONE:
+            break;
+        case OSCE_METHOD_LACE:
+            init_lace(&model->lace);
+            break;
+        case OSCE_METHOD_NOLACE:
+            init_nolace(&model->nolace);
+            break;
+        default:
+            celt_assert(0 && "method not defined");
+    }
+}
+
 void osce_enhance_frame(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
@@ -770,8 +789,20 @@ void osce_enhance_frame(
         in_buffer[i] = ((float) xq[i]) / (1U<<15);
     }
 
-    lace_process_20ms_frame(&psDec->osce.model.lace, out_buffer, in_buffer, features, numbits, periods, arch);
-
+    switch(psDec->osce.method)
+    {
+        case OSCE_METHOD_NONE:
+            OPUS_COPY(out_buffer, in_buffer, 320);
+            break;
+        case OSCE_METHOD_LACE:
+            lace_process_20ms_frame(&psDec->osce.model.lace, out_buffer, in_buffer, features, numbits, periods, arch);
+            break;
+        case OSCE_METHOD_NOLACE:
+            nolace_process_20ms_frame(&psDec->osce.model.nolace, out_buffer, in_buffer, features, numbits, periods, arch);
+            break;
+        default:
+            celt_assert(0 && "method not defined");
+    }
 
 #ifdef WRITE_FEATURES
     int  k;

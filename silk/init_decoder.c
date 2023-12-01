@@ -57,7 +57,8 @@ opus_int silk_init_decoder(
     silk_PLC_Reset( psDec );
 
 #ifdef ENABLE_OSCE
-    init_osce(&psDec->osce.model.lace);
+    psDec->osce.method = OSCE_DEFAULT_METHOD;
+    osce_init_model(&psDec->osce.model, psDec->osce.method);
 #endif
 
     return(0);
