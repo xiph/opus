@@ -151,34 +151,48 @@ class NoLACE(NNSBase):
         periods         = periods.squeeze(-1)
         pitch_embedding = self.pitch_embedding(periods)
         numbits_embedding = self.numbits_embedding(numbits).flatten(2)
+        DEBUG=False
 
         full_features = torch.cat((features, pitch_embedding, numbits_embedding), dim=-1)
         cf = self.feature_net(full_features)
+        if DEBUG: np.save("nolacedebug/encoded_features.f32", cf.detach().squeeze().numpy())
 
         y = self.cf1(x, cf, periods, debug=debug)
         cf = self.feature_transform(cf, self.post_cf1)
+        if DEBUG: np.save("nolacedebug/features_post_cf1.f32", cf.detach().squeeze().numpy())
+        if DEBUG: np.save("nolacedebug/y_post_cf1.f32", y.detach().squeeze().numpy())
 
         y = self.cf2(y, cf, periods, debug=debug)
         cf = self.feature_transform(cf, self.post_cf2)
+        if DEBUG: np.save("nolacedebug/features_post_cf2.f32", cf.detach().squeeze().numpy())
+        if DEBUG: np.save("nolacedebug/y_post_cf2.f32", y.detach().squeeze().numpy())
 
         y = self.af1(y, cf, debug=debug)
         cf = self.feature_transform(cf, self.post_af1)
+        if DEBUG: np.save("nolacedebug/features_post_af1.f32", cf.detach().squeeze().numpy())
+        if DEBUG: np.save("nolacedebug/y_post_af1.f32", y.detach().squeeze().numpy())
 
         y1 = y[:, 0:1, :]
         y2 = self.tdshape1(y[:, 1:2, :], cf)
         y = torch.cat((y1, y2), dim=1)
+        if DEBUG: np.save("nolacedebug/y_post_tdshape1.f32", y.detach().squeeze().numpy())
         y = self.af2(y, cf, debug=debug)
         cf = self.feature_transform(cf, self.post_af2)
+        if DEBUG: np.save("nolacedebug/features_post_af2.f32", cf.detach().squeeze().numpy())
+        if DEBUG: np.save("nolacedebug/y_post_af2.f32", y.detach().squeeze().numpy())
 
         y1 = y[:, 0:1, :]
         y2 = self.tdshape2(y[:, 1:2, :], cf)
         y = torch.cat((y1, y2), dim=1)
         y = self.af3(y, cf, debug=debug)
         cf = self.feature_transform(cf, self.post_af3)
+        if DEBUG: np.save("nolacedebug/features_post_af3.f32", cf.detach().squeeze().numpy())
+        if DEBUG: np.save("nolacedebug/y_post_af3.f32", y.detach().squeeze().numpy())
 
         y1 = y[:, 0:1, :]
         y2 = self.tdshape3(y[:, 1:2, :], cf)
         y = torch.cat((y1, y2), dim=1)
         y = self.af4(y, cf, debug=debug)
+        if DEBUG: np.save("nolacedebug/y_post_af4.f32", y.detach().squeeze().numpy())
 
         return y
