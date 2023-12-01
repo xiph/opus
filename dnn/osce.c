@@ -11,9 +11,9 @@
 
 #ifdef OSCE_DEBUG
 #include <stdio.h>
-//#define WRITE_FEATURES
-//#define DEBUG_LACE
-//#define DEBUG_NOLACE
+/*#define WRITE_FEATURES*/
+/*#define DEBUG_LACE*/
+/*#define DEBUG_NOLACE*/
 #define FINIT(fid, name, mode) do{if (fid == NULL) {fid = fopen(name, mode);}} while(0)
 #endif
 
@@ -1215,4 +1215,4 @@ int main()
 }
 #endif
 
-//gcc  -I ../include -I . -I ../silk -I ../celt osce.c nndsp.c lace_data.c nolace_data.c nnet.c parse_lpcnet_weights.c -lm -o lacetest
+/*gcc  -I ../include -I . -I ../silk -I ../celt osce.c nndsp.c lace_data.c nolace_data.c nnet.c parse_lpcnet_weights.c -lm -o lacetest*/

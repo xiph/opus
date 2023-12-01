@@ -5,8 +5,8 @@
 
 
 /*DEBUG*/
-//#define WRITE_FEATURES
-//#define DEBUG_PRING
+/*#define WRITE_FEATURES*/
+/*#define DEBUG_PRING*/
 /*******/
 
 #include "stack_alloc.h"
@@ -337,7 +337,7 @@ void osce_calculate_features(
     }
 #endif
 
-    //OPUS_CLEAR(buffer, 1);
+    /*OPUS_CLEAR(buffer, 1);*/
     memset(buffer, 0, sizeof(buffer));
 
     num_subframes = psDec->nb_subfr;
