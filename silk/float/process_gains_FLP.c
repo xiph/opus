@@ -95,7 +95,8 @@ void silk_process_gains_FLP(
                       + LAMBDA_DELAYED_DECISIONS * psEnc->sCmn.nStatesDelayedDecision
                       + LAMBDA_SPEECH_ACT        * psEnc->sCmn.speech_activity_Q8 * ( 1.0f /  256.0f )
                       + LAMBDA_INPUT_QUALITY     * psEncCtrl->input_quality
-                      + LAMBDA_CODING_QUALITY    * psEncCtrl->coding_quality
+                      + LAMBDA_CODING_QUALITY    * psEncCtrl->coding_quality        /* High-bitrate term */
+                      + silk_max_float(0.f, .7f - 3.2e-4f * psEnc->sCmn.SNR_dB_Q7)  /* Low-bitrate term */
                       + LAMBDA_QUANT_OFFSET      * quant_offset;
 
     silk_assert( psEncCtrl->Lambda > 0.0f );
