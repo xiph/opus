@@ -157,6 +157,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
     opus_int   nSamplesFromInput = 0, nSamplesFromInputMax;
     opus_int   speech_act_thr_for_switch_Q8;
     opus_int32 TargetRate_bps, MStargetRates_bps[ 2 ], channelRate_bps, LBRR_symbol, sum;
+    opus_int excess=0;
     silk_encoder *psEnc = ( silk_encoder * )encState;
     VARDECL( opus_int16, buf );
     opus_int transition, curr_block, tot_blocks;
@@ -428,8 +429,8 @@ opus_int silk_Encode(                                   /* O    Returns error co
                 opus_int32 bitsBalance = ec_tell( psRangeEnc ) - psEnc->nBitsUsedLBRR - nBits * psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded;
                 TargetRate_bps -= silk_DIV32_16( silk_MUL( bitsBalance, 1000 ), BITRESERVOIR_DECAY_TIME_MS );
             }
-            /* Never exceed input bitrate */
-            TargetRate_bps = silk_LIMIT( TargetRate_bps, encControl->bitRate, 5000 );
+            /* Never exceed input bitrate by more than 1 kb/s */
+            TargetRate_bps = silk_LIMIT( TargetRate_bps, encControl->bitRate + 1000, 5000 );
 
             /* Convert Left/Right to Mid/Side */
             if( encControl->nChannelsInternal == 2 ) {
@@ -511,7 +512,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
                     } else {
                         condCoding = CODE_CONDITIONALLY;
                     }
-                    if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc, condCoding, maxBits, useCBR ) ) != 0 ) {
+                    if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc, &excess, condCoding, maxBits, useCBR ) ) != 0 ) {
                         silk_assert( 0 );
                     }
                 }
@@ -541,9 +542,13 @@ opus_int silk_Encode(                                   /* O    Returns error co
                     *nBytesOut = 0;
                 }
 
-                psEnc->nBitsExceeded += *nBytesOut * 8;
-                psEnc->nBitsExceeded -= silk_DIV32_16( silk_MUL( encControl->bitRate, encControl->payloadSize_ms ), 1000 );
-                psEnc->nBitsExceeded  = silk_LIMIT( psEnc->nBitsExceeded, 0, 10000 );
+                if ( encControl->useCBR || excess > 0 ) {
+                    psEnc->nBitsExceeded += excess;
+                } else {
+                    psEnc->nBitsExceeded += *nBytesOut * 8;
+                    psEnc->nBitsExceeded -= silk_DIV32_16( silk_MUL( encControl->bitRate, encControl->payloadSize_ms ), 1000 );
+                }
+                psEnc->nBitsExceeded  = silk_LIMIT( psEnc->nBitsExceeded, -500, 10000 );
 
                 /* Update flag indicating if bandwidth switching is allowed */
                 speech_act_thr_for_switch_Q8 = silk_SMLAWB( SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ),

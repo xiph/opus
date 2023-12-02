@@ -75,6 +75,7 @@ opus_int silk_encode_frame_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
     opus_int32                      *pnBytesOut,                            /* O    Pointer to number of payload bytes;                                         */
     ec_enc                          *psRangeEnc,                            /* I/O  compressor data structure                                                   */
+    opus_int                        *excess,                                /* For CBR/cap, the excess number of bits on first pass.                            */
     opus_int                        condCoding,                             /* I    The type of conditional coding to use                                       */
     opus_int                        maxBits,                                /* I    If > 0: maximum number of output bits                                       */
     opus_int                        useCBR                                  /* I    Flag to force constant-bitrate operation                                    */
