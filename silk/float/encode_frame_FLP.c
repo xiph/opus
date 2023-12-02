@@ -85,6 +85,7 @@ opus_int silk_encode_frame_FLP(
     silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
     opus_int32                      *pnBytesOut,                        /* O    Number of payload bytes;                    */
     ec_enc                          *psRangeEnc,                        /* I/O  compressor data structure                   */
+    opus_int                        *excess,                            /* For CBR/cap, the excess number of bits on first pass. */
     opus_int                        condCoding,                         /* I    The type of conditional coding to use       */
     opus_int                        maxBits,                            /* I    If > 0: maximum number of output bits       */
     opus_int                        useCBR                              /* I    Flag to force constant-bitrate operation    */
@@ -109,6 +110,7 @@ opus_int silk_encode_frame_FLP(
     opus_int     best_sum[ MAX_NB_SUBFR ];
     opus_int     bits_margin;
 
+    *excess = 0;
     /* For CBR, 5 bits below budget is close enough. For VBR, allow up to 25% below the cap if we initially busted the budget. */
     bits_margin = useCBR ? 5 : maxBits/4;
     /* This is totally unnecessary but many compilers (including gcc) are too dumb to realise it */
@@ -242,6 +244,9 @@ opus_int silk_encode_frame_FLP(
                     nBits = ec_tell( psRangeEnc );
                 }
 
+                if( iter == 0 && (useCBR == 1 || nBits > maxBits) ) {
+                    *excess = nBits - maxBits;
+                }
                 if( useCBR == 0 && iter == 0 && nBits <= maxBits ) {
                     break;
                 }
