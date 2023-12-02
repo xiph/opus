@@ -139,7 +139,7 @@ extern "C"
 #define LAMBDA_SPEECH_ACT                               -0.2f
 #define LAMBDA_DELAYED_DECISIONS                        -0.05f
 #define LAMBDA_INPUT_QUALITY                            -0.1f
-#define LAMBDA_CODING_QUALITY                           -0.2f
+#define LAMBDA_CODING_QUALITY                           -0.1f
 #define LAMBDA_QUANT_OFFSET                             0.8f
 
 /* Compensation in bitrate calculations for 10 ms modes */

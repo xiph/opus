@@ -110,6 +110,8 @@ void silk_process_gains_FIX(
                           + silk_SMULWB( SILK_FIX_CONST( LAMBDA_SPEECH_ACT,        18 ), psEnc->sCmn.speech_activity_Q8     )
                           + silk_SMULWB( SILK_FIX_CONST( LAMBDA_INPUT_QUALITY,     12 ), psEncCtrl->input_quality_Q14       )
                           + silk_SMULWB( SILK_FIX_CONST( LAMBDA_CODING_QUALITY,    12 ), psEncCtrl->coding_quality_Q14      )
+                          + silk_max_32( 0, SILK_FIX_CONST( .7f, 10 )
+                              - silk_RSHIFT32( SILK_FIX_CONST( 3.2e-4, 16 ) * psEnc->sCmn.SNR_dB_Q7, 6) )  /* Low-bitrate term */
                           + silk_SMULWB( SILK_FIX_CONST( LAMBDA_QUANT_OFFSET,      16 ), quant_offset_Q10                   );
 
     silk_assert( psEncCtrl->Lambda_Q10 > 0 );
