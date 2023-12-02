@@ -246,6 +246,10 @@ opus_int silk_encode_frame_FLP(
 
                 if( iter == 0 && (useCBR == 1 || nBits > maxBits) ) {
                     *excess = nBits - maxBits;
+                    /* For CBR, aim a little below the target to increase our chances. */
+                    if ( useCBR ) {
+                        *excess += 20;
+                    }
                 }
                 if( useCBR == 0 && iter == 0 && nBits <= maxBits ) {
                     break;
