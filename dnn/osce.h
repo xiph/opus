@@ -15,7 +15,7 @@
 #define OSCE_METHOD_LACE 1
 #define OSCE_METHOD_NOLACE 2
 
-#define OSCE_DEFAULT_METHOD OSCE_METHOD_NOLACE
+#define OSCE_DEFAULT_METHOD OSCE_METHOD_LACE
 
 
 extern const WeightArray lacelayers_arrays[];
