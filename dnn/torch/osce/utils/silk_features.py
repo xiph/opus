@@ -100,7 +100,7 @@ def silk_feature_factory(no_pitch_value=256,
 
 def load_inference_data(path,
                         no_pitch_value=256,
-                        skip=92,
+                        skip=91,
                         preemph=0.85,
                         acorr_radius=2,
                         pitch_hangover=8,
@@ -109,8 +109,8 @@ def load_inference_data(path,
                         noisy_spec_scale='opus',
                         noisy_apply_dct=True,
                         add_double_lag_acorr=False,
-                        bugfix1_numbits_smoothing = False,
-                        bugfix2_pitch_hangover = False,
+                        bugfix1_numbits_smoothing=True,
+                        bugfix2_pitch_hangover=False,
                         **kwargs):
 
     print(f"[load_inference_data]: ignoring keyword arguments {kwargs.keys()}...")

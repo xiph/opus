@@ -50,6 +50,7 @@ class SilkEnhancementSet(Dataset):
                  noisy_spec_scale='opus',
                  noisy_apply_dct=True,
                  add_double_lag_acorr=False,
+                 bugfix2_pitch_hangover=False
                  ):
 
         assert frames_per_sample % 4 == 0
@@ -84,7 +85,8 @@ class SilkEnhancementSet(Dataset):
                                                     num_bands_noisy_spec,
                                                     noisy_spec_scale,
                                                     noisy_apply_dct,
-                                                    add_double_lag_acorr)
+                                                    add_double_lag_acorr,
+                                                    bugfix2_pitch_hangover=bugfix2_pitch_hangover)
 
         self.history_len = 700 if add_double_lag_acorr else 350
         # discard some frames to have enough signal history

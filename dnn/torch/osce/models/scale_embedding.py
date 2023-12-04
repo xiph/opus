@@ -59,7 +59,8 @@ class ScaleEmbedding(nn.Module):
 
         self.offset = (self.min_val + self.max_val) / 2
         self.scale_factors = nn.Parameter(
-            torch.arange(1, dim+1, dtype=torch.float32) * torch.pi / (self.max_val - self.min_val)
+            torch.arange(1, dim+1, dtype=torch.float32) * torch.pi / (self.max_val - self.min_val),
+            requires_grad=False
         )
 
     def forward(self, x):
