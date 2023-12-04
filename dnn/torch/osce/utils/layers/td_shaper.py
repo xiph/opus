@@ -12,7 +12,9 @@ class TDShaper(nn.Module):
                  frame_size=160,
                  avg_pool_k=4,
                  innovate=False,
-                 pool_after=False
+                 pool_after=False,
+                 activation='leaky_relu',
+                 pre_scale=False
     ):
         """
 
@@ -41,12 +43,25 @@ class TDShaper(nn.Module):
         self.avg_pool_k     = avg_pool_k
         self.innovate       = innovate
         self.pool_after     = pool_after
+        self.pre_scale      = pre_scale
 
         assert frame_size % avg_pool_k == 0
         self.env_dim = frame_size // avg_pool_k + 1
 
+        if activation == 'leaky_relu':
+            self.activation = torch.nn.LeakyReLU(0.2)
+        elif activation == 'tanh':
+            self.activation = torch.tanh
+        else:
+            raise ValueError(f'invalid activation {activation}')
+
         # feature transform
-        self.feature_alpha1 = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2)
+        if pre_scale:
+            pre_scale_out_channels = (self.env_dim + 3) // 4
+            self.tenv_pre_scale = nn.Linear(self.env_dim, pre_scale_out_channels, 1)
+            self.feature_alpha1 = nn.Conv1d(self.feature_dim + pre_scale_out_channels, frame_size, 2)
+        else:
+            self.feature_alpha1 = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2)
         self.feature_alpha2 = nn.Conv1d(frame_size, frame_size, 2)
 
         if self.innovate:
@@ -85,6 +100,9 @@ class TDShaper(nn.Module):
 
         x = torch.cat((x - avg_x, avg_x), dim=-1)
 
+        if self.pre_scale:
+            x = torch.tanh(self.tenv_pre_scale(x))
+
         return x
 
     def forward(self, x, features, debug=False):
@@ -112,7 +130,7 @@ class TDShaper(nn.Module):
         # feature path
         f = torch.cat((features, tenv), dim=-1)
         f = F.pad(f.permute(0, 2, 1), [1, 0])
-        alpha = F.leaky_relu(self.feature_alpha1(f), 0.2)
+        alpha = self.activation(self.feature_alpha1(f))
         alpha = torch.exp(self.feature_alpha2(F.pad(alpha, [1, 0])))
         alpha = alpha.permute(0, 2, 1)
 

@@ -60,7 +60,8 @@ def silk_feature_factory(no_pitch_value=256,
                          num_bands_noisy_spec=18,
                          noisy_spec_scale='opus',
                          noisy_apply_dct=True,
-                         add_double_lag_acorr=False
+                         add_double_lag_acorr=False,
+                         bugfix2_pitch_hangover=False
                          ):
 
     w = scipy.signal.windows.cosine(320)
@@ -72,7 +73,7 @@ def silk_feature_factory(no_pitch_value=256,
         periods = periods.copy()
 
         if pitch_hangover > 0:
-            periods = hangover(periods, num_frames=pitch_hangover)
+            periods = hangover(periods, num_frames=pitch_hangover, bugfix2=bugfix2_pitch_hangover)
 
         periods[periods == 0] = no_pitch_value
 
@@ -108,6 +109,8 @@ def load_inference_data(path,
                         noisy_spec_scale='opus',
                         noisy_apply_dct=True,
                         add_double_lag_acorr=False,
+                        bugfix1_numbits_smoothing = False,
+                        bugfix2_pitch_hangover = False,
                         **kwargs):
 
     print(f"[load_inference_data]: ignoring keyword arguments {kwargs.keys()}...")
@@ -123,7 +126,7 @@ def load_inference_data(path,
     signal  = np.fromfile(os.path.join(path, 'noisy.s16'), dtype=np.int16).astype(np.float32) / (2 ** 15)
     signal = np.concatenate((np.zeros(skip, dtype=np.float32), signal), dtype=np.float32)
 
-    create_features = silk_feature_factory(no_pitch_value, acorr_radius, pitch_hangover, num_bands_clean_spec, num_bands_noisy_spec, noisy_spec_scale, noisy_apply_dct, add_double_lag_acorr)
+    create_features = silk_feature_factory(no_pitch_value, acorr_radius, pitch_hangover, num_bands_clean_spec, num_bands_noisy_spec, noisy_spec_scale, noisy_apply_dct, add_double_lag_acorr, bugfix2_pitch_hangover=bugfix2_pitch_hangover)
 
     num_frames = min((len(signal) // 320) * 4, len(lpcs))
     signal = signal[: num_frames * 80]
@@ -132,7 +135,10 @@ def load_inference_data(path,
     gains = gains[: num_frames]
     periods = periods[: num_frames]
     num_bits = num_bits[: num_frames // 4]
-    num_bits_smooth = num_bits[: num_frames // 4]
+    if bugfix1_numbits_smoothing:
+        num_bits_smooth = num_bits_smooth[: num_frames // 4]
+    else:
+        num_bits_smooth = num_bits[: num_frames // 4]
 
     numbits = np.repeat(np.concatenate((num_bits, num_bits_smooth), axis=-1, dtype=np.float32), 4, axis=0)
 

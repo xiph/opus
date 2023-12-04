@@ -29,7 +29,7 @@
 
 import numpy as np
 
-def hangover(lags, num_frames=10):
+def hangover(lags, num_frames=10, bugfix2=False):
     lags = lags.copy()
     count = 0
     last_lag = 0
@@ -43,6 +43,9 @@ def hangover(lags, num_frames=10):
                 count += 1
         else:
             count = 0
+
+        if bugfix2:
+            last_lag = lags[i]
 
     return lags
 

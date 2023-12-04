@@ -219,6 +219,63 @@ nolace_setup_adv = {
 }
 
 
+nolace2_setup = {
+    'dataset': '/local/datasets/silk_enhancement_v2_full_6to64kbps/training',
+    'validation_dataset': '/local/datasets/silk_enhancement_v2_full_6to64kbps/validation',
+    'model': {
+        'name': 'nolace2',
+        'args': [],
+        'kwargs': {
+            'comb_gain_limit_db': 10,
+            'cond_dim': 256,
+            'conv_gain_limits_db': [-12, 12],
+            'global_gain_limits_db': [-6, 6],
+            'hidden_feature_dim': 96,
+            'kernel_size': 16,
+            'num_features': 93,
+            'numbits_embedding_dim': 8,
+            'numbits_range': [50, 650],
+            'upsamp_embedding_dim': 32,
+            'feature_transform_channels': 128,
+            'tdshape_prescale': True,
+            'tdshape_activation': 'tanh',
+            'pitch_embedding_dim': 64,
+            'pitch_max': 300,
+            'preemph': 0.85,
+            'skip': 91
+        }
+    },
+    'data': {
+        'frames_per_sample': 100,
+        'no_pitch_value': 7,
+        'preemph': 0.85,
+        'skip': 91,
+        'pitch_hangover': 8,
+        'acorr_radius': 2,
+        'num_bands_clean_spec': 64,
+        'num_bands_noisy_spec': 18,
+        'noisy_spec_scale': 'opus',
+        'pitch_hangover': 8,
+    },
+    'training': {
+        'batch_size': 256,
+        'lr': 5.e-4,
+        'lr_decay_factor': 2.5e-5,
+        'epochs': 50,
+        'loss': {
+            'w_l1': 0,
+            'w_lm': 0,
+            'w_logmel': 0,
+            'w_sc': 0,
+            'w_wsc': 0,
+            'w_xcorr': 0,
+            'w_sxcorr': 1,
+            'w_l2': 10,
+            'w_slm': 2
+        }
+    }
+}
+
 lavoce_setup = {
     'data': {
         'frames_per_sample': 100,
@@ -330,6 +387,7 @@ setup_dict = {
     'lace': lace_setup,
     'nolace': nolace_setup,
     'nolace_adv': nolace_setup_adv,
+    'nolace2' : nolace2_setup,
     'lavoce': lavoce_setup,
     'lavoce_adv': lavoce_setup_adv
 }

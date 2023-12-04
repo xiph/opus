@@ -72,8 +72,6 @@ class LimitedAdaptiveConv1d(nn.Module):
         overlap_size : int
             overlap size for filter cross-fade. Cross-fade is done on the first overlap_size samples of every frame
 
-        use_bias : bool
-            if true, biases will be added to output channels
 
 
         padding : List[int, int]
@@ -128,10 +126,6 @@ class LimitedAdaptiveConv1d(nn.Module):
         # kernel computation and filtering
         count += 2 * (frame_rate * self.feature_dim * self.kernel_size)
         count += 2 * (self.in_channels * self.out_channels * self.kernel_size * (1 + overhead) * rate)
-
-        # bias computation
-        if self.use_bias:
-            count += 2 * (frame_rate * self.feature_dim) + rate * (1 + overhead)
 
         # gain computation
 
