@@ -5,6 +5,7 @@
 #include "structs.h"
 #include "opus_types.h"
 
+#define OSCE_NUMBITS_BUGFIX
 
 void osce_calculate_features(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
