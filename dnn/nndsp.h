@@ -105,10 +105,6 @@ void adashape_process_frame(
     int feature_dim,
     int frame_size,
     int avg_pool_k,
-    int in_stride,
-    int in_offset,
-    int out_stride,
-    int out_offset,
     int arch
 );
 
