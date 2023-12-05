@@ -92,7 +92,7 @@ void adaconv_compare(
 
         adaconv_process_frame(hAdaConv, x_out, x_in, features, kernel_layer, gain_layer, feature_dim,
             frame_size, overlap_size, in_channels, out_channels, kernel_size, left_padding,
-            filter_gain_a, filter_gain_b, shape_gain, NULL);
+            filter_gain_a, filter_gain_b, shape_gain, NULL, 0);
 
         mse = 0;
         for (i_sample = 0; i_sample < frame_size * out_channels; i_sample ++)
@@ -207,7 +207,7 @@ void adacomb_compare(
         }
 
         adacomb_process_frame(hAdaComb, x_out, x_in, features, kernel_layer, gain_layer, global_gain_layer,
-            pitch_lag, feature_dim, frame_size, overlap_size, kernel_size, left_padding, filter_gain_a, filter_gain_b, log_gain_limit, NULL);
+            pitch_lag, feature_dim, frame_size, overlap_size, kernel_size, left_padding, filter_gain_a, filter_gain_b, log_gain_limit, NULL, 0);
 
 
         mse = 0;
@@ -298,7 +298,7 @@ void adashape_compare(
         }
 
         adashape_process_frame(hAdaShape, x_out, x_in, features, alpha1, alpha2, feature_dim,
-        frame_size, avg_pool_k, 1, 0, 1, 0);
+        frame_size, avg_pool_k, 1, 0, 1, 0, 0);
 
         mse = 0;
         for (i_sample = 0; i_sample < frame_size; i_sample ++)
@@ -438,4 +438,4 @@ int main()
 }
 
 
-//gcc  -I ../include -I ../silk -I . -I ../celt adaconvtest.c nndsp.c lace_data.c nolace_data.c nnet.c parse_lpcnet_weights.c -lm -o adaconvtest
+//gcc -DVAR_ARRAYS  -I ../include -I ../silk -I . -I ../celt adaconvtest.c nndsp.c lace_data.c nolace_data.c nnet.c nnet_default.c ../celt/pitch.c ../celt/celt_lpc.c parse_lpcnet_weights.c -lm -o adaconvtest
