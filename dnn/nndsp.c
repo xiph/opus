@@ -115,16 +115,14 @@ void adaconv_process_frame(
     float output_buffer[ADACONV_MAX_FRAME_SIZE * ADACONV_MAX_OUTPUT_CHANNELS];
     float kernel_buffer[ADACONV_MAX_KERNEL_SIZE * ADACONV_MAX_INPUT_CHANNELS * ADACONV_MAX_OUTPUT_CHANNELS];
     float input_buffer[ADACONV_MAX_INPUT_CHANNELS * (ADACONV_MAX_FRAME_SIZE + ADACONV_MAX_KERNEL_SIZE)];
-#ifdef USE_XCORR
     float kernel0[ADACONV_MAX_KERNEL_SIZE];
     float kernel1[ADACONV_MAX_KERNEL_SIZE];
     float channel_buffer0[ADACONV_MAX_OVERLAP_SIZE];
     float channel_buffer1[ADACONV_MAX_FRAME_SIZE];
-#endif
     float window_buffer[ADACONV_MAX_OVERLAP_SIZE];
     float gain_buffer[ADACONV_MAX_OUTPUT_CHANNELS];
     float *p_input;
-    int i_in_channels, i_out_channels, i_sample, i_kernel;
+    int i_in_channels, i_out_channels, i_sample;
 
     (void) feature_dim; /* ToDo: figure out whether we might need this information */
 
@@ -180,7 +178,6 @@ void adaconv_process_frame(
     {
         for (i_in_channels = 0; i_in_channels < in_channels; i_in_channels++)
         {
-#ifdef USE_XCORR
             OPUS_CLEAR(kernel0, ADACONV_MAX_KERNEL_SIZE);
             OPUS_CLEAR(kernel1, ADACONV_MAX_KERNEL_SIZE);
 
@@ -197,42 +194,8 @@ void adaconv_process_frame(
             {
                 output_buffer[i_sample + i_out_channels * frame_size] += channel_buffer1[i_sample];
             }
-#else
-
-            for (i_sample = 0; i_sample < overlap_size; i_sample++)
-            {
-                for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
-                {
-
-                    output_buffer[i_sample + i_out_channels * frame_size] +=
-                        window[i_sample] * p_input[(i_sample + i_kernel - left_padding) + i_in_channels * (frame_size + kernel_size)] * hAdaConv->last_kernel[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)];
-                    output_buffer[i_sample + i_out_channels * frame_size] +=
-                        (1 - window[i_sample]) * p_input[(i_sample + i_kernel - left_padding) + i_in_channels * (frame_size + kernel_size)] * kernel_buffer[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)];
-                }
-            }
-#endif
         }
     }
-
-#ifndef USE_XCORR
-    /* calculate non-overlapping part */
-
-    for (i_out_channels = 0; i_out_channels < out_channels; i_out_channels++)
-    {
-        for (i_in_channels = 0; i_in_channels < in_channels; i_in_channels++)
-        {
-            for (i_sample = overlap_size; i_sample < frame_size; i_sample++)
-            {
-                for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
-                {
-
-                    output_buffer[i_sample + i_out_channels * frame_size] +=
-                        p_input[(i_sample + i_kernel - left_padding) + i_in_channels * (frame_size + kernel_size)] * kernel_buffer[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)];
-                }
-            }
-        }
-    }
-#endif
 
     OPUS_COPY(x_out, output_buffer, out_channels * frame_size);
 
