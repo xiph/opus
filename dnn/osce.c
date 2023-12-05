@@ -578,18 +578,18 @@ void nolace_process_20ms_frame(
         /* modifies second channel in place */
         adashape_process_frame(
             &state->tdshape1_state,
-            x_buffer2 + i_subframe * NOLACE_AF1_OUT_CHANNELS * NOLACE_FRAME_SIZE,
-            x_buffer2 + i_subframe * NOLACE_AF1_OUT_CHANNELS * NOLACE_FRAME_SIZE,
+            x_buffer2 + i_subframe * NOLACE_AF1_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
+            x_buffer2 + i_subframe * NOLACE_AF1_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             &layers->nolace_tdshape1_alpha1,
             &layers->nolace_tdshape1_alpha2,
             NOLACE_TDSHAPE1_FEATURE_DIM,
             NOLACE_TDSHAPE1_FRAME_SIZE,
             NOLACE_TDSHAPE1_AVG_POOL_K,
-            2,
             1,
-            2,
+            0,
             1,
+            0,
             arch
         );
 
@@ -637,18 +637,18 @@ void nolace_process_20ms_frame(
         /* modifies second channel in place */
         adashape_process_frame(
             &state->tdshape2_state,
-            x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE,
-            x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE,
+            x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
+            x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             &layers->nolace_tdshape2_alpha1,
             &layers->nolace_tdshape2_alpha2,
             NOLACE_TDSHAPE2_FEATURE_DIM,
             NOLACE_TDSHAPE2_FRAME_SIZE,
             NOLACE_TDSHAPE2_AVG_POOL_K,
-            2,
             1,
-            2,
+            0,
             1,
+            0,
             arch
         );
 
@@ -692,18 +692,18 @@ void nolace_process_20ms_frame(
         /* modifies second channel in place */
         adashape_process_frame(
             &state->tdshape3_state,
-            x_buffer2 + i_subframe * NOLACE_AF3_OUT_CHANNELS * NOLACE_FRAME_SIZE,
-            x_buffer2 + i_subframe * NOLACE_AF3_OUT_CHANNELS * NOLACE_FRAME_SIZE,
+            x_buffer2 + i_subframe * NOLACE_AF3_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
+            x_buffer2 + i_subframe * NOLACE_AF3_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             &layers->nolace_tdshape3_alpha1,
             &layers->nolace_tdshape3_alpha2,
             NOLACE_TDSHAPE3_FEATURE_DIM,
             NOLACE_TDSHAPE3_FRAME_SIZE,
             NOLACE_TDSHAPE3_AVG_POOL_K,
-            2,
             1,
-            2,
+            0,
             1,
+            0,
             arch
         );
 

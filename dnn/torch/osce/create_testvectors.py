@@ -17,6 +17,7 @@ parser.add_argument('--debug', action='store_true', help='add debug output to ou
 def create_adaconv_testvector(prefix, adaconv, num_frames, debug=False):
     feature_dim = adaconv.feature_dim
     in_channels = adaconv.in_channels
+    out_channels = adaconv.out_channels
     frame_size = adaconv.frame_size
 
     features = torch.randn((1, num_frames, feature_dim))
@@ -25,8 +26,8 @@ def create_adaconv_testvector(prefix, adaconv, num_frames, debug=False):
     x_out = adaconv(x_in, features, debug=debug)
 
     features = features[0].detach().numpy()
-    x_in = x_in[0].permute(1, 0).detach().numpy()
-    x_out = x_out[0].permute(1, 0).detach().numpy()
+    x_in = x_in[0].reshape(in_channels, num_frames, frame_size).permute(1, 0, 2).detach().numpy()
+    x_out = x_out[0].reshape(out_channels, num_frames, frame_size).permute(1, 0, 2).detach().numpy()
 
     features.tofile(prefix + '_features.f32')
     x_in.tofile(prefix + '_x_in.f32')
