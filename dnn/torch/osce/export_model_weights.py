@@ -53,6 +53,41 @@ parser.add_argument('checkpoint', type=str, help='LACE or NoLACE model checkpoin
 parser.add_argument('output_dir', type=str, help='output folder')
 
 
+schedules = {
+    'nolace': [
+        ('pitch_embedding', dict()),
+        ('feature_net.conv1', dict()),
+        ('feature_net.conv2', dict(quantize=True, scale=None)),
+        ('feature_net.tconv', dict(quantize=True, scale=None)),
+        ('feature_net.gru', dict()),
+        ('cf1', dict()),
+        ('cf2', dict()),
+        ('af1', dict()),
+        ('tdshape1', dict()),
+        ('tdshape2', dict()),
+        ('tdshape3', dict()),
+        ('af2', dict()),
+        ('af3', dict()),
+        ('af4', dict()),
+        ('post_cf1', dict(quantize=True, scale=None)),
+        ('post_cf2', dict(quantize=True, scale=None)),
+        ('post_af1', dict(quantize=True, scale=None)),
+        ('post_af2', dict(quantize=True, scale=None)),
+        ('post_af3', dict(quantize=True, scale=None))
+    ],
+    'lace' : [
+        ('pitch_embedding', dict()),
+        ('feature_net.conv1', dict()),
+        ('feature_net.conv2', dict(quantize=True, scale=None)),
+        ('feature_net.tconv', dict(quantize=True, scale=None)),
+        ('feature_net.gru', dict()),
+        ('cf1', dict()),
+        ('cf2', dict()),
+        ('af1', dict())
+    ]
+}
+
+
 # auxiliary functions
 def sha1(filename):
     BUF_SIZE = 65536
@@ -72,10 +107,21 @@ def osce_dump_generic(writer, name, module):
             or isinstance(module, torch.nn.ConvTranspose1d) or isinstance(module, torch.nn.Embedding) \
                 or isinstance(module, LimitedAdaptiveConv1d) or isinstance(module, LimitedAdaptiveComb1d) \
                     or isinstance(module, TDShaper) or isinstance(module, torch.nn.GRU):
-                        dump_torch_weights(cwriter, module, name=name, verbose=True)
+                        dump_torch_weights(writer, module, name=name, verbose=True)
     else:
         for child_name, child in module.named_children():
             osce_dump_generic(writer, name + "_" + child_name, child)
+
+
+def export_name(name):
+    return name.replace('.', '_')
+
+def osce_scheduled_dump(writer, prefix, model, schedule):
+    if not prefix.endswith('_'):
+        prefix += '_'
+
+    for name, kwargs in schedule:
+        dump_torch_weights(writer, model.get_submodule(name), prefix + export_name(name), **kwargs, verbose=True)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -115,6 +161,9 @@ if __name__ == "__main__":
         cwriter.header.write(f"#define {model_name.upper()}_NUMBITS_SCALE_{i} {float(s.detach().cpu())}\n")
 
     # dump layers
-    osce_dump_generic(cwriter, model_name, model)
+    if model_name in schedules:
+        osce_scheduled_dump(cwriter, model_name, model, schedules[model_name])
+    else:
+        osce_dump_generic(cwriter, model_name, model)
 
     cwriter.close()

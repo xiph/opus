@@ -7,6 +7,7 @@
 #include "arch.h"
 #include "nnet.h"
 #include "os_support.h"
+#include "pitch.h"
 
 #include <math.h>
 
@@ -114,10 +115,14 @@ void adaconv_process_frame(
     float output_buffer[ADACONV_MAX_FRAME_SIZE * ADACONV_MAX_OUTPUT_CHANNELS];
     float kernel_buffer[ADACONV_MAX_KERNEL_SIZE * ADACONV_MAX_INPUT_CHANNELS * ADACONV_MAX_OUTPUT_CHANNELS];
     float input_buffer[ADACONV_MAX_INPUT_CHANNELS * (ADACONV_MAX_FRAME_SIZE + ADACONV_MAX_KERNEL_SIZE)];
+    float kernel0[ADACONV_MAX_KERNEL_SIZE];
+    float kernel1[ADACONV_MAX_KERNEL_SIZE];
+    float channel_buffer0[ADACONV_MAX_OVERLAP_SIZE];
+    float channel_buffer1[ADACONV_MAX_FRAME_SIZE];
     float window_buffer[ADACONV_MAX_OVERLAP_SIZE];
     float gain_buffer[ADACONV_MAX_OUTPUT_CHANNELS];
     float *p_input;
-    int i_in_channels, i_out_channels, i_sample, i_kernel;
+    int i_in_channels, i_out_channels, i_sample;
 
     (void) feature_dim; /* ToDo: figure out whether we might need this information */
 
@@ -142,9 +147,14 @@ void adaconv_process_frame(
         window = &window_buffer[0];
     }
 
-    OPUS_COPY(input_buffer, hAdaConv->history, kernel_size * in_channels);
-    OPUS_COPY(input_buffer + kernel_size * in_channels, x_in, frame_size * in_channels);
-    p_input = input_buffer + kernel_size * in_channels;
+    /* prepare input */
+    for (i_in_channels=0; i_in_channels < in_channels; i_in_channels ++)
+    {
+        OPUS_COPY(input_buffer + i_in_channels * (kernel_size + frame_size), hAdaConv->history + i_in_channels * kernel_size, kernel_size);
+        OPUS_COPY(input_buffer + kernel_size + i_in_channels * (kernel_size + frame_size), x_in + frame_size * i_in_channels, frame_size);
+        p_input = input_buffer + kernel_size;
+    }
+
 
     /* calculate new kernel and new gain */
     compute_generic_dense(kernel_layer, kernel_buffer, features, ACTIVATION_LINEAR, arch);
@@ -163,35 +173,26 @@ void adaconv_process_frame(
 #endif
 
     /* calculate overlapping part using kernel from last frame */
-    for (i_sample = 0; i_sample < overlap_size; i_sample++)
-    {
-        for (i_out_channels = 0; i_out_channels < out_channels; i_out_channels++)
-        {
-            for (i_in_channels = 0; i_in_channels < in_channels; i_in_channels++)
-            {
-                for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
-                {
-                    output_buffer[i_sample * out_channels + i_out_channels] +=
-                        window[i_sample] * p_input[(i_sample + i_kernel - left_padding) * in_channels + i_in_channels] * hAdaConv->last_kernel[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)];
-                    output_buffer[i_sample * out_channels + i_out_channels] +=
-                        (1 - window[i_sample]) * p_input[(i_sample + i_kernel - left_padding) * in_channels + i_in_channels] * kernel_buffer[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)];
-                }
-            }
-        }
-    }
 
-    /* calculate non-overlapping part */
-    for (i_sample = overlap_size; i_sample < frame_size; i_sample++)
+    for (i_out_channels = 0; i_out_channels < out_channels; i_out_channels++)
     {
-        for (i_out_channels = 0; i_out_channels < out_channels; i_out_channels++)
+        for (i_in_channels = 0; i_in_channels < in_channels; i_in_channels++)
         {
-            for (i_in_channels = 0; i_in_channels < in_channels; i_in_channels++)
+            OPUS_CLEAR(kernel0, ADACONV_MAX_KERNEL_SIZE);
+            OPUS_CLEAR(kernel1, ADACONV_MAX_KERNEL_SIZE);
+
+            OPUS_COPY(kernel0, hAdaConv->last_kernel + KERNEL_INDEX(i_out_channels, i_in_channels, 0), kernel_size);
+            OPUS_COPY(kernel1, kernel_buffer + KERNEL_INDEX(i_out_channels, i_in_channels, 0), kernel_size);
+            celt_pitch_xcorr(kernel0, p_input + i_in_channels * (frame_size + kernel_size) - left_padding, channel_buffer0, ADACONV_MAX_KERNEL_SIZE, overlap_size, arch);
+            celt_pitch_xcorr(kernel1, p_input + i_in_channels * (frame_size + kernel_size) - left_padding, channel_buffer1, ADACONV_MAX_KERNEL_SIZE, frame_size, arch);
+            for (i_sample = 0; i_sample < overlap_size; i_sample++)
             {
-                for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
-                {
-                    output_buffer[i_sample * out_channels + i_out_channels] +=
-                        p_input[(i_sample + i_kernel - left_padding) * in_channels + i_in_channels] * kernel_buffer[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)];
-                }
+                output_buffer[i_sample + i_out_channels * frame_size] +=  window[i_sample] * channel_buffer0[i_sample];
+                output_buffer[i_sample + i_out_channels * frame_size] += (1 - window[i_sample]) * channel_buffer1[i_sample];
+            }
+            for (i_sample = overlap_size; i_sample < frame_size; i_sample++)
+            {
+                output_buffer[i_sample + i_out_channels * frame_size] += channel_buffer1[i_sample];
             }
         }
     }
@@ -203,7 +204,10 @@ void adaconv_process_frame(
 #endif
 
     /* buffer update */
-    OPUS_COPY(hAdaConv->history, &p_input[(frame_size - kernel_size) * in_channels], kernel_size * in_channels);
+    for (i_in_channels=0; i_in_channels < in_channels; i_in_channels ++)
+    {
+        OPUS_COPY(hAdaConv->history + i_in_channels * kernel_size, p_input + i_in_channels * (frame_size + kernel_size) + frame_size - kernel_size, kernel_size);
+    }
     OPUS_COPY(hAdaConv->last_kernel, kernel_buffer, kernel_size * in_channels * out_channels);
 }
 
@@ -229,12 +233,15 @@ void adacomb_process_frame(
 )
 {
     float output_buffer[ADACOMB_MAX_FRAME_SIZE];
+    float output_buffer_last[ADACOMB_MAX_FRAME_SIZE];
     float kernel_buffer[ADACOMB_MAX_KERNEL_SIZE];
     float input_buffer[ADACOMB_MAX_FRAME_SIZE + ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE];
     float window_buffer[ADACOMB_MAX_OVERLAP_SIZE];
     float gain, global_gain;
     float *p_input;
-    int i_sample, i_kernel;
+    int i_sample;
+    float kernel[16];
+    float last_kernel[16];
 
     (void) feature_dim; /* ToDo: figure out whether we might need this information */
 
@@ -275,28 +282,28 @@ void adacomb_process_frame(
     print_float_vector("adacomb_gain", &gain, 1);
 #endif
 
-    /* calculate overlapping part using kernel and lag from last frame */
+    OPUS_CLEAR(kernel, ADACOMB_MAX_KERNEL_SIZE);
+    OPUS_CLEAR(last_kernel, ADACOMB_MAX_KERNEL_SIZE);
+    OPUS_COPY(kernel, kernel_buffer, kernel_size);
+    OPUS_COPY(last_kernel, hAdaComb->last_kernel, kernel_size);
+
+    celt_pitch_xcorr(last_kernel, &p_input[- left_padding - hAdaComb->last_pitch_lag], output_buffer_last, ADACOMB_MAX_KERNEL_SIZE, overlap_size, arch);
+
+    celt_pitch_xcorr(kernel, &p_input[- left_padding - pitch_lag], output_buffer, ADACOMB_MAX_KERNEL_SIZE, frame_size, arch);
     for (i_sample = 0; i_sample < overlap_size; i_sample++)
     {
-        for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
-        {
-            output_buffer[i_sample] += hAdaComb->last_global_gain * window[i_sample] * p_input[i_sample + i_kernel - left_padding - hAdaComb->last_pitch_lag] * hAdaComb->last_kernel[i_kernel];
-            output_buffer[i_sample] += global_gain * (1 - window[i_sample]) * p_input[i_sample + i_kernel - left_padding - pitch_lag] * kernel_buffer[i_kernel];
-        }
-        output_buffer[i_sample] += (window[i_sample] * hAdaComb->last_global_gain + (1 - window[i_sample]) * global_gain) * p_input[i_sample];
+      output_buffer[i_sample] = hAdaComb->last_global_gain * window[i_sample] * output_buffer_last[i_sample] + global_gain * (1 - window[i_sample]) * output_buffer[i_sample];
     }
 
+    for (i_sample = 0; i_sample < overlap_size; i_sample++)
+    {
+      output_buffer[i_sample] += (window[i_sample] * hAdaComb->last_global_gain + (1 - window[i_sample]) * global_gain) * p_input[i_sample];
+    }
 
-    /* calculate non-overlapping part */
     for (i_sample = overlap_size; i_sample < frame_size; i_sample++)
     {
-        for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
-        {
-            output_buffer[i_sample] += p_input[i_sample + i_kernel - left_padding - pitch_lag] * kernel_buffer[i_kernel];
-        }
-        output_buffer[i_sample] = global_gain * (output_buffer[i_sample] + p_input[i_sample]);
+      output_buffer[i_sample] = global_gain * (output_buffer[i_sample] + p_input[i_sample]);
     }
-
     OPUS_COPY(x_out, output_buffer, frame_size);
 
 #ifdef DEBUG_NNDSP
@@ -321,10 +328,6 @@ void adashape_process_frame(
     int feature_dim,
     int frame_size,
     int avg_pool_k,
-    int in_stride,
-    int in_offset,
-    int out_stride,
-    int out_offset,
     int arch
 )
 {
@@ -350,7 +353,7 @@ void adashape_process_frame(
     {
         for (k = 0; k < avg_pool_k; k++)
         {
-            tenv[i] += fabs(x_in[in_stride * (i * avg_pool_k + k) + in_offset]);
+            tenv[i] += fabs(x_in[i * avg_pool_k + k]);
         }
         tenv[i] = log(tenv[i] / avg_pool_k + 1.52587890625e-05f);
         mean += tenv[i];
@@ -386,7 +389,7 @@ void adashape_process_frame(
     /* shape signal */
     for (i = 0; i < frame_size; i ++)
     {
-        x_out[out_stride * i + out_offset] = exp(out_buffer[i]) * x_in[in_stride * i + in_offset];
+        x_out[i] = exp(out_buffer[i]) * x_in[i];
     }
 
 }
