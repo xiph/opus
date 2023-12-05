@@ -115,6 +115,12 @@ void adaconv_process_frame(
     float output_buffer[ADACONV_MAX_FRAME_SIZE * ADACONV_MAX_OUTPUT_CHANNELS];
     float kernel_buffer[ADACONV_MAX_KERNEL_SIZE * ADACONV_MAX_INPUT_CHANNELS * ADACONV_MAX_OUTPUT_CHANNELS];
     float input_buffer[ADACONV_MAX_INPUT_CHANNELS * (ADACONV_MAX_FRAME_SIZE + ADACONV_MAX_KERNEL_SIZE)];
+#ifdef USE_XCORR
+    float kernel0[ADACONV_MAX_KERNEL_SIZE];
+    float kernel1[ADACONV_MAX_KERNEL_SIZE];
+    float channel_buffer0[ADACONV_MAX_OVERLAP_SIZE];
+    float channel_buffer1[ADACONV_MAX_FRAME_SIZE];
+#endif
     float window_buffer[ADACONV_MAX_OVERLAP_SIZE];
     float gain_buffer[ADACONV_MAX_OUTPUT_CHANNELS];
     float *p_input;
@@ -174,6 +180,25 @@ void adaconv_process_frame(
     {
         for (i_in_channels = 0; i_in_channels < in_channels; i_in_channels++)
         {
+#ifdef USE_XCORR
+            OPUS_CLEAR(kernel0, 1);
+            OPUS_CLEAR(kernel1, 1);
+
+            OPUS_COPY(kernel0, hAdaConv->last_kernel + KERNEL_INDEX(i_out_channels, i_in_channels, 0), kernel_size);
+            OPUS_COPY(kernel1, kernel_buffer + KERNEL_INDEX(i_out_channels, i_in_channels, 0), kernel_size);
+            celt_pitch_xcorr(kernel0, p_input + i_in_channels * (frame_size + kernel_size) - left_padding, channel_buffer0, ADACONV_MAX_KERNEL_SIZE, overlap_size, arch);
+            celt_pitch_xcorr(kernel1, p_input + i_in_channels * (frame_size + kernel_size) - left_padding, channel_buffer1, ADACONV_MAX_KERNEL_SIZE, frame_size, arch);
+            for (i_sample = 0; i_sample < overlap_size; i_sample++)
+            {
+                output_buffer[i_sample + i_out_channels * frame_size] +=  window[i_sample] * channel_buffer0[i_sample];
+                output_buffer[i_sample + i_out_channels * frame_size] += (1 - window[i_sample]) * channel_buffer1[i_sample];
+            }
+            for (i_sample = overlap_size; i_sample < frame_size; i_sample++)
+            {
+                output_buffer[i_sample + i_out_channels * frame_size] += channel_buffer1[i_sample];
+            }
+#else
+
             for (i_sample = 0; i_sample < overlap_size; i_sample++)
             {
                 for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
@@ -185,28 +210,17 @@ void adaconv_process_frame(
                         (1 - window[i_sample]) * p_input[(i_sample + i_kernel - left_padding) + i_in_channels * (frame_size + kernel_size)] * kernel_buffer[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)];
                 }
             }
+#endif
         }
     }
 
-
+#ifndef USE_XCORR
     /* calculate non-overlapping part */
 
     for (i_out_channels = 0; i_out_channels < out_channels; i_out_channels++)
     {
         for (i_in_channels = 0; i_in_channels < in_channels; i_in_channels++)
         {
-#ifdef USE_XCORR
-            float channel_buffer[ADACONV_MAX_FRAME_SIZE];
-            float kernel[ADACONV_MAX_KERNEL_SIZE];
-            OPUS_CLEAR(kernel, 1);
-            OPUS_CLEAR(channel_buffer, 1);
-            OPUS_COPY(kernel, &kernel_buffer[KERNEL_INDEX(i_out_channels, i_in_channels, 0)], kernel_size);
-            celt_pitch_xcorr(kernel, p_input + i_in_channels * (frame_size + kernel_size) - left_padding + overlap_size, channel_buffer, ADACONV_MAX_KERNEL_SIZE,  frame_size - overlap_size, arch);
-            for (i_sample = overlap_size; i_sample < frame_size; i_sample++)
-            {
-                output_buffer[i_sample + i_out_channels * frame_size] += channel_buffer[i_sample - overlap_size];
-            }
-#else
             for (i_sample = overlap_size; i_sample < frame_size; i_sample++)
             {
                 for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
@@ -216,9 +230,9 @@ void adaconv_process_frame(
                         p_input[(i_sample + i_kernel - left_padding) + i_in_channels * (frame_size + kernel_size)] * kernel_buffer[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)];
                 }
             }
-#endif
         }
     }
+#endif
 
     OPUS_COPY(x_out, output_buffer, out_channels * frame_size);
 
@@ -231,7 +245,6 @@ void adaconv_process_frame(
     {
         OPUS_COPY(hAdaConv->history + i_in_channels * kernel_size, p_input + i_in_channels * (frame_size + kernel_size) + frame_size - kernel_size, kernel_size);
     }
-
     OPUS_COPY(hAdaConv->last_kernel, kernel_buffer, kernel_size * in_channels * out_channels);
 }
 

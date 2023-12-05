@@ -25,6 +25,8 @@
 #include <stdio.h>
 #endif
 
+//#define USE_XCORR
+
 void print_float_vector(const char* name, const float *vec, int length);
 
 typedef struct {
