@@ -299,7 +299,7 @@ void adashape_compare(
         }
 
         adashape_process_frame(hAdaShape, x_out, x_in, features, alpha1, alpha2, feature_dim,
-        frame_size, avg_pool_k, 1, 0, 1, 0, 0);
+        frame_size, avg_pool_k, 0);
 
         mse = 0;
         for (i_sample = 0; i_sample < frame_size; i_sample ++)

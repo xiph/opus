@@ -586,10 +586,6 @@ void nolace_process_20ms_frame(
             NOLACE_TDSHAPE1_FEATURE_DIM,
             NOLACE_TDSHAPE1_FRAME_SIZE,
             NOLACE_TDSHAPE1_AVG_POOL_K,
-            1,
-            0,
-            1,
-            0,
             arch
         );
 
@@ -645,10 +641,6 @@ void nolace_process_20ms_frame(
             NOLACE_TDSHAPE2_FEATURE_DIM,
             NOLACE_TDSHAPE2_FRAME_SIZE,
             NOLACE_TDSHAPE2_AVG_POOL_K,
-            1,
-            0,
-            1,
-            0,
             arch
         );
 
@@ -700,10 +692,6 @@ void nolace_process_20ms_frame(
             NOLACE_TDSHAPE3_FEATURE_DIM,
             NOLACE_TDSHAPE3_FRAME_SIZE,
             NOLACE_TDSHAPE3_AVG_POOL_K,
-            1,
-            0,
-            1,
-            0,
             arch
         );
 
