@@ -181,8 +181,8 @@ void adaconv_process_frame(
         for (i_in_channels = 0; i_in_channels < in_channels; i_in_channels++)
         {
 #ifdef USE_XCORR
-            OPUS_CLEAR(kernel0, 1);
-            OPUS_CLEAR(kernel1, 1);
+            OPUS_CLEAR(kernel0, ADACONV_MAX_KERNEL_SIZE);
+            OPUS_CLEAR(kernel1, ADACONV_MAX_KERNEL_SIZE);
 
             OPUS_COPY(kernel0, hAdaConv->last_kernel + KERNEL_INDEX(i_out_channels, i_in_channels, 0), kernel_size);
             OPUS_COPY(kernel1, kernel_buffer + KERNEL_INDEX(i_out_channels, i_in_channels, 0), kernel_size);
