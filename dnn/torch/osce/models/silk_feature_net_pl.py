@@ -57,7 +57,7 @@ class SilkFeatureNetPL(nn.Module):
         self.activate = activate
         self.softquant = softquant
 
-        self.conv1 = nn.Conv1d(feature_dim, self.hidden_feature_dim, 1), ['weight']
+        self.conv1 = nn.Conv1d(feature_dim, self.hidden_feature_dim, 1)
         self.conv2 = wrap(nn.Conv1d(4 * self.hidden_feature_dim, num_channels, 2), ['weight'])
         self.tconv = wrap(nn.ConvTranspose1d(num_channels, num_channels, 4, 4), ['weight'])
 
