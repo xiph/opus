@@ -60,7 +60,9 @@ class LACE(NNSBase):
                  numbits_embedding_dim=8,
                  hidden_feature_dim=64,
                  partial_lookahead=True,
-                 norm_p=2):
+                 norm_p=2,
+                 tconv_activation=False,
+                 softquant=False):
 
         super().__init__(skip=skip, preemph=preemph)
 
@@ -76,6 +78,7 @@ class LACE(NNSBase):
         self.numbits_embedding_dim  = numbits_embedding_dim
         self.hidden_feature_dim     = hidden_feature_dim
         self.partial_lookahead      = partial_lookahead
+        self.tconv_activation       = tconv_activation
 
         # pitch embedding
         self.pitch_embedding = nn.Embedding(pitch_max + 1, pitch_embedding_dim)
@@ -85,7 +88,7 @@ class LACE(NNSBase):
 
         # feature net
         if partial_lookahead:
-            self.feature_net = SilkFeatureNetPL(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim, hidden_feature_dim)
+            self.feature_net = SilkFeatureNetPL(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim, hidden_feature_dim, activate=tconv_activation, softquant=softquant)
         else:
             self.feature_net = SilkFeatureNet(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim)
 
