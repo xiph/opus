@@ -974,7 +974,7 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
    opus_int32 bytes_per_frame;
    opus_int32 cbr_bytes;
    opus_int32 repacketize_len;
-   int tmp_len;
+   int tmp_len, first_len;
    ALLOC_STACK;
 
    /* Worst cases:
@@ -1010,6 +1010,7 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
 
    for (i=0;i<nb_frames;i++)
    {
+      int first_frame = i == 0;
       st->silk_mode.toMono = 0;
       st->nonfinal_frame = i<(nb_frames-1);
 
@@ -1019,7 +1020,7 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
 
       tmp_len = opus_encode_native(st, pcm+i*(st->channels*frame_size), frame_size,
          tmp_data+i*bytes_per_frame, bytes_per_frame, lsb_depth, NULL, 0, 0, 0, 0,
-         NULL, float_api);
+         NULL, float_api, first_frame);
 
       if (tmp_len<0)
       {
@@ -1034,11 +1035,49 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
          RESTORE_STACK;
          return OPUS_INTERNAL_ERROR;
       }
+      if (first_frame) first_len = tmp_len;
    }
 
-   /* FIXME: Handle extensions here. */
-   ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr, NULL, 0);
+   {
+      /* Handle extensions here. We only take the extensions from the first frame */
+      /* FIXME: handle extensions in a more general manner in OpusRepacketizer */
+      opus_int16 size[48];
+      const unsigned char *padding;
+      opus_int32 padding_len;
+      opus_int32 extensions_count;
+      VARDECL(opus_extension_data, extensions);
+      int extensions_alloc;
 
+      ret = opus_packet_parse_impl(tmp_data, first_len, 0, NULL, NULL, size,
+         NULL, NULL, &padding, &padding_len);
+      if (ret<0)
+      {
+         RESTORE_STACK;
+         return OPUS_INTERNAL_ERROR;
+      }
+      extensions_count = opus_packet_extensions_count(padding, padding_len);
+      if (extensions_count > 0)
+      {
+         extensions_alloc = extensions_count;
+      }
+      else
+      {
+         extensions_alloc = ALLOC_NONE;
+         extensions_count = 0;
+      }
+
+      ALLOC(extensions, extensions_alloc, opus_extension_data);
+      if (extensions_count > 0)
+      {
+         ret = opus_packet_extensions_parse(padding, padding_len, extensions, &extensions_count);
+         if (ret<0)
+         {
+            RESTORE_STACK;
+            return OPUS_INTERNAL_ERROR;
+         }
+      }
+      ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr, extensions, extensions_count);
+   }
    if (ret<0)
    {
       RESTORE_STACK;
@@ -1086,7 +1125,7 @@ static int compute_redundancy_bytes(opus_int32 max_data_bytes, opus_int32 bitrat
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
                 const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
-                int analysis_channels, downmix_func downmix, int float_api)
+                int analysis_channels, downmix_func downmix, int float_api, int first_frame)
 {
     void *silk_enc;
     CELTEncoder *celt_enc;
@@ -2262,7 +2301,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     ret += 1+redundancy_bytes;
     apply_padding = !st->use_vbr;
 #ifdef ENABLE_DRED
-    if (st->dred_duration > 0 && st->dred_encoder.loaded) {
+    if (st->dred_duration > 0 && st->dred_encoder.loaded && first_frame) {
        opus_extension_data extension;
        unsigned char buf[DRED_MAX_DATA_SIZE];
        int dred_chunks;
@@ -2297,6 +2336,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            }
        }
     }
+#else
+    (void)first_frame; /* Avoids a warning about first_frame being unused. */
 #endif
     if (apply_padding)
     {
@@ -2333,7 +2374,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
    for (i=0;i<frame_size*st->channels;i++)
       in[i] = FLOAT2INT16(pcm[i]);
    ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
-                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
+                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1, 1);
    RESTORE_STACK;
    return ret;
 }
@@ -2345,7 +2386,7 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
    int frame_size;
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 16,
-                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
+                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0, 1);
 }
 
 #else
@@ -2368,7 +2409,7 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
    for (i=0;i<frame_size*st->channels;i++)
       in[i] = (1.0f/32768)*pcm[i];
    ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
-                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
+                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0, 1);
    RESTORE_STACK;
    return ret;
 }
@@ -2378,7 +2419,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
    int frame_size;
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 24,
-                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
+                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1, 1);
 }
 #endif
 
