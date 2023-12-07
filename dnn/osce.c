@@ -20,7 +20,14 @@
 #define CLIP(a, min, max) (((a) < (min) ? (min) : (a)) > (max) ? (max) : (a))
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 
+
+
+extern const WeightArray lacelayers_arrays[];
+extern const WeightArray nolacelayers_arrays[];
+
 /* LACE */
+
+#ifndef DISABLE_LACE
 
 static void compute_lace_numbits_embedding(float *emb, float numbits, int dim, float min_val, float max_val, int logscale)
 {
@@ -41,16 +48,13 @@ static void compute_lace_numbits_embedding(float *emb, float numbits, int dim, f
 }
 
 
-void init_lace(LACE *hLACE)
+static void init_lace(LACE *hLACE, const WeightArray *weights)
 {
     int i;
     OPUS_CLEAR(hLACE, 1);
+    celt_assert(weights != NULL);
 
-    init_lacelayers(&hLACE->layers, lacelayers_arrays);
-
-    init_adacomb_state(&hLACE->state.cf1_state);
-    init_adacomb_state(&hLACE->state.cf2_state);
-    init_adaconv_state(&hLACE->state.af1_state);
+    init_lacelayers(&hLACE->layers, weights);
 
     for (i = 0; i < LACE_OVERLAP_SIZE; i ++)
     {
@@ -58,8 +62,18 @@ void init_lace(LACE *hLACE)
     }
 }
 
+static void reset_lace_state(LACEState *state)
+{
+    OPUS_CLEAR(state, 1);
+
+    init_adacomb_state(&state->cf1_state);
+    init_adacomb_state(&state->cf2_state);
+    init_adaconv_state(&state->af1_state);
+}
+
 static void lace_feature_net(
     LACE *hLACE,
+    LACEState *state,
     float *output,
     const float *features,
     const float *numbits,
@@ -99,7 +113,7 @@ static void lace_feature_net(
     compute_generic_conv1d(
         &hLACE->layers.lace_feature_net_conv2,
         output_buffer,
-        hLACE->state.feature_net_conv2_state,
+        state->feature_net_conv2_state,
         input_buffer,
         4 * LACE_HIDDEN_FEATURE_DIM,
         ACTIVATION_TANH,
@@ -123,17 +137,18 @@ static void lace_feature_net(
         compute_generic_gru(
             &hLACE->layers.lace_feature_net_gru_input,
             &hLACE->layers.lace_feature_net_gru_recurrent,
-            hLACE->state.feature_net_gru_state,
+            state->feature_net_gru_state,
             input_buffer + i_subframe * LACE_COND_DIM,
             arch
         );
-        OPUS_COPY(output + i_subframe * LACE_COND_DIM, hLACE->state.feature_net_gru_state, LACE_COND_DIM);
+        OPUS_COPY(output + i_subframe * LACE_COND_DIM, state->feature_net_gru_state, LACE_COND_DIM);
     }
 }
 
 
-void lace_process_20ms_frame(
+static void lace_process_20ms_frame(
     LACE* hLACE,
+    LACEState *state,
     float *x_out,
     const float *x_in,
     const float *features,
@@ -170,12 +185,12 @@ void lace_process_20ms_frame(
     /* pre-emphasis */
     for (i_sample = 0; i_sample < 4 * LACE_FRAME_SIZE; i_sample ++)
     {
-        output_buffer[i_sample] = x_in[i_sample] - LACE_PREEMPH * hLACE->state.preemph_mem;
-        hLACE->state.preemph_mem = x_in[i_sample];
+        output_buffer[i_sample] = x_in[i_sample] - LACE_PREEMPH * state->preemph_mem;
+        state->preemph_mem = x_in[i_sample];
     }
 
     /* run feature encoder */
-    lace_feature_net(hLACE, feature_buffer, features, numbits, periods, arch);
+    lace_feature_net(hLACE, state, feature_buffer, features, numbits, periods, arch);
 #ifdef DEBUG_LACE
     fwrite(features, sizeof(*features), 4 * LACE_NUM_FEATURES, f_features);
     fwrite(feature_buffer, sizeof(*feature_buffer), 4 * LACE_COND_DIM, f_encfeatures);
@@ -186,7 +201,7 @@ void lace_process_20ms_frame(
     for (i_subframe = 0; i_subframe < 4; i_subframe++)
     {
         adacomb_process_frame(
-            &hLACE->state.cf1_state,
+            &state->cf1_state,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             feature_buffer + i_subframe * LACE_COND_DIM,
@@ -214,7 +229,7 @@ void lace_process_20ms_frame(
     for (i_subframe = 0; i_subframe < 4; i_subframe++)
     {
         adacomb_process_frame(
-            &hLACE->state.cf2_state,
+            &state->cf2_state,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             feature_buffer + i_subframe * LACE_COND_DIM,
@@ -241,7 +256,7 @@ void lace_process_20ms_frame(
     for (i_subframe = 0; i_subframe < 4; i_subframe++)
     {
         adaconv_process_frame(
-            &hLACE->state.af1_state,
+            &state->af1_state,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             feature_buffer + i_subframe * LACE_COND_DIM,
@@ -267,16 +282,19 @@ void lace_process_20ms_frame(
     /* de-emphasis */
     for (i_sample = 0; i_sample < 4 * LACE_FRAME_SIZE; i_sample ++)
     {
-        x_out[i_sample] = output_buffer[i_sample] + LACE_PREEMPH * hLACE->state.deemph_mem;
-        hLACE->state.deemph_mem = x_out[i_sample];
+        x_out[i_sample] = output_buffer[i_sample] + LACE_PREEMPH * state->deemph_mem;
+        state->deemph_mem = x_out[i_sample];
     }
 #ifdef DEBUG_LACE
     fwrite(x_out, sizeof(float), 4 * LACE_FRAME_SIZE, f_xdeemph);
 #endif
 }
 
+#endif /* #ifndef DISABLE_LACE */
+
 
 /* NoLACE */
+#ifndef DISABLE_NOLACE
 
 static void compute_nolace_numbits_embedding(float *emb, float numbits, int dim, float min_val, float max_val, int logscale)
 {
@@ -296,23 +314,14 @@ static void compute_nolace_numbits_embedding(float *emb, float numbits, int dim,
     emb[7] = sin(x * NOLACE_NUMBITS_SCALE_7 - 0.5f);
 }
 
-void init_nolace(NoLACE *hNoLACE)
+static void init_nolace(NoLACE *hNoLACE, const WeightArray *weights)
 {
     int i;
     OPUS_CLEAR(hNoLACE, 1);
+    celt_assert(weights != NULL);
 
-    init_nolacelayers(&hNoLACE->layers, nolacelayers_arrays);
 
-    init_adacomb_state(&hNoLACE->state.cf1_state);
-    init_adacomb_state(&hNoLACE->state.cf2_state);
-    init_adaconv_state(&hNoLACE->state.af1_state);
-    init_adaconv_state(&hNoLACE->state.af2_state);
-    init_adaconv_state(&hNoLACE->state.af3_state);
-    init_adaconv_state(&hNoLACE->state.af4_state);
-    init_adashape_state(&hNoLACE->state.tdshape1_state);
-    init_adashape_state(&hNoLACE->state.tdshape2_state);
-    init_adashape_state(&hNoLACE->state.tdshape3_state);
-
+    init_nolacelayers(&hNoLACE->layers, weights);
 
     for (i = 0; i < NOLACE_OVERLAP_SIZE; i ++)
     {
@@ -320,8 +329,24 @@ void init_nolace(NoLACE *hNoLACE)
     }
 }
 
+static void reset_nolace_state(NoLACEState *state)
+{
+    OPUS_CLEAR(state, 1);
+
+    init_adacomb_state(&state->cf1_state);
+    init_adacomb_state(&state->cf2_state);
+    init_adaconv_state(&state->af1_state);
+    init_adaconv_state(&state->af2_state);
+    init_adaconv_state(&state->af3_state);
+    init_adaconv_state(&state->af4_state);
+    init_adashape_state(&state->tdshape1_state);
+    init_adashape_state(&state->tdshape2_state);
+    init_adashape_state(&state->tdshape3_state);
+}
+
 static void nolace_feature_net(
     NoLACE *hNoLACE,
+    NoLACEState *state,
     float *output,
     const float *features,
     const float *numbits,
@@ -361,7 +386,7 @@ static void nolace_feature_net(
     compute_generic_conv1d(
         &hNoLACE->layers.nolace_feature_net_conv2,
         output_buffer,
-        hNoLACE->state.feature_net_conv2_state,
+        state->feature_net_conv2_state,
         input_buffer,
         4 * NOLACE_HIDDEN_FEATURE_DIM,
         ACTIVATION_TANH,
@@ -385,17 +410,18 @@ static void nolace_feature_net(
         compute_generic_gru(
             &hNoLACE->layers.nolace_feature_net_gru_input,
             &hNoLACE->layers.nolace_feature_net_gru_recurrent,
-            hNoLACE->state.feature_net_gru_state,
+            state->feature_net_gru_state,
             input_buffer + i_subframe * NOLACE_COND_DIM,
             arch
         );
-        OPUS_COPY(output + i_subframe * NOLACE_COND_DIM, hNoLACE->state.feature_net_gru_state, NOLACE_COND_DIM);
+        OPUS_COPY(output + i_subframe * NOLACE_COND_DIM, state->feature_net_gru_state, NOLACE_COND_DIM);
     }
 }
 
 
-void nolace_process_20ms_frame(
+static void nolace_process_20ms_frame(
     NoLACE* hNoLACE,
+    NoLACEState *state,
     float *x_out,
     const float *x_in,
     const float *features,
@@ -410,7 +436,6 @@ void nolace_process_20ms_frame(
     float x_buffer2[8 * NOLACE_FRAME_SIZE];
     int i_subframe, i_sample;
     NOLACELayers *layers = &hNoLACE->layers;
-    NoLACEState *state = &hNoLACE->state;
 
 #ifdef DEBUG_NOLACE
     static FILE *f_features=NULL, *f_encfeatures=NULL, *f_xin=NULL, *f_xpreemph=NULL, *f_postcf1=NULL;
@@ -437,12 +462,12 @@ void nolace_process_20ms_frame(
     /* pre-emphasis */
     for (i_sample = 0; i_sample < 4 * NOLACE_FRAME_SIZE; i_sample ++)
     {
-        x_buffer1[i_sample] = x_in[i_sample] - NOLACE_PREEMPH * hNoLACE->state.preemph_mem;
-        hNoLACE->state.preemph_mem = x_in[i_sample];
+        x_buffer1[i_sample] = x_in[i_sample] - NOLACE_PREEMPH * state->preemph_mem;
+        state->preemph_mem = x_in[i_sample];
     }
 
     /* run feature encoder */
-    nolace_feature_net(hNoLACE, feature_buffer, features, numbits, periods, arch);
+    nolace_feature_net(hNoLACE, state, feature_buffer, features, numbits, periods, arch);
 #ifdef DEBUG_NOLACE
     fwrite(features, sizeof(*features), 4 * NOLACE_NUM_FEATURES, f_features);
     fwrite(feature_buffer, sizeof(*feature_buffer), 4 * NOLACE_COND_DIM, f_encfeatures);
@@ -454,7 +479,7 @@ void nolace_process_20ms_frame(
     {
         /* modifies signal in place */
         adacomb_process_frame(
-            &hNoLACE->state.cf1_state,
+            &state->cf1_state,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -495,7 +520,7 @@ void nolace_process_20ms_frame(
     {
         /* modifies signal in place */
         adacomb_process_frame(
-            &hNoLACE->state.cf2_state,
+            &state->cf2_state,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -535,7 +560,7 @@ void nolace_process_20ms_frame(
     for (i_subframe = 0; i_subframe < 4; i_subframe++)
     {
         adaconv_process_frame(
-            &hNoLACE->state.af1_state,
+            &state->af1_state,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF1_OUT_CHANNELS,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -590,7 +615,7 @@ void nolace_process_20ms_frame(
         );
 
         adaconv_process_frame(
-            &hNoLACE->state.af2_state,
+            &state->af2_state,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF2_OUT_CHANNELS,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF2_IN_CHANNELS,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -645,7 +670,7 @@ void nolace_process_20ms_frame(
         );
 
         adaconv_process_frame(
-            &hNoLACE->state.af3_state,
+            &state->af3_state,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF3_OUT_CHANNELS,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF3_IN_CHANNELS,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -696,7 +721,7 @@ void nolace_process_20ms_frame(
         );
 
         adaconv_process_frame(
-            &hNoLACE->state.af4_state,
+            &state->af4_state,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF4_OUT_CHANNELS,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF4_IN_CHANNELS,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -721,33 +746,71 @@ void nolace_process_20ms_frame(
     /* de-emphasis */
     for (i_sample = 0; i_sample < 4 * NOLACE_FRAME_SIZE; i_sample ++)
     {
-        x_out[i_sample] = x_buffer1[i_sample] + NOLACE_PREEMPH * hNoLACE->state.deemph_mem;
-        hNoLACE->state.deemph_mem = x_out[i_sample];
+        x_out[i_sample] = x_buffer1[i_sample] + NOLACE_PREEMPH * state->deemph_mem;
+        state->deemph_mem = x_out[i_sample];
     }
 #ifdef DEBUG_NOLACE
     fwrite(x_out, sizeof(float), 4 * NOLACE_FRAME_SIZE, f_xdeemph);
 #endif
 }
 
+#endif /* #ifndef DISABLE_NOLACE */
 
 /* API */
-/* API */
 
-void osce_init_model(OSCEModel *model, int method)
+void osce_reset(silk_OSCE_struct *hOSCE, int method)
 {
+    OSCEState *state = &hOSCE->state;
+
+    OPUS_CLEAR(&hOSCE->features, 1);
+
     switch(method)
     {
         case OSCE_METHOD_NONE:
             break;
+#ifndef DISABLE_LACE
         case OSCE_METHOD_LACE:
-            init_lace(&model->lace);
+            reset_lace_state(&state->lace);
             break;
+#endif
+#ifndef DISABLE_NOLACE
         case OSCE_METHOD_NOLACE:
-            init_nolace(&model->nolace);
+            reset_nolace_state(&state->nolace);
             break;
+#endif
         default:
-            celt_assert(0 && "method not defined");
+            celt_assert(0 && "method not defined"); /* Question: return error code? */
     }
+    hOSCE->method = method;
+}
+
+
+void osce_init(silk_OSCE_struct *hOSCE, int method, WeightArray **weights)
+{
+    /* initialize all models */
+#ifndef DISABLE_LACE
+    if (weights == NULL)
+    {
+        init_lace(&hOSCE->model.lace, lacelayers_arrays);
+    }
+    else
+    {
+        init_lace(&hOSCE->model.lace, weights[OSCE_METHOD_LACE]);
+    }
+#endif
+
+#ifndef DISABLE_NOLACE
+    if (weights == NULL)
+    {
+        init_nolace(&hOSCE->model.nolace, nolacelayers_arrays);
+    }
+    else
+    {
+        init_nolace(&hOSCE->model.nolace, weights[OSCE_METHOD_NOLACE]);
+    }
+#endif
+
+    osce_reset(hOSCE, method);
 }
 
 void osce_enhance_frame(
@@ -767,7 +830,12 @@ void osce_enhance_frame(
 
     (void) arch;
 
-    /* ToDo: decide when to enhance (20 ms frame, 16kHz) */
+    /* enhancement only implemented for 20 ms frame at 16kHz */
+    if (psDec->fs_kHz != 16 || psDec->nb_subfr != 4)
+    {
+        /* Question: reset state? */
+        return;
+    }
 
     osce_calculate_features(psDec, psDecCtrl, features, numbits, periods, xq, num_bits);
 
@@ -782,12 +850,16 @@ void osce_enhance_frame(
         case OSCE_METHOD_NONE:
             OPUS_COPY(out_buffer, in_buffer, 320);
             break;
+#ifndef DISABLE_LACE
         case OSCE_METHOD_LACE:
-            lace_process_20ms_frame(&psDec->osce.model.lace, out_buffer, in_buffer, features, numbits, periods, arch);
+            lace_process_20ms_frame(&psDec->osce.model.lace, &psDec->osce.state.lace, out_buffer, in_buffer, features, numbits, periods, arch);
             break;
+#endif
+#ifndef DISABLE_NOLACE
         case OSCE_METHOD_NOLACE:
-            nolace_process_20ms_frame(&psDec->osce.model.nolace, out_buffer, in_buffer, features, numbits, periods, arch);
+            nolace_process_20ms_frame(&psDec->osce.model.nolace, &psDec->osce.state.nolace, out_buffer, in_buffer, features, numbits, periods, arch);
             break;
+#endif
         default:
             celt_assert(0 && "method not defined");
     }
