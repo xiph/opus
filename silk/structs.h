@@ -247,6 +247,7 @@ typedef struct {
 typedef struct {
     OSCEFeatureState features;
     OSCEModel model;
+    OSCEState state;
     int method;
 } silk_OSCE_struct;
 #endif

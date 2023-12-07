@@ -66,11 +66,15 @@ typedef struct {
     float window[LACE_OVERLAP_SIZE];
 } NoLACE;
 
-/* Unified OSCEModel*/
-typedef union {
+/* OSCEModel */
+typedef struct {
     LACE lace;
     NoLACE nolace;
 } OSCEModel;
 
+typedef union {
+    LACEState lace;
+    NoLACEState nolace;
+} OSCEState;
 
 #endif
