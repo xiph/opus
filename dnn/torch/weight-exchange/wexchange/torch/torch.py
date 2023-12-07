@@ -45,7 +45,7 @@ except:
 
 from wexchange.c_export import CWriter, print_gru_layer, print_dense_layer, print_conv1d_layer, print_tconv1d_layer, print_conv2d_layer
 
-def dump_torch_adaptive_conv1d_weights(where, adaconv, name='adaconv', kernel_scale=1/128, kernel_quantize=False, gain_scale=1/128, gain_quantize=False):
+def dump_torch_adaptive_conv1d_weights(where, adaconv, name='adaconv', scale=1/128, quantize=False):
 
 
     w_kernel = adaconv.conv_kernel.weight.detach().cpu().numpy().copy()
@@ -54,14 +54,25 @@ def dump_torch_adaptive_conv1d_weights(where, adaconv, name='adaconv', kernel_sc
     b_gain = adaconv.filter_gain.bias.detach().cpu().numpy().copy()
 
     if isinstance(where, CWriter):
+        # pad kernel for quantization
+        left_padding = adaconv.padding[0]
+        kernel_size = adaconv.kernel_size
+
+        if quantize and w_kernel.shape[0] % 8:
+            kernel_padding = 8 - (w_kernel.shape[0] % 8)
+            w_kernel = np.concatenate((np.zeros((kernel_padding, w_kernel.shape[1])), w_kernel), dtype=w_kernel.dtype)
+            b_kernel = np.concatenate((np.zeros((kernel_padding)), b_kernel), dtype=b_kernel.dtype)
+            left_padding += kernel_padding
+            kernel_size += kernel_padding
+
         # write relevant scalar parameters to header file
         where.header.write(f"""
 #define {name.upper()}_FILTER_GAIN_A {adaconv.filter_gain_a:f}f
 #define {name.upper()}_FILTER_GAIN_B {adaconv.filter_gain_b:f}f
 #define {name.upper()}_SHAPE_GAIN {adaconv.shape_gain:f}f
-#define {name.upper()}_KERNEL_SIZE {adaconv.kernel_size}
+#define {name.upper()}_KERNEL_SIZE {kernel_size}
 #define {name.upper()}_FRAME_SIZE {adaconv.frame_size}
-#define {name.upper()}_LEFT_PADDING {adaconv.padding[0]}
+#define {name.upper()}_LEFT_PADDING {left_padding}
 #define {name.upper()}_OVERLAP_SIZE {adaconv.overlap_size}
 #define {name.upper()}_IN_CHANNELS {adaconv.in_channels}
 #define {name.upper()}_OUT_CHANNELS {adaconv.out_channels}
@@ -70,8 +81,8 @@ def dump_torch_adaptive_conv1d_weights(where, adaconv, name='adaconv', kernel_sc
 """
         )
 
-        print_dense_layer(where, name + "_kernel", w_kernel, b_kernel, scale=kernel_scale, format='torch', sparse=False, diagonal=False, quantize=kernel_quantize)
-        print_dense_layer(where, name + "_gain", w_gain, b_gain, scale=gain_scale, format='torch', sparse=False, diagonal=False, quantize=gain_quantize)
+        print_dense_layer(where, name + "_kernel", w_kernel, b_kernel, scale=scale, format='torch', sparse=False, diagonal=False, quantize=quantize)
+        print_dense_layer(where, name + "_gain", w_gain, b_gain, format='torch', sparse=False, diagonal=False, quantize=False)
 
 
     else:
@@ -81,7 +92,7 @@ def dump_torch_adaptive_conv1d_weights(where, adaconv, name='adaconv', kernel_sc
         np.save(where, 'bias_gain.npy', b_gain)
 
 
-def dump_torch_adaptive_comb1d_weights(where, adaconv, name='adaconv', kernel_scale=1/128, kernel_quantize=False, gain_scale=1/128, gain_quantize=False, global_gain_scale=1/128, global_gain_quantize=False):
+def dump_torch_adaptive_comb1d_weights(where, adaconv, name='adaconv', scale=1/128, quantize=False):
 
 
     w_kernel = adaconv.conv_kernel.weight.detach().cpu().numpy().copy()
@@ -93,13 +104,23 @@ def dump_torch_adaptive_comb1d_weights(where, adaconv, name='adaconv', kernel_sc
 
 
     if isinstance(where, CWriter):
+        # pad kernel for quantization
+        left_padding = adaconv.padding[0]
+        kernel_size = adaconv.kernel_size
+
+        if quantize and w_kernel.shape[0] % 8:
+            kernel_padding = 8 - (w_kernel.shape[0] % 8)
+            w_kernel = np.concatenate((np.zeros((kernel_padding, w_kernel.shape[1])), w_kernel), dtype=w_kernel.dtype)
+            b_kernel = np.concatenate((np.zeros((kernel_padding)), b_kernel), dtype=b_kernel.dtype)
+            left_padding += kernel_padding
+            kernel_size += kernel_padding
         # write relevant scalar parameters to header file
         where.header.write(f"""
 #define {name.upper()}_FILTER_GAIN_A {adaconv.filter_gain_a:f}f
 #define {name.upper()}_FILTER_GAIN_B {adaconv.filter_gain_b:f}f
 #define {name.upper()}_LOG_GAIN_LIMIT {adaconv.log_gain_limit:f}f
-#define {name.upper()}_KERNEL_SIZE {adaconv.kernel_size}
-#define {name.upper()}_LEFT_PADDING {adaconv.padding[0]}
+#define {name.upper()}_KERNEL_SIZE {kernel_size}
+#define {name.upper()}_LEFT_PADDING {left_padding}
 #define {name.upper()}_FRAME_SIZE {adaconv.frame_size}
 #define {name.upper()}_OVERLAP_SIZE {adaconv.overlap_size}
 #define {name.upper()}_IN_CHANNELS {adaconv.in_channels}
@@ -110,9 +131,9 @@ def dump_torch_adaptive_comb1d_weights(where, adaconv, name='adaconv', kernel_sc
 """
         )
 
-        print_dense_layer(where, name + "_kernel", w_kernel, b_kernel, scale=kernel_scale, format='torch', sparse=False, diagonal=False, quantize=kernel_quantize)
-        print_dense_layer(where, name + "_gain", w_gain, b_gain, scale=gain_scale, format='torch', sparse=False, diagonal=False, quantize=gain_quantize)
-        print_dense_layer(where, name + "_global_gain", w_global_gain, b_global_gain, scale=global_gain_scale, format='torch', sparse=False, diagonal=False, quantize=global_gain_quantize)
+        print_dense_layer(where, name + "_kernel", w_kernel, b_kernel, scale=scale, format='torch', sparse=False, diagonal=False, quantize=quantize)
+        print_dense_layer(where, name + "_gain", w_gain, b_gain, format='torch', sparse=False, diagonal=False, quantize=False)
+        print_dense_layer(where, name + "_global_gain", w_global_gain, b_global_gain, format='torch', sparse=False, diagonal=False, quantize=False)
 
 
     else:
