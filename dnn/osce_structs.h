@@ -3,8 +3,12 @@
 
 #include "opus_types.h"
 #include "osce_config.h"
+#ifndef DISABLE_LACE
 #include "lace_data.h"
+#endif
+#ifndef DISABLE_NOLACE
 #include "nolace_data.h"
+#endif
 #include "nndsp.h"
 #include "nnet.h"
 
@@ -18,8 +22,9 @@ typedef struct {
     float               signal_history[OSCE_FEATURES_MAX_HISTORY];
 } OSCEFeatureState;
 
-/* LACE */
 
+#ifndef DISABLE_LACE
+/* LACE */
 typedef struct {
     float feature_net_conv2_state[LACE_FEATURE_NET_CONV2_STATE_SIZE];
     float feature_net_gru_state[LACE_COND_DIM]; /* ToDo: fix! */
@@ -33,12 +38,14 @@ typedef struct {
 typedef struct
 {
     LACELayers layers;
-    LACEState state;
     float window[LACE_OVERLAP_SIZE];
 } LACE;
 
-/* NoLACE */
+#endif /* #ifndef DISABLE_LACE */
 
+
+#ifndef DISABLE_NOLACE
+/* NoLACE */
 typedef struct {
     float feature_net_conv2_state[NOLACE_FEATURE_NET_CONV2_STATE_SIZE];
     float feature_net_gru_state[NOLACE_COND_DIM];
@@ -62,19 +69,28 @@ typedef struct {
 
 typedef struct {
     NOLACELayers layers;
-    NoLACEState state;
     float window[LACE_OVERLAP_SIZE];
 } NoLACE;
 
+#endif /* #ifndef DISABLE_NOLACE */
+
 /* OSCEModel */
 typedef struct {
+#ifndef DISABLE_LACE
     LACE lace;
+#endif
+#ifndef DISABLE_NOLACE
     NoLACE nolace;
+#endif
 } OSCEModel;
 
 typedef union {
+#ifndef DISABLE_LACE
     LACEState lace;
+#endif
+#ifndef DISABLE_NOLACE
     NoLACEState nolace;
+#endif
 } OSCEState;
 
 #endif
