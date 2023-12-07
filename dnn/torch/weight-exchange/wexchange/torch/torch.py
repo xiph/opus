@@ -63,12 +63,10 @@ def dump_torch_adaptive_conv1d_weights(where, adaconv, name='adaconv', scale=1/1
 
         if quantize and kernel_size % 8:
             kernel_padding = 8 - (kernel_size % 8)
-            print(f"{w_kernel.shape=}")
             w_kernel = np.concatenate(
                 (np.zeros((out_channels, in_channels, kernel_padding, feature_dim)), w_kernel.reshape(out_channels, in_channels, kernel_size, feature_dim)),
                 dtype=w_kernel.dtype,
                 axis=2).reshape(-1, feature_dim)
-            print(f"{w_kernel.shape=}")
             b_kernel = np.concatenate(
                 (np.zeros((out_channels, in_channels, kernel_padding)), b_kernel.reshape(out_channels, in_channels, kernel_size)),
                 dtype=b_kernel.dtype,
