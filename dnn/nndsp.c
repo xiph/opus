@@ -152,8 +152,8 @@ void adaconv_process_frame(
     {
         OPUS_COPY(input_buffer + i_in_channels * (kernel_size + frame_size), hAdaConv->history + i_in_channels * kernel_size, kernel_size);
         OPUS_COPY(input_buffer + kernel_size + i_in_channels * (kernel_size + frame_size), x_in + frame_size * i_in_channels, frame_size);
-        p_input = input_buffer + kernel_size;
     }
+    p_input = input_buffer + kernel_size;
 
 
     /* calculate new kernel and new gain */
