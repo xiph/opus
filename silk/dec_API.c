@@ -33,6 +33,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "stack_alloc.h"
 #include "os_support.h"
 
+#ifdef ENABLE_OSCE
+#include "osce.h"
+#endif
+
 /************************/
 /* Decoder Super Struct */
 /************************/
@@ -60,6 +64,24 @@ opus_int silk_Get_Decoder_Size(                         /* O    Returns error co
 }
 
 /* Reset decoder state */
+opus_int silk_ResetDecoder(                              /* O    Returns error code                              */
+    void                            *decState           /* I/O  State                                           */
+)
+{
+    opus_int n, ret = SILK_NO_ERROR;
+    silk_decoder_state *channel_state = ((silk_decoder *)decState)->channel_state;
+
+    for( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
+        ret  = silk_reset_decoder( &channel_state[ n ] );
+    }
+    silk_memset(&((silk_decoder *)decState)->sStereo, 0, sizeof(((silk_decoder *)decState)->sStereo));
+    /* Not strictly needed, but it's cleaner that way */
+    ((silk_decoder *)decState)->prev_decode_only_middle = 0;
+
+    return ret;
+}
+
+
 opus_int silk_InitDecoder(                              /* O    Returns error code                              */
     void                            *decState           /* I/O  State                                           */
 )
@@ -301,6 +323,9 @@ opus_int silk_Decode(                                   /* O    Returns error co
             } else {
                 condCoding = CODE_CONDITIONALLY;
             }
+#ifdef ENABLE_OSCE
+            if (channel_state[n].osce.method != decControl->osce_method) {osce_reset(&channel_state[n].osce, decControl->osce_method);}
+#endif
             ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding,
 #ifdef ENABLE_DEEP_PLC
                 n == 0 ? lpcnet : NULL,

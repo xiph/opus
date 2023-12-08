@@ -284,6 +284,10 @@ typedef struct {
 /* Decoder state                */
 /********************************/
 typedef struct {
+#ifdef ENABLE_OSCE
+    silk_OSCE_struct            osce;
+#endif
+#define SILK_DECODER_STATE_RESET_START prev_gain_Q16
     opus_int32                  prev_gain_Q16;
     opus_int32                  exc_Q14[ MAX_FRAME_LENGTH ];
     opus_int32                  sLPC_Q14_buf[ MAX_LPC_ORDER ];
@@ -323,10 +327,6 @@ typedef struct {
 
     /* CNG state */
     silk_CNG_struct             sCNG;
-
-#ifdef ENABLE_OSCE
-    silk_OSCE_struct            osce;
-#endif
 
     /* Stuff used for PLC */
     opus_int                    lossCnt;
