@@ -833,7 +833,7 @@ void osce_enhance_frame(
     /* enhancement only implemented for 20 ms frame at 16kHz */
     if (psDec->fs_kHz != 16 || psDec->nb_subfr != 4)
     {
-        /* Question: reset state? */
+        osce_reset(&psDec->osce, psDec->osce.method);
         return;
     }
 

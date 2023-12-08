@@ -57,6 +57,10 @@
 #include "dred_rdovae_dec.h"
 #endif
 
+#ifdef ENABLE_OSCE
+#include "osce.h"
+#endif
+
 struct OpusDecoder {
    int          celt_dec_offset;
    int          silk_dec_offset;
@@ -383,7 +387,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
          pcm_ptr = pcm_silk;
 
       if (st->prev_mode==MODE_CELT_ONLY)
-         silk_InitDecoder( silk_dec );
+         silk_ResetDecoder( silk_dec );
 
       /* The SILK PLC cannot produce frames of less than 10 ms */
       st->DecControl.payloadSize_ms = IMAX(10, 1000 * audiosize / st->Fs);
@@ -408,6 +412,15 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         }
      }
      st->DecControl.enable_deep_plc = st->complexity >= 5;
+#ifdef ENABLE_OSCE
+     st->DecControl.osce_method = OSCE_METHOD_NONE;
+#ifndef DISABLE_LACE
+     if (st->complexity >= 2) {st->DecControl.osce_method = OSCE_METHOD_LACE;}
+#endif
+#ifndef DISABLE_NOLACE
+     if (st->complexity >= 5) {st->DecControl.osce_method = OSCE_METHOD_NOLACE;}
+#endif
+#endif
 
      lost_flag = data == NULL ? 1 : 2 * !!decode_fec;
      decoded_samples = 0;
@@ -953,7 +966,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
             ((char*)&st->OPUS_DECODER_RESET_START - (char*)st));
 
       celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
-      silk_InitDecoder( silk_dec );
+      silk_ResetDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
 #ifdef ENABLE_DEEP_PLC
