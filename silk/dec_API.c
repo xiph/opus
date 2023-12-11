@@ -52,6 +52,21 @@ typedef struct {
 /* Decoder functions */
 /*********************/
 
+
+
+opus_int silk_LoadOSCEModels(void *decState, const unsigned char *data, int len)
+{
+    opus_int n, ret = SILK_NO_ERROR;
+#ifdef ENABLE_OSCE
+    silk_decoder_state *channel_state = ((silk_decoder *)decState)->channel_state;
+
+    for ( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
+        ret |= osce_load_models(&channel_state[n].osce, data, len);
+    }
+#endif
+    return ret;
+}
+
 opus_int silk_Get_Decoder_Size(                         /* O    Returns error code                              */
     opus_int                        *decSizeBytes       /* O    Number of bytes in SILK decoder state           */
 )

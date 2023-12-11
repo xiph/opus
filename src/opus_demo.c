@@ -70,6 +70,10 @@ unsigned char *load_blob(const char *filename, int *len) {
   FILE *file;
   unsigned char *data;
   file = fopen(filename, "r");
+  if (file == NULL)
+  {
+    perror("could not open blob file\n");
+  }
   fseek(file, 0L, SEEK_END);
   *len = ftell(file);
   fseek(file, 0L, SEEK_SET);

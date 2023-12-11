@@ -78,7 +78,9 @@ opus_int silk_init_decoder(
     silk_memset( psDec, 0, sizeof( silk_decoder_state ) );
 
 #ifdef ENABLE_OSCE
-    osce_init(&psDec->osce, OSCE_DEFAULT_METHOD, NULL);
+#ifndef USE_WEIGHTS_FILE
+    osce_init(&psDec->osce, OSCE_DEFAULT_METHOD);
+#endif
 #endif
 
     silk_reset_decoder( psDec );
