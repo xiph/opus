@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "osce.h"
 #endif
 
-#include "struct.h"
+#include "structs.h"
 
 /************************/
 /* Reset Decoder State  */
