@@ -52,18 +52,20 @@ static void compute_lace_numbits_embedding(float *emb, float numbits, int dim, f
 }
 
 
-static void init_lace(LACE *hLACE, const WeightArray *weights)
+static int init_lace(LACE *hLACE, const WeightArray *weights)
 {
-    int i;
+    int i, ret = 0;
     OPUS_CLEAR(hLACE, 1);
     celt_assert(weights != NULL);
 
-    init_lacelayers(&hLACE->layers, weights);
+    ret = init_lacelayers(&hLACE->layers, weights);
 
     for (i = 0; i < LACE_OVERLAP_SIZE; i ++)
     {
         hLACE->window[i] = 0.5f + 0.5f * cos(M_PI * (i + 0.5f) / LACE_OVERLAP_SIZE);
     }
+
+    return ret;
 }
 
 static void reset_lace_state(LACEState *state)
@@ -99,7 +101,7 @@ static void lace_feature_net(
     for (i_subframe = 0; i_subframe < 4; i_subframe ++)
     {
         OPUS_COPY(input_buffer, features + i_subframe * LACE_NUM_FEATURES, LACE_NUM_FEATURES);
-        OPUS_COPY(input_buffer + LACE_NUM_FEATURES, hLACE->layers.embed.float_weights + periods[i_subframe] * LACE_PITCH_EMBEDDING_DIM, LACE_PITCH_EMBEDDING_DIM);
+        OPUS_COPY(input_buffer + LACE_NUM_FEATURES, hLACE->layers.lace_pitch_embedding.float_weights + periods[i_subframe] * LACE_PITCH_EMBEDDING_DIM, LACE_PITCH_EMBEDDING_DIM);
         OPUS_COPY(input_buffer + LACE_NUM_FEATURES + LACE_PITCH_EMBEDDING_DIM, numbits_embedded, 2 * LACE_NUMBITS_EMBEDDING_DIM);
 
         compute_generic_conv1d(
@@ -318,19 +320,21 @@ static void compute_nolace_numbits_embedding(float *emb, float numbits, int dim,
     emb[7] = sin(x * NOLACE_NUMBITS_SCALE_7 - 0.5f);
 }
 
-static void init_nolace(NoLACE *hNoLACE, const WeightArray *weights)
+static int init_nolace(NoLACE *hNoLACE, const WeightArray *weights)
 {
-    int i;
+    int i, ret = 0;
     OPUS_CLEAR(hNoLACE, 1);
     celt_assert(weights != NULL);
 
 
-    init_nolacelayers(&hNoLACE->layers, weights);
+    ret = init_nolacelayers(&hNoLACE->layers, weights);
 
     for (i = 0; i < NOLACE_OVERLAP_SIZE; i ++)
     {
         hNoLACE->window[i] = 0.5 + 0.5 * cos(M_PI * (i + 0.5) / LACE_OVERLAP_SIZE);
     }
+
+    return ret;
 }
 
 static void reset_nolace_state(NoLACEState *state)
@@ -372,7 +376,7 @@ static void nolace_feature_net(
     for (i_subframe = 0; i_subframe < 4; i_subframe ++)
     {
         OPUS_COPY(input_buffer, features + i_subframe * NOLACE_NUM_FEATURES, NOLACE_NUM_FEATURES);
-        OPUS_COPY(input_buffer + NOLACE_NUM_FEATURES, hNoLACE->layers.embed.float_weights + periods[i_subframe] * NOLACE_PITCH_EMBEDDING_DIM, NOLACE_PITCH_EMBEDDING_DIM);
+        OPUS_COPY(input_buffer + NOLACE_NUM_FEATURES, hNoLACE->layers.nolace_pitch_embedding.float_weights + periods[i_subframe] * NOLACE_PITCH_EMBEDDING_DIM, NOLACE_PITCH_EMBEDDING_DIM);
         OPUS_COPY(input_buffer + NOLACE_NUM_FEATURES + NOLACE_PITCH_EMBEDDING_DIM, numbits_embedded, 2 * NOLACE_NUMBITS_EMBEDDING_DIM);
 
         compute_generic_conv1d(
@@ -789,33 +793,51 @@ void osce_reset(silk_OSCE_struct *hOSCE, int method)
 }
 
 
-void osce_init(silk_OSCE_struct *hOSCE, int method, WeightArray **weights)
+void osce_init(silk_OSCE_struct *hOSCE, int method)
 {
+#ifndef USE_WEIGHTS_FILE
     /* initialize all models */
 #ifndef DISABLE_LACE
-    if (weights == NULL)
-    {
-        init_lace(&hOSCE->model.lace, lacelayers_arrays);
-    }
-    else
-    {
-        init_lace(&hOSCE->model.lace, weights[OSCE_METHOD_LACE]);
-    }
+    init_lace(&hOSCE->model.lace, lacelayers_arrays);
 #endif
 
 #ifndef DISABLE_NOLACE
-    if (weights == NULL)
-    {
-        init_nolace(&hOSCE->model.nolace, nolacelayers_arrays);
-    }
-    else
-    {
-        init_nolace(&hOSCE->model.nolace, weights[OSCE_METHOD_NOLACE]);
-    }
+    init_nolace(&hOSCE->model.nolace, nolacelayers_arrays);
+
 #endif
 
     osce_reset(hOSCE, method);
+#else
+    (void *) hOSCE;
+    (void) method;
+#endif
 }
+
+int osce_load_models(silk_OSCE_struct *hOSCE, const unsigned char *data, int len)
+{
+    WeightArray *list;
+    int ret = 0;
+    printf("[loading model weights] %p, %d\n", data, parse_weights(&list, data, len));
+
+#ifndef DISABLE_LACE
+    if (ret == 0) {ret = init_lace(&hOSCE->model.lace, list);}
+#endif
+
+    printf("ret: %d\n", ret);
+
+#ifndef DISABLE_LACE
+    if (ret == 0) {ret = init_nolace(&hOSCE->model.nolace, list);}
+#endif
+
+    printf("ret: %d\n", ret);
+
+    osce_reset(hOSCE, OSCE_DEFAULT_METHOD);
+
+    free(list);
+
+    return ret;
+}
+
 
 void osce_enhance_frame(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
