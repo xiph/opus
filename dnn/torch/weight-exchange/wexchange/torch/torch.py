@@ -398,7 +398,7 @@ def dump_torch_weights(where, module, name=None, verbose=False, **kwargs):
     elif isinstance(module, torch.nn.Conv2d):
         return dump_torch_conv2d_weights(where, module, name, **kwargs)
     elif isinstance(module, torch.nn.Embedding):
-        return dump_torch_embedding_weights(where, module)
+        return dump_torch_embedding_weights(where, module, name, **kwargs)
     elif isinstance(module, torch.nn.ConvTranspose1d):
         return dump_torch_tconv1d_weights(where, module, name, **kwargs)
     else:
