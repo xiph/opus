@@ -254,6 +254,68 @@ static OpusDecoder *ms_opus_decoder_create(opus_int32 Fs, int channels, int *err
 }
 #endif
 
+
+#ifdef ENABLE_OSCE_TRAINING_DATA
+#define COMPLEXITY_MIN 0
+#define COMPLEXITY_MAX 10
+
+#define PACKET_LOSS_PERC_MIN 0
+#define PACKET_LOSS_PERC_MAX 50
+#define PACKET_LOSS_PERC_STEP 5
+
+#define CBR_BITRATE_LIMIT 8000
+
+#define NUM_BITRATES 102
+static int bitrates[NUM_BITRATES] = {
+        6000,  6060,  6120,  6180,  6240,  6300,  6360,  6420,  6480,
+        6525,  6561,  6598,  6634,  6670,  6707,  6743,  6780,  6816,
+        6853,  6889,  6926,  6962,  6999,  7042,  7085,  7128,  7171,
+        7215,  7258,  7301,  7344,  7388,  7431,  7474,  7512,  7541,
+        7570,  7599,  7628,  7657,  7686,  7715,  7744,  7773,  7802,
+        7831,  7860,  7889,  7918,  7947,  7976,  8013,  8096,  8179,
+        8262,  8344,  8427,  8511,  8605,  8699,  8792,  8886,  8980,
+        9100,  9227,  9354,  9480,  9561,  9634,  9706,  9779,  9851,
+        9924,  9996, 10161, 10330, 10499, 10698, 10898, 11124, 11378,
+       11575, 11719, 11862, 12014, 12345, 12751, 13195, 13561, 13795,
+       14069, 14671, 15403, 15790, 16371, 17399, 17968, 19382, 20468,
+       22000, 32000, 64000
+};
+
+static int randint(int min, int max, int step)
+{
+    double r = ((double) rand())/ (RAND_MAX + 1.);
+    int d;
+
+    d = ((int) ((max + 1 - min) * r / step) * step) + min;
+
+    return d;
+}
+
+static void new_random_setting(OpusEncoder *enc)
+{
+    int bitrate_bps;
+    int complexity;
+    int packet_loss_perc;
+    int use_vbr;
+
+    bitrate_bps = bitrates[randint(0, NUM_BITRATES - 1, 1)];
+    complexity  = randint(COMPLEXITY_MIN, COMPLEXITY_MAX, 1);
+    packet_loss_perc = randint(PACKET_LOSS_PERC_MIN, PACKET_LOSS_PERC_MAX, PACKET_LOSS_PERC_STEP);
+    use_vbr = bitrate_bps < CBR_BITRATE_LIMIT ? 1 : randint(0, 1, 1);
+
+    if (1)
+    {
+        printf("changing settings to %d\t%d\t%d\t%d\n", bitrate_bps, complexity, packet_loss_perc, use_vbr);
+    }
+
+    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
+    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
+    opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
+    opus_encoder_ctl(enc, OPUS_SET_VBR(use_vbr));
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
     int err;
@@ -316,6 +378,10 @@ int main(int argc, char *argv[])
     int lost_count=0;
     FILE *packet_loss_file=NULL;
     int dred_duration=0;
+#ifdef ENABLE_OSCE_TRAINING_DATA
+    int silk_random_switching = 0;
+    int silk_frame_counter = 0;
+#endif
 #ifdef USE_WEIGHTS_FILE
     int blob_len;
     unsigned char *blob_data;
@@ -546,6 +612,12 @@ int main(int argc, char *argv[])
             mode_list = celt_hq_test;
             nb_modes_in_list = 4;
             args++;
+#ifdef ENABLE_OSCE_TRAINING_DATA
+        } else if( strcmp( argv[ args ], "-silk_random_switching" ) == 0 ){
+            silk_random_switching = atoi( argv[ args + 1 ] );
+            printf("switching encoding parameters every %dth frame\n", silk_random_switching);
+            args += 2;
+#endif
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
             print_usage( argv );
@@ -764,6 +836,15 @@ int main(int argc, char *argv[])
                 opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(mode_list[curr_mode][3]));
                 frame_size = mode_list[curr_mode][2];
             }
+#ifdef ENABLE_OSCE_TRAINING_DATA
+            if (silk_random_switching)
+            {
+                silk_frame_counter += 1;
+                if (silk_frame_counter % silk_random_switching == 0) {
+                    new_random_setting(enc);
+                }
+            }
+#endif
             num_read = fread(fbytes, sizeof(short)*channels, frame_size-remaining, fin);
             curr_read = (int)num_read;
             tot_in += curr_read;

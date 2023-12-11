@@ -50,6 +50,9 @@
 #else
 #include "float/structs_FLP.h"
 #endif
+#ifdef ENABLE_OSCE_TRAINING_DATA
+#include <stdio.h>
+#endif
 
 #define MAX_ENCODER_BUFFER 480
 
@@ -1699,6 +1702,25 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (st->application == OPUS_APPLICATION_VOIP)
     {
        hp_cutoff(pcm, cutoff_Hz, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs, st->arch);
+
+#ifdef ENABLE_OSCE_TRAINING_DATA
+       /* write out high pass filtered clean signal*/
+       static FILE *fout =NULL;
+       if (fout == NULL)
+       {
+         fout = fopen("clean_hp.s16", "wb");
+       }
+
+       {
+         int idx;
+         opus_int16 tmp;
+         for (idx = 0; idx < frame_size; idx++)
+         {
+            tmp = (opus_int16) (32768 * pcm_buf[total_buffer + idx] + 0.5f);
+            fwrite(&tmp, sizeof(tmp), 1, fout);
+         }
+       }
+#endif
     } else {
        dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     }

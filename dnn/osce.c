@@ -17,6 +17,10 @@
 #define FINIT(fid, name, mode) do{if (fid == NULL) {fid = fopen(name, mode);}} while(0)
 #endif
 
+#ifdef ENABLE_OSCE_TRAINING_DATA
+#include <stdio.h>
+#endif
+
 #define CLIP(a, min, max) (((a) < (min) ? (min) : (a)) > (max) ? (max) : (a))
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 
@@ -864,7 +868,7 @@ void osce_enhance_frame(
             celt_assert(0 && "method not defined");
     }
 
-#ifdef WRITE_FEATURES
+#ifdef ENABLE_OSCE_TRAINING_DATA
     int  k;
 
     static FILE *flpc = NULL;
@@ -874,7 +878,6 @@ void osce_enhance_frame(
     static FILE *fnoisy16k = NULL;
     static FILE* f_numbits = NULL;
     static FILE* f_numbits_smooth = NULL;
-    static FILE* f_noisy = NULL;
 
     if (flpc == NULL) {flpc = fopen("features_lpc.f32", "wb");}
     if (fgain == NULL) {fgain = fopen("features_gain.f32", "wb");}
@@ -884,10 +887,8 @@ void osce_enhance_frame(
     if(f_numbits == NULL) {f_numbits = fopen("features_num_bits.s32", "wb");}
     if (f_numbits_smooth == NULL) {f_numbits_smooth = fopen("features_num_bits_smooth.f32", "wb");}
 
-    psDec->osce.features.num_bits_smooth = 0.9 * psDec->osce.features.num_bits_smooth + 0.1 * num_bits;
-
     fwrite(&num_bits, sizeof(num_bits), 1, f_numbits);
-    fwrite(&(psDec->osce.features.num_bits_smooth), sizeof(psDec->osce.features.num_bits_smooth), 1, f_numbits_smooth);
+    fwrite(&(psDec->osce.features.numbits_smooth), sizeof(psDec->osce.features.numbits_smooth), 1, f_numbits_smooth);
 
     for (k = 0; k < psDec->nb_subfr; k++)
     {
