@@ -46,7 +46,8 @@ void osce_enhance_frame(
 );
 
 
-void osce_init(silk_OSCE_struct *hOSCE, int method, WeightArray **weights);
+void osce_init(silk_OSCE_struct *hOSCE, int method);
+int osce_load_models(silk_OSCE_struct *hOSCE, const unsigned char *data, int len);
 void osce_reset(silk_OSCE_struct *hOSCE, int method);
 
 

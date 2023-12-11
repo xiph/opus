@@ -1057,6 +1057,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
           goto bad_arg;
        }
        ret = lpcnet_plc_load_model(&st->lpcnet, data, len);
+       ret |= osce_load_models(silk_dec, data, len);
    }
    break;
 #endif
