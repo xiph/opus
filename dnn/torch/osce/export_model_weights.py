@@ -51,6 +51,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('checkpoint', type=str, help='LACE or NoLACE model checkpoint')
 parser.add_argument('output_dir', type=str, help='output folder')
+parser.add_argument('--quantize', action="store_true", help='quantization according to schedule')
 
 
 schedules = {
@@ -60,15 +61,15 @@ schedules = {
         ('feature_net.conv2', dict(quantize=True, scale=None)),
         ('feature_net.tconv', dict(quantize=True, scale=None)),
         ('feature_net.gru', dict()),
-        ('cf1', dict()),
-        ('cf2', dict()),
-        ('af1', dict()),
+        ('cf1', dict(quantize=True, scale=None)),
+        ('cf2', dict(quantize=True, scale=None)),
+        ('af1', dict(quantize=True, scale=None)),
         ('tdshape1', dict()),
         ('tdshape2', dict()),
         ('tdshape3', dict()),
-        ('af2', dict()),
-        ('af3', dict()),
-        ('af4', dict()),
+        ('af2', dict(quantize=True, scale=None)),
+        ('af3', dict(quantize=True, scale=None)),
+        ('af4', dict(quantize=True, scale=None)),
         ('post_cf1', dict(quantize=True, scale=None)),
         ('post_cf2', dict(quantize=True, scale=None)),
         ('post_af1', dict(quantize=True, scale=None)),
@@ -81,9 +82,9 @@ schedules = {
         ('feature_net.conv2', dict(quantize=True, scale=None)),
         ('feature_net.tconv', dict(quantize=True, scale=None)),
         ('feature_net.gru', dict()),
-        ('cf1', dict()),
-        ('cf2', dict()),
-        ('af1', dict())
+        ('cf1', dict(quantize=True, scale=None)),
+        ('cf2', dict(quantize=True, scale=None)),
+        ('af1', dict(quantize=True, scale=None))
     ]
 }
 
@@ -161,7 +162,7 @@ if __name__ == "__main__":
         cwriter.header.write(f"#define {model_name.upper()}_NUMBITS_SCALE_{i} {float(s.detach().cpu())}\n")
 
     # dump layers
-    if model_name in schedules:
+    if model_name in schedules and args.quantize:
         osce_scheduled_dump(cwriter, model_name, model, schedules[model_name])
     else:
         osce_dump_generic(cwriter, model_name, model)

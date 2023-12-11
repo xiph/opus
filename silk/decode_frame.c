@@ -140,6 +140,10 @@ opus_int silk_decode_frame(
         /********************************************************/
         osce_enhance_frame( psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
     }
+    else
+    {
+        osce_reset( &psDec->osce, psDec->osce.method );
+    }
 #endif
 
     /************************************************/

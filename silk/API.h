@@ -100,8 +100,12 @@ opus_int silk_Get_Decoder_Size(                         /* O    Returns error co
 );
 
 /*************************/
-/* Init or Reset decoder */
+/* Init and Reset decoder */
 /*************************/
+opus_int silk_ResetDecoder(                              /* O    Returns error code                              */
+    void                            *decState           /* I/O  State                                           */
+);
+
 opus_int silk_InitDecoder(                              /* O    Returns error code                              */
     void                            *decState           /* I/O  State                                           */
 );
