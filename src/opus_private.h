@@ -54,7 +54,8 @@ typedef struct ChannelLayout {
 typedef enum {
   MAPPING_TYPE_NONE,
   MAPPING_TYPE_SURROUND,
-  MAPPING_TYPE_AMBISONICS
+  MAPPING_TYPE_AMBISONICS,
+  MAPPING_TYPE_OBJECTS
 } MappingType;
 
 struct OpusMSEncoder {
