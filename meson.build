@@ -148,6 +148,7 @@ opts = [
   [ 'float-approx', 'FLOAT_APPROX' ],
   [ 'enable-deep-plc', 'ENABLE_DEEP_PLC' ],
   [ 'enable-dred', 'ENABLE_DRED' ],
+  [ 'enable-osce', 'ENABLE_OSCE' ],
   [ 'assertions', 'ENABLE_ASSERTIONS' ],
   [ 'hardening', 'ENABLE_HARDENING' ],
   [ 'fuzzing', 'FUZZING' ],
