@@ -537,7 +537,7 @@ opus_int32 opus_multistream_surround_encoder_get_size(int channels, int mapping_
       if (!validate_ambisonics(channels, &nb_streams, &nb_coupled_streams))
          return 0;
    }
-   else if (mapping_family == 3)
+   else if (mapping_family==252)
    {
        nb_streams = channels;
        nb_coupled_streams = 0;
@@ -674,7 +674,7 @@ int opus_multistream_surround_encoder_init(
          mapping[i] = vorbis_mappings[channels-1].mapping[i];
       if (channels>=6)
          st->lfe_stream = *streams-1;
-   } else if (mapping_family==3 || mapping_family == 255)
+   } else if (mapping_family==252 || mapping_family==255)
    {
       int i;
       *streams=channels;
@@ -698,7 +698,7 @@ int opus_multistream_surround_encoder_init(
    } else if (mapping_family==2)
    {
       mapping_type = MAPPING_TYPE_AMBISONICS;
-   } else if (mapping_family == 3)
+   } else if (mapping_family==252)
    {
        mapping_type = MAPPING_TYPE_OBJECTS;
    } else

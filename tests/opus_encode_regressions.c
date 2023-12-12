@@ -399,7 +399,7 @@ static int object_analysis_uninit(void)
     int coupled_streams;
     unsigned char mapping[3];
 
-    enc = opus_multistream_surround_encoder_create(24000, 3, 3, &streams,
+    enc = opus_multistream_surround_encoder_create(24000, 3, 252, &streams,
         &coupled_streams, mapping, OPUS_APPLICATION_AUDIO, &err);
     opus_multistream_encoder_ctl(enc, OPUS_SET_SIGNAL(OPUS_SIGNAL_MUSIC));
     opus_multistream_encoder_ctl(enc, OPUS_SET_VBR(1));
