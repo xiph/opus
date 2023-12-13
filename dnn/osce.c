@@ -335,7 +335,7 @@ static int init_nolace(NoLACE *hNoLACE, const WeightArray *weights)
 
     for (i = 0; i < NOLACE_OVERLAP_SIZE; i ++)
     {
-        hNoLACE->window[i] = 0.5 + 0.5 * cos(M_PI * (i + 0.5) / LACE_OVERLAP_SIZE);
+        hNoLACE->window[i] = 0.5f + 0.5f * cos(M_PI * (i + 0.5f) / LACE_OVERLAP_SIZE);
     }
 
     return ret;
@@ -343,6 +343,7 @@ static int init_nolace(NoLACE *hNoLACE, const WeightArray *weights)
 
 static void reset_nolace_state(NoLACEState *state)
 {
+    printf("nolace reset\n");
     OPUS_CLEAR(state, 1);
 
     init_adacomb_state(&state->cf1_state);
@@ -794,6 +795,7 @@ void osce_reset(silk_OSCE_struct *hOSCE, int method)
             celt_assert(0 && "method not defined"); /* Question: return error code? */
     }
     hOSCE->method = method;
+    hOSCE->features.reset = 1;
 }
 
 
@@ -859,6 +861,11 @@ void osce_enhance_frame(
     int i;
 
     (void) arch;
+    static int counter = 0;
+
+    if (counter ++ % 50 == 0){
+        osce_reset(&psDec->osce, psDec->osce.method);
+    }
 
     /* enhancement only implemented for 20 ms frame at 16kHz */
     if (psDec->fs_kHz != 16 || psDec->nb_subfr != 4)
@@ -954,17 +961,23 @@ void osce_enhance_frame(
     fwrite(xq, psDec->nb_subfr * psDec->subfr_length, sizeof(xq[0]), fnoisy16k);
 #endif
 
+    if (psDec->osce.features.reset)
+    {
+        osce_cross_fade_10ms(out_buffer, in_buffer, 320);
+        psDec->osce.features.reset = 0;
+    }
+
     /* scale output */
     for (i = 0; i < 320; i++)
     {
         float tmp = round((1U<<15) * out_buffer[i]);
-        if (tmp > 32767) tmp = 32767;
-        if (tmp < -32768) tmp = -32768;
+
+        if (tmp > INT16_MAX) tmp = INT16_MAX;
+        if (tmp < INT16_MIN) tmp = INT16_MIN;
         xq[i] = (opus_int16) tmp;
     }
 
 }
-
 
 
 #if 0
