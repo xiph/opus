@@ -11,6 +11,10 @@
 
 #include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
 #define SET_ZERO(x) memset(x, 0, sizeof(x))
 #define KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel) ((((i_out_channels) * in_channels) + (i_in_channels)) * kernel_size + (i_kernel))
 
