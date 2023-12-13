@@ -343,7 +343,6 @@ static int init_nolace(NoLACE *hNoLACE, const WeightArray *weights)
 
 static void reset_nolace_state(NoLACEState *state)
 {
-    printf("nolace reset\n");
     OPUS_CLEAR(state, 1);
 
     init_adacomb_state(&state->cf1_state);
@@ -819,23 +818,19 @@ void osce_init(silk_OSCE_struct *hOSCE, int method)
 #endif
 }
 
+#ifdef USE_WEIGHTS_FILE
 int osce_load_models(silk_OSCE_struct *hOSCE, const unsigned char *data, int len)
 {
     WeightArray *list;
     int ret = 0;
-    printf("[loading model weights] %p, %d\n", data, parse_weights(&list, data, len));
 
 #ifndef DISABLE_LACE
     if (ret == 0) {ret = init_lace(&hOSCE->model.lace, list);}
 #endif
 
-    printf("ret: %d\n", ret);
-
 #ifndef DISABLE_LACE
     if (ret == 0) {ret = init_nolace(&hOSCE->model.nolace, list);}
 #endif
-
-    printf("ret: %d\n", ret);
 
     osce_reset(hOSCE, OSCE_DEFAULT_METHOD);
 
@@ -843,7 +838,7 @@ int osce_load_models(silk_OSCE_struct *hOSCE, const unsigned char *data, int len
 
     return ret;
 }
-
+#endif
 
 void osce_enhance_frame(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
@@ -859,13 +854,6 @@ void osce_enhance_frame(
     float numbits[2];
     int periods[4];
     int i;
-
-    (void) arch;
-    static int counter = 0;
-
-    if (counter ++ % 50 == 0){
-        osce_reset(&psDec->osce, psDec->osce.method);
-    }
 
     /* enhancement only implemented for 20 ms frame at 16kHz */
     if (psDec->fs_kHz != 16 || psDec->nb_subfr != 4)
