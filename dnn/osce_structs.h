@@ -20,6 +20,7 @@ typedef struct {
     int                 last_lag;
     int                 last_type;
     float               signal_history[OSCE_FEATURES_MAX_HISTORY];
+    int                 reset;
 } OSCEFeatureState;
 
 

@@ -692,8 +692,10 @@ int main(int argc, char *argv[])
        }
 
 #ifdef ENABLE_OSCE
+#if 0
         /* force encoder to use SILK for the time being */
         opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY));
+#endif
 #endif
     }
     if (!encode_only)

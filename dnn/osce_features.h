@@ -18,4 +18,6 @@ void osce_calculate_features(
 );
 
 
+void osce_cross_fade_10ms(float *x_enhanced, float *x_in, int length);
+
 #endif
