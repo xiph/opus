@@ -97,6 +97,19 @@ opus_int silk_decode_frame(
         /********************************************************/
         silk_decode_core( psDec, psDecCtrl, pOut, pulses, arch );
 
+        /*************************/
+        /* Update output buffer. */
+        /*************************/
+        celt_assert( psDec->ltp_mem_length >= psDec->frame_length );
+        mv_len = psDec->ltp_mem_length - psDec->frame_length;
+        silk_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
+        silk_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
+
+        /********************************************************/
+        /* Run SILK enhancer                                    */
+        /********************************************************/
+        osce_enhance_frame( psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
+
         /********************************************************/
         /* Update PLC state                                     */
         /********************************************************/
@@ -119,32 +132,18 @@ opus_int silk_decode_frame(
             lpcnet,
 #endif
             arch );
-    }
-
-    /*************************/
-    /* Update output buffer. */
-    /*************************/
-    celt_assert( psDec->ltp_mem_length >= psDec->frame_length );
-    mv_len = psDec->ltp_mem_length - psDec->frame_length;
-    silk_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
-    silk_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
-
 
 #ifdef ENABLE_OSCE
-    /* ToDo: find the right place for this call */
-    if(   lostFlag == FLAG_DECODE_NORMAL ||
-        ( lostFlag == FLAG_DECODE_LBRR && psDec->LBRR_flags[ psDec->nFramesDecoded ] == 1 ) )
-    {
-        /********************************************************/
-        /* Run SILK enhancer                                    */
-        /********************************************************/
-        osce_enhance_frame( psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
-    }
-    else
-    {
         osce_reset( &psDec->osce, psDec->osce.method );
-    }
 #endif
+        /*************************/
+        /* Update output buffer. */
+        /*************************/
+        celt_assert( psDec->ltp_mem_length >= psDec->frame_length );
+        mv_len = psDec->ltp_mem_length - psDec->frame_length;
+        silk_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
+        silk_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
+    }
 
     /************************************************/
     /* Comfort noise generation / estimation        */
