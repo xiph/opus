@@ -21,6 +21,10 @@
 #include <stdio.h>
 #endif
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
 #define CLIP(a, min, max) (((a) < (min) ? (min) : (a)) > (max) ? (max) : (a))
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 
@@ -954,8 +958,8 @@ void osce_enhance_frame(
     for (i = 0; i < 320; i++)
     {
         float tmp = round((1U<<15) * out_buffer[i]);
-        if (tmp > INT16_MAX) tmp = INT16_MAX;
-        if (tmp < INT16_MIN) tmp = INT16_MIN;
+        if (tmp > 32767) tmp = 32767;
+        if (tmp < -32768) tmp = -32768;
         xq[i] = (opus_int16) tmp;
     }
 
@@ -1178,7 +1182,7 @@ void lace_demo(
         for (int n=0; n < 4 * LACE_FRAME_SIZE; n ++)
         {
             float tmp = (1UL<<15) * buffer[n];
-            tmp = CLIP(tmp, INT16_MIN, INT16_MAX);
+            tmp = CLIP(tmp, -32768, 32767);
             x_out[n] = (int16_t) round(tmp);
         }
 
@@ -1298,7 +1302,7 @@ void nolace_demo(
         for (int n=0; n < 4 * LACE_FRAME_SIZE; n ++)
         {
             float tmp = (1UL<<15) * buffer[n];
-            tmp = CLIP(tmp, INT16_MIN, INT16_MAX);
+            tmp = CLIP(tmp, -32768, 32767);
             x_out[n] = (int16_t) round(tmp);
         }
 
