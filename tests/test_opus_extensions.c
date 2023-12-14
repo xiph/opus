@@ -40,15 +40,8 @@
 #define getpid _getpid
 #endif
 
-/* including sources directly to test internal APIs */
-#define CELT_C /* to make celt_assert work */
-#include "../src/extensions.c"
+#include "../src/opus_private.h"
 #include "test_opus_common.h"
-
-const char *opus_get_version_string(void)
-{
-   return "unknown";
-}
 
 void test_extensions_generate_success(void)
 {
@@ -343,6 +336,87 @@ void test_random_extensions_parse(void)
    }
 }
 
+void test_opus_repacketizer_out_range_impl(void)
+{
+   OpusRepacketizer rp;
+   unsigned char packet[1024];
+   unsigned char packet_out[1024];
+   opus_int16 size[48];
+   const unsigned char *padding;
+   opus_int32 padding_len;
+   opus_extension_data ext_out[10];
+   int nb_ext;
+   int res, len;
+   int first_count = 0, second_count = 0;
+   static const opus_extension_data ext[] = {
+      {33, 0, (const unsigned char *)"abcdefg", 7},
+      {100, 0, (const unsigned char *)"uvwxyz", 6},
+   };
+
+   opus_repacketizer_init(&rp);
+
+   memset(packet, 0, sizeof(packet));
+   /* Hybrid Packet with 20 msec frames, Code 3 */
+   packet[0] = (15 << 3) | 3;
+   /* Code 3, padding bit set, 1 frame */
+   packet[1] = 1 << 6 | 1;
+   packet[2] = 0;
+   packet[3] = 0;
+
+   /* generate 2 extensions, id 33 and 100 */
+   len = opus_packet_extensions_generate(&packet[4], sizeof(packet)-4, ext, 2, 0);
+   /* update the padding length */
+   packet[2] = len;
+
+   /* concatenate 3 frames */
+   res = opus_repacketizer_cat(&rp, packet, 4+len);
+   /* for the middle frame, no padding, no extensions */
+   packet[1] = 1;
+   res = opus_repacketizer_cat(&rp, packet, 4);
+   /* switch back to extensions for the last frame extensions */
+   packet[1] = 1 << 6 | 1;
+   res = opus_repacketizer_cat(&rp, packet, 4+len);
+
+   expect_true(rp.nb_frames == 3, "Expected 3 frames");
+   res = opus_repacketizer_out_range_impl(&rp,
+      0, 3, /* begin, end */
+      packet_out, /* unsigned char *data */
+      sizeof(packet_out), /* opus_int32 maxlen */
+      0, /*int self_delimited */
+      0, /* int pad */
+      NULL, /* const opus_extension_data *extensions */
+      0 /* int nb_extensions */);
+   expect_true(res > 0, "expected valid packet length");
+
+   /* now verify that we have the expected extensions */
+   res = opus_packet_parse_impl(packet_out, res, 0, NULL, NULL, size,
+      NULL, NULL, &padding, &padding_len);
+   nb_ext = 10;
+   res = opus_packet_extensions_parse(padding, padding_len, ext_out, &nb_ext);
+   expect_true(nb_ext == 4, "Expected 4 extensions");
+   for (int i = 0 ; i < nb_ext; i++)
+   {
+      if (ext_out[i].id == 33)
+      {
+         opus_test_assert(ext_out[i].len == ext[0].len);
+         opus_test_assert(0 == memcmp(ext_out[i].data, ext[0].data, ext[0].len));
+         first_count++;
+      }
+      else if (ext_out[i].id == 100)
+      {
+         opus_test_assert(ext_out[i].len == ext[1].len);
+         opus_test_assert(0 == memcmp(ext_out[i].data, ext[1].data, ext[1].len));
+         second_count++;
+      }
+      if (i < 2)
+         opus_test_assert(ext_out[i].frame == 0)
+      else
+         opus_test_assert(ext_out[i].frame == 2)
+   }
+   opus_test_assert(first_count == 2);
+   opus_test_assert(second_count == 2);
+}
+
 int main(int argc, char **argv)
 {
    int env_used;
@@ -369,6 +443,7 @@ int main(int argc, char **argv)
    test_extensions_parse_zero();
    test_extensions_parse_fail();
    test_random_extensions_parse();
+   test_opus_repacketizer_out_range_impl();
    fprintf(stderr,"Tests completed successfully.\n");
    return 0;
 }

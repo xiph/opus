@@ -19,7 +19,7 @@ foreach t : opus_tests
 
   exe_kwargs = {}
   # This test uses private symbols
-  if test_name == 'test_opus_projection'
+  if test_name == 'test_opus_projection' or test_name == 'test_opus_extensions'
     exe_kwargs = {
       'link_with': [celt_lib, silk_lib, dnn_lib],
       'objects': opus_lib.extract_all_objects(),

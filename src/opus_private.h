@@ -42,6 +42,8 @@ struct OpusRepacketizer {
    const unsigned char *frames[48];
    opus_int16 len[48];
    int framesize;
+   const unsigned char *paddings[48];
+   opus_int32 padding_len[48];
 };
 
 typedef struct {

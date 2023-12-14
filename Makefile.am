@@ -202,9 +202,6 @@ tests_test_opus_api_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 tests_test_opus_encode_SOURCES = tests/test_opus_encode.c tests/opus_encode_regressions.c tests/test_opus_common.h
 tests_test_opus_encode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
-tests_test_opus_extensions_SOURCES = tests/test_opus_extensions.c tests/test_opus_common.h
-tests_test_opus_extensions_LDADD = $(NE10_LIBS) $(LIBM)
-
 tests_test_opus_decode_SOURCES = tests/test_opus_decode.c tests/test_opus_common.h
 tests_test_opus_decode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
@@ -218,6 +215,12 @@ CELT_OBJ = $(CELT_SOURCES:.c=.lo)
 SILK_OBJ = $(SILK_SOURCES:.c=.lo)
 LPCNET_OBJ = $(LPCNET_SOURCES:.c=.lo)
 OPUS_OBJ = $(OPUS_SOURCES:.c=.lo)
+
+tests_test_opus_extensions_SOURCES = tests/test_opus_extensions.c tests/test_opus_common.h
+tests_test_opus_extensions_LDADD = $(OPUS_OBJ) $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+if OPUS_ARM_EXTERNAL_ASM
+tests_test_opus_extensions_LDADD += libarmasm.la
+endif
 
 tests_test_opus_projection_SOURCES = tests/test_opus_projection.c tests/test_opus_common.h
 tests_test_opus_projection_LDADD = $(OPUS_OBJ) $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)

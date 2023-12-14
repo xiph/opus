@@ -974,7 +974,7 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
    opus_int32 bytes_per_frame;
    opus_int32 cbr_bytes;
    opus_int32 repacketize_len;
-   int tmp_len, first_len;
+   int tmp_len;
    ALLOC_STACK;
 
    /* Worst cases:
@@ -1035,49 +1035,9 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
          RESTORE_STACK;
          return OPUS_INTERNAL_ERROR;
       }
-      if (first_frame) first_len = tmp_len;
    }
 
-   {
-      /* Handle extensions here. We only take the extensions from the first frame */
-      /* FIXME: handle extensions in a more general manner in OpusRepacketizer */
-      opus_int16 size[48];
-      const unsigned char *padding;
-      opus_int32 padding_len;
-      opus_int32 extensions_count;
-      VARDECL(opus_extension_data, extensions);
-      int extensions_alloc;
-
-      ret = opus_packet_parse_impl(tmp_data, first_len, 0, NULL, NULL, size,
-         NULL, NULL, &padding, &padding_len);
-      if (ret<0)
-      {
-         RESTORE_STACK;
-         return OPUS_INTERNAL_ERROR;
-      }
-      extensions_count = opus_packet_extensions_count(padding, padding_len);
-      if (extensions_count > 0)
-      {
-         extensions_alloc = extensions_count;
-      }
-      else
-      {
-         extensions_alloc = ALLOC_NONE;
-         extensions_count = 0;
-      }
-
-      ALLOC(extensions, extensions_alloc, opus_extension_data);
-      if (extensions_count > 0)
-      {
-         ret = opus_packet_extensions_parse(padding, padding_len, extensions, &extensions_count);
-         if (ret<0)
-         {
-            RESTORE_STACK;
-            return OPUS_INTERNAL_ERROR;
-         }
-      }
-      ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr, extensions, extensions_count);
-   }
+   ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr, NULL, 0);
    if (ret<0)
    {
       RESTORE_STACK;
