@@ -418,7 +418,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
      if (st->complexity >= 6) {st->DecControl.osce_method = OSCE_METHOD_LACE;}
 #endif
 #ifndef DISABLE_NOLACE
-     if (st->complexity >= 5) {st->DecControl.osce_method = OSCE_METHOD_NOLACE;}
+     if (st->complexity >= 7) {st->DecControl.osce_method = OSCE_METHOD_NOLACE;}
 #endif
 #endif
 
