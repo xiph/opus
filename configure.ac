@@ -162,6 +162,32 @@ AS_IF([test "$enable_custom_modes" = "yes"],[
 
 AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes"])
 
+
+AC_ARG_ENABLE([osce-training-data],
+  AS_HELP_STRING([--enable-osce-training-data], [enables feature output for SILK enhancement]),,
+  [enable_osc_training_data=no]
+)
+
+AS_IF([test "$enable_osce_training_data" = "yes"], [
+       AC_DEFINE([ENABLE_OSCE_TRAINING_DATA], [1], [Enable dumping of OSCE training data])
+])
+
+AC_MSG_CHECKING([argument osce training data])
+AS_IF([test "$enable_osce_training_data" = "yes"], [
+       AC_MSG_RESULT([yes])
+], [AC_MSG_RESULT([no])])
+
+AC_ARG_ENABLE([osce],
+  AS_HELP_STRING([--disable-osce], [enables feature output for SILK enhancement]),,
+  [enable_osce=yes]
+)
+
+AS_IF([test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"], [
+       AC_DEFINE([ENABLE_OSCE], [1], [Enable Opus Speech Coding Enhancement])
+])
+
+AM_CONDITIONAL([ENABLE_OSCE], [test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
+
 AC_ARG_ENABLE([dred],
     [AS_HELP_STRING([--enable-dred], [Use Deep REDundancy (DRED)])],,
     [enable_dred=no])
@@ -904,30 +930,6 @@ AS_IF([test "$enable_dnn_debug_float" = "no"], [
        AC_DEFINE([DISABLE_DEBUG_FLOAT], [1], [Disable DNN debug float])
 ])
 
-AC_ARG_ENABLE([osce-training-data],
-  AS_HELP_STRING([--enable-osce-training-data], [enables feature output for SILK enhancement]),,
-  [enable_osc_training_data=no]
-)
-
-AS_IF([test "$enable_osce_training_data" = "yes"], [
-       AC_DEFINE([ENABLE_OSCE_TRAINING_DATA], [1], [Enable dumping of OSCE training data])
-])
-
-AC_MSG_CHECKING([argument osce training data])
-AS_IF([test "$enable_osce_training_data" = "yes"], [
-       AC_MSG_RESULT([yes])
-], [AC_MSG_RESULT([no])])
-
-AC_ARG_ENABLE([osce],
-  AS_HELP_STRING([--enable-osce], [enables feature output for SILK enhancement]),,
-  [enable_osce=no]
-)
-
-AS_IF([test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"], [
-       AC_DEFINE([ENABLE_OSCE], [1], [Enable Opus Speech Coding Enhancement])
-])
-
-AM_CONDITIONAL([ENABLE_OSCE], [test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
 
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "$HAVE_DOXYGEN" = "yes"])
 
