@@ -794,7 +794,7 @@ void osce_reset(silk_OSCE_struct *hOSCE, int method)
             celt_assert(0 && "method not defined"); /* Question: return error code? */
     }
     hOSCE->method = method;
-    hOSCE->features.reset = 1;
+    hOSCE->features.reset = 2;
 }
 
 
@@ -949,7 +949,12 @@ void osce_enhance_frame(
     fwrite(xq, psDec->nb_subfr * psDec->subfr_length, sizeof(xq[0]), fnoisy16k);
 #endif
 
-    if (psDec->osce.features.reset)
+    if (psDec->osce.features.reset > 1)
+    {
+        OPUS_COPY(out_buffer, in_buffer, 320);
+        psDec->osce.features.reset --;
+    }
+    else if (psDec->osce.features.reset)
     {
         osce_cross_fade_10ms(out_buffer, in_buffer, 320);
         psDec->osce.features.reset = 0;
