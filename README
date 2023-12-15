@@ -24,14 +24,6 @@ To activate LACE as enhancement model, set the decoder complexity to 6, i.e.
 and to run opus without enhancement set the decoder complexity to 5 or lower.
 
 
-
-Python code related to the paper
-
-"Noise-Robust DSP-Assisted Neural Pitch Estimation with Very Low Complexity" by K. Subramani,
-J.-M. Valin, J. Büthe, P. Smaragdis, M. Goodwin
-
-is located in dnn/torch/neural-pitch
-
 == Opus audio codec ==
 
 Opus is a codec for interactive speech and audio transmission over the Internet.
