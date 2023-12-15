@@ -1189,7 +1189,7 @@ int dred_decoder_load_model(OpusDREDDecoder *dec, const unsigned char *data, int
     int ret;
     parse_weights(&list, data, len);
     ret = init_rdovaedec(&dec->model, list);
-    free(list);
+    opus_free(list);
     if (ret == 0) dec->loaded = 1;
     return (ret == 0) ? OPUS_OK : OPUS_BAD_ARG;
 }
@@ -1233,8 +1233,8 @@ OpusDREDDecoder *opus_dred_decoder_create(int *error)
 
 void opus_dred_decoder_destroy(OpusDREDDecoder *dec)
 {
-   dec->magic = 0xDE57801D;
-   free(dec);
+   if (dec) dec->magic = 0xDE57801D;
+   opus_free(dec);
 }
 
 int opus_dred_decoder_ctl(OpusDREDDecoder *dred_dec, int request, ...)
@@ -1372,7 +1372,7 @@ OpusDRED *opus_dred_alloc(int *error)
 void opus_dred_free(OpusDRED *dec)
 {
 #ifdef ENABLE_DRED
-  free(dec);
+  opus_free(dec);
 #else
   (void)dec;
 #endif

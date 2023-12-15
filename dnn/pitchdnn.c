@@ -73,7 +73,7 @@ int pitchdnn_load_model(PitchDNNState *st, const unsigned char *data, int len) {
   int ret;
   parse_weights(&list, data, len);
   ret = init_pitchdnn(&st->model, list);
-  free(list);
+  opus_free(list);
   if (ret == 0) return 0;
   else return -1;
 }

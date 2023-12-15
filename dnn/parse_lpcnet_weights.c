@@ -31,6 +31,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "nnet.h"
+#include "os_support.h"
 
 #define SPARSE_BLOCK_SIZE 32
 
@@ -55,7 +56,7 @@ int parse_weights(WeightArray **list, const unsigned char *data, int len)
 {
   int nb_arrays=0;
   int capacity=20;
-  *list = malloc(capacity*sizeof(WeightArray));
+  *list = opus_alloc(capacity*sizeof(WeightArray));
   while (len > 0) {
     int ret;
     WeightArray array = {NULL, 0, 0, 0};
@@ -64,11 +65,11 @@ int parse_weights(WeightArray **list, const unsigned char *data, int len)
       if (nb_arrays+1 >= capacity) {
         /* Make sure there's room for the ending NULL element too. */
         capacity = capacity*3/2;
-        *list = realloc(*list, capacity*sizeof(WeightArray));
+        *list = opus_realloc(*list, capacity*sizeof(WeightArray));
       }
       (*list)[nb_arrays++] = array;
     } else {
-      free(*list);
+      opus_free(*list);
       *list = NULL;
       return -1;
     }
@@ -269,7 +270,7 @@ int main()
     printf("found %s: size %d\n", list[i].name, list[i].size);
   }
   printf("%p\n", list[i].name);
-  free(list);
+  opus_free(list);
   munmap(data, len);
   close(fd);
   return 0;

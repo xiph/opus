@@ -205,7 +205,7 @@ int lpcnet_load_model(LPCNetState *st, const unsigned char *data, int len) {
   int ret;
   parse_weights(&list, data, len);
   ret = init_lpcnet_model(&st->model, list);
-  free(list);
+  opus_free(list);
   if (ret == 0) return 0;
   else return -1;
 }
@@ -214,14 +214,15 @@ int lpcnet_load_model(LPCNetState *st, const unsigned char *data, int len) {
 LPCNetState *lpcnet_create()
 {
     LPCNetState *lpcnet;
-    lpcnet = (LPCNetState *)calloc(lpcnet_get_size(), 1);
+    lpcnet = (LPCNetState *)opus_alloc(lpcnet_get_size(), 1);
+    OPUS_CLEAR(lpcnet, 1);
     lpcnet_init(lpcnet);
     return lpcnet;
 }
 
 void lpcnet_destroy(LPCNetState *lpcnet)
 {
-    free(lpcnet);
+    opus_free(lpcnet);
 }
 
 void lpcnet_reset_signal(LPCNetState *lpcnet)

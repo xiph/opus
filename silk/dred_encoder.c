@@ -58,7 +58,7 @@ int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len)
     int ret;
     parse_weights(&list, data, len);
     ret = init_rdovaeenc(&enc->model, list);
-    free(list);
+    opus_free(list);
     if (ret == 0) {
       ret = lpcnet_encoder_load_model(&enc->lpcnet_enc_state, data, len);
     }

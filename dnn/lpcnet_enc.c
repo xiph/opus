@@ -62,13 +62,13 @@ int lpcnet_encoder_load_model(LPCNetEncState *st, const unsigned char *data, int
 
 LPCNetEncState *lpcnet_encoder_create(void) {
   LPCNetEncState *st;
-  st = malloc(lpcnet_encoder_get_size());
+  st = opus_alloc(lpcnet_encoder_get_size());
   lpcnet_encoder_init(st);
   return st;
 }
 
 void lpcnet_encoder_destroy(LPCNetEncState *st) {
-  free(st);
+  opus_free(st);
 }
 
 static void frame_analysis(LPCNetEncState *st, kiss_fft_cpx *X, float *Ex, const float *in) {

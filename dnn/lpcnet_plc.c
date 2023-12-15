@@ -76,7 +76,7 @@ int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len
   int ret;
   parse_weights(&list, data, len);
   ret = init_plc_model(&st->model, list);
-  free(list);
+  opus_free(list);
   if (ret == 0) {
     ret = lpcnet_encoder_load_model(&st->enc, data, len);
   }
