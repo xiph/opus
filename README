@@ -1,3 +1,37 @@
+== ICASSP 2024 demo branch ==
+This is a dedicated demo branch of the opus audio codec to showcase contributions to ICASSP 2024.
+
+Python code related to the paper
+
+"NoLACE: Improving Low-Complexity Speech Codec Enhancement Through Adaptive Temporal Shaping" by
+J. Büthe, A. Mustafa, J.-M. Valin, K. Helwani, M. Goodwin
+
+is located in dnn/torch/osce and detailed instructions on how to run training or inference is
+given in dnn/torch/osce/README.md.
+
+Moderately optimized versions of NoLACE and of the small LACE model from the WASPAA 2023 paper
+"LACE: A light-weight, causal model for enhancing coded speech through adaptive convolutions"
+by J. Büthe, J.-M. Valin and A. Mustafa are also included in the opus C library. To run Opus
+with NoLACE simply build opus_demo as outlined below and run the voip application on a 16 kHz
+input file with a frame size of 20ms (default), e.g.
+
+./opus_demo voip 16000 1 9000 in_16kHz.pcm out.pcm
+
+To activate LACE as enhancement model, set the decoder complexity to 6, i.e.
+
+./opus_demo voip 16000 1 9000 -dec_complecity 6 in_16kHz.pcm out.pcm
+
+and to run opus without enhancement set the decoder complexity to 5 or lower.
+
+
+
+Python code related to the paper
+
+"Noise-Robust DSP-Assisted Neural Pitch Estimation with Very Low Complexity" by K. Subramani,
+J.-M. Valin, J. Büthe, P. Smaragdis, M. Goodwin
+
+is located in dnn/torch/neural-pitch
+
 == Opus audio codec ==
 
 Opus is a codec for interactive speech and audio transmission over the Internet.
