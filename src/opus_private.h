@@ -153,7 +153,7 @@ opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
       unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
       const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
-      int analysis_channels, downmix_func downmix, int float_api, int first_frame);
+      int analysis_channels, downmix_func downmix, int float_api);
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
       opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited,
