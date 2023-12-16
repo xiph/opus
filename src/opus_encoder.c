@@ -1017,6 +1017,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     opus_int32 max_rate; /* Max bitrate we're allowed to use */
     int curr_bandwidth;
     opus_int32 max_data_bytes; /* Max number of bytes we're allowed to use */
+    opus_int32 cbr_bytes=-1;
     opus_val16 stereo_width;
     const CELTMode *celt_mode;
 #ifndef DISABLE_FLOAT_API
@@ -1130,14 +1131,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     frame_rate = st->Fs/frame_size;
     if (!st->use_vbr)
     {
-       int cbrBytes;
        /* Multiply by 12 to make sure the division is exact. */
        int frame_rate12 = 12*st->Fs/frame_size;
        /* We need to make sure that "int" values always fit in 16 bits. */
-       cbrBytes = IMIN( (12*st->bitrate_bps/8 + frame_rate12/2)/frame_rate12, max_data_bytes);
-       st->bitrate_bps = cbrBytes*(opus_int32)frame_rate12*8/12;
+       cbr_bytes = IMIN( (12*st->bitrate_bps/8 + frame_rate12/2)/frame_rate12, max_data_bytes);
+       st->bitrate_bps = cbr_bytes*(opus_int32)frame_rate12*8/12;
        /* Make sure we provide at least one byte to avoid failing. */
-       max_data_bytes = IMAX(1, cbrBytes);
+       max_data_bytes = IMAX(1, cbr_bytes);
     }
 #ifdef ENABLE_DRED
     /* Allocate some of the bits to DRED if needed. */
@@ -1500,9 +1500,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        VARDECL(unsigned char, tmp_data);
        VARDECL(OpusRepacketizer, rp);
        int max_header_bytes;
-       opus_int32 bytes_per_frame;
-       opus_int32 cbr_bytes;
        opus_int32 repacketize_len;
+       opus_int32 max_len_sum;
+       opus_int32 tot_size=0;
+       unsigned char *curr_data;
        int tmp_len;
        ALLOC_STACK;
 
@@ -1538,12 +1539,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        if (st->use_vbr || st->user_bitrate_bps==OPUS_BITRATE_MAX)
           repacketize_len = out_data_bytes;
        else {
-          cbr_bytes = 3*st->bitrate_bps/(3*8*st->Fs/(enc_frame_size*nb_frames));
+          celt_assert(cbr_bytes>=0);
           repacketize_len = IMIN(cbr_bytes, out_data_bytes);
        }
-       bytes_per_frame = IMIN(1276, 1+(repacketize_len-max_header_bytes)/nb_frames);
+       max_len_sum = nb_frames + repacketize_len - max_header_bytes;
 
-       ALLOC(tmp_data, nb_frames*bytes_per_frame, unsigned char);
+       ALLOC(tmp_data, max_len_sum, unsigned char);
+       curr_data = tmp_data;
        ALLOC(rp, 1, OpusRepacketizer);
        opus_repacketizer_init(rp);
 
@@ -1559,6 +1561,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           int first_frame = i == 0;
           int frame_to_celt;
           int frame_redundancy;
+          opus_int32 curr_max;
           st->silk_mode.toMono = 0;
           st->nonfinal_frame = i<(nb_frames-1);
 
@@ -1566,6 +1569,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           frame_to_celt = to_celt && i==nb_frames-1;
           frame_redundancy = redundancy && (frame_to_celt || (!to_celt && i==0));
 
+          curr_max = 3*st->bitrate_bps/(3*8*st->Fs/enc_frame_size);
+#ifdef ENABLE_DRED
+          if (first_frame) curr_max += 3*dred_bitrate_bps/(3*8*st->Fs/frame_size);
+#endif
+          curr_max = IMIN(max_len_sum-tot_size, curr_max);
 #ifndef DISABLE_FLOAT_API
           if (analysis_read_pos_bak != -1) {
             is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
@@ -1574,7 +1582,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           }
 #endif
 
-          tmp_len = opus_encode_native_process(st, pcm+i*(st->channels*enc_frame_size), enc_frame_size, tmp_data+i*bytes_per_frame, float_api, first_frame,
+          tmp_len = opus_encode_native_process(st, pcm+i*(st->channels*enc_frame_size), enc_frame_size, curr_data, float_api, first_frame,
 #ifdef ENABLE_DRED
           dred_bitrate_bps,
 #endif
@@ -1582,23 +1590,23 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           &analysis_info,
           is_silence,
 #endif
-                    frame_redundancy, celt_to_silk, prefill, bytes_per_frame,
+                    frame_redundancy, celt_to_silk, prefill, curr_max,
                     equiv_rate, frame_to_celt
               );
-
           if (tmp_len<0)
           {
              RESTORE_STACK;
              return OPUS_INTERNAL_ERROR;
           }
-
-          ret = opus_repacketizer_cat(rp, tmp_data+i*bytes_per_frame, tmp_len);
+          ret = opus_repacketizer_cat(rp, curr_data, tmp_len);
 
           if (ret<0)
           {
              RESTORE_STACK;
              return OPUS_INTERNAL_ERROR;
           }
+          tot_size += tmp_len;
+          curr_data += tmp_len;
        }
        ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr, NULL, 0);
        if (ret<0)
