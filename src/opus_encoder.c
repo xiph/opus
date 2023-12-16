@@ -1566,8 +1566,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           frame_to_celt = to_celt && i==nb_frames-1;
           frame_redundancy = redundancy && (frame_to_celt || (!to_celt && i==0));
 
-          curr_max = 3*st->bitrate_bps/(3*8*st->Fs/enc_frame_size);
+          curr_max = IMIN(3*st->bitrate_bps/(3*8*st->Fs/enc_frame_size), max_len_sum/nb_frames);
 #ifdef ENABLE_DRED
+          curr_max = IMIN(curr_max, (max_len_sum-3*dred_bitrate_bps/(3*8*st->Fs/frame_size))/nb_frames);
           if (first_frame) curr_max += 3*dred_bitrate_bps/(3*8*st->Fs/frame_size);
 #endif
           curr_max = IMIN(max_len_sum-tot_size, curr_max);
