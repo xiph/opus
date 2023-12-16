@@ -985,7 +985,7 @@ int opus_multistream_encode_native
       if (!vbr && s == st->layout.nb_streams-1)
          opus_encoder_ctl(enc, OPUS_SET_BITRATE(curr_max*(8*Fs/frame_size)));
       len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth,
-            pcm, analysis_frame_size, c1, c2, st->layout.nb_channels, downmix, float_api, 1);
+            pcm, analysis_frame_size, c1, c2, st->layout.nb_channels, downmix, float_api);
       if (len<0)
       {
          RESTORE_STACK;
