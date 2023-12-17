@@ -129,10 +129,6 @@ class LimitedAdaptiveConv1d(nn.Module):
         count += 2 * (frame_rate * self.feature_dim * self.kernel_size)
         count += 2 * (self.in_channels * self.out_channels * self.kernel_size * (1 + overhead) * rate)
 
-        # bias computation
-        if self.use_bias:
-            count += 2 * (frame_rate * self.feature_dim) + rate * (1 + overhead)
-
         # gain computation
 
         count += 2 * (frame_rate * self.feature_dim * self.out_channels) + rate * (1 + overhead) * self.out_channels
