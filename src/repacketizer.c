@@ -92,6 +92,7 @@ static int opus_repacketizer_cat_impl(OpusRepacketizer *rp, const unsigned char 
    {
       rp->nb_frames++;
       rp->padding_len[rp->nb_frames] = 0;
+      rp->paddings[rp->nb_frames] = NULL;
       curr_nb_frames--;
    }
    rp->nb_frames++;
