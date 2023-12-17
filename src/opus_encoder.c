@@ -1044,7 +1044,7 @@ static opus_int32 opus_encode_native_process(OpusEncoder *st, const opus_val16 *
                 AnalysisInfo *analysis_info, int is_silence,
 #endif
                 int redundancy, int celt_to_silk, int prefill, opus_int32 max_data_bytes,
-                int total_buffer, opus_int activity, opus_int32 equiv_rate, int to_celt);
+                opus_int activity, opus_int32 equiv_rate, int to_celt);
 
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
@@ -1061,12 +1061,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     int to_celt = 0;
     int voice_est; /* Probability of voice in Q7 */
     opus_int32 equiv_rate;
-    int delay_compensation;
     int frame_rate;
     opus_int32 max_rate; /* Max bitrate we're allowed to use */
     int curr_bandwidth;
     opus_int32 max_data_bytes; /* Max number of bytes we're allowed to use */
-    int total_buffer;
     opus_val16 stereo_width;
     const CELTMode *celt_mode;
 #ifndef DISABLE_FLOAT_API
@@ -1100,10 +1098,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
-    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-       delay_compensation = 0;
-    else
-       delay_compensation = st->delay_compensation;
 
     lsb_depth = IMIN(lsb_depth, st->lsb_depth);
 
@@ -1195,7 +1189,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        stereo_width = compute_stereo_width(pcm, frame_size, st->Fs, &st->width_mem);
     else
        stereo_width = 0;
-    total_buffer = delay_compensation;
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
 
     frame_rate = st->Fs/frame_size;
@@ -1651,7 +1644,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           is_silence,
 #endif
                     frame_redundancy, celt_to_silk, prefill, bytes_per_frame,
-                    total_buffer, activity, equiv_rate, frame_to_celt
+                    activity, equiv_rate, frame_to_celt
               );
 
           if (tmp_len<0)
@@ -1686,7 +1679,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     is_silence,
 #endif
                 redundancy, celt_to_silk, prefill, max_data_bytes,
-                total_buffer, activity, equiv_rate, to_celt
+                activity, equiv_rate, to_celt
           );
       RESTORE_STACK;
       return ret;
@@ -1703,7 +1696,7 @@ static opus_int32 opus_encode_native_process(OpusEncoder *st, const opus_val16 *
                 AnalysisInfo *analysis_info, int is_silence,
 #endif
                 int redundancy, int celt_to_silk, int prefill, opus_int32 max_data_bytes,
-                int total_buffer, opus_int activity, opus_int32 equiv_rate, int to_celt)
+                opus_int activity, opus_int32 equiv_rate, int to_celt)
 {
     void *silk_enc;
     CELTEncoder *celt_enc;
@@ -1723,13 +1716,21 @@ static opus_int32 opus_encode_native_process(OpusEncoder *st, const opus_val16 *
     int apply_padding;
     int frame_rate;
     int curr_bandwidth;
+    int delay_compensation;
+    int total_buffer;
     VARDECL(opus_val16, pcm_buf);
     VARDECL(opus_val16, tmp_prefill);
 
+    st->rangeFinal = 0;
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
     curr_bandwidth = st->bandwidth;
+    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+       delay_compensation = 0;
+    else
+       delay_compensation = st->delay_compensation;
+    total_buffer = delay_compensation;
 
     frame_rate = st->Fs/frame_size;
     /* For the first frame at a new SILK bandwidth */
