@@ -155,7 +155,7 @@ static void lace_feature_net(
         &hLACE->layers.lace_fnet_tconv,
         output_buffer,
         input_buffer,
-        ACTIVATION_LINEAR,
+        ACTIVATION_TANH,
         arch
     );
 
@@ -426,7 +426,7 @@ static void nolace_feature_net(
         &hNoLACE->layers.nolace_fnet_tconv,
         output_buffer,
         input_buffer,
-        ACTIVATION_LINEAR,
+        ACTIVATION_TANH,
         arch
     );
 
@@ -633,7 +633,8 @@ static void nolace_process_20ms_frame(
             x_buffer2 + i_subframe * NOLACE_AF1_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
             x_buffer2 + i_subframe * NOLACE_AF1_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
-            &layers->nolace_tdshape1_alpha1,
+            &layers->nolace_tdshape1_alpha1_f,
+            &layers->nolace_tdshape1_alpha1_t,
             &layers->nolace_tdshape1_alpha2,
             NOLACE_TDSHAPE1_FEATURE_DIM,
             NOLACE_TDSHAPE1_FRAME_SIZE,
@@ -688,7 +689,8 @@ static void nolace_process_20ms_frame(
             x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
             x_buffer1 + i_subframe * NOLACE_AF2_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
-            &layers->nolace_tdshape2_alpha1,
+            &layers->nolace_tdshape2_alpha1_f,
+            &layers->nolace_tdshape2_alpha1_t,
             &layers->nolace_tdshape2_alpha2,
             NOLACE_TDSHAPE2_FEATURE_DIM,
             NOLACE_TDSHAPE2_FRAME_SIZE,
@@ -739,7 +741,8 @@ static void nolace_process_20ms_frame(
             x_buffer2 + i_subframe * NOLACE_AF3_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
             x_buffer2 + i_subframe * NOLACE_AF3_OUT_CHANNELS * NOLACE_FRAME_SIZE + NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
-            &layers->nolace_tdshape3_alpha1,
+            &layers->nolace_tdshape3_alpha1_f,
+            &layers->nolace_tdshape3_alpha1_t,
             &layers->nolace_tdshape3_alpha2,
             NOLACE_TDSHAPE3_FEATURE_DIM,
             NOLACE_TDSHAPE3_FRAME_SIZE,
@@ -884,7 +887,7 @@ int osce_load_models(OSCEModel *model, const unsigned char *data, int len)
         if (ret == 0) {ret = init_lace(&model->lace, list);}
 #endif
 
-#ifndef DISABLE_LACE
+#ifndef DISABLE_NOLACE
         if (ret == 0) {ret = init_nolace(&model->nolace, list);}
 #endif
 
@@ -898,7 +901,7 @@ int osce_load_models(OSCEModel *model, const unsigned char *data, int len)
         if (ret == 0) {ret = init_lace(&model->lace, lacelayers_arrays);}
 #endif
 
-#ifndef DISABLE_LACE
+#ifndef DISABLE_NOLACE
         if (ret == 0) {ret = init_nolace(&model->nolace, nolacelayers_arrays);}
 #endif
 

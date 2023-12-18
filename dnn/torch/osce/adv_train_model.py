@@ -111,7 +111,7 @@ os.makedirs(checkpoint_dir, exist_ok=True)
 if has_git:
     working_dir = os.path.split(__file__)[0]
     try:
-        repo = git.Repo(working_dir)
+        repo = git.Repo(working_dir, search_parent_directories=True)
         setup['repo'] = dict()
         hash = repo.head.object.hexsha
         urls = list(repo.remote().urls)
@@ -407,6 +407,10 @@ for ep in range(1, epochs + 1):
             (gen_loss + lambda_feat * loss_feat + lambda_reg * loss_reg).backward()
 
             optimizer.step()
+
+            # sparsification
+            if hasattr(model, 'sparsifier'):
+                model.sparsifier()
 
             running_model_grad_norm += get_grad_norm(model).detach().cpu().item()
             running_adv_loss += gen_loss.detach().cpu().item()

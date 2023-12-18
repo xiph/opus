@@ -340,7 +340,8 @@ void adashape_process_frame(
     float *x_out,
     const float *x_in,
     const float *features,
-    const LinearLayer *alpha1,
+    const LinearLayer *alpha1f,
+    const LinearLayer *alpha1t,
     const LinearLayer *alpha2,
     int feature_dim,
     int frame_size,
@@ -350,6 +351,7 @@ void adashape_process_frame(
 {
     float in_buffer[ADASHAPE_MAX_INPUT_DIM + ADASHAPE_MAX_FRAME_SIZE];
     float out_buffer[ADASHAPE_MAX_FRAME_SIZE];
+    float tmp_buffer[ADASHAPE_MAX_FRAME_SIZE];
     int i, k;
     int tenv_size;
     float mean;
@@ -389,14 +391,16 @@ void adashape_process_frame(
 #ifdef DEBUG_NNDSP
     print_float_vector("alpha1_in", in_buffer, feature_dim + tenv_size + 1);
 #endif
-    compute_generic_conv1d(alpha1, out_buffer, hAdaShape->conv_alpha1_state, in_buffer, feature_dim + tenv_size + 1, ACTIVATION_LINEAR, arch);
+    compute_generic_conv1d(alpha1f, out_buffer, hAdaShape->conv_alpha1f_state, in_buffer, feature_dim, ACTIVATION_LINEAR, arch);
+    compute_generic_conv1d(alpha1t, tmp_buffer, hAdaShape->conv_alpha1t_state, tenv, tenv_size + 1, ACTIVATION_LINEAR, arch);
 #ifdef DEBUG_NNDSP
     print_float_vector("alpha1_out", out_buffer, frame_size);
 #endif
     /* compute leaky ReLU by hand. ToDo: try tanh activation */
     for (i = 0; i < frame_size; i ++)
     {
-        in_buffer[i] = out_buffer[i] >= 0 ? out_buffer[i] : 0.2f * out_buffer[i];
+        float tmp = out_buffer[i] + tmp_buffer[i];
+        in_buffer[i] = tmp >= 0 ? tmp : 0.2 * tmp;
     }
 #ifdef DEBUG_NNDSP
     print_float_vector("post_alpha1", in_buffer, frame_size);

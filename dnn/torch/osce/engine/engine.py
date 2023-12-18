@@ -46,6 +46,10 @@ def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, 
             # update learning rate
             scheduler.step()
 
+            # sparsification
+            if hasattr(model, 'sparsifier'):
+                model.sparsifier()
+
             # update running loss
             running_loss += float(loss.cpu())
 
@@ -72,8 +76,6 @@ def evaluate(model, criterion, dataloader, device, log_interval=10):
         with tqdm(dataloader, unit='batch', file=sys.stdout) as tepoch:
 
             for i, batch in enumerate(tepoch):
-
-
 
                 # push batch to device
                 for key in batch:

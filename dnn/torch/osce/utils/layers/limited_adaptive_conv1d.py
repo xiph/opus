@@ -34,7 +34,7 @@ import torch.nn.functional as F
 from utils.endoscopy import write_data
 
 from utils.ada_conv import adaconv_kernel
-
+from utils.softquant import soft_quant
 
 class LimitedAdaptiveConv1d(nn.Module):
     COUNTER = 1
@@ -51,6 +51,8 @@ class LimitedAdaptiveConv1d(nn.Module):
                  gain_limits_db=[-6, 6],
                  shape_gain_db=0,
                  norm_p=2,
+                 softquant=False,
+                 apply_weight_norm=False,
                  **kwargs):
         """
 
@@ -100,12 +102,16 @@ class LimitedAdaptiveConv1d(nn.Module):
         else:
             self.name = name
 
+        norm = torch.nn.utils.weight_norm if apply_weight_norm else lambda x, name=None: x
+
         # network for generating convolution weights
-        self.conv_kernel = nn.Linear(feature_dim, in_channels * out_channels * kernel_size)
+        self.conv_kernel = norm(nn.Linear(feature_dim, in_channels * out_channels * kernel_size))
+        if softquant:
+            self.conv_kernel = soft_quant(self.conv_kernel)
 
         self.shape_gain = min(1, 10**(shape_gain_db / 20))
 
-        self.filter_gain = nn.Linear(feature_dim, out_channels)
+        self.filter_gain = norm(nn.Linear(feature_dim, out_channels))
         log_min, log_max = gain_limits_db[0] * 0.11512925464970229, gain_limits_db[1] * 0.11512925464970229
         self.filter_gain_a = (log_max - log_min) / 2
         self.filter_gain_b = (log_max + log_min) / 2

@@ -32,6 +32,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from utils.endoscopy import write_data
+from utils.softquant import soft_quant
 
 class LimitedAdaptiveComb1d(nn.Module):
     COUNTER = 1
@@ -47,6 +48,8 @@ class LimitedAdaptiveComb1d(nn.Module):
                  gain_limit_db=10,
                  global_gain_limits_db=[-6, 6],
                  norm_p=2,
+                 softquant=False,
+                 apply_weight_norm=False,
                  **kwargs):
         """
 
@@ -97,17 +100,22 @@ class LimitedAdaptiveComb1d(nn.Module):
         else:
             self.name = name
 
+        norm = torch.nn.utils.weight_norm if apply_weight_norm else lambda x, name=None: x
+
         # network for generating convolution weights
-        self.conv_kernel = nn.Linear(feature_dim, kernel_size)
+        self.conv_kernel = norm(nn.Linear(feature_dim, kernel_size))
+
+        if softquant:
+            self.conv_kernel = soft_quant(self.conv_kernel)
 
 
         # comb filter gain
-        self.filter_gain = nn.Linear(feature_dim, 1)
+        self.filter_gain = norm(nn.Linear(feature_dim, 1))
         self.log_gain_limit = gain_limit_db * 0.11512925464970229
         with torch.no_grad():
             self.filter_gain.bias[:] = max(0.1, 4 + self.log_gain_limit)
 
-        self.global_filter_gain = nn.Linear(feature_dim, 1)
+        self.global_filter_gain = norm(nn.Linear(feature_dim, 1))
         log_min, log_max = global_gain_limits_db[0] * 0.11512925464970229, global_gain_limits_db[1] * 0.11512925464970229
         self.filter_gain_a = (log_max - log_min) / 2
         self.filter_gain_b = (log_max + log_min) / 2

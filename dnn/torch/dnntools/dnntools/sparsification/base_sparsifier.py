@@ -1,3 +1,4 @@
+"""
 /* Copyright (c) 2023 Amazon
    Written by Jan Buethe */
 /*
@@ -24,39 +25,34 @@
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+"""
 
-#ifndef OSCE_CONFIG
-#define OSCE_CONFIG
+class BaseSparsifier:
+    def __init__(self, task_list, start, stop, interval, exponent=3):
 
-#define OSCE_MAX_RNN_NEURONS 256
+        # just copying parameters...
+        self.start      = start
+        self.stop       = stop
+        self.interval   = interval
+        self.exponent   = exponent
+        self.task_list  = task_list
 
-#define OSCE_FEATURES_MAX_HISTORY 350
-#define OSCE_FEATURE_DIM 93
-#define OSCE_MAX_FEATURE_FRAMES 4
+        # ... and setting counter to 0
+        self.step_counter = 0
 
-#define OSCE_CLEAN_SPEC_NUM_BANDS 64
-#define OSCE_NOISY_SPEC_NUM_BANDS 18
+    def step(self, verbose=False):
+        # compute current interpolation factor
+        self.step_counter += 1
 
-#define OSCE_NO_PITCH_VALUE 7
+        if self.step_counter < self.start:
+            return
+        elif self.step_counter < self.stop:
+            # update only every self.interval-th interval
+            if self.step_counter % self.interval:
+                return
 
-#define OSCE_PREEMPH 0.85f
+            alpha = ((self.stop - self.step_counter) / (self.stop - self.start)) ** self.exponent
+        else:
+            alpha = 0
 
-#define OSCE_PITCH_HANGOVER 0
-
-#define OSCE_CLEAN_SPEC_START 0
-#define OSCE_CLEAN_SPEC_LENGTH 64
-
-#define OSCE_NOISY_CEPSTRUM_START 64
-#define OSCE_NOISY_CEPSTRUM_LENGTH 18
-
-#define OSCE_ACORR_START 82
-#define OSCE_ACORR_LENGTH 5
-
-#define OSCE_LTP_START 87
-#define OSCE_LTP_LENGTH 5
-
-#define OSCE_LOG_GAIN_START 92
-#define OSCE_LOG_GAIN_LENGTH 1
-
-
-#endif
+        self.sparsify(alpha, verbose=verbose)

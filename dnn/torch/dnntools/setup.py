@@ -1,3 +1,4 @@
+"""
 /* Copyright (c) 2023 Amazon
    Written by Jan Buethe */
 /*
@@ -24,39 +25,24 @@
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+"""
 
-#ifndef OSCE_CONFIG
-#define OSCE_CONFIG
+#!/usr/bin/env/python
+import os
+from setuptools import setup
 
-#define OSCE_MAX_RNN_NEURONS 256
+lib_folder = os.path.dirname(os.path.realpath(__file__))
 
-#define OSCE_FEATURES_MAX_HISTORY 350
-#define OSCE_FEATURE_DIM 93
-#define OSCE_MAX_FEATURE_FRAMES 4
+with open(os.path.join(lib_folder, 'requirements.txt'), 'r') as f:
+    install_requires = list(f.read().splitlines())
 
-#define OSCE_CLEAN_SPEC_NUM_BANDS 64
-#define OSCE_NOISY_SPEC_NUM_BANDS 18
+print(install_requires)
 
-#define OSCE_NO_PITCH_VALUE 7
-
-#define OSCE_PREEMPH 0.85f
-
-#define OSCE_PITCH_HANGOVER 0
-
-#define OSCE_CLEAN_SPEC_START 0
-#define OSCE_CLEAN_SPEC_LENGTH 64
-
-#define OSCE_NOISY_CEPSTRUM_START 64
-#define OSCE_NOISY_CEPSTRUM_LENGTH 18
-
-#define OSCE_ACORR_START 82
-#define OSCE_ACORR_LENGTH 5
-
-#define OSCE_LTP_START 87
-#define OSCE_LTP_LENGTH 5
-
-#define OSCE_LOG_GAIN_START 92
-#define OSCE_LOG_GAIN_LENGTH 1
-
-
-#endif
+setup(name='dnntools',
+      version='1.0',
+      author='Jan Buethe',
+      author_email='jbuethe@amazon.de',
+      description='Non-Standard tools for deep neural network training with PyTorch',
+      packages=['dnntools', 'dnntools.sparsification', 'dnntools.quantization'],
+      install_requires=install_requires
+      )
