@@ -155,7 +155,7 @@ static void lace_feature_net(
         &hLACE->layers.lace_feature_net_tconv,
         output_buffer,
         input_buffer,
-        ACTIVATION_LINEAR,
+        ACTIVATION_TANH,
         arch
     );
 
@@ -426,7 +426,7 @@ static void nolace_feature_net(
         &hNoLACE->layers.nolace_feature_net_tconv,
         output_buffer,
         input_buffer,
-        ACTIVATION_LINEAR,
+        ACTIVATION_TANH,
         arch
     );
 
