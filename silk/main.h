@@ -417,6 +417,9 @@ opus_int silk_decode_frame(
 #ifdef ENABLE_DEEP_PLC
     LPCNetPLCState              *lpcnet,
 #endif
+#ifdef ENABLE_OSCE
+    OSCEModel                   *osce_model,
+#endif
     int                         arch                            /* I    Run-time architecture                       */
 );
 

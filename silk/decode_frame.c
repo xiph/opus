@@ -50,6 +50,9 @@ opus_int silk_decode_frame(
 #ifdef ENABLE_DEEP_PLC
     LPCNetPLCState              *lpcnet,
 #endif
+#ifdef ENABLE_OSCE
+    OSCEModel                   *osce_model,
+#endif
     int                         arch                            /* I    Run-time architecture                       */
 )
 {
@@ -109,7 +112,7 @@ opus_int silk_decode_frame(
         /********************************************************/
         /* Run SILK enhancer                                    */
         /********************************************************/
-        osce_enhance_frame( psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
+        osce_enhance_frame( osce_model, psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
 #endif
 
         /********************************************************/

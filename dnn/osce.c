@@ -36,6 +36,7 @@
 #include "os_support.h"
 #include "nndsp.h"
 #include "float_cast.h"
+#include "arch.h"
 
 #ifdef OSCE_DEBUG
 #include <stdio.h>
@@ -50,9 +51,6 @@
 #endif
 
 #define CLIP(a, min, max) (((a) < (min) ? (min) : (a)) > (max) ? (max) : (a))
-#define MAX(a, b) ((a) < (b) ? (b) : (a))
-
-
 
 extern const WeightArray lacelayers_arrays[];
 extern const WeightArray nolacelayers_arrays[];
@@ -112,8 +110,8 @@ static void lace_feature_net(
     int arch
 )
 {
-    float input_buffer[4 * MAX(LACE_COND_DIM, LACE_HIDDEN_FEATURE_DIM)];
-    float output_buffer[4 * MAX(LACE_COND_DIM, LACE_HIDDEN_FEATURE_DIM)];
+    float input_buffer[4 * IMAX(LACE_COND_DIM, LACE_HIDDEN_FEATURE_DIM)];
+    float output_buffer[4 * IMAX(LACE_COND_DIM, LACE_HIDDEN_FEATURE_DIM)];
     float numbits_embedded[2 * LACE_NUMBITS_EMBEDDING_DIM];
     int i_subframe;
 
@@ -383,8 +381,8 @@ static void nolace_feature_net(
     int arch
 )
 {
-    float input_buffer[4 * MAX(NOLACE_COND_DIM, NOLACE_HIDDEN_FEATURE_DIM)];
-    float output_buffer[4 * MAX(NOLACE_COND_DIM, NOLACE_HIDDEN_FEATURE_DIM)];
+    float input_buffer[4 * IMAX(NOLACE_COND_DIM, NOLACE_HIDDEN_FEATURE_DIM)];
+    float output_buffer[4 * IMAX(NOLACE_COND_DIM, NOLACE_HIDDEN_FEATURE_DIM)];
     float numbits_embedded[2 * NOLACE_NUMBITS_EMBEDDING_DIM];
     int i_subframe;
 
@@ -815,49 +813,47 @@ void osce_reset(silk_OSCE_struct *hOSCE, int method)
 }
 
 
-void osce_init(silk_OSCE_struct *hOSCE, int method)
+int osce_load_models(OSCEModel *model, const unsigned char *data, int len)
 {
-#ifndef USE_WEIGHTS_FILE
-    /* initialize all models */
-#ifndef DISABLE_LACE
-    init_lace(&hOSCE->model.lace, lacelayers_arrays);
-#endif
-
-#ifndef DISABLE_NOLACE
-    init_nolace(&hOSCE->model.nolace, nolacelayers_arrays);
-
-#endif
-
-    osce_reset(hOSCE, method);
-#else
-    (void *) hOSCE;
-    (void) method;
-#endif
-}
-
-#ifdef USE_WEIGHTS_FILE
-int osce_load_models(silk_OSCE_struct *hOSCE, const unsigned char *data, int len)
-{
-    WeightArray *list;
     int ret = 0;
+    WeightArray *list;
+
+    if (data != NULL  && len)
+    {
+        /* init from buffer */
+        parse_weights(&list, data, len);
 
 #ifndef DISABLE_LACE
-    if (ret == 0) {ret = init_lace(&hOSCE->model.lace, list);}
+        if (ret == 0) {ret = init_lace(&model->lace, list);}
 #endif
 
 #ifndef DISABLE_LACE
-    if (ret == 0) {ret = init_nolace(&hOSCE->model.nolace, list);}
+        if (ret == 0) {ret = init_nolace(&model->nolace, list);}
 #endif
 
-    osce_reset(hOSCE, OSCE_DEFAULT_METHOD);
+        free(list);
+    } else
+    {
+#ifdef USE_WEIGHTS_FILE
+        return -1;
+#else
+#ifndef DISABLE_LACE
+        if (ret == 0) {ret = init_lace(&model->lace, lacelayers_arrays);}
+#endif
 
-    free(list);
+#ifndef DISABLE_LACE
+        if (ret == 0) {ret = init_nolace(&model->nolace, nolacelayers_arrays);}
+#endif
 
+#endif /* USE_WEIGHTS_FILE */
+    }
+
+    ret = ret ? -1 : 0;
     return ret;
 }
-#endif
 
 void osce_enhance_frame(
+    OSCEModel                   *model,                         /* I    OSCE model struct                           */
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
     opus_int16                  xq[],                           /* I/O  Decoded speech                              */
@@ -894,12 +890,12 @@ void osce_enhance_frame(
             break;
 #ifndef DISABLE_LACE
         case OSCE_METHOD_LACE:
-            lace_process_20ms_frame(&psDec->osce.model.lace, &psDec->osce.state.lace, out_buffer, in_buffer, features, numbits, periods, arch);
+            lace_process_20ms_frame(&model->lace, &psDec->osce.state.lace, out_buffer, in_buffer, features, numbits, periods, arch);
             break;
 #endif
 #ifndef DISABLE_NOLACE
         case OSCE_METHOD_NOLACE:
-            nolace_process_20ms_frame(&psDec->osce.model.nolace, &psDec->osce.state.nolace, out_buffer, in_buffer, features, numbits, periods, arch);
+            nolace_process_20ms_frame(&model->nolace, &psDec->osce.state.nolace, out_buffer, in_buffer, features, numbits, periods, arch);
             break;
 #endif
         default:

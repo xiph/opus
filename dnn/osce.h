@@ -65,6 +65,7 @@
 
 
 void osce_enhance_frame(
+    OSCEModel                   *model,                         /* I    OSCE model struct                           */
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
     opus_int16                  xq[],                           /* I/O  Decoded speech                              */
@@ -73,8 +74,7 @@ void osce_enhance_frame(
 );
 
 
-void osce_init(silk_OSCE_struct *hOSCE, int method);
-int osce_load_models(silk_OSCE_struct *hOSCE, const unsigned char *data, int len);
+int osce_load_models(OSCEModel *hModel, const unsigned char *data, int len);
 void osce_reset(silk_OSCE_struct *hOSCE, int method);
 
 
