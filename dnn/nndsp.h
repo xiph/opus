@@ -71,7 +71,8 @@ typedef struct {
 
 
 typedef struct {
-    float conv_alpha1_state[ADASHAPE_MAX_INPUT_DIM];
+    float conv_alpha1f_state[ADASHAPE_MAX_INPUT_DIM];
+    float conv_alpha1t_state[ADASHAPE_MAX_INPUT_DIM];
     float conv_alpha2_state[ADASHAPE_MAX_FRAME_SIZE];
 } AdaShapeState;
 
@@ -130,7 +131,8 @@ void adashape_process_frame(
     float *x_out,
     const float *x_in,
     const float *features,
-    const LinearLayer *alpha1,
+    const LinearLayer *alpha1f,
+    const LinearLayer *alpha1t,
     const LinearLayer *alpha2,
     int feature_dim,
     int frame_size,
