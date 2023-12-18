@@ -52,7 +52,7 @@ class TDShaper(nn.Module):
         self.feature_alpha1_t = nn.Conv1d(self.env_dim, frame_size, 2)
         self.feature_alpha2 = nn.Conv1d(frame_size, frame_size, 2)
 
-        if soft_quant:
+        if softquant:
             self.feature_alpha1_f = soft_quant(self.feature_alpha1_f)
 
         if self.innovate:
