@@ -39,7 +39,7 @@
 #include <math.h>
 
 #ifndef M_PI
-#define M_PI 3.141592653
+#define M_PI 3.141592653589793f
 #endif
 
 #define SET_ZERO(x) memset(x, 0, sizeof(x))
@@ -58,6 +58,15 @@ void init_adacomb_state(AdaCombState *hAdaComb)
 void init_adashape_state(AdaShapeState *hAdaShape)
 {
     OPUS_CLEAR(hAdaShape, 1);
+}
+
+void compute_overlap_window(float *window, int overlap_size)
+{
+    int i_sample;
+    for (i_sample=0; i_sample < overlap_size; i_sample++)
+    {
+        window[i_sample] = 0.5f + 0.5f * cos(M_PI * (i_sample + 0.5f) / overlap_size);
+    }
 }
 
 #ifdef DEBUG_NNDSP
@@ -169,15 +178,6 @@ void adaconv_process_frame(
     print_float_vector("x_in", x_in, in_channels * frame_size);
 #endif
 
-    if (window == NULL)
-    {
-        for (i_sample=0; i_sample < overlap_size; i_sample++)
-        {
-            window_buffer[i_sample] = 0.5f + 0.5f * cos(M_PI * (i_sample + 0.5f) / overlap_size);
-        }
-        window = &window_buffer[0];
-    }
-
     /* prepare input */
     for (i_in_channels=0; i_in_channels < in_channels; i_in_channels ++)
     {
@@ -279,16 +279,6 @@ void adacomb_process_frame(
     SET_ZERO(output_buffer);
     SET_ZERO(kernel_buffer);
     SET_ZERO(input_buffer);
-
-
-    if (window == NULL)
-    {
-        for (i_sample=0; i_sample < overlap_size; i_sample++)
-        {
-            window_buffer[i_sample] = 0.5f + 0.5f * cos(M_PI * (i_sample + 0.5f) / overlap_size);
-        }
-        window = &window_buffer[0];
-    }
 
     OPUS_COPY(input_buffer, hAdaComb->history, kernel_size + ADACOMB_MAX_LAG);
     OPUS_COPY(input_buffer + kernel_size + ADACOMB_MAX_LAG, x_in, frame_size);

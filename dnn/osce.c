@@ -91,10 +91,7 @@ static int init_lace(LACE *hLACE, const WeightArray *weights)
 
     ret = init_lacelayers(&hLACE->layers, weights);
 
-    for (i = 0; i < LACE_OVERLAP_SIZE; i ++)
-    {
-        hLACE->window[i] = 0.5f + 0.5f * cos(M_PI * (i + 0.5f) / LACE_OVERLAP_SIZE);
-    }
+    compute_overlap_window(hLACE->window, LACE_OVERLAP_SIZE);
 
     return ret;
 }
@@ -357,13 +354,9 @@ static int init_nolace(NoLACE *hNoLACE, const WeightArray *weights)
     OPUS_CLEAR(hNoLACE, 1);
     celt_assert(weights != NULL);
 
-
     ret = init_nolacelayers(&hNoLACE->layers, weights);
 
-    for (i = 0; i < NOLACE_OVERLAP_SIZE; i ++)
-    {
-        hNoLACE->window[i] = 0.5f + 0.5f * cos(M_PI * (i + 0.5f) / LACE_OVERLAP_SIZE);
-    }
+    compute_overlap_window(hNoLACE->window, NOLACE_OVERLAP_SIZE);
 
     return ret;
 }

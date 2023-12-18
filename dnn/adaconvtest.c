@@ -3,10 +3,14 @@
 #include "osce.h"
 #include "nndsp.h"
 
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 
+
+extern const WeightArray lacelayers_arrays[];
+extern const WeightArray nolacelayers_arrays[];
 
 void adaconv_compare(
     const char * prefix,
@@ -36,8 +40,10 @@ void adaconv_compare(
     float x_in[512];
     float x_out_ref[512];
     float x_out[512];
+    float window[40];
 
     init_adaconv_state(hAdaConv);
+    compute_overlap_window(window, 40);
 
     FILE *f_features, *f_x_in, *f_x_out;
 
@@ -93,7 +99,7 @@ void adaconv_compare(
 
         adaconv_process_frame(hAdaConv, x_out, x_in, features, kernel_layer, gain_layer, feature_dim,
             frame_size, overlap_size, in_channels, out_channels, kernel_size, left_padding,
-            filter_gain_a, filter_gain_b, shape_gain, NULL, 0);
+            filter_gain_a, filter_gain_b, shape_gain, window, 0);
 
         mse = 0;
         for (i_sample = 0; i_sample < frame_size * out_channels; i_sample ++)
@@ -136,8 +142,10 @@ void adacomb_compare(
     float x_out_ref[512];
     float x_out[512];
     int pitch_lag;
+    float window[40];
 
     init_adacomb_state(hAdaComb);
+    compute_overlap_window(window, 40);
 
     FILE *f_features, *f_x_in, *f_p_in, *f_x_out;
 
@@ -208,7 +216,7 @@ void adacomb_compare(
         }
 
         adacomb_process_frame(hAdaComb, x_out, x_in, features, kernel_layer, gain_layer, global_gain_layer,
-            pitch_lag, feature_dim, frame_size, overlap_size, kernel_size, left_padding, filter_gain_a, filter_gain_b, log_gain_limit, NULL, 0);
+            pitch_lag, feature_dim, frame_size, overlap_size, kernel_size, left_padding, filter_gain_a, filter_gain_b, log_gain_limit, window, 0);
 
 
         mse = 0;
@@ -438,5 +446,4 @@ int main()
     return 0;
 }
 
-
-//gcc -DVAR_ARRAYS  -I ../include -I ../silk -I . -I ../celt adaconvtest.c nndsp.c lace_data.c nolace_data.c nnet.c nnet_default.c ../celt/pitch.c ../celt/celt_lpc.c parse_lpcnet_weights.c -lm -o adaconvtest
+/* gcc -DVAR_ARRAYS -DENABLE_OSCE  -I ../include -I ../silk -I . -I ../celt adaconvtest.c nndsp.c lace_data.c nolace_data.c nnet.c nnet_default.c ../celt/pitch.c ../celt/celt_lpc.c parse_lpcnet_weights.c -lm -o adaconvtest */
