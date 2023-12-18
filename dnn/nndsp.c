@@ -84,7 +84,6 @@ static void scale_kernel(
     int in_channels,
     int out_channels,
     int kernel_size,
-    float p,
     float *gain
 )
 /* normalizes (p-norm) kernel over input channel and kernel dimension */
@@ -99,13 +98,13 @@ static void scale_kernel(
         {
             for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
             {
-                norm += pow(kernel[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)], p);
+                norm += kernel[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)] * kernel[KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel)];
             }
         }
 #ifdef DEBUG_NNDSP
-        printf("kernel norm: %f, %f\n", norm, pow(norm, 1.f/p));
+        printf("kernel norm: %f, %f\n", norm, sqrt(norm));
 #endif
-        norm = 1. / (1e-6 + pow(norm, 1.f/p));
+        norm = 1.f / (1e-6f + sqrt(norm));
         for (i_in_channels = 0; i_in_channels < in_channels; i_in_channels++)
         {
             for (i_kernel = 0; i_kernel < kernel_size; i_kernel++)
@@ -159,7 +158,6 @@ void adaconv_process_frame(
     float kernel1[ADACONV_MAX_KERNEL_SIZE];
     float channel_buffer0[ADACONV_MAX_OVERLAP_SIZE];
     float channel_buffer1[ADACONV_MAX_FRAME_SIZE];
-    float window_buffer[ADACONV_MAX_OVERLAP_SIZE];
     float gain_buffer[ADACONV_MAX_OUTPUT_CHANNELS];
     float *p_input;
     int i_in_channels, i_out_channels, i_sample;
@@ -196,7 +194,7 @@ void adaconv_process_frame(
     print_float_vector("adaconv_gain_raw", gain_buffer, out_channels);
 #endif
     transform_gains(gain_buffer, out_channels, filter_gain_a, filter_gain_b);
-    scale_kernel(kernel_buffer, in_channels, out_channels, kernel_size, 2, gain_buffer);
+    scale_kernel(kernel_buffer, in_channels, out_channels, kernel_size, gain_buffer);
 
 #ifdef DEBUG_NNDSP
     print_float_vector("adaconv_kernel", kernel_buffer, in_channels * out_channels * kernel_size);
@@ -267,7 +265,6 @@ void adacomb_process_frame(
     float output_buffer_last[ADACOMB_MAX_FRAME_SIZE];
     float kernel_buffer[ADACOMB_MAX_KERNEL_SIZE];
     float input_buffer[ADACOMB_MAX_FRAME_SIZE + ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE];
-    float window_buffer[ADACOMB_MAX_OVERLAP_SIZE];
     float gain, global_gain;
     float *p_input;
     int i_sample;
@@ -296,7 +293,7 @@ void adacomb_process_frame(
 #endif
     gain = exp(log_gain_limit - gain);
     global_gain = exp(filter_gain_a * global_gain + filter_gain_b);
-    scale_kernel(kernel_buffer, 1, 1, kernel_size, 2, &gain);
+    scale_kernel(kernel_buffer, 1, 1, kernel_size, &gain);
 
 #ifdef DEBUG_NNDSP
     print_float_vector("adacomb_kernel", kernel_buffer, kernel_size);
