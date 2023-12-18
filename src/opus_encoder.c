@@ -2935,7 +2935,9 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             {
                goto bad_arg;
             }
+#ifdef ENABLE_DRED
             ret = dred_encoder_load_model(&st->dred_encoder, data, len);
+#endif
         }
         break;
 #endif
