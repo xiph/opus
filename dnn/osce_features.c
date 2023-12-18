@@ -29,6 +29,8 @@
 #include "config.h"
 #endif
 
+#define OSCE_SPEC_WINDOW_SIZE 320
+#define OSCE_SPEC_NUM_FREQS 161
 
 
 /*DEBUG*/
@@ -93,7 +95,7 @@ static const float band_weights_noisy[18] = {
      0.041666666667f,     0.080000000000f
 };
 
-static float osce_window[320] = {
+static float osce_window[OSCE_SPEC_WINDOW_SIZE] = {
      0.004908718808f,     0.014725683311f,     0.024541228523f,     0.034354408400f,     0.044164277127f,
      0.053969889210f,     0.063770299562f,     0.073564563600f,     0.083351737332f,     0.093130877450f,
      0.102901041421f,     0.112661287575f,     0.122410675199f,     0.132148264628f,     0.141873117332f,
@@ -189,16 +191,16 @@ static void apply_filterbank(float *x_out, float *x_in, const int *center_bins, 
 }
 
 
-static void mag_spec_320_onesided_slow(float *out, float *in)
-/* for temporary use only */
+static void mag_spec_320_onesided(float *out, float *in)
 {
-    kiss_fft_cpx buffer[320];
+    celt_assert(OSCE_SPEC_WINDOW_SIZE == 320);
+    kiss_fft_cpx buffer[OSCE_SPEC_WINDOW_SIZE];
     int k;
     forward_transform(buffer, in);
 
-    for (k = 0; k < 161; k++)
+    for (k = 0; k < OSCE_SPEC_NUM_FREQS; k++)
     {
-        out[k] = 320. * sqrt(buffer[k].r * buffer[k].r + buffer[k].i * buffer[k].i);
+        out[k] = OSCE_SPEC_WINDOW_SIZE * sqrt(buffer[k].r * buffer[k].r + buffer[k].i * buffer[k].i);
 #ifdef DEBUG_PRINT
         printf("magspec[%d]: %f\n", k, out[k]);
 #endif
@@ -208,7 +210,7 @@ static void mag_spec_320_onesided_slow(float *out, float *in)
 
 static void calculate_log_spectrum_from_lpc(float *spec, opus_int16 *a_q12, int lpc_order)
 {
-    float buffer[320] = {0};
+    float buffer[OSCE_SPEC_WINDOW_SIZE] = {0};
     int i;
 
     /* zero expansion */
@@ -219,9 +221,9 @@ static void calculate_log_spectrum_from_lpc(float *spec, opus_int16 *a_q12, int 
     }
 
     /* calculate and invert magnitude spectrum */
-    mag_spec_320_onesided_slow(buffer, buffer);
+    mag_spec_320_onesided(buffer, buffer);
 
-    for (i = 0; i < 161; i++)
+    for (i = 0; i < OSCE_SPEC_NUM_FREQS; i++)
     {
         buffer[i] = 1. / (buffer[i] + 1e-9f);
     }
@@ -238,19 +240,19 @@ static void calculate_log_spectrum_from_lpc(float *spec, opus_int16 *a_q12, int 
 
 static void calculate_cepstrum(float *cepstrum, float *signal)
 {
-    float buffer[320];
-    float *spec = &buffer[164];
+    float buffer[OSCE_SPEC_WINDOW_SIZE];
+    float *spec = &buffer[OSCE_SPEC_NUM_FREQS + 3];
     int n;
 
     celt_assert(cepstrum != signal)
 
-    for (n = 0; n < 320; n++)
+    for (n = 0; n < OSCE_SPEC_WINDOW_SIZE; n++)
     {
         buffer[n] = osce_window[n] * signal[n];
     }
 
     /* calculate magnitude spectrum */
-    mag_spec_320_onesided_slow(buffer, buffer);
+    mag_spec_320_onesided(buffer, buffer);
 
     /* accumulate bands */
     apply_filterbank(spec, buffer, center_bins_noisy, band_weights_noisy, OSCE_NOISY_SPEC_NUM_BANDS);
@@ -445,7 +447,7 @@ void osce_cross_fade_10ms(float *x_enhanced, float *x_in, int length)
 
     for (i = 0; i < 160; i++)
     {
-        x_enhanced[i] = osce_window[i] * x_enhanced[i] + (1 - osce_window[i]) * x_in[i];
+        x_enhanced[i] = osce_window[i] * x_enhanced[i] + (1.f - osce_window[i]) * x_in[i];
     }
 
 
