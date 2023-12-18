@@ -33,13 +33,15 @@ from torch import nn
 import torch.nn.functional as F
 
 from utils.complexity import _conv1d_flop_count
+from utils.softquant import soft_quant
 
 class SilkFeatureNetPL(nn.Module):
     """ feature net with partial lookahead """
     def __init__(self,
                  feature_dim=47,
                  num_channels=256,
-                 hidden_feature_dim=64):
+                 hidden_feature_dim=64,
+                 softquant=False):
 
         super(SilkFeatureNetPL, self).__init__()
 
@@ -50,8 +52,14 @@ class SilkFeatureNetPL(nn.Module):
         self.conv1 = nn.Conv1d(feature_dim, self.hidden_feature_dim, 1)
         self.conv2 = nn.Conv1d(4 * self.hidden_feature_dim, num_channels, 2)
         self.tconv = nn.ConvTranspose1d(num_channels, num_channels, 4, 4)
-
         self.gru = nn.GRU(num_channels, num_channels, batch_first=True)
+
+        if softquant:
+            self.conv2 = soft_quant(self.conv2)
+            self.tconv = soft_quant(self.tconv)
+            self.gru = soft_quant(self.gru, names=['weight_hh_l0', 'weight_ih_l0'])
+
+
 
     def flop_count(self, rate=200):
         count = 0
@@ -82,7 +90,7 @@ class SilkFeatureNetPL(nn.Module):
         c = torch.tanh(self.conv2(F.pad(c, [1, 0])))
 
         # upsampling
-        c = self.tconv(c)
+        c = torch.tanh(self.tconv(c))
         c = c.permute(0, 2, 1)
 
         c, _ = self.gru(c, state)

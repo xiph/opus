@@ -153,7 +153,7 @@ def dump_torch_adaptive_comb1d_weights(where, adaconv, name='adaconv', scale=1/1
         np.save(where, 'weight_global_gain.npy', w_global_gain)
         np.save(where, 'bias_global_gain.npy', b_global_gain)
 
-def dump_torch_tdshaper(where, shaper, name='tdshaper'):
+def dump_torch_tdshaper(where, shaper, name='tdshaper', quantize=False, scale=1/128):
 
     if isinstance(where, CWriter):
         where.header.write(f"""
@@ -165,7 +165,8 @@ def dump_torch_tdshaper(where, shaper, name='tdshaper'):
 """
         )
 
-    dump_torch_conv1d_weights(where, shaper.feature_alpha1, name + "_alpha1")
+    dump_torch_conv1d_weights(where, shaper.feature_alpha1_f, name + "_alpha1_f", quantize=quantize, scale=scale)
+    dump_torch_conv1d_weights(where, shaper.feature_alpha1_t, name + "_alpha1_t")
     dump_torch_conv1d_weights(where, shaper.feature_alpha2, name + "_alpha2")
 
     if shaper.innovate:

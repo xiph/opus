@@ -50,7 +50,8 @@ lace_setup = {
             'pitch_embedding_dim': 64,
             'pitch_max': 300,
             'preemph': 0.85,
-            'skip': 91
+            'skip': 91,
+            'softquant': True
         }
     },
     'data': {
@@ -63,7 +64,7 @@ lace_setup = {
         'num_bands_clean_spec': 64,
         'num_bands_noisy_spec': 18,
         'noisy_spec_scale': 'opus',
-        'pitch_hangover': 8,
+        'pitch_hangover': 0,
     },
     'training': {
         'batch_size': 256,
@@ -106,7 +107,8 @@ nolace_setup = {
             'pitch_embedding_dim': 64,
             'pitch_max': 300,
             'preemph': 0.85,
-            'skip': 91
+            'skip': 91,
+            'softquant': True
         }
     },
     'data': {
@@ -119,7 +121,7 @@ nolace_setup = {
         'num_bands_clean_spec': 64,
         'num_bands_noisy_spec': 18,
         'noisy_spec_scale': 'opus',
-        'pitch_hangover': 8,
+        'pitch_hangover': 0,
     },
     'training': {
         'batch_size': 256,
@@ -160,7 +162,8 @@ nolace_setup_adv = {
             'pitch_embedding_dim': 64,
             'pitch_max': 300,
             'preemph': 0.85,
-            'skip': 91
+            'skip': 91,
+            'softquant': True
         }
     },
     'data': {
@@ -173,7 +176,7 @@ nolace_setup_adv = {
         'num_bands_clean_spec': 64,
         'num_bands_noisy_spec': 18,
         'noisy_spec_scale': 'opus',
-        'pitch_hangover': 8,
+        'pitch_hangover': 0,
     },
     'discriminator': {
         'args': [],
