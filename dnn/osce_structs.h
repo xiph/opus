@@ -55,7 +55,7 @@ typedef struct {
 /* LACE */
 typedef struct {
     float feature_net_conv2_state[LACE_FEATURE_NET_CONV2_STATE_SIZE];
-    float feature_net_gru_state[LACE_COND_DIM]; /* ToDo: fix! */
+    float feature_net_gru_state[LACE_COND_DIM];
     AdaCombState cf1_state;
     AdaCombState cf2_state;
     AdaConvState af1_state;
