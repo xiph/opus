@@ -35,6 +35,7 @@
 #include "osce_features.h"
 #include "os_support.h"
 #include "nndsp.h"
+#include "float_cast.h"
 
 #ifdef OSCE_DEBUG
 #include <stdio.h>
@@ -883,7 +884,7 @@ void osce_enhance_frame(
     /* scale input */
     for (i = 0; i < 320; i++)
     {
-        in_buffer[i] = ((float) xq[i]) / (1U<<15);
+        in_buffer[i] = ((float) xq[i]) * (1.f/32768.f);
     }
 
     switch(psDec->osce.method)
@@ -979,11 +980,10 @@ void osce_enhance_frame(
     /* scale output */
     for (i = 0; i < 320; i++)
     {
-        float tmp = round((1U<<15) * out_buffer[i]);
-
+        float tmp = (1U<<15) * out_buffer[i];
         if (tmp > INT16_MAX) tmp = INT16_MAX;
         if (tmp < INT16_MIN) tmp = INT16_MIN;
-        xq[i] = (opus_int16) tmp;
+        xq[i] = float2int(tmp);
     }
 
 }
