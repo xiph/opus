@@ -159,7 +159,7 @@ if __name__ == "__main__":
 ''')
 
     for i, s in enumerate(model.numbits_embedding.scale_factors):
-        cwriter.header.write(f"#define {model_name.upper()}_NUMBITS_SCALE_{i} {float(s.detach().cpu())}\n")
+        cwriter.header.write(f"#define {model_name.upper()}_NUMBITS_SCALE_{i} {float(s.detach().cpu())}f\n")
 
     # dump layers
     if model_name in schedules and args.quantize:
