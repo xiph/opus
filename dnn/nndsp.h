@@ -81,6 +81,8 @@ void init_adacomb_state(AdaCombState *hAdaComb);
 
 void init_adashape_state(AdaShapeState *hAdaShape);
 
+void compute_overlap_window(float *window, int overlap_size);
+
 void adaconv_process_frame(
     AdaConvState* hAdaConv,
     float *x_out,
