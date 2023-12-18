@@ -32,6 +32,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from utils.endoscopy import write_data
+from utils.softquant import soft_quant
 
 class LimitedAdaptiveComb1d(nn.Module):
     COUNTER = 1
@@ -47,6 +48,7 @@ class LimitedAdaptiveComb1d(nn.Module):
                  gain_limit_db=10,
                  global_gain_limits_db=[-6, 6],
                  norm_p=2,
+                 softquant=False,
                  **kwargs):
         """
 
@@ -99,6 +101,9 @@ class LimitedAdaptiveComb1d(nn.Module):
 
         # network for generating convolution weights
         self.conv_kernel = nn.Linear(feature_dim, kernel_size)
+
+        if softquant:
+            self.conv_kernel = soft_quant(self.conv_kernel)
 
 
         # comb filter gain
