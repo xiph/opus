@@ -42,7 +42,6 @@
 #define M_PI 3.141592653589793f
 #endif
 
-#define SET_ZERO(x) memset(x, 0, sizeof(x))
 #define KERNEL_INDEX(i_out_channels, i_in_channels, i_kernel) ((((i_out_channels) * in_channels) + (i_in_channels)) * kernel_size + (i_kernel))
 
 void init_adaconv_state(AdaConvState *hAdaConv)
@@ -168,9 +167,9 @@ void adaconv_process_frame(
     celt_assert(left_padding == kernel_size - 1); /* currently only supports causal version. Non-causal version not difficult to implement but will require third loop */
     celt_assert(kernel_size < frame_size);
 
-    SET_ZERO(output_buffer);
-    SET_ZERO(kernel_buffer);
-    SET_ZERO(input_buffer);
+    OPUS_CLEAR(output_buffer, ADACONV_MAX_FRAME_SIZE * ADACONV_MAX_OUTPUT_CHANNELS);
+    OPUS_CLEAR(kernel_buffer, ADACONV_MAX_KERNEL_SIZE * ADACONV_MAX_INPUT_CHANNELS * ADACONV_MAX_OUTPUT_CHANNELS);
+    OPUS_CLEAR(input_buffer, ADACONV_MAX_INPUT_CHANNELS * (ADACONV_MAX_FRAME_SIZE + ADACONV_MAX_KERNEL_SIZE));
 
 #ifdef DEBUG_NNDSP
     print_float_vector("x_in", x_in, in_channels * frame_size);
@@ -273,9 +272,9 @@ void adacomb_process_frame(
 
     (void) feature_dim; /* ToDo: figure out whether we might need this information */
 
-    SET_ZERO(output_buffer);
-    SET_ZERO(kernel_buffer);
-    SET_ZERO(input_buffer);
+    OPUS_CLEAR(output_buffer, ADACOMB_MAX_FRAME_SIZE);
+    OPUS_CLEAR(kernel_buffer, ADACOMB_MAX_KERNEL_SIZE);
+    OPUS_CLEAR(input_buffer, ADACOMB_MAX_FRAME_SIZE + ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE);
 
     OPUS_COPY(input_buffer, hAdaComb->history, kernel_size + ADACOMB_MAX_LAG);
     OPUS_COPY(input_buffer + kernel_size + ADACOMB_MAX_LAG, x_in, frame_size);

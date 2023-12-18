@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef ENABLE_OSCE
 #include "osce.h"
+#include "osce_structs.h"
 #endif
 
 /************************/
@@ -46,6 +47,9 @@ typedef struct {
     opus_int                         nChannelsAPI;
     opus_int                         nChannelsInternal;
     opus_int                         prev_decode_only_middle;
+#ifdef ENABLE_OSCE
+    OSCEModel                        osce_model;
+#endif
 } silk_decoder;
 
 /*********************/
@@ -56,14 +60,10 @@ typedef struct {
 
 opus_int silk_LoadOSCEModels(void *decState, const unsigned char *data, int len)
 {
-#if defined(ENABLE_OSCE) && defined(USE_WEIGHTS_FILE)
-    opus_int n, ret = SILK_NO_ERROR;
+#ifdef ENABLE_OSCE
+    opus_int ret = SILK_NO_ERROR;
 
-    silk_decoder_state *channel_state = ((silk_decoder *)decState)->channel_state;
-
-    for ( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
-        ret |= osce_load_models(&channel_state[n].osce, data, len);
-    }
+    ret = osce_load_models(&((silk_decoder *)decState)->osce_model, data, len);
 
     return ret;
 #else
@@ -110,6 +110,11 @@ opus_int silk_InitDecoder(                              /* O    Returns error co
 {
     opus_int n, ret = SILK_NO_ERROR;
     silk_decoder_state *channel_state = ((silk_decoder *)decState)->channel_state;
+
+#ifndef USE_WEIGHTS_FILE
+    /* load osce models */
+    silk_LoadOSCEModels(decState, NULL, 0);
+#endif
 
     for( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
         ret  = silk_init_decoder( &channel_state[ n ] );
@@ -351,6 +356,9 @@ opus_int silk_Decode(                                   /* O    Returns error co
             ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding,
 #ifdef ENABLE_DEEP_PLC
                 n == 0 ? lpcnet : NULL,
+#endif
+#ifdef ENABLE_OSCE
+                &psDec->osce_model,
 #endif
                 arch);
         } else {
