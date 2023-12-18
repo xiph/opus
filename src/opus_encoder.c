@@ -1044,7 +1044,7 @@ static opus_int32 opus_encode_native_process(OpusEncoder *st, const opus_val16 *
                 AnalysisInfo *analysis_info, int is_silence,
 #endif
                 int redundancy, int celt_to_silk, int prefill, opus_int32 max_data_bytes,
-                opus_int activity, opus_int32 equiv_rate, int to_celt);
+                opus_int32 equiv_rate, int to_celt);
 
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
@@ -1076,8 +1076,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifdef ENABLE_DRED
     opus_int32 dred_bitrate_bps;
 #endif
-    opus_int activity = VAD_NO_DECISION;
-
     ALLOC_STACK;
 
     max_data_bytes = IMIN(1276, out_data_bytes);
@@ -1138,20 +1136,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
      * Otherwise, preserve voice_ratio from the last non-silent frame */
     if (!is_silence)
       st->voice_ratio = -1;
-
-    if (is_silence)
-    {
-       activity = !is_silence;
-    } else if (analysis_info.valid)
-    {
-       activity = analysis_info.activity_probability >= DTX_ACTIVITY_THRESHOLD;
-       if (!activity)
-       {
-           /* Mark as active if this noise frame is sufficiently loud */
-           opus_val32 noise_energy = compute_frame_energy(pcm, frame_size, st->channels, st->arch);
-           activity = st->peak_signal_energy < (PSEUDO_SNR_THRESHOLD * noise_energy);
-       }
-    }
 
     st->detected_bandwidth = 0;
     if (analysis_info.valid)
@@ -1631,8 +1615,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           frame_redundancy = redundancy && (frame_to_celt || (!to_celt && i==0));
 
 #ifndef DISABLE_FLOAT_API
-          /* Get analysis for current frame. */
-          tonality_get_info(&st->analysis, &analysis_info, enc_frame_size);
+          if (analysis_read_pos_bak != -1) {
+            is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
+            /* Get analysis for current frame. */
+            tonality_get_info(&st->analysis, &analysis_info, enc_frame_size);
+          }
 #endif
 
           tmp_len = opus_encode_native_process(st, pcm+i*(st->channels*enc_frame_size), enc_frame_size, tmp_data+i*bytes_per_frame, float_api, first_frame,
@@ -1644,7 +1631,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           is_silence,
 #endif
                     frame_redundancy, celt_to_silk, prefill, bytes_per_frame,
-                    activity, equiv_rate, frame_to_celt
+                    equiv_rate, frame_to_celt
               );
 
           if (tmp_len<0)
@@ -1679,7 +1666,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     is_silence,
 #endif
                 redundancy, celt_to_silk, prefill, max_data_bytes,
-                activity, equiv_rate, to_celt
+                equiv_rate, to_celt
           );
       RESTORE_STACK;
       return ret;
@@ -1696,7 +1683,7 @@ static opus_int32 opus_encode_native_process(OpusEncoder *st, const opus_val16 *
                 AnalysisInfo *analysis_info, int is_silence,
 #endif
                 int redundancy, int celt_to_silk, int prefill, opus_int32 max_data_bytes,
-                opus_int activity, opus_int32 equiv_rate, int to_celt)
+                opus_int32 equiv_rate, int to_celt)
 {
     void *silk_enc;
     CELTEncoder *celt_enc;
@@ -1718,6 +1705,7 @@ static opus_int32 opus_encode_native_process(OpusEncoder *st, const opus_val16 *
     int curr_bandwidth;
     int delay_compensation;
     int total_buffer;
+    opus_int activity = VAD_NO_DECISION;
     VARDECL(opus_val16, pcm_buf);
     VARDECL(opus_val16, tmp_prefill);
 
@@ -1733,6 +1721,23 @@ static opus_int32 opus_encode_native_process(OpusEncoder *st, const opus_val16 *
     total_buffer = delay_compensation;
 
     frame_rate = st->Fs/frame_size;
+
+#ifndef DISABLE_FLOAT_API
+    if (is_silence)
+    {
+       activity = !is_silence;
+    } else if (analysis_info->valid)
+    {
+       activity = analysis_info->activity_probability >= DTX_ACTIVITY_THRESHOLD;
+       if (!activity)
+       {
+           /* Mark as active if this noise frame is sufficiently loud */
+           opus_val32 noise_energy = compute_frame_energy(pcm, frame_size, st->channels, st->arch);
+           activity = st->peak_signal_energy < (PSEUDO_SNR_THRESHOLD * noise_energy);
+       }
+    }
+#endif
+
     /* For the first frame at a new SILK bandwidth */
     if (st->silk_bw_switch)
     {
