@@ -105,10 +105,12 @@ opus_int silk_decode_frame(
         silk_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
         silk_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
 
+#ifdef ENABLE_OSCE
         /********************************************************/
         /* Run SILK enhancer                                    */
         /********************************************************/
         osce_enhance_frame( psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
+#endif
 
         /********************************************************/
         /* Update PLC state                                     */
