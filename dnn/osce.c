@@ -48,10 +48,6 @@
 #include <stdio.h>
 #endif
 
-#ifndef M_PI
-#define M_PI 3.141592653
-#endif
-
 #define CLIP(a, min, max) (((a) < (min) ? (min) : (a)) > (max) ? (max) : (a))
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 
@@ -85,7 +81,7 @@ static void compute_lace_numbits_embedding(float *emb, float numbits, int dim, f
 
 static int init_lace(LACE *hLACE, const WeightArray *weights)
 {
-    int i, ret = 0;
+    int ret = 0;
     OPUS_CLEAR(hLACE, 1);
     celt_assert(weights != NULL);
 
@@ -350,7 +346,7 @@ static void compute_nolace_numbits_embedding(float *emb, float numbits, int dim,
 
 static int init_nolace(NoLACE *hNoLACE, const WeightArray *weights)
 {
-    int i, ret = 0;
+    int ret = 0;
     OPUS_CLEAR(hNoLACE, 1);
     celt_assert(weights != NULL);
 
