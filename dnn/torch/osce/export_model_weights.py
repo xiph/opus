@@ -147,7 +147,7 @@ if __name__ == "__main__":
 
     # Add custom includes and global parameters
     cwriter.header.write(f'''
-#define {model_name.upper()}_PREEMPH {model.preemph}
+#define {model_name.upper()}_PREEMPH {model.preemph}f
 #define {model_name.upper()}_FRAME_SIZE {model.FRAME_SIZE}
 #define {model_name.upper()}_OVERLAP_SIZE 40
 #define {model_name.upper()}_NUM_FEATURES {model.num_features}
