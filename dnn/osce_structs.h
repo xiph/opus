@@ -54,7 +54,7 @@ typedef struct {
 #ifndef DISABLE_LACE
 /* LACE */
 typedef struct {
-    float feature_net_conv2_state[LACE_FEATURE_NET_CONV2_STATE_SIZE];
+    float feature_net_conv2_state[LACE_FNET_CONV2_STATE_SIZE];
     float feature_net_gru_state[LACE_COND_DIM];
     AdaCombState cf1_state;
     AdaCombState cf2_state;
@@ -75,7 +75,7 @@ typedef struct
 #ifndef DISABLE_NOLACE
 /* NoLACE */
 typedef struct {
-    float feature_net_conv2_state[NOLACE_FEATURE_NET_CONV2_STATE_SIZE];
+    float feature_net_conv2_state[NOLACE_FNET_CONV2_STATE_SIZE];
     float feature_net_gru_state[NOLACE_COND_DIM];
     float post_cf1_state[NOLACE_COND_DIM];
     float post_cf2_state[NOLACE_COND_DIM];

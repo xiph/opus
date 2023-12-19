@@ -50,7 +50,7 @@ int parse_record(const unsigned char **data, int *len, WeightArray *array) {
   *len -= h->block_size+WEIGHT_BLOCK_SIZE;
   return array->size;
 }
-
+#include <stdio.h>
 int parse_weights(WeightArray **list, const unsigned char *data, int len)
 {
   int nb_arrays=0;
@@ -67,6 +67,7 @@ int parse_weights(WeightArray **list, const unsigned char *data, int len)
         *list = realloc(*list, capacity*sizeof(WeightArray));
       }
       (*list)[nb_arrays++] = array;
+      printf("loading weight %s\n", array.name);
     } else {
       free(*list);
       *list = NULL;
