@@ -56,9 +56,10 @@ void write_weights(const WeightArray *list, FILE *fout)
   int i=0;
   unsigned char zeros[WEIGHT_BLOCK_SIZE] = {0};
   while (list[i].name != NULL) {
-    printf("writing weight %s\n", list[i].name);
     WeightHead h;
-    celt_assert(strlen(list[i].name) < sizeof(h.name) - 1 && "name too long in write_weights");
+    if (strlen(list[i].name) >= sizeof(h.name) - 1) {
+      printf("[write_weights] warning: name %s too long\n", list[i].name);
+    }
     memcpy(h.head, "DNNw", 4);
     h.version = WEIGHT_BLOB_VERSION;
     h.type = list[i].type;
