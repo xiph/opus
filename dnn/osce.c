@@ -128,7 +128,7 @@ static void lace_feature_net(
         OPUS_COPY(input_buffer + LACE_NUM_FEATURES + LACE_PITCH_EMBEDDING_DIM, numbits_embedded, 2 * LACE_NUMBITS_EMBEDDING_DIM);
 
         compute_generic_conv1d(
-            &hLACE->layers.lace_feature_net_conv1,
+            &hLACE->layers.lace_fnet_conv1,
             output_buffer + i_subframe * LACE_HIDDEN_FEATURE_DIM,
             NULL,
             input_buffer,
@@ -140,7 +140,7 @@ static void lace_feature_net(
     /* subframe accumulation */
     OPUS_COPY(input_buffer, output_buffer, 4 * LACE_HIDDEN_FEATURE_DIM);
     compute_generic_conv1d(
-        &hLACE->layers.lace_feature_net_conv2,
+        &hLACE->layers.lace_fnet_conv2,
         output_buffer,
         state->feature_net_conv2_state,
         input_buffer,
@@ -152,7 +152,7 @@ static void lace_feature_net(
     /* tconv upsampling */
     OPUS_COPY(input_buffer, output_buffer, 4 * LACE_COND_DIM);
     compute_generic_dense(
-        &hLACE->layers.lace_feature_net_tconv,
+        &hLACE->layers.lace_fnet_tconv,
         output_buffer,
         input_buffer,
         ACTIVATION_LINEAR,
@@ -164,8 +164,8 @@ static void lace_feature_net(
     for (i_subframe = 0; i_subframe < 4; i_subframe++)
     {
         compute_generic_gru(
-            &hLACE->layers.lace_feature_net_gru_input,
-            &hLACE->layers.lace_feature_net_gru_recurrent,
+            &hLACE->layers.lace_fnet_gru_input,
+            &hLACE->layers.lace_fnet_gru_recurrent,
             state->feature_net_gru_state,
             input_buffer + i_subframe * LACE_COND_DIM,
             arch
@@ -399,7 +399,7 @@ static void nolace_feature_net(
         OPUS_COPY(input_buffer + NOLACE_NUM_FEATURES + NOLACE_PITCH_EMBEDDING_DIM, numbits_embedded, 2 * NOLACE_NUMBITS_EMBEDDING_DIM);
 
         compute_generic_conv1d(
-            &hNoLACE->layers.nolace_feature_net_conv1,
+            &hNoLACE->layers.nolace_fnet_conv1,
             output_buffer + i_subframe * NOLACE_HIDDEN_FEATURE_DIM,
             NULL,
             input_buffer,
@@ -411,7 +411,7 @@ static void nolace_feature_net(
     /* subframe accumulation */
     OPUS_COPY(input_buffer, output_buffer, 4 * NOLACE_HIDDEN_FEATURE_DIM);
     compute_generic_conv1d(
-        &hNoLACE->layers.nolace_feature_net_conv2,
+        &hNoLACE->layers.nolace_fnet_conv2,
         output_buffer,
         state->feature_net_conv2_state,
         input_buffer,
@@ -423,7 +423,7 @@ static void nolace_feature_net(
     /* tconv upsampling */
     OPUS_COPY(input_buffer, output_buffer, 4 * NOLACE_COND_DIM);
     compute_generic_dense(
-        &hNoLACE->layers.nolace_feature_net_tconv,
+        &hNoLACE->layers.nolace_fnet_tconv,
         output_buffer,
         input_buffer,
         ACTIVATION_LINEAR,
@@ -435,8 +435,8 @@ static void nolace_feature_net(
     for (i_subframe = 0; i_subframe < 4; i_subframe++)
     {
         compute_generic_gru(
-            &hNoLACE->layers.nolace_feature_net_gru_input,
-            &hNoLACE->layers.nolace_feature_net_gru_recurrent,
+            &hNoLACE->layers.nolace_fnet_gru_input,
+            &hNoLACE->layers.nolace_fnet_gru_recurrent,
             state->feature_net_gru_state,
             input_buffer + i_subframe * NOLACE_COND_DIM,
             arch
@@ -812,6 +812,63 @@ void osce_reset(silk_OSCE_struct *hOSCE, int method)
     hOSCE->features.reset = 2;
 }
 
+
+#if 0
+#include <stdio.h>
+static void print_float_array(FILE *fid, const char  *name, const float *array, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        fprintf(fid, "%s[%d]: %f\n", name, i, array[i]);
+    }
+}
+
+static void print_int_array(FILE *fid, const char  *name, const int *array, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        fprintf(fid, "%s[%d]: %d\n", name, i, array[i]);
+    }
+}
+
+static void print_int8_array(FILE *fid, const char  *name, const opus_int8 *array, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        fprintf(fid, "%s[%d]: %d\n", name, i, array[i]);
+    }
+}
+
+static void print_linear_layer(FILE *fid, const char *name, LinearLayer *layer)
+{
+    int i, n_in, n_out, n_total;
+    char tmp[256];
+
+    n_in = layer->nb_inputs;
+    n_out = layer->nb_outputs;
+    n_total = n_in * n_out;
+
+    fprintf(fid, "\nprinting layer %s...\n", name);
+    fprintf(fid, "%s.nb_inputs: %d\n%s.nb_outputs: %d\n", name, n_in, name, n_out);
+
+    if (layer->bias !=NULL){}
+    if (layer->subias !=NULL){}
+    if (layer->weights !=NULL){}
+    if (layer->float_weights !=NULL){}
+
+    if (layer->bias != NULL) {sprintf(tmp, "%s.bias", name); print_float_array(fid, tmp, layer->bias, n_out);}
+    if (layer->subias != NULL) {sprintf(tmp, "%s.subias", name); print_float_array(fid, tmp, layer->subias, n_out);}
+    if (layer->weights != NULL) {sprintf(tmp, "%s.weights", name); print_int8_array(fid, tmp, layer->weights, n_total);}
+    if (layer->float_weights != NULL) {sprintf(tmp, "%s.float_weights", name); print_float_array(fid, tmp, layer->float_weights, n_total);}
+    //if (layer->weights_idx != NULL) {sprintf(tmp, "%s.weights_idx", name); print_float_array(fid, tmp, layer->weights_idx, n_total);}
+    if (layer->diag != NULL) {sprintf(tmp, "%s.diag", name); print_float_array(fid, tmp, layer->diag, n_in);}
+    if (layer->scale != NULL) {sprintf(tmp, "%s.scale", name); print_float_array(fid, tmp, layer->scale, n_out);}
+
+}
+#endif
 
 int osce_load_models(OSCEModel *model, const unsigned char *data, int len)
 {

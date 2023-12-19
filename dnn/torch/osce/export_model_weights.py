@@ -111,11 +111,13 @@ def osce_dump_generic(writer, name, module):
                         dump_torch_weights(writer, module, name=name, verbose=True)
     else:
         for child_name, child in module.named_children():
-            osce_dump_generic(writer, name + "_" + child_name, child)
+            osce_dump_generic(writer, (name + "_" + child_name).replace("feature_net", "fnet"), child)
 
 
 def export_name(name):
-    return name.replace('.', '_')
+    name = name.replace('.', '_')
+    name = name.replace('feature_net', 'fnet')
+    return name
 
 def osce_scheduled_dump(writer, prefix, model, schedule):
     if not prefix.endswith('_'):
