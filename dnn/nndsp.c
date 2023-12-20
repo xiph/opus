@@ -216,7 +216,7 @@ void adaconv_process_frame(
             for (i_sample = 0; i_sample < overlap_size; i_sample++)
             {
                 output_buffer[i_sample + i_out_channels * frame_size] +=  window[i_sample] * channel_buffer0[i_sample];
-                output_buffer[i_sample + i_out_channels * frame_size] += (1 - window[i_sample]) * channel_buffer1[i_sample];
+                output_buffer[i_sample + i_out_channels * frame_size] += (1.f - window[i_sample]) * channel_buffer1[i_sample];
             }
             for (i_sample = overlap_size; i_sample < frame_size; i_sample++)
             {
@@ -309,12 +309,12 @@ void adacomb_process_frame(
     celt_pitch_xcorr(kernel, &p_input[- left_padding - pitch_lag], output_buffer, ADACOMB_MAX_KERNEL_SIZE, frame_size, arch);
     for (i_sample = 0; i_sample < overlap_size; i_sample++)
     {
-      output_buffer[i_sample] = hAdaComb->last_global_gain * window[i_sample] * output_buffer_last[i_sample] + global_gain * (1 - window[i_sample]) * output_buffer[i_sample];
+      output_buffer[i_sample] = hAdaComb->last_global_gain * window[i_sample] * output_buffer_last[i_sample] + global_gain * (1.f - window[i_sample]) * output_buffer[i_sample];
     }
 
     for (i_sample = 0; i_sample < overlap_size; i_sample++)
     {
-      output_buffer[i_sample] += (window[i_sample] * hAdaComb->last_global_gain + (1 - window[i_sample]) * global_gain) * p_input[i_sample];
+      output_buffer[i_sample] += (window[i_sample] * hAdaComb->last_global_gain + (1.f - window[i_sample]) * global_gain) * p_input[i_sample];
     }
 
     for (i_sample = overlap_size; i_sample < frame_size; i_sample++)
@@ -396,7 +396,7 @@ void adashape_process_frame(
     /* compute leaky ReLU by hand. ToDo: try tanh activation */
     for (i = 0; i < frame_size; i ++)
     {
-        in_buffer[i] = out_buffer[i] >= 0 ? out_buffer[i] : 0.2 * out_buffer[i];
+        in_buffer[i] = out_buffer[i] >= 0 ? out_buffer[i] : 0.2f * out_buffer[i];
     }
 #ifdef DEBUG_NNDSP
     print_float_vector("post_alpha1", in_buffer, frame_size);

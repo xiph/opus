@@ -225,7 +225,7 @@ static void calculate_log_spectrum_from_lpc(float *spec, opus_int16 *a_q12, int 
 
     for (i = 0; i < OSCE_SPEC_NUM_FREQS; i++)
     {
-        buffer[i] = 1. / (buffer[i] + 1e-9f);
+        buffer[i] = 1.f / (buffer[i] + 1e-9f);
     }
 
     /* apply filterbank */
