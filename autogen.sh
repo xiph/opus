@@ -9,7 +9,7 @@ set -e
 srcdir=`dirname $0`
 test -n "$srcdir" && cd "$srcdir"
 
-dnn/download_model.sh c942e22
+dnn/download_model.sh 591c8ba
 
 echo "Updating build configuration files, please wait...."
 
