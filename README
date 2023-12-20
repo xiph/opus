@@ -21,7 +21,10 @@ To activate LACE as enhancement model, set the decoder complexity to 6, i.e.
 
 ./opus_demo voip 16000 1 9000 -dec_complecity 6 in_16kHz.pcm out.pcm
 
-and to run opus without enhancement set the decoder complexity to 5 or lower.
+and to run opus without enhancement set the decoder complexity to 5 or lower. Please note that
+LACE and NoLACE are designed to enhance wideband speech and that the encoder may reduce the
+bandwidth, e.g., for CBR encoding below 8 kb/s. In such casees, no enhancement is applied. The same
+is true when using 10-ms frames instead of the default 20-ms frames.
 
 
 == Opus audio codec ==
