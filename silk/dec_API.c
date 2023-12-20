@@ -351,7 +351,9 @@ opus_int silk_Decode(                                   /* O    Returns error co
                 condCoding = CODE_CONDITIONALLY;
             }
 #ifdef ENABLE_OSCE
-            if (channel_state[n].osce.method != decControl->osce_method) {osce_reset(&channel_state[n].osce, decControl->osce_method);}
+            if ( channel_state[n].osce.method != decControl->osce_method ) {
+                osce_reset( &channel_state[n].osce, decControl->osce_method );
+            }
 #endif
             ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding,
 #ifdef ENABLE_DEEP_PLC
