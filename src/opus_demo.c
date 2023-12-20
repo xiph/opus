@@ -690,14 +690,11 @@ int main(int argc, char *argv[])
        {
           opus_encoder_ctl(enc, OPUS_SET_DRED_DURATION(dred_duration));
        }
-<<<<<<< HEAD
-=======
 
 #ifdef ENABLE_OSCE_TRAINING_DATA
         /* force encoder to use SILK for the time being */
         opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY));
 #endif
->>>>>>> 895fb562 (osce enabled by default, dec_complexity=10)
     }
     if (!encode_only)
     {
