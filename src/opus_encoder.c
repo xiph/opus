@@ -2124,7 +2124,7 @@ static opus_int32 opus_encode_native_process(OpusEncoder *st, const opus_val16 *
             max_celt_bytes = nb_compr_bytes - dred_bytes*3/4;
             /* But try to give CELT at least 5 bytes to prevent a mismatch with
                the redundancy signaling. */
-            max_celt_bytes = IMAX((ec_tell(&enc)+7)/8 + 8, max_celt_bytes);
+            max_celt_bytes = IMAX((ec_tell(&enc)+7)/8 + 5, max_celt_bytes);
             /* Subject to the original max. */
             nb_compr_bytes = IMIN(nb_compr_bytes, max_celt_bytes);
         }
