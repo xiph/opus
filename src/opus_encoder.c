@@ -2232,7 +2232,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
               return OPUS_INTERNAL_ERROR;
            }
            /* Put CELT->SILK redundancy data in the right place. */
-           if (redundancy && celt_to_silk && st->mode==MODE_HYBRID && st->use_vbr)
+           if (redundancy && celt_to_silk && st->mode==MODE_HYBRID && nb_compr_bytes != ret)
            {
               OPUS_MOVE(data+ret, data+nb_compr_bytes, redundancy_bytes);
               nb_compr_bytes = ret+redundancy_bytes;
