@@ -32,13 +32,13 @@ class LossDataset(torch.utils.data.Dataset):
         return [self.loss[index, :, :], self.perc[index, :, :]+r0+r1]
 
 
-adam_betas = [0.8, 0.99]
+adam_betas = [0.8, 0.98]
 adam_eps = 1e-8
-batch_size=512
-lr_decay = 0.0001
-lr = 0.001
+batch_size=256
+lr_decay = 0.001
+lr = 0.003
 epsilon = 1e-5
-epochs = 20
+epochs = 2000
 checkpoint_dir='checkpoint'
 os.makedirs(checkpoint_dir, exist_ok=True)
 checkpoint = dict()

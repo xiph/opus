@@ -18,10 +18,7 @@ args = parser.parse_args()
 
 
 checkpoint = torch.load(args.model, map_location='cpu')
-
 model = lossgen.LossGen(*checkpoint['model_args'], **checkpoint['model_kwargs'])
-
-
 model.load_state_dict(checkpoint['state_dict'], strict=False)
 
 states=None

@@ -8,7 +8,8 @@ class LossGen(nn.Module):
 
         self.gru1_size = gru1_size
         self.gru2_size = gru2_size
-        self.gru1 = nn.GRU(2, self.gru1_size, batch_first=True)
+        self.dense_in = nn.Linear(2, 8)
+        self.gru1 = nn.GRU(8, self.gru1_size, batch_first=True)
         self.gru2 = nn.GRU(self.gru1_size, self.gru2_size, batch_first=True)
         self.dense_out = nn.Linear(self.gru2_size, 1)
 
@@ -22,7 +23,7 @@ class LossGen(nn.Module):
         else:
             gru1_state = states[0]
             gru2_state = states[1]
-        x = torch.cat([loss, perc], dim=-1)
+        x = torch.tanh(self.dense_in(torch.cat([loss, perc], dim=-1)))
         gru1_out, gru1_state = self.gru1(x, gru1_state)
         gru2_out, gru2_state = self.gru2(gru1_out, gru2_state)
         return self.dense_out(gru2_out), [gru1_state, gru2_state]
