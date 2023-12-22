@@ -6,7 +6,53 @@
 #include "lossgen.h"
 #include "os_support.h"
 #include "nnet.h"
-#include "lpcnet_private.h"
+
+/* Disable RTCD for this. */
+#define RTCD_ARCH c
+
+#include "nnet_arch.h"
+
+#define MAX_RNN_NEURONS_ALL IMAX(LOSSGEN_GRU1_STATE_SIZE, LOSSGEN_GRU2_STATE_SIZE)
+
+/* These two functions are copied from nnet.c to make sure we don't have linking issues. */
+void compute_generic_gru_lossgen(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in, int arch)
+{
+  int i;
+  int N;
+  float zrh[3*MAX_RNN_NEURONS_ALL];
+  float recur[3*MAX_RNN_NEURONS_ALL];
+  float *z;
+  float *r;
+  float *h;
+  celt_assert(3*recurrent_weights->nb_inputs == recurrent_weights->nb_outputs);
+  celt_assert(input_weights->nb_outputs == recurrent_weights->nb_outputs);
+  N = recurrent_weights->nb_inputs;
+  z = zrh;
+  r = &zrh[N];
+  h = &zrh[2*N];
+  celt_assert(recurrent_weights->nb_outputs <= 3*MAX_RNN_NEURONS_ALL);
+  celt_assert(in != state);
+  compute_linear(input_weights, zrh, in, arch);
+  compute_linear(recurrent_weights, recur, state, arch);
+  for (i=0;i<2*N;i++)
+     zrh[i] += recur[i];
+  compute_activation(zrh, zrh, 2*N, ACTIVATION_SIGMOID, arch);
+  for (i=0;i<N;i++)
+     h[i] += recur[2*N+i]*r[i];
+  compute_activation(h, h, N, ACTIVATION_TANH, arch);
+  for (i=0;i<N;i++)
+     h[i] = z[i]*state[i] + (1-z[i])*h[i];
+  for (i=0;i<N;i++)
+     state[i] = h[i];
+}
+
+
+void compute_generic_dense_lossgen(const LinearLayer *layer, float *output, const float *input, int activation, int arch)
+{
+   compute_linear(layer, output, input, arch);
+   compute_activation(output, output, layer->nb_outputs, activation, arch);
+}
+
 
 int sample_loss(
     LossGenState *st,
@@ -21,10 +67,10 @@ int sample_loss(
   LossGen *model = &st->model;
   input[0] = st->last_loss;
   input[1] = percent_loss;
-  compute_generic_dense(&model->lossgen_dense_in, tmp, input, ACTIVATION_TANH, arch);
-  compute_generic_gru(&model->lossgen_gru1_input, &model->lossgen_gru1_recurrent, st->gru1_state, tmp, arch);
-  compute_generic_gru(&model->lossgen_gru2_input, &model->lossgen_gru2_recurrent, st->gru2_state, st->gru1_state, arch);
-  compute_generic_dense(&model->lossgen_dense_out, &out, st->gru2_state, ACTIVATION_SIGMOID, arch);
+  compute_generic_dense_lossgen(&model->lossgen_dense_in, tmp, input, ACTIVATION_TANH, arch);
+  compute_generic_gru_lossgen(&model->lossgen_gru1_input, &model->lossgen_gru1_recurrent, st->gru1_state, tmp, arch);
+  compute_generic_gru_lossgen(&model->lossgen_gru2_input, &model->lossgen_gru2_recurrent, st->gru2_state, st->gru1_state, arch);
+  compute_generic_dense_lossgen(&model->lossgen_dense_out, &out, st->gru2_state, ACTIVATION_SIGMOID, arch);
   loss = (float)rand()/RAND_MAX < out;
   st->last_loss = loss;
   return loss;
@@ -41,6 +87,7 @@ void lossgen_init(LossGenState *st)
   ret = 0;
 #endif
   celt_assert(ret == 0);
+  (void)ret;
 }
 
 int lossgen_load_model(LossGenState *st, const unsigned char *data, int len) {
@@ -59,6 +106,10 @@ int main(int argc, char **argv) {
   int i, N;
   float p;
   LossGenState st;
+  if (argc!=3) {
+    fprintf(stderr, "usage: lossgen <percentage> <length>\n");
+    return 1;
+  }
   lossgen_init(&st);
   p = atof(argv[1]);
   N = atoi(argv[2]);

@@ -138,6 +138,7 @@ void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *
 
 void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input, int arch);
 
+int parse_weights(WeightArray **list, const unsigned char *data, int len);
 
 
 extern const WeightArray lpcnet_arrays[];
