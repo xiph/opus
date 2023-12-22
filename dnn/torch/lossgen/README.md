@@ -7,7 +7,7 @@ to build a generative model for packet loss.
 
 We use the training data provided for the Audio Deep Packet Loss Concealment Challenge, which is available at:
 
-http://plcchallenge2022pub.blob.core.windows.net/plcchallengearchive/test\_train.tar.gz
+http://plcchallenge2022pub.blob.core.windows.net/plcchallengearchive/test_train.tar.gz
 
 To create the training data, run:
 
