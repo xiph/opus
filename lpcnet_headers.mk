@@ -38,3 +38,7 @@ dnn/osce_features.h \
 dnn/nndsp.h \
 dnn/lace_data.h \
 dnn/nolace_data.h
+
+LOSSGEN_HEAD = \
+dnn/lossgen.h \
+dnn/lossgen_data.h

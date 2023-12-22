@@ -39,6 +39,9 @@
 #include "opus_types.h"
 #include "opus_private.h"
 #include "opus_multistream.h"
+#ifdef ENABLE_LOSSGEN
+#include "lossgen.h"
+#endif
 
 #define MAX_PACKET 1500
 
@@ -111,6 +114,9 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-forcemono           : force mono encoding, even for stereo input\n" );
     fprintf(stderr, "-dtx                 : enable SILK DTX\n" );
     fprintf(stderr, "-loss <perc>         : optimize for loss percentage and simulate packet loss, in percent (0-100); default: 0\n" );
+#ifdef ENABLE_LOSSGEN
+    fprintf(stderr, "-sim_loss <perc>     : simulate realistic (bursty) packet loss from percentage, using generative model\n" );
+#endif
     fprintf(stderr, "-lossfile <file>     : simulate packet loss, reading loss from file\n" );
     fprintf(stderr, "-dred <frames>       : add Deep REDundancy (in units of 10-ms frames)\n" );
 }
@@ -346,6 +352,10 @@ int main(int argc, char *argv[])
     int forcechannels;
     int cvbr = 0;
     int packet_loss_perc;
+#ifdef ENABLE_LOSSGEN
+    float lossgen_perc = -1.f;
+    LossGenState lossgen;
+#endif
     opus_int32 count=0, count_act=0;
     int k;
     opus_int32 skip=0;
@@ -555,6 +565,12 @@ int main(int argc, char *argv[])
         } else if( strcmp( argv[ args ], "-loss" ) == 0 ) {
             packet_loss_perc = atoi( argv[ args + 1 ] );
             args += 2;
+#ifdef ENABLE_LOSSGEN
+        } else if( strcmp( argv[ args ], "-sim_loss" ) == 0 ) {
+            lossgen_perc = atof( argv[ args + 1 ] );
+            lossgen_init(&lossgen);
+            args += 2;
+#endif
         } else if( strcmp( argv[ args ], "-lossfile" ) == 0 ) {
             packet_loss_file = fopen( argv[ args + 1 ], "r" );
             if (packet_loss_file == NULL) {
@@ -933,6 +949,10 @@ int main(int argc, char *argv[])
                 if ( fscanf(packet_loss_file, "%d", &lost) != 1) {
                     lost = 0;
                 }
+#ifdef ENABLE_LOSSGEN
+            } else if (lossgen_perc >= 0) {
+               lost = sample_loss(&lossgen, lossgen_perc*.01f);
+#endif
             } else {
               lost = (packet_loss_perc>0) && (rand()%100 < packet_loss_perc);
             }
