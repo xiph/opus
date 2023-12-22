@@ -48,7 +48,7 @@ checkpoint = dict()
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 checkpoint['model_args']    = ()
-checkpoint['model_kwargs']  = {'gru1_size': 16, 'gru2_size': 48}
+checkpoint['model_kwargs']  = {'gru1_size': 16, 'gru2_size': 32}
 model = lossgen.LossGen(*checkpoint['model_args'], **checkpoint['model_kwargs'])
 dataset = LossDataset('loss_sorted.txt')
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)

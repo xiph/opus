@@ -56,9 +56,7 @@ void compute_generic_dense_lossgen(const LinearLayer *layer, float *output, cons
 
 int sample_loss(
     LossGenState *st,
-    float percent_loss,
-    int arch
-    )
+    float percent_loss)
 {
   float input[2];
   float tmp[LOSSGEN_DENSE_IN_OUT_SIZE];
@@ -67,10 +65,10 @@ int sample_loss(
   LossGen *model = &st->model;
   input[0] = st->last_loss;
   input[1] = percent_loss;
-  compute_generic_dense_lossgen(&model->lossgen_dense_in, tmp, input, ACTIVATION_TANH, arch);
-  compute_generic_gru_lossgen(&model->lossgen_gru1_input, &model->lossgen_gru1_recurrent, st->gru1_state, tmp, arch);
-  compute_generic_gru_lossgen(&model->lossgen_gru2_input, &model->lossgen_gru2_recurrent, st->gru2_state, st->gru1_state, arch);
-  compute_generic_dense_lossgen(&model->lossgen_dense_out, &out, st->gru2_state, ACTIVATION_SIGMOID, arch);
+  compute_generic_dense_lossgen(&model->lossgen_dense_in, tmp, input, ACTIVATION_TANH, 0);
+  compute_generic_gru_lossgen(&model->lossgen_gru1_input, &model->lossgen_gru1_recurrent, st->gru1_state, tmp, 0);
+  compute_generic_gru_lossgen(&model->lossgen_gru2_input, &model->lossgen_gru2_recurrent, st->gru2_state, st->gru1_state, 0);
+  compute_generic_dense_lossgen(&model->lossgen_dense_out, &out, st->gru2_state, ACTIVATION_SIGMOID, 0);
   loss = (float)rand()/RAND_MAX < out;
   st->last_loss = loss;
   return loss;
@@ -114,7 +112,7 @@ int main(int argc, char **argv) {
   p = atof(argv[1]);
   N = atoi(argv[2]);
   for (i=0;i<N;i++) {
-    printf("%d\n", sample_loss(&st, p, 0));
+    printf("%d\n", sample_loss(&st, p));
   }
 }
 #endif

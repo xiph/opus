@@ -138,6 +138,9 @@ endif
 if ENABLE_OSCE
 LPCNET_HEAD += $(OSCE_HEAD)
 endif
+if ENABLE_LOSSGEN
+LPCNET_HEAD += $(LOSSGEN_HEAD)
+endif
 
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(LPCNET_SOURCES) $(OPUS_SOURCES)
 libopus_la_LDFLAGS = -no-undefined -version-info @OPUS_LT_CURRENT@:@OPUS_LT_REVISION@:@OPUS_LT_AGE@
@@ -189,6 +192,9 @@ TESTS = celt/tests/test_unit_cwrs32 \
         tests/test_opus_projection
 
 opus_demo_SOURCES = src/opus_demo.c
+if ENABLE_LOSSGEN
+opus_demo_SOURCES += $(LOSSGEN_SOURCES)
+endif
 
 opus_demo_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 

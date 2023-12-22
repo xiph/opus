@@ -180,6 +180,15 @@ AS_IF([test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes" || test "$
 ])
 AM_CONDITIONAL([ENABLE_DEEP_PLC], [test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes" || test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
 
+AC_ARG_ENABLE([lossgen],
+    [AS_HELP_STRING([--enable-lossgen], [Build opus_demo with packet loss simulator])],,
+    [enable_lossgen=no])
+
+AS_IF([test "$enable_lossgen" = "yes"],[
+  AC_DEFINE([ENABLE_LOSSGEN], [1], [LOSSGEN])
+])
+AM_CONDITIONAL([ENABLE_LOSSGEN], [test "$enable_lossgen" = "yes"])
+
 has_float_approx=no
 case "$host_cpu" in
 i[[3456]]86 | x86_64 | arm* | aarch64* | powerpc64 | powerpc32 | ia64)

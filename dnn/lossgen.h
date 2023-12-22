@@ -23,8 +23,6 @@ int lossgen_load_model(LossGenState *st, const unsigned char *data, int len);
 
 int sample_loss(
     LossGenState *st,
-    float percent_loss,
-    int arch
-    );
+    float percent_loss);
 
 #endif
