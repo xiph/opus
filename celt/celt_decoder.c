@@ -1183,6 +1183,36 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 
    /* Decode the global flags (first symbols in the stream) */
    intra_ener = tell+3<=total_bits ? ec_dec_bit_logp(dec, 3) : 0;
+   /* If recovering from packet loss, make sure we make the energy prediction safe to reduce the
+      risk of getting loud artifacts. */
+   if (!intra_ener && st->loss_duration != 0) {
+      c=0; do
+      {
+         opus_val16 safety = 0;
+         int missing = IMIN(10, st->loss_duration>>LM);
+         if (LM==0) safety = QCONST16(1.5f,DB_SHIFT);
+         else if (LM==1) safety = QCONST16(.5f,DB_SHIFT);
+         for (i=start;i<end;i++)
+         {
+            if (oldBandE[c*nbEBands+i] < MAX16(oldLogE[c*nbEBands+i], oldLogE2[c*nbEBands+i])) {
+               /* If energy is going down already, continue the trend. */
+               opus_val32 slope;
+               opus_val32 E0, E1, E2;
+               E0 = oldBandE[c*nbEBands+i];
+               E1 = oldLogE[c*nbEBands+i];
+               E2 = oldLogE2[c*nbEBands+i];
+               slope = MAX32(E1 - E0, HALF32(E2 - E0));
+               E0 -= MAX32(0, (1+missing)*slope);
+               oldBandE[c*nbEBands+i] = MAX32(-QCONST16(20.f,DB_SHIFT), E0);
+            } else {
+               /* Otherwise take the min of the last frames. */
+               oldBandE[c*nbEBands+i] = MIN16(MIN16(oldBandE[c*nbEBands+i], oldLogE[c*nbEBands+i]), oldLogE2[c*nbEBands+i]);
+            }
+            /* Shorter frames have more natural fluctuations -- play it safe. */
+            oldBandE[c*nbEBands+i] -= safety;
+         }
+      } while (++c<2);
+   }
    /* Get band energies */
    unquant_coarse_energy(mode, start, end, oldBandE,
          intra_ener, dec, C, LM);
