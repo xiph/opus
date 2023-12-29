@@ -11,6 +11,7 @@ SOURCES = dump_modes.c \
           ../entdec.c \
           ../mathops.c \
           ../mdct.c \
+          ../celt.c \
           ../kiss_fft.c
 
 ifdef HAVE_ARM_NE10
