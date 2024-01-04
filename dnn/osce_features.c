@@ -296,12 +296,16 @@ static void calculate_acorr(float *acorr, float *signal, int lag)
 static int pitch_postprocessing(OSCEFeatureState *psFeatures, int lag, int type)
 {
     int new_lag;
+    int modulus;
 
 #ifdef OSCE_HANGOVER_BUGFIX
 #define TESTBIT 1
 #else
 #define TESTBIT 0
 #endif
+
+    modulus = OSCE_PITCH_HANGOVER;
+    if (modulus == 0) modulus ++;
 
     /* hangover is currently disabled to reflect a bug in the python code. ToDo: re-evaluate hangover */
     if (type != TYPE_VOICED && psFeatures->last_type == TYPE_VOICED && TESTBIT)
@@ -311,14 +315,14 @@ static int pitch_postprocessing(OSCEFeatureState *psFeatures, int lag, int type)
         if (psFeatures->pitch_hangover_count < OSCE_PITCH_HANGOVER)
         {
             new_lag = psFeatures->last_lag;
-            psFeatures->pitch_hangover_count = (psFeatures->pitch_hangover_count + 1) % OSCE_PITCH_HANGOVER;
+            psFeatures->pitch_hangover_count = (psFeatures->pitch_hangover_count + 1) % modulus;
         }
     }
     else if (type != TYPE_VOICED && psFeatures->pitch_hangover_count && TESTBIT)
     /* continue hangover */
     {
         new_lag = psFeatures->last_lag;
-        psFeatures->pitch_hangover_count = (psFeatures->pitch_hangover_count + 1) % OSCE_PITCH_HANGOVER;
+        psFeatures->pitch_hangover_count = (psFeatures->pitch_hangover_count + 1) % modulus;
     }
     else if (type != TYPE_VOICED)
     /* unvoiced frame after hangover */
@@ -376,11 +380,7 @@ void osce_calculate_features(
     /* smooth bit count */
     psFeatures->numbits_smooth = 0.9f * psFeatures->numbits_smooth + 0.1f * num_bits;
     numbits[0] = num_bits;
-#ifdef OSCE_NUMBITS_BUGFIX
     numbits[1] = psFeatures->numbits_smooth;
-#else
-    numbits[1] = num_bits;
-#endif
 
     for (n = 0; n < num_samples; n++)
     {
