@@ -41,6 +41,12 @@ from models.silk_feature_net_pl import SilkFeatureNetPL
 from models.silk_feature_net import SilkFeatureNet
 from .scale_embedding import ScaleEmbedding
 
+import sys
+sys.path.append('../dnntools')
+
+from dnntools.sparsification import create_sparsifier
+
+
 class LACE(NNSBase):
     """ Linear-Adaptive Coding Enhancer """
     FRAME_SIZE=80
@@ -61,7 +67,8 @@ class LACE(NNSBase):
                  hidden_feature_dim=64,
                  partial_lookahead=True,
                  norm_p=2,
-                 softquant=False):
+                 softquant=False,
+                 sparsify=False):
 
         super().__init__(skip=skip, preemph=preemph)
 
@@ -98,6 +105,9 @@ class LACE(NNSBase):
 
         # spectral shaping
         self.af1 = LimitedAdaptiveConv1d(1, 1, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p, softquant=softquant)
+
+        if sparsify:
+            self.sparsify = create_sparsifier(self, 500, 2000, 100)
 
     def flop_count(self, rate=16000, verbose=False):
 
