@@ -26,7 +26,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 """
-
+import sys
+sys.path.append('../dnntools')
 
 import torch
 from torch import nn
@@ -35,13 +36,15 @@ import torch.nn.functional as F
 from utils.complexity import _conv1d_flop_count
 from utils.softquant import soft_quant
 
+from dnntools.sparsification import mark_for_sparsification
 class SilkFeatureNetPL(nn.Module):
     """ feature net with partial lookahead """
     def __init__(self,
                  feature_dim=47,
                  num_channels=256,
                  hidden_feature_dim=64,
-                 softquant=False):
+                 softquant=False,
+                 sparsify=True):
 
         super(SilkFeatureNetPL, self).__init__()
 
@@ -59,6 +62,21 @@ class SilkFeatureNetPL(nn.Module):
             self.tconv = soft_quant(self.tconv)
             self.gru = soft_quant(self.gru, names=['weight_hh_l0', 'weight_ih_l0'])
 
+
+        if sparsify:
+            mark_for_sparsification(self.conv2, (0.25, [8, 4]))
+            mark_for_sparsification(self.tconv, (0.25, [8, 4]))
+            mark_for_sparsification(
+                self.gru,
+                {
+                    'W_ir' : (0.25, [8, 4], False),
+                    'W_iz' : (0.25, [8, 4], False),
+                    'W_in' : (0.25, [8, 4], False),
+                    'W_hr' : (0.125, [8, 4], True),
+                    'W_hz' : (0.125, [8, 4], True),
+                    'W_hn' : (0.125, [8, 4], True),
+                }
+            )
 
 
     def flop_count(self, rate=200):

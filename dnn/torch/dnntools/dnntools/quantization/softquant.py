@@ -24,6 +24,7 @@ def q_scaled_noise(module, weight):
     if isinstance(module, torch.nn.Conv1d):
         w = weight.permute(0, 2, 1).flatten(1)
         noise = torch.rand_like(w) - 0.5
+        noise[w == 0] = 0 # ignore zero entries from sparsification
         scale = compute_optimal_scale(w)
         noise = noise * scale.unsqueeze(-1)
         noise = noise.reshape(weight.size(0), weight.size(2), weight.size(1)).permute(0, 2, 1)
@@ -31,11 +32,13 @@ def q_scaled_noise(module, weight):
         i, o, k = weight.shape
         w = weight.permute(2, 1, 0).reshape(k * o, i)
         noise = torch.rand_like(w) - 0.5
+        noise[w == 0] = 0 # ignore zero entries from sparsification
         scale = compute_optimal_scale(w)
         noise = noise * scale.unsqueeze(-1)
         noise = noise.reshape(k, o, i).permute(2, 1, 0)
     elif len(weight.shape) == 2:
         noise = torch.rand_like(weight) - 0.5
+        noise[weight == 0] = 0 # ignore zero entries from sparsification
         scale = compute_optimal_scale(weight)
         noise = noise * scale.unsqueeze(-1)
     else:
