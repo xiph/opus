@@ -44,6 +44,11 @@ from models.silk_feature_net_pl import SilkFeatureNetPL
 from models.silk_feature_net import SilkFeatureNet
 from .scale_embedding import ScaleEmbedding
 
+import sys
+sys.path.append('../dnntools')
+
+from dnntools.sparsification import create_sparsifier, mark_for_sparsification
+
 class NoLACE(NNSBase):
     """ Non-Linear Adaptive Coding Enhancer """
     FRAME_SIZE=80
@@ -66,7 +71,8 @@ class NoLACE(NNSBase):
                  norm_p=2,
                  avg_pool_k=4,
                  pool_after=False,
-                 softquant=False):
+                 softquant=False,
+                 sparsify=False):
 
         super().__init__(skip=skip, preemph=preemph)
 
@@ -129,11 +135,14 @@ class NoLACE(NNSBase):
             self.post_af3 = soft_quant(self.post_af3)
 
 
+        if sparsify:
+            mark_for_sparsification(self.post_cf1, (0.25, [8, 4]))
+            mark_for_sparsification(self.post_cf2, (0.25, [8, 4]))
+            mark_for_sparsification(self.post_af1, (0.25, [8, 4]))
+            mark_for_sparsification(self.post_af2, (0.25, [8, 4]))
+            mark_for_sparsification(self.post_af3, (0.25, [8, 4]))
 
-
-
-
-
+            self.sparsify = create_sparsifier(self, 500, 1000, 100)
 
     def flop_count(self, rate=16000, verbose=False):
 
