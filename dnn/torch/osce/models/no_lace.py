@@ -72,7 +72,9 @@ class NoLACE(NNSBase):
                  avg_pool_k=4,
                  pool_after=False,
                  softquant=False,
-                 sparsify=False):
+                 sparsify=False,
+                 sparsification_schedule=[100, 1000, 100],
+                 sparsification_density=0.5):
 
         super().__init__(skip=skip, preemph=preemph)
 
@@ -97,7 +99,7 @@ class NoLACE(NNSBase):
 
         # feature net
         if partial_lookahead:
-            self.feature_net = SilkFeatureNetPL(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim, hidden_feature_dim, softquant=softquant)
+            self.feature_net = SilkFeatureNetPL(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim, hidden_feature_dim, softquant=softquant, sparsify=sparsify, sparsification_density=sparsification_density)
         else:
             self.feature_net = SilkFeatureNet(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim)
 
@@ -136,13 +138,13 @@ class NoLACE(NNSBase):
 
 
         if sparsify:
-            mark_for_sparsification(self.post_cf1, (0.25, [8, 4]))
-            mark_for_sparsification(self.post_cf2, (0.25, [8, 4]))
-            mark_for_sparsification(self.post_af1, (0.25, [8, 4]))
-            mark_for_sparsification(self.post_af2, (0.25, [8, 4]))
-            mark_for_sparsification(self.post_af3, (0.25, [8, 4]))
+            mark_for_sparsification(self.post_cf1, (sparsification_density, [8, 4]))
+            mark_for_sparsification(self.post_cf2, (sparsification_density, [8, 4]))
+            mark_for_sparsification(self.post_af1, (sparsification_density, [8, 4]))
+            mark_for_sparsification(self.post_af2, (sparsification_density, [8, 4]))
+            mark_for_sparsification(self.post_af3, (sparsification_density, [8, 4]))
 
-            self.sparsify = create_sparsifier(self, 500, 1000, 100)
+            self.sparsifier = create_sparsifier(self, *sparsification_schedule)
 
     def flop_count(self, rate=16000, verbose=False):
 

@@ -41,7 +41,17 @@ def count_parameters(model, verbose=False):
 
     return total
 
+def count_nonzero_parameters(model, verbose=False):
+    total = 0
+    for name, p in model.named_parameters():
+        count = torch.count_nonzero(p).item()
 
+        if verbose:
+            print(f"{name}: {count} non-zero parameters")
+
+        total += count
+
+    return total
 def retain_grads(module):
     for p in module.parameters():
         if p.requires_grad:
