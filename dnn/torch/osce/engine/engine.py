@@ -47,8 +47,8 @@ def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, 
             scheduler.step()
 
             # sparsification
-            if hasattr(model, 'sparsify'):
-                model.sparsify(True)
+            if hasattr(model, 'sparsifier'):
+                model.sparsifier()
 
             # update running loss
             running_loss += float(loss.cpu())

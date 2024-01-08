@@ -51,7 +51,10 @@ lace_setup = {
             'pitch_max': 300,
             'preemph': 0.85,
             'skip': 91,
-            'softquant': True
+            'softquant': True,
+            'sparsify': False,
+            'sparsification_density': 0.4,
+            'sparsification_schedule': [10000, 40000, 200]
         }
     },
     'data': {
@@ -108,7 +111,10 @@ nolace_setup = {
             'pitch_max': 300,
             'preemph': 0.85,
             'skip': 91,
-            'softquant': True
+            'softquant': True,
+            'sparsify': False,
+            'sparsification_density': 0.4,
+            'sparsification_schedule': [10000, 40000, 200]
         }
     },
     'data': {
@@ -163,7 +169,10 @@ nolace_setup_adv = {
             'pitch_max': 300,
             'preemph': 0.85,
             'skip': 91,
-            'softquant': True
+            'softquant': True,
+            'sparsify': False,
+            'sparsification_density': 0.4,
+            'sparsification_schedule': [0, 0, 200]
         }
     },
     'data': {

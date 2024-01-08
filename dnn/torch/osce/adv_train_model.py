@@ -408,6 +408,10 @@ for ep in range(1, epochs + 1):
 
             optimizer.step()
 
+            # sparsification
+            if hasattr(model, 'sparsifier'):
+                model.sparsifier()
+
             running_model_grad_norm += get_grad_norm(model).detach().cpu().item()
             running_adv_loss += gen_loss.detach().cpu().item()
             running_disc_loss += disc_loss.detach().cpu().item()

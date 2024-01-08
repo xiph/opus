@@ -36,8 +36,29 @@ def create_sparsifier(module, start, stop, interval):
 
     return sparsify
 
-def estimate_parameters(module):
+
+def count_parameters(model, verbose=False):
+    total = 0
+    for name, p in model.named_parameters():
+        count = torch.ones_like(p).sum().item()
+
+        if verbose:
+            print(f"{name}: {count} parameters")
+
+        total += count
+
+    return total
+
+def estimate_nonzero_parameters(module):
     num_zero_parameters = 0
     if hasattr(module, 'sparsify'):
-        if isinstance(module, torch.nn.Conv1d):
-            pass
+        params = module.sparsification_params
+        if isinstance(module, torch.nn.Conv1d) or isinstance(module, torch.nn.ConvTranspose1d):
+            num_zero_parameters = torch.ones_like(module.weight).sum().item() * (1 - params[0])
+        elif isinstance(module, torch.nn.GRU):
+            num_zero_parameters = module.input_size * module.hidden_size * (3 - params['W_ir'][0] - params['W_iz'][0] - params['W_in'][0])
+            num_zero_parameters += module.hidden_size * module.hidden_size * (3 - params['W_hr'][0] - params['W_hz'][0] - params['W_hn'][0])
+        elif isinstance(module, torch.nn.Linear):
+            num_zero_parameters = module.in_features * module.out_features * params[0]
+        else:
+            raise ValueError(f'unknown sparsification method for module of type {type(module)}')

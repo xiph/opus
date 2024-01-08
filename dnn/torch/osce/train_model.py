@@ -54,7 +54,7 @@ from engine.engine import train_one_epoch, evaluate
 
 
 from utils.silk_features import load_inference_data
-from utils.misc import count_parameters
+from utils.misc import count_parameters, count_nonzero_parameters
 
 from losses.stft_loss import MRSTFTLoss, MRLogMelLoss
 
@@ -292,6 +292,6 @@ for ep in range(1, epochs + 1):
     torch.save(checkpoint, os.path.join(checkpoint_dir, checkpoint_prefix + f'_last.pth'))
 
 
-    print()
+    print(f"non-zero parameters: {count_nonzero_parameters(model)}\n")
 
 print('Done')
