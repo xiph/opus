@@ -128,12 +128,16 @@ class GRUSparsifier:
                 # input weights
                 for i, key in enumerate(['W_ir', 'W_iz', 'W_in']):
                     if key in params:
+                        if hasattr(gru, 'weight_ih_l0_v'):
+                            weight = gru.weight_ih_l0_v
+                        else:
+                            weight = gru.weight_ih_l0
                         density = alpha + (1 - alpha) * params[key][0]
                         if verbose:
                             print(f"[{self.step_counter}]: {key} density: {density}")
 
-                        gru.weight_ih_l0[i * hidden_size : (i+1) * hidden_size, : ], new_mask = sparsify_matrix(
-                            gru.weight_ih_l0[i * hidden_size : (i + 1) * hidden_size, : ],
+                        weight[i * hidden_size : (i+1) * hidden_size, : ], new_mask = sparsify_matrix(
+                            weight[i * hidden_size : (i + 1) * hidden_size, : ],
                             density, # density
                             params[key][1], # block_size
                             params[key][2], # keep_diagonal (might want to set this to False)
@@ -149,11 +153,15 @@ class GRUSparsifier:
                 # recurrent weights
                 for i, key in enumerate(['W_hr', 'W_hz', 'W_hn']):
                     if key in params:
+                        if hasattr(gru, 'weight_hh_l0_v'):
+                            weight = gru.weight_hh_l0_v
+                        else:
+                            weight = gru.weight_hh_l0
                         density = alpha + (1 - alpha) * params[key][0]
                         if verbose:
                             print(f"[{self.step_counter}]: {key} density: {density}")
-                        gru.weight_hh_l0[i * hidden_size : (i+1) * hidden_size, : ], new_mask = sparsify_matrix(
-                            gru.weight_hh_l0[i * hidden_size : (i + 1) * hidden_size, : ],
+                        weight[i * hidden_size : (i+1) * hidden_size, : ], new_mask = sparsify_matrix(
+                            weight[i * hidden_size : (i + 1) * hidden_size, : ],
                             density,
                             params[key][1], # block_size
                             params[key][2], # keep_diagonal (might want to set this to False)

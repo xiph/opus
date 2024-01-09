@@ -114,13 +114,17 @@ class Conv1dSparsifier:
         with torch.no_grad():
             for conv, params in self.task_list:
                 # reshape weight
-                i, o, k = conv.weight.shape
-                w = conv.weight.permute(0, 2, 1).flatten(1)
+                if hasattr(conv, 'weight_v'):
+                    weight = conv.weight_v
+                else:
+                    weight = conv.weight
+                i, o, k = weight.shape
+                w = weight.permute(0, 2, 1).flatten(1)
                 target_density, block_size = params
                 density = alpha + (1 - alpha) * target_density
                 w = sparsify_matrix(w, density, block_size)
                 w = w.reshape(i, k, o).permute(0, 2, 1)
-                conv.weight[:] = w
+                weight[:] = w
 
                 if verbose:
                     print(f"conv1d_sparsier[{self.step_counter}]: {density=}")

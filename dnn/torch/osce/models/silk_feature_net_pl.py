@@ -32,6 +32,7 @@ sys.path.append('../dnntools')
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torch.nn.utils import weight_norm
 
 from utils.complexity import _conv1d_flop_count
 from utils.softquant import soft_quant
@@ -45,7 +46,8 @@ class SilkFeatureNetPL(nn.Module):
                  hidden_feature_dim=64,
                  softquant=False,
                  sparsify=True,
-                 sparsification_density=0.5):
+                 sparsification_density=0.5,
+                 apply_weight_norm=False):
 
         super(SilkFeatureNetPL, self).__init__()
 
@@ -53,10 +55,12 @@ class SilkFeatureNetPL(nn.Module):
         self.num_channels = num_channels
         self.hidden_feature_dim = hidden_feature_dim
 
-        self.conv1 = nn.Conv1d(feature_dim, self.hidden_feature_dim, 1)
-        self.conv2 = nn.Conv1d(4 * self.hidden_feature_dim, num_channels, 2)
-        self.tconv = nn.ConvTranspose1d(num_channels, num_channels, 4, 4)
-        self.gru = nn.GRU(num_channels, num_channels, batch_first=True)
+        norm = weight_norm if apply_weight_norm else lambda x, name=None: x
+
+        self.conv1 = norm(nn.Conv1d(feature_dim, self.hidden_feature_dim, 1))
+        self.conv2 = norm(nn.Conv1d(4 * self.hidden_feature_dim, num_channels, 2))
+        self.tconv = norm(nn.ConvTranspose1d(num_channels, num_channels, 4, 4))
+        self.gru   = norm(norm(nn.GRU(num_channels, num_channels, batch_first=True), name='weight_hh_l0'), name='weight_ih_l0')
 
         if softquant:
             self.conv2 = soft_quant(self.conv2)

@@ -113,9 +113,13 @@ class LinearSparsifier:
 
         with torch.no_grad():
             for linear, params in self.task_list:
+                if hasattr(linear, 'weight_v'):
+                    weight = linear.weight_v
+                else:
+                    weight = linear.weight
                 target_density, block_size = params
                 density = alpha + (1 - alpha) * target_density
-                linear.weight[:] = sparsify_matrix(linear.weight, density, block_size)
+                weight[:] = sparsify_matrix(weight, density, block_size)
 
                 if verbose:
                     print(f"linear_sparsifier[{self.step_counter}]: {density=}")
