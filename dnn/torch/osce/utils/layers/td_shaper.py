@@ -14,7 +14,8 @@ class TDShaper(nn.Module):
                  avg_pool_k=4,
                  innovate=False,
                  pool_after=False,
-                 softquant=False
+                 softquant=False,
+                 apply_weight_norm=False
     ):
         """
 
@@ -47,20 +48,22 @@ class TDShaper(nn.Module):
         assert frame_size % avg_pool_k == 0
         self.env_dim = frame_size // avg_pool_k + 1
 
+        norm = torch.nn.utils.weight_norm if apply_weight_norm else lambda x, name=None: x
+
         # feature transform
-        self.feature_alpha1_f = nn.Conv1d(self.feature_dim, frame_size, 2)
-        self.feature_alpha1_t = nn.Conv1d(self.env_dim, frame_size, 2)
-        self.feature_alpha2 = nn.Conv1d(frame_size, frame_size, 2)
+        self.feature_alpha1_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2))
+        self.feature_alpha1_t = norm(nn.Conv1d(self.env_dim, frame_size, 2))
+        self.feature_alpha2 = norm(nn.Conv1d(frame_size, frame_size, 2))
 
         if softquant:
             self.feature_alpha1_f = soft_quant(self.feature_alpha1_f)
 
         if self.innovate:
-            self.feature_alpha1b = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2)
-            self.feature_alpha1c = nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2)
+            self.feature_alpha1b = norm(nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2))
+            self.feature_alpha1c = norm(nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2))
 
-            self.feature_alpha2b = nn.Conv1d(frame_size, frame_size, 2)
-            self.feature_alpha2c = nn.Conv1d(frame_size, frame_size, 2)
+            self.feature_alpha2b = norm(nn.Conv1d(frame_size, frame_size, 2))
+            self.feature_alpha2c = norm(nn.Conv1d(frame_size, frame_size, 2))
 
 
     def flop_count(self, rate):

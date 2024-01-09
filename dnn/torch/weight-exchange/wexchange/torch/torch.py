@@ -275,7 +275,7 @@ def load_torch_dense_weights(where, dense):
             dense.bias.set_(torch.from_numpy(b))
 
 
-def dump_torch_conv1d_weights(where, conv, name='conv', scale=1/128, quantize=False):
+def dump_torch_conv1d_weights(where, conv, name='conv', scale=1/128, quantize=False, sparse=False):
 
     w = conv.weight.detach().cpu().numpy().copy()
     if conv.bias is None:
@@ -285,7 +285,7 @@ def dump_torch_conv1d_weights(where, conv, name='conv', scale=1/128, quantize=Fa
 
     if isinstance(where, CWriter):
 
-        return print_conv1d_layer(where, name, w, b, scale=scale, format='torch', quantize=quantize)
+        return print_conv1d_layer(where, name, w, b, scale=scale, format='torch', quantize=quantize, sparse=sparse)
     else:
         os.makedirs(where, exist_ok=True)
 
@@ -305,7 +305,7 @@ def load_torch_conv1d_weights(where, conv):
                 conv.bias.set_(torch.from_numpy(b))
 
 
-def dump_torch_tconv1d_weights(where, conv, name='conv', scale=1/128, quantize=False):
+def dump_torch_tconv1d_weights(where, conv, name='conv', scale=1/128, quantize=False, sparse=False):
 
     w = conv.weight.detach().cpu().numpy().copy()
     if conv.bias is None:
@@ -315,7 +315,7 @@ def dump_torch_tconv1d_weights(where, conv, name='conv', scale=1/128, quantize=F
 
     if isinstance(where, CWriter):
 
-        return print_tconv1d_layer(where, name, w, b, conv.stride[0], scale=scale, quantize=quantize)
+        return print_tconv1d_layer(where, name, w, b, conv.stride[0], scale=scale, quantize=quantize, sparse=sparse)
     else:
         os.makedirs(where, exist_ok=True)
 
