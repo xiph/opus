@@ -65,7 +65,7 @@ class SoftQuant:
                     self.quantization_noise[name] = q_scaled_noise(module, weight)
                 else:
                     self.quantization_noise[name] = \
-                        self.scale * weight.abs().max() * (torch.rand_like(weight) - 0.5)
+                        self.scale * (torch.rand_like(weight) - 0.5)
                 with torch.no_grad():
                     weight.data[:] = weight + self.quantization_noise[name]
         else:
