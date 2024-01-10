@@ -27,9 +27,13 @@
 */
 """
 
+seed=1888
+
 import os
 import argparse
 import sys
+import random
+random.seed(seed)
 
 import yaml
 
@@ -40,9 +44,12 @@ except:
     has_git = False
 
 import torch
+torch.manual_seed(seed)
+torch.backends.cudnn.benchmark = False
 from torch.optim.lr_scheduler import LambdaLR
 
 import numpy as np
+np.random.seed(seed)
 
 from scipy.io import wavfile
 
@@ -69,6 +76,7 @@ parser.add_argument('--testdata', type=str, help='path to features and signal fo
 parser.add_argument('--no-redirect', action='store_true', help='disables re-direction of stdout')
 
 args = parser.parse_args()
+
 
 
 torch.set_num_threads(4)

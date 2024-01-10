@@ -28,6 +28,8 @@
 """
 import sys
 sys.path.append('../dnntools')
+import numbers
+
 
 import torch
 from torch import nn
@@ -51,6 +53,9 @@ class SilkFeatureNetPL(nn.Module):
 
         super(SilkFeatureNetPL, self).__init__()
 
+        if isinstance(sparsification_density, numbers.Number):
+            sparsification_density = 4 * [sparsification_density]
+
         self.feature_dim = feature_dim
         self.num_channels = num_channels
         self.hidden_feature_dim = hidden_feature_dim
@@ -69,17 +74,17 @@ class SilkFeatureNetPL(nn.Module):
 
 
         if sparsify:
-            mark_for_sparsification(self.conv2, (sparsification_density, [8, 4]))
-            mark_for_sparsification(self.tconv, (sparsification_density, [8, 4]))
+            mark_for_sparsification(self.conv2, (sparsification_density[0], [8, 4]))
+            mark_for_sparsification(self.tconv, (sparsification_density[1], [8, 4]))
             mark_for_sparsification(
                 self.gru,
                 {
-                    'W_ir' : (sparsification_density, [8, 4], False),
-                    'W_iz' : (sparsification_density, [8, 4], False),
-                    'W_in' : (sparsification_density, [8, 4], False),
-                    'W_hr' : (sparsification_density, [8, 4], True),
-                    'W_hz' : (sparsification_density, [8, 4], True),
-                    'W_hn' : (sparsification_density, [8, 4], True),
+                    'W_ir' : (sparsification_density[2], [8, 4], False),
+                    'W_iz' : (sparsification_density[2], [8, 4], False),
+                    'W_in' : (sparsification_density[2], [8, 4], False),
+                    'W_hr' : (sparsification_density[3], [8, 4], True),
+                    'W_hz' : (sparsification_density[3], [8, 4], True),
+                    'W_hn' : (sparsification_density[3], [8, 4], True),
                 }
             )
 
