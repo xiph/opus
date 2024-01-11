@@ -106,7 +106,7 @@ if os.path.exists(args.output):
         reply = input('continue? (y/n): ')
 
     if reply == 'n':
-        os._exit()
+        os._exit(0)
 else:
     os.makedirs(args.output, exist_ok=True)
 

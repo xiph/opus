@@ -29,10 +29,12 @@
 
 import torch
 
-from .common import sparsify_matrix
+
+from .base_sparsifier import BaseSparsifier
+from .common import sparsify_matrix, debug
 
 
-class ConvTranspose1dSparsifier:
+class ConvTranspose1dSparsifier(BaseSparsifier):
     def __init__(self, task_list, start, stop, interval, exponent=3):
         """ Sparsifier for torch.nn.GRUs
 
@@ -68,17 +70,12 @@ class ConvTranspose1dSparsifier:
             >>> for i in range(100):
             ...         sparsifier.step()
         """
-        # just copying parameters...
-        self.start      = start
-        self.stop       = stop
-        self.interval   = interval
-        self.exponent   = exponent
-        self.task_list  = task_list
 
-        # ... and setting counter to 0
-        self.step_counter = 0
+        super().__init__(task_list, start, stop, interval, exponent=3)
 
-    def step(self, verbose=False):
+        self.last_mask = None
+
+    def sparsify(self, alpha, verbose=False):
         """ carries out sparsification step
 
             Call this function after optimizer.step in your
@@ -86,6 +83,8 @@ class ConvTranspose1dSparsifier:
 
             Parameters:
             ----------
+            alpha : float
+                density interpolation parameter (1: dense, 0: target density)
             verbose : bool
                 if true, densities are printed out
 
@@ -94,20 +93,6 @@ class ConvTranspose1dSparsifier:
             None
 
         """
-        # compute current interpolation factor
-        self.step_counter += 1
-
-        if self.step_counter < self.start:
-            return
-        elif self.step_counter < self.stop:
-            # update only every self.interval-th interval
-            if self.step_counter % self.interval:
-                return
-
-            alpha = ((self.stop - self.step_counter) / (self.stop - self.start)) ** self.exponent
-        else:
-            alpha = 0
-
 
         with torch.no_grad():
             for conv, params in self.task_list:
@@ -120,9 +105,15 @@ class ConvTranspose1dSparsifier:
                 w = weight.permute(2, 1, 0).reshape(k * o, i)
                 target_density, block_size = params
                 density = alpha + (1 - alpha) * target_density
-                w = sparsify_matrix(w, density, block_size)
+                w, new_mask = sparsify_matrix(w, density, block_size, return_mask=True)
                 w = w.reshape(k, o, i).permute(2, 1, 0)
                 weight[:] = w
+
+                if self.last_mask is not None:
+                    if not torch.all(self.last_mask * new_mask == new_mask) and debug:
+                        print("weight resurrection in conv.weight")
+
+                self.last_mask = new_mask
 
                 if verbose:
                     print(f"convtrans1d_sparsier[{self.step_counter}]: {density=}")

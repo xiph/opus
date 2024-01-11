@@ -29,10 +29,11 @@
 
 import torch
 
-from .common import sparsify_matrix
+from .base_sparsifier import BaseSparsifier
+from .common import sparsify_matrix, debug
 
 
-class GRUSparsifier:
+class GRUSparsifier(BaseSparsifier):
     def __init__(self, task_list, start, stop, interval, exponent=3):
         """ Sparsifier for torch.nn.GRUs
 
@@ -78,19 +79,11 @@ class GRUSparsifier:
             >>> for i in range(100):
             ...         sparsifier.step()
         """
-        # just copying parameters...
-        self.start      = start
-        self.stop       = stop
-        self.interval   = interval
-        self.exponent   = exponent
-        self.task_list  = task_list
-
-        # ... and setting counter to 0
-        self.step_counter = 0
+        super().__init__(task_list, start, stop, interval, exponent=3)
 
         self.last_masks = {key : None for key in ['W_ir', 'W_in', 'W_iz', 'W_hr', 'W_hn', 'W_hz']}
 
-    def step(self, verbose=False):
+    def sparsify(self, alpha, verbose=False):
         """ carries out sparsification step
 
             Call this function after optimizer.step in your
@@ -98,6 +91,8 @@ class GRUSparsifier:
 
             Parameters:
             ----------
+            alpha : float
+                density interpolation parameter (1: dense, 0: target density)
             verbose : bool
                 if true, densities are printed out
 
@@ -106,20 +101,6 @@ class GRUSparsifier:
             None
 
         """
-        # compute current interpolation factor
-        self.step_counter += 1
-
-        if self.step_counter < self.start:
-            return
-        elif self.step_counter < self.stop:
-            # update only every self.interval-th interval
-            if self.step_counter % self.interval:
-                return
-
-            alpha = ((self.stop - self.step_counter) / (self.stop - self.start)) ** self.exponent
-        else:
-            alpha = 0
-
 
         with torch.no_grad():
             for gru, params in self.task_list:
@@ -145,8 +126,8 @@ class GRUSparsifier:
                         )
 
                         if type(self.last_masks[key]) != type(None):
-                            if not torch.all(self.last_masks[key] == new_mask) and self.step_counter > self.stop:
-                                print(f"sparsification mask {key} changed for gru {gru}")
+                            if not torch.all(self.last_masks[key] * new_mask == new_mask) and debug:
+                                print("weight resurrection in weight_ih_l0_v")
 
                         self.last_masks[key] = new_mask
 
@@ -169,8 +150,8 @@ class GRUSparsifier:
                         )
 
                         if type(self.last_masks[key]) != type(None):
-                            if not torch.all(self.last_masks[key] == new_mask) and self.step_counter > self.stop:
-                                print(f"sparsification mask {key} changed for gru {gru}")
+                            if not torch.all(self.last_masks[key] * new_mask == new_mask)  and True:
+                                print("weight resurrection in weight_hh_l0_v")
 
                         self.last_masks[key] = new_mask
 
@@ -193,3 +174,5 @@ if __name__ == "__main__":
 
     for i in range(100):
         sparsifier.step(verbose=True)
+
+    print(gru.weight_hh_l0)
