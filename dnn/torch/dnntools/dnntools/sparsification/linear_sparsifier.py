@@ -29,10 +29,11 @@
 
 import torch
 
+from .base_sparsifier import BaseSparsifier
 from .common import sparsify_matrix
 
 
-class LinearSparsifier:
+class LinearSparsifier(BaseSparsifier):
     def __init__(self, task_list, start, stop, interval, exponent=3):
         """ Sparsifier for torch.nn.GRUs
 
@@ -68,19 +69,12 @@ class LinearSparsifier:
             >>> for i in range(100):
             ...         sparsifier.step()
         """
-        # just copying parameters...
-        self.start      = start
-        self.stop       = stop
-        self.interval   = interval
-        self.exponent   = exponent
-        self.task_list  = task_list
 
-        # ... and setting counter to 0
-        self.step_counter = 0
+        super().__init__(task_list, start, stop, interval, exponent=3)
 
-        self.last_masks = {key : None for key in ['W_ir', 'W_in', 'W_iz', 'W_hr', 'W_hn', 'W_hz']}
+        self.last_mask = None
 
-    def step(self, verbose=False):
+    def sparsify(self, alpha, verbose=False):
         """ carries out sparsification step
 
             Call this function after optimizer.step in your
@@ -88,6 +82,8 @@ class LinearSparsifier:
 
             Parameters:
             ----------
+            alpha : float
+                density interpolation parameter (1: dense, 0: target density)
             verbose : bool
                 if true, densities are printed out
 
@@ -96,20 +92,6 @@ class LinearSparsifier:
             None
 
         """
-        # compute current interpolation factor
-        self.step_counter += 1
-
-        if self.step_counter < self.start:
-            return
-        elif self.step_counter < self.stop:
-            # update only every self.interval-th interval
-            if self.step_counter % self.interval:
-                return
-
-            alpha = ((self.stop - self.step_counter) / (self.stop - self.start)) ** self.exponent
-        else:
-            alpha = 0
-
 
         with torch.no_grad():
             for linear, params in self.task_list:
@@ -119,7 +101,13 @@ class LinearSparsifier:
                     weight = linear.weight
                 target_density, block_size = params
                 density = alpha + (1 - alpha) * target_density
-                weight[:] = sparsify_matrix(weight, density, block_size)
+                weight[:], new_mask = sparsify_matrix(weight, density, block_size, return_mask=True)
+
+                if self.last_mask is not None:
+                    if not torch.all(self.last_mask * new_mask == new_mask) and debug:
+                        print("weight resurrection in conv.weight")
+
+                self.last_mask = new_mask
 
                 if verbose:
                     print(f"linear_sparsifier[{self.step_counter}]: {density=}")
