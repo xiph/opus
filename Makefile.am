@@ -288,7 +288,10 @@ endif
 
 if EXTRA_PROGRAMS
 if ENABLE_DEEP_PLC
-noinst_PROGRAMS += lpcnet_demo dump_data dump_weights_blob
+noinst_PROGRAMS += pitch_demo lpcnet_demo dump_data dump_weights_blob
+pitch_demo_SOURCES = dnn/pitch_demo.c
+pitch_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
+
 lpcnet_demo_SOURCES = dnn/lpcnet_demo.c
 lpcnet_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 
