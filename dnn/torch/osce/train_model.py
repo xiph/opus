@@ -117,7 +117,7 @@ os.makedirs(checkpoint_dir, exist_ok=True)
 if has_git:
     working_dir = os.path.split(__file__)[0]
     try:
-        repo = git.Repo(working_dir)
+        repo = git.Repo(working_dir, search_parent_directories=True)
         setup['repo'] = dict()
         hash = repo.head.object.hexsha
         urls = list(repo.remote().urls)
