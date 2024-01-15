@@ -37,8 +37,8 @@ import torch.nn.functional as F
 from torch.nn.utils import weight_norm
 
 from utils.complexity import _conv1d_flop_count
-from utils.softquant import soft_quant
 
+from dnntools.quantization.softquant import soft_quant
 from dnntools.sparsification import mark_for_sparsification
 
 class SilkFeatureNetPL(nn.Module):
@@ -73,7 +73,8 @@ class SilkFeatureNetPL(nn.Module):
             self.upsamp_embedding = nn.Embedding(4, self.repeat_upsamp_dim)
         else:
             self.tconv = norm(nn.ConvTranspose1d(num_channels, num_channels, 4, 4))
-        self.gru   = norm(norm(nn.GRU(num_channels + self.repeat_upsamp_dim if self.repeat_upsamp else 0, num_channels, batch_first=True), name='weight_hh_l0'), name='weight_ih_l0')
+        gru_input_dim = num_channels + self.repeat_upsamp_dim if self.repeat_upsamp else num_channels
+        self.gru   = norm(norm(nn.GRU(gru_input_dim, num_channels, batch_first=True), name='weight_hh_l0'), name='weight_ih_l0')
 
         if softquant:
             self.conv2 = soft_quant(self.conv2)
