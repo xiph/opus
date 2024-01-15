@@ -125,6 +125,8 @@ if has_git:
 
         if is_dirty:
             print("warning: repo is dirty")
+            with open(os.path.join(args.output, 'repo.diff'), "w") as f:
+                f.write(repo.git.execute(["git", "diff"]))
 
         setup['repo']['hash'] = hash
         setup['repo']['urls'] = urls
