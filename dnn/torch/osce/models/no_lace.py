@@ -41,7 +41,6 @@ from utils.layers.limited_adaptive_comb1d import LimitedAdaptiveComb1d
 from utils.layers.limited_adaptive_conv1d import LimitedAdaptiveConv1d
 from utils.layers.td_shaper import TDShaper
 from utils.complexity import _conv1d_flop_count
-from utils.softquant import soft_quant
 
 from models.nns_base import NNSBase
 from models.silk_feature_net_pl import SilkFeatureNetPL
@@ -50,7 +49,7 @@ from .scale_embedding import ScaleEmbedding
 
 import sys
 sys.path.append('../dnntools')
-
+from dnntools.quantization import soft_quant
 from dnntools.sparsification import create_sparsifier, mark_for_sparsification
 
 class NoLACE(NNSBase):
