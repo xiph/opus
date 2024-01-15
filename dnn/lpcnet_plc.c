@@ -51,6 +51,8 @@ void lpcnet_plc_reset(LPCNetPLCState *st) {
   st->blend = 0;
   st->loss_count = 0;
   st->analysis_gap = 1;
+  st->analysis_pos = PLC_BUF_SIZE;
+  st->predict_pos = PLC_BUF_SIZE;
 }
 
 int lpcnet_plc_init(LPCNetPLCState *st) {
@@ -58,7 +60,6 @@ int lpcnet_plc_init(LPCNetPLCState *st) {
   st->arch = opus_select_arch();
   fargan_init(&st->fargan);
   lpcnet_encoder_init(&st->enc);
-  st->analysis_pos = PLC_BUF_SIZE;
   st->loaded = 0;
 #ifndef USE_WEIGHTS_FILE
   ret = init_plc_model(&st->model, lpcnet_plc_arrays);
@@ -148,6 +149,7 @@ int lpcnet_plc_update(LPCNetPLCState *st, opus_int16 *pcm) {
   int i;
   if (st->analysis_pos - FRAME_SIZE >= 0) st->analysis_pos -= FRAME_SIZE;
   else st->analysis_gap = 1;
+  if (st->predict_pos - FRAME_SIZE >= 0) st->predict_pos -= FRAME_SIZE;
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->loss_count = 0;
@@ -161,28 +163,38 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   celt_assert(st->loaded);
   if (st->blend == 0) {
     int count = 0;
+    st->plc_net = st->plc_bak[0];
     while (st->analysis_pos + FRAME_SIZE <= PLC_BUF_SIZE) {
       float x[FRAME_SIZE];
       float plc_features[2*NB_BANDS+NB_FEATURES+1];
+      celt_assert(st->analysis_pos >= 0);
       for (i=0;i<FRAME_SIZE;i++) x[i] = 32768.f*st->pcm[st->analysis_pos+i];
       burg_cepstral_analysis(plc_features, x);
       lpcnet_compute_single_frame_features_float(&st->enc, x, st->features, st->arch);
-      if ((st->analysis_gap && count > 0) || count > 1) {
+      if ((!st->analysis_gap || count>0) && st->analysis_pos >= st->predict_pos) {
         queue_features(st, st->features);
         OPUS_COPY(&plc_features[2*NB_BANDS], st->features, NB_FEATURES);
         plc_features[2*NB_BANDS+NB_FEATURES] = 1;
+        st->plc_bak[0] = st->plc_bak[1];
+        st->plc_bak[1] = st->plc_net;
         compute_plc_pred(st, st->features, plc_features);
       }
       st->analysis_pos += FRAME_SIZE;
       count++;
     }
+    st->plc_bak[0] = st->plc_bak[1];
+    st->plc_bak[1] = st->plc_net;
     get_fec_or_pred(st, st->features);
     queue_features(st, st->features);
+    st->plc_bak[0] = st->plc_bak[1];
+    st->plc_bak[1] = st->plc_net;
     get_fec_or_pred(st, st->features);
     queue_features(st, st->features);
     fargan_cont(&st->fargan, &st->pcm[PLC_BUF_SIZE-FARGAN_CONT_SAMPLES], st->cont_features);
     st->analysis_gap = 0;
   }
+  st->plc_bak[0] = st->plc_bak[1];
+  st->plc_bak[1] = st->plc_net;
   if (get_fec_or_pred(st, st->features)) st->loss_count = 0;
   else st->loss_count++;
   if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
@@ -191,6 +203,7 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   queue_features(st, st->features);
   if (st->analysis_pos - FRAME_SIZE >= 0) st->analysis_pos -= FRAME_SIZE;
   else st->analysis_gap = 1;
+  st->predict_pos = PLC_BUF_SIZE;
   OPUS_MOVE(st->pcm, &st->pcm[FRAME_SIZE], PLC_BUF_SIZE-FRAME_SIZE);
   for (i=0;i<FRAME_SIZE;i++) st->pcm[PLC_BUF_SIZE-FRAME_SIZE+i] = (1.f/32768.f)*pcm[i];
   st->blend = 1;

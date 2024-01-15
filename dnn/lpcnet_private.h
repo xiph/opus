@@ -41,7 +41,7 @@ struct LPCNetEncState{
   float burg_cepstrum[2*NB_BANDS];
 };
 
-#define PLC_BUF_SIZE (CONT_VECTORS*FRAME_SIZE)
+#define PLC_BUF_SIZE ((CONT_VECTORS+5)*FRAME_SIZE)
 struct LPCNetPLCState {
   PLCModel model;
   FARGANState fargan;
@@ -56,12 +56,14 @@ struct LPCNetPLCState {
   int fec_fill_pos;
   int fec_skip;
   int analysis_pos;
+  int predict_pos;
   float pcm[PLC_BUF_SIZE];
   int blend;
   float features[NB_TOTAL_FEATURES];
   float cont_features[CONT_VECTORS*NB_FEATURES];
   int loss_count;
   PLCNetState plc_net;
+  PLCNetState plc_bak[2];
 };
 
 void preemphasis(float *y, float *mem, const float *x, float coef, int N);
