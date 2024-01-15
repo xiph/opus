@@ -80,7 +80,9 @@ class NoLACE(NNSBase):
                  sparsification_schedule=[100, 1000, 100],
                  sparsification_density=0.5,
                  apply_weight_norm=False,
-                 residual_in_feature_transform=False):
+                 residual_in_feature_transform=False,
+                 repeat_upsamp=False,
+                 repeat_upsamp_dim=16):
 
         super().__init__(skip=skip, preemph=preemph)
 
@@ -110,7 +112,7 @@ class NoLACE(NNSBase):
 
         # feature net
         if partial_lookahead:
-            self.feature_net = SilkFeatureNetPL(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim, hidden_feature_dim, softquant=softquant, sparsify=sparsify, sparsification_density=sparsification_density, apply_weight_norm=apply_weight_norm)
+            self.feature_net = SilkFeatureNetPL(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim, hidden_feature_dim, softquant=softquant, sparsify=sparsify, sparsification_density=sparsification_density, apply_weight_norm=apply_weight_norm, repeat_upsamp=repeat_upsamp, repeat_upsamp_dim=repeat_upsamp_dim)
         else:
             self.feature_net = SilkFeatureNet(num_features + pitch_embedding_dim + 2 * numbits_embedding_dim, cond_dim)
 

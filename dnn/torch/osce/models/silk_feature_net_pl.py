@@ -40,6 +40,7 @@ from utils.complexity import _conv1d_flop_count
 from utils.softquant import soft_quant
 
 from dnntools.sparsification import mark_for_sparsification
+
 class SilkFeatureNetPL(nn.Module):
     """ feature net with partial lookahead """
     def __init__(self,
@@ -49,7 +50,9 @@ class SilkFeatureNetPL(nn.Module):
                  softquant=False,
                  sparsify=True,
                  sparsification_density=0.5,
-                 apply_weight_norm=False):
+                 apply_weight_norm=False,
+                 repeat_upsamp=False,
+                 repeat_upsamp_dim=16):
 
         super(SilkFeatureNetPL, self).__init__()
 
@@ -59,23 +62,28 @@ class SilkFeatureNetPL(nn.Module):
         self.feature_dim = feature_dim
         self.num_channels = num_channels
         self.hidden_feature_dim = hidden_feature_dim
+        self.repeat_upsamp = repeat_upsamp
+        self.repeat_upsamp_dim = 16
 
         norm = weight_norm if apply_weight_norm else lambda x, name=None: x
 
         self.conv1 = norm(nn.Conv1d(feature_dim, self.hidden_feature_dim, 1))
         self.conv2 = norm(nn.Conv1d(4 * self.hidden_feature_dim, num_channels, 2))
-        self.tconv = norm(nn.ConvTranspose1d(num_channels, num_channels, 4, 4))
-        self.gru   = norm(norm(nn.GRU(num_channels, num_channels, batch_first=True), name='weight_hh_l0'), name='weight_ih_l0')
+        if self.repeat_upsamp:
+            self.upsamp_embedding = nn.Embedding(4, self.repeat_upsamp_dim)
+        else:
+            self.tconv = norm(nn.ConvTranspose1d(num_channels, num_channels, 4, 4))
+        self.gru   = norm(norm(nn.GRU(num_channels + self.repeat_upsamp_dim if self.repeat_upsamp else 0, num_channels, batch_first=True), name='weight_hh_l0'), name='weight_ih_l0')
 
         if softquant:
             self.conv2 = soft_quant(self.conv2)
-            self.tconv = soft_quant(self.tconv)
+            if not self.repeat_upsamp: self.tconv = soft_quant(self.tconv)
             self.gru = soft_quant(self.gru, names=['weight_hh_l0', 'weight_ih_l0'])
 
 
         if sparsify:
             mark_for_sparsification(self.conv2, (sparsification_density[0], [8, 4]))
-            mark_for_sparsification(self.tconv, (sparsification_density[1], [8, 4]))
+            if not self.repeat_upsamp: mark_for_sparsification(self.tconv, (sparsification_density[1], [8, 4]))
             mark_for_sparsification(
                 self.gru,
                 {
@@ -91,7 +99,7 @@ class SilkFeatureNetPL(nn.Module):
 
     def flop_count(self, rate=200):
         count = 0
-        for conv in self.conv1, self.conv2, self.tconv:
+        for conv in [self.conv1, self.conv2] if self.repeat_upsamp else [self.conv1, self.conv2, self.tconv]:
             count += _conv1d_flop_count(conv, rate)
 
         count += 2 * (3 * self.gru.input_size * self.gru.hidden_size + 3 * self.gru.hidden_size * self.gru.hidden_size) * rate
@@ -118,8 +126,18 @@ class SilkFeatureNetPL(nn.Module):
         c = torch.tanh(self.conv2(F.pad(c, [1, 0])))
 
         # upsampling
-        c = torch.tanh(self.tconv(c))
-        c = c.permute(0, 2, 1)
+        if self.repeat_upsamp:
+            a = torch.arange(num_frames, device=features.device) % 4
+            embeddings = torch.repeat_interleave(
+                torch.tanh(self.upsamp_embedding(a)).unsqueeze(0),
+                batch_size,
+                0
+            )
+            c = c.permute(0, 2, 1)
+            c = torch.cat((torch.repeat_interleave(c, 4, 1), embeddings), dim=2)
+        else:
+            c = torch.tanh(self.tconv(c))
+            c = c.permute(0, 2, 1)
 
         c, _ = self.gru(c, state)
 
