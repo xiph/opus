@@ -138,7 +138,7 @@ if __name__ == '__main__':
                                    )
 
         # save checkpoint
-        checkpoint_path = os.path.join(checkpoint_dir, f'fargan{args.suffix}_{epoch}.pth')
+        checkpoint_path = os.path.join(checkpoint_dir, f'plc{args.suffix}_{epoch}.pth')
         checkpoint['state_dict'] = model.state_dict()
         checkpoint['loss'] = running_loss / len(dataloader)
         checkpoint['epoch'] = epoch
