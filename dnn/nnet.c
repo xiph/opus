@@ -64,9 +64,9 @@ void compute_generic_dense(const LinearLayer *layer, float *output, const float 
 }
 
 #ifdef ENABLE_OSCE
-#define MAX_RNN_NEURONS_ALL IMAX(IMAX(IMAX(FARGAN_MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), DRED_MAX_RNN_NEURONS), OSCE_MAX_RNN_NEURONS)
+#define MAX_RNN_NEURONS_ALL IMAX(IMAX(IMAX(FARGAN_MAX_RNN_NEURONS, PLC_MAX_RNN_UNITS), DRED_MAX_RNN_NEURONS), OSCE_MAX_RNN_NEURONS)
 #else
-#define MAX_RNN_NEURONS_ALL IMAX(IMAX(FARGAN_MAX_RNN_NEURONS, PLC_MAX_RNN_NEURONS), DRED_MAX_RNN_NEURONS)
+#define MAX_RNN_NEURONS_ALL IMAX(IMAX(FARGAN_MAX_RNN_NEURONS, PLC_MAX_RNN_UNITS), DRED_MAX_RNN_NEURONS)
 #endif
 
 void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in, int arch)

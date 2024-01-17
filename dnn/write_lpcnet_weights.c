@@ -81,7 +81,7 @@ int main(void)
   FILE *fout = fopen("weights_blob.bin", "w");
   write_weights(pitchdnn_arrays, fout);
   write_weights(fargan_arrays, fout);
-  write_weights(lpcnet_plc_arrays, fout);
+  write_weights(plcmodel_arrays, fout);
   write_weights(rdovaeenc_arrays, fout);
   write_weights(rdovaedec_arrays, fout);
 #ifdef ENABLE_OSCE
