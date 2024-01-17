@@ -62,7 +62,7 @@ int lpcnet_plc_init(LPCNetPLCState *st) {
   lpcnet_encoder_init(&st->enc);
   st->loaded = 0;
 #ifndef USE_WEIGHTS_FILE
-  ret = init_plc_model(&st->model, lpcnet_plc_arrays);
+  ret = init_plcmodel(&st->model, plcmodel_arrays);
   if (ret == 0) st->loaded = 1;
 #else
   ret = 0;
@@ -76,7 +76,7 @@ int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len
   WeightArray *list;
   int ret;
   parse_weights(&list, data, len);
-  ret = init_plc_model(&st->model, list);
+  ret = init_plcmodel(&st->model, list);
   opus_free(list);
   if (ret == 0) {
     ret = lpcnet_encoder_load_model(&st->enc, data, len);
@@ -108,14 +108,14 @@ void lpcnet_plc_fec_clear(LPCNetPLCState *st) {
 
 
 static void compute_plc_pred(LPCNetPLCState *st, float *out, const float *in) {
-  float zeros[3*PLC_MAX_RNN_NEURONS] = {0};
-  float dense_out[PLC_DENSE1_OUT_SIZE];
+  float tmp[PLC_DENSE_IN_OUT_SIZE];
+  PLCModel *model = &st->model;
   PLCNetState *net = &st->plc_net;
   celt_assert(st->loaded);
-  _lpcnet_compute_dense(&st->model.plc_dense1, dense_out, in, st->arch);
-  compute_gruB(&st->model.plc_gru1, zeros, net->plc_gru1_state, dense_out, st->arch);
-  compute_gruB(&st->model.plc_gru2, zeros, net->plc_gru2_state, net->plc_gru1_state, st->arch);
-  _lpcnet_compute_dense(&st->model.plc_out, out, net->plc_gru2_state, st->arch);
+  compute_generic_dense(&model->plc_dense_in, tmp, in, ACTIVATION_TANH, 0);
+  compute_generic_gru(&model->plc_gru1_input, &model->plc_gru1_recurrent, net->gru1_state, tmp, 0);
+  compute_generic_gru(&model->plc_gru2_input, &model->plc_gru2_recurrent, net->gru2_state, net->gru1_state, 0);
+  compute_generic_dense(&model->plc_dense_out, out, net->gru2_state, ACTIVATION_LINEAR, 0);
 }
 
 static int get_fec_or_pred(LPCNetPLCState *st, float *out) {

@@ -142,7 +142,7 @@ int parse_weights(WeightArray **list, const unsigned char *data, int len);
 
 
 extern const WeightArray lpcnet_arrays[];
-extern const WeightArray lpcnet_plc_arrays[];
+extern const WeightArray plcmodel_arrays[];
 extern const WeightArray rdovaeenc_arrays[];
 extern const WeightArray rdovaedec_arrays[];
 extern const WeightArray fwgan_arrays[];

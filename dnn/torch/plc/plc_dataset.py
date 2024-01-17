@@ -40,6 +40,10 @@ class PLCDataset(torch.utils.data.Dataset):
 
         lost_offset = np.random.randint(0, high=self.lost.shape[0]-self.sequence_length)
         lost = self.lost[lost_offset:lost_offset+self.sequence_length]
+        #randomly add a few 10-ms losses so that the model learns to handle them
+        lost = lost * (np.random.rand(lost.shape[-1]) > .02).astype('float32')
+        #randomly break long consecutive losses so we don't try too hard to predict them
+        lost = 1 - ((1-lost) * (np.random.rand(lost.shape[-1]) > .1).astype('float32'))
         lost = np.reshape(lost, (features.shape[0], 1))
         lost_mask = np.tile(lost, (1,features.shape[-1]))
         in_features = features*lost_mask
