@@ -31,13 +31,6 @@
 #include <stddef.h>
 #include "opus_types.h"
 
-#ifdef DISABLE_DOT_PROD
-typedef float qweight;
-#else
-typedef signed char qweight;
-#define DOT_PROD
-#endif
-
 #define ACTIVATION_LINEAR  0
 #define ACTIVATION_SIGMOID 1
 #define ACTIVATION_TANH    2
@@ -91,40 +84,6 @@ typedef struct {
   int kheight;
 } Conv2dLayer;
 
-typedef struct {
-  const float *bias;
-  const float *input_weights;
-  int nb_inputs;
-  int nb_neurons;
-  int activation;
-} DenseLayer;
-
-typedef struct {
-  const float *bias;
-  const float *subias;
-  const qweight *input_weights;
-  const int *input_weights_idx;
-  const qweight *recurrent_weights;
-  int nb_inputs;
-  int nb_neurons;
-  int activation;
-  int reset_after;
-} GRULayer;
-
-typedef struct {
-  const float *bias;
-  const float *input_weights;
-  int nb_inputs;
-  int kernel_size;
-  int nb_neurons;
-  int activation;
-} Conv1DLayer;
-
-typedef struct {
-  const float *embedding_weights;
-  int nb_inputs;
-  int dim;
-} EmbeddingLayer;
 
 void compute_generic_dense(const LinearLayer *layer, float *output, const float *input, int activation, int arch);
 void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in, int arch);
@@ -133,10 +92,6 @@ void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, fl
 void compute_glu(const LinearLayer *layer, float *output, const float *input, int arch);
 void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation, int arch);
 
-
-void _lpcnet_compute_dense(const DenseLayer *layer, float *output, const float *input, int arch);
-
-void compute_gruB(const GRULayer *gru, const float* gru_b_condition, float *state, const float *input, int arch);
 
 int parse_weights(WeightArray **list, const unsigned char *data, int len);
 
@@ -168,24 +123,6 @@ int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
   int out_channels,
   int ktime,
   int kheight);
-
-int dense_init(DenseLayer *layer, const WeightArray *arrays,
-  const char *bias,
-  const char *input_weights,
-  int nb_inputs,
-  int nb_neurons,
-  int activation);
-
-int gru_init(GRULayer *layer, const WeightArray *arrays,
-  const char *bias,
-  const char *subias,
-  const char *input_weights,
-  const char *input_weights_idx,
-  const char *recurrent_weights,
-  int nb_inputs,
-  int nb_neurons,
-  int activation,
-  int reset_after);
 
 
 void compute_linear_c(const LinearLayer *linear, float *out, const float *in);
