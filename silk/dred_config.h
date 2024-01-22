@@ -36,7 +36,7 @@
 #define DRED_EXPERIMENTAL_BYTES 2
 
 
-#define DRED_MIN_BYTES 16
+#define DRED_MIN_BYTES 8
 
 /* these are inpart duplicates to the values defined in dred_rdovae_constants.h */
 #define DRED_SILK_ENCODER_DELAY (79+12-80)
