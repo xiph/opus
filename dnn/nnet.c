@@ -42,7 +42,7 @@
 #include "vec.h"
 
 #ifdef ENABLE_OSCE
-#include "osce_config.h"
+#include "osce.h"
 #endif
 
 #ifdef NO_OPTIMIZATIONS
