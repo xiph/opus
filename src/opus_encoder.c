@@ -45,6 +45,7 @@
 #include "analysis.h"
 #include "mathops.h"
 #include "tuning_parameters.h"
+#include "silk/dred_coding.h"
 #ifdef FIXED_POINT
 #include "fixed/structs_FIX.h"
 #else
@@ -124,6 +125,9 @@ struct OpusEncoder {
 #endif
 #ifdef ENABLE_DRED
     int          dred_duration;
+    int          dred_q0;
+    int          dred_dQ;
+    int          dred_target_chunks;
 #endif
     int          nonfinal_frame; /* current frame is not the final in a packet */
     opus_uint32  rangeFinal;
@@ -560,22 +564,60 @@ OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int application, i
 }
 
 #ifdef ENABLE_DRED
+
+static const float dred_bits_table[16] = {73.2f, 68.1f, 62.5f, 57.0f, 51.5f, 45.7f, 39.9f, 32.4f, 26.4f, 20.4f, 16.3f, 13.f, 9.3f, 8.2f, 7.2f, 6.4f};
+static int estimate_dred_bitrate(int q0, int dQ, int duration, opus_int32 target_bits, int *target_chunks) {
+   int dred_chunks;
+   int i;
+   float bits;
+   /* Signaling DRED costs 3 bytes. */
+   bits = 8*(3+DRED_EXPERIMENTAL_BYTES);
+   /* Approximation for the size of the IS. */
+   bits += 50.f+dred_bits_table[q0];
+   dred_chunks = IMIN((duration+5)/4, DRED_NUM_REDUNDANCY_FRAMES/2);
+   if (target_chunks != NULL) *target_chunks = 0;
+   for (i=0;i<dred_chunks;i++) {
+      int q = compute_quantizer(q0, dQ, i);
+      bits += dred_bits_table[q];
+      if (target_chunks != NULL && bits < target_bits) *target_chunks = i+1;
+   }
+   return (int)floor(.5f+bits);
+}
+
 static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, int frame_size)
 {
    float dred_frac;
    int bitrate_offset;
    opus_int32 dred_bitrate;
    opus_int32 target_dred_bitrate;
-   opus_int32 max_dred_bitrate;
-   if (st->dred_duration > 0) max_dred_bitrate = (120 + 6*st->dred_duration)*st->Fs/frame_size;
-   else max_dred_bitrate = 0;
-   dred_frac = MIN16(.75f, 3.f*st->silk_mode.packetLossPercentage/100.f);
-   bitrate_offset = st->silk_mode.useInBandFEC ? 18000 : 12000;
+   int target_chunks;
+   opus_int32 max_dred_bits;
+   int q0, dQ;
+   if (st->silk_mode.useInBandFEC) {
+      dred_frac = MIN16(.7f, 3.f*st->silk_mode.packetLossPercentage/100.f);
+      bitrate_offset = 20000;
+   } else {
+      dred_frac = MIN16(.8f, 4.f*st->silk_mode.packetLossPercentage/100.f);
+      bitrate_offset = 12000;
+   }
+   /* Approximate fit based on a few experiments. Could probably be improved. */
+   q0 = IMIN(15, IMAX(4, 51 - 3*EC_ILOG(IMAX(1, bitrate_bps-bitrate_offset))));
+   dQ = bitrate_bps-bitrate_offset > 36000 ? 3 : 5;
    target_dred_bitrate = IMAX(0, (int)(dred_frac*(bitrate_bps-bitrate_offset)));
-   dred_bitrate = IMIN(target_dred_bitrate, max_dred_bitrate);
+   if (st->dred_duration > 0) {
+      opus_int32 target_bits = target_dred_bitrate*frame_size/st->Fs;
+      max_dred_bits = estimate_dred_bitrate(q0, dQ, st->dred_duration, target_bits, &target_chunks);
+   } else {
+      max_dred_bits = 0;
+      target_chunks=0;
+   }
+   dred_bitrate = IMIN(target_dred_bitrate, max_dred_bits*st->Fs/frame_size);
    /* If we can't afford enough bits, don't bother with DRED at all. */
-   if (dred_bitrate <= (DRED_MIN_BYTES+DRED_EXPERIMENTAL_BYTES)*8*st->Fs/frame_size)
+   if (target_chunks < 2)
       dred_bitrate = 0;
+   st->dred_q0 = q0;
+   st->dred_dQ = dQ;
+   st->dred_target_chunks = target_chunks;
    return dred_bitrate;
 }
 #endif
@@ -2289,6 +2331,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        int dred_chunks;
        int dred_bytes_left;
        dred_chunks = IMIN((st->dred_duration+5)/4, DRED_NUM_REDUNDANCY_FRAMES/2);
+       if (st->use_vbr) dred_chunks = IMIN(dred_chunks, st->dred_target_chunks);
        /* Remaining space for DRED, accounting for cost the 3 extra bytes for code 3, padding length, and extension number. */
        dred_bytes_left = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-3);
        /* Check whether we actually have something to encode. */
@@ -2300,7 +2343,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            buf[0] = 'D';
            buf[1] = DRED_EXPERIMENTAL_VERSION;
 #endif
-           dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+DRED_EXPERIMENTAL_BYTES, dred_chunks, dred_bytes_left-DRED_EXPERIMENTAL_BYTES, st->arch);
+           dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+DRED_EXPERIMENTAL_BYTES, dred_chunks, dred_bytes_left-DRED_EXPERIMENTAL_BYTES, st->dred_q0, st->dred_dQ, st->arch);
            if (dred_bytes > 0) {
               dred_bytes += DRED_EXPERIMENTAL_BYTES;
               celt_assert(dred_bytes <= dred_bytes_left);

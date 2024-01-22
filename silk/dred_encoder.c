@@ -249,21 +249,17 @@ static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint8 *s
     }
 }
 
-int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int arch) {
+int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, int arch) {
     ec_enc ec_encoder;
 
     int q_level;
     int i;
     int offset;
     int ec_buffer_fill;
-    int q0;
-    int dQ;
     int state_qoffset;
 
     /* entropy coding of state and latents */
     ec_enc_init(&ec_encoder, buf, max_bytes);
-    q0 = DRED_ENC_Q0;
-    dQ = 3;
     ec_enc_uint(&ec_encoder, enc->dred_offset, 32);
     ec_enc_uint(&ec_encoder, q0, 16);
     ec_enc_uint(&ec_encoder, dQ, 8);

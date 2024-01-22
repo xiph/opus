@@ -66,6 +66,6 @@ void dred_deinit_encoder(DREDEnc *enc);
 
 void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int extra_delay, int arch);
 
-int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int arch);
+int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, int arch);
 
 #endif
