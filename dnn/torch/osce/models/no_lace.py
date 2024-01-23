@@ -177,10 +177,7 @@ class NoLACE(NNSBase):
     def feature_transform(self, f, layer):
         f0 = f.permute(0, 2, 1)
         f = F.pad(f0, [1, 0])
-        if self.residual_in_feature_transform:
-            f = torch.tanh(layer(f) + f0)
-        else:
-            f = torch.tanh(layer(f))
+        f = torch.tanh(layer(f))
         return f.permute(0, 2, 1)
 
     def forward(self, x, features, periods, numbits, debug=False):

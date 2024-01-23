@@ -92,7 +92,7 @@ class SilkFeatureNetPL(nn.Module):
 
     def flop_count(self, rate=200):
         count = 0
-        for conv in [self.conv1, self.conv2] if self.repeat_upsamp else [self.conv1, self.conv2, self.tconv]:
+        for conv in self.conv1, self.conv2, self.tconv:
             count += _conv1d_flop_count(conv, rate)
 
         count += 2 * (3 * self.gru.input_size * self.gru.hidden_size + 3 * self.gru.hidden_size * self.gru.hidden_size) * rate
