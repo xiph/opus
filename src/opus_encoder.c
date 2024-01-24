@@ -597,9 +597,15 @@ static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, 
       dred_frac = MIN16(.7f, 3.f*st->silk_mode.packetLossPercentage/100.f);
       bitrate_offset = 20000;
    } else {
-      dred_frac = MIN16(.8f, 4.f*st->silk_mode.packetLossPercentage/100.f);
+      if (st->silk_mode.packetLossPercentage > 5) {
+         dred_frac = MIN16(.8f, .55f + st->silk_mode.packetLossPercentage/100.f);
+      } else {
+         dred_frac = 12*st->silk_mode.packetLossPercentage/100.f;
+      }
       bitrate_offset = 12000;
    }
+   /* Account for the fact that longer packets require less redundancy. */
+   dred_frac = dred_frac/(dred_frac + (1-dred_frac)*(frame_size*50.f)/st->Fs);
    /* Approximate fit based on a few experiments. Could probably be improved. */
    q0 = IMIN(15, IMAX(4, 51 - 3*EC_ILOG(IMAX(1, bitrate_bps-bitrate_offset))));
    dQ = bitrate_bps-bitrate_offset > 36000 ? 3 : 5;
