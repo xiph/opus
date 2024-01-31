@@ -1662,7 +1662,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           tot_size += tmp_len;
           curr_data += tmp_len;
        }
-       ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr, NULL, 0);
+       ret = opus_repacketizer_out_range_impl(rp, 0, nb_frames, data, repacketize_len, 0, !st->use_vbr && (dtx_count != nb_frames), NULL, 0);
        if (ret<0)
        {
           ret = OPUS_INTERNAL_ERROR;
