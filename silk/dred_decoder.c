@@ -55,7 +55,7 @@ static void dred_decode_latents(ec_dec *dec, float *x, const opus_uint8 *scale, 
     }
 }
 
-int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames)
+int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames, int dred_frame_offset)
 {
   ec_dec ec;
   int q_level;
@@ -71,7 +71,8 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
 
   /* decode initial state and initialize RDOVAE decoder */
   ec_dec_init(&ec, (unsigned char*)bytes, num_bytes);
-  dec->dred_offset = sign_extend(ec_dec_uint(&ec, 32), 5);
+  /* Compute total offset, including DRED position in a multiframe packet. */
+  dec->dred_offset = sign_extend(ec_dec_uint(&ec, 32), 5) + dred_frame_offset;
   q0 = ec_dec_uint(&ec, 16);
   dQ = ec_dec_uint(&ec, 8);
   /*printf("%d %d %d\n", dred_offset, q0, dQ);*/

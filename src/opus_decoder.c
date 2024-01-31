@@ -1294,7 +1294,7 @@ bad_arg:
 }
 
 #ifdef ENABLE_DRED
-static int dred_find_payload(const unsigned char *data, opus_int32 len, const unsigned char **payload)
+static int dred_find_payload(const unsigned char *data, opus_int32 len, const unsigned char **payload, int *dred_frame_offset)
 {
    const unsigned char *data0;
    int len0;
@@ -1302,12 +1302,14 @@ static int dred_find_payload(const unsigned char *data, opus_int32 len, const un
    int ret;
    const unsigned char *frames[48];
    opus_int16 size[48];
+   int frame_size;
 
    *payload = NULL;
    /* Get the padding section of the packet. */
    ret = opus_packet_parse_impl(data, len, 0, NULL, frames, size, NULL, NULL, &data0, &len0);
    if (ret < 0)
       return ret;
+   frame_size = opus_packet_get_samples_per_frame(data, 48000);
    data = data0;
    len = len0;
    /* Scan extensions in order until we find the earliest frame with DRED data. */
@@ -1336,6 +1338,8 @@ static int dred_find_payload(const unsigned char *data, opus_int32 len, const un
          opus_int32 curr_payload_len;
          curr_payload = data0+header_size;
          curr_payload_len = (data-data0)-header_size;
+         /* DRED position in the packet, in units of 2.5 ms like for the signaled DRED offset. */
+         *dred_frame_offset = frame*frame_size/120;
 #ifdef DRED_EXPERIMENTAL_VERSION
          /* Check that temporary extension type and version match.
             This check will be removed once extension is finalized. */
@@ -1397,10 +1401,11 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
 #ifdef ENABLE_DRED
    const unsigned char *payload;
    opus_int32 payload_len;
+   int dred_frame_offset=0;
    VALIDATE_DRED_DECODER(dred_dec);
    if (!dred_dec->loaded) return OPUS_UNIMPLEMENTED;
    dred->process_stage = -1;
-   payload_len = dred_find_payload(data, len, &payload);
+   payload_len = dred_find_payload(data, len, &payload, &dred_frame_offset);
    if (payload_len < 0)
       return payload_len;
    if (payload != NULL)
@@ -1409,7 +1414,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
       int min_feature_frames;
       offset = 100*max_dred_samples/sampling_rate;
       min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
-      dred_ec_decode(dred, payload, payload_len, min_feature_frames);
+      dred_ec_decode(dred, payload, payload_len, min_feature_frames, dred_frame_offset);
       if (!defer_processing)
          opus_dred_process(dred_dec, dred, dred);
       return dred->nb_latents*sampling_rate/25 - sampling_rate/50;
