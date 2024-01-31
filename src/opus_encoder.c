@@ -1553,7 +1553,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        opus_int32 tot_size=0;
        unsigned char *curr_data;
        int tmp_len;
-       ALLOC_STACK;
+       int dtx_count = 0;
 
        if (st->mode == MODE_SILK_ONLY)
        {
@@ -1606,10 +1606,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
        for (i=0;i<nb_frames;i++)
        {
-          int first_frame = i == 0;
+          int first_frame;
           int frame_to_celt;
           int frame_redundancy;
           opus_int32 curr_max;
+          /* Attempt DRED encoding until we have a non-DTX frame. In case of DTX refresh,
+             that allows for DRED not to be in the first frame. */
+          first_frame = (i == 0) || (i == dtx_count);
           st->silk_mode.toMono = 0;
           st->nonfinal_frame = i<(nb_frames-1);
 
@@ -1646,6 +1649,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
           {
              RESTORE_STACK;
              return OPUS_INTERNAL_ERROR;
+          } else if (tmp_len==1) {
+             dtx_count++;
           }
           ret = opus_repacketizer_cat(rp, curr_data, tmp_len);
 
