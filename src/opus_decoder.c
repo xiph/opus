@@ -1328,7 +1328,7 @@ static int dred_find_payload(const unsigned char *data, opus_int32 len, const un
          {
             frame++;
          } else {
-            frame += data[1];
+            frame += data0[1];
          }
       } else if (id == DRED_EXTENSION_ID)
       {
