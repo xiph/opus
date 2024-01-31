@@ -345,6 +345,7 @@ void test_opus_repacketizer_out_range_impl(void)
    const unsigned char *padding;
    opus_int32 padding_len;
    opus_extension_data ext_out[10];
+   int i;
    int nb_ext;
    int res, len;
    int first_count = 0, second_count = 0;
@@ -394,7 +395,7 @@ void test_opus_repacketizer_out_range_impl(void)
    nb_ext = 10;
    res = opus_packet_extensions_parse(padding, padding_len, ext_out, &nb_ext);
    expect_true(nb_ext == 4, "Expected 4 extensions");
-   for (int i = 0 ; i < nb_ext; i++)
+   for (i = 0 ; i < nb_ext; i++)
    {
       if (ext_out[i].id == 33)
       {
