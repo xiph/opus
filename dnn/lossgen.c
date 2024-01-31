@@ -2,15 +2,31 @@
 #include "config.h"
 #endif
 
+#include "arch.h"
+
 #include <math.h>
 #include "lossgen.h"
 #include "os_support.h"
 #include "nnet.h"
+#include "assert.h"
 
 /* Disable RTCD for this. */
 #define RTCD_ARCH c
 
+/* Override assert to avoid undefined/redefined symbols. */
+#undef celt_assert
+#define celt_assert assert
+
+/* Directly include the C files we need since the symbols won't be exposed if we link in a shared object. */
+#include "parse_lpcnet_weights.c"
 #include "nnet_arch.h"
+
+#undef compute_linear
+#undef compute_activation
+
+/* Force the C version since the SIMD versions may be hidden. */
+#define compute_linear(linear, out, in, arch) ((void)(arch),compute_linear_c(linear, out, in))
+#define compute_activation(output, input, N, activation, arch) ((void)(arch),compute_activation_c(output, input, N, activation))
 
 #define MAX_RNN_NEURONS_ALL IMAX(LOSSGEN_GRU1_STATE_SIZE, LOSSGEN_GRU2_STATE_SIZE)
 
