@@ -58,17 +58,11 @@ opus_int silk_decode_frame(
 {
     VARDECL( silk_decoder_control, psDecCtrl );
     opus_int         L, mv_len, ret = 0;
-#ifdef ENABLE_OSCE
-    opus_int32  ec_start;
-#endif
     SAVE_STACK;
 
     L = psDec->frame_length;
     ALLOC( psDecCtrl, 1, silk_decoder_control );
     psDecCtrl->LTP_scale_Q14 = 0;
-#ifdef ENABLE_OSCE
-    ec_start = ec_tell(psRangeDec);
-#endif
 
     /* Safety checks */
     celt_assert( L > 0 && L <= MAX_FRAME_LENGTH );
@@ -77,6 +71,10 @@ opus_int silk_decode_frame(
         ( lostFlag == FLAG_DECODE_LBRR && psDec->LBRR_flags[ psDec->nFramesDecoded ] == 1 ) )
     {
         VARDECL( opus_int16, pulses );
+#ifdef ENABLE_OSCE
+        opus_int32  ec_start;
+        ec_start = ec_tell(psRangeDec);
+#endif
         ALLOC( pulses, (L + SHELL_CODEC_FRAME_LENGTH - 1) &
                        ~(SHELL_CODEC_FRAME_LENGTH - 1), opus_int16 );
         /*********************************************/
