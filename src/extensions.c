@@ -232,7 +232,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, 
                if (data) data[pos] = (extensions[i].id<<1) + extensions[i].len;
                pos++;
                if (extensions[i].len > 0) {
-                  data[pos] = extensions[i].data[0];
+                  if (data) data[pos] = extensions[i].data[0];
                   pos++;
                }
             } else {
