@@ -249,7 +249,15 @@ static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint8 *s
     }
 }
 
-int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, int arch) {
+static int dred_voice_active(const unsigned char *activity_mem, int offset) {
+    int i;
+    for (i=0;i<16;i++) {
+        if (activity_mem[8*offset + i] == 1) return 1;
+    }
+    return 0;
+}
+
+int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, unsigned char *activity_mem, int arch) {
     ec_enc ec_encoder;
 
     int q_level;
@@ -257,6 +265,9 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
     int offset;
     int ec_buffer_fill;
     int state_qoffset;
+    ec_enc ec_bak;
+    int prev_active=0;
+    int dred_encoded=0;
 
     /* entropy coding of state and latents */
     ec_enc_init(&ec_encoder, buf, max_bytes);
@@ -276,11 +287,10 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
     if (ec_tell(&ec_encoder) > 8*max_bytes) {
       return 0;
     }
+    ec_bak = ec_encoder;
     for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-enc->latent_offset-1); i += 2)
     {
-        ec_enc ec_bak;
-        ec_bak = ec_encoder;
-
+        int active;
         q_level = compute_quantizer(q0, dQ, i/2);
         offset = q_level * DRED_LATENT_DIM;
 
@@ -295,12 +305,21 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
             arch
         );
         if (ec_tell(&ec_encoder) > 8*max_bytes) {
-          ec_encoder = ec_bak;
           /* If we haven't been able to code one chunk, give up on DRED completely. */
           if (i==0) return 0;
           break;
         }
+        active = dred_voice_active(activity_mem, i+enc->latent_offset);
+        if (active || prev_active) {
+           ec_bak = ec_encoder;
+           dred_encoded = i+2;
+        }
+        prev_active = active;
     }
+    /* Avoid sending empty DRED packets. */
+    if (dred_encoded==0) return 0;
+
+    ec_encoder = ec_bak;
 
     ec_buffer_fill = (ec_tell(&ec_encoder)+7)/8;
     ec_enc_shrink(&ec_encoder, ec_buffer_fill);
