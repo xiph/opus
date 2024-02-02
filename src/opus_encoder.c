@@ -128,6 +128,7 @@ struct OpusEncoder {
     int          dred_q0;
     int          dred_dQ;
     int          dred_target_chunks;
+    unsigned char activity_mem[DRED_MAX_FRAMES*4]; /* 2.5ms resolution*/
 #endif
     int          nonfinal_frame; /* current frame is not the final in a packet */
     opus_uint32  rangeFinal;
@@ -1837,10 +1838,16 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
 
 #ifdef ENABLE_DRED
     if ( st->dred_duration > 0 && st->dred_encoder.loaded ) {
+        int frame_size_400Hz;
         /* DRED Encoder */
         dred_compute_latents( &st->dred_encoder, &pcm_buf[total_buffer*st->channels], frame_size, total_buffer, st->arch );
+        frame_size_400Hz = frame_size*400/st->Fs;
+        OPUS_MOVE(&st->activity_mem[frame_size_400Hz], st->activity_mem, 4*DRED_MAX_FRAMES-frame_size_400Hz);
+        for (i=0;i<frame_size_400Hz;i++)
+           st->activity_mem[i] = activity;
     } else {
         st->dred_encoder.latents_buffer_fill = 0;
+        OPUS_CLEAR(st->activity_mem, DRED_MAX_FRAMES);
     }
 #endif
 
@@ -2406,7 +2413,8 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
            buf[0] = 'D';
            buf[1] = DRED_EXPERIMENTAL_VERSION;
 #endif
-           dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+DRED_EXPERIMENTAL_BYTES, dred_chunks, dred_bytes_left-DRED_EXPERIMENTAL_BYTES, st->dred_q0, st->dred_dQ, st->arch);
+           dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+DRED_EXPERIMENTAL_BYTES, dred_chunks, dred_bytes_left-DRED_EXPERIMENTAL_BYTES,
+                                               st->dred_q0, st->dred_dQ, st->activity_mem, st->arch);
            if (dred_bytes > 0) {
               dred_bytes += DRED_EXPERIMENTAL_BYTES;
               celt_assert(dred_bytes <= dred_bytes_left);
