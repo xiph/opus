@@ -956,7 +956,7 @@ static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size, in
 
    /* Compute the right shift required in the MAC to avoid an overflow */
    max_shift = celt_ilog2(len);
-   shift = IMAX(0, (celt_ilog2(sample_max) << 1) + max_shift - 28);
+   shift = IMAX(0, (celt_ilog2(1+sample_max) << 1) + max_shift - 28);
 
    /* Compute the energy */
    for (i=0; i<len; i++)
