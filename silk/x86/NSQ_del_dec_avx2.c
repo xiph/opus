@@ -1073,7 +1073,7 @@ static OPUS_INLINE void silk_LPC_analysis_filter_avx2(
         out32_Q12 = silk_mm256_hsum_epi32(sum);
 
         /* Subtract prediction */
-        out32_Q12 = silk_LSHIFT((opus_int32)*in_ptr, 12 ) - out32_Q12;
+        out32_Q12 = silk_SUB32_ovflw( silk_LSHIFT( (opus_int32)*in_ptr, 12 ), out32_Q12 );
 
         /* Scale to Q0 */
         out32 = silk_sar_round_32(out32_Q12, 12);
