@@ -53,8 +53,7 @@ typedef struct {
     int latent_offset;
     float latents_buffer[DRED_MAX_FRAMES * DRED_LATENT_DIM];
     int latents_buffer_fill;
-    float state_buffer[DRED_STATE_DIM];
-    float initial_state[DRED_STATE_DIM];
+    float state_buffer[DRED_MAX_FRAMES * DRED_STATE_DIM];
     float resample_mem[RESAMPLING_ORDER + 1];
 } DREDEnc;
 
