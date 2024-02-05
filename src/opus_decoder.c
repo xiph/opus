@@ -1396,7 +1396,7 @@ void opus_dred_free(OpusDRED *dec)
 #endif
 }
 
-int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int defer_processing)
+int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int *dred_end, int defer_processing)
 {
 #ifdef ENABLE_DRED
    const unsigned char *payload;
@@ -1417,6 +1417,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
       dred_ec_decode(dred, payload, payload_len, min_feature_frames, dred_frame_offset);
       if (!defer_processing)
          opus_dred_process(dred_dec, dred, dred);
+      if (dred_end) *dred_end = IMAX(0, -dred->dred_offset*sampling_rate/400);
       return IMAX(0, dred->nb_latents*sampling_rate/25 - dred->dred_offset* sampling_rate/400);
    }
    return 0;
