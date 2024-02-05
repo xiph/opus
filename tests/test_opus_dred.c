@@ -67,14 +67,16 @@ void test_random_dred(void)
       int len;
       int j;
       int res1, res2;
+      int dred_end;
       len = fast_rand()%(MAX_EXTENSION_SIZE+1);
       for (j=0;j<len;j++)
          payload[j] = fast_rand()&0xFF;
-      res1 = opus_dred_parse(dred_dec, dred, payload, len, 48000, 48000, fast_rand()&0x1);
+      res1 = opus_dred_parse(dred_dec, dred, payload, len, 48000, 48000, &dred_end, fast_rand()&0x1);
       if (res1 > 0)
       {
          res2 = opus_dred_process(dred_dec, dred, dred);
          expect_true(res2 == OPUS_OK, "process should succeed if parse succeeds");
+         expect_true(res1 >= dred_end, "end before beginning");
       }
    }
    opus_dred_free(dred);
