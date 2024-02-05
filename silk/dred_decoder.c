@@ -64,7 +64,7 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   int q0;
   int dQ;
   int state_qoffset;
-
+  int extra_offset;
 
   /* since features are decoded in quadruples, it makes no sense to go with an uneven number of redundancy frames */
   celt_assert(DRED_NUM_REDUNDANCY_FRAMES % 2 == 0);
@@ -75,6 +75,9 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   dec->dred_offset = sign_extend(ec_dec_uint(&ec, 32), 5) + dred_frame_offset;
   q0 = ec_dec_uint(&ec, 16);
   dQ = ec_dec_uint(&ec, 8);
+  if (ec_dec_uint(&ec, 2)) extra_offset = ec_dec_uint(&ec, 128);
+  else extra_offset = 0;
+  dec->dred_offset -= extra_offset*8;
   /*printf("%d %d %d\n", dred_offset, q0, dQ);*/
 
   state_qoffset = q0*DRED_STATE_DIM;
