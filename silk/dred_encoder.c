@@ -267,17 +267,34 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
     int state_qoffset;
     ec_enc ec_bak;
     int prev_active=0;
+    int latent_offset;
+    int extra_dred_offset=0;
     int dred_encoded=0;
+    int total_offset;
+
+    latent_offset = enc->latent_offset;
+    while (latent_offset < enc->latents_buffer_fill && !dred_voice_active(activity_mem, latent_offset)) {
+       latent_offset++;
+       extra_dred_offset++;
+    }
 
     /* entropy coding of state and latents */
     ec_enc_init(&ec_encoder, buf, max_bytes);
-    ec_enc_uint(&ec_encoder, enc->dred_offset, 32);
     ec_enc_uint(&ec_encoder, q0, 16);
     ec_enc_uint(&ec_encoder, dQ, 8);
+    total_offset = 16 - (enc->dred_offset - extra_dred_offset*8);
+    if (total_offset > 31) {
+       ec_enc_uint(&ec_encoder, 1, 2);
+       ec_enc_uint(&ec_encoder, total_offset>>5, 256);
+       ec_enc_uint(&ec_encoder, total_offset&31, 32);
+    } else {
+       ec_enc_uint(&ec_encoder, 0, 2);
+       ec_enc_uint(&ec_encoder, total_offset, 32);
+    }
     state_qoffset = q0*DRED_STATE_DIM;
     dred_encode_latents(
         &ec_encoder,
-        &enc->state_buffer[enc->latent_offset*DRED_STATE_DIM],
+        &enc->state_buffer[latent_offset*DRED_STATE_DIM],
         dred_state_quant_scales_q8 + state_qoffset,
         dred_state_dead_zone_q8 + state_qoffset,
         dred_state_r_q8 + state_qoffset,
@@ -288,7 +305,7 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
       return 0;
     }
     ec_bak = ec_encoder;
-    for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-enc->latent_offset-1); i += 2)
+    for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-latent_offset-1); i += 2)
     {
         int active;
         q_level = compute_quantizer(q0, dQ, i/2);
@@ -296,7 +313,7 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
 
         dred_encode_latents(
             &ec_encoder,
-            enc->latents_buffer + (i+enc->latent_offset) * DRED_LATENT_DIM,
+            enc->latents_buffer + (i+latent_offset) * DRED_LATENT_DIM,
             dred_latent_quant_scales_q8 + offset,
             dred_latent_dead_zone_q8 + offset,
             dred_latent_r_q8 + offset,
@@ -309,7 +326,7 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
           if (i==0) return 0;
           break;
         }
-        active = dred_voice_active(activity_mem, i+enc->latent_offset);
+        active = dred_voice_active(activity_mem, i+latent_offset);
         if (active || prev_active) {
            ec_bak = ec_encoder;
            dred_encoded = i+2;
@@ -317,8 +334,7 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
         prev_active = active;
     }
     /* Avoid sending empty DRED packets. */
-    if (dred_encoded==0) return 0;
-
+    if (dred_encoded==0 || (dred_encoded<=2 && extra_dred_offset)) return 0;
     ec_encoder = ec_bak;
 
     ec_buffer_fill = (ec_tell(&ec_encoder)+7)/8;
