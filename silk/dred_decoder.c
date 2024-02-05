@@ -39,12 +39,6 @@
 #include "dred_rdovae_stats_data.h"
 #include "dred_rdovae_constants.h"
 
-/* From http://graphics.stanford.edu/~seander/bithacks.html#FixedSignExtend */
-static int sign_extend(int x, int b) {
-  int m = 1U << (b - 1);
-  return (x ^ m) - m;
-}
-
 static void dred_decode_latents(ec_dec *dec, float *x, const opus_uint8 *scale, const opus_uint8 *r, const opus_uint8 *p0, int dim) {
     int i;
     for (i=0;i<dim;i++) {
@@ -64,17 +58,19 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   int q0;
   int dQ;
   int state_qoffset;
-
+  int extra_offset;
 
   /* since features are decoded in quadruples, it makes no sense to go with an uneven number of redundancy frames */
   celt_assert(DRED_NUM_REDUNDANCY_FRAMES % 2 == 0);
 
   /* decode initial state and initialize RDOVAE decoder */
   ec_dec_init(&ec, (unsigned char*)bytes, num_bytes);
-  /* Compute total offset, including DRED position in a multiframe packet. */
-  dec->dred_offset = sign_extend(ec_dec_uint(&ec, 32), 5) + dred_frame_offset;
   q0 = ec_dec_uint(&ec, 16);
   dQ = ec_dec_uint(&ec, 8);
+  if (ec_dec_uint(&ec, 2)) extra_offset = 32*ec_dec_uint(&ec, 256);
+  else extra_offset = 0;
+  /* Compute total offset, including DRED position in a multiframe packet. */
+  dec->dred_offset = 16 - ec_dec_uint(&ec, 32) - extra_offset + dred_frame_offset;
   /*printf("%d %d %d\n", dred_offset, q0, dQ);*/
 
   state_qoffset = q0*DRED_STATE_DIM;

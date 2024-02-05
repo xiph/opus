@@ -703,7 +703,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
          if (feature_offset <= 4*dred->nb_latents-1 && feature_offset >= 0) {
            lpcnet_plc_fec_add(&st->lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
          } else {
-           lpcnet_plc_fec_add(&st->lpcnet, NULL);
+           if (feature_offset >= 0) lpcnet_plc_fec_add(&st->lpcnet, NULL);
          }
 
       }
@@ -1417,7 +1417,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
       dred_ec_decode(dred, payload, payload_len, min_feature_frames, dred_frame_offset);
       if (!defer_processing)
          opus_dred_process(dred_dec, dred, dred);
-      return dred->nb_latents*sampling_rate/25 - sampling_rate/50;
+      return IMAX(0, dred->nb_latents*sampling_rate/25 - dred->dred_offset* sampling_rate/400);
    }
    return 0;
 #else
