@@ -2395,6 +2395,8 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
        if (st->use_vbr) dred_chunks = IMIN(dred_chunks, st->dred_target_chunks);
        /* Remaining space for DRED, accounting for cost the 3 extra bytes for code 3, padding length, and extension number. */
        dred_bytes_left = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-3);
+       /* Account for the extra bytes required to signal large padding length. */
+       dred_bytes_left -= (dred_bytes_left+1+DRED_EXPERIMENTAL_BYTES)/255;
        /* Check whether we actually have something to encode. */
        if (dred_chunks >= 1 && dred_bytes_left >= DRED_MIN_BYTES+DRED_EXPERIMENTAL_BYTES) {
            int dred_bytes;
