@@ -122,11 +122,11 @@ void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem,
    float tmp[MAX_CONV_INPUTS_ALL];
    celt_assert(input != output);
    celt_assert(layer->nb_inputs <= MAX_CONV_INPUTS_ALL);
-   OPUS_COPY(tmp, mem, layer->nb_inputs-input_size);
+   if (layer->nb_inputs!=input_size) OPUS_COPY(tmp, mem, layer->nb_inputs-input_size);
    OPUS_COPY(&tmp[layer->nb_inputs-input_size], input, input_size);
    compute_linear(layer, output, tmp, arch);
    compute_activation(output, output, layer->nb_outputs, activation, arch);
-   OPUS_COPY(mem, &tmp[input_size], layer->nb_inputs-input_size);
+   if (layer->nb_inputs!=input_size) OPUS_COPY(mem, &tmp[input_size], layer->nb_inputs-input_size);
 }
 
 void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int dilation, int activation, int arch)
