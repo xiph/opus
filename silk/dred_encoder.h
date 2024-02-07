@@ -51,6 +51,7 @@ typedef struct {
     int input_buffer_fill;
     int dred_offset;
     int latent_offset;
+    int last_extra_dred_offset;
     float latents_buffer[DRED_MAX_FRAMES * DRED_LATENT_DIM];
     int latents_buffer_fill;
     float state_buffer[DRED_MAX_FRAMES * DRED_STATE_DIM];
@@ -65,6 +66,6 @@ void dred_deinit_encoder(DREDEnc *enc);
 
 void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int extra_delay, int arch);
 
-int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, unsigned char *activity_mem, int arch);
+int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, unsigned char *activity_mem, int arch);
 
 #endif

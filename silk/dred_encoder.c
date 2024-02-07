@@ -257,7 +257,7 @@ static int dred_voice_active(const unsigned char *activity_mem, int offset) {
     return 0;
 }
 
-int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, unsigned char *activity_mem, int arch) {
+int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, unsigned char *activity_mem, int arch) {
     ec_enc ec_encoder;
 
     int q_level;
@@ -270,13 +270,22 @@ int dred_encode_silk_frame(const DREDEnc *enc, unsigned char *buf, int max_chunk
     int latent_offset;
     int extra_dred_offset=0;
     int dred_encoded=0;
+    int delayed_dred=0;
     int total_offset;
 
     latent_offset = enc->latent_offset;
+    /* Delaying new DRED data when just out of silence because we already have the
+       main Opus payload for that frame. */
+    if (activity_mem[0] && enc->last_extra_dred_offset>0) {
+        latent_offset = enc->last_extra_dred_offset;
+        delayed_dred = 1;
+        enc->last_extra_dred_offset = 0;
+    }
     while (latent_offset < enc->latents_buffer_fill && !dred_voice_active(activity_mem, latent_offset)) {
        latent_offset++;
        extra_dred_offset++;
     }
+    if (!delayed_dred) enc->last_extra_dred_offset = extra_dred_offset;
 
     /* entropy coding of state and latents */
     ec_enc_init(&ec_encoder, buf, max_bytes);
