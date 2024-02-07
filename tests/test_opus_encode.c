@@ -250,7 +250,9 @@ void fuzz_encoder_settings(const int num_encoders, const int num_setting_changes
          if(opus_encoder_ctl(enc, OPUS_SET_PREDICTION_DISABLED(pred_disabled)) != OPUS_OK) test_failed();
          if(opus_encoder_ctl(enc, OPUS_SET_DTX(dtx)) != OPUS_OK) test_failed();
          if(opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(frame_size_enum)) != OPUS_OK) test_failed();
-
+#ifdef ENABLE_DRED
+         if(opus_encoder_ctl(enc, OPUS_SET_DRED_DURATION(fast_rand()%101)) != OPUS_OK) test_failed();
+#endif
          if(test_encode(enc, num_channels, frame_size, dec)) {
             fprintf(stderr,
                "fuzz_encoder_settings: %d kHz, %d ch, application: %d, "
@@ -395,6 +397,9 @@ int run_test1(int no_fuzz)
       if(opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(rc==1))!=OPUS_OK)test_failed();
       if(opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(rc==1))!=OPUS_OK)test_failed();
       if(opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(rc==0))!=OPUS_OK)test_failed();
+#ifdef ENABLE_DRED
+      if(opus_encoder_ctl(enc, OPUS_SET_DRED_DURATION(fast_rand()%101)) != OPUS_OK) test_failed();
+#endif
       for(j=0;j<13;j++)
       {
          int rate;
