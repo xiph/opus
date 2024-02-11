@@ -67,7 +67,7 @@ void celt_fir_sse4_1(const opus_val16 *x,
 #if defined(OPUS_CHECK_ASM)
       {
          opus_val32 sums_c[4] = {0};
-         xcorr_kernel_c(rnum, x+i-ord, sums, ord);
+         xcorr_kernel_c(rnum, x+i-ord, sums_c, ord);
 #endif
          xcorr_kernel(rnum, x+i-ord, sums, ord, arch);
 #if defined(OPUS_CHECK_ASM)
