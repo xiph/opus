@@ -41,7 +41,10 @@
 #include "entenc.h"
 #include "entdec.h"
 #include "arch.h"
-#include "lpcnet.h"
+
+#ifdef ENABLE_DEEP_PLC
+typedef struct LPCNetPLCState LPCNetPLCState;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
