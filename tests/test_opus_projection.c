@@ -231,7 +231,7 @@ void test_creation_arguments(const int channels, const int mapping_family)
     opus_free(matrix);
   }
 
-  is_channels_valid = ((order_plus_one >= 2 && order_plus_one <= 4) || order_plus_one == 6) &&
+  is_channels_valid = (order_plus_one >= 2 && order_plus_one <= 6) &&
     (nondiegetic_channels == 0 || nondiegetic_channels == 2);
   is_projection_valid = (enc_error == OPUS_OK && dec_error == OPUS_OK);
   if (is_channels_valid ^ is_projection_valid)
