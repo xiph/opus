@@ -936,5 +936,4 @@ const opus_int16 mapping_matrix_fifthoa_demixing_data[1444] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
- };
-   
+};
