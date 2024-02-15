@@ -43,6 +43,7 @@ def hangover(lags, num_frames=10):
                 count += 1
         else:
             count = 0
+            last_lag = lag
 
     return lags
 
