@@ -1429,6 +1429,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
    (void)max_dred_samples;
    (void)sampling_rate;
    (void)defer_processing;
+   (void)dred_end;
    return OPUS_UNIMPLEMENTED;
 #endif
 }
