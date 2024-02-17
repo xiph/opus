@@ -15,6 +15,7 @@ typedef struct {
   float gru1_state[LOSSGEN_GRU1_STATE_SIZE];
   float gru2_state[LOSSGEN_GRU2_STATE_SIZE];
   int last_loss;
+  int used;
 } LossGenState;
 
 

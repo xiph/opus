@@ -308,7 +308,15 @@ endif
 if ENABLE_DRED
 TESTS += tests/test_opus_dred
 endif
+
+if ENABLE_LOSSGEN
+noinst_PROGRAMS += lossgen_demo
+lossgen_demo_SOURCES = dnn/lossgen_demo.c $(LOSSGEN_SOURCES)
+lossgen_demo_LDADD = $(LIBM)
 endif
+
+endif
+
 
 EXTRA_DIST = opus.pc.in \
              opus-uninstalled.pc.in \

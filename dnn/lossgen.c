@@ -70,7 +70,7 @@ void compute_generic_dense_lossgen(const LinearLayer *layer, float *output, cons
 }
 
 
-int sample_loss(
+static int sample_loss_impl(
     LossGenState *st,
     float percent_loss)
 {
@@ -90,6 +90,19 @@ int sample_loss(
   return loss;
 }
 
+int sample_loss(
+    LossGenState *st,
+    float percent_loss)
+{
+   /* Due to GRU being initialized with zeros, the first packets aren't quite random,
+      so we skip them. */
+   if (!st->used) {
+      int i;
+      for (i=0;i<100;i++) sample_loss_impl(st, percent_loss);
+      st->used = 1;
+   }
+   return sample_loss_impl(st, percent_loss);
+}
 
 void lossgen_init(LossGenState *st)
 {
