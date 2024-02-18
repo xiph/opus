@@ -25,11 +25,11 @@
 */
 
 /* This packet loss simulator can be used independently of the Opus codebase.
-   Do do that, you need to compile the following files:
+   To do that, you need to compile the following files:
      dnn/lossgen.c
      dnn/lossgen_data.c
-   
-   To to that, the following files are needed as #include
+
+   with the following files needed as #include
      dnn/lossgen_data.h
      dnn/lossgen.h
      dnn/nnet_arch.h
@@ -43,7 +43,6 @@
      include/opus_defines.h
      include/opus_types.h
 
-   
    Additionally, the code in dnn/lossgen_demo.c can be used to generate losses from
    the command line.
 */
