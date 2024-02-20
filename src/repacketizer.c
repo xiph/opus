@@ -121,7 +121,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    int ext_begin=0, ext_len=0;
    int ext_count, total_ext_count;
    VARDECL(opus_extension_data, all_extensions);
-   ALLOC_STACK;
+   SAVE_STACK;
 
    if (begin<0 || begin>=end || end>rp->nb_frames)
    {
@@ -312,6 +312,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       while (ptr<data+maxlen)
          *ptr++=0;
    }
+   RESTORE_STACK;
    return tot_size;
 }
 
@@ -329,24 +330,32 @@ opus_int32 opus_packet_pad_impl(unsigned char *data, opus_int32 len, opus_int32 
 {
    OpusRepacketizer rp;
    opus_int32 ret;
+   VARDECL(unsigned char, copy);
+   SAVE_STACK;
    if (len < 1)
       return OPUS_BAD_ARG;
    if (len==new_len)
       return OPUS_OK;
    else if (len > new_len)
       return OPUS_BAD_ARG;
+   ALLOC(copy, len, unsigned char);
    opus_repacketizer_init(&rp);
    /* Moving payload to the end of the packet so we can do in-place padding */
-   OPUS_MOVE(data+new_len-len, data, len);
-   ret = opus_repacketizer_cat(&rp, data+new_len-len, len);
+   OPUS_COPY(copy, data, len);
+   ret = opus_repacketizer_cat(&rp, copy, len);
    if (ret != OPUS_OK)
       return ret;
-   return opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, data, new_len, 0, pad, extensions, nb_extensions);
+   ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, data, new_len, 0, pad, extensions, nb_extensions);
+   RESTORE_STACK;
+   return ret;
 }
 
 int opus_packet_pad(unsigned char *data, opus_int32 len, opus_int32 new_len)
 {
-   opus_int32 ret = opus_packet_pad_impl(data, len, new_len, 1, NULL, 0);
+   opus_int32 ret;
+   ALLOC_STACK;
+   ret = opus_packet_pad_impl(data, len, new_len, 1, NULL, 0);
+   RESTORE_STACK;
    if (ret > 0)
       return OPUS_OK;
    else
