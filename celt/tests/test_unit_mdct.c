@@ -224,5 +224,6 @@ int main(int argc,char ** argv)
         test1d(1920,1,arch);
 #endif
     }
+    RESTORE_STACK;
     return ret;
 }
