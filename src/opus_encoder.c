@@ -1727,6 +1727,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
     opus_int activity = VAD_NO_DECISION;
     VARDECL(opus_val16, pcm_buf);
     VARDECL(opus_val16, tmp_prefill);
+    SAVE_STACK;
 
     st->rangeFinal = 0;
     silk_enc = (char*)st+st->silk_enc_offset;
