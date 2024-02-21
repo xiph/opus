@@ -1420,6 +1420,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
       if (dred_end) *dred_end = IMAX(0, -dred->dred_offset*sampling_rate/400);
       return IMAX(0, dred->nb_latents*sampling_rate/25 - dred->dred_offset* sampling_rate/400);
    }
+   if (dred_end) *dred_end = 0;
    return 0;
 #else
    (void)dred_dec;
