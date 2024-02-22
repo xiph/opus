@@ -36,9 +36,9 @@
 #include "dred_config.h"
 #include "dred_coding.h"
 
-int compute_quantizer(int q0, int dQ, int i) {
+int compute_quantizer(int q0, int dQ, int qmax, int i) {
   int quant;
   static const int dQ_table[8] = {0, 2, 3, 4, 6, 8, 12, 16};
   quant = q0 + (dQ_table[dQ]*i + 8)/16;
-  return quant > 15 ? 15 : quant;
+  return quant > qmax ? qmax : quant;
 }

@@ -131,6 +131,7 @@ struct OpusEncoder {
     int          dred_duration;
     int          dred_q0;
     int          dred_dQ;
+    int          dred_qmax;
     int          dred_target_chunks;
     unsigned char activity_mem[DRED_MAX_FRAMES*4]; /* 2.5ms resolution*/
 #endif
@@ -571,7 +572,7 @@ OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int application, i
 #ifdef ENABLE_DRED
 
 static const float dred_bits_table[16] = {73.2f, 68.1f, 62.5f, 57.0f, 51.5f, 45.7f, 39.9f, 32.4f, 26.4f, 20.4f, 16.3f, 13.f, 9.3f, 8.2f, 7.2f, 6.4f};
-static int estimate_dred_bitrate(int q0, int dQ, int duration, opus_int32 target_bits, int *target_chunks) {
+static int estimate_dred_bitrate(int q0, int dQ, int qmax, int duration, opus_int32 target_bits, int *target_chunks) {
    int dred_chunks;
    int i;
    float bits;
@@ -582,7 +583,7 @@ static int estimate_dred_bitrate(int q0, int dQ, int duration, opus_int32 target
    dred_chunks = IMIN((duration+5)/4, DRED_NUM_REDUNDANCY_FRAMES/2);
    if (target_chunks != NULL) *target_chunks = 0;
    for (i=0;i<dred_chunks;i++) {
-      int q = compute_quantizer(q0, dQ, i);
+      int q = compute_quantizer(q0, dQ, qmax, i);
       bits += dred_bits_table[q];
       if (target_chunks != NULL && bits < target_bits) *target_chunks = i+1;
    }
@@ -597,7 +598,7 @@ static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, 
    opus_int32 target_dred_bitrate;
    int target_chunks;
    opus_int32 max_dred_bits;
-   int q0, dQ;
+   int q0, dQ, qmax;
    if (st->silk_mode.useInBandFEC) {
       dred_frac = MIN16(.7f, 3.f*st->silk_mode.packetLossPercentage/100.f);
       bitrate_offset = 20000;
@@ -614,10 +615,11 @@ static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, 
    /* Approximate fit based on a few experiments. Could probably be improved. */
    q0 = IMIN(15, IMAX(4, 51 - 3*EC_ILOG(IMAX(1, bitrate_bps-bitrate_offset))));
    dQ = bitrate_bps-bitrate_offset > 36000 ? 3 : 5;
+   qmax = 15;
    target_dred_bitrate = IMAX(0, (int)(dred_frac*(bitrate_bps-bitrate_offset)));
    if (st->dred_duration > 0) {
       opus_int32 target_bits = target_dred_bitrate*frame_size/st->Fs;
-      max_dred_bits = estimate_dred_bitrate(q0, dQ, st->dred_duration, target_bits, &target_chunks);
+      max_dred_bits = estimate_dred_bitrate(q0, dQ, qmax, st->dred_duration, target_bits, &target_chunks);
    } else {
       max_dred_bits = 0;
       target_chunks=0;
@@ -628,6 +630,7 @@ static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, 
       dred_bitrate = 0;
    st->dred_q0 = q0;
    st->dred_dQ = dQ;
+   st->dred_qmax = qmax;
    st->dred_target_chunks = target_chunks;
    return dred_bitrate;
 }
@@ -2419,7 +2422,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
            buf[1] = DRED_EXPERIMENTAL_VERSION;
 #endif
            dred_bytes = dred_encode_silk_frame(&st->dred_encoder, buf+DRED_EXPERIMENTAL_BYTES, dred_chunks, dred_bytes_left-DRED_EXPERIMENTAL_BYTES,
-                                               st->dred_q0, st->dred_dQ, st->activity_mem, st->arch);
+                                               st->dred_q0, st->dred_dQ, st->dred_qmax, st->activity_mem, st->arch);
            if (dred_bytes > 0) {
               dred_bytes += DRED_EXPERIMENTAL_BYTES;
               celt_assert(dred_bytes <= dred_bytes_left);

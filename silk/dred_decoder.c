@@ -57,6 +57,7 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   int offset;
   int q0;
   int dQ;
+  int qmax;
   int state_qoffset;
   int extra_offset;
 
@@ -72,7 +73,28 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
   /* Compute total offset, including DRED position in a multiframe packet. */
   dec->dred_offset = 16 - ec_dec_uint(&ec, 32) - extra_offset + dred_frame_offset;
   /*printf("%d %d %d\n", dred_offset, q0, dQ);*/
-
+  qmax = 15;
+  if (q0 < 14 && dQ > 0) {
+    int nvals;
+    int ft;
+    int s;
+    /* The distribution for the dQmax symbol is split evenly between zero
+        (which implies qmax == 15) and larger values, with the probability of
+        all larger values being uniform.
+       This is equivalent to coding 1 bit to decide if the maximum is less than
+        15 followed by a uint to decide the actual value if it is less than
+        15, but combined into a single symbol. */
+    nvals = 15 - (q0 + 1);
+    ft = 2*nvals;
+    s = ec_decode(&ec, ft);
+    if (s >= nvals) {
+      qmax = q0 + (s - nvals) + 1;
+      ec_dec_update(&ec, s, s + 1, ft);
+    }
+    else {
+      ec_dec_update(&ec, 0, nvals, ft);
+    }
+  }
   state_qoffset = q0*DRED_STATE_DIM;
   dred_decode_latents(
       &ec,
@@ -88,7 +110,7 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
       /* FIXME: Figure out how to avoid missing a last frame that would take up < 8 bits. */
       if (8*num_bytes - ec_tell(&ec) <= 7)
          break;
-      q_level = compute_quantizer(q0, dQ, i/2);
+      q_level = compute_quantizer(q0, dQ, qmax, i/2);
       offset = q_level*DRED_LATENT_DIM;
       dred_decode_latents(
           &ec,

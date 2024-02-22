@@ -257,7 +257,7 @@ static int dred_voice_active(const unsigned char *activity_mem, int offset) {
     return 0;
 }
 
-int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, unsigned char *activity_mem, int arch) {
+int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int max_bytes, int q0, int dQ, int qmax, unsigned char *activity_mem, int arch) {
     ec_enc ec_encoder;
 
     int q_level;
@@ -301,6 +301,15 @@ int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int
        ec_enc_uint(&ec_encoder, 0, 2);
        ec_enc_uint(&ec_encoder, total_offset, 32);
     }
+    celt_assert(qmax >= q0);
+    if (q0 < 14 && dQ > 0) {
+      int nvals;
+      /* If you want to use qmax == q0, you should have set dQ = 0. */
+      celt_assert(qmax > q0);
+      nvals = 15 - (q0 + 1);
+      ec_encode(&ec_encoder, qmax >= 15 ? 0 : nvals + qmax - (q0 + 1),
+        qmax >= 15 ? nvals : nvals + qmax - q0, 2*nvals);
+    }
     state_qoffset = q0*DRED_STATE_DIM;
     dred_encode_latents(
         &ec_encoder,
@@ -318,7 +327,7 @@ int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int
     for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-latent_offset-1); i += 2)
     {
         int active;
-        q_level = compute_quantizer(q0, dQ, i/2);
+        q_level = compute_quantizer(q0, dQ, qmax, i/2);
         offset = q_level * DRED_LATENT_DIM;
 
         dred_encode_latents(
