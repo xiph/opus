@@ -39,8 +39,6 @@
 int compute_quantizer(int q0, int dQ, int i) {
   int quant;
   static const int dQ_table[8] = {0, 2, 3, 4, 6, 8, 12, 16};
-  quant = 0;
   quant = q0 + (dQ_table[dQ]*i + 8)/16;
   return quant > 15 ? 15 : quant;
-  return (int) floor(0.5f + DRED_ENC_Q0 + 1.f * (DRED_ENC_Q1 - DRED_ENC_Q0) * i / (DRED_NUM_REDUNDANCY_FRAMES - 2));
 }
