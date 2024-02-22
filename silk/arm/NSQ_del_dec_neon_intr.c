@@ -730,7 +730,7 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
                 int16x4_t tmp1_s16x4, tmp2_s16x4, tmp_summand_s16x4;
 
                 q1_Q10_s16x4 = vshl_n_s16( q1_Q0_s16x4, 10 );
-                tmp_summand_s16x4 = vand_s16( vreinterpret_s16_u16(vcgez_s16(q1_Q0_s16x4)), vdup_n_s16( offset_Q10 - QUANT_LEVEL_ADJUST_Q10 ) );
+                tmp_summand_s16x4 = vand_s16( vreinterpret_s16_u16(vcge_s16(q1_Q0_s16x4, vdup_n_s16(0))), vdup_n_s16( offset_Q10 - QUANT_LEVEL_ADJUST_Q10 ) );
                 tmp1_s16x4 = vadd_s16( q1_Q10_s16x4, tmp_summand_s16x4 );
                 tmp_summand_s16x4 = vbsl_s16( lessThanMinus1_u16x4, vdup_n_s16( offset_Q10 + QUANT_LEVEL_ADJUST_Q10 ), vdup_n_s16(0) );
                 q1_Q10_s16x4 = vadd_s16( q1_Q10_s16x4,  tmp_summand_s16x4);
