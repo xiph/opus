@@ -537,13 +537,12 @@ OPUS_EXPORT int opus_dred_decoder_get_size(void);
 OPUS_EXPORT OpusDREDDecoder *opus_dred_decoder_create(int *error);
 
 /** Initializes an <code>OpusDREDDecoder</code> state.
-  * @param[in] st <tt>OpusDREDDecoder*</tt>: State to be initialized.
-  * @param [out] error <tt>int*</tt>: #OPUS_OK Success or @ref opus_errorcodes
+  * @param[in] dec <tt>OpusDREDDecoder*</tt>: State to be initialized.
   */
 OPUS_EXPORT int opus_dred_decoder_init(OpusDREDDecoder *dec);
 
 /** Frees an <code>OpusDREDDecoder</code> allocated by opus_dred_decoder_create().
-  * @param[in] st <tt>OpusDREDDecoder*</tt>: State to be freed.
+  * @param[in] dec <tt>OpusDREDDecoder*</tt>: State to be freed.
   */
 OPUS_EXPORT void opus_dred_decoder_destroy(OpusDREDDecoder *dec);
 
@@ -551,7 +550,7 @@ OPUS_EXPORT void opus_dred_decoder_destroy(OpusDREDDecoder *dec);
   *
   * Generally the request and subsequent arguments are generated
   * by a convenience macro.
-  * @param st <tt>OpusDREDDecoder*</tt>: DRED Decoder state.
+  * @param dred_dec <tt>OpusDREDDecoder*</tt>: DRED Decoder state.
   * @param request This and all remaining parameters should be replaced by one
   *                of the convenience macros in @ref opus_genericctls or
   *                @ref opus_decoderctls.
@@ -571,11 +570,12 @@ OPUS_EXPORT int opus_dred_get_size(void);
 OPUS_EXPORT OpusDRED *opus_dred_alloc(int *error);
 
 /** Frees an <code>OpusDRED</code> allocated by opus_dred_create().
-  * @param[in] st <tt>OpusDRED*</tt>: State to be freed.
+  * @param[in] dec <tt>OpusDRED*</tt>: State to be freed.
   */
 OPUS_EXPORT void opus_dred_free(OpusDRED *dec);
 
 /** Decode an Opus DRED packet.
+  * @param [in] dred_dec <tt>OpusDRED*</tt>: DRED Decoder state
   * @param [in] dred <tt>OpusDRED*</tt>: DRED state
   * @param [in] data <tt>char*</tt>: Input payload
   * @param [in] len <tt>opus_int32</tt>: Number of bytes in payload
@@ -589,7 +589,9 @@ OPUS_EXPORT int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const
 
 /** Finish decoding an Opus DRED packet. The function only needs to be called if opus_dred_parse() was called with defer_processing=1.
   * The source and destination will often be the same DRED state.
-  * @param [in] dred <tt>OpusDRED*</tt>: DRED state
+  * @param [in] dred_dec <tt>OpusDRED*</tt>: DRED Decoder state
+  * @param [in] src <tt>OpusDRED*</tt>: Source DRED state to start the processing from.
+  * @param [out] dst <tt>OpusDRED*</tt>: Destination DRED state to store the updated state after processing.
   * @returns @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *dst);
@@ -692,7 +694,8 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_get_nb_frames(const unsigned
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_packet_get_nb_samples(const unsigned char packet[], opus_int32 len, opus_int32 Fs) OPUS_ARG_NONNULL(1);
 
 /** Checks whether an Opus packet has LBRR.
-  * @param [in] data <tt>char*</tt>: Opus packet
+  * @param [in] packet <tt>char*</tt>: Opus packet
+  * @param [in] len <tt>opus_int32</tt>: Length of packet
   * @returns 1 is LBRR is present, 0 otherwise
   * @retval OPUS_INVALID_PACKET The compressed data passed is corrupted or of an unsupported type
   */
