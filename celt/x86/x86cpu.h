@@ -60,18 +60,33 @@
 int opus_select_arch(void);
 # endif
 
+# if defined(OPUS_X86_MAY_HAVE_SSE2)
+#  include "opus_defines.h"
+
 /*MOVD should not impose any alignment restrictions, but the C standard does,
    and UBSan will report errors if we actually make unaligned accesses.
   Use this to work around those restrictions (which should hopefully all get
-   optimized to a single MOVD instruction).*/
-#define OP_LOADU_EPI32(x) \
-  (int)((*(unsigned char *)(x) | *((unsigned char *)(x) + 1) << 8U |\
-   *((unsigned char *)(x) + 2) << 16U | (opus_uint32)*((unsigned char *)(x) + 3) << 24U))
+   optimized to a single MOVD instruction).
+  GCC implemented _mm_loadu_si32() since GCC 11; HOWEVER, there is a bug!
+  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99754 */
+#  if !defined(_MSC_VER) && !OPUS_GNUC_PREREQ(11,3) && !(defined(__clang__) && (__clang_major__ >= 8))
+#   include <string.h>
+#   include <emmintrin.h>
 
-#define OP_CVTEPI8_EPI32_M32(x) \
- (_mm_cvtepi8_epi32(_mm_cvtsi32_si128(OP_LOADU_EPI32(x))))
+#   define _mm_loadu_si32 WORKAROUND_mm_loadu_si32
+static inline __m128i WORKAROUND_mm_loadu_si32(void const* mem_addr) {
+  int val;
+  memcpy(&val, mem_addr, sizeof(val));
+  return _mm_cvtsi32_si128(val);
+}
+#  endif
 
-#define OP_CVTEPI16_EPI32_M64(x) \
+#  define OP_CVTEPI8_EPI32_M32(x) \
+ (_mm_cvtepi8_epi32(_mm_loadu_si32(x)))
+
+#  define OP_CVTEPI16_EPI32_M64(x) \
  (_mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i *)(void*)(x))))
+
+# endif
 
 #endif

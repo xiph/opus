@@ -86,18 +86,6 @@ static inline int __builtin_ctz(unsigned int x)
 }
 #endif
 
-/*
- * GCC implemented _mm_loadu_si32() since GCC 11; HOWEVER, there is a bug!
- * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99754
- */
-#if !defined(_MSC_VER) && !OPUS_GNUC_PREREQ(11,3) && !(defined(__clang__) && (__clang_major__ >= 8))
-#define _mm_loadu_si32 WORKAROUND_mm_loadu_si32
-static inline __m128i WORKAROUND_mm_loadu_si32(void const* mem_addr)
-{
-  return _mm_cvtsi32_si128(OP_LOADU_EPI32(mem_addr));
-}
-#endif
-
 static OPUS_INLINE __m128i silk_cvtepi64_epi32_high(__m256i num)
 {
     return _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(num, _mm256_set_epi32(0, 0, 0, 0, 7, 5, 3, 1)));
