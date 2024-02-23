@@ -109,7 +109,8 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB> : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
     fprintf(stderr, "-framesize <2.5|5|10|20|40|60|80|100|120> : frame size in ms; default: 20 \n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
-    fprintf(stderr, "-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10\n" );
+    fprintf(stderr, "-complexity <comp>   : encoder complexity, 0 (lowest) ... 10 (highest); default: 10\n" );
+    fprintf(stderr, "-dec_complexity <comp> : decoder complexity, 0 (lowest) ... 10 (highest); default: 0\n" );
     fprintf(stderr, "-inbandfec           : enable SILK inband FEC\n" );
     fprintf(stderr, "-forcemono           : force mono encoding, even for stereo input\n" );
     fprintf(stderr, "-dtx                 : enable SILK DTX\n" );
