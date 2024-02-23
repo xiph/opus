@@ -151,6 +151,9 @@ void xcorr_kernel_neon_fixed(const opus_val16 * x, const opus_val16 * y, opus_va
 #if defined(__ARM_FEATURE_FMA) && defined(__ARM_ARCH_ISA_A64)
 /* If we can, force the compiler to use an FMA instruction rather than break
  *    vmlaq_f32() into fmul/fadd. */
+#ifdef vmlaq_lane_f32
+#undef vmlaq_lane_f32
+#endif
 #define vmlaq_lane_f32(a,b,c,lane) vfmaq_lane_f32(a,b,c,lane)
 #endif
 
