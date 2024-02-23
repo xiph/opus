@@ -35,8 +35,7 @@ CFLAGS='-g'
 
 opt=`echo -e "-O1\n-O2\n-O3" | shuf -n1`
 
-#arch=-march=`echo -e "core2\nsandybridge\nbroadwell\nskylake" | shuf -n1`
-arch=`echo -e "\n-march=core2\n-march=sandybridge\n-march=broadwell\n-march=skylake\n-march=native" | shuf -n1`
+arch=`echo -e "\n-march=core2\n-march=sandybridge\n-march=broadwell\n-march=skylake" | shuf -n1`
 
 footprint=`echo -e "\n-DSMALL_FOOTPRINT" | shuf -n1`
 std=`echo -e "\n-std=c90\n-std=c99\n-std=c11\n-std=c17" | shuf -n1`
@@ -49,7 +48,7 @@ echo "CFLAGS=$CFLAGS" > "$config"
 
 lib=`echo -e "\n--disable-static\n--disable-shared" | shuf -n1`
 
-arithmetic=`echo -e "\n--enable-fixed-point\n--enable-fixed-point --enable-fixed-point-debug\n--enable-fixed-point --disable-float-api\n--enable-fixed-point --enable-fixed-point-debug --disable-float-api" | shuf -n1`
+arithmetic=`echo -e "\n--enable-deep-plc\n--enable-dred\n--enable-osce\n--enable-dred --enable-osce\n--enable-fixed-point\n--enable-fixed-point --enable-fixed-point-debug\n--enable-fixed-point --disable-float-api\n--enable-fixed-point --enable-fixed-point-debug --disable-float-api" | shuf -n1`
 
 custom=`echo -e "\n--enable-custom-modes" | shuf -n1`
 
@@ -61,6 +60,7 @@ harden=`echo -e "\n--enable-hardening" | shuf -n1`
 fuzz=`echo -e "\n--enable-fuzzing" | shuf -n1`
 checkasm=`echo -e "\n--enable-check-asm" | shuf -n1`
 rfc8251=`echo -e "\n--disable-rfc8251" | shuf -n1`
+lossgen=`echo -e "\n--enable-lossgen" | shuf -n1`
 
 if [ "$rfc8251" = --disable-rfc8251 ]
 then
@@ -71,7 +71,7 @@ fi
 echo using testvectors at "$vectors" >> "$config"
 
 
-config_opt="$lib $arithmetic $custom $asm $assert $harden $fuzz $checkasm $rfc8251 $approx"
+config_opt="$lib $arithmetic $custom $asm $assert $harden $fuzz $checkasm $rfc8251 $approx $lossgen"
 
 echo configure $config_opt >> "$config"
 
