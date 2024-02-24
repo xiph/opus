@@ -79,6 +79,8 @@ static inline __m128i WORKAROUND_mm_loadu_si32(void const* mem_addr) {
   memcpy(&val, mem_addr, sizeof(val));
   return _mm_cvtsi32_si128(val);
 }
+#  elif defined(_MSC_VER)
+#   include <immintrin.h>
 #  endif
 
 #  define OP_CVTEPI8_EPI32_M32(x) \
