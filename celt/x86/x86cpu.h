@@ -73,12 +73,18 @@ int opus_select_arch(void);
 #   include <string.h>
 #   include <emmintrin.h>
 
+#   ifdef _mm_loadu_si32
+#    undef _mm_loadu_si32
+#   endif
 #   define _mm_loadu_si32 WORKAROUND_mm_loadu_si32
 static inline __m128i WORKAROUND_mm_loadu_si32(void const* mem_addr) {
   int val;
   memcpy(&val, mem_addr, sizeof(val));
   return _mm_cvtsi32_si128(val);
 }
+#  elif defined(_MSC_VER)
+    /* MSVC needs this for _mm_loadu_si32 */
+#   include <immintrin.h>
 #  endif
 
 #  define OP_CVTEPI8_EPI32_M32(x) \
