@@ -1842,6 +1842,8 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
           st->hp_mem[0] = st->hp_mem[1] = st->hp_mem[2] = st->hp_mem[3] = 0;
        }
     }
+#else
+    (void)float_api;
 #endif
 
 #ifdef ENABLE_DRED
