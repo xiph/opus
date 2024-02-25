@@ -33,7 +33,7 @@ whitespace:
     - apt-get update &&
       apt-get install -y git
   script:
-    - git diff-tree --check origin/master HEAD
+    - git diff-tree --check origin/main HEAD
 
 # Make sure commits are GPG signed
 ci-fairy:
