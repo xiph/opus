@@ -18,10 +18,10 @@ dnn/nnet_arch.h \
 dnn/arm/dnn_arm.h
 
 DRED_HEAD = \
-silk/dred_coding.h \
-silk/dred_config.h \
-silk/dred_decoder.h \
-silk/dred_encoder.h \
+dnn/dred_coding.h \
+dnn/dred_config.h \
+dnn/dred_decoder.h \
+dnn/dred_encoder.h \
 dnn/dred_rdovae.h \
 dnn/dred_rdovae_constants.h \
 dnn/dred_rdovae_enc.h \

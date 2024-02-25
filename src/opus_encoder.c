@@ -47,7 +47,7 @@
 #include "tuning_parameters.h"
 
 #ifdef ENABLE_DRED
-#include "silk/dred_coding.h"
+#include "dred_coding.h"
 #endif
 
 #ifdef FIXED_POINT
