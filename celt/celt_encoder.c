@@ -978,7 +978,7 @@ static opus_val16 median_of_3(const opus_val16 *x)
       return t0;
 }
 
-static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
+static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2, const opus_val16 *oldBandE,
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
       int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc,
@@ -989,9 +989,11 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
    opus_val16 maxDepth;
    VARDECL(opus_val16, follower);
    VARDECL(opus_val16, noise_floor);
+   VARDECL(opus_val16, bandLogE3);
    SAVE_STACK;
    ALLOC(follower, C*nbEBands, opus_val16);
    ALLOC(noise_floor, C*nbEBands, opus_val16);
+   ALLOC(bandLogE3, nbEBands, opus_val16);
    OPUS_CLEAR(offsets, nbEBands);
    /* Dynamic allocation code */
    maxDepth=-QCONST16(31.9f, DB_SHIFT);
@@ -1044,8 +1046,10 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
          printf("%d ", spread_weight[i]);
       printf("\n");*/
    }
-   /* Make sure that dynamic allocation can't make us bust the budget */
-   if (effectiveBytes > 50 && LM>=1 && !lfe)
+   /* Make sure that dynamic allocation can't make us bust the budget.
+      We enable the feature starting at 24 kb/s for 20-ms frames
+      and 96 kb/s for 2.5 ms frames.  */
+   if (effectiveBytes >= (30 + 5*LM) && !lfe)
    {
       int last=0;
       c=0;do
@@ -1053,30 +1057,38 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
          opus_val16 offset;
          opus_val16 tmp;
          opus_val16 *f;
+         OPUS_COPY(bandLogE3, &bandLogE2[c*nbEBands], end);
+         if (LM==0) {
+            /* For 2.5 ms frames, the first 8 bands have just one bin, so the
+               energy is highly unreliable (high variance). For that reason,
+               we take the max with the previous energy so that at least 2 bins
+               are getting used. */
+            for (i=0;i<IMIN(8,end);i++) bandLogE3[i] = MAX16(bandLogE2[c*nbEBands+i], oldBandE[c*nbEBands+i]);
+         }
          f = &follower[c*nbEBands];
-         f[0] = bandLogE2[c*nbEBands];
+         f[0] = bandLogE3[0];
          for (i=1;i<end;i++)
          {
             /* The last band to be at least 3 dB higher than the previous one
                is the last we'll consider. Otherwise, we run into problems on
                bandlimited signals. */
-            if (bandLogE2[c*nbEBands+i] > bandLogE2[c*nbEBands+i-1]+QCONST16(.5f,DB_SHIFT))
+            if (bandLogE3[i] > bandLogE3[i-1]+QCONST16(.5f,DB_SHIFT))
                last=i;
-            f[i] = MIN16(f[i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE2[c*nbEBands+i]);
+            f[i] = MIN16(f[i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE3[i]);
          }
          for (i=last-1;i>=0;i--)
-            f[i] = MIN16(f[i], MIN16(f[i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*nbEBands+i]));
+            f[i] = MIN16(f[i], MIN16(f[i+1]+QCONST16(2.f,DB_SHIFT), bandLogE3[i]));
 
          /* Combine with a median filter to avoid dynalloc triggering unnecessarily.
             The "offset" value controls how conservative we are -- a higher offset
             reduces the impact of the median filter and makes dynalloc use more bits. */
          offset = QCONST16(1.f, DB_SHIFT);
          for (i=2;i<end-2;i++)
-            f[i] = MAX16(f[i], median_of_5(&bandLogE2[c*nbEBands+i-2])-offset);
-         tmp = median_of_3(&bandLogE2[c*nbEBands])-offset;
+            f[i] = MAX16(f[i], median_of_5(&bandLogE3[i-2])-offset);
+         tmp = median_of_3(&bandLogE3[0])-offset;
          f[0] = MAX16(f[0], tmp);
          f[1] = MAX16(f[1], tmp);
-         tmp = median_of_3(&bandLogE2[c*nbEBands+end-3])-offset;
+         tmp = median_of_3(&bandLogE3[end-3])-offset;
          f[end-2] = MAX16(f[end-2], tmp);
          f[end-1] = MAX16(f[end-1], tmp);
 
@@ -1896,7 +1908,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    ALLOC(importance, nbEBands, int);
    ALLOC(spread_weight, nbEBands, int);
 
-   maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, start, end, C, offsets,
+   maxDepth = dynalloc_analysis(bandLogE, bandLogE2, oldBandE, nbEBands, start, end, C, offsets,
          st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
          eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis, importance, spread_weight);
 
