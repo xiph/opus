@@ -1063,7 +1063,7 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
                energy is highly unreliable (high variance). For that reason,
                we take the max with the previous energy so that at least 2 bins
                are getting used. */
-            for (i=0;i<8;i++) bandLogE3[i] = MAX16(bandLogE2[c*nbEBands+i], oldBandE[c*nbEBands+i]);
+            for (i=0;i<IMIN(8,end);i++) bandLogE3[i] = MAX16(bandLogE2[c*nbEBands+i], oldBandE[c*nbEBands+i]);
          }
          f = &follower[c*nbEBands];
          f[0] = bandLogE3[0];
