@@ -64,9 +64,6 @@
    pitch of 480 Hz. */
 #define PLC_PITCH_LAG_MIN (100)
 
-#if defined(SMALL_FOOTPRINT) && defined(FIXED_POINT)
-#define NORM_ALIASING_HACK
-#endif
 /**********************************************************************/
 /*                                                                    */
 /*                             DECODER                                */
@@ -651,11 +648,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
    if (noise_based)
    {
       /* Noise-based PLC/CNG */
-#ifdef NORM_ALIASING_HACK
-      celt_norm *X;
-#else
       VARDECL(celt_norm, X);
-#endif
       opus_uint32 seed;
       int end;
       int effEnd;
@@ -663,13 +656,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       end = st->end;
       effEnd = IMAX(start, IMIN(end, mode->effEBands));
 
-#ifdef NORM_ALIASING_HACK
-      /* This is an ugly hack that breaks aliasing rules and would be easily broken,
-         but it saves almost 4kB of stack. */
-      X = (celt_norm*)(out_syn[C-1]+overlap/2);
-#else
       ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
-#endif
       c=0; do {
          OPUS_MOVE(decode_mem[c], decode_mem[c]+N,
                DECODE_BUFFER_SIZE-N+overlap);
@@ -991,11 +978,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    int spread_decision;
    opus_int32 bits;
    ec_dec _dec;
-#ifdef NORM_ALIASING_HACK
-   celt_norm *X;
-#else
    VARDECL(celt_norm, X);
-#endif
    VARDECL(int, fine_quant);
    VARDECL(int, pulses);
    VARDECL(int, cap);
@@ -1286,13 +1269,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    /* Decode fixed codebook */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
 
-#ifdef NORM_ALIASING_HACK
-   /* This is an ugly hack that breaks aliasing rules and would be easily broken,
-      but it saves almost 4kB of stack. */
-   X = (celt_norm*)(out_syn[CC-1]+overlap/2);
-#else
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
-#endif
 
    quant_all_bands(0, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
