@@ -164,6 +164,33 @@ opus_uint32 opus_cpu_capabilities(void)
   }
   return flags;
 }
+
+#elif defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
+opus_uint32 opus_cpu_capabilities(void)
+{
+  opus_uint32 flags = 0;
+
+#if defined(OPUS_ARM_MAY_HAVE_DOTPROD)
+  size_t size = sizeof(uint32_t);
+  uint32_t value = 0;
+  if (!sysctlbyname("hw.optional.arm.FEAT_DotProd", &value, &size, NULL, 0) && value)
+  {
+    flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
+  }
+#endif
+
+#if defined(OPUS_ARM_PRESUME_AARCH64_NEON_INTR)
+  flags |= OPUS_CPU_ARM_EDSP_FLAG | OPUS_CPU_ARM_MEDIA_FLAG | OPUS_CPU_ARM_NEON_FLAG;
+# if defined(OPUS_ARM_PRESUME_DOTPROD)
+  flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
+# endif
+#endif
+  return flags;
+}
+
 #else
 /* The feature registers which can tell us what the processor supports are
  * accessible in priveleged modes only, so we can't have a general user-space
