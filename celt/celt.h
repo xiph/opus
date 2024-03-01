@@ -43,7 +43,7 @@
 #include "arch.h"
 
 #ifdef ENABLE_DEEP_PLC
-typedef struct LPCNetPLCState LPCNetPLCState;
+#include "lpcnet.h"
 #endif
 
 #ifdef __cplusplus
