@@ -909,7 +909,8 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
         vst1q_s32( psDelDec->Pred_Q15[ *smpl_buf_idx ], vshlq_n_s32( vld1q_s32( psSampleState[ 0 ].LPC_exc_Q14 ), 1 ) );
         vst1q_s32( psDelDec->Shape_Q14[ *smpl_buf_idx ], vld1q_s32( psSampleState[ 0 ].sLTP_shp_Q14 ) );
         tmp1_s32x4 = vrshrq_n_s32( tmp1_s32x4, 10 );
-        tmp1_s32x4 = vaddq_s32( vld1q_s32( psDelDec->Seed ), tmp1_s32x4 );
+        tmp1_s32x4 = vreinterpretq_s32_u32( vaddq_u32( vreinterpretq_u32_s32(
+            vld1q_s32( psDelDec->Seed ) ), vreinterpretq_u32_s32( tmp1_s32x4 ) ) );
         vst1q_s32( psDelDec->Seed, tmp1_s32x4 );
         vst1q_s32( psDelDec->RandState[ *smpl_buf_idx ], tmp1_s32x4 );
         vst1q_s32( psDelDec->RD_Q10, vld1q_s32( psSampleState[ 0 ].RD_Q10 ) );
