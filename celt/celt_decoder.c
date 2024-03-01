@@ -589,7 +589,7 @@ void update_plc_state(LPCNetPLCState *lpcnet, celt_sig *decode_mem[2], float *pl
       for (j=0;j<SINC_ORDER+1;j++) {
          sum += buf48k[3*i + j + offset]*sinc_filter[j];
       }
-      buf16k[i] = sum;
+      buf16k[i] = float2int(MIN32(32767.f, MAX32(-32767.f, sum)));
    }
    tmp_read_post = lpcnet->fec_read_pos;
    tmp_fec_skip = lpcnet->fec_skip;
