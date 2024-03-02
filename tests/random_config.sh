@@ -39,7 +39,7 @@ arch=`echo -e "\n-march=core2\n-march=sandybridge\n-march=broadwell\n-march=skyl
 
 footprint=`echo -e "\n-DSMALL_FOOTPRINT" | shuf -n1`
 std=`echo -e "\n-std=c90\n-std=c99\n-std=c11\n-std=c17" | shuf -n1`
-sanitize=`echo -e "\n-fsanitize=address -fno-sanitize-recover=all\n-fsanitize=undefined -fno-sanitize-recover=all -fsanitize-recover=signed-integer-overflow" | shuf -n1`
+sanitize=`echo -e "\n-fsanitize=address -fno-sanitize-recover=all\n-fsanitize=undefined -fno-sanitize-recover=all -fsanitize-recover=signed-integer-overflow -DDISABLE_PTR_CHECK" | shuf -n1`
 
 
 CFLAGS="$CFLAGS $std $opt $arch $footprint $math $sanitize"

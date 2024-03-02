@@ -179,10 +179,20 @@ extern "C" {
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
+
+#ifdef DISABLE_PTR_CHECK
+/* Disable checks to prevent ubsan from complaining about NULL checks
+   in test_opus_api. */
+#define __opus_check_int_ptr(ptr) (ptr)
+#define __opus_check_uint_ptr(ptr) (ptr)
+#define __opus_check_uint8_ptr(ptr) (ptr)
+#define __opus_check_val16_ptr(ptr) (ptr)
+#else
 #define __opus_check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
 #define __opus_check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
 #define __opus_check_uint8_ptr(ptr) ((ptr) + ((ptr) - (opus_uint8*)(ptr)))
 #define __opus_check_val16_ptr(ptr) ((ptr) + ((ptr) - (opus_val16*)(ptr)))
+#endif
 /** @endcond */
 
 /** @defgroup opus_ctlvalues Pre-defined values for CTL interface
