@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
         long pos;
         /* Randomize the fraction because rand() only gives us 31 bits. */
         float frac_pos = rand()/(float)RAND_MAX;
-        pos = (frac_pos*noise_size);
+        pos = (long)(frac_pos*noise_size);
         /* 32-bit alignment. */
         pos = pos/4 * 4;
         if (pos > noise_size-500000) pos = noise_size-500000;
@@ -244,7 +244,7 @@ int main(int argc, char **argv) {
       fwrite(ceps, sizeof(float), 2*NB_BANDS, ffeat);
     }
     preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
-    for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5;
+    for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5f;
     /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
     for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
     compute_frame_features(st, x, arch);
@@ -256,10 +256,10 @@ int main(int argc, char **argv) {
     if (pitch) {
       signed char pitch_features[PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES];
       for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
-        pitch_features[i] = floor(.5 + 127.f*st->xcorr_features[i]);
+        pitch_features[i] = (int)floor(.5f + 127.f*st->xcorr_features[i]);
       }
       for (i=0;i<PITCH_IF_FEATURES;i++) {
-        pitch_features[i+PITCH_MAX_PERIOD-PITCH_MIN_PERIOD] = floor(.5 + 127.f*st->if_features[i]);
+        pitch_features[i+PITCH_MAX_PERIOD-PITCH_MIN_PERIOD] = (int)floor(.5f + 127.f*st->if_features[i]);
       }
       fwrite(pitch_features, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES, 1, ffeat);
     } else {

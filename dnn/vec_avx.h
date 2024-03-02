@@ -378,7 +378,7 @@ static inline __m256 exp8_approx(__m256 X)
 
 static inline void vector_ps_to_epi8(unsigned char *x, const float *_x, int len) {
     int i;
-    for (i=0;i<len;i++) x[i] = 127+floor(.5+127*_x[i]);
+    for (i=0;i<len;i++) x[i] = 127+(int)floor(.5+127*_x[i]);
 }
 
 #endif
