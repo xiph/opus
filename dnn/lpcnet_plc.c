@@ -112,10 +112,10 @@ static void compute_plc_pred(LPCNetPLCState *st, float *out, const float *in) {
   PLCModel *model = &st->model;
   PLCNetState *net = &st->plc_net;
   celt_assert(st->loaded);
-  compute_generic_dense(&model->plc_dense_in, tmp, in, ACTIVATION_TANH, 0);
-  compute_generic_gru(&model->plc_gru1_input, &model->plc_gru1_recurrent, net->gru1_state, tmp, 0);
-  compute_generic_gru(&model->plc_gru2_input, &model->plc_gru2_recurrent, net->gru2_state, net->gru1_state, 0);
-  compute_generic_dense(&model->plc_dense_out, out, net->gru2_state, ACTIVATION_LINEAR, 0);
+  compute_generic_dense(&model->plc_dense_in, tmp, in, ACTIVATION_TANH, st->arch);
+  compute_generic_gru(&model->plc_gru1_input, &model->plc_gru1_recurrent, net->gru1_state, tmp, st->arch);
+  compute_generic_gru(&model->plc_gru2_input, &model->plc_gru2_recurrent, net->gru2_state, net->gru1_state, st->arch);
+  compute_generic_dense(&model->plc_dense_out, out, net->gru2_state, ACTIVATION_LINEAR, st->arch);
 }
 
 static int get_fec_or_pred(LPCNetPLCState *st, float *out) {
