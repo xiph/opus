@@ -183,7 +183,7 @@ static inline mm256i_emu mm256_setzero_si256(void) {
 static inline mm256i_emu mm256_loadu_si256(const mm256i_emu *src) {
   mm256i_emu ret;
   ret.lo = _mm_loadu_si128((const __m128i*)src);
-  ret.hi = _mm_loadu_si128((const __m128i*)(&((const char *)src)[16]));
+  ret.hi = _mm_loadu_si128(&((const __m128i*)src)[1]);
   return ret;
 }
 #define _mm256_loadu_si256(src) mm256_loadu_si256(src)
@@ -191,7 +191,7 @@ static inline mm256i_emu mm256_loadu_si256(const mm256i_emu *src) {
 
 static inline void mm256_storeu_si256(mm256i_emu *dst, mm256i_emu src) {
   _mm_storeu_si128((__m128i*)dst, src.lo);
-  _mm_storeu_si128((__m128i*)(&((char *)dst)[16]), src.hi);
+  _mm_storeu_si128(&((__m128i*)dst)[1], src.hi);
 }
 #define _mm256_storeu_si256(dst, src) mm256_storeu_si256(dst, src)
 
