@@ -72,7 +72,7 @@ int lpcnet_plc_init(LPCNetPLCState *st) {
   return ret;
 }
 
-int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len) {
+int lpcnet_plc_load_model(LPCNetPLCState *st, const void *data, int len) {
   WeightArray *list;
   int ret;
   parse_weights(&list, data, len);

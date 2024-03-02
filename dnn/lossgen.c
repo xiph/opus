@@ -166,7 +166,7 @@ void lossgen_init(LossGenState *st)
   (void)ret;
 }
 
-int lossgen_load_model(LossGenState *st, const unsigned char *data, int len) {
+int lossgen_load_model(LossGenState *st, const void *data, int len) {
   WeightArray *list;
   int ret;
   parse_weights(&list, data, len);

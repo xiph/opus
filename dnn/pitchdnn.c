@@ -68,7 +68,7 @@ void pitchdnn_init(PitchDNNState *st)
   celt_assert(ret == 0);
 }
 
-int pitchdnn_load_model(PitchDNNState *st, const unsigned char *data, int len) {
+int pitchdnn_load_model(PitchDNNState *st, const void *data, int len) {
   WeightArray *list;
   int ret;
   parse_weights(&list, data, len);

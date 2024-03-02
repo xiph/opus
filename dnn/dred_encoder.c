@@ -52,7 +52,7 @@ static void DRED_rdovae_init_encoder(RDOVAEEncState *enc_state)
     memset(enc_state, 0, sizeof(*enc_state));
 }
 
-int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len)
+int dred_encoder_load_model(DREDEnc* enc, const void *data, int len)
 {
     WeightArray *list;
     int ret;

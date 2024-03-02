@@ -58,7 +58,7 @@ typedef struct {
     float resample_mem[RESAMPLING_ORDER + 1];
 } DREDEnc;
 
-int dred_encoder_load_model(DREDEnc* enc, const unsigned char *data, int len);
+int dred_encoder_load_model(DREDEnc* enc, const void *data, int len);
 void dred_encoder_init(DREDEnc* enc, opus_int32 Fs, int channels);
 void dred_encoder_reset(DREDEnc* enc);
 

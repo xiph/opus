@@ -93,7 +93,7 @@ void compute_glu(const LinearLayer *layer, float *output, const float *input, in
 void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation, int arch);
 
 
-int parse_weights(WeightArray **list, const unsigned char *data, int len);
+int parse_weights(WeightArray **list, const void *data, int len);
 
 
 extern const WeightArray lpcnet_arrays[];

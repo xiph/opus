@@ -873,7 +873,7 @@ static void print_linear_layer(FILE *fid, const char *name, LinearLayer *layer)
 }
 #endif
 
-int osce_load_models(OSCEModel *model, const unsigned char *data, int len)
+int osce_load_models(OSCEModel *model, const void *data, int len)
 {
     int ret = 0;
     WeightArray *list;

@@ -46,7 +46,7 @@ typedef struct {
 
 
 void lossgen_init(LossGenState *st);
-int lossgen_load_model(LossGenState *st, const unsigned char *data, int len);
+int lossgen_load_model(LossGenState *st, const void *data, int len);
 
 int sample_loss(
     LossGenState *st,

@@ -644,7 +644,7 @@ extern "C" {
 
 /** Provide external DNN weights from binary object (only when explicitly built without the weights)
   * @hideinitializer */
-#define OPUS_SET_DNN_BLOB(data, len) OPUS_SET_DNN_BLOB_REQUEST, __opus_check_uint8_ptr(data), __opus_check_int(len)
+#define OPUS_SET_DNN_BLOB(data, len) OPUS_SET_DNN_BLOB_REQUEST, (data), __opus_check_int(len)
 
 
 /**@}*/

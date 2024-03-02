@@ -94,7 +94,7 @@ int lpcnet_encoder_get_size(void);
   */
 int lpcnet_encoder_init(LPCNetEncState *st);
 
-int lpcnet_encoder_load_model(LPCNetEncState *st, const unsigned char *data, int len);
+int lpcnet_encoder_load_model(LPCNetEncState *st, const void *data, int len);
 
 /** Allocates and initializes an encoder state.
   *  @returns The newly created state
@@ -177,7 +177,7 @@ void lpcnet_plc_fec_add(LPCNetPLCState *st, const float *features);
 
 void lpcnet_plc_fec_clear(LPCNetPLCState *st);
 
-int lpcnet_load_model(LPCNetState *st, const unsigned char *data, int len);
-int lpcnet_plc_load_model(LPCNetPLCState *st, const unsigned char *data, int len);
+int lpcnet_load_model(LPCNetState *st, const void *data, int len);
+int lpcnet_plc_load_model(LPCNetPLCState *st, const void *data, int len);
 
 #endif

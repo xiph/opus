@@ -57,7 +57,7 @@ typedef struct {
 } FARGANState;
 
 void fargan_init(FARGANState *st);
-int fargan_load_model(FARGANState *st, const unsigned char *data, int len);
+int fargan_load_model(FARGANState *st, const void *data, int len);
 
 void fargan_cont(FARGANState *st, const float *pcm0, const float *features0);
 

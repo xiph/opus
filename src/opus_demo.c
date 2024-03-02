@@ -54,9 +54,9 @@
 /* When available, mmap() is preferable to reading the file, as it leads to
    better resource utilization, especially if multiple processes are using the same
    file (mapping will be shared in cache). */
-unsigned char *load_blob(const char *filename, int *len) {
+void *load_blob(const char *filename, int *len) {
   int fd;
-  unsigned char *data;
+  void *data;
   struct stat st;
   stat(filename, &st);
   *len = st.st_size;
@@ -65,13 +65,13 @@ unsigned char *load_blob(const char *filename, int *len) {
   close(fd);
   return data;
 }
-void free_blob(unsigned char *blob, int len) {
+void free_blob(void *blob, int len) {
   munmap(blob, len);
 }
 # else
-unsigned char *load_blob(const char *filename, int *len) {
+void *load_blob(const char *filename, int *len) {
   FILE *file;
-  unsigned char *data;
+  void *data;
   file = fopen(filename, "r");
   if (file == NULL)
   {
@@ -85,7 +85,7 @@ unsigned char *load_blob(const char *filename, int *len) {
   *len = fread(data, 1, *len, file);
   return data;
 }
-void free_blob(unsigned char *blob, int len) {
+void free_blob(void *blob, int len) {
   free(blob);
   (void)len;
 }
@@ -399,7 +399,7 @@ int main(int argc, char *argv[])
 #endif
 #ifdef USE_WEIGHTS_FILE
     int blob_len;
-    unsigned char *blob_data;
+    void *blob_data;
     const char *filename = "weights_blob.bin";
     blob_data = load_blob(filename, &blob_len);
 #endif

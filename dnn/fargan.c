@@ -184,7 +184,7 @@ void fargan_init(FARGANState *st)
   celt_assert(ret == 0);
 }
 
-int fargan_load_model(FARGANState *st, const unsigned char *data, int len) {
+int fargan_load_model(FARGANState *st, const void *data, int len) {
   WeightArray *list;
   int ret;
   parse_weights(&list, data, len);

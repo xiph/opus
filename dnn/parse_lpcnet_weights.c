@@ -35,7 +35,7 @@
 
 #define SPARSE_BLOCK_SIZE 32
 
-int parse_record(const unsigned char **data, int *len, WeightArray *array) {
+int parse_record(const void **data, int *len, WeightArray *array) {
   WeightHead *h = (WeightHead *)*data;
   if (*len < WEIGHT_BLOCK_SIZE) return -1;
   if (h->block_size < h->size) return -1;
@@ -45,14 +45,14 @@ int parse_record(const unsigned char **data, int *len, WeightArray *array) {
   array->name = h->name;
   array->type = h->type;
   array->size = h->size;
-  array->data = (*data)+WEIGHT_BLOCK_SIZE;
+  array->data = (void*)((unsigned char*)(*data)+WEIGHT_BLOCK_SIZE);
 
-  *data += h->block_size+WEIGHT_BLOCK_SIZE;
+  *data = (void*)((unsigned char*)*data + h->block_size+WEIGHT_BLOCK_SIZE);
   *len -= h->block_size+WEIGHT_BLOCK_SIZE;
   return array->size;
 }
 
-int parse_weights(WeightArray **list, const unsigned char *data, int len)
+int parse_weights(WeightArray **list, const void *data, int len)
 {
   int nb_arrays=0;
   int capacity=20;
@@ -213,7 +213,7 @@ int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
 int main()
 {
   int fd;
-  unsigned char *data;
+  void *data;
   int len;
   int nb_arrays;
   int i;
