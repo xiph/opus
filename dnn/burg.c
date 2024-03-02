@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <assert.h>
 
+#include "arch.h"
 #include "burg.h"
 
 #define MAX_FRAME_SIZE              384 /* subfr_length * nb_subfr = ( 0.005 * 16000 + 16 ) * 4 = 384*/
@@ -241,5 +242,5 @@ float silk_burg_analysis(              /* O    returns residual energy          
     }
 
     /* Return residual energy */
-    return (float)nrg_f;
+    return MAX32(0, (float)nrg_f);
 }
