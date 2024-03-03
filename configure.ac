@@ -935,7 +935,7 @@ AS_IF([test "$enable_osce_training_data" = "yes"], [
 ], [AC_MSG_RESULT([no])])
 
 AC_ARG_ENABLE([osce],
-  AS_HELP_STRING([--enable-osce], [enables feature output for SILK enhancement]),,
+  AS_HELP_STRING([--enable-osce], [enables speech coding enhancement]),,
   [enable_osce=no]
 )
 
