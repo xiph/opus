@@ -104,6 +104,7 @@ typedef struct {
 
 /* OSCEModel */
 typedef struct {
+   int loaded;
 #ifndef DISABLE_LACE
     LACE lace;
 #endif

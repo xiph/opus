@@ -927,6 +927,7 @@ void osce_enhance_frame(
     float numbits[2];
     int periods[4];
     int i;
+    int method;
 
     /* enhancement only implemented for 20 ms frame at 16kHz */
     if (psDec->fs_kHz != 16 || psDec->nb_subfr != 4)
@@ -943,7 +944,11 @@ void osce_enhance_frame(
         in_buffer[i] = ((float) xq[i]) * (1.f/32768.f);
     }
 
-    switch(psDec->osce.method)
+    if (model->loaded)
+        method = psDec->osce.method;
+    else
+        method = OSCE_METHOD_NONE;
+    switch(method)
     {
         case OSCE_METHOD_NONE:
             OPUS_COPY(out_buffer, in_buffer, 320);

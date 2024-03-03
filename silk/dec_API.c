@@ -64,7 +64,7 @@ opus_int silk_LoadOSCEModels(void *decState, const unsigned char *data, int len)
     opus_int ret = SILK_NO_ERROR;
 
     ret = osce_load_models(&((silk_decoder *)decState)->osce_model, data, len);
-
+    ((silk_decoder *)decState)->osce_model.loaded = (ret == 0);
     return ret;
 #else
     (void) decState;
@@ -110,7 +110,9 @@ opus_int silk_InitDecoder(                              /* O    Returns error co
 {
     opus_int n, ret = SILK_NO_ERROR;
     silk_decoder_state *channel_state = ((silk_decoder *)decState)->channel_state;
-
+#ifdef ENABLE_OSCE
+    ((silk_decoder *)decState)->osce_model.loaded = 0;
+#endif
 #ifndef USE_WEIGHTS_FILE
     /* load osce models */
     silk_LoadOSCEModels(decState, NULL, 0);
