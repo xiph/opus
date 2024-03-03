@@ -58,15 +58,26 @@ void *load_blob(const char *filename, int *len) {
   int fd;
   void *data;
   struct stat st;
-  stat(filename, &st);
+  if (stat(filename, &st)) {
+     *len = 0;
+     return NULL;
+  }
   *len = st.st_size;
   fd = open(filename, O_RDONLY);
+  if (fd<0) {
+     *len = 0;
+     return NULL;
+  }
   data = mmap(NULL, *len, PROT_READ, MAP_SHARED, fd, 0);
+  if (data == MAP_FAILED) {
+     *len = 0;
+     data = NULL;
+  }
   close(fd);
   return data;
 }
 void free_blob(void *blob, int len) {
-  munmap(blob, len);
+  if (blob) munmap(blob, len);
 }
 # else
 void *load_blob(const char *filename, int *len) {
@@ -75,13 +86,22 @@ void *load_blob(const char *filename, int *len) {
   file = fopen(filename, "r");
   if (file == NULL)
   {
-    perror("could not open blob file\n");
+    perror("could not open blob file");
+    *len = 0;
+    return NULL;
   }
   fseek(file, 0L, SEEK_END);
   *len = ftell(file);
   fseek(file, 0L, SEEK_SET);
-  if (*len <= 0) return NULL;
+  if (*len <= 0) {
+     *len = 0;
+     return NULL;
+  }
   data = malloc(*len);
+  if (!data) {
+     *len = 0;
+     return NULL;
+  }
   *len = fread(data, 1, *len, file);
   return data;
 }
