@@ -187,11 +187,13 @@ extern "C" {
 #define __opus_check_uint_ptr(ptr) (ptr)
 #define __opus_check_uint8_ptr(ptr) (ptr)
 #define __opus_check_val16_ptr(ptr) (ptr)
+#define __opus_check_void_ptr(ptr) (ptr)
 #else
 #define __opus_check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
 #define __opus_check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
 #define __opus_check_uint8_ptr(ptr) ((ptr) + ((ptr) - (opus_uint8*)(ptr)))
 #define __opus_check_val16_ptr(ptr) ((ptr) + ((ptr) - (opus_val16*)(ptr)))
+#define __opus_check_void_ptr(x) ((void)((void *)0 == (x)), (x))
 #endif
 /** @endcond */
 
@@ -644,7 +646,7 @@ extern "C" {
 
 /** Provide external DNN weights from binary object (only when explicitly built without the weights)
   * @hideinitializer */
-#define OPUS_SET_DNN_BLOB(data, len) OPUS_SET_DNN_BLOB_REQUEST, (data), __opus_check_int(len)
+#define OPUS_SET_DNN_BLOB(data, len) OPUS_SET_DNN_BLOB_REQUEST, __opus_check_void_ptr(data), __opus_check_int(len)
 
 
 /**@}*/
