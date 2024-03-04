@@ -803,9 +803,9 @@ int main(int argc, char *argv[])
     dred_dec = opus_dred_decoder_create(&err);
     dred = opus_dred_alloc(&err);
 #ifdef USE_WEIGHTS_FILE
-    opus_encoder_ctl(enc, OPUS_SET_DNN_BLOB(blob_data, blob_len));
-    opus_decoder_ctl(dec, OPUS_SET_DNN_BLOB(blob_data, blob_len));
-    opus_dred_decoder_ctl(dred_dec, OPUS_SET_DNN_BLOB(blob_data, blob_len));
+    if (enc) opus_encoder_ctl(enc, OPUS_SET_DNN_BLOB(blob_data, blob_len));
+    if (dec) opus_decoder_ctl(dec, OPUS_SET_DNN_BLOB(blob_data, blob_len));
+    if (dred_dec) opus_dred_decoder_ctl(dred_dec, OPUS_SET_DNN_BLOB(blob_data, blob_len));
 #endif
     while (!stop)
     {
