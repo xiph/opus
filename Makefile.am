@@ -343,6 +343,7 @@ EXTRA_DIST = opus.pc.in \
              include/meson.build \
              celt/meson.build \
              celt/tests/meson.build \
+             dnn/meson.build \
              silk/meson.build \
              silk/tests/meson.build \
              src/meson.build \
