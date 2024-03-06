@@ -43,14 +43,7 @@ if host_cpu_family in ['arm', 'aarch64'] and have_arm_intrinsics_or_asm
     celt_sources += sources['CELT_SOURCES_ARM_NE10']
   endif
   if opus_arm_external_asm
-    arm2gnu = [find_program('arm/arm2gnu.pl')] + arm2gnu_args
-    celt_sources_arm_asm = configure_file(input: 'arm/celt_pitch_xcorr_arm.s',
-      output: '@BASENAME@-gnu.S',
-      command: arm2gnu + ['@INPUT@'],
-      capture: true)
-    celt_arm_armopts_s = configure_file(input: 'arm/armopts.s.in',
-      output: 'arm/armopts.s',
-      configuration: opus_conf)
+    subdir('arm')
     celt_static_libs += static_library('celt-armasm',
       celt_arm_armopts_s, celt_sources_arm_asm,
       install: false)
