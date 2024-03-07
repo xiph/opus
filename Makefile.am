@@ -331,6 +331,7 @@ EXTRA_DIST = opus.pc.in \
              cmake/OpusFunctions.cmake \
              cmake/OpusPackageVersion.cmake \
              cmake/OpusSources.cmake \
+             cmake/README.md \
              cmake/RunTest.cmake \
              cmake/config.h.cmake.in \
              cmake/vla.c \
@@ -338,12 +339,14 @@ EXTRA_DIST = opus.pc.in \
              cmake/cpu_info_by_c.c \
              meson/get-version.py \
              meson/read-sources-list.py \
+             meson/README.md \
              meson.build \
              meson_options.txt \
              include/meson.build \
              celt/meson.build \
              celt/tests/meson.build \
              dnn/meson.build \
+             dnn/README.md \
              silk/meson.build \
              silk/tests/meson.build \
              src/meson.build \
