@@ -18,7 +18,8 @@ First step is to convert all training items to 16 kHz and 16 bit pcm and then co
 
 `python scripts/concatenator.py filelist 16000 dataset/clean.s16 --db_min -40 --db_max 0`
 
-which on top provides some random scaling.
+which on top provides some random scaling. Data is taken from the datasets listed in dnn/datasets.txt and the exact list of items used for training and validation is
+located in dnn/torch/osce/resources.
 
 Second step is to run a patched version of opus_demo in the dataset folder, which will produce the coded output and add feature files. To build the patched opus_demo binary, check out the exp-neural-silk-enhancement branch and build opus_demo the usual way. Then run
 
