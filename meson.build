@@ -252,6 +252,13 @@ if not opt_asm.disabled()
         opus_conf.set('OPUS_ARM_INLINE_NEON', 1)
         inline_optimization += ['NEON']
       endif
+
+      # AS_ASM_ARM_DOTPROD
+      if cc.compiles(asm_tmpl.format('udot v0.4s,v1.16b,v2.16b'),
+                     name : 'assembler supports DOTPROD instructions on ARM')
+        opus_conf.set('OPUS_ARM_INLINE_DOTPROD', 1)
+        inline_optimization += ['DOTPROD']
+      endif
     endif
 
     # We need Perl to translate RVCT-syntax asm to gas syntax
@@ -272,6 +279,9 @@ if not opt_asm.disabled()
 
       opus_arm_may_have_neon = opus_conf.has('OPUS_ARM_INLINE_NEON')
       opus_arm_presume_neon = opus_arm_may_have_neon and opus_can_presume_simd
+
+      opus_arm_may_have_dotprod = opus_conf.has('OPUS_ARM_INLINE_DOTPROD')
+      opus_arm_presume_dotprod = opus_arm_may_have_dotprod and opus_can_presume_simd
 
       if not opt_rtcd.disabled()
         if not opus_arm_may_have_edsp
