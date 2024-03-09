@@ -986,7 +986,7 @@ static OPUS_INLINE void silk_nsq_del_dec_scale_states_avx2(
         for (i = NSQ->sLTP_shp_buf_idx - psEncC->ltp_mem_length; i < NSQ->sLTP_shp_buf_idx; i+=4)
         {
             __m128i_u* p = (__m128i_u*)&NSQ->sLTP_shp_Q14[i];
-            *p = silk_mm_smulww_epi32(*p, gain_adj_Q16);
+            _mm_storeu_si128(p, silk_mm_smulww_epi32(_mm_loadu_si128(p), gain_adj_Q16));
         }
 
         /* Scale long-term prediction state */
