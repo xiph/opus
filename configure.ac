@@ -699,7 +699,7 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
              mtest = _mm256_fmadd_ps(mtest, mtest, mtest);
              mtest1 = _mm256_set_m128i(_mm_loadu_si64(utest), _mm_loadu_si64(utest));
              mtest2 =
-              _mm256_cvtepi16_epi32(_mm_loadu_si128((__m128i_u *)utest));
+              _mm256_cvtepi16_epi32(_mm_loadu_si128(utest));
              return _mm256_extract_epi16(_mm256_xor_si256(
               _mm256_xor_si256(mtest1, mtest2), _mm256_cvttps_epi32(mtest)), 0);
          ]]
