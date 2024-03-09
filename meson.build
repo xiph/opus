@@ -227,7 +227,7 @@ if not opt_asm.disabled()
                       #error GCC before 3.4 has critical bugs compiling inline assembly
                       #endif
                       #endif
-                      __asm__ (""::)''',
+                      int main(int argc, char ** argv) { __asm__ (""::); }''',
                    name : 'compiler supports gcc-style inline assembly')
 
       opus_conf.set('OPUS_ARM_INLINE_ASM', 1)
