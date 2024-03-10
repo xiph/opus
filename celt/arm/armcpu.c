@@ -96,7 +96,7 @@ static OPUS_INLINE opus_uint32 opus_cpu_capabilities(void){
 /* Linux based */
 #include <stdio.h>
 
-opus_uint32 opus_cpu_capabilities(void)
+static opus_uint32 opus_cpu_capabilities(void)
 {
   opus_uint32 flags = 0;
   FILE *cpuinfo;
@@ -169,7 +169,7 @@ opus_uint32 opus_cpu_capabilities(void)
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
-opus_uint32 opus_cpu_capabilities(void)
+static opus_uint32 opus_cpu_capabilities(void)
 {
   opus_uint32 flags = 0;
 
