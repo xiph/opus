@@ -490,10 +490,10 @@ if not opt_intrinsics.disabled()
   elif host_cpu_family in ['x86', 'x86_64']
     # XXX: allow external override/specification of the flags
     x86_intrinsics = [
-      [ 'SSE', 'xmmintrin.h', '__m128', '_mm_setzero_ps()', ['-msse'] ],
-      [ 'SSE2', 'emmintrin.h', '__m128i', '_mm_setzero_si128()', ['-msse2'] ],
-      [ 'SSE4.1', 'smmintrin.h', '__m128i', '_mm_setzero_si128(); mtest = _mm_cmpeq_epi64(mtest, mtest)', ['-msse4.1'] ],
-      [ 'AVX2', 'immintrin.h', '__m256i', '_mm256_abs_epi32(_mm256_setzero_si256())', ['-mavx', '-mfma', '-mavx2'] ],
+      [ 'SSE', 'xmmintrin.h', '__m128', '_mm_setzero_ps()', ['-msse'], [] ],
+      [ 'SSE2', 'emmintrin.h', '__m128i', '_mm_setzero_si128()', ['-msse2'], [] ],
+      [ 'SSE4.1', 'smmintrin.h', '__m128i', '_mm_setzero_si128(); mtest = _mm_cmpeq_epi64(mtest, mtest)', ['-msse4.1'], [] ],
+      [ 'AVX2', 'immintrin.h', '__m256i', '_mm256_abs_epi32(_mm256_setzero_si256())', ['-mavx', '-mfma', '-mavx2'], ['/arch:AVX2'] ],
     ]
 
     foreach intrin : x86_intrinsics
@@ -504,9 +504,11 @@ if not opt_intrinsics.disabled()
                           return *((unsigned char *) &mtest) != 0;
                         }'''.format(intrin[1],intrin[2],intrin[3])
       intrin_name = intrin[0]
-      # Intrinsics arguments are not available with MSVC-like compilers
-      intrin_args = cc.get_argument_syntax() == 'msvc' ? [] : intrin[4]
-      if cc.links(intrin_check, name : 'compiler supports @0@ intrinsics'.format(intrin_name))
+      intrin_args = cc.get_argument_syntax() == 'msvc' ? intrin[5] : intrin[4]
+      if cc.get_argument_syntax() == 'msvc' and intrin_args.length() == 0 and cc.links(intrin_check, name : 'compiler supports @0@ intrinsics'.format(intrin_name))
+        may_have_intrin = true
+        presume_intrin = opus_can_presume_simd
+      elif cc.get_argument_syntax() != 'msvc' and cc.links(intrin_check, name : 'compiler supports @0@ intrinsics'.format(intrin_name))
         may_have_intrin = true
         presume_intrin = opus_can_presume_simd
       elif intrin_args.length() > 0
