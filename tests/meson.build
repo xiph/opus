@@ -8,6 +8,10 @@ opus_tests = [
   ['test_opus_projection'],
 ]
 
+if opt_dred.enabled()
+  opus_tests += [['test_opus_dred', [], 60 * 20]]
+endif
+
 foreach t : opus_tests
   test_name = t.get(0)
   extra_srcs = t.get(1, [])

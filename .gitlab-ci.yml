@@ -101,7 +101,7 @@ cmake:
   script:
     - ./autogen.sh
     - mkdir builddir
-    - meson setup -Denable-deep-plc=true -Denable-osce=true -Denable-dred=true -Dtests=enabled -Ddocs=enabled -Dbuildtype=release builddir
+    - meson setup -Ddeep-plc=enabled -Dosce=enabled -Ddred=enabled -Dtests=enabled -Ddocs=enabled -Dbuildtype=release builddir
     - meson compile -C builddir
     - meson test -C builddir
     #- meson dist --no-tests -C builddir

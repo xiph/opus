@@ -146,9 +146,6 @@ opts = [
   [ 'fixed-point-debug', 'FIXED_DEBUG' ],
   [ 'custom-modes', 'CUSTOM_MODES' ],
   [ 'float-approx', 'FLOAT_APPROX' ],
-  [ 'enable-deep-plc', 'ENABLE_DEEP_PLC' ],
-  [ 'enable-dred', 'ENABLE_DRED' ],
-  [ 'enable-osce', 'ENABLE_OSCE' ],
   [ 'assertions', 'ENABLE_ASSERTIONS' ],
   [ 'hardening', 'ENABLE_HARDENING' ],
   [ 'fuzzing', 'FUZZING' ],
@@ -159,6 +156,21 @@ foreach opt : opts
   # we assume these are all boolean options
   opt_foo = get_option(opt[0])
   if opt_foo
+    opus_conf.set(opt[1], 1)
+  endif
+  set_variable('opt_' + opt[0].underscorify(), opt_foo)
+endforeach
+
+feat = [
+  [ 'deep-plc', 'ENABLE_DEEP_PLC' ],
+  [ 'dred', 'ENABLE_DRED' ],
+  [ 'osce', 'ENABLE_OSCE' ],
+]
+
+foreach opt : feat
+  # we assume these are all boolean options
+  opt_foo = get_option(opt[0])
+  if opt_foo.enabled()
     opus_conf.set(opt[1], 1)
   endif
   set_variable('opt_' + opt[0].underscorify(), opt_foo)
@@ -175,7 +187,7 @@ if disable_float_api
   opus_conf.set('DISABLE_FLOAT_API', 1)
 endif
 
-if not get_option('enable-dnn-debug-float')
+if not get_option('dnn-debug-float').enabled()
   opus_conf.set('DISABLE_DEBUG_FLOAT', 1)
 endif
 
