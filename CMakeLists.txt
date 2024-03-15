@@ -543,7 +543,6 @@ if(NOT OPUS_DISABLE_INTRINSICS)
       # Do runtime check for NEON
       target_compile_definitions(opus
                                  PRIVATE
-                                 OPUS_ARM_MAY_HAVE_NEON
                                  OPUS_ARM_MAY_HAVE_NEON_INTR)
     endif()
 
@@ -563,7 +562,6 @@ if(NOT OPUS_DISABLE_INTRINSICS)
     if(OPUS_PRESUME_NEON)
       target_compile_definitions(opus
                                  PRIVATE
-                                 OPUS_ARM_PRESUME_NEON
                                  OPUS_ARM_PRESUME_NEON_INTR)
     endif()
   endif()
