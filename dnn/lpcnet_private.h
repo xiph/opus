@@ -46,7 +46,7 @@ typedef struct {
   float gru2_state[PLC_GRU2_STATE_SIZE];
 } PLCNetState;
 
-#define PLC_BUF_SIZE ((CONT_VECTORS+5)*FRAME_SIZE)
+#define PLC_BUF_SIZE ((CONT_VECTORS+10)*FRAME_SIZE)
 struct LPCNetPLCState {
   PLCModel model;
   FARGANState fargan;
