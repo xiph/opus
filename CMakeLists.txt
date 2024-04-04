@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.16)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(OpusPackageVersion)
@@ -95,6 +95,12 @@ if(APPLE)
   set(OPUS_BUILD_FRAMEWORK_HELP_STR "build Framework bundle for Apple systems.")
   option(OPUS_BUILD_FRAMEWORK ${OPUS_BUILD_FRAMEWORK_HELP_STR} OFF)
   add_feature_info(OPUS_BUILD_FRAMEWORK OPUS_BUILD_FRAMEWORK ${OPUS_BUILD_FRAMEWORK_HELP_STR})
+endif()
+
+if(MSVC)
+  set(OPUS_STATIC_RUNTIME_HELP_STR "build with static runtime library.")
+  option(OPUS_STATIC_RUNTIME ${OPUS_STATIC_RUNTIME_HELP_STR} OFF)
+  add_feature_info(OPUS_STATIC_RUNTIME OPUS_STATIC_RUNTIME ${OPUS_STATIC_RUNTIME_HELP_STR})
 endif()
 
 set(OPUS_FIXED_POINT_DEBUG_HELP_STR "debug fixed-point implementation.")
@@ -263,6 +269,14 @@ set(Opus_PUBLIC_HEADER
 
 if(OPUS_CUSTOM_MODES)
   list(APPEND Opus_PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/opus_custom.h)
+endif()
+
+if(MSVC)
+  if(OPUS_STATIC_RUNTIME)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  else()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+  endif()
 endif()
 
 add_library(opus ${opus_headers} ${opus_sources} ${opus_sources_float} ${Opus_PUBLIC_HEADER})

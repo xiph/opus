@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   CMakeVersionTest:
-    name: Test build with CMake 3.1.0
+    name: Test build with CMake 3.16.0
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
@@ -12,9 +12,9 @@ jobs:
           fetch-depth: 0
       - name: Download models
         run: ./autogen.sh
-      - name: Install CMake 3.1
+      - name: Install CMake 3.16
         run: |
-          curl -sL https://github.com/Kitware/CMake/releases/download/v3.1.0/cmake-3.1.0-Linux-x86_64.sh -o cmakeinstall.sh
+          curl -sL https://github.com/Kitware/CMake/releases/download/v3.16.0/cmake-3.16.0-Linux-x86_64.sh -o cmakeinstall.sh
           chmod +x cmakeinstall.sh
           sudo ./cmakeinstall.sh --prefix=/usr/local --exclude-subdir
           rm cmakeinstall.sh
