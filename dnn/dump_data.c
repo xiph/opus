@@ -68,42 +68,11 @@ static void rand_resp(float *a, float *b) {
   b[1] = .75*uni_rand();
 }
 
-void compute_noise(int *noise, float noise_std) {
-  int i;
-  for (i=0;i<FRAME_SIZE;i++) {
-    noise[i] = (int)floor(.5 + noise_std*.707*(log_approx(rand()/(float)RAND_MAX)-log_approx(rand()/(float)RAND_MAX)));
-  }
-}
-
 static opus_int16 float2short(float x)
 {
   int i;
   i = (int)floor(.5+x);
   return IMAX(-32767, IMIN(32767, i));
-}
-
-
-void write_audio(LPCNetEncState *st, const opus_int16 *pcm, const int *noise, FILE *file) {
-  int i;
-  opus_int16 data[2*FRAME_SIZE];
-  for (i=0;i<FRAME_SIZE;i++) {
-    float p=0;
-    float e;
-    int j;
-    for (j=0;j<LPC_ORDER;j++) p -= st->features[NB_BANDS+2+j]*st->sig_mem[j];
-    e = lin2ulaw(pcm[i] - p);
-    /* Signal in. */
-    data[2*i] = float2short(st->sig_mem[0]);
-    /* Signal out. */
-    data[2*i+1] = pcm[i];
-    /* Simulate error on excitation. */
-    e += noise[i];
-    e = IMIN(255, IMAX(0, e));
-
-    OPUS_MOVE(&st->sig_mem[1], &st->sig_mem[0], LPC_ORDER-1);
-    st->sig_mem[0] = p + ulaw2lin(e);
-  }
-  fwrite(data, 4*FRAME_SIZE, 1, file);
 }
 
 int main(int argc, char **argv) {
@@ -123,13 +92,11 @@ int main(int argc, char **argv) {
   FILE *ffeat;
   FILE *fpcm=NULL;
   opus_int16 pcm[FRAME_SIZE]={0};
-  int noisebuf[FRAME_SIZE]={0};
   opus_int16 tmp[FRAME_SIZE] = {0};
   float speech_gain=1;
   float old_speech_gain = 1;
   int one_pass_completed = 0;
   LPCNetEncState *st;
-  float noise_std=0;
   int training = -1;
   int burg = 0;
   int pitch = 0;
@@ -202,16 +169,12 @@ int main(int argc, char **argv) {
     for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
     if (count*FRAME_SIZE_5MS>=10000000 && one_pass_completed) break;
     if (training && ++gain_change_count > 2821) {
-      float tmp1, tmp2;
       speech_gain = pow(10., (-30+(rand()%40))/20.);
       if (rand()&1) speech_gain = -speech_gain;
       if (rand()%20==0) speech_gain *= .01;
       if (!pitch && rand()%100==0) speech_gain = 0;
       gain_change_count = 0;
       rand_resp(a_sig, b_sig);
-      tmp1 = rand()/(float)RAND_MAX;
-      tmp2 = rand()/(float)RAND_MAX;
-      noise_std = ABS16(-1.5*log(1e-4+tmp1)-.5*log(1e-4+tmp2));
       if (fnoise != NULL) {
         long pos;
         /* Randomize the fraction because rand() only gives us 31 bits. */
@@ -244,14 +207,9 @@ int main(int argc, char **argv) {
       fwrite(ceps, sizeof(float), 2*NB_BANDS, ffeat);
     }
     preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
-    for (i=0;i<FRAME_SIZE;i++) x[i] += rand()/(float)RAND_MAX - .5f;
     /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
     for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
     compute_frame_features(st, x, arch);
-
-    if (fpcm) {
-        compute_noise(noisebuf, noise_std);
-    }
 
     if (pitch) {
       signed char pitch_features[PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES];
@@ -266,7 +224,7 @@ int main(int argc, char **argv) {
       fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
     }
     /*if(pitch) fwrite(pcm, FRAME_SIZE, 2, stdout);*/
-    if (fpcm) write_audio(st, pcm, noisebuf, fpcm);
+    if (fpcm) fwrite(pcm, FRAME_SIZE, 2, fpcm);
     /*if (fpcm) fwrite(pcm, sizeof(opus_int16), FRAME_SIZE, fpcm);*/
     for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);
     old_speech_gain = speech_gain;
