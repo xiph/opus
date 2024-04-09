@@ -294,9 +294,9 @@ endif
 
 if EXTRA_PROGRAMS
 if ENABLE_DEEP_PLC
-noinst_PROGRAMS += lpcnet_demo dump_data dump_weights_blob
-lpcnet_demo_SOURCES = dnn/lpcnet_demo.c
-lpcnet_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
+noinst_PROGRAMS += fargan_demo dump_data dump_weights_blob
+fargan_demo_SOURCES = dnn/fargan_demo.c
+fargan_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 
 dump_data_SOURCES = dnn/dump_data.c
 dump_data_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
