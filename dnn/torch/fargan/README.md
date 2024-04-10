@@ -8,9 +8,9 @@ For data preparation you need to build Opus as detailed in the top-level README.
 You will need to use the --enable-deep-plc configure option.
 The build will produce an executable named "dump_data".
 To prepare the training data, run:
-
+```
 ./dump_data -train in_speech.pcm out_features.f32 out_speech.pcm
-
+```
 Where the in_speech.pcm speech file is a raw 16-bit PCM file sampled at 16 kHz.
 The speech data used for training the model can be found at:
 https://media.xiph.org/lpcnet/speech/tts_speech_negative_16k.sw
