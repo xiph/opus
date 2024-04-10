@@ -1,6 +1,9 @@
 # Framewise Auto-Regressive GAN (FARGAN)
 
-Implementation of FARGAN, a low-complexity neural vocoder.
+Implementation of FARGAN, a low-complexity neural vocoder. Pre-trained models
+are provided as C code in the dnn/ directory with the corresponding model in
+dnn/models/ directory (name starts with fargan_). If you don't want to train
+a new FARGAN model, you can skip straight to the Inference section.
 
 ## Data preparation
 
