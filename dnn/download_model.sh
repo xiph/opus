@@ -8,22 +8,21 @@ if [ ! -f $model ]; then
         wget https://media.xiph.org/opus/models/$model
 fi
 
-SHA256=$(command -v sha256sum)
-if [ "$?" != "0" ]
+if command -v sha256sum
 then
-   echo "Could not find sha256 sum. Skipping verification. Please verify manually that sha256 hash of ${model} matches ${1}."
-else
    echo "Validating checksum"
-   checksum=$1
+   checksum="$1"
    checksum2=$(sha256sum $model | awk '{print $1}')
    if [ "$checksum" != "$checksum2" ]
    then
-      echo "checksums don't match, aborting"
+      echo "Aborting due to mismatching checksums. This could be caused by a corrupted download of $model."
+      echo "Consider deleting local copy of $model and running this script again."
       exit 1
    else
       echo "checksums match"
    fi
-
+else
+   echo "Could not find sha256 sum; skipping verification. Please verify manually that sha256 hash of ${model} matches ${1}."
 fi
 
 
