@@ -294,7 +294,7 @@ static OpusDecoder *ms_opus_decoder_create(opus_int32 Fs, int channels, int *err
 #define PACKET_LOSS_PERC_MAX 50
 #define PACKET_LOSS_PERC_STEP 5
 
-#define CBR_BITRATE_LIMIT 8000
+#define CBR_BITRATE_LIMIT 80000
 
 #define NUM_BITRATES 102
 static int bitrates[NUM_BITRATES] = {
@@ -727,6 +727,10 @@ int main(int argc, char *argv[])
        {
           opus_encoder_ctl(enc, OPUS_SET_DRED_DURATION(dred_duration));
        }
+#ifdef ENABLE_OSCE_TRAINING_DATA
+       opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY));
+       srand(0);
+#endif
     }
     if (!encode_only)
     {
