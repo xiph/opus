@@ -50,6 +50,9 @@
 #include "lace_data.c"
 #include "nolace_data.c"
 #endif
+#ifdef ENABLE_LOSSGEN
+#include "lossgen_data.c"
+#endif
 
 void write_weights(const WeightArray *list, FILE *fout)
 {
@@ -91,6 +94,9 @@ int main(void)
 #ifndef DISABLE_NOLACE
   write_weights(nolacelayers_arrays, fout);
 #endif
+#endif
+#ifdef ENABLE_LOSSGEN
+  write_weights(lossgen_arrays, fout);
 #endif
   fclose(fout);
   return 0;
