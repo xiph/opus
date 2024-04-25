@@ -66,7 +66,7 @@ from utils.templates import setup_dict
 parser = argparse.ArgumentParser()
 
 parser.add_argument('name', type=str, help='name of default setup file')
-parser.add_argument('--model', choices=['lace', 'nolace', 'lavoce'], help='model name', default='lace')
+parser.add_argument('--model', choices=['lace', 'nolace', 'lavoce', 'bwenet', 'bbwenet'], help='model name', default='lace')
 parser.add_argument('--adversarial', action='store_true', help='setup for adversarial training')
 parser.add_argument('--path2dataset', type=str, help='dataset path', default=None)
 

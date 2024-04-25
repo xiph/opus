@@ -208,3 +208,34 @@ def cepstrum(x, frame_size, fb=None, window=None):
     cepstrum = scipy.fftpack.dct(X, 2, norm='ortho')
 
     return cepstrum
+
+def instafreq(x, frame_size, max_bin, window=None):
+
+    assert(2*len(x)) % frame_size == 0
+    assert frame_size % 2 == 0
+
+    n = len(x)
+    num_even = n // frame_size
+    num_odd  = (n - frame_size // 2) // frame_size
+    num_bins = frame_size // 2 + 1
+
+    x_even = x[:num_even * frame_size].reshape(-1, frame_size)
+    x_odd  = x[frame_size//2 : frame_size//2 + frame_size *  num_odd].reshape(-1, frame_size)
+
+    x_unfold = np.empty((x_even.size + x_odd.size), dtype=x.dtype).reshape((-1, frame_size))
+    x_unfold[::2, :] = x_even
+    x_unfold[1::2, :] = x_odd
+
+    if window is not None:
+        x_unfold *= window.reshape(1, -1)
+
+    X = np.fft.fft(x_unfold, n=frame_size, axis=-1)
+
+    # instantaneus frequency
+    X_trunc = X[..., :max_bin + 1] + 1e-9
+    Y = X_trunc[1:] * np.conj(X_trunc[:-1])
+    Y = Y / (np.abs(Y) + 1e-9)
+
+    instafreq = np.concatenate((np.real(Y), np.imag(Y)), axis=-1, dtype=x.dtype)
+
+    return instafreq

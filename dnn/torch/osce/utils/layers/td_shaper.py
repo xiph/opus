@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+import scipy.signal
 
 from utils.complexity import _conv1d_flop_count
 from utils.softquant import soft_quant
@@ -11,11 +12,15 @@ class TDShaper(nn.Module):
     def __init__(self,
                  feature_dim,
                  frame_size=160,
-                 avg_pool_k=4,
                  innovate=False,
+                 avg_pool_k=4,
                  pool_after=False,
                  softquant=False,
-                 apply_weight_norm=False
+                 apply_weight_norm=False,
+                 interpolate_k=1,
+                 noise_substitution=False,
+                 cutoff=None,
+                 bias=True,
     ):
         """
 
@@ -38,32 +43,39 @@ class TDShaper(nn.Module):
 
         super().__init__()
 
+        if innovate:
+            print("warning: option innovate is no longer supported, setting innovate to True will have no effect")
 
         self.feature_dim    = feature_dim
         self.frame_size     = frame_size
         self.avg_pool_k     = avg_pool_k
-        self.innovate       = innovate
         self.pool_after     = pool_after
+        self.interpolate_k  = interpolate_k
+        self.hidden_dim     = frame_size // interpolate_k
+        self.innovate       = innovate
+        self.noise_substitution = noise_substitution
+        self.cutoff             = cutoff
 
         assert frame_size % avg_pool_k == 0
+        assert frame_size % interpolate_k == 0
         self.env_dim = frame_size // avg_pool_k + 1
 
         norm = torch.nn.utils.weight_norm if apply_weight_norm else lambda x, name=None: x
 
         # feature transform
-        self.feature_alpha1_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2))
-        self.feature_alpha1_t = norm(nn.Conv1d(self.env_dim, frame_size, 2))
-        self.feature_alpha2 = norm(nn.Conv1d(frame_size, frame_size, 2))
+        self.feature_alpha1_f = norm(nn.Conv1d(self.feature_dim, self.hidden_dim, 2, bias=bias))
+        self.feature_alpha1_t = norm(nn.Conv1d(self.env_dim, self.hidden_dim, 2, bias=bias))
+        self.feature_alpha2 = norm(nn.Conv1d(self.hidden_dim, self.hidden_dim, 2, bias=bias))
+
+        self.interpolate_weight = nn.Parameter(torch.ones(1, 1, self.interpolate_k) / self.interpolate_k, requires_grad=False)
 
         if softquant:
             self.feature_alpha1_f = soft_quant(self.feature_alpha1_f)
 
-        if self.innovate:
-            self.feature_alpha1b = norm(nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2))
-            self.feature_alpha1c = norm(nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2))
-
-            self.feature_alpha2b = norm(nn.Conv1d(frame_size, frame_size, 2))
-            self.feature_alpha2c = norm(nn.Conv1d(frame_size, frame_size, 2))
+        if self.noise_substitution:
+            self.hp = torch.nn.Parameter(torch.from_numpy(scipy.signal.firwin(15, cutoff, pass_zero=False)).float().view(1, 1, -1), requires_grad=False)
+        else:
+            self.hp = None
 
 
     def flop_count(self, rate):
@@ -72,12 +84,7 @@ class TDShaper(nn.Module):
 
         shape_flops = sum([_conv1d_flop_count(x, frame_rate) for x in (self.feature_alpha1_f, self.feature_alpha1_t, self.feature_alpha2)]) + 11 * frame_rate * self.frame_size
 
-        if self.innovate:
-            inno_flops = sum([_conv1d_flop_count(x, frame_rate) for x in (self.feature_alpha1b, self.feature_alpha2b, self.feature_alpha1c, self.feature_alpha2c)]) + 22 * frame_rate * self.frame_size
-        else:
-            inno_flops = 0
-
-        return shape_flops + inno_flops
+        return shape_flops
 
     def envelope_transform(self, x):
 
@@ -111,9 +118,7 @@ class TDShaper(nn.Module):
         """
 
         batch_size = x.size(0)
-        num_frames = features.size(1)
         num_samples = x.size(2)
-        frame_size = self.frame_size
 
         # generate temporal envelope
         tenv = self.envelope_transform(x)
@@ -123,23 +128,24 @@ class TDShaper(nn.Module):
         t = F.pad(tenv.permute(0, 2, 1), [1, 0])
         alpha = self.feature_alpha1_f(f) + self.feature_alpha1_t(t)
         alpha = F.leaky_relu(alpha, 0.2)
-        alpha = torch.exp(self.feature_alpha2(F.pad(alpha, [1, 0])))
+        alpha = self.feature_alpha2(F.pad(alpha, [1, 0]))
+        # reshape and interpolate to size (batch_size, 1, num_samples)
         alpha = alpha.permute(0, 2, 1)
+        alpha = alpha.reshape(batch_size, 1, num_samples // self.interpolate_k)
+        if self.interpolate_k != 1:
+            alpha = F.interpolate(alpha, self.interpolate_k * alpha.size(-1), mode='nearest')
+            alpha = F.conv1d(F.pad(alpha, [self.interpolate_k - 1, 0], mode='reflect'), self.interpolate_weight) # interpolation in log-domain
+        alpha = torch.exp(alpha)
 
-        if self.innovate:
-            inno_alpha = F.leaky_relu(self.feature_alpha1b(f), 0.2)
-            inno_alpha = torch.exp(self.feature_alpha2b(F.pad(inno_alpha, [1, 0])))
-            inno_alpha = inno_alpha.permute(0, 2, 1)
+        # sample-wise shaping in time domain
+        if self.noise_substitution:
+            if self.hp is not None:
+                x = torch.rand_like(x)
+                x = F.pad(x, [7, 7], mode='reflect')
+                x = F.conv1d(x, self.hp)
+            else:
+                x = 2 * torch.rand_like(x) - 1
 
-            inno_x = F.leaky_relu(self.feature_alpha1c(f), 0.2)
-            inno_x = torch.tanh(self.feature_alpha2c(F.pad(inno_x, [1, 0])))
-            inno_x = inno_x.permute(0, 2, 1)
+        y = alpha * x
 
-        # signal path
-        y = x.reshape(batch_size, num_frames, -1)
-        y = alpha * y
-
-        if self.innovate:
-            y = y + inno_alpha * inno_x
-
-        return y.reshape(batch_size, 1, num_samples)
+        return y
