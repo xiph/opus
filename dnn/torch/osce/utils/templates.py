@@ -89,6 +89,46 @@ lace_setup = {
 }
 
 
+bwenet_setup = {
+    'dataset': '/local2/bwe0_dataset//training',
+    'validation_dataset': '/local2/bwe0_dataset/validation',
+    'model': {
+        'name': 'bwenet',
+        'args': [],
+        'kwargs': {
+            'cond_dim': 128,
+            'conv_gain_limits_db': [-12, 12],
+            'kernel_size32': 15,
+            'kernel_size48': 15,
+            'feature_dim': 114,
+            'activation' : "AdaShape"
+        }
+    },
+    'data': {
+        'frames_per_sample': 100,
+        'spec_num_bands' : 32,
+        'max_instafreq_bin' : 40
+    },
+    'training': {
+        'batch_size': 128,
+        'lr': 5.e-4,
+        'lr_decay_factor': 2.5e-5,
+        'epochs': 50,
+        'loss': {
+            'w_l1': 0,
+            'w_lm': 0,
+            'w_logmel': 0,
+            'w_sc': 0,
+            'w_wsc': 0,
+            'w_xcorr': 0,
+            'w_sxcorr': 1,
+            'w_l2': 10,
+            'w_slm': 2
+        }
+    }
+}
+
+
 nolace_setup = {
     'dataset': '/local/datasets/silk_enhancement_v2_full_6to64kbps/training',
     'validation_dataset': '/local/datasets/silk_enhancement_v2_full_6to64kbps/validation',
@@ -343,5 +383,6 @@ setup_dict = {
     'nolace': nolace_setup,
     'nolace_adv': nolace_setup_adv,
     'lavoce': lavoce_setup,
-    'lavoce_adv': lavoce_setup_adv
+    'lavoce_adv': lavoce_setup_adv,
+    'bwenet' : bwenet_setup
 }

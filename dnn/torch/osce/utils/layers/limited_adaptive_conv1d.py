@@ -31,6 +31,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+import math as m
+
 from utils.endoscopy import write_data
 
 from utils.ada_conv import adaconv_kernel
@@ -123,6 +125,8 @@ class LimitedAdaptiveConv1d(nn.Module):
 
         self.overlap_win = nn.Parameter(.5 + .5 * torch.cos((torch.arange(self.overlap_size) + 0.5) * torch.pi / overlap_size), requires_grad=False)
 
+        self.fft_size = 2 ** int(m.ceil(m.log2(2 * frame_size + overlap_size)))
+
 
     def flop_count(self, rate):
         frame_rate = rate / self.frame_size
@@ -194,7 +198,7 @@ class LimitedAdaptiveConv1d(nn.Module):
 
         conv_kernels = conv_kernels.permute(0, 2, 3, 1, 4)
 
-        output = adaconv_kernel(x, conv_kernels, win1, fft_size=256)
+        output = adaconv_kernel(x, conv_kernels, win1, fft_size=self.fft_size)
 
 
         return output
