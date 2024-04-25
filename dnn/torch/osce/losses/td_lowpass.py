@@ -9,7 +9,7 @@ class TDLowpass(torch.nn.Module):
         super().__init__()
 
         self.b = scipy.signal.firwin(numtaps, cutoff)
-        self.weight = torch.from_numpy(self.b).float().view(1, 1, -1)
+        self.weight = torch.nn.Parameter(torch.from_numpy(self.b).float().view(1, 1, -1), requires_grad=False)
         self.power = power
 
     def forward(self, y_true, y_pred):
