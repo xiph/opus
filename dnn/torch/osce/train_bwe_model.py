@@ -63,6 +63,7 @@ from utils.bwe_features import load_inference_data
 from utils.misc import count_parameters, count_nonzero_parameters
 
 from losses.stft_loss import MRSTFTLoss, MRLogMelLoss
+from losses.td_lowpass import TDLowpass
 
 
 parser = argparse.ArgumentParser()
@@ -204,8 +205,9 @@ w_wsc = setup['training']['loss']['w_wsc']
 w_xcorr = setup['training']['loss']['w_xcorr']
 w_sxcorr = setup['training']['loss']['w_sxcorr']
 w_l2 = setup['training']['loss']['w_l2']
+w_tdlp = setup['training']['loss'].get('w_tdlp', 0)
 
-w_sum = w_l1 + w_lm + w_sc + w_logmel + w_wsc + w_slm + w_xcorr + w_sxcorr + w_l2
+w_sum = w_l1 + w_lm + w_sc + w_logmel + w_wsc + w_slm + w_xcorr + w_sxcorr + w_l2 + w_tdlp
 
 
 fft_sizes_16k = [2048, 1024, 512, 256, 128, 64]
@@ -233,10 +235,12 @@ def td_l1(y_true, y_pred, pow=0):
 
     return torch.mean(tmp)
 
-def criterion(x, y):
+tdlp = TDLowpass(15, 4000/24000).to(device)
+
+def criterion(x, y, x_up):
 
     return (w_l1 * td_l1(x, y, pow=1) +  stftloss(x, y) + w_logmel * logmelloss(x, y)
-            + w_xcorr * xcorr_loss(x, y) + w_l2 * td_l2_norm(x, y)) / w_sum
+            + w_xcorr * xcorr_loss(x, y) + w_l2 * td_l2_norm(x, y) + tdlp(x_up, y)) / w_sum
 
 
 

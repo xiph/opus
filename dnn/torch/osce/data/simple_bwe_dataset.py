@@ -41,10 +41,13 @@ class SimpleBWESet(Dataset):
                  path,
                  frames_per_sample=100,
                  spec_num_bands=32,
-                 max_instafreq_bin=40
+                 max_instafreq_bin=40,
+                 upsampling_delay48=13,
                  ):
 
         self.frames_per_sample = frames_per_sample
+        self.upsampling_delay48 = upsampling_delay48
+        
         self.signal_16k = np.fromfile(os.path.join(path, 'signal_16kHz.s16'), dtype=np.int16)
         self.signal_48k = np.fromfile(os.path.join(path, 'signal_48kHz.s16'), dtype=np.int16)
 
@@ -53,7 +56,7 @@ class SimpleBWESet(Dataset):
 
         self.create_features = bwe_feature_factory(spec_num_bands=spec_num_bands, max_instafreq_bin=max_instafreq_bin)
 
-        self.frame_offset = 4
+        self.frame_offset = 6
 
         self.len = (num_frames - self.frame_offset) // frames_per_sample
 
@@ -71,7 +74,8 @@ class SimpleBWESet(Dataset):
         x_16 = self.signal_16k[signal_start16 : signal_stop16].astype(np.float32) / 2**15
         history_16 = self.signal_16k[signal_start16 - 320 : signal_start16].astype(np.float32) / 2**15
 
-        x_48 = self.signal_48k[3 * signal_start16 : 3 * signal_stop16].astype(np.float32) / 2**15
+        x_48 = self.signal_48k[3 * signal_start16 - self.upsampling_delay48 
+                               : 3 * signal_stop16 - self.upsampling_delay48].astype(np.float32) / 2**15
 
         features = self.create_features(
               x_16,

@@ -23,12 +23,14 @@ def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, 
                 batch[key] = batch[key].to(device)
 
             target = batch['x_48']
+            x16 = batch['x_16']
+            x_up = model.upsampler(x16.unsqueeze(1))
 
             # calculate model output
             output = model(batch['x_16'].unsqueeze(1), batch['features'])
 
             # calculate loss
-            loss = criterion(target, output.squeeze(1))
+            loss = criterion(target, output.squeeze(1), x_up)
 
             # calculate gradients
             loss.backward()
@@ -79,7 +81,7 @@ def evaluate(model, criterion, dataloader, device, log_interval=10):
                 output = model(batch['x_16'].unsqueeze(1), batch['features'])
 
                 # calculate loss
-                loss = criterion(target, output.squeeze(1))
+                loss = criterion(target, output.squeeze(1), model.upsampler(batch['x_16'].unsqueeze(1)))
 
                 # update running loss
                 running_loss += float(loss.cpu())

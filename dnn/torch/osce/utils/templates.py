@@ -90,7 +90,7 @@ lace_setup = {
 
 
 bwenet_setup = {
-    'dataset': '/local2/bwe0_dataset//training',
+    'dataset': '/local2/bwe0_dataset/training',
     'validation_dataset': '/local2/bwe0_dataset/validation',
     'model': {
         'name': 'bwenet',
@@ -107,7 +107,8 @@ bwenet_setup = {
     'data': {
         'frames_per_sample': 100,
         'spec_num_bands' : 32,
-        'max_instafreq_bin' : 40
+        'max_instafreq_bin' : 40,
+        'upsampling_delay48' : 13
     },
     'training': {
         'batch_size': 128,
@@ -122,8 +123,9 @@ bwenet_setup = {
             'w_wsc': 0,
             'w_xcorr': 0,
             'w_sxcorr': 1,
-            'w_l2': 10,
-            'w_slm': 2
+            'w_l2': 0,
+            'w_slm': 2,
+            'w_tdlp': 1
         }
     }
 }
