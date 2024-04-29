@@ -63,4 +63,4 @@ Generating inference data is analogous to generating training data. Given an ite
 
 The folder item1.se then serves as input for the test_model.py script or for the --testdata argument of train_model.py resp. adv_train_model.py
 
-Checkpoints of pre-trained models are located here: https://media.xiph.org/lpcnet/models/lace-20231019.tar.gz
+Checkpoints of pre-trained models are downloaded to dnn/models.
