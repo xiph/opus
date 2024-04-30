@@ -130,6 +130,71 @@ bwenet_setup = {
     }
 }
 
+bwenet_setup_adv = {
+    'dataset': '/local2/bwe0_dataset/training',
+    'validation_dataset': '/local2/bwe0_dataset/validation',
+    'model': {
+        'name': 'bwenet',
+        'args': [],
+        'kwargs': {
+            'cond_dim': 128,
+            'conv_gain_limits_db': [-12, 12],
+            'kernel_size32': 15,
+            'kernel_size48': 15,
+            'feature_dim': 114,
+            'activation' : "AdaShape"
+        }
+    },
+    'data': {
+        'frames_per_sample': 100,
+        'spec_num_bands' : 32,
+        'max_instafreq_bin' : 40,
+        'upsampling_delay48' : 13
+    },
+    'discriminator': {
+        'args': [],
+        'kwargs': {
+            'architecture': 'free',
+            'design': 'f_down',
+            'fft_sizes_16k': [
+                64,
+                128,
+                256,
+                512,
+                1024,
+                2048,
+            ],
+            'freq_roi': [0, 22000],
+            'fs': 48000,
+            'max_channels': 256,
+            'noise_gain': 0.0
+        },
+        'name': 'fdmresdisc',
+    },
+    'training': {
+        'adv_target': 'target_orig',
+        'batch_size': 64,
+        'epochs': 50,
+        'gen_lr_reduction': 1,
+        'lambda_feat': 1.0,
+        'lambda_reg': 0.6,
+        'loss': {
+            'w_l1': 0,
+            'w_l2': 0,
+            'w_lm': 0,
+            'w_logmel': 0,
+            'w_sc': 0,
+            'w_slm': 2,
+            'w_sxcorr': 1,
+            'w_wsc': 0,
+            'w_xcorr': 0,
+            'w_tdlp': 1,
+        },
+        'lr': 0.0001,
+        'lr_decay_factor': 2.5e-09,
+    }
+}
+
 
 nolace_setup = {
     'dataset': '/local/datasets/silk_enhancement_v2_full_6to64kbps/training',
@@ -386,5 +451,6 @@ setup_dict = {
     'nolace_adv': nolace_setup_adv,
     'lavoce': lavoce_setup,
     'lavoce_adv': lavoce_setup_adv,
-    'bwenet' : bwenet_setup
+    'bwenet' : bwenet_setup,
+    'bwenet_adv': bwenet_setup_adv
 }

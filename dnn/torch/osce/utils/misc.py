@@ -30,7 +30,7 @@
 import torch
 from torch.nn.utils import remove_weight_norm
 
-def count_parameters(model, verbose=False):
+def count_parameters(model, verbose=False, trainable=True):
     total = 0
     for name, p in model.named_parameters():
         count = torch.ones_like(p).sum().item()
@@ -38,6 +38,8 @@ def count_parameters(model, verbose=False):
         if verbose:
             print(f"{name}: {count} parameters")
 
+        if trainable and not p.requires_grad:
+            continue
         total += count
 
     return total
