@@ -132,7 +132,7 @@ class SpecDiscriminatorBase(nn.Module):
                  resolution,
                  fs=16000,
                  freq_roi=[50, 7000],
-                 noise_gain=1e-3,
+                 noise_gain=0,
                  fmap_start_index=0
                  ):
         super().__init__()
@@ -150,10 +150,11 @@ class SpecDiscriminatorBase(nn.Module):
         # filter bank for noise shaping
         n_fft = resolution[0]
 
-        self.filterbank = nn.Parameter(
-            gen_filterbank(n_fft // 2, fs, keep_size=True),
-            requires_grad=False
-        )
+        if self.noise_gain > 0:
+            self.filterbank = nn.Parameter(
+                gen_filterbank(n_fft // 2, fs, keep_size=True),
+                requires_grad=False
+            )
 
         # roi bins
         f_step = fs / n_fft
@@ -294,9 +295,10 @@ class SpecDiscriminatorBase(nn.Module):
         x = torch.abs(x)
 
         # noise floor following spectral envelope
-        smoothed_x = torch.matmul(self.filterbank, x)
-        noise = torch.randn_like(x) * smoothed_x * self.noise_gain
-        x = x + noise
+        if self.noise_gain > 0:
+            smoothed_x = torch.matmul(self.filterbank, x)
+            noise = torch.randn_like(x) * smoothed_x * self.noise_gain
+            x = x + noise
 
         # frequency ROI
         x = x[:, self.start_bin : self.stop_bin + 1, ...]
@@ -722,6 +724,7 @@ class DiscriminatorMagFree(SpecDiscriminatorBase):
                  max_channels=256,
                  num_layers=5,
                  use_spectral_norm=False,
+                 k_height=3,
                  design=None):
 
         if design is None:
@@ -729,8 +732,9 @@ class DiscriminatorMagFree(SpecDiscriminatorBase):
 
         norm_f = weight_norm if use_spectral_norm == False else spectral_norm
 
-        stretch = configs[design]['stretch'][resolution[0]]
-        down = configs[design]['down'][resolution[0]]
+        resolution_16k = [(r * 16000) // fs for r in resolution]
+        stretch = configs[design]['stretch'][resolution_16k[0]]
+        down = configs[design]['down'][resolution_16k[0]]
 
         self.num_channels = num_channels
         self.num_channels_max = max_channels
@@ -746,7 +750,7 @@ class DiscriminatorMagFree(SpecDiscriminatorBase):
             layers.append(
                 nn.Sequential(
                     FrequencyPositionalEmbedding(),
-                    norm_f(nn.Conv2d(in_channels, out_channels, (3, 3), stride=plan[i][0], dilation=plan[i][1], padding=plan[i][2])),
+                    norm_f(nn.Conv2d(in_channels, out_channels, (k_height, 3), stride=plan[i][0], dilation=plan[i][1], padding=plan[i][2])),
                     nn.ReLU(inplace=True)
                 )
             )
@@ -758,7 +762,7 @@ class DiscriminatorMagFree(SpecDiscriminatorBase):
         layers.append(
             nn.Sequential(
                 FrequencyPositionalEmbedding(),
-                norm_f(nn.Conv2d(in_channels, 1, (3, 3), stride=plan[-1][0], dilation=plan[-1][1], padding=plan[-1][2])),
+                norm_f(nn.Conv2d(in_channels, 1, (k_height, 3), stride=plan[-1][0], dilation=plan[-1][1], padding=plan[-1][2])),
                 nn.Sigmoid()
             )
         )
