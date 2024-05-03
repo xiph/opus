@@ -263,7 +263,7 @@ print("summary:")
 
 print(f"{count_parameters(model.cpu()) / 1e6:5.3f} M parameters")
 if hasattr(model, 'flop_count'):
-    print(f"{model.flop_count(16000) / 1e6:5.3f} MFLOPS")
+    print(f"{model.flop_count(48000) / 1e6:5.3f} MFLOPS")
 
 
 best_loss = 1e9

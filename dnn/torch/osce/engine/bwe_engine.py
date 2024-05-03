@@ -85,6 +85,7 @@ def evaluate(model, criterion, dataloader, device, preemph_gamma=0, log_interval
                     batch[key] = batch[key].to(device)
 
                 target = batch['x_48']
+                x_up = model.upsampler(batch['x_16'].unsqueeze(1))
 
                 # calculate model output
                 output = model(batch['x_16'].unsqueeze(1), batch['features'])
@@ -95,7 +96,7 @@ def evaluate(model, criterion, dataloader, device, preemph_gamma=0, log_interval
                 output = preemph(output, preemph_gamma)
 
                 # calculate loss
-                loss = criterion(target, output.squeeze(1), model.upsampler(batch['x_16'].unsqueeze(1)))
+                loss = criterion(target, output.squeeze(1), x_up)
 
                 # update running loss
                 running_loss += float(loss.cpu())
