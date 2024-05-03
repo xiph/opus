@@ -13,7 +13,7 @@ class TDLowpass(torch.nn.Module):
         self.power = power
 
     def forward(self, y_true, y_pred):
-        
+
         if len(y_true.shape) < 3: y_true = y_true.unsqueeze(1)
         if len(y_pred.shape) < 3: y_pred = y_pred.unsqueeze(1)
 

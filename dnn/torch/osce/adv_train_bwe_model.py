@@ -361,7 +361,7 @@ for ep in range(1, epochs + 1):
 
             # calculate model output
             output = model(x16, batch['features'])
-            
+
             # pre-emphasize
             target = preemph(target, preemph_gamma)
             x_up = preemph(x_up, preemph_gamma)
