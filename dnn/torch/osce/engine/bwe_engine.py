@@ -2,7 +2,11 @@ import torch
 from tqdm import tqdm
 import sys
 
-def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, log_interval=10):
+def preemph(x, gamma):
+    y = torch.cat((x[..., 0:1], x[..., 1:] - gamma * x[...,:-1]), dim=-1)
+    return y
+
+def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, preemph_gamma=0, log_interval=10):
 
     model.to(device)
     model.train()
@@ -28,6 +32,11 @@ def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, 
 
             # calculate model output
             output = model(batch['x_16'].unsqueeze(1), batch['features'])
+
+            # pre-emphasize
+            target = preemph(target, preemph_gamma)
+            x_up = preemph(x_up, preemph_gamma)
+            output = preemph(output, preemph_gamma)
 
             # calculate loss
             loss = criterion(target, output.squeeze(1), x_up)
@@ -58,7 +67,7 @@ def train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, 
 
     return running_loss
 
-def evaluate(model, criterion, dataloader, device, log_interval=10):
+def evaluate(model, criterion, dataloader, device, preemph_gamma=0, log_interval=10):
 
     model.to(device)
     model.eval()
@@ -79,6 +88,11 @@ def evaluate(model, criterion, dataloader, device, log_interval=10):
 
                 # calculate model output
                 output = model(batch['x_16'].unsqueeze(1), batch['features'])
+
+                # pre-emphasize
+                target = preemph(target, preemph_gamma)
+                x_up = preemph(x_up, preemph_gamma)
+                output = preemph(output, preemph_gamma)
 
                 # calculate loss
                 loss = criterion(target, output.squeeze(1), model.upsampler(batch['x_16'].unsqueeze(1)))

@@ -153,6 +153,7 @@ batch_size      = setup['training']['batch_size']
 epochs          = setup['training']['epochs']
 lr              = setup['training']['lr']
 lr_decay_factor = setup['training']['lr_decay_factor']
+preemph_gamma   = setup['training']['preemph']
 
 # load training dataset
 data_config = setup['data']
@@ -269,7 +270,7 @@ best_loss = 1e9
 
 for ep in range(1, epochs + 1):
     print(f"training epoch {ep}...")
-    new_loss = train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler)
+    new_loss = train_one_epoch(model, criterion, optimizer, dataloader, device, scheduler, preemph_gamma)
 
 
     # save checkpoint
@@ -278,7 +279,7 @@ for ep in range(1, epochs + 1):
 
     if run_validation:
         print("running validation...")
-        validation_loss = evaluate(model, criterion, validation_dataloader, device)
+        validation_loss = evaluate(model, criterion, validation_dataloader, device, preemph_gamma)
         checkpoint['validation_loss'] = validation_loss
 
         if validation_loss < best_loss:
