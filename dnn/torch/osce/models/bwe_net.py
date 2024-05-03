@@ -123,7 +123,7 @@ class BWENet(torch.nn.Module):
         # feature net
         feature_net_flops = self.feature_net.flop_count(frame_rate)
         af_flops = self.af1.flop_count(rate) + self.af2.flop_count(2 * rate) + self.af3.flop_count(3 * rate) + + self.af4.flop_count(3 * rate)
-        
+
         if self.activation == 'AdaShape':
             shape_flops = self.act1.flop_count(rate) + self.act2.flop_count(rate)
         else:
