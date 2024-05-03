@@ -73,6 +73,10 @@ parser.add_argument('--no-redirect', action='store_true', help='disables re-dire
 args = parser.parse_args()
 
 
+def preemph(x, gamma):
+    y = torch.cat((x[..., 0:1], x[..., 1:] - gamma * x[...,:-1]), dim=-1)
+    return y
+
 torch.set_num_threads(4)
 
 with open(args.setup, 'r') as f:
@@ -239,6 +243,7 @@ w_xcorr = setup['training']['loss']['w_xcorr']
 w_sxcorr = setup['training']['loss']['w_sxcorr']
 w_l2 = setup['training']['loss']['w_l2']
 w_tdlp = setup['training']['loss'].get('w_tdlp', 0)
+preemph_gamma = setup['training']['preemph']
 
 w_sum = w_l1 + w_lm + w_sc + w_logmel + w_wsc + w_slm + w_xcorr + w_sxcorr + w_l2 + w_tdlp
 
@@ -356,6 +361,11 @@ for ep in range(1, epochs + 1):
 
             # calculate model output
             output = model(x16, batch['features'])
+            
+            # pre-emphasize
+            target = preemph(target, preemph_gamma)
+            x_up = preemph(x_up, preemph_gamma)
+            output = preemph(output, preemph_gamma)
 
             # discriminator update
             scores_gen = disc(output.detach())

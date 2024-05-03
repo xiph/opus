@@ -126,7 +126,8 @@ bwenet_setup = {
             'w_l2': 0,
             'w_slm': 2,
             'w_tdlp': 1
-        }
+        },
+        'preemph': 0.9
     }
 }
 
@@ -146,7 +147,7 @@ bwenet_setup_adv = {
         }
     },
     'data': {
-        'frames_per_sample': 100,
+        'frames_per_sample': 60,
         'spec_num_bands' : 32,
         'max_instafreq_bin' : 40,
         'upsampling_delay48' : 13
@@ -192,6 +193,7 @@ bwenet_setup_adv = {
         },
         'lr': 0.0001,
         'lr_decay_factor': 2.5e-09,
+        'preemph': 0.9
     }
 }
 
