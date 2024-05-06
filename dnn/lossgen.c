@@ -147,7 +147,7 @@ int sample_loss(
       so we skip them. */
    if (!st->used) {
       int i;
-      for (i=0;i<100;i++) sample_loss_impl(st, percent_loss);
+      for (i=0;i<1000;i++) sample_loss_impl(st, percent_loss);
       st->used = 1;
    }
    return sample_loss_impl(st, percent_loss);
@@ -157,11 +157,7 @@ void lossgen_init(LossGenState *st)
 {
   int ret;
   OPUS_CLEAR(st, 1);
-#ifndef USE_WEIGHTS_FILE
   ret = init_lossgen(&st->model, lossgen_arrays);
-#else
-  ret = 0;
-#endif
   celt_assert(ret == 0);
   (void)ret;
 }
