@@ -120,50 +120,49 @@ f"""
     def _finalize_header(self):
 
         # create model type
-        if self.enable_binary_blob:
-            if self.add_typedef:
-                self.header.write(f"\ntypedef struct {{")
-            else:
-                self.header.write(f"\nstruct {self.model_struct_name} {{")
-            for name, data in self.layer_dict.items():
-                layer_type = data[0]
-                self.header.write(f"\n    {layer_type} {name};")
-            if self.add_typedef:
-                self.header.write(f"\n}} {self.model_struct_name};\n")
-            else:
-                self.header.write(f"\n}};\n")
+        if self.add_typedef:
+            self.header.write(f"\ntypedef struct {{")
+        else:
+            self.header.write(f"\nstruct {self.model_struct_name} {{")
+        for name, data in self.layer_dict.items():
+            layer_type = data[0]
+            self.header.write(f"\n    {layer_type} {name};")
+        if self.add_typedef:
+            self.header.write(f"\n}} {self.model_struct_name};\n")
+        else:
+            self.header.write(f"\n}};\n")
 
-            init_prototype = f"int init_{self.model_struct_name.lower()}({self.model_struct_name} *model, const WeightArray *arrays)"
-            self.header.write(f"\n{init_prototype};\n")
+        init_prototype = f"int init_{self.model_struct_name.lower()}({self.model_struct_name} *model, const WeightArray *arrays)"
+        self.header.write(f"\n{init_prototype};\n")
 
         self.header.write(f"\n#endif /* {self.header_guard} */\n")
 
     def _finalize_source(self):
 
-        if self.enable_binary_blob:
-            # create weight array
-            if len(set(self.weight_arrays)) != len(self.weight_arrays):
-                raise ValueError("error: detected duplicates in weight arrays")
-            self.source.write("\n#ifndef USE_WEIGHTS_FILE\n")
-            self.source.write(f"const WeightArray {self.model_struct_name.lower()}_arrays[] = {{\n")
-            for name in self.weight_arrays:
-                self.source.write(f"#ifdef WEIGHTS_{name}_DEFINED\n")
-                self.source.write(f'    {{"{name}",  WEIGHTS_{name}_TYPE, sizeof({name}), {name}}},\n')
-                self.source.write(f"#endif\n")
-            self.source.write("    {NULL, 0, 0, NULL}\n")
-            self.source.write("};\n")
 
-            self.source.write("#endif /* USE_WEIGHTS_FILE */\n")
+        # create weight array
+        if len(set(self.weight_arrays)) != len(self.weight_arrays):
+            raise ValueError("error: detected duplicates in weight arrays")
+        if self.enable_binary_blob: self.source.write("\n#ifndef USE_WEIGHTS_FILE\n")
+        self.source.write(f"const WeightArray {self.model_struct_name.lower()}_arrays[] = {{\n")
+        for name in self.weight_arrays:
+            self.source.write(f"#ifdef WEIGHTS_{name}_DEFINED\n")
+            self.source.write(f'    {{"{name}",  WEIGHTS_{name}_TYPE, sizeof({name}), {name}}},\n')
+            self.source.write(f"#endif\n")
+        self.source.write("    {NULL, 0, 0, NULL}\n")
+        self.source.write("};\n")
 
-            # create init function definition
-            init_prototype = f"int init_{self.model_struct_name.lower()}({self.model_struct_name} *model, const WeightArray *arrays)"
-            self.source.write("\n#ifndef DUMP_BINARY_WEIGHTS\n")
-            self.source.write(f"{init_prototype} {{\n")
-            for name, data in self.layer_dict.items():
-                self.source.write(f"    if ({data[1]}) return 1;\n")
-            self.source.write("    return 0;\n")
-            self.source.write("}\n")
-            self.source.write("#endif /* DUMP_BINARY_WEIGHTS */\n")
+        if self.enable_binary_blob: self.source.write("#endif /* USE_WEIGHTS_FILE */\n")
+
+        # create init function definition
+        init_prototype = f"int init_{self.model_struct_name.lower()}({self.model_struct_name} *model, const WeightArray *arrays)"
+        if self.enable_binary_blob: self.source.write("\n#ifndef DUMP_BINARY_WEIGHTS\n")
+        self.source.write(f"{init_prototype} {{\n")
+        for name, data in self.layer_dict.items():
+            self.source.write(f"    if ({data[1]}) return 1;\n")
+        self.source.write("    return 0;\n")
+        self.source.write("}\n")
+        if self.enable_binary_blob:self.source.write("#endif /* DUMP_BINARY_WEIGHTS */\n")
 
 
     def close(self):

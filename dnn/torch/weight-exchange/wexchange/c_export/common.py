@@ -54,7 +54,7 @@ f'''
 #ifndef USE_WEIGHTS_FILE
 '''
         )
-        writer.weight_arrays.append(name)
+    writer.weight_arrays.append(name)
 
     if reshape_8x4:
         vector = vector.reshape((vector.shape[0]//4, 4, vector.shape[1]//8, 8))
