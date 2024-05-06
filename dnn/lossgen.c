@@ -157,11 +157,7 @@ void lossgen_init(LossGenState *st)
 {
   int ret;
   OPUS_CLEAR(st, 1);
-#ifndef USE_WEIGHTS_FILE
   ret = init_lossgen(&st->model, lossgen_arrays);
-#else
-  ret = 0;
-#endif
   celt_assert(ret == 0);
   (void)ret;
 }
