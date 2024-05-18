@@ -64,8 +64,7 @@ f'''
 
     if debug_float:
         f.write('#ifndef DISABLE_DEBUG_FLOAT\n')
-    if binary_blob:
-        f.write(
+    f.write(
 f'''
 #define WEIGHTS_{name}_DEFINED
 #define WEIGHTS_{name}_TYPE WEIGHT_TYPE_{dtype_suffix[dtype]}
