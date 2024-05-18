@@ -52,7 +52,7 @@ def c_export(args, model):
 
     message = f"Auto generated from checkpoint {os.path.basename(args.checkpoint)}"
 
-    writer = CWriter(os.path.join(args.output_dir, "lossgen_data"), message=message, model_struct_name='LossGen', enable_binary_blob=False)
+    writer = CWriter(os.path.join(args.output_dir, "lossgen_data"), message=message, model_struct_name='LossGen', enable_binary_blob=False, add_typedef=True)
     writer.header.write(
 f"""
 #include "opus_types.h"
