@@ -35,11 +35,11 @@ opus_val32 celt_inner_prod_neon(const opus_val16 *x, const opus_val16 *y, int N)
 void dual_inner_prod_neon(const opus_val16 *x, const opus_val16 *y01,
         const opus_val16 *y02, int N, opus_val32 *xy1, opus_val32 *xy2);
 
-#  if !defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_PRESUME_NEON)
+#  if !defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_PRESUME_NEON_INTR)
 #   define OVERRIDE_CELT_INNER_PROD (1)
 #   define OVERRIDE_DUAL_INNER_PROD (1)
-#   define celt_inner_prod(x, y, N, arch) ((void)(arch), PRESUME_NEON(celt_inner_prod)(x, y, N))
-#   define dual_inner_prod(x, y01, y02, N, xy1, xy2, arch) ((void)(arch), PRESUME_NEON(dual_inner_prod)(x, y01, y02, N, xy1, xy2))
+#   define celt_inner_prod(x, y, N, arch) ((void)(arch), celt_inner_prod_neon(x, y, N))
+#   define dual_inner_prod(x, y01, y02, N, xy1, xy2, arch) ((void)(arch), dual_inner_prod_neon(x, y01, y02, N, xy1, xy2))
 #  endif
 # endif
 
