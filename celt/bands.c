@@ -47,12 +47,6 @@
 #define M_PI 3.141592653
 #endif
 
-#ifdef ENABLE_QEXT
-#define ARG_QEXT(arg) , arg
-#else
-#define ARG_QEXT(arg)
-#endif
-
 int hysteresis_decision(opus_val16 val, const opus_val16 *thresholds, const opus_val16 *hysteresis, int N, int prev)
 {
    int i;
