@@ -57,6 +57,9 @@
 #include "mips/mdct_mipsr1.h"
 #endif
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
 
 #ifdef CUSTOM_MODES
 
@@ -86,12 +89,12 @@ int clt_mdct_init(mdct_lookup *l,int N, int maxshift, int arch)
    {
       /* We have enough points that sine isn't necessary */
 #if defined(FIXED_POINT)
-#if 1
+#ifndef ENABLE_QEXT
       for (i=0;i<N2;i++)
          trig[i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(EXTEND32(i),17),N2+16384),N));
 #else
       for (i=0;i<N2;i++)
-         trig[i] = (kiss_twiddle_scalar)MAX32(-32767,MIN32(32767,floor(.5+32768*cos(2*M_PI*(i+.125)/N))));
+         trig[i] = (kiss_twiddle_scalar)MAX32(-2147483647,MIN32(2147483647,floor(.5+2147483648*cos(2*M_PI*(i+.125)/N))));
 #endif
 #else
       for (i=0;i<N2;i++)
@@ -125,7 +128,7 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
    VARDECL(kiss_fft_cpx, f2);
    const kiss_fft_state *st = l->kfft[shift];
    const kiss_twiddle_scalar *trig;
-   opus_val16 scale;
+   celt_coef scale;
 #ifdef FIXED_POINT
    /* Allows us to scale with MULT16_32_Q16(), which is faster than
       MULT16_32_Q15() on ARM. */
@@ -205,8 +208,8 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
          yi = S_MUL(im,t0)  +  S_MUL(re,t1);
          yc.r = yr;
          yc.i = yi;
-         yc.r = PSHR32(MULT16_32_Q16(scale, yc.r), scale_shift);
-         yc.i = PSHR32(MULT16_32_Q16(scale, yc.i), scale_shift);
+         yc.r = PSHR32(S_MUL2(yc.r, scale), scale_shift);
+         yc.i = PSHR32(S_MUL2(yc.i, scale), scale_shift);
          f2[st->bitrev[i]] = yc;
       }
    }
