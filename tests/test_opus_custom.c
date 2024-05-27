@@ -473,7 +473,11 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
    TestCustomParams params = {0};
 
    /* Parameters to fuzz. Some values are duplicated to increase their probability of being tested. */
-   int sampling_rates[5] = { 8000, 12000, 16000, 24000, 48000 };
+   int sampling_rates[] = { 8000, 12000, 16000, 24000, 48000,
+#ifdef ENABLE_QEXT
+         96000
+#endif
+         };
    int channels[2] = { 1, 2 };
    int bitrates[10] = { 6000, 12000, 16000, 24000, 32000, 48000, 64000, 96000, 510000, OPUS_BITRATE_MAX };
    int use_vbr[3] = { 0, 1, 1 };
@@ -496,8 +500,8 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
       params.sample_rate = RAND_SAMPLE(sampling_rates);
       params.custom_encode = 1;
       params.custom_decode = 1;
-      /* Can only mix and match Opus and OpusCustom with 48kHz */
-      if (params.sample_rate == 48000) {
+      /* Can only mix and match Opus and OpusCustom with 48kHz (and optionally 96 kHz). */
+      if (params.sample_rate == 48000 || params.sample_rate == 96000) {
          params.custom_encode = RAND_SAMPLE(use_custom_encode);
          params.custom_decode = RAND_SAMPLE(use_custom_decode);
 
