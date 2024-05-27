@@ -69,7 +69,7 @@
 /*                             DECODER                                */
 /*                                                                    */
 /**********************************************************************/
-#define DECODE_BUFFER_SIZE 2048
+#define DECODE_BUFFER_SIZE DEC_PITCH_BUF_SIZE
 
 #define PLC_UPDATE_FRAMES 4
 #define PLC_UPDATE_SAMPLES (PLC_UPDATE_FRAMES*FRAME_SIZE)
@@ -1044,7 +1044,9 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    {
       int data0=data[0];
       /* Convert "standard mode" to Opus header */
+# ifndef ENABLE_QEXT
       if (mode->Fs==48000 && mode->shortMdctSize==120)
+# endif
       {
          data0 = fromOpus(data0);
          if (data0<0)
