@@ -59,7 +59,11 @@
 #include <stdio.h>
 #endif
 
+#ifdef ENABLE_QEXT
+#define MAX_ENCODER_BUFFER 960
+#else
 #define MAX_ENCODER_BUFFER 480
+#endif
 
 #ifndef DISABLE_FLOAT_API
 #define PSEUDO_SNR_THRESHOLD 316.23f    /* 10^(25/10) */
