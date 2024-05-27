@@ -36,6 +36,12 @@
 #include "entdec.h"
 #include "rate.h"
 
+#ifdef ENABLE_QEXT
+#define ARG_QEXT(arg) , arg
+#else
+#define ARG_QEXT(arg)
+#endif
+
 opus_int16 bitexact_cos(opus_int16 x);
 int bitexact_log2tan(int isin,int icos);
 
