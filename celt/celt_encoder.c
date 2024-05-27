@@ -83,6 +83,7 @@ struct OpusCustomEncoder {
    int arch;
 #ifdef ENABLE_QEXT
    int enable_qext;
+   int qext_scale;
 #endif
 
    /* Everything beyond this point gets cleared on a reset */
@@ -124,7 +125,7 @@ struct OpusCustomEncoder {
 
 #ifdef RESYNTH
    /* +MAX_PERIOD/2 to make space for overlap */
-   celt_sig syn_mem[2][2*MAX_PERIOD+MAX_PERIOD/2];
+   celt_sig syn_mem[2][DEC_PITCH_BUF_SIZE+MAX_PERIOD/2];
 #endif
 
    celt_sig in_mem[1]; /* Size = channels*mode->overlap */
@@ -143,9 +144,15 @@ int celt_encoder_get_size(int channels)
 
 OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_get_size(const CELTMode *mode, int channels)
 {
-   int size = sizeof(struct CELTEncoder)
+   int size;
+#ifdef ENABLE_QEXT
+   int qext_scale;
+   if (mode->Fs == 96000 && mode->shortMdctSize==240) qext_scale = 2;
+   else qext_scale = 1;
+#endif
+   size = sizeof(struct CELTEncoder)
          + (channels*mode->overlap-1)*sizeof(celt_sig)    /* celt_sig in_mem[channels*mode->overlap]; */
-         + channels*COMBFILTER_MAXPERIOD*sizeof(celt_sig) /* celt_sig prefilter_mem[channels*COMBFILTER_MAXPERIOD]; */
+         + channels*QEXT_SCALE(COMBFILTER_MAXPERIOD)*sizeof(celt_sig) /* celt_sig prefilter_mem[channels*COMBFILTER_MAXPERIOD]; */
          + 4*channels*mode->nbEBands*sizeof(celt_glog);   /* celt_glog oldBandE[channels*mode->nbEBands]; */
                                                           /* celt_glog oldLogE[channels*mode->nbEBands]; */
                                                           /* celt_glog oldLogE2[channels*mode->nbEBands]; */
@@ -199,6 +206,11 @@ static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
    st->force_intra  = 0;
    st->complexity = 5;
    st->lsb_depth=24;
+
+#ifdef ENABLE_QEXT
+   if (st->mode->Fs == 96000 && mode->shortMdctSize==240) st->qext_scale = 2;
+   else st->qext_scale = 1;
+#endif
 
    opus_custom_encoder_ctl(st, OPUS_RESET_STATE);
 
@@ -994,7 +1006,8 @@ static celt_glog dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *b
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
       int effectiveBytes, opus_int32 *tot_boost_, int lfe, celt_glog *surround_dynalloc,
-      AnalysisInfo *analysis, int *importance, int *spread_weight, opus_val16 tone_freq, opus_val32 toneishness)
+      AnalysisInfo *analysis, int *importance, int *spread_weight, opus_val16 tone_freq, opus_val32 toneishness
+      ARG_QEXT(int qext_scale))
 {
    int i, c;
    opus_int32 tot_boost=0;
@@ -1148,9 +1161,9 @@ static celt_glog dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *b
       /* Compensate for Opus' under-allocation on tones. */
       if (toneishness > QCONST32(.98f, 29)) {
 #ifdef FIXED_POINT
-         int freq_bin = PSHR32(MULT16_16(tone_freq, QCONST16(120/M_PI, 9)), 13+9);
+         int freq_bin = PSHR32(QEXT_SCALE((opus_val32)tone_freq)*QCONST16(120/M_PI, 9), 13+9);
 #else
-         int freq_bin = (int)floor(.5 + tone_freq*120/M_PI);
+         int freq_bin = (int)floor(.5 + QEXT_SCALE(tone_freq)*120/M_PI);
 #endif
          for (i=start;i<end;i++) {
             if (freq_bin >= eBands[i] && freq_bin <= eBands[i+1]) follower[i] += GCONST(2.f);
@@ -1298,7 +1311,7 @@ static int tone_lpc(const opus_val16 *x, int len, int delay, opus_val32 *lpc) {
 }
 
 /* Detects pure of nearly pure tones so we can prevent them from causing problems with the encoder. */
-static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem, int CC, int N, int overlap, opus_val32 *toneishness, opus_int32 Fs) {
+static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem, int CC, int N, int overlap, opus_val32 *toneishness, opus_int32 Fs ARG_QEXT(int qext_scale)) {
    int i;
    int delay = 1;
    int fail;
@@ -1306,13 +1319,13 @@ static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem,
    opus_val16 freq;
    VARDECL(opus_val16, x);
    ALLOC(x, N+overlap, opus_val16);
-   /* Shift by SIG_SHIFT+1 (+2 for stereo) to account for HF gain of the preemphasis filter. */
+   /* Shift by SIG_SHIFT+2 (+3 for stereo) to account for HF gain of the preemphasis filter. */
    if (CC==2) {
-      for (i=0;i<N;i++) x[i+overlap] = PSHR32(ADD32(in[i], in[i+N+overlap]), SIG_SHIFT+2);
-      for (i=0;i<overlap;i++) x[i] = PSHR32(ADD32(prefilter_mem[COMBFILTER_MAXPERIOD-overlap+i], prefilter_mem[2*COMBFILTER_MAXPERIOD-overlap+i]), SIG_SHIFT+2);
+      for (i=0;i<N;i++) x[i+overlap] = PSHR32(ADD32(in[i], in[i+N+overlap]), SIG_SHIFT+3);
+      for (i=0;i<overlap;i++) x[i] = PSHR32(ADD32(prefilter_mem[QEXT_SCALE(COMBFILTER_MAXPERIOD)-overlap+i], prefilter_mem[2*QEXT_SCALE(COMBFILTER_MAXPERIOD)-overlap+i]), SIG_SHIFT+3);
    } else {
-      for (i=0;i<N;i++) x[i+overlap] = PSHR32(in[i], SIG_SHIFT+1);
-      for (i=0;i<overlap;i++) x[i] = PSHR32(prefilter_mem[COMBFILTER_MAXPERIOD-overlap+i], SIG_SHIFT+1);
+      for (i=0;i<N;i++) x[i+overlap] = PSHR32(in[i], SIG_SHIFT+2);
+      for (i=0;i<overlap;i++) x[i] = PSHR32(prefilter_mem[QEXT_SCALE(COMBFILTER_MAXPERIOD)-overlap+i], SIG_SHIFT+2);
    }
 #ifdef FIXED_POINT
    normalize_tone_input(x, N+overlap);
@@ -1341,7 +1354,7 @@ static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem,
 }
 
 static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem, int CC, int N,
-      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes, AnalysisInfo *analysis, opus_val16 tone_freq, opus_val32 toneishness)
+      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes, AnalysisInfo *analysis, opus_val16 tone_freq, opus_val32 toneishness ARG_QEXT(int qext_scale))
 {
    int c;
    VARDECL(celt_sig, _pre);
@@ -1353,56 +1366,62 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
    int pf_on;
    int qg;
    int overlap;
+   int min_period, max_period;
    SAVE_STACK;
 
+   max_period = QEXT_SCALE(COMBFILTER_MAXPERIOD);
+   min_period = QEXT_SCALE(COMBFILTER_MINPERIOD);
    mode = st->mode;
    overlap = mode->overlap;
-   ALLOC(_pre, CC*(N+COMBFILTER_MAXPERIOD), celt_sig);
+   ALLOC(_pre, CC*(N+max_period), celt_sig);
 
    pre[0] = _pre;
-   pre[1] = _pre + (N+COMBFILTER_MAXPERIOD);
+   pre[1] = _pre + (N+max_period);
 
 
    c=0; do {
-      OPUS_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
-      OPUS_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+overlap)+overlap, N);
+      OPUS_COPY(pre[c], prefilter_mem+c*max_period, max_period);
+      OPUS_COPY(pre[c]+max_period, in+c*(N+overlap)+overlap, N);
    } while (++c<CC);
 
    if (enabled)
    {
       VARDECL(opus_val16, pitch_buf);
-      ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, opus_val16);
+      ALLOC(pitch_buf, (max_period+N)>>1, opus_val16);
 
-      pitch_downsample(pre, pitch_buf, COMBFILTER_MAXPERIOD+N, CC, st->arch);
+      pitch_downsample(pre, pitch_buf, max_period+N, CC, st->arch);
       /* Don't search for the fir last 1.5 octave of the range because
          there's too many false-positives due to short-term correlation */
-      pitch_search(pitch_buf+(COMBFILTER_MAXPERIOD>>1), pitch_buf, N,
-            COMBFILTER_MAXPERIOD-3*COMBFILTER_MINPERIOD, &pitch_index,
+      pitch_search(pitch_buf+(max_period>>1), pitch_buf, N,
+            max_period-3*min_period, &pitch_index,
             st->arch);
-      pitch_index = COMBFILTER_MAXPERIOD-pitch_index;
+      pitch_index = max_period-pitch_index;
 
-      gain1 = remove_doubling(pitch_buf, COMBFILTER_MAXPERIOD, COMBFILTER_MINPERIOD,
+      gain1 = remove_doubling(pitch_buf, max_period, min_period,
             N, &pitch_index, st->prefilter_period, st->prefilter_gain, st->arch);
-      if (pitch_index > COMBFILTER_MAXPERIOD-2)
-         pitch_index = COMBFILTER_MAXPERIOD-2;
+      if (pitch_index > max_period-QEXT_SCALE(2))
+         pitch_index = max_period-QEXT_SCALE(2);
       gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
       /* If we detect that the signal is dominated by a single tone, don't rely on the standard pitch
          estimator, as it can become unreliable. */
       if (toneishness > QCONST32(.99f, 29)) {
+         /* Using aliased version of the postfilter above 24 kHz.
+            First value is purposely slightly above pi to avoid triggering for Fs=48kHz. */
+         if (QEXT_SCALE(tone_freq) >= QCONST16(3.1416f, 13)) tone_freq = QCONST16(3.141593f, 13) - tone_freq;
          /* If the pitch is too high for our post-filter, apply pitch doubling until
             we can get something that fits (not ideal, but better than nothing). */
-         while (tone_freq >= QCONST16(0.39f, 13)) tone_freq/=2;
-         if (tone_freq > QCONST16(0.006148f, 13)) {
+         while (QEXT_SCALE(tone_freq) >= QCONST16(0.39f, 13)) tone_freq/=2;
+         if (QEXT_SCALE(tone_freq) > QCONST16(0.006148f, 13)) {
 #ifdef FIXED_POINT
-            pitch_index = IMIN(51472/tone_freq, COMBFILTER_MAXPERIOD-2);
+            pitch_index = IMIN(51472/tone_freq, max_period-QEXT_SCALE(2));
 #else
-            pitch_index = IMIN((int)floor(.5+2.f*M_PI/tone_freq), COMBFILTER_MAXPERIOD-2);
+            pitch_index = IMIN((int)floor(.5+2.f*M_PI/tone_freq), max_period-QEXT_SCALE(2));
 #endif
          } else {
             /* If the pitch is too low, using a very high pitch will actually give us an improvement
                due to the DC component of the filter that will be close to our tone. Again, not ideal,
                but if we only have a single tone, it's better than nothing. */
-            pitch_index = COMBFILTER_MINPERIOD;
+            pitch_index = min_period;
          }
          gain1 = QCONST16(.75f, 15);
       }
@@ -1415,8 +1434,11 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
          gain1 = 0;
    } else {
       gain1 = 0;
-      pitch_index = COMBFILTER_MINPERIOD;
+      pitch_index = min_period;
    }
+#ifdef ENABLE_QEXT
+   pitch_index /= qext_scale;
+#endif
 #ifndef DISABLE_FLOAT_API
    if (analysis->valid)
       gain1 = (opus_val16)(gain1 * analysis->max_pitch_ratio);
@@ -1467,21 +1489,21 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
       OPUS_COPY(in+c*(N+overlap), st->in_mem+c*(overlap), overlap);
       if (offset)
-         comb_filter(in+c*(N+overlap)+overlap, pre[c]+COMBFILTER_MAXPERIOD,
+         comb_filter(in+c*(N+overlap)+overlap, pre[c]+max_period,
                st->prefilter_period, st->prefilter_period, offset, -st->prefilter_gain, -st->prefilter_gain,
                st->prefilter_tapset, st->prefilter_tapset, NULL, 0, st->arch);
 
-      comb_filter(in+c*(N+overlap)+overlap+offset, pre[c]+COMBFILTER_MAXPERIOD+offset,
+      comb_filter(in+c*(N+overlap)+overlap+offset, pre[c]+max_period+offset,
             st->prefilter_period, pitch_index, N-offset, -st->prefilter_gain, -gain1,
             st->prefilter_tapset, prefilter_tapset, mode->window, overlap, st->arch);
       OPUS_COPY(st->in_mem+c*(overlap), in+c*(N+overlap)+N, overlap);
 
-      if (N>COMBFILTER_MAXPERIOD)
+      if (N>max_period)
       {
-         OPUS_COPY(prefilter_mem+c*COMBFILTER_MAXPERIOD, pre[c]+N, COMBFILTER_MAXPERIOD);
+         OPUS_COPY(prefilter_mem+c*max_period, pre[c]+N, max_period);
       } else {
-         OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD, prefilter_mem+c*COMBFILTER_MAXPERIOD+N, COMBFILTER_MAXPERIOD-N);
-         OPUS_COPY(prefilter_mem+c*COMBFILTER_MAXPERIOD+COMBFILTER_MAXPERIOD-N, pre[c]+COMBFILTER_MAXPERIOD, N);
+         OPUS_MOVE(prefilter_mem+c*max_period, prefilter_mem+c*max_period+N, max_period-N);
+         OPUS_COPY(prefilter_mem+c*max_period+max_period-N, pre[c]+max_period, N);
       }
    } while (++c<CC);
 
@@ -1680,6 +1702,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    VARDECL(celt_glog, surround_dynalloc);
    int qext_bytes=0;
 #ifdef ENABLE_QEXT
+   int qext_scale;
    int padding_len_bytes=0;
    unsigned char *ext_payload;
    ec_enc ext_enc;
@@ -1715,8 +1738,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    M=1<<LM;
    N = M*mode->shortMdctSize;
 
+#ifdef ENABLE_QEXT
+   qext_scale = st->qext_scale;
+#endif
+
    prefilter_mem = st->in_mem+CC*(overlap);
-   oldBandE = (celt_glog*)(st->in_mem+CC*(overlap+COMBFILTER_MAXPERIOD));
+   oldBandE = (celt_glog*)(st->in_mem+CC*(overlap+QEXT_SCALE(COMBFILTER_MAXPERIOD)));
    oldLogE = oldBandE + CC*nbEBands;
    oldLogE2 = oldLogE + CC*nbEBands;
    energyError = oldLogE2 + CC*nbEBands;
@@ -1740,7 +1767,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       compressed[0] |= LM<<3;
       compressed[0] |= (C==2)<<2;
       /* Convert "standard mode" to Opus header */
+# ifndef ENABLE_QEXT
       if (mode->Fs==48000 && mode->shortMdctSize==120)
+# endif
       {
          int c0 = toOpus(compressed[0]);
          if (c0<0)
@@ -1870,7 +1899,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    } while (++c<CC);
 
 
-   tone_freq = tone_detect(in+overlap, prefilter_mem, 1, N, overlap, &toneishness, mode->Fs);
+   tone_freq = tone_detect(in+overlap, prefilter_mem, 1, N, overlap, &toneishness, mode->Fs ARG_QEXT(qext_scale));
    /* Find pitch period and gain */
    {
       int enabled;
@@ -1879,7 +1908,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
             && st->complexity >= 5;
 
       prefilter_tapset = st->tapset_decision;
-      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes, &st->analysis, tone_freq, toneishness);
+      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes, &st->analysis, tone_freq, toneishness ARG_QEXT(qext_scale));
       if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && (!st->analysis.valid || st->analysis.tonality > .3)
             && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
          pitch_change = 1;
@@ -2100,7 +2129,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 
    maxDepth = dynalloc_analysis(bandLogE, bandLogE2, oldBandE, nbEBands, start, end, C, offsets,
          st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
-         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis, importance, spread_weight, tone_freq, toneishness);
+         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis, importance, spread_weight, tone_freq, toneishness ARG_QEXT(qext_scale));
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
@@ -2517,11 +2546,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       }
 
       c=0; do {
-         OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, 2*MAX_PERIOD-N+overlap/2);
+         OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, DEC_PITCH_BUF_SIZE-N+overlap/2);
       } while (++c<CC);
 
       c=0; do {
-         out_mem[c] = st->syn_mem[c]+2*MAX_PERIOD-N;
+         out_mem[c] = st->syn_mem[c]+DEC_PITCH_BUF_SIZE-N;
       } while (++c<CC);
 
       celt_synthesis(mode, X, out_mem, oldBandE, start, effEnd,
@@ -2859,7 +2888,7 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
       {
          int i;
          celt_glog *oldBandE, *oldLogE, *oldLogE2;
-         oldBandE = (celt_glog*)(st->in_mem+st->channels*(st->mode->overlap+COMBFILTER_MAXPERIOD));
+         oldBandE = (celt_glog*)(st->in_mem+st->channels*(st->mode->overlap+QEXT_SCALE2(COMBFILTER_MAXPERIOD, st->qext_scale)));
          oldLogE = oldBandE + st->channels*st->mode->nbEBands;
          oldLogE2 = oldLogE + st->channels*st->mode->nbEBands;
          OPUS_CLEAR((char*)&st->ENCODER_RESET_START,
