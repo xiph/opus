@@ -272,7 +272,11 @@ CELTMode *opus_custom_mode_create(opus_int32 Fs, int frame_size, int *error)
          *error = OPUS_BAD_ARG;
       return NULL;
    }
+#ifdef ENABLE_QEXT
+   if (frame_size < 40 || frame_size > 2048 || frame_size%2!=0)
+#else
    if (frame_size < 40 || frame_size > 1024 || frame_size%2!=0)
+#endif
    {
       if (error)
          *error = OPUS_BAD_ARG;
@@ -316,6 +320,15 @@ CELTMode *opus_custom_mode_create(opus_int32 Fs, int frame_size, int *error)
    /* Pre/de-emphasis depends on sampling rate. The "standard" pre-emphasis
       is defined as A(z) = 1 - 0.85*z^-1 at 48 kHz. Other rates should
       approximate that. */
+#ifdef ENABLE_QEXT
+   if(Fs == 96000) /* 96 kHz */
+   {
+      mode->preemph[0] =  QCONST16(0.9230041504f, 15);
+      mode->preemph[1] =  QCONST16(0.2200012207f, 15);
+      mode->preemph[2] =  QCONST16(1.5128347184f, SIG_SHIFT); /* exact 1/preemph[3] */
+      mode->preemph[3] =  QCONST16(0.6610107422f, 13);
+   } else
+#endif
    if(Fs < 12000) /* 8 kHz */
    {
       mode->preemph[0] =  QCONST16(0.3500061035f, 15);
