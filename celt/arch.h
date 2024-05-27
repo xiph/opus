@@ -173,6 +173,12 @@ typedef opus_val16 opus_res;
 #define INT16TOSIG(a)   SHL32(EXTEND32(a), SIG_SHIFT)
 #define INT24TOSIG(a)   SHL32(a, SIG_SHIFT-8)
 
+#ifdef ENABLE_QEXT
+typedef opus_val32 celt_coef;
+#else
+typedef opus_val16 celt_coef;
+#endif
+
 #define celt_isnan(x) 0
 
 #define Q15ONE 32767
@@ -239,6 +245,7 @@ typedef float celt_ener;
 typedef float celt_glog;
 
 typedef float opus_res;
+typedef float celt_coef;
 
 #ifdef FLOAT_APPROX
 /* This code should reliably detect NaN/inf even when -ffast-math is used.
