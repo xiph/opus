@@ -69,7 +69,7 @@
 /*                             DECODER                                */
 /*                                                                    */
 /**********************************************************************/
-#define DECODE_BUFFER_SIZE 2048
+#define DECODE_BUFFER_SIZE DEC_PITCH_BUF_SIZE
 
 #define PLC_UPDATE_FRAMES 4
 #define PLC_UPDATE_SAMPLES (PLC_UPDATE_FRAMES*FRAME_SIZE)
@@ -834,7 +834,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             tmp = SROUND16(
                   buf[DECODE_BUFFER_SIZE-MAX_PERIOD-N+extrapolation_offset+j],
                   SIG_SHIFT);
-            S1 += SHR32(MULT16_16(tmp, tmp), 10);
+            S1 += SHR32(MULT16_16(tmp, tmp), 11);
          }
          {
             opus_val16 lpc_mem[CELT_LPC_ORDER];
@@ -861,7 +861,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             for (i=0;i<extrapolation_len;i++)
             {
                opus_val16 tmp = SROUND16(buf[DECODE_BUFFER_SIZE-N+i], SIG_SHIFT);
-               S2 += SHR32(MULT16_16(tmp, tmp), 10);
+               S2 += SHR32(MULT16_16(tmp, tmp), 11);
             }
             /* This checks for an "explosion" in the synthesis. */
 #ifdef FIXED_POINT
@@ -1044,7 +1044,9 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    {
       int data0=data[0];
       /* Convert "standard mode" to Opus header */
+# ifndef ENABLE_QEXT
       if (mode->Fs==48000 && mode->shortMdctSize==120)
+# endif
       {
          data0 = fromOpus(data0);
          if (data0<0)
