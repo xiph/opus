@@ -50,7 +50,7 @@ extern opus_int64 celt_mips;
 #define MULT16_32_P16(a,b) MULT16_32_PX(a,b,16)
 
 #define QCONST16(x,bits) ((opus_val16)(.5+(x)*(((opus_val32)1)<<(bits))))
-#define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_val32)1)<<(bits))))
+#define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_val64)1)<<(bits))))
 #define GCONST2(x,bits) ((celt_glog)(.5+(x)*(((celt_glog)1)<<(bits))))
 #define GCONST(x) GCONST2((x),DB_SHIFT)
 

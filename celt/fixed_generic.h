@@ -75,7 +75,7 @@
 #define QCONST16(x,bits) ((opus_val16)(.5+(x)*(((opus_val32)1)<<(bits))))
 
 /** Compile-time conversion of float constant to 32-bit value */
-#define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_val32)1)<<(bits))))
+#define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_int64)1)<<(bits))))
 
 /** Compile-time conversion of float constant to log gain value */
 #define GCONST2(x,bits) ((celt_glog)(.5+(x)*(((celt_glog)1)<<(bits))))
