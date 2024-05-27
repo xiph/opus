@@ -250,6 +250,14 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       int LM, int downsample, int silence, int arch);
 #endif
 
+#ifdef ENABLE_QEXT
+#define QEXT_SCALE(x) ((qext_scale)*(x))
+#define QEXT_SCALE2(x, qext_scale) ((qext_scale)*(x))
+#else
+#define QEXT_SCALE(x) (x)
+#define QEXT_SCALE2(x, qext_scale) (x)
+#endif
+
 #ifdef __cplusplus
 }
 #endif
