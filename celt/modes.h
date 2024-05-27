@@ -39,6 +39,12 @@
 
 #define MAX_PERIOD 1024
 
+#ifdef ENABLE_QEXT
+#define DEC_PITCH_BUF_SIZE 4096
+#else
+#define DEC_PITCH_BUF_SIZE 2048
+#endif
+
 typedef struct {
    int size;
    const opus_int16 *index;

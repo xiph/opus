@@ -138,10 +138,18 @@ int main(int argc, char *argv[])
 
    if (rate != 8000 && rate != 12000
     && rate != 16000 && rate != 24000
-    && rate != 48000)
+    && rate != 48000
+#ifdef ENABLE_QEXT
+    && rate != 96000
+#endif
+    )
    {
-       fprintf(stderr, "Supported sampling rates are 8000, 12000, "
-               "16000, 24000 and 48000.\n");
+       fprintf(stderr, "Supported sampling rates are 8000, 12000, 16000, 24000"
+#ifdef ENABLE_QEXT
+               ", 48000 and 96000.\n");
+#else
+               " and 48000.\n");
+#endif
        goto failure;
    }
 
