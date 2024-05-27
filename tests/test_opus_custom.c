@@ -405,7 +405,11 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
    TestCustomParams params = {0};
 
    /* Parameters to fuzz. Some values are duplicated to increase their probability of being tested. */
-   int sampling_rates[5] = { 8000, 12000, 16000, 24000, 48000 };
+   int sampling_rates[] = { 8000, 12000, 16000, 24000, 48000,
+#ifdef ENABLE_QEXT
+         96000
+#endif
+         };
    int channels[2] = { 1, 2 };
    int bitrates[10] = { 6000, 12000, 16000, 24000, 32000, 48000, 64000, 96000, 510000, OPUS_BITRATE_MAX };
    int use_vbr[3] = { 0, 1, 1 };
