@@ -41,6 +41,7 @@
 #include "entenc.h"
 #include "entdec.h"
 #include "arch.h"
+#include "kiss_fft.h"
 
 #ifdef ENABLE_DEEP_PLC
 #include "lpcnet.h"
@@ -236,7 +237,7 @@ void celt_preemphasis(const opus_res * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTR
 
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
-      const opus_val16 *window, int overlap, int arch);
+      const celt_coef *window, int overlap, int arch);
 
 void init_caps(const CELTMode *m,int *cap,int LM,int C);
 

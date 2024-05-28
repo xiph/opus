@@ -535,8 +535,8 @@ static void prefilter_and_fold(CELTDecoder * OPUS_RESTRICT st, int N)
       for (i=0;i<overlap/2;i++)
       {
          decode_mem[c][DECODE_BUFFER_SIZE-N+i] =
-            MULT16_32_Q15(mode->window[i], etmp[overlap-1-i])
-            + MULT16_32_Q15(mode->window[overlap-i-1], etmp[i]);
+            MULT16_32_Q15(COEF2VAL16(mode->window[i]), etmp[overlap-1-i])
+            + MULT16_32_Q15 (COEF2VAL16(mode->window[overlap-i-1]), etmp[i]);
       }
    } while (++c<CC);
 }
@@ -692,7 +692,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
    } else {
       int exc_length;
       /* Pitch-based PLC */
-      const opus_val16 *window;
+      const celt_coef *window;
       opus_val16 *exc;
       opus_val16 fade = Q15ONE;
       int pitch_index;
@@ -880,7 +880,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
                for (i=0;i<overlap;i++)
                {
                   opus_val16 tmp_g = Q15ONE
-                        - MULT16_16_Q15(window[i], Q15ONE-ratio);
+                        - MULT16_16_Q15(COEF2VAL16(window[i]), Q15ONE-ratio);
                   buf[DECODE_BUFFER_SIZE-N+i] =
                         MULT16_32_Q15(tmp_g, buf[DECODE_BUFFER_SIZE-N+i]);
                }

@@ -120,7 +120,7 @@ void clt_mdct_clear(mdct_lookup *l, int arch)
 /* Forward MDCT trashes the input array */
 #ifndef OVERRIDE_clt_mdct_forward
 void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
-      const opus_val16 *window, int overlap, int shift, int stride, int arch)
+      const celt_coef *window, int overlap, int shift, int stride, int arch)
 {
    int i;
    int N, N2, N4;
@@ -159,13 +159,13 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
       const kiss_fft_scalar * OPUS_RESTRICT xp1 = in+(overlap>>1);
       const kiss_fft_scalar * OPUS_RESTRICT xp2 = in+N2-1+(overlap>>1);
       kiss_fft_scalar * OPUS_RESTRICT yp = f;
-      const opus_val16 * OPUS_RESTRICT wp1 = window+(overlap>>1);
-      const opus_val16 * OPUS_RESTRICT wp2 = window+(overlap>>1)-1;
+      const celt_coef * OPUS_RESTRICT wp1 = window+(overlap>>1);
+      const celt_coef * OPUS_RESTRICT wp2 = window+(overlap>>1)-1;
       for(i=0;i<((overlap+3)>>2);i++)
       {
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-         *yp++ = MULT16_32_Q15(*wp2, xp1[N2]) + MULT16_32_Q15(*wp1,*xp2);
-         *yp++ = MULT16_32_Q15(*wp1, *xp1)    - MULT16_32_Q15(*wp2, xp2[-N2]);
+         *yp++ = S_MUL(xp1[N2], *wp2) + S_MUL(*xp2, *wp1);
+         *yp++ = S_MUL(*xp1, *wp1)    - S_MUL(xp2[-N2], *wp2);
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -184,8 +184,8 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
       for(;i<N4;i++)
       {
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         *yp++ =  -MULT16_32_Q15(*wp1, xp1[-N2]) + MULT16_32_Q15(*wp2, *xp2);
-         *yp++ = MULT16_32_Q15(*wp2, *xp1)     + MULT16_32_Q15(*wp1, xp2[N2]);
+         *yp++ =  -S_MUL(xp1[-N2], *wp1) + S_MUL(*xp2, *wp2);
+         *yp++ = S_MUL(*xp1, *wp2)     + S_MUL(xp2[N2], *wp1);
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -258,7 +258,7 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
 
 #ifndef OVERRIDE_clt_mdct_backward
 void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
-      const opus_val16 * OPUS_RESTRICT window, int overlap, int shift, int stride, int arch)
+      const celt_coef * OPUS_RESTRICT window, int overlap, int shift, int stride, int arch)
 {
    int i;
    int N, N2, N4;
@@ -346,16 +346,16 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_sca
    {
       kiss_fft_scalar * OPUS_RESTRICT xp1 = out+overlap-1;
       kiss_fft_scalar * OPUS_RESTRICT yp1 = out;
-      const opus_val16 * OPUS_RESTRICT wp1 = window;
-      const opus_val16 * OPUS_RESTRICT wp2 = window+overlap-1;
+      const celt_coef * OPUS_RESTRICT wp1 = window;
+      const celt_coef * OPUS_RESTRICT wp2 = window+overlap-1;
 
       for(i = 0; i < overlap/2; i++)
       {
          kiss_fft_scalar x1, x2;
          x1 = *xp1;
          x2 = *yp1;
-         *yp1++ = SUB32_ovflw(MULT16_32_Q15(*wp2, x2), MULT16_32_Q15(*wp1, x1));
-         *xp1-- = ADD32_ovflw(MULT16_32_Q15(*wp1, x2), MULT16_32_Q15(*wp2, x1));
+         *yp1++ = SUB32_ovflw(S_MUL(x2, *wp2), S_MUL(x1, *wp1));
+         *xp1-- = ADD32_ovflw(S_MUL(x2, *wp1), S_MUL(x1, *wp2));
          wp1++;
          wp2--;
       }
