@@ -99,9 +99,19 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
 
       fprintf(file, "#ifndef DEF_WINDOW%d\n", mode->overlap);
       fprintf(file, "#define DEF_WINDOW%d\n", mode->overlap);
-      fprintf (file, "static const opus_val16 window%d[%d] = {\n", mode->overlap, mode->overlap);
+      fprintf (file, "static const celt_coef window%d[%d] = {\n", mode->overlap, mode->overlap);
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+      fprintf(file, "#ifdef ENABLE_QEXT\n");
+      for (j=0;j<mode->overlap;j++)
+         fprintf (file, WORD32 ",%c", mode->window[j],(j+6)%5==0?'\n':' ');
+      fprintf(file, "#else\n");
+      for (j=0;j<mode->overlap;j++)
+         fprintf (file, WORD16 ",%c", COEF16(mode->window[j], 16),(j+6)%5==0?'\n':' ');
+      fprintf(file, "#endif\n");
+#else
       for (j=0;j<mode->overlap;j++)
          fprintf (file, WORD16 ",%c", mode->window[j],(j+6)%5==0?'\n':' ');
+#endif
       fprintf (file, "};\n");
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
