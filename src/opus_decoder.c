@@ -205,7 +205,7 @@ OpusDecoder *opus_decoder_create(opus_int32 Fs, int channels, int *error)
 #ifdef ENABLE_RES24
 static void smooth_fade(const opus_res *in1, const opus_res *in2,
       opus_res *out, int overlap, int channels,
-      const opus_val16 *window, opus_int32 Fs)
+      const celt_coef *window, opus_int32 Fs)
 {
    int i, c;
    int inc = 48000/Fs;
@@ -213,9 +213,9 @@ static void smooth_fade(const opus_res *in1, const opus_res *in2,
    {
       for (i=0;i<overlap;i++)
       {
-         opus_val16 w = MULT16_16_Q15(window[i*inc], window[i*inc]);
-         out[i*channels+c] = ADD32(MULT16_32_Q15(w,in2[i*channels+c]),
-                                   MULT16_32_Q15(Q15ONE-w, in1[i*channels+c]));
+         celt_coef w = MULT_COEF(window[i*inc], window[i*inc]);
+         out[i*channels+c] = ADD32(MULT_COEF_32(w,in2[i*channels+c]),
+                                   MULT_COEF_32(COEF_ONE-w, in1[i*channels+c]));
       }
    }
 }
@@ -279,7 +279,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    int celt_to_silk=0;
    int c;
    int F2_5, F5, F10, F20;
-   const opus_val16 *window;
+   const celt_coef *window;
    opus_uint32 redundant_rng = 0;
    int celt_accum;
    ALLOC_STACK;
