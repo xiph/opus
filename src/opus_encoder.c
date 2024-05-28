@@ -513,7 +513,7 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 #endif
 
 static void stereo_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_val16 g2,
-        int overlap48, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
+        int overlap48, int frame_size, int channels, const celt_coef *window, opus_int32 Fs)
 {
     int i;
     int overlap;
@@ -526,7 +526,8 @@ static void stereo_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_v
     {
        opus_val32 diff;
        opus_val16 g, w;
-       w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+       w = COEF2VAL16(window[i*inc]);
+       w = MULT16_16_Q15(w, w);
        g = SHR32(MAC16_16(MULT16_16(w,g2),
              Q15ONE-w, g1), 15);
        diff = HALF32((opus_val32)in[i*channels] - (opus_val32)in[i*channels+1]);
@@ -545,7 +546,7 @@ static void stereo_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_v
 }
 
 static void gain_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_val16 g2,
-        int overlap48, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
+        int overlap48, int frame_size, int channels, const celt_coef *window, opus_int32 Fs)
 {
     int i;
     int inc;
@@ -558,7 +559,8 @@ static void gain_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_val
        for (i=0;i<overlap;i++)
        {
           opus_val16 g, w;
-          w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+          w = COEF2VAL16(window[i*inc]);
+          w = MULT16_16_Q15(w, w);
           g = SHR32(MAC16_16(MULT16_16(w,g2),
                 Q15ONE-w, g1), 15);
           out[i] = MULT16_RES_Q15(g, in[i]);
@@ -567,7 +569,8 @@ static void gain_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_val
        for (i=0;i<overlap;i++)
        {
           opus_val16 g, w;
-          w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+          w = COEF2VAL16(window[i*inc]);
+          w = MULT16_16_Q15(w, w);
           g = SHR32(MAC16_16(MULT16_16(w,g2),
                 Q15ONE-w, g1), 15);
           out[i*2] = MULT16_RES_Q15(g, in[i*2]);
