@@ -106,6 +106,14 @@ void celt_fatal(const char *str, const char *file, int line)
 #define UADD32(a,b) ((a)+(b))
 #define USUB32(a,b) ((a)-(b))
 
+/* Throughout the code, we use the following scaling for signals:
+   FLOAT: used for float API, normalized to +/-1.
+   INT16: used for 16-bit API, normalized to +/- 32768
+   RES: internal Opus resolution, defined as +/-1. in float builds, or either 16-bit or 24-bit int for fixed-point builds
+   SIG: internal CELT resolution: defined as +/- 32768. in float builds, or Q27 in fixed-point builds (int16 shifted by 12)
+*/
+
+
 /* Set this if opus_int64 is a native type of the CPU. */
 /* Assume that all LP64 architectures have fast 64-bit types; also x86_64
    (which can be ILP32 for x32) and Win64 (which is LLP64). */
@@ -126,6 +134,26 @@ typedef opus_int64 opus_val64;
 typedef opus_val32 celt_sig;
 typedef opus_val16 celt_norm;
 typedef opus_val32 celt_ener;
+
+#ifdef ENABLE_RES24
+typedef opus_val32 opus_res;
+#define RES_SHIFT 8
+#define SCALEIN(a)      (a)
+#define SIG2RES(a)      PSHR32(a, SIG_SHIFT-RES_SHIFT)
+#define RES2INT16(a)    SAT16(PSHR32(a, RES_SHIFT))
+#define RES2FLOAT(a)    ((1.f/32768.f/256.)*(a))
+#define INT16TORES(a)   SHL32(EXTEND32(a), RES_SHIFT)
+#define ADD_RES(a, b)   ADD32(a, b)
+#else
+typedef opus_val16 opus_res;
+#define RES_SHIFT 0
+#define SCALEIN(a)      (a)
+#define SIG2RES(a)      SIG2WORD16(a)
+#define RES2INT16(a)    (a)
+#define RES2FLOAT(a)    ((1.f/32768.f)*(a))
+#define INT16TORES(a)   (a)
+#define ADD_RES(a, b)   SAT16(ADD32((a), (b)));
+#endif
 
 #define celt_isnan(x) 0
 
@@ -150,8 +178,6 @@ typedef opus_val32 celt_ener;
 #define VERY_LARGE16 ((opus_val16)32767)
 #define Q15_ONE ((opus_val16)32767)
 
-#define SCALEIN(a)      (a)
-#define SCALEOUT(a)     (a)
 
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))
 #define ABS32(x) ((x) < 0 ? (-(x)) : (x))
@@ -191,6 +217,8 @@ typedef float opus_val64;
 typedef float celt_sig;
 typedef float celt_norm;
 typedef float celt_ener;
+
+typedef float opus_res;
 
 #ifdef FLOAT_APPROX
 /* This code should reliably detect NaN/inf even when -ffast-math is used.
@@ -279,9 +307,12 @@ static OPUS_INLINE int celt_isnan(float x)
 #define DIV32(a,b)     (((opus_val32)(a))/(opus_val32)(b))
 
 #define SCALEIN(a)      ((a)*CELT_SIG_SCALE)
-#define SCALEOUT(a)     ((a)*(1/CELT_SIG_SCALE))
 
-#define SIG2WORD16(x) (x)
+#define SIG2RES(a)      ((1/CELT_SIG_SCALE)*(a))
+#define RES2INT16(a)    FLOAT2INT16(a)
+#define RES2FLOAT(a)    (a)
+#define INT16TORES(a)   ((a)*(1/CELT_SIG_SCALE))
+#define ADD_RES(a, b)   ADD32(a, b)
 
 #endif /* !FIXED_POINT */
 
