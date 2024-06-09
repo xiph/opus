@@ -154,14 +154,14 @@ int celt_decoder_get_size(int channels);
 int celt_decoder_init(CELTDecoder *st, opus_int32 sampling_rate, int channels);
 
 int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data,
-      int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum
+      int len, opus_res * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum
 #ifdef ENABLE_DEEP_PLC
       ,LPCNetPLCState *lpcnet
 #endif
       );
 
 int celt_decode_with_ec(OpusCustomDecoder * OPUS_RESTRICT st, const unsigned char *data,
-      int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum);
+      int len, opus_res * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum);
 
 #define celt_encoder_ctl opus_custom_encoder_ctl
 #define celt_decoder_ctl opus_custom_decoder_ctl
@@ -239,7 +239,7 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
 void init_caps(const CELTMode *m,int *cap,int LM,int C);
 
 #ifdef RESYNTH
-void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem, int accum);
+void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem, int accum);
 void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       opus_val16 *oldBandE, int start, int effEnd, int C, int CC, int isTransient,
       int LM, int downsample, int silence, int arch);

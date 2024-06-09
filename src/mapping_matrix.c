@@ -118,7 +118,7 @@ void mapping_matrix_multiply_channel_in_float(
 
 void mapping_matrix_multiply_channel_out_float(
     const MappingMatrix *matrix,
-    const opus_val16 *input,
+    const opus_res *input,
     int input_row,
     int input_rows,
     float *output,
@@ -137,11 +137,7 @@ void mapping_matrix_multiply_channel_out_float(
 
   for (i = 0; i < frame_size; i++)
   {
-#if defined(FIXED_POINT)
-    input_sample = (1/32768.f)*input[input_rows * i];
-#else
-    input_sample = input[input_rows * i];
-#endif
+    input_sample = RES2FLOAT(input[input_rows * i]);
     for (row = 0; row < output_rows; row++)
     {
       float tmp =
@@ -195,7 +191,7 @@ void mapping_matrix_multiply_channel_in_short(
 
 void mapping_matrix_multiply_channel_out_short(
     const MappingMatrix *matrix,
-    const opus_val16 *input,
+    const opus_res *input,
     int input_row,
     int input_rows,
     opus_int16 *output,
@@ -213,11 +209,7 @@ void mapping_matrix_multiply_channel_out_short(
 
   for (i = 0; i < frame_size; i++)
   {
-#if defined(FIXED_POINT)
-    input_sample = (opus_int32)input[input_rows * i];
-#else
-    input_sample = (opus_int32)FLOAT2INT16(input[input_rows * i]);
-#endif
+    input_sample = RES2INT16(input[input_rows * i]);
     for (row = 0; row < output_rows; row++)
     {
       opus_int32 tmp =

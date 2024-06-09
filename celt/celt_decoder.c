@@ -246,7 +246,7 @@ void opus_custom_decoder_destroy(CELTDecoder *st)
 /* Special case for stereo with no downsampling and no accumulation. This is
    quite common and we can make it faster by processing both channels in the
    same loop, reducing overhead due to the dependency loop in the IIR filter. */
-static void deemphasis_stereo_simple(celt_sig *in[], opus_val16 *pcm, int N, const opus_val16 coef0,
+static void deemphasis_stereo_simple(celt_sig *in[], opus_res *pcm, int N, const opus_val16 coef0,
       celt_sig *mem)
 {
    celt_sig * OPUS_RESTRICT x0;
@@ -265,8 +265,8 @@ static void deemphasis_stereo_simple(celt_sig *in[], opus_val16 *pcm, int N, con
       tmp1 = SATURATE(x1[j] + VERY_SMALL + m1, SIG_SAT);
       m0 = MULT16_32_Q15(coef0, tmp0);
       m1 = MULT16_32_Q15(coef0, tmp1);
-      pcm[2*j  ] = SCALEOUT(SIG2WORD16(tmp0));
-      pcm[2*j+1] = SCALEOUT(SIG2WORD16(tmp1));
+      pcm[2*j  ] = SIG2RES(tmp0);
+      pcm[2*j+1] = SIG2RES(tmp1);
    }
    mem[0] = m0;
    mem[1] = m1;
@@ -276,7 +276,7 @@ static void deemphasis_stereo_simple(celt_sig *in[], opus_val16 *pcm, int N, con
 #ifndef RESYNTH
 static
 #endif
-void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, const opus_val16 *coef,
+void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, const opus_val16 *coef,
       celt_sig *mem, int accum)
 {
    int c;
@@ -293,17 +293,13 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
       return;
    }
 #endif
-#ifndef FIXED_POINT
-   (void)accum;
-   celt_assert(accum==0);
-#endif
    ALLOC(scratch, N, celt_sig);
    coef0 = coef[0];
    Nd = N/downsample;
    c=0; do {
       int j;
       celt_sig * OPUS_RESTRICT x;
-      opus_val16  * OPUS_RESTRICT y;
+      opus_res  * OPUS_RESTRICT y;
       celt_sig m = mem[c];
       x =in[c];
       y = pcm+c;
@@ -335,23 +331,21 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
          apply_downsampling=1;
       } else {
          /* Shortcut for the standard (non-custom modes) case */
-#ifdef FIXED_POINT
          if (accum)
          {
             for (j=0;j<N;j++)
             {
                celt_sig tmp = SATURATE(x[j] + m + VERY_SMALL, SIG_SAT);
                m = MULT16_32_Q15(coef0, tmp);
-               y[j*C] = SAT16(ADD32(y[j*C], SCALEOUT(SIG2WORD16(tmp))));
+               y[j*C] = ADD_RES(y[j*C], SIG2RES(tmp));
             }
          } else
-#endif
          {
             for (j=0;j<N;j++)
             {
                celt_sig tmp = SATURATE(x[j] + VERY_SMALL + m, SIG_SAT);
                m = MULT16_32_Q15(coef0, tmp);
-               y[j*C] = SCALEOUT(SIG2WORD16(tmp));
+               y[j*C] = SIG2RES(tmp);
             }
          }
       }
@@ -360,16 +354,14 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
       if (apply_downsampling)
       {
          /* Perform down-sampling */
-#ifdef FIXED_POINT
          if (accum)
          {
             for (j=0;j<Nd;j++)
-               y[j*C] = SAT16(ADD32(y[j*C], SCALEOUT(SIG2WORD16(scratch[j*downsample]))));
+               y[j*C] = ADD_RES(y[j*C], SIG2RES(scratch[j*downsample]));
          } else
-#endif
          {
             for (j=0;j<Nd;j++)
-               y[j*C] = SCALEOUT(SIG2WORD16(scratch[j*downsample]));
+               y[j*C] = SIG2RES(scratch[j*downsample]);
          }
       }
    } while (++c<C);
@@ -968,7 +960,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 }
 
 int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data,
-      int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum
+      int len, opus_res * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum
 #ifdef ENABLE_DEEP_PLC
       ,LPCNetPLCState *lpcnet
 #endif
@@ -1369,7 +1361,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 }
 
 int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data,
-      int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum)
+      int len, opus_res * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum)
 {
    return celt_decode_with_ec_dred(st, data, len, pcm, frame_size, dec, accum
 #ifdef ENABLE_DEEP_PLC
@@ -1381,16 +1373,11 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 #ifdef CUSTOM_MODES
 
 #ifdef FIXED_POINT
+#ifdef ENABLE_RES24
 int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int16 * OPUS_RESTRICT pcm, int frame_size)
 {
-   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
-}
-
-#ifndef DISABLE_FLOAT_API
-int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, float * OPUS_RESTRICT pcm, int frame_size)
-{
    int j, ret, C, N;
-   VARDECL(opus_int16, out);
+   VARDECL(opus_res, out);
    ALLOC_STACK;
 
    if (pcm==NULL)
@@ -1399,11 +1386,40 @@ int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    C = st->channels;
    N = frame_size;
 
-   ALLOC(out, C*N, opus_int16);
+   ALLOC(out, C*N, opus_res);
+   ret = celt_decode_with_ec(st, data, len, out, frame_size, NULL, 0);
+   if (ret>0)
+      for (j=0;j<C*ret;j++)
+         pcm[j]=RES2INT16(out[j]);
+
+   RESTORE_STACK;
+   return ret;
+}
+#else
+int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int16 * OPUS_RESTRICT pcm, int frame_size)
+{
+   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
+}
+#endif
+
+#ifndef DISABLE_FLOAT_API
+int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, float * OPUS_RESTRICT pcm, int frame_size)
+{
+   int j, ret, C, N;
+   VARDECL(opus_res, out);
+   ALLOC_STACK;
+
+   if (pcm==NULL)
+      return OPUS_BAD_ARG;
+
+   C = st->channels;
+   N = frame_size;
+
+   ALLOC(out, C*N, opus_res);
    ret=celt_decode_with_ec(st, data, len, out, frame_size, NULL, 0);
    if (ret>0)
       for (j=0;j<C*ret;j++)
-         pcm[j]=out[j]*(1.f/32768.f);
+         pcm[j]=RES2FLOAT(out[j]);
 
    RESTORE_STACK;
    return ret;
@@ -1434,7 +1450,7 @@ int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data
 
    if (ret>0)
       for (j=0;j<C*ret;j++)
-         pcm[j] = FLOAT2INT16 (out[j]);
+         pcm[j] = RES2INT16 (out[j]);
 
    RESTORE_STACK;
    return ret;
