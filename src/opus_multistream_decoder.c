@@ -193,7 +193,7 @@ int opus_multistream_decode_native(
    int s, c;
    char *ptr;
    int do_plc=0;
-   VARDECL(opus_val16, buf);
+   VARDECL(opus_res, buf);
    ALLOC_STACK;
 
    VALIDATE_MS_DECODER(st);
@@ -205,7 +205,7 @@ int opus_multistream_decode_native(
    /* Limit frame_size to avoid excessive stack allocations. */
    MUST_SUCCEED(opus_multistream_decoder_ctl(st, OPUS_GET_SAMPLE_RATE(&Fs)));
    frame_size = IMIN(frame_size, Fs/25*3);
-   ALLOC(buf, 2*frame_size, opus_val16);
+   ALLOC(buf, 2*frame_size, opus_res);
    ptr = (char*)st + align(sizeof(OpusMSDecoder));
    coupled_size = opus_decoder_get_size(2);
    mono_size = opus_decoder_get_size(1);
@@ -311,7 +311,7 @@ static void opus_copy_channel_out_float(
   void *dst,
   int dst_stride,
   int dst_channel,
-  const opus_val16 *src,
+  const opus_res *src,
   int src_stride,
   int frame_size,
   void *user_data
@@ -324,11 +324,7 @@ static void opus_copy_channel_out_float(
    if (src != NULL)
    {
       for (i=0;i<frame_size;i++)
-#if defined(FIXED_POINT)
-         float_dst[i*dst_stride+dst_channel] = (1/32768.f)*src[i*src_stride];
-#else
-         float_dst[i*dst_stride+dst_channel] = src[i*src_stride];
-#endif
+         float_dst[i*dst_stride+dst_channel] = RES2FLOAT(src[i*src_stride]);
    }
    else
    {
@@ -342,7 +338,7 @@ static void opus_copy_channel_out_short(
   void *dst,
   int dst_stride,
   int dst_channel,
-  const opus_val16 *src,
+  const opus_res *src,
   int src_stride,
   int frame_size,
   void *user_data
@@ -355,11 +351,7 @@ static void opus_copy_channel_out_short(
    if (src != NULL)
    {
       for (i=0;i<frame_size;i++)
-#if defined(FIXED_POINT)
-         short_dst[i*dst_stride+dst_channel] = src[i*src_stride];
-#else
-         short_dst[i*dst_stride+dst_channel] = FLOAT2INT16(src[i*src_stride]);
-#endif
+         short_dst[i*dst_stride+dst_channel] = RES2INT16(src[i*src_stride]);
    }
    else
    {

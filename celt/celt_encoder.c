@@ -2591,7 +2591,7 @@ int opus_custom_encode(CELTEncoder * OPUS_RESTRICT st, const opus_int16 * pcm, i
    N=frame_size;
    ALLOC(in, C*N, celt_sig);
    for (j=0;j<C*N;j++) {
-     in[j] = SCALEOUT(pcm[j]);
+     in[j] = (1.0f/32768)*pcm[j];
    }
 
    ret = celt_encode_with_ec(st,in,frame_size,compressed,nbCompressedBytes, NULL);
