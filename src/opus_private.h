@@ -138,7 +138,7 @@ typedef void (*opus_copy_channel_out_func)(
   void *dst,
   int dst_stride,
   int dst_channel,
-  const opus_val16 *src,
+  const opus_res *src,
   int src_stride,
   int frame_size,
   void *user_data
@@ -186,7 +186,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
       int analysis_channels, downmix_func downmix, int float_api);
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
-      opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited,
+      opus_res *pcm, int frame_size, int decode_fec, int self_delimited,
       opus_int32 *packet_offset, int soft_clip, const OpusDRED *dred, opus_int32 dred_offset);
 
 /* Make sure everything is properly aligned. */
