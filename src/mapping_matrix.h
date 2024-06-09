@@ -74,7 +74,7 @@ void mapping_matrix_multiply_channel_in_float(
 
 void mapping_matrix_multiply_channel_out_float(
     const MappingMatrix *matrix,
-    const opus_val16 *input,
+    const opus_res *input,
     int input_row,
     int input_rows,
     float *output,
@@ -95,7 +95,7 @@ void mapping_matrix_multiply_channel_in_short(
 
 void mapping_matrix_multiply_channel_out_short(
     const MappingMatrix *matrix,
-    const opus_val16 *input,
+    const opus_res *input,
     int input_row,
     int input_rows,
     opus_int16 *output,
