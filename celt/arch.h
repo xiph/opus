@@ -144,6 +144,9 @@ typedef opus_val32 opus_res;
 #define RES2FLOAT(a)    ((1.f/32768.f/256.)*(a))
 #define INT16TORES(a)   SHL32(EXTEND32(a), RES_SHIFT)
 #define ADD_RES(a, b)   ADD32(a, b)
+#define FLOAT2RES(a)    float2int(32768.f*256.f*(a))
+#define RES2SIG(a)      SHL32((a), SIG_SHIFT-RES_SHIFT)
+#define MULT16_RES_Q15(a,b) MULT16_32_Q15(a,b)
 #else
 typedef opus_val16 opus_res;
 #define RES_SHIFT 0
@@ -153,7 +156,12 @@ typedef opus_val16 opus_res;
 #define RES2FLOAT(a)    ((1.f/32768.f)*(a))
 #define INT16TORES(a)   (a)
 #define ADD_RES(a, b)   SAT16(ADD32((a), (b)));
+#define FLOAT2RES(a)    FLOAT2INT16(a)
+#define RES2SIG(a)      SHL32(EXTEND32(a), SIG_SHIFT)
+#define MULT16_RES_Q15(a,b) MULT16_16_Q15(a,b)
 #endif
+
+#define RES2VAL16(a)    RES2INT16(a)
 
 #define celt_isnan(x) 0
 
@@ -313,6 +321,12 @@ static OPUS_INLINE int celt_isnan(float x)
 #define RES2FLOAT(a)    (a)
 #define INT16TORES(a)   ((a)*(1/CELT_SIG_SCALE))
 #define ADD_RES(a, b)   ADD32(a, b)
+#define FLOAT2RES(a)    (a)
+#define RES2SIG(a)      (CELT_SIG_SCALE*(a))
+#define MULT16_RES_Q15(a,b) MULT16_16_Q15(a,b)
+
+#define RES2VAL16(a)    (a)
+
 
 #endif /* !FIXED_POINT */
 

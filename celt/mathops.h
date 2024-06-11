@@ -91,6 +91,26 @@ static OPUS_INLINE opus_val32 celt_maxabs16(const opus_val16 *x, int len)
 }
 #endif
 
+#ifdef ENABLE_RES24
+static OPUS_INLINE opus_res celt_maxabs_res(const opus_res *x, int len)
+{
+   int i;
+   opus_res maxval = 0;
+   opus_res minval = 0;
+   for (i=0;i<len;i++)
+   {
+      maxval = MAX32(maxval, x[i]);
+      minval = MIN32(minval, x[i]);
+   }
+   /* opus_res should never reach such amplitude, so we should be safe. */
+   celt_sig_assert(minval != -2147483648);
+   return MAX32(maxval,-minval);
+}
+#else
+#define celt_maxabs_res celt_maxabs16
+#endif
+
+
 #ifndef OVERRIDE_CELT_MAXABS32
 #ifdef FIXED_POINT
 static OPUS_INLINE opus_val32 celt_maxabs32(const opus_val32 *x, int len)

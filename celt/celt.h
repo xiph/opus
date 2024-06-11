@@ -139,7 +139,7 @@ typedef struct {
 
 int celt_encoder_get_size(int channels);
 
-int celt_encode_with_ec(OpusCustomEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
+int celt_encode_with_ec(OpusCustomEncoder * OPUS_RESTRICT st, const opus_res * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
 
 int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels,
                       int arch);
@@ -229,7 +229,7 @@ void validate_celt_decoder(CELTDecoder *st);
 
 int resampling_factor(opus_int32 rate);
 
-void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
+void celt_preemphasis(const opus_res * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
                         int N, int CC, int upsample, const opus_val16 *coef, celt_sig *mem, int clip);
 
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,

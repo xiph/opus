@@ -86,7 +86,7 @@ void mapping_matrix_multiply_channel_in_float(
     const MappingMatrix *matrix,
     const float *input,
     int input_rows,
-    opus_val16 *output,
+    opus_res *output,
     int output_row,
     int output_rows,
     int frame_size)
@@ -108,11 +108,7 @@ void mapping_matrix_multiply_channel_in_float(
         matrix_data[MATRIX_INDEX(matrix->rows, output_row, col)] *
         input[MATRIX_INDEX(input_rows, col, i)];
     }
-#if defined(FIXED_POINT)
-    output[output_rows * i] = FLOAT2INT16((1/32768.f)*tmp);
-#else
-    output[output_rows * i] = (1/32768.f)*tmp;
-#endif
+    output[output_rows * i] = FLOAT2RES((1/32768.f)*tmp);
   }
 }
 
@@ -153,7 +149,7 @@ void mapping_matrix_multiply_channel_in_short(
     const MappingMatrix *matrix,
     const opus_int16 *input,
     int input_rows,
-    opus_val16 *output,
+    opus_res *output,
     int output_row,
     int output_rows,
     int frame_size)
@@ -182,7 +178,7 @@ void mapping_matrix_multiply_channel_in_short(
 #endif
     }
 #if defined(FIXED_POINT)
-    output[output_rows * i] = (opus_int16)((tmp + 64) >> 7);
+    output[output_rows * i] = INT16TORES((tmp + 64) >> 7);
 #else
     output[output_rows * i] = (1/(32768.f*32768.f))*tmp;
 #endif

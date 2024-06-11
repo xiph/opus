@@ -121,7 +121,7 @@ struct OpusEncoder {
     int          first;
     opus_val16 * energy_masking;
     StereoWidthState width_mem;
-    opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
+    opus_res     delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef DISABLE_FLOAT_API
     int          detected_bandwidth;
     int          nb_no_activity_ms_Q1;
@@ -328,13 +328,52 @@ static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channel
    return toc;
 }
 
-#ifndef FIXED_POINT
-static void silk_biquad_float(
-    const opus_val16      *in,            /* I:    Input signal                   */
+#ifdef FIXED_POINT
+/* Second order ARMA filter, alternative implementation */
+void silk_biquad_res(
+    const opus_res              *in,                /* I     input signal                                               */
+    const opus_int32            *B_Q28,             /* I     MA coefficients [3]                                        */
+    const opus_int32            *A_Q28,             /* I     AR coefficients [2]                                        */
+    opus_int32                  *S,                 /* I/O   State vector [2]                                           */
+    opus_res                    *out,               /* O     output signal                                              */
+    const opus_int32            len,                /* I     signal length (must be even)                               */
+    int stride
+)
+{
+    /* DIRECT FORM II TRANSPOSED (uses 2 element state vector) */
+    opus_int   k;
+    opus_int32 inval, A0_U_Q28, A0_L_Q28, A1_U_Q28, A1_L_Q28, out32_Q14;
+
+    /* Negate A_Q28 values and split in two parts */
+    A0_L_Q28 = ( -A_Q28[ 0 ] ) & 0x00003FFF;        /* lower part */
+    A0_U_Q28 = silk_RSHIFT( -A_Q28[ 0 ], 14 );      /* upper part */
+    A1_L_Q28 = ( -A_Q28[ 1 ] ) & 0x00003FFF;        /* lower part */
+    A1_U_Q28 = silk_RSHIFT( -A_Q28[ 1 ], 14 );      /* upper part */
+
+    for( k = 0; k < len; k++ ) {
+        /* S[ 0 ], S[ 1 ]: Q12 */
+        inval = RES2INT16(in[ k*stride ]);
+        out32_Q14 = silk_LSHIFT( silk_SMLAWB( S[ 0 ], B_Q28[ 0 ], inval ), 2 );
+
+        S[ 0 ] = S[1] + silk_RSHIFT_ROUND( silk_SMULWB( out32_Q14, A0_L_Q28 ), 14 );
+        S[ 0 ] = silk_SMLAWB( S[ 0 ], out32_Q14, A0_U_Q28 );
+        S[ 0 ] = silk_SMLAWB( S[ 0 ], B_Q28[ 1 ], inval);
+
+        S[ 1 ] = silk_RSHIFT_ROUND( silk_SMULWB( out32_Q14, A1_L_Q28 ), 14 );
+        S[ 1 ] = silk_SMLAWB( S[ 1 ], out32_Q14, A1_U_Q28 );
+        S[ 1 ] = silk_SMLAWB( S[ 1 ], B_Q28[ 2 ], inval );
+
+        /* Scale back to Q0 and saturate */
+        out[ k*stride ] = INT16TORES( silk_SAT16( silk_RSHIFT( out32_Q14 + (1<<14) - 1, 14 ) ) );
+    }
+}
+#else
+static void silk_biquad_res(
+    const opus_res        *in,            /* I:    Input signal                   */
     const opus_int32      *B_Q28,         /* I:    MA coefficients [3]            */
     const opus_int32      *A_Q28,         /* I:    AR coefficients [2]            */
     opus_val32            *S,             /* I/O:  State vector [2]               */
-    opus_val16            *out,           /* O:    Output signal                  */
+    opus_res              *out,           /* O:    Output signal                  */
     const opus_int32      len,            /* I:    Signal length (must be even)   */
     int stride
 )
@@ -368,7 +407,7 @@ static void silk_biquad_float(
 }
 #endif
 
-static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs, int arch)
+static void hp_cutoff(const opus_res *in, opus_int32 cutoff_Hz, opus_res *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs, int arch)
 {
    opus_int32 B_Q28[ 3 ], A_Q28[ 2 ];
    opus_int32 Fc_Q19, r_Q28, r_Q22;
@@ -391,22 +430,22 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
    A_Q28[ 0 ] = silk_SMULWW( r_Q22, silk_SMULWW( Fc_Q19, Fc_Q19 ) - SILK_FIX_CONST( 2.0,  22 ) );
    A_Q28[ 1 ] = silk_SMULWW( r_Q22, r_Q22 );
 
-#ifdef FIXED_POINT
+#if defined(FIXED_POINT) && !defined(ENABLE_RES24)
    if( channels == 1 ) {
       silk_biquad_alt_stride1( in, B_Q28, A_Q28, hp_mem, out, len );
    } else {
       silk_biquad_alt_stride2( in, B_Q28, A_Q28, hp_mem, out, len, arch );
    }
 #else
-   silk_biquad_float( in, B_Q28, A_Q28, hp_mem, out, len, channels );
+   silk_biquad_res( in, B_Q28, A_Q28, hp_mem, out, len, channels );
    if( channels == 2 ) {
-       silk_biquad_float( in+1, B_Q28, A_Q28, hp_mem+2, out+1, len, channels );
+       silk_biquad_res( in+1, B_Q28, A_Q28, hp_mem+2, out+1, len, channels );
    }
 #endif
 }
 
 #ifdef FIXED_POINT
-static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs)
+static void dc_reject(const opus_res *in, opus_int32 cutoff_Hz, opus_res *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs)
 {
    int c, i;
    int shift;
@@ -418,10 +457,15 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
       for (i=0;i<len;i++)
       {
          opus_val32 x, y;
-         x = SHL32(EXTEND32(in[channels*i+c]), 14);
+         x = SHL32((opus_val32)in[channels*i+c], 14-RES_SHIFT);
          y = x-hp_mem[2*c];
          hp_mem[2*c] = hp_mem[2*c] + PSHR32(x - hp_mem[2*c], shift);
-         out[channels*i+c] = EXTRACT16(SATURATE(PSHR32(y, 14), 32767));
+#ifdef ENABLE_RES24
+         /* Don't saturate if we have the headroom to avoid it. */
+         out[channels*i+c] = PSHR32(y, 14-RES_SHIFT);
+#else
+         out[channels*i+c] = SATURATE(PSHR32(y, 14-RES_SHIFT), 32767);
+#endif
       }
    }
 }
@@ -468,7 +512,7 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 }
 #endif
 
-static void stereo_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus_val16 g2,
+static void stereo_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_val16 g2,
         int overlap48, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
 {
     int i;
@@ -485,22 +529,22 @@ static void stereo_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, op
        w = MULT16_16_Q15(window[i*inc], window[i*inc]);
        g = SHR32(MAC16_16(MULT16_16(w,g2),
              Q15ONE-w, g1), 15);
-       diff = EXTRACT16(HALF32((opus_val32)in[i*channels] - (opus_val32)in[i*channels+1]));
-       diff = MULT16_16_Q15(g, diff);
+       diff = HALF32((opus_val32)in[i*channels] - (opus_val32)in[i*channels+1]);
+       diff = MULT16_RES_Q15(g, diff);
        out[i*channels] = out[i*channels] - diff;
        out[i*channels+1] = out[i*channels+1] + diff;
     }
     for (;i<frame_size;i++)
     {
        opus_val32 diff;
-       diff = EXTRACT16(HALF32((opus_val32)in[i*channels] - (opus_val32)in[i*channels+1]));
-       diff = MULT16_16_Q15(g2, diff);
+       diff = HALF32((opus_val32)in[i*channels] - (opus_val32)in[i*channels+1]);
+       diff = MULT16_RES_Q15(g2, diff);
        out[i*channels] = out[i*channels] - diff;
        out[i*channels+1] = out[i*channels+1] + diff;
     }
 }
 
-static void gain_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus_val16 g2,
+static void gain_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_val16 g2,
         int overlap48, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
 {
     int i;
@@ -517,7 +561,7 @@ static void gain_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus
           w = MULT16_16_Q15(window[i*inc], window[i*inc]);
           g = SHR32(MAC16_16(MULT16_16(w,g2),
                 Q15ONE-w, g1), 15);
-          out[i] = MULT16_16_Q15(g, in[i]);
+          out[i] = MULT16_RES_Q15(g, in[i]);
        }
     } else {
        for (i=0;i<overlap;i++)
@@ -526,14 +570,14 @@ static void gain_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus
           w = MULT16_16_Q15(window[i*inc], window[i*inc]);
           g = SHR32(MAC16_16(MULT16_16(w,g2),
                 Q15ONE-w, g1), 15);
-          out[i*2] = MULT16_16_Q15(g, in[i*2]);
-          out[i*2+1] = MULT16_16_Q15(g, in[i*2+1]);
+          out[i*2] = MULT16_RES_Q15(g, in[i*2]);
+          out[i*2+1] = MULT16_RES_Q15(g, in[i*2+1]);
        }
     }
     c=0;do {
        for (i=overlap;i<frame_size;i++)
        {
-          out[i*channels+c] = MULT16_16_Q15(g2, in[i*channels+c]);
+          out[i*channels+c] = MULT16_RES_Q15(g2, in[i*channels+c]);
        }
     }
     while (++c<channels);
@@ -726,7 +770,7 @@ opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_
    return new_size;
 }
 
-opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int32 Fs, StereoWidthState *mem)
+opus_val16 compute_stereo_width(const opus_res *pcm, int frame_size, opus_int32 Fs, StereoWidthState *mem)
 {
    opus_val32 xx, xy, yy;
    opus_val16 sqrt_xx, sqrt_yy;
@@ -747,23 +791,23 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
       opus_val32 pxy=0;
       opus_val32 pyy=0;
       opus_val16 x, y;
-      x = pcm[2*i];
-      y = pcm[2*i+1];
+      x = RES2VAL16(pcm[2*i]);
+      y = RES2VAL16(pcm[2*i+1]);
       pxx = SHR32(MULT16_16(x,x),2);
       pxy = SHR32(MULT16_16(x,y),2);
       pyy = SHR32(MULT16_16(y,y),2);
-      x = pcm[2*i+2];
-      y = pcm[2*i+3];
+      x = RES2VAL16(pcm[2*i+2]);
+      y = RES2VAL16(pcm[2*i+3]);
       pxx += SHR32(MULT16_16(x,x),2);
       pxy += SHR32(MULT16_16(x,y),2);
       pyy += SHR32(MULT16_16(y,y),2);
-      x = pcm[2*i+4];
-      y = pcm[2*i+5];
+      x = RES2VAL16(pcm[2*i+4]);
+      y = RES2VAL16(pcm[2*i+5]);
       pxx += SHR32(MULT16_16(x,x),2);
       pxy += SHR32(MULT16_16(x,y),2);
       pyy += SHR32(MULT16_16(y,y),2);
-      x = pcm[2*i+6];
-      y = pcm[2*i+7];
+      x = RES2VAL16(pcm[2*i+6]);
+      y = RES2VAL16(pcm[2*i+7]);
       pxx += SHR32(MULT16_16(x,x),2);
       pxy += SHR32(MULT16_16(x,y),2);
       pyy += SHR32(MULT16_16(y,y),2);
@@ -930,14 +974,14 @@ static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
 
 #ifndef DISABLE_FLOAT_API
 
-int is_digital_silence(const opus_val16* pcm, int frame_size, int channels, int lsb_depth)
+int is_digital_silence(const opus_res* pcm, int frame_size, int channels, int lsb_depth)
 {
    int silence = 0;
    opus_val32 sample_max = 0;
 #ifdef MLP_TRAINING
    return 0;
 #endif
-   sample_max = celt_maxabs16(pcm, frame_size*channels);
+   sample_max = celt_maxabs_res(pcm, frame_size*channels);
 
 #ifdef FIXED_POINT
    silence = (sample_max == 0);
@@ -950,7 +994,7 @@ int is_digital_silence(const opus_val16* pcm, int frame_size, int channels, int 
 }
 
 #ifdef FIXED_POINT
-static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size, int channels, int arch)
+static opus_val32 compute_frame_energy(const opus_res *pcm, int frame_size, int channels, int arch)
 {
    int i;
    opus_val32 sample_max;
@@ -960,7 +1004,7 @@ static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size, in
    int len = frame_size*channels;
    (void)arch;
    /* Max amplitude in the signal */
-   sample_max = celt_maxabs16(pcm, len);
+   sample_max = RES2INT16(celt_maxabs_res(pcm, len));
 
    /* Compute the right shift required in the MAC to avoid an overflow */
    max_shift = celt_ilog2(len);
@@ -968,7 +1012,7 @@ static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size, in
 
    /* Compute the energy */
    for (i=0; i<len; i++)
-      energy += SHR32(MULT16_16(pcm[i], pcm[i]), shift);
+      energy += SHR32(MULT16_16(RES2INT16(pcm[i]), RES2INT16(pcm[i])), shift);
 
    /* Normalize energy by the frame size and left-shift back to the original position */
    energy /= len;
@@ -1042,7 +1086,7 @@ static int compute_redundancy_bytes(opus_int32 max_data_bytes, opus_int32 bitrat
    return redundancy_bytes;
 }
 
-static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
+static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm, int frame_size,
                 unsigned char *data, opus_int32 max_data_bytes,
                 int float_api, int first_frame,
 #ifdef ENABLE_DRED
@@ -1054,7 +1098,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
                 int redundancy, int celt_to_silk, int prefill,
                 opus_int32 equiv_rate, int to_celt);
 
-opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
+opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
                 const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
                 int analysis_channels, downmix_func downmix, int float_api)
@@ -1696,7 +1740,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
 }
 
-static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
+static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm, int frame_size,
                 unsigned char *data, opus_int32 max_data_bytes,
                 int float_api, int first_frame,
 #ifdef ENABLE_DRED
@@ -1729,8 +1773,8 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
     int delay_compensation;
     int total_buffer;
     opus_int activity = VAD_NO_DECISION;
-    VARDECL(opus_val16, pcm_buf);
-    VARDECL(opus_val16, tmp_prefill);
+    VARDECL(opus_res, pcm_buf);
+    VARDECL(opus_res, tmp_prefill);
     SAVE_STACK;
 
     st->rangeFinal = 0;
@@ -1791,7 +1835,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
 
     ec_enc_init(&enc, data, max_data_bytes-1);
 
-    ALLOC(pcm_buf, (total_buffer+frame_size)*st->channels, opus_val16);
+    ALLOC(pcm_buf, (total_buffer+frame_size)*st->channels, opus_res);
     OPUS_COPY(pcm_buf, &st->delay_buffer[(st->encoder_buffer-total_buffer)*st->channels], total_buffer*st->channels);
 
     if (st->mode == MODE_CELT_ONLY)
@@ -1867,12 +1911,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
     if (st->mode != MODE_CELT_ONLY)
     {
         opus_int32 total_bitRate, celt_rate;
-#ifdef FIXED_POINT
-       const opus_int16 *pcm_silk;
-#else
-       VARDECL(opus_int16, pcm_silk);
-       ALLOC(pcm_silk, st->channels*frame_size, opus_int16);
-#endif
+        const opus_res *pcm_silk;
 
         /* Distribute bits between SILK and CELT */
         total_bitRate = 8 * bytes_target * frame_rate;
@@ -2025,23 +2064,13 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
             gain_fade(st->delay_buffer+prefill_offset, st->delay_buffer+prefill_offset,
                   0, Q15ONE, celt_mode->overlap, st->Fs/400, st->channels, celt_mode->window, st->Fs);
             OPUS_CLEAR(st->delay_buffer, prefill_offset);
-#ifdef FIXED_POINT
             pcm_silk = st->delay_buffer;
-#else
-            for (i=0;i<st->encoder_buffer*st->channels;i++)
-                pcm_silk[i] = FLOAT2INT16(st->delay_buffer[i]);
-#endif
             silk_Encode( silk_enc, &st->silk_mode, pcm_silk, st->encoder_buffer, NULL, &zero, prefill, activity );
             /* Prevent a second switch in the real encode call. */
             st->silk_mode.opusCanSwitch = 0;
         }
 
-#ifdef FIXED_POINT
         pcm_silk = pcm_buf+total_buffer*st->channels;
-#else
-        for (i=0;i<frame_size*st->channels;i++)
-            pcm_silk[i] = FLOAT2INT16(pcm_buf[total_buffer*st->channels + i]);
-#endif
         ret = silk_Encode( silk_enc, &st->silk_mode, pcm_silk, frame_size, &enc, &nBytes, 0, activity );
         if( ret ) {
             /*fprintf (stderr, "SILK encode error: %d\n", ret);*/
@@ -2116,7 +2145,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_val16 *pc
         celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(celt_pred));
     }
 
-    ALLOC(tmp_prefill, st->channels*st->Fs/400, opus_val16);
+    ALLOC(tmp_prefill, st->channels*st->Fs/400, opus_res);
     if (st->mode != MODE_SILK_ONLY && st->mode != st->prev_mode && st->prev_mode > 0)
     {
        OPUS_COPY(tmp_prefill, &st->delay_buffer[(st->encoder_buffer-total_buffer-st->Fs/400)*st->channels], st->channels*st->Fs/400);
@@ -2467,7 +2496,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
 {
    int i, ret;
    int frame_size;
-   VARDECL(opus_int16, in);
+   VARDECL(opus_res, in);
    ALLOC_STACK;
 
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
@@ -2476,10 +2505,10 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
       RESTORE_STACK;
       return OPUS_BAD_ARG;
    }
-   ALLOC(in, frame_size*st->channels, opus_int16);
+   ALLOC(in, frame_size*st->channels, opus_res);
 
    for (i=0;i<frame_size*st->channels;i++)
-      in[i] = FLOAT2INT16(pcm[i]);
+      in[i] = FLOAT2RES(pcm[i]);
    ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
    RESTORE_STACK;
@@ -2487,14 +2516,40 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
 }
 #endif
 
+#ifdef ENABLE_RES24
 opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
-                unsigned char *data, opus_int32 out_data_bytes)
+                unsigned char *data, opus_int32 max_data_bytes)
+{
+   int i, ret;
+   int frame_size;
+   VARDECL(opus_res, in);
+   ALLOC_STACK;
+
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   if (frame_size <= 0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+   ALLOC(in, frame_size*st->channels, opus_res);
+
+   for (i=0;i<frame_size*st->channels;i++)
+      in[i] = INT16TORES(pcm[i]);
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
+                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 1);
+   RESTORE_STACK;
+   return ret;
+}
+#else
+opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
+                unsigned char *data, opus_int32 max_data_bytes)
 {
    int frame_size;
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
-   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 16,
+   return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, 16,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
 }
+#endif /* ENABLE_RES24 */
 
 #else
 opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
