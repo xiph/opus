@@ -236,7 +236,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
    opus_val32 bandE[21];
    opus_val16 maskLogE[3][21];
    VARDECL(opus_val32, in);
-   VARDECL(opus_val16, x);
+   VARDECL(opus_res, x);
    VARDECL(opus_val32, freq);
    SAVE_STACK;
 
@@ -250,7 +250,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
          break;
 
    ALLOC(in, frame_size+overlap, opus_val32);
-   ALLOC(x, len, opus_val16);
+   ALLOC(x, len, opus_res);
    ALLOC(freq, freq_size, opus_val32);
 
    channel_pos(channels, pos);
@@ -819,7 +819,7 @@ int opus_multistream_encode_native
    int s;
    char *ptr;
    int tot_size;
-   VARDECL(opus_val16, buf);
+   VARDECL(opus_res, buf);
    VARDECL(opus_val16, bandSMR);
    unsigned char tmp_data[MS_FRAME_TMP];
    OpusRepacketizer rp;
@@ -862,7 +862,7 @@ int opus_multistream_encode_native
       RESTORE_STACK;
       return OPUS_BUFFER_TOO_SMALL;
    }
-   ALLOC(buf, 2*frame_size, opus_val16);
+   ALLOC(buf, 2*frame_size, opus_res);
    coupled_size = opus_encoder_get_size(2);
    mono_size = opus_encoder_get_size(1);
 
@@ -1014,7 +1014,7 @@ int opus_multistream_encode_native
 
 #if !defined(DISABLE_FLOAT_API)
 static void opus_copy_channel_in_float(
-  opus_val16 *dst,
+  opus_res *dst,
   int dst_stride,
   const void *src,
   int src_stride,
@@ -1028,16 +1028,12 @@ static void opus_copy_channel_in_float(
    (void)user_data;
    float_src = (const float *)src;
    for (i=0;i<frame_size;i++)
-#if defined(FIXED_POINT)
-      dst[i*dst_stride] = FLOAT2INT16(float_src[i*src_stride+src_channel]);
-#else
-      dst[i*dst_stride] = float_src[i*src_stride+src_channel];
-#endif
+      dst[i*dst_stride] = FLOAT2RES(float_src[i*src_stride+src_channel]);
 }
 #endif
 
 static void opus_copy_channel_in_short(
-  opus_val16 *dst,
+  opus_res *dst,
   int dst_stride,
   const void *src,
   int src_stride,
@@ -1051,11 +1047,7 @@ static void opus_copy_channel_in_short(
    (void)user_data;
    short_src = (const opus_int16 *)src;
    for (i=0;i<frame_size;i++)
-#if defined(FIXED_POINT)
-      dst[i*dst_stride] = short_src[i*src_stride+src_channel];
-#else
-      dst[i*dst_stride] = (1/32768.f)*short_src[i*src_stride+src_channel];
-#endif
+      dst[i*dst_stride] = INT16TORES(short_src[i*src_stride+src_channel]);
 }
 
 
