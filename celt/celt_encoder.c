@@ -513,7 +513,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * OPUS
 }
 
 
-void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
+void celt_preemphasis(const opus_res * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTRICT inp,
                         int N, int CC, int upsample, const opus_val16 *coef, celt_sig *mem, int clip)
 {
    int i;
@@ -529,11 +529,11 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
    {
       for (i=0;i<N;i++)
       {
-         opus_val16 x;
-         x = SCALEIN(pcmp[CC*i]);
+         celt_sig x;
+         x = RES2SIG(pcmp[CC*i]);
          /* Apply pre-emphasis */
-         inp[i] = SHL32(x, SIG_SHIFT) - m;
-         m = SHR32(MULT16_16(coef0, x), 15-SIG_SHIFT);
+         inp[i] = x - m;
+         m = MULT16_32_Q15(coef0, x);
       }
       *mem = m;
       return;
@@ -545,7 +545,7 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
       OPUS_CLEAR(inp, N);
    }
    for (i=0;i<Nu;i++)
-      inp[i*upsample] = SCALEIN(pcmp[CC*i]);
+      inp[i*upsample] = RES2SIG(pcmp[CC*i]);
 
 #ifndef FIXED_POINT
    if (clip)
@@ -567,7 +567,7 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
          celt_sig x, tmp;
          x = inp[i];
          /* Apply pre-emphasis */
-         tmp = MULT16_16(coef2, x);
+         tmp = SHL32(MULT16_32_Q15(coef2, x), 15-SIG_SHIFT);
          inp[i] = tmp + m;
          m = MULT16_32_Q15(coef1, inp[i]) - MULT16_32_Q15(coef0, tmp);
       }
@@ -576,11 +576,11 @@ void celt_preemphasis(const opus_val16 * OPUS_RESTRICT pcmp, celt_sig * OPUS_RES
    {
       for (i=0;i<N;i++)
       {
-         opus_val16 x;
+         celt_sig x;
          x = inp[i];
          /* Apply pre-emphasis */
-         inp[i] = SHL32(x, SIG_SHIFT) - m;
-         m = SHR32(MULT16_16(coef0, x), 15-SIG_SHIFT);
+         inp[i] = x - m;
+         m = MULT16_32_Q15(coef0, x);
       }
    }
    *mem = m;
@@ -1597,7 +1597,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
    return target;
 }
 
-int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
+int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
    int i, c, N;
    opus_int32 bits;
@@ -1813,8 +1813,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    ALLOC(in, CC*(N+overlap), celt_sig);
 
-   sample_max=MAX32(st->overlap_max, celt_maxabs16(pcm, C*(N-overlap)/st->upsample));
-   st->overlap_max=celt_maxabs16(pcm+C*(N-overlap)/st->upsample, C*overlap/st->upsample);
+   sample_max=MAX32(st->overlap_max, celt_maxabs_res(pcm, C*(N-overlap)/st->upsample));
+   st->overlap_max=celt_maxabs_res(pcm+C*(N-overlap)/st->upsample, C*overlap/st->upsample);
    sample_max=MAX32(sample_max, st->overlap_max);
 #ifdef FIXED_POINT
    silence = (sample_max==0);
@@ -2473,7 +2473,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       } while (++c<CC);
 
       /* We reuse freq[] as scratch space for the de-emphasis */
-      deemphasis(out_mem, (opus_val16*)pcm, N, CC, st->upsample, mode->preemph, st->preemph_memD, 0);
+      deemphasis(out_mem, (opus_res*)pcm, N, CC, st->upsample, mode->preemph, st->preemph_memD, 0);
       st->prefilter_period_old = st->prefilter_period;
       st->prefilter_gain_old = st->prefilter_gain;
       st->prefilter_tapset_old = st->prefilter_tapset;
@@ -2545,16 +2545,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 #ifdef CUSTOM_MODES
 
 #ifdef FIXED_POINT
+#ifdef ENABLE_RES24
 int opus_custom_encode(CELTEncoder * OPUS_RESTRICT st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
-   return celt_encode_with_ec(st, pcm, frame_size, compressed, nbCompressedBytes, NULL);
-}
-
-#ifndef DISABLE_FLOAT_API
-int opus_custom_encode_float(CELTEncoder * OPUS_RESTRICT st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
-{
    int j, ret, C, N;
-   VARDECL(opus_int16, in);
+   VARDECL(opus_res, in);
    ALLOC_STACK;
 
    if (pcm==NULL)
@@ -2562,15 +2557,47 @@ int opus_custom_encode_float(CELTEncoder * OPUS_RESTRICT st, const float * pcm, 
 
    C = st->channels;
    N = frame_size;
-   ALLOC(in, C*N, opus_int16);
+   ALLOC(in, C*N, opus_res);
 
    for (j=0;j<C*N;j++)
-     in[j] = FLOAT2INT16(pcm[j]);
+     in[j] = INT16TORES(pcm[j]);
 
    ret=celt_encode_with_ec(st,in,frame_size,compressed,nbCompressedBytes, NULL);
 #ifdef RESYNTH
    for (j=0;j<C*N;j++)
-      ((float*)pcm)[j]=in[j]*(1.f/32768.f);
+      ((opus_int16*)pcm)[j]=RES2INT16(in[j]);
+#endif
+   RESTORE_STACK;
+   return ret;
+}
+#else
+int opus_custom_encode(CELTEncoder * OPUS_RESTRICT st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+{
+   return celt_encode_with_ec(st, pcm, frame_size, compressed, nbCompressedBytes, NULL);
+}
+#endif
+
+#ifndef DISABLE_FLOAT_API
+int opus_custom_encode_float(CELTEncoder * OPUS_RESTRICT st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+{
+   int j, ret, C, N;
+   VARDECL(opus_res, in);
+   ALLOC_STACK;
+
+   if (pcm==NULL)
+      return OPUS_BAD_ARG;
+
+   C = st->channels;
+   N = frame_size;
+   ALLOC(in, C*N, opus_res);
+
+   for (j=0;j<C*N;j++)
+     in[j] = FLOAT2RES(pcm[j]);
+
+   ret=celt_encode_with_ec(st,in,frame_size,compressed,nbCompressedBytes, NULL);
+#ifdef RESYNTH
+   for (j=0;j<C*N;j++)
+      ((float*)pcm)[j]=RES2FLOAT(in[j]);
 #endif
    RESTORE_STACK;
    return ret;
