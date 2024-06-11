@@ -47,7 +47,7 @@ struct OpusProjectionEncoder
 
 #if !defined(DISABLE_FLOAT_API)
 static void opus_projection_copy_channel_in_float(
-  opus_val16 *dst,
+  opus_res *dst,
   int dst_stride,
   const void *src,
   int src_stride,
@@ -62,7 +62,7 @@ static void opus_projection_copy_channel_in_float(
 #endif
 
 static void opus_projection_copy_channel_in_short(
-  opus_val16 *dst,
+  opus_res *dst,
   int dst_stride,
   const void *src,
   int src_stride,
