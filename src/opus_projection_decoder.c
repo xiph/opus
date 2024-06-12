@@ -210,24 +210,19 @@ OpusProjectionDecoder *opus_projection_decoder_create(
 }
 
 #ifdef FIXED_POINT
-int opus_projection_decode(OpusProjectionDecoder *st, const unsigned char *data,
-                           opus_int32 len, opus_int16 *pcm, int frame_size,
-                           int decode_fec)
-{
-  return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
-    pcm, opus_projection_copy_channel_out_short, frame_size, decode_fec, 0,
-    get_dec_demixing_matrix(st));
-}
+#define OPTIONAL_CLIP 0
 #else
+#define OPTIONAL_CLIP 1
+#endif
+
 int opus_projection_decode(OpusProjectionDecoder *st, const unsigned char *data,
                            opus_int32 len, opus_int16 *pcm, int frame_size,
                            int decode_fec)
 {
   return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
-    pcm, opus_projection_copy_channel_out_short, frame_size, decode_fec, 1,
+    pcm, opus_projection_copy_channel_out_short, frame_size, decode_fec, OPTIONAL_CLIP,
     get_dec_demixing_matrix(st));
 }
-#endif
 
 #ifndef DISABLE_FLOAT_API
 int opus_projection_decode_float(OpusProjectionDecoder *st, const unsigned char *data,
