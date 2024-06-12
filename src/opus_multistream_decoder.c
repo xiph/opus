@@ -360,6 +360,32 @@ static void opus_copy_channel_out_short(
    }
 }
 
+static void opus_copy_channel_out_int24(
+  void *dst,
+  int dst_stride,
+  int dst_channel,
+  const opus_res *src,
+  int src_stride,
+  int frame_size,
+  void *user_data
+)
+{
+   opus_int32 *short_dst;
+   opus_int32 i;
+   (void)user_data;
+   short_dst = (opus_int32*)dst;
+   if (src != NULL)
+   {
+      for (i=0;i<frame_size;i++)
+         short_dst[i*dst_stride+dst_channel] = RES2INT24(src[i*src_stride]);
+   }
+   else
+   {
+      for (i=0;i<frame_size;i++)
+         short_dst[i*dst_stride+dst_channel] = 0;
+   }
+}
+
 #ifdef FIXED_POINT
 #define OPTIONAL_CLIP 0
 #else
@@ -377,6 +403,19 @@ int opus_multistream_decode(
 {
    return opus_multistream_decode_native(st, data, len,
        pcm, opus_copy_channel_out_short, frame_size, decode_fec, OPTIONAL_CLIP, NULL);
+}
+
+int opus_multistream_decode24(
+      OpusMSDecoder *st,
+      const unsigned char *data,
+      opus_int32 len,
+      opus_int32 *pcm,
+      int frame_size,
+      int decode_fec
+)
+{
+   return opus_multistream_decode_native(st, data, len,
+       pcm, opus_copy_channel_out_int24, frame_size, decode_fec, 0, NULL);
 }
 
 #ifndef DISABLE_FLOAT_API
