@@ -1372,8 +1372,12 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 
 #ifdef CUSTOM_MODES
 
-#ifdef FIXED_POINT
-#ifdef ENABLE_RES24
+#if defined(FIXED_POINT) && !defined(ENABLE_RES24)
+int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int16 * OPUS_RESTRICT pcm, int frame_size)
+{
+   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
+}
+#else
 int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int16 * OPUS_RESTRICT pcm, int frame_size)
 {
    int j, ret, C, N;
@@ -1395,17 +1399,14 @@ int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data
    RESTORE_STACK;
    return ret;
 }
+#endif
 
+#if defined(FIXED_POINT) && defined(ENABLE_RES24)
 int opus_custom_decode24(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int32 * OPUS_RESTRICT pcm, int frame_size)
 {
    return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
 }
 #else
-int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int16 * OPUS_RESTRICT pcm, int frame_size)
-{
-   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
-}
-
 int opus_custom_decode24(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int32 * OPUS_RESTRICT pcm, int frame_size)
 {
    int j, ret, C, N;
@@ -1429,7 +1430,15 @@ int opus_custom_decode24(CELTDecoder * OPUS_RESTRICT st, const unsigned char *da
 }
 #endif
 
+
 #ifndef DISABLE_FLOAT_API
+
+# if !defined(FIXED_POINT)
+int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, float * OPUS_RESTRICT pcm, int frame_size)
+{
+   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
+}
+# else
 int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, float * OPUS_RESTRICT pcm, int frame_size)
 {
    int j, ret, C, N;
@@ -1451,61 +1460,10 @@ int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    RESTORE_STACK;
    return ret;
 }
-#endif /* DISABLE_FLOAT_API */
+# endif
 
-#else
-
-int opus_custom_decode_float(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, float * OPUS_RESTRICT pcm, int frame_size)
-{
-   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
-}
-
-int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int16 * OPUS_RESTRICT pcm, int frame_size)
-{
-   int j, ret, C, N;
-   VARDECL(celt_sig, out);
-   ALLOC_STACK;
-
-   if (pcm==NULL)
-      return OPUS_BAD_ARG;
-
-   C = st->channels;
-   N = frame_size;
-   ALLOC(out, C*N, celt_sig);
-
-   ret=celt_decode_with_ec(st, data, len, out, frame_size, NULL, 0);
-
-   if (ret>0)
-      for (j=0;j<C*ret;j++)
-         pcm[j] = RES2INT16(out[j]);
-
-   RESTORE_STACK;
-   return ret;
-}
-
-int opus_custom_decode24(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int32 * OPUS_RESTRICT pcm, int frame_size)
-{
-   int j, ret, C, N;
-   VARDECL(celt_sig, out);
-   ALLOC_STACK;
-
-   if (pcm==NULL)
-      return OPUS_BAD_ARG;
-
-   C = st->channels;
-   N = frame_size;
-   ALLOC(out, C*N, celt_sig);
-
-   ret=celt_decode_with_ec(st, data, len, out, frame_size, NULL, 0);
-
-   if (ret>0)
-      for (j=0;j<C*ret;j++)
-         pcm[j] = RES2INT24(out[j]);
-
-   RESTORE_STACK;
-   return ret;
-}
 #endif
+
 #endif /* CUSTOM_MODES */
 
 int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
