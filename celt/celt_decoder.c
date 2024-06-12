@@ -1395,10 +1395,37 @@ int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data
    RESTORE_STACK;
    return ret;
 }
+
+int opus_custom_decode24(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int32 * OPUS_RESTRICT pcm, int frame_size)
+{
+   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
+}
 #else
 int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int16 * OPUS_RESTRICT pcm, int frame_size)
 {
    return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL, 0);
+}
+
+int opus_custom_decode24(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int32 * OPUS_RESTRICT pcm, int frame_size)
+{
+   int j, ret, C, N;
+   VARDECL(opus_res, out);
+   ALLOC_STACK;
+
+   if (pcm==NULL)
+      return OPUS_BAD_ARG;
+
+   C = st->channels;
+   N = frame_size;
+
+   ALLOC(out, C*N, opus_res);
+   ret = celt_decode_with_ec(st, data, len, out, frame_size, NULL, 0);
+   if (ret>0)
+      for (j=0;j<C*ret;j++)
+         pcm[j]=RES2INT24(out[j]);
+
+   RESTORE_STACK;
+   return ret;
 }
 #endif
 
@@ -1450,12 +1477,34 @@ int opus_custom_decode(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data
 
    if (ret>0)
       for (j=0;j<C*ret;j++)
-         pcm[j] = RES2INT16 (out[j]);
+         pcm[j] = RES2INT16(out[j]);
 
    RESTORE_STACK;
    return ret;
 }
 
+int opus_custom_decode24(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_int32 * OPUS_RESTRICT pcm, int frame_size)
+{
+   int j, ret, C, N;
+   VARDECL(celt_sig, out);
+   ALLOC_STACK;
+
+   if (pcm==NULL)
+      return OPUS_BAD_ARG;
+
+   C = st->channels;
+   N = frame_size;
+   ALLOC(out, C*N, celt_sig);
+
+   ret=celt_decode_with_ec(st, data, len, out, frame_size, NULL, 0);
+
+   if (ret>0)
+      for (j=0;j<C*ret;j++)
+         pcm[j] = RES2INT24(out[j]);
+
+   RESTORE_STACK;
+   return ret;
+}
 #endif
 #endif /* CUSTOM_MODES */
 
