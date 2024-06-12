@@ -360,9 +360,12 @@ static void opus_copy_channel_out_short(
    }
 }
 
-
-
 #ifdef FIXED_POINT
+#define OPTIONAL_CLIP 0
+#else
+#define OPTIONAL_CLIP 1
+#endif
+
 int opus_multistream_decode(
       OpusMSDecoder *st,
       const unsigned char *data,
@@ -373,35 +376,12 @@ int opus_multistream_decode(
 )
 {
    return opus_multistream_decode_native(st, data, len,
-       pcm, opus_copy_channel_out_short, frame_size, decode_fec, 0, NULL);
+       pcm, opus_copy_channel_out_short, frame_size, decode_fec, OPTIONAL_CLIP, NULL);
 }
 
 #ifndef DISABLE_FLOAT_API
 int opus_multistream_decode_float(OpusMSDecoder *st, const unsigned char *data,
       opus_int32 len, float *pcm, int frame_size, int decode_fec)
-{
-   return opus_multistream_decode_native(st, data, len,
-       pcm, opus_copy_channel_out_float, frame_size, decode_fec, 0, NULL);
-}
-#endif
-
-#else
-
-int opus_multistream_decode(OpusMSDecoder *st, const unsigned char *data,
-      opus_int32 len, opus_int16 *pcm, int frame_size, int decode_fec)
-{
-   return opus_multistream_decode_native(st, data, len,
-       pcm, opus_copy_channel_out_short, frame_size, decode_fec, 1, NULL);
-}
-
-int opus_multistream_decode_float(
-      OpusMSDecoder *st,
-      const unsigned char *data,
-      opus_int32 len,
-      opus_val16 *pcm,
-      int frame_size,
-      int decode_fec
-)
 {
    return opus_multistream_decode_native(st, data, len,
        pcm, opus_copy_channel_out_float, frame_size, decode_fec, 0, NULL);
