@@ -54,7 +54,7 @@ else:
     parser.add_argument('checkpoint', type=str, help='checkpoint file')
     parser.add_argument('output', type=str, help='output file')
     parser.add_argument('--debug', action='store_true', help='enables debug output')
-
+    parser.add_argument('--upsamp', type=str, default=None, help='optional path to output upsampled signal')
 
     args = parser.parse_args()
 
@@ -92,6 +92,10 @@ with torch.no_grad():
     out = model(signal.view(1, 1, -1), features.unsqueeze(0)).squeeze().numpy()
 wavfile.write(output_file, 48000, (2**15 * out).astype(np.int16))
 
+if args.upsamp is not None:
+    with torch.no_grad():
+        upsamp = model.upsampler(signal.view(1, 1, -1)).numpy()
+    wavfile.write(args.upsamp, 48000, (2**15 * upsamp).astype(np.int16))
 
 if args.debug:
     endoscopy.close()
