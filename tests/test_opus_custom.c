@@ -37,6 +37,8 @@ typedef struct {
    int float_decode;
    int custom_encode;
    int custom_decode;
+   int encoder_bit_depth;
+   int decoder_bit_depth;
 } TestCustomParams;
 
 void* generate_sine_sweep(double amplitude, int bit_depth, int sample_rate, int channels, int use_float, double duration_seconds, int* num_samples_out) {
@@ -125,7 +127,7 @@ int test_encode(TestCustomParams params) {
 
    /* Generate input data */
    inbuf = generate_sine_sweep(SINE_SWEEP_AMPLITUDE,
-                               16,
+                               params.encoder_bit_depth,
                                params.sample_rate,
                                num_channels,
                                params.float_encode,
@@ -133,7 +135,7 @@ int test_encode(TestCustomParams params) {
                                &input_samples);
 
    /* Allocate memory for output data */
-   if (params.float_decode) {
+   if (params.float_decode || params.decoder_bit_depth == 24) {
        outbuf = malloc(input_samples*num_channels*sizeof(float));
    }
    else {
@@ -186,20 +188,36 @@ int test_encode(TestCustomParams params) {
       } else
 #endif
       {
-         opus_int16* input = (opus_int16*)inbuf;
          if (params.custom_encode) {
-            len = opus_custom_encode(encC,
-                                     &input[samp_count*num_channels],
-                                     frame_size,
-                                     packet,
-                                     MAX_PACKET);
-            if (len <= 0) {
-                fprintf(stderr, "opus_custom_encode() failed: %s\n", opus_strerror(len));
-                ret = -1;
-                break;
+            if (params.encoder_bit_depth == 24) {
+               opus_int32* input = (opus_int32*)inbuf;
+               len = opus_custom_encode24(encC,
+                                          &input[samp_count*num_channels],
+                                          frame_size,
+                                          packet,
+                                          MAX_PACKET);
+               if (len <= 0) {
+                  fprintf(stderr, "opus_custom_encode24() failed: %s\n", opus_strerror(len));
+                  ret = -1;
+                  break;
+               }
+            }
+            else {
+               opus_int16* input = (opus_int16*)inbuf;
+               len = opus_custom_encode(encC,
+                                        &input[samp_count*num_channels],
+                                        frame_size,
+                                        packet,
+                                        MAX_PACKET);
+               if (len <= 0) {
+                  fprintf(stderr, "opus_custom_encode() failed: %s\n", opus_strerror(len));
+                  ret = -1;
+                  break;
+               }
             }
          }
          else {
+            opus_int16* input = (opus_int16*)inbuf;
             len = opus_encode(enc,
                               &input[samp_count*num_channels],
                               frame_size,
@@ -245,21 +263,38 @@ int test_encode(TestCustomParams params) {
       } else
 #endif
       {
-         opus_int16* output = (opus_int16*)outbuf;
          if (params.custom_decode) {
-            samples_decoded = opus_custom_decode(decC,
-                                                 packet,
-                                                 len,
-                                                 &output[samp_count*num_channels],
-                                                 frame_size);
+            if (params.decoder_bit_depth == 24) {
+               opus_int32* output = (opus_int32*)outbuf;
+               samples_decoded = opus_custom_decode24(decC,
+                                                      packet,
+                                                      len,
+                                                      &output[samp_count*num_channels],
+                                                      frame_size);
 
-            if (samples_decoded != frame_size) {
-                fprintf(stderr, "opus_custom_decode() returned %d\n", samples_decoded);
-                ret = -1;
-                break;
+               if (samples_decoded != frame_size) {
+                  fprintf(stderr, "opus_custom_decode24() returned %d\n", samples_decoded);
+                  ret = -1;
+                  break;
+               }
+            }
+            else {
+               opus_int16* output = (opus_int16*)outbuf;
+               samples_decoded = opus_custom_decode(decC,
+                                                    packet,
+                                                    len,
+                                                    &output[samp_count*num_channels],
+                                                    frame_size);
+
+               if (samples_decoded != frame_size) {
+                  fprintf(stderr, "opus_custom_decode() returned %d\n", samples_decoded);
+                  ret = -1;
+                  break;
+               }
             }
          }
          else {
+            opus_int16* output = (opus_int16*)outbuf;
             samples_decoded = opus_decode(dec,
                                           packet,
                                           len,
@@ -287,6 +322,15 @@ int test_encode(TestCustomParams params) {
             rmsd += (input[i]-output[i])*(input[i]-output[i]);
          }
          rmsd = sqrt(rmsd/(num_channels*samp_count));
+      }
+      else if (params.decoder_bit_depth == 24) {
+         opus_int32* input = (opus_int32*)inbuf;
+         opus_int32* output = (opus_int32*)outbuf;
+         for (i = 0; i < samp_count * num_channels; i++) {
+            rmsd += (input[i]-output[i])*(double)(input[i]-output[i]);
+         }
+         rmsd = sqrt(rmsd/((double)num_channels*samp_count));
+         rmsd /= 8388608;
       }
       else {
          opus_int16* input = (opus_int16*)inbuf;
@@ -340,6 +384,8 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
 #endif
    int use_custom_encode[2] = {0, 1};
    int use_custom_decode[2] = {0, 1};
+   int encoder_bit_depths[2] = {16, 24};
+   int decoder_bit_depths[2] = {16, 24};
 
    for (i = 0; i < num_encoders; i++) {
       params.sample_rate = RAND_SAMPLE(sampling_rates);
@@ -438,9 +484,22 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
          params.float_encode = 0;
          params.float_decode = 0;
 #endif
+         if (params.custom_encode) {
+            params.encoder_bit_depth = RAND_SAMPLE(encoder_bit_depths);
+         }
+         else {
+            params.encoder_bit_depth = 16;
+         }
+         if (params.custom_decode) {
+            params.decoder_bit_depth = RAND_SAMPLE(decoder_bit_depths);
+         }
+         else {
+            params.decoder_bit_depth = 16;
+         }
 #ifdef RESYNTH
          /* Resynth logic works best when encoder/decoder use same datatype */
          params.float_decode = params.float_encode;
+         params.decoder_bit_depth = params.encoder_bit_depth;
 #endif
 
          if (params.custom_encode) {
@@ -461,17 +520,23 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
          }
          fprintf(stderr,
                  "test_opus_custom: %d kHz, %d ch, float_encode: %d, float_decode: %d, "
+                 "encoder_bit_depth: %d, "
+                 "decoder_bit_depth: %d, "
                  "custom_encode: %d, custom_decode: %d, %d bps, vbr: %d, vbr constraint: %d, complexity: %d, "
                  "pkt loss: %d%%, lsb depth: %d, (%d/2) ms\n",
                  params.sample_rate / 1000, params.num_channels, params.float_encode, params.float_decode,
+                 params.encoder_bit_depth, params.decoder_bit_depth,
                  params.custom_encode, params.custom_decode, bitrate, vbr, vbr_constraint, complexity,
                  pkt_loss, lsb_depth, frame_size_ms_x2);
          if (test_encode(params)) {
             fprintf(stderr,
                     "test_opus_custom error: %d kHz, %d ch, float_encode: %d, float_decode: %d, "
+                    "encoder_bit_depth: %d, "
+                    "decoder_bit_depth: %d, "
                     "custom_encode: %d, custom_decode: %d, %d bps, vbr: %d, vbr constraint: %d, complexity: %d, "
                     "pkt loss: %d%%, lsb depth: %d, (%d/2) ms\n",
                     params.sample_rate / 1000, params.num_channels, params.float_encode, params.float_decode,
+                    params.encoder_bit_depth, params.decoder_bit_depth,
                     params.custom_encode, params.custom_decode, bitrate, vbr, vbr_constraint, complexity,
                     pkt_loss, lsb_depth, frame_size_ms_x2);
             test_failed();

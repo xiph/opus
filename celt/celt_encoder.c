@@ -2569,10 +2569,40 @@ int opus_custom_encode(CELTEncoder * OPUS_RESTRICT st, const opus_int16 * pcm, i
    RESTORE_STACK;
    return ret;
 }
+
+int opus_custom_encode24(CELTEncoder * OPUS_RESTRICT st, const opus_int32 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+{
+   return celt_encode_with_ec(st, pcm, frame_size, compressed, nbCompressedBytes, NULL);
+}
 #else
 int opus_custom_encode(CELTEncoder * OPUS_RESTRICT st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
    return celt_encode_with_ec(st, pcm, frame_size, compressed, nbCompressedBytes, NULL);
+}
+
+int opus_custom_encode24(CELTEncoder * OPUS_RESTRICT st, const opus_int32 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+{
+   int j, ret, C, N;
+   VARDECL(opus_res, in);
+   ALLOC_STACK;
+
+   if (pcm==NULL)
+      return OPUS_BAD_ARG;
+
+   C = st->channels;
+   N = frame_size;
+   ALLOC(in, C*N, opus_res);
+
+   for (j=0;j<C*N;j++)
+     in[j] = INT24TORES(pcm[j]);
+
+   ret=celt_encode_with_ec(st,in,frame_size,compressed,nbCompressedBytes, NULL);
+#ifdef RESYNTH
+   for (j=0;j<C*N;j++)
+      ((float*)pcm)[j]=RES2INT24(in[j]);
+#endif
+   RESTORE_STACK;
+   return ret;
 }
 #endif
 
@@ -2617,13 +2647,38 @@ int opus_custom_encode(CELTEncoder * OPUS_RESTRICT st, const opus_int16 * pcm, i
    N=frame_size;
    ALLOC(in, C*N, celt_sig);
    for (j=0;j<C*N;j++) {
-     in[j] = (1.0f/32768)*pcm[j];
+     in[j] = INT16TORES(pcm[j]);
    }
 
    ret = celt_encode_with_ec(st,in,frame_size,compressed,nbCompressedBytes, NULL);
 #ifdef RESYNTH
    for (j=0;j<C*N;j++)
       ((opus_int16*)pcm)[j] = FLOAT2INT16(in[j]);
+#endif
+   RESTORE_STACK;
+   return ret;
+}
+
+int opus_custom_encode24(CELTEncoder * OPUS_RESTRICT st, const opus_int32 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+{
+   int j, ret, C, N;
+   VARDECL(celt_sig, in);
+   ALLOC_STACK;
+
+   if (pcm==NULL)
+      return OPUS_BAD_ARG;
+
+   C=st->channels;
+   N=frame_size;
+   ALLOC(in, C*N, celt_sig);
+   for (j=0;j<C*N;j++) {
+     in[j] = INT24TORES(pcm[j]);
+   }
+
+   ret = celt_encode_with_ec(st,in,frame_size,compressed,nbCompressedBytes, NULL);
+#ifdef RESYNTH
+   for (j=0;j<C*N;j++)
+      ((opus_int32*)pcm)[j] = RES2INT24(in[j]);
 #endif
    RESTORE_STACK;
    return ret;
