@@ -166,6 +166,7 @@ typedef opus_val16 opus_res;
 #define RES2VAL16(a)    RES2INT16(a)
 #define FLOAT2SIG(a)    float2int(((opus_int32)32768<<SIG_SHIFT)*(a))
 #define INT16TOSIG(a)   SHL32(EXTEND32(a), SIG_SHIFT)
+#define INT24TOSIG(a)   SHL32(a, SIG_SHIFT-8)
 
 #define celt_isnan(x) 0
 
@@ -332,6 +333,7 @@ static OPUS_INLINE int celt_isnan(float x)
 #define RES2VAL16(a)    (a)
 #define FLOAT2SIG(a)    ((a)*CELT_SIG_SCALE)
 #define INT16TOSIG(a)   ((float)(a))
+#define INT24TOSIG(a)   ((float)(a)*(1.f/256.f))
 
 
 #endif /* !FIXED_POINT */
