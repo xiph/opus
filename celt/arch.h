@@ -148,6 +148,7 @@ typedef opus_val32 opus_res;
 #define FLOAT2RES(a)    float2int(32768.f*256.f*(a))
 #define RES2SIG(a)      SHL32((a), SIG_SHIFT-RES_SHIFT)
 #define MULT16_RES_Q15(a,b) MULT16_32_Q15(a,b)
+#define MAX_ENCODING_DEPTH 24
 #else
 typedef opus_val16 opus_res;
 #define RES_SHIFT 0
@@ -161,6 +162,7 @@ typedef opus_val16 opus_res;
 #define FLOAT2RES(a)    FLOAT2INT16(a)
 #define RES2SIG(a)      SHL32(EXTEND32(a), SIG_SHIFT)
 #define MULT16_RES_Q15(a,b) MULT16_16_Q15(a,b)
+#define MAX_ENCODING_DEPTH 16
 #endif
 
 #define RES2VAL16(a)    RES2INT16(a)
@@ -334,7 +336,7 @@ static OPUS_INLINE int celt_isnan(float x)
 #define FLOAT2SIG(a)    ((a)*CELT_SIG_SCALE)
 #define INT16TOSIG(a)   ((float)(a))
 #define INT24TOSIG(a)   ((float)(a)*(1.f/256.f))
-
+#define MAX_ENCODING_DEPTH 24
 
 #endif /* !FIXED_POINT */
 
