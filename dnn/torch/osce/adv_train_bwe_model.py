@@ -363,6 +363,7 @@ for ep in range(1, epochs + 1):
             output = model(x16, batch['features'])
 
             # pre-emphasize
+            disc_target = preemph(target, preemph_gamma)
             target = preemph(target, preemph_gamma)
             x_up = preemph(x_up, preemph_gamma)
             output = preemph(output, preemph_gamma)
