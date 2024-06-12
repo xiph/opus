@@ -1050,6 +1050,23 @@ static void opus_copy_channel_in_short(
       dst[i*dst_stride] = INT16TORES(short_src[i*src_stride+src_channel]);
 }
 
+static void opus_copy_channel_in_int24(
+  opus_res *dst,
+  int dst_stride,
+  const void *src,
+  int src_stride,
+  int src_channel,
+  int frame_size,
+  void *user_data
+)
+{
+   const opus_int32 *short_src;
+   opus_int32 i;
+   (void)user_data;
+   short_src = (const opus_int32 *)src;
+   for (i=0;i<frame_size;i++)
+      dst[i*dst_stride] = INT24TORES(short_src[i*src_stride+src_channel]);
+}
 
 int opus_multistream_encode(
     OpusMSEncoder *st,
@@ -1061,6 +1078,18 @@ int opus_multistream_encode(
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_short,
       pcm, frame_size, data, max_data_bytes, 16, downmix_int, 0, NULL);
+}
+
+int opus_multistream_encode24(
+    OpusMSEncoder *st,
+    const opus_int32 *pcm,
+    int frame_size,
+    unsigned char *data,
+    opus_int32 max_data_bytes
+)
+{
+   return opus_multistream_encode_native(st, opus_copy_channel_in_int24,
+      pcm, frame_size, data, max_data_bytes, MAX_ENCODING_DEPTH, downmix_int24, 0, NULL);
 }
 
 #ifndef DISABLE_FLOAT_API
