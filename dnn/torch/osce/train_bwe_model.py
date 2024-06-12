@@ -241,7 +241,7 @@ tdlp = TDLowpass(15, 4000/24000).to(device)
 def criterion(x, y, x_up):
 
     return (w_l1 * td_l1(x, y, pow=1) +  stftloss(x, y) + w_logmel * logmelloss(x, y)
-            + w_xcorr * xcorr_loss(x, y) + w_l2 * td_l2_norm(x, y) + tdlp(x_up, y)) / w_sum
+            + w_xcorr * xcorr_loss(x, y) + w_l2 * td_l2_norm(x, y) + w_tdlp * tdlp(x_up, y)) / w_sum
 
 
 
