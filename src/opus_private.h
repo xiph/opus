@@ -174,6 +174,7 @@ typedef void (*opus_copy_channel_out_func)(
 typedef void (*downmix_func)(const void *, opus_val32 *, int, int, int, int, int);
 void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C);
 void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C);
+void downmix_int24(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C);
 int is_digital_silence(const opus_res* pcm, int frame_size, int channels, int lsb_depth);
 
 int encode_size(int size, unsigned char *data);
