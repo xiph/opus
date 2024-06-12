@@ -1051,10 +1051,9 @@ static void opus_copy_channel_in_short(
 }
 
 
-#ifdef FIXED_POINT
 int opus_multistream_encode(
     OpusMSEncoder *st,
-    const opus_val16 *pcm,
+    const opus_int16 *pcm,
     int frame_size,
     unsigned char *data,
     opus_int32 max_data_bytes
@@ -1074,35 +1073,7 @@ int opus_multistream_encode_float(
 )
 {
    return opus_multistream_encode_native(st, opus_copy_channel_in_float,
-      pcm, frame_size, data, max_data_bytes, 16, downmix_float, 1, NULL);
-}
-#endif
-
-#else
-
-int opus_multistream_encode_float
-(
-    OpusMSEncoder *st,
-    const opus_val16 *pcm,
-    int frame_size,
-    unsigned char *data,
-    opus_int32 max_data_bytes
-)
-{
-   return opus_multistream_encode_native(st, opus_copy_channel_in_float,
-      pcm, frame_size, data, max_data_bytes, 24, downmix_float, 1, NULL);
-}
-
-int opus_multistream_encode(
-    OpusMSEncoder *st,
-    const opus_int16 *pcm,
-    int frame_size,
-    unsigned char *data,
-    opus_int32 max_data_bytes
-)
-{
-   return opus_multistream_encode_native(st, opus_copy_channel_in_short,
-      pcm, frame_size, data, max_data_bytes, 16, downmix_int, 0, NULL);
+      pcm, frame_size, data, max_data_bytes, MAX_ENCODING_DEPTH, downmix_float, 1, NULL);
 }
 #endif
 
