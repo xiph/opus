@@ -218,16 +218,31 @@ int test_encode(TestCustomParams params) {
             }
          }
          else {
-            opus_int16* input = (opus_int16*)inbuf;
-            len = opus_encode(enc,
-                              &input[samp_count*num_channels],
-                              frame_size,
-                              packet,
-                              MAX_PACKET);
-            if (len <= 0) {
-                fprintf(stderr, "opus_encode() failed: %s\n", opus_strerror(len));
-                ret = -1;
-                break;
+            if (params.encoder_bit_depth == 24) {
+               opus_int32* input = (opus_int32*)inbuf;
+               len = opus_encode24(enc,
+                                   &input[samp_count*num_channels],
+                                   frame_size,
+                                   packet,
+                                   MAX_PACKET);
+               if (len <= 0) {
+                  fprintf(stderr, "opus_encode24() failed: %s\n", opus_strerror(len));
+                  ret = -1;
+                  break;
+               }
+            }
+            else {
+               opus_int16* input = (opus_int16*)inbuf;
+               len = opus_encode(enc,
+                                 &input[samp_count*num_channels],
+                                 frame_size,
+                                 packet,
+                                 MAX_PACKET);
+               if (len <= 0) {
+                   fprintf(stderr, "opus_encode() failed: %s\n", opus_strerror(len));
+                   ret = -1;
+                   break;
+               }
             }
          }
       }
@@ -295,17 +310,34 @@ int test_encode(TestCustomParams params) {
             }
          }
          else {
-            opus_int16* output = (opus_int16*)outbuf;
-            samples_decoded = opus_decode(dec,
-                                          packet,
-                                          len,
-                                          &output[samp_count*num_channels],
-                                          frame_size,
-                                          0);
-            if (samples_decoded != frame_size) {
-                fprintf(stderr, "opus_decode() returned %d\n", samples_decoded);
-                ret = -1;
-                break;
+            if (params.decoder_bit_depth == 24) {
+               opus_int32* output = (opus_int32*)outbuf;
+               samples_decoded = opus_decode24(dec,
+                                               packet,
+                                               len,
+                                               &output[samp_count*num_channels],
+                                               frame_size,
+                                               0);
+
+               if (samples_decoded != frame_size) {
+                  fprintf(stderr, "opus_decode24() returned %d\n", samples_decoded);
+                  ret = -1;
+                  break;
+               }
+            }
+            else {
+               opus_int16* output = (opus_int16*)outbuf;
+               samples_decoded = opus_decode(dec,
+                                             packet,
+                                             len,
+                                             &output[samp_count*num_channels],
+                                             frame_size,
+                                             0);
+               if (samples_decoded != frame_size) {
+                   fprintf(stderr, "opus_decode() returned %d\n", samples_decoded);
+                   ret = -1;
+                   break;
+               }
             }
          }
       }
@@ -314,8 +346,13 @@ int test_encode(TestCustomParams params) {
    } while (samp_count + frame_size <= input_samples);
 
 #ifdef RESYNTH
-   /* Resynth only works with OpusCustom encoder */
-   if (params.custom_encode && params.custom_decode) {
+   /* Resynth only works with OpusCustom encoder. Also, we don't enable it if there's
+      a 16-bit bottleneck in the decoder that can cause clipping. */
+   if (params.custom_encode && (params.custom_decode
+#if !defined(FIXED_POINT) || defined(ENABLE_RES24)
+         || params.decoder_bit_depth > 16
+#endif
+         )) {
       if (params.float_encode) {
          float* input = (float*)inbuf;
          float* output = (float*)outbuf;
@@ -486,18 +523,8 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
          params.float_encode = 0;
          params.float_decode = 0;
 #endif
-         if (params.custom_encode) {
-            params.encoder_bit_depth = RAND_SAMPLE(encoder_bit_depths);
-         }
-         else {
-            params.encoder_bit_depth = 16;
-         }
-         if (params.custom_decode) {
-            params.decoder_bit_depth = RAND_SAMPLE(decoder_bit_depths);
-         }
-         else {
-            params.decoder_bit_depth = 16;
-         }
+         params.encoder_bit_depth = RAND_SAMPLE(encoder_bit_depths);
+         params.decoder_bit_depth = RAND_SAMPLE(decoder_bit_depths);
 #ifdef RESYNTH
          /* Resynth logic works best when encoder/decoder use same datatype */
          params.float_decode = params.float_encode;

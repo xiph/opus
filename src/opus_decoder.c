@@ -819,7 +819,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 #ifdef FIXED_POINT
 #ifdef ENABLE_RES24
 int opus_decode(OpusDecoder *st, const unsigned char *data,
-      opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec)
+      opus_int32 len, opus_int16 *pcm, int frame_size, int decode_fec)
 {
 	   VARDECL(opus_res, out);
 	   int ret, i;
@@ -851,14 +851,59 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	   RESTORE_STACK;
 	   return ret;
 }
-#else
-int opus_decode(OpusDecoder *st, const unsigned char *data,
-      opus_int32 len, opus_val16 *pcm, int frame_size, int decode_fec)
+
+int opus_decode24(OpusDecoder *st, const unsigned char *data,
+      opus_int32 len, opus_int32 *pcm, int frame_size, int decode_fec)
 {
    if(frame_size<=0)
       return OPUS_BAD_ARG;
    return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0, NULL, 0);
 }
+
+#else
+
+int opus_decode(OpusDecoder *st, const unsigned char *data,
+      opus_int32 len, opus_int16 *pcm, int frame_size, int decode_fec)
+{
+   if(frame_size<=0)
+      return OPUS_BAD_ARG;
+   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL, 0, NULL, 0);
+}
+
+int opus_decode24(OpusDecoder *st, const unsigned char *data,
+      opus_int32 len, opus_int32 *pcm, int frame_size, int decode_fec)
+{
+       VARDECL(opus_res, out);
+       int ret, i;
+       int nb_samples;
+       ALLOC_STACK;
+
+       if(frame_size<=0)
+       {
+          RESTORE_STACK;
+          return OPUS_BAD_ARG;
+       }
+       if (data != NULL && len > 0 && !decode_fec)
+       {
+          nb_samples = opus_decoder_get_nb_samples(st, data, len);
+          if (nb_samples>0)
+             frame_size = IMIN(frame_size, nb_samples);
+          else
+             return OPUS_INVALID_PACKET;
+       }
+       celt_assert(st->channels == 1 || st->channels == 2);
+       ALLOC(out, frame_size*st->channels, opus_res);
+
+       ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0, NULL, 0);
+       if (ret > 0)
+       {
+          for (i=0;i<ret*st->channels;i++)
+             pcm[i] = RES2INT24(out[i]);
+       }
+       RESTORE_STACK;
+       return ret;
+}
+
 #endif
 
 #ifndef DISABLE_FLOAT_API
@@ -929,6 +974,41 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
    {
       for (i=0;i<ret*st->channels;i++)
          pcm[i] = RES2INT16(out[i]);
+   }
+   RESTORE_STACK;
+   return ret;
+}
+
+int opus_decode24(OpusDecoder *st, const unsigned char *data,
+      opus_int32 len, opus_int32 *pcm, int frame_size, int decode_fec)
+{
+   VARDECL(float, out);
+   int ret, i;
+   int nb_samples;
+   ALLOC_STACK;
+
+   if(frame_size<=0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+
+   if (data != NULL && len > 0 && !decode_fec)
+   {
+      nb_samples = opus_decoder_get_nb_samples(st, data, len);
+      if (nb_samples>0)
+         frame_size = IMIN(frame_size, nb_samples);
+      else
+         return OPUS_INVALID_PACKET;
+   }
+   celt_assert(st->channels == 1 || st->channels == 2);
+   ALLOC(out, frame_size*st->channels, float);
+
+   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 1, NULL, 0);
+   if (ret > 0)
+   {
+      for (i=0;i<ret*st->channels;i++)
+         pcm[i] = RES2INT24(out[i]);
    }
    RESTORE_STACK;
    return ret;
@@ -1500,7 +1580,41 @@ int opus_decoder_dred_decode(OpusDecoder *st, const OpusDRED *dred, opus_int32 d
    if (ret > 0)
    {
       for (i=0;i<ret*st->channels;i++)
-         pcm[i] = FLOAT2INT16(out[i]);
+         pcm[i] = RES2INT16(out[i]);
+   }
+   RESTORE_STACK;
+   return ret;
+#else
+   (void)st;
+   (void)dred;
+   (void)dred_offset;
+   (void)pcm;
+   (void)frame_size;
+   return OPUS_UNIMPLEMENTED;
+#endif
+}
+
+int opus_decoder_dred_decode24(OpusDecoder *st, const OpusDRED *dred, opus_int32 dred_offset, opus_int32 *pcm, opus_int32 frame_size)
+{
+#ifdef ENABLE_DRED
+   VARDECL(float, out);
+   int ret, i;
+   ALLOC_STACK;
+
+   if(frame_size<=0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+
+   celt_assert(st->channels == 1 || st->channels == 2);
+   ALLOC(out, frame_size*st->channels, float);
+
+   ret = opus_decode_native(st, NULL, 0, out, frame_size, 0, 0, NULL, 1, dred, dred_offset);
+   if (ret > 0)
+   {
+      for (i=0;i<ret*st->channels;i++)
+         pcm[i] = RES2INT24(out[i]);
    }
    RESTORE_STACK;
    return ret;

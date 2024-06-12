@@ -739,6 +739,29 @@ void downmix_int(const void *_x, opus_val32 *y, int subframe, int offset, int c1
    }
 }
 
+void downmix_int24(const void *_x, opus_val32 *y, int subframe, int offset, int c1, int c2, int C)
+{
+   const opus_int32 *x;
+   int j;
+
+   x = (const opus_int32 *)_x;
+   for (j=0;j<subframe;j++)
+      y[j] = INT24TOSIG(x[(j+offset)*C+c1]);
+   if (c2>-1)
+   {
+      for (j=0;j<subframe;j++)
+         y[j] += INT24TOSIG(x[(j+offset)*C+c2]);
+   } else if (c2==-2)
+   {
+      int c;
+      for (c=1;c<C;c++)
+      {
+         for (j=0;j<subframe;j++)
+            y[j] += INT24TOSIG(x[(j+offset)*C+c]);
+      }
+   }
+}
+
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
 {
    int new_size;
@@ -2533,6 +2556,16 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
    RESTORE_STACK;
    return ret;
 }
+
+opus_int32 opus_encode24(OpusEncoder *st, const opus_int32 *pcm, int analysis_frame_size,
+                unsigned char *data, opus_int32 max_data_bytes)
+{
+   int frame_size;
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, 16,
+                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_int24, 0);
+}
+
 #else
 opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
                 unsigned char *data, opus_int32 max_data_bytes)
@@ -2541,6 +2574,30 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, 16,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
+}
+
+opus_int32 opus_encode24(OpusEncoder *st, const opus_int32 *pcm, int analysis_frame_size,
+                unsigned char *data, opus_int32 max_data_bytes)
+{
+   int i, ret;
+   int frame_size;
+   VARDECL(opus_res, in);
+   ALLOC_STACK;
+
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   if (frame_size <= 0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+   ALLOC(in, frame_size*st->channels, opus_res);
+
+   for (i=0;i<frame_size*st->channels;i++)
+      in[i] = INT24TORES(pcm[i]);
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
+                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_int24, 1);
+   RESTORE_STACK;
+   return ret;
 }
 #endif /* ENABLE_RES24 */
 
@@ -2562,12 +2619,37 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
    ALLOC(in, frame_size*st->channels, float);
 
    for (i=0;i<frame_size*st->channels;i++)
-      in[i] = (1.0f/32768)*pcm[i];
+      in[i] = INT16TORES(pcm[i]);
    ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
    RESTORE_STACK;
    return ret;
 }
+
+opus_int32 opus_encode24(OpusEncoder *st, const opus_int32 *pcm, int analysis_frame_size,
+      unsigned char *data, opus_int32 max_data_bytes)
+{
+   int i, ret;
+   int frame_size;
+   VARDECL(float, in);
+   ALLOC_STACK;
+
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   if (frame_size <= 0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+   ALLOC(in, frame_size*st->channels, float);
+
+   for (i=0;i<frame_size*st->channels;i++)
+      in[i] = INT24TORES(pcm[i]);
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
+                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_int24, 0);
+   RESTORE_STACK;
+   return ret;
+}
+
 opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_frame_size,
                       unsigned char *data, opus_int32 out_data_bytes)
 {
