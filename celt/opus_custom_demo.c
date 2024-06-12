@@ -41,13 +41,17 @@
 
 static void print_usage(char **argv) {
    fprintf (stderr, "Usage: %s [-e | -d] <rate> <channels> <frame size> "
-                  " [<bytes per packet>] [-complexity <0-10>] [-loss <packet loss percent>] "
+                  " [<bytes per packet>] [options] "
                   "<input> <output>\n", argv[0]);
    fprintf (stderr, "     -e encode only (default is encode and decode)\n");
    fprintf (stderr, "     -d decode only (default is encode and decode)\n");
    fprintf (stderr, "     <bytes per packet>: required only when encoding\n");
-   fprintf (stderr, "     -complexity <0-10>: optional only when encoding\n");
-   fprintf (stderr, "     -loss <packet loss percent>: encoding (robsutness setting) and decoding (simulating loss)\n");
+   fprintf (stderr, "options:\n");
+   fprintf (stderr, "     -16                      format is 16-bit little-endian (default)\n");
+   fprintf (stderr, "     -24                      format is 24-bit little-endian\n");
+   fprintf (stderr, "     -f32                     format is 32-bit float little-endian\n");
+   fprintf (stderr, "     -complexity <0-10>       optional only when encoding\n");
+   fprintf (stderr, "     -loss <percentage>       encoding (robsutness setting) and decoding (simulating loss)\n");
 }
 
 static void int_to_char(opus_uint32 i, unsigned char ch[4])
@@ -67,6 +71,18 @@ static opus_uint32 char_to_int(unsigned char ch[4])
 #define check_encoder_option(decode_only, opt) do {if (decode_only) {fprintf(stderr, "option %s is only for encoding\n", opt); goto failure;}} while(0)
 #define check_decoder_option(encode_only, opt) do {if (encode_only) {fprintf(stderr, "option %s is only for decoding\n", opt); goto failure;}} while(0)
 
+#define FORMAT_S16_LE 0
+#define FORMAT_S24_LE 1
+#define FORMAT_F32_LE 2
+
+static const int format_size[3] = {2, 3, 4};
+
+typedef union {
+    opus_int32 i;
+    float f;
+} float_bits;
+
+
 int main(int argc, char *argv[])
 {
    int err;
@@ -82,6 +98,7 @@ int main(int argc, char *argv[])
    OpusCustomDecoder *dec=NULL;
    int len;
    opus_int32 frame_size, channels, rate;
+   int format=FORMAT_S16_LE;
    int bytes_per_packet=0;
    unsigned char data[MAX_PACKET];
    int complexity=-1;
@@ -92,7 +109,7 @@ int main(int argc, char *argv[])
 #endif
    int count = 0;
    opus_int32 skip;
-   opus_int16 *in=NULL, *out=NULL;
+   opus_int32 *in=NULL, *out=NULL;
    unsigned char *fbytes=NULL;
    args = 1;
    if (argc < 7)
@@ -163,6 +180,15 @@ int main(int argc, char *argv[])
           args++;
           percent_loss = atof(argv[args]);
           args++;
+       } else if( strcmp( argv[ args ], "-16" ) == 0 ) {
+          format = FORMAT_S16_LE;
+          args++;
+       } else if( strcmp( argv[ args ], "-24" ) == 0 ) {
+          format = FORMAT_S24_LE;
+          args++;
+       } else if( strcmp( argv[ args ], "-f32" ) == 0 ) {
+          format = FORMAT_F32_LE;
+          args++;
        } else {
           printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
           print_usage( argv );
@@ -212,9 +238,9 @@ int main(int argc, char *argv[])
       fprintf (stderr, "Could not open output file %s\n", argv[argc-1]);
       goto failure;
    }
-   in = (opus_int16*)malloc(frame_size*channels*sizeof(opus_int16));
-   out = (opus_int16*)malloc(frame_size*channels*sizeof(opus_int16));
-   fbytes = (unsigned char*)malloc(frame_size*channels*2);
+   in = (opus_int32*)malloc(frame_size*channels*sizeof(opus_int32));
+   out = (opus_int32*)malloc(frame_size*channels*sizeof(opus_int32));
+   fbytes = (unsigned char*)malloc(frame_size*channels*4);
 
    while (!feof(fin))
    {
@@ -244,17 +270,34 @@ int main(int argc, char *argv[])
               break;
           }
       } else {
-         err = fread(fbytes, sizeof(short), frame_size*channels, fin);
+         err = fread(fbytes, format_size[format], frame_size*channels, fin);
          if (feof(fin))
             break;
-         for(i=0;i<frame_size*channels;i++)
-         {
-             opus_int32 s;
-             s=fbytes[2*i+1]<<8|fbytes[2*i];
-             s=((s&0xFFFF)^0x8000)-0x8000;
-             in[i]=s;
+         if (format == FORMAT_S16_LE) {
+            for(i=0;i<frame_size*channels;i++)
+            {
+               opus_int32 s;
+               s=fbytes[2*i+1]<<8|fbytes[2*i];
+               s=((s&0xFFFF)^0x8000)-0x8000;
+               in[i]=s*256;
+            }
+         } else if (format == FORMAT_S24_LE) {
+            for(i=0;i<frame_size*channels;i++)
+            {
+               opus_int32 s;
+               s=fbytes[3*i+2]<<16|fbytes[3*i+1]<<8|fbytes[3*i];
+               s=((s&0xFFFFFF)^0x800000)-0x800000;
+               in[i]=s;
+            }
+         } else if (format == FORMAT_F32_LE) {
+            for(i=0;i<frame_size*channels;i++)
+            {
+               float_bits s;
+               s.i=fbytes[4*i+3]<<24|fbytes[4*i+2]<<16|fbytes[4*i+1]<<8|fbytes[4*i];
+               in[i]=(int)floor(.5 + s.f*8388608);
+            }
          }
-         len = opus_custom_encode(enc, in, frame_size, data, bytes_per_packet);
+         len = opus_custom_encode24(enc, in, frame_size, data, bytes_per_packet);
          opus_custom_encoder_ctl(enc, OPUS_GET_FINAL_RANGE(&enc_final_range));
          if (len <= 0)
             fprintf (stderr, "opus_custom_encode() failed: %s\n", opus_strerror(len));
@@ -306,9 +349,9 @@ int main(int argc, char *argv[])
          lost = percent_loss != 0 && (float)rand()/RAND_MAX<.01*percent_loss;
          if (lost)
             /*if (errors && (errors%2==0))*/
-            ret = opus_custom_decode(dec, NULL, len, out, frame_size);
+            ret = opus_custom_decode24(dec, NULL, len, out, frame_size);
          else
-            ret = opus_custom_decode(dec, data, len, out, frame_size);
+            ret = opus_custom_decode24(dec, data, len, out, frame_size);
          opus_custom_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range));
          if (ret < 0)
             fprintf(stderr, "opus_custom_decode() failed: %s\n", opus_strerror(ret));
@@ -326,14 +369,39 @@ int main(int argc, char *argv[])
             }
          }
 #endif
-         for(i=0;i<(ret-skip)*channels;i++)
-         {
-            short s;
-            s=out[i+(skip*channels)];
-            fbytes[2*i]=s&0xFF;
-            fbytes[2*i+1]=(s>>8)&0xFF;
+         if (format == FORMAT_S16_LE) {
+            for(i=0;i<(ret-skip)*channels;i++)
+            {
+               opus_int32 s;
+               s=(out[i+(skip*channels)]+128)>>8;
+               if (s > 32767) s = 32767;
+               if (s < -32767) s = -32767;
+               fbytes[2*i]=s&0xFF;
+               fbytes[2*i+1]=(s>>8)&0xFF;
+            }
+         } else if (format == FORMAT_S24_LE) {
+            for(i=0;i<(ret-skip)*channels;i++)
+            {
+               opus_int32 s;
+               s=out[i+(skip*channels)];
+               if (s > 8388607) s = 8388607;
+               if (s < -8388607) s = -8388607;
+               fbytes[3*i]=s&0xFF;
+               fbytes[3*i+1]=(s>>8)&0xFF;
+               fbytes[3*i+2]=(s>>16)&0xFF;
+            }
+         } else if (format == FORMAT_F32_LE) {
+            for(i=0;i<(ret-skip)*channels;i++)
+            {
+               float_bits s;
+               s.f=out[i+(skip*channels)]*(1.f/8388608.f);
+               fbytes[4*i]=s.i&0xFF;
+               fbytes[4*i+1]=(s.i>>8)&0xFF;
+               fbytes[4*i+2]=(s.i>>16)&0xFF;
+               fbytes[4*i+3]=(s.i>>24)&0xFF;
+            }
          }
-         fwrite(fbytes, 2, (ret-skip)*channels, fout);
+         fwrite(fbytes, format_size[format], (ret-skip)*channels, fout);
       }
 
       /* compare final range encoder rng values of encoder and decoder */
