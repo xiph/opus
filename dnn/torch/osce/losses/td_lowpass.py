@@ -20,7 +20,8 @@ class TDLowpass(torch.nn.Module):
         diff = y_true - y_pred
         diff_lp = torch.nn.functional.conv1d(diff, self.weight)
 
-        loss = torch.mean(torch.abs(diff_lp ** self.power))
+        loss = torch.mean(torch.abs(diff_lp) ** self.power) / (torch.mean(torch.abs(y_true) ** self.power) + 1e-6**self.power)
+        loss = loss ** 1/self.power
 
         return loss
 
