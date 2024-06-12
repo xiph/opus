@@ -2504,35 +2504,18 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     return ret;
 }
 
-#ifdef FIXED_POINT
 
-#ifndef DISABLE_FLOAT_API
-opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_frame_size,
-      unsigned char *data, opus_int32 max_data_bytes)
+
+#if defined(FIXED_POINT) && !defined(ENABLE_RES24)
+opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
+                unsigned char *data, opus_int32 max_data_bytes)
 {
-   int i, ret;
    int frame_size;
-   VARDECL(opus_res, in);
-   ALLOC_STACK;
-
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
-   if (frame_size <= 0)
-   {
-      RESTORE_STACK;
-      return OPUS_BAD_ARG;
-   }
-   ALLOC(in, frame_size*st->channels, opus_res);
-
-   for (i=0;i<frame_size*st->channels;i++)
-      in[i] = FLOAT2RES(pcm[i]);
-   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
-                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
-   RESTORE_STACK;
-   return ret;
+   return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, 16,
+                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
 }
-#endif
-
-#ifdef ENABLE_RES24
+#else
 opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
                 unsigned char *data, opus_int32 max_data_bytes)
 {
@@ -2556,26 +2539,18 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
    RESTORE_STACK;
    return ret;
 }
+#endif
 
+#if defined(FIXED_POINT) && defined(ENABLE_RES24)
 opus_int32 opus_encode24(OpusEncoder *st, const opus_int32 *pcm, int analysis_frame_size,
                 unsigned char *data, opus_int32 max_data_bytes)
 {
    int frame_size;
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
-   return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, 16,
+   return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, MAX_ENCODING_DEPTH,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_int24, 0);
 }
-
 #else
-opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
-                unsigned char *data, opus_int32 max_data_bytes)
-{
-   int frame_size;
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
-   return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, 16,
-                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
-}
-
 opus_int32 opus_encode24(OpusEncoder *st, const opus_int32 *pcm, int analysis_frame_size,
                 unsigned char *data, opus_int32 max_data_bytes)
 {
@@ -2594,70 +2569,51 @@ opus_int32 opus_encode24(OpusEncoder *st, const opus_int32 *pcm, int analysis_fr
 
    for (i=0;i<frame_size*st->channels;i++)
       in[i] = INT24TORES(pcm[i]);
-   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, MAX_ENCODING_DEPTH,
                             pcm, analysis_frame_size, 0, -2, st->channels, downmix_int24, 1);
    RESTORE_STACK;
    return ret;
 }
-#endif /* ENABLE_RES24 */
+#endif
 
-#else
-opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_frame_size,
-      unsigned char *data, opus_int32 max_data_bytes)
-{
-   int i, ret;
-   int frame_size;
-   VARDECL(float, in);
-   ALLOC_STACK;
 
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
-   if (frame_size <= 0)
-   {
-      RESTORE_STACK;
-      return OPUS_BAD_ARG;
-   }
-   ALLOC(in, frame_size*st->channels, float);
+#ifndef DISABLE_FLOAT_API
 
-   for (i=0;i<frame_size*st->channels;i++)
-      in[i] = INT16TORES(pcm[i]);
-   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
-                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
-   RESTORE_STACK;
-   return ret;
-}
-
-opus_int32 opus_encode24(OpusEncoder *st, const opus_int32 *pcm, int analysis_frame_size,
-      unsigned char *data, opus_int32 max_data_bytes)
-{
-   int i, ret;
-   int frame_size;
-   VARDECL(float, in);
-   ALLOC_STACK;
-
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
-   if (frame_size <= 0)
-   {
-      RESTORE_STACK;
-      return OPUS_BAD_ARG;
-   }
-   ALLOC(in, frame_size*st->channels, float);
-
-   for (i=0;i<frame_size*st->channels;i++)
-      in[i] = INT24TORES(pcm[i]);
-   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, 16,
-                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_int24, 0);
-   RESTORE_STACK;
-   return ret;
-}
-
+# if !defined(FIXED_POINT)
 opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_frame_size,
                       unsigned char *data, opus_int32 out_data_bytes)
 {
    int frame_size;
    frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
-   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 24,
+   return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, MAX_ENCODING_DEPTH,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
 }
+# else
+opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_frame_size,
+      unsigned char *data, opus_int32 max_data_bytes)
+{
+   int i, ret;
+   int frame_size;
+   VARDECL(opus_res, in);
+   ALLOC_STACK;
+
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   if (frame_size <= 0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+   ALLOC(in, frame_size*st->channels, opus_res);
+
+   for (i=0;i<frame_size*st->channels;i++)
+      in[i] = FLOAT2RES(pcm[i]);
+   ret = opus_encode_native(st, in, frame_size, data, max_data_bytes, MAX_ENCODING_DEPTH,
+                            pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
+   RESTORE_STACK;
+   return ret;
+}
+# endif
+
 #endif
 
 
