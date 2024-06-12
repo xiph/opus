@@ -692,12 +692,6 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 }
 
 #ifndef DISABLE_FLOAT_API
-#ifdef FIXED_POINT
-#define PCM2VAL(x) FLOAT2INT16(x)
-#else
-#define PCM2VAL(x) SCALEIN(x)
-#endif
-
 void downmix_float(const void *_x, opus_val32 *y, int subframe, int offset, int c1, int c2, int C)
 {
    const float *x;
@@ -705,18 +699,18 @@ void downmix_float(const void *_x, opus_val32 *y, int subframe, int offset, int 
 
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
-      y[j] = PCM2VAL(x[(j+offset)*C+c1]);
+      y[j] = FLOAT2SIG(x[(j+offset)*C+c1]);
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         y[j] += PCM2VAL(x[(j+offset)*C+c2]);
+         y[j] += FLOAT2SIG(x[(j+offset)*C+c2]);
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            y[j] += PCM2VAL(x[(j+offset)*C+c]);
+            y[j] += FLOAT2SIG(x[(j+offset)*C+c]);
       }
    }
 }
@@ -729,18 +723,18 @@ void downmix_int(const void *_x, opus_val32 *y, int subframe, int offset, int c1
 
    x = (const opus_int16 *)_x;
    for (j=0;j<subframe;j++)
-      y[j] = x[(j+offset)*C+c1];
+      y[j] = INT16TOSIG(x[(j+offset)*C+c1]);
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         y[j] += x[(j+offset)*C+c2];
+         y[j] += INT16TOSIG(x[(j+offset)*C+c2]);
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            y[j] += x[(j+offset)*C+c];
+            y[j] += INT16TOSIG(x[(j+offset)*C+c]);
       }
    }
 }
