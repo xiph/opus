@@ -75,6 +75,20 @@ static void opus_projection_copy_channel_in_short(
     (const opus_int16*)src, src_stride, dst, src_channel, dst_stride, frame_size);
 }
 
+static void opus_projection_copy_channel_in_int24(
+  opus_res *dst,
+  int dst_stride,
+  const void *src,
+  int src_stride,
+  int src_channel,
+  int frame_size,
+  void *user_data
+)
+{
+  mapping_matrix_multiply_channel_in_int24((const MappingMatrix*)user_data,
+    (const opus_int32*)src, src_stride, dst, src_channel, dst_stride, frame_size);
+}
+
 static int get_order_plus_one_from_channels(int channels, int *order_plus_one)
 {
   int order_plus_one_;
@@ -390,6 +404,15 @@ int opus_projection_encode(OpusProjectionEncoder *st, const opus_int16 *pcm,
   return opus_multistream_encode_native(get_multistream_encoder(st),
     opus_projection_copy_channel_in_short, pcm, frame_size, data,
     max_data_bytes, 16, downmix_int, 0, get_mixing_matrix(st));
+}
+
+int opus_projection_encode24(OpusProjectionEncoder *st, const opus_int32 *pcm,
+                           int frame_size, unsigned char *data,
+                           opus_int32 max_data_bytes)
+{
+  return opus_multistream_encode_native(get_multistream_encoder(st),
+    opus_projection_copy_channel_in_int24, pcm, frame_size, data,
+    max_data_bytes, MAX_ENCODING_DEPTH, downmix_int, 0, get_mixing_matrix(st));
 }
 
 #ifndef DISABLE_FLOAT_API

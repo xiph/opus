@@ -216,6 +216,72 @@ void mapping_matrix_multiply_channel_out_short(
   }
 }
 
+void mapping_matrix_multiply_channel_in_int24(
+    const MappingMatrix *matrix,
+    const opus_int32 *input,
+    int input_rows,
+    opus_res *output,
+    int output_row,
+    int output_rows,
+    int frame_size)
+{
+  /* Matrix data is ordered col-wise. */
+  opus_int16* matrix_data;
+  int i, col;
+
+  celt_assert(input_rows <= matrix->cols && output_rows <= matrix->rows);
+
+  matrix_data = mapping_matrix_get_data(matrix);
+
+  for (i = 0; i < frame_size; i++)
+  {
+    opus_val64 tmp = 0;
+    for (col = 0; col < input_rows; col++)
+    {
+      tmp +=
+        matrix_data[MATRIX_INDEX(matrix->rows, output_row, col)] *
+        (opus_val64)input[MATRIX_INDEX(input_rows, col, i)];
+    }
+#if defined(FIXED_POINT)
+    output[output_rows * i] = INT24TORES((tmp + 16384) >> 15);
+#else
+    output[output_rows * i] = INT24TORES((1/(32768.f))*tmp);
+#endif
+  }
+}
+
+void mapping_matrix_multiply_channel_out_int24(
+    const MappingMatrix *matrix,
+    const opus_res *input,
+    int input_row,
+    int input_rows,
+    opus_int32 *output,
+    int output_rows,
+    int frame_size)
+{
+  /* Matrix data is ordered col-wise. */
+  opus_int16* matrix_data;
+  int i, row;
+  opus_int32 input_sample;
+
+  celt_assert(input_rows <= matrix->cols && output_rows <= matrix->rows);
+
+  matrix_data = mapping_matrix_get_data(matrix);
+
+  for (i = 0; i < frame_size; i++)
+  {
+    input_sample = RES2INT24(input[input_rows * i]);
+    for (row = 0; row < output_rows; row++)
+    {
+      opus_int64 tmp =
+        (opus_int64)matrix_data[MATRIX_INDEX(matrix->rows, row, input_row)] *
+        input_sample;
+      output[MATRIX_INDEX(output_rows, row, i)] += (tmp + 16384) >> 15;
+    }
+  }
+}
+
+
 const MappingMatrix mapping_matrix_foa_mixing = { 6, 6, 0 };
 const opus_int16 mapping_matrix_foa_mixing_data[36] = {
      16384,      0, -16384,  23170,      0,      0,  16384,  23170,
