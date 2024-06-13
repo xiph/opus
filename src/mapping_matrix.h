@@ -103,6 +103,26 @@ void mapping_matrix_multiply_channel_out_short(
     int frame_size
 );
 
+
+void mapping_matrix_multiply_channel_in_int24(
+    const MappingMatrix *matrix,
+    const opus_int32 *input,
+    int input_rows,
+    opus_res *output,
+    int output_row,
+    int output_rows,
+    int frame_size
+);
+
+void mapping_matrix_multiply_channel_out_int24(
+    const MappingMatrix *matrix,
+    const opus_res *input,
+    int input_row,
+    int input_rows,
+    opus_int32 *output,
+    int output_rows,
+    int frame_size
+);
 /* Pre-computed mixing and demixing matrices for 1st to 3rd-order ambisonics.
  *   foa: first-order ambisonics
  *   soa: second-order ambisonics
