@@ -1011,6 +1011,12 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    int overlap;
    const opus_int16 *eBands;
    celt_glog max_background_increase;
+#ifdef ENABLE_QEXT
+   ec_dec ext_dec;
+   int qext_bytes=0;
+   VARDECL(int, extra_quant);
+   VARDECL(int, extra_pulses);
+#endif
    ALLOC_STACK;
 
    VALIDATE_CELT_DECODER(st);
@@ -1028,6 +1034,9 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    oldLogE2 = oldLogE + 2*nbEBands;
    backgroundLogE = oldLogE2  + 2*nbEBands;
 
+#ifdef ENABLE_QEXT
+   ec_dec_init(&ext_dec, NULL, 0);
+#endif
 #ifdef CUSTOM_MODES
    if (st->signalling && data!=NULL)
    {
@@ -1042,8 +1051,38 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       st->end = end = IMAX(1, mode->effEBands-2*(data0>>5));
       LM = (data0>>3)&0x3;
       C = 1 + ((data0>>2)&0x1);
-      data++;
-      len--;
+#ifdef ENABLE_QEXT
+      if ((data[0] & 0x03) == 0x03) {
+         data++;
+         len--;
+         if (len<=0)
+            return OPUS_INVALID_PACKET;
+         if (data[0] & 0x40) {
+            int p;
+            data++;
+            len--;
+            do {
+               int tmp;
+               if (len<=0)
+                  return OPUS_INVALID_PACKET;
+               p = *data++;
+               len--;
+               tmp = p==255 ? 254: p;
+               len -= tmp;
+               qext_bytes += tmp;
+            } while (p==255);
+            qext_bytes--;
+            if (len <= 0 || qext_bytes<0) return OPUS_INVALID_PACKET;
+            if (data[len] != QEXT_EXTENSION_ID<<1)
+               qext_bytes=0;
+            ec_dec_init(&ext_dec, (unsigned char*)data+len+1, qext_bytes);
+         }
+      } else
+#endif
+      {
+         data++;
+         len--;
+      }
       if (LM>mode->maxLM)
          return OPUS_INVALID_PACKET;
       if (frame_size < mode->shortMdctSize<<LM)
@@ -1248,6 +1287,11 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 
    ALLOC(pulses, nbEBands, int);
    ALLOC(fine_priority, nbEBands, int);
+#ifdef ENABLE_QEXT
+   ALLOC(extra_quant, nbEBands, int);
+   ALLOC(extra_pulses, nbEBands, int);
+   for (i=0;i<nbEBands;i++) extra_quant[i] = 4;
+#endif
 
    codedBands = clt_compute_allocation(mode, start, end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
@@ -1349,6 +1393,9 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       }
    } while (++c<2);
    st->rng = dec->rng;
+#ifdef ENABLE_QEXT
+   if (qext_bytes) st->rng = st->rng ^ ext_dec.rng;
+#endif
 
    deemphasis(out_syn, pcm, N, CC, st->downsample, mode->preemph, st->preemph_memD, accum);
    st->loss_duration = 0;
@@ -1356,6 +1403,10 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    RESTORE_STACK;
    if (ec_tell(dec) > 8*len)
       return OPUS_INTERNAL_ERROR;
+#ifdef ENABLE_QEXT
+   if (qext_bytes != 0 && ec_tell(&ext_dec) > 8*qext_bytes)
+      return OPUS_INTERNAL_ERROR;
+#endif
    if(ec_get_error(dec))
       st->error = 1;
    return frame_size/st->downsample;
