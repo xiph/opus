@@ -364,6 +364,73 @@ static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int 
    *refine = offset;
    return MULT16_16(up_iy[0],up_iy[0]) + MULT16_16(up_iy[1],up_iy[1]);
 }
+
+static int op_pvq_n4(const celt_norm *X, int *iy, int *iy0, int K, int up, int margin, opus_val32 rcp_sum) {
+   int i;
+   int dir;
+   opus_val32 rounding[4];
+   int iysum = 0;
+   for (i=0;i<4;i++) {
+      opus_val32 tmp;
+#ifdef FIXED_POINT
+      tmp = silk_SMULWW(MULT16_16(K,ABS16(X[i])), rcp_sum);
+      iy[i] = PSHR32(tmp, 15);
+#else
+      tmp = K*ABS16(X[i])*rcp_sum;
+      iy[i] = (int)floor(.5+tmp);
+#endif
+      iysum += iy[i];
+      rounding[i] = tmp - SHL32(iy[i], 15);
+   }
+   if (abs(iysum - K) > 4) {
+      return 1;
+   }
+   dir = iysum < K ? 1 : -1;
+   while (iysum != K) {
+      opus_val32 roundval=-100000*dir;
+      int roundpos=0;
+      for (i=0;i<4;i++) {
+         if ((rounding[i]-roundval)*dir > 0 && abs(iy[i]-up*iy0[i]) < (margin-1) && !(dir==-1 && iy[i] == 0)) {
+            roundval = rounding[i];
+            roundpos = i;
+         }
+      }
+      iy[roundpos] += dir;
+      rounding[roundpos] -= SHL32(dir, 15);
+      iysum+=dir;
+   }
+   return 0;
+}
+
+static opus_val32 op_pvq_search_N4(const celt_norm *X, int *iy, int *up_iy, int K, int up, int *refine) {
+   opus_val32 rcp_sum;
+   opus_val32 sum;
+   int i;
+   int failed=0;
+   opus_val32 yy=0;
+   sum = ABS16(X[0]) + ABS16(X[1]) + ABS16(X[2]) + ABS16(X[3]);
+   if (sum == 0)
+      failed = 1;
+   else
+      rcp_sum = celt_rcp(sum);
+   failed = failed || op_pvq_n4(X, iy, iy, K, 1, K+1, rcp_sum);
+   failed = failed || op_pvq_n4(X, up_iy, iy, up*K, up, up, rcp_sum);
+   if (failed) {
+      iy[0] = K;
+      for (i=1;i<4;i++) iy[i] = 0;
+      up_iy[0] = up*K;
+      for (i=1;i<4;i++) up_iy[i] = 0;
+   }
+   for (i=0;i<4;i++) {
+      yy += MULT16_16(up_iy[i], up_iy[i]);
+      if (X[i] < 0) {
+         iy[i] = -iy[i];
+         up_iy[i] = -up_iy[i];
+      }
+      refine[i] = up_iy[i]-up*iy[i];
+   }
+   return yy;
+}
 #endif
 
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
@@ -393,13 +460,27 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       int up;
       up = (1<<extra_bits)-1;
       yy = op_pvq_search_N2(X, iy, up_iy, K, up, &refine);
+      collapse_mask = extract_collapse_mask(up_iy, N, B);
       ec_enc_uint(ext_enc, refine+(up-1)/2, up);
+      if (resynth)
+         normalise_residual(up_iy, X, N, yy, gain);
+   } else if (N==4 && extra_bits >= 2) {
+      int i;
+      int up_iy[4];
+      int refine[4];
+      int up;
+      up = (1<<extra_bits)-1;
+      yy = op_pvq_search_N4(X, iy, up_iy, K, up, refine);
+      collapse_mask = extract_collapse_mask(up_iy, N, B);
+      for (i=0;i<3;i++) ec_enc_uint(ext_enc, refine[i]+up-1, 2*up-1);
+      if (iy[3]==0) ec_enc_bits(ext_enc, up_iy[3]<0, 1);
       if (resynth)
          normalise_residual(up_iy, X, N, yy, gain);
    } else
 #endif
    {
       yy = op_pvq_search(X, iy, K, N, arch);
+      collapse_mask = extract_collapse_mask(iy, N, B);
       if (resynth)
          normalise_residual(iy, X, N, yy, gain);
    }
@@ -409,7 +490,6 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    if (resynth)
       exp_rotation(X, N, -1, B, K, spread);
 
-   collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;
    return collapse_mask;
 }
@@ -432,7 +512,6 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    celt_assert2(N>1, "alg_unquant() needs at least two dimensions");
    ALLOC(iy, N, int);
    Ryy = decode_pulses(iy, N, K, dec);
-   collapse_mask = extract_collapse_mask(iy, N, B);
 #ifdef ENABLE_QEXT
    if (N==2 && extra_bits >= 2) {
       int up;
@@ -452,10 +531,27 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
          iy[1] -= refine*(iy[0]>0?1:-1);
       }
       Ryy = iy[0]*iy[0] + iy[1]*iy[1];
+   } else if (N==4 && extra_bits >= 2) {
+      int i;
+      int refine[4];
+      int up;
+      int sign=0;
+      up = (1<<extra_bits)-1;
+      for (i=0;i<3;i++) refine[i] = ec_dec_uint(ext_dec, 2*up-1) - (up-1);
+      if (iy[3]==0) sign = ec_dec_bits(ext_dec, 1);
+      else sign = iy[3] < 0;
+      for (i=0;i<3;i++) {
+         iy[i] = iy[i]*up + refine[i];
+      }
+      iy[3] = up*K - abs(iy[0]) - abs(iy[1]) - abs(iy[2]);
+      if (sign) iy[3] = -iy[3];
+      Ryy = 0;
+      for (i=0;i<4;i++) Ryy += iy[i]*iy[i];
    }
 #endif
    normalise_residual(iy, X, N, Ryy, gain);
    exp_rotation(X, N, -1, B, K, spread);
+   collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;
    return collapse_mask;
 }
