@@ -55,6 +55,8 @@ extern "C" {
 #define CELTDecoder OpusCustomDecoder
 #define CELTMode OpusCustomMode
 
+#define QEXT_EXTENSION_ID 124
+
 #define LEAK_BANDS 19
 
 typedef struct {
