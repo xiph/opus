@@ -173,6 +173,8 @@ extern "C" {
 #define OPUS_GET_DRED_DURATION_REQUEST 4051
 #define OPUS_SET_DNN_BLOB_REQUEST 4052
 /*#define OPUS_GET_DNN_BLOB_REQUEST 4053 */
+#define OPUS_SET_QEXT_REQUEST 4054
+#define OPUS_GET_QEXT_REQUEST 4055
 
 /** Defines for the presence of extended APIs. */
 #define OPUS_HAVE_OPUS_PROJECTION_H
@@ -648,6 +650,13 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_SET_DNN_BLOB(data, len) OPUS_SET_DNN_BLOB_REQUEST, __opus_check_void_ptr(data), __opus_check_int(len)
 
+/** If set to 1, enables quality extension (QEXT), otherwise disables it (default). Warning: This will *hurt* audio quality unless operating at
+    a very high bitrate.
+  * @hideinitializer */
+#define OPUS_SET_QEXT(x) OPUS_SET_QEXT_REQUEST, __opus_check_int(x)
+/** Gets the encoder's configured quality extension (QEXT).
+  * @hideinitializer */
+#define OPUS_GET_QEXT(x) OPUS_GET_QEXT_REQUEST, __opus_check_int_ptr(x)
 
 /**@}*/
 
