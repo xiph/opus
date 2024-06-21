@@ -81,6 +81,9 @@ struct OpusCustomEncoder {
    int lfe;
    int disable_inv;
    int arch;
+#ifdef ENABLE_QEXT
+   int enable_qext;
+#endif
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
@@ -1630,6 +1633,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    int LM, M;
    int tf_select;
    int nbFilledBytes, nbAvailableBytes;
+   opus_int32 min_allowed;
    int start;
    int end;
    int effEnd;
@@ -1674,6 +1678,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    opus_val16 tone_freq=-1;
    opus_val32 toneishness=0;
    VARDECL(celt_glog, surround_dynalloc);
+#ifdef ENABLE_QEXT
+   int qext_bytes=0;
+   int padding_len_bytes=0;
+   unsigned char *ext_payload;
+   ec_enc ext_enc;
+   VARDECL(int, extra_quant);
+   VARDECL(int, extra_pulses);
+#endif
    ALLOC_STACK;
 
    mode = st->mode;
@@ -2261,6 +2273,16 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       tell = ec_tell_frac(enc);
    }
 
+   /* In VBR mode the frame size must not be reduced so much that it would
+       result in the encoder running out of bits.
+      The margin of 2 bytes ensures that none of the bust-prevention logic
+       in the decoder will have triggered so far. */
+   min_allowed = ((tell+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3)) + 2;
+   /* Take into account the 37 bits we need to have left in the packet to
+      signal a redundant frame in hybrid mode. Creating a shorter packet would
+      create an entropy coder desync. */
+   if (hybrid)
+      min_allowed = IMAX(min_allowed, (tell0_frac+(37<<BITRES)+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3));
    /* Variable bitrate */
    if (vbr_rate>0)
    {
@@ -2268,7 +2290,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
      opus_int32 delta;
      /* The target rate in 8th bits per frame */
      opus_int32 target, base_target;
-     opus_int32 min_allowed;
      int lm_diff = mode->maxLM - LM;
 
      /* Don't attempt to use more than 510 kb/s, even for frames smaller than 20 ms.
@@ -2307,16 +2328,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
      /* The current offset is removed from the target and the space used
         so far is added*/
      target=target+tell;
-     /* In VBR mode the frame size must not be reduced so much that it would
-         result in the encoder running out of bits.
-        The margin of 2 bytes ensures that none of the bust-prevention logic
-         in the decoder will have triggered so far. */
-     min_allowed = ((tell+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3)) + 2;
-     /* Take into account the 37 bits we need to have left in the packet to
-        signal a redundant frame in hybrid mode. Creating a shorter packet would
-        create an entropy coder desync. */
-     if (hybrid)
-        min_allowed = IMAX(min_allowed, (tell0_frac+(37<<BITRES)+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3));
 
      nbAvailableBytes = (target+(1<<(BITRES+2)))>>(BITRES+3);
      nbAvailableBytes = IMAX(min_allowed,nbAvailableBytes);
@@ -2372,11 +2383,47 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
      /* This moves the raw bits to take into account the new compressed size */
      ec_enc_shrink(enc, nbCompressedBytes);
    }
+#ifdef ENABLE_QEXT
+   if (st->enable_qext) {
+      int new_compressedBytes;
+      qext_bytes = nbCompressedBytes*2/3;
+      padding_len_bytes = (qext_bytes+253)/254;
+      qext_bytes = IMIN(qext_bytes, nbCompressedBytes-min_allowed-padding_len_bytes-1);
+      padding_len_bytes = (qext_bytes+253)/254;
+      if (qext_bytes > 20) {
+         new_compressedBytes = nbCompressedBytes-qext_bytes-padding_len_bytes-1;
+         ec_enc_shrink(enc, new_compressedBytes);
+         enc->buf += 1+padding_len_bytes;
+         OPUS_MOVE(compressed+1+padding_len_bytes, compressed, new_compressedBytes);
+         compressed[-1] |= 0x03; /* Code 3 packet */
+         compressed[0] = 0x41; /* Set padding */
+         for (i=0;i<padding_len_bytes-1;i++) compressed[i+1] = 255;
+         compressed[padding_len_bytes] = qext_bytes%254 == 0 ? 254 : qext_bytes%254;
+         ext_payload = compressed+padding_len_bytes+1+new_compressedBytes;
+         ext_payload[0] = QEXT_EXTENSION_ID<<1;
+         ext_payload += 1;
+         qext_bytes -= 1;
+         OPUS_CLEAR(ext_payload, qext_bytes);
+         ec_enc_init(&ext_enc, ext_payload, qext_bytes);
+         nbCompressedBytes = new_compressedBytes;
+      } else {
+         ec_enc_init(&ext_enc, NULL, 0);
+         qext_bytes = 0;
+      }
+   } else {
+      ec_enc_init(&ext_enc, NULL, 0);
+   }
+#endif
 
    /* Bit allocation */
    ALLOC(fine_quant, nbEBands, int);
    ALLOC(pulses, nbEBands, int);
    ALLOC(fine_priority, nbEBands, int);
+#ifdef ENABLE_QEXT
+   ALLOC(extra_quant, nbEBands, int);
+   ALLOC(extra_pulses, nbEBands, int);
+   for (i=0;i<nbEBands;i++) extra_quant[i] = 4;
+#endif
 
    /* bits =           packet size                    - where we are - safety*/
    bits = (((opus_int32)nbCompressedBytes*8)<<BITRES) - (opus_int32)ec_tell_frac(enc) - 1;
@@ -2533,7 +2580,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    /* If there's any room left (can only happen for very high rates),
       it's already filled with zeros */
    ec_enc_done(enc);
-
+#ifdef ENABLE_QEXT
+   ec_enc_done(&ext_enc);
+   if (qext_bytes > 0)
+      nbCompressedBytes += padding_len_bytes+2+qext_bytes;
+   if (qext_bytes) st->rng = st->rng ^ ext_enc.rng;
+   if (ec_get_error(&ext_enc))
+      return OPUS_INTERNAL_ERROR;
+#endif
 #ifdef CUSTOM_MODES
    if (st->signalling)
       nbCompressedBytes++;
@@ -2764,6 +2818,28 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
           *value = st->disable_inv;
       }
       break;
+#ifdef ENABLE_QEXT
+      case OPUS_SET_QEXT_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          if(value<0 || value>1)
+          {
+             goto bad_arg;
+          }
+          st->enable_qext = value;
+      }
+      break;
+      case OPUS_GET_QEXT_REQUEST:
+      {
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          if (!value)
+          {
+             goto bad_arg;
+          }
+          *value = st->enable_qext;
+      }
+      break;
+#endif
       case OPUS_RESET_STATE:
       {
          int i;
