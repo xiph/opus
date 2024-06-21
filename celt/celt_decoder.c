@@ -1016,6 +1016,8 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    int qext_bytes=0;
    VARDECL(int, extra_quant);
    VARDECL(int, extra_pulses);
+#else
+# define qext_bytes 0
 #endif
    ALLOC_STACK;
 
@@ -1299,7 +1301,12 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, dec, 0, 0, 0);
 
-   unquant_fine_energy(mode, start, end, oldBandE, fine_quant, dec, C);
+   unquant_fine_energy(mode, start, end, oldBandE, NULL, fine_quant, dec, C);
+
+#ifdef ENABLE_QEXT
+   if (qext_bytes > 0)
+      unquant_fine_energy(mode, start, end, oldBandE, fine_quant, extra_quant, &ext_dec, C);
+#endif
 
    c=0; do {
       OPUS_MOVE(decode_mem[c], decode_mem[c]+N, DECODE_BUFFER_SIZE-N+overlap);
@@ -1319,10 +1326,8 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    {
       anti_collapse_on = ec_dec_bits(dec, 1);
    }
-
-   unquant_energy_finalise(mode, start, end, oldBandE,
+   unquant_energy_finalise(mode, start, end, (qext_bytes > 0) ? NULL : oldBandE,
          fine_quant, fine_priority, len*8-ec_tell(dec), dec, C);
-
    if (anti_collapse_on)
       anti_collapse(mode, X, collapse_masks, LM, C, N,
             start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng, 0, st->arch);
