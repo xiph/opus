@@ -67,7 +67,7 @@ unsigned isqrt32(opus_uint32 _val){
 
 #ifdef FIXED_POINT
 
-opus_val32 frac_div32(opus_val32 a, opus_val32 b)
+opus_val32 frac_div32_q29(opus_val32 a, opus_val32 b)
 {
    opus_val16 rcp;
    opus_val32 result, rem;
@@ -79,6 +79,11 @@ opus_val32 frac_div32(opus_val32 a, opus_val32 b)
    result = MULT16_32_Q15(rcp, a);
    rem = PSHR32(a,2)-MULT32_32_Q31(result, b);
    result = ADD32(result, SHL32(MULT16_32_Q15(rcp, rem),2));
+   return result;
+}
+
+opus_val32 frac_div32(opus_val32 a, opus_val32 b) {
+   opus_val32 result = frac_div32_q29(a,b);
    if (result >= 536870912)       /*  2^29 */
       return 2147483647;          /*  2^31 - 1 */
    else if (result <= -536870912) /* -2^29 */

@@ -120,6 +120,7 @@ static OPUS_INLINE opus_val32 celt_maxabs32(const opus_val32 *x, int len)
 #define celt_rcp(x) (1.f/(x))
 #define celt_div(a,b) ((a)/(b))
 #define frac_div32(a,b) ((float)(a)/(b))
+#define frac_div32_q29(a,b) frac_div32(a,b)
 
 #ifdef FLOAT_APPROX
 
@@ -254,6 +255,7 @@ opus_val32 celt_rcp(opus_val32 x);
 
 #define celt_div(a,b) MULT32_32_Q31((opus_val32)(a),celt_rcp(b))
 
+opus_val32 frac_div32_q29(opus_val32 a, opus_val32 b);
 opus_val32 frac_div32(opus_val32 a, opus_val32 b);
 
 #define M1 32767
