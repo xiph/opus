@@ -52,6 +52,11 @@
 #include "vq.h"
 
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
+
 /** Encoder state
  @brief Encoder state
  */
@@ -226,7 +231,7 @@ void opus_custom_encoder_destroy(CELTEncoder *st)
 
 static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int C,
                               opus_val16 *tf_estimate, int *tf_chan, int allow_weak_transients,
-                              int *weak_transient)
+                              int *weak_transient, opus_val16 tone_freq, opus_val32 toneishness)
 {
    int i;
    VARDECL(opus_val16, tmp);
@@ -399,6 +404,10 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       }
    }
    is_transient = mask_metric>200;
+   /* Prevent the transient detector from confusing the partial cycle of a
+      very low frequency tone with a transient. */
+   if (toneishness > QCONST32(.98f, 29) && tone_freq < QCONST16(0.026f, 13))
+      is_transient = 0;
    /* For low bitrates, define "weak transients" that need to be
       handled differently to avoid partial collapse. */
    if (allow_weak_transients && is_transient && mask_metric<600) {
@@ -1184,9 +1193,135 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
    return maxDepth;
 }
 
+#ifdef FIXED_POINT
+void normalize_tone_input(opus_val16 *x, int len) {
+   opus_val32 ac0=len;
+   int i;
+   int shift;
+   for (i=0;i<len;i++) {
+      ac0 = ADD32(ac0, SHR32(MULT16_16(x[i], x[i]), 10));
+   }
+   shift = 5 - (28-celt_ilog2(ac0))/2;
+   if (shift > 0) {
+      for (i=0;i<len;i++) {
+         x[i] = PSHR32(x[i], shift);
+      }
+   }
+}
+int acos_approx(opus_val32 x) {
+   opus_val16 x14;
+   opus_val32 tmp;
+   int flip = x<0;
+   x = abs(x);
+   x14 = x>>15;
+   tmp = (762*x14>>14)-3308;
+   tmp = (tmp*x14>>14)+25726;
+   tmp = tmp*celt_sqrt(IMAX(0, (1<<30) - (x<<1)))>>16;
+   if (flip) tmp = 25736 - tmp;
+   return tmp;
+}
+#endif
+
+/* Compute the LPC coefficients using a least-squares fit for both forward and backward prediction. */
+static int tone_lpc(const opus_val16 *x, int len, int delay, opus_val32 *lpc) {
+   int i;
+   opus_val32 r00=0, r01=0, r11=0, r02=0, r12=0, r22=0;
+   opus_val32 edges;
+   opus_val32 num0, num1, den;
+   celt_assert(len > 2*delay);
+   /* Compute correlations as if using the forward prediction covariance method. */
+   for (i=0;i<len-2*delay;i++) {
+      r00 += MULT16_16(x[i],x[i]);
+      r01 += MULT16_16(x[i],x[i+delay]);
+      r02 += MULT16_16(x[i],x[i+2*delay]);
+   }
+   edges = 0;
+   for (i=0;i<delay;i++) edges += MULT16_16(x[len+i-2*delay],x[len+i-2*delay]) - MULT16_16(x[i],x[i]);
+   r11 = r00+edges;
+   edges = 0;
+   for (i=0;i<delay;i++) edges += MULT16_16(x[len+i-delay],x[len+i-delay]) - MULT16_16(x[i+delay],x[i+delay]);
+   r22 = r11+edges;
+   edges = 0;
+   for (i=0;i<delay;i++) edges += MULT16_16(x[len+i-2*delay],x[len+i-delay]) - MULT16_16(x[i],x[i+delay]);
+   r12 = r01+edges;
+   /* Reverse and sum to get the backward contribution. */
+   {
+      opus_val32 R00, R01, R11, R02, R12, R22;
+      R00 = r00 + r22;
+      R01 = r01 + r12;
+      R11 = 2*r11;
+      R02 = 2*r02;
+      R12 = r12 + r01;
+      R22 = r00 + r22;
+      r00 = R00;
+      r01 = R01;
+      r11 = R11;
+      r02 = R02;
+      r12 = R12;
+      r22 = R22;
+   }
+   /* Solve A*x=b, where A=[r00, r01; r01, r11] and b=[r02; r12]. */
+   den = MULT32_32_Q31(r00,r11) - MULT32_32_Q31(r01,r01);
+#ifdef FIXED_POINT
+   if (den <= SHR32(MULT32_32_Q31(r00,r11), 10)) return 1;
+#else
+   if (den < .001f*MULT32_32_Q31(r00,r11)) return 1;
+#endif
+   num1 = MULT32_32_Q31(r02,r11) - MULT32_32_Q31(r01,r12);
+   if (num1 >= den) lpc[1] = QCONST32(1.f, 29);
+   else lpc[1] = frac_div32_q29(num1, den);
+   num0 = MULT32_32_Q31(r00,r12) - MULT32_32_Q31(r02,r01);
+   if (HALF32(num0) >= den) lpc[0] = QCONST32(1.999f, 29);
+   else lpc[0] = frac_div32_q29(num0, den);
+   /*printf("%f %f\n", lpc[0], lpc[1]);*/
+   return 0;
+}
+
+/* Detects pure of nearly pure tones so we can prevent them from causing problems with the encoder. */
+static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem, int CC, int N, int overlap, opus_val32 *toneishness, opus_int32 Fs) {
+   int i;
+   int delay = 1;
+   int fail;
+   opus_val32 lpc[2];
+   opus_val16 freq;
+   VARDECL(opus_val16, x);
+   ALLOC(x, N+overlap, opus_val16);
+   /* Shift by SIG_SHIFT+1 (+2 for stereo) to account for HF gain of the preemphasis filter. */
+   if (CC==2) {
+      for (i=0;i<N;i++) x[i+overlap] = PSHR32(ADD32(in[i], in[i+N+overlap]), SIG_SHIFT+2);
+      for (i=0;i<overlap;i++) x[i] = PSHR32(ADD32(prefilter_mem[COMBFILTER_MAXPERIOD-overlap+i], prefilter_mem[2*COMBFILTER_MAXPERIOD-overlap+i]), SIG_SHIFT+2);
+   } else {
+      for (i=0;i<N;i++) x[i+overlap] = PSHR32(in[i], SIG_SHIFT+1);
+      for (i=0;i<overlap;i++) x[i] = PSHR32(prefilter_mem[COMBFILTER_MAXPERIOD-overlap+i], SIG_SHIFT+1);
+   }
+#ifdef FIXED_POINT
+   normalize_tone_input(x, N+overlap);
+#endif
+   fail = tone_lpc(x, N+overlap, delay, lpc);
+   /* If our LPC filter resonates too close to DC, retry the analysis with down-sampling. */
+   while (delay <= Fs/3000 && (fail || (lpc[0] > QCONST32(1.f, 29) && lpc[1] < 0))) {
+      delay *= 2;
+      fail = tone_lpc(x, N+overlap, delay, lpc);
+   }
+   /* Check that our filter has complex roots. */
+   if (!fail && MULT32_32_Q31(lpc[0],lpc[0]) + MULT32_32_Q31(QCONST32(4.f, 29), lpc[1]) < 0) {
+      /* Squared radius of the poles, compensating for down-sampling */
+      *toneishness = QCONST32(1.f, 29)-(QCONST32(1.f, 29)+lpc[1])/delay;
+#ifdef FIXED_POINT
+      freq = acos_approx(lpc[0]>>1)/delay;
+#else
+      freq = acos(.5f*lpc[0])/delay;
+#endif
+   } else {
+      freq = -1;
+      *toneishness=0;
+   }
+   /*printf("%f %f %f %f\n", freq, lpc[0], lpc[1], *toneishness);*/
+   return freq;
+}
 
 static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem, int CC, int N,
-      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes, AnalysisInfo *analysis)
+      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes, AnalysisInfo *analysis, opus_val16 tone_freq, opus_val32 toneishness)
 {
    int c;
    VARDECL(celt_sig, _pre);
@@ -1231,6 +1366,26 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       if (pitch_index > COMBFILTER_MAXPERIOD-2)
          pitch_index = COMBFILTER_MAXPERIOD-2;
       gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
+      /* If we detect that the signal is dominated by a single tone, don't rely on the standard pitch
+         estimator, as it can become unreliable. */
+      if (toneishness > QCONST32(.99f, 29)) {
+         /* If the pitch is too high for our post-filter, apply pitch doubling until
+            we can get something that fits (not ideal, but better than nothing). */
+         while (tone_freq >= QCONST16(0.39f, 13)) tone_freq/=2;
+         if (tone_freq > QCONST16(0.006148f, 13)) {
+#ifdef FIXED_POINT
+            pitch_index = IMIN(51472/tone_freq, COMBFILTER_MAXPERIOD-2);
+#else
+            pitch_index = IMIN((int)floor(.5+2.f*M_PI/tone_freq), COMBFILTER_MAXPERIOD-2);
+#endif
+         } else {
+            /* If the pitch is too low, using a very high pitch will actually give us an improvement
+               due to the DC component of the filter that will be close to our tone. Again, not ideal,
+               but if we only have a single tone, it's better than nothing. */
+            pitch_index = COMBFILTER_MINPERIOD;
+         }
+         gain1 = QCONST16(.75f, 15);
+      }
       /*printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);*/
       if (st->loss_rate>2)
          gain1 = HALF32(gain1);
@@ -1499,6 +1654,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    int hybrid;
    int weak_transient = 0;
    int enable_tf_analysis;
+   opus_val16 tone_freq=-1;
+   opus_val32 toneishness=0;
    VARDECL(opus_val16, surround_dynalloc);
    ALLOC_STACK;
 
@@ -1683,7 +1840,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    } while (++c<CC);
 
 
-
+   tone_freq = tone_detect(in+overlap, prefilter_mem, 1, N, overlap, &toneishness, mode->Fs);
    /* Find pitch period and gain */
    {
       int enabled;
@@ -1692,7 +1849,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
             && st->complexity >= 5;
 
       prefilter_tapset = st->tapset_decision;
-      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes, &st->analysis);
+      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes, &st->analysis, tone_freq, toneishness);
       if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && (!st->analysis.valid || st->analysis.tonality > .3)
             && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
          pitch_change = 1;
@@ -1724,7 +1881,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          though (small SILK quantization offset value). */
       int allow_weak_transients = hybrid && effectiveBytes<15 && st->silk_info.signalType != 2;
       isTransient = transient_analysis(in, N+overlap, CC,
-            &tf_estimate, &tf_chan, allow_weak_transients, &weak_transient);
+            &tf_estimate, &tf_chan, allow_weak_transients, &weak_transient, tone_freq, toneishness);
    }
    if (LM>0 && ec_tell(enc)+3<=total_bits)
    {
