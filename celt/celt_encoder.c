@@ -991,7 +991,7 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
       int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc,
-      AnalysisInfo *analysis, int *importance, int *spread_weight)
+      AnalysisInfo *analysis, int *importance, int *spread_weight, opus_val16 tone_freq, opus_val32 toneishness)
 {
    int i, c;
    opus_int32 tot_boost=0;
@@ -1141,6 +1141,20 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
             follower[i] *= 2;
          if (i>=12)
             follower[i] = HALF16(follower[i]);
+      }
+      /* Compensate for Opus' under-allocation on tones. */
+      if (toneishness > QCONST32(.98f, 29)) {
+#ifdef FIXED_POINT
+         int freq_bin = PSHR32(MULT16_16(tone_freq, QCONST16(120/M_PI, 9)), 13+9);
+#else
+         int freq_bin = (int)floor(.5 + tone_freq*120/M_PI);
+#endif
+         for (i=start;i<end;i++) {
+            if (freq_bin >= eBands[i] && freq_bin <= eBands[i+1]) follower[i] += QCONST16(2., DB_SHIFT);
+            if (freq_bin >= eBands[i]-1 && freq_bin <= eBands[i+1]+1) follower[i] += QCONST16(1., DB_SHIFT);
+            if (freq_bin >= eBands[i]-2 && freq_bin <= eBands[i+1]+2) follower[i] += QCONST16(1., DB_SHIFT);
+            if (freq_bin >= eBands[i]-3 && freq_bin <= eBands[i+1]+3) follower[i] += QCONST16(.5, DB_SHIFT);
+         }
       }
 #ifdef DISABLE_FLOAT_API
       (void)analysis;
@@ -2067,7 +2081,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    maxDepth = dynalloc_analysis(bandLogE, bandLogE2, oldBandE, nbEBands, start, end, C, offsets,
          st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
-         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis, importance, spread_weight);
+         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis, importance, spread_weight, tone_freq, toneishness);
 
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
