@@ -1678,13 +1678,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    opus_val16 tone_freq=-1;
    opus_val32 toneishness=0;
    VARDECL(celt_glog, surround_dynalloc);
-#ifdef ENABLE_QEXT
    int qext_bytes=0;
+#ifdef ENABLE_QEXT
    int padding_len_bytes=0;
    unsigned char *ext_payload;
    ec_enc ext_enc;
    VARDECL(int, extra_quant);
    VARDECL(int, extra_pulses);
+   VARDECL(celt_glog, error_bak);
 #endif
    ALLOC_STACK;
 
@@ -2457,7 +2458,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    else
       st->lastCodedBands = codedBands;
 
-   quant_fine_energy(mode, start, end, oldBandE, error, fine_quant, enc, C);
+   quant_fine_energy(mode, start, end, oldBandE, error, NULL, fine_quant, enc, C);
+   OPUS_CLEAR(energyError, nbEBands*CC);
+#ifdef ENABLE_QEXT
+   ALLOC(error_bak, C*nbEBands, celt_glog);
+   OPUS_COPY(error_bak, error, C*nbEBands);
+   if (qext_bytes > 0)
+      quant_fine_energy(mode, start, end, oldBandE, error, fine_quant, extra_quant, &ext_enc, C);
+#endif
 
    /* Residual quantisation */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
@@ -2474,8 +2482,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 #endif
       ec_enc_bits(enc, anti_collapse_on, 1);
    }
-   quant_energy_finalise(mode, start, end, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_tell(enc), enc, C);
-   OPUS_CLEAR(energyError, nbEBands*CC);
+   if (qext_bytes == 0)
+      quant_energy_finalise(mode, start, end, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_tell(enc), enc, C);
    c=0;
    do {
       for (i=start;i<end;i++)
@@ -2483,7 +2491,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          energyError[i+c*nbEBands] = MAXG(-GCONST(0.5f), MING(GCONST(0.5f), error[i+c*nbEBands]));
       }
    } while (++c < C);
-
+#ifdef ENABLE_QEXT
+   if (qext_bytes > 0)
+      quant_energy_finalise(mode, start, end, NULL, error_bak, fine_quant, fine_priority, nbCompressedBytes*8-ec_tell(enc), enc, C);
+#endif
    if (silence)
    {
       for (i=0;i<C*nbEBands;i++)
