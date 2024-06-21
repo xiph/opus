@@ -159,6 +159,14 @@ AS_IF([test "$enable_fixed_res24" = "yes"],[
   AC_DEFINE([ENABLE_RES24], [1], [24-bit internal resolution for fixed-point])
 ])
 
+AC_ARG_ENABLE([qext],
+	      [AS_HELP_STRING([--enable-qext], [Enable scalable quality extension])],,
+    [enable_qext=no])
+
+AS_IF([test "$enable_qext" = "yes"],[
+  AC_DEFINE([ENABLE_QEXT], [1], [Scalable quality extension])
+])
+
 AC_ARG_ENABLE([custom-modes],
     [AS_HELP_STRING([--enable-custom-modes], [enable non-Opus modes, e.g. 44.1 kHz & 2^n frames])],,
     [enable_custom_modes=no])
