@@ -249,8 +249,8 @@ w_sum = w_l1 + w_lm + w_sc + w_logmel + w_wsc + w_slm + w_xcorr + w_sxcorr + w_l
 
 fft_sizes_16k = [2048, 1024, 512, 256, 128, 64]
 fft_sizes_48k = [3 * n for n in fft_sizes_16k]
-stftloss = MRSTFTLoss(sc_weight=w_sc, log_mag_weight=w_lm, wsc_weight=w_wsc, smooth_log_mag_weight=w_slm, sxcorr_weight=w_sxcorr).to(device)
-logmelloss = MRLogMelLoss().to(device)
+stftloss = MRSTFTLoss(fft_sizes=fft_sizes_48k, fs=48000, sc_weight=w_sc, log_mag_weight=w_lm, wsc_weight=w_wsc, smooth_log_mag_weight=w_slm, sxcorr_weight=w_sxcorr).to(device)
+logmelloss = MRLogMelLoss(fft_sizes=fft_sizes_48k).to(device)
 
 def xcorr_loss(y_true, y_pred):
     dims = list(range(1, len(y_true.shape)))
@@ -277,7 +277,7 @@ tdlp = TDLowpass(15, 4000/24000).to(device)
 def criterion(x, y, x_up):
 
     return (w_l1 * td_l1(x, y, pow=1) +  stftloss(x, y) + w_logmel * logmelloss(x, y)
-            + w_xcorr * xcorr_loss(x, y) + w_l2 * td_l2_norm(x, y) + tdlp(x_up, y)) / w_sum
+            + w_xcorr * xcorr_loss(x, y) + w_l2 * td_l2_norm(x, y) + w_tdlp * tdlp(x_up, y)) / w_sum
 
 
 # model checkpoint
