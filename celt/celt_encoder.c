@@ -1011,7 +1011,7 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       /* Noise floor must take into account eMeans, the depth, the width of the bands
          and the preemphasis filter (approx. square of bark band ID) */
       noise_floor[i] = MULT16_16(QCONST16(0.0625f, DB_SHIFT),logN[i])
-            +QCONST16(.5f,DB_SHIFT)+SHL16(9-lsb_depth,DB_SHIFT)-SHL16(eMeans[i],6)
+            +QCONST16(.5f,DB_SHIFT)+SHL16(9-lsb_depth,DB_SHIFT)-SHL16(eMeans[i],DB_SHIFT-4)
             +MULT16_16(QCONST16(.0062,DB_SHIFT),(i+5)*(i+5));
    }
    c=0;do
