@@ -551,7 +551,7 @@ void amp2Log2(const CELTMode *m, int effEnd, int end,
       {
          bandLogE[i+c*m->nbEBands] =
                celt_log2(bandE[i+c*m->nbEBands])
-               - SHL16((opus_val16)eMeans[i],6);
+               - SHL16((opus_val16)eMeans[i],DB_SHIFT-4);
 #ifdef FIXED_POINT
          /* Compensate for bandE[] being Q12 but celt_log2() taking a Q14 input. */
          bandLogE[i+c*m->nbEBands] += QCONST16(2.f, DB_SHIFT);
