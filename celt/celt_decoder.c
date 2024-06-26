@@ -659,11 +659,11 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       }
 
       /* Energy decay */
-      decay = loss_duration==0 ? QCONST16(1.5f, DB_SHIFT) : QCONST16(.5f, DB_SHIFT);
+      decay = loss_duration==0 ? GCONST(1.5f) : GCONST(.5f);
       c=0; do
       {
          for (i=start;i<end;i++)
-            oldBandE[c*nbEBands+i] = MAX16(backgroundLogE[c*nbEBands+i], oldBandE[c*nbEBands+i] - decay);
+            oldBandE[c*nbEBands+i] = MAXG(backgroundLogE[c*nbEBands+i], oldBandE[c*nbEBands+i] - decay);
       } while (++c<C);
       seed = st->rng;
       for (c=0;c<C;c++)
@@ -1106,7 +1106,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    if (C==1)
    {
       for (i=0;i<nbEBands;i++)
-         oldBandE[i]=MAX16(oldBandE[i],oldBandE[nbEBands+i]);
+         oldBandE[i]=MAXG(oldBandE[i],oldBandE[nbEBands+i]);
    }
 
    total_bits = len*8;
@@ -1165,11 +1165,11 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       {
          celt_glog safety = 0;
          int missing = IMIN(10, st->loss_duration>>LM);
-         if (LM==0) safety = QCONST16(1.5f,DB_SHIFT);
-         else if (LM==1) safety = QCONST16(.5f,DB_SHIFT);
+         if (LM==0) safety = GCONST(1.5f);
+         else if (LM==1) safety = GCONST(.5f);
          for (i=start;i<end;i++)
          {
-            if (oldBandE[c*nbEBands+i] < MAX16(oldLogE[c*nbEBands+i], oldLogE2[c*nbEBands+i])) {
+            if (oldBandE[c*nbEBands+i] < MAXG(oldLogE[c*nbEBands+i], oldLogE2[c*nbEBands+i])) {
                /* If energy is going down already, continue the trend. */
                opus_val32 slope;
                opus_val32 E0, E1, E2;
@@ -1178,10 +1178,10 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
                E2 = oldLogE2[c*nbEBands+i];
                slope = MAX32(E1 - E0, HALF32(E2 - E0));
                E0 -= MAX32(0, (1+missing)*slope);
-               oldBandE[c*nbEBands+i] = MAX32(-QCONST16(20.f,DB_SHIFT), E0);
+               oldBandE[c*nbEBands+i] = MAX32(-GCONST(20.f), E0);
             } else {
                /* Otherwise take the min of the last frames. */
-               oldBandE[c*nbEBands+i] = MIN16(MIN16(oldBandE[c*nbEBands+i], oldLogE[c*nbEBands+i]), oldLogE2[c*nbEBands+i]);
+               oldBandE[c*nbEBands+i] = MING(MING(oldBandE[c*nbEBands+i], oldLogE[c*nbEBands+i]), oldLogE2[c*nbEBands+i]);
             }
             /* Shorter frames have more natural fluctuations -- play it safe. */
             oldBandE[c*nbEBands+i] -= safety;
@@ -1283,7 +1283,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    if (silence)
    {
       for (i=0;i<C*nbEBands;i++)
-         oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
+         oldBandE[i] = -GCONST(28.f);
    }
    if (st->prefilter_and_fold) {
       prefilter_and_fold(st, N);
@@ -1325,26 +1325,26 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       OPUS_COPY(oldLogE, oldBandE, 2*nbEBands);
    } else {
       for (i=0;i<2*nbEBands;i++)
-         oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);
+         oldLogE[i] = MING(oldLogE[i], oldBandE[i]);
    }
    /* In normal circumstances, we only allow the noise floor to increase by
       up to 2.4 dB/second, but when we're in DTX we give the weight of
       all missing packets to the update packet. */
-   max_background_increase = IMIN(160, st->loss_duration+M)*QCONST16(0.001f,DB_SHIFT);
+   max_background_increase = IMIN(160, st->loss_duration+M)*GCONST(0.001f);
    for (i=0;i<2*nbEBands;i++)
-      backgroundLogE[i] = MIN16(backgroundLogE[i] + max_background_increase, oldBandE[i]);
+      backgroundLogE[i] = MING(backgroundLogE[i] + max_background_increase, oldBandE[i]);
    /* In case start or end were to change */
    c=0; do
    {
       for (i=0;i<start;i++)
       {
          oldBandE[c*nbEBands+i]=0;
-         oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=-QCONST16(28.f,DB_SHIFT);
+         oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=-GCONST(28.f);
       }
       for (i=end;i<nbEBands;i++)
       {
          oldBandE[c*nbEBands+i]=0;
-         oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=-QCONST16(28.f,DB_SHIFT);
+         oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=-GCONST(28.f);
       }
    } while (++c<2);
    st->rng = dec->rng;
@@ -1537,16 +1537,17 @@ int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
       case OPUS_RESET_STATE:
       {
          int i;
-         celt_glog *lpc, *oldBandE, *oldLogE, *oldLogE2;
-         lpc = (celt_glog*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*st->channels);
-         oldBandE = lpc+st->channels*CELT_LPC_ORDER;
+         opus_val16 *lpc;
+         celt_glog *oldBandE, *oldLogE, *oldLogE2;
+         lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*st->channels);
+         oldBandE = (celt_glog*)(lpc+st->channels*CELT_LPC_ORDER);
          oldLogE = oldBandE + 2*st->mode->nbEBands;
          oldLogE2 = oldLogE + 2*st->mode->nbEBands;
          OPUS_CLEAR((char*)&st->DECODER_RESET_START,
                opus_custom_decoder_get_size(st->mode, st->channels)-
                ((char*)&st->DECODER_RESET_START - (char*)st));
          for (i=0;i<2*st->mode->nbEBands;i++)
-            oldLogE[i]=oldLogE2[i]=-QCONST16(28.f,DB_SHIFT);
+            oldLogE[i]=oldLogE2[i]=-GCONST(28.f);
          st->skip_plc = 1;
       }
       break;
