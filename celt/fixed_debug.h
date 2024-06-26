@@ -51,6 +51,8 @@ extern opus_int64 celt_mips;
 
 #define QCONST16(x,bits) ((opus_val16)(.5+(x)*(((opus_val32)1)<<(bits))))
 #define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_val32)1)<<(bits))))
+#define GCONST2(x,bits) ((celt_glog)(.5+(x)*(((celt_glog)1)<<(bits))))
+#define GCONST(x) GCONST2((x),DB_SHIFT)
 
 #define VERIFY_SHORT(x) ((x)<=32767&&(x)>=-32768)
 #define VERIFY_INT(x) ((x)<=2147483647LL&&(x)>=-2147483648LL)
