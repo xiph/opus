@@ -105,6 +105,8 @@ void celt_fatal(const char *str, const char *file, int line)
 #define IMAX(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum int value.   */
 #define UADD32(a,b) ((a)+(b))
 #define USUB32(a,b) ((a)-(b))
+#define MAXG(a,b) MAX16(a, b)
+#define MING(a,b) MIN16(a, b)
 
 /* Throughout the code, we use the following scaling for signals:
    FLOAT: used for float API, normalized to +/-1.
@@ -270,6 +272,7 @@ static OPUS_INLINE int celt_isnan(float x)
 
 #define QCONST16(x,bits) (x)
 #define QCONST32(x,bits) (x)
+#define GCONST(x) (x)
 
 #define NEG16(x) (-(x))
 #define NEG32(x) (-(x))
