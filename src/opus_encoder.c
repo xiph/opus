@@ -1951,7 +1951,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         if (st->energy_masking && st->use_vbr && !st->lfe)
         {
            opus_val32 mask_sum=0;
-           opus_val16 masking_depth;
+           celt_glog masking_depth;
            opus_int32 rate_offset;
            int c;
            int end = 17;
@@ -1969,17 +1969,17 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
            {
               for(i=0;i<end;i++)
               {
-                 opus_val16 mask;
-                 mask = MAX16(MIN16(st->energy_masking[21*c+i],
-                        QCONST16(.5f, DB_SHIFT)), -QCONST16(2.0f, DB_SHIFT));
+                 celt_glog mask;
+                 mask = MAXG(MING(st->energy_masking[21*c+i],
+                        GCONST(.5f)), -GCONST(2.0f));
                  if (mask > 0)
-                    mask = HALF16(mask);
+                    mask = HALF32(mask);
                  mask_sum += mask;
               }
            }
            /* Conservative rate reduction, we cut the masking in half */
            masking_depth = mask_sum / end*st->channels;
-           masking_depth += QCONST16(.2f, DB_SHIFT);
+           masking_depth += GCONST(.2f);
            rate_offset = (opus_int32)PSHR32(MULT16_16(srate, masking_depth), DB_SHIFT);
            rate_offset = MAX32(rate_offset, -2*st->silk_mode.bitRate/3);
            /* Split the rate change between the SILK and CELT part for hybrid. */

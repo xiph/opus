@@ -77,6 +77,12 @@
 /** Compile-time conversion of float constant to 32-bit value */
 #define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_val32)1)<<(bits))))
 
+/** Compile-time conversion of float constant to log gain value */
+#define GCONST2(x,bits) ((celt_glog)(.5+(x)*(((celt_glog)1)<<(bits))))
+
+/** Compile-time conversion of float constant to DB_SHFIT log gain value */
+#define GCONST(x) GCONST2((x),DB_SHIFT)
+
 /** Negate a 16-bit value */
 #define NEG16(x) (-(x))
 /** Negate a 32-bit value */

@@ -184,15 +184,15 @@ static void channel_pos(int channels, int pos[8])
 
 #if 1
 /* Computes a rough approximation of log2(2^a + 2^b) */
-static opus_val16 logSum(opus_val16 a, opus_val16 b)
+static opus_val16 logSum(celt_glog a, celt_glog b)
 {
-   opus_val16 max;
-   opus_val32 diff;
-   opus_val16 frac;
+   celt_glog max;
+   celt_glog diff;
+   celt_glog frac;
    static const opus_val16 diff_table[17] = {
-         QCONST16(0.5000000f, DB_SHIFT), QCONST16(0.2924813f, DB_SHIFT), QCONST16(0.1609640f, DB_SHIFT), QCONST16(0.0849625f, DB_SHIFT),
-         QCONST16(0.0437314f, DB_SHIFT), QCONST16(0.0221971f, DB_SHIFT), QCONST16(0.0111839f, DB_SHIFT), QCONST16(0.0056136f, DB_SHIFT),
-         QCONST16(0.0028123f, DB_SHIFT)
+         GCONST(0.5000000f), GCONST(0.2924813f), GCONST(0.1609640f), GCONST(0.0849625f),
+         GCONST(0.0437314f), GCONST(0.0221971f), GCONST(0.0111839f), GCONST(0.0056136f),
+         GCONST(0.0028123f)
    };
    int low;
    if (a>b)
@@ -203,16 +203,16 @@ static opus_val16 logSum(opus_val16 a, opus_val16 b)
       max = b;
       diff = SUB32(EXTEND32(b),EXTEND32(a));
    }
-   if (!(diff < QCONST16(8.f, DB_SHIFT)))  /* inverted to catch NaNs */
+   if (!(diff < GCONST(8.f)))  /* inverted to catch NaNs */
       return max;
 #ifdef FIXED_POINT
    low = SHR32(diff, DB_SHIFT-1);
-   frac = SHL16(diff - SHL16(low, DB_SHIFT-1), 16-DB_SHIFT);
+   frac = SHL32(diff - SHL32(low, DB_SHIFT-1), 16-DB_SHIFT);
 #else
    low = (int)floor(2*diff);
    frac = 2*diff - low;
 #endif
-   return max + diff_table[low] + MULT16_16_Q15(frac, SUB16(diff_table[low+1], diff_table[low]));
+   return max + diff_table[low] + MULT16_16_Q15(frac, SUB32(diff_table[low+1], diff_table[low]));
 }
 #else
 opus_val16 logSum(opus_val16 a, opus_val16 b)
@@ -257,7 +257,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, celt_glog *ba
 
    for (c=0;c<3;c++)
       for (i=0;i<21;i++)
-         maskLogE[c][i] = -QCONST16(28.f, DB_SHIFT);
+         maskLogE[c][i] = -GCONST(28.f);
 
    for (c=0;c<channels;c++)
    {
@@ -303,9 +303,9 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, celt_glog *ba
       amp2Log2(celt_mode, 21, 21, bandE, bandLogE+21*c, 1);
       /* Apply spreading function with -6 dB/band going up and -12 dB/band going down. */
       for (i=1;i<21;i++)
-         bandLogE[21*c+i] = MAX16(bandLogE[21*c+i], bandLogE[21*c+i-1]-QCONST16(1.f, DB_SHIFT));
+         bandLogE[21*c+i] = MAXG(bandLogE[21*c+i], bandLogE[21*c+i-1]-GCONST(1.f));
       for (i=19;i>=0;i--)
-         bandLogE[21*c+i] = MAX16(bandLogE[21*c+i], bandLogE[21*c+i+1]-QCONST16(2.f, DB_SHIFT));
+         bandLogE[21*c+i] = MAXG(bandLogE[21*c+i], bandLogE[21*c+i+1]-GCONST(2.f));
       if (pos[c]==1)
       {
          for (i=0;i<21;i++)
@@ -318,8 +318,8 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, celt_glog *ba
       {
          for (i=0;i<21;i++)
          {
-            maskLogE[0][i] = logSum(maskLogE[0][i], bandLogE[21*c+i]-QCONST16(.5f, DB_SHIFT));
-            maskLogE[2][i] = logSum(maskLogE[2][i], bandLogE[21*c+i]-QCONST16(.5f, DB_SHIFT));
+            maskLogE[0][i] = logSum(maskLogE[0][i], bandLogE[21*c+i]-GCONST(.5f));
+            maskLogE[2][i] = logSum(maskLogE[2][i], bandLogE[21*c+i]-GCONST(.5f));
          }
       }
 #if 0
