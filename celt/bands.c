@@ -238,7 +238,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
 #endif
       j=M*eBands[i];
       band_end = M*eBands[i+1];
-      lg = SATURATE16(ADD32(bandLogE[i], SHL32((opus_val32)eMeans[i],6)));
+      lg = SATURATE16(ADD32(bandLogE[i], SHL32((opus_val32)eMeans[i],DB_SHIFT-4)));
 #ifndef FIXED_POINT
       g = celt_exp2(MIN32(32.f, lg));
 #else
@@ -250,7 +250,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
          g=0;
       } else {
          /* Handle the fractional part. */
-         g = celt_exp2_frac(lg&((1<<DB_SHIFT)-1));
+         g = celt_exp2_frac((lg&((1<<DB_SHIFT)-1))<<(10-DB_SHIFT));
       }
       /* Handle extreme gains with negative shift. */
       if (shift<0)
