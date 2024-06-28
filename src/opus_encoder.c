@@ -1980,7 +1980,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
            /* Conservative rate reduction, we cut the masking in half */
            masking_depth = mask_sum / end*st->channels;
            masking_depth += GCONST(.2f);
-           rate_offset = (opus_int32)PSHR32(MULT16_16(srate, masking_depth), DB_SHIFT);
+           rate_offset = (opus_int32)PSHR32(MULT16_16(srate, SHR32(masking_depth, DB_SHIFT-10)), 10);
            rate_offset = MAX32(rate_offset, -2*st->silk_mode.bitRate/3);
            /* Split the rate change between the SILK and CELT part for hybrid. */
            if (st->bandwidth==OPUS_BANDWIDTH_SUPERWIDEBAND || st->bandwidth==OPUS_BANDWIDTH_FULLBAND)
