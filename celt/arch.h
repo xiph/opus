@@ -105,8 +105,8 @@ void celt_fatal(const char *str, const char *file, int line)
 #define IMAX(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum int value.   */
 #define UADD32(a,b) ((a)+(b))
 #define USUB32(a,b) ((a)-(b))
-#define MAXG(a,b) MAX16(a, b)
-#define MING(a,b) MIN16(a, b)
+#define MAXG(a,b) MAX32(a, b)
+#define MING(a,b) MIN32(a, b)
 
 /* Throughout the code, we use the following scaling for signals:
    FLOAT: used for float API, normalized to +/-1.
@@ -136,7 +136,7 @@ typedef opus_int64 opus_val64;
 typedef opus_val32 celt_sig;
 typedef opus_val16 celt_norm;
 typedef opus_val32 celt_ener;
-typedef opus_val16 celt_glog;
+typedef opus_val32 celt_glog;
 
 #ifdef ENABLE_RES24
 typedef opus_val32 opus_res;
@@ -190,7 +190,7 @@ typedef opus_val16 opus_res;
 
 #define NORM_SCALING 16384
 
-#define DB_SHIFT 10
+#define DB_SHIFT 24
 
 #define EPSILON 1
 #define VERY_SMALL 0
