@@ -457,7 +457,7 @@ static int patch_transient_decision(celt_glog *newE, celt_glog *oldE, int nbEBan
          opus_val16 x1, x2;
          x1 = MAXG(0, newE[i + c*nbEBands]);
          x2 = MAXG(0, spread_old[i]);
-         mean_diff = ADD32(mean_diff, EXTEND32(MAXG(0, SUB16(x1, x2))));
+         mean_diff = ADD32(mean_diff, MAXG(0, SUB32(x1, x2)));
       }
    } while (++c<C);
    mean_diff = DIV32(mean_diff, C*(end-1-IMAX(2,start)));
@@ -864,12 +864,12 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    c=0; do {
       for (i=0;i<end-1;i++)
       {
-         diff += bandLogE[i+c*m->nbEBands]*(opus_int32)(2+2*i-end);
+         diff += SHR32(bandLogE[i+c*m->nbEBands], 5)*(opus_int32)(2+2*i-end);
       }
    } while (++c<C);
    diff /= C*(end-1);
    /*printf("%f\n", diff);*/
-   trim -= MAX32(-QCONST16(2.f, 8), MIN32(QCONST16(2.f, 8), SHR32(diff+GCONST(1.f),DB_SHIFT-8)/6 ));
+   trim -= MAX32(-QCONST16(2.f, 8), MIN32(QCONST16(2.f, 8), SHR32(diff+QCONST32(1.f, DB_SHIFT-5),DB_SHIFT-13)/6 ));
    trim -= SHR16(surround_trim, DB_SHIFT-8);
    trim -= 2*SHR16(tf_estimate, 14-8);
 #ifndef DISABLE_FLOAT_API
@@ -1010,9 +1010,9 @@ static celt_glog dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *b
    {
       /* Noise floor must take into account eMeans, the depth, the width of the bands
          and the preemphasis filter (approx. square of bark band ID) */
-      noise_floor[i] = MULT16_16(GCONST(0.0625f),logN[i])
-            +GCONST(.5f)+SHL16(9-lsb_depth,DB_SHIFT)-SHL16(eMeans[i],DB_SHIFT-4)
-            +MULT16_16(GCONST(.0062),(i+5)*(i+5));
+      noise_floor[i] = GCONST(0.0625f)*logN[i]
+            +GCONST(.5f)+SHL32(9-lsb_depth,DB_SHIFT)-SHL32(eMeans[i],DB_SHIFT-4)
+            +GCONST(.0062f)*(i+5)*(i+5);
    }
    c=0;do
    {
@@ -1111,7 +1111,7 @@ static celt_glog dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *b
             /* Consider 24 dB "cross-talk" */
             follower[nbEBands+i] = MAXG(follower[nbEBands+i], follower[         i]-GCONST(4.f));
             follower[         i] = MAXG(follower[         i], follower[nbEBands+i]-GCONST(4.f));
-            follower[i] = HALF16(MAXG(0, bandLogE[i]-follower[i]) + MAXG(0, bandLogE[nbEBands+i]-follower[nbEBands+i]));
+            follower[i] = HALF32(MAXG(0, bandLogE[i]-follower[i]) + MAXG(0, bandLogE[nbEBands+i]-follower[nbEBands+i]));
          }
       } else {
          for (i=start;i<end;i++)
@@ -1124,9 +1124,9 @@ static celt_glog dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *b
       for (i=start;i<end;i++)
       {
 #ifdef FIXED_POINT
-         importance[i] = PSHR32(13*celt_exp2(MING(follower[i], GCONST(4.f))), 16);
+         importance[i] = PSHR32(13*celt_exp2_db(MING(follower[i], GCONST(4.f))), 16);
 #else
-         importance[i] = (int)floor(.5f+13*celt_exp2(MING(follower[i], GCONST(4.f))));
+         importance[i] = (int)floor(.5f+13*celt_exp2_db(MING(follower[i], GCONST(4.f))));
 #endif
       }
       /* For non-transient CBR/CVBR frames, halve the dynalloc contribution */
@@ -1173,16 +1173,17 @@ static celt_glog dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *b
 
          follower[i] = MING(follower[i], GCONST(4));
 
+         follower[i] = SHR32(follower[i], 8);
          width = C*(eBands[i+1]-eBands[i])<<LM;
          if (width<6)
          {
-            boost = (int)SHR32(EXTEND32(follower[i]),DB_SHIFT);
+            boost = (int)SHR32(follower[i],DB_SHIFT-8);
             boost_bits = boost*width<<BITRES;
          } else if (width > 48) {
-            boost = (int)SHR32(EXTEND32(follower[i])*8,DB_SHIFT);
+            boost = (int)SHR32(follower[i]*8,DB_SHIFT-8);
             boost_bits = (boost*width<<BITRES)/8;
          } else {
-            boost = (int)SHR32(EXTEND32(follower[i])*width/6,DB_SHIFT);
+            boost = (int)SHR32(follower[i]*width/6,DB_SHIFT-8);
             boost_bits = boost*6<<BITRES;
          }
          /* For CBR and non-transient CVBR frames, limit dynalloc to 2/3 of the bits */
@@ -1490,7 +1491,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       int constrained_vbr, opus_val16 stereo_saving, int tot_boost,
       opus_val16 tf_estimate, int pitch_change, celt_glog maxDepth,
       int lfe, int has_surround_mask, celt_glog surround_masking,
-      opus_val16 temporal_vbr)
+      celt_glog temporal_vbr)
 {
    /* The target rate in 8th bits per frame */
    opus_int32 target;
@@ -1558,7 +1559,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
 
    if (has_surround_mask&&!lfe)
    {
-      opus_int32 surround_target = target + (opus_int32)SHR32(MULT16_16(surround_masking,coded_bins<<BITRES), DB_SHIFT);
+      opus_int32 surround_target = target + (opus_int32)SHR32(MULT16_16(SHR32(surround_masking,DB_SHIFT-10),coded_bins<<BITRES), 10);
       /*printf("%f %d %d %d %d %d %d ", surround_masking, coded_bins, st->end, st->intensity, surround_target, target, st->bitrate);*/
       target = IMAX(target/4, surround_target);
    }
@@ -1568,7 +1569,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       int bins;
       bins = eBands[nbEBands-2]<<LM;
       /*floor_depth = SHR32(MULT16_16((C*bins<<BITRES),celt_log2(SHL32(MAX16(1,sample_max),13))), DB_SHIFT);*/
-      floor_depth = (opus_int32)SHR32(MULT16_16((C*bins<<BITRES),maxDepth), DB_SHIFT);
+      floor_depth = (opus_int32)SHR32(MULT16_32_Q15((C*bins<<BITRES),maxDepth), DB_SHIFT-15);
       floor_depth = IMAX(floor_depth, target>>2);
       target = IMIN(target, floor_depth);
       /*printf("%f %d\n", maxDepth, floor_depth);*/
@@ -1586,7 +1587,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       opus_val16 amount;
       opus_val16 tvbr_factor;
       amount = MULT16_16_Q15(QCONST16(.0000031f, 30), IMAX(0, IMIN(32000, 96000-bitrate)));
-      tvbr_factor = SHR32(MULT16_16(temporal_vbr, amount), DB_SHIFT);
+      tvbr_factor = SHR32(MULT16_16(SHR32(temporal_vbr, DB_SHIFT-10), amount), 10);
       target += (opus_int32)MULT16_32_Q15(tvbr_factor, target);
    }
 
@@ -1661,7 +1662,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    int signalBandwidth;
    int transient_got_disabled=0;
    celt_glog surround_masking=0;
-   opus_val16 temporal_vbr=0;
+   celt_glog temporal_vbr=0;
    celt_glog surround_trim = 0;
    opus_int32 equiv_rate;
    int hybrid;
@@ -1958,19 +1959,21 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          for(i=0;i<mask_end;i++)
          {
             celt_glog mask;
+            opus_val16 mask16;
             mask = MAXG(MING(st->energy_mask[nbEBands*c+i],
                    GCONST(.25f)), -GCONST(2.0f));
             if (mask > 0)
                mask = HALF32(mask);
-            mask_avg += MULT16_16(mask, eBands[i+1]-eBands[i]);
+            mask16 = SHR32(mask, DB_SHIFT-10);
+            mask_avg += MULT16_16(mask16, eBands[i+1]-eBands[i]);
             count += eBands[i+1]-eBands[i];
-            diff += MULT16_16(mask, 1+2*i-mask_end);
+            diff += MULT16_16(mask16, 1+2*i-mask_end);
          }
       }
       celt_assert(count>0);
-      mask_avg = DIV32_16(mask_avg,count);
+      mask_avg = SHL32(DIV32_16(mask_avg,count), DB_SHIFT-10);
       mask_avg += GCONST(.2f);
-      diff = diff*6/(C*(mask_end-1)*(mask_end+1)*mask_end);
+      diff = SHL32(diff*6/(C*(mask_end-1)*(mask_end+1)*mask_end), DB_SHIFT-10);
       /* Again, being conservative */
       diff = HALF32(diff);
       diff = MAX32(MIN32(diff, GCONST(.031f)), -GCONST(.031f));
@@ -2020,20 +2023,20 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    /* Temporal VBR (but not for LFE) */
    if (!st->lfe)
    {
-      celt_glog follow=-GCONST(10.0f);
+      celt_glog follow=-QCONST32(10.0f, DB_SHIFT-5);
       opus_val32 frame_avg=0;
-      celt_glog offset = shortBlocks?HALF32(SHL32(LM, DB_SHIFT)):0;
+      celt_glog offset = shortBlocks?HALF32(SHL32(LM, DB_SHIFT-5)):0;
       for(i=start;i<end;i++)
       {
-         follow = MAXG(follow-GCONST(1.f), bandLogE[i]-offset);
+         follow = MAXG(follow-QCONST32(1.0f, DB_SHIFT-5), SHR32(bandLogE[i],5)-offset);
          if (C==2)
-            follow = MAXG(follow, bandLogE[i+nbEBands]-offset);
+            follow = MAXG(follow, SHR32(bandLogE[i+nbEBands],5)-offset);
          frame_avg += follow;
       }
       frame_avg /= (end-start);
-      temporal_vbr = SUB16(frame_avg,st->spec_avg);
+      temporal_vbr = SUB32(SHL32(frame_avg, 5),st->spec_avg);
       temporal_vbr = MING(GCONST(3.f), MAXG(-GCONST(1.5f), temporal_vbr));
-      st->spec_avg += MULT16_16_Q15(QCONST16(.02f, 15), temporal_vbr);
+      st->spec_avg += MULT16_32_Q15(QCONST16(.02f, 15), temporal_vbr);
    }
    /*for (i=0;i<21;i++)
       printf("%f ", bandLogE[i]);
@@ -2122,7 +2125,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
             better than fluctuations). */
          if (ABS32(SUB32(bandLogE[i+c*nbEBands], oldBandE[i+c*nbEBands])) < GCONST(2.f))
          {
-            bandLogE[i+c*nbEBands] -= MULT16_16_Q15(energyError[i+c*nbEBands], QCONST16(0.25f, 15));
+            bandLogE[i+c*nbEBands] -= MULT16_32_Q15(QCONST16(0.25f, 15), energyError[i+c*nbEBands]);
          }
       }
    } while (++c < C);

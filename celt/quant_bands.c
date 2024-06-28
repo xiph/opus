@@ -146,11 +146,11 @@ static opus_val32 loss_distortion(const celt_glog *eBands, celt_glog *oldEBands,
    c=0; do {
       for (i=start;i<end;i++)
       {
-         celt_glog d = SUB32(SHR32(eBands[i+c*len], 3), SHR32(oldEBands[i+c*len], 3));
+         celt_glog d = PSHR32(SUB32(eBands[i+c*len], oldEBands[i+c*len]), DB_SHIFT-7);
          dist = MAC16_16(dist, d,d);
       }
    } while (++c<C);
-   return MIN32(200,SHR32(dist,2*DB_SHIFT-6));
+   return MIN32(200,SHR32(dist,14));
 }
 
 static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
@@ -191,11 +191,10 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          x = eBands[i+c*m->nbEBands];
          oldE = MAXG(-GCONST(9.f), oldEBands[i+c*m->nbEBands]);
 #ifdef FIXED_POINT
-         f = SHL32(EXTEND32(x),7) - PSHR32(MULT16_16(coef,oldE), 8) - prev[c];
+         f = x - MULT16_32_Q15(coef,oldE) - prev[c];
          /* Rounding to nearest integer here is really important! */
-         qi = (f+QCONST32(.5f,DB_SHIFT+7))>>(DB_SHIFT+7);
-         decay_bound = EXTRACT16(MAX32(-GCONST(28.f),
-               SUB32((opus_val32)oldEBands[i+c*m->nbEBands],max_decay)));
+         qi = (f+QCONST32(.5f,DB_SHIFT))>>DB_SHIFT;
+         decay_bound = MAXG(-GCONST(28.f), SUB32((opus_val32)oldEBands[i+c*m->nbEBands],max_decay));
 #else
          f = x-coef*oldE-prev[c];
          /* Rounding to nearest integer here is really important! */
@@ -243,16 +242,16 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          }
          else
             qi = -1;
-         error[i+c*m->nbEBands] = PSHR32(f,7) - SHL32(qi,DB_SHIFT);
+         error[i+c*m->nbEBands] = f - SHL32(qi,DB_SHIFT);
          badness += abs(qi0-qi);
          q = (opus_val32)SHL32(EXTEND32(qi),DB_SHIFT);
 
-         tmp = PSHR32(MULT16_16(coef,oldE),8) + prev[c] + SHL32(q,7);
+         tmp = MULT16_32_Q15(coef,oldE) + prev[c] + q;
 #ifdef FIXED_POINT
-         tmp = MAX32(-QCONST32(28.f, DB_SHIFT+7), tmp);
+         tmp = MAX32(-GCONST(28.f), tmp);
 #endif
-         oldEBands[i+c*m->nbEBands] = PSHR32(tmp, 7);
-         prev[c] = prev[c] + SHL32(q,7) - MULT16_16(beta,PSHR32(q,8));
+         oldEBands[i+c*m->nbEBands] = tmp;
+         prev[c] = prev[c] + q - MULT16_32_Q15(beta,q);
       } while (++c < C);
    }
    return lfe ? 0 : badness;
@@ -286,7 +285,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    if (end-start>10)
    {
 #ifdef FIXED_POINT
-      max_decay = MIN32(max_decay, SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
+      max_decay = SHL32(MIN32(SHR32(max_decay,DB_SHIFT-3), EXTEND32(nbAvailableBytes)),DB_SHIFT-3);
 #else
       max_decay = MIN32(max_decay, .125f*nbAvailableBytes);
 #endif
@@ -384,7 +383,7 @@ void quant_fine_energy(const CELTMode *m, int start, int end, celt_glog *oldEBan
             q2 = 0;
          ec_enc_bits(enc, q2, fine_quant[i]);
 #ifdef FIXED_POINT
-         offset = SUB32(SHR32(SHL32(EXTEND32(q2),DB_SHIFT)+GCONST(.5f),fine_quant[i]),GCONST(.5f));
+         offset = SUB32(VSHR32(2*q2+1, fine_quant[i]-DB_SHIFT+1), GCONST(.5f));
 #else
          offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
 #endif
@@ -480,12 +479,12 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_glog *old
          q = (opus_val32)SHL32(EXTEND32(qi),DB_SHIFT);
 
          oldEBands[i+c*m->nbEBands] = MAXG(-GCONST(9.f), oldEBands[i+c*m->nbEBands]);
-         tmp = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]),8) + prev[c] + SHL32(q,7);
+         tmp = MULT16_32_Q15(coef,oldEBands[i+c*m->nbEBands]) + prev[c] + q;
 #ifdef FIXED_POINT
-         tmp = MAX32(-QCONST32(28.f, DB_SHIFT+7), tmp);
+         tmp = MAX32(-GCONST(28.f), tmp);
 #endif
-         oldEBands[i+c*m->nbEBands] = PSHR32(tmp, 7);
-         prev[c] = prev[c] + SHL32(q,7) - MULT16_16(beta,PSHR32(q,8));
+         oldEBands[i+c*m->nbEBands] = tmp;
+         prev[c] = prev[c] + q - MULT16_32_Q15(beta,q);
       } while (++c < C);
    }
 }
@@ -504,7 +503,7 @@ void unquant_fine_energy(const CELTMode *m, int start, int end, celt_glog *oldEB
          celt_glog offset;
          q2 = ec_dec_bits(dec, fine_quant[i]);
 #ifdef FIXED_POINT
-         offset = SUB32(SHR32(SHL32(EXTEND32(q2),DB_SHIFT)+GCONST(.5f),fine_quant[i]),GCONST(.5f));
+         offset = SUB32(VSHR32(2*q2+1, fine_quant[i]-DB_SHIFT+1), GCONST(.5f));
 #else
          offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
 #endif
@@ -550,7 +549,7 @@ void amp2Log2(const CELTMode *m, int effEnd, int end,
       for (i=0;i<effEnd;i++)
       {
          bandLogE[i+c*m->nbEBands] =
-               celt_log2(bandE[i+c*m->nbEBands])
+               celt_log2_db(bandE[i+c*m->nbEBands])
                - SHL32((celt_glog)eMeans[i],DB_SHIFT-4);
 #ifdef FIXED_POINT
          /* Compensate for bandE[] being Q12 but celt_log2() taking a Q14 input. */

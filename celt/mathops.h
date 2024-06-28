@@ -188,6 +188,9 @@ static OPUS_INLINE float celt_exp2(float x)
 #define celt_exp2(x) ((float)exp(0.6931471805599453094*(x)))
 #endif
 
+#define celt_exp2_db celt_exp2
+#define celt_log2_db celt_log2
+
 #endif
 
 #ifdef FIXED_POINT
@@ -223,13 +226,13 @@ static OPUS_INLINE opus_val16 celt_log2(opus_val32 x)
    opus_val16 n, frac;
    /* -0.41509302963303146, 0.9609890551383969, -0.31836011537636605,
        0.15530808010959576, -0.08556153059057618 */
-   static const opus_val16 C[5] = {-6801+(1<<(13-DB_SHIFT)), 15746, -5217, 2545, -1401};
+   static const opus_val16 C[5] = {-6801+(1<<(13-10)), 15746, -5217, 2545, -1401};
    if (x==0)
       return -32767;
    i = celt_ilog2(x);
    n = VSHR32(x,i-15)-32768-16384;
    frac = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], MULT16_16_Q15(n, ADD16(C[3], MULT16_16_Q15(n, C[4]))))))));
-   return SHL16(i-13,DB_SHIFT)+SHR16(frac,14-DB_SHIFT);
+   return SHL32(i-13,10)+SHR32(frac,14-10);
 }
 
 /*
@@ -268,6 +271,39 @@ static OPUS_INLINE opus_val32 celt_exp2(opus_val16 x)
    frac = celt_exp2_frac(x-SHL16(integer,10));
    return VSHR32(EXTEND32(frac), -integer-2);
 }
+
+#ifdef ENABLE_QEXT
+
+static OPUS_INLINE opus_val32 celt_log2_db(opus_val32 x) {
+   return (int)floor(.5 + (1<<DB_SHIFT) * 1.4426950409f*log(x/(float)(1<<14)));
+}
+
+static OPUS_INLINE opus_val32 celt_exp2_db_frac(opus_val32 x)
+{
+   return (int)floor(.5f + (1<<14)*exp(0.6931471806f*x/(float)(1<<DB_SHIFT))*32768.f);
+}
+
+/** Base-2 exponential approximation (2^x). (DB input, Q16 output) */
+static OPUS_INLINE opus_val32 celt_exp2_db(opus_val32 x)
+{
+   int integer;
+   opus_val32 frac;
+   integer = SHR32(x,DB_SHIFT);
+   if (integer>14)
+      return 0x7f000000;
+   else if (integer <= -14)
+      return 0;
+   frac = celt_exp2_db_frac(x-SHL32(integer,DB_SHIFT));
+   return VSHR32(frac, -integer-2+15);
+}
+#else
+
+#define celt_log2_db(x) SHL32(EXTEND32(celt_log2(x)), DB_SHIFT-10)
+#define celt_exp2_db_frac(x) SHL32(celt_exp2_frac(PSHR32(x, DB_SHIFT-10)), 15)
+#define celt_exp2_db(x) celt_exp2(PSHR32(x, DB_SHIFT-10))
+
+#endif
+
 
 opus_val32 celt_rcp(opus_val32 x);
 
