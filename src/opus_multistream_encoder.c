@@ -189,7 +189,7 @@ static opus_val16 logSum(celt_glog a, celt_glog b)
    celt_glog max;
    celt_glog diff;
    celt_glog frac;
-   static const opus_val16 diff_table[17] = {
+   static const celt_glog diff_table[17] = {
          GCONST(0.5000000f), GCONST(0.2924813f), GCONST(0.1609640f), GCONST(0.0849625f),
          GCONST(0.0437314f), GCONST(0.0221971f), GCONST(0.0111839f), GCONST(0.0056136f),
          GCONST(0.0028123f)
@@ -198,21 +198,21 @@ static opus_val16 logSum(celt_glog a, celt_glog b)
    if (a>b)
    {
       max = a;
-      diff = SUB32(EXTEND32(a),EXTEND32(b));
+      diff = SUB32(a,b);
    } else {
       max = b;
-      diff = SUB32(EXTEND32(b),EXTEND32(a));
+      diff = SUB32(b,a);
    }
    if (!(diff < GCONST(8.f)))  /* inverted to catch NaNs */
       return max;
 #ifdef FIXED_POINT
    low = SHR32(diff, DB_SHIFT-1);
-   frac = SHL32(diff - SHL32(low, DB_SHIFT-1), 16-DB_SHIFT);
+   frac = VSHR32(diff - SHL32(low, DB_SHIFT-1), DB_SHIFT-16);
 #else
    low = (int)floor(2*diff);
    frac = 2*diff - low;
 #endif
-   return max + diff_table[low] + MULT16_16_Q15(frac, SUB32(diff_table[low+1], diff_table[low]));
+   return max + diff_table[low] + MULT16_32_Q15(frac, SUB32(diff_table[low+1], diff_table[low]));
 }
 #else
 opus_val16 logSum(opus_val16 a, opus_val16 b)
