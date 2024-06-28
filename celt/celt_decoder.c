@@ -1177,6 +1177,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
                E1 = oldLogE[c*nbEBands+i];
                E2 = oldLogE2[c*nbEBands+i];
                slope = MAX32(E1 - E0, HALF32(E2 - E0));
+               slope = MING(slope, GCONST(2.f));
                E0 -= MAX32(0, (1+missing)*slope);
                oldBandE[c*nbEBands+i] = MAX32(-GCONST(20.f), E0);
             } else {
