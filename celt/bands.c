@@ -231,16 +231,16 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
    for (i=start;i<end;i++)
    {
       int j, band_end;
-      opus_val16 g;
-      opus_val16 lg;
+      opus_val32 g;
+      celt_glog lg;
 #ifdef FIXED_POINT
       int shift;
 #endif
       j=M*eBands[i];
       band_end = M*eBands[i+1];
-      lg = SATURATE16(ADD32(bandLogE[i], SHL32((opus_val32)eMeans[i],DB_SHIFT-4)));
+      lg = ADD32(bandLogE[i], SHL32((opus_val32)eMeans[i],DB_SHIFT-4));
 #ifndef FIXED_POINT
-      g = celt_exp2(MIN32(32.f, lg));
+      g = celt_exp2_db(MIN32(32.f, lg));
 #else
       /* Handle the integer part of the log energy */
       shift = 16-(lg>>DB_SHIFT);
@@ -250,7 +250,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
          g=0;
       } else {
          /* Handle the fractional part. */
-         g = celt_exp2_frac((lg&((1<<DB_SHIFT)-1))>>(DB_SHIFT-10));
+         g = celt_exp2_db_frac((lg&((1<<DB_SHIFT)-1)));
       }
       /* Handle extreme gains with negative shift. */
       if (shift<0)
@@ -260,17 +260,17 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
             This shouldn't trigger unless the bitstream is already corrupted. */
          if (shift <= -2)
          {
-            g = 16384;
+            g = 16384*32768;
             shift = -2;
          }
          do {
-            *f++ = SHL32(MULT16_16(*x++, g), -shift);
+            *f++ = SHL32(MULT16_32_Q15(*x++, g), -shift);
          } while (++j<band_end);
       } else
 #endif
          /* Be careful of the fixed-point "else" just above when changing this code */
          do {
-            *f++ = SHR32(MULT16_16(*x++, g), shift);
+            *f++ = SHR32(MULT16_32_Q15(*x++, g), shift);
          } while (++j<band_end);
    }
    celt_assert(start <= end);
@@ -328,13 +328,13 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
             prev1 = MAXG(prev1,prev1logE[m->nbEBands+i]);
             prev2 = MAXG(prev2,prev2logE[m->nbEBands+i]);
          }
-         Ediff = EXTEND32(logE[c*m->nbEBands+i])-EXTEND32(MING(prev1,prev2));
+         Ediff = logE[c*m->nbEBands+i]-MING(prev1,prev2);
          Ediff = MAX32(0, Ediff);
 
 #ifdef FIXED_POINT
          if (Ediff < GCONST(16.f))
          {
-            opus_val32 r32 = SHR32(celt_exp2(-EXTRACT16(Ediff)),1);
+            opus_val32 r32 = SHR32(celt_exp2_db(-Ediff),1);
             r = 2*MIN16(16383,r32);
          } else {
             r = 0;
@@ -346,7 +346,7 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
 #else
          /* r needs to be multiplied by 2 or 2*sqrt(2) depending on LM because
             short blocks don't have the same energy as long */
-         r = 2.f*celt_exp2(-Ediff);
+         r = 2.f*celt_exp2_db(-Ediff);
          if (LM==3)
             r *= 1.41421356f;
          r = MIN16(thresh, r);
