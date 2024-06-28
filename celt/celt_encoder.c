@@ -2074,7 +2074,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    /* Band normalisation */
    normalise_bands(mode, freq, X, bandE, effEnd, C, M);
 
-   enable_tf_analysis = effectiveBytes>=15*C && !hybrid && st->complexity>=2 && !st->lfe;
+   enable_tf_analysis = effectiveBytes>=15*C && !hybrid && st->complexity>=2 && !st->lfe && toneishness < QCONST32(.98f, 29);
 
    ALLOC(offsets, nbEBands, int);
    ALLOC(importance, nbEBands, int);
