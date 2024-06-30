@@ -150,13 +150,19 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
       i=0; do {
          opus_val16 g;
          int j,shift;
-         opus_val16 E;
-         shift = celt_zlog2(bandE[i+c*m->nbEBands])-13;
-         E = VSHR32(bandE[i+c*m->nbEBands], shift);
-         g = EXTRACT16(celt_rcp(SHL32(E,3)));
-         j=M*eBands[i]; do {
-            X[j+c*N] = MULT16_16_Q15(VSHR32(freq[j+c*N],shift-1),g);
-         } while (++j<M*eBands[i+1]);
+         opus_val32 E;
+         shift = celt_zlog2(bandE[i+c*m->nbEBands])-14;
+         E = VSHR32(bandE[i+c*m->nbEBands], shift-2);
+         g = EXTRACT16(celt_rcp(E));
+         if (shift > 0) {
+            j=M*eBands[i]; do {
+               X[j+c*N] = PSHR32(MULT16_32_Q15(g, freq[j+c*N]),shift);
+            } while (++j<M*eBands[i+1]);
+         } else {
+            j=M*eBands[i]; do {
+               X[j+c*N] = SHL32(MULT16_32_Q15(g, freq[j+c*N]),-shift);
+            } while (++j<M*eBands[i+1]);
+         }
       } while (++i<end);
    } while (++c<C);
 }
