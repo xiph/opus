@@ -173,6 +173,7 @@ typedef opus_val16 opus_res;
 #define celt_isnan(x) 0
 
 #define Q15ONE 32767
+#define Q31ONE 2147483647
 
 #define SIG_SHIFT 12
 /* Safe saturation value for 32-bit signals. We need to make sure that we can
@@ -252,6 +253,7 @@ static OPUS_INLINE int celt_isnan(float x)
 #endif
 
 #define Q15ONE 1.0f
+#define Q31ONE 1.0f
 
 #define NORM_SCALING 1.f
 
