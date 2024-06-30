@@ -369,7 +369,7 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
          }
          /* We just added some energy, so we need to renormalise */
          if (renormalize)
-            renormalise_vector(X, N0<<LM, Q15ONE, arch);
+            renormalise_vector(X, N0<<LM, Q31ONE, arch);
       } while (++c<C);
    }
 }
@@ -436,12 +436,11 @@ static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    }
 }
 
-static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, opus_val16 mid, int N, int arch)
+static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, opus_val32 mid, int N, int arch)
 {
    int j;
    opus_val32 xp=0, side=0;
    opus_val32 El, Er;
-   opus_val16 mid2;
 #ifdef FIXED_POINT
    int kl, kr;
 #endif
@@ -450,11 +449,10 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
    dual_inner_prod(Y, X, Y, N, &xp, &side, arch);
    /* Compensating for the mid normalization */
-   xp = MULT16_32_Q15(mid, xp);
+   xp = MULT32_32_Q31(mid, xp);
    /* mid and side are in Q15, not Q14 like X and Y */
-   mid2 = SHR16(mid, 1);
-   El = MULT16_16(mid2, mid2) + side - 2*xp;
-   Er = MULT16_16(mid2, mid2) + side + 2*xp;
+   El = SHR32(MULT32_32_Q31(mid, mid),3) + side - 2*xp;
+   Er = SHR32(MULT32_32_Q31(mid, mid),3) + side + 2*xp;
    if (Er < QCONST32(6e-4f, 28) || El < QCONST32(6e-4f, 28))
    {
       OPUS_COPY(Y, X, N);
@@ -481,7 +479,7 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    {
       celt_norm r, l;
       /* Apply mid scaling (side is already scaled) */
-      l = MULT16_16_P15(mid, X[j]);
+      l = MULT32_32_Q31(mid, X[j]);
       r = Y[j];
       X[j] = EXTRACT16(PSHR32(MULT16_16(lgain, SUB16(l,r)), kl+1));
       Y[j] = EXTRACT16(PSHR32(MULT16_16(rgain, ADD16(l,r)), kr+1));
@@ -956,14 +954,14 @@ static unsigned quant_band_n1(struct band_ctx *ctx, celt_norm *X, celt_norm *Y,
 static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
       int N, int b, int B, celt_norm *lowband,
       int LM,
-      opus_val16 gain, int fill)
+      opus_val32 gain, int fill)
 {
    const unsigned char *cache;
    int q;
    int curr_bits;
    int imid=0, iside=0;
    int B0=B;
-   opus_val16 mid=0, side=0;
+   opus_val32 mid=0, side=0;
    unsigned cm=0;
    celt_norm *Y=NULL;
    int encode;
@@ -1003,8 +1001,8 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
       itheta = sctx.itheta;
       qalloc = sctx.qalloc;
 #ifdef FIXED_POINT
-      mid = imid;
-      side = iside;
+      mid = SHL32(EXTEND32(imid), 16);
+      side = SHL32(EXTEND32(iside), 16);
 #else
       mid = (1.f/32768)*imid;
       side = (1.f/32768)*iside;
@@ -1031,20 +1029,20 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
       if (mbits >= sbits)
       {
          cm = quant_partition(ctx, X, N, mbits, B, lowband, LM,
-               MULT16_16_P15(gain,mid), fill);
+               MULT32_32_Q31(gain,mid), fill);
          rebalance = mbits - (rebalance-ctx->remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=0)
             sbits += rebalance - (3<<BITRES);
          cm |= quant_partition(ctx, Y, N, sbits, B, next_lowband2, LM,
-               MULT16_16_P15(gain,side), fill>>B)<<(B0>>1);
+               MULT32_32_Q31(gain,side), fill>>B)<<(B0>>1);
       } else {
          cm = quant_partition(ctx, Y, N, sbits, B, next_lowband2, LM,
-               MULT16_16_P15(gain,side), fill>>B)<<(B0>>1);
+               MULT32_32_Q31(gain,side), fill>>B)<<(B0>>1);
          rebalance = sbits - (rebalance-ctx->remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=16384)
             mbits += rebalance - (3<<BITRES);
          cm |= quant_partition(ctx, X, N, mbits, B, lowband, LM,
-               MULT16_16_P15(gain,mid), fill);
+               MULT32_32_Q31(gain,mid), fill);
       }
    } else {
       /* This is the basic no-split case */
@@ -1122,7 +1120,7 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
 static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
       int N, int b, int B, celt_norm *lowband,
       int LM, celt_norm *lowband_out,
-      opus_val16 gain, celt_norm *lowband_scratch, int fill)
+      opus_val32 gain, celt_norm *lowband_scratch, int fill)
 {
    int N0=N;
    int N_B=N;
@@ -1252,7 +1250,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
 {
    int imid=0, iside=0;
    int inv = 0;
-   opus_val16 mid=0, side=0;
+   opus_val32 mid=0, side=0;
    unsigned cm=0;
    int mbits, sbits, delta;
    int itheta;
@@ -1281,8 +1279,8 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
    itheta = sctx.itheta;
    qalloc = sctx.qalloc;
 #ifdef FIXED_POINT
-   mid = imid;
-   side = iside;
+   mid = SHL32(EXTEND32(imid), 16);
+   side = SHL32(EXTEND32(iside), 16);
 #else
    mid = (1.f/32768)*imid;
    side = (1.f/32768)*iside;
@@ -1321,7 +1319,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
       sign = 1-2*sign;
       /* We use orig_fill here because we want to fold the side, but if
          itheta==16384, we'll have cleared the low bits of fill. */
-      cm = quant_band(ctx, x2, N, mbits, B, lowband, LM, lowband_out, Q15ONE,
+      cm = quant_band(ctx, x2, N, mbits, B, lowband, LM, lowband_out, Q31ONE,
             lowband_scratch, orig_fill);
       /* We don't split N=2 bands, so cm is either 1 or 0 (for a fold-collapse),
          and there's no need to worry about mixing with the other channel. */
@@ -1330,10 +1328,10 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
       if (ctx->resynth)
       {
          celt_norm tmp;
-         X[0] = MULT16_16_Q15(mid, X[0]);
-         X[1] = MULT16_16_Q15(mid, X[1]);
-         Y[0] = MULT16_16_Q15(side, Y[0]);
-         Y[1] = MULT16_16_Q15(side, Y[1]);
+         X[0] = MULT32_32_Q31(mid, X[0]);
+         X[1] = MULT32_32_Q31(mid, X[1]);
+         Y[0] = MULT32_32_Q31(side, Y[0]);
+         Y[1] = MULT32_32_Q31(side, Y[1]);
          tmp = X[0];
          X[0] = SUB16(tmp,Y[0]);
          Y[0] = ADD16(tmp,Y[0]);
@@ -1354,7 +1352,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
       {
          /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
             mid for folding later. */
-         cm = quant_band(ctx, X, N, mbits, B, lowband, LM, lowband_out, Q15ONE,
+         cm = quant_band(ctx, X, N, mbits, B, lowband, LM, lowband_out, Q31ONE,
                lowband_scratch, fill);
          rebalance = mbits - (rebalance-ctx->remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=0)
@@ -1372,7 +1370,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
             mbits += rebalance - (3<<BITRES);
          /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
             mid for folding later. */
-         cm |= quant_band(ctx, X, N, mbits, B, lowband, LM, lowband_out, Q15ONE,
+         cm |= quant_band(ctx, X, N, mbits, B, lowband, LM, lowband_out, Q31ONE,
                lowband_scratch, fill);
       }
    }
@@ -1586,10 +1584,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       {
          x_cm = quant_band(&ctx, X, N, b/2, B,
                effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
-               last?NULL:norm+M*eBands[i]-norm_offset, Q15ONE, lowband_scratch, x_cm);
+               last?NULL:norm+M*eBands[i]-norm_offset, Q31ONE, lowband_scratch, x_cm);
          y_cm = quant_band(&ctx, Y, N, b/2, B,
                effective_lowband != -1 ? norm2+effective_lowband : NULL, LM,
-               last?NULL:norm2+M*eBands[i]-norm_offset, Q15ONE, lowband_scratch, y_cm);
+               last?NULL:norm2+M*eBands[i]-norm_offset, Q31ONE, lowband_scratch, y_cm);
       } else {
          if (Y!=NULL)
          {
@@ -1665,7 +1663,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          } else {
             x_cm = quant_band(&ctx, X, N, b, B,
                   effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
-                  last?NULL:norm+M*eBands[i]-norm_offset, Q15ONE, lowband_scratch, x_cm|y_cm);
+                  last?NULL:norm+M*eBands[i]-norm_offset, Q31ONE, lowband_scratch, x_cm|y_cm);
          }
          y_cm = x_cm;
       }
