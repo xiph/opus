@@ -123,7 +123,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
                } while (++j<eBands[i+1]<<LM);
             }
             /* We're adding one here to ensure the normalized band isn't larger than unity norm */
-            bandE[i+c*m->nbEBands] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
+            bandE[i+c*m->nbEBands] = EPSILON+VSHR32(celt_sqrt(sum),-shift);
          } else {
             bandE[i+c*m->nbEBands] = EPSILON;
          }
