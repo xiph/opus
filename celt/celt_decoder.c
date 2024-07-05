@@ -261,8 +261,8 @@ static void deemphasis_stereo_simple(celt_sig *in[], opus_val16 *pcm, int N, con
    {
       celt_sig tmp0, tmp1;
       /* Add VERY_SMALL to x[] first to reduce dependency chain. */
-      tmp0 = x0[j] + VERY_SMALL + m0;
-      tmp1 = x1[j] + VERY_SMALL + m1;
+      tmp0 = SATURATE(x0[j] + VERY_SMALL + m0, SIG_SAT);
+      tmp1 = SATURATE(x1[j] + VERY_SMALL + m1, SIG_SAT);
       m0 = MULT16_32_Q15(coef0, tmp0);
       m1 = MULT16_32_Q15(coef0, tmp1);
       pcm[2*j  ] = SCALEOUT(SIG2WORD16(tmp0));
@@ -314,7 +314,7 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
          opus_val16 coef3 = coef[3];
          for (j=0;j<N;j++)
          {
-            celt_sig tmp = x[j] + m + VERY_SMALL;
+            celt_sig tmp = SATURATE(x[j] + m + VERY_SMALL, SIG_SAT);
             m = MULT16_32_Q15(coef0, tmp)
                           - MULT16_32_Q15(coef1, x[j]);
             tmp = SHL32(MULT16_32_Q15(coef3, tmp), 2);
@@ -328,7 +328,7 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
          /* Shortcut for the standard (non-custom modes) case */
          for (j=0;j<N;j++)
          {
-            celt_sig tmp = x[j] + VERY_SMALL + m;
+            celt_sig tmp = SATURATE(x[j] + VERY_SMALL + m, SIG_SAT);
             m = MULT16_32_Q15(coef0, tmp);
             scratch[j] = tmp;
          }
@@ -340,7 +340,7 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
          {
             for (j=0;j<N;j++)
             {
-               celt_sig tmp = x[j] + m + VERY_SMALL;
+               celt_sig tmp = SATURATE(x[j] + m + VERY_SMALL, SIG_SAT);
                m = MULT16_32_Q15(coef0, tmp);
                y[j*C] = SAT16(ADD32(y[j*C], SCALEOUT(SIG2WORD16(tmp))));
             }
@@ -349,7 +349,7 @@ void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, c
          {
             for (j=0;j<N;j++)
             {
-               celt_sig tmp = x[j] + VERY_SMALL + m;
+               celt_sig tmp = SATURATE(x[j] + VERY_SMALL + m, SIG_SAT);
                m = MULT16_32_Q15(coef0, tmp);
                y[j*C] = SCALEOUT(SIG2WORD16(tmp));
             }
