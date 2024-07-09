@@ -1154,6 +1154,24 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
 #endif
                   );
          }
+#ifdef ENABLE_QEXT
+      } else if (ext_b > 2*N<<BITRES)
+      {
+         /* If we have extra bits, but couldn't use them because no regular
+            bits got allocated, use the regular quantizer with the
+            extra entropy coder (to avoid breaking the bitstream).
+            We need to be careful to restore things as they were. */
+         int remaining_bak;
+         ec_ctx *bak_ec=ctx->ec;
+         remaining_bak = ctx->remaining_bits;
+         ctx->remaining_bits = ctx->ext_total_bits - ec_tell_frac(ctx->ext_ec) - 1;
+         ctx->ec = ctx->ext_ec;
+         int new_b;
+         new_b = IMIN(ctx->remaining_bits, ext_b);
+         cm = quant_partition(ctx, X, N, new_b, B, lowband, LM, gain, fill ARG_QEXT(0));
+         ctx->ec = bak_ec;
+         ctx->remaining_bits = remaining_bak;
+#endif
       } else {
          /* If there's no pulse, fill the band anyway */
          int j;
