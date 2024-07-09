@@ -493,6 +493,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       up = (1<<extra_bits)-1;
       yy = op_pvq_search_N2(X, iy, up_iy, K, up, &refine, yy_shift);
       collapse_mask = extract_collapse_mask(up_iy, N, B);
+      encode_pulses(iy, N, K, enc);
       ec_enc_uint(ext_enc, refine+(up-1)/2, up);
       if (resynth)
          normalise_residual(up_iy, X, N, yy, gain, yy_shift);
@@ -507,6 +508,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       up = (1<<extra_bits)-1;
       yy = op_pvq_search_extra(X, iy, up_iy, K, up, refine, N, yy_shift);
       collapse_mask = extract_collapse_mask(up_iy, N, B);
+      encode_pulses(iy, N, K, enc);
       for (i=0;i<N-1;i++) ec_enc_uint(ext_enc, refine[i]+up-1, 2*up-1);
       if (iy[N-1]==0) ec_enc_bits(ext_enc, up_iy[N-1]<0, 1);
       if (resynth)
@@ -516,11 +518,10 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    {
       yy = op_pvq_search(X, iy, K, N, arch);
       collapse_mask = extract_collapse_mask(iy, N, B);
+      encode_pulses(iy, N, K, enc);
       if (resynth)
          normalise_residual(iy, X, N, yy, gain, 0);
    }
-
-   encode_pulses(iy, N, K, enc);
 
    if (resynth)
       exp_rotation(X, N, -1, B, K, spread);
