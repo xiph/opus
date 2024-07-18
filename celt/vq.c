@@ -584,7 +584,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch)
 }
 #endif /* OVERRIDE_renormalise_vector */
 
-int stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N, int arch)
+opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N, int arch)
 {
    int i;
    int itheta;
@@ -610,9 +610,9 @@ int stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N, int
    side = celt_sqrt(Eside);
 #ifdef FIXED_POINT
    /* 0.63662 = 2/pi */
-   itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
+   itheta = MULT16_16(QCONST16(0.63662f,15),celt_atan2p(side, mid))<<1;
 #else
-   itheta = (int)floor(.5f+16384*0.63662f*fast_atan2f(side,mid));
+   itheta = (int)floor(.5f+65536.f*16384*0.6366197724f*atan2(side,mid));
 #endif
 
    return itheta;
