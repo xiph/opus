@@ -119,7 +119,7 @@ struct OpusEncoder {
     int          silk_bw_switch;
     /* Sampling rate (at the API level) */
     int          first;
-    opus_val16 * energy_masking;
+    celt_glog * energy_masking;
     StereoWidthState width_mem;
     opus_res     delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef DISABLE_FLOAT_API
@@ -3101,7 +3101,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         break;
         case OPUS_SET_ENERGY_MASK_REQUEST:
         {
-            opus_val16 *value = va_arg(ap, opus_val16*);
+            celt_glog *value = va_arg(ap, celt_glog*);
             st->energy_masking = value;
             ret = celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_MASK(value));
         }

@@ -83,6 +83,8 @@ typedef struct {
 
 #define __celt_check_silkinfo_ptr(ptr) ((ptr) + ((ptr) - (const SILKInfo*)(ptr)))
 
+#define __celt_check_glog_ptr(ptr) ((ptr) + ((ptr) - (celt_glog*)(ptr)))
+
 /* Encoder/decoder Requests */
 
 
@@ -130,7 +132,7 @@ typedef struct {
 #define OPUS_SET_LFE(x) OPUS_SET_LFE_REQUEST, __opus_check_int(x)
 
 #define OPUS_SET_ENERGY_MASK_REQUEST    10026
-#define OPUS_SET_ENERGY_MASK(x) OPUS_SET_ENERGY_MASK_REQUEST, __opus_check_val16_ptr(x)
+#define OPUS_SET_ENERGY_MASK(x) OPUS_SET_ENERGY_MASK_REQUEST, __celt_check_glog_ptr(x)
 
 #define CELT_SET_SILK_INFO_REQUEST    10028
 #define CELT_SET_SILK_INFO(x) CELT_SET_SILK_INFO_REQUEST, __celt_check_silkinfo_ptr(x)
@@ -241,7 +243,7 @@ void init_caps(const CELTMode *m,int *cap,int LM,int C);
 #ifdef RESYNTH
 void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem, int accum);
 void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
-      opus_val16 *oldBandE, int start, int effEnd, int C, int CC, int isTransient,
+      celt_glog *oldBandE, int start, int effEnd, int C, int CC, int isTransient,
       int LM, int downsample, int silence, int arch);
 #endif
 
