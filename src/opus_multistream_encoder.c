@@ -221,7 +221,7 @@ opus_val16 logSum(opus_val16 a, opus_val16 b)
 }
 #endif
 
-void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *bandLogE, opus_val32 *mem, opus_val32 *preemph_mem,
+void surround_analysis(const CELTMode *celt_mode, const void *pcm, celt_glog *bandLogE, opus_val32 *mem, opus_val32 *preemph_mem,
       int len, int overlap, int channels, int rate, opus_copy_channel_in_func copy_channel_in, int arch
 )
 {
@@ -234,7 +234,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
    int freq_size;
    opus_val16 channel_offset;
    opus_val32 bandE[21];
-   opus_val16 maskLogE[3][21];
+   celt_glog maskLogE[3][21];
    VARDECL(opus_val32, in);
    VARDECL(opus_res, x);
    VARDECL(opus_val32, freq);
@@ -347,7 +347,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, opus_val16 *b
 #endif
    for (c=0;c<channels;c++)
    {
-      opus_val16 *mask;
+      celt_glog *mask;
       if (pos[c]!=0)
       {
          mask = &maskLogE[pos[c]-1][0];
@@ -820,13 +820,13 @@ int opus_multistream_encode_native
    char *ptr;
    int tot_size;
    VARDECL(opus_res, buf);
-   VARDECL(opus_val16, bandSMR);
+   VARDECL(celt_glog, bandSMR);
    unsigned char tmp_data[MS_FRAME_TMP];
    OpusRepacketizer rp;
    opus_int32 vbr;
    const CELTMode *celt_mode;
    opus_int32 bitrates[256];
-   opus_val16 bandLogE[42];
+   celt_glog bandLogE[42];
    opus_val32 *mem = NULL;
    opus_val32 *preemph_mem=NULL;
    int frame_size;
@@ -866,7 +866,7 @@ int opus_multistream_encode_native
    coupled_size = opus_encoder_get_size(2);
    mono_size = opus_encoder_get_size(1);
 
-   ALLOC(bandSMR, 21*st->layout.nb_channels, opus_val16);
+   ALLOC(bandSMR, 21*st->layout.nb_channels, celt_glog);
    if (st->mapping_type == MAPPING_TYPE_SURROUND)
    {
       surround_analysis(celt_mode, pcm, bandSMR, mem, preemph_mem, frame_size, 120, st->layout.nb_channels, Fs, copy_channel_in, st->arch);
