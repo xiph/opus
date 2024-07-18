@@ -2424,6 +2424,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    ALLOC(extra_quant, nbEBands, int);
    ALLOC(extra_pulses, nbEBands, int);
    for (i=0;i<nbEBands;i++) extra_quant[i] = 4;
+   for (i=0;i<nbEBands;i++) extra_pulses[i] = 4*(C*(eBands[i+1]-eBands[i])<<LM<<BITRES);
 #endif
 
    /* bits =           packet size                    - where we are - safety*/
@@ -2472,7 +2473,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    quant_all_bands(1, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
          bandE, pulses, shortBlocks, st->spread_decision,
          dual_stereo, st->intensity, tf_res, nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv,
-         balance, enc, LM, codedBands, &st->rng, st->complexity, st->arch, st->disable_inv);
+         balance, enc, LM, codedBands, &st->rng, st->complexity, st->arch, st->disable_inv
+#ifdef ENABLE_QEXT
+      , &ext_enc, extra_pulses, qext_bytes*(8<<BITRES)
+#endif
+         );
 
    if (anti_collapse_rsv > 0)
    {
