@@ -134,6 +134,7 @@ typedef opus_int64 opus_val64;
 typedef opus_val32 celt_sig;
 typedef opus_val16 celt_norm;
 typedef opus_val32 celt_ener;
+typedef opus_val16 celt_glog;
 
 #ifdef ENABLE_RES24
 typedef opus_val32 opus_res;
@@ -233,6 +234,7 @@ typedef float opus_val64;
 typedef float celt_sig;
 typedef float celt_norm;
 typedef float celt_ener;
+typedef float celt_glog;
 
 typedef float opus_res;
 
