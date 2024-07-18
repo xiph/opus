@@ -43,6 +43,10 @@
 #include "quant_bands.h"
 #include "pitch.h"
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
 #ifdef ENABLE_QEXT
 #define ARG_QEXT(arg) , arg
 #else
@@ -718,16 +722,20 @@ struct split_ctx {
    int iside;
    int delta;
    int itheta;
+#ifdef ENABLE_QEXT
+   int itheta_q30;
+#endif
    int qalloc;
 };
 
 static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
       celt_norm *X, celt_norm *Y, int N, int *b, int B, int B0,
       int LM,
-      int stereo, int *fill)
+      int stereo, int *fill ARG_QEXT(int *ext_b))
 {
    int qn;
    int itheta=0;
+   int itheta_q30=0;
    int delta;
    int imid, iside;
    int qalloc;
@@ -761,7 +769,8 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
          side and mid. With just that parameter, we can re-scale both
          mid and side because we know that 1) they have unit norm and
          2) they are orthogonal. */
-      itheta = stereo_itheta(X, Y, stereo, N, ctx->arch);
+      itheta_q30 = stereo_itheta(X, Y, stereo, N, ctx->arch);
+      itheta = itheta_q30>>16;
    }
    tell = ec_tell_frac(ec);
    if (qn!=1)
@@ -861,6 +870,30 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
       }
       celt_assert(itheta>=0);
       itheta = celt_udiv((opus_int32)itheta*16384, qn);
+#ifdef ENABLE_QEXT
+      *ext_b = IMIN(*ext_b, ctx->ext_total_bits - (opus_int32)ec_tell_frac(ctx->ext_ec));
+      if (*ext_b >= 2*N<<BITRES && ctx->ext_total_bits-ec_tell_frac(ctx->ext_ec)-1 > 2<<BITRES) {
+         int extra_bits;
+         int ext_tell = ec_tell_frac(ctx->ext_ec);
+         extra_bits = IMIN(12, IMAX(2, celt_sudiv(*ext_b, (2*N-1)<<BITRES)));
+         if (encode) {
+            itheta_q30 = itheta_q30 - (itheta<<16);
+            itheta_q30 = (itheta_q30*(opus_int64)qn*((1<<extra_bits)-1)+(1<<29))>>30;
+            itheta_q30 += (1<<(extra_bits-1))-1;
+            itheta_q30 = IMAX(0, IMIN((1<<extra_bits)-2, itheta_q30));
+            ec_enc_uint(ctx->ext_ec, itheta_q30, (1<<extra_bits)-1);
+         } else {
+            itheta_q30 = ec_dec_uint(ctx->ext_ec, (1<<extra_bits)-1);
+         }
+         itheta_q30 -= (1<<(extra_bits-1))-1;
+         itheta_q30 = (itheta<<16) + itheta_q30*(opus_int64)(1<<30)/(qn*((1<<extra_bits)-1));
+         /* Hard bounds on itheta (can only trigger on corrupted bitstreams). */
+         itheta_q30 = IMAX(0, IMIN(itheta_q30, 1073741824));
+         *ext_b -= ec_tell_frac(ctx->ext_ec) - ext_tell;
+      } else {
+         itheta_q30 = (opus_int32)itheta<<16;
+      }
+#endif
       if (encode && stereo)
       {
          if (itheta==0)
@@ -894,6 +927,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
       if (ctx->disable_inv)
          inv = 0;
       itheta = 0;
+      itheta_q30 = 0;
    }
    qalloc = ec_tell_frac(ec) - tell;
    *b -= qalloc;
@@ -923,6 +957,9 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
    sctx->iside = iside;
    sctx->delta = delta;
    sctx->itheta = itheta;
+#ifdef ENABLE_QEXT
+   sctx->itheta_q30 = itheta_q30;
+#endif
    sctx->qalloc = qalloc;
 }
 static unsigned quant_band_n1(struct band_ctx *ctx, celt_norm *X, celt_norm *Y,
@@ -1008,18 +1045,32 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
          fill = (fill&1)|(fill<<1);
       B = (B+1)>>1;
 
-      compute_theta(ctx, &sctx, X, Y, N, &b, B, B0, LM, 0, &fill);
+      compute_theta(ctx, &sctx, X, Y, N, &b, B, B0, LM, 0, &fill ARG_QEXT(&ext_b));
       imid = sctx.imid;
       iside = sctx.iside;
       delta = sctx.delta;
       itheta = sctx.itheta;
       qalloc = sctx.qalloc;
 #ifdef FIXED_POINT
+# ifdef ENABLE_QEXT
+      (void)imid;
+      (void)iside;
+      mid = (int)MIN32(2147483647, floor(.5+2147483648*cos(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)))));
+      side = (int)MIN32(2147483647, floor(.5+2147483648*sin(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)))));
+# else
       mid = SHL32(EXTEND32(imid), 16);
       side = SHL32(EXTEND32(iside), 16);
+# endif
 #else
+# ifdef ENABLE_QEXT
+      (void)imid;
+      (void)iside;
+      mid = cos(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)));
+      side = sin(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)));
+# else
       mid = (1.f/32768)*imid;
       side = (1.f/32768)*iside;
+# endif
 #endif
 
       /* Give more bits to low-energy MDCTs than they would otherwise deserve */
@@ -1306,7 +1357,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
 
    orig_fill = fill;
 
-   compute_theta(ctx, &sctx, X, Y, N, &b, B, B, LM, 1, &fill);
+   compute_theta(ctx, &sctx, X, Y, N, &b, B, B, LM, 1, &fill ARG_QEXT(&ext_b));
    inv = sctx.inv;
    imid = sctx.imid;
    iside = sctx.iside;
@@ -1314,11 +1365,25 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
    itheta = sctx.itheta;
    qalloc = sctx.qalloc;
 #ifdef FIXED_POINT
+# ifdef ENABLE_QEXT
+   (void)imid;
+   (void)iside;
+   mid = (int)MIN32(2147483647, floor(.5+2147483648*cos(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)))));
+   side = (int)MIN32(2147483647, floor(.5+2147483648*sin(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)))));
+# else
    mid = SHL32(EXTEND32(imid), 16);
    side = SHL32(EXTEND32(iside), 16);
+# endif
 #else
+# ifdef ENABLE_QEXT
+   (void)imid;
+   (void)iside;
+   mid = cos(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)));
+   side = sin(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)));
+# else
    mid = (1.f/32768)*imid;
    side = (1.f/32768)*iside;
+# endif
 #endif
 
    /* This is a special case for N=2 that only works for stereo and takes
