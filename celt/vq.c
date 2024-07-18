@@ -38,6 +38,7 @@
 #include "bands.h"
 #include "rate.h"
 #include "pitch.h"
+#include "SigProc_FIX.h"
 
 #if defined(MIPSr1_ASM)
 #include "mips/vq_mipsr1.h"
@@ -327,11 +328,53 @@ opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch)
    return yy;
 }
 
+#ifdef ENABLE_QEXT
+#include "macros.h"
+
+static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int K, int up, int *refine) {
+   opus_val32 sum;
+   opus_val32 rcp_sum;
+   int offset;
+   sum = ABS16(X[0]) + ABS16(X[1]);
+   if (sum == 0) {
+      iy[0] = K;
+      up_iy[0] = up*K;
+      iy[1]=up_iy[1]=0;
+      *refine=0;
+      return K*K*up*up;
+   }
+#ifdef FIXED_POINT
+   rcp_sum = celt_rcp(sum);
+   iy[0] = PSHR32(silk_SMULWW(MULT16_16(K,X[0]), rcp_sum), 15);
+   up_iy[0] = PSHR32(silk_SMULWW(MULT16_16(up*K,X[0]), rcp_sum), 15);
+#else
+   rcp_sum = 1.f/sum;
+   iy[0] = (int)floor(.5f+K*X[0]*rcp_sum);
+   up_iy[0] = (int)floor(.5f+up*K*X[0]*rcp_sum);
+#endif
+   up_iy[0] = IMAX(up*iy[0] - (up-1)/2, IMIN(up*iy[0] + (up-1)/2, up_iy[0]));
+   offset = up_iy[0] - up*iy[0];
+   iy[1] = K-abs(iy[0]);
+   up_iy[1] = up*K-abs(up_iy[0]);
+   if (X[1] < 0) {
+      iy[1] = -iy[1];
+      up_iy[1] = -up_iy[1];
+      offset = -offset;
+   }
+   *refine = offset;
+   return MULT16_16(up_iy[0],up_iy[0]) + MULT16_16(up_iy[1],up_iy[1]);
+}
+#endif
+
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
-      opus_val32 gain, int resynth, int arch)
+      opus_val32 gain, int resynth,
+#ifdef ENABLE_QEXT
+      ec_enc *ext_enc, int extra_bits,
+#endif
+      int arch)
 {
    VARDECL(int, iy);
-   opus_val16 yy;
+   opus_val32 yy;
    unsigned collapse_mask;
    SAVE_STACK;
 
@@ -343,15 +386,28 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
 
    exp_rotation(X, N, 1, B, K, spread);
 
-   yy = op_pvq_search(X, iy, K, N, arch);
+#ifdef ENABLE_QEXT
+   if (N==2 && extra_bits >= 2) {
+      int refine;
+      int up_iy[2];
+      int up;
+      up = (1<<extra_bits)-1;
+      yy = op_pvq_search_N2(X, iy, up_iy, K, up, &refine);
+      ec_enc_uint(ext_enc, refine+(up-1)/2, up);
+      if (resynth)
+         normalise_residual(up_iy, X, N, yy, gain);
+   } else
+#endif
+   {
+      yy = op_pvq_search(X, iy, K, N, arch);
+      if (resynth)
+         normalise_residual(iy, X, N, yy, gain);
+   }
 
    encode_pulses(iy, N, K, enc);
 
    if (resynth)
-   {
-      normalise_residual(iy, X, N, yy, gain);
       exp_rotation(X, N, -1, B, K, spread);
-   }
 
    collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;
@@ -361,7 +417,11 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
 unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
-      ec_dec *dec, opus_val32 gain)
+      ec_dec *dec, opus_val32 gain
+#ifdef ENABLE_QEXT
+      , ec_enc *ext_dec, int extra_bits
+#endif
+      )
 {
    opus_val32 Ryy;
    unsigned collapse_mask;
@@ -372,9 +432,30 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    celt_assert2(N>1, "alg_unquant() needs at least two dimensions");
    ALLOC(iy, N, int);
    Ryy = decode_pulses(iy, N, K, dec);
+   collapse_mask = extract_collapse_mask(iy, N, B);
+#ifdef ENABLE_QEXT
+   if (N==2 && extra_bits >= 2) {
+      int up;
+      int refine;
+      up = (1<<extra_bits)-1;
+      refine = ec_dec_uint(ext_dec, up) - (up-1)/2;
+      iy[0] *= up;
+      iy[1] *= up;
+      if (iy[1] == 0) {
+         iy[1] = (iy[0] > 0) ? -refine : refine;
+         iy[0] += (refine*iy[0] > 0) ? -refine : refine;
+      } else if (iy[1] > 0) {
+         iy[0] += refine;
+         iy[1] -= refine*(iy[0]>0?1:-1);
+      } else {
+         iy[0] -= refine;
+         iy[1] -= refine*(iy[0]>0?1:-1);
+      }
+      Ryy = iy[0]*iy[0] + iy[1]*iy[1];
+   }
+#endif
    normalise_residual(iy, X, N, Ryy, gain);
    exp_rotation(X, N, -1, B, K, spread);
-   collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;
    return collapse_mask;
 }
