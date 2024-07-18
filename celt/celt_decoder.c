@@ -116,10 +116,10 @@ struct OpusCustomDecoder {
 
    celt_sig _decode_mem[1]; /* Size = channels*(DECODE_BUFFER_SIZE+mode->overlap) */
    /* opus_val16 lpc[],  Size = channels*CELT_LPC_ORDER */
-   /* opus_val16 oldEBands[], Size = 2*mode->nbEBands */
-   /* opus_val16 oldLogE[], Size = 2*mode->nbEBands */
-   /* opus_val16 oldLogE2[], Size = 2*mode->nbEBands */
-   /* opus_val16 backgroundLogE[], Size = 2*mode->nbEBands */
+   /* celt_glog oldEBands[], Size = 2*mode->nbEBands */
+   /* celt_glog oldLogE[], Size = 2*mode->nbEBands */
+   /* celt_glog oldLogE2[], Size = 2*mode->nbEBands */
+   /* celt_glog backgroundLogE[], Size = 2*mode->nbEBands */
 };
 
 #if defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS)
@@ -171,7 +171,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_get_size(const CELTMode *mode, int 
    int size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
             + channels*CELT_LPC_ORDER*sizeof(opus_val16)
-            + 4*2*mode->nbEBands*sizeof(opus_val16);
+            + 4*2*mode->nbEBands*sizeof(celt_glog);
    return size;
 }
 
@@ -372,7 +372,7 @@ void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, con
 static
 #endif
 void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
-                    opus_val16 *oldBandE, int start, int effEnd, int C, int CC,
+                    celt_glog *oldBandE, int start, int effEnd, int C, int CC,
                     int isTransient, int LM, int downsample,
                     int silence, int arch)
 {
@@ -605,7 +605,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
    celt_sig *decode_mem[2];
    celt_sig *out_syn[2];
    opus_val16 *lpc;
-   opus_val16 *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
+   celt_glog *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
    const OpusCustomMode *mode;
    int nbEBands;
    int overlap;
@@ -625,7 +625,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       out_syn[c] = decode_mem[c]+DECODE_BUFFER_SIZE-N;
    } while (++c<C);
    lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+overlap)*C);
-   oldBandE = lpc+C*CELT_LPC_ORDER;
+   oldBandE = (celt_glog*)(lpc+C*CELT_LPC_ORDER);
    oldLogE = oldBandE + 2*nbEBands;
    oldLogE2 = oldLogE + 2*nbEBands;
    backgroundLogE = oldLogE2  + 2*nbEBands;
@@ -644,7 +644,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       opus_uint32 seed;
       int end;
       int effEnd;
-      opus_val16 decay;
+      celt_glog decay;
       end = st->end;
       effEnd = IMAX(start, IMIN(end, mode->effEBands));
 
@@ -981,7 +981,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    celt_sig *decode_mem[2];
    celt_sig *out_syn[2];
    opus_val16 *lpc;
-   opus_val16 *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
+   celt_glog *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
 
    int shortBlocks;
    int isTransient;
@@ -1010,7 +1010,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    int nbEBands;
    int overlap;
    const opus_int16 *eBands;
-   opus_val16 max_background_increase;
+   celt_glog max_background_increase;
    ALLOC_STACK;
 
    VALIDATE_CELT_DECODER(st);
@@ -1023,7 +1023,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    frame_size *= st->downsample;
 
    lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+overlap)*CC);
-   oldBandE = lpc+CC*CELT_LPC_ORDER;
+   oldBandE = (celt_glog*)(lpc+CC*CELT_LPC_ORDER);
    oldLogE = oldBandE + 2*nbEBands;
    oldLogE2 = oldLogE + 2*nbEBands;
    backgroundLogE = oldLogE2  + 2*nbEBands;
@@ -1163,7 +1163,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    if (!intra_ener && st->loss_duration != 0) {
       c=0; do
       {
-         opus_val16 safety = 0;
+         celt_glog safety = 0;
          int missing = IMIN(10, st->loss_duration>>LM);
          if (LM==0) safety = QCONST16(1.5f,DB_SHIFT);
          else if (LM==1) safety = QCONST16(.5f,DB_SHIFT);
@@ -1537,8 +1537,8 @@ int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
       case OPUS_RESET_STATE:
       {
          int i;
-         opus_val16 *lpc, *oldBandE, *oldLogE, *oldLogE2;
-         lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*st->channels);
+         celt_glog *lpc, *oldBandE, *oldLogE, *oldLogE2;
+         lpc = (celt_glog*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*st->channels);
          oldBandE = lpc+st->channels*CELT_LPC_ORDER;
          oldLogE = oldBandE + 2*st->mode->nbEBands;
          oldLogE2 = oldLogE + 2*st->mode->nbEBands;
