@@ -207,7 +207,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
-      celt_sig * OPUS_RESTRICT freq, const opus_val16 *bandLogE, int start,
+      celt_sig * OPUS_RESTRICT freq, const celt_glog *bandLogE, int start,
       int end, int M, int downsample, int silence)
 {
    int i, N;
@@ -250,7 +250,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
          g=0;
       } else {
          /* Handle the fractional part. */
-         g = celt_exp2_frac((lg&((1<<DB_SHIFT)-1))<<(10-DB_SHIFT));
+         g = celt_exp2_frac((lg&((1<<DB_SHIFT)-1))>>(DB_SHIFT-10));
       }
       /* Handle extreme gains with negative shift. */
       if (shift<0)
@@ -279,8 +279,8 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
 
 /* This prevents energy collapse for transients with multiple short MDCTs */
 void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_masks, int LM, int C, int size,
-      int start, int end, const opus_val16 *logE, const opus_val16 *prev1logE,
-      const opus_val16 *prev2logE, const int *pulses, opus_uint32 seed, int encode, int arch)
+      int start, int end, const celt_glog *logE, const celt_glog *prev1logE,
+      const celt_glog *prev2logE, const int *pulses, opus_uint32 seed, int encode, int arch)
 {
    int c, i, j, k;
    for (i=start;i<end;i++)
@@ -316,8 +316,8 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
       c=0; do
       {
          celt_norm *X;
-         opus_val16 prev1;
-         opus_val16 prev2;
+         celt_glog prev1;
+         celt_glog prev2;
          opus_val32 Ediff;
          opus_val16 r;
          int renormalize=0;
