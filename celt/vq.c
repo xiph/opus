@@ -120,7 +120,7 @@ void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
 static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT X,
-      int N, opus_val32 Ryy, opus_val32 gain)
+      int N, opus_val32 Ryy, opus_val32 gain, int shift)
 {
    int i;
 #ifdef FIXED_POINT
@@ -136,6 +136,14 @@ static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT
    g = MULT32_32_Q31(celt_rsqrt_norm(t),gain);
 
    i=0;
+   (void)shift;
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+   if (shift>0) {
+      do {
+         X[i] = EXTRACT16((g*(opus_val64)iy[i]+(1<<(k+shift))) >> (k+1+shift));
+      } while (++i < N);
+   } else
+#endif
    do
       X[i] = EXTRACT16(PSHR32(MULT16_16(g, iy[i]), k+1));
    while (++i < N);
@@ -331,7 +339,7 @@ opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch)
 #ifdef ENABLE_QEXT
 #include "macros.h"
 
-static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int K, int up, int *refine) {
+static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int K, int up, int *refine, int shift) {
    opus_val32 sum;
    opus_val32 rcp_sum;
    int offset;
@@ -341,12 +349,18 @@ static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int 
       up_iy[0] = up*K;
       iy[1]=up_iy[1]=0;
       *refine=0;
-      return K*K*up*up;
+#ifdef FIXED_POINT
+      return (opus_val64)K*K*up*up>>2*shift;
+#else
+      (void)shift;
+      return K*(float)K*up*up;
+#endif
    }
 #ifdef FIXED_POINT
    rcp_sum = celt_rcp(sum);
    iy[0] = PSHR32(silk_SMULWW(MULT16_16(K,X[0]), rcp_sum), 15);
-   up_iy[0] = PSHR32(silk_SMULWW(MULT16_16(up*K,X[0]), rcp_sum), 15);
+   /*up_iy[0] = PSHR32(silk_SMULWW(MULT16_16(up*K,X[0]), rcp_sum), 15);*/
+   up_iy[0] = ((opus_val64)up*K*X[0]*rcp_sum+(1<<30))>>31;
 #else
    rcp_sum = 1.f/sum;
    iy[0] = (int)floor(.5f+K*X[0]*rcp_sum);
@@ -362,32 +376,38 @@ static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int 
       offset = -offset;
    }
    *refine = offset;
-   return MULT16_16(up_iy[0],up_iy[0]) + MULT16_16(up_iy[1],up_iy[1]);
+#ifdef FIXED_POINT
+   return (up_iy[0]*(opus_val64)up_iy[0] + up_iy[1]*(opus_val64)up_iy[1] + (1<<2*shift>>1))>>2*shift;
+#else
+   return up_iy[0]*(opus_val64)up_iy[0] + up_iy[1]*(opus_val64)up_iy[1];
+#endif
 }
 
 static int op_pvq_n4(const celt_norm *X, int *iy, int *iy0, int K, int up, int margin, opus_val32 rcp_sum) {
    int i;
    int dir;
-   opus_val32 rounding[4];
+   opus_val64 rounding[4];
    int iysum = 0;
    for (i=0;i<4;i++) {
-      opus_val32 tmp;
+      opus_val64 tmp;
 #ifdef FIXED_POINT
-      tmp = silk_SMULWW(MULT16_16(K,ABS16(X[i])), rcp_sum);
-      iy[i] = PSHR32(tmp, 15);
+      tmp = K*(opus_val64)ABS16(X[i])*rcp_sum >> 16;
+      iy[i] = (tmp+16384) >> 15;
+      iysum += iy[i];
+      rounding[i] = tmp - ((opus_val64)iy[i]<<15);
 #else
       tmp = K*ABS16(X[i])*rcp_sum;
       iy[i] = (int)floor(.5+tmp);
-#endif
       iysum += iy[i];
       rounding[i] = tmp - SHL32(iy[i], 15);
+#endif
    }
-   if (abs(iysum - K) > 4) {
+   if (abs(iysum - K) > 32) {
       return 1;
    }
    dir = iysum < K ? 1 : -1;
    while (iysum != K) {
-      opus_val32 roundval=-100000*dir;
+      opus_val32 roundval=-1000000*dir;
       int roundpos=0;
       for (i=0;i<4;i++) {
          if ((rounding[i]-roundval)*dir > 0 && abs(iy[i]-up*iy0[i]) < (margin-1) && !(dir==-1 && iy[i] == 0)) {
@@ -402,12 +422,12 @@ static int op_pvq_n4(const celt_norm *X, int *iy, int *iy0, int K, int up, int m
    return 0;
 }
 
-static opus_val32 op_pvq_search_N4(const celt_norm *X, int *iy, int *up_iy, int K, int up, int *refine) {
+static opus_val32 op_pvq_search_N4(const celt_norm *X, int *iy, int *up_iy, int K, int up, int *refine, int shift) {
    opus_val32 rcp_sum;
    opus_val32 sum;
    int i;
    int failed=0;
-   opus_val32 yy=0;
+   opus_val64 yy=0;
    sum = ABS16(X[0]) + ABS16(X[1]) + ABS16(X[2]) + ABS16(X[3]);
    if (sum == 0)
       failed = 1;
@@ -422,14 +442,19 @@ static opus_val32 op_pvq_search_N4(const celt_norm *X, int *iy, int *up_iy, int 
       for (i=1;i<4;i++) up_iy[i] = 0;
    }
    for (i=0;i<4;i++) {
-      yy += MULT16_16(up_iy[i], up_iy[i]);
+      yy += up_iy[i]*(opus_val64)up_iy[i];
       if (X[i] < 0) {
          iy[i] = -iy[i];
          up_iy[i] = -up_iy[i];
       }
       refine[i] = up_iy[i]-up*iy[i];
    }
+#ifdef FIXED_POINT
+   return (yy + (1<<2*shift>>1))>>2*shift;
+#else
+   (void)shift;
    return yy;
+#endif
 }
 #endif
 
@@ -443,6 +468,9 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    VARDECL(int, iy);
    opus_val32 yy;
    unsigned collapse_mask;
+#ifdef ENABLE_QEXT
+   int yy_shift = 0;
+#endif
    SAVE_STACK;
 
    celt_assert2(K>0, "alg_quant() needs at least one pulse");
@@ -458,31 +486,33 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       int refine;
       int up_iy[2];
       int up;
+      yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
-      yy = op_pvq_search_N2(X, iy, up_iy, K, up, &refine);
+      yy = op_pvq_search_N2(X, iy, up_iy, K, up, &refine, yy_shift);
       collapse_mask = extract_collapse_mask(up_iy, N, B);
       ec_enc_uint(ext_enc, refine+(up-1)/2, up);
       if (resynth)
-         normalise_residual(up_iy, X, N, yy, gain);
+         normalise_residual(up_iy, X, N, yy, gain, yy_shift);
    } else if (N==4 && extra_bits >= 2) {
       int i;
       int up_iy[4];
       int refine[4];
       int up;
+      yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
-      yy = op_pvq_search_N4(X, iy, up_iy, K, up, refine);
+      yy = op_pvq_search_N4(X, iy, up_iy, K, up, refine, yy_shift);
       collapse_mask = extract_collapse_mask(up_iy, N, B);
       for (i=0;i<3;i++) ec_enc_uint(ext_enc, refine[i]+up-1, 2*up-1);
       if (iy[3]==0) ec_enc_bits(ext_enc, up_iy[3]<0, 1);
       if (resynth)
-         normalise_residual(up_iy, X, N, yy, gain);
+         normalise_residual(up_iy, X, N, yy, gain, yy_shift);
    } else
 #endif
    {
       yy = op_pvq_search(X, iy, K, N, arch);
       collapse_mask = extract_collapse_mask(iy, N, B);
       if (resynth)
-         normalise_residual(iy, X, N, yy, gain);
+         normalise_residual(iy, X, N, yy, gain, 0);
    }
 
    encode_pulses(iy, N, K, enc);
@@ -506,6 +536,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    opus_val32 Ryy;
    unsigned collapse_mask;
    VARDECL(int, iy);
+   int yy_shift=0;
    SAVE_STACK;
 
    celt_assert2(K>0, "alg_unquant() needs at least one pulse");
@@ -516,13 +547,14 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    if (N==2 && extra_bits >= 2) {
       int up;
       int refine;
+      yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
       refine = ec_dec_uint(ext_dec, up) - (up-1)/2;
       iy[0] *= up;
       iy[1] *= up;
       if (iy[1] == 0) {
          iy[1] = (iy[0] > 0) ? -refine : refine;
-         iy[0] += (refine*iy[0] > 0) ? -refine : refine;
+         iy[0] += (refine*(opus_int64)iy[0] > 0) ? -refine : refine;
       } else if (iy[1] > 0) {
          iy[0] += refine;
          iy[1] -= refine*(iy[0]>0?1:-1);
@@ -530,12 +562,18 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
          iy[0] -= refine;
          iy[1] -= refine*(iy[0]>0?1:-1);
       }
-      Ryy = iy[0]*iy[0] + iy[1]*iy[1];
+#ifdef FIXED_POINT
+      Ryy = (iy[0]*(opus_val64)iy[0] + iy[1]*(opus_val64)iy[1] + (1<<2*yy_shift>>1)) >> 2*yy_shift;
+#else
+      Ryy = iy[0]*(opus_val64)iy[0] + iy[1]*(opus_val64)iy[1];
+#endif
    } else if (N==4 && extra_bits >= 2) {
       int i;
       int refine[4];
+      opus_val64 yy64;
       int up;
       int sign=0;
+      yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
       for (i=0;i<3;i++) refine[i] = ec_dec_uint(ext_dec, 2*up-1) - (up-1);
       if (iy[3]==0) sign = ec_dec_bits(ext_dec, 1);
@@ -545,11 +583,16 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       }
       iy[3] = up*K - abs(iy[0]) - abs(iy[1]) - abs(iy[2]);
       if (sign) iy[3] = -iy[3];
-      Ryy = 0;
-      for (i=0;i<4;i++) Ryy += iy[i]*iy[i];
+      yy64 = 0;
+      for (i=0;i<4;i++) yy64 += iy[i]*(opus_val64)iy[i];
+#ifdef FIXED_POINT
+      Ryy = (yy64 + (1<<2*yy_shift>>1)) >> 2*yy_shift;
+#else
+      Ryy = yy64;
+#endif
    }
 #endif
-   normalise_residual(iy, X, N, Ryy, gain);
+   normalise_residual(iy, X, N, Ryy, gain, yy_shift);
    exp_rotation(X, N, -1, B, K, spread);
    collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;
