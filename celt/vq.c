@@ -383,25 +383,28 @@ static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int 
 #endif
 }
 
-static int op_pvq_n4(const celt_norm *X, int *iy, int *iy0, int K, int up, int margin, opus_val32 rcp_sum) {
+static int op_pvq_refine(const celt_norm *X, int *iy, int *iy0, int K, int up, int margin, int N, opus_val32 rcp_sum) {
    int i;
    int dir;
-   opus_val64 rounding[4];
+   VARDECL(opus_val64, rounding);
+   ALLOC(rounding, N, opus_val64);
    int iysum = 0;
-   for (i=0;i<4;i++) {
+   for (i=0;i<N;i++) {
       opus_val64 tmp;
 #ifdef FIXED_POINT
       tmp = K*(opus_val64)ABS16(X[i])*rcp_sum >> 16;
       iy[i] = (tmp+16384) >> 15;
-      iysum += iy[i];
       rounding[i] = tmp - ((opus_val64)iy[i]<<15);
 #else
       tmp = K*ABS16(X[i])*rcp_sum;
       iy[i] = (int)floor(.5+tmp);
-      iysum += iy[i];
       rounding[i] = tmp - SHL32(iy[i], 15);
 #endif
    }
+   if (iy != iy0) {
+      for (i=0;i<N;i++) iy[i] = IMIN(up*iy0[i]+up-1, IMAX(up*iy0[i]-up+1, iy[i]));
+   }
+   for (i=0;i<N;i++) iysum += iy[i];
    if (abs(iysum - K) > 32) {
       return 1;
    }
@@ -409,7 +412,7 @@ static int op_pvq_n4(const celt_norm *X, int *iy, int *iy0, int K, int up, int m
    while (iysum != K) {
       opus_val32 roundval=-1000000*dir;
       int roundpos=0;
-      for (i=0;i<4;i++) {
+      for (i=0;i<N;i++) {
          if ((rounding[i]-roundval)*dir > 0 && abs(iy[i]-up*iy0[i]) < (margin-1) && !(dir==-1 && iy[i] == 0)) {
             roundval = rounding[i];
             roundpos = i;
@@ -422,26 +425,26 @@ static int op_pvq_n4(const celt_norm *X, int *iy, int *iy0, int K, int up, int m
    return 0;
 }
 
-static opus_val32 op_pvq_search_N4(const celt_norm *X, int *iy, int *up_iy, int K, int up, int *refine, int shift) {
+static opus_val32 op_pvq_search_extra(const celt_norm *X, int *iy, int *up_iy, int K, int up, int *refine, int N, int shift) {
    opus_val32 rcp_sum;
-   opus_val32 sum;
+   opus_val32 sum=0;
    int i;
    int failed=0;
    opus_val64 yy=0;
-   sum = ABS16(X[0]) + ABS16(X[1]) + ABS16(X[2]) + ABS16(X[3]);
+   for (i=0;i<N;i++) sum += ABS16(X[i]);
    if (sum == 0)
       failed = 1;
    else
       rcp_sum = celt_rcp(sum);
-   failed = failed || op_pvq_n4(X, iy, iy, K, 1, K+1, rcp_sum);
-   failed = failed || op_pvq_n4(X, up_iy, iy, up*K, up, up, rcp_sum);
+   failed = failed || op_pvq_refine(X, iy, iy, K, 1, K+1, N, rcp_sum);
+   failed = failed || op_pvq_refine(X, up_iy, iy, up*K, up, up, N, rcp_sum);
    if (failed) {
       iy[0] = K;
-      for (i=1;i<4;i++) iy[i] = 0;
+      for (i=1;i<N;i++) iy[i] = 0;
       up_iy[0] = up*K;
-      for (i=1;i<4;i++) up_iy[i] = 0;
+      for (i=1;i<N;i++) up_iy[i] = 0;
    }
-   for (i=0;i<4;i++) {
+   for (i=0;i<N;i++) {
       yy += up_iy[i]*(opus_val64)up_iy[i];
       if (X[i] < 0) {
          iy[i] = -iy[i];
@@ -493,17 +496,19 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       ec_enc_uint(ext_enc, refine+(up-1)/2, up);
       if (resynth)
          normalise_residual(up_iy, X, N, yy, gain, yy_shift);
-   } else if (N==4 && extra_bits >= 2) {
+   } else if (extra_bits >= 2) {
       int i;
-      int up_iy[4];
-      int refine[4];
+      VARDECL(int, up_iy);
+      VARDECL(int, refine);
+      ALLOC(up_iy, N, int);
+      ALLOC(refine, N, int);
       int up;
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
-      yy = op_pvq_search_N4(X, iy, up_iy, K, up, refine, yy_shift);
+      yy = op_pvq_search_extra(X, iy, up_iy, K, up, refine, N, yy_shift);
       collapse_mask = extract_collapse_mask(up_iy, N, B);
-      for (i=0;i<3;i++) ec_enc_uint(ext_enc, refine[i]+up-1, 2*up-1);
-      if (iy[3]==0) ec_enc_bits(ext_enc, up_iy[3]<0, 1);
+      for (i=0;i<N-1;i++) ec_enc_uint(ext_enc, refine[i]+up-1, 2*up-1);
+      if (iy[N-1]==0) ec_enc_bits(ext_enc, up_iy[N-1]<0, 1);
       if (resynth)
          normalise_residual(up_iy, X, N, yy, gain, yy_shift);
    } else
@@ -567,24 +572,26 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
 #else
       Ryy = iy[0]*(opus_val64)iy[0] + iy[1]*(opus_val64)iy[1];
 #endif
-   } else if (N==4 && extra_bits >= 2) {
+   } else if (extra_bits >= 2) {
       int i;
-      int refine[4];
       opus_val64 yy64;
+      VARDECL(int, refine);
+      ALLOC(refine, N, int);
       int up;
       int sign=0;
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
-      for (i=0;i<3;i++) refine[i] = ec_dec_uint(ext_dec, 2*up-1) - (up-1);
-      if (iy[3]==0) sign = ec_dec_bits(ext_dec, 1);
-      else sign = iy[3] < 0;
-      for (i=0;i<3;i++) {
+      for (i=0;i<N-1;i++) refine[i] = ec_dec_uint(ext_dec, 2*up-1) - (up-1);
+      if (iy[N-1]==0) sign = ec_dec_bits(ext_dec, 1);
+      else sign = iy[N-1] < 0;
+      for (i=0;i<N-1;i++) {
          iy[i] = iy[i]*up + refine[i];
       }
-      iy[3] = up*K - abs(iy[0]) - abs(iy[1]) - abs(iy[2]);
-      if (sign) iy[3] = -iy[3];
+      iy[N-1] = up*K;
+      for (i=0;i<N-1;i++) iy[N-1] -= abs(iy[i]);
+      if (sign) iy[N-1] = -iy[N-1];
       yy64 = 0;
-      for (i=0;i<4;i++) yy64 += iy[i]*(opus_val64)iy[i];
+      for (i=0;i<N;i++) yy64 += iy[i]*(opus_val64)iy[i];
 #ifdef FIXED_POINT
       Ryy = (yy64 + (1<<2*yy_shift>>1)) >> 2*yy_shift;
 #else
