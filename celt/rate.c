@@ -38,6 +38,7 @@
 
 #include "entcode.h"
 #include "rate.h"
+#include "quant_bands.h"
 
 static const unsigned char LOG2_FRAC_TABLE[24]={
    0,
@@ -644,3 +645,78 @@ int clt_compute_allocation(const CELTMode *m, int start, int end, const int *off
    return codedBands;
 }
 
+#ifdef ENABLE_QEXT
+
+void clt_compute_extra_allocation(const CELTMode *m, int start, int end, const celt_glog *bandLogE,
+      opus_int32 total, int *extra_pulses, int *extra_equant, int C, int LM, ec_ctx *ec, int encode)
+{
+   int i;
+   opus_val32 sum;
+   opus_val32 fill;
+   int iter;
+   VARDECL(int, depth);
+
+   if (total <= 0) {
+      for (i=start;i<end;i++) {
+         extra_pulses[i] = extra_equant[i] = 0;
+      }
+      return;
+   }
+   ALLOC(depth, end, int);
+   if (encode) {
+      VARDECL(opus_val16, flatE);
+      VARDECL(int, Ncoef);
+
+      ALLOC(flatE, end, opus_val16);
+      ALLOC(Ncoef, end, int);
+      for (i=start;i<end;i++) {
+         Ncoef[i] = (m->eBands[i+1]-m->eBands[i])*C<<LM;
+      }
+      /* Remove the effect of band width, eMeans and pre-emphasis to compute the real (flat) spectrum. */
+      for (i=start;i<end;i++) {
+         flatE[i] = PSHR32(bandLogE[i] - GCONST(0.0625f)*m->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(i+5)*(i+5), DB_SHIFT-10);
+      }
+      if (C==2) {
+         for (i=start;i<end;i++) {
+            flatE[i] = MAXG(flatE[i], PSHR32(bandLogE[m->nbEBands+i] - GCONST(0.0625f)*m->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(i+5)*(i+5), DB_SHIFT-10));
+         }
+      }
+      /* Approximate fill level assuming all bands contribute fully. */
+      sum = 0;
+      for (i=start;i<end;i++) {
+         sum += MULT16_16(Ncoef[i], flatE[i]);
+      }
+      total >>= BITRES;
+      fill = (SHL32(total, 10) + sum)/((m->eBands[end]-m->eBands[start])*C<<LM);
+      /* Iteratively refine the fill level considering that we allow between 0 and 12 bits of depth. */
+      for (iter=0;iter<10;iter++) {
+         sum = 0;
+         for (i=start;i<end;i++)
+            sum += Ncoef[i] * MIN32(QCONST16(12.f, 10), MAX32(0, flatE[i]-fill));
+         fill -= (SHL32(total, 10) - sum)/((m->eBands[end]-m->eBands[start])*C<<LM);
+      }
+      for (i=start;i<end;i++) {
+#ifdef FIXED_POINT
+         depth[i] = PSHR32(MIN32(QCONST16(12.f, 10), MAX32(0, flatE[i]-fill)), 10-2);
+#else
+         depth[i] = (int)floor(.5+4*MIN32(QCONST16(12.f, 10), MAX32(0, flatE[i]-fill)));
+#endif
+         if (ec_tell_frac(ec) + 45 < ec->storage*8<<BITRES)
+            ec_enc_uint(ec, depth[i], 49);
+         else
+            depth[i] = 0;
+      }
+   } else {
+      for (i=start;i<end;i++) {
+         if (ec_tell_frac(ec) + 45 < ec->storage*8<<BITRES)
+            depth[i] = ec_dec_uint(ec, 49);
+         else
+            depth[i] = 0;
+      }
+   }
+   for (i=start;i<end;i++) {
+      extra_equant[i] = (depth[i]+3)>>2;
+      extra_pulses[i] = ((((m->eBands[i+1]-m->eBands[i])<<LM)-1)*C * depth[i] * (1<<BITRES) + 2)>>2;
+   }
+}
+#endif
