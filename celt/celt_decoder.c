@@ -1291,12 +1291,6 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 
    ALLOC(pulses, nbEBands, int);
    ALLOC(fine_priority, nbEBands, int);
-#ifdef ENABLE_QEXT
-   ALLOC(extra_quant, nbEBands, int);
-   ALLOC(extra_pulses, nbEBands, int);
-   for (i=0;i<nbEBands;i++) extra_quant[i] = 4;
-   for (i=0;i<nbEBands;i++) extra_pulses[i] = 4*(C*(eBands[i+1]-eBands[i])<<LM<<BITRES);
-#endif
 
    codedBands = clt_compute_allocation(mode, start, end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
@@ -1305,6 +1299,10 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    unquant_fine_energy(mode, start, end, oldBandE, NULL, fine_quant, dec, C);
 
 #ifdef ENABLE_QEXT
+   ALLOC(extra_quant, nbEBands, int);
+   ALLOC(extra_pulses, nbEBands, int);
+   clt_compute_extra_allocation(mode, start, end, NULL,
+         qext_bytes*8<<BITRES, extra_pulses, extra_quant, C, LM, &ext_dec, 0);
    if (qext_bytes > 0)
       unquant_fine_energy(mode, start, end, oldBandE, fine_quant, extra_quant, &ext_dec, C);
 #endif
