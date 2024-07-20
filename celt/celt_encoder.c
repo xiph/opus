@@ -2420,12 +2420,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    ALLOC(fine_quant, nbEBands, int);
    ALLOC(pulses, nbEBands, int);
    ALLOC(fine_priority, nbEBands, int);
-#ifdef ENABLE_QEXT
-   ALLOC(extra_quant, nbEBands, int);
-   ALLOC(extra_pulses, nbEBands, int);
-   for (i=0;i<nbEBands;i++) extra_quant[i] = 4;
-   for (i=0;i<nbEBands;i++) extra_pulses[i] = 4*(C*(eBands[i+1]-eBands[i])<<LM<<BITRES);
-#endif
 
    /* bits =           packet size                    - where we are - safety*/
    bits = (((opus_int32)nbCompressedBytes*8)<<BITRES) - (opus_int32)ec_tell_frac(enc) - 1;
@@ -2462,7 +2456,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    quant_fine_energy(mode, start, end, oldBandE, error, NULL, fine_quant, enc, C);
    OPUS_CLEAR(energyError, nbEBands*CC);
 #ifdef ENABLE_QEXT
+   ALLOC(extra_quant, nbEBands, int);
+   ALLOC(extra_pulses, nbEBands, int);
    ALLOC(error_bak, C*nbEBands, celt_glog);
+
+   clt_compute_extra_allocation(mode, start, end, bandLogE,
+         qext_bytes*8<<BITRES, extra_pulses, extra_quant, C, LM, &ext_enc, 1);
    OPUS_COPY(error_bak, error, C*nbEBands);
    if (qext_bytes > 0)
       quant_fine_energy(mode, start, end, oldBandE, error, fine_quant, extra_quant, &ext_enc, C);
