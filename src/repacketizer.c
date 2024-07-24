@@ -86,12 +86,14 @@ static int opus_repacketizer_cat_impl(OpusRepacketizer *rp, const unsigned char 
    ret=opus_packet_parse_impl(data, len, self_delimited, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames],
        NULL, NULL, &rp->paddings[rp->nb_frames], &rp->padding_len[rp->nb_frames]);
    if(ret<1)return ret;
+   rp->padding_nb_frames[rp->nb_frames]=ret;
 
    /* set padding length to zero for all but the first frame */
    while (curr_nb_frames > 1)
    {
       rp->nb_frames++;
       rp->padding_len[rp->nb_frames] = 0;
+      rp->padding_nb_frames[rp->nb_frames] = 0;
       rp->paddings[rp->nb_frames] = NULL;
       curr_nb_frames--;
    }
@@ -142,7 +144,8 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    total_ext_count = nb_extensions;
    for (i=begin;i<end;i++)
    {
-      int n = opus_packet_extensions_count(rp->paddings[i], rp->padding_len[i]);
+      int n = opus_packet_extensions_count(rp->paddings[i], rp->padding_len[i],
+       rp->padding_nb_frames[i]);
       if (n > 0) total_ext_count += n;
    }
    ALLOC(all_extensions, total_ext_count ? total_ext_count : ALLOC_NONE, opus_extension_data);
@@ -159,7 +162,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       opus_int32 frame_ext_count;
       frame_ext_count = total_ext_count - ext_count;
       int ret = opus_packet_extensions_parse(rp->paddings[i], rp->padding_len[i],
-         &all_extensions[ext_count], &frame_ext_count);
+         &all_extensions[ext_count], &frame_ext_count, rp->padding_nb_frames[i]);
       if (ret<0)
       {
          RESTORE_STACK;
