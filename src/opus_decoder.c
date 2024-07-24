@@ -1297,7 +1297,7 @@ bad_arg:
 static int dred_find_payload(const unsigned char *data, opus_int32 len, const unsigned char **payload, int *dred_frame_offset)
 {
    const unsigned char *data0;
-   int len0;
+   opus_int32 len0;
    int frame = 0;
    int nb_frames;
    const unsigned char *frames[48];
