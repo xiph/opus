@@ -303,6 +303,20 @@ void test_extensions_parse_fail(void)
    len = opus_packet_extensions_generate(packet, sizeof(packet), ext, 4, 0);
    result = opus_packet_extensions_parse(packet, len, ext_out, &nb_ext);
    expect_true(result == OPUS_BUFFER_TOO_SMALL, "expected OPUS_BUFFER_TOO_SMALL");
+
+   /* overflow for long extension length */
+   {
+      /* about 8 MB */
+#define LENSIZE ((1U<<31)/255 + 1)
+      unsigned char *buf = malloc(LENSIZE+1);
+      len = LENSIZE+1;
+      buf[0] = 33<<1 | 1;
+      memset(buf + 1, 0xFF, LENSIZE - 1);
+      buf[LENSIZE] = 0xFE;
+      result = opus_packet_extensions_parse(buf, len, ext_out, &nb_ext);
+      expect_true(result == OPUS_INVALID_PACKET, "expected OPUS_INVALID_PACKET");
+      free(buf);
+   }
 }
 
 #define NB_RANDOM_EXTENSIONS 100000000
