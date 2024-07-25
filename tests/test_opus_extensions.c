@@ -300,8 +300,10 @@ void test_extensions_parse_fail(void)
    nb_ext = 10;
    result = opus_packet_extensions_parse(packet, len, ext_out, &nb_ext);
    expect_true(result == OPUS_INVALID_PACKET, "expected OPUS_INVALID_PACKET");
+   /* note, opus_packet_extensions_count stops at the invalid frame increment
+      and tells us that we have 1 extension */
    result = opus_packet_extensions_count(packet, len);
-   expect_true(result == OPUS_INVALID_PACKET, "expected OPUS_INVALID_PACKET");
+   expect_true(result == 1, "expected opus_packet_extensions_count to return 1");
 
    /* create invalid frame increment */
    nb_ext = 10;
@@ -309,10 +311,10 @@ void test_extensions_parse_fail(void)
    packet[14] = 255;
    result = opus_packet_extensions_parse(packet, len, ext_out, &nb_ext);
    expect_true(result == OPUS_INVALID_PACKET, "expected OPUS_INVALID_PACKET");
-   /* note, opus_packet_extensions_count does not read the invalid frame increment
-      and tells us that we have 4 extensions */
+   /* note, opus_packet_extensions_count stops at the invalid frame increment
+      and tells us that we have 2 extensions */
    result = opus_packet_extensions_count(packet, len);
-   expect_true(result == 4, "expected opus_packet_extensions_count to return 4");
+   expect_true(result == 2, "expected opus_packet_extensions_count to return 2");
 
    /* not enough space */
    nb_ext = 1;
