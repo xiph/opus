@@ -400,33 +400,197 @@ opus_int32 opus_packet_extensions_parse_ext(const unsigned char *data,
    return ret;
 }
 
-opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, const opus_extension_data  *extensions, opus_int32 nb_extensions, int pad)
+static int write_extension_payload(unsigned char *data, opus_int32 len,
+ opus_int32 pos, const opus_extension_data *ext, int last) {
+   celt_assert(ext->id >= 3 && ext->id <= 127);
+   if (ext->id < 32)
+   {
+      if (ext->len < 0 || ext->len > 1)
+         return OPUS_BAD_ARG;
+      if (ext->len > 0) {
+         if (len-pos < ext->len)
+            return OPUS_BUFFER_TOO_SMALL;
+         if (data) data[pos] = ext->data[0];
+         pos++;
+      }
+   } else {
+      opus_int32 length_bytes;
+      if (ext->len < 0)
+         return OPUS_BAD_ARG;
+      length_bytes = 1 + ext->len/255;
+      if (last)
+         length_bytes = 0;
+      if (len-pos < length_bytes + ext->len)
+         return OPUS_BUFFER_TOO_SMALL;
+      if (!last)
+      {
+         opus_int32 j;
+         for (j=0;j<ext->len/255;j++) {
+            if (data) data[pos] = 255;
+            pos++;
+         }
+         if (data) data[pos] = ext->len % 255;
+         pos++;
+      }
+      if (data) OPUS_COPY(&data[pos], ext->data, ext->len);
+      pos += ext->len;
+   }
+   return pos;
+}
+
+static int write_extension(unsigned char *data, opus_int32 len, opus_int32 pos,
+ const opus_extension_data *ext, int last) {
+   if (len-pos < 1)
+      return OPUS_BUFFER_TOO_SMALL;
+   celt_assert(ext->id >= 3 && ext->id <= 127);
+   if (data) data[pos] = (ext->id<<1) + (ext->id < 32 ? ext->len : !last);
+   pos++;
+   return write_extension_payload(data, len, pos, ext, last);
+}
+
+opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
+ const opus_extension_data  *extensions, opus_int32 nb_extensions,
+ int nb_frames, int pad)
 {
-   int max_frame=0;
+   opus_int32 frame_min_idx[48];
+   opus_int32 frame_max_idx[48];
+   opus_int32 frame_repeat_idx[48];
    opus_int32 i;
-   int frame;
+   int f;
    int curr_frame = 0;
    opus_int32 pos = 0;
    opus_int32 written = 0;
 
    celt_assert(len >= 0);
+   if (nb_frames > 48) return OPUS_BAD_ARG;
 
+   /* Do a little work up-front to make this O(nb_extensions) instead of
+       O(nb_extensions*nb_frames) so long as the extensions are in frame
+       order (without requiring that they be in frame order). */
+   for (f=0;f<nb_frames;f++) frame_min_idx[f] = nb_extensions;
+   OPUS_CLEAR(frame_max_idx, nb_frames);
    for (i=0;i<nb_extensions;i++)
    {
-      max_frame = IMAX(max_frame, extensions[i].frame);
-      if (extensions[i].id < 3 || extensions[i].id > 127)
-         return OPUS_BAD_ARG;
+      f = extensions[i].frame;
+      if (f < 0 || f >= nb_frames) return OPUS_BAD_ARG;
+      if (extensions[i].id < 3 || extensions[i].id > 127) return OPUS_BAD_ARG;
+      frame_min_idx[f] = IMIN(frame_min_idx[f], i);
+      frame_max_idx[f] = IMAX(frame_max_idx[f], i+1);
    }
-   if (max_frame >= 48) return OPUS_BAD_ARG;
-   for (frame=0;frame<=max_frame;frame++)
+   for (f=0;f<nb_frames;f++) frame_repeat_idx[f] = frame_min_idx[f];
+   for (f=0;f<nb_frames;f++)
    {
-      for (i=0;i<nb_extensions;i++)
+      opus_int32 repeat_data_end_idx;
+      int repeat_count;
+      repeat_count = 0;
+      repeat_data_end_idx = -1;
+      if (f + 1 < nb_frames)
       {
-         if (extensions[i].frame == frame)
+         for (i=frame_min_idx[f];i<frame_max_idx[f];i++)
+         {
+            if (extensions[i].frame == f)
+            {
+               int g;
+               /* Test if we can repeat this extension in future frames. */
+               for (g=f+1;g<nb_frames;g++)
+               {
+                  if (frame_repeat_idx[g] >= frame_max_idx[g]) break;
+                  celt_assert(extensions[frame_repeat_idx[g]].frame == g);
+                  if (extensions[frame_repeat_idx[g]].id != extensions[i].id)
+                  {
+                     break;
+                  }
+                  if (extensions[frame_repeat_idx[g]].id < 32
+                    && extensions[frame_repeat_idx[g]].len
+                    != extensions[i].len)
+                  {
+                     break;
+                  }
+               }
+               if (g < nb_frames) break;
+               /* We can! */
+               /* If this extension can have a non-empty payload, save the
+                   index of the last instance, so we can modify its L flag. */
+               if (extensions[i].id >= 32 || extensions[i].len) {
+                  repeat_data_end_idx = frame_repeat_idx[nb_frames-1];
+               }
+               /* Using the repeat mechanism almost always makes the
+                   encoding smaller (or at least no larger).
+                  However, there's one case where that might not be true: if
+                   the last repeated extension in the last frame was previously
+                   the last extension, but using the repeat mechanism makes
+                   that no longer true (because there are other non-repeated
+                   extensions in earlier frames that must now be coded after
+                   it), and coding its length requires more bytes than the
+                   repeat mechanism saves.
+                  This can only be true if it is a long extension with at least
+                   255 bytes of payload data (although sometimes it requires
+                   even more).
+                  Currently we do not check for that, and just always use the
+                   repeat mechanism if we can. */
+#if 0
+               if (frame_repeat_idx[nb_frames-1]+1 >=
+                frame_max_idx[nb_frames-1]
+                && extensions[frame_repeat_idx[nb_frames-1]].len >= 255) {
+                  opus_int32 savings;
+                  opus_int32 last_idx;
+                  int last_f;
+                  /* Start by assuming we will save one extension ID for each
+                      repeated extension in each future frame, as well as one
+                      frame separator. */
+                  savings = (nb_frames - 1 - f)*((repeat_count + 1) + 1);
+                  /* Count up the bytes we still need to spend on frame
+                      separators to code any non-repeated extensions.
+                     Also find the frame with the new last extension.
+                     Fortunately, we know that no future frames will try to use
+                      a repeat, because we know the last frame will not have
+                      that extension. */
+                  last_f = f;
+                  last_idx = i;
+                  for (g=f+1; g<nb_frames; g++) {
+                     if (frame_repeat_idx[g]+1 < frame_max_idx[g]) {
+                        savings--;
+                        if (last_f != g-1) savings--;
+                        last_f = g;
+                        last_idx = frame_repeat_idx[g];
+                     }
+                  }
+                  if (last_idx+1 < frame_max_idx[last_f]) {
+                     last_idx = frame_max_idx[last_f] - 1;
+                     /* If the new last extension is a long extension, we no
+                         longer need to code its length. */
+                     if (extensions[last_idx].id >= 32) {
+                        savings += extensions[last_idx].len/255 + 1;
+                     }
+                     savings -=
+                      (extensions[frame_repeat_idx[nb_frames-1]].len/255 + 1);
+                     if (savings < 0) break;
+                  }
+                  celt_assert(savings >= 0);
+               }
+#endif
+               /* Advance the repeat pointers. */
+               for (g=f+1; g<nb_frames; g++)
+               {
+                  int j;
+                  for (j=frame_repeat_idx[g]+1; j<frame_max_idx[g]
+                   && extensions[j].frame != g; j++);
+                  frame_repeat_idx[g] = j;
+               }
+               repeat_count++;
+               /* Point the repeat pointer for this frame to the current
+                   extension, so we know when to trigger the repeats. */
+               frame_repeat_idx[f] = i;
+            }
+         }
+      }
+      for (i=frame_min_idx[f];i<frame_max_idx[f];i++)
+      {
+         if (extensions[i].frame == f)
          {
             /* Insert separator when needed. */
-            if (frame != curr_frame) {
-               int diff = frame - curr_frame;
+            if (f != curr_frame) {
+               int diff = f - curr_frame;
                if (len-pos < 2)
                   return OPUS_BUFFER_TOO_SMALL;
                if (diff == 1) {
@@ -438,50 +602,45 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, 
                   if (data) data[pos] = diff;
                   pos++;
                }
-               curr_frame = frame;
+               curr_frame = f;
             }
-            if (extensions[i].id < 32)
-            {
-               if (extensions[i].len < 0 || extensions[i].len > 1)
-                  return OPUS_BAD_ARG;
-               if (len-pos < extensions[i].len+1)
-                  return OPUS_BUFFER_TOO_SMALL;
-               if (data) data[pos] = (extensions[i].id<<1) + extensions[i].len;
-               pos++;
-               if (extensions[i].len > 0) {
-                  if (data) data[pos] = extensions[i].data[0];
-                  pos++;
-               }
-            } else {
-               int last;
-               opus_int32 length_bytes;
-               if (extensions[i].len < 0)
-                  return OPUS_BAD_ARG;
-               last = (written == nb_extensions - 1);
-               length_bytes = 1 + extensions[i].len/255;
-               if (last)
-                  length_bytes = 0;
-               if (len-pos < 1 + length_bytes + extensions[i].len)
-                  return OPUS_BUFFER_TOO_SMALL;
-               if (data) data[pos] = (extensions[i].id<<1) + !last;
-               pos++;
-               if (!last)
-               {
-                  opus_int32 j;
-                  for (j=0;j<extensions[i].len/255;j++) {
-                     if (data) data[pos] = 255;
-                     pos++;
-                  }
-                  if (data) data[pos] = extensions[i].len % 255;
-                  pos++;
-               }
-               if (data) OPUS_COPY(&data[pos], extensions[i].data, extensions[i].len);
-               pos += extensions[i].len;
-            }
+
+            pos = write_extension(data, len, pos, extensions + i,
+             written == nb_extensions - 1);
+            if (pos < 0) return pos;
             written++;
+
+            if (repeat_count > 0 && frame_repeat_idx[f] == i) {
+               int nb_repeated;
+               int last;
+               int g;
+               /* Add the repeat indicator. */
+               nb_repeated = repeat_count*(nb_frames - (f + 1));
+               last = written + nb_repeated == nb_extensions;
+               if (len-pos < 1)
+                  return OPUS_BUFFER_TOO_SMALL;
+               if (data) data[pos] = 0x04 + !last;
+               pos++;
+               for (g=f+1;g<nb_frames;g++)
+               {
+                  int j;
+                  for (j=frame_min_idx[g];j<frame_repeat_idx[g];j++)
+                  {
+                     if (extensions[j].frame == g)
+                     {
+                        pos = write_extension_payload(data, len, pos,
+                         extensions + j, last && j == repeat_data_end_idx);
+                        if (pos < 0) return pos;
+                        written++;
+                     }
+                  }
+                  frame_min_idx[g] = j;
+               }
+            }
          }
       }
    }
+   celt_assert(written == nb_extensions);
    /* If we need to pad, just prepend 0x01 bytes. Even better would be to fill the
       end with zeros, but that requires checking that turning the last extesion into
       an L=1 case still fits. */

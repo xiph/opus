@@ -246,7 +246,9 @@ opus_int32 opus_packet_extensions_parse_ext(const unsigned char *data,
  opus_int32 len, opus_extension_data *extensions, opus_int32 *nb_extensions,
  const opus_int32 *nb_frame_exts, int nb_frames);
 
-opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len, const opus_extension_data  *extensions, opus_int32 nb_extensions, int pad);
+opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
+ const opus_extension_data *extensions, opus_int32 nb_extensions,
+ int nb_frames, int pad);
 
 opus_int32 opus_packet_extensions_count(const unsigned char *data,
  opus_int32 len, int nb_frames);
