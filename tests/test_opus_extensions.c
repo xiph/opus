@@ -149,8 +149,24 @@ void test_extensions_generate_fail(void)
    unsigned char packet[100];
 
    /* buffer too small */
-   result = opus_packet_extensions_generate(packet, 4, ext, 4, 1);
-   expect_true(result == OPUS_BUFFER_TOO_SMALL, "expected OPUS_BUFFER_TOO_SMALL");
+   {
+      opus_int32 len;
+      /* this failure can occur at lots of points, so iterate to check as many
+          as possible */
+      for (len=0;len<23;len++)
+      {
+         size_t i;
+         for (i=len;i<sizeof(packet);i++) packet[i] = 0xFE;
+         result = opus_packet_extensions_generate(packet, len, ext, 4, 1);
+         expect_true(result == OPUS_BUFFER_TOO_SMALL,
+          "expected OPUS_BUFFER_TOO_SMALL");
+         for (i=len;i<sizeof(packet);i++)
+         {
+            expect_true(packet[i] == 0xFE,
+             "expected 0xFE padding to be undisturbed");
+         }
+      }
+   }
 
    /* invalid id */
    {
