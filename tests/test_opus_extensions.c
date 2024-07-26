@@ -55,7 +55,7 @@ void test_extensions_generate_success(void)
    int result;
    unsigned char packet[32];
    const unsigned char *p = packet;
-   result = opus_packet_extensions_generate(packet, 23+4, ext, 4, 1);
+   result = opus_packet_extensions_generate(packet, 23+4, ext, 4, 11, 1);
    expect_true(result == 23+4, "expected length 23+4");
 
    /* expect padding */
@@ -117,7 +117,7 @@ void test_extensions_generate_zero(void)
    unsigned char packet[32];
 
    /* zero length packet, zero extensions */
-   result = opus_packet_extensions_generate(packet, 0, NULL, 0, 1);
+   result = opus_packet_extensions_generate(packet, 0, NULL, 0, 0, 1);
    expect_true(result == 0, "expected length 0");
 }
 
@@ -132,7 +132,8 @@ void test_extensions_generate_no_padding(void)
 
    int result;
    unsigned char packet[32];
-   result = opus_packet_extensions_generate(packet, sizeof(packet), ext, 4, 0);
+   result =
+    opus_packet_extensions_generate(packet, sizeof(packet), ext, 4, 11, 0);
    expect_true(result == 23, "expected length 23");
 }
 
@@ -157,7 +158,7 @@ void test_extensions_generate_fail(void)
       {
          size_t i;
          for (i=len;i<sizeof(packet);i++) packet[i] = 0xFE;
-         result = opus_packet_extensions_generate(packet, len, ext, 4, 1);
+         result = opus_packet_extensions_generate(packet, len, ext, 4, 11, 1);
          expect_true(result == OPUS_BUFFER_TOO_SMALL,
           "expected OPUS_BUFFER_TOO_SMALL");
          for (i=len;i<sizeof(packet);i++)
@@ -173,7 +174,8 @@ void test_extensions_generate_fail(void)
       static const opus_extension_data id_too_big[] = {
          {256, 0, (const unsigned char *)"a", 1},
       };
-      result = opus_packet_extensions_generate(packet, sizeof(packet), id_too_big, 1, 1);
+      result = opus_packet_extensions_generate(packet, sizeof(packet),
+       id_too_big, 1, 11, 1);
       expect_true(result == OPUS_BAD_ARG, "expected OPUS_BAD_ARG");
    }
 
@@ -182,16 +184,38 @@ void test_extensions_generate_fail(void)
       static const opus_extension_data id_too_small[] = {
          {2, 0, (const unsigned char *)"a", 1},
       };
-      result = opus_packet_extensions_generate(packet, sizeof(packet), id_too_small, 1, 1);
+      result = opus_packet_extensions_generate(packet, sizeof(packet),
+       id_too_small, 1, 11, 1);
+      expect_true(result == OPUS_BAD_ARG, "expected OPUS_BAD_ARG");
+   }
+
+   /* frame count too big */
+   {
+      static const opus_extension_data frame_too_big[] = {
+         {33, 11, (const unsigned char *)"a", 1},
+      };
+      result = opus_packet_extensions_generate(packet, sizeof(packet),
+       frame_too_big, 1, 49, 1);
+      expect_true(result == OPUS_BAD_ARG, "expected OPUS_BAD_ARG");
+   }
+
+   /* frame index too small */
+   {
+      static const opus_extension_data frame_too_big[] = {
+         {33, -1, (const unsigned char *)"a", 1},
+      };
+      result = opus_packet_extensions_generate(packet, sizeof(packet),
+       frame_too_big, 1, 11, 1);
       expect_true(result == OPUS_BAD_ARG, "expected OPUS_BAD_ARG");
    }
 
    /* frame index too big */
    {
       static const opus_extension_data frame_too_big[] = {
-         {33, 48, (const unsigned char *)"a", 1},
+         {33, 11, (const unsigned char *)"a", 1},
       };
-      result = opus_packet_extensions_generate(packet, sizeof(packet), frame_too_big, 1, 1);
+      result = opus_packet_extensions_generate(packet, sizeof(packet),
+       frame_too_big, 1, 11, 1);
       expect_true(result == OPUS_BAD_ARG, "expected OPUS_BAD_ARG");
    }
 
@@ -200,7 +224,8 @@ void test_extensions_generate_fail(void)
       static const opus_extension_data size_too_big[] = {
          {3, 0, (const unsigned char *)"abcd", 4},
       };
-      result = opus_packet_extensions_generate(packet, sizeof(packet), size_too_big, 1, 1);
+      result = opus_packet_extensions_generate(packet, sizeof(packet),
+       size_too_big, 1, 1, 1);
       expect_true(result == OPUS_BAD_ARG, "expected OPUS_BAD_ARG");
    }
 
@@ -209,7 +234,8 @@ void test_extensions_generate_fail(void)
       static const opus_extension_data neg_size[] = {
          {3, 0, NULL, -4},
       };
-      result = opus_packet_extensions_generate(packet, sizeof(packet), neg_size, 1, 1);
+      result = opus_packet_extensions_generate(packet, sizeof(packet),
+       neg_size, 1, 1, 1);
       expect_true(result == OPUS_BAD_ARG, "expected OPUS_BAD_ARG");
    }
 
@@ -218,7 +244,8 @@ void test_extensions_generate_fail(void)
       static const opus_extension_data neg_size_33[] = {
          {33, 0, NULL, -4},
       };
-      result = opus_packet_extensions_generate(packet, sizeof(packet), neg_size_33, 1, 1);
+      result = opus_packet_extensions_generate(packet, sizeof(packet),
+       neg_size_33, 1, 1, 1);
       expect_true(result == OPUS_BAD_ARG, "expected OPUS_BAD_ARG");
    }
 }
@@ -239,7 +266,7 @@ void test_extensions_parse_success(void)
 
    nb_ext = 10;
    nb_frames = 11;
-   len = opus_packet_extensions_generate(packet, 32, ext, 4, 1);
+   len = opus_packet_extensions_generate(packet, 32, ext, 4, 11, 1);
    expect_true(len == 32, "expected length 32");
    result = opus_packet_extensions_count(packet, len, nb_frames);
    expect_true(result == 4, "expected opus_packet_extensions_count 4");
@@ -277,7 +304,7 @@ void test_extensions_parse_zero(void)
    int len, result;
    unsigned char packet[32];
 
-   len = opus_packet_extensions_generate(packet, 32, ext, 1, 1);
+   len = opus_packet_extensions_generate(packet, 32, ext, 1, 2, 1);
    expect_true(len == 32, "expected length 32");
 
    nb_ext = 0;
@@ -301,7 +328,7 @@ void test_extensions_parse_fail(void)
    unsigned char packet[32];
 
    /* create invalid length */
-   len = opus_packet_extensions_generate(packet, sizeof(packet), ext, 4, 0);
+   len = opus_packet_extensions_generate(packet, sizeof(packet), ext, 4, 11, 0);
    packet[4] = 255;
    nb_ext = 10;
    nb_frames = 11;
@@ -315,7 +342,7 @@ void test_extensions_parse_fail(void)
 
    /* create invalid frame increment */
    nb_ext = 10;
-   len = opus_packet_extensions_generate(packet, sizeof(packet), ext, 4, 0);
+   len = opus_packet_extensions_generate(packet, sizeof(packet), ext, 4, 11, 0);
    /* first by reducing the number of frames */
    result = opus_packet_extensions_parse(packet, len, ext_out, &nb_ext, 5);
    expect_true(result == OPUS_INVALID_PACKET, "expected OPUS_INVALID_PACKET");
@@ -338,7 +365,7 @@ void test_extensions_parse_fail(void)
 
    /* not enough space */
    nb_ext = 1;
-   len = opus_packet_extensions_generate(packet, sizeof(packet), ext, 4, 0);
+   len = opus_packet_extensions_generate(packet, sizeof(packet), ext, 4, 11, 0);
    result = opus_packet_extensions_parse(packet, len, ext_out, &nb_ext,
     nb_frames);
    expect_true(result == OPUS_BUFFER_TOO_SMALL, "expected OPUS_BUFFER_TOO_SMALL");
@@ -355,6 +382,159 @@ void test_extensions_parse_fail(void)
       result = opus_packet_extensions_parse(buf, len, ext_out, &nb_ext, 1);
       expect_true(result == OPUS_INVALID_PACKET, "expected OPUS_INVALID_PACKET");
       free(buf);
+   }
+}
+
+/* Check that the same extensions with the same data appear in both ext_in and
+    ext_out, with extensions in ext_out appearing in frame order, and the order
+    within a frame matching the order within a frame in ext_in. */
+static void check_ext_data(const opus_extension_data *ext_in,
+ const opus_extension_data *ext_out, int nb_ext)
+{
+   opus_int32 i;
+   opus_int32 j;
+   int prev_frame;
+   prev_frame = -1;
+   j = 0;
+   for (i=0;i<nb_ext;i++)
+   {
+      expect_true(ext_out[i].frame >= prev_frame,
+       "expected parsed extensions to be returned in frame order");
+      if (ext_out[i].frame > prev_frame) {
+         j = 0;
+      }
+      while (j < nb_ext && ext_in[j].frame != ext_out[i].frame) j++;
+      expect_true(j < nb_ext,
+       "expected enough extensions matching this frame");
+      expect_true(ext_in[j].id == ext_out[i].id,
+       "expected extension IDs to match");
+      expect_true(ext_in[j].len == ext_out[i].len,
+       "expected extension lengths to match");
+      /* The len check allows ext_in[j].data to be NULL without triggering
+          undefined behavior. */
+      expect_true(ext_in[j].len == 0 ||
+       memcmp(ext_in[j].data, ext_out[i].data, ext_out[i].len) == 0,
+       "expected extension data to match");
+      prev_frame = ext_out[i].frame;
+      j++;
+   }
+}
+
+#define NB_EXT (12)
+
+void test_extensions_repeating(void)
+{
+   static const opus_extension_data ext[] = {
+      {3, 0, (const unsigned char *)"a", 1},
+      {3, 1, (const unsigned char *)"b", 1},
+      {3, 2, (const unsigned char *)"c", 1},
+      {4, 0, (const unsigned char *)"d", 1},
+      {4, 1, (const unsigned char *)NULL, 0},
+      {4, 2, (const unsigned char *)NULL, 0},
+      {32, 1, (const unsigned char *)"DRED", 4},
+      {32, 2, (const unsigned char *)"DRED2", 5},
+      {5, 1, (const unsigned char *)NULL, 0},
+      {5, 2, (const unsigned char *)NULL, 0},
+      {6, 1, (const unsigned char *)"e", 1},
+      {6, 2, (const unsigned char *)"f", 1}
+   };
+   static const opus_int32 encoded_len[] = {
+      0,
+      2,
+      /* nb_ext = 2: don't try to repeat if the same extension is not used in
+          every frame */
+      5,
+      /* nb_ext = 3: do repeat if the same extension is used in every frame */
+      5,
+      7,
+      9,
+      /* nb_ext = 6: do not repeat short extensions if the lengths do not match
+          ... but do repeat after the first frame when the lengths do match. */
+      10,
+      /* nb_ext = 7: code a long extension with L=0 despite having more
+          extensions in future frames, because we already coded them via
+          repeats. */
+      15,
+      /* nb_ext = 8: repeat multiple extensions in the same frame.
+         code the last repeated extension with L=0 if it is a long
+          extension. */
+      21,
+      23,
+      /* nb_ext = 10: code the last repeated long extension with L=0 even if it
+          is followed by repeated short extensions, as long as they have L=0. */
+      22,
+      25,
+      /* nb_ext = 12: don't code the last repeated long extension with L=0 if
+          it is followed by repeated short extensions with L=1. */
+      26
+   };
+   opus_int32 nb_ext;
+   for (nb_ext = 0; nb_ext <= NB_EXT; nb_ext++) {
+      opus_extension_data ext_out[NB_EXT];
+      opus_int32 nb_frame_exts[48];
+      opus_int32 nb_ext_out;
+      int len, result;
+      unsigned char packet[32];
+      len = opus_packet_extensions_generate(packet, sizeof(packet), ext,
+       nb_ext, 3, 0);
+      expect_true(len == encoded_len[nb_ext],
+       "expected extension encoding length to match");
+      result = opus_packet_extensions_count_ext(packet, len, nb_frame_exts, 3);
+      expect_true(result == nb_ext, "expected extension count to match");
+      nb_ext_out = NB_EXT;
+      result = opus_packet_extensions_parse_ext(packet, len, ext_out,
+       &nb_ext_out, nb_frame_exts, 3);
+      expect_true(result == 0, "expected extension parsing to succeed");
+      expect_true(nb_ext_out == nb_ext, "expected extension count to match");
+      check_ext_data(ext, ext_out, nb_ext);
+      /* Special case some modifications to test things our generator will
+          never produce. */
+      if (nb_ext == 6) {
+         /* allow a repeat in the last frame, as well as trailing junk after an
+             L=0 repeat that MUST be ignored. */
+         packet[len++] = 2<<1|0;
+         packet[len++] = 3<<1|0;
+      }
+      else if (nb_ext == 8) {
+         /* insert padding before the repeat indicator */
+         memmove(packet+16, packet+15, len-15);
+         packet[15] = 0x1;
+         len++;
+         /* don't repeat the padding and continue decoding last extension with
+             L=0 */
+      }
+      else if (nb_ext == 10) {
+         /* use a frame separator with an increment of 0 as padding.
+            This should _not_ change which extensions get repeated. */
+         memmove(packet+17, packet+15, len-15);
+         packet[15] = 0x3;
+         packet[16] = 0;
+         len += 2;
+      }
+      else continue;
+      result = opus_packet_extensions_count_ext(packet, len, nb_frame_exts, 3);
+      expect_true(result == nb_ext, "expected extension count to match");
+      nb_ext_out = NB_EXT;
+      result = opus_packet_extensions_parse_ext(packet, len, ext_out,
+       &nb_ext_out, nb_frame_exts, 3);
+      expect_true(result == 0, "expected extension parsing to succeed");
+      expect_true(nb_ext_out == nb_ext, "expected extension count to match");
+      check_ext_data(ext, ext_out, nb_ext);
+      if (nb_ext == 8) {
+         /* allow multiple repeat indicators in the same frame */
+         memmove(packet+6, packet+5, len-5);
+         packet[5] = 2<<1|1;
+         len++;
+      }
+      else continue;
+      result = opus_packet_extensions_count_ext(packet, len, nb_frame_exts, 3);
+      expect_true(result == nb_ext, "expected extension count to match");
+      nb_ext_out = NB_EXT;
+      result = opus_packet_extensions_parse_ext(packet, len, ext_out,
+       &nb_ext_out, nb_frame_exts, 3);
+      expect_true(result == 0, "expected extension parsing to succeed");
+      expect_true(nb_ext_out == nb_ext, "expected extension count to match");
+      check_ext_data(ext, ext_out, nb_ext);
    }
 }
 
@@ -420,7 +600,8 @@ void test_opus_repacketizer_out_range_impl(void)
    packet[3] = 0;
 
    /* generate 2 extensions, id 33 and 100 */
-   len = opus_packet_extensions_generate(&packet[4], sizeof(packet)-4, ext, 2, 0);
+   len = opus_packet_extensions_generate(&packet[4], sizeof(packet)-4, ext, 2,
+    1, 0);
    /* update the padding length */
    packet[2] = len;
 
@@ -499,6 +680,7 @@ int main(int argc, char **argv)
    test_extensions_parse_success();
    test_extensions_parse_zero();
    test_extensions_parse_fail();
+   test_extensions_repeating();
    test_random_extensions_parse();
    test_opus_repacketizer_out_range_impl();
    fprintf(stderr,"Tests completed successfully.\n");
