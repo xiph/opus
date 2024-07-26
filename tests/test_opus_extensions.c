@@ -420,7 +420,7 @@ static void check_ext_data(const opus_extension_data *ext_in,
    }
 }
 
-#define NB_EXT (12)
+#define NB_EXT (13)
 
 void test_extensions_repeating(void)
 {
@@ -435,8 +435,9 @@ void test_extensions_repeating(void)
       {32, 2, (const unsigned char *)"DRED2", 5},
       {5, 1, (const unsigned char *)NULL, 0},
       {5, 2, (const unsigned char *)NULL, 0},
+      {6, 2, (const unsigned char *)"f", 1},
       {6, 1, (const unsigned char *)"e", 1},
-      {6, 2, (const unsigned char *)"f", 1}
+      {32, 2, (const unsigned char *)"DREDthree", 9}
    };
    static const opus_int32 encoded_len[] = {
       0,
@@ -463,10 +464,16 @@ void test_extensions_repeating(void)
       /* nb_ext = 10: code the last repeated long extension with L=0 even if it
           is followed by repeated short extensions, as long as they have L=0. */
       22,
-      25,
+      /* nb_ext = 11: don't use L=0 to skip a frame separator if repeats end
+          on a short L=0 extension if there was a preceding L=0 long
+          extension. */
+      26,
       /* nb_ext = 12: don't code the last repeated long extension with L=0 if
           it is followed by repeated short extensions with L=1. */
-      26
+      26,
+      /* nb_ext = 13: do use L=0 to skip a frame separator if repeats end on a
+          short L=1 extension */
+      36
    };
    opus_int32 nb_ext;
    for (nb_ext = 0; nb_ext <= NB_EXT; nb_ext++) {
@@ -474,7 +481,7 @@ void test_extensions_repeating(void)
       opus_int32 nb_frame_exts[48];
       opus_int32 nb_ext_out;
       int len, result;
-      unsigned char packet[32];
+      unsigned char packet[64];
       len = opus_packet_extensions_generate(packet, sizeof(packet), ext,
        nb_ext, 3, 0);
       expect_true(len == encoded_len[nb_ext],
@@ -510,6 +517,14 @@ void test_extensions_repeating(void)
          packet[15] = 0x3;
          packet[16] = 0;
          len += 2;
+      }
+      else if (nb_ext == 13) {
+         /* use L=0 to skip a frame separator if a repeat has no extensions at
+             all */
+         packet[18] = 2<<1|1;
+         memmove(packet+27, packet+26, len-26);
+         packet[26] = 2<<1|0;
+         len++;
       }
       else continue;
       result = opus_packet_extensions_count_ext(packet, len, nb_frame_exts, 3);

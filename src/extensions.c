@@ -157,11 +157,6 @@ int opus_extension_iterator_next(OpusExtensionIterator *iter,
    if (iter->curr_len < 0) {
       return OPUS_INVALID_PACKET;
    }
-   /* Checking this here allows opus_extension_iterator_set_frame_max() to be
-       called at any point. */
-   if (iter->curr_frame >= iter->frame_max) {
-      return 0;
-   }
    if (iter->repeat_frame > 0) {
       /* We are in the process of repeating some extensions. */
       for (;iter->repeat_frame < iter->nb_frames; iter->repeat_frame++) {
@@ -195,13 +190,6 @@ int opus_extension_iterator_next(OpusExtensionIterator *iter,
             /* If we were asked to stop at frame_max, skip extensions for later
                 frames. */
             if (iter->repeat_frame >= iter->frame_max) {
-               if (iter->repeat_l == 0) {
-                  /* If L == 0, there will be no more extensions after these
-                      repeats, so we can just stop. */
-                  iter->repeat_frame = 0;
-                  iter->curr_len = 0;
-                  return 0;
-               }
                continue;
             }
             if (ext != NULL) {
@@ -218,13 +206,21 @@ int opus_extension_iterator_next(OpusExtensionIterator *iter,
       }
       /* We finished repeating extensions. */
       iter->repeat_data_end = iter->repeat_data = iter->curr_data;
-      /* Even if there is more data (because there was nothing to repeat or
-          because the last extension was a short extension and we did not use
-          all the data), when L == 0 we are done decoding extensions. */
+      /* If L == 0, advance the frame number to handle the case where we did
+          not consume all of the data with an L == 0 long extension. */
       if (iter->repeat_l == 0) {
-         iter->curr_len = 0;
+         iter->curr_frame++;
+         /* Ignore additional padding if this was already the last frame. */
+         if (iter->curr_frame >= iter->nb_frames) {
+            iter->curr_len = 0;
+         }
       }
       iter->repeat_frame = 0;
+   }
+   /* Checking this here allows opus_extension_iterator_set_frame_max() to be
+       called at any point. */
+   if (iter->curr_frame >= iter->frame_max) {
+      return 0;
    }
    while (iter->curr_len > 0) {
       const unsigned char *curr_data0;
@@ -483,7 +479,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
       opus_int32 repeat_data_end_idx;
       int repeat_count;
       repeat_count = 0;
-      repeat_data_end_idx = -1;
+      repeat_data_end_idx = i;
       if (f + 1 < nb_frames)
       {
          for (i=frame_min_idx[f];i<frame_max_idx[f];i++)
@@ -566,6 +562,9 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                       (extensions[frame_repeat_idx[nb_frames-1]].len/255 + 1);
                      if (savings < 0) break;
                   }
+                  /* N.B., we are only considering the case where the last
+                      repeated extension is a long extension, so we do not
+                      check if we can save a frame separator by using L=0. */
                   celt_assert(savings >= 0);
                }
 #endif
@@ -616,7 +615,9 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                int g;
                /* Add the repeat indicator. */
                nb_repeated = repeat_count*(nb_frames - (f + 1));
-               last = written + nb_repeated == nb_extensions;
+               last = written + nb_repeated == nb_extensions
+                || (extensions[repeat_data_end_idx].id < 32
+                && i+1 >= frame_max_idx[f]);
                if (len-pos < 1)
                   return OPUS_BUFFER_TOO_SMALL;
                if (data) data[pos] = 0x04 + !last;
@@ -636,6 +637,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                   }
                   frame_min_idx[g] = j;
                }
+               if (last) curr_frame++;
             }
          }
       }
