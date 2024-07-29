@@ -550,6 +550,7 @@ void test_random_extensions_parse(void)
    for (i=0;i<NB_RANDOM_EXTENSIONS;i++)
    {
       opus_extension_data ext_out[MAX_NB_EXTENSIONS];
+      int nb_frames;
       int nb_ext;
       unsigned char payload[MAX_EXTENSION_SIZE];
       int len;
@@ -559,14 +560,44 @@ void test_random_extensions_parse(void)
       for (j=0;j<len;j++)
          payload[j] = fast_rand()&0xFF;
       nb_ext = fast_rand()%(MAX_NB_EXTENSIONS+1);
-      result = opus_packet_extensions_parse(payload, len, ext_out, &nb_ext, 48);
+      /* The success rate is near 60.4% almost independent of the number of
+          frames we choose, so pick it randomly.
+         nb_frames == 1 is slightly (~0.2%) less likely to succeed, while
+          nb_frames == 2 is slightly (~0.1%) more likely to succeed, followed
+          by nb_frames == 3 being very slightly (~0.02%) more likely. */
+      nb_frames = (fast_rand()%48) + 1;
+      result =
+       opus_packet_extensions_parse(payload, len, ext_out, &nb_ext, nb_frames);
       expect_true(result == OPUS_OK || result == OPUS_BUFFER_TOO_SMALL || result == OPUS_INVALID_PACKET, "expected OPUS_OK, OPUS_BUFFER_TOO_SMALL or OPUS_INVALID_PACKET");
       /* Even if parsing fails, check that the extensions that got extracted make sense. */
       for (j=0;j<nb_ext;j++)
       {
-         expect_true(ext_out[j].frame >= 0 && ext_out[j].frame < 48, "expected frame between 0 and 47");
+         expect_true(ext_out[j].frame >= 0 && ext_out[j].frame < nb_frames,
+          "expected frame between 0 and nb_frames-1");
          expect_true(ext_out[j].id >= 2 && ext_out[j].id <= 127, "expected id between 2 and 127");
          expect_true(ext_out[j].data >= payload && ext_out[j].data+ext_out[j].len <= payload+len, "expected data to be within packet");
+      }
+      /* If parsing succeeds, check to see if we can round-trip these
+          extensions. */
+      if (result == OPUS_OK) {
+         opus_extension_data ext_out2[MAX_NB_EXTENSIONS];
+         unsigned char payload2[MAX_EXTENSION_SIZE+1];
+         opus_int32 nb_frame_exts[48];
+         opus_int32 nb_ext_out;
+         len = opus_packet_extensions_generate(payload2, sizeof(payload2),
+          ext_out, nb_ext, nb_frames, 0);
+         expect_true(len >= 0, "expected extension generation to succeed");
+         result = opus_packet_extensions_count_ext(payload2, len,
+          nb_frame_exts, nb_frames);
+         expect_true(result == nb_ext, "expected extension count to match");
+         nb_ext_out = MAX_NB_EXTENSIONS;
+         result = opus_packet_extensions_parse_ext(payload2, len, ext_out2,
+          &nb_ext_out, nb_frame_exts, nb_frames);
+         expect_true(result == OPUS_OK,
+          "expected extension parsing to succeed");
+         expect_true(nb_ext == nb_ext_out,
+          "expected extension count to match");
+         check_ext_data(ext_out, ext_out2, nb_ext);
       }
    }
 }
