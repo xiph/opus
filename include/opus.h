@@ -739,7 +739,7 @@ OPUS_EXPORT void opus_pcm_soft_clip(float *pcm, int frame_size, int channels, fl
   * framing overhead becomes negligible.
   *
   * The repacketizer currently only operates on elementary Opus
-  * streams. It will not manipualte multistream packets successfully, except in
+  * streams. It will not manipulate multistream packets successfully, except in
   * the degenerate case where they consist of data from a single stream.
   *
   * The repacketizing process starts with creating a repacketizer state, either
