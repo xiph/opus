@@ -353,6 +353,7 @@ EXTRA_DIST = opus.pc.in \
              tests/meson.build \
              doc/meson.build \
              tests/run_vectors.sh \
+             celt/arm/meson.build \
              celt/arm/arm2gnu.pl \
              celt/arm/celt_pitch_xcorr_arm.s
 
