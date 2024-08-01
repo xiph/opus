@@ -1593,7 +1593,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       {
          nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
                (tmp+4*mode->Fs)/(8*mode->Fs)-!!st->signalling));
-         ec_enc_shrink(enc, nbCompressedBytes);
+         if (enc != NULL)
+            ec_enc_shrink(enc, nbCompressedBytes);
       }
       effectiveBytes = nbCompressedBytes - nbFilledBytes;
    }
