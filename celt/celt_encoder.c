@@ -1572,7 +1572,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 
    /* Can't produce more than 1275 output bytes */
    nbCompressedBytes = IMIN(nbCompressedBytes,1275);
-   nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
 
    if (st->vbr && st->bitrate!=OPUS_BITRATE_MAX)
    {
@@ -1598,6 +1597,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       }
       effectiveBytes = nbCompressedBytes - nbFilledBytes;
    }
+   nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
    equiv_rate = ((opus_int32)nbCompressedBytes*8*50 << (3-LM)) - (40*C+20)*((400>>LM) - 50);
    if (st->bitrate != OPUS_BITRATE_MAX)
       equiv_rate = IMIN(equiv_rate, st->bitrate - (40*C+20)*((400>>LM) - 50));
@@ -1688,7 +1688,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    {
       int enabled;
       int qg;
-      enabled = ((st->lfe&&nbAvailableBytes>3) || nbAvailableBytes>12*C) && !hybrid && !silence && !st->disable_pf
+      enabled = ((st->lfe&&nbAvailableBytes>3) || nbAvailableBytes>12*C) && !hybrid && !silence && tell+16<=total_bits && !st->disable_pf
             && st->complexity >= 5;
 
       prefilter_tapset = st->tapset_decision;
