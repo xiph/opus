@@ -55,6 +55,7 @@ class LimitedAdaptiveConv1d(nn.Module):
                  norm_p=2,
                  softquant=False,
                  apply_weight_norm=False,
+                 expansion_power=1,
                  **kwargs):
         """
 
@@ -97,6 +98,7 @@ class LimitedAdaptiveConv1d(nn.Module):
         self.gain_limits_db = gain_limits_db
         self.shape_gain_db  = shape_gain_db
         self.norm_p         = norm_p
+        self.expansion_power = expansion_power
 
         if name is None:
             self.name = "limited_adaptive_conv1d_" + str(LimitedAdaptiveConv1d.COUNTER)
@@ -198,7 +200,7 @@ class LimitedAdaptiveConv1d(nn.Module):
 
         conv_kernels = conv_kernels.permute(0, 2, 3, 1, 4)
 
-        output = adaconv_kernel(x, conv_kernels, win1, fft_size=self.fft_size)
+        output = adaconv_kernel(x, conv_kernels, win1, fft_size=self.fft_size, expansion_power=self.expansion_power)
 
 
         return output

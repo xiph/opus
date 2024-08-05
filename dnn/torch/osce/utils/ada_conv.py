@@ -33,7 +33,7 @@ import torch.nn.functional as F
 
 # x is (batch, nb_in_channels, nb_frames*frame_size)
 # kernels is (batch, nb_out_channels, nb_in_channels, nb_frames, coeffs)
-def adaconv_kernel(x, kernels, half_window, fft_size=256):
+def adaconv_kernel(x, kernels, half_window, fft_size=256, expansion_power=1):
     device=x.device
     overlap_size=half_window.size(-1)
     nb_frames=kernels.size(3)
@@ -55,6 +55,12 @@ def adaconv_kernel(x, kernels, half_window, fft_size=256):
     x_prev = torch.cat([torch.zeros_like(x[:, :, :, :1, :]), x[:, :, :, :-1, :]], dim=-2)
     x_next = torch.cat([x[:, :, :, 1:, :overlap_size], torch.zeros_like(x[:, :, :, -1:, :overlap_size])], dim=-2)
     x_padded = torch.cat([x_prev, x, x_next, torch.zeros(nb_batches, 1, nb_in_channels, nb_frames, fft_size - 2 * frame_size - overlap_size, device=device)], -1)
+    if expansion_power != 1:
+        x_target_energy = torch.sum(x_padded ** 2, dim=-1)
+        x_padded = x_padded ** expansion_power
+        x_new_energy = torch.sum(x_padded ** 2, dim=-1)
+        x_padded = x_padded * torch.sqrt(x_target_energy / (x_new_energy + (1e-6 ** expansion_power))).unsqueeze(-1)
+
     k_padded = torch.cat([torch.flip(kernels, [-1]), torch.zeros(nb_batches, nb_out_channels, nb_in_channels, nb_frames, fft_size-kernel_size, device=device)], dim=-1)
 
     # compute convolution

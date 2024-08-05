@@ -34,6 +34,7 @@ import torch
 
 import scipy
 import scipy.signal
+from scipy.io import wavfile
 
 from utils.spec import log_spectrum, instafreq, create_filter_bank
 
@@ -64,7 +65,10 @@ def load_inference_data(path,
 
     print(f"[load_inference_data]: ignoring keyword arguments {kwargs.keys()}...")
 
-    signal  = np.fromfile(path, dtype=np.int16).astype(np.float32) / (2 ** 15)
+    if path.endswith(".wav"):
+        signal = wavfile.read(path)[1].astype(np.float32) / (2 ** 15)
+    else:
+        signal  = np.fromfile(path, dtype=np.int16).astype(np.float32) / (2 ** 15)
 
     num_frames = len(signal) // 160
     signal = signal[:num_frames*160]
