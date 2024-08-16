@@ -461,3 +461,40 @@ void opus_custom_mode_destroy(CELTMode *mode)
    opus_free((CELTMode *)mode);
 }
 #endif
+
+#ifdef ENABLE_QEXT
+
+static const opus_int16 qext_eBands_180[] = {
+/* 20k  22k  24k  26k  28k  30k  32k  34k  36k  38k  40k  42k  44k  47k  48k */
+    74,  82,  90,  98, 106, 114, 122, 130, 138, 146, 154, 162, 168, 174, 180
+};
+
+static const opus_int16 qext_logN_180[] = {24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 21, 21, 21};
+
+/* Extra bands. */
+static const opus_int16 qext_eBands_240[] = {
+/* 20k  22k  24k  26k  28k  30k  32k  34k  36k  38k  40k  42k  44k  47k  48k */
+   100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240
+};
+
+static const opus_int16 qext_logN_240[] = {27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27};
+
+void compute_qext_mode(CELTMode *qext, const CELTMode *m)
+{
+   OPUS_COPY(qext, m, 1);
+   if (m->shortMdctSize*48000 == 120*m->Fs) {
+      qext->eBands = qext_eBands_240;
+      qext->logN = qext_logN_240;
+   } else if (m->shortMdctSize*48000 == 90*m->Fs) {
+      qext->eBands = qext_eBands_180;
+      qext->logN = qext_logN_180;
+   } else {
+      celt_assert(0);
+   }
+   qext->nbEBands = qext->effEBands = NB_QEXT_BANDS;
+   while (qext->eBands[qext->effEBands] > qext->shortMdctSize)
+      qext->effEBands--;
+   qext->nbAllocVectors = 0;
+   qext->allocVectors = NULL;
+}
+#endif
