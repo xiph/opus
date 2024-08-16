@@ -230,8 +230,13 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
    }
    f = freq;
    x = X+M*eBands[start];
-   for (i=0;i<M*eBands[start];i++)
-      *f++ = 0;
+   if (start != 0)
+   {
+      for (i=0;i<M*eBands[start];i++)
+         *f++ = 0;
+   } else {
+      f += M*eBands[start];
+   }
    for (i=start;i<end;i++)
    {
       int j, band_end;
