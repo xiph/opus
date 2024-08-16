@@ -144,18 +144,22 @@ int celt_encoder_get_size(int channels)
 
 OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_get_size(const CELTMode *mode, int channels)
 {
+   int extra=0;
 #ifdef ENABLE_QEXT
    int qext_scale;
-   if (mode->Fs == 96000 && mode->shortMdctSize==240) qext_scale = 2;
-   else qext_scale = 1;
+   if (mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)) {
+      qext_scale = 2;
+      extra = channels*NB_QEXT_BANDS*sizeof(celt_glog);
+   } else qext_scale = 1;
 #endif
    int size = sizeof(struct CELTEncoder)
          + (channels*mode->overlap-1)*sizeof(celt_sig)    /* celt_sig in_mem[channels*mode->overlap]; */
          + channels*QEXT_SCALE(COMBFILTER_MAXPERIOD)*sizeof(celt_sig) /* celt_sig prefilter_mem[channels*COMBFILTER_MAXPERIOD]; */
-         + 4*channels*mode->nbEBands*sizeof(celt_glog);   /* celt_glog oldBandE[channels*mode->nbEBands]; */
+         + 4*channels*mode->nbEBands*sizeof(celt_glog)    /* celt_glog oldBandE[channels*mode->nbEBands]; */
                                                           /* celt_glog oldLogE[channels*mode->nbEBands]; */
                                                           /* celt_glog oldLogE2[channels*mode->nbEBands]; */
                                                           /* celt_glog energyError[channels*mode->nbEBands]; */
+         + extra;
    return size;
 }
 
@@ -207,7 +211,7 @@ static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
    st->lsb_depth=24;
 
 #ifdef ENABLE_QEXT
-   if (st->mode->Fs == 96000 && mode->shortMdctSize==240) st->qext_scale = 2;
+   if (st->mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)) st->qext_scale = 2;
    else st->qext_scale = 1;
 #endif
 
@@ -1705,6 +1709,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    VARDECL(int, extra_quant);
    VARDECL(int, extra_pulses);
    VARDECL(celt_glog, error_bak);
+   const CELTMode *qext_mode = NULL;
+   CELTMode qext_mode_struct;
+   celt_ener qext_bandE[2*NB_QEXT_BANDS];
+   celt_glog qext_bandLogE[2*NB_QEXT_BANDS];
+   celt_glog *qext_oldBandE=NULL;
+   celt_glog qext_error[2*NB_QEXT_BANDS];
 #endif
    ALLOC_STACK;
 
@@ -2433,12 +2443,31 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          OPUS_CLEAR(ext_payload, qext_bytes);
          ec_enc_init(&ext_enc, ext_payload, qext_bytes);
          nbCompressedBytes = new_compressedBytes;
+         if (qext_scale == 2)
+         {
+            compute_qext_mode(&qext_mode_struct, mode);
+            qext_mode = &qext_mode_struct;
+         }
       } else {
          ec_enc_init(&ext_enc, NULL, 0);
          qext_bytes = 0;
       }
    } else {
       ec_enc_init(&ext_enc, NULL, 0);
+   }
+   if (qext_mode)
+   {
+      /* Don't bias for intra. */
+      opus_val32 qext_delayedIntra=0;
+      qext_oldBandE = energyError + CC*nbEBands;
+      compute_band_energies(qext_mode, freq, qext_bandE, NB_QEXT_BANDS, C, LM, st->arch);
+      normalise_bands(qext_mode, freq, X, qext_bandE, NB_QEXT_BANDS, C, M);
+      amp2Log2(qext_mode, NB_QEXT_BANDS, NB_QEXT_BANDS, qext_bandE, qext_bandLogE, C);
+
+      quant_coarse_energy(qext_mode, 0, NB_QEXT_BANDS, NB_QEXT_BANDS, qext_bandLogE,
+               qext_oldBandE, qext_bytes*8, qext_error, &ext_enc,
+               C, LM, qext_bytes, st->force_intra,
+               &qext_delayedIntra, st->complexity >= 4, st->loss_rate, st->lfe);
    }
 #endif
 
@@ -2551,7 +2580,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       } while (++c<CC);
 
       celt_synthesis(mode, X, out_mem, oldBandE, start, effEnd,
-                     C, CC, isTransient, LM, st->upsample, silence, st->arch);
+                     C, CC, isTransient, LM, st->upsample, silence, st->arch ARG_QEXT(qext_mode) ARG_QEXT(qext_bandLogE));
 
       c=0; do {
          st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
