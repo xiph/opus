@@ -77,5 +77,9 @@ struct OpusCustomMode {
    PulseCache cache;
 };
 
+#ifdef ENABLE_QEXT
+#define NB_QEXT_BANDS 7
+void compute_qext_mode(CELTMode *qext, const CELTMode *m);
+#endif
 
 #endif
