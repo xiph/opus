@@ -168,10 +168,16 @@ int celt_decoder_get_size(int channels)
 
 OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_get_size(const CELTMode *mode, int channels)
 {
-   int size = sizeof(struct CELTDecoder)
+   int size;
+   int extra=0;
+#ifdef ENABLE_QEXT
+   extra = 2*NB_QEXT_BANDS*sizeof(celt_glog);
+#endif
+   size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
             + channels*CELT_LPC_ORDER*sizeof(opus_val16)
-            + 4*2*mode->nbEBands*sizeof(celt_glog);
+            + 4*2*mode->nbEBands*sizeof(celt_glog)
+            + extra;
    return size;
 }
 
@@ -374,7 +380,7 @@ static
 void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
                     celt_glog *oldBandE, int start, int effEnd, int C, int CC,
                     int isTransient, int LM, int downsample,
-                    int silence, int arch)
+                    int silence, int arch ARG_QEXT(const CELTMode *qext_mode) ARG_QEXT(const celt_glog *qext_bandLogE) ARG_QEXT(int qext_end))
 {
    int c, i;
    int M;
@@ -392,6 +398,9 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
    N = mode->shortMdctSize<<LM;
    ALLOC(freq, N, celt_sig); /**< Interleaved signal MDCTs */
    M = 1<<LM;
+#ifdef ENABLE_QEXT
+   if (mode->Fs != 96000) qext_end=2;
+#endif
 
    if (isTransient)
    {
@@ -410,6 +419,11 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       celt_sig *freq2;
       denormalise_bands(mode, X, freq, oldBandE, start, effEnd, M,
             downsample, silence);
+#ifdef ENABLE_QEXT
+      if (qext_mode)
+         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, qext_end, M,
+                        downsample, silence);
+#endif
       /* Store a temporary copy in the output buffer because the IMDCT destroys its input. */
       freq2 = out_syn[1]+overlap/2;
       OPUS_COPY(freq2, freq, N);
@@ -427,6 +441,15 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       /* Use the output buffer as temp array before downmixing. */
       denormalise_bands(mode, X+N, freq2, oldBandE+nbEBands, start, effEnd, M,
             downsample, silence);
+#ifdef ENABLE_QEXT
+      if (qext_mode)
+      {
+         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, qext_end, M,
+                        downsample, silence);
+         denormalise_bands(qext_mode, X+N, freq2, qext_bandLogE+NB_QEXT_BANDS, 0, qext_end, M,
+                        downsample, silence);
+      }
+#endif
       for (i=0;i<N;i++)
          freq[i] = ADD32(HALF32(freq[i]), HALF32(freq2[i]));
       for (b=0;b<B;b++)
@@ -436,6 +459,11 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       c=0; do {
          denormalise_bands(mode, X+c*N, freq, oldBandE+c*nbEBands, start, effEnd, M,
                downsample, silence);
+#ifdef ENABLE_QEXT
+         if (qext_mode)
+            denormalise_bands(qext_mode, X+c*N, freq, qext_bandLogE+c*NB_QEXT_BANDS, 0, qext_end, M,
+                           downsample, silence);
+#endif
          for (b=0;b<B;b++)
             clt_mdct_backward(&mode->mdct, &freq[b], out_syn[c]+NB*b, mode->window, overlap, shift, B, arch);
       } while (++c<CC);
@@ -685,7 +713,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       }
       st->rng = seed;
 
-      celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch);
+      celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch ARG_QEXT(NULL) ARG_QEXT(NULL) ARG_QEXT(0));
       st->prefilter_and_fold = 0;
       /* Skip regular PLC until we get two consecutive packets. */
       st->skip_plc = 1;
@@ -1014,8 +1042,12 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 #ifdef ENABLE_QEXT
    ec_dec ext_dec;
    int qext_bytes=0;
+   int qext_end;
    VARDECL(int, extra_quant);
    VARDECL(int, extra_pulses);
+   const CELTMode *qext_mode = NULL;
+   CELTMode qext_mode_struct;
+   celt_glog *qext_oldBandE=NULL;
 #else
 # define qext_bytes 0
 #endif
@@ -1237,6 +1269,20 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    /* Get band energies */
    unquant_coarse_energy(mode, start, end, oldBandE,
          intra_ener, dec, C, LM);
+#ifdef ENABLE_QEXT
+   if (qext_bytes && end == nbEBands &&
+         ((mode->Fs == 48000 && (mode->shortMdctSize==120 || mode->shortMdctSize==90))
+       || (mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)))) {
+      int qext_intra_ener;
+      qext_oldBandE = backgroundLogE + 2*nbEBands;
+      compute_qext_mode(&qext_mode_struct, mode);
+      qext_mode = &qext_mode_struct;
+      qext_end = ec_dec_bit_logp(&ext_dec, 1) ? NB_QEXT_BANDS : 2;
+      qext_intra_ener = ec_tell(&ext_dec)+3<=qext_bytes*8 ? ec_dec_bit_logp(&ext_dec, 3) : 0;
+      unquant_coarse_energy(qext_mode, 0, qext_end, qext_oldBandE,
+            qext_intra_ener, &ext_dec, C, LM);
+   }
+#endif
 
    ALLOC(tf_res, nbEBands, int);
    tf_decode(start, end, isTransient, tf_res, LM, dec);
@@ -1317,7 +1363,9 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
 
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
-
+#ifdef ENABLE_QEXT
+   if (qext_mode) OPUS_CLEAR(X, C*N);
+#endif
    quant_all_bands(0, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
          len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng, 0,
@@ -1346,7 +1394,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       prefilter_and_fold(st, N);
    }
    celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd,
-                  C, CC, isTransient, LM, st->downsample, silence, st->arch);
+                  C, CC, isTransient, LM, st->downsample, silence, st->arch ARG_QEXT(qext_mode) ARG_QEXT(qext_oldBandE) ARG_QEXT(qext_end));
 
    c=0; do {
       st->postfilter_period=IMAX(st->postfilter_period, COMBFILTER_MINPERIOD);
