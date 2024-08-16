@@ -43,6 +43,13 @@
 #include "arch.h"
 #include "kiss_fft.h"
 
+#ifdef ENABLE_QEXT
+#define ARG_QEXT(arg) , arg
+#else
+#define ARG_QEXT(arg)
+#endif
+
+
 #ifdef ENABLE_DEEP_PLC
 #include "lpcnet.h"
 #endif
@@ -247,7 +254,7 @@ void init_caps(const CELTMode *m,int *cap,int LM,int C);
 void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem, int accum);
 void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       celt_glog *oldBandE, int start, int effEnd, int C, int CC, int isTransient,
-      int LM, int downsample, int silence, int arch);
+      int LM, int downsample, int silence, int arch ARG_QEXT(const CELTMode *qext_mode) ARG_QEXT(const celt_glog *qext_bandLogE) ARG_QEXT(int qext_end));
 #endif
 
 #ifdef ENABLE_QEXT
