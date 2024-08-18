@@ -599,7 +599,8 @@ endif()
 target_compile_definitions(opus
                            PRIVATE
                            $<$<BOOL:${HAVE_LRINT}>:HAVE_LRINT>
-                           $<$<BOOL:${HAVE_LRINTF}>:HAVE_LRINTF>)
+                           $<$<BOOL:${HAVE_LRINTF}>:HAVE_LRINTF>
+                           $<$<BOOL:${HAVE_ELF_AUX_INFO}>:HAVE_ELF_AUX_INFO>)
 
 if(OPUS_BUILD_FRAMEWORK)
   set_target_properties(opus PROPERTIES

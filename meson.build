@@ -83,6 +83,7 @@ libm = cc.find_library('m', required : false)
 opus_conf.set('HAVE_LRINTF', cc.has_function('lrintf', prefix: '#include <math.h>', dependencies: libm))
 opus_conf.set('HAVE_LRINT', cc.has_function('lrint', prefix: '#include <math.h>', dependencies: libm))
 opus_conf.set('HAVE___MALLOC_HOOK', cc.has_function('__malloc_hook', prefix: '#include <malloc.h>'))
+opus_conf.set('HAVE_ELF_AUX_INFO', cc.has_function('elf_aux_info', prefix: '#include <sys/auxv.h>'))
 opus_conf.set('HAVE_STDINT_H', cc.check_header('stdint.h'))
 
 # Check for restrict keyword
