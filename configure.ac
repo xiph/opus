@@ -1040,7 +1040,7 @@ AC_CHECK_FUNCS([lrintf])
 AC_CHECK_FUNCS([lrint])
 LIBS="$saved_LIBS"
 
-AC_CHECK_FUNCS([__malloc_hook])
+AC_CHECK_FUNCS([__malloc_hook elf_aux_info])
 
 AC_SUBST([PC_BUILD])
 
