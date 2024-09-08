@@ -81,7 +81,8 @@ class FloatFeatureNet(nn.Module):
 
         return c
 
-
+def sawtooth(x):
+    return 2 * torch.frac(0.5 * x / torch.pi) - 1
 
 class BWENet(torch.nn.Module):
     FRAME_SIZE16k=80
@@ -97,7 +98,9 @@ class BWENet(torch.nn.Module):
                  avg_pool_k48=12,
                  interpolate_k32=1,
                  interpolate_k48=1,
-                 use_noise_shaper=False
+                 use_noise_shaper=False,
+                 use_extra_nl=False,
+                 disable_bias=False
                  ):
 
         super().__init__()
@@ -110,6 +113,7 @@ class BWENet(torch.nn.Module):
         self.conv_gain_limits_db    = conv_gain_limits_db
         self.activation             = activation
         self.use_noise_shaper       = use_noise_shaper
+        self.use_extra_nl           = use_extra_nl
 
         self.frame_size32 = 2 * self.FRAME_SIZE16k
         self.frame_size48 = 3 * self.FRAME_SIZE16k
@@ -122,8 +126,8 @@ class BWENet(torch.nn.Module):
 
         # non-linear transforms
         if activation == "AdaShape":
-            self.tdshape1 = TDShaper(cond_dim, frame_size=self.frame_size32, avg_pool_k=avg_pool_k32, interpolate_k=interpolate_k32)
-            self.tdshape2 = TDShaper(cond_dim, frame_size=self.frame_size48, avg_pool_k=avg_pool_k48, interpolate_k=interpolate_k48)
+            self.tdshape1 = TDShaper(cond_dim, frame_size=self.frame_size32, avg_pool_k=avg_pool_k32, interpolate_k=interpolate_k32, bias=not disable_bias)
+            self.tdshape2 = TDShaper(cond_dim, frame_size=self.frame_size48, avg_pool_k=avg_pool_k48, interpolate_k=interpolate_k48, bias=not disable_bias)
             self.act1 = self.tdshape1
             self.act2 = self.tdshape2
         elif activation == "ReLU":
@@ -134,6 +138,12 @@ class BWENet(torch.nn.Module):
             self.extaf2 = LimitedAdaptiveConv1d(1, 1, 5, cond_dim, frame_size=self.frame_size48, overlap_size=self.frame_size48//2, use_bias=False, padding=[4, 0], gain_limits_db=conv_gain_limits_db, norm_p=2, expansion_power=3)
             self.act1 = self.extaf1
             self.act2 = self.extaf2
+        elif activation == "ImPowI":
+            self.act1 = lambda x, _ : x * torch.sin(torch.log((2**15) * torch.abs(x) + 1e-6))
+            self.act2 = lambda x, _ : x * torch.sin(torch.log((2**15) * torch.abs(x) + 1e-6))
+        elif activation == "SawLog":
+            self.act1 = lambda x, _ : x * sawtooth(torch.log((2**15) * torch.abs(x) + 1e-6))
+            self.act2 = lambda x, _ : x * sawtooth(torch.log((2**15) * torch.abs(x) + 1e-6))
         else:
             raise ValueError(f"unknown activation {activation}")
 
@@ -141,6 +151,9 @@ class BWENet(torch.nn.Module):
             self.nshape1 = TDShaper(cond_dim, frame_size=self.frame_size32, avg_pool_k=avg_pool_k32, interpolate_k=2, noise_substitution=True, cutoff=0.45)
             self.nshape2 = TDShaper(cond_dim, frame_size=self.frame_size48, avg_pool_k=avg_pool_k48, interpolate_k=2, noise_substitution=True, cutoff=0.6)
             latent_channels = 3
+        elif use_extra_nl:
+            latent_channels = 3
+            self.extra_nl = lambda x: x * torch.sin(torch.log((2**15) * torch.abs(x) + 1e-6))
         else:
             latent_channels = 2
 
@@ -160,7 +173,7 @@ class BWENet(torch.nn.Module):
         af_flops = self.af1.flop_count(rate) + self.af2.flop_count(2 * rate) + self.af3.flop_count(3 * rate) + + self.af4.flop_count(3 * rate)
 
         if self.activation == 'AdaShape':
-            shape_flops = self.act1.flop_count(rate) + self.act2.flop_count(rate)
+            shape_flops = self.act1.flop_count(2*rate) + self.act2.flop_count(3*rate)
         else:
             shape_flops = 0
 
@@ -196,6 +209,12 @@ class BWENet(torch.nn.Module):
                 dump_as_wav('dump/y32_3pre.wav', 32000,  y32[:, 2:3, :])
                 dump_as_wav('dump/y32_3act.wav', 32000,  y32_3)
             y32 = torch.cat((y32_1, y32_2, y32_3), dim=1)
+        elif self.use_extra_nl:
+            y32_3 = self.extra_nl(y32[:, 2:3, :])
+            if DUMP:
+                dump_as_wav('dump/y32_3pre.wav', 32000,  y32[:, 2:3, :])
+                dump_as_wav('dump/y32_3act.wav', 32000,  y32_3)
+            y32 = torch.cat((y32_1, y32_2, y32_3), dim=1)
         else:
             y32 = torch.cat((y32_1, y32_2), dim=1)
 
@@ -220,6 +239,12 @@ class BWENet(torch.nn.Module):
 
         if self.use_noise_shaper:
             y48_3 = self.nshape2(y48[:, 2:3, :], cf)
+            if DUMP:
+                dump_as_wav('dump/y48_3pre.wav', 48000, y48[:, 2:3, :])
+                dump_as_wav('dump/y48_3act.wav', 48000, y48_3)
+
+        elif self.use_extra_nl:
+            y48_3 = self.extra_nl(y48[:, 2:3, :])
             if DUMP:
                 dump_as_wav('dump/y48_3pre.wav', 48000, y48[:, 2:3, :])
                 dump_as_wav('dump/y48_3act.wav', 48000, y48_3)
