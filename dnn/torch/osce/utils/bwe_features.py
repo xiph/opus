@@ -47,7 +47,9 @@ def bwe_feature_factory(
     w = scipy.signal.windows.cosine(320)
     fb = create_filter_bank(spec_num_bands, 320, scale='erb', round_center_bins=True, normalize=True)
 
-    def create_features(x, history):
+    def create_features(x, history=None):
+        if history is None:
+            history = np.zeros(320, dtype=np.float32)
         lmspec = log_spectrum(np.concatenate((history[-160:], x), dtype=x.dtype), frame_size=320, window=w, fb=fb)
         freqs = instafreq(np.concatenate((history[-320:], x), dtype=x.dtype), frame_size=320, max_bin=max_instafreq_bin, window=w)
 

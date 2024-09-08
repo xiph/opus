@@ -208,7 +208,7 @@ class SpecDiscriminatorBase(nn.Module):
                 print("warning: exceeded max size while trying to determine receptive field")
 
         # create transposed convolutional kernel
-        #self.tconv_kernel = nn.Parameter(create_kernel(h0, w0, sw, sw), requires_grad=False)
+        self.tconv_kernel = nn.Parameter(create_kernel(h0, w0, sw, sw), requires_grad=False)
 
     def run_layer_stack(self, spec):
 
@@ -645,7 +645,9 @@ configs = {
             256: (2, 0),
             512: (3, 0),
             1024: (4, 0),
-            2048: (5, 0)
+            2048: (5, 0),
+            4096: (6, 0),
+            8192: (7, 0),
         },
         'down' : {
             64 : (0, 0),
@@ -653,7 +655,9 @@ configs = {
             256: (2, 0),
             512: (3, 0),
             1024: (4, 0),
-            2048: (5, 0)
+            2048: (5, 0),
+            4096: (6, 0),
+            8192: (7, 0)
         }
     },
     'ft_down': {

@@ -19,7 +19,8 @@ class TDShaper(nn.Module):
                  apply_weight_norm=False,
                  interpolate_k=1,
                  noise_substitution=False,
-                 cutoff=None
+                 cutoff=None,
+                 bias=True,
     ):
         """
 
@@ -62,9 +63,9 @@ class TDShaper(nn.Module):
         norm = torch.nn.utils.weight_norm if apply_weight_norm else lambda x, name=None: x
 
         # feature transform
-        self.feature_alpha1_f = norm(nn.Conv1d(self.feature_dim, self.hidden_dim, 2))
-        self.feature_alpha1_t = norm(nn.Conv1d(self.env_dim, self.hidden_dim, 2))
-        self.feature_alpha2 = norm(nn.Conv1d(self.hidden_dim, self.hidden_dim, 2))
+        self.feature_alpha1_f = norm(nn.Conv1d(self.feature_dim, self.hidden_dim, 2, bias=bias))
+        self.feature_alpha1_t = norm(nn.Conv1d(self.env_dim, self.hidden_dim, 2, bias=bias))
+        self.feature_alpha2 = norm(nn.Conv1d(self.hidden_dim, self.hidden_dim, 2, bias=bias))
 
         self.interpolate_weight = nn.Parameter(torch.ones(1, 1, self.interpolate_k) / self.interpolate_k, requires_grad=False)
 
