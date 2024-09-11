@@ -39,6 +39,7 @@ celt/arm/fixed_armv5e.h \
 celt/arm/fixed_arm64.h \
 celt/arm/kiss_fft_armv4.h \
 celt/arm/kiss_fft_armv5e.h \
+celt/arm/mathops_arm.h \
 celt/arm/pitch_arm.h \
 celt/arm/fft_arm.h \
 celt/arm/mdct_arm.h \
