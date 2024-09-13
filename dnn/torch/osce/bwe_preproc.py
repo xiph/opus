@@ -81,7 +81,7 @@ def random_resamp16(x, fs=48000):
     assert fs == 48000 and "only supporting 48kHz input sampling rate for now"
 
     cutoff = 800 * np.random.rand(1) + 7200 # cutoff between 7.2 and 8 kHz
-    numtaps = np.random.randint(151, 301)
+    numtaps = 2 * np.random.randint(75, 150) + 1
     a = signal.firwin(numtaps, cutoff, fs=fs)
 
     x16 = np.convolve(x, a, mode='same')[::3]
