@@ -74,7 +74,7 @@ def concatenate(filelist : str, output : str, target_fs: int, normalize=True, db
 
             f.write(x1.astype(np.int16).tobytes())
 
-            overlap_mem = x1[-overlap_size]
+            overlap_mem = x[-overlap_size:]
 
 
 if __name__ == "__main__":
