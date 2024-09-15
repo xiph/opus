@@ -74,6 +74,10 @@ class SimpleBWESet(Dataset):
         x_16 = self.signal_16k[signal_start16 : signal_stop16].astype(np.float32) / 2**15
         history_16 = self.signal_16k[signal_start16 - 320 : signal_start16].astype(np.float32) / 2**15
 
+        # dithering
+        x_16 += (np.random.rand(len(x_16)) - 0.5) / 2**15
+        history_16 += (np.random.rand(len(history_16)) - 0.5) / 2**15
+
         x_48 = self.signal_48k[3 * signal_start16 - self.upsampling_delay48
                                : 3 * signal_stop16 - self.upsampling_delay48].astype(np.float32) / 2**15
 
