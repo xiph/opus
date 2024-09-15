@@ -33,6 +33,7 @@ from .lavoce import LaVoce
 from .lavoce_400 import LaVoce400
 from .fd_discriminator import TFDMultiResolutionDiscriminator as FDMResDisc
 from .bwe_net import BWENet
+from .bbwe_net import BBWENet
 
 model_dict = {
     'lace': LACE,
@@ -41,4 +42,5 @@ model_dict = {
     'lavoce400': LaVoce400,
     'fdmresdisc': FDMResDisc,
     'bwenet' : BWENet,
+    'bbwenet': BBWENet
 }
