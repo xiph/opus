@@ -67,7 +67,10 @@ def apply_20kHz_lp(x, fs):
     if fs != 48000:
         return x
 
-    return np.convolve(x, lp_coeffs, mode='valid')
+    y = np.convolve(x, lp_coeffs, mode='valid')
+    y *= np.max(np.abs(x)) / np.max(np.abs(y) + 1e-6)
+
+    return y
 
 
 def random_normalize(x, db_min, db_max, max_val=2**15 - 1):
@@ -282,9 +285,6 @@ def concatenate(filelist : str,
 
             noise_first = np.random.randint(2)
 
-            if normalize:
-                x = random_normalize(x, db_min, db_max)
-
             if np.random.rand(1) < rand_eq_prob:
                 x = random_eq(x, target_fs, 5000)
 
@@ -305,19 +305,40 @@ def concatenate(filelist : str,
             # trim final signal to length divisible by 3 to keep 16 and 48 kHz signals in sync
             x = x[:len(x) - (len(x) % 3)]
 
+            if normalize:
+                x = random_normalize(x, db_min, db_max)
+
             # write 48 and 16 kHz signals to disk
-            x1 = x[:-overlap_size]
-            x1[:overlap_size] = overlap_win1 * overlap_mem + overlap_win2 * x1[:overlap_size]
-            f48.write(x1.astype(np.int16).tobytes())
+            if False:
+                x1 = x[:-overlap_size]
+                x1[:overlap_size] = overlap_win1 * overlap_mem + overlap_win2 * x1[:overlap_size]
+                f48.write(x1.astype(np.int16).tobytes())
 
-            x16 = random_resamp16(x)
-            x1_16 = x16[:-overlap_size16]
-            x1_16[:overlap_size16] = overlap_win1_16 * overlap_mem16 + overlap_win2_16 * x1_16[:overlap_size16]
-            f16.write(x1_16.astype(np.int16).tobytes())
+                x16 = random_resamp16(x)
+                x1_16 = x16[:-overlap_size16]
+                x1_16[:overlap_size16] = overlap_win1_16 * overlap_mem16 + overlap_win2_16 * x1_16[:overlap_size16]
+                f16.write(x1_16.astype(np.int16).tobytes())
 
-            # memory update
-            overlap_mem = x[-overlap_size:]
-            overlap_mem16 = x16[-overlap_size16]
+                # memory update
+                overlap_mem = x[-overlap_size:]
+                overlap_mem16 = x16[-overlap_size16:]
+            else:
+                # window and zero pad signal
+                padding_samples = 3 * 100
+                x[:overlap_size]  *= overlap_win2 # fade in
+                x[-overlap_size:] *= overlap_win1 # fade out
+
+                x = np.concatenate((np.zeros(padding_samples), x, np.zeros(padding_samples)), dtype=x.dtype)
+
+                x16 = random_resamp16(x)
+
+                assert 3*len(x16) == len(x)
+                if np.max(x) > 2**15 - 1 or np.min(x) < -2**15: print("clipping")
+                if np.max(x16) > 2**15 - 1 or np.min(x16) < -2**15: print("clipping")
+                x = np.clip(x, -2**15, 2**15 - 1)
+                x16 = np.clip(x16, -2**15, 2**15 - 1)
+                f48.write(x.astype(np.int16).tobytes())
+                f16.write(x16.astype(np.int16).tobytes())
 
 
 if __name__ == "__main__":
