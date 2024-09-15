@@ -171,19 +171,21 @@ class LaVoce(nn.Module):
         frame_rate = rate / self.FRAME_SIZE
 
         # feature net
-        feature_net_flops = self.feature_net.flop_count(frame_rate)
+        feature_net_flops = self.feature_net.flop_count(frame_rate / self.upsamp_factor)
         comb_flops = self.cf1.flop_count(rate) + self.cf2.flop_count(rate)
         af_flops = self.af1.flop_count(rate) + self.af2.flop_count(rate) + self.af3.flop_count(rate) + self.af4.flop_count(rate) + self.af_prescale.flop_count(rate) + self.af_mix.flop_count(rate)
         feature_flops = (_conv1d_flop_count(self.post_cf1, frame_rate) + _conv1d_flop_count(self.post_cf2, frame_rate)
                          + _conv1d_flop_count(self.post_af1, frame_rate) + _conv1d_flop_count(self.post_af2, frame_rate) + _conv1d_flop_count(self.post_af3, frame_rate))
+        shape_flops = self.tdshape1.flop_count(rate) + self.tdshape2.flop_count(rate) + self.tdshape3.flop_count(rate)
 
         if verbose:
             print(f"feature net: {feature_net_flops / 1e6} MFLOPS")
             print(f"comb filters: {comb_flops / 1e6} MFLOPS")
             print(f"adaptive conv: {af_flops / 1e6} MFLOPS")
             print(f"feature transforms: {feature_flops / 1e6} MFLOPS")
+            print(f"adashape: {shape_flops / 1e6} MFLOPS")
 
-        return feature_net_flops + comb_flops + af_flops + feature_flops
+        return feature_net_flops + comb_flops + af_flops + feature_flops + shape_flops
 
     def feature_transform(self, f, layer):
         f = f.permute(0, 2, 1)

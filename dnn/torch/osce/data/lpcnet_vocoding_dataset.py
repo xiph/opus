@@ -86,6 +86,8 @@ class LPCNetVocodingDataset(Dataset):
             self.getitem = self.getitem_v1
         elif self.version == 2:
             self.getitem = self.getitem_v2
+        elif self.version == 3:
+            self.getitem = self.getitem_v3
         else:
             raise ValueError(f"dataset version {self.version} unknown")
 
@@ -124,6 +126,34 @@ class LPCNetVocodingDataset(Dataset):
 
     def __getitem__(self, index):
         return self.getitem(index)
+
+    def getitem_v3(self, index):
+        sample = dict()
+
+        # extract features
+        frame_start = self.frame_offset + index       * self.frames_per_sample - self.feature_history
+        frame_stop  = self.frame_offset + (index + 1) * self.frames_per_sample + self.feature_lookahead
+
+        for feature in self.input_features:
+            feature_start, feature_stop = self.feature_frame_layout[feature]
+            sample[feature] = self.features[frame_start : frame_stop, feature_start : feature_stop]
+
+        # convert periods
+        if 'periods' in self.input_features:
+            sample['periods'] = np.round(np.clip(256./2**(sample['periods']+1.5), 32, 255)).astype('int16')
+
+        signal_start = (self.frame_offset + index       * self.frames_per_sample) * self.frame_length
+        signal_stop  = (self.frame_offset + (index + 1) * self.frames_per_sample) * self.frame_length
+
+        sample['signal'] = self.signals[signal_start : signal_stop, self.signal_frame_layout['signal']]
+
+        # concatenate features
+        feature_keys = [key for key in self.input_features if not key.startswith("periods")]
+        features = torch.concat([torch.FloatTensor(sample[key]) for key in feature_keys], dim=-1)
+        target  = torch.FloatTensor(sample[self.target]) / 2**15
+        periods = torch.LongTensor(sample['periods'])
+
+        return {'features' : features, 'periods' : periods, 'target' : target}
 
     def getitem_v2(self, index):
         sample = dict()

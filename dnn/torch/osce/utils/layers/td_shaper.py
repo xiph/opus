@@ -59,11 +59,17 @@ class TDShaper(nn.Module):
             self.feature_alpha1_f = soft_quant(self.feature_alpha1_f)
 
         if self.innovate:
-            self.feature_alpha1b = norm(nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2))
-            self.feature_alpha1c = norm(nn.Conv1d(self.feature_dim + self.env_dim, frame_size, 2))
+            self.feature_alpha1b_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2))
+            self.feature_alpha1b_t = norm(nn.Conv1d(self.env_dim, frame_size, 2))
+            self.feature_alpha1c_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2))
+            self.feature_alpha1c_t = norm(nn.Conv1d(self.env_dim, frame_size, 2))
 
             self.feature_alpha2b = norm(nn.Conv1d(frame_size, frame_size, 2))
             self.feature_alpha2c = norm(nn.Conv1d(frame_size, frame_size, 2))
+
+            if softquant:
+                self.feature_alpha1b_f = soft_quant(self.feature_alpha1b_f)
+                self.feature_alpha1c_f = soft_quant(self.feature_alpha1c_f)
 
 
     def flop_count(self, rate):
@@ -73,7 +79,7 @@ class TDShaper(nn.Module):
         shape_flops = sum([_conv1d_flop_count(x, frame_rate) for x in (self.feature_alpha1_f, self.feature_alpha1_t, self.feature_alpha2)]) + 11 * frame_rate * self.frame_size
 
         if self.innovate:
-            inno_flops = sum([_conv1d_flop_count(x, frame_rate) for x in (self.feature_alpha1b, self.feature_alpha2b, self.feature_alpha1c, self.feature_alpha2c)]) + 22 * frame_rate * self.frame_size
+            inno_flops = sum([_conv1d_flop_count(x, frame_rate) for x in (self.feature_alpha1b_f, self.feature_alpha1b_t, self.feature_alpha2b, self.feature_alpha1c_f, self.feature_alpha1c_t, self.feature_alpha2c)]) + 22 * frame_rate * self.frame_size
         else:
             inno_flops = 0
 
@@ -127,11 +133,11 @@ class TDShaper(nn.Module):
         alpha = alpha.permute(0, 2, 1)
 
         if self.innovate:
-            inno_alpha = F.leaky_relu(self.feature_alpha1b(f), 0.2)
+            inno_alpha = F.leaky_relu(self.feature_alpha1b_f(f) + self.feature_alpha1b_t(t), 0.2)
             inno_alpha = torch.exp(self.feature_alpha2b(F.pad(inno_alpha, [1, 0])))
             inno_alpha = inno_alpha.permute(0, 2, 1)
 
-            inno_x = F.leaky_relu(self.feature_alpha1c(f), 0.2)
+            inno_x = F.leaky_relu(self.feature_alpha1c_f(f) + self.feature_alpha1c_t(t), 0.2)
             inno_x = torch.tanh(self.feature_alpha2c(F.pad(inno_x, [1, 0])))
             inno_x = inno_x.permute(0, 2, 1)
 

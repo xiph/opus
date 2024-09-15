@@ -3,8 +3,8 @@ import os
 import torch
 import numpy as np
 
-def load_lpcnet_features(feature_file, version=2):
-    if version == 2:
+def load_lpcnet_features(feature_file, version=3):
+    if version == 2 or version == 3:
         layout = {
             'cepstrum': [0,18],
             'periods': [18, 19],
@@ -37,7 +37,10 @@ def load_lpcnet_features(feature_file, version=2):
     )
 
     lpcs = raw_features[:, layout['lpc'][0]   : layout['lpc'][1]]
-    periods = (0.1 + 50 * raw_features[:, layout['periods'][0] : layout['periods'][1]] + 100).long()
+    if version <= 2:
+        periods = (0.1 + 50 * raw_features[:, layout['periods'][0] : layout['periods'][1]] + 100).long()
+    else:
+        periods = torch.round(torch.clip(256./2**(raw_features[:, layout['periods'][0] : layout['periods'][1]]+1.5), 32, 255)).long()
 
     return {'features' : features, 'periods' : periods, 'lpcs' : lpcs}
 
