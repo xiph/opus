@@ -1286,7 +1286,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 
    if (anti_collapse_on)
       anti_collapse(mode, X, collapse_masks, LM, C, N,
-            start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng, st->arch);
+            start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng, 0, st->arch);
 
    if (silence)
    {
