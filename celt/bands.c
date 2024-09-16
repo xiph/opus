@@ -267,7 +267,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
 /* This prevents energy collapse for transients with multiple short MDCTs */
 void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_masks, int LM, int C, int size,
       int start, int end, const opus_val16 *logE, const opus_val16 *prev1logE,
-      const opus_val16 *prev2logE, const int *pulses, opus_uint32 seed, int arch)
+      const opus_val16 *prev2logE, const int *pulses, opus_uint32 seed, int encode, int arch)
 {
    int c, i, j, k;
    for (i=start;i<end;i++)
@@ -310,7 +310,7 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
          int renormalize=0;
          prev1 = prev1logE[c*m->nbEBands+i];
          prev2 = prev2logE[c*m->nbEBands+i];
-         if (C==1)
+         if (!encode && C==1)
          {
             prev1 = MAX16(prev1,prev1logE[m->nbEBands+i]);
             prev2 = MAX16(prev2,prev2logE[m->nbEBands+i]);

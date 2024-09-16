@@ -2272,7 +2272,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       if (anti_collapse_on)
       {
          anti_collapse(mode, X, collapse_masks, LM, C, N,
-               start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng, st->arch);
+               start, end, oldBandE, oldLogE, oldLogE2, pulses, st->rng, 1, st->arch);
       }
 
       c=0; do {
