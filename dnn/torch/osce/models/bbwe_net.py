@@ -85,25 +85,25 @@ class FloatFeatureNet(nn.Module):
 class Folder(torch.nn.Module):
     def __init__(self, num_taps, frame_size):
         super().__init__()
-        
+
         self.num_taps = num_taps
         self.frame_size = frame_size
         assert frame_size % num_taps == 0
         self.taps = torch.nn.Parameter(torch.randn(num_taps).view(1, 1, -1), requires_grad=True)
-        
-    
+
+
     def flop_count(self, rate):
-        
+
         # single multiplication per sample
         return rate
-    
+
     def forward(self, x, *args):
-        
+
         batch_size, num_channels, length = x.shape
         assert length % self.num_taps == 0
-        
+
         y = x * torch.repeat_interleave(torch.exp(self.taps), length // self.num_taps, dim=-1)
-        
+
         return y
 
 class BBWENet(torch.nn.Module):
@@ -123,7 +123,7 @@ class BBWENet(torch.nn.Module):
                  interpolate_k48=1,
                  shape_extension=True,
                  func_extension=True,
-                 shaper='TDShape',
+                 shaper='TDShaper',
                  bias=False,
                  ):
 
@@ -140,7 +140,7 @@ class BBWENet(torch.nn.Module):
         self.shape_extension        = shape_extension
         self.func_extension         = func_extension
         self.shaper                 = shaper
-        
+
         assert (shape_extension or func_extension) and "Require at least one of shape_extension and func_extension to be true"
 
 
@@ -165,7 +165,7 @@ class BBWENet(torch.nn.Module):
                 self.tdshape2 = Folder(12, frame_size=self.frame_size48)
             else:
                 raise ValueError(f"unknown shaper {self.shaper}")
-        
+
         if activation == 'ImPowI':
             self.nlfunc = lambda x : x * torch.sin(torch.log(torch.abs(x) + 1e-6))
         elif activation == "ReLU":
@@ -209,7 +209,7 @@ class BBWENet(torch.nn.Module):
 
         # split into latent_channels channels
         y16 = self.af1(x, cf, debug=debug)
-        
+
         # first 2x upsampling step
         y32 = self.upsampler.hq_2x_up(y16)
         y32_out = y32[:, 0:1, :] # first channel is bypass channel
@@ -220,14 +220,14 @@ class BBWENet(torch.nn.Module):
             y32_shape = self.tdshape1(y32[:, idx:idx+1, :], cf)
             y32_out = torch.cat((y32_out, y32_shape), dim=1)
             idx += 1
-        
+
         if self.func_extension:
             y32_func = self.nlfunc(y32[:, idx:idx+1, :])
             y32_out = torch.cat((y32_out, y32_func), dim=1)
-        
+
         # mix-select
         y32_out = self.af2(y32_out, cf)
-        
+
         # 1.5x upsampling
         y48 = self.upsampler.interpolate_3_2(y32_out)
         y48_out = y48[:, 0:1, :] # first channel is bypass channel
@@ -238,12 +238,12 @@ class BBWENet(torch.nn.Module):
             y48_shape = self.tdshape2(y48[:, idx:idx+1, :], cf)
             y48_out = torch.cat((y48_out, y48_shape), dim=1)
             idx += 1
-        
+
         if self.func_extension:
             y48_func = self.nlfunc(y48[:, idx:idx+1, :])
             y48_out = torch.cat((y48_out, y48_func), dim=1)
-        
+
         # 2nd mixing
         y48_out = self.af3(y48_out, cf)
-        
+
         return y48_out

@@ -236,9 +236,9 @@ bbwenet_setup = {
             'w_sc': 0,
             'w_wsc': 0,
             'w_xcorr': 0,
-            'w_sxcorr': 1,
-            'w_l2': 0,
-            'w_slm': 2,
+            'w_sxcorr': 2,
+            'w_l2': 10,
+            'w_slm': 1,
             'w_tdlp': 1
         },
         'preemph': 0.85
