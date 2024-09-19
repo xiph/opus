@@ -155,6 +155,7 @@ lr_gen          = lr * setup['training']['gen_lr_reduction']
 lambda_feat     =  setup['training']['lambda_feat']
 lambda_reg      = setup['training']['lambda_reg']
 adv_target      = setup['training'].get('adv_target', 'x_48')
+newloss         = setup['training'].get('newloss', False)
 
 # load training dataset
 data_config = setup['data']
@@ -174,10 +175,12 @@ else:
 model = model_dict[model_name](*setup['model']['args'], **setup['model']['kwargs'])
 
 # create discriminator
+print(setup['discriminator']['name'],setup['discriminator']['kwargs'])
 disc_name = setup['discriminator']['name']
 disc = model_dict[disc_name](
     *setup['discriminator']['args'], **setup['discriminator']['kwargs']
 )
+
 
 # set compute device
 if type(args.device) == type(None):
@@ -272,13 +275,28 @@ def td_l1(y_true, y_pred, pow=0):
 
     return torch.mean(tmp)
 
-tdlp = TDLowpass(15, 4000/24000).to(device)
+if newloss:
+    tdlp = TDLowpass(31, 4000/24000).to(device)
+else:
+    tdlp = TDLowpass(15, 4000/24000).to(device)
 
-def criterion(x, y, x_up):
+if newloss:
+    def criterion(x, y, x_up):
+        # FD-losses are calculated on preemphasized signals
+        xp = preemph(x, preemph_gamma)
+        yp = preemph(y, preemph_gamma)
 
-    return (w_l1 * td_l1(x, y, pow=1) +  stftloss(x, y) + w_logmel * logmelloss(x, y)
-            + w_xcorr * xcorr_loss(x, y) + w_l2 * td_l2_norm(x, y) + w_tdlp * tdlp(x_up, y)) / w_sum
+        return (w_l1 * td_l1(x, y, pow=1) +  stftloss(xp, yp) + w_logmel * logmelloss(xp, yp)
+                + w_xcorr * xcorr_loss(x, y) + w_l2 * td_l2_norm(x, y) + w_tdlp * tdlp(x_up, y)) / w_sum
+else:
+    def criterion(x, y, x_up):
+        # all losses are calculated on preemphasized signals
+        x = preemph(x, preemph_gamma)
+        y = preemph(y, preemph_gamma)
+        x_up = preemph(x_up, preemph_gamma)
 
+        return (w_l1 * td_l1(x, y, pow=1) +  stftloss(x, y) + w_logmel * logmelloss(x, y)
+                + w_xcorr * xcorr_loss(x, y) + w_l2 * td_l2_norm(x, y) + w_tdlp * tdlp(x_up, y)) / w_sum
 
 # model checkpoint
 checkpoint = {
@@ -364,12 +382,10 @@ for ep in range(1, epochs + 1):
 
             # pre-emphasize
             disc_target = preemph(target, preemph_gamma)
-            target = preemph(target, preemph_gamma)
-            x_up = preemph(x_up, preemph_gamma)
-            output = preemph(output, preemph_gamma)
+            output_preemph = preemph(output, preemph_gamma)
 
             # discriminator update
-            scores_gen = disc(output.detach())
+            scores_gen = disc(output_preemph.detach())
             scores_real = disc(disc_target.unsqueeze(1))
 
             disc_loss = 0
@@ -394,7 +410,7 @@ for ep in range(1, epochs + 1):
             optimizer_disc.step()
 
             # generator update
-            scores_gen = disc(output)
+            scores_gen = disc(output_preemph)
 
             # calculate loss
             loss_reg = criterion(target, output.squeeze(1), x_up)

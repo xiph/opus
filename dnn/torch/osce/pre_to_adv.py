@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     setup['training'] = adv_setup['training']
     setup['discriminator'] = adv_setup['discriminator']
-    setup['data']['frames_per_sample'] = 60
+    setup['data']['frames_per_sample'] = 90
 
     with open(args.adv_setup_yaml, 'w') as f:
         yaml.dump(setup, f)
