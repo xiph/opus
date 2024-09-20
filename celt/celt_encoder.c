@@ -1705,6 +1705,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    int qext_scale;
    int padding_len_bytes=0;
    unsigned char *ext_payload;
+   opus_int32 qext_bits;
    ec_enc ext_enc;
    VARDECL(int, extra_quant);
    VARDECL(int, extra_pulses);
@@ -2511,15 +2512,27 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    quant_fine_energy(mode, start, end, oldBandE, error, NULL, fine_quant, enc, C);
    OPUS_CLEAR(energyError, nbEBands*CC);
 #ifdef ENABLE_QEXT
-   ALLOC(extra_quant, nbEBands, int);
-   ALLOC(extra_pulses, nbEBands, int);
+   ALLOC(extra_quant, nbEBands+NB_QEXT_BANDS, int);
+   ALLOC(extra_pulses, nbEBands+NB_QEXT_BANDS, int);
    ALLOC(error_bak, C*nbEBands, celt_glog);
 
-   clt_compute_extra_allocation(mode, start, end, bandLogE,
-         qext_bytes*8<<BITRES, extra_pulses, extra_quant, C, LM, &ext_enc, 1);
+   qext_bits = ((opus_int32)qext_bytes*8<<BITRES) - ec_tell_frac(enc) - 1;
+   clt_compute_extra_allocation(mode, qext_mode, start, end, bandLogE, qext_bandLogE,
+         qext_bits, extra_pulses, extra_quant, C, LM, &ext_enc, 1);
    OPUS_COPY(error_bak, error, C*nbEBands);
    if (qext_bytes > 0)
       quant_fine_energy(mode, start, end, oldBandE, error, fine_quant, extra_quant, &ext_enc, C);
+   if (qext_mode) {
+      quant_fine_energy(qext_mode, 0, NB_QEXT_BANDS, qext_oldBandE, qext_error, NULL, &extra_quant[nbEBands], &ext_enc, C);
+      ec_enc foo_enc;
+      ec_enc_init(&foo_enc, NULL, 0);
+      int zeros[21] = {0};
+      ALLOC(qext_collapse_masks, C*NB_QEXT_BANDS, unsigned char);
+      quant_all_bands(1, qext_mode, 0, NB_QEXT_BANDS, X, C==2 ? X+N : NULL, qext_collapse_masks,
+            qext_bandE, &extra_pulses[nbEBands], shortBlocks, st->spread_decision,
+            dual_stereo, st->intensity, zeros, qext_bytes*(8<<BITRES),
+            0, &ext_enc, LM, codedBands, &st->rng, st->complexity, st->arch, st->disable_inv, &foo_enc, zeros, 0);
+   }
 #endif
 
    /* Residual quantisation */
@@ -2580,7 +2593,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       } while (++c<CC);
 
       celt_synthesis(mode, X, out_mem, oldBandE, start, effEnd,
-                     C, CC, isTransient, LM, st->upsample, silence, st->arch ARG_QEXT(qext_mode) ARG_QEXT(qext_bandLogE));
+                     C, CC, isTransient, LM, st->upsample, silence, st->arch ARG_QEXT(qext_mode) ARG_QEXT(qext_oldBandE));
 
       c=0; do {
          st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);

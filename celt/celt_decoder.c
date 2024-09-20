@@ -1039,6 +1039,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    const opus_int16 *eBands;
    celt_glog max_background_increase;
 #ifdef ENABLE_QEXT
+   opus_int32 qext_bits;
    ec_dec ext_dec;
    int qext_bytes=0;
    VARDECL(int, extra_quant);
@@ -1333,13 +1334,27 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 
    unquant_fine_energy(mode, start, end, oldBandE, NULL, fine_quant, dec, C);
 
+   ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
+
 #ifdef ENABLE_QEXT
-   ALLOC(extra_quant, nbEBands, int);
-   ALLOC(extra_pulses, nbEBands, int);
-   clt_compute_extra_allocation(mode, start, end, NULL,
-         qext_bytes*8<<BITRES, extra_pulses, extra_quant, C, LM, &ext_dec, 0);
+   ALLOC(extra_quant, nbEBands+NB_QEXT_BANDS, int);
+   ALLOC(extra_pulses, nbEBands+NB_QEXT_BANDS, int);
+   qext_bits = ((opus_int32)qext_bytes*8<<BITRES) - ec_tell_frac(dec) - 1;
+   clt_compute_extra_allocation(mode, qext_mode, start, end, NULL, NULL,
+         qext_bits, extra_pulses, extra_quant, C, LM, &ext_dec, 0);
    if (qext_bytes > 0)
       unquant_fine_energy(mode, start, end, oldBandE, fine_quant, extra_quant, &ext_dec, C);
+   if (qext_mode) {
+      ec_enc foo_enc;
+      ec_enc_init(&foo_enc, NULL, 0);
+      int zeros[21] = {0};
+      ALLOC(qext_collapse_masks, C*NB_QEXT_BANDS, unsigned char);
+      unquant_fine_energy(qext_mode, 0, NB_QEXT_BANDS, qext_oldBandE, NULL, &extra_quant[nbEBands], &ext_dec, C);
+      quant_all_bands(0, qext_mode, 0, NB_QEXT_BANDS, X, C==2 ? X+N : NULL, qext_collapse_masks,
+               NULL, &extra_pulses[nbEBands], shortBlocks, spread_decision, dual_stereo, intensity, zeros,
+               qext_bytes*(8<<BITRES), 0, &ext_dec, LM, codedBands, &st->rng, 0,
+               st->arch, st->disable_inv, &foo_enc, zeros, 0);
+   }
 #endif
 
    c=0; do {
@@ -1349,10 +1364,6 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    /* Decode fixed codebook */
    ALLOC(collapse_masks, C*nbEBands, unsigned char);
 
-   ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
-#ifdef ENABLE_QEXT
-   if (qext_mode) OPUS_CLEAR(X, C*N);
-#endif
    quant_all_bands(0, mode, start, end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
          len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng, 0,
