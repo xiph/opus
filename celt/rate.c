@@ -48,7 +48,7 @@ static const unsigned char LOG2_FRAC_TABLE[24]={
   32,33,34,34,35,36,36,37,37
 };
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_QEXT)
 
 /*Determines if V(N,K) fits in a 32-bit unsigned integer.
   N and K are themselves limited to 15 bits.*/
@@ -647,28 +647,39 @@ int clt_compute_allocation(const CELTMode *m, int start, int end, const int *off
 
 #ifdef ENABLE_QEXT
 
-void clt_compute_extra_allocation(const CELTMode *m, int start, int end, const celt_glog *bandLogE,
+void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, int start, int end, int qext_end, const celt_glog *bandLogE, const celt_glog *qext_bandLogE,
       opus_int32 total, int *extra_pulses, int *extra_equant, int C, int LM, ec_ctx *ec, int encode)
 {
    int i;
    opus_val32 sum;
    opus_val32 fill;
    int iter;
+   int tot_bands;
+   int tot_samples;
    VARDECL(int, depth);
 
+   if (qext_mode != NULL) {
+      celt_assert(end==m->nbEBands);
+      tot_bands = end + qext_end;
+      tot_samples = qext_mode->eBands[qext_end]*C<<LM;
+   } else {
+      tot_bands = end;
+      tot_samples = (m->eBands[end]-m->eBands[start])*C<<LM;
+   }
+
    if (total <= 0) {
-      for (i=start;i<end;i++) {
+      for (i=start;i<m->nbEBands+qext_end;i++) {
          extra_pulses[i] = extra_equant[i] = 0;
       }
       return;
    }
-   ALLOC(depth, end, int);
+   ALLOC(depth, tot_bands, int);
    if (encode) {
       VARDECL(opus_val16, flatE);
       VARDECL(int, Ncoef);
 
-      ALLOC(flatE, end, opus_val16);
-      ALLOC(Ncoef, end, int);
+      ALLOC(flatE, tot_bands, opus_val16);
+      ALLOC(Ncoef, tot_bands, int);
       for (i=start;i<end;i++) {
          Ncoef[i] = (m->eBands[i+1]-m->eBands[i])*C<<LM;
       }
@@ -681,21 +692,34 @@ void clt_compute_extra_allocation(const CELTMode *m, int start, int end, const c
             flatE[i] = MAXG(flatE[i], PSHR32(bandLogE[m->nbEBands+i] - GCONST(0.0625f)*m->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(i+5)*(i+5), DB_SHIFT-10));
          }
       }
+      if (qext_mode != NULL) {
+         for (i=0;i<qext_end;i++) {
+            Ncoef[end+i] = (qext_mode->eBands[i+1]-qext_mode->eBands[i])*C<<LM;
+         }
+         for (i=0;i<qext_end;i++) {
+            flatE[end+i] = PSHR32(qext_bandLogE[i] - GCONST(0.0625f)*qext_mode->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(end+i+5)*(end+i+5), DB_SHIFT-10);
+         }
+         if (C==2) {
+            for (i=0;i<qext_end;i++) {
+               flatE[end+i] = MAXG(flatE[end+i], PSHR32(qext_bandLogE[NB_QEXT_BANDS+i] - GCONST(0.0625f)*qext_mode->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(end+i+5)*(end+i+5), DB_SHIFT-10));
+            }
+         }
+      }
       /* Approximate fill level assuming all bands contribute fully. */
       sum = 0;
-      for (i=start;i<end;i++) {
+      for (i=start;i<tot_bands;i++) {
          sum += MULT16_16(Ncoef[i], flatE[i]);
       }
       total >>= BITRES;
-      fill = (SHL32(total, 10) + sum)/((m->eBands[end]-m->eBands[start])*C<<LM);
+      fill = (SHL32(total, 10) + sum)/tot_samples;
       /* Iteratively refine the fill level considering that we allow between 0 and 12 bits of depth. */
       for (iter=0;iter<10;iter++) {
          sum = 0;
-         for (i=start;i<end;i++)
+         for (i=start;i<tot_bands;i++)
             sum += Ncoef[i] * MIN32(QCONST16(12.f, 10), MAX32(0, flatE[i]-fill));
-         fill -= (SHL32(total, 10) - sum)/((m->eBands[end]-m->eBands[start])*C<<LM);
+         fill -= (SHL32(total, 10) - sum)/tot_samples;
       }
-      for (i=start;i<end;i++) {
+      for (i=start;i<tot_bands;i++) {
 #ifdef FIXED_POINT
          depth[i] = PSHR32(MIN32(QCONST16(12.f, 10), MAX32(0, flatE[i]-fill)), 10-2);
 #else
@@ -707,7 +731,7 @@ void clt_compute_extra_allocation(const CELTMode *m, int start, int end, const c
             depth[i] = 0;
       }
    } else {
-      for (i=start;i<end;i++) {
+      for (i=start;i<tot_bands;i++) {
          if (ec_tell_frac(ec) + 45 < ec->storage*8<<BITRES)
             depth[i] = ec_dec_uint(ec, 49);
          else
@@ -717,6 +741,12 @@ void clt_compute_extra_allocation(const CELTMode *m, int start, int end, const c
    for (i=start;i<end;i++) {
       extra_equant[i] = (depth[i]+3)>>2;
       extra_pulses[i] = ((((m->eBands[i+1]-m->eBands[i])<<LM)-1)*C * depth[i] * (1<<BITRES) + 2)>>2;
+   }
+   if (qext_mode) {
+      for (i=0;i<qext_end;i++) {
+         extra_equant[end+i] = (depth[end+i]+3)>>2;
+         extra_pulses[end+i] = ((((qext_mode->eBands[i+1]-qext_mode->eBands[i])<<LM)-1)*C * depth[end+i] * (1<<BITRES) + 2)>>2;
+      }
    }
 }
 #endif
