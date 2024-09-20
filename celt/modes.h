@@ -75,10 +75,13 @@ struct OpusCustomMode {
    const celt_coef *window;
    mdct_lookup mdct;
    PulseCache cache;
+#ifdef ENABLE_QEXT
+   PulseCache qext_cache;
+#endif
 };
 
 #ifdef ENABLE_QEXT
-#define NB_QEXT_BANDS 7
+#define NB_QEXT_BANDS 14
 void compute_qext_mode(CELTMode *qext, const CELTMode *m);
 #endif
 
