@@ -494,5 +494,6 @@ void compute_qext_mode(CELTMode *qext, const CELTMode *m)
    qext->nbEBands = qext->effEBands = NB_QEXT_BANDS;
    qext->nbAllocVectors = 0;
    qext->allocVectors = NULL;
+   compute_pulse_cache(qext, qext->maxLM);
 }
 #endif
