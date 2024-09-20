@@ -67,3 +67,5 @@ get_opus_sources(tests_test_opus_padding_SOURCES Makefile.am
                  test_opus_padding_sources)
 get_opus_sources(tests_test_opus_dred_SOURCES Makefile.am
                  test_opus_dred_sources)
+get_opus_sources(tests_test_opus_custom_SOURCES Makefile.am
+                 test_opus_custom_sources)
