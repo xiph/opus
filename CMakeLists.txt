@@ -745,4 +745,11 @@ if(BUILD_TESTING AND NOT BUILD_SHARED_LIBS)
           -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
           -P "${PROJECT_SOURCE_DIR}/cmake/RunTest.cmake")
   endif()
+  if(OPUS_CUSTOM_MODES)
+    add_executable(test_opus_custom ${test_opus_custom_sources})
+    target_include_directories(test_opus_custom
+                              PRIVATE ${CMAKE_CURRENT_BINARY_DIR} celt dnn)
+    target_link_libraries(test_opus_custom PRIVATE opus)
+    target_compile_definitions(test_opus_custom PRIVATE OPUS_BUILD)
+  endif()
 endif()

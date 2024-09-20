@@ -223,6 +223,11 @@ tests_test_opus_padding_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 tests_test_opus_dred_SOURCES = tests/test_opus_dred.c tests/test_opus_common.h
 tests_test_opus_dred_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
+if CUSTOM_MODES
+tests_test_opus_custom_SOURCES = tests/test_opus_custom.c tests/test_opus_common.h
+tests_test_opus_custom_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+endif
+
 CELT_OBJ = $(CELT_SOURCES:.c=.lo)
 SILK_OBJ = $(SILK_SOURCES:.c=.lo)
 LPCNET_OBJ = $(LPCNET_SOURCES:.c=.lo)
@@ -289,6 +294,9 @@ if EXTRA_PROGRAMS
 noinst_PROGRAMS += opus_custom_demo
 opus_custom_demo_SOURCES = celt/opus_custom_demo.c
 opus_custom_demo_LDADD = libopus.la $(LIBM)
+
+TESTS += tests/test_opus_custom
+noinst_PROGRAMS += tests/test_opus_custom
 endif
 endif
 
