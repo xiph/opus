@@ -36,7 +36,7 @@
 #include "mathops.h"
 #include "arch.h"
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_QEXT)
 
 /*Guaranteed to return a conservatively large estimate of the binary logarithm
    with frac bits of fractional precision.
@@ -427,7 +427,7 @@ static const opus_uint32 *const CELT_PVQ_U_ROW[15]={
 };
 #endif
 
-#if defined(CUSTOM_MODES)
+#if defined(CUSTOM_MODES) || defined(ENABLE_QEXT)
 void get_required_bits(opus_int16 *_bits,int _n,int _maxk,int _frac){
   int k;
   /*_maxk==0 => there's nothing to do.*/
@@ -666,7 +666,7 @@ static OPUS_INLINE opus_uint32 icwrs(int _n,int _k,opus_uint32 *_nc,const int *_
   return i;
 }
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_QEXT)
 void get_required_bits(opus_int16 *_bits,int _n,int _maxk,int _frac){
   int k;
   /*_maxk==0 => there's nothing to do.*/
