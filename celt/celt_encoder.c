@@ -2007,6 +2007,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          /*printf("%f %d %f %d\n\n", st->analysis.tonality, st->spread_decision, st->analysis.tonality_slope, st->tapset_decision);*/
       }
       ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
+   } else {
+      st->spread_decision = SPREAD_NORMAL;
    }
 
    /* For LFE, everything interesting is in the first band */
