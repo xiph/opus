@@ -37,7 +37,8 @@ class NoiseShaper(nn.Module):
 
     def __init__(self,
                  feature_dim,
-                 frame_size=160
+                 frame_size=160,
+                 bias=True
     ):
         """
 
@@ -58,8 +59,8 @@ class NoiseShaper(nn.Module):
         self.frame_size     = frame_size
 
         # feature transform
-        self.feature_alpha1 = nn.Conv1d(self.feature_dim, frame_size, 2)
-        self.feature_alpha2 = nn.Conv1d(frame_size, frame_size, 2)
+        self.feature_alpha1 = nn.Conv1d(self.feature_dim, frame_size, 2, bias=bias)
+        self.feature_alpha2 = nn.Conv1d(frame_size, frame_size, 2, bias=bias)
 
 
     def flop_count(self, rate):

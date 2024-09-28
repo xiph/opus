@@ -15,7 +15,8 @@ class TDShaper(nn.Module):
                  innovate=False,
                  pool_after=False,
                  softquant=False,
-                 apply_weight_norm=False
+                 apply_weight_norm=False,
+                 bias=True
     ):
         """
 
@@ -51,21 +52,21 @@ class TDShaper(nn.Module):
         norm = torch.nn.utils.weight_norm if apply_weight_norm else lambda x, name=None: x
 
         # feature transform
-        self.feature_alpha1_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2))
-        self.feature_alpha1_t = norm(nn.Conv1d(self.env_dim, frame_size, 2))
-        self.feature_alpha2 = norm(nn.Conv1d(frame_size, frame_size, 2))
+        self.feature_alpha1_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2, bias=bias))
+        self.feature_alpha1_t = norm(nn.Conv1d(self.env_dim, frame_size, 2, bias=bias))
+        self.feature_alpha2 = norm(nn.Conv1d(frame_size, frame_size, 2, bias=bias))
 
         if softquant:
             self.feature_alpha1_f = soft_quant(self.feature_alpha1_f)
 
         if self.innovate:
-            self.feature_alpha1b_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2))
-            self.feature_alpha1b_t = norm(nn.Conv1d(self.env_dim, frame_size, 2))
-            self.feature_alpha1c_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2))
-            self.feature_alpha1c_t = norm(nn.Conv1d(self.env_dim, frame_size, 2))
+            self.feature_alpha1b_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2, bias=bias))
+            self.feature_alpha1b_t = norm(nn.Conv1d(self.env_dim, frame_size, 2, bias=bias))
+            self.feature_alpha1c_f = norm(nn.Conv1d(self.feature_dim, frame_size, 2, bias=bias))
+            self.feature_alpha1c_t = norm(nn.Conv1d(self.env_dim, frame_size, 2, bias=bias))
 
-            self.feature_alpha2b = norm(nn.Conv1d(frame_size, frame_size, 2))
-            self.feature_alpha2c = norm(nn.Conv1d(frame_size, frame_size, 2))
+            self.feature_alpha2b = norm(nn.Conv1d(frame_size, frame_size, 2, bias=bias))
+            self.feature_alpha2c = norm(nn.Conv1d(frame_size, frame_size, 2, bias=bias))
 
             if softquant:
                 self.feature_alpha1b_f = soft_quant(self.feature_alpha1b_f)

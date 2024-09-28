@@ -74,10 +74,13 @@ class LaVoce(nn.Module):
                  norm_p=2,
                  avg_pool_k=4,
                  pulses=False,
+                 power_pulses=False,
+                 pulse_power=9,
                  innovate1=True,
                  innovate2=False,
                  innovate3=False,
-                 ftrans_k=2):
+                 ftrans_k=2,
+                 shape_bias=True):
 
         super().__init__()
 
@@ -90,6 +93,8 @@ class LaVoce(nn.Module):
         self.preemph                = preemph
         self.pulses                 = pulses
         self.ftrans_k               = ftrans_k
+        self.power_pulses           = power_pulses
+        self.pulse_power            = pulse_power
 
         assert self.FEATURE_FRAME_SIZE % self.FRAME_SIZE == 0
         self.upsamp_factor =  self.FEATURE_FRAME_SIZE // self.FRAME_SIZE
@@ -101,7 +106,7 @@ class LaVoce(nn.Module):
         self.feature_net = LPCNetFeatureNet(num_features + pitch_embedding_dim, cond_dim, self.upsamp_factor)
 
         # noise shaper
-        self.noise_shaper = NoiseShaper(cond_dim, self.FRAME_SIZE)
+        self.noise_shaper = NoiseShaper(cond_dim, self.FRAME_SIZE, bias=shape_bias)
 
         # comb filters
         left_pad = self.kernel_size // 2
@@ -117,9 +122,9 @@ class LaVoce(nn.Module):
         self.af1 = LimitedAdaptiveConv1d(1, 2, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
 
         # non-linear transforms
-        self.tdshape1 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=innovate1)
-        self.tdshape2 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=innovate2)
-        self.tdshape3 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=innovate3)
+        self.tdshape1 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=innovate1, bias=shape_bias)
+        self.tdshape2 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=innovate2, bias=shape_bias)
+        self.tdshape3 = TDShaper(cond_dim, frame_size=self.FRAME_SIZE, avg_pool_k=avg_pool_k, innovate=innovate3, bias=shape_bias)
 
         # combinators
         self.af2 = LimitedAdaptiveConv1d(2, 2, self.kernel_size, cond_dim, frame_size=self.FRAME_SIZE, use_bias=False, padding=[self.kernel_size - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=norm_p)
@@ -152,6 +157,11 @@ class LaVoce(nn.Module):
                 pulse_b = torch.relu(-chunk_sin - alpha) / (1 - alpha)
 
                 chunk = torch.cat((pulse_a, pulse_b), dim = 1)
+            elif self.power_pulses:
+                chunk_sin = torch.sin(f  * progression + phase0).view(batch_size, 1, self.FRAME_SIZE)
+                pulse_a = torch.relu(chunk_sin) ** self.pulse_power
+                pulse_b = torch.relu(-chunk_sin) ** self.pulse_power
+                chunk = torch.cat((pulse_a, pulse_b), dim = 1)
             else:
                 chunk_sin = torch.sin(f  * progression + phase0).view(batch_size, 1, self.FRAME_SIZE)
                 chunk_cos = torch.cos(f  * progression + phase0).view(batch_size, 1, self.FRAME_SIZE)
@@ -176,7 +186,7 @@ class LaVoce(nn.Module):
         af_flops = self.af1.flop_count(rate) + self.af2.flop_count(rate) + self.af3.flop_count(rate) + self.af4.flop_count(rate) + self.af_prescale.flop_count(rate) + self.af_mix.flop_count(rate)
         feature_flops = (_conv1d_flop_count(self.post_cf1, frame_rate) + _conv1d_flop_count(self.post_cf2, frame_rate)
                          + _conv1d_flop_count(self.post_af1, frame_rate) + _conv1d_flop_count(self.post_af2, frame_rate) + _conv1d_flop_count(self.post_af3, frame_rate))
-        shape_flops = self.tdshape1.flop_count(rate) + self.tdshape2.flop_count(rate) + self.tdshape3.flop_count(rate)
+        shape_flops = self.tdshape1.flop_count(rate) + self.tdshape2.flop_count(rate) + self.tdshape3.flop_count(rate) + self.noise_shaper.flop_count(rate)
 
         if verbose:
             print(f"feature net: {feature_net_flops / 1e6} MFLOPS")

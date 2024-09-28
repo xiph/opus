@@ -316,8 +316,8 @@ lavoce_setup_adv = {
         'name': 'lavoce'
     },
     'training': {
-        'batch_size': 64,
-        'epochs': 50,
+        'batch_size': 128,
+        'epochs': 100,
         'gen_lr_reduction': 1,
         'lambda_feat': 1.0,
         'lambda_reg': 0.6,
