@@ -435,6 +435,77 @@ void testcelt_float2int16(int use_ref_impl, int buffer_size)
 #undef MAX_BUFFER_SIZE
 }
 
+void testopus_limit2_checkwithin1(int use_ref_impl)
+{
+#define BUFFER_SIZE 37 /* strange float count to trigger residue loop of SIMD implementation */
+#define BYTE_COUNT (BUFFER_SIZE * sizeof(float))
+   int i, within1;
+   const int arch = opus_select_arch();
+
+   float pattern[BUFFER_SIZE], buffer[BUFFER_SIZE];
+
+   for (i = 0; i < BUFFER_SIZE; ++i)
+   {
+      pattern[i] = i % 2 ? -1.f : 1.f;
+   }
+
+   /* All values within -1..1:
+   Nothing changed. Return value is implementation-dependent (not expected to recognise nothing exceeds -1..1) */
+   memcpy(buffer, pattern, BYTE_COUNT);
+   within1 = use_ref_impl ? opus_limit2_checkwithin1_c(buffer, BUFFER_SIZE) : opus_limit2_checkwithin1(buffer, BUFFER_SIZE, arch);
+   if (memcmp(buffer, pattern, BYTE_COUNT) != 0)
+   {
+      fprintf (stderr, "opus_limit2_checkwithin1() modified values not exceeding -1..1 (ref=%d)\n", use_ref_impl);
+      ret = 1;
+   }
+
+   /* One value exceeds -1..1, within -2..2:
+   Values unchanged. Return value says not all values are within -1..1 */
+   for (i = 0; i < BUFFER_SIZE; ++i)
+   {
+      const float replace_value = pattern[i] * 1.001f;
+
+      memcpy(buffer, pattern, BYTE_COUNT);
+      buffer[i] = replace_value;
+      within1 = use_ref_impl ? opus_limit2_checkwithin1_c(buffer, BUFFER_SIZE) : opus_limit2_checkwithin1(buffer, BUFFER_SIZE, arch);
+      if (within1 || buffer[i] != replace_value)
+      {
+         fprintf (stderr, "opus_limit2_checkwithin1() handled value exceeding -1..1 erroneously (ref=%d, i=%d)\n", use_ref_impl, i);
+         ret = 1;
+      }
+      buffer[i] = pattern[i];
+      if (memcmp(buffer, pattern, BYTE_COUNT) != 0)
+      {
+         fprintf (stderr, "opus_limit2_checkwithin1() modified value within -2..2  (ref=%d, i=%d)\n", use_ref_impl, i);
+         ret = 1;
+      }
+   }
+
+   /* One value exceeds -2..2:
+   One value is hardclipped, others are unchanged. Return value says not all values are within -1..1 */
+   for (i = 0; i < BUFFER_SIZE; ++i)
+   {
+      const float replace_value = pattern[i] * 2.1;
+
+      memcpy(buffer, pattern, BYTE_COUNT);
+      buffer[i] = replace_value;
+      within1 = use_ref_impl ? opus_limit2_checkwithin1_c(buffer, BUFFER_SIZE) : opus_limit2_checkwithin1(buffer, BUFFER_SIZE, arch);
+      if (within1 || buffer[i] != (replace_value > 0.f ? 2.f : -2.f))
+      {
+         fprintf (stderr, "opus_limit2_checkwithin1() handled value exceeding -2..2 erroneously (ref=%d, i=%d)\n", use_ref_impl, i);
+         ret = 1;
+      }
+      buffer[i] = pattern[i];
+      if (memcmp(buffer, pattern, BYTE_COUNT) != 0)
+      {
+         fprintf (stderr, "opus_limit2_checkwithin1() modified value within -2..2  (ref=%d, i=%d)\n", use_ref_impl, i);
+         ret = 1;
+      }
+   }
+#undef BUFFER_SIZE
+#undef BYTE_COUNT
+}
+
 #endif
 
 int main(void)
@@ -461,6 +532,7 @@ int main(void)
       testcelt_float2int16(use_ref_impl[i], 32);
       testcelt_float2int16(use_ref_impl[i], 127);
       testcelt_float2int16(use_ref_impl[i], 1031);
+      testopus_limit2_checkwithin1(use_ref_impl[i]);
    }
 #endif
    return ret;
