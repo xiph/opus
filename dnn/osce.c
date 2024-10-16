@@ -110,7 +110,7 @@ static void lace_feature_net(
     int arch
 )
 {
-    float input_buffer[4 * IMAX(LACE_COND_DIM, LACE_HIDDEN_FEATURE_DIM)];
+    float input_buffer[IMAX(4 * IMAX(LACE_COND_DIM, LACE_HIDDEN_FEATURE_DIM), LACE_NUM_FEATURES + LACE_PITCH_EMBEDDING_DIM + 2*LACE_NUMBITS_EMBEDDING_DIM)];
     float output_buffer[4 * IMAX(LACE_COND_DIM, LACE_HIDDEN_FEATURE_DIM)];
     float numbits_embedded[2 * LACE_NUMBITS_EMBEDDING_DIM];
     int i_subframe;
