@@ -347,6 +347,48 @@ static void new_random_setting(OpusEncoder *enc)
 
 #endif
 
+#define MODE_SWITCHING_RATE 53
+#define BITRATE_SWITCHING_RATE 47
+#define NUM_BITRATES2 7
+static int bitrates2[NUM_BITRATES2] = {
+        6000,  9000, 12000, 15000, 18000, 24000, 32000
+};
+
+static int randint2(int min, int max, int step)
+{
+    double r = ((double) rand())/ (RAND_MAX + 1.);
+    int d;
+
+    d = ((int) ((max + 1 - min) * r / step) * step) + min;
+
+    return d;
+}
+
+static void set_random_bitrate(OpusEncoder *enc)
+{
+    int bitrate = bitrates2[randint2(0, NUM_BITRATES2 - 1, 1)];
+
+    //printf("switching to bitrate %d\n", bitrate);
+    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate));
+}
+
+static void switch_silk_celt(OpusEncoder *enc)
+{
+    static unsigned mode = 0;
+    if (mode == 0)
+    {
+        //printf("switching to SILK only\n");
+        opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY));
+    }
+    else
+    {
+        //printf("switching to CELT only\n");
+        opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_CELT_ONLY));
+    }
+    mode ^= 1;
+}
+
+
 int main(int argc, char *argv[])
 {
     int err;
@@ -417,6 +459,9 @@ int main(int argc, char *argv[])
     int silk_random_switching = 0;
     int silk_frame_counter = 0;
 #endif
+    int osce_test_frame_counter = 0;
+    int osce_test_bitrate_switching = 0;
+    int osce_test_mode_switching = 0;
 #ifdef USE_WEIGHTS_FILE
     int blob_len;
     void *blob_data;
@@ -659,6 +704,12 @@ int main(int argc, char *argv[])
             printf("switching encoding parameters every %dth frame\n", silk_random_switching);
             args += 2;
 #endif
+        } else if (strcmp( argv[ args ], "-osce_test_bitrate_switching") == 0) {
+            osce_test_bitrate_switching = 1;
+            args++;
+        }else if (strcmp( argv[ args ], "-osce_test_mode_switching") == 0) {
+            osce_test_mode_switching = 1;
+            args++;
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
             print_usage( argv );
@@ -885,6 +936,16 @@ int main(int argc, char *argv[])
                 }
             }
 #endif
+            if (osce_test_bitrate_switching && osce_test_frame_counter % BITRATE_SWITCHING_RATE == 0)
+            {
+                set_random_bitrate(enc);
+            }
+            if (osce_test_mode_switching && osce_test_frame_counter % MODE_SWITCHING_RATE == 0)
+            {
+                switch_silk_celt(enc);
+            }
+            osce_test_frame_counter ++;
+
             num_read = fread(fbytes, sizeof(short)*channels, frame_size-remaining, fin);
             curr_read = (int)num_read;
             tot_in += curr_read;
