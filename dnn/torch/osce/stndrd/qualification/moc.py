@@ -26,6 +26,7 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 """
+import sys
 
 import numpy as np
 import scipy.signal
@@ -172,14 +173,28 @@ if __name__ == "__main__":
     from scipy.io import wavfile
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('ref', type=str, help='reference wav file')
-    parser.add_argument('deg', type=str, help='degraded wav file')
+    parser.add_argument('ref', type=str, help='reference file (.wav or .s16)')
+    parser.add_argument('deg', type=str, help='degraded file (.wav or .s16)')
     parser.add_argument('--apply-vad', action='store_true')
     args = parser.parse_args()
 
+    if args.ref.endswith(".s16"):
+        x = np.fromfile(args.ref, dtype=np.int16)
+        fs1 = 16000
+    elif args.ref.endswith(".wav"):
+        fs1, x = wavfile.read(args.ref)
+    else:
+        parser.print_help()
+        sys.exit(1)
 
-    fs1, x = wavfile.read(args.ref)
-    fs2, y = wavfile.read(args.deg)
+    if args.deg.endswith(".s16"):
+        y = np.fromfile(args.deg, dtype=np.int16)
+        fs2 = 16000
+    elif args.ref.endswith(".wav"):
+        fs2, y = wavfile.read(args.deg)
+    else:
+        parser.print_help()
+        sys.exit(1)
 
     if max(fs1, fs2) != 16000:
         raise ValueError('error: encountered sampling frequency diffrent from 16kHz')
