@@ -613,7 +613,7 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
    /* 0.63662 = 2/pi */
    itheta = MULT16_16(QCONST16(0.63662f,15),celt_atan2p(side, mid))<<1;
 #else
-   itheta = (int)floor(.5f+65536.f*16384*0.6366197724f*atan2(side,mid));
+   itheta = (int)floor(.5f+65536.f*16384*celt_atan2p_norm(side,mid));
 #endif
 
    return itheta;

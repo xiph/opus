@@ -220,6 +220,40 @@ void testexp2log2(void)
    }
    fprintf (stdout, "celt_exp2, celt_log2 max_error: %15.25e\n", max_error);
 }
+
+void test_atan2(void) {
+   float x, y;
+   float error_threshold = 1.5e-07;
+   float max_error = 0;
+   for (x = 0.0f; x < 1.0f; x += 0.007f)
+   {
+      for (y = 0.0f; y <1.0f; y += 0.007f)
+      {
+         if (x==0 && y==0)
+         {
+            /* atan2(0,0) is undefined behavior. */
+            continue;
+         }
+         float error = fabs(0.636619772367581f*(float)atan2(y, x) - celt_atan2p_norm(y, x));
+         if (max_error < error)
+         {
+            max_error = error;
+         }
+
+         if (error > error_threshold)
+         {
+            fprintf (stderr,
+                     "celt_atan2p_norm failed: "
+                     "(fabs)(2/pi*atan2(y,x) - celt_atan2p_norm(y,x))>%15.25e "
+                     "(x = %f, y = %f, error = %15.25e)\n",
+                     error_threshold, x, y, error);
+            ret = 1;
+         }
+      }
+   }
+   fprintf (stdout, "celt_atan2p_norm max_error: %15.25e\n", max_error);
+}
+
 #else
 
 void testlog2_db(void)
@@ -453,6 +487,8 @@ int main(void)
    testilog2();
    testlog2_db();
    testexp2_db();
+#else
+   test_atan2();
 #endif
 #ifndef DISABLE_FLOAT_API
    for (i = 0; i <= 1; ++i)
