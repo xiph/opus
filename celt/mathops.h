@@ -135,6 +135,55 @@ static OPUS_INLINE opus_val32 celt_maxabs32(const opus_val32 *x, int len)
 #endif
 #endif
 
+#if !defined(FIXED_POINT) || defined(ENABLE_QEXT)
+/* Calculates the arctangent of x using a Remez approximation of order 15,
+ * incorporating only odd-powered terms. */
+static OPUS_INLINE float celt_atan_norm(float x)
+{
+   #define ATAN2_2_OVER_PI 0.636619772367581f
+   float x_sq = x * x;
+
+   /* Polynomial coefficients approximated in the [0, 1] range.
+    * Lolremez command: lolremez --degree 6 --range "0:1"
+    *                   "(atan(sqrt(x))-sqrt(x))/(x*sqrt(x))" "1/(sqrt(x)*x)"
+    * Please note that ATAN2_COEFF_A01 is fixed to 1.0f. */
+   #define ATAN2_COEFF_A03 -3.3331659436225891113281250000e-01f
+   #define ATAN2_COEFF_A05 1.99627041816711425781250000000e-01f
+   #define ATAN2_COEFF_A07 -1.3976582884788513183593750000e-01f
+   #define ATAN2_COEFF_A09 9.79423448443412780761718750000e-02f
+   #define ATAN2_COEFF_A11 -5.7773590087890625000000000000e-02f
+   #define ATAN2_COEFF_A13 2.30401363223791122436523437500e-02f
+   #define ATAN2_COEFF_A15 -4.3554059229791164398193359375e-03f
+   return ATAN2_2_OVER_PI * (x + x * x_sq * (ATAN2_COEFF_A03
+                + x_sq * (ATAN2_COEFF_A05
+                + x_sq * (ATAN2_COEFF_A07
+                + x_sq * (ATAN2_COEFF_A09
+                + x_sq * (ATAN2_COEFF_A11
+                + x_sq * (ATAN2_COEFF_A13
+                + x_sq * (ATAN2_COEFF_A15))))))));
+}
+
+/* Calculates the arctangent of y/x, returning an approximate value in radians.
+ * Please refer to the linked wiki page (https://en.wikipedia.org/wiki/Atan2)
+ * to learn how atan2 results are computed. */
+static OPUS_INLINE float celt_atan2p_norm(float y, float x)
+{
+   celt_sig_assert(x>=0 && y>=0);
+
+   /* For very small values, we don't care about the answer. */
+   if ((x*x + y*y) < 1e-18f)
+   {
+      return 0;
+   }
+
+   if (y < x)
+   {
+      return celt_atan_norm(y / x);
+   } else {
+      return 1.f - celt_atan_norm(x / y);
+   }
+}
+#endif
 
 #ifndef FIXED_POINT
 
