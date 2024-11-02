@@ -141,15 +141,45 @@ static OPUS_INLINE opus_val32 celt_maxabs32(const opus_val32 *x, int len)
 #define frac_div32_q29(a,b) frac_div32(a,b)
 
 #ifdef FLOAT_APPROX
+/* Calculates the base-2 logarithm (log2(x)) of a number. It is designed for
+ * systems using radix-2 floating-point representation, with the exponent
+ * located at bits 23 to 30 and an offset of 127. Note that special cases like
+ * denormalized numbers, positive/negative infinity, and NaN are not handled.
+ * log2(x) = log2(x^exponent * mantissa)
+ *         = exponent + log2(mantissa) */
 
-/* Note: This assumes radix-2 floating point with the exponent at bits 23..30 and an offset of 127
-         denorm, +/- inf and NaN are *not* handled */
+/* Log2 x normalization single precision coefficients calculated by
+ * 1 / (1 + 0.125 * index).
+ * Coefficients in Double Precision
+ * double log2_x_norm_coeff[8] = {
+ *    1.0000000000000000000, 8.888888888888888e-01,
+ *    8.000000000000000e-01, 7.272727272727273e-01,
+ *    6.666666666666666e-01, 6.153846153846154e-01,
+ *    5.714285714285714e-01, 5.333333333333333e-01} */
+static const float log2_x_norm_coeff[8] = {
+   1.000000000000000000000000000f, 8.88888895511627197265625e-01f,
+   8.00000000000000000000000e-01f, 7.27272748947143554687500e-01f,
+   6.66666686534881591796875e-01f, 6.15384638309478759765625e-01f,
+   5.71428596973419189453125e-01f, 5.33333361148834228515625e-01f};
 
-/** Base-2 log approximation (log2(x)). */
+/* Log2 y normalization single precision coefficients calculated by
+ * log2(1 + 0.125 * index).
+ * Coefficients in Double Precision
+ * double log2_y_norm_coeff[8] = {
+ *    0.0000000000000000000, 1.699250014423124e-01,
+ *    3.219280948873623e-01, 4.594316186372973e-01,
+ *    5.849625007211562e-01, 7.004397181410922e-01,
+ *    8.073549220576041e-01, 9.068905956085185e-01}; */
+static const float log2_y_norm_coeff[8] = {
+   0.0000000000000000000000000000f, 1.699250042438507080078125e-01f,
+   3.219280838966369628906250e-01f, 4.594316184520721435546875e-01f,
+   5.849624872207641601562500e-01f, 7.004396915435791015625000e-01f,
+   8.073549270629882812500000e-01f, 9.068905711174011230468750e-01f};
+
 static OPUS_INLINE float celt_log2(float x)
 {
    int integer;
-   float frac;
+   opus_int32 range_idx;
    union {
       float f;
       opus_uint32 i;
@@ -157,10 +187,29 @@ static OPUS_INLINE float celt_log2(float x)
    in.f = x;
    integer = (in.i>>23)-127;
    in.i -= (opus_uint32)integer<<23;
-   frac = in.f - 1.5f;
-   frac = -0.41445418f + frac*(0.95909232f
-          + frac*(-0.33951290f + frac*0.16541097f));
-   return 1+integer+frac;
+
+   /* Normalize the mantissa range from [1, 2] to [1,1.125], and then shift x
+    * by 1.0625 to [-0.0625, 0.0625]. */
+   range_idx = (in.i >> 20) & 0x7;
+   in.f = in.f * log2_x_norm_coeff[range_idx] - 1.0625f;
+
+   /* Polynomial coefficients approximated in the [1, 1.125] range.
+    * Lolremez command: lolremez --degree 4 --range -0.0625:0.0625
+    *                   "log(x+1.0625)/log(2)"
+    * Coefficients in Double Precision
+    * A0: 8.7462840624502679e-2    A1: 1.3578296070972002
+    * A2: -6.3897703690210047e-1   A3: 4.0197125617419959e-1
+    * A4: -2.8415445877832832e-1 */
+   #define LOG2_COEFF_A0 8.74628424644470214843750000e-02f
+   #define LOG2_COEFF_A1 1.357829570770263671875000000000f
+   #define LOG2_COEFF_A2 -6.3897705078125000000000000e-01f
+   #define LOG2_COEFF_A3 4.01971250772476196289062500e-01f
+   #define LOG2_COEFF_A4 -2.8415444493293762207031250e-01f
+   in.f = LOG2_COEFF_A0 + in.f * (LOG2_COEFF_A1
+               + in.f * (LOG2_COEFF_A2
+               + in.f * (LOG2_COEFF_A3
+               + in.f * (LOG2_COEFF_A4))));
+   return integer + in.f + log2_y_norm_coeff[range_idx];
 }
 
 /** Base-2 exponential approximation (2^x). */
