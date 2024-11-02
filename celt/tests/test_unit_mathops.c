@@ -143,15 +143,26 @@ void testbitexactlog2tan(void)
 void testlog2(void)
 {
    float x;
+   float error_threshold = 2.e-06;
+   float max_error = 0;
    for (x=0.001f;x<1677700.0;x+=(x/8.0))
    {
       float error = fabs((1.442695040888963387*log(x))-celt_log2(x));
-      if (error>0.0009)
+      if (max_error < error)
       {
-         fprintf (stderr, "celt_log2 failed: fabs((1.442695040888963387*log(x))-celt_log2(x))>0.001 (x = %f, error = %f)\n", x,error);
+         max_error = error;
+      }
+
+      if (error > error_threshold)
+      {
+         fprintf (stderr,
+                  "celt_log2 failed: "
+                  "fabs((1.442695040888963387*log(x))-celt_log2(x))>%15.25e "
+                  "(x = %f, error = %15.25e)\n", error_threshold, x, error);
          ret = 1;
       }
    }
+   fprintf (stdout, "celt_log2 max_error: %15.25e\n", max_error);
 }
 
 void testexp2(void)
@@ -171,15 +182,26 @@ void testexp2(void)
 void testexp2log2(void)
 {
    float x;
+   float error_threshold = 5.0e-04;
+   float max_error = 0;
    for (x=-11.0;x<24.0;x+=0.0007f)
    {
       float error = fabs(x-(celt_log2(celt_exp2(x))));
-      if (error>0.001)
+      if (max_error < error)
       {
-         fprintf (stderr, "celt_log2/celt_exp2 failed: fabs(x-(celt_log2(celt_exp2(x))))>0.001 (x = %f, error = %f)\n", x,error);
+         max_error = error;
+      }
+
+      if (error > error_threshold)
+      {
+         fprintf (stderr,
+                  "celt_log2/celt_exp2 failed: "
+                  "fabs(x-(celt_log2(celt_exp2(x))))>%15.25e "
+                  "(x = %f, error = %15.25e)\n", error_threshold, x, error);
          ret = 1;
       }
    }
+   fprintf (stdout, "celt_exp2, celt_log2 max_error: %15.25e\n", max_error);
 }
 #else
 void testlog2(void)
