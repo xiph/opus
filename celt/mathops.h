@@ -1,7 +1,7 @@
 /* Copyright (c) 2002-2008 Jean-Marc Valin
    Copyright (c) 2007-2008 CSIRO
    Copyright (c) 2007-2009 Xiph.Org Foundation
-   Written by Jean-Marc Valin */
+   Written by Jean-Marc Valin, and Yunho Huh */
 /**
    @file mathops.h
    @brief Various math functions
@@ -212,7 +212,11 @@ static OPUS_INLINE float celt_log2(float x)
    return integer + in.f + log2_y_norm_coeff[range_idx];
 }
 
-/** Base-2 exponential approximation (2^x). */
+/* Calculates an approximation of 2^x. The approximation was achieved by
+ * employing a base-2 exponential function and utilizing a Remez approximation
+ * of order 5, ensuring a controlled relative error.
+ * exp2(x) = exp2(integer + fraction)
+ *         ~ exp2(integer) + exp2(fraction) */
 static OPUS_INLINE float celt_exp2(float x)
 {
    int integer;
@@ -225,9 +229,22 @@ static OPUS_INLINE float celt_exp2(float x)
    if (integer < -50)
       return 0;
    frac = x-integer;
-   /* K0 = 1, K1 = log(2), K2 = 3-4*log(2), K3 = 3*log(2) - 2 */
-   res.f = 0.99992522f + frac * (0.69583354f
-           + frac * (0.22606716f + 0.078024523f*frac));
+
+   /* Polynomial coefficients approximated in the [0, 1] range.
+    * Lolremez command: lolremez --degree 5 --range 0:1
+    *                   "exp(x*0.693147180559945)" "exp(x*0.693147180559945)"
+    * NOTE: log(2) ~ 0.693147180559945 */
+   #define EXP2_COEFF_A0 9.999999403953552246093750000000e-01f
+   #define EXP2_COEFF_A1 6.931530833244323730468750000000e-01f
+   #define EXP2_COEFF_A2 2.401536107063293457031250000000e-01f
+   #define EXP2_COEFF_A3 5.582631751894950866699218750000e-02f
+   #define EXP2_COEFF_A4 8.989339694380760192871093750000e-03f
+   #define EXP2_COEFF_A5 1.877576694823801517486572265625e-03f
+   res.f = EXP2_COEFF_A0 + frac * (EXP2_COEFF_A1
+               + frac * (EXP2_COEFF_A2
+               + frac * (EXP2_COEFF_A3
+               + frac * (EXP2_COEFF_A4
+               + frac * (EXP2_COEFF_A5)))));
    res.i = (res.i + ((opus_uint32)integer<<23)) & 0x7fffffff;
    return res.f;
 }

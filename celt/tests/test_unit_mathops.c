@@ -1,6 +1,7 @@
 /* Copyright (c) 2008-2011 Xiph.Org Foundation, Mozilla Corporation,
                            Gregory Maxwell
-   Written by Jean-Marc Valin, Gregory Maxwell, and Timothy B. Terriberry */
+   Written by Jean-Marc Valin, Gregory Maxwell, Timothy B. Terriberry,
+   and Yunho Huh */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -168,21 +169,32 @@ void testlog2(void)
 void testexp2(void)
 {
    float x;
+   float error_threshold = 2.3e-07;
+   float max_error = 0;
    for (x=-11.0;x<24.0;x+=0.0007f)
    {
       float error = fabs(x-(1.442695040888963387*log(celt_exp2(x))));
-      if (error>0.0002)
+      if (max_error < error)
       {
-         fprintf (stderr, "celt_exp2 failed: fabs(x-(1.442695040888963387*log(celt_exp2(x))))>0.0005 (x = %f, error = %f)\n", x,error);
+         max_error = error;
+      }
+
+      if (error > error_threshold)
+      {
+         fprintf (stderr,
+                  "celt_exp2 failed: "
+                  "fabs(x-(1.442695040888963387*log(celt_exp2(x))))>%15.25e "
+                  "(x = %f, error = %15.25e)\n", error_threshold, x, error);
          ret = 1;
       }
    }
+   fprintf (stdout, "celt_exp2 max_error: %15.25e\n", max_error);
 }
 
 void testexp2log2(void)
 {
    float x;
-   float error_threshold = 5.0e-04;
+   float error_threshold = 2.0e-06;
    float max_error = 0;
    for (x=-11.0;x<24.0;x+=0.0007f)
    {
