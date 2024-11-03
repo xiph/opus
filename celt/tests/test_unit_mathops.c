@@ -221,6 +221,31 @@ void testexp2log2(void)
    fprintf (stdout, "celt_exp2, celt_log2 max_error: %15.25e\n", max_error);
 }
 
+void test_cos(void)
+{
+   float x;
+   float error_threshold = 6.0e-07;
+   float max_error = 0;
+   for (x = -4.0f; x < 4.0f; x += 0.0007f)
+   {
+      float error = fabs((float)cos((.5f*PI)*(x)) - celt_cos_norm2(x));
+      if (max_error < error)
+      {
+         max_error = error;
+      }
+
+      if (error > error_threshold)
+      {
+         fprintf (stderr,
+                  "celt_cos_norm2 failed: "
+                  "fabs(ref_x-(celt_cos_norm2(x)))>%15.25e "
+                  "(x = %f, error = %15.25e)\n", error_threshold, x, error);
+         ret = 1;
+      }
+   }
+   fprintf (stdout, "celt_cos_norm2 max_error: %15.25e\n", max_error);
+}
+
 void test_atan2(void) {
    float x, y;
    float error_threshold = 1.5e-07;
@@ -488,6 +513,7 @@ int main(void)
    testlog2_db();
    testexp2_db();
 #else
+   test_cos();
    test_atan2();
 #endif
 #ifndef DISABLE_FLOAT_API
