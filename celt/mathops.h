@@ -183,6 +183,38 @@ static OPUS_INLINE float celt_atan2p_norm(float y, float x)
       return 1.f - celt_atan_norm(x / y);
    }
 }
+
+/* Computes estimated cosine values for (PI/2 * x) using only terms with even
+ * exponents. */
+static OPUS_INLINE float celt_cos_norm2(float x)
+{
+   float x_norm_sq;
+   int output_sign;
+   /* Restrict x to [-1, 3]. */
+   x -= 4*floor(.25*(x+1));
+   /* Negative sign for [1, 3]. */
+   output_sign = 1 - 2*(x>1);
+   /* Restrict to [-1, 1]. */
+   x -= 2*(x>1);
+
+   /* The cosine function, cos(x), has a Taylor series representation consisting
+    * exclusively of even-powered polynomial terms. */
+   x_norm_sq = x * x;
+
+   /* Polynomial coefficients approximated in the [0, 1] range using only terms
+    * with even exponents.
+    * Lolremez command: lolremez --degree 4 --range 0:1 "cos(sqrt(x)*pi*0.5)" */
+   #define COS_COEFF_A0 9.999999403953552246093750000000e-01f
+   #define COS_COEFF_A2 -1.233698248863220214843750000000000f
+   #define COS_COEFF_A4 2.536507546901702880859375000000e-01f
+   #define COS_COEFF_A6 -2.08106283098459243774414062500e-02f
+   #define COS_COEFF_A8 8.581906440667808055877685546875e-04f
+   return output_sign * (COS_COEFF_A0 + x_norm_sq * (COS_COEFF_A2 +
+                               x_norm_sq * (COS_COEFF_A4 +
+                               x_norm_sq * (COS_COEFF_A6 +
+                               x_norm_sq * (COS_COEFF_A8)))));
+}
+
 #endif
 
 #ifndef FIXED_POINT
