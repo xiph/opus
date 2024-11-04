@@ -319,7 +319,10 @@ void test_extensions_parse_fail(void)
       {3, 0, (const unsigned char *)"a", 1},
       {33, 1, (const unsigned char *)"NOT DRED", 8},
       {4, 4, (const unsigned char *)NULL, 0},
-      {32, 10, (const unsigned char *)"DRED", 4}
+      {32, 10, (const unsigned char *)"DRED", 4},
+      {32, 9, (const unsigned char *)"DRED", 4},
+      {4, 9, (const unsigned char *)"b", 1},
+      {4, 10, (const unsigned char *)"c", 1}
    };
    opus_extension_data ext_out[10];
    int nb_ext;
@@ -369,6 +372,20 @@ void test_extensions_parse_fail(void)
    result = opus_packet_extensions_parse(packet, len, ext_out, &nb_ext,
     nb_frames);
    expect_true(result == OPUS_BUFFER_TOO_SMALL, "expected OPUS_BUFFER_TOO_SMALL");
+
+   /* create repeated L=0 long extension without enough room for all of the
+       short extension payloads that need to follow it */
+   len = opus_packet_extensions_generate(packet, sizeof(packet), ext, 7, 11, 0);
+   len -= 5;
+   nb_ext = 10;
+   nb_frames = 11;
+   result = opus_packet_extensions_parse(packet, len, ext_out, &nb_ext,
+    nb_frames);
+   expect_true(result == OPUS_INVALID_PACKET, "expected OPUS_INVALID_PACKET");
+   /* note, opus_packet_extensions_count stops at the invalid long extension
+       and tells us that we have 5 extensions */
+   result = opus_packet_extensions_count(packet, len, nb_frames);
+   expect_true(result == 5, "expected opus_packet_extensions_count to return 5");
 
    /* overflow for long extension length */
    {
@@ -431,8 +448,8 @@ void test_extensions_repeating(void)
       {4, 0, (const unsigned char *)"d", 1},
       {4, 1, (const unsigned char *)NULL, 0},
       {4, 2, (const unsigned char *)NULL, 0},
-      {32, 1, (const unsigned char *)"DRED", 4},
       {32, 2, (const unsigned char *)"DRED2", 5},
+      {32, 1, (const unsigned char *)"DRED", 4},
       {5, 1, (const unsigned char *)NULL, 0},
       {5, 2, (const unsigned char *)NULL, 0},
       {6, 2, (const unsigned char *)"f", 1},
@@ -452,28 +469,26 @@ void test_extensions_repeating(void)
       /* nb_ext = 6: do not repeat short extensions if the lengths do not match
           ... but do repeat after the first frame when the lengths do match. */
       10,
-      /* nb_ext = 7: code a long extension with L=0 despite having more
-          extensions in future frames, because we already coded them via
-          repeats. */
-      15,
+      /* nb_ext = 7: code repeated extensions with L=0 to skip a frame
+          separator because they are all short extensions. */
+      16,
       /* nb_ext = 8: repeat multiple extensions in the same frame.
          code the last repeated extension with L=0 if it is a long
           extension. */
       21,
       23,
       /* nb_ext = 10: code the last repeated long extension with L=0 even if it
-          is followed by repeated short extensions, as long as they have L=0. */
+          is followed by repeated short extensions with L=0. */
       22,
       /* nb_ext = 11: don't use L=0 to skip a frame separator if repeats end
-          on a short L=0 extension if there was a preceding L=0 long
-          extension. */
+          on a short extension if there was a preceding L=0 long extension. */
       26,
-      /* nb_ext = 12: don't code the last repeated long extension with L=0 if
+      /* nb_ext = 12: code the last repeated long extension with L=0 even if
           it is followed by repeated short extensions with L=1. */
-      26,
-      /* nb_ext = 13: do use L=0 to skip a frame separator if repeats end on a
-          short L=1 extension */
-      36
+      25,
+      /* nb_ext = 13: don't use L=0 to skip a frame separator if repeats end
+          on a short extension if there was a preceding L=1 long extension. */
+      37
    };
    opus_int32 nb_ext;
    for (nb_ext = 0; nb_ext <= NB_EXT; nb_ext++) {
@@ -521,10 +536,7 @@ void test_extensions_repeating(void)
       else if (nb_ext == 13) {
          /* use L=0 to skip a frame separator if a repeat has no extensions at
              all */
-         packet[18] = 2<<1|1;
-         memmove(packet+27, packet+26, len-26);
          packet[26] = 2<<1|0;
-         len++;
       }
       else continue;
       result = opus_packet_extensions_count_ext(packet, len, nb_frame_exts, 3);
@@ -537,6 +549,10 @@ void test_extensions_repeating(void)
       check_ext_data(ext, ext_out, nb_ext);
       if (nb_ext == 8) {
          /* allow multiple repeat indicators in the same frame */
+         memmove(packet+10, packet+9, len-9);
+         packet[9] = 2<<1|1;
+         len++;
+         /* even when there are no new extensions to repeat */
          memmove(packet+6, packet+5, len-5);
          packet[5] = 2<<1|1;
          len++;
