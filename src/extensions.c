@@ -43,7 +43,8 @@
     the repeated extension payloads.
    That requires higher-level logic. */
 static opus_int32 skip_extension_payload(const unsigned char **pdata,
- opus_int32 len, opus_int32 *pheader_size, int id_byte)
+ opus_int32 len, opus_int32 *pheader_size, int id_byte,
+ opus_int32 trailing_short_len)
 {
    const unsigned char *data;
    opus_int32 header_size;
@@ -64,8 +65,9 @@ static opus_int32 skip_extension_payload(const unsigned char **pdata,
    } else {
       if (L==0)
       {
-         data += len;
-         len = 0;
+         if (len < trailing_short_len) return -1;
+         data += len - trailing_short_len;
+         len = trailing_short_len;
       } else {
          opus_int32 bytes=0;
          opus_int32 lacing;
@@ -107,7 +109,7 @@ static opus_int32 skip_extension(const unsigned char **pdata, opus_int32 len,
    data = *pdata;
    id_byte = *data++;
    len--;
-   len = skip_extension_payload(&data, len, pheader_size, id_byte);
+   len = skip_extension_payload(&data, len, pheader_size, id_byte, 0);
    if (len >= 0) {
       *pdata = data;
       (*pheader_size)++;
@@ -120,11 +122,11 @@ void opus_extension_iterator_init(OpusExtensionIterator *iter,
    celt_assert(len >= 0);
    celt_assert(data != NULL || len == 0);
    celt_assert(nb_frames >= 0 && nb_frames <= 48);
-   iter->repeat_data_end = iter->repeat_data = iter->curr_data = iter->data =
-    data;
-   iter->src_data = NULL;
+   iter->repeat_data = iter->curr_data = iter->data = data;
+   iter->last_long = iter->src_data = NULL;
    iter->curr_len = iter->len = len;
    iter->repeat_len = iter->src_len = 0;
+   iter->trailing_short_len = 0;
    iter->frame_max = iter->nb_frames = nb_frames;
    iter->repeat_frame = iter->curr_frame = 0;
    iter->repeat_l = 0;
@@ -133,9 +135,11 @@ void opus_extension_iterator_init(OpusExtensionIterator *iter,
 /* Reset the iterator so it can start iterating again from the first
     extension. */
 void opus_extension_iterator_reset(OpusExtensionIterator *iter) {
-   iter->repeat_data_end = iter->repeat_data = iter->curr_data = iter->data;
+   iter->repeat_data = iter->curr_data = iter->data;
+   iter->last_long = NULL;
    iter->curr_len = iter->len;
    iter->repeat_frame = iter->curr_frame = 0;
+   iter->trailing_short_len = 0;
 }
 
 /* Tell the iterator not to return any extensions for frames of index
@@ -171,17 +175,17 @@ int opus_extension_iterator_next(OpusExtensionIterator *iter,
             /* Don't repeat padding or frame separators with a 0 increment. */
             if (repeat_id_byte <= 3) continue;
             /* If the "Repeat These Extensions" extension had L == 0 and this
-                is the last repeated extension, and it is a long extension,
-                then force decoding the payload with L = 0. */
+                is the last repeated long extension, then force decoding the
+                payload with L = 0. */
             if (iter->repeat_l == 0
              && iter->repeat_frame + 1 >= iter->nb_frames
-             && iter->src_data == iter->repeat_data_end
-             && repeat_id_byte >= 64) {
+             && iter->src_data == iter->last_long) {
                repeat_id_byte &= ~1;
             }
             curr_data0 = iter->curr_data;
             iter->curr_len = skip_extension_payload(&iter->curr_data,
-             iter->curr_len, &header_size, repeat_id_byte);
+             iter->curr_len, &header_size, repeat_id_byte,
+             iter->trailing_short_len);
             if (iter->curr_len < 0) {
                return OPUS_INVALID_PACKET;
             }
@@ -205,7 +209,8 @@ int opus_extension_iterator_next(OpusExtensionIterator *iter,
          iter->src_len = iter->repeat_len;
       }
       /* We finished repeating extensions. */
-      iter->repeat_data_end = iter->repeat_data = iter->curr_data;
+      iter->repeat_data = iter->curr_data;
+      iter->last_long = NULL;
       /* If L == 0, advance the frame number to handle the case where we did
           not consume all of the data with an L == 0 long extension. */
       if (iter->repeat_l == 0) {
@@ -253,7 +258,9 @@ int opus_extension_iterator_next(OpusExtensionIterator *iter,
          if (iter->curr_frame >= iter->frame_max) {
             iter->curr_len = 0;
          }
-         iter->repeat_data_end = iter->repeat_data = iter->curr_data;
+         iter->repeat_data = iter->curr_data;
+         iter->last_long = NULL;
+         iter->trailing_short_len = 0;
       }
       else if (id == 2) {
          iter->repeat_l = L;
@@ -264,14 +271,16 @@ int opus_extension_iterator_next(OpusExtensionIterator *iter,
          return opus_extension_iterator_next(iter, ext);
       }
       else if (id > 2) {
-         /* Update the stopping point for repeating extension data.
-            This lets us detect when we have hit the last repeated extension,
-             for purposes of modifying the L flag if it is a long extension.
-            Only extensions which can have a non-empty payload count, as we can
-             still use L=0 to code a final long extension if there cannot be
-             any more payload data, even if there are more short L=0
-             extensions (or padding). */
-         if (L || id >= 32) iter->repeat_data_end = iter->curr_data;
+         /* Update the location of the last long extension.
+            This lets us know when we need to modify the last L flag if we
+             repeat these extensions with L=0. */
+         if (id >= 32) {
+           iter->last_long = iter->curr_data;
+           iter->trailing_short_len = 0;
+         }
+         /* Otherwise, keep track of how many payload bytes follow the last
+             long extension. */
+         else iter->trailing_short_len += L;
          if (ext != NULL) {
             ext->id = id;
             ext->frame = iter->curr_frame;
@@ -476,10 +485,12 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
    for (f=0;f<nb_frames;f++) frame_repeat_idx[f] = frame_min_idx[f];
    for (f=0;f<nb_frames;f++)
    {
-      opus_int32 repeat_data_end_idx;
+      opus_int32 last_long_idx;
+      opus_int32 trailing_short_len;
       int repeat_count;
       repeat_count = 0;
-      repeat_data_end_idx = i;
+      last_long_idx = -1;
+      trailing_short_len = 0;
       if (f + 1 < nb_frames)
       {
          for (i=frame_min_idx[f];i<frame_max_idx[f];i++)
@@ -505,23 +516,26 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                }
                if (g < nb_frames) break;
                /* We can! */
-               /* If this extension can have a non-empty payload, save the
-                   index of the last instance, so we can modify its L flag. */
-               if (extensions[i].id >= 32 || extensions[i].len) {
-                  repeat_data_end_idx = frame_repeat_idx[nb_frames-1];
+               /* If this is a long extension, save the index of the last
+                   instance, so we can modify its L flag. */
+               if (extensions[i].id >= 32) {
+                  last_long_idx = frame_repeat_idx[nb_frames-1];
+                  trailing_short_len = 0;
                }
+               /* Otherwise, keep track of how many payload bytes follow the
+                   last long extension. */
+               else trailing_short_len += extensions[i].len;
                /* Using the repeat mechanism almost always makes the
                    encoding smaller (or at least no larger).
                   However, there's one case where that might not be true: if
-                   the last repeated extension in the last frame was previously
-                   the last extension, but using the repeat mechanism makes
-                   that no longer true (because there are other non-repeated
-                   extensions in earlier frames that must now be coded after
-                   it), and coding its length requires more bytes than the
-                   repeat mechanism saves.
-                  This can only be true if it is a long extension with at least
-                   255 bytes of payload data (although sometimes it requires
-                   even more).
+                   the last repeated long extension in the last frame was
+                   previously the last extension, but using the repeat
+                   mechanism makes that no longer true (because there are other
+                   non-repeated extensions in earlier frames that must now be
+                   coded after it), and coding its length requires more bytes
+                   than the repeat mechanism saves.
+                  This can only be true if its length is at least 255 bytes
+                   (although sometimes it requires even more).
                   Currently we do not check for that, and just always use the
                    repeat mechanism if we can. */
 #if 0
@@ -616,8 +630,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                /* Add the repeat indicator. */
                nb_repeated = repeat_count*(nb_frames - (f + 1));
                last = written + nb_repeated == nb_extensions
-                || (extensions[repeat_data_end_idx].id < 32
-                && i+1 >= frame_max_idx[f]);
+                || (last_long_idx < 0 && i+1 >= frame_max_idx[f]);
                if (len-pos < 1)
                   return OPUS_BUFFER_TOO_SMALL;
                if (data) data[pos] = 0x04 + !last;
@@ -630,7 +643,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                      if (extensions[j].frame == g)
                      {
                         pos = write_extension_payload(data, len, pos,
-                         extensions + j, last && j == repeat_data_end_idx);
+                         extensions + j, last && j == last_long_idx);
                         if (pos < 0) return pos;
                         written++;
                      }

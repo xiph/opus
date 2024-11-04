@@ -51,12 +51,13 @@ typedef struct OpusExtensionIterator {
    const unsigned char *data;
    const unsigned char *curr_data;
    const unsigned char *repeat_data;
-   const unsigned char *repeat_data_end;
+   const unsigned char *last_long;
    const unsigned char *src_data;
    opus_int32 len;
    opus_int32 curr_len;
    opus_int32 repeat_len;
    opus_int32 src_len;
+   opus_int32 trailing_short_len;
    int nb_frames;
    int frame_max;
    int curr_frame;
