@@ -629,7 +629,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
    }
    celt_assert(written == nb_extensions);
    /* If we need to pad, just prepend 0x01 bytes. Even better would be to fill the
-      end with zeros, but that requires checking that turning the last extesion into
+      end with zeros, but that requires checking that turning the last extension into
       an L=1 case still fits. */
    if (pad && pos < len)
    {

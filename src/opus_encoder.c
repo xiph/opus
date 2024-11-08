@@ -1053,7 +1053,7 @@ static opus_val32 compute_frame_energy(const opus_val16 *pcm, int frame_size, in
 /* Decides if DTX should be turned on (=1) or off (=0) */
 static int decide_dtx_mode(opus_int activity,            /* indicates if this frame contains speech/music */
                            int *nb_no_activity_ms_Q1,    /* number of consecutive milliseconds with no activity, in Q1 */
-                           int frame_size_ms_Q1          /* number of miliseconds in this update, in Q1 */
+                           int frame_size_ms_Q1          /* number of milliseconds in this update, in Q1 */
                            )
 
 {
