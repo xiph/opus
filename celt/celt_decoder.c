@@ -953,7 +953,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       st->prefilter_and_fold = 1;
    }
 
-   /* Saturate to soemthing large to avoid wrap-around. */
+   /* Saturate to something large to avoid wrap-around. */
    st->loss_duration = IMIN(10000, loss_duration+(1<<LM));
 
    RESTORE_STACK;

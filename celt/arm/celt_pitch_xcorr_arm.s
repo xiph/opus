@@ -78,7 +78,7 @@ xcorr_kernel_neon_process8
   ;
   ; Load x[0...7]
   VLD1.16      {d6, d7}, [r4]!
-  ; Unlike VMOV, VAND is a data processsing instruction (and doesn't get
+  ; Unlike VMOV, VAND is a data processing instruction (and doesn't get
   ; assembled to VMOV, like VORR would), so it dual-issues with the prior VLD1.
   VAND         d3, d5, d5
   SUBS         r12, r12, #8

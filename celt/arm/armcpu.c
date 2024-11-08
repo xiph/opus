@@ -241,7 +241,7 @@ static opus_uint32 opus_cpu_capabilities(void)
 
 #else
 /* The feature registers which can tell us what the processor supports are
- * accessible in priveleged modes only, so we can't have a general user-space
+ * accessible in privileged modes only, so we can't have a general user-space
  * detection method like on x86.*/
 # error "Configured to use ARM asm but no CPU detection method available for " \
    "your platform.  Reconfigure with --disable-rtcd (or send patches)."
