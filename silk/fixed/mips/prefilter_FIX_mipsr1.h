@@ -117,9 +117,9 @@ static inline void silk_prefilt_FIX(
     silk_prefilter_state_FIX    *P,                         /* I/O  state                               */
     opus_int32                  st_res_Q12[],               /* I    short term residual signal          */
     opus_int32                  xw_Q3[],                    /* O    prefiltered signal                  */
-    opus_int32                  HarmShapeFIRPacked_Q12,     /* I    Harmonic shaping coeficients        */
-    opus_int                    Tilt_Q14,                   /* I    Tilt shaping coeficient             */
-    opus_int32                  LF_shp_Q14,                 /* I    Low-frequancy shaping coeficients   */
+    opus_int32                  HarmShapeFIRPacked_Q12,     /* I    Harmonic shaping coefficients       */
+    opus_int                    Tilt_Q14,                   /* I    Tilt shaping coefficients           */
+    opus_int32                  LF_shp_Q14,                 /* I    Low-frequancy shaping coefficients  */
     opus_int                    lag,                        /* I    Lag for harmonic shaping            */
     opus_int                    length                      /* I    Length of signals                   */
 )

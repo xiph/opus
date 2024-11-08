@@ -328,7 +328,7 @@ opus_int silk_encode_frame_FIX(
             } else {
                 /* Adjust gain by interpolating */
                 gainMult_Q8 = gainMult_lower + silk_DIV32_16( silk_MUL( gainMult_upper - gainMult_lower, maxBits - nBits_lower ), nBits_upper - nBits_lower );
-                /* New gain multplier must be between 25% and 75% of old range (note that gainMult_upper < gainMult_lower) */
+                /* New gain multiplier must be between 25% and 75% of old range (note that gainMult_upper < gainMult_lower) */
                 if( gainMult_Q8 > silk_ADD_RSHIFT32( gainMult_lower, gainMult_upper - gainMult_lower, 2 ) ) {
                     gainMult_Q8 = silk_ADD_RSHIFT32( gainMult_lower, gainMult_upper - gainMult_lower, 2 );
                 } else
