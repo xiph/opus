@@ -35,7 +35,7 @@ class MetaCritic():
 
         Args:
             gamma (float, optional): update rate for tracking discriminator stats. Defaults to 0.9.
-            beta (float, optional): Miminum confidence related threshold. Defaults to 0.0.
+            beta (float, optional): Minimum confidence related threshold. Defaults to 0.0.
         """
         self.normalize = normalize
         self.gamma = gamma

@@ -9,7 +9,7 @@ Setup is done as usual via
 pip install -r requirements.txt
 ```
 
-The test scrip run_warpq_test.py requires a setup file in yaml format, which specifies how
+The test script run_warpq_test.py requires a setup file in yaml format, which specifies how
 to generate a wave file OUTPUT from a wave file INPUT sampled resampled to the specified
 sampling rate as a list of shell commands. This makes it easy to test other neural vocoders
 with it as well. Two examples are given in examples. INPUT and OUTPUT will be replaced by using

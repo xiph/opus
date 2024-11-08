@@ -236,7 +236,7 @@ class FWGAN500Cont(nn.Module):
 
     def forward(self, pitch_period, bfcc_with_corr, x0):
 
-        #This should create a latent representation of shape [Batch_dim, 500 frames, 256 elemets per frame]
+        #This should create a latent representation of shape [Batch_dim, 500 frames, 256 elements per frame]
         p_embed = self.create_phase_signals(pitch_period).permute(0, 2, 1).contiguous()
         envelope = self.bfcc_with_corr_upsampler(bfcc_with_corr.permute(0,2,1).contiguous())
         feat_in = torch.cat((p_embed , envelope), dim=1)

@@ -180,7 +180,7 @@ if __name__ == "__main__":
     fs2, y = wavfile.read(args.deg)
 
     if max(fs1, fs2) != 16000:
-        raise ValueError('error: encountered sampling frequency diffrent from 16kHz')
+        raise ValueError('error: encountered sampling frequency different from 16kHz')
 
     x = x.astype(np.float32) / 2**15
     y = y.astype(np.float32) / 2**15

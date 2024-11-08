@@ -33,7 +33,7 @@ args = parser.parse_args()
 # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 # os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_index)
 
-# Fixing the seeds for reproducability
+# Fixing the seeds for reproducibility
 import time
 np_seed = int(time.time())
 torch_seed = int(time.time())

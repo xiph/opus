@@ -36,7 +36,7 @@ parser.add_argument("config_name", type=str, help="name of config file (.yml wil
 parser.add_argument("test_name", type=str, help="name for test result display")
 parser.add_argument("checkpoint", type=str, help="checkpoint to test")
 parser.add_argument("--lpcnet-demo", type=str, help="path to lpcnet_demo binary, default: /local/code/LPCNet/lpcnet_demo", default="/local/code/LPCNet/lpcnet_demo")
-parser.add_argument("--lpcnext-path", type=str, help="path to lpcnext folder, defalut: dirname(__file__)", default=os.path.dirname(__file__))
+parser.add_argument("--lpcnext-path", type=str, help="path to lpcnext folder, default: dirname(__file__)", default=os.path.dirname(__file__))
 parser.add_argument("--python-exe", type=str, help='python executable path, default: sys.executable', default=sys.executable)
 parser.add_argument("--pad", type=str, help="left pad of output in seconds, default: 0.015", default="0.015")
 parser.add_argument("--trim", type=str, help="left trim of output in seconds, default: 0", default="0")

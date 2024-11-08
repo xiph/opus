@@ -75,7 +75,7 @@ def create_partition_kernel(widths, strides):
     """ creates a partition kernel for mapping a convolutional network output back to the input domain
 
         Given a fully convolutional network with receptive field of shape widths and the given strides, this
-        function construncts an intorpolation kernel whose tranlations by multiples of the given strides form
+        function constructs an interpolation kernel whose translations by multiples of the given strides form
         a partition of one on the input domain.
 
         Parameter:

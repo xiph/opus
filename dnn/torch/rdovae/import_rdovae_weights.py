@@ -44,7 +44,7 @@ model_group.add_argument('--num-features', type=int, help="number of features, d
 model_group.add_argument('--latent-dim', type=int, help="number of symbols produces by encoder, default: 80", default=80)
 model_group.add_argument('--cond-size', type=int, help="first conditioning size, default: 256", default=256)
 model_group.add_argument('--cond-size2', type=int, help="second conditioning size, default: 256", default=256)
-model_group.add_argument('--state-dim', type=int, help="dimensionality of transfered state, default: 24", default=24)
+model_group.add_argument('--state-dim', type=int, help="dimensionality of transferred state, default: 24", default=24)
 model_group.add_argument('--quant-levels', type=int, help="number of quantization levels, default: 40", default=40)
 
 args = parser.parse_args()

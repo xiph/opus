@@ -54,7 +54,7 @@ training_group.add_argument('--sequence-length', type=int, help='sequence length
 training_group.add_argument('--lr-decay', type=float, help='learning rate decay factor, default: 0.0', default=0.0)
 training_group.add_argument('--initial-checkpoint', type=str, help='initial checkpoint to start training from, default: None', default=None)
 training_group.add_argument('--reg-weight', type=float, help='regression loss weight, default: 1.0', default=1.0)
-training_group.add_argument('--fmap-weight', type=float, help='feature matchin loss weight, default: 1.0', default=1.)
+training_group.add_argument('--fmap-weight', type=float, help='feature matching loss weight, default: 1.0', default=1.)
 
 args = parser.parse_args()
 

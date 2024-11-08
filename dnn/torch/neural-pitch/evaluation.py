@@ -3,7 +3,7 @@ Evaluation script to compute the Raw Pitch Accuracy
 Procedure:
     - Look at all voiced frames in file
     - Compute number of pitches in those frames that lie within a 50 cent threshold
-    RPA = (Total number of pitches within threshold summed across all files)/(Total number of voiced frames summed accross all files)
+    RPA = (Total number of pitches within threshold summed across all files)/(Total number of voiced frames summed across all files)
 """
 
 import os

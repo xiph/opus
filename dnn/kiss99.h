@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 /*KISS PRNG from George Marsaglia (1999 version).
   See https://en.wikipedia.org/wiki/KISS_(algorithm) for details.
-  This is suitable for simulations, but not for use in crytographic contexts.*/
+  This is suitable for simulations, but not for use in cryptographic contexts.*/
 
 typedef struct kiss99_ctx kiss99_ctx;
 

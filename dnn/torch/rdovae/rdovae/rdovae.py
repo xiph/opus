@@ -207,7 +207,7 @@ def init_weights(module):
 
 
 def weight_clip_factory(max_value):
-    """ weight clipping function concerning sum of abs values of adjecent weights """
+    """ weight clipping function concerning sum of abs values of adjacent weights """
     def clip_weight_(w):
         stop = w.size(1)
         # omit last column if stop is odd
@@ -604,7 +604,7 @@ class RDOVAE(nn.Module):
         chunks = []
 
         for offset in range(stride):
-            # start is the smalles number = offset mod stride that decodes to a valid range
+            # start is the smallest number = offset mod stride that decodes to a valid range
             start = offset
             while enc_stride * (start + 1) - dec_stride < 0:
                 start += stride

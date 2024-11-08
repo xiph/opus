@@ -3,7 +3,7 @@
 
 
 ## Weight Exchange
-Repo wor exchanging weights betweeen torch an tensorflow.keras modules, using an intermediate numpy format.
+Repo wor exchanging weights between torch an tensorflow.keras modules, using an intermediate numpy format.
 
 Routines for loading/dumping torch weights are located in exchange/torch and can be loaded with
 ```

@@ -41,7 +41,7 @@ class CWriter:
                  nnet_header="nnet.h",
                  add_typedef=False):
         """
-        Writer class for creating souce and header files for weight exports to C
+        Writer class for creating source and header files for weight exports to C
 
         Parameters:
         -----------

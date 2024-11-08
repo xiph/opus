@@ -33,7 +33,7 @@ class SpectralConvergenceLoss(torch.nn.Module):
     """Spectral convergence loss module."""
 
     def __init__(self):
-        """Initilize spectral convergence loss module."""
+        """Initialize spectral convergence loss module."""
         super(SpectralConvergenceLoss, self).__init__()
 
     def forward(self, x_mag, y_mag):
@@ -52,7 +52,7 @@ class LogSTFTMagnitudeLoss(torch.nn.Module):
     """Log STFT magnitude loss module."""
 
     def __init__(self):
-        """Initilize los STFT magnitude loss module."""
+        """Initialize los STFT magnitude loss module."""
         super(LogSTFTMagnitudeLoss, self).__init__()
 
     def forward(self, x, y):

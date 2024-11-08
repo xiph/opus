@@ -188,7 +188,7 @@ def main(inputdir, outputdir, bitrate, reference_opus_demo, test_opus_demo, enc_
 
     print(f"{num_passed}/{len(clips)} tests passed!")
 
-    print(f"worst case occured at clip {worst_clip} with relative difference of {min_rel_diff}")
+    print(f"worst case occurred at clip {worst_clip} with relative difference of {min_rel_diff}")
     print(f"worst mean relative difference was {min_mean} for test {worst_lang}")
 
     np.save(os.path.join(outputdir, f'results_' + "_".join(test_options) + f"_{bitrate}.npy"), results, allow_pickle=True)

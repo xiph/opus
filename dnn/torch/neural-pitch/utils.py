@@ -36,7 +36,7 @@ def feature_xform(feature):
     """
     Take as input the (N * 256) xcorr features output by LPCNet and perform the following
     1. Downsample and Upsample by 2 (followed by smoothing)
-    2. Append positional embeddings (of dim k) coresponding to each xcorr lag
+    2. Append positional embeddings (of dim k) corresponding to each xcorr lag
     """
 
     from scipy.signal import resample_poly, lfilter
