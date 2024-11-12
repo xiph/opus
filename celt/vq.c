@@ -667,3 +667,88 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
 
    return itheta;
 }
+
+#ifdef ENABLE_QEXT
+
+static void cubic_synthesis(celt_norm *X, int *iy, int N, int K, int face, int sign, opus_val32 gain) {
+   int i;
+   opus_val32 sum=0;
+   float mag;
+#ifdef FIXED_POINT
+   int shift = IMAX(celt_ilog2(K) + celt_ilog2(N)/2 - 13, 0);
+#endif
+   for (i=0;i<N;i++) {
+      X[i] = (1+2*iy[i])-K;
+   }
+   X[face] = sign ? -K : K;
+   for (i=0;i<N;i++) {
+      sum += PSHR32(MULT16_16(X[i],X[i]), 2*shift);
+   }
+   mag = 1.f/sqrt(sum);
+#ifdef FIXED_POINT
+   for (i=0;i<N;i++) {
+      X[i] = PSHR32((int)floor(.5 + X[i]*mag*gain*(1.f/131072)), shift);
+   }
+#else
+   for (i=0;i<N;i++) {
+      X[i] *= mag*gain;
+   }
+#endif
+}
+
+unsigned cubic_quant(celt_norm *X, int N, int K, int B, ec_enc *enc, opus_val32 gain, int resynth) {
+   int i;
+   int face=0;
+   VARDECL(int, iy);
+   celt_norm faceval=-1;
+   float norm;
+   int sign;
+   SAVE_STACK;
+   ALLOC(iy, N, int);
+   if (K==1) {
+      if (resynth) OPUS_CLEAR(X, N);
+      return 0;
+   }
+   for (i=0;i<N;i++) {
+      if (ABS32(X[i]) > faceval) {
+         faceval = ABS32(X[i]);
+         face = i;
+      }
+   }
+   sign = X[face]<0;
+   ec_enc_uint(enc, face, N);
+   ec_enc_bits(enc, sign, 1);
+   norm = .5f*K/(faceval+EPSILON);
+   for (i=0;i<N;i++) {
+      iy[i] = IMIN(K-1, (int)floor((X[i]+faceval)*norm));
+      if (i != face) ec_enc_uint(enc, iy[i], K);
+   }
+   if (resynth) {
+      cubic_synthesis(X, iy, N, K, face, sign, gain);
+   }
+   RESTORE_STACK;
+   return (1<<B)-1;
+}
+
+unsigned cubic_unquant(celt_norm *X, int N, int K, int B, ec_dec *dec, opus_val32 gain) {
+   int i;
+   int face;
+   int sign;
+   VARDECL(int, iy);
+   SAVE_STACK;
+   ALLOC(iy, N, int);
+   if (K==1) {
+      OPUS_CLEAR(X, N);
+      return 0;
+   }
+   face = ec_dec_uint(dec, N);
+   sign = ec_dec_bits(dec, 1);
+   for (i=0;i<N;i++) {
+      if (i != face) iy[i] = ec_dec_uint(dec, K);
+   }
+   iy[face]=0;
+   cubic_synthesis(X, iy, N, K, face, sign, gain);
+   RESTORE_STACK;
+   return (1<<B)-1;
+}
+#endif
