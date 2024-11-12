@@ -84,4 +84,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch);
 
 opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N, int arch);
 
+unsigned cubic_quant(celt_norm *X, int N, int K, int B, ec_enc *enc, opus_val32 gain, int resynth);
+unsigned cubic_unquant(celt_norm *X, int N, int K, int B, ec_dec *dec, opus_val32 gain);
+
 #endif /* VQ_H */
