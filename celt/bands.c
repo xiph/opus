@@ -710,6 +710,7 @@ struct band_ctx {
    ec_ctx *ext_ec;
    int extra_bits;
    opus_int32 ext_total_bits;
+   int extra_bands;
 #endif
 };
 
@@ -1152,20 +1153,17 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
 #ifdef ENABLE_QEXT
       } else if (ext_b > 2*N<<BITRES)
       {
-         /* If we have extra bits, but couldn't use them because no regular
-            bits got allocated, use the regular quantizer with the
-            extra entropy coder (to avoid breaking the bitstream).
-            We need to be careful to restore things as they were. */
-         int remaining_bak;
-         ec_ctx *bak_ec=ctx->ec;
-         remaining_bak = ctx->remaining_bits;
-         ctx->remaining_bits = ctx->ext_total_bits - ec_tell_frac(ctx->ext_ec) - 1;
-         ctx->ec = ctx->ext_ec;
-         int new_b;
-         new_b = IMIN(ctx->remaining_bits, ext_b);
-         cm = quant_partition(ctx, X, N, new_b, B, lowband, LM, gain, fill ARG_QEXT(0));
-         ctx->ec = bak_ec;
-         ctx->remaining_bits = remaining_bak;
+         int extra_bits;
+         int ext_remaining_bits;
+         extra_bits = ext_b/(N-1)>>BITRES;
+         ext_remaining_bits = ctx->ext_total_bits-ec_tell_frac(ctx->ext_ec);
+         if (ext_remaining_bits < ((extra_bits+1)*(N-1)+N)<<BITRES) {
+            extra_bits = (ext_remaining_bits-(N<<BITRES))/(N-1)>>BITRES;
+            extra_bits = IMAX(extra_bits-1, 0);
+         }
+         extra_bits = IMIN(16, extra_bits);
+         if (encode) cm = cubic_quant(X, N, 1<<extra_bits, B, ctx->ext_ec, gain, ctx->resynth);
+         else cm = cubic_unquant(X, N, 1<<extra_bits, B, ctx->ext_ec, gain);
 #endif
       } else {
          /* If there's no pulse, fill the band anyway */
@@ -1294,7 +1292,19 @@ static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
          deinterleave_hadamard(lowband, N_B>>recombine, B0<<recombine, longBlocks);
    }
 
-   cm = quant_partition(ctx, X, N, b, B, lowband, LM, gain, fill ARG_QEXT(ext_b));
+#ifdef ENABLE_QEXT
+   if (ctx->extra_bands && b > (3*N<<BITRES)+(ctx->m->logN[ctx->i]+8+8*LM)) {
+      int res;
+      ctx->remaining_bits = ctx->ec->storage*8*8 - ec_tell_frac(ctx->ec);
+      res = IMIN((b+N/2)/8/(N-1),  (ctx->remaining_bits-(ctx->m->logN[ctx->i]+8+8*LM))/8/(N-1));
+      res = IMIN(16, IMAX(1, res));
+      if (encode) cm = cubic_quant(X, N, 1<<res, B, ctx->ec, gain, ctx->resynth);
+      else cm = cubic_unquant(X, N, 1<<res, B, ctx->ec, gain);
+   } else
+#endif
+   {
+      cm = quant_partition(ctx, X, N, b, B, lowband, LM, gain, fill ARG_QEXT(ext_b));
+   }
 
    /* This code is used by the decoder and by the resynthesis-enabled encoder */
    if (ctx->resynth)
@@ -1605,6 +1615,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 #ifdef ENABLE_QEXT
    ctx.ext_ec = ext_ec;
    ctx.ext_total_bits = ext_total_bits;
+   ctx.extra_bands = end == NB_QEXT_BANDS;
 #endif
    /* Avoid injecting noise in the first band on transients. */
    ctx.avoid_split_noise = B > 1;
