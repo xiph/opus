@@ -1409,12 +1409,14 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       /* If we detect that the signal is dominated by a single tone, don't rely on the standard pitch
          estimator, as it can become unreliable. */
       if (toneishness > QCONST32(.99f, 29)) {
+         int multiple=1;
          /* Using aliased version of the postfilter above 24 kHz.
             First value is purposely slightly above pi to avoid triggering for Fs=48kHz. */
          if (QEXT_SCALE(tone_freq) >= QCONST16(3.1416f, 13)) tone_freq = QCONST16(3.141593f, 13) - tone_freq;
          /* If the pitch is too high for our post-filter, apply pitch doubling until
             we can get something that fits (not ideal, but better than nothing). */
-         while (QEXT_SCALE(tone_freq) >= QCONST16(0.39f, 13)) tone_freq/=2;
+         while (QEXT_SCALE(tone_freq) >= multiple*QCONST16(0.39f, 13)) multiple++;
+         tone_freq /= multiple;
          if (QEXT_SCALE(tone_freq) > QCONST16(0.006148f, 13)) {
 #ifdef FIXED_POINT
             pitch_index = IMIN(51472/tone_freq, max_period-QEXT_SCALE(2));
