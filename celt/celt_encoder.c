@@ -1175,6 +1175,10 @@ static celt_glog dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *b
             if (freq_bin >= eBands[i]-2 && freq_bin <= eBands[i+1]+2) follower[i] += GCONST(1.f);
             if (freq_bin >= eBands[i]-3 && freq_bin <= eBands[i+1]+3) follower[i] += GCONST(.5f);
          }
+         if (freq_bin >= eBands[end]) {
+            follower[end-1] += GCONST(2.f);
+            follower[end-2] += GCONST(1.f);
+         }
       }
 #ifdef DISABLE_FLOAT_API
       (void)analysis;
