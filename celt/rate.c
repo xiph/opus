@@ -709,7 +709,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
                flatE[end+i] = MAXG(flatE[end+i], PSHR32(qext_bandLogE[NB_QEXT_BANDS+i] - GCONST(0.0625f)*qext_mode->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(end+i+5)*(end+i+5), DB_SHIFT-10));
             }
          }
-         for (i=0;i<qext_end;i++) flatE[end+i] = flatE[end+i] + QCONST16(3.f, 10);
+         for (i=0;i<qext_end;i++) flatE[end+i] = flatE[end+i] + QCONST16(3.f, 10) + QCONST16(.2f, 10)*i;
       }
       /* Approximate fill level assuming all bands contribute fully. */
       sum = 0;
