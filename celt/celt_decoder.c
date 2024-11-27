@@ -1352,7 +1352,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    ALLOC(extra_pulses, nbEBands+NB_QEXT_BANDS, int);
    qext_bits = ((opus_int32)qext_bytes*8<<BITRES) - (opus_int32)ec_tell_frac(dec) - 1;
    clt_compute_extra_allocation(mode, qext_mode, start, end, qext_end, NULL, NULL,
-         qext_bits, extra_pulses, extra_quant, C, LM, &ext_dec, 0);
+         qext_bits, extra_pulses, extra_quant, C, LM, &ext_dec, 0, 0, 0);
    if (qext_bytes > 0) {
       unquant_fine_energy(mode, start, end, oldBandE, fine_quant, extra_quant, &ext_dec, C);
       if (qext_mode) {
