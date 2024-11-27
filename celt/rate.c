@@ -648,7 +648,7 @@ int clt_compute_allocation(const CELTMode *m, int start, int end, const int *off
 #ifdef ENABLE_QEXT
 
 void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, int start, int end, int qext_end, const celt_glog *bandLogE, const celt_glog *qext_bandLogE,
-      opus_int32 total, int *extra_pulses, int *extra_equant, int C, int LM, ec_ctx *ec, int encode)
+      opus_int32 total, int *extra_pulses, int *extra_equant, int C, int LM, ec_ctx *ec, int encode, opus_val16 tone_freq, opus_val32 toneishness)
 {
    int i;
    opus_val32 sum;
@@ -678,9 +678,11 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       VARDECL(opus_val16, flatE);
       VARDECL(int, Ncoef);
       VARDECL(opus_val16, cap);
+      VARDECL(opus_val16, min);
 
       ALLOC(flatE, tot_bands, opus_val16);
       ALLOC(cap, tot_bands, opus_val16);
+      ALLOC(min, tot_bands, opus_val16);
       ALLOC(Ncoef, tot_bands, int);
       for (i=start;i<end;i++) {
          Ncoef[i] = (m->eBands[i+1]-m->eBands[i])*C<<LM;
@@ -689,6 +691,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       for (i=start;i<end;i++) {
          flatE[i] = PSHR32(bandLogE[i] - GCONST(0.0625f)*m->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(i+5)*(i+5), DB_SHIFT-10);
          cap[i] = QCONST16(12.f, 10);
+         min[i] = 0;
       }
       if (C==2) {
          for (i=start;i<end;i++) {
@@ -697,9 +700,14 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       }
       flatE[end-1] += QCONST16(2.f, 10);
       if (qext_mode != NULL) {
+         opus_val16 min_depth = 0;
+         /* If we have enough bits, give at least 1 bit of depth to all higher bands. */
+         if (total >= 3*C*(qext_mode->eBands[qext_end]-qext_mode->eBands[start])<<LM<<BITRES && (toneishness < QCONST32(.98f, 29) || tone_freq > 1.33f))
+            min_depth = QCONST16(1.f, 10);
          for (i=0;i<qext_end;i++) {
             Ncoef[end+i] = (qext_mode->eBands[i+1]-qext_mode->eBands[i])*C<<LM;
             cap[end+i] = QCONST16(14.f, 10);
+            min[end+i] = min_depth;
          }
          for (i=0;i<qext_end;i++) {
             flatE[end+i] = PSHR32(qext_bandLogE[i] - GCONST(0.0625f)*qext_mode->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(end+i+5)*(end+i+5), DB_SHIFT-10);
@@ -722,14 +730,14 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       for (iter=0;iter<10;iter++) {
          sum = 0;
          for (i=start;i<tot_bands;i++)
-            sum += Ncoef[i] * MIN32(cap[i], MAX32(0, flatE[i]-fill));
+            sum += Ncoef[i] * MIN32(cap[i], MAX32(min[i], flatE[i]-fill));
          fill -= (SHL32(total, 10) - sum)/tot_samples;
       }
       for (i=start;i<tot_bands;i++) {
 #ifdef FIXED_POINT
-         depth[i] = PSHR32(MIN32(cap[i], MAX32(0, flatE[i]-fill)), 10-2);
+         depth[i] = PSHR32(MIN32(cap[i], MAX32(min[i], flatE[i]-fill)), 10-2);
 #else
-         depth[i] = (int)floor(.5+4*MIN32(cap[i], MAX32(0, flatE[i]-fill)));
+         depth[i] = (int)floor(.5+4*MIN32(cap[i], MAX32(min[i], flatE[i]-fill)));
 #endif
          if (ec_tell_frac(ec) + 47 < ec->storage*8<<BITRES)
             ec_enc_uint(ec, depth[i], 57);
