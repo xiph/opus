@@ -1212,6 +1212,71 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
    return cm;
 }
 
+#ifdef ENABLE_QEXT
+static unsigned cubic_quant_partition(struct band_ctx *ctx, celt_norm *X, int N, int b, int B, ec_ctx *ec, int LM, opus_val32 gain, int resynth, int encode)
+{
+   int res;
+   celt_assert(LM>=0);
+   ctx->remaining_bits = ctx->ec->storage*8*8 - ec_tell_frac(ctx->ec);
+   res = IMIN((b+N/2)/8/(N-1),  (ctx->remaining_bits-(ctx->m->logN[ctx->i]+8+8*LM))/8/(N-1));
+   res = IMIN(14, IMAX(0, res));
+   if (LM==0 || res<=2) {
+      int K;
+      K=1<<res;
+      if (B!=1) K=IMAX(1, K-1);
+      if (encode) return cubic_quant(X, N, K, B, ec, gain, resynth);
+      else return cubic_unquant(X, N, K, B, ec, gain);
+      /* Using odd K on transients to avoid adding pre-echo. */
+   } else {
+      celt_norm *Y;
+      opus_int32 itheta_q30;
+      opus_val32 g1, g2;
+      opus_int32 theta_res;
+      opus_int32 qtheta;
+      int delta;
+      int b1, b2;
+      int cm;
+      int N0;
+      N0 = N;
+      N >>= 1;
+      Y = X+N;
+      LM -= 1;
+      B = (B+1)>>1;
+      theta_res = IMIN(16, res+1);
+      if (encode) {
+         itheta_q30 = stereo_itheta(X, Y, 0, N, ctx->arch);
+         qtheta = (itheta_q30+(1<<(29-theta_res)))>>(30-theta_res);
+         ec_enc_uint(ec, qtheta, (1<<theta_res)+1);
+      } else {
+         qtheta = ec_dec_uint(ec, (1<<theta_res)+1);
+      }
+      itheta_q30 = qtheta<<(30-theta_res);
+      b -= theta_res<<BITRES;
+      delta = (N0-1) * 23 * ((itheta_q30>>16)-8192) >> (17-BITRES);
+
+#ifdef FIXED_POINT
+      g1 = (int)MIN32(2147483647, floor(.5+2147483648*celt_cos_norm2(itheta_q30*(1.f/(1<<30)))));
+      g2 = (int)MIN32(2147483647, floor(.5+2147483648*celt_cos_norm2(1.f-itheta_q30*(1.f/(1<<30)))));
+#else
+      g1 = celt_cos_norm2(itheta_q30*(1.f/(1<<30)));
+      g2 = celt_cos_norm2(1.f-itheta_q30*(1.f/(1<<30)));
+#endif
+      if (itheta_q30 == 0) {
+         b1=b;
+         b2=0;
+      } else if (itheta_q30==1073741824) {
+         b1=0;
+         b2=b;
+      } else {
+         b1 = IMIN(b, IMAX(0, (b-delta)/2));
+         b2 = b-b1;
+      }
+      cm  = cubic_quant_partition(ctx, X, N, b1, B, ec, LM, MULT32_32_Q31(gain, g1), resynth, encode);
+      cm |= cubic_quant_partition(ctx, Y, N, b2, B, ec, LM, MULT32_32_Q31(gain, g2), resynth, encode);
+      return cm;
+   }
+}
+#endif
 
 /* This function is responsible for encoding and decoding a band for the mono case. */
 static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
@@ -1296,12 +1361,7 @@ static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
 
 #ifdef ENABLE_QEXT
    if (ctx->extra_bands && b > (3*N<<BITRES)+(ctx->m->logN[ctx->i]+8+8*LM)) {
-      int res;
-      ctx->remaining_bits = ctx->ec->storage*8*8 - ec_tell_frac(ctx->ec);
-      res = IMIN((b+N/2)/8/(N-1),  (ctx->remaining_bits-(ctx->m->logN[ctx->i]+8+8*LM))/8/(N-1));
-      res = IMIN(16, IMAX(1, res));
-      if (encode) cm = cubic_quant(X, N, 1<<res, B, ctx->ec, gain, ctx->resynth);
-      else cm = cubic_unquant(X, N, 1<<res, B, ctx->ec, gain);
+      cm = cubic_quant_partition(ctx, X, N, b, B, ctx->ec, LM, gain, ctx->resynth, encode);
    } else
 #endif
    {
