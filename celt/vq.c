@@ -387,8 +387,8 @@ static int op_pvq_refine(const celt_norm *X, int *iy, int *iy0, int K, int up, i
    int i;
    int dir;
    VARDECL(opus_val64, rounding);
-   ALLOC(rounding, N, opus_val64);
    int iysum = 0;
+   ALLOC(rounding, N, opus_val64);
    for (i=0;i<N;i++) {
       opus_val64 tmp;
 #ifdef FIXED_POINT
@@ -461,6 +461,35 @@ static opus_val32 op_pvq_search_extra(const celt_norm *X, int *iy, int *up_iy, i
 }
 #endif
 
+#ifdef ENABLE_QEXT
+/* Take advantage of the fact that "large" refine values are much less likely
+   than smaller ones. */
+static void ec_enc_refine(ec_enc *enc, opus_int32 refine, opus_int32 up, int extra_bits, int use_entropy) {
+   int large;
+   large = abs(refine)>up/2;
+   ec_enc_bit_logp(enc, large, use_entropy ? 3 : 1);
+   if (large) {
+      ec_enc_bits(enc, refine < 0, 1);
+      ec_enc_bits(enc, abs(refine)-up/2-1, extra_bits-1);
+   } else {
+      ec_enc_bits(enc, refine+up/2, extra_bits);
+   }
+}
+
+static int ec_dec_refine(ec_enc *dec, opus_int32 up, int extra_bits, int use_entropy) {
+   int large, refine;
+   large = ec_dec_bit_logp(dec, use_entropy ? 3 : 1);
+   if (large) {
+      int sign = ec_dec_bits(dec, 1);
+      refine = ec_dec_bits(dec, extra_bits-1) + up/2+1;
+      if (sign) refine = -refine;
+   } else {
+      refine = (opus_int32)ec_dec_bits(dec, extra_bits)-up/2;
+   }
+   return refine;
+}
+#endif
+
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       opus_val32 gain, int resynth,
 #ifdef ENABLE_QEXT
@@ -501,15 +530,16 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       int i;
       VARDECL(int, up_iy);
       VARDECL(int, refine);
+      int up, use_entropy;
       ALLOC(up_iy, N, int);
       ALLOC(refine, N, int);
-      int up;
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
       yy = op_pvq_search_extra(X, iy, up_iy, K, up, refine, N, yy_shift);
       collapse_mask = extract_collapse_mask(up_iy, N, B);
       encode_pulses(iy, N, K, enc);
-      for (i=0;i<N-1;i++) ec_enc_uint(ext_enc, refine[i]+up-1, 2*up-1);
+      use_entropy = (ext_enc->storage*8 - ec_tell(ext_enc)) > (unsigned)(N-1)*(extra_bits+3)+1;
+      for (i=0;i<N-1;i++) ec_enc_refine(ext_enc, refine[i], up, extra_bits, use_entropy);
       if (iy[N-1]==0) ec_enc_bits(ext_enc, up_iy[N-1]<0, 1);
       if (resynth)
          normalise_residual(up_iy, X, N, yy, gain, yy_shift);
@@ -555,7 +585,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       int refine;
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
-      refine = ec_dec_uint(ext_dec, up) - (up-1)/2;
+      refine = (opus_int32)ec_dec_uint(ext_dec, up) - (up-1)/2;
       iy[0] *= up;
       iy[1] *= up;
       if (iy[1] == 0) {
@@ -577,12 +607,13 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       int i;
       opus_val64 yy64;
       VARDECL(int, refine);
-      ALLOC(refine, N, int);
-      int up;
+      int up, use_entropy;
       int sign=0;
+      ALLOC(refine, N, int);
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
-      for (i=0;i<N-1;i++) refine[i] = ec_dec_uint(ext_dec, 2*up-1) - (up-1);
+      use_entropy = (ext_dec->storage*8 - ec_tell(ext_dec)) > (unsigned)(N-1)*(extra_bits+3)+1;
+      for (i=0;i<N-1;i++) refine[i] = ec_dec_refine(ext_dec, up, extra_bits, use_entropy);
       if (iy[N-1]==0) sign = ec_dec_bits(ext_dec, 1);
       else sign = iy[N-1] < 0;
       for (i=0;i<N-1;i++) {
