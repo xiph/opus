@@ -461,6 +461,36 @@ static opus_val32 op_pvq_search_extra(const celt_norm *X, int *iy, int *up_iy, i
 }
 #endif
 
+#ifdef ENABLE_QEXT
+/* Take advantage of the fact that "large" refine values are much less likely
+   than smaller ones. */
+static const unsigned char large_icdf[3] = {11, 0};
+static void ec_enc_refine(ec_enc *enc, opus_int32 refine, opus_int32 up) {
+   int large;
+   large = abs(refine)>up/2;
+   ec_enc_icdf(enc, large, large_icdf, 7);
+   if (large) {
+      ec_enc_bits(enc, refine < 0, 1);
+      ec_enc_uint(enc, abs(refine)-up/2-1, up/2+1);
+   } else {
+      ec_enc_uint(enc, refine+up/2, up);
+   }
+}
+
+static int ec_dec_refine(ec_enc *dec, opus_int32 up) {
+   int large, refine;
+   large = ec_dec_icdf(dec, large_icdf, 7);
+   if (large) {
+      int sign = ec_dec_bits(dec, 1);
+      refine = ec_dec_uint(dec, up/2+1) + up/2+1;
+      if (sign) refine = -refine;
+   } else {
+      refine = ec_dec_uint(dec, up)-up/2;
+   }
+   return refine;
+}
+#endif
+
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       opus_val32 gain, int resynth,
 #ifdef ENABLE_QEXT
@@ -509,7 +539,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       yy = op_pvq_search_extra(X, iy, up_iy, K, up, refine, N, yy_shift);
       collapse_mask = extract_collapse_mask(up_iy, N, B);
       encode_pulses(iy, N, K, enc);
-      for (i=0;i<N-1;i++) ec_enc_uint(ext_enc, refine[i]+up-1, 2*up-1);
+      for (i=0;i<N-1;i++) ec_enc_refine(ext_enc, refine[i], up);
       if (iy[N-1]==0) ec_enc_bits(ext_enc, up_iy[N-1]<0, 1);
       if (resynth)
          normalise_residual(up_iy, X, N, yy, gain, yy_shift);
@@ -582,7 +612,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       int sign=0;
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
-      for (i=0;i<N-1;i++) refine[i] = ec_dec_uint(ext_dec, 2*up-1) - (up-1);
+      for (i=0;i<N-1;i++) refine[i] = ec_dec_refine(ext_dec, up);
       if (iy[N-1]==0) sign = ec_dec_bits(ext_dec, 1);
       else sign = iy[N-1] < 0;
       for (i=0;i<N-1;i++) {
