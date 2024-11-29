@@ -464,27 +464,27 @@ static opus_val32 op_pvq_search_extra(const celt_norm *X, int *iy, int *up_iy, i
 #ifdef ENABLE_QEXT
 /* Take advantage of the fact that "large" refine values are much less likely
    than smaller ones. */
-static void ec_enc_refine(ec_enc *enc, opus_int32 refine, opus_int32 up, int use_entropy) {
+static void ec_enc_refine(ec_enc *enc, opus_int32 refine, opus_int32 up, int extra_bits, int use_entropy) {
    int large;
    large = abs(refine)>up/2;
    ec_enc_bit_logp(enc, large, use_entropy ? 3 : 1);
    if (large) {
       ec_enc_bits(enc, refine < 0, 1);
-      ec_enc_uint(enc, abs(refine)-up/2-1, up/2+1);
+      ec_enc_bits(enc, abs(refine)-up/2-1, extra_bits-1);
    } else {
-      ec_enc_uint(enc, refine+up/2, up);
+      ec_enc_bits(enc, refine+up/2, extra_bits);
    }
 }
 
-static int ec_dec_refine(ec_enc *dec, opus_int32 up, int use_entropy) {
+static int ec_dec_refine(ec_enc *dec, opus_int32 up, int extra_bits, int use_entropy) {
    int large, refine;
    large = ec_dec_bit_logp(dec, use_entropy ? 3 : 1);
    if (large) {
       int sign = ec_dec_bits(dec, 1);
-      refine = ec_dec_uint(dec, up/2+1) + up/2+1;
+      refine = ec_dec_bits(dec, extra_bits-1) + up/2+1;
       if (sign) refine = -refine;
    } else {
-      refine = ec_dec_uint(dec, up)-up/2;
+      refine = ec_dec_bits(dec, extra_bits)-up/2;
    }
    return refine;
 }
@@ -539,7 +539,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       collapse_mask = extract_collapse_mask(up_iy, N, B);
       encode_pulses(iy, N, K, enc);
       use_entropy = (ext_enc->storage*8 - ec_tell(ext_enc)) > (unsigned)(N-1)*(extra_bits+3)+1;
-      for (i=0;i<N-1;i++) ec_enc_refine(ext_enc, refine[i], up, use_entropy);
+      for (i=0;i<N-1;i++) ec_enc_refine(ext_enc, refine[i], up, extra_bits, use_entropy);
       if (iy[N-1]==0) ec_enc_bits(ext_enc, up_iy[N-1]<0, 1);
       if (resynth)
          normalise_residual(up_iy, X, N, yy, gain, yy_shift);
@@ -613,7 +613,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
       use_entropy = (ext_dec->storage*8 - ec_tell(ext_dec)) > (unsigned)(N-1)*(extra_bits+3)+1;
-      for (i=0;i<N-1;i++) refine[i] = ec_dec_refine(ext_dec, up, use_entropy);
+      for (i=0;i<N-1;i++) refine[i] = ec_dec_refine(ext_dec, up, extra_bits, use_entropy);
       if (iy[N-1]==0) sign = ec_dec_bits(ext_dec, 1);
       else sign = iy[N-1] < 0;
       for (i=0;i<N-1;i++) {
