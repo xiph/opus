@@ -736,7 +736,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       }
       for (i=start;i<tot_bands;i++) {
 #ifdef FIXED_POINT
-         depth[i] = PSHR32(MIN32(cap[i], MAX32(0, flatE[i]-fill)), 10-2);
+         depth[i] = PSHR32(MIN32(cap[i], MAX32(min[i], flatE[i]-fill)), 10-2);
 #else
          depth[i] = (int)floor(.5+4*MIN32(cap[i], MAX32(min[i], flatE[i]-fill)));
 #endif
