@@ -664,10 +664,10 @@ void haar1(celt_norm *X, int N0, int stride)
       }
 }
 
+static const opus_int16 exp2_table8[8] =
+   {16384, 17866, 19483, 21247, 23170, 25267, 27554, 30048};
 static int compute_qn(int N, int b, int offset, int pulse_cap, int stereo)
 {
-   static const opus_int16 exp2_table8[8] =
-      {16384, 17866, 19483, 21247, 23170, 25267, 27554, 30048};
    int qn, qb;
    int N2 = 2*N-1;
    if (stereo && N==2)
@@ -1211,16 +1211,28 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
 }
 
 #ifdef ENABLE_QEXT
+
+static int compute_qext_res(int depth)
+{
+   return exp2_table8[depth&0x7]<<(depth>>BITRES)>>14;
+}
+
 static unsigned cubic_quant_partition(struct band_ctx *ctx, celt_norm *X, int N, int b, int B, ec_ctx *ec, int LM, opus_val32 gain, int resynth, int encode)
 {
-   int res;
    celt_assert(LM>=0);
    ctx->remaining_bits = ctx->ec->storage*8*8 - ec_tell_frac(ctx->ec);
-   res = IMIN((b+N/2)/8/(N-1),  (ctx->remaining_bits-(ctx->m->logN[ctx->i]+8+8*LM))/8/(N-1));
-   res = IMIN(14, IMAX(0, res));
-   if (LM==0 || res<=2) {
-      if (encode) return cubic_quant(X, N, 1<<res, B, ec, gain, resynth);
-      else return cubic_unquant(X, N, 1<<res, B, ec, gain);
+   b = IMIN(b, ctx->remaining_bits);
+   if (LM==0 || b<=2*N<<BITRES) {
+      int K, res, ret;
+      /* Resolution left after taking into account coding the cube face. */
+      res = (b-(1<<BITRES)-ctx->m->logN[ctx->i]-(LM<<BITRES)-1)/(N-1);
+      res = IMIN(14<<BITRES, IMAX(0, res));
+      K = compute_qext_res(res);
+      K = IMAX(1, K>>1<<1);
+      if (encode) ret = cubic_quant(X, N, K, B, ec, gain, resynth);
+      else ret = cubic_unquant(X, N, K, B, ec, gain);
+      ctx->remaining_bits = ctx->ec->storage*8*8 - ec_tell_frac(ctx->ec);
+      return ret;
    } else {
       celt_norm *Y;
       opus_int32 itheta_q30;
@@ -1236,7 +1248,7 @@ static unsigned cubic_quant_partition(struct band_ctx *ctx, celt_norm *X, int N,
       Y = X+N;
       LM -= 1;
       B = (B+1)>>1;
-      theta_res = IMIN(16, res+1);
+      theta_res = IMIN(16, (b>>BITRES)/(N0-1) + 1);
       if (encode) {
          itheta_q30 = stereo_itheta(X, Y, 0, N, ctx->arch);
          qtheta = (itheta_q30+(1<<(29-theta_res)))>>(30-theta_res);
