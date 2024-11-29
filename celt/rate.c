@@ -647,17 +647,58 @@ int clt_compute_allocation(const CELTMode *m, int start, int end, const int *off
 
 #ifdef ENABLE_QEXT
 
+static const unsigned char last_zero[3] = {64, 50, 0};
+static const unsigned char last_cap[3] = {110, 60, 0};
+static const unsigned char last_other[4] = {120, 112, 70, 0};
+
+static void ec_enc_depth(ec_enc *enc, opus_int32 depth, opus_int32 cap, opus_int32 *last) {
+   int sym = 3;
+   if (depth==*last) sym = 2;
+   if (depth==cap) sym = 1;
+   if (depth==0) sym = 0;
+   if (*last == 0) {
+      ec_enc_icdf(enc, IMIN(sym, 2), last_zero, 7);
+   } else if (*last == cap) {
+      ec_enc_icdf(enc, IMIN(sym, 2), last_cap, 7);
+   } else {
+      ec_enc_icdf(enc, sym, last_other, 7);
+   }
+   /* We accept some redundancy if depth==last (for last different from 0 and cap). */
+   if (sym == 3) ec_enc_uint(enc, depth-1, cap);
+   *last = depth;
+}
+
+static int ec_dec_depth(ec_dec *dec, opus_int32 cap, opus_int32 *last) {
+   int depth, sym;
+   if (*last == 0) {
+      sym = ec_dec_icdf(dec, last_zero, 7);
+      if (sym==2) sym=3;
+   } else if (*last == cap) {
+      sym = ec_dec_icdf(dec, last_cap, 7);
+      if (sym==2) sym=3;
+   } else {
+      sym = ec_dec_icdf(dec, last_other, 7);
+   }
+   if (sym==0) depth=0;
+   else if (sym==1) depth=cap;
+   else if (sym==2) depth=*last;
+   else depth = 1 + ec_dec_uint(dec, cap);
+   *last = depth;
+   return depth;
+}
+
 void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, int start, int end, int qext_end, const celt_glog *bandLogE, const celt_glog *qext_bandLogE,
       opus_int32 total, int *extra_pulses, int *extra_equant, int C, int LM, ec_ctx *ec, int encode, opus_val16 tone_freq, opus_val32 toneishness)
 {
    int i;
+   opus_int32 last=0;
    opus_val32 sum;
    opus_val32 fill;
    int iter;
    int tot_bands;
    int tot_samples;
    VARDECL(int, depth);
-
+   VARDECL(opus_int32, cap);
    if (qext_mode != NULL) {
       celt_assert(end==m->nbEBands);
       tot_bands = end + qext_end;
@@ -666,7 +707,11 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       tot_bands = end;
       tot_samples = (m->eBands[end]-m->eBands[start])*C<<LM;
    }
-
+   ALLOC(cap, tot_bands, opus_int32);
+   for (i=start;i<end;i++) cap[i] = 12;
+   if (qext_mode != NULL) {
+      for (i=0;i<qext_end;i++) cap[end+i] = 14;
+   }
    if (total <= 0) {
       for (i=start;i<m->nbEBands+qext_end;i++) {
          extra_pulses[i] = extra_equant[i] = 0;
@@ -677,11 +722,9 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
    if (encode) {
       VARDECL(opus_val16, flatE);
       VARDECL(int, Ncoef);
-      VARDECL(opus_val16, cap);
       VARDECL(opus_val16, min);
 
       ALLOC(flatE, tot_bands, opus_val16);
-      ALLOC(cap, tot_bands, opus_val16);
       ALLOC(min, tot_bands, opus_val16);
       ALLOC(Ncoef, tot_bands, int);
       for (i=start;i<end;i++) {
@@ -690,7 +733,6 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       /* Remove the effect of band width, eMeans and pre-emphasis to compute the real (flat) spectrum. */
       for (i=start;i<end;i++) {
          flatE[i] = PSHR32(bandLogE[i] - GCONST(0.0625f)*m->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(i+5)*(i+5), DB_SHIFT-10);
-         cap[i] = QCONST16(12.f, 10);
          min[i] = 0;
       }
       if (C==2) {
@@ -706,7 +748,6 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
             min_depth = QCONST16(1.f, 10);
          for (i=0;i<qext_end;i++) {
             Ncoef[end+i] = (qext_mode->eBands[i+1]-qext_mode->eBands[i])*C<<LM;
-            cap[end+i] = QCONST16(14.f, 10);
             min[end+i] = min_depth;
          }
          for (i=0;i<qext_end;i++) {
@@ -726,28 +767,28 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       }
       total >>= BITRES;
       fill = (SHL32(total, 10) + sum)/tot_samples;
-      /* Iteratively refine the fill level considering that we allow between 0 and 12 bits of depth. */
+      /* Iteratively refine the fill level considering the depth min and cap. */
       for (iter=0;iter<10;iter++) {
          sum = 0;
          for (i=start;i<tot_bands;i++)
-            sum += Ncoef[i] * MIN32(cap[i], MAX32(min[i], flatE[i]-fill));
+            sum += Ncoef[i] * MIN32(SHL32(cap[i], 10), MAX32(min[i], flatE[i]-fill));
          fill -= (SHL32(total, 10) - sum)/tot_samples;
       }
       for (i=start;i<tot_bands;i++) {
 #ifdef FIXED_POINT
-         depth[i] = PSHR32(MIN32(cap[i], MAX32(min[i], flatE[i]-fill)), 10-2);
+         depth[i] = PSHR32(MIN32(SHL32(cap[i], 10), MAX32(min[i], flatE[i]-fill)), 10-2);
 #else
-         depth[i] = (int)floor(.5+4*MIN32(cap[i], MAX32(min[i], flatE[i]-fill)));
+         depth[i] = (int)floor(.5+4*MIN32(SHL32(cap[i], 10), MAX32(min[i], flatE[i]-fill)));
 #endif
-         if (ec_tell_frac(ec) + 47 < ec->storage*8<<BITRES)
-            ec_enc_uint(ec, depth[i], 57);
+         if (ec_tell_frac(ec) + 80 < ec->storage*8<<BITRES)
+            ec_enc_depth(ec, depth[i], 4*cap[i], &last);
          else
             depth[i] = 0;
       }
    } else {
       for (i=start;i<tot_bands;i++) {
-         if (ec_tell_frac(ec) + 47 < ec->storage*8<<BITRES)
-            depth[i] = ec_dec_uint(ec, 57);
+         if (ec_tell_frac(ec) + 80 < ec->storage*8<<BITRES)
+            depth[i] = ec_dec_depth(ec, 4*cap[i], &last);
          else
             depth[i] = 0;
       }
