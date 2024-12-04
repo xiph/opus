@@ -1709,6 +1709,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    int qext_bytes=0;
 #ifdef ENABLE_QEXT
    int qext_scale;
+   int qext_end;
    int padding_len_bytes=0;
    unsigned char *ext_payload;
    opus_int32 qext_bits;
@@ -2450,11 +2451,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          OPUS_CLEAR(ext_payload, qext_bytes);
          ec_enc_init(&ext_enc, ext_payload, qext_bytes);
          nbCompressedBytes = new_compressedBytes;
-         if (qext_scale == 2)
-         {
-            compute_qext_mode(&qext_mode_struct, mode);
-            qext_mode = &qext_mode_struct;
-         }
+         compute_qext_mode(&qext_mode_struct, mode);
+         qext_mode = &qext_mode_struct;
+         qext_end = (qext_scale == 2) ? NB_QEXT_BANDS : 2;
+         ec_enc_bit_logp(&ext_enc, qext_end == NB_QEXT_BANDS, 1);
       } else {
          ec_enc_init(&ext_enc, NULL, 0);
          qext_bytes = 0;
@@ -2462,16 +2462,16 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    } else {
       ec_enc_init(&ext_enc, NULL, 0);
    }
-   if (qext_mode)
+   if (qext_bytes)
    {
       /* Don't bias for intra. */
       opus_val32 qext_delayedIntra=0;
       qext_oldBandE = energyError + CC*nbEBands;
-      compute_band_energies(qext_mode, freq, qext_bandE, NB_QEXT_BANDS, C, LM, st->arch);
-      normalise_bands(qext_mode, freq, X, qext_bandE, NB_QEXT_BANDS, C, M);
-      amp2Log2(qext_mode, NB_QEXT_BANDS, NB_QEXT_BANDS, qext_bandE, qext_bandLogE, C);
+      compute_band_energies(qext_mode, freq, qext_bandE, qext_end, C, LM, st->arch);
+      normalise_bands(qext_mode, freq, X, qext_bandE, qext_end, C, M);
+      amp2Log2(qext_mode, qext_end, qext_end, qext_bandE, qext_bandLogE, C);
 
-      quant_coarse_energy(qext_mode, 0, NB_QEXT_BANDS, NB_QEXT_BANDS, qext_bandLogE,
+      quant_coarse_energy(qext_mode, 0, qext_end, qext_end, qext_bandLogE,
                qext_oldBandE, qext_bytes*8, qext_error, &ext_enc,
                C, LM, qext_bytes, st->force_intra,
                &qext_delayedIntra, st->complexity >= 4, st->loss_rate, st->lfe);

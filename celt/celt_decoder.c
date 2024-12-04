@@ -1042,6 +1042,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    opus_int32 qext_bits;
    ec_dec ext_dec;
    int qext_bytes=0;
+   int qext_end;
    VARDECL(int, extra_quant);
    VARDECL(int, extra_pulses);
    const CELTMode *qext_mode = NULL;
@@ -1261,13 +1262,14 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    unquant_coarse_energy(mode, start, end, oldBandE,
          intra_ener, dec, C, LM);
 #ifdef ENABLE_QEXT
-   if (qext_bytes && mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)) {
+   if (qext_bytes && (mode->shortMdctSize==240 || mode->shortMdctSize==180)) {
       int qext_intra_ener;
       qext_oldBandE = backgroundLogE + 2*nbEBands;
       compute_qext_mode(&qext_mode_struct, mode);
       qext_mode = &qext_mode_struct;
+      qext_end = ec_dec_bit_logp(&ext_dec, 1) ? NB_QEXT_BANDS : 2;
       qext_intra_ener = ec_tell(&ext_dec)+3<=qext_bytes*8 ? ec_dec_bit_logp(&ext_dec, 3) : 0;
-      unquant_coarse_energy(qext_mode, 0, NB_QEXT_BANDS, qext_oldBandE,
+      unquant_coarse_energy(qext_mode, 0, qext_end, qext_oldBandE,
             qext_intra_ener, &ext_dec, C, LM);
    }
 #endif
