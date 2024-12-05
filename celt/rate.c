@@ -688,7 +688,7 @@ static int ec_dec_depth(ec_dec *dec, opus_int32 cap, opus_int32 *last) {
 }
 
 void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, int start, int end, const celt_glog *bandLogE, const celt_glog *qext_bandLogE,
-      opus_int32 total, int *extra_pulses, int *extra_equant, int C, int LM, ec_ctx *ec, int encode)
+      opus_int32 total, int *extra_pulses, int *extra_equant, int C, int LM, ec_ctx *ec, int encode, opus_val16 tone_freq, opus_val32 toneishness)
 {
    int i;
    opus_int32 last=0;
@@ -744,7 +744,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       if (qext_mode != NULL) {
          opus_val16 min_depth = 0;
          /* If we have enough bits, give at least 1 bit of depth to all higher bands. */
-         if (total >= 3*C*(qext_mode->eBands[NB_QEXT_BANDS]-qext_mode->eBands[start])<<LM<<BITRES)
+         if (total >= 3*C*(qext_mode->eBands[NB_QEXT_BANDS]-qext_mode->eBands[start])<<LM<<BITRES && (toneishness < QCONST32(.98f, 29) || tone_freq > 1.33f))
             min_depth = QCONST16(1.f, 10);
          for (i=0;i<NB_QEXT_BANDS;i++) {
             Ncoef[end+i] = (qext_mode->eBands[i+1]-qext_mode->eBands[i])*C<<LM;
