@@ -42,6 +42,8 @@
 
 #ifdef FIXED_POINT
 #define WORD "%d"
+#define FIX_INT_TO_DOUBLE(x,q) ((double)(x) / (double)(1L << q))
+#define DOUBLE_TO_FIX_INT(x,q) (((double)x * (double)(1L << q)))
 #else
 #define WORD "%f"
 #endif
@@ -275,6 +277,35 @@ void test_atan2(void) {
 }
 
 #else
+
+void testlog2_db(void)
+{
+#if defined(ENABLE_QEXT)
+   /* celt_log2_db test */
+   float error = -1;
+   float max_error = -2;
+   float error_threshold = 7.59e-08;
+   opus_int32 x = 0;
+   int q_input = 14;
+   for (x = 8; x < 1073741824; x += (x >> 3))
+   {
+      error = fabs((1.442695040888963387*log(FIX_INT_TO_DOUBLE(x, q_input))) -
+                   FIX_INT_TO_DOUBLE(celt_log2_db(x), DB_SHIFT));
+      if (error > max_error)
+      {
+         max_error = error;
+      }
+      if (error > error_threshold)
+      {
+         fprintf(stderr, "celt_log2_db failed: error: [%.5e > %.5e] (x = %f)\n",
+                 error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+         ret = 1;
+      }
+   }
+   fprintf(stdout, "celt_log2_db max_error: %.7e\n", max_error);
+#endif  /* defined(ENABLE_QEXT) */
+}
+
 void testlog2(void)
 {
    opus_val32 x;
@@ -354,6 +385,7 @@ int main(void)
    testexp2log2();
 #ifdef FIXED_POINT
    testilog2();
+   testlog2_db();
 #else
    test_cos();
    test_atan2();

@@ -421,8 +421,48 @@ static OPUS_INLINE opus_val32 celt_exp2(opus_val16 x)
 
 #ifdef ENABLE_QEXT
 
+/* Calculates the base-2 logarithm of a Q14 input value. The result is returned
+ * in Q(DB_SHIFT). If the input value is 0, the function will output -32.0f. */
 static OPUS_INLINE opus_val32 celt_log2_db(opus_val32 x) {
-   return (int)floor(.5 + (1<<DB_SHIFT) * 1.4426950409f*log(x/(float)(1<<14)));
+   /* Q30 */
+   static const opus_val32 log2_x_norm_coeff[8] = {
+      1073741824, 954437184, 858993472, 780903168,
+      715827904,  660764224, 613566784, 572662336};
+   /* Q24 */
+   static const opus_val32 log2_y_norm_coeff[8] = {
+      0,       2850868,  5401057,  7707983,
+      9814042, 11751428, 13545168, 15215099};
+   static const opus_val32 LOG2_COEFF_A0 = 1467383;     /* Q24 */
+   static const opus_val32 LOG2_COEFF_A1 = 182244800;   /* Q27 */
+   static const opus_val32 LOG2_COEFF_A2 = -21440512;   /* Q25 */
+   static const opus_val32 LOG2_COEFF_A3 = 107903336;   /* Q28 */
+   static const opus_val32 LOG2_COEFF_A4 = -610217024;  /* Q31 */
+
+   opus_int32 integer, norm_coeff_idx;
+   opus_val32 mantissa;
+   if (x==0) {
+      return -536870912; /* -32.0f */
+   }
+   integer =  SUB32(celt_ilog2(x), 14);  /* Q0 */
+   mantissa = VSHR32(x, integer + 14 - 29);  /* Q29 */
+   norm_coeff_idx = SHR32(mantissa, 29 - 3) & 0x7;
+   /* mantissa is in Q28 (29 + Q_NORM_CONST - 31 where Q_NORM_CONST is Q30)
+    * 285212672 (Q28) is 1.0625f. */
+   mantissa = SUB32(MULT32_32_Q31(mantissa, log2_x_norm_coeff[norm_coeff_idx]),
+                    285212672);
+
+   /* q_a3(Q28): q_mantissa + q_a4 - 31
+    * q_a2(Q25): q_mantissa + q_a3 - 31
+    * q_a1(Q27): q_mantissa + q_a2 - 31 + 5
+    * q_a0(Q24): q_mantissa + q_a1 - 31
+    * where  q_mantissa is Q28 */
+   return ADD32(log2_y_norm_coeff[norm_coeff_idx],
+          ADD32(SHL32(integer, DB_SHIFT),
+          ADD32(LOG2_COEFF_A0, MULT32_32_Q31(mantissa,
+          ADD32(LOG2_COEFF_A1, SHL32(MULT32_32_Q31(mantissa,
+          ADD32(LOG2_COEFF_A2, MULT32_32_Q31(mantissa,
+          ADD32(LOG2_COEFF_A3, MULT32_32_Q31(mantissa, LOG2_COEFF_A4))))),
+                5 /* SHL32 for LOG2_COEFF_A1 */))))));
 }
 
 static OPUS_INLINE opus_val32 celt_exp2_db_frac(opus_val32 x)
