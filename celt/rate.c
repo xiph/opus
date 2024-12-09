@@ -710,8 +710,9 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
    }
    ALLOC(cap, tot_bands, opus_int32);
    for (i=start;i<end;i++) cap[i] = 12;
-   for (i=0;i<NB_QEXT_BANDS;i++) cap[end+i] = 14;
-
+   if (qext_mode != NULL) {
+      for (i=0;i<NB_QEXT_BANDS;i++) cap[end+i] = 14;
+   }
    if (total <= 0) {
       for (i=start;i<m->nbEBands+NB_QEXT_BANDS;i++) {
          extra_pulses[i] = extra_equant[i] = 0;
