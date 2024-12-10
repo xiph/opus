@@ -297,7 +297,7 @@ static OPUS_INLINE float celt_log2(float x)
  * employing a base-2 exponential function and utilizing a Remez approximation
  * of order 5, ensuring a controlled relative error.
  * exp2(x) = exp2(integer + fraction)
- *         ~ exp2(integer) + exp2(fraction) */
+ *         = exp2(integer) * exp2(fraction) */
 static OPUS_INLINE float celt_exp2(float x)
 {
    int integer;
@@ -465,12 +465,28 @@ static OPUS_INLINE opus_val32 celt_log2_db(opus_val32 x) {
                 5 /* SHL32 for LOG2_COEFF_A1 */))))));
 }
 
+/* Calculates exp2 for Q28 within a specific range (0 to 1.0) using fixed-point
+ * arithmetic. The input number must be adjusted for Q DB_SHIFT. */
 static OPUS_INLINE opus_val32 celt_exp2_db_frac(opus_val32 x)
 {
-   return (int)floor(.5f + (1<<14)*exp(0.6931471806f*x/(float)(1<<DB_SHIFT))*32768.f);
+   /* Approximation constants. */
+   static const opus_int32 EXP2_COEFF_A0 = 268435440;   /* Q28 */
+   static const opus_int32 EXP2_COEFF_A1 = 744267456;   /* Q30 */
+   static const opus_int32 EXP2_COEFF_A2 = 1031451904;  /* Q32 */
+   static const opus_int32 EXP2_COEFF_A3 = 959088832;   /* Q34 */
+   static const opus_int32 EXP2_COEFF_A4 = 617742720;   /* Q36 */
+   static const opus_int32 EXP2_COEFF_A5 = 516104352;   /* Q38 */
+   /* Converts input value from Q24 to Q29. */
+   opus_val32 x_q29 = SHL32(x, 29 - 24);
+   return ADD32(EXP2_COEFF_A0, MULT32_32_Q31(x_q29,
+          ADD32(EXP2_COEFF_A1, MULT32_32_Q31(x_q29,
+          ADD32(EXP2_COEFF_A2, MULT32_32_Q31(x_q29,
+          ADD32(EXP2_COEFF_A3, MULT32_32_Q31(x_q29,
+          ADD32(EXP2_COEFF_A4, MULT32_32_Q31(x_q29, EXP2_COEFF_A5))))))))));
 }
 
-/** Base-2 exponential approximation (2^x). (DB input, Q16 output) */
+/* Calculates exp2 for Q16 using fixed-point arithmetic. The input number must
+ * be adjusted for Q DB_SHIFT. */
 static OPUS_INLINE opus_val32 celt_exp2_db(opus_val32 x)
 {
    int integer;
@@ -478,15 +494,15 @@ static OPUS_INLINE opus_val32 celt_exp2_db(opus_val32 x)
    integer = SHR32(x,DB_SHIFT);
    if (integer>14)
       return 0x7f000000;
-   else if (integer <= -14)
+   else if (integer <= -17)
       return 0;
-   frac = celt_exp2_db_frac(x-SHL32(integer,DB_SHIFT));
-   return VSHR32(frac, -integer-2+15);
+   frac = celt_exp2_db_frac(x-SHL32(integer, DB_SHIFT));  /* Q28 */
+   return VSHR32(frac, -integer + 28 - 16);  /* Q16 */
 }
 #else
 
 #define celt_log2_db(x) SHL32(EXTEND32(celt_log2(x)), DB_SHIFT-10)
-#define celt_exp2_db_frac(x) SHL32(celt_exp2_frac(PSHR32(x, DB_SHIFT-10)), 15)
+#define celt_exp2_db_frac(x) SHL32(celt_exp2_frac(PSHR32(x, DB_SHIFT-10)), 14)
 #define celt_exp2_db(x) celt_exp2(PSHR32(x, DB_SHIFT-10))
 
 #endif
