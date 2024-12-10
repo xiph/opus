@@ -369,6 +369,8 @@ static OPUS_INLINE opus_int16 celt_zlog2(opus_val32 x)
 
 opus_val16 celt_rsqrt_norm(opus_val32 x);
 
+opus_val32 celt_rsqrt_norm32(opus_val32 x);
+
 opus_val32 celt_sqrt(opus_val32 x);
 
 opus_val16 celt_cos_norm(opus_val32 x);
