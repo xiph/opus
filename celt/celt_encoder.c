@@ -2525,7 +2525,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    ALLOC(error_bak, C*nbEBands, celt_glog);
 
    qext_bits = ((opus_int32)qext_bytes*8<<BITRES) - ec_tell_frac(enc) - 1;
-   clt_compute_extra_allocation(mode, qext_mode, start, end, bandLogE, qext_bandLogE,
+   clt_compute_extra_allocation(mode, qext_mode, start, end, qext_end, bandLogE, qext_bandLogE,
          qext_bits, extra_pulses, extra_quant, C, LM, &ext_enc, 1, tone_freq, toneishness);
    OPUS_COPY(error_bak, error, C*nbEBands);
    if (qext_bytes > 0) {
