@@ -276,6 +276,42 @@ void testexp2(void)
    }
 }
 
+void testexp2_db(void)
+{
+#if defined(ENABLE_QEXT)
+   float absolute_error = -1;
+   float absolute_error_threshold = FIX_INT_TO_DOUBLE(2, 16);
+   float relative_error_threshold = -2;
+   float fx;
+   float quantized_fx;
+   float ground_truth;
+   opus_val32 x_32;
+
+   for (fx = -32.0; fx < 15.0; fx += 0.0007)
+   {
+      x_32 = DOUBLE_TO_FIX_INT(fx, DB_SHIFT);
+      quantized_fx = FIX_INT_TO_DOUBLE(x_32, DB_SHIFT);
+
+      double ground_truth = (exp(0.6931471805599453094 * quantized_fx));
+      absolute_error = fabs(ground_truth -
+                            FIX_INT_TO_DOUBLE(celt_exp2_db(x_32), 16));
+
+      relative_error_threshold = 1.24e-7 * ground_truth;
+      if (absolute_error > absolute_error_threshold &&
+          absolute_error > relative_error_threshold)
+      {
+         fprintf(stderr,
+                 "celt_exp2_db failed: "
+                 "absolute_error: [%.5e > %.5e] "
+                 "relative_error: [%.5e > %.5e] (x = %f)\n",
+                 absolute_error, absolute_error_threshold,
+                 absolute_error, relative_error_threshold, quantized_fx);
+         ret = 1;
+      }
+   }
+#endif  /* defined(ENABLE_QEXT) */
+}
+
 void testexp2log2(void)
 {
    opus_val32 x;
@@ -327,6 +363,7 @@ int main(void)
 #ifdef FIXED_POINT
    testilog2();
    testlog2_db();
+   testexp2_db();
 #endif
    return ret;
 }
