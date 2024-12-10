@@ -243,7 +243,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       g = celt_exp2_db(MIN32(32.f, lg));
 #else
       /* Handle the integer part of the log energy */
-      shift = 16-(lg>>DB_SHIFT);
+      shift = 15-(lg>>DB_SHIFT);
       if (shift>31)
       {
          shift=0;
