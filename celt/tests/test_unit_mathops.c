@@ -411,6 +411,37 @@ void testilog2(void)
       }
    }
 }
+
+void testrsqrt(void)
+{
+   float error_threshold = 6.e-08;
+   float error = 0;
+   float max_error = 0;
+   float fx = 0;
+   float quantized_fx;
+   opus_int32 x;
+   for (fx = 0.25; fx < 1.0f; fx += 0.007f)
+   {
+      x = DOUBLE_TO_FIX_INT(fx, 31);
+      quantized_fx = FIX_INT_TO_DOUBLE(x, 31);
+      error = fabs(FIX_INT_TO_DOUBLE(celt_rsqrt_norm32(x), 29) -
+                   1/sqrt(quantized_fx));
+      if (max_error < error)
+      {
+         max_error = error;
+      }
+      if (error > error_threshold)
+      {
+         fprintf (stderr,
+                  "celt_rsqrt_norm32 failed: "
+                  "fabs((1/sqrt(x))-celt_rsqrt_norm32(x))>%15.25e "
+                  "(x = %f, error = %15.25e)\n",
+                  error_threshold, quantized_fx, error);
+         ret = 1;
+      }
+   }
+   fprintf (stdout, "celt_rsqrt_norm32 max_error: %.7e\n", max_error);
+}
 #endif
 
 
@@ -512,6 +543,7 @@ int main(void)
    testilog2();
    testlog2_db();
    testexp2_db();
+   testrsqrt();
 #else
    test_cos();
    test_atan2();
