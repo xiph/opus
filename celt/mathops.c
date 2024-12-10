@@ -122,6 +122,20 @@ opus_val16 celt_rsqrt_norm(opus_val32 x)
               SUB16(MULT16_16_Q15(y, 12288), 16384))));
 }
 
+/** Reciprocal sqrt approximation in the range [0.25,1) (Q31 in, Q29 out) */
+opus_val32 celt_rsqrt_norm32(opus_val32 x)
+{
+   opus_int32 tmp;
+   /* Use the first-order Newton-Raphson method to refine the root estimate.
+    * r = r * (1.5 - 0.5*x*r*r) */
+   opus_int32 r_q29 = SHL32(celt_rsqrt_norm(SHR32(x, 31-16)), 15);
+   /* Split evaluation in steps to avoid exploding macro expansion. */
+   tmp = MULT32_32_Q31(r_q29, r_q29);
+   tmp = MULT32_32_Q31(1073741824 /* Q31 */, tmp);
+   tmp = MULT32_32_Q31(x, tmp);
+   return SHL32(MULT32_32_Q31(r_q29, SUB32(201326592 /* Q27 */, tmp)), 4);
+}
+
 /** Sqrt approximation (QX input, QX/2 output) */
 opus_val32 celt_sqrt(opus_val32 x)
 {
