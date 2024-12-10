@@ -482,10 +482,10 @@ static const opus_int16 qext_logN_240[] = {27, 27, 27, 27, 27, 27, 27, 27, 27, 2
 void compute_qext_mode(CELTMode *qext, const CELTMode *m)
 {
    OPUS_COPY(qext, m, 1);
-   if (m->shortMdctSize == 240) {
+   if (m->shortMdctSize*48000 == 120*m->Fs) {
    qext->eBands = qext_eBands_240;
    qext->logN = qext_logN_240;
-   } else if (m->shortMdctSize == 180) {
+   } else if (m->shortMdctSize*48000 == 90*m->Fs) {
       qext->eBands = qext_eBands_180;
       qext->logN = qext_logN_180;
    } else {

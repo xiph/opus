@@ -171,9 +171,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_get_size(const CELTMode *mode, int 
    int size;
    int extra=0;
 #ifdef ENABLE_QEXT
-   if (mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)) {
-      extra = 2*NB_QEXT_BANDS*sizeof(celt_glog);
-   }
+   extra = 2*NB_QEXT_BANDS*sizeof(celt_glog);
 #endif
    size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
@@ -420,7 +418,7 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
             downsample, silence);
 #ifdef ENABLE_QEXT
       if (qext_mode)
-         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, NB_QEXT_BANDS, M,
+         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, mode->Fs == 96000 ? NB_QEXT_BANDS : 2, M,
                         downsample, silence);
 #endif
       /* Store a temporary copy in the output buffer because the IMDCT destroys its input. */
@@ -443,9 +441,9 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
 #ifdef ENABLE_QEXT
       if (qext_mode)
       {
-         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, NB_QEXT_BANDS, M,
+         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, mode->Fs == 96000 ? NB_QEXT_BANDS : 2, M,
                         downsample, silence);
-         denormalise_bands(qext_mode, X+N, freq2, qext_bandLogE+NB_QEXT_BANDS, 0, NB_QEXT_BANDS, M,
+         denormalise_bands(qext_mode, X+N, freq2, qext_bandLogE+NB_QEXT_BANDS, 0, mode->Fs == 96000 ? NB_QEXT_BANDS : 2, M,
                         downsample, silence);
       }
 #endif
@@ -460,7 +458,7 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
                downsample, silence);
 #ifdef ENABLE_QEXT
          if (qext_mode)
-            denormalise_bands(qext_mode, X+c*N, freq, qext_bandLogE+c*NB_QEXT_BANDS, 0, NB_QEXT_BANDS, M,
+            denormalise_bands(qext_mode, X+c*N, freq, qext_bandLogE+c*NB_QEXT_BANDS, 0, mode->Fs == 96000 ? NB_QEXT_BANDS : 2, M,
                            downsample, silence);
 #endif
          for (b=0;b<B;b++)
@@ -1262,7 +1260,9 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    unquant_coarse_energy(mode, start, end, oldBandE,
          intra_ener, dec, C, LM);
 #ifdef ENABLE_QEXT
-   if (qext_bytes && (mode->shortMdctSize==240 || mode->shortMdctSize==180)) {
+   if (qext_bytes &&
+         ((mode->Fs == 48000 && (mode->shortMdctSize==120 || mode->shortMdctSize==90))
+       || (mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)))) {
       int qext_intra_ener;
       qext_oldBandE = backgroundLogE + 2*nbEBands;
       compute_qext_mode(&qext_mode_struct, mode);
@@ -1354,8 +1354,8 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
          ALLOC(qext_collapse_masks, C*NB_QEXT_BANDS, unsigned char);
          ec_dec_init(&dummy_dec, NULL, 0);
          OPUS_CLEAR(zeros, end);
-         unquant_fine_energy(qext_mode, 0, NB_QEXT_BANDS, qext_oldBandE, NULL, &extra_quant[nbEBands], &ext_dec, C);
-         quant_all_bands(0, qext_mode, 0, NB_QEXT_BANDS, X, C==2 ? X+N : NULL, qext_collapse_masks,
+         unquant_fine_energy(qext_mode, 0, qext_end, qext_oldBandE, NULL, &extra_quant[nbEBands], &ext_dec, C);
+         quant_all_bands(0, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
                NULL, &extra_pulses[nbEBands], shortBlocks, spread_decision, dual_stereo, intensity, zeros,
                qext_bytes*(8<<BITRES), 0, &ext_dec, LM, codedBands, &st->rng, 0,
                st->arch, st->disable_inv, &dummy_dec, zeros, 0);

@@ -147,9 +147,9 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_get_size(const CELTMode *mode, int 
    int extra=0;
 #ifdef ENABLE_QEXT
    int qext_scale;
+   extra = channels*NB_QEXT_BANDS*sizeof(celt_glog);
    if (mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)) {
       qext_scale = 2;
-      extra = channels*NB_QEXT_BANDS*sizeof(celt_glog);
    } else qext_scale = 1;
 #endif
    int size = sizeof(struct CELTEncoder)
@@ -1709,7 +1709,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    int qext_bytes=0;
 #ifdef ENABLE_QEXT
    int qext_scale;
-   int qext_end;
+   int qext_end=0;
    int padding_len_bytes=0;
    unsigned char *ext_payload;
    opus_int32 qext_bits;
@@ -2451,10 +2451,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          OPUS_CLEAR(ext_payload, qext_bytes);
          ec_enc_init(&ext_enc, ext_payload, qext_bytes);
          nbCompressedBytes = new_compressedBytes;
-         compute_qext_mode(&qext_mode_struct, mode);
-         qext_mode = &qext_mode_struct;
-         qext_end = (qext_scale == 2) ? NB_QEXT_BANDS : 2;
-         ec_enc_bit_logp(&ext_enc, qext_end == NB_QEXT_BANDS, 1);
+         if ((mode->Fs == 48000 ||  mode->Fs == 96000) && (mode->shortMdctSize==120*qext_scale || mode->shortMdctSize==90*qext_scale)) {
+            compute_qext_mode(&qext_mode_struct, mode);
+            qext_mode = &qext_mode_struct;
+            qext_end = (qext_scale == 2) ? NB_QEXT_BANDS : 2;
+            ec_enc_bit_logp(&ext_enc, qext_end == NB_QEXT_BANDS, 1);
+         }
       } else {
          ec_enc_init(&ext_enc, NULL, 0);
          qext_bytes = 0;
@@ -2462,7 +2464,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    } else {
       ec_enc_init(&ext_enc, NULL, 0);
    }
-   if (qext_bytes)
+   if (qext_mode)
    {
       /* Don't bias for intra. */
       opus_val32 qext_delayedIntra=0;
@@ -2536,8 +2538,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          ALLOC(qext_collapse_masks, C*NB_QEXT_BANDS, unsigned char);
          ec_enc_init(&dummy_enc, NULL, 0);
          OPUS_CLEAR(zeros, end);
-         quant_fine_energy(qext_mode, 0, NB_QEXT_BANDS, qext_oldBandE, qext_error, NULL, &extra_quant[nbEBands], &ext_enc, C);
-         quant_all_bands(1, qext_mode, 0, NB_QEXT_BANDS, X, C==2 ? X+N : NULL, qext_collapse_masks,
+         quant_fine_energy(qext_mode, 0, qext_end, qext_oldBandE, qext_error, NULL, &extra_quant[nbEBands], &ext_enc, C);
+         quant_all_bands(1, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
                qext_bandE, &extra_pulses[nbEBands], shortBlocks, st->spread_decision,
                dual_stereo, st->intensity, zeros, qext_bytes*(8<<BITRES),
                0, &ext_enc, LM, codedBands, &st->rng, st->complexity, st->arch, st->disable_inv, &dummy_enc, zeros, 0);

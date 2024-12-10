@@ -1681,7 +1681,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 #ifdef ENABLE_QEXT
    ctx.ext_ec = ext_ec;
    ctx.ext_total_bits = ext_total_bits;
-   ctx.extra_bands = end == NB_QEXT_BANDS;
+   ctx.extra_bands = end == NB_QEXT_BANDS || end == 2;
 #endif
    /* Avoid injecting noise in the first band on transients. */
    ctx.avoid_split_noise = B > 1;
