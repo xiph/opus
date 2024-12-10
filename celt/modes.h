@@ -75,6 +75,9 @@ struct OpusCustomMode {
    const celt_coef *window;
    mdct_lookup mdct;
    PulseCache cache;
+#ifdef ENABLE_QEXT
+   PulseCache qext_cache;
+#endif
 };
 
 #ifdef ENABLE_QEXT
