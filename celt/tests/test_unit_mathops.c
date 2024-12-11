@@ -522,6 +522,40 @@ void testatan(void)
    testatan_norm();
    testatan2p_norm();
 }
+
+void test_cos_norm32(void)
+{
+   float error = -1;
+   float max_error = -2;
+   float error_threshold = 1e-07;
+   float fx = 0;
+   opus_int32 x = 0;
+   int q_input = 30;
+   int q_output = 31;
+   for (fx = -1.0f; fx <= 1.0f; fx += 0.007f)
+   {
+      x = DOUBLE_TO_FIX_INT(fx, q_input);
+      error = fabs(cos(1.5707963267948966 * FIX_INT_TO_DOUBLE(x, q_input)) -
+                   FIX_INT_TO_DOUBLE(celt_cos_norm32(x), q_output));
+      if (error > max_error)
+      {
+         max_error = error;
+      }
+      if (error > error_threshold)
+      {
+         fprintf(stderr,
+                 "celt_cos_norm32 failed: error: [%.5e > %.5e] (x = %f)\n",
+                 error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+         ret = 1;
+      }
+   }
+   fprintf(stdout, "celt_cos_norm32 max_error: %.7e\n", max_error);
+}
+
+void test_cos(void)
+{
+   test_cos_norm32();
+}
 #endif
 
 
@@ -690,6 +724,7 @@ int main(void)
    testlog2();
    testexp2();
    testexp2log2();
+   test_cos();
 #ifdef FIXED_POINT
    testilog2();
    testlog2_db();
@@ -697,7 +732,6 @@ int main(void)
    testrsqrt();
    testatan();
 #else
-   test_cos();
    test_atan2();
 #endif
 #ifndef DISABLE_FLOAT_API
