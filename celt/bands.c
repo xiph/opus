@@ -1230,6 +1230,8 @@ static unsigned cubic_quant_partition(struct band_ctx *ctx, celt_norm *X, int N,
       res = IMIN(14<<BITRES, IMAX(0, res));
       K = compute_qext_res(res);
       K = IMAX(1, K>>1<<1);
+      /* Using odd K on transients to avoid adding pre-echo. */
+      if (B!=1) K=IMAX(1, K-1);
       if (encode) ret = cubic_quant(X, N, K, B, ec, gain, resynth);
       else ret = cubic_unquant(X, N, K, B, ec, gain);
       ctx->remaining_bits = ctx->ec->storage*8*8 - ec_tell_frac(ctx->ec);
