@@ -201,6 +201,26 @@ opus_val16 celt_cos_norm(opus_val32 x)
    }
 }
 
+/* Calculates the cosine of (PI*0.5*x) where the input x ranges from -1 to 1 and
+ * is in Q30 format. The output will also be in Q31 format. */
+opus_val32 celt_cos_norm32(opus_val32 x)
+{
+   static const opus_val32 COS_NORM_COEFF_A0 = 134217720;   /* Q27 */
+   static const opus_val32 COS_NORM_COEFF_A1 = -662336704;  /* Q29 */
+   static const opus_val32 COS_NORM_COEFF_A2 = 544710848;   /* Q31 */
+   static const opus_val32 COS_NORM_COEFF_A3 = -178761936;  /* Q33 */
+   static const opus_val32 COS_NORM_COEFF_A4 = 29487206;    /* Q35 */
+   opus_int32 x_sq_q29, tmp;
+   /* The expected x is in the range of [-1.0f, 1.0f] */
+   celt_sig_assert((x >= -1073741824) && (x <= 1073741824));
+   x_sq_q29 = MULT32_32_Q31(x, x);
+   /* Split evaluation in steps to avoid exploding macro expansion. */
+   tmp = ADD32(COS_NORM_COEFF_A3, MULT32_32_Q31(x_sq_q29, COS_NORM_COEFF_A4));
+   tmp = ADD32(COS_NORM_COEFF_A2, MULT32_32_Q31(x_sq_q29, tmp));
+   tmp = ADD32(COS_NORM_COEFF_A1, MULT32_32_Q31(x_sq_q29, tmp));
+   return SHL32(ADD32(COS_NORM_COEFF_A0, MULT32_32_Q31(x_sq_q29, tmp)), 4);
+}
+
 /** Reciprocal approximation (Q15 input, Q16 output) */
 opus_val32 celt_rcp(opus_val32 x)
 {
