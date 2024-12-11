@@ -1219,8 +1219,12 @@ static unsigned cubic_quant_partition(struct band_ctx *ctx, celt_norm *X, int N,
    res = IMIN((b+N/2)/8/(N-1),  (ctx->remaining_bits-(ctx->m->logN[ctx->i]+8+8*LM))/8/(N-1));
    res = IMIN(14, IMAX(0, res));
    if (LM==0 || res<=2) {
-      if (encode) return cubic_quant(X, N, 1<<res, B, ec, gain, resynth);
-      else return cubic_unquant(X, N, 1<<res, B, ec, gain);
+      int K;
+      K=1<<res;
+      if (B!=1) K=IMAX(1, K-1);
+      if (encode) return cubic_quant(X, N, K, B, ec, gain, resynth);
+      else return cubic_unquant(X, N, K, B, ec, gain);
+      /* Using odd K on transients to avoid adding pre-echo. */
    } else {
       celt_norm *Y;
       opus_int32 itheta_q30;
