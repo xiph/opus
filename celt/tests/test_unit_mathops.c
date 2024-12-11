@@ -442,6 +442,86 @@ void testrsqrt(void)
    }
    fprintf (stdout, "celt_rsqrt_norm32 max_error: %.7e\n", max_error);
 }
+
+void testatan_norm(void)
+{
+#if defined(ENABLE_QEXT)
+   float error = -1;
+   float max_error = -2;
+   float error_threshold = 5.97e-08;
+   float fx = 0;
+   opus_int32 x = 0;
+   int q_input = 30;
+   int q_output = 30;
+   #define ATAN2_2_OVER_PI 0.636619772367581f
+   for (fx = -1.0f; fx <= 1.0f; fx += 0.007f)
+   {
+      x = DOUBLE_TO_FIX_INT(fx, q_input);
+      error = fabs(atan(FIX_INT_TO_DOUBLE(x, q_input)) * ATAN2_2_OVER_PI -
+                   FIX_INT_TO_DOUBLE(celt_atan_norm(x), q_output));
+      if (error > max_error)
+      {
+         max_error = error;
+      }
+      if (error > error_threshold)
+      {
+         fprintf(stderr,
+                 "celt_atan_norm failed: error: [%.5e > %.5e] (x = %f)\n",
+                 error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+         ret = 1;
+      }
+   }
+   fprintf(stdout, "celt_atan_norm max_error: %.7e\n", max_error);
+#endif /* defined(ENABLE_QEXT) */
+}
+
+void testatan2p_norm(void)
+{
+#if defined(ENABLE_QEXT)
+   float error = -1;
+   float max_error = -2;
+   float error_threshold = 1.2e-07;
+   float fx = 0;
+   float fy = 0;
+   opus_int32 x = 0;
+   opus_int32 y = 0;
+   int q_input = 30;
+   int q_output = 30;
+   #define ATAN2_2_OVER_PI 0.636619772367581f
+   for (fx = 0.0f; fx <= 1.0f; fx += 0.007f)
+   {
+      x = DOUBLE_TO_FIX_INT(fx, q_input);
+      for (fy = 0.0f; fy <= 1.0f; fy += 0.007f)
+      {
+         y = DOUBLE_TO_FIX_INT(fy, q_input);
+         if (x == 0 && x == 0)
+            continue;
+
+         error = fabs(atan2(FIX_INT_TO_DOUBLE(y, q_input),
+                            FIX_INT_TO_DOUBLE(x, q_input)) * ATAN2_2_OVER_PI -
+                      FIX_INT_TO_DOUBLE(celt_atan2p_norm(y, x), q_output));
+         if (error > max_error)
+         {
+            max_error = error;
+         }
+         if (error > error_threshold)
+         {
+            fprintf(stderr,
+                  "celt_atan2p_norm failed: error: [%.5e > %.5e] (x = %f)\n",
+                  error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+            ret = 1;
+         }
+      }
+   }
+   fprintf(stdout, "celt_atan2p_norm max_error: %.7e\n", max_error);
+#endif /* defined(ENABLE_QEXT) */
+}
+
+void testatan(void)
+{
+   testatan_norm();
+   testatan2p_norm();
+}
 #endif
 
 
@@ -615,6 +695,7 @@ int main(void)
    testlog2_db();
    testexp2_db();
    testrsqrt();
+   testatan();
 #else
    test_cos();
    test_atan2();
