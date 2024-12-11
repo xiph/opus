@@ -1055,8 +1055,8 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
 # ifdef ENABLE_QEXT
       (void)imid;
       (void)iside;
-      mid = (int)MIN32(2147483647, floor(.5+2147483648*celt_cos_norm2(sctx.itheta_q30*(1.f/(1<<30)))));
-      side = (int)MIN32(2147483647, floor(.5+2147483648*celt_cos_norm2(1.f-sctx.itheta_q30*(1.f/(1<<30)))));
+      mid = celt_cos_norm32(sctx.itheta_q30);
+      side = celt_cos_norm32((1<<30)-sctx.itheta_q30);
 # else
       mid = SHL32(EXTEND32(imid), 16);
       side = SHL32(EXTEND32(iside), 16);
@@ -1257,8 +1257,8 @@ static unsigned cubic_quant_partition(struct band_ctx *ctx, celt_norm *X, int N,
       delta = (N0-1) * 23 * ((itheta_q30>>16)-8192) >> (17-BITRES);
 
 #ifdef FIXED_POINT
-      g1 = (int)MIN32(2147483647, floor(.5+2147483648*celt_cos_norm2(itheta_q30*(1.f/(1<<30)))));
-      g2 = (int)MIN32(2147483647, floor(.5+2147483648*celt_cos_norm2(1.f-itheta_q30*(1.f/(1<<30)))));
+      g1 = celt_cos_norm32(itheta_q30);
+      g2 = celt_cos_norm32((1<<30)-itheta_q30);
 #else
       g1 = celt_cos_norm2(itheta_q30*(1.f/(1<<30)));
       g2 = celt_cos_norm2(1.f-itheta_q30*(1.f/(1<<30)));
@@ -1455,8 +1455,8 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
 # ifdef ENABLE_QEXT
    (void)imid;
    (void)iside;
-   mid = (int)MIN32(2147483647, floor(.5+2147483648*cos(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)))));
-   side = (int)MIN32(2147483647, floor(.5+2147483648*sin(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)))));
+   mid = celt_cos_norm32(sctx.itheta_q30);
+   side = celt_cos_norm32((1<<30)-sctx.itheta_q30);
 # else
    mid = SHL32(EXTEND32(imid), 16);
    side = SHL32(EXTEND32(iside), 16);
