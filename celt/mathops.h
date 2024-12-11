@@ -135,7 +135,7 @@ static OPUS_INLINE opus_val32 celt_maxabs32(const opus_val32 *x, int len)
 #endif
 #endif
 
-#if !defined(FIXED_POINT) || defined(ENABLE_QEXT)
+#ifndef FIXED_POINT
 /* Calculates the arctangent of x using a Remez approximation of order 15,
  * incorporating only odd-powered terms. */
 static OPUS_INLINE float celt_atan_norm(float x)
@@ -183,7 +183,9 @@ static OPUS_INLINE float celt_atan2p_norm(float y, float x)
       return 1.f - celt_atan_norm(x / y);
    }
 }
+#endif
 
+#if !defined(FIXED_POINT) || defined(ENABLE_QEXT)
 /* Computes estimated cosine values for (PI/2 * x) using only terms with even
  * exponents. */
 static OPUS_INLINE float celt_cos_norm2(float x)
@@ -526,6 +528,68 @@ opus_val32 celt_rcp(opus_val32 x);
 
 opus_val32 frac_div32_q29(opus_val32 a, opus_val32 b);
 opus_val32 frac_div32(opus_val32 a, opus_val32 b);
+
+/* Computes atan(x) multiplied by 2/PI. The input value (x) should be within the
+ * range of -1 to 1 and represented in Q30 format. The function will return the
+ * result in Q30 format. */
+static OPUS_INLINE opus_val32 celt_atan_norm(opus_val32 x)
+{
+   /* Approximation constants. */
+   static const opus_int32 ATAN_2_OVER_PI = 1367130551;   /* Q31 */
+   static const opus_int32 ATAN_COEFF_A03 = -715791936;   /* Q31 */
+   static const opus_int32 ATAN_COEFF_A05 = 857391616;    /* Q32 */
+   static const opus_int32 ATAN_COEFF_A07 = -1200579328;  /* Q33 */
+   static const opus_int32 ATAN_COEFF_A09 = 1682636672;   /* Q34 */
+   static const opus_int32 ATAN_COEFF_A11 = -1985085440;  /* Q35 */
+   static const opus_int32 ATAN_COEFF_A13 = 1583306112;   /* Q36 */
+   static const opus_int32 ATAN_COEFF_A15 = -598602432;   /* Q37 */
+   opus_int32 x_sq_q30;
+   opus_int32 x_q31;
+   opus_int32 tmp;
+   /* The expected x is in the range of [-1.0f, 1.0f] */
+   celt_sig_assert((x <= 1073741824) && (x >= -1073741824));
+
+   /* If x = 1.0f, returns 0.5f */
+   if (x == 1073741824)
+   {
+      return 536870912; /* 0.5f (Q30) */
+   }
+   /* If x = 1.0f, returns 0.5f */
+   if (x == -1073741824)
+   {
+      return -536870912; /* -0.5f (Q30) */
+   }
+   x_q31 = SHL32(x, 1);
+   x_sq_q30 = MULT32_32_Q31(x_q31, x);
+   /* Split evaluation in steps to avoid exploding macro expansion. */
+   tmp = MULT32_32_Q31(x_sq_q30, ATAN_COEFF_A15);
+   tmp = MULT32_32_Q31(x_sq_q30, ADD32(ATAN_COEFF_A13, tmp));
+   tmp = MULT32_32_Q31(x_sq_q30, ADD32(ATAN_COEFF_A11, tmp));
+   tmp = MULT32_32_Q31(x_sq_q30, ADD32(ATAN_COEFF_A09, tmp));
+   tmp = MULT32_32_Q31(x_sq_q30, ADD32(ATAN_COEFF_A07, tmp));
+   tmp = MULT32_32_Q31(x_sq_q30, ADD32(ATAN_COEFF_A05, tmp));
+   tmp = MULT32_32_Q31(x_sq_q30, ADD32(ATAN_COEFF_A03, tmp));
+   tmp = ADD32(x, MULT32_32_Q31(x_q31, tmp));
+   return MULT32_32_Q31(ATAN_2_OVER_PI, tmp);
+}
+
+/* Calculates the arctangent of y/x, multiplies the result by 2/pi, and returns
+ * the value in Q30 format. Both input values (x and y) must be within the range
+ * of 0 to 1 and represented in Q30 format. Inputs must be zero or greater, and
+ * at least one input must be non-zero. */
+static OPUS_INLINE opus_val32 celt_atan2p_norm(opus_val32 y, opus_val32 x)
+{
+   celt_sig_assert(x>=0 && y>=0);
+   if (y==0 && x==0) {
+      return 0;
+   } else if (y < x) {
+      return celt_atan_norm(SHR32(frac_div32(y, x), 1));
+   } else {
+      celt_sig_assert(y > 0);
+      return 1073741824 /* 1.0f Q30 */ -
+             celt_atan_norm(SHR32(frac_div32(x, y), 1));
+   }
+}
 
 #define M1 32767
 #define M2 -21
