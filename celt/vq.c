@@ -608,10 +608,8 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
    }
    mid = celt_sqrt(Emid);
    side = celt_sqrt(Eside);
-   /* FIXME: Add a fixed-point version for ENABLE_QEXT*/
-#if defined(FIXED_POINT) && !defined(ENABLE_QEXT)
-   /* 0.63662 = 2/pi */
-   itheta = MULT16_16(QCONST16(0.63662f,15),celt_atan2p(side, mid))<<1;
+#if defined(FIXED_POINT)
+   itheta = celt_atan2p_norm(side, mid);
 #else
    itheta = (int)floor(.5f+65536.f*16384*celt_atan2p_norm(side,mid));
 #endif
