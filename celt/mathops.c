@@ -159,6 +159,23 @@ opus_val32 celt_sqrt(opus_val32 x)
    return rt;
 }
 
+/* Perform fixed-point arithmetic to approximate the square root. When the input
+ * is in Qx format, the output will be in Q(x/2 + 16) format. */
+opus_val32 celt_sqrt32(opus_val32 x)
+{
+   int k;
+   opus_int32 x_frac;
+   if (x==0)
+      return 0;
+   else if (x>=1073741824)
+      return 2147483647; /* 2^31 -1 */
+   k = (celt_ilog2(x)>>1);
+   x_frac = VSHR32(x, 2*(k-14)-1);
+   x_frac = MULT32_32_Q31(celt_rsqrt_norm32(x_frac), x_frac);
+   if (k < 12) return PSHR32(x_frac, 12-k);
+   else return SHL32(x_frac, k-12);
+}
+
 #define L1 32767
 #define L2 -7651
 #define L3 8277
