@@ -1635,6 +1635,13 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
    return target;
 }
 
+#ifdef ENABLE_QEXT
+static void encode_qext_stereo_params(ec_enc *ec, int qext_end, int qext_intensity, int qext_dual_stereo) {
+   ec_enc_uint(ec, qext_intensity, qext_end+1);
+   if (qext_intensity != 0) ec_enc_bit_logp(ec, qext_dual_stereo, 1);
+}
+#endif
+
 int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
    int i, c, N;
@@ -1714,6 +1721,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 #ifdef ENABLE_QEXT
    int qext_scale;
    int qext_end=0;
+   int qext_intensity=0;
+   int qext_dual_stereo=0;
    int padding_len_bytes=0;
    unsigned char *ext_payload;
    opus_int32 qext_bits;
@@ -2467,20 +2476,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    } else {
       ec_enc_init(&ext_enc, NULL, 0);
    }
-   if (qext_mode)
-   {
-      /* Don't bias for intra. */
-      opus_val32 qext_delayedIntra=0;
-      qext_oldBandE = energyError + CC*nbEBands;
-      compute_band_energies(qext_mode, freq, qext_bandE, qext_end, C, LM, st->arch);
-      normalise_bands(qext_mode, freq, X, qext_bandE, qext_end, C, M);
-      amp2Log2(qext_mode, qext_end, qext_end, qext_bandE, qext_bandLogE, C);
-
-      quant_coarse_energy(qext_mode, 0, qext_end, qext_end, qext_bandLogE,
-               qext_oldBandE, qext_bytes*8, qext_error, &ext_enc,
-               C, LM, qext_bytes, st->force_intra,
-               &qext_delayedIntra, st->complexity >= 4, st->loss_rate, st->lfe);
-   }
 #endif
 
    /* Bit allocation */
@@ -2523,6 +2518,24 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    quant_fine_energy(mode, start, end, oldBandE, error, NULL, fine_quant, enc, C);
    OPUS_CLEAR(energyError, nbEBands*CC);
 #ifdef ENABLE_QEXT
+   if (qext_mode)
+   {
+      /* Don't bias for intra. */
+      opus_val32 qext_delayedIntra=0;
+      qext_oldBandE = energyError + CC*nbEBands;
+      compute_band_energies(qext_mode, freq, qext_bandE, qext_end, C, LM, st->arch);
+      normalise_bands(qext_mode, freq, X, qext_bandE, qext_end, C, M);
+      amp2Log2(qext_mode, qext_end, qext_end, qext_bandE, qext_bandLogE, C);
+      if (C==2) {
+         qext_intensity = qext_end;
+         qext_dual_stereo = dual_stereo;
+         encode_qext_stereo_params(&ext_enc, qext_end, qext_intensity, qext_dual_stereo);
+      }
+      quant_coarse_energy(qext_mode, 0, qext_end, qext_end, qext_bandLogE,
+               qext_oldBandE, qext_bytes*8, qext_error, &ext_enc,
+               C, LM, qext_bytes, st->force_intra,
+               &qext_delayedIntra, st->complexity >= 4, st->loss_rate, st->lfe);
+   }
    ALLOC(extra_quant, nbEBands+NB_QEXT_BANDS, int);
    ALLOC(extra_pulses, nbEBands+NB_QEXT_BANDS, int);
    ALLOC(error_bak, C*nbEBands, celt_glog);
@@ -2544,7 +2557,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          quant_fine_energy(qext_mode, 0, qext_end, qext_oldBandE, qext_error, NULL, &extra_quant[nbEBands], &ext_enc, C);
          quant_all_bands(1, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
                qext_bandE, &extra_pulses[nbEBands], shortBlocks, st->spread_decision,
-               dual_stereo, st->intensity, zeros, qext_bytes*(8<<BITRES),
+               qext_dual_stereo, qext_intensity, zeros, qext_bytes*(8<<BITRES),
                0, &ext_enc, LM, qext_end, &st->rng, st->complexity, st->arch, st->disable_inv, &dummy_enc, zeros, 0);
       }
    }
