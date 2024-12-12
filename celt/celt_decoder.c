@@ -987,6 +987,14 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
    RESTORE_STACK;
 }
 
+#ifdef ENABLE_QEXT
+static void decode_qext_stereo_params(ec_dec *ec, int qext_end, int *qext_intensity, int *qext_dual_stereo) {
+   *qext_intensity = ec_dec_uint(ec, qext_end+1);
+   if (*qext_intensity != 0) *qext_dual_stereo = ec_dec_bit_logp(ec, 1);
+   else *qext_dual_stereo = 0;
+}
+#endif
+
 int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char *data,
       int len, opus_res * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec, int accum
 #ifdef ENABLE_DEEP_PLC
@@ -1044,6 +1052,8 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    ec_dec ext_dec;
    int qext_bytes=0;
    int qext_end=0;
+   int qext_intensity=0;
+   int qext_dual_stereo=0;
    VARDECL(int, extra_quant);
    VARDECL(int, extra_pulses);
    const CELTMode *qext_mode = NULL;
@@ -1268,20 +1278,6 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    /* Get band energies */
    unquant_coarse_energy(mode, start, end, oldBandE,
          intra_ener, dec, C, LM);
-#ifdef ENABLE_QEXT
-   if (qext_bytes && end == nbEBands &&
-         ((mode->Fs == 48000 && (mode->shortMdctSize==120 || mode->shortMdctSize==90))
-       || (mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)))) {
-      int qext_intra_ener;
-      qext_oldBandE = backgroundLogE + 2*nbEBands;
-      compute_qext_mode(&qext_mode_struct, mode);
-      qext_mode = &qext_mode_struct;
-      qext_end = ec_dec_bit_logp(&ext_dec, 1) ? NB_QEXT_BANDS : 2;
-      qext_intra_ener = ec_tell(&ext_dec)+3<=qext_bytes*8 ? ec_dec_bit_logp(&ext_dec, 3) : 0;
-      unquant_coarse_energy(qext_mode, 0, qext_end, qext_oldBandE,
-            qext_intra_ener, &ext_dec, C, LM);
-   }
-#endif
 
    ALLOC(tf_res, nbEBands, int);
    tf_decode(start, end, isTransient, tf_res, LM, dec);
@@ -1348,6 +1344,19 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
 
 #ifdef ENABLE_QEXT
+   if (qext_bytes && end == nbEBands &&
+         ((mode->Fs == 48000 && (mode->shortMdctSize==120 || mode->shortMdctSize==90))
+       || (mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)))) {
+      int qext_intra_ener;
+      qext_oldBandE = backgroundLogE + 2*nbEBands;
+      compute_qext_mode(&qext_mode_struct, mode);
+      qext_mode = &qext_mode_struct;
+      qext_end = ec_dec_bit_logp(&ext_dec, 1) ? NB_QEXT_BANDS : 2;
+      if (C==2) decode_qext_stereo_params(&ext_dec, qext_end, &qext_intensity, &qext_dual_stereo);
+      qext_intra_ener = ec_tell(&ext_dec)+3<=qext_bytes*8 ? ec_dec_bit_logp(&ext_dec, 3) : 0;
+      unquant_coarse_energy(qext_mode, 0, qext_end, qext_oldBandE,
+            qext_intra_ener, &ext_dec, C, LM);
+   }
    ALLOC(extra_quant, nbEBands+NB_QEXT_BANDS, int);
    ALLOC(extra_pulses, nbEBands+NB_QEXT_BANDS, int);
    qext_bits = ((opus_int32)qext_bytes*8<<BITRES) - (opus_int32)ec_tell_frac(dec) - 1;
@@ -1365,7 +1374,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
          OPUS_CLEAR(zeros, end);
          unquant_fine_energy(qext_mode, 0, qext_end, qext_oldBandE, NULL, &extra_quant[nbEBands], &ext_dec, C);
          quant_all_bands(0, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
-               NULL, &extra_pulses[nbEBands], shortBlocks, spread_decision, dual_stereo, intensity, zeros,
+               NULL, &extra_pulses[nbEBands], shortBlocks, spread_decision, qext_dual_stereo, qext_intensity, zeros,
                qext_bytes*(8<<BITRES), 0, &ext_dec, LM, qext_end, &st->rng, 0,
                st->arch, st->disable_inv, &dummy_dec, zeros, 0);
       }
