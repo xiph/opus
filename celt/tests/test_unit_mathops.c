@@ -443,6 +443,31 @@ void testrsqrt(void)
    fprintf (stdout, "celt_rsqrt_norm32 max_error: %.7e\n", max_error);
 }
 
+void testsqrt32(void)
+{
+   opus_int32 i;
+   float absolute_error;
+   float two_LSBs = FIX_INT_TO_DOUBLE(2, 16);
+   float relative_error_threshold;
+   for (i = 0; i <= 1073741824+64; i++)
+   {
+      absolute_error = fabs(sqrt(i) - FIX_INT_TO_DOUBLE(celt_sqrt32(i), 16));
+      relative_error_threshold = 8e-8 * sqrt(i);
+      if (absolute_error > two_LSBs &&
+          absolute_error > relative_error_threshold)
+      {
+         fprintf(stderr,
+                 "celt_sqrt32 failed: "
+                 "absolute_error: [%.5e > %.5e] "
+                 "relative_error: [%.5e > %.5e] (x = %d)\n",
+                 absolute_error, two_LSBs,
+                 absolute_error, relative_error_threshold, i);
+         ret = 1;
+      }
+      i+= i>>25;
+   }
+}
+
 void testatan_norm(void)
 {
 #if defined(ENABLE_QEXT)
@@ -659,6 +684,7 @@ int main(void)
    testlog2_db();
    testexp2_db();
    testrsqrt();
+   testsqrt32();
    testatan();
 #else
    test_atan2();
