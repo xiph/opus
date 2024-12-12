@@ -223,6 +223,7 @@ static OPUS_INLINE float celt_cos_norm2(float x)
 #ifndef FIXED_POINT
 
 #define celt_sqrt(x) ((float)sqrt(x))
+#define celt_sqrt32(x) ((float)sqrt(x))
 #define celt_rsqrt(x) (1.f/celt_sqrt(x))
 #define celt_rsqrt_norm(x) (celt_rsqrt(x))
 #define celt_rsqrt_norm32(x) (celt_rsqrt(x))
@@ -376,6 +377,8 @@ opus_val16 celt_rsqrt_norm(opus_val32 x);
 opus_val32 celt_rsqrt_norm32(opus_val32 x);
 
 opus_val32 celt_sqrt(opus_val32 x);
+
+opus_val32 celt_sqrt32(opus_val32 x);
 
 opus_val16 celt_cos_norm(opus_val32 x);
 
