@@ -614,7 +614,9 @@ static OPUS_INLINE opus_val16 celt_atan01(opus_val16 x)
 /* atan2() approximation valid for positive input values */
 static OPUS_INLINE opus_val16 celt_atan2p(opus_val16 y, opus_val16 x)
 {
-   if (y < x)
+   if (x==0 && y==0) {
+      return 0;
+   } else if (y < x)
    {
       opus_val32 arg;
       arg = celt_div(SHL32(EXTEND32(y),15),x);

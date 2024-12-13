@@ -673,7 +673,7 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
    opus_val16 mid, side;
    opus_val32 Emid, Eside;
 
-   Emid = Eside = EPSILON;
+   Emid = Eside = 0;
    if (stereo)
    {
       for (i=0;i<N;i++)
