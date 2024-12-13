@@ -2558,7 +2558,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          quant_all_bands(1, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
                qext_bandE, &extra_pulses[nbEBands], shortBlocks, st->spread_decision,
                qext_dual_stereo, qext_intensity, zeros, qext_bytes*(8<<BITRES),
-               0, &ext_enc, LM, qext_end, &st->rng, st->complexity, st->arch, st->disable_inv, &dummy_enc, zeros, 0);
+               0, &ext_enc, LM, qext_end, &st->rng, st->complexity, st->arch, st->disable_inv, &dummy_enc, zeros, 0, NULL);
       }
    }
 #endif
@@ -2570,7 +2570,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          dual_stereo, st->intensity, tf_res, nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv,
          balance, enc, LM, codedBands, &st->rng, st->complexity, st->arch, st->disable_inv
 #ifdef ENABLE_QEXT
-      , &ext_enc, extra_pulses, qext_bytes*(8<<BITRES)
+      , &ext_enc, extra_pulses, qext_bytes*(8<<BITRES), cap
 #endif
          );
 
