@@ -110,7 +110,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       opus_int32 balance, ec_ctx *ec, int M, int codedBands, opus_uint32 *seed,
       int complexity, int arch, int disable_inv
 #ifdef ENABLE_QEXT
-      , ec_ctx *ext_ec, int *extra_pulses, opus_int32 total_ext_bits
+      , ec_ctx *ext_ec, int *extra_pulses, opus_int32 total_ext_bits, const int *cap
 #endif
       );
 

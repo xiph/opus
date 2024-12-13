@@ -1419,7 +1419,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
       int N, int b, int B, celt_norm *lowband,
       int LM, celt_norm *lowband_out,
       celt_norm *lowband_scratch, int fill
-      ARG_QEXT(int ext_b))
+      ARG_QEXT(int ext_b) ARG_QEXT(const int *cap))
 {
    int imid=0, iside=0;
    int inv = 0;
@@ -1537,10 +1537,15 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
       rebalance = ctx->remaining_bits;
       if (mbits >= sbits)
       {
+#ifdef ENABLE_QEXT
+         int qext_extra = 0;
+         /* Reallocate any mid bits that cannot be used to extra mid bits. */
+         if (cap != NULL && ext_b != 0) qext_extra = IMAX(0, IMIN(ext_b/2, mbits - cap[ctx->i]/2));
+#endif
          /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
             mid for folding later. */
          cm = quant_band(ctx, X, N, mbits, B, lowband, LM, lowband_out, Q31ONE,
-               lowband_scratch, fill ARG_QEXT(ext_b/2));
+               lowband_scratch, fill ARG_QEXT(ext_b/2+qext_extra));
          rebalance = mbits - (rebalance-ctx->remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=0)
             sbits += rebalance - (3<<BITRES);
@@ -1550,11 +1555,16 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
 #endif
          /* For a stereo split, the high bits of fill are always zero, so no
             folding will be done to the side. */
-         cm |= quant_band(ctx, Y, N, sbits, B, NULL, LM, NULL, side, NULL, fill>>B ARG_QEXT(ext_b/2));
+         cm |= quant_band(ctx, Y, N, sbits, B, NULL, LM, NULL, side, NULL, fill>>B ARG_QEXT(ext_b/2-qext_extra));
       } else {
+#ifdef ENABLE_QEXT
+         int qext_extra = 0;
+         /* Reallocate any side bits that cannot be used to extra side bits. */
+         if (cap != NULL && ext_b != 0) qext_extra = IMAX(0, IMIN(ext_b/2, sbits - cap[ctx->i]/2));
+#endif
          /* For a stereo split, the high bits of fill are always zero, so no
             folding will be done to the side. */
-         cm = quant_band(ctx, Y, N, sbits, B, NULL, LM, NULL, side, NULL, fill>>B ARG_QEXT(ext_b/2));
+         cm = quant_band(ctx, Y, N, sbits, B, NULL, LM, NULL, side, NULL, fill>>B ARG_QEXT(ext_b/2+qext_extra));
          rebalance = sbits - (rebalance-ctx->remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=16384)
             mbits += rebalance - (3<<BITRES);
@@ -1565,7 +1575,7 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
          /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
             mid for folding later. */
          cm |= quant_band(ctx, X, N, mbits, B, lowband, LM, lowband_out, Q31ONE,
-               lowband_scratch, fill ARG_QEXT(ext_b/2));
+               lowband_scratch, fill ARG_QEXT(ext_b/2-qext_extra));
       }
    }
 
@@ -1607,7 +1617,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       opus_int32 balance, ec_ctx *ec, int LM, int codedBands,
       opus_uint32 *seed, int complexity, int arch, int disable_inv
 #ifdef ENABLE_QEXT
-      , ec_ctx *ext_ec, int *extra_pulses, opus_int32 ext_total_bits
+      , ec_ctx *ext_ec, int *extra_pulses, opus_int32 ext_total_bits, const int *cap
 #endif
       )
 {
@@ -1846,7 +1856,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ctx.theta_round = -1;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
-                     last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm ARG_QEXT(ext_b));
+                     last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm ARG_QEXT(ext_b) ARG_QEXT(cap));
                dist0 = MULT16_32_Q15(w[0], celt_inner_prod(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod(Y_save, Y, N, arch));
 
                /* Save first result. */
@@ -1888,7 +1898,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ctx.theta_round = 1;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
-                     last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm ARG_QEXT(ext_b));
+                     last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm ARG_QEXT(ext_b) ARG_QEXT(cap));
                dist1 = MULT16_32_Q15(w[0], celt_inner_prod(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod(Y_save, Y, N, arch));
                if (dist0 >= dist1) {
                   x_cm = cm2;
@@ -1910,7 +1920,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ctx.theta_round = 0;
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
-                     last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, x_cm|y_cm ARG_QEXT(ext_b));
+                     last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, x_cm|y_cm ARG_QEXT(ext_b) ARG_QEXT(cap));
             }
          } else {
             x_cm = quant_band(&ctx, X, N, b, B,
