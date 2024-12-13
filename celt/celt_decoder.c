@@ -1376,7 +1376,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
          quant_all_bands(0, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
                NULL, &extra_pulses[nbEBands], shortBlocks, spread_decision, qext_dual_stereo, qext_intensity, zeros,
                qext_bytes*(8<<BITRES), 0, &ext_dec, LM, qext_end, &st->rng, 0,
-               st->arch, st->disable_inv, &dummy_dec, zeros, 0);
+               st->arch, st->disable_inv, &dummy_dec, zeros, 0, NULL);
       }
    }
 #endif
@@ -1393,7 +1393,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
          len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng, 0,
          st->arch, st->disable_inv
 #ifdef ENABLE_QEXT
-      , &ext_dec, extra_pulses, qext_bytes*(8<<BITRES)
+      , &ext_dec, extra_pulses, qext_bytes*(8<<BITRES), cap
 #endif
          );
 
