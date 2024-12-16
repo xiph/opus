@@ -1839,7 +1839,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                ec_ctx ext_ec_save, ext_ec_save2;
                unsigned char *ext_bytes_buf;
                int ext_nstart_bytes, ext_nend_bytes, ext_save_bytes;
-               unsigned char ext_bytes_save[1275];
+               unsigned char ext_bytes_save[QEXT_PACKET_SIZE_CAP];
 #endif
                opus_val16 w[2];
                compute_channel_weights(bandE[i], bandE[i+m->nbEBands], w);
