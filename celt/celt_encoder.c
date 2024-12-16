@@ -1718,6 +1718,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    opus_val32 toneishness=0;
    VARDECL(celt_glog, surround_dynalloc);
    int qext_bytes=0;
+   int packet_size_cap = 1275;
 #ifdef ENABLE_QEXT
    int qext_scale;
    int qext_end=0;
@@ -1767,6 +1768,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 
 #ifdef ENABLE_QEXT
    qext_scale = st->qext_scale;
+   if (st->enable_qext) packet_size_cap = QEXT_PACKET_SIZE_CAP;
 #endif
 
    prefilter_mem = st->in_mem+CC*(overlap);
@@ -1813,8 +1815,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    celt_assert(st->signalling==0);
 #endif
 
-   /* Can't produce more than 1275 output bytes */
-   nbCompressedBytes = IMIN(nbCompressedBytes,1275);
+   /* Can't produce more than 1275 output bytes for the main payload, plus any QEXT extra data. */
+   nbCompressedBytes = IMIN(nbCompressedBytes,packet_size_cap);
 
    if (st->vbr && st->bitrate!=OPUS_BITRATE_MAX)
    {
@@ -1914,6 +1916,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       /* Pretend we've filled all the remaining bits with zeros
             (that's what the initialiser did anyway) */
       tell = nbCompressedBytes*8;
+#ifdef ENABLE_QEXT
+      if (st->enable_qext) nbCompressedBytes = IMIN(nbCompressedBytes, 1275);
+#endif
       enc->nbits_total+=tell-ec_tell(enc);
    }
    c=0; do {
@@ -2351,7 +2356,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 
      /* Don't attempt to use more than 510 kb/s, even for frames smaller than 20 ms.
         The CELT allocator will just not be able to use more than that anyway. */
-     nbCompressedBytes = IMIN(nbCompressedBytes,1275>>(3-LM));
+     nbCompressedBytes = IMIN(nbCompressedBytes,packet_size_cap>>(3-LM));
      if (!hybrid)
      {
         base_target = vbr_rate - ((40*C+20)<<BITRES);
@@ -2445,7 +2450,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       int new_compressedBytes;
       /* Don't give any bits for the first 80 kb/s per channel. Then 80% of the excess. */
       opus_int32 offset = C*80000*frame_size/mode->Fs/8;
-      qext_bytes = IMAX(0, (nbCompressedBytes-offset)*4/5);
+      qext_bytes = IMAX(nbCompressedBytes-1275, IMAX(0, (nbCompressedBytes-offset)*4/5));
       padding_len_bytes = (qext_bytes+253)/254;
       qext_bytes = IMIN(qext_bytes, nbCompressedBytes-min_allowed-padding_len_bytes-1);
       padding_len_bytes = (qext_bytes+253)/254;
