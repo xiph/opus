@@ -32,12 +32,17 @@
 
 #include "opus_custom.h"
 #include "arch.h"
+#include "modes.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 
+#ifdef ENABLE_QEXT
+#define MAX_PACKET QEXT_PACKET_SIZE_CAP
+#else
 #define MAX_PACKET 1275
+#endif
 
 static void print_usage(char **argv) {
    fprintf (stderr, "Usage: %s [-e | -d] <rate> <channels> <frame size> "
