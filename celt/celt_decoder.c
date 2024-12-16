@@ -1366,20 +1366,6 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
          qext_bits, extra_pulses, extra_quant, C, LM, &ext_dec, 0, 0, 0);
    if (qext_bytes > 0) {
       unquant_fine_energy(mode, start, end, oldBandE, fine_quant, extra_quant, &ext_dec, C);
-      if (qext_mode) {
-         VARDECL(int, zeros);
-         VARDECL(unsigned char, qext_collapse_masks);
-         ec_dec dummy_dec;
-         ALLOC(zeros, nbEBands, int);
-         ALLOC(qext_collapse_masks, C*NB_QEXT_BANDS, unsigned char);
-         ec_dec_init(&dummy_dec, NULL, 0);
-         OPUS_CLEAR(zeros, end);
-         unquant_fine_energy(qext_mode, 0, qext_end, qext_oldBandE, NULL, &extra_quant[nbEBands], &ext_dec, C);
-         quant_all_bands(0, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
-               NULL, &extra_pulses[nbEBands], shortBlocks, spread_decision, qext_dual_stereo, qext_intensity, zeros,
-               qext_bytes*(8<<BITRES), 0, &ext_dec, LM, qext_end, &st->rng, 0,
-               st->arch, st->disable_inv, &dummy_dec, zeros, 0, NULL);
-      }
    }
 #endif
 
@@ -1398,6 +1384,26 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       , &ext_dec, extra_pulses, qext_bytes*(8<<BITRES), cap
 #endif
          );
+
+#ifdef ENABLE_QEXT
+   if (qext_mode) {
+      VARDECL(int, zeros);
+      VARDECL(unsigned char, qext_collapse_masks);
+      ec_dec dummy_dec;
+      int ext_balance;
+      ALLOC(zeros, nbEBands, int);
+      ALLOC(qext_collapse_masks, C*NB_QEXT_BANDS, unsigned char);
+      ec_dec_init(&dummy_dec, NULL, 0);
+      OPUS_CLEAR(zeros, end);
+      ext_balance = qext_bytes*(8<<BITRES) - ec_tell_frac(&ext_dec);
+      for (i=0;i<qext_end;i++) ext_balance -= extra_pulses[nbEBands+i] + C*(extra_quant[nbEBands+1]<<BITRES);
+      unquant_fine_energy(qext_mode, 0, qext_end, qext_oldBandE, NULL, &extra_quant[nbEBands], &ext_dec, C);
+      quant_all_bands(0, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
+            NULL, &extra_pulses[nbEBands], shortBlocks, spread_decision, qext_dual_stereo, qext_intensity, zeros,
+            qext_bytes*(8<<BITRES), ext_balance, &ext_dec, LM, qext_end, &st->rng, 0,
+            st->arch, st->disable_inv, &dummy_dec, zeros, 0, NULL);
+   }
+#endif
 
    if (anti_collapse_rsv > 0)
    {
