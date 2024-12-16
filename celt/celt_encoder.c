@@ -2443,7 +2443,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 #ifdef ENABLE_QEXT
    if (st->enable_qext) {
       int new_compressedBytes;
-      qext_bytes = nbCompressedBytes*2/3;
+      /* Don't give any bits for the first 80 kb/s per channel. Then 80% of the excess. */
+      opus_int32 offset = C*80000*frame_size/mode->Fs/8;
+      qext_bytes = IMAX(0, (nbCompressedBytes-offset)*4/5);
       padding_len_bytes = (qext_bytes+253)/254;
       qext_bytes = IMIN(qext_bytes, nbCompressedBytes-min_allowed-padding_len_bytes-1);
       padding_len_bytes = (qext_bytes+253)/254;
