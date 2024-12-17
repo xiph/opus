@@ -127,25 +127,28 @@ static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT
    int k;
 #endif
    opus_val32 t;
-   opus_val16 g;
+   opus_val32 g;
 
 #ifdef FIXED_POINT
    k = celt_ilog2(Ryy)>>1;
 #endif
-   t = VSHR32(Ryy, 2*(k-7));
-   g = MULT32_32_Q31(celt_rsqrt_norm(t),gain);
-
+   t = VSHR32(Ryy, 2*(k-7)-15);
+   g = MULT32_32_Q31(celt_rsqrt_norm32(t),gain);
    i=0;
    (void)shift;
 #if defined(FIXED_POINT) && defined(ENABLE_QEXT)
    if (shift>0) {
-      do {
-         X[i] = EXTRACT16((g*(opus_val64)iy[i]+(1<<(k+shift))) >> (k+1+shift));
-      } while (++i < N);
+      int tot_shift = 15-k-shift;
+      if (tot_shift >= 0) {
+         do X[i] = MULT32_32_Q31(g, SHL32(iy[i], tot_shift));
+         while (++i < N);
+      } else {
+         do X[i] = MULT32_32_Q31(g, PSHR32(iy[i], -tot_shift));
+         while (++i < N);
+      }
    } else
 #endif
-   do
-      X[i] = EXTRACT16(PSHR32(MULT16_16(g, iy[i]), k+1));
+   do X[i] = EXTRACT16(PSHR32(MULT16_32_Q15(iy[i], g), k+1));
    while (++i < N);
 }
 
