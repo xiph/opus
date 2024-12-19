@@ -707,8 +707,9 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
 static void cubic_synthesis(celt_norm *X, int *iy, int N, int K, int face, int sign, opus_val32 gain) {
    int i;
    opus_val32 sum=0;
-   float mag;
+   opus_val32 mag;
 #ifdef FIXED_POINT
+   int sum_shift;
    int shift = IMAX(celt_ilog2(K) + celt_ilog2(N)/2 - 13, 0);
 #endif
    for (i=0;i<N;i++) {
@@ -718,12 +719,14 @@ static void cubic_synthesis(celt_norm *X, int *iy, int N, int K, int face, int s
    for (i=0;i<N;i++) {
       sum += PSHR32(MULT16_16(X[i],X[i]), 2*shift);
    }
-   mag = 1.f/sqrt(sum);
 #ifdef FIXED_POINT
+   sum_shift = (29-celt_ilog2(sum))>>1;
+   mag = celt_rsqrt_norm32(SHL32(sum, 2*sum_shift+1));
    for (i=0;i<N;i++) {
-      X[i] = PSHR32((int)floor(.5 + X[i]*mag*gain*(1.f/131072)), shift);
+      X[i] = VSHR32(MULT16_32_Q15(X[i],MULT32_32_Q31(mag,gain)), shift-sum_shift+15);
    }
 #else
+   mag = 1.f/sqrt(sum);
    for (i=0;i<N;i++) {
       X[i] *= mag*gain;
    }
