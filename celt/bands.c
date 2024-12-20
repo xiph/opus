@@ -1223,7 +1223,7 @@ static unsigned cubic_quant_partition(struct band_ctx *ctx, celt_norm *X, int N,
    if (LM==0 || b<=2*N<<BITRES) {
       int K, res, ret;
       /* Resolution left after taking into account coding the cube face. */
-      res = (b-(1<<BITRES)-ctx->m->logN[ctx->i]-(LM<<BITRES))/(N-1);
+      res = (b-(1<<BITRES)-ctx->m->logN[ctx->i]-(LM<<BITRES)-1)/(N-1);
       res = IMIN(14<<BITRES, IMAX(0, res));
       K = compute_qext_res(res);
       K = IMAX(1, K>>1<<1);
