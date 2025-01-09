@@ -181,6 +181,7 @@ typedef opus_val16 opus_res;
 #define INT16TOSIG(a)   SHL32(EXTEND32(a), SIG_SHIFT)
 #define INT24TOSIG(a)   SHL32(a, SIG_SHIFT-8)
 
+#define NORM_SHIFT 14
 #ifdef ENABLE_QEXT
 typedef opus_val32 celt_coef;
 #define COEF_ONE Q31ONE
@@ -214,7 +215,7 @@ typedef opus_val16 celt_coef;
    so the limit should be about 2^31*sqrt(.5). */
 #define SIG_SAT (536870911)
 
-#define NORM_SCALING 16384
+#define NORM_SCALING (1<<NORM_SHIFT)
 
 #define DB_SHIFT 24
 
