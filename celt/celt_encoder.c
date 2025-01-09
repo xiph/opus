@@ -849,7 +849,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       for (i=0;i<8;i++)
       {
          opus_val32 partial;
-         partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
+         partial = celt_inner_prod_norm(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
                (m->eBands[i+1]-m->eBands[i])<<LM, arch);
          sum = ADD16(sum, EXTRACT16(SHR32(partial, 18)));
       }
@@ -859,7 +859,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       for (i=8;i<intensity;i++)
       {
          opus_val32 partial;
-         partial = celt_inner_prod(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
+         partial = celt_inner_prod_norm(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
                (m->eBands[i+1]-m->eBands[i])<<LM, arch);
          minXC = MIN16(minXC, ABS16(EXTRACT16(SHR32(partial, 18))));
       }
