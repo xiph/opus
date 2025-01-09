@@ -48,8 +48,8 @@ void test_rotation(int N, int K)
 {
    int i;
    double err = 0, ener = 0, snr, snr0;
-   opus_val16 x0[MAX_SIZE];
-   opus_val16 x1[MAX_SIZE];
+   celt_norm x0[MAX_SIZE];
+   celt_norm x1[MAX_SIZE];
    for (i=0;i<N;i++)
       x1[i] = x0[i] = rand()%32767-16384;
    exp_rotation(x1, N, 1, 1, K, SPREAD_NORMAL);
