@@ -44,6 +44,16 @@
 #include "mips/vq_mipsr1.h"
 #endif
 
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+opus_val32 celt_inner_prod_norm(const celt_norm *x, const celt_norm *y, int len, int arch) {
+   int i;
+   opus_val32 sum = 0;
+   (void)arch;
+   for (i=0;i<len;i++) sum += x[i]*y[i];
+   return sum;
+}
+#endif
+
 #ifndef OVERRIDE_vq_exp_rotation1
 static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_val16 s)
 {
@@ -138,7 +148,7 @@ static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT
    (void)shift;
 #if defined(FIXED_POINT) && defined(ENABLE_QEXT)
    if (shift>0) {
-      int tot_shift = 15-k-shift;
+      int tot_shift = NORM_SHIFT+1-k-shift;
       if (tot_shift >= 0) {
          do X[i] = MULT32_32_Q31(g, SHL32(iy[i], tot_shift));
          while (++i < N);
@@ -148,7 +158,7 @@ static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT
       }
    } else
 #endif
-   do X[i] = EXTRACT16(PSHR32(MULT16_32_Q15(iy[i], g), k+1));
+   do X[i] = EXTRACT16(PSHR32(MULT16_32_Q15(iy[i], g), k+15-NORM_SHIFT));
    while (++i < N);
 }
 
@@ -652,7 +662,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch)
    opus_val16 g;
    opus_val32 t;
    celt_norm *xptr;
-   E = EPSILON + celt_inner_prod(X, X, N, arch);
+   E = EPSILON + celt_inner_prod_norm(X, X, N, arch);
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
 #endif
@@ -662,7 +672,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch)
    xptr = X;
    for (i=0;i<N;i++)
    {
-      *xptr = EXTRACT16(PSHR32(MULT16_16(g, *xptr), k+1));
+      *xptr = EXTRACT16(PSHR32(MULT16_16(g, *xptr), k+15-NORM_SHIFT));
       xptr++;
    }
    /*return celt_sqrt(E);*/
@@ -688,8 +698,8 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
          Eside = MAC16_16(Eside, s, s);
       }
    } else {
-      Emid += celt_inner_prod(X, X, N, arch);
-      Eside += celt_inner_prod(Y, Y, N, arch);
+      Emid += celt_inner_prod_norm(X, X, N, arch);
+      Eside += celt_inner_prod_norm(Y, Y, N, arch);
    }
    mid = celt_sqrt(Emid);
    side = celt_sqrt(Eside);
@@ -723,7 +733,7 @@ static void cubic_synthesis(celt_norm *X, int *iy, int N, int K, int face, int s
    sum_shift = (29-celt_ilog2(sum))>>1;
    mag = celt_rsqrt_norm32(SHL32(sum, 2*sum_shift+1));
    for (i=0;i<N;i++) {
-      X[i] = VSHR32(MULT16_32_Q15(X[i],MULT32_32_Q31(mag,gain)), shift-sum_shift+15);
+      X[i] = VSHR32(MULT16_32_Q15(X[i],MULT32_32_Q31(mag,gain)), shift-sum_shift+29-NORM_SHIFT);
    }
 #else
    mag = 1.f/sqrt(sum);
