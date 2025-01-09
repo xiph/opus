@@ -41,6 +41,12 @@
 #include "x86/vq_sse.h"
 #endif
 
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+opus_val32 celt_inner_prod_norm(const celt_norm *x, const celt_norm *y, int len, int arch);
+#else
+#define celt_inner_prod_norm celt_inner_prod
+#endif
+
 void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread);
 
 opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch);
