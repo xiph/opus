@@ -613,7 +613,7 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, opus_val16 bias
    opus_val32 L1;
    L1 = 0;
    for (i=0;i<N;i++)
-      L1 += EXTEND32(ABS16(tmp[i]));
+      L1 += EXTEND32(ABS16(SHR32(tmp[i], NORM_SHIFT-14)));
    /* When in doubt, prefer good freq resolution */
    L1 = MAC16_32_Q15(L1, LM*bias, L1);
    return L1;
@@ -849,7 +849,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       for (i=0;i<8;i++)
       {
          opus_val32 partial;
-         partial = celt_inner_prod_norm(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
+         partial = celt_inner_prod_norm_shift(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
                (m->eBands[i+1]-m->eBands[i])<<LM, arch);
          sum = ADD16(sum, EXTRACT16(SHR32(partial, 18)));
       }
@@ -859,7 +859,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       for (i=8;i<intensity;i++)
       {
          opus_val32 partial;
-         partial = celt_inner_prod_norm(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
+         partial = celt_inner_prod_norm_shift(&X[m->eBands[i]<<LM], &X[N0+(m->eBands[i]<<LM)],
                (m->eBands[i+1]-m->eBands[i])<<LM, arch);
          minXC = MIN16(minXC, ABS16(EXTRACT16(SHR32(partial, 18))));
       }
@@ -929,8 +929,8 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
       {
          opus_val32 L, R, M, S;
          /* We cast to 32-bit first because of the -32768 case */
-         L = EXTEND32(X[j]);
-         R = EXTEND32(X[N0+j]);
+         L = SHR32(X[j], NORM_SHIFT-14);
+         R = SHR32(X[N0+j], NORM_SHIFT-14);
          M = ADD32(L, R);
          S = SUB32(L, R);
          sumLR = ADD32(sumLR, ADD32(ABS32(L), ABS32(R)));
