@@ -160,11 +160,11 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
          g = EXTRACT16(celt_rcp(E));
          if (shift > 0) {
             j=M*eBands[i]; do {
-               X[j+c*N] = PSHR32(MULT16_32_Q15(g, freq[j+c*N]),shift+14-NORM_SHIFT);
+               X[j+c*N] = VSHR32(MULT16_32_Q15(g, freq[j+c*N]),shift+14-NORM_SHIFT);
             } while (++j<M*eBands[i+1]);
          } else {
             j=M*eBands[i]; do {
-               X[j+c*N] = PSHR32(MULT16_16(g, freq[j+c*N]),29-NORM_SHIFT+shift);
+               X[j+c*N] = VSHR32(MULT16_16(g, freq[j+c*N]),29-NORM_SHIFT+shift);
             } while (++j<M*eBands[i+1]);
          }
       } while (++i<end);
@@ -252,34 +252,36 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       g = celt_exp2_db(MIN32(32.f, lg));
 #else
       /* Handle the integer part of the log energy */
-      shift = NORM_SHIFT+1-(lg>>DB_SHIFT);
-      if (shift>31)
+      shift = NORM_SHIFT+1-(lg>>DB_SHIFT)-16;
+      if (shift>=29)
       {
          shift=0;
          g=0;
       } else {
          /* Handle the fractional part. */
-         g = celt_exp2_db_frac((lg&((1<<DB_SHIFT)-1)));
+         g = SHL32(celt_exp2_db_frac((lg&((1<<DB_SHIFT)-1))), 2);
       }
       /* Handle extreme gains with negative shift. */
       if (shift<0)
       {
-         /* For shift <= -2 and g > 16384 we'd be likely to overflow, so we're
+         /* To avoid overflow, we're
             capping the gain here, which is equivalent to a cap of 18 on lg.
             This shouldn't trigger unless the bitstream is already corrupted. */
-         if (shift <= NORM_SHIFT-16)
+         if (shift < NORM_SHIFT-32)
          {
-            g = 16384*32768;
-            shift = NORM_SHIFT-16;
+            g = 2147483647;
+            shift = NORM_SHIFT-32;
          }
          do {
-            *f++ = SHL32(MULT16_32_Q15(*x++, g), -shift);
+            *f++ = PSHR32(MULT32_32_Q31(SHL32(*x, -shift), g), 2);
+            x++;
          } while (++j<band_end);
       } else
 #endif
          /* Be careful of the fixed-point "else" just above when changing this code */
          do {
-            *f++ = SHR32(MULT16_32_Q15(*x++, g), shift);
+            *f++ = PSHR32(MULT32_32_Q31(*x, g), shift+2);
+            x++;
          } while (++j<band_end);
    }
    celt_assert(start <= end);
@@ -456,14 +458,14 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    opus_val32 t, lgain, rgain;
 
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
-   xp = celt_inner_prod_norm(Y, X, N, arch);
-   side = celt_inner_prod_norm(Y, Y, N, arch);
+   xp = celt_inner_prod_norm_shift(Y, X, N, arch);
+   side = celt_inner_prod_norm_shift(Y, Y, N, arch);
    /* Compensating for the mid normalization */
    xp = MULT32_32_Q31(mid, xp);
    /* mid and side are in Q15, not Q14 like X and Y */
-   El = SHR32(MULT32_32_Q31(mid, mid),31-2*NORM_SHIFT) + side - 2*xp;
-   Er = SHR32(MULT32_32_Q31(mid, mid),31-2*NORM_SHIFT) + side + 2*xp;
-   if (Er < QCONST32(6e-4f, 2*NORM_SHIFT) || El < QCONST32(6e-4f, 2*NORM_SHIFT))
+   El = SHR32(MULT32_32_Q31(mid, mid),3) + side - 2*xp;
+   Er = SHR32(MULT32_32_Q31(mid, mid),3) + side + 2*xp;
+   if (Er < QCONST32(6e-4f, 28) || El < QCONST32(6e-4f, 28))
    {
       OPUS_COPY(Y, X, N);
       return;
@@ -491,8 +493,8 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
       /* Apply mid scaling (side is already scaled) */
       l = MULT32_32_Q31(mid, X[j]);
       r = Y[j];
-      X[j] = EXTRACT16(PSHR32(MULT16_16(lgain, SUB16(l,r)), kl+15-NORM_SHIFT));
-      Y[j] = EXTRACT16(PSHR32(MULT16_16(rgain, ADD16(l,r)), kr+15-NORM_SHIFT));
+      X[j] = VSHR32(MULT16_32_Q15(lgain, SUB32(l,r)), kl-14);
+      Y[j] = VSHR32(MULT16_32_Q15(rgain, ADD32(l,r)), kr-14);
    }
 }
 
@@ -650,6 +652,24 @@ static void interleave_hadamard(celt_norm *X, int N0, int stride, int hadamard)
    RESTORE_STACK;
 }
 
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+void haar1(celt_norm *X, int N0, int stride)
+{
+   int i, j;
+   N0 >>= 1;
+   norm_scaleup(X, 2*stride*N0, NORM_SHIFT2-NORM_SHIFT);
+   for (i=0;i<stride;i++)
+      for (j=0;j<N0;j++)
+      {
+         opus_val32 tmp1, tmp2;
+         tmp1 = MULT32_32_Q31(QCONST32(.70710678f,31), X[stride*2*j+i]);
+         tmp2 = MULT32_32_Q31(QCONST32(.70710678f,31), X[stride*(2*j+1)+i]);
+         X[stride*2*j+i] = ADD32(tmp1, tmp2);
+         X[stride*(2*j+1)+i] = SUB32(tmp1, tmp2);
+      }
+   norm_scaledown(X, 2*stride*N0, NORM_SHIFT2-NORM_SHIFT);
+}
+#else
 void haar1(celt_norm *X, int N0, int stride)
 {
    int i, j;
@@ -664,6 +684,7 @@ void haar1(celt_norm *X, int N0, int stride)
          X[stride*(2*j+1)+i] = EXTRACT16(PSHR32(SUB32(tmp1, tmp2), 15));
       }
 }
+#endif
 
 static const opus_int16 exp2_table8[8] =
    {16384, 17866, 19483, 21247, 23170, 25267, 27554, 30048};
@@ -1411,7 +1432,7 @@ static unsigned quant_band(struct band_ctx *ctx, celt_norm *X,
          opus_val16 n;
          n = celt_sqrt(SHL32(EXTEND32(N0),22));
          for (j=0;j<N0;j++)
-            lowband_out[j] = MULT16_16_Q15(n,X[j]);
+            lowband_out[j] = MULT16_32_Q15(n,X[j]);
       }
       cm &= (1<<B)-1;
    }

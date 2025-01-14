@@ -134,7 +134,6 @@ typedef opus_int32 opus_val32;
 typedef opus_int64 opus_val64;
 
 typedef opus_val32 celt_sig;
-typedef opus_val16 celt_norm;
 typedef opus_val32 celt_ener;
 typedef opus_val32 celt_glog;
 
@@ -173,8 +172,10 @@ typedef opus_val16 opus_res;
 #define INT16TOSIG(a)   SHL32(EXTEND32(a), SIG_SHIFT)
 #define INT24TOSIG(a)   SHL32(a, SIG_SHIFT-8)
 
-#define NORM_SHIFT 14
 #ifdef ENABLE_QEXT
+typedef opus_val32 celt_norm;
+#define NORM_SHIFT 24
+#define NORM_SHIFT2 24
 typedef opus_val32 celt_coef;
 #define COEF_ONE Q31ONE
 #define MULT_COEF_32(a, b) MULT32_32_Q31(a,b)
@@ -183,6 +184,8 @@ typedef opus_val32 celt_coef;
 #define MULT_COEF_TAPS(a, b) SHL32(MULT16_16(a,b), 1)
 #define COEF2VAL16(x) EXTRACT16(SHR32(x, 16))
 #else
+typedef opus_val16 celt_norm;
+#define NORM_SHIFT 14
 typedef opus_val16 celt_coef;
 #define COEF_ONE Q15ONE
 #define MULT_COEF_32(a, b) MULT16_32_Q15(a,b)

@@ -45,12 +45,40 @@
 #endif
 
 #if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+void norm_scaleup(celt_norm *X, int N, int shift) {
+   int i;
+   celt_assert(shift >= 0);
+   if (shift <= 0) return;
+#ifdef FIXED_POINT
+   for (i=0;i<N;i++) X[i] = SHL32(X[i], shift);
+#endif
+}
+
+void norm_scaledown(celt_norm *X, int N, int shift) {
+   int i;
+   celt_assert(shift >= 0);
+   if (shift <= 0) return;
+#ifdef FIXED_POINT
+   for (i=0;i<N;i++) X[i] = PSHR32(X[i], shift);
+#endif
+}
+#endif
+
+
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
 opus_val32 celt_inner_prod_norm(const celt_norm *x, const celt_norm *y, int len, int arch) {
    int i;
    opus_val32 sum = 0;
    (void)arch;
    for (i=0;i<len;i++) sum += x[i]*y[i];
    return sum;
+}
+opus_val32 celt_inner_prod_norm_shift(const celt_norm *x, const celt_norm *y, int len, int arch) {
+   int i;
+   opus_val64 sum = 0;
+   (void)arch;
+   for (i=0;i<len;i++) sum += x[i]*(opus_val64)y[i];
+   return sum>>2*(NORM_SHIFT-14);
 }
 #endif
 
@@ -62,6 +90,7 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
    celt_norm *Xptr;
    Xptr = X;
    ms = NEG16(s);
+   norm_scaledown(X, len, NORM_SHIFT-14);
    for (i=0;i<len-stride;i++)
    {
       celt_norm x1, x2;
@@ -79,6 +108,7 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
       Xptr[stride] = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x2),  s, x1), 15));
       *Xptr--      = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x1), ms, x2), 15));
    }
+   norm_scaleup(X, len, NORM_SHIFT-14);
 }
 #endif /* OVERRIDE_vq_exp_rotation1 */
 
@@ -127,8 +157,42 @@ void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
    }
 }
 
-/** Takes the pitch vector and the decoded residual vector, computes the gain
-    that will give ||p+g*y||=1 and mixes the residual with the pitch. */
+/** Normalizes the decoded integer pvq codeword to unit norm. */
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT X,
+      int N, opus_val32 Ryy, opus_val32 gain, int shift)
+{
+   int i;
+#ifdef FIXED_POINT
+   int k;
+#endif
+   opus_val32 t;
+   opus_val32 g;
+
+#ifdef FIXED_POINT
+   k = celt_ilog2(Ryy)>>1;
+#endif
+   t = VSHR32(Ryy, 2*(k-7)-15);
+   g = MULT32_32_Q31(celt_rsqrt_norm32(t),gain);
+   i=0;
+   (void)shift;
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+   if (shift>0) {
+      int tot_shift = NORM_SHIFT2+1-k-shift;
+      if (tot_shift >= 0) {
+         do X[i] = MULT32_32_Q31(g, SHL32(iy[i], tot_shift));
+         while (++i < N);
+      } else {
+         do X[i] = MULT32_32_Q31(g, PSHR32(iy[i], -tot_shift));
+         while (++i < N);
+      }
+   } else
+#endif
+   do X[i] = VSHR32(MULT16_32_Q15(iy[i], g), k+15-NORM_SHIFT2);
+   while (++i < N);
+   norm_scaledown(X, N, NORM_SHIFT2-NORM_SHIFT);
+}
+#else
 static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT X,
       int N, opus_val32 Ryy, opus_val32 gain, int shift)
 {
@@ -161,6 +225,7 @@ static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT
    do X[i] = EXTRACT16(PSHR32(MULT16_32_Q15(iy[i], g), k+15-NORM_SHIFT));
    while (++i < N);
 }
+#endif
 
 static unsigned extract_collapse_mask(int *iy, int N, int B)
 {
@@ -662,19 +727,20 @@ void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch)
    opus_val16 g;
    opus_val32 t;
    celt_norm *xptr;
+   norm_scaledown(X, N, NORM_SHIFT-14);
    E = EPSILON + celt_inner_prod_norm(X, X, N, arch);
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
 #endif
    t = VSHR32(E, 2*(k-7));
    g = MULT32_32_Q31(celt_rsqrt_norm(t),gain);
-
    xptr = X;
    for (i=0;i<N;i++)
    {
-      *xptr = EXTRACT16(PSHR32(MULT16_16(g, *xptr), k+15-NORM_SHIFT));
+      *xptr = EXTRACT16(PSHR32(MULT16_16(g, *xptr), k+15-14));
       xptr++;
    }
+   norm_scaleup(X, N, NORM_SHIFT-14);
    /*return celt_sqrt(E);*/
 }
 #endif /* OVERRIDE_renormalise_vector */
@@ -733,8 +799,9 @@ static void cubic_synthesis(celt_norm *X, int *iy, int N, int K, int face, int s
    sum_shift = (29-celt_ilog2(sum))>>1;
    mag = celt_rsqrt_norm32(SHL32(sum, 2*sum_shift+1));
    for (i=0;i<N;i++) {
-      X[i] = VSHR32(MULT16_32_Q15(X[i],MULT32_32_Q31(mag,gain)), shift-sum_shift+29-NORM_SHIFT);
+      X[i] = VSHR32(MULT16_32_Q15(X[i],MULT32_32_Q31(mag,gain)), shift-sum_shift+29-NORM_SHIFT2);
    }
+   norm_scaledown(X, N, NORM_SHIFT2-NORM_SHIFT);
 #else
    mag = 1.f/sqrt(sum);
    for (i=0;i<N;i++) {
