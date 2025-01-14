@@ -472,7 +472,7 @@ OPUS_EXPORT int opus_decoder_init(
   *  FEC cases, frame_size <b>must</b> be a multiple of 2.5 ms.
   * @param [in] decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band forward error correction data be
   *  decoded. If no such data is available, the frame is decoded as if it were lost.
-  * @returns Number of decoded samples or @ref opus_errorcodes
+  * @returns Number of decoded samples per channel or @ref opus_errorcodes
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode(
     OpusDecoder *st,
@@ -497,7 +497,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode(
   *  FEC cases, frame_size <b>must</b> be a multiple of 2.5 ms.
   * @param [in] decode_fec <tt>int</tt>: Flag (0 or 1) to request that any in-band forward error correction data be
   *  decoded. If no such data is available the frame is decoded as if it were lost.
-  * @returns Number of decoded samples or @ref opus_errorcodes
+  * @returns Number of decoded samples per channel or @ref opus_errorcodes
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_decode_float(
     OpusDecoder *st,
