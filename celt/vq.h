@@ -41,10 +41,18 @@
 #include "x86/vq_sse.h"
 #endif
 
-#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+#if defined(FIXED_POINT)
 opus_val32 celt_inner_prod_norm(const celt_norm *x, const celt_norm *y, int len, int arch);
+opus_val32 celt_inner_prod_norm_shift(const celt_norm *x, const celt_norm *y, int len, int arch);
+
+void norm_scaleup(celt_norm *X, int N, int shift);
+void norm_scaledown(celt_norm *X, int N, int shift);
+
 #else
 #define celt_inner_prod_norm celt_inner_prod
+#define celt_inner_prod_norm_shift celt_inner_prod
+#define norm_scaleup(X, N, shift)
+#define norm_scaledown(X, N, shift)
 #endif
 
 void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread);

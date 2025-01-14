@@ -51,7 +51,7 @@ void test_rotation(int N, int K)
    celt_norm x0[MAX_SIZE];
    celt_norm x1[MAX_SIZE];
    for (i=0;i<N;i++)
-      x1[i] = x0[i] = rand()%32767-16384;
+      x1[i] = x0[i] = rand()%16777215-8388608;
    exp_rotation(x1, N, 1, 1, K, SPREAD_NORMAL);
    for (i=0;i<N;i++)
    {
