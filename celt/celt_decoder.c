@@ -706,7 +706,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             for (j=0;j<blen;j++)
             {
                seed = celt_lcg_rand(seed);
-               X[boffs+j] = (celt_norm)((opus_int32)seed>>20);
+               X[boffs+j] = SHL32((celt_norm)((opus_int32)seed>>20), NORM_SHIFT-14);
             }
             renormalise_vector(X+boffs, blen, Q31ONE, st->arch);
          }
