@@ -44,13 +44,34 @@
 #include "mips/vq_mipsr1.h"
 #endif
 
-#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+#if defined(FIXED_POINT)
+void norm_scaleup(celt_norm *X, int N, int shift) {
+   int i;
+   celt_assert(shift >= 0);
+   if (shift <= 0) return;
+   for (i=0;i<N;i++) X[i] = SHL32(X[i], shift);
+}
+
+void norm_scaledown(celt_norm *X, int N, int shift) {
+   int i;
+   celt_assert(shift >= 0);
+   if (shift <= 0) return;
+   for (i=0;i<N;i++) X[i] = PSHR32(X[i], shift);
+}
+
 opus_val32 celt_inner_prod_norm(const celt_norm *x, const celt_norm *y, int len, int arch) {
    int i;
    opus_val32 sum = 0;
    (void)arch;
    for (i=0;i<len;i++) sum += x[i]*y[i];
    return sum;
+}
+opus_val32 celt_inner_prod_norm_shift(const celt_norm *x, const celt_norm *y, int len, int arch) {
+   int i;
+   opus_val64 sum = 0;
+   (void)arch;
+   for (i=0;i<len;i++) sum += x[i]*(opus_val64)y[i];
+   return sum>>2*(NORM_SHIFT-14);
 }
 #endif
 
@@ -62,6 +83,7 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
    celt_norm *Xptr;
    Xptr = X;
    ms = NEG16(s);
+   norm_scaledown(X, len, NORM_SHIFT-14);
    for (i=0;i<len-stride;i++)
    {
       celt_norm x1, x2;
@@ -79,6 +101,7 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
       Xptr[stride] = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x2),  s, x1), 15));
       *Xptr--      = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x1), ms, x2), 15));
    }
+   norm_scaleup(X, len, NORM_SHIFT-14);
 }
 #endif /* OVERRIDE_vq_exp_rotation1 */
 
@@ -127,8 +150,7 @@ void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
    }
 }
 
-/** Takes the pitch vector and the decoded residual vector, computes the gain
-    that will give ||p+g*y||=1 and mixes the residual with the pitch. */
+/** Normalizes the decoded integer pvq codeword to unit norm. */
 static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT X,
       int N, opus_val32 Ryy, opus_val32 gain, int shift)
 {
@@ -158,7 +180,7 @@ static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT
       }
    } else
 #endif
-   do X[i] = EXTRACT16(PSHR32(MULT16_32_Q15(iy[i], g), k+15-NORM_SHIFT));
+   do X[i] = VSHR32(MULT16_32_Q15(iy[i], g), k+15-NORM_SHIFT);
    while (++i < N);
 }
 
@@ -525,6 +547,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    ALLOC(iy, N+3, int);
 
    exp_rotation(X, N, 1, B, K, spread);
+   norm_scaledown(X, N, NORM_SHIFT-14);
 
 #ifdef ENABLE_QEXT
    if (N==2 && extra_bits >= 2) {
@@ -662,6 +685,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch)
    opus_val16 g;
    opus_val32 t;
    celt_norm *xptr;
+   norm_scaledown(X, N, NORM_SHIFT-14);
    E = EPSILON + celt_inner_prod_norm(X, X, N, arch);
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
@@ -672,9 +696,10 @@ void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch)
    xptr = X;
    for (i=0;i<N;i++)
    {
-      *xptr = EXTRACT16(PSHR32(MULT16_16(g, *xptr), k+15-NORM_SHIFT));
+      *xptr = EXTRACT16(PSHR32(MULT16_16(g, *xptr), k+15-14));
       xptr++;
    }
+   norm_scaleup(X, N, NORM_SHIFT-14);
    /*return celt_sqrt(E);*/
 }
 #endif /* OVERRIDE_renormalise_vector */
@@ -692,14 +717,14 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
       for (i=0;i<N;i++)
       {
          celt_norm m, s;
-         m = ADD16(SHR16(X[i],1),SHR16(Y[i],1));
-         s = SUB16(SHR16(X[i],1),SHR16(Y[i],1));
+         m = PSHR32(ADD32(X[i], Y[i]), NORM_SHIFT-13);
+         s = PSHR32(SUB32(X[i], Y[i]), NORM_SHIFT-13);
          Emid = MAC16_16(Emid, m, m);
          Eside = MAC16_16(Eside, s, s);
       }
    } else {
-      Emid += celt_inner_prod_norm(X, X, N, arch);
-      Eside += celt_inner_prod_norm(Y, Y, N, arch);
+      Emid += celt_inner_prod_norm_shift(X, X, N, arch);
+      Eside += celt_inner_prod_norm_shift(Y, Y, N, arch);
    }
    mid = celt_sqrt(Emid);
    side = celt_sqrt(Eside);
