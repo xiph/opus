@@ -160,15 +160,14 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
          g = EXTRACT16(celt_rcp(E));
          if (shift > 0) {
             j=M*eBands[i]; do {
-               X[j+c*N] = VSHR32(MULT16_32_Q15(g, freq[j+c*N]),shift+14-NORM_SHIFT2);
+               X[j+c*N] = VSHR32(MULT16_32_Q15(g, freq[j+c*N]),shift+14-NORM_SHIFT);
             } while (++j<M*eBands[i+1]);
          } else {
             j=M*eBands[i]; do {
-               X[j+c*N] = VSHR32(MULT16_16(g, freq[j+c*N]),29-NORM_SHIFT2+shift);
+               X[j+c*N] = VSHR32(MULT16_16(g, freq[j+c*N]),29-NORM_SHIFT+shift);
             } while (++j<M*eBands[i+1]);
          }
       } while (++i<end);
-      norm_scaledown(X+c*N+M*eBands[0], M*(eBands[end]-eBands[0]), NORM_SHIFT2-NORM_SHIFT);
    } while (++c<C);
 }
 
@@ -438,12 +437,9 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
    norm_scaleup(X, N, NORM_SHIFT-14);
 }
 
-#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
 static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, int N)
 {
    int j;
-   norm_scaleup(X, N, NORM_SHIFT2-NORM_SHIFT);
-   norm_scaleup(Y, N, NORM_SHIFT2-NORM_SHIFT);
    for (j=0;j<N;j++)
    {
       opus_val32 r, l;
@@ -452,23 +448,7 @@ static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
       X[j] = ADD32(l, r);
       Y[j] = SUB32(r, l);
    }
-   norm_scaledown(X, N, NORM_SHIFT2-NORM_SHIFT);
-   norm_scaledown(Y, N, NORM_SHIFT2-NORM_SHIFT);
 }
-#else
-static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, int N)
-{
-   int j;
-   for (j=0;j<N;j++)
-   {
-      opus_val32 r, l;
-      l = MULT16_16(QCONST16(.70710678f, 15), X[j]);
-      r = MULT16_16(QCONST16(.70710678f, 15), Y[j]);
-      X[j] = EXTRACT16(SHR32(ADD32(l, r), 15));
-      Y[j] = EXTRACT16(SHR32(SUB32(r, l), 15));
-   }
-}
-#endif
 
 static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, opus_val32 mid, int N, int arch)
 {
@@ -675,12 +655,10 @@ static void interleave_hadamard(celt_norm *X, int N0, int stride, int hadamard)
    RESTORE_STACK;
 }
 
-#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
 void haar1(celt_norm *X, int N0, int stride)
 {
    int i, j;
    N0 >>= 1;
-   norm_scaleup(X, 2*stride*N0, NORM_SHIFT2-NORM_SHIFT);
    for (i=0;i<stride;i++)
       for (j=0;j<N0;j++)
       {
@@ -690,24 +668,7 @@ void haar1(celt_norm *X, int N0, int stride)
          X[stride*2*j+i] = ADD32(tmp1, tmp2);
          X[stride*(2*j+1)+i] = SUB32(tmp1, tmp2);
       }
-   norm_scaledown(X, 2*stride*N0, NORM_SHIFT2-NORM_SHIFT);
 }
-#else
-void haar1(celt_norm *X, int N0, int stride)
-{
-   int i, j;
-   N0 >>= 1;
-   for (i=0;i<stride;i++)
-      for (j=0;j<N0;j++)
-      {
-         opus_val32 tmp1, tmp2;
-         tmp1 = MULT16_16(QCONST16(.70710678f,15), X[stride*2*j+i]);
-         tmp2 = MULT16_16(QCONST16(.70710678f,15), X[stride*(2*j+1)+i]);
-         X[stride*2*j+i] = EXTRACT16(PSHR32(ADD32(tmp1, tmp2), 15));
-         X[stride*(2*j+1)+i] = EXTRACT16(PSHR32(SUB32(tmp1, tmp2), 15));
-      }
-}
-#endif
 
 static const opus_int16 exp2_table8[8] =
    {16384, 17866, 19483, 21247, 23170, 25267, 27554, 30048};

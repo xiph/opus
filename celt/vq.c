@@ -158,41 +158,6 @@ void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
 }
 
 /** Normalizes the decoded integer pvq codeword to unit norm. */
-#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
-static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT X,
-      int N, opus_val32 Ryy, opus_val32 gain, int shift)
-{
-   int i;
-#ifdef FIXED_POINT
-   int k;
-#endif
-   opus_val32 t;
-   opus_val32 g;
-
-#ifdef FIXED_POINT
-   k = celt_ilog2(Ryy)>>1;
-#endif
-   t = VSHR32(Ryy, 2*(k-7)-15);
-   g = MULT32_32_Q31(celt_rsqrt_norm32(t),gain);
-   i=0;
-   (void)shift;
-#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
-   if (shift>0) {
-      int tot_shift = NORM_SHIFT2+1-k-shift;
-      if (tot_shift >= 0) {
-         do X[i] = MULT32_32_Q31(g, SHL32(iy[i], tot_shift));
-         while (++i < N);
-      } else {
-         do X[i] = MULT32_32_Q31(g, PSHR32(iy[i], -tot_shift));
-         while (++i < N);
-      }
-   } else
-#endif
-   do X[i] = VSHR32(MULT16_32_Q15(iy[i], g), k+15-NORM_SHIFT2);
-   while (++i < N);
-   norm_scaledown(X, N, NORM_SHIFT2-NORM_SHIFT);
-}
-#else
 static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT X,
       int N, opus_val32 Ryy, opus_val32 gain, int shift)
 {
@@ -222,10 +187,9 @@ static void normalise_residual(int * OPUS_RESTRICT iy, celt_norm * OPUS_RESTRICT
       }
    } else
 #endif
-   do X[i] = EXTRACT16(PSHR32(MULT16_32_Q15(iy[i], g), k+15-NORM_SHIFT));
+   do X[i] = VSHR32(MULT16_32_Q15(iy[i], g), k+15-NORM_SHIFT);
    while (++i < N);
 }
-#endif
 
 static unsigned extract_collapse_mask(int *iy, int N, int B)
 {
@@ -735,6 +699,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch)
 #endif
    t = VSHR32(E, 2*(k-7));
    g = MULT32_32_Q31(celt_rsqrt_norm(t),gain);
+
    xptr = X;
    for (i=0;i<N;i++)
    {
@@ -800,9 +765,8 @@ static void cubic_synthesis(celt_norm *X, int *iy, int N, int K, int face, int s
    sum_shift = (29-celt_ilog2(sum))>>1;
    mag = celt_rsqrt_norm32(SHL32(sum, 2*sum_shift+1));
    for (i=0;i<N;i++) {
-      X[i] = VSHR32(MULT16_32_Q15(X[i],MULT32_32_Q31(mag,gain)), shift-sum_shift+29-NORM_SHIFT2);
+      X[i] = VSHR32(MULT16_32_Q15(X[i],MULT32_32_Q31(mag,gain)), shift-sum_shift+29-NORM_SHIFT);
    }
-   norm_scaledown(X, N, NORM_SHIFT2-NORM_SHIFT);
 #else
    mag = 1.f/sqrt(sum);
    for (i=0;i<N;i++) {
