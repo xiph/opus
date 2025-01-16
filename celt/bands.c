@@ -1189,7 +1189,7 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
                   for (j=0;j<N;j++)
                   {
                      ctx->seed = celt_lcg_rand(ctx->seed);
-                     X[j] = (celt_norm)((opus_int32)ctx->seed>>(34-NORM_SHIFT));
+                     X[j] = SHL32((celt_norm)((opus_int32)ctx->seed>>20), NORM_SHIFT-14);
                   }
                   cm = cm_mask;
                } else {
