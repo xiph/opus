@@ -1228,7 +1228,7 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
                   for (j=0;j<N;j++)
                   {
                      ctx->seed = celt_lcg_rand(ctx->seed);
-                     X[j] = (celt_norm)((opus_int32)ctx->seed>>20);
+                     X[j] = (celt_norm)((opus_int32)ctx->seed>>(34-NORM_SHIFT));
                   }
                   cm = cm_mask;
                } else {
@@ -1238,7 +1238,7 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
                      opus_val16 tmp;
                      ctx->seed = celt_lcg_rand(ctx->seed);
                      /* About 48 dB below the "normal" folding level */
-                     tmp = QCONST16(1.0f/256, 10);
+                     tmp = QCONST16(1.0f/256, NORM_SHIFT-4);
                      tmp = (ctx->seed)&0x8000 ? tmp : -tmp;
                      X[j] = lowband[j]+tmp;
                   }
