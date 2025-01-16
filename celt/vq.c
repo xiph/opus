@@ -590,6 +590,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    ALLOC(iy, N+3, int);
 
    exp_rotation(X, N, 1, B, K, spread);
+   norm_scaledown(X, N, NORM_SHIFT-14);
 
 #ifdef ENABLE_QEXT
    if (N==2 && extra_bits >= 2) {
@@ -758,14 +759,14 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
       for (i=0;i<N;i++)
       {
          celt_norm m, s;
-         m = ADD16(SHR16(X[i],1),SHR16(Y[i],1));
-         s = SUB16(SHR16(X[i],1),SHR16(Y[i],1));
+         m = PSHR32(ADD32(X[i], Y[i]), NORM_SHIFT-13);
+         s = PSHR32(SUB32(X[i], Y[i]), NORM_SHIFT-13);
          Emid = MAC16_16(Emid, m, m);
          Eside = MAC16_16(Eside, s, s);
       }
    } else {
-      Emid += celt_inner_prod_norm(X, X, N, arch);
-      Eside += celt_inner_prod_norm(Y, Y, N, arch);
+      Emid += celt_inner_prod_norm_shift(X, X, N, arch);
+      Eside += celt_inner_prod_norm_shift(Y, Y, N, arch);
    }
    mid = celt_sqrt(Emid);
    side = celt_sqrt(Eside);

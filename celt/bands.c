@@ -160,14 +160,15 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
          g = EXTRACT16(celt_rcp(E));
          if (shift > 0) {
             j=M*eBands[i]; do {
-               X[j+c*N] = VSHR32(MULT16_32_Q15(g, freq[j+c*N]),shift+14-NORM_SHIFT);
+               X[j+c*N] = VSHR32(MULT16_32_Q15(g, freq[j+c*N]),shift+14-NORM_SHIFT2);
             } while (++j<M*eBands[i+1]);
          } else {
             j=M*eBands[i]; do {
-               X[j+c*N] = VSHR32(MULT16_16(g, freq[j+c*N]),29-NORM_SHIFT+shift);
+               X[j+c*N] = VSHR32(MULT16_16(g, freq[j+c*N]),29-NORM_SHIFT2+shift);
             } while (++j<M*eBands[i+1]);
          }
       } while (++i<end);
+      norm_scaledown(X+c*N+M*eBands[0], M*(eBands[end]-eBands[0]), NORM_SHIFT2-NORM_SHIFT);
    } while (++c<C);
 }
 
@@ -419,6 +420,8 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
 #ifdef FIXED_POINT
    int shift = celt_zlog2(MAX32(bandE[i], bandE[i+m->nbEBands]))-13;
 #endif
+   norm_scaledown(X, N, NORM_SHIFT-14);
+   norm_scaledown(Y, N, NORM_SHIFT-14);
    left = VSHR32(bandE[i],shift);
    right = VSHR32(bandE[i+m->nbEBands],shift);
    norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
@@ -432,8 +435,27 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
       X[j] = EXTRACT16(SHR32(MAC16_16(MULT16_16(a1, l), a2, r), 14));
       /* Side is not encoded, no need to calculate */
    }
+   norm_scaleup(X, N, NORM_SHIFT-14);
 }
 
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, int N)
+{
+   int j;
+   norm_scaleup(X, N, NORM_SHIFT2-NORM_SHIFT);
+   norm_scaleup(Y, N, NORM_SHIFT2-NORM_SHIFT);
+   for (j=0;j<N;j++)
+   {
+      opus_val32 r, l;
+      l = MULT32_32_Q31(QCONST32(.70710678f,31), X[j]);
+      r = MULT32_32_Q31(QCONST32(.70710678f,31), Y[j]);
+      X[j] = ADD32(l, r);
+      Y[j] = SUB32(r, l);
+   }
+   norm_scaledown(X, N, NORM_SHIFT2-NORM_SHIFT);
+   norm_scaledown(Y, N, NORM_SHIFT2-NORM_SHIFT);
+}
+#else
 static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, int N)
 {
    int j;
@@ -446,6 +468,7 @@ static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
       Y[j] = EXTRACT16(SHR32(SUB32(r, l), 15));
    }
 }
+#endif
 
 static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, opus_val32 mid, int N, int arch)
 {
@@ -529,7 +552,7 @@ int spreading_decision(const CELTMode *m, const celt_norm *X, int *average,
          {
             opus_val32 x2N; /* Q13 */
 
-            x2N = MULT16_16(MULT16_16_Q15(x[j], x[j]), N);
+            x2N = MULT16_16(MULT16_16_Q15(SHR32(x[j], NORM_SHIFT-14), SHR32(x[j], NORM_SHIFT-14)), N);
             if (x2N < QCONST16(0.25f,13))
                tcount[0]++;
             if (x2N < QCONST16(0.0625f,13))
@@ -1011,7 +1034,7 @@ static unsigned quant_band_n1(struct band_ctx *ctx, celt_norm *X, celt_norm *Y,
       x = Y;
    } while (++c<1+stereo);
    if (lowband_out)
-      lowband_out[0] = SHR16(X[0],4);
+      lowband_out[0] = SHR32(X[0],4);
    return 1;
 }
 
@@ -1546,11 +1569,11 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
          Y[0] = MULT32_32_Q31(side, Y[0]);
          Y[1] = MULT32_32_Q31(side, Y[1]);
          tmp = X[0];
-         X[0] = SUB16(tmp,Y[0]);
-         Y[0] = ADD16(tmp,Y[0]);
+         X[0] = SUB32(tmp,Y[0]);
+         Y[0] = ADD32(tmp,Y[0]);
          tmp = X[1];
-         X[1] = SUB16(tmp,Y[1]);
-         Y[1] = ADD16(tmp,Y[1]);
+         X[1] = SUB32(tmp,Y[1]);
+         Y[1] = ADD32(tmp,Y[1]);
       }
    } else {
       /* "Normal" split code */
@@ -1875,7 +1898,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm ARG_QEXT(ext_b) ARG_QEXT(cap));
-               dist0 = MULT16_32_Q15(w[0], celt_inner_prod_norm(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod_norm(Y_save, Y, N, arch));
+               dist0 = MULT16_32_Q15(w[0], celt_inner_prod_norm_shift(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod_norm_shift(Y_save, Y, N, arch));
 
                /* Save first result. */
                cm2 = x_cm;
@@ -1917,7 +1940,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                x_cm = quant_band_stereo(&ctx, X, Y, N, b, B,
                      effective_lowband != -1 ? norm+effective_lowband : NULL, LM,
                      last?NULL:norm+M*eBands[i]-norm_offset, lowband_scratch, cm ARG_QEXT(ext_b) ARG_QEXT(cap));
-               dist1 = MULT16_32_Q15(w[0], celt_inner_prod_norm(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod_norm(Y_save, Y, N, arch));
+               dist1 = MULT16_32_Q15(w[0], celt_inner_prod_norm_shift(X_save, X, N, arch)) + MULT16_32_Q15(w[1], celt_inner_prod_norm_shift(Y_save, Y, N, arch));
                if (dist0 >= dist1) {
                   x_cm = cm2;
                   *ec = ec_save2;
