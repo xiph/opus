@@ -44,7 +44,7 @@
 #include "mips/vq_mipsr1.h"
 #endif
 
-#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+#if defined(FIXED_POINT)
 void norm_scaleup(celt_norm *X, int N, int shift) {
    int i;
    celt_assert(shift >= 0);
@@ -62,10 +62,7 @@ void norm_scaledown(celt_norm *X, int N, int shift) {
    for (i=0;i<N;i++) X[i] = PSHR32(X[i], shift);
 #endif
 }
-#endif
 
-
-#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
 opus_val32 celt_inner_prod_norm(const celt_norm *x, const celt_norm *y, int len, int arch) {
    int i;
    opus_val32 sum = 0;

@@ -41,7 +41,7 @@
 #include "x86/vq_sse.h"
 #endif
 
-#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+#if defined(FIXED_POINT)
 opus_val32 celt_inner_prod_norm(const celt_norm *x, const celt_norm *y, int len, int arch);
 opus_val32 celt_inner_prod_norm_shift(const celt_norm *x, const celt_norm *y, int len, int arch);
 
