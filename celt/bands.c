@@ -498,10 +498,10 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
    kl = celt_ilog2(El)>>1;
    kr = celt_ilog2(Er)>>1;
 #endif
-   t = VSHR32(El, (kl-7)<<1);
-   lgain = celt_rsqrt_norm(t);
-   t = VSHR32(Er, (kr-7)<<1);
-   rgain = celt_rsqrt_norm(t);
+   t = VSHR32(El, (kl<<1)-29);
+   lgain = celt_rsqrt_norm32(t);
+   t = VSHR32(Er, (kr<<1)-29);
+   rgain = celt_rsqrt_norm32(t);
 
 #ifdef FIXED_POINT
    if (kl < 7)
@@ -516,8 +516,8 @@ static void stereo_merge(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT 
       /* Apply mid scaling (side is already scaled) */
       l = MULT32_32_Q31(mid, X[j]);
       r = Y[j];
-      X[j] = VSHR32(MULT16_32_Q15(lgain, SUB32(l,r)), kl-14);
-      Y[j] = VSHR32(MULT16_32_Q15(rgain, ADD32(l,r)), kr-14);
+      X[j] = VSHR32(MULT32_32_Q31(lgain, SUB32(l,r)), kl-15);
+      Y[j] = VSHR32(MULT32_32_Q31(rgain, ADD32(l,r)), kr-15);
    }
 }
 
