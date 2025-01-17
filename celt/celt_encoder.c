@@ -1603,7 +1603,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       int bins;
       bins = eBands[nbEBands-2]<<LM;
       /*floor_depth = SHR32(MULT16_16((C*bins<<BITRES),celt_log2(SHL32(MAX16(1,sample_max),13))), DB_SHIFT);*/
-      floor_depth = (opus_int32)SHR32(MULT16_16((C*bins<<BITRES),maxDepth), DB_SHIFT);
+      floor_depth = (opus_int32)SHR32(MULT16_32_Q15((C*bins<<BITRES),maxDepth), DB_SHIFT-15);
       floor_depth = IMAX(floor_depth, target>>2);
       target = IMIN(target, floor_depth);
       /*printf("%f %d\n", maxDepth, floor_depth);*/
