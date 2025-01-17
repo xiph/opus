@@ -176,7 +176,16 @@ AS_IF([test "$enable_custom_modes" = "yes"],[
   PC_BUILD="$PC_BUILD, custom modes"
 ])
 
-AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes"])
+AC_ARG_ENABLE([opus-custom-api],
+    [AS_HELP_STRING([--enable-opus-custom-api], [enable Opus custom API])],,
+    [enable_opus_custom_api=no])
+
+AS_IF([test "$enable_opus_custom_api" = "yes"],[
+  AC_DEFINE([ENABLE_OPUS_CUSTOM_API], [1], [Opus custom API])
+  PC_BUILD="$PC_BUILD, Opus custom API"
+])
+
+AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes" -o "$enable_opus_custom_api" == "yes"])
 
 AC_ARG_ENABLE([dred],
     [AS_HELP_STRING([--enable-dred], [Use Deep REDundancy (DRED)])],,
