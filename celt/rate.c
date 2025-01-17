@@ -48,7 +48,7 @@ static const unsigned char LOG2_FRAC_TABLE[24]={
   32,33,34,34,35,36,36,37,37
 };
 
-#if defined(CUSTOM_MODES) || defined(ENABLE_QEXT)
+#if defined(CUSTOM_MODES)
 
 /*Determines if V(N,K) fits in a 32-bit unsigned integer.
   N and K are themselves limited to 15 bits.*/
