@@ -437,7 +437,7 @@ failure:
 #endif /* !CUSTOM_MODES */
 }
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 void opus_custom_mode_destroy(CELTMode *mode)
 {
    int arch = opus_select_arch();
@@ -456,6 +456,7 @@ void opus_custom_mode_destroy(CELTMode *mode)
      }
    }
 #endif /* CUSTOM_MODES_ONLY */
+#ifdef CUSTOM_MODES
 #ifdef ENABLE_QEXT
    if (mode->qext_cache.index) opus_free((opus_int16*)mode->qext_cache.index);
    if (mode->qext_cache.bits) opus_free((unsigned char*)mode->qext_cache.bits);
@@ -473,6 +474,9 @@ void opus_custom_mode_destroy(CELTMode *mode)
    clt_mdct_clear(&mode->mdct, arch);
 
    opus_free((CELTMode *)mode);
+#else
+   celt_assert(0);
+#endif
 }
 #endif
 
