@@ -870,8 +870,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       logXC2 = MAX16(HALF16(logXC), celt_log2(QCONST32(1.001f, 20)-MULT16_16(minXC, minXC)));
 #ifdef FIXED_POINT
       /* Compensate for Q20 vs Q14 input and convert output to Q8 */
-      logXC = PSHR32(logXC-GCONST(6.f),DB_SHIFT-8);
-      logXC2 = PSHR32(logXC2-GCONST(6.f),DB_SHIFT-8);
+      logXC = PSHR32(logXC-QCONST16(6.f, 10),10-8);
+      logXC2 = PSHR32(logXC2-QCONST16(6.f, 10),10-8);
 #endif
 
       trim += MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC));
