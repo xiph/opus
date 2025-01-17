@@ -179,7 +179,7 @@ int celt_decode_with_ec(OpusCustomDecoder * OPUS_RESTRICT st, const unsigned cha
 #define celt_decoder_ctl opus_custom_decoder_ctl
 
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 #define OPUS_CUSTOM_NOSTATIC
 #else
 #define OPUS_CUSTOM_NOSTATIC static OPUS_INLINE
@@ -191,7 +191,7 @@ static const unsigned char spread_icdf[4] = {25, 23, 2, 0};
 
 static const unsigned char tapset_icdf[3]={2,1,0};
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 static const unsigned char toOpusTable[20] = {
       0xE0, 0xE8, 0xF0, 0xF8,
       0xC0, 0xC8, 0xD0, 0xD8,

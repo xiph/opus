@@ -473,7 +473,11 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
    TestCustomParams params = {0};
 
    /* Parameters to fuzz. Some values are duplicated to increase their probability of being tested. */
-   int sampling_rates[] = { 8000, 12000, 16000, 24000, 48000,
+   int sampling_rates[] = {
+#ifdef CUSTOM_MODEES
+         8000, 12000, 16000, 24000,
+#endif
+         48000,
 #ifdef ENABLE_QEXT
          96000
 #endif
