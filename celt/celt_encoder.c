@@ -163,7 +163,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_get_size(const CELTMode *mode, int 
    return size;
 }
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 CELTEncoder *opus_custom_encoder_create(const CELTMode *mode, int channels, int *error)
 {
    int ret;
@@ -220,7 +220,7 @@ static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
    return OPUS_OK;
 }
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
 {
    return opus_custom_encoder_init_arch(st, mode, channels, opus_select_arch());
@@ -239,7 +239,7 @@ int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels,
    return OPUS_OK;
 }
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 void opus_custom_encoder_destroy(CELTEncoder *st)
 {
    opus_free(st);
@@ -575,7 +575,7 @@ void celt_preemphasis(const opus_res * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTR
 #else
    (void)clip; /* Avoids a warning about clip being unused. */
 #endif
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
    if (coef[1] != 0)
    {
       opus_val16 coef1 = coef[1];
@@ -1783,7 +1783,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       nbFilledBytes=(tell+4)>>3;
    }
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
    if (st->signalling && enc==NULL)
    {
       int tmp = (mode->effEBands-end)>>1;
@@ -1818,7 +1818,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    {
       opus_int32 den=mode->Fs>>BITRES;
       vbr_rate=(st->bitrate*frame_size+(den>>1))/den;
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
       if (st->signalling)
          vbr_rate -= 8<<BITRES;
 #endif
@@ -2709,7 +2709,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    if (ec_get_error(&ext_enc))
       return OPUS_INTERNAL_ERROR;
 #endif
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
    if (st->signalling)
       nbCompressedBytes++;
 #endif
@@ -2722,7 +2722,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 }
 
 
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 
 #if defined(FIXED_POINT) && !defined(ENABLE_RES24)
 int opus_custom_encode(CELTEncoder * OPUS_RESTRICT st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
@@ -2981,7 +2981,7 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
          st->tapset_decision = 0;
       }
       break;
-#ifdef CUSTOM_MODES
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
       case CELT_SET_INPUT_CLIPPING_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
