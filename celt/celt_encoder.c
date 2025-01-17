@@ -1005,7 +1005,7 @@ static celt_glog median_of_3(const celt_glog *x)
       return t0;
 }
 
-static opus_val16 dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *bandLogE2, const celt_glog *oldBandE,
+static celt_glog dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *bandLogE2, const celt_glog *oldBandE,
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
       int effectiveBytes, opus_int32 *tot_boost_, int lfe, celt_glog *surround_dynalloc,
