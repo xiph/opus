@@ -580,13 +580,24 @@ void celt_preemphasis(const opus_res * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTR
    if (coef[1] != 0)
    {
       opus_val16 coef1 = coef[1];
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+      /* If we need the extra precision, we use the fact that coef[3] is exact to do a Newton-Raphson
+         iteration and get us more precision on coef[2]. */
+      opus_val32 coef2_q30 = SHL32(coef[2], 18) + PSHR32(MULT16_16(QCONST32(1.f, 25) - MULT16_16(coef[3], coef[2]), coef[2]), 7);
+      celt_assert(SIG_SHIFT == 12);
+#else
       opus_val16 coef2 = coef[2];
+#endif
       for (i=0;i<N;i++)
       {
          celt_sig x, tmp;
          x = inp[i];
          /* Apply pre-emphasis */
+#if defined(FIXED_POINT) && defined(ENABLE_QEXT)
+         tmp = SHL32(MULT32_32_Q31(coef2_q30, x), 1);
+#else
          tmp = SHL32(MULT16_32_Q15(coef2, x), 15-SIG_SHIFT);
+#endif
          inp[i] = tmp + m;
          m = MULT16_32_Q15(coef1, inp[i]) - MULT16_32_Q15(coef0, tmp);
       }
