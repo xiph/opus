@@ -2,6 +2,11 @@
 #include "config.h"
 #endif
 
+/* FIXME: Is there a better way to get access to opus_custom_decoder_get_size()? */
+#ifdef OPUS_BUILD
+#undef OPUS_BUILD
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -30,6 +35,7 @@
 typedef struct {
    void* encoder;
    void* decoder;
+   OpusCustomMode *mode;
    int sample_rate;
    int num_channels;
    int frame_size;
@@ -114,9 +120,12 @@ int test_encode(TestCustomParams params) {
    void *outbuf;
    OpusEncoder* enc = NULL;
    OpusDecoder* dec = NULL;
+   OpusDecoder* dec_copy = NULL;
    OpusCustomEncoder* encC = NULL;
    OpusCustomDecoder* decC = NULL;
+   OpusCustomDecoder* decC_copy = NULL;
    unsigned char packet[MAX_PACKET+257];
+   unsigned char packet_corrupt[MAX_PACKET+257];
    int len;
    int input_samples;
    int samples_decoded;
@@ -154,10 +163,16 @@ int test_encode(TestCustomParams params) {
    }
 
    if (params.custom_decode) {
+      int size = opus_custom_decoder_get_size(params.mode, params.num_channels);
       decC = (OpusCustomDecoder*)params.decoder;
+      decC_copy = malloc(size);
+      memcpy(decC_copy, decC, size);
    }
    else {
+      int size = opus_decoder_get_size(params.num_channels);
       dec = (OpusDecoder*)params.decoder;
+      dec_copy = malloc(size);
+      memcpy(dec_copy, dec, size);
    }
 
    /* Encode data, then decode for sanity check */
@@ -250,6 +265,48 @@ int test_encode(TestCustomParams params) {
          }
       }
 
+      /* Generate bit/byte errors and check that nothing bad happens. */
+      {
+         int error_pos;
+         /* Draw the inverse bit error rate from an exponential distribution. */
+         int ber_1 = 1 - 100*log(1e-10 + fast_rand()/4294967296.);
+         opus_int16 scratch[1920*6];
+         memcpy(packet_corrupt, packet, sizeof(packet));
+         /* Randomly flip the 5 first bytes. */
+         for (error_pos=0;error_pos<5;error_pos++) {
+            /* 25% chance of flipping each byte. */
+            if (error_pos<len && fast_rand()%5 == 0) packet_corrupt[error_pos] = fast_rand()&0xFF;
+         }
+         error_pos=0;
+         /* Generate bit errors using "run-length" flipping. */
+         while (1) {
+            error_pos += (int)-ber_1*log(1e-10 + fast_rand()/4294967296.);
+            if (error_pos >= len*8) break;
+            packet_corrupt[error_pos/8] ^= (1<<(error_pos&7));
+         }
+         if (params.custom_decode) {
+            int error = opus_custom_decode(decC_copy,
+                  packet_corrupt,
+                  len,
+                  scratch,
+                  frame_size);
+            if (!(error > 0 || error == OPUS_BAD_ARG || error == OPUS_INVALID_PACKET || error == OPUS_BUFFER_TOO_SMALL)) {
+               fprintf(stderr, "opus_custom_decode() with corrupt stream failed with: %s\n", opus_strerror(error));
+               test_failed();
+            }
+         } else {
+            int error = opus_decode(dec_copy,
+                  packet_corrupt,
+                  len,
+                  scratch,
+                  frame_size,
+                  0);
+            if (!(error > 0 || error == OPUS_BAD_ARG || error == OPUS_INVALID_PACKET || error == OPUS_BUFFER_TOO_SMALL)) {
+               fprintf(stderr, "opus_custom_decode() with corrupt stream failed with: %s\n", opus_strerror(error));
+               test_failed();
+            }
+         }
+      }
 #ifndef DISABLE_FLOAT_API
       if (params.float_decode) {
          float* output = (float*)outbuf;
@@ -389,6 +446,8 @@ int test_encode(TestCustomParams params) {
    }
 #endif
 
+   if (dec_copy) free(dec_copy);
+   if (decC_copy) free(decC_copy);
    /* Clean up */
    free(inbuf);
    free(outbuf);
@@ -463,6 +522,9 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
                     params.custom_encode, params.custom_decode, frame_size_ms_x2);
             test_failed();
          }
+         params.mode = mode;
+      } else {
+         params.mode = NULL;
       }
 
       if (params.custom_decode) {
