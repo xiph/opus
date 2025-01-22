@@ -1104,12 +1104,16 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
             data++;
             len--;
             do {
-               p = data[0];
-               qext_bytes += p == 255 ? 254 : p;
-               data++;
+               int tmp;
+               if (len<=0)
+                  return OPUS_INVALID_PACKET;
+               p = *data++;
                len--;
-            } while (p == 255);
-            len -= qext_bytes;
+               tmp = p==255 ? 254: p;
+               len -= tmp;
+               qext_bytes += tmp;
+            } while (p==255);
+            if (len <= 0) return OPUS_INVALID_PACKET;
             qext_bytes--;
             if (data[len] != 124<<1)
                qext_bytes=0;
