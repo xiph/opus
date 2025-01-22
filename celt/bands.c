@@ -891,6 +891,8 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
          }
          itheta_q30 -= (1<<(extra_bits-1))-1;
          itheta_q30 = (itheta<<16) + itheta_q30*(opus_int64)(1<<30)/(qn*((1<<extra_bits)-1));
+         /* Hard bounds on itheta (can only trigger on corrupted bitstreams). */
+         itheta_q30 = IMAX(0, IMIN(itheta_q30, 1073741824));
          *ext_b -= ec_tell_frac(ctx->ext_ec) - ext_tell;
       } else {
          itheta_q30 = (opus_int32)itheta<<16;
