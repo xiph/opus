@@ -1335,7 +1335,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
 
 #ifdef ENABLE_QEXT
-   if (qext_bytes &&
+   if (qext_bytes && end == nbEBands &&
          ((mode->Fs == 48000 && (mode->shortMdctSize==120 || mode->shortMdctSize==90))
        || (mode->Fs == 96000 && (mode->shortMdctSize==240 || mode->shortMdctSize==180)))) {
       int qext_intra_ener;

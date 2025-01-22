@@ -2478,7 +2478,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          OPUS_CLEAR(ext_payload, qext_bytes);
          ec_enc_init(&ext_enc, ext_payload, qext_bytes);
          nbCompressedBytes = new_compressedBytes;
-         if ((mode->Fs == 48000 ||  mode->Fs == 96000) && (mode->shortMdctSize==120*qext_scale || mode->shortMdctSize==90*qext_scale)) {
+         if (end == nbEBands && (mode->Fs == 48000 ||  mode->Fs == 96000) && (mode->shortMdctSize==120*qext_scale || mode->shortMdctSize==90*qext_scale)) {
             compute_qext_mode(&qext_mode_struct, mode);
             qext_mode = &qext_mode_struct;
             qext_end = (qext_scale == 2) ? NB_QEXT_BANDS : 2;
