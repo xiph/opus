@@ -1507,7 +1507,8 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
          if (encode)
          {
             /* Here we only need to encode a sign for the side. */
-            sign = x2[0]*y2[1] - x2[1]*y2[0] < 0;
+            /* FIXME: Need to increase fixed-point precision? */
+            sign = MULT32_32_Q31(x2[0],y2[1]) - MULT32_32_Q31(x2[1],y2[0]) < 0;
             ec_enc_bits(ec, sign, 1);
          } else {
             sign = ec_dec_bits(ec, 1);
