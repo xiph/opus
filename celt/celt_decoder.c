@@ -398,6 +398,9 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
    N = mode->shortMdctSize<<LM;
    ALLOC(freq, N, celt_sig); /**< Interleaved signal MDCTs */
    M = 1<<LM;
+#ifdef ENABLE_QEXT
+   if (mode->Fs != 96000) qext_end=2;
+#endif
 
    if (isTransient)
    {
