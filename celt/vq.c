@@ -49,18 +49,14 @@ void norm_scaleup(celt_norm *X, int N, int shift) {
    int i;
    celt_assert(shift >= 0);
    if (shift <= 0) return;
-#ifdef FIXED_POINT
    for (i=0;i<N;i++) X[i] = SHL32(X[i], shift);
-#endif
 }
 
 void norm_scaledown(celt_norm *X, int N, int shift) {
    int i;
    celt_assert(shift >= 0);
    if (shift <= 0) return;
-#ifdef FIXED_POINT
    for (i=0;i<N;i++) X[i] = PSHR32(X[i], shift);
-#endif
 }
 
 opus_val32 celt_inner_prod_norm(const celt_norm *x, const celt_norm *y, int len, int arch) {
