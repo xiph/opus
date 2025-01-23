@@ -1099,6 +1099,8 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       if ((data[0] & 0x03) == 0x03) {
          data++;
          len--;
+         if (len<=0)
+            return OPUS_INVALID_PACKET;
          if (data[0] & 0x40) {
             int p;
             data++;
