@@ -419,8 +419,6 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
 #ifdef FIXED_POINT
    int shift = celt_zlog2(MAX32(bandE[i], bandE[i+m->nbEBands]))-13;
 #endif
-   norm_scaledown(X, N, NORM_SHIFT-14);
-   norm_scaledown(Y, N, NORM_SHIFT-14);
    left = VSHR32(bandE[i],shift);
    right = VSHR32(bandE[i+m->nbEBands],shift);
    norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
@@ -428,13 +426,12 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
    a2 = DIV32_16(SHL32(EXTEND32(right),14),norm);
    for (j=0;j<N;j++)
    {
-      celt_norm r, l;
-      l = X[j];
-      r = Y[j];
-      X[j] = EXTRACT16(SHR32(MAC16_16(MULT16_16(a1, l), a2, r), 14));
+      opus_val16 r, l;
+      l = EXTRACT16(PSHR32(X[j], NORM_SHIFT-14));
+      r = EXTRACT16(PSHR32(Y[j], NORM_SHIFT-14));
+      X[j] = PSHR32(MAC16_16(MULT16_16(a1, l), a2, r), 28-NORM_SHIFT);
       /* Side is not encoded, no need to calculate */
    }
-   norm_scaleup(X, N, NORM_SHIFT-14);
 }
 
 static void stereo_split(celt_norm * OPUS_RESTRICT X, celt_norm * OPUS_RESTRICT Y, int N)
