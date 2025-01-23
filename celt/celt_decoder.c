@@ -380,7 +380,7 @@ static
 void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
                     celt_glog *oldBandE, int start, int effEnd, int C, int CC,
                     int isTransient, int LM, int downsample,
-                    int silence, int arch ARG_QEXT(const CELTMode *qext_mode) ARG_QEXT(const celt_glog *qext_bandLogE))
+                    int silence, int arch ARG_QEXT(const CELTMode *qext_mode) ARG_QEXT(const celt_glog *qext_bandLogE) ARG_QEXT(int qext_end))
 {
    int c, i;
    int M;
@@ -418,7 +418,7 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
             downsample, silence);
 #ifdef ENABLE_QEXT
       if (qext_mode)
-         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, mode->Fs == 96000 ? NB_QEXT_BANDS : 2, M,
+         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, qext_end, M,
                         downsample, silence);
 #endif
       /* Store a temporary copy in the output buffer because the IMDCT destroys its input. */
@@ -441,9 +441,9 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
 #ifdef ENABLE_QEXT
       if (qext_mode)
       {
-         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, mode->Fs == 96000 ? NB_QEXT_BANDS : 2, M,
+         denormalise_bands(qext_mode, X, freq, qext_bandLogE, 0, qext_end, M,
                         downsample, silence);
-         denormalise_bands(qext_mode, X+N, freq2, qext_bandLogE+NB_QEXT_BANDS, 0, mode->Fs == 96000 ? NB_QEXT_BANDS : 2, M,
+         denormalise_bands(qext_mode, X+N, freq2, qext_bandLogE+NB_QEXT_BANDS, 0, qext_end, M,
                         downsample, silence);
       }
 #endif
@@ -458,7 +458,7 @@ void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
                downsample, silence);
 #ifdef ENABLE_QEXT
          if (qext_mode)
-            denormalise_bands(qext_mode, X+c*N, freq, qext_bandLogE+c*NB_QEXT_BANDS, 0, mode->Fs == 96000 ? NB_QEXT_BANDS : 2, M,
+            denormalise_bands(qext_mode, X+c*N, freq, qext_bandLogE+c*NB_QEXT_BANDS, 0, qext_end, M,
                            downsample, silence);
 #endif
          for (b=0;b<B;b++)
@@ -710,7 +710,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       }
       st->rng = seed;
 
-      celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch ARG_QEXT(NULL) ARG_QEXT(NULL));
+      celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch ARG_QEXT(NULL) ARG_QEXT(NULL) ARG_QEXT(0));
       st->prefilter_and_fold = 0;
       /* Skip regular PLC until we get two consecutive packets. */
       st->skip_plc = 1;
@@ -1417,7 +1417,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       prefilter_and_fold(st, N);
    }
    celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd,
-                  C, CC, isTransient, LM, st->downsample, silence, st->arch ARG_QEXT(qext_mode) ARG_QEXT(qext_oldBandE));
+                  C, CC, isTransient, LM, st->downsample, silence, st->arch ARG_QEXT(qext_mode) ARG_QEXT(qext_oldBandE) ARG_QEXT(qext_end));
 
    c=0; do {
       st->postfilter_period=IMAX(st->postfilter_period, COMBFILTER_MINPERIOD);

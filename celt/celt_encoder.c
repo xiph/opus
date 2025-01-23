@@ -2642,7 +2642,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       } while (++c<CC);
 
       celt_synthesis(mode, X, out_mem, oldBandE, start, effEnd,
-                     C, CC, isTransient, LM, st->upsample, silence, st->arch ARG_QEXT(qext_mode) ARG_QEXT(qext_oldBandE));
+                     C, CC, isTransient, LM, st->upsample, silence, st->arch ARG_QEXT(qext_mode) ARG_QEXT(qext_oldBandE) ARG_QEXT(qext_end));
 
       c=0; do {
          st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
