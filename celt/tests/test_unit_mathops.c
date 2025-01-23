@@ -343,7 +343,6 @@ void testexp2_db(void)
    float relative_error_threshold = -2;
    float fx;
    float quantized_fx;
-   float ground_truth;
    opus_val32 x_32;
 
    for (fx = -32.0; fx < 15.0; fx += 0.0007)
