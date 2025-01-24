@@ -347,10 +347,11 @@ void testexp2_db(void)
 
    for (fx = -32.0; fx < 15.0; fx += 0.0007)
    {
+      double ground_truth;
       x_32 = DOUBLE_TO_FIX_INT(fx, DB_SHIFT);
       quantized_fx = FIX_INT_TO_DOUBLE(x_32, DB_SHIFT);
 
-      double ground_truth = (exp(0.6931471805599453094 * quantized_fx));
+      ground_truth = (exp(0.6931471805599453094 * quantized_fx));
       absolute_error = fabs(ground_truth -
                             FIX_INT_TO_DOUBLE(celt_exp2_db(x_32), 16));
 
