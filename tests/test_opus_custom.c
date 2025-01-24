@@ -55,16 +55,17 @@ void* generate_sine_sweep(double amplitude, int bit_depth, int sample_rate, int 
    int num_samples;
    double start_freq = 100.0;
    double end_freq = sample_rate / 2.0;
+   void *output_buffer;
+
+   /* Calculate the maximum sample value based on bit depth. */
+   opus_int32 max_sample_value = (1L << (bit_depth - 1)) - 1;
+   int bytes_per_sample = (bit_depth == 16) ? 2 : 4;
 
    num_samples = (int)floor(.5f + duration_seconds * sample_rate);
 
-   /* Calculate the maximum sample value based on bit depth. */
-   opus_int32 max_sample_value = (1LL << (bit_depth - 1)) - 1;
-
    /* Allocate memory for the output buffer. */
    if (use_float) bit_depth = 32;
-   int bytes_per_sample = (bit_depth == 16) ? 2 : 4;
-   void* output_buffer = malloc(num_samples * channels * bytes_per_sample);
+   output_buffer = malloc(num_samples * channels * bytes_per_sample);
    if (output_buffer == NULL) {
       fprintf(stderr, "Error allocating memory for output buffer.\n");
       *num_samples_out = 0;
@@ -490,6 +491,7 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
    int decoder_bit_depths[2] = {16, 24};
 
    for (i = 0; i < num_encoders; i++) {
+      int frame_size_ms_x2;
       params.sample_rate = RAND_SAMPLE(sampling_rates);
       params.custom_encode = 1;
       params.custom_decode = 1;
@@ -503,7 +505,7 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
             continue;
       }
       params.num_channels = RAND_SAMPLE(channels);
-      int frame_size_ms_x2 = RAND_SAMPLE(frame_sizes_ms_x2);
+      frame_size_ms_x2 = RAND_SAMPLE(frame_sizes_ms_x2);
       params.frame_size = frame_size_ms_x2 * params.sample_rate / 2000;
 
       /* OpusCustom isn't supporting this case at the moment (frame < 40) */
