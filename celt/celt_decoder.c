@@ -127,7 +127,7 @@ struct OpusCustomDecoder {
    up writing all over memory. */
 void validate_celt_decoder(CELTDecoder *st)
 {
-#if !defined(CUSTOM_MODES) && !defined(ENABLE_OPUS_CUSTOM_API)
+#if !defined(CUSTOM_MODES) && !defined(ENABLE_OPUS_CUSTOM_API) && !defined(ENABLE_QEXT)
    celt_assert(st->mode == opus_custom_mode_create(48000, 960, NULL));
    celt_assert(st->overlap == 120);
    celt_assert(st->end <= 21);
@@ -162,7 +162,11 @@ void validate_celt_decoder(CELTDecoder *st)
 
 int celt_decoder_get_size(int channels)
 {
+#ifdef ENABLE_QEXT
+   const CELTMode *mode = opus_custom_mode_create(96000, 960, NULL);
+#else
    const CELTMode *mode = opus_custom_mode_create(48000, 960, NULL);
+#endif
    return opus_custom_decoder_get_size(mode, channels);
 }
 
@@ -201,6 +205,11 @@ CELTDecoder *opus_custom_decoder_create(const CELTMode *mode, int channels, int 
 int celt_decoder_init(CELTDecoder *st, opus_int32 sampling_rate, int channels)
 {
    int ret;
+#ifdef ENABLE_QEXT
+   if (sampling_rate == 96000) {
+      return opus_custom_decoder_init(st, opus_custom_mode_create(96000, 960, NULL), channels);
+   }
+#endif
    ret = opus_custom_decoder_init(st, opus_custom_mode_create(48000, 960, NULL), channels);
    if (ret != OPUS_OK)
       return ret;
@@ -248,7 +257,7 @@ void opus_custom_decoder_destroy(CELTDecoder *st)
 }
 #endif /* CUSTOM_MODES */
 
-#if !defined(CUSTOM_MODES) && !defined(ENABLE_OPUS_CUSTOM_API)
+#if !defined(CUSTOM_MODES) && !defined(ENABLE_OPUS_CUSTOM_API) && !defined(ENABLE_QEXT)
 /* Special case for stereo with no downsampling and no accumulation. This is
    quite common and we can make it faster by processing both channels in the
    same loop, reducing overhead due to the dependency loop in the IIR filter. */
@@ -291,7 +300,7 @@ void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, con
    opus_val16 coef0;
    VARDECL(celt_sig, scratch);
    SAVE_STACK;
-#if !defined(CUSTOM_MODES) && !defined(ENABLE_OPUS_CUSTOM_API)
+#if !defined(CUSTOM_MODES) && !defined(ENABLE_OPUS_CUSTOM_API) && !defined(ENABLE_QEXT)
    /* Short version for common case. */
    if (downsample == 1 && C == 2 && !accum)
    {
@@ -309,7 +318,7 @@ void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, con
       celt_sig m = mem[c];
       x =in[c];
       y = pcm+c;
-#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API) || defined(ENABLE_QEXT)
       if (coef[1] != 0)
       {
          opus_val16 coef1 = coef[1];
@@ -1000,6 +1009,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
 #ifdef ENABLE_DEEP_PLC
       ,LPCNetPLCState *lpcnet
 #endif
+      ARG_QEXT(const unsigned char *qext_payload) ARG_QEXT(int qext_payload_len)
       )
 {
    int c, i, N;
@@ -1080,7 +1090,12 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
    backgroundLogE = oldLogE2  + 2*nbEBands;
 
 #ifdef ENABLE_QEXT
-   ec_dec_init(&ext_dec, NULL, 0);
+   if (qext_payload) {
+      ec_dec_init(&ext_dec, (unsigned char*)qext_payload, qext_payload_len);
+      qext_bytes = qext_payload_len;
+   } else {
+      ec_dec_init(&ext_dec, NULL, 0);
+   }
 #endif
 #if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
    if (st->signalling && data!=NULL)
@@ -1509,6 +1524,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
 #ifdef ENABLE_DEEP_PLC
        , NULL
 #endif
+       ARG_QEXT(NULL) ARG_QEXT(0)
        );
 }
 

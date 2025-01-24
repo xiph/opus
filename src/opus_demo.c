@@ -43,7 +43,13 @@
 #include "lossgen.h"
 #endif
 
-#define MAX_PACKET 1500
+#define MAX_PACKET 15000
+
+#ifdef ENABLE_QEXT
+#define MAX_SAMPLING_RATE 96000
+#else
+#define MAX_SAMPLING_RATE 48000
+#endif
 
 #ifdef USE_WEIGHTS_FILE
 # if __unix__
@@ -405,7 +411,7 @@ int main(int argc, char *argv[])
     opus_uint32 enc_final_range;
     opus_uint32 dec_final_range;
     int encode_only=0, decode_only=0;
-    int max_frame_size = 48000*2;
+    int max_frame_size = MAX_SAMPLING_RATE*2;
     size_t num_read;
     int curr_read=0;
     int sweep_bps = 0;
@@ -425,6 +431,7 @@ int main(int argc, char *argv[])
     int lost_count=0;
     FILE *packet_loss_file=NULL;
     int dred_duration=0;
+    int ignore_extensions=0;
 #ifdef ENABLE_OSCE_TRAINING_DATA
     int silk_random_switching = 0;
     int silk_frame_counter = 0;
@@ -479,10 +486,18 @@ int main(int argc, char *argv[])
 
     if (sampling_rate != 8000 && sampling_rate != 12000
      && sampling_rate != 16000 && sampling_rate != 24000
-     && sampling_rate != 48000)
+     && sampling_rate != 48000
+#ifdef ENABLE_QEXT
+     && sampling_rate != 96000
+#endif
+     )
     {
-        fprintf(stderr, "Supported sampling rates are 8000, 12000, "
-                "16000, 24000 and 48000.\n");
+        fprintf(stderr, "Supported sampling rates are 8000, 12000, 16000, 24000"
+#ifdef ENABLE_QEXT
+              ", 48000 and 96000.\n");
+#else
+              " and 48000.\n");
+#endif
         goto failure;
     }
     frame_size = sampling_rate/50;
@@ -674,6 +689,10 @@ int main(int argc, char *argv[])
             mode_list = celt_hq_test;
             nb_modes_in_list = 4;
             args++;
+        } else if( strcmp( argv[ args ], "-ignore_extensions" ) == 0 ) {
+            check_decoder_option(encode_only, "-ignore_extensions");
+            ignore_extensions = 1;
+            args++;
 #ifdef ENABLE_OSCE_TRAINING_DATA
         } else if( strcmp( argv[ args ], "-silk_random_switching" ) == 0 ){
             silk_random_switching = atoi( argv[ args + 1 ] );
@@ -762,6 +781,7 @@ int main(int argc, char *argv[])
           goto failure;
        }
        opus_decoder_ctl(dec, OPUS_SET_COMPLEXITY(dec_complexity));
+       opus_decoder_ctl(dec, OPUS_SET_IGNORE_EXTENSIONS(ignore_extensions));
     }
     switch(bandwidth)
     {
@@ -823,7 +843,7 @@ int main(int argc, char *argv[])
        else
           variable_duration = OPUS_FRAMESIZE_120_MS;
        opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
-       frame_size = 2*48000;
+       frame_size = 2*sampling_rate;
     }
     dred_dec = opus_dred_decoder_create(&err);
     dred = opus_dred_alloc(&err);
@@ -1035,7 +1055,7 @@ int main(int argc, char *argv[])
                 opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                 dred_input = lost_count*output_samples;
                 /* Only decode the amount we need to fill in the gap. */
-                ret = opus_dred_parse(dred_dec, dred, data, len, IMIN(48000, IMAX(0, dred_input)), sampling_rate, &dred_end, 0);
+                ret = opus_dred_parse(dred_dec, dred, data, len, IMIN(sampling_rate, IMAX(0, dred_input)), sampling_rate, &dred_end, 0);
                 dred_input = ret > 0 ? ret : 0;
             }
             /* FIXME: Figure out how to trigger the decoder when the last packet of the file is lost. */
