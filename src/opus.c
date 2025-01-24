@@ -236,6 +236,13 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
    opus_int32 pad = 0;
    const unsigned char *data0 = data;
 
+   /* Make sure we return NULL/0 on error. */
+   if (padding != NULL)
+   {
+      *padding = NULL;
+      *padding_len = 0;
+   }
+
    if (size==NULL || len<0)
       return OPUS_BAD_ARG;
    if (len==0)
