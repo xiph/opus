@@ -145,6 +145,7 @@ int celt_encoder_get_size(int channels)
 OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_get_size(const CELTMode *mode, int channels)
 {
    int extra=0;
+   int size;
 #ifdef ENABLE_QEXT
    int qext_scale;
    extra = channels*NB_QEXT_BANDS*sizeof(celt_glog);
@@ -152,7 +153,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_get_size(const CELTMode *mode, int 
       qext_scale = 2;
    } else qext_scale = 1;
 #endif
-   int size = sizeof(struct CELTEncoder)
+   size = sizeof(struct CELTEncoder)
          + (channels*mode->overlap-1)*sizeof(celt_sig)    /* celt_sig in_mem[channels*mode->overlap]; */
          + channels*QEXT_SCALE(COMBFILTER_MAXPERIOD)*sizeof(celt_sig) /* celt_sig prefilter_mem[channels*COMBFILTER_MAXPERIOD]; */
          + 4*channels*mode->nbEBands*sizeof(celt_glog)    /* celt_glog oldBandE[channels*mode->nbEBands]; */
