@@ -422,8 +422,8 @@ static int op_pvq_refine(const celt_norm *X, int *iy, int *iy0, int K, int up, i
    int i;
    int dir;
    VARDECL(opus_val64, rounding);
-   ALLOC(rounding, N, opus_val64);
    int iysum = 0;
+   ALLOC(rounding, N, opus_val64);
    for (i=0;i<N;i++) {
       opus_val64 tmp;
 #ifdef FIXED_POINT
@@ -566,9 +566,9 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
       int i;
       VARDECL(int, up_iy);
       VARDECL(int, refine);
+      int up, use_entropy;
       ALLOC(up_iy, N, int);
       ALLOC(refine, N, int);
-      int up, use_entropy;
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
       yy = op_pvq_search_extra(X, iy, up_iy, K, up, refine, N, yy_shift);
@@ -643,9 +643,9 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       int i;
       opus_val64 yy64;
       VARDECL(int, refine);
-      ALLOC(refine, N, int);
       int up, use_entropy;
       int sign=0;
+      ALLOC(refine, N, int);
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
       use_entropy = (ext_dec->storage*8 - ec_tell(ext_dec)) > (unsigned)(N-1)*(extra_bits+3)+1;
