@@ -1562,6 +1562,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        unsigned char *curr_data;
        int tmp_len;
        int dtx_count = 0;
+       int bak_to_mono;
 
        if (st->mode == MODE_SILK_ONLY)
        {
@@ -1606,7 +1607,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        opus_repacketizer_init(rp);
 
 
-       int bak_to_mono = st->silk_mode.toMono;
+       bak_to_mono = st->silk_mode.toMono;
        if (bak_to_mono)
           st->force_channels = 1;
        else
