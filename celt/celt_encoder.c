@@ -583,8 +583,8 @@ void celt_preemphasis(const opus_res * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTR
 #if defined(FIXED_POINT) && defined(ENABLE_QEXT)
       /* If we need the extra precision, we use the fact that coef[3] is exact to do a Newton-Raphson
          iteration and get us more precision on coef[2]. */
-      celt_assert(SIG_SHIFT == 12);
       opus_val32 coef2_q30 = SHL32(coef[2], 18) + PSHR32(MULT16_16(QCONST32(1.f, 25) - MULT16_16(coef[3], coef[2]), coef[2]), 7);
+      celt_assert(SIG_SHIFT == 12);
 #else
       opus_val16 coef2 = coef[2];
 #endif
