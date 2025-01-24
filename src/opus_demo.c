@@ -43,7 +43,7 @@
 #include "lossgen.h"
 #endif
 
-#define MAX_PACKET 1500
+#define MAX_PACKET 15000
 
 #ifdef USE_WEIGHTS_FILE
 # if __unix__
@@ -413,6 +413,7 @@ int main(int argc, char *argv[])
     int lost_count=0;
     FILE *packet_loss_file=NULL;
     int dred_duration=0;
+    int ignore_extensions=0;
 #ifdef ENABLE_OSCE_TRAINING_DATA
     int silk_random_switching = 0;
     int silk_frame_counter = 0;
@@ -467,10 +468,18 @@ int main(int argc, char *argv[])
 
     if (sampling_rate != 8000 && sampling_rate != 12000
      && sampling_rate != 16000 && sampling_rate != 24000
-     && sampling_rate != 48000)
+     && sampling_rate != 48000
+#ifdef ENABLE_QEXT
+     && sampling_rate != 96000
+#endif
+     )
     {
-        fprintf(stderr, "Supported sampling rates are 8000, 12000, "
-                "16000, 24000 and 48000.\n");
+        fprintf(stderr, "Supported sampling rates are 8000, 12000, 16000, 24000"
+#ifdef ENABLE_QEXT
+              ", 48000 and 96000.\n");
+#else
+              " and 48000.\n");
+#endif
         goto failure;
     }
     frame_size = sampling_rate/50;
@@ -653,6 +662,10 @@ int main(int argc, char *argv[])
             mode_list = celt_hq_test;
             nb_modes_in_list = 4;
             args++;
+        } else if( strcmp( argv[ args ], "-ignore_extensions" ) == 0 ) {
+            check_decoder_option(encode_only, "-ignore_extensions");
+            ignore_extensions = 1;
+            args++;
 #ifdef ENABLE_OSCE_TRAINING_DATA
         } else if( strcmp( argv[ args ], "-silk_random_switching" ) == 0 ){
             silk_random_switching = atoi( argv[ args + 1 ] );
@@ -741,6 +754,7 @@ int main(int argc, char *argv[])
           goto failure;
        }
        opus_decoder_ctl(dec, OPUS_SET_COMPLEXITY(dec_complexity));
+       opus_decoder_ctl(dec, OPUS_SET_IGNORE_EXTENSIONS(ignore_extensions));
     }
     switch(bandwidth)
     {
