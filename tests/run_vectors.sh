@@ -81,7 +81,7 @@ do
     else
         echo "Bitstream file not found: testvector$file.bit"
     fi
-    if "$OPUS_DEMO" -d "$RATE" 1 "$VECTOR_PATH/testvector$file.bit" tmp.out >> logs_mono.txt 2>&1; then
+    if "$OPUS_DEMO" -d "$RATE" 1 -ignore_extensions "$VECTOR_PATH/testvector$file.bit" tmp.out >> logs_mono.txt 2>&1; then
         echo "successfully decoded"
     else
         echo "ERROR: decoding failed"
@@ -112,7 +112,7 @@ do
     else
         echo "Bitstream file not found: testvector$file"
     fi
-    if "$OPUS_DEMO" -d "$RATE" 2 "$VECTOR_PATH/testvector$file.bit" tmp.out >> logs_stereo.txt 2>&1; then
+    if "$OPUS_DEMO" -d "$RATE" 2 -ignore_extensions "$VECTOR_PATH/testvector$file.bit" tmp.out >> logs_stereo.txt 2>&1; then
         echo "successfully decoded"
     else
         echo "ERROR: decoding failed"

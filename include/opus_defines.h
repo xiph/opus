@@ -177,6 +177,8 @@ extern "C" {
 #define OPUS_GET_OSCE_BWE_REQUEST 4055
 #define OPUS_SET_QEXT_REQUEST 4056
 #define OPUS_GET_QEXT_REQUEST 4057
+#define OPUS_SET_IGNORE_EXTENSIONS_REQUEST 4058
+#define OPUS_GET_IGNORE_EXTENSIONS_REQUEST 4059
 
 /** Defines for the presence of extended APIs. */
 #define OPUS_HAVE_OPUS_PROJECTION_H
@@ -822,6 +824,13 @@ extern "C" {
   * @hideinitializer */
  #define OPUS_GET_OSCE_BWE(x) OPUS_GET_OSCE_BWE_REQUEST, __opus_check_int_ptr(x)
 
+/** If set to 1, enables quality extension (QEXT), otherwise disables it (default). Warning: This will *hurt* audio quality unless operating at
+    a very high bitrate.
+  * @hideinitializer */
+#define OPUS_SET_IGNORE_EXTENSIONS(x) OPUS_SET_IGNORE_EXTENSIONS_REQUEST, __opus_check_int(x)
+/** Gets the encoder's configured quality extension (QEXT).
+  * @hideinitializer */
+#define OPUS_GET_IGNORE_EXTENSIONS(x) OPUS_GET_IGNORE_EXTENSIONS_REQUEST, __opus_check_int_ptr(x)
 
 /**@}*/
 
