@@ -587,6 +587,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
                                      , &st->lpcnet
 #endif
                                      ARG_QEXT(ext ? ext->data : NULL) ARG_QEXT(ext ? ext->len : 0));
+      celt_decoder_ctl(celt_dec, OPUS_GET_FINAL_RANGE(&st->rangeFinal));
    } else {
       unsigned char silence[2] = {0xFF, 0xFF};
       if (!celt_accum)
@@ -601,6 +602,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
          MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0)));
          celt_decode_with_ec(celt_dec, silence, 2, pcm, F2_5, NULL, celt_accum);
       }
+      st->rangeFinal = dec.rng;
    }
 
    {
@@ -669,14 +671,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    if (len <= 1)
       st->rangeFinal = 0;
    else
-      st->rangeFinal = dec.rng ^ redundant_rng;
-#ifdef ENABLE_QEXT
-   if (mode != MODE_SILK_ONLY) {
-      opus_uint32 rng2;
-      celt_decoder_ctl(celt_dec, OPUS_GET_FINAL_RANGE(&rng2));
-      st->rangeFinal ^= dec.rng^rng2;
-   }
-#endif
+      st->rangeFinal ^= redundant_rng;
 
    st->prev_mode = mode;
    st->prev_redundancy = redundancy && !celt_to_silk;
