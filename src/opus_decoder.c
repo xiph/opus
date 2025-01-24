@@ -586,7 +586,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 #ifdef ENABLE_DEEP_PLC
                                      , &st->lpcnet
 #endif
-                                     ARG_QEXT(ext->data) ARG_QEXT(ext->len));
+                                     ARG_QEXT(ext ? ext->data : NULL) ARG_QEXT(ext ? ext->len : 0));
    } else {
       unsigned char silence[2] = {0xFF, 0xFF};
       if (!celt_accum)
