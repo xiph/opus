@@ -43,7 +43,7 @@
 #include "lossgen.h"
 #endif
 
-#define MAX_PACKET 1500
+#define MAX_PACKET 15000
 
 #ifdef USE_WEIGHTS_FILE
 # if __unix__
@@ -467,10 +467,18 @@ int main(int argc, char *argv[])
 
     if (sampling_rate != 8000 && sampling_rate != 12000
      && sampling_rate != 16000 && sampling_rate != 24000
-     && sampling_rate != 48000)
+     && sampling_rate != 48000
+#ifdef ENABLE_QEXT
+     && sampling_rate != 96000
+#endif
+     )
     {
-        fprintf(stderr, "Supported sampling rates are 8000, 12000, "
-                "16000, 24000 and 48000.\n");
+        fprintf(stderr, "Supported sampling rates are 8000, 12000, 16000, 24000"
+#ifdef ENABLE_QEXT
+              ", 48000 and 96000.\n");
+#else
+              " and 48000.\n");
+#endif
         goto failure;
     }
     frame_size = sampling_rate/50;
