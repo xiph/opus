@@ -109,10 +109,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       int dual_stereo, int intensity, int *tf_res, opus_int32 total_bits,
       opus_int32 balance, ec_ctx *ec, int M, int codedBands, opus_uint32 *seed,
       int complexity, int arch, int disable_inv
-#ifdef ENABLE_QEXT
-      , ec_ctx *ext_ec, int *extra_pulses, opus_int32 total_ext_bits, const int *cap
-#endif
-      );
+      ARG_QEXT(ec_ctx *ext_ec) ARG_QEXT(int *extra_pulses)
+      ARG_QEXT(opus_int32 total_ext_bits) ARG_QEXT(const int *cap));
 
 void anti_collapse(const CELTMode *m, celt_norm *X_,
       unsigned char *collapse_masks, int LM, int C, int size, int start,
