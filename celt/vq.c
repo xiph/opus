@@ -526,11 +526,8 @@ static int ec_dec_refine(ec_enc *dec, opus_int32 up, int extra_bits, int use_ent
 #endif
 
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
-      opus_val32 gain, int resynth,
-#ifdef ENABLE_QEXT
-      ec_enc *ext_enc, int extra_bits,
-#endif
-      int arch)
+      opus_val32 gain, int resynth
+      ARG_QEXT(ec_enc *ext_enc) ARG_QEXT(int extra_bits), int arch)
 {
    VARDECL(int, iy);
    opus_val32 yy;
@@ -600,10 +597,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
     the final normalised signal in the current band. */
 unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       ec_dec *dec, opus_val32 gain
-#ifdef ENABLE_QEXT
-      , ec_enc *ext_dec, int extra_bits
-#endif
-      )
+      ARG_QEXT(ec_enc *ext_dec) ARG_QEXT(int extra_bits))
 {
    opus_val32 Ryy;
    unsigned collapse_mask;
