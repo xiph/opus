@@ -2587,10 +2587,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          bandE, pulses, shortBlocks, st->spread_decision,
          dual_stereo, st->intensity, tf_res, nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv,
          balance, enc, LM, codedBands, &st->rng, st->complexity, st->arch, st->disable_inv
-#ifdef ENABLE_QEXT
-      , &ext_enc, extra_pulses, qext_bytes*(8<<BITRES), cap
-#endif
-         );
+         ARG_QEXT(&ext_enc) ARG_QEXT(extra_pulses)
+         ARG_QEXT(qext_bytes*(8<<BITRES)) ARG_QEXT(cap));
 
 #ifdef ENABLE_QEXT
    if (qext_mode) {
