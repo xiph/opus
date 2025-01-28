@@ -1135,17 +1135,12 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
          /* Finally do the actual quantization */
          if (encode)
          {
-            cm = alg_quant(X, N, K, spread, B, ec, gain, ctx->resynth,
-#ifdef ENABLE_QEXT
-                           ctx->ext_ec, extra_bits,
-#endif
+            cm = alg_quant(X, N, K, spread, B, ec, gain, ctx->resynth
+                           ARG_QEXT(ctx->ext_ec) ARG_QEXT(extra_bits),
                            ctx->arch);
          } else {
             cm = alg_unquant(X, N, K, spread, B, ec, gain
-#ifdef ENABLE_QEXT
-                             , ctx->ext_ec, extra_bits
-#endif
-                  );
+                             ARG_QEXT(ctx->ext_ec) ARG_QEXT(extra_bits));
          }
 #ifdef ENABLE_QEXT
       } else if (ext_b > 2*N<<BITRES)
@@ -1610,10 +1605,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       int dual_stereo, int intensity, int *tf_res, opus_int32 total_bits,
       opus_int32 balance, ec_ctx *ec, int LM, int codedBands,
       opus_uint32 *seed, int complexity, int arch, int disable_inv
-#ifdef ENABLE_QEXT
-      , ec_ctx *ext_ec, int *extra_pulses, opus_int32 ext_total_bits, const int *cap
-#endif
-      )
+      ARG_QEXT(ec_ctx *ext_ec) ARG_QEXT(int *extra_pulses)
+      ARG_QEXT(opus_int32 ext_total_bits) ARG_QEXT(const int *cap))
 {
    int i;
    opus_int32 remaining_bits;
