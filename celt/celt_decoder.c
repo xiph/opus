@@ -1393,10 +1393,8 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
          len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng, 0,
          st->arch, st->disable_inv
-#ifdef ENABLE_QEXT
-      , &ext_dec, extra_pulses, qext_bytes*(8<<BITRES), cap
-#endif
-         );
+         ARG_QEXT(&ext_dec) ARG_QEXT(extra_pulses)
+         ARG_QEXT(qext_bytes*(8<<BITRES)) ARG_QEXT(cap));
 
 #ifdef ENABLE_QEXT
    if (qext_mode) {
