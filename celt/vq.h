@@ -74,11 +74,8 @@ opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch);
  * @ret A mask indicating which blocks in the band received pulses
 */
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
-      opus_val32 gain, int resynth,
-#ifdef ENABLE_QEXT
-      ec_enc *ext_enc, int extra_bits,
-#endif
-      int arch);
+      opus_val32 gain, int resynth
+      ARG_QEXT(ec_enc *ext_enc) ARG_QEXT(int extra_bits), int arch);
 
 /** Algebraic pulse decoder
  * @param X Decoded normalised spectrum (returned)
@@ -89,10 +86,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
  */
 unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       ec_dec *dec, opus_val32 gain
-#ifdef ENABLE_QEXT
-      , ec_enc *ext_dec, int extra_bits
-#endif
-      );
+      ARG_QEXT(ec_enc *ext_dec) ARG_QEXT(int extra_bits));
 
 void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch);
 
