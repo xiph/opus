@@ -44,6 +44,17 @@
 #define MAX_PACKET 1275
 #endif
 
+static OPUS_INLINE void _opus_ctl_failed(const char *file, int line)
+{
+   fprintf(stderr, "\n ***************************************************\n");
+   fprintf(stderr, " ***         A fatal error was detected.         ***\n");
+   fprintf(stderr, " ***************************************************\n");
+   fprintf(stderr, "En/decoder ctl function %s failed at %d for %s.\n",
+           file, line, opus_get_version_string());
+}
+
+#define opus_ctl_failed() _opus_ctl_failed(__FILE__, __LINE__);
+
 static void print_usage(char **argv) {
    fprintf (stderr, "Usage: %s [-e | -d] <rate> <channels> <frame size> "
                   " [<bytes per packet>] [options] "
@@ -228,13 +239,25 @@ int main(int argc, char *argv[])
       }
       if (complexity >= 0)
       {
-         opus_custom_encoder_ctl(enc,OPUS_SET_COMPLEXITY(complexity));
+         if(opus_custom_encoder_ctl(
+                  enc, OPUS_SET_COMPLEXITY(complexity)) != OPUS_OK) {
+            opus_ctl_failed();
+            goto failure;
+         }
       }
       if (percent_loss >= 0) {
-         opus_custom_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC((int)percent_loss));
+         if(opus_custom_encoder_ctl(
+                  enc, OPUS_SET_PACKET_LOSS_PERC((int)percent_loss)) !=
+                        OPUS_OK) {
+            opus_ctl_failed();
+            goto failure;
+         }
       }
 #ifdef ENABLE_QEXT
-      opus_custom_encoder_ctl(enc, OPUS_SET_QEXT(qext));
+      if(opus_custom_encoder_ctl(enc, OPUS_SET_QEXT(qext)) != OPUS_OK) {
+         opus_ctl_failed();
+         goto failure;
+      }
 #endif
    }
    if (!encode_only) {
@@ -244,7 +267,10 @@ int main(int argc, char *argv[])
          fprintf(stderr, "Failed to create the decoder: %s\n", opus_strerror(err));
          goto failure;
       }
-      opus_custom_decoder_ctl(dec, OPUS_GET_LOOKAHEAD(&skip));
+      if(opus_custom_decoder_ctl(dec, OPUS_GET_LOOKAHEAD(&skip)) != OPUS_OK) {
+         opus_ctl_failed();
+         goto failure;
+      }
    }
    if (argc-args != 2)
    {
@@ -325,7 +351,11 @@ int main(int argc, char *argv[])
             }
          }
          len = opus_custom_encode24(enc, in, frame_size, data, bytes_per_packet);
-         opus_custom_encoder_ctl(enc, OPUS_GET_FINAL_RANGE(&enc_final_range));
+         if (opus_custom_encoder_ctl(
+                   enc, OPUS_GET_FINAL_RANGE(&enc_final_range)) != OPUS_OK) {
+            opus_ctl_failed();
+            goto failure;
+         }
          if (len <= 0)
             fprintf (stderr, "opus_custom_encode() failed: %s\n", opus_strerror(len));
       }
@@ -379,7 +409,11 @@ int main(int argc, char *argv[])
             ret = opus_custom_decode24(dec, NULL, len, out, frame_size);
          else
             ret = opus_custom_decode24(dec, data, len, out, frame_size);
-         opus_custom_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range));
+         if(opus_custom_decoder_ctl(
+                  dec, OPUS_GET_FINAL_RANGE(&dec_final_range)) != OPUS_OK) {
+            opus_ctl_failed();
+            goto failure;
+         }
          if (ret < 0)
             fprintf(stderr, "opus_custom_decode() failed: %s\n", opus_strerror(ret));
 #else
