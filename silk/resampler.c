@@ -57,7 +57,7 @@ static const opus_int8 delay_matrix_enc[ 6 ][ 3 ] = {
 /* 16 */   {  0,  1, 10 },
 /* 24 */   {  0,  2,  6 },
 /* 48 */   { 18, 10, 12 },
-/* 96 */   {  0,  0,  0 }
+/* 96 */   {  0,  0,  44 }
 };
 
 static const opus_int8 delay_matrix_dec[ 3 ][ 6 ] = {
@@ -90,7 +90,11 @@ opus_int silk_resampler_init(
 
     /* Input checking */
     if( forEnc ) {
-        if( ( Fs_Hz_in  != 8000 && Fs_Hz_in  != 12000 && Fs_Hz_in  != 16000 && Fs_Hz_in  != 24000 && Fs_Hz_in  != 48000 ) ||
+        if( ( Fs_Hz_in  != 8000 && Fs_Hz_in  != 12000 && Fs_Hz_in  != 16000 && Fs_Hz_in  != 24000 && Fs_Hz_in  != 48000
+#ifdef ENABLE_QEXT
+                  && Fs_Hz_in != 96000
+#endif
+              ) ||
             ( Fs_Hz_out != 8000 && Fs_Hz_out != 12000 && Fs_Hz_out != 16000 ) ) {
             celt_assert( 0 );
             return -1;
