@@ -41,7 +41,7 @@ typedef struct _silk_resampler_state_struct{
         opus_int32   i32[ SILK_RESAMPLER_MAX_FIR_ORDER ];
         opus_int16   i16[ SILK_RESAMPLER_MAX_FIR_ORDER ];
     }                sFIR;
-    opus_int16       delayBuf[ 48 ];
+    opus_int16       delayBuf[ 96 ];
     opus_int         resampler_function;
     opus_int         batchSize;
     opus_int32       invRatio_Q16;
