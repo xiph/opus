@@ -64,6 +64,9 @@ int resampling_factor(opus_int32 rate)
    int ret;
    switch (rate)
    {
+#ifdef ENABLE_QEXT
+   case 96000:
+#endif
    case 48000:
       ret = 1;
       break;
