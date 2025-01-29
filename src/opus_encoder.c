@@ -210,7 +210,11 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     int err;
     int ret, silkEncSizeBytes;
 
-   if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000)||(channels!=1&&channels!=2)||
+   if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000
+#ifdef ENABLE_QEXT
+         &&Fs!=96000
+#endif
+         )||(channels!=1&&channels!=2)||
         (application != OPUS_APPLICATION_VOIP && application != OPUS_APPLICATION_AUDIO
         && application != OPUS_APPLICATION_RESTRICTED_LOWDELAY))
         return OPUS_BAD_ARG;
@@ -522,7 +526,7 @@ static void stereo_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_v
     int i;
     int overlap;
     int inc;
-    inc = 48000/Fs;
+    inc = IMAX(1, 48000/Fs);
     overlap=overlap48/inc;
     g1 = Q15ONE-g1;
     g2 = Q15ONE-g2;
@@ -556,7 +560,7 @@ static void gain_fade(const opus_res *in, opus_res *out, opus_val16 g1, opus_val
     int inc;
     int overlap;
     int c;
-    inc = 48000/Fs;
+    inc = IMAX(1, 48000/Fs);
     overlap=overlap48/inc;
     if (channels==1)
     {
@@ -594,7 +598,11 @@ OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int application, i
 {
    int ret;
    OpusEncoder *st;
-   if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000)||(channels!=1&&channels!=2)||
+   if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000
+#ifdef ENABLE_QEXT
+         &&Fs!=96000
+#endif
+         )||(channels!=1&&channels!=2)||
        (application != OPUS_APPLICATION_VOIP && application != OPUS_APPLICATION_AUDIO
        && application != OPUS_APPLICATION_RESTRICTED_LOWDELAY))
    {
@@ -1180,9 +1188,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 #ifndef DISABLE_FLOAT_API
     analysis_info.valid = 0;
 #ifdef FIXED_POINT
-    if (st->silk_mode.complexity >= 10 && st->Fs>=16000)
+    if (st->silk_mode.complexity >= 10 && st->Fs>=16000 && st->Fs<=48000)
 #else
-    if (st->silk_mode.complexity >= 7 && st->Fs>=16000)
+    if (st->silk_mode.complexity >= 7 && st->Fs>=16000 && st->Fs<=48000)
 #endif
     {
        is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
@@ -2031,6 +2039,10 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
               st->silk_mode.maxInternalSampleRate = 8000;
               st->silk_mode.desiredInternalSampleRate = IMIN(8000, st->silk_mode.desiredInternalSampleRate);
            }
+#ifdef ENABLE_QEXT
+           /* At 96 kHz, we don't have the input resampler to do 8 or 12 kHz. */
+           if (st->Fs==96000) st->silk_mode.maxInternalSampleRate = st->silk_mode.desiredInternalSampleRate = 16000;
+#endif
         }
 
         st->silk_mode.useCBR = !st->use_vbr;
