@@ -334,7 +334,7 @@ void pitch_search(const opus_val16 * OPUS_RESTRICT x_lp, opus_val16 * OPUS_RESTR
 #ifdef FIXED_POINT
    xmax = celt_maxabs16(x_lp4, len>>2);
    ymax = celt_maxabs16(y_lp4, lag>>2);
-   shift = celt_ilog2(MAX32(1, MAX32(xmax, ymax)))-11;
+   shift = celt_ilog2(MAX32(1, MAX32(xmax, ymax))) - 14 + celt_ilog2(len)/2;
    if (shift>0)
    {
       for (j=0;j<len>>2;j++)

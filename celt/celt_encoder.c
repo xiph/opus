@@ -124,8 +124,13 @@ struct OpusCustomEncoder {
    celt_glog spec_avg;
 
 #ifdef RESYNTH
+#ifdef ENABLE_QEXT
+   /* +MAX_PERIOD/2 to make space for overlap */
+   celt_sig syn_mem[2][2*DEC_PITCH_BUF_SIZE+MAX_PERIOD];
+#else
    /* +MAX_PERIOD/2 to make space for overlap */
    celt_sig syn_mem[2][DEC_PITCH_BUF_SIZE+MAX_PERIOD/2];
+#endif
 #endif
 
    celt_sig in_mem[1]; /* Size = channels*mode->overlap */
@@ -138,7 +143,11 @@ struct OpusCustomEncoder {
 
 int celt_encoder_get_size(int channels)
 {
+#ifdef ENABLE_QEXT
+   CELTMode *mode = opus_custom_mode_create(96000, 1920, NULL);
+#else
    CELTMode *mode = opus_custom_mode_create(48000, 960, NULL);
+#endif
    return opus_custom_encoder_get_size(mode, channels);
 }
 
@@ -232,6 +241,13 @@ int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels,
                       int arch)
 {
    int ret;
+#ifdef ENABLE_QEXT
+   if (sampling_rate==96000) {
+      st->upsample = 1;
+      return opus_custom_encoder_init_arch(st,
+              opus_custom_mode_create(96000, 1920, NULL), channels, arch);
+   }
+#endif
    ret = opus_custom_encoder_init_arch(st,
            opus_custom_mode_create(48000, 960, NULL), channels, arch);
    if (ret != OPUS_OK)
@@ -579,7 +595,7 @@ void celt_preemphasis(const opus_res * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTR
 #else
    (void)clip; /* Avoids a warning about clip being unused. */
 #endif
-#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API) || defined(ENABLE_QEXT)
    if (coef[1] != 0)
    {
       opus_val16 coef1 = coef[1];
@@ -2685,11 +2701,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       }
 
       c=0; do {
-         OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, DEC_PITCH_BUF_SIZE-N+overlap/2);
+         OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, QEXT_SCALE(DEC_PITCH_BUF_SIZE)-N+overlap/2);
       } while (++c<CC);
 
       c=0; do {
-         out_mem[c] = st->syn_mem[c]+DEC_PITCH_BUF_SIZE-N;
+         out_mem[c] = st->syn_mem[c]+QEXT_SCALE(DEC_PITCH_BUF_SIZE)-N;
       } while (++c<CC);
 
       celt_synthesis(mode, X, out_mem, oldBandE, start, effEnd,

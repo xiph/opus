@@ -312,15 +312,18 @@ int _celt_autocorr(
 #ifdef FIXED_POINT
    {
       opus_val32 ac0;
+      int ac0_shift = celt_ilog2(n + (n>>4));
       ac0 = 1+(n<<7);
-      if (n&1) ac0 += SHR32(MULT16_16(xptr[0],xptr[0]),9);
+      if (n&1) ac0 += SHR32(MULT16_16(xptr[0],xptr[0]),ac0_shift);
       for(i=(n&1);i<n;i+=2)
       {
-         ac0 += SHR32(MULT16_16(xptr[i],xptr[i]),9);
-         ac0 += SHR32(MULT16_16(xptr[i+1],xptr[i+1]),9);
+         ac0 += SHR32(MULT16_16(xptr[i],xptr[i]),ac0_shift);
+         ac0 += SHR32(MULT16_16(xptr[i+1],xptr[i+1]),ac0_shift);
       }
+      /* Consider the effect of rounding-to-nearest when scaling the signal. */
+      ac0 += SHR32(ac0,7);
 
-      shift = celt_ilog2(ac0)-30+10;
+      shift = celt_ilog2(ac0)-30+ac0_shift+1;
       shift = (shift)/2;
       if (shift>0)
       {
