@@ -138,7 +138,11 @@ struct OpusCustomEncoder {
 
 int celt_encoder_get_size(int channels)
 {
+#ifdef ENABLE_QEXT
+   CELTMode *mode = opus_custom_mode_create(96000, 1920, NULL);
+#else
    CELTMode *mode = opus_custom_mode_create(48000, 960, NULL);
+#endif
    return opus_custom_encoder_get_size(mode, channels);
 }
 
@@ -232,6 +236,13 @@ int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels,
                       int arch)
 {
    int ret;
+#ifdef ENABLE_QEXT
+   if (sampling_rate==96000) {
+      st->upsample = 1;
+      return opus_custom_encoder_init_arch(st,
+              opus_custom_mode_create(96000, 1920, NULL), channels, arch);
+   }
+#endif
    ret = opus_custom_encoder_init_arch(st,
            opus_custom_mode_create(48000, 960, NULL), channels, arch);
    if (ret != OPUS_OK)
