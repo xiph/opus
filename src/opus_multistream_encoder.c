@@ -61,6 +61,12 @@ static const VorbisLayout vorbis_mappings[8] = {
       {5, 3, {0, 6, 1, 2, 3, 4, 5, 7}}, /* 8: 7.1 surround */
 };
 
+#ifdef ENABLE_QEXT
+#define MAX_OVERLAP 240
+#else
+#define MAX_OVERLAP 120
+#endif
+
 static opus_val32 *ms_get_preemph_mem(OpusMSEncoder *st)
 {
    int s;
@@ -78,7 +84,7 @@ static opus_val32 *ms_get_preemph_mem(OpusMSEncoder *st)
          ptr += align(mono_size);
    }
    /* void* cast avoids clang -Wcast-align warning */
-   return (opus_val32*)(void*)(ptr+st->layout.nb_channels*120*sizeof(opus_val32));
+   return (opus_val32*)(void*)(ptr+st->layout.nb_channels*MAX_OVERLAP*sizeof(opus_val32));
 }
 
 static opus_val32 *ms_get_window_mem(OpusMSEncoder *st)
@@ -242,12 +248,13 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, celt_glog *ba
 
    upsample = resampling_factor(rate);
    frame_size = len*upsample;
-   freq_size = IMIN(960, frame_size);
 
    /* LM = log2(frame_size / 120) */
    for (LM=0;LM<celt_mode->maxLM;LM++)
       if (celt_mode->shortMdctSize<<LM==frame_size)
          break;
+
+   freq_size = celt_mode->shortMdctSize<<LM;
 
    ALLOC(in, frame_size+overlap, opus_val32);
    ALLOC(x, len, opus_res);
@@ -284,7 +291,7 @@ void surround_analysis(const CELTMode *celt_mode, const void *pcm, celt_glog *ba
       for (frame=0;frame<nb_frames;frame++)
       {
          opus_val32 tmpE[21];
-         clt_mdct_forward(&celt_mode->mdct, in+960*frame, freq, celt_mode->window,
+         clt_mdct_forward(&celt_mode->mdct, in+freq_size*frame, freq, celt_mode->window,
                overlap, celt_mode->maxLM-LM, 1, arch);
          if (upsample != 1)
          {
@@ -421,7 +428,7 @@ opus_int32 opus_multistream_surround_encoder_get_size(int channels, int mapping_
    size = opus_multistream_encoder_get_size(nb_streams, nb_coupled_streams);
    if (channels>2)
    {
-      size += channels*(120*sizeof(opus_val32) + sizeof(opus_val32));
+      size += channels*(MAX_OVERLAP*sizeof(opus_val32) + sizeof(opus_val32));
    }
    return size;
 }
@@ -488,7 +495,7 @@ static int opus_multistream_encoder_init_impl(
    if (mapping_type == MAPPING_TYPE_SURROUND)
    {
       OPUS_CLEAR(ms_get_preemph_mem(st), channels);
-      OPUS_CLEAR(ms_get_window_mem(st), channels*120);
+      OPUS_CLEAR(ms_get_window_mem(st), channels*MAX_OVERLAP);
    }
    st->mapping_type = mapping_type;
    return OPUS_OK;
@@ -869,7 +876,7 @@ int opus_multistream_encode_native
    ALLOC(bandSMR, 21*st->layout.nb_channels, celt_glog);
    if (st->mapping_type == MAPPING_TYPE_SURROUND)
    {
-      surround_analysis(celt_mode, pcm, bandSMR, mem, preemph_mem, frame_size, 120, st->layout.nb_channels, Fs, copy_channel_in, st->arch);
+      surround_analysis(celt_mode, pcm, bandSMR, mem, preemph_mem, frame_size, celt_mode->overlap, st->layout.nb_channels, Fs, copy_channel_in, st->arch);
    }
 
    /* Compute bitrate allocation between streams (this could be a lot better) */
@@ -1280,7 +1287,7 @@ int opus_multistream_encoder_ctl_va_list(OpusMSEncoder *st, int request,
       if (st->mapping_type == MAPPING_TYPE_SURROUND)
       {
          OPUS_CLEAR(ms_get_preemph_mem(st), st->layout.nb_channels);
-         OPUS_CLEAR(ms_get_window_mem(st), st->layout.nb_channels*120);
+         OPUS_CLEAR(ms_get_window_mem(st), st->layout.nb_channels*MAX_OVERLAP);
       }
       for (s=0;s<st->layout.nb_streams;s++)
       {
