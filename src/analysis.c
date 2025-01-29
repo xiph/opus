@@ -178,6 +178,7 @@ static opus_val32 downmix_and_resample(downmix_func downmix, const void *_x, opu
       subframe = subframe*2/3;
       offset = offset*2/3;
    }
+   else if (Fs != 24000) celt_assert(0);
    ALLOC(tmp, subframe, opus_val32);
 
    downmix(_x, tmp, subframe, offset, c1, c2, C);
