@@ -1164,8 +1164,8 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
             extra_bits = IMAX(extra_bits-1, 0);
          }
          extra_bits = IMIN(14, extra_bits);
-         if (encode) cm = cubic_quant(X, N, 1<<extra_bits, B, ctx->ext_ec, gain, ctx->resynth);
-         else cm = cubic_unquant(X, N, 1<<extra_bits, B, ctx->ext_ec, gain);
+         if (encode) cm = cubic_quant(X, N, extra_bits, B, ctx->ext_ec, gain, ctx->resynth);
+         else cm = cubic_unquant(X, N, extra_bits, B, ctx->ext_ec, gain);
 #endif
       } else {
          /* If there's no pulse, fill the band anyway */
@@ -1215,18 +1215,20 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
 #ifdef ENABLE_QEXT
 static unsigned cubic_quant_partition(struct band_ctx *ctx, celt_norm *X, int N, int b, int B, ec_ctx *ec, int LM, opus_val32 gain, int resynth, int encode)
 {
-   int res;
    celt_assert(LM>=0);
    ctx->remaining_bits = ctx->ec->storage*8*8 - ec_tell_frac(ctx->ec);
-   res = IMIN((b+N/2)/8/(N-1),  (ctx->remaining_bits-(ctx->m->logN[ctx->i]+8+8*LM))/8/(N-1));
-   res = IMIN(14, IMAX(0, res));
-   if (LM==0 || res<=2) {
-      int K;
-      K=1<<res;
-      if (B!=1) K=IMAX(1, K-1);
-      if (encode) return cubic_quant(X, N, K, B, ec, gain, resynth);
-      else return cubic_unquant(X, N, K, B, ec, gain);
-      /* Using odd K on transients to avoid adding pre-echo. */
+   b = IMIN(b, ctx->remaining_bits);
+   /* As long as we have at least two bits of depth, split all the way to LM=0 (not -1 like PVQ). */
+   if (LM==0 || b<=2*N<<BITRES) {
+      int res, ret;
+      b = IMIN(b + ((N-1)<<BITRES)/2, ctx->remaining_bits);
+      /* Resolution left after taking into account coding the cube face. */
+      res = (b-(1<<BITRES)-ctx->m->logN[ctx->i]-(LM<<BITRES)-1)/(N-1)>>BITRES;
+      res = IMIN(14, IMAX(0, res));
+      if (encode) ret = cubic_quant(X, N, res, B, ec, gain, resynth);
+      else ret = cubic_unquant(X, N, res, B, ec, gain);
+      ctx->remaining_bits = ctx->ec->storage*8*8 - ec_tell_frac(ctx->ec);
+      return ret;
    } else {
       celt_norm *Y;
       opus_int32 itheta_q30;
@@ -1242,7 +1244,7 @@ static unsigned cubic_quant_partition(struct band_ctx *ctx, celt_norm *X, int N,
       Y = X+N;
       LM -= 1;
       B = (B+1)>>1;
-      theta_res = IMIN(16, res+1);
+      theta_res = IMIN(16, (b>>BITRES)/(N0-1) + 1);
       if (encode) {
          itheta_q30 = stereo_itheta(X, Y, 0, N, ctx->arch);
          qtheta = (itheta_q30+(1<<(29-theta_res)))>>(30-theta_res);
