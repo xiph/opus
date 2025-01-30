@@ -707,6 +707,8 @@ unsigned cubic_quant(celt_norm *X, int N, int res, int B, ec_enc *enc, opus_val3
    SAVE_STACK;
    ALLOC(iy, N, int);
    K = 1<<res;
+   /* Using odd K on transients to avoid adding pre-echo. */
+   if (B!=1) K=IMAX(1, K-1);
    if (K==1) {
       if (resynth) OPUS_CLEAR(X, N);
       return 0;
@@ -741,6 +743,8 @@ unsigned cubic_unquant(celt_norm *X, int N, int res, int B, ec_dec *dec, opus_va
    SAVE_STACK;
    ALLOC(iy, N, int);
    K = 1<<res;
+   /* Using odd K on transients to avoid adding pre-echo. */
+   if (B!=1) K=IMAX(1, K-1);
    if (K==1) {
       OPUS_CLEAR(X, N);
       return 0;
