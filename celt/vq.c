@@ -696,15 +696,17 @@ static void cubic_synthesis(celt_norm *X, int *iy, int N, int K, int face, int s
 #endif
 }
 
-unsigned cubic_quant(celt_norm *X, int N, int K, int B, ec_enc *enc, opus_val32 gain, int resynth) {
+unsigned cubic_quant(celt_norm *X, int N, int res, int B, ec_enc *enc, opus_val32 gain, int resynth) {
    int i;
    int face=0;
+   int K;
    VARDECL(int, iy);
    celt_norm faceval=-1;
    float norm;
    int sign;
    SAVE_STACK;
    ALLOC(iy, N, int);
+   K = 1<<res;
    if (K==1) {
       if (resynth) OPUS_CLEAR(X, N);
       return 0;
@@ -721,7 +723,7 @@ unsigned cubic_quant(celt_norm *X, int N, int K, int B, ec_enc *enc, opus_val32 
    norm = .5f*K/(faceval+EPSILON);
    for (i=0;i<N;i++) {
       iy[i] = IMIN(K-1, (int)floor((X[i]+faceval)*norm));
-      if (i != face) ec_enc_uint(enc, iy[i], K);
+      if (i != face) ec_enc_bits(enc, iy[i], res);
    }
    if (resynth) {
       cubic_synthesis(X, iy, N, K, face, sign, gain);
@@ -730,13 +732,15 @@ unsigned cubic_quant(celt_norm *X, int N, int K, int B, ec_enc *enc, opus_val32 
    return (1<<B)-1;
 }
 
-unsigned cubic_unquant(celt_norm *X, int N, int K, int B, ec_dec *dec, opus_val32 gain) {
+unsigned cubic_unquant(celt_norm *X, int N, int res, int B, ec_dec *dec, opus_val32 gain) {
    int i;
    int face;
    int sign;
+   int K;
    VARDECL(int, iy);
    SAVE_STACK;
    ALLOC(iy, N, int);
+   K = 1<<res;
    if (K==1) {
       OPUS_CLEAR(X, N);
       return 0;
@@ -744,7 +748,7 @@ unsigned cubic_unquant(celt_norm *X, int N, int K, int B, ec_dec *dec, opus_val3
    face = ec_dec_uint(dec, N);
    sign = ec_dec_bits(dec, 1);
    for (i=0;i<N;i++) {
-      if (i != face) iy[i] = ec_dec_uint(dec, K);
+      if (i != face) iy[i] = ec_dec_bits(dec, res);
    }
    iy[face]=0;
    cubic_synthesis(X, iy, N, K, face, sign, gain);
