@@ -1169,6 +1169,7 @@ int opus_multistream_encoder_ctl_va_list(OpusMSEncoder *st, int request,
    case OPUS_GET_FORCE_CHANNELS_REQUEST:
    case OPUS_GET_PREDICTION_DISABLED_REQUEST:
    case OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST:
+   case OPUS_GET_QEXT_REQUEST:
    {
       OpusEncoder *enc;
       /* For int32* GET params, just query the first stream */
@@ -1216,6 +1217,7 @@ int opus_multistream_encoder_ctl_va_list(OpusMSEncoder *st, int request,
    case OPUS_SET_FORCE_CHANNELS_REQUEST:
    case OPUS_SET_PREDICTION_DISABLED_REQUEST:
    case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:
+   case OPUS_SET_QEXT_REQUEST:
    {
       int s;
       /* This works for int32 params */

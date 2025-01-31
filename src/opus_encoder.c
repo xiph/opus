@@ -106,6 +106,9 @@ struct OpusEncoder {
 #ifndef DISABLE_FLOAT_API
     TonalityAnalysisState analysis;
 #endif
+#ifdef ENABLE_QEXT
+   int enable_qext;
+#endif
 
 #define OPUS_ENCODER_RESET_START stream_channels
     int          stream_channels;
@@ -1668,6 +1671,13 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
         * 2 frames: Code 2 with different compressed sizes
         * >2 frames: Code 3 VBR */
        max_header_bytes = nb_frames == 2 ? 3 : (2+(nb_frames-1)*2);
+#ifdef ENABLE_QEXT
+       /* Cover the use of the separators that are the only thing that can get us over
+          once we consider that we need to subtract the extension overhead in each
+          of the individual frames. Also consider that a separator can get our padding
+          from 254 to 255, which costs an extra length byte (at most once). */
+       if (st->enable_qext) max_header_bytes += (nb_frames-1) + 1;
+#endif
 
        if (st->use_vbr || st->user_bitrate_bps==OPUS_BITRATE_MAX)
           repacketize_len = out_data_bytes;
@@ -1904,6 +1914,11 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
        }
 #endif
     } else {
+#ifdef ENABLE_QEXT
+       /* FIXME: Avoid glitching when we switch qext on/off dynamically. */
+       if (st->enable_qext) OPUS_COPY(&pcm_buf[total_buffer*st->channels], pcm, frame_size*st->channels);
+       else
+#endif
        dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     }
 #ifndef FIXED_POINT
@@ -2320,6 +2335,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
 
     celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(start_band));
 
+    data[-1] = 0;
     if (st->mode != MODE_SILK_ONLY)
     {
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(st->use_vbr));
@@ -2362,7 +2378,13 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         /* If false, we already busted the budget and we'll end up with a "PLC frame" */
         if (ec_tell(&enc) <= 8*nb_compr_bytes)
         {
+#ifdef ENABLE_QEXT
+           if (st->mode == MODE_CELT_ONLY) celt_encoder_ctl(celt_enc, OPUS_SET_QEXT(st->enable_qext));
+#endif
            ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
+#ifdef ENABLE_QEXT
+           celt_encoder_ctl(celt_enc, OPUS_SET_QEXT(0));
+#endif
            if (ret < 0)
            {
               RESTORE_STACK;
@@ -2375,6 +2397,9 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
               nb_compr_bytes = ret+redundancy_bytes;
            }
         }
+        celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&st->rangeFinal));
+    } else {
+       st->rangeFinal = enc.rng;
     }
 
     /* 5 ms redundant frame for SILK->CELT */
@@ -2414,9 +2439,9 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
 
     /* Signalling the mode in the first byte */
     data--;
-    data[0] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
+    data[0] |= gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
 
-    st->rangeFinal = enc.rng ^ redundant_rng;
+    st->rangeFinal ^= redundant_rng;
 
     if (to_celt)
         st->prev_mode = MODE_CELT_ONLY;
@@ -3073,6 +3098,28 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->dred_duration;
         }
         break;
+#endif
+#ifdef ENABLE_QEXT
+      case OPUS_SET_QEXT_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          if(value<0 || value>1)
+          {
+             goto bad_arg;
+          }
+          st->enable_qext = value;
+      }
+      break;
+      case OPUS_GET_QEXT_REQUEST:
+      {
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          if (!value)
+          {
+             goto bad_arg;
+          }
+          *value = st->enable_qext;
+      }
+      break;
 #endif
         case OPUS_RESET_STATE:
         {
