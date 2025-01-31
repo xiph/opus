@@ -146,6 +146,9 @@ void print_usage( char* argv[] )
 #endif
     fprintf(stderr, "-lossfile <file>     : simulate packet loss, reading loss from file\n" );
     fprintf(stderr, "-dred <frames>       : add Deep REDundancy (in units of 10-ms frames)\n" );
+#ifdef ENABLE_QEXT
+    fprintf(stderr, "-qext                : enable QEXT\n" );
+#endif
 }
 
 #define FORMAT_S16_LE 0
@@ -432,6 +435,9 @@ int main(int argc, char *argv[])
     FILE *packet_loss_file=NULL;
     int dred_duration=0;
     int ignore_extensions=0;
+#ifdef ENABLE_QEXT
+    int enable_qext=0;
+#endif
 #ifdef ENABLE_OSCE_TRAINING_DATA
     int silk_random_switching = 0;
     int silk_frame_counter = 0;
@@ -693,6 +699,12 @@ int main(int argc, char *argv[])
             check_decoder_option(encode_only, "-ignore_extensions");
             ignore_extensions = 1;
             args++;
+#ifdef ENABLE_QEXT
+        } else if( strcmp( argv[ args ], "-qext" ) == 0 ) {
+            check_encoder_option(decode_only, "-qext");
+            enable_qext = 1;
+            args++;
+#endif
 #ifdef ENABLE_OSCE_TRAINING_DATA
         } else if( strcmp( argv[ args ], "-silk_random_switching" ) == 0 ){
             silk_random_switching = atoi( argv[ args + 1 ] );
@@ -770,6 +782,9 @@ int main(int argc, char *argv[])
 #ifdef ENABLE_OSCE_TRAINING_DATA
        opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY));
        srand(0);
+#endif
+#ifdef ENABLE_QEXT
+       opus_encoder_ctl(enc, OPUS_SET_QEXT(enable_qext));
 #endif
     }
     if (!encode_only)
