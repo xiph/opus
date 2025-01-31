@@ -106,6 +106,9 @@ struct OpusEncoder {
 #ifndef DISABLE_FLOAT_API
     TonalityAnalysisState analysis;
 #endif
+#ifdef ENABLE_QEXT
+   int enable_qext;
+#endif
 
 #define OPUS_ENCODER_RESET_START stream_channels
     int          stream_channels;
@@ -1904,6 +1907,11 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
        }
 #endif
     } else {
+#ifdef ENABLE_QEXT
+       /* FIXME: Avoid glitching when we switch qext on/off dynamically. */
+       if (st->enable_qext) OPUS_COPY(&pcm_buf[total_buffer*st->channels], pcm, frame_size*st->channels);
+       else
+#endif
        dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     }
 #ifndef FIXED_POINT
@@ -2320,6 +2328,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
 
     celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(start_band));
 
+    data[-1] = 0;
     if (st->mode != MODE_SILK_ONLY)
     {
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(st->use_vbr));
@@ -2375,6 +2384,9 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
               nb_compr_bytes = ret+redundancy_bytes;
            }
         }
+        celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&st->rangeFinal));
+    } else {
+       st->rangeFinal = enc.rng;
     }
 
     /* 5 ms redundant frame for SILK->CELT */
@@ -2414,9 +2426,9 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
 
     /* Signalling the mode in the first byte */
     data--;
-    data[0] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
+    data[0] |= gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
 
-    st->rangeFinal = enc.rng ^ redundant_rng;
+    st->rangeFinal ^= redundant_rng;
 
     if (to_celt)
         st->prev_mode = MODE_CELT_ONLY;
@@ -3073,6 +3085,29 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->dred_duration;
         }
         break;
+#endif
+#ifdef ENABLE_QEXT
+      case OPUS_SET_QEXT_REQUEST:
+      {
+          opus_int32 value = va_arg(ap, opus_int32);
+          if(value<0 || value>1)
+          {
+             goto bad_arg;
+          }
+          st->enable_qext = value;
+          celt_encoder_ctl(celt_enc, OPUS_SET_QEXT(st->enable_qext));
+      }
+      break;
+      case OPUS_GET_QEXT_REQUEST:
+      {
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          if (!value)
+          {
+             goto bad_arg;
+          }
+          *value = st->enable_qext;
+      }
+      break;
 #endif
         case OPUS_RESET_STATE:
         {
