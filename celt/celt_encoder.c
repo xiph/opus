@@ -2479,9 +2479,12 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       if (qext_bytes > 20) {
          new_compressedBytes = nbCompressedBytes-qext_bytes-padding_len_bytes-1;
          ec_enc_shrink(enc, new_compressedBytes);
+         if (compressed == NULL) {
+            compressed = enc->buf;
+         }
+         compressed[-1] |= 0x03; /* Code 3 packet */
          enc->buf += 1+padding_len_bytes;
          OPUS_MOVE(compressed+1+padding_len_bytes, compressed, new_compressedBytes);
-         compressed[-1] |= 0x03; /* Code 3 packet */
          compressed[0] = 0x41; /* Set padding */
          for (i=0;i<padding_len_bytes-1;i++) compressed[i+1] = 255;
          compressed[padding_len_bytes] = qext_bytes%254 == 0 ? 254 : qext_bytes%254;
