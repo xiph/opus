@@ -1569,7 +1569,41 @@ int opus_decoder_dred_decode(OpusDecoder *st, const OpusDRED *dred, opus_int32 d
    if (ret > 0)
    {
       for (i=0;i<ret*st->channels;i++)
-         pcm[i] = FLOAT2INT16(out[i]);
+         pcm[i] = RES2INT16(out[i]);
+   }
+   RESTORE_STACK;
+   return ret;
+#else
+   (void)st;
+   (void)dred;
+   (void)dred_offset;
+   (void)pcm;
+   (void)frame_size;
+   return OPUS_UNIMPLEMENTED;
+#endif
+}
+
+int opus_decoder_dred_decode24(OpusDecoder *st, const OpusDRED *dred, opus_int32 dred_offset, opus_int32 *pcm, opus_int32 frame_size)
+{
+#ifdef ENABLE_DRED
+   VARDECL(float, out);
+   int ret, i;
+   ALLOC_STACK;
+
+   if(frame_size<=0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
+
+   celt_assert(st->channels == 1 || st->channels == 2);
+   ALLOC(out, frame_size*st->channels, float);
+
+   ret = opus_decode_native(st, NULL, 0, out, frame_size, 0, 0, NULL, 1, dred, dred_offset);
+   if (ret > 0)
+   {
+      for (i=0;i<ret*st->channels;i++)
+         pcm[i] = RES2INT24(out[i]);
    }
    RESTORE_STACK;
    return ret;

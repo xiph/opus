@@ -657,7 +657,7 @@ OPUS_EXPORT int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const
   */
 OPUS_EXPORT int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src, OpusDRED *dst);
 
-/** Decode audio from an Opus DRED packet with floating point output.
+/** Decode audio from an Opus DRED packet with 16-bit output.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
   * @param [in] dred <tt>OpusDRED*</tt>: DRED state
   * @param [in] dred_offset <tt>opus_int32</tt>: position of the redundancy to decode (in samples before the beginning of the real audio data in the packet).
@@ -668,6 +668,18 @@ OPUS_EXPORT int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src
   * @returns Number of decoded samples or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_decoder_dred_decode(OpusDecoder *st, const OpusDRED *dred, opus_int32 dred_offset, opus_int16 *pcm, opus_int32 frame_size);
+
+/** Decode audio from an Opus DRED packet with 24-bit output.
+  * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
+  * @param [in] dred <tt>OpusDRED*</tt>: DRED state
+  * @param [in] dred_offset <tt>opus_int32</tt>: position of the redundancy to decode (in samples before the beginning of the real audio data in the packet).
+  * @param [out] pcm <tt>opus_int32*</tt>: Output signal (interleaved if 2 channels). length
+  *  is frame_size*channels*sizeof(opus_int16)
+  * @param [in] frame_size Number of samples per channel to decode in \a pcm.
+  *  frame_size <b>must</b> be a multiple of 2.5 ms.
+  * @returns Number of decoded samples or @ref opus_errorcodes
+  */
+OPUS_EXPORT int opus_decoder_dred_decode24(OpusDecoder *st, const OpusDRED *dred, opus_int32 dred_offset, opus_int32 *pcm, opus_int32 frame_size);
 
 /** Decode audio from an Opus DRED packet with floating point output.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
