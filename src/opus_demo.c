@@ -145,6 +145,17 @@ void print_usage( char* argv[] )
 #endif
 }
 
+#define FORMAT_S16_LE 0
+#define FORMAT_S24_LE 1
+#define FORMAT_F32_LE 2
+
+static const int format_size[3] = {2, 3, 4};
+
+typedef union {
+    opus_int32 i;
+    float f;
+} float_bits;
+
 static void int_to_char(opus_uint32 i, unsigned char ch[4])
 {
     ch[0] = i>>24;
@@ -383,9 +394,10 @@ int main(int argc, char *argv[])
     opus_int32 count=0, count_act=0;
     int k;
     opus_int32 skip=0;
+    int format=FORMAT_S16_LE;
     int stop=0;
-    short *in=NULL;
-    short *out=NULL;
+    opus_int32 *in=NULL;
+    opus_int32 *out=NULL;
     int application=OPUS_APPLICATION_AUDIO;
     double bits=0.0, bits_max=0.0, bits_act=0.0, bits2=0.0, nrg;
     double tot_samples=0;
@@ -579,6 +591,15 @@ int main(int argc, char *argv[])
             check_decoder_option(encode_only, "-dec_complexity");
             dec_complexity = atoi( argv[ args + 1 ] );
             args += 2;
+        } else if( strcmp( argv[ args ], "-16" ) == 0 ) {
+           format = FORMAT_S16_LE;
+           args++;
+        } else if( strcmp( argv[ args ], "-24" ) == 0 ) {
+           format = FORMAT_S24_LE;
+           args++;
+        } else if( strcmp( argv[ args ], "-f32" ) == 0 ) {
+           format = FORMAT_F32_LE;
+           args++;
         } else if( strcmp( argv[ args ], "-inbandfec" ) == 0 ) {
             use_inbandfec = 1;
             args++;
@@ -805,10 +826,10 @@ int main(int argc, char *argv[])
                        (long)sampling_rate, bitrate_bps*0.001,
                        bandwidth_string, frame_size);
 
-    in = (short*)malloc(max_frame_size*channels*sizeof(short));
-    out = (short*)malloc(max_frame_size*channels*sizeof(short));
+    in = (opus_int32*)malloc(max_frame_size*channels*sizeof(opus_int32));
+    out = (opus_int32*)malloc(max_frame_size*channels*sizeof(opus_int32));
     /* We need to allocate for 16-bit PCM data, but we store it as unsigned char. */
-    fbytes = (unsigned char*)malloc(max_frame_size*channels*sizeof(short));
+    fbytes = (unsigned char*)malloc(max_frame_size*channels*sizeof(opus_int32));
     data = (unsigned char*)calloc(max_payload_bytes,sizeof(unsigned char));
     if(delayed_decision)
     {
@@ -914,15 +935,32 @@ int main(int argc, char *argv[])
                 }
             }
 #endif
-            num_read = fread(fbytes, sizeof(short)*channels, frame_size-remaining, fin);
+            num_read = fread(fbytes, format_size[format]*channels, frame_size-remaining, fin);
             curr_read = (int)num_read;
             tot_in += curr_read;
-            for(i=0;i<curr_read*channels;i++)
-            {
-                opus_int32 s;
-                s=fbytes[2*i+1]<<8|fbytes[2*i];
-                s=((s&0xFFFF)^0x8000)-0x8000;
-                in[i+remaining*channels]=s;
+            if (format == FORMAT_S16_LE) {
+               for(i=0;i<frame_size*channels;i++)
+               {
+                  opus_int32 s;
+                  s=fbytes[2*i+1]<<8|fbytes[2*i];
+                  s=((s&0xFFFF)^0x8000)-0x8000;
+                  in[i]=s*256;
+               }
+            } else if (format == FORMAT_S24_LE) {
+               for(i=0;i<frame_size*channels;i++)
+               {
+                  opus_int32 s;
+                  s=fbytes[3*i+2]<<16|fbytes[3*i+1]<<8|fbytes[3*i];
+                  s=((s&0xFFFFFF)^0x800000)-0x800000;
+                  in[i]=s;
+               }
+            } else if (format == FORMAT_F32_LE) {
+               for(i=0;i<frame_size*channels;i++)
+               {
+                  float_bits s;
+                  s.i=fbytes[4*i+3]<<24|fbytes[4*i+2]<<16|fbytes[4*i+1]<<8|fbytes[4*i];
+                  in[i]=(int)floor(.5 + s.f*8388608);
+               }
             }
             if (curr_read+remaining < frame_size)
             {
@@ -931,7 +969,7 @@ int main(int argc, char *argv[])
                 if (encode_only || decode_only)
                    stop = 1;
             }
-            len = opus_encode(enc, in, frame_size, data, max_payload_bytes);
+            len = opus_encode24(enc, in, frame_size, data, max_payload_bytes);
             if (len < 0)
             {
                 fprintf (stderr, "opus_encode() returned %d\n", len);
@@ -1034,16 +1072,16 @@ int main(int argc, char *argv[])
                 opus_int32 output_samples=0;
                 if (fr == lost_count-1 && opus_packet_has_lbrr(data, len)) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
-                   output_samples = opus_decode(dec, data, len, out, output_samples, 1);
+                   output_samples = opus_decode24(dec, data, len, out, output_samples, 1);
                 } else if (fr < lost_count) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                    if (dred_input > 0)
-                      output_samples = opus_decoder_dred_decode(dec, dred, (lost_count-fr)*output_samples, out, output_samples);
+                      output_samples = opus_decoder_dred_decode24(dec, dred, (lost_count-fr)*output_samples, out, output_samples);
                    else
-                      output_samples = opus_decode(dec, NULL, 0, out, output_samples, 0);
+                      output_samples = opus_decode24(dec, NULL, 0, out, output_samples, 0);
                 } else {
                    output_samples = max_frame_size;
-                   output_samples = opus_decode(dec, data, len, out, output_samples, 0);
+                   output_samples = opus_decode24(dec, data, len, out, output_samples, 0);
                 }
                 if (output_samples>0)
                 {
@@ -1054,14 +1092,39 @@ int main(int argc, char *argv[])
                     }
                     if (output_samples>skip) {
                        int i;
-                       for(i=0;i<(output_samples-skip)*channels;i++)
-                       {
-                          short s;
-                          s=out[i+(skip*channels)];
-                          fbytes[2*i]=s&0xFF;
-                          fbytes[2*i+1]=(s>>8)&0xFF;
+                       if (format == FORMAT_S16_LE) {
+                          for(i=0;i<(output_samples-skip)*channels;i++)
+                          {
+                             opus_int32 s;
+                             s=(out[i+(skip*channels)]+128)>>8;
+                             if (s > 32767) s = 32767;
+                             if (s < -32767) s = -32767;
+                             fbytes[2*i]=s&0xFF;
+                             fbytes[2*i+1]=(s>>8)&0xFF;
+                          }
+                       } else if (format == FORMAT_S24_LE) {
+                          for(i=0;i<(output_samples-skip)*channels;i++)
+                          {
+                             opus_int32 s;
+                             s=out[i+(skip*channels)];
+                             if (s > 8388607) s = 8388607;
+                             if (s < -8388607) s = -8388607;
+                             fbytes[3*i]=s&0xFF;
+                             fbytes[3*i+1]=(s>>8)&0xFF;
+                             fbytes[3*i+2]=(s>>16)&0xFF;
+                          }
+                       } else if (format == FORMAT_F32_LE) {
+                          for(i=0;i<(output_samples-skip)*channels;i++)
+                          {
+                             float_bits s;
+                             s.f=out[i+(skip*channels)]*(1.f/8388608.f);
+                             fbytes[4*i]=s.i&0xFF;
+                             fbytes[4*i+1]=(s.i>>8)&0xFF;
+                             fbytes[4*i+2]=(s.i>>16)&0xFF;
+                             fbytes[4*i+3]=(s.i>>24)&0xFF;
+                          }
                        }
-                       if (fwrite(fbytes, sizeof(short)*channels, output_samples-skip, fout) != (unsigned)(output_samples-skip)){
+                       if (fwrite(fbytes, format_size[format]*channels, output_samples-skip, fout) != (unsigned)(output_samples-skip)){
                           fprintf(stderr, "Error writing.\n");
                           goto failure;
                        }
