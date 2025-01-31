@@ -157,10 +157,10 @@ typedef opus_val16 opus_res;
 #define RES_SHIFT 0
 #define SIG2RES(a)      SIG2WORD16(a)
 #define RES2INT16(a)    (a)
-#define RES2INT24(a)    SHL32(EXTEND32(a), RES_SHIFT)
+#define RES2INT24(a)    SHL32(EXTEND32(a), 8)
 #define RES2FLOAT(a)    ((1.f/32768.f)*(a))
 #define INT16TORES(a)   (a)
-#define INT24TORES(a)   SAT16(PSHR32(a, RES_SHIFT))
+#define INT24TORES(a)   SAT16(PSHR32(a, 8))
 #define ADD_RES(a, b)   SAT16(ADD32((a), (b)));
 #define FLOAT2RES(a)    FLOAT2INT16(a)
 #define RES2SIG(a)      SHL32(EXTEND32(a), SIG_SHIFT)
