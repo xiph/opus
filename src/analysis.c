@@ -205,6 +205,9 @@ static opus_val32 downmix_and_resample(downmix_func downmix, const void *_x, opu
       silk_resampler_down2_hp(S, y, tmp3x, 3*subframe);
    }
    RESTORE_STACK;
+#ifndef FIXED_POINT
+   ret *= 1.f/32768/32768;
+#endif
    return ret;
 }
 
