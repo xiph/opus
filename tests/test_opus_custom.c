@@ -495,8 +495,8 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
       params.sample_rate = RAND_SAMPLE(sampling_rates);
       params.custom_encode = 1;
       params.custom_decode = 1;
-      /* Can only mix and match Opus and OpusCustom with 48kHz */
-      if (params.sample_rate == 48000) {
+      /* Can only mix and match Opus and OpusCustom with 48kHz (and optionally 96 kHz). */
+      if (params.sample_rate == 48000 || params.sample_rate == 96000) {
          params.custom_encode = RAND_SAMPLE(use_custom_encode);
          params.custom_decode = RAND_SAMPLE(use_custom_decode);
 
