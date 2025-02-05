@@ -191,7 +191,7 @@ static opus_uint32 opus_cpu_capabilities(void)
   return flags;
 }
 
-#elif defined(__FreeBSD__)
+#elif defined(HAVE_ELF_AUX_INFO)
 #include <sys/auxv.h>
 
 static opus_uint32 opus_cpu_capabilities(void)
@@ -237,6 +237,38 @@ static opus_uint32 opus_cpu_capabilities(void)
 #endif
 
   return (flags);
+}
+
+#elif defined(__OpenBSD__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <machine/armreg.h>
+#include <machine/cpu.h>
+
+static opus_uint32 opus_cpu_capabilities(void)
+{
+  opus_uint32 flags = 0;
+
+#if defined(OPUS_ARM_MAY_HAVE_DOTPROD) && defined(CPU_ID_AA64ISAR0)
+  const int isar0_mib[] = { CTL_MACHDEP, CPU_ID_AA64ISAR0 };
+  uint64_t isar0;
+  size_t len = sizeof(isar0);
+
+  if (sysctl(isar0_mib, 2, &isar0, &len, NULL, 0) != -1)
+  {
+    if (ID_AA64ISAR0_DP(isar0) >= ID_AA64ISAR0_DP_IMPL)
+      flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
+  }
+#endif
+
+#if defined(OPUS_ARM_PRESUME_NEON_INTR) \
+ || defined(OPUS_ARM_PRESUME_AARCH64_NEON_INTR)
+  flags |= OPUS_CPU_ARM_EDSP_FLAG | OPUS_CPU_ARM_MEDIA_FLAG | OPUS_CPU_ARM_NEON_FLAG;
+# if defined(OPUS_ARM_PRESUME_DOTPROD)
+  flags |= OPUS_CPU_ARM_DOTPROD_FLAG;
+# endif
+#endif
+  return flags;
 }
 
 #else
