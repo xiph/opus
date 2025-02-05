@@ -5,7 +5,12 @@ model=opus_data-$1.tar.gz
 
 if [ ! -f $model ]; then
         echo "Downloading latest model"
-        wget https://media.xiph.org/opus/models/$model
+        if command -v wget >/dev/null; then
+          wget -O $model https://media.xiph.org/opus/models/$model
+        else
+          # if wget is not available use curl
+          curl -o $model https://media.xiph.org/opus/models/$model
+        fi
 fi
 
 if command -v sha256sum
