@@ -6,7 +6,7 @@ from utils.complexity import _conv1d_flop_count
 from utils.layers.silk_upsampler import SilkUpsampler
 from utils.layers.limited_adaptive_conv1d import LimitedAdaptiveConv1d
 from utils.layers.td_shaper import TDShaper
-
+from dnntools.quantization.softquant import soft_quant
 
 DUMP=False
 
@@ -30,7 +30,8 @@ class FloatFeatureNet(nn.Module):
                  feature_dim=84,
                  num_channels=256,
                  upsamp_factor=2,
-                 lookahead=False):
+                 lookahead=False,
+                 softquant=False):
 
         super().__init__()
 
@@ -45,6 +46,11 @@ class FloatFeatureNet(nn.Module):
         self.gru = nn.GRU(num_channels, num_channels, batch_first=True)
 
         self.tconv = nn.ConvTranspose1d(num_channels, num_channels, upsamp_factor, upsamp_factor)
+
+        if softquant:
+            self.conv2 = soft_quant(self.conv2)
+            self.gru   = soft_quant(self.gru, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.tconv = soft_quant(self.tconv)
 
     def flop_count(self, rate=100):
         count = 0
@@ -125,6 +131,8 @@ class BBWENet(torch.nn.Module):
                  func_extension=True,
                  shaper='TDShaper',
                  bias=False,
+                 softquant=False,
+                 lookahead=False,
                  ):
 
         super().__init__()
@@ -152,14 +160,14 @@ class BBWENet(torch.nn.Module):
         self.upsampler = SilkUpsampler()
 
         # feature net
-        self.feature_net = FloatFeatureNet(feature_dim=feature_dim, num_channels=cond_dim)
+        self.feature_net = FloatFeatureNet(feature_dim=feature_dim, num_channels=cond_dim, softquant=softquant, lookahead=lookahead)
 
         # non-linear transforms
 
         if self.shape_extension:
             if self.shaper == 'TDShaper':
-                self.tdshape1 = TDShaper(cond_dim, frame_size=self.frame_size32, avg_pool_k=avg_pool_k32, interpolate_k=interpolate_k32, bias=bias)
-                self.tdshape2 = TDShaper(cond_dim, frame_size=self.frame_size48, avg_pool_k=avg_pool_k48, interpolate_k=interpolate_k48, bias=bias)
+                self.tdshape1 = TDShaper(cond_dim, frame_size=self.frame_size32, avg_pool_k=avg_pool_k32, interpolate_k=interpolate_k32, bias=bias, softquant=softquant)
+                self.tdshape2 = TDShaper(cond_dim, frame_size=self.frame_size48, avg_pool_k=avg_pool_k48, interpolate_k=interpolate_k48, bias=bias, softquant=softquant)
             elif self.shaper == 'Folder':
                 self.tdshape1 = Folder(8, frame_size=self.frame_size32)
                 self.tdshape2 = Folder(12, frame_size=self.frame_size48)
@@ -178,9 +186,9 @@ class BBWENet(torch.nn.Module):
         if self.func_extension: latent_channels += 1
 
         # spectral shaping
-        self.af1 = LimitedAdaptiveConv1d(1, latent_channels, self.kernel_size16, cond_dim, frame_size=self.frame_size16, overlap_size=self.frame_size16//2, use_bias=False, padding=[self.kernel_size16 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2)
-        self.af2 = LimitedAdaptiveConv1d(latent_channels, latent_channels, self.kernel_size32, cond_dim, frame_size=self.frame_size32, overlap_size=self.frame_size32//2, use_bias=False, padding=[self.kernel_size32 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2)
-        self.af3 = LimitedAdaptiveConv1d(latent_channels, 1, self.kernel_size48, cond_dim, frame_size=self.frame_size48, overlap_size=self.frame_size48//2, use_bias=False, padding=[self.kernel_size48 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2)
+        self.af1 = LimitedAdaptiveConv1d(1, latent_channels, self.kernel_size16, cond_dim, frame_size=self.frame_size16, overlap_size=self.frame_size16//2, use_bias=False, padding=[self.kernel_size16 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2, softquant=softquant)
+        self.af2 = LimitedAdaptiveConv1d(latent_channels, latent_channels, self.kernel_size32, cond_dim, frame_size=self.frame_size32, overlap_size=self.frame_size32//2, use_bias=False, padding=[self.kernel_size32 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2, softquant=softquant)
+        self.af3 = LimitedAdaptiveConv1d(latent_channels, 1, self.kernel_size48, cond_dim, frame_size=self.frame_size48, overlap_size=self.frame_size48//2, use_bias=False, padding=[self.kernel_size48 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2, softquant=softquant)
 
 
     def flop_count(self, rate=16000, verbose=False):
