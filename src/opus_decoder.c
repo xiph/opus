@@ -1,4 +1,5 @@
 /* Copyright (c) 2010 Xiph.Org Foundation, Skype Limited
+   Copyright (c) 2024 Arm Limited
    Written by Jean-Marc Valin and Koen Vos */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -862,7 +863,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
       opus_int32 len, opus_int16 *pcm, int frame_size, int decode_fec)
 {
    VARDECL(float, out);
-   int ret, i;
+   int ret;
    int nb_samples;
    ALLOC_STACK;
 
@@ -886,9 +887,9 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
    ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 1, NULL, 0);
    if (ret > 0)
    {
-      for (i=0;i<ret*st->channels;i++)
-         pcm[i] = FLOAT2INT16(out[i]);
+      celt_float2int16(out, pcm, ret*st->channels, st->arch);
    }
+
    RESTORE_STACK;
    return ret;
 }
