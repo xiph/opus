@@ -315,7 +315,7 @@ print("summary:")
 
 print(f"generator: {count_parameters(model.cpu()) / 1e6:5.3f} M parameters")
 if hasattr(model, 'flop_count'):
-    print(f"generator: {model.flop_count(48000) / 1e6:5.3f} MFLOPS")
+    print(f"generator: {model.flop_count(16000) / 1e6:5.3f} MFLOPS")
 print(f"discriminator: {count_parameters(disc.cpu()) / 1e6:5.3f} M parameters")
 
 
