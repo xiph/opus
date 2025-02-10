@@ -537,51 +537,8 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                   This can only be true if its length is at least 255 bytes
                    (although sometimes it requires even more).
                   Currently we do not check for that, and just always use the
-                   repeat mechanism if we can. */
-#if 0
-               if (frame_repeat_idx[nb_frames-1]+1 >=
-                frame_max_idx[nb_frames-1]
-                && extensions[frame_repeat_idx[nb_frames-1]].len >= 255) {
-                  opus_int32 savings;
-                  opus_int32 last_idx;
-                  int last_f;
-                  /* Start by assuming we will save one extension ID for each
-                      repeated extension in each future frame, as well as one
-                      frame separator. */
-                  savings = (nb_frames - 1 - f)*((repeat_count + 1) + 1);
-                  /* Count up the bytes we still need to spend on frame
-                      separators to code any non-repeated extensions.
-                     Also find the frame with the new last extension.
-                     Fortunately, we know that no future frames will try to use
-                      a repeat, because we know the last frame will not have
-                      that extension. */
-                  last_f = f;
-                  last_idx = i;
-                  for (g=f+1; g<nb_frames; g++) {
-                     if (frame_repeat_idx[g]+1 < frame_max_idx[g]) {
-                        savings--;
-                        if (last_f != g-1) savings--;
-                        last_f = g;
-                        last_idx = frame_repeat_idx[g];
-                     }
-                  }
-                  if (last_idx+1 < frame_max_idx[last_f]) {
-                     last_idx = frame_max_idx[last_f] - 1;
-                     /* If the new last extension is a long extension, we no
-                         longer need to code its length. */
-                     if (extensions[last_idx].id >= 32) {
-                        savings += extensions[last_idx].len/255 + 1;
-                     }
-                     savings -=
-                      (extensions[frame_repeat_idx[nb_frames-1]].len/255 + 1);
-                     if (savings < 0) break;
-                  }
-                  /* N.B., we are only considering the case where the last
-                      repeated extension is a long extension, so we do not
-                      check if we can save a frame separator by using L=0. */
-                  celt_assert(savings >= 0);
-               }
-#endif
+                   repeat mechanism if we can.
+                  See git history for code that does the check. */
                /* Advance the repeat pointers. */
                for (g=f+1; g<nb_frames; g++)
                {
