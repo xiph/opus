@@ -56,7 +56,7 @@
 
 #define CELT_SIG_SCALE 32768.f
 
-#define CELT_FATAL(str) celt_fatal(str, __FILE__, __LINE__);
+#define CELT_FATAL(str) celt_fatal(str, __FILE__, __LINE__)
 
 #if defined(ENABLE_ASSERTIONS) || defined(ENABLE_HARDENING)
 #ifdef __GNUC__
