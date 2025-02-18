@@ -1384,7 +1384,8 @@ static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem,
 }
 
 static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem, int CC, int N,
-      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes, AnalysisInfo *analysis, opus_val16 tone_freq, opus_val32 toneishness ARG_QEXT(int qext_scale))
+      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int complexity,
+      int nbAvailableBytes, AnalysisInfo *analysis, opus_val16 tone_freq, opus_val32 toneishness ARG_QEXT(int qext_scale))
 {
    int c;
    VARDECL(celt_sig, _pre);
@@ -1414,8 +1415,31 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       OPUS_COPY(pre[c]+max_period, in+c*(N+overlap)+overlap, N);
    } while (++c<CC);
 
-   if (enabled)
-   {
+   /* If we detect that the signal is dominated by a single tone, don't rely on the standard pitch
+      estimator, as it can become unreliable. */
+   if (enabled && toneishness > QCONST32(.99f, 29)) {
+      int multiple=1;
+      /* Using aliased version of the postfilter above 24 kHz.
+         First value is purposely slightly above pi to avoid triggering for Fs=48kHz. */
+      if (QEXT_SCALE(tone_freq) >= QCONST16(3.1416f, 13)) tone_freq = QCONST16(3.141593f, 13) - tone_freq;
+      /* If the pitch is too high for our post-filter, apply pitch doubling until
+         we can get something that fits (not ideal, but better than nothing). */
+      while (QEXT_SCALE(tone_freq) >= multiple*QCONST16(0.39f, 13)) multiple++;
+      tone_freq /= multiple;
+      if (QEXT_SCALE(tone_freq) > QCONST16(0.006148f, 13)) {
+#ifdef FIXED_POINT
+         pitch_index = IMIN(51472/tone_freq, max_period-QEXT_SCALE(2));
+#else
+         pitch_index = IMIN((int)floor(.5+2.f*M_PI/tone_freq), max_period-QEXT_SCALE(2));
+#endif
+      } else {
+         /* If the pitch is too low, using a very high pitch will actually give us an improvement
+            due to the DC component of the filter that will be close to our tone. Again, not ideal,
+            but if we only have a single tone, it's better than nothing. */
+         pitch_index = min_period;
+      }
+      gain1 = QCONST16(.75f, 15);
+   } else if (enabled && complexity >= 5) {
       VARDECL(opus_val16, pitch_buf);
       ALLOC(pitch_buf, (max_period+N)>>1, opus_val16);
 
@@ -1432,31 +1456,6 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       if (pitch_index > max_period-QEXT_SCALE(2))
          pitch_index = max_period-QEXT_SCALE(2);
       gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
-      /* If we detect that the signal is dominated by a single tone, don't rely on the standard pitch
-         estimator, as it can become unreliable. */
-      if (toneishness > QCONST32(.99f, 29)) {
-         int multiple=1;
-         /* Using aliased version of the postfilter above 24 kHz.
-            First value is purposely slightly above pi to avoid triggering for Fs=48kHz. */
-         if (QEXT_SCALE(tone_freq) >= QCONST16(3.1416f, 13)) tone_freq = QCONST16(3.141593f, 13) - tone_freq;
-         /* If the pitch is too high for our post-filter, apply pitch doubling until
-            we can get something that fits (not ideal, but better than nothing). */
-         while (QEXT_SCALE(tone_freq) >= multiple*QCONST16(0.39f, 13)) multiple++;
-         tone_freq /= multiple;
-         if (QEXT_SCALE(tone_freq) > QCONST16(0.006148f, 13)) {
-#ifdef FIXED_POINT
-            pitch_index = IMIN(51472/tone_freq, max_period-QEXT_SCALE(2));
-#else
-            pitch_index = IMIN((int)floor(.5+2.f*M_PI/tone_freq), max_period-QEXT_SCALE(2));
-#endif
-         } else {
-            /* If the pitch is too low, using a very high pitch will actually give us an improvement
-               due to the DC component of the filter that will be close to our tone. Again, not ideal,
-               but if we only have a single tone, it's better than nothing. */
-            pitch_index = min_period;
-         }
-         gain1 = QCONST16(.75f, 15);
-      }
       /*printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);*/
       if (st->loss_rate>2)
          gain1 = HALF32(gain1);
@@ -1958,11 +1957,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    {
       int enabled;
       int qg;
-      enabled = ((st->lfe&&nbAvailableBytes>3) || nbAvailableBytes>12*C) && !hybrid && !silence && tell+16<=total_bits && !st->disable_pf
-            && st->complexity >= 5;
+      enabled = ((st->lfe&&nbAvailableBytes>3) || nbAvailableBytes>12*C) && !hybrid && !silence && tell+16<=total_bits && !st->disable_pf;
 
       prefilter_tapset = st->tapset_decision;
-      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes, &st->analysis, tone_freq, toneishness ARG_QEXT(qext_scale));
+      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, st->complexity, nbAvailableBytes, &st->analysis, tone_freq, toneishness ARG_QEXT(qext_scale));
       if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && (!st->analysis.valid || st->analysis.tonality > .3)
             && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
          pitch_change = 1;
