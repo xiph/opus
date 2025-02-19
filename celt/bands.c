@@ -112,36 +112,17 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
          maxval = celt_maxabs32(&X[c*N+(eBands[i]<<LM)], (eBands[i+1]-eBands[i])<<LM);
          if (maxval > 0)
          {
-            int shift, shift2;
-            shift = celt_ilog2(maxval) - 14;
-            shift2 = (((m->logN[i]>>BITRES)+LM+1)>>1);
-            j=eBands[i]<<LM;
-            if (shift>0)
-            {
-               do {
-                  sum = ADD32(sum, SHR32(MULT16_16(EXTRACT16(SHR32(X[j+c*N],shift)),
-                        EXTRACT16(SHR32(X[j+c*N],shift))), 2*shift2));
-               } while (++j<eBands[i+1]<<LM);
-            } else {
-               do {
-                  sum = ADD32(sum, SHR32(MULT16_16(EXTRACT16(SHL32(X[j+c*N],-shift)),
-                        EXTRACT16(SHL32(X[j+c*N],-shift))), 2*shift2));
-               } while (++j<eBands[i+1]<<LM);
-            }
-            shift+=shift2;
-            while (sum < 1<<28) {
-               sum <<=2;
-               shift -= 1;
-            }
-            /* We're adding one here to ensure the normalized band isn't larger than unity norm */
-            bandE[i+c*m->nbEBands] = EPSILON+VSHR32(celt_sqrt(sum),-shift);
+            int shift = IMAX(0, 30 - celt_ilog2(maxval+(maxval>>14)+1) - ((((m->logN[i]+7)>>BITRES)+LM+1)>>1));
+            j=eBands[i]<<LM; do {
+               opus_val32 x = SHL32(X[j+c*N],shift);
+               sum = ADD32(sum, MULT32_32_Q31(x, x));
+            } while (++j<eBands[i+1]<<LM);
+            bandE[i+c*m->nbEBands] = EPSILON+MAX32(maxval, PSHR32(celt_sqrt32(SHR32(sum,1)), shift));
          } else {
             bandE[i+c*m->nbEBands] = EPSILON;
          }
-         /*printf ("%f ", bandE[i+c*m->nbEBands]);*/
       }
    } while (++c<C);
-   /*printf ("\n");*/
 }
 
 /* Normalise each band such that the energy is one. */
