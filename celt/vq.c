@@ -702,7 +702,7 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
 {
    int i;
    int itheta;
-   opus_val16 mid, side;
+   opus_val32 mid, side;
    opus_val32 Emid, Eside;
 
    Emid = Eside = 0;
@@ -720,8 +720,8 @@ opus_int32 stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int
       Emid += celt_inner_prod_norm_shift(X, X, N, arch);
       Eside += celt_inner_prod_norm_shift(Y, Y, N, arch);
    }
-   mid = celt_sqrt(Emid);
-   side = celt_sqrt(Eside);
+   mid = celt_sqrt32(Emid);
+   side = celt_sqrt32(Eside);
 #if defined(FIXED_POINT)
    itheta = celt_atan2p_norm(side, mid);
 #else
