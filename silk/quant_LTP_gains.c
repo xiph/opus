@@ -82,6 +82,7 @@ void silk_quant_LTP_gains(
             max_gain_Q7 = silk_log2lin( ( SILK_FIX_CONST( MAX_SUM_LOG_GAIN_DB / 6.0, 7 ) - sum_log_gain_tmp_Q7 )
                                         + SILK_FIX_CONST( 7, 7 ) ) - gain_safety;
             silk_VQ_WMat_EC(
+                arch,                   /* I    Run-time architecture                                   */
                 &temp_idx[ j ],         /* O    index of best codebook vector                           */
                 &res_nrg_Q15_subfr,     /* O    residual energy                                         */
                 &rate_dist_Q7_subfr,    /* O    best weighted quantization error + mu * rate            */
@@ -93,8 +94,7 @@ void silk_quant_LTP_gains(
                 cl_ptr_Q5,              /* I    code length for each codebook vector                    */
                 subfr_len,              /* I    number of samples per subframe                          */
                 max_gain_Q7,            /* I    maximum sum of absolute LTP coefficients                */
-                cbk_size,               /* I    number of vectors in codebook                           */
-                arch                    /* I    Run-time architecture                                   */
+                cbk_size                /* I    number of vectors in codebook                           */
             );
 
             res_nrg_Q15  = silk_ADD_POS_SAT32( res_nrg_Q15, res_nrg_Q15_subfr );
