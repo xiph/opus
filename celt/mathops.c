@@ -238,29 +238,60 @@ opus_val32 celt_cos_norm32(opus_val32 x)
    return SHL32(ADD32(COS_NORM_COEFF_A0, MULT32_32_Q31(x_sq_q29, tmp)), 4);
 }
 
+/* Computes a 16 bit approximate reciprocal (1/x) for a normalized Q15 input,
+ * resulting in a Q15 output. */
+opus_val16 celt_rcp_norm16(opus_val16 x)
+{
+   opus_val16 r;
+   /* Start with a linear approximation:
+      r = 1.8823529411764706-0.9411764705882353*n.
+      The coefficients and the result are Q14 in the range [15420,30840].*/
+   r = ADD16(30840, MULT16_16_Q15(-15420, x));
+   /* Perform two Newton iterations:
+      r -= r*((r*n)+(r-1.Q15))
+         = r*((r*n)+(r-1.Q15)). */
+   r = SUB16(r, MULT16_16_Q15(r,
+             ADD16(MULT16_16_Q15(r, x), ADD16(r, -32768))));
+   /* We subtract an extra 1 in the second iteration to avoid overflow; it also
+       neatly compensates for truncation error in the rest of the process. */
+   return SUB16(r, ADD16(1, MULT16_16_Q15(r,
+                ADD16(MULT16_16_Q15(r, x), ADD16(r, -32768)))));
+}
+
+/* Computes a 32 bit approximated reciprocal (1/x) for a normalized Q31 input,
+ * resulting in a Q30 output. The expected input range is [0.5f, 1.0f) in Q31
+ * and the expected output range is [1.0f, 2.0f) in Q30. */
+opus_val32 celt_rcp_norm32(opus_val32 x)
+{
+   opus_val32 r_q30;
+   celt_sig_assert(x >= 1073741824);
+   r_q30 = SHL32(EXTEND32(celt_rcp_norm16(SHR32(x, 15)-32768)), 16);
+   /* Solving f(y) = a - 1/y using the Newton Method
+    * Note: f(y)' = 1/y^2
+    * r = r - f(r)/f(r)' = r - (x * r*r - r)
+    *   = r - r*(r*x - 1)
+    * where
+    *   - r means 1/y's approximation.
+    *   - x means a, the input of function.
+    * Please note that:
+    *   - It adds 1 to avoid overflow
+    *   - -1.0f in Q30 is -1073741824. */
+   return SUB32(r_q30, ADD32(SHL32(
+                MULT32_32_Q31(ADD32(MULT32_32_Q31(r_q30, x), -1073741824),
+                              r_q30), 1), 1));
+}
+
 /** Reciprocal approximation (Q15 input, Q16 output) */
 opus_val32 celt_rcp(opus_val32 x)
 {
    int i;
-   opus_val16 n;
    opus_val16 r;
    celt_sig_assert(x>0);
    i = celt_ilog2(x);
-   /* n is Q15 with range [0,1). */
-   n = VSHR32(x,i-15)-32768;
-   /* Start with a linear approximation:
-      r = 1.8823529411764706-0.9411764705882353*n.
-      The coefficients and the result are Q14 in the range [15420,30840].*/
-   r = ADD16(30840, MULT16_16_Q15(-15420, n));
-   /* Perform two Newton iterations:
-      r -= r*((r*n)-1.Q15)
-         = r*((r*n)+(r-1.Q15)). */
-   r = SUB16(r, MULT16_16_Q15(r,
-             ADD16(MULT16_16_Q15(r, n), ADD16(r, -32768))));
-   /* We subtract an extra 1 in the second iteration to avoid overflow; it also
-       neatly compensates for truncation error in the rest of the process. */
-   r = SUB16(r, ADD16(1, MULT16_16_Q15(r,
-             ADD16(MULT16_16_Q15(r, n), ADD16(r, -32768)))));
+
+   /* Compute the reciprocal of a Q15 number in the range [0, 1). */
+   r = celt_rcp_norm16(VSHR32(x,i-15)-32768);
+
    /* r is now the Q15 solution to 2/(n+1), with a maximum relative error
        of 7.05346E-5, a (relative) RMSE of 2.14418E-5, and a peak absolute
        error of 1.24665/32768. */
