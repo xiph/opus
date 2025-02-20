@@ -530,6 +530,7 @@ static OPUS_INLINE opus_val32 celt_exp2_db(opus_val32 x)
 
 
 opus_val32 celt_rcp(opus_val32 x);
+opus_val32 celt_rcp_norm32(opus_val32 x);
 
 #define celt_div(a,b) MULT32_32_Q31((opus_val32)(a),celt_rcp(b))
 

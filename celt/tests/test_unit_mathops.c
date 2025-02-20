@@ -581,6 +581,44 @@ void test_cos(void)
 {
    test_cos_norm32();
 }
+
+void test_rcp_norm32(void)
+{
+   double ground_truth;
+   float absolute_error = -1;
+   float relative_error = -1;
+   float two_LSBs = FIX_INT_TO_DOUBLE(2, 29); /* absolute error threshold */
+   float relative_error_threshold = 6.51e-08;
+   float max_relative_error = -1;
+   float fx;
+   float quantized_fx;
+   opus_val32 x;
+   int q_input = 31;
+
+   for (fx = 0.5; fx <= 1.0; fx += 0.0000007)
+   {
+      x = DOUBLE_TO_FIX_INT(fx, q_input);
+      quantized_fx = FIX_INT_TO_DOUBLE(x, q_input);
+      ground_truth = 1 / quantized_fx;
+      absolute_error = fabs(ground_truth -
+                            FIX_INT_TO_DOUBLE(celt_rcp_norm32(x), 30));
+      relative_error = absolute_error/ground_truth;
+      if (max_relative_error < relative_error) {
+         max_relative_error = relative_error;
+      }
+      if (absolute_error > two_LSBs &&
+          absolute_error > relative_error_threshold * ground_truth) {
+         fprintf(stderr,
+                 "celt_rcp_norm32 failed: "
+                 "absolute_error: [%.5e > %.5e] "
+                 "relative_error: [%.5e > %.5e] (x = %f)\n",
+                 absolute_error, two_LSBs,
+                 relative_error, relative_error_threshold, quantized_fx);
+         ret = 1;
+      }
+   }
+   fprintf(stdout, "celt_rcp_norm32 max_rel_error: %.7e\n", max_relative_error);
+}
 #endif
 
 
@@ -686,6 +724,7 @@ int main(void)
    testrsqrt();
    testsqrt32();
    testatan();
+   test_rcp_norm32();
 #else
    test_atan2();
 #endif
