@@ -393,14 +393,15 @@ static void intensity_stereo(const CELTMode *m, celt_norm * OPUS_RESTRICT X, con
    left = VSHR32(bandE[i],shift);
    right = VSHR32(bandE[i+m->nbEBands],shift);
    norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
-   a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
-   a2 = DIV32_16(SHL32(EXTEND32(right),14),norm);
+#ifdef FIXED_POINT
+   left = MIN32(left, norm-1);
+   right = MIN32(right, norm-1);
+#endif
+   a1 = DIV32_16(SHL32(EXTEND32(left),15),norm);
+   a2 = DIV32_16(SHL32(EXTEND32(right),15),norm);
    for (j=0;j<N;j++)
    {
-      opus_val16 r, l;
-      l = EXTRACT16(PSHR32(X[j], NORM_SHIFT-14));
-      r = EXTRACT16(PSHR32(Y[j], NORM_SHIFT-14));
-      X[j] = PSHR32(MAC16_16(MULT16_16(a1, l), a2, r), 28-NORM_SHIFT);
+      X[j] = ADD32(MULT16_32_Q15(a1, X[j]), MULT16_32_Q15(a2, Y[j]));
       /* Side is not encoded, no need to calculate */
    }
 }
