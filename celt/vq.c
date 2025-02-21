@@ -220,6 +220,7 @@ opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch)
    (void)arch;
    ALLOC(y, N, celt_norm);
    ALLOC(signx, N, int);
+   norm_scaledown(X, N, NORM_SHIFT-14);
 
    /* Get rid of the sign */
    sum = 0;
@@ -378,7 +379,7 @@ static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int 
    opus_val32 sum;
    opus_val32 rcp_sum;
    int offset;
-   sum = ABS16(X[0]) + ABS16(X[1]);
+   sum = ABS32(X[0]) + ABS32(X[1]);
    if (sum == 0) {
       iy[0] = K;
       up_iy[0] = up*K;
@@ -392,10 +393,13 @@ static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int 
 #endif
    }
 #ifdef FIXED_POINT
-   rcp_sum = celt_rcp(sum);
-   iy[0] = PSHR32(silk_SMULWW(MULT16_16(K,X[0]), rcp_sum), 15);
-   /*up_iy[0] = PSHR32(silk_SMULWW(MULT16_16(up*K,X[0]), rcp_sum), 15);*/
-   up_iy[0] = ((opus_val64)up*K*X[0]*rcp_sum+(1<<30))>>31;
+   int sum_shift;
+   opus_val32 X0;
+   sum_shift = 30-celt_ilog2(sum);
+   rcp_sum = celt_rcp_norm32(SHL32(sum, sum_shift));
+   X0 = MULT32_32_Q31(SHL32(X[0], sum_shift), rcp_sum);
+   iy[0] = PSHR32(MULT32_32_Q31(SHL32(K, 8), X0), 7);
+   up_iy[0] = PSHR32(MULT32_32_Q31(SHL32(up*K, 8), X0), 7);
 #else
    rcp_sum = 1.f/sum;
    iy[0] = (int)floor(.5f+K*X[0]*rcp_sum);
@@ -418,23 +422,22 @@ static opus_val32 op_pvq_search_N2(const celt_norm *X, int *iy, int *up_iy, int 
 #endif
 }
 
-static int op_pvq_refine(const celt_norm *X, int *iy, int *iy0, int K, int up, int margin, int N, opus_val32 rcp_sum) {
+static int op_pvq_refine(const opus_val32 *Xn, int *iy, int *iy0, int K, int up, int margin, int N) {
    int i;
    int dir;
-   VARDECL(opus_val64, rounding);
+   VARDECL(opus_val32, rounding);
    int iysum = 0;
-   ALLOC(rounding, N, opus_val64);
+   SAVE_STACK;
+   ALLOC(rounding, N, opus_val32);
    for (i=0;i<N;i++) {
-      opus_val64 tmp;
+      opus_val32 tmp;
+      tmp = MULT32_32_Q31(SHL32(K, 8), Xn[i]);
 #ifdef FIXED_POINT
-      tmp = K*(opus_val64)ABS16(X[i])*rcp_sum >> 16;
-      iy[i] = (tmp+16384) >> 15;
-      rounding[i] = tmp - ((opus_val64)iy[i]<<15);
+      iy[i] = (tmp+64) >> 7;
 #else
-      tmp = K*ABS16(X[i])*rcp_sum;
       iy[i] = (int)floor(.5+tmp);
-      rounding[i] = tmp - SHL32(iy[i], 15);
 #endif
+      rounding[i] = tmp - SHL32(iy[i], 7);
    }
    if (iy != iy0) {
       for (i=0;i<N;i++) iy[i] = IMIN(up*iy0[i]+up-1, IMAX(up*iy0[i]-up+1, iy[i]));
@@ -466,13 +469,28 @@ static opus_val32 op_pvq_search_extra(const celt_norm *X, int *iy, int *up_iy, i
    int i;
    int failed=0;
    opus_val64 yy=0;
-   for (i=0;i<N;i++) sum += ABS16(X[i]);
+   VARDECL(opus_val32, Xn);
+   SAVE_STACK;
+   for (i=0;i<N;i++) sum += ABS32(X[i]);
+   ALLOC(Xn, N, opus_val32);
    if (sum == 0)
       failed = 1;
-   else
+   else {
+#ifdef FIXED_POINT
+      int sum_shift = 30-celt_ilog2(sum);
+      rcp_sum = celt_rcp_norm32(SHL32(sum, sum_shift));
+      for (i=0;i<N;i++) {
+         Xn[i] = MULT32_32_Q31(SHL32(ABS32(X[i]), sum_shift), rcp_sum);
+      }
+#else
       rcp_sum = celt_rcp(sum);
-   failed = failed || op_pvq_refine(X, iy, iy, K, 1, K+1, N, rcp_sum);
-   failed = failed || op_pvq_refine(X, up_iy, iy, up*K, up, up, N, rcp_sum);
+      for (i=0;i<N;i++) {
+         Xn[i] = ABS32(X[i])*rcp_sum;
+      }
+#endif
+   }
+   failed = failed || op_pvq_refine(Xn, iy, iy, K, 1, K+1, N);
+   failed = failed || op_pvq_refine(Xn, up_iy, iy, up*K, up, up, N);
    if (failed) {
       iy[0] = K;
       for (i=1;i<N;i++) iy[i] = 0;
@@ -544,7 +562,6 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
    ALLOC(iy, N+3, int);
 
    exp_rotation(X, N, 1, B, K, spread);
-   norm_scaledown(X, N, NORM_SHIFT-14);
 
 #ifdef ENABLE_QEXT
    if (N==2 && extra_bits >= 2) {
