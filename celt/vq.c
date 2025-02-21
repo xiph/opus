@@ -785,7 +785,7 @@ unsigned cubic_quant(celt_norm *X, int N, int res, int B, ec_enc *enc, opus_val3
    int K;
    VARDECL(int, iy);
    celt_norm faceval=-1;
-   float norm;
+   opus_val32 norm;
    int sign;
    SAVE_STACK;
    ALLOC(iy, N, int);
@@ -794,6 +794,7 @@ unsigned cubic_quant(celt_norm *X, int N, int res, int B, ec_enc *enc, opus_val3
    if (B!=1) K=IMAX(1, K-1);
    if (K==1) {
       if (resynth) OPUS_CLEAR(X, N);
+      RESTORE_STACK;
       return 0;
    }
    for (i=0;i<N;i++) {
@@ -805,9 +806,25 @@ unsigned cubic_quant(celt_norm *X, int N, int res, int B, ec_enc *enc, opus_val3
    sign = X[face]<0;
    ec_enc_uint(enc, face, N);
    ec_enc_bits(enc, sign, 1);
+#ifdef FIXED_POINT
+   if (faceval != 0) {
+      int face_shift = 30-celt_ilog2(faceval);
+      norm = celt_rcp_norm32(SHL32(faceval, face_shift));
+      norm = MULT16_32_Q15(K, norm);
+      for (i=0;i<N;i++) {
+         /* By computing X[i]+faceval inside the shift, the result is guaranteed non-negative. */
+         iy[i] = IMIN(K-1, (MULT32_32_Q31(SHL32(X[i]+faceval, face_shift-1), norm)) >> 15);
+      }
+   } else {
+      OPUS_CLEAR(iy, N);
+   }
+#else
    norm = .5f*K/(faceval+EPSILON);
    for (i=0;i<N;i++) {
       iy[i] = IMIN(K-1, (int)floor((X[i]+faceval)*norm));
+   }
+#endif
+   for (i=0;i<N;i++) {
       if (i != face) ec_enc_bits(enc, iy[i], res);
    }
    if (resynth) {
