@@ -117,7 +117,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
                opus_val32 x = SHL32(X[j+c*N],shift);
                sum = ADD32(sum, MULT32_32_Q31(x, x));
             } while (++j<eBands[i+1]<<LM);
-            bandE[i+c*m->nbEBands] = EPSILON+MAX32(maxval, PSHR32(celt_sqrt32(SHR32(sum,1)), shift));
+            bandE[i+c*m->nbEBands] = MAX32(maxval, PSHR32(celt_sqrt32(SHR32(sum,1)), shift));
          } else {
             bandE[i+c*m->nbEBands] = EPSILON;
          }
@@ -133,21 +133,19 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
    N = M*m->shortMdctSize;
    c=0; do {
       i=0; do {
-         opus_val16 g;
          int j,shift;
          opus_val32 E;
-         shift = celt_zlog2(bandE[i+c*m->nbEBands])-14;
-         E = VSHR32(bandE[i+c*m->nbEBands], shift-2);
-         g = EXTRACT16(celt_rcp(E));
-         if (shift > 0) {
-            j=M*eBands[i]; do {
-               X[j+c*N] = VSHR32(MULT16_32_Q15(g, freq[j+c*N]),shift+14-NORM_SHIFT);
-            } while (++j<M*eBands[i+1]);
-         } else {
-            j=M*eBands[i]; do {
-               X[j+c*N] = VSHR32(MULT16_16(g, freq[j+c*N]),29-NORM_SHIFT+shift);
-            } while (++j<M*eBands[i+1]);
-         }
+         opus_val32 g;
+         E = bandE[i+c*m->nbEBands];
+         /* For very low energies, we need this to make sure not to prevent energy rounding from
+            blowing up the normalized signal. */
+         if (E < 10) E += EPSILON;
+         shift = 30-celt_zlog2(E);
+         E = SHL32(E, shift);
+         g = celt_rcp_norm32(E);
+         j=M*eBands[i]; do {
+            X[j+c*N] = PSHR32(MULT32_32_Q31(g, SHL32(freq[j+c*N], shift)), 30-NORM_SHIFT);
+         } while (++j<M*eBands[i+1]);
       } while (++i<end);
    } while (++c<C);
 }
