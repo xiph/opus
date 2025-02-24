@@ -1526,7 +1526,10 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
          rebalance = mbits - (rebalance-ctx->remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=0)
             sbits += rebalance - (3<<BITRES);
-
+#ifdef ENABLE_QEXT
+         /* Guard against overflowing the EC with the angle if the cubic quant used too many bits for the mid. */
+         if (ctx->extra_bands) sbits = IMIN(sbits, ctx->remaining_bits);
+#endif
          /* For a stereo split, the high bits of fill are always zero, so no
             folding will be done to the side. */
          cm |= quant_band(ctx, Y, N, sbits, B, NULL, LM, NULL, side, NULL, fill>>B ARG_QEXT(ext_b/2-qext_extra));
@@ -1542,6 +1545,10 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
          rebalance = sbits - (rebalance-ctx->remaining_bits);
          if (rebalance > 3<<BITRES && itheta!=16384)
             mbits += rebalance - (3<<BITRES);
+#ifdef ENABLE_QEXT
+         /* Guard against overflowing the EC with the angle if the cubic quant used too many bits for the side. */
+         if (ctx->extra_bands) mbits = IMIN(mbits, ctx->remaining_bits);
+#endif
          /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
             mid for folding later. */
          cm |= quant_band(ctx, X, N, mbits, B, lowband, LM, lowband_out, Q31ONE,
