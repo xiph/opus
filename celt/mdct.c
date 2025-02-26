@@ -221,16 +221,11 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
       }
 #ifdef FIXED_POINT
       headroom = IMAX(0, IMIN(scale_shift, 28-celt_ilog2(maxval)));
-      for(i=0;i<N4;i++)
-      {
-         f2[i].r = PSHR32(f2[i].r, scale_shift-headroom);
-         f2[i].i = PSHR32(f2[i].i, scale_shift-headroom);
-      }
 #endif
    }
 
    /* N/4 complex FFT, does not downscale anymore */
-   opus_fft_impl(st, f2);
+   opus_fft_impl(st, f2 ARG_FIXED(scale_shift-headroom));
 
    /* Post-rotate */
    {
@@ -302,7 +297,7 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_sca
       }
    }
 
-   opus_fft_impl(l->kfft[shift], (kiss_fft_cpx*)(out+(overlap>>1)));
+   opus_fft_impl(l->kfft[shift], (kiss_fft_cpx*)(out+(overlap>>1)) ARG_FIXED(0));
 
    /* Post-rotate and de-shuffle from both ends of the buffer at once to make
       it in-place. */
