@@ -215,12 +215,12 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
          yc.r = S_MUL2(yc.r, scale);
          yc.i = S_MUL2(yc.i, scale);
 #ifdef FIXED_POINT
-         maxval = MAX32(maxval, MAX32(yc.r, yc.i));
+         maxval = MAX32(maxval, MAX32(ABS32(yc.r), ABS32(yc.i)));
 #endif
          f2[st->bitrev[i]] = yc;
       }
 #ifdef FIXED_POINT
-      headroom = IMAX(0, IMIN(scale_shift-1, 28-celt_ilog2(maxval)));
+      headroom = IMAX(0, IMIN(scale_shift, 28-celt_ilog2(maxval)));
       for(i=0;i<N4;i++)
       {
          f2[i].r = PSHR32(f2[i].r, scale_shift-headroom);
