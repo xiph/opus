@@ -417,8 +417,8 @@ static void compute_twiddles(kiss_twiddle_cpx *twiddles, int nfft)
    for (i=0;i<nfft;++i) {
       opus_val32 phase = -i;
 #ifdef ENABLE_QEXT
-      twiddles[i].r = floor(.5+2147483647*cos((2*M_PI/nfft)*phase));
-      twiddles[i].i = floor(.5+2147483647*sin((2*M_PI/nfft)*phase));
+      twiddles[i].r = (int)MIN32(2147483647, floor(.5+2147483648*cos((2*M_PI/nfft)*phase)));
+      twiddles[i].i = (int)MIN32(2147483647, floor(.5+2147483648*sin((2*M_PI/nfft)*phase)));
 #else
       kf_cexp2(twiddles+i, DIV32(SHL32(phase,17),nfft));
 #endif
