@@ -1095,7 +1095,7 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
       int extra_bits;
       int ext_remaining_bits;
       extra_bits = ext_b/(N-1)>>BITRES;
-      ext_remaining_bits = ctx->ext_total_bits-ec_tell_frac(ctx->ext_ec);
+      ext_remaining_bits = ctx->ext_total_bits-(opus_int32)ec_tell_frac(ctx->ext_ec);
       if (ext_remaining_bits < ((extra_bits+1)*(N-1)+N)<<BITRES) {
          extra_bits = (ext_remaining_bits-(N<<BITRES))/(N-1)>>BITRES;
          extra_bits = IMAX(extra_bits-1, 0);
