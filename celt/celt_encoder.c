@@ -1347,13 +1347,13 @@ static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem,
    opus_val16 freq;
    VARDECL(opus_val16, x);
    ALLOC(x, N+overlap, opus_val16);
-   /* Shift by SIG_SHIFT+1 (+2 for stereo) to account for HF gain of the preemphasis filter. */
+   /* Shift by SIG_SHIFT+2 (+3 for stereo) to account for HF gain of the preemphasis filter. */
    if (CC==2) {
-      for (i=0;i<N;i++) x[i+overlap] = PSHR32(ADD32(in[i], in[i+N+overlap]), SIG_SHIFT+2);
-      for (i=0;i<overlap;i++) x[i] = PSHR32(ADD32(prefilter_mem[QEXT_SCALE(COMBFILTER_MAXPERIOD)-overlap+i], prefilter_mem[2*QEXT_SCALE(COMBFILTER_MAXPERIOD)-overlap+i]), SIG_SHIFT+2);
+      for (i=0;i<N;i++) x[i+overlap] = PSHR32(ADD32(in[i], in[i+N+overlap]), SIG_SHIFT+3);
+      for (i=0;i<overlap;i++) x[i] = PSHR32(ADD32(prefilter_mem[QEXT_SCALE(COMBFILTER_MAXPERIOD)-overlap+i], prefilter_mem[2*QEXT_SCALE(COMBFILTER_MAXPERIOD)-overlap+i]), SIG_SHIFT+3);
    } else {
-      for (i=0;i<N;i++) x[i+overlap] = PSHR32(in[i], SIG_SHIFT+1);
-      for (i=0;i<overlap;i++) x[i] = PSHR32(prefilter_mem[QEXT_SCALE(COMBFILTER_MAXPERIOD)-overlap+i], SIG_SHIFT+1);
+      for (i=0;i<N;i++) x[i+overlap] = PSHR32(in[i], SIG_SHIFT+2);
+      for (i=0;i<overlap;i++) x[i] = PSHR32(prefilter_mem[QEXT_SCALE(COMBFILTER_MAXPERIOD)-overlap+i], SIG_SHIFT+2);
    }
 #ifdef FIXED_POINT
    normalize_tone_input(x, N+overlap);
