@@ -1319,7 +1319,7 @@ static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem,
       fail = tone_lpc(x, N+overlap, delay, lpc);
    }
    /* Check that our filter has complex roots. */
-   if (!fail && MULT32_32_Q31(lpc[0],lpc[0]) + MULT32_32_Q31(QCONST32(4.f, 29), lpc[1]) < 0) {
+   if (!fail && MULT32_32_Q31(lpc[0],lpc[0]) + MULT32_32_Q31(QCONST32(3.999999, 29), lpc[1]) < 0) {
       /* Squared radius of the poles. */
       *toneishness = -lpc[1];
 #ifdef FIXED_POINT
