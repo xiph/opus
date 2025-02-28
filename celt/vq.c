@@ -537,7 +537,7 @@ static int ec_dec_refine(ec_enc *dec, opus_int32 up, int extra_bits, int use_ent
       refine = ec_dec_bits(dec, extra_bits-1) + up/2+1;
       if (sign) refine = -refine;
    } else {
-      refine = ec_dec_bits(dec, extra_bits)-up/2;
+      refine = (opus_int32)ec_dec_bits(dec, extra_bits)-up/2;
    }
    return refine;
 }
@@ -632,7 +632,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       int refine;
       yy_shift = IMAX(0, extra_bits-7);
       up = (1<<extra_bits)-1;
-      refine = ec_dec_uint(ext_dec, up) - (up-1)/2;
+      refine = (opus_int32)ec_dec_uint(ext_dec, up) - (up-1)/2;
       iy[0] *= up;
       iy[1] *= up;
       if (iy[1] == 0) {
