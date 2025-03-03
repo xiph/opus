@@ -1371,7 +1371,7 @@ static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem,
       /* Squared radius of the poles. */
       *toneishness = -lpc[1];
 #ifdef FIXED_POINT
-      freq = acos_approx(lpc[0]>>1)/delay;
+      freq = (acos_approx(lpc[0]>>1)+delay/2)/delay;
 #else
       freq = acos(.5f*lpc[0])/delay;
 #endif
@@ -1425,18 +1425,17 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       /* If the pitch is too high for our post-filter, apply pitch doubling until
          we can get something that fits (not ideal, but better than nothing). */
       while (QEXT_SCALE(tone_freq) >= multiple*QCONST16(0.39f, 13)) multiple++;
-      tone_freq /= multiple;
       if (QEXT_SCALE(tone_freq) > QCONST16(0.006148f, 13)) {
 #ifdef FIXED_POINT
-         pitch_index = IMIN(51472/tone_freq, max_period-QEXT_SCALE(2));
+         pitch_index = IMIN((51472*multiple+QEXT_SCALE(tone_freq)/2)/QEXT_SCALE(tone_freq), COMBFILTER_MAXPERIOD-2);
 #else
-         pitch_index = IMIN((int)floor(.5+2.f*M_PI/tone_freq), max_period-QEXT_SCALE(2));
+         pitch_index = IMIN((int)floor(.5+2.f*M_PI*multiple/QEXT_SCALE(tone_freq)), COMBFILTER_MAXPERIOD-2);
 #endif
       } else {
          /* If the pitch is too low, using a very high pitch will actually give us an improvement
             due to the DC component of the filter that will be close to our tone. Again, not ideal,
             but if we only have a single tone, it's better than nothing. */
-         pitch_index = min_period;
+         pitch_index = COMBFILTER_MINPERIOD;
       }
       gain1 = QCONST16(.75f, 15);
    } else if (enabled && complexity >= 5) {
@@ -1455,6 +1454,9 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
             N, &pitch_index, st->prefilter_period, st->prefilter_gain, st->arch);
       if (pitch_index > max_period-QEXT_SCALE(2))
          pitch_index = max_period-QEXT_SCALE(2);
+#ifdef ENABLE_QEXT
+   pitch_index /= qext_scale;
+#endif
       gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
       /*printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);*/
       if (st->loss_rate>2)
@@ -1465,11 +1467,8 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
          gain1 = 0;
    } else {
       gain1 = 0;
-      pitch_index = min_period;
+      pitch_index = COMBFILTER_MINPERIOD;
    }
-#ifdef ENABLE_QEXT
-   pitch_index /= qext_scale;
-#endif
 #ifndef DISABLE_FLOAT_API
    if (analysis->valid)
       gain1 = (opus_val16)(gain1 * analysis->max_pitch_ratio);
