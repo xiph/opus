@@ -25,6 +25,7 @@ parser.add_argument('--cuda-visible-devices', type=str, help="comma separates li
 model_group = parser.add_argument_group(title="model parameters")
 model_group.add_argument('--cond-size', type=int, help="first conditioning size, default: 256", default=256)
 model_group.add_argument('--gamma', type=float, help="Use A(z/gamma), default: 0.9", default=0.9)
+model_group.add_argument('--softquant', action="store_true", help="enables soft quantization during training")
 
 training_group = parser.add_argument_group(title="training parameters")
 training_group.add_argument('--batch-size', type=int, help="batch size, default: 512", default=512)
@@ -72,7 +73,7 @@ checkpoint['adam_betas'] = adam_betas
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 checkpoint['model_args']    = ()
-checkpoint['model_kwargs']  = {'cond_size': cond_size, 'gamma': args.gamma}
+checkpoint['model_kwargs']  = {'cond_size': cond_size, 'gamma': args.gamma, 'softquant': args.softquant}
 print(checkpoint['model_kwargs'])
 model = fargan.FARGAN(*checkpoint['model_args'], **checkpoint['model_kwargs'])
 
