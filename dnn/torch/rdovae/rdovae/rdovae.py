@@ -40,6 +40,8 @@ source_dir = os.path.split(os.path.abspath(__file__))[0]
 sys.path.append(os.path.join(source_dir, "../../lpcnet/"))
 from utils.sparsification import GRUSparsifier
 from torch.nn.utils import weight_norm
+sys.path.append(os.path.join(source_dir, "../../dnntools"))
+from dnntools.quantization import soft_quant
 
 # Quantization and rate related utily functions
 
@@ -260,24 +262,31 @@ sparse_params2 = {
 
 
 class MyConv(nn.Module):
-    def __init__(self, input_dim, output_dim, dilation=1):
+    def __init__(self, input_dim, output_dim, dilation=1, softquant=False):
         super(MyConv, self).__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.dilation=dilation
         self.conv = nn.Conv1d(input_dim, output_dim, kernel_size=2, padding='valid', dilation=dilation)
+
+        if softquant:
+            self.conv = soft_quant(self.conv)
+
     def forward(self, x, state=None):
         device = x.device
         conv_in = torch.cat([torch.zeros_like(x[:,0:self.dilation,:], device=device), x], -2).permute(0, 2, 1)
         return torch.tanh(self.conv(conv_in)).permute(0, 2, 1)
 
 class GLU(nn.Module):
-    def __init__(self, feat_size):
+    def __init__(self, feat_size, softquant=False):
         super(GLU, self).__init__()
 
         torch.manual_seed(5)
 
         self.gate = weight_norm(nn.Linear(feat_size, feat_size, bias=False))
+
+        if softquant:
+            self.gate = soft_quant(self.gate)
 
         self.init_weights()
 
@@ -299,7 +308,7 @@ class CoreEncoder(nn.Module):
     FRAMES_PER_STEP = 2
     CONV_KERNEL_SIZE = 4
 
-    def __init__(self, feature_dim, output_dim, cond_size, cond_size2, state_size=24):
+    def __init__(self, feature_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False):
         """ core encoder for RDOVAE
 
             Computes latents, initial states, and rate estimates from features and lambda parameter
@@ -321,15 +330,15 @@ class CoreEncoder(nn.Module):
         # layers
         self.dense_1 = nn.Linear(self.input_dim, 64)
         self.gru1 = nn.GRU(64, 64, batch_first=True)
-        self.conv1 = MyConv(128, 96)
+        self.conv1 = MyConv(128, 96, softquant=True)
         self.gru2 = nn.GRU(224, 64, batch_first=True)
-        self.conv2 = MyConv(288, 96, dilation=2)
+        self.conv2 = MyConv(288, 96, dilation=2, softquant=True)
         self.gru3 = nn.GRU(384, 64, batch_first=True)
-        self.conv3 = MyConv(448, 96, dilation=2)
+        self.conv3 = MyConv(448, 96, dilation=2, softquant=True)
         self.gru4 = nn.GRU(544, 64, batch_first=True)
-        self.conv4 = MyConv(608, 96, dilation=2)
+        self.conv4 = MyConv(608, 96, dilation=2, softquant=True)
         self.gru5 = nn.GRU(704, 64, batch_first=True)
-        self.conv5 = MyConv(768, 96, dilation=2)
+        self.conv5 = MyConv(768, 96, dilation=2, softquant=True)
 
         self.z_dense = nn.Linear(864, self.output_dim)
 
@@ -342,6 +351,16 @@ class CoreEncoder(nn.Module):
 
         # initialize weights
         self.apply(init_weights)
+
+        if softquant:
+            self.gru1 = soft_quant(self.gru1, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.gru2 = soft_quant(self.gru2, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.gru3 = soft_quant(self.gru3, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.gru4 = soft_quant(self.gru4, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.gru5 = soft_quant(self.gru5, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.z_dense = soft_quant(self.z_dense)
+            self.state_dense_1 = soft_quant(self.state_dense_1)
+            self.state_dense_2 = soft_quant(self.state_dense_2)
 
 
     def forward(self, features):
@@ -379,7 +398,7 @@ class CoreDecoder(nn.Module):
 
     FRAMES_PER_STEP = 4
 
-    def __init__(self, input_dim, output_dim, cond_size, cond_size2, state_size=24):
+    def __init__(self, input_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False):
         """ core decoder for RDOVAE
 
             Computes features from latents, initial state, and quantization index
@@ -400,21 +419,21 @@ class CoreDecoder(nn.Module):
         # layers
         self.dense_1    = nn.Linear(self.input_size, 96)
         self.gru1 = nn.GRU(96, 96, batch_first=True)
-        self.conv1 = MyConv(192, 32)
+        self.conv1 = MyConv(192, 32, softquant=softquant)
         self.gru2 = nn.GRU(224, 96, batch_first=True)
-        self.conv2 = MyConv(320, 32)
+        self.conv2 = MyConv(320, 32, softquant=softquant)
         self.gru3 = nn.GRU(352, 96, batch_first=True)
-        self.conv3 = MyConv(448, 32)
+        self.conv3 = MyConv(448, 32, softquant=softquant)
         self.gru4 = nn.GRU(480, 96, batch_first=True)
-        self.conv4 = MyConv(576, 32)
+        self.conv4 = MyConv(576, 32, softquant=softquant)
         self.gru5 = nn.GRU(608, 96, batch_first=True)
-        self.conv5 = MyConv(704, 32)
+        self.conv5 = MyConv(704, 32, softquant=softquant)
         self.output  = nn.Linear(736, self.FRAMES_PER_STEP * self.output_dim)
-        self.glu1 = GLU(96)
-        self.glu2 = GLU(96)
-        self.glu3 = GLU(96)
-        self.glu4 = GLU(96)
-        self.glu5 = GLU(96)
+        self.glu1 = GLU(96, softquant=softquant)
+        self.glu2 = GLU(96, softquant=softquant)
+        self.glu3 = GLU(96, softquant=softquant)
+        self.glu4 = GLU(96, softquant=softquant)
+        self.glu5 = GLU(96, softquant=softquant)
         self.hidden_init = nn.Linear(self.state_size, 128)
         self.gru_init = nn.Linear(128, 480)
 
@@ -428,6 +447,15 @@ class CoreDecoder(nn.Module):
         self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
         self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
         self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+
+        if softquant:
+            self.gru1 = soft_quant(self.gru1, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.gru2 = soft_quant(self.gru2, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.gru3 = soft_quant(self.gru3, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.gru4 = soft_quant(self.gru4, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.gru5 = soft_quant(self.gru5, names=['weight_hh_l0', 'weight_ih_l0'])
+            self.output = soft_quant(self.output)
+            self.gru_init = soft_quant(self.gru_init)
 
     def sparsify(self):
         for sparsifier in self.sparsifier:
@@ -525,7 +553,8 @@ class RDOVAE(nn.Module):
                  split_mode='split',
                  clip_weights=False,
                  pvq_num_pulses=82,
-                 state_dropout_rate=0):
+                 state_dropout_rate=0,
+                 softquant=False):
 
         super(RDOVAE, self).__init__()
 
@@ -541,8 +570,8 @@ class RDOVAE(nn.Module):
 
         # submodules encoder and decoder share the statistical model
         self.statistical_model = StatisticalModel(quant_levels, latent_dim, state_dim)
-        self.core_encoder = nn.DataParallel(CoreEncoder(feature_dim, latent_dim, cond_size, cond_size2, state_size=state_dim))
-        self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim, feature_dim, cond_size, cond_size2, state_size=state_dim))
+        self.core_encoder = nn.DataParallel(CoreEncoder(feature_dim, latent_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant))
+        self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim, feature_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant))
 
         self.enc_stride = CoreEncoder.FRAMES_PER_STEP
         self.dec_stride = CoreDecoder.FRAMES_PER_STEP
