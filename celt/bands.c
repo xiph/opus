@@ -1852,7 +1852,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 #ifdef ENABLE_QEXT
                ext_nstart_bytes = ext_ec_save.offs;
                ext_nend_bytes = ext_ec_save.storage;
-               ext_bytes_buf = ext_ec_save.buf+ext_nstart_bytes;
+               ext_bytes_buf = ext_ec_save.buf!=NULL ? ext_ec_save.buf+ext_nstart_bytes : NULL;
                ext_save_bytes = ext_nend_bytes-ext_nstart_bytes;
                if (ext_save_bytes) OPUS_COPY(ext_bytes_save, ext_bytes_buf, ext_save_bytes);
 #endif
