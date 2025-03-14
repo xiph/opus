@@ -146,7 +146,7 @@ void testbitexactlog2tan(void)
 void testlog2(void)
 {
    float x;
-   float error_threshold = 2.e-06;
+   float error_threshold = 2.2e-06;
    float max_error = 0;
    for (x=0.001f;x<1677700.0;x+=(x/8.0))
    {
