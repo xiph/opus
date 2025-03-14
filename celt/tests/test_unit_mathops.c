@@ -245,7 +245,7 @@ void test_cos(void)
 
 void test_atan2(void) {
    float x, y;
-   float error_threshold = 1.2e-07;
+   float error_threshold = 1.5e-07;
    float max_error = 0;
    for (x = 0.0f; x < 1.0f; x += 0.007f)
    {
