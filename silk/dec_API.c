@@ -49,6 +49,9 @@ typedef struct {
     opus_int                         prev_decode_only_middle;
 #ifdef ENABLE_OSCE
     OSCEModel                        osce_model;
+#ifdef OSCE_ENABLE_BBWE
+    //OSCEBBWEModel bbwe_model;
+#endif
 #endif
 } silk_decoder;
 
@@ -65,6 +68,9 @@ opus_int silk_LoadOSCEModels(void *decState, const unsigned char *data, int len)
 
     ret = osce_load_models(&((silk_decoder *)decState)->osce_model, data, len);
     ((silk_decoder *)decState)->osce_model.loaded = (ret == 0);
+#ifdef OSCE_ENABLE_BBWE
+    // osce_load_bbwe_model
+#endif
     return ret;
 #else
     (void) decState;
@@ -404,6 +410,9 @@ opus_int silk_Decode(                                   /* O    Returns error co
     for( n = 0; n < silk_min( decControl->nChannelsAPI, decControl->nChannelsInternal ); n++ ) {
 
         /* Resample decoded signal to API_sampleRate */
+#ifdef OSCE_ENABLE_BBWE
+            // do blind bandwidth extension here if internal FS is 16 kHz,  API_sampleRate is 48 kHz and mode is SILK only
+#endif
         ret += silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
 
         /* Interleave if stereo output and stereo stream */
