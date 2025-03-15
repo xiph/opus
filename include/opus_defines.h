@@ -173,6 +173,8 @@ extern "C" {
 #define OPUS_GET_DRED_DURATION_REQUEST 4051
 #define OPUS_SET_DNN_BLOB_REQUEST 4052
 /*#define OPUS_GET_DNN_BLOB_REQUEST 4053 */
+#define OPUS_SET_OSCE_BWE_REQUEST 4054
+#define OPUS_GET_OSCE_BWE_REQUEST 4055
 
 /** Defines for the presence of extended APIs. */
 #define OPUS_HAVE_OPUS_PROJECTION_H
@@ -798,6 +800,19 @@ extern "C" {
   *
   * @hideinitializer */
 #define OPUS_GET_PITCH(x) OPUS_GET_PITCH_REQUEST, __opus_check_int_ptr(x)
+
+/** Enables blind bandwidth extension for wideband signals if decoding sampling rate is 48 kHz.
+  * @param[in] x <tt>opus_int32 </tt>: 1 enables bandwidth extension, 0 disables it.
+  * The default is 0.
+  *
+  * @hideinitializer */
+ #define OPUS_SET_OSCE_BWE(x) OPUS_SET_OSCE_BWE_REQUEST, __opus_check_int(x)
+/** Gets blind bandwidth extension flag for wideband signals if decoding sampling rate is 48 kHz.
+  * @param[out] x <tt>opus_int32 *</tt>: 1 if bwe enabled, 0 if disabled.
+  *
+  * @hideinitializer */
+ #define OPUS_GET_OSCE_BWE(x) OPUS_GET_OSCE_BWE_REQUEST, __opus_check_int_ptr(x)
+
 
 /**@}*/
 

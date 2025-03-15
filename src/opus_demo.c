@@ -141,7 +141,11 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-lossfile <file>     : simulate packet loss, reading loss from file\n" );
     fprintf(stderr, "-dred <frames>       : add Deep REDundancy (in units of 10-ms frames)\n" );
     fprintf(stderr, "-enc_loss            : Apply loss on the encoder side (store empty packets)\n" );
+#ifdef ENABLE_OSCE_BWE
+    fprintf(stderr, "-enable_osce_bwe     : enable OSCE bandwidth extension for wideband signals (48 kHz sampling rate only), raises dec_complexity to 4\n");
+#endif
 }
+
 
 #define FORMAT_S16_LE 0
 #define FORMAT_S24_LE 1
@@ -431,6 +435,9 @@ int main(int argc, char *argv[])
     int silk_random_switching = 0;
     int silk_frame_counter = 0;
 #endif
+#if defined(ENABLE_OSCE) && defined(ENABLE_OSCE_BWE)
+    int enable_osce_bwe = 0;
+#endif
 #ifdef USE_WEIGHTS_FILE
     int blob_len;
     void *blob_data;
@@ -686,6 +693,11 @@ int main(int argc, char *argv[])
             printf("switching encoding parameters every %dth frame\n", silk_random_switching);
             args += 2;
 #endif
+#if defined(ENABLE_OSCE) && defined(ENABLE_OSCE_BWE)
+        } else if( strcmp( argv[ args ], "-enable_osce_bwe" ) == 0 ) {
+            enable_osce_bwe = 1;
+            args++;
+#endif
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
             print_usage( argv );
@@ -767,6 +779,12 @@ int main(int argc, char *argv[])
           fprintf(stderr, "Cannot create decoder: %s\n", opus_strerror(err));
           goto failure;
        }
+#ifdef ENABLE_OSCE_BWE
+       if (enable_osce_bwe) {
+            opus_decoder_ctl(dec, OPUS_SET_OSCE_BWE(1));
+            if (dec_complexity < 4) {dec_complexity = 4;}
+       }
+#endif
        opus_decoder_ctl(dec, OPUS_SET_COMPLEXITY(dec_complexity));
     }
     switch(bandwidth)

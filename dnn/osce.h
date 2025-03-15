@@ -42,6 +42,12 @@
 #include "osce_structs.h"
 #include "structs.h"
 
+
+#define OSCE_MODE_SILK_ONLY     1000
+#define OSCE_MODE_HYBRID        1001
+#define OSCE_MODE_CELT_ONLY     1002
+#define OSCE_MODE_SILK_BBWE     1003
+
 #define OSCE_METHOD_NONE 0
 #ifndef DISABLE_LACE
 #define OSCE_METHOD_LACE 1
@@ -61,7 +67,10 @@
 #define OSCE_MAX_RNN_NEURONS 0
 #endif
 
+#ifdef ENABLE_OSCE_BWE
+#define OSCE_BWE_MAX_RNN_NEURONS BBWENET_FNET_GRU_STATE_SIZE
 
+#endif
 
 
 /* API */
@@ -79,6 +88,19 @@ void osce_enhance_frame(
 
 int osce_load_models(OSCEModel *hModel, const void *data, int len);
 void osce_reset(silk_OSCE_struct *hOSCE, int method);
+
+#ifdef ENABLE_OSCE_BWE
+void osce_bwe(
+   OSCEModel                   *model,                         /* I    OSCE model struct                           */
+   silk_OSCE_BWE_struct        *psOSCEBWE,                     /* I/O  OSCE BWE state                              */
+   opus_int16                  xq48[],                         /* O    bandwidth-extended speech                   */
+   opus_int16                  xq16[],                         /* I    Decoded speech                              */
+   opus_int32                  xq16_len,                       /* I    Length of xq16 in samples                   */
+   int                         arch                            /* I    Run-time architecture                       */
+);
+
+void osce_bwe_reset(silk_OSCE_BWE_struct *hOSCEBWE);
+#endif /* ENABLE_OSCE_BWE */
 
 
 #endif

@@ -151,6 +151,17 @@ typedef struct {
 #ifdef ENABLE_OSCE
     /* I: OSCE method */
     opus_int osce_method;
+
+#ifdef ENABLE_OSCE_BWE
+    /* I: OSCE bandwidth extension method */
+    opus_int enable_osce_bwe;
+
+    /* I: extended mode */
+    opus_int osce_extended_mode;
+
+    /* O: previous extended mode */
+    opus_int prev_osce_extended_mode;
+#endif
 #endif
 } silk_DecControlStruct;
 

@@ -147,6 +147,11 @@ typedef void (*opus_copy_channel_out_func)(
 #define MODE_SILK_ONLY          1000
 #define MODE_HYBRID             1001
 #define MODE_CELT_ONLY          1002
+#ifdef ENABLE_OSCE
+#ifdef ENABLE_OSCE_BWE
+#define MODE_SILK_BBWE          1003
+#endif
+#endif
 
 #define OPUS_SET_VOICE_RATIO_REQUEST         11018
 #define OPUS_GET_VOICE_RATIO_REQUEST         11019

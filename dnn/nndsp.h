@@ -33,11 +33,11 @@
 #include <string.h>
 
 
-#define ADACONV_MAX_KERNEL_SIZE 16
-#define ADACONV_MAX_INPUT_CHANNELS 2
-#define ADACONV_MAX_OUTPUT_CHANNELS 2
-#define ADACONV_MAX_FRAME_SIZE 80
-#define ADACONV_MAX_OVERLAP_SIZE 40
+#define ADACONV_MAX_KERNEL_SIZE 32
+#define ADACONV_MAX_INPUT_CHANNELS 3
+#define ADACONV_MAX_OUTPUT_CHANNELS 3
+#define ADACONV_MAX_FRAME_SIZE 240
+#define ADACONV_MAX_OVERLAP_SIZE 120
 
 #define ADACOMB_MAX_LAG 300
 #define ADACOMB_MAX_KERNEL_SIZE 16
@@ -45,7 +45,7 @@
 #define ADACOMB_MAX_OVERLAP_SIZE 40
 
 #define ADASHAPE_MAX_INPUT_DIM 512
-#define ADASHAPE_MAX_FRAME_SIZE 160
+#define ADASHAPE_MAX_FRAME_SIZE 240
 
 /*#define DEBUG_NNDSP*/
 #ifdef DEBUG_NNDSP
@@ -74,6 +74,7 @@ typedef struct {
     float conv_alpha1f_state[ADASHAPE_MAX_INPUT_DIM];
     float conv_alpha1t_state[ADASHAPE_MAX_INPUT_DIM];
     float conv_alpha2_state[ADASHAPE_MAX_FRAME_SIZE];
+    float interpolate_state[1];
 } AdaShapeState;
 
 void init_adaconv_state(AdaConvState *hAdaConv);
@@ -137,6 +138,7 @@ void adashape_process_frame(
     int feature_dim,
     int frame_size,
     int avg_pool_k,
+    int interpolate_k,
     int arch
 );
 

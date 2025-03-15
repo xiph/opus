@@ -22,6 +22,14 @@ if DUMP:
         s = 0.5 * s / s.max()
         wavfile.write(filename, fs, (2**15 * s).astype(np.int16))
 
+DEBUGDUMP=False
+if DEBUGDUMP:
+    import os
+    debugdumpdir='debugdump'
+    os.makedirs(debugdumpdir, exist_ok=True)
+
+    def debugdump(filename, data):
+        data.detach().numpy().tofile(os.path.join(debugdumpdir, filename))
 
 
 class FloatFeatureNet(nn.Module):
@@ -62,10 +70,13 @@ class FloatFeatureNet(nn.Module):
         return count
 
 
-    def forward(self, features, state=None):
+    def forward(self, features, state=None, debug=False):
         """ features shape: (batch_size, num_frames, feature_dim) """
 
         batch_size = features.size(0)
+
+        if DEBUGDUMP:
+            debugdump('features.f32', features.float())
 
         if state is None:
             state = torch.zeros((1, batch_size, self.num_channels), device=features.device)
@@ -77,13 +88,22 @@ class FloatFeatureNet(nn.Module):
             c = torch.tanh(self.conv2(F.pad(c, [2, 0])))
         else:
             c = torch.tanh(self.conv1(F.pad(features, [2, 0])))
+            if DEBUGDUMP:
+                debugdump('feature_net_conv1_activated.f32', c.permute(0, 2, 1))
             c = torch.tanh(self.conv2(F.pad(c, [2, 0])))
+            if DEBUGDUMP:
+                debugdump('feature_net_conv2_activated.f32', c.permute(0, 2, 1))
 
         c = torch.tanh(self.tconv(c))
+        if DEBUGDUMP:
+            debugdump('feature_net_tconv_activated.f32', c.permute(0, 2, 1))
 
         c = c.permute(0, 2, 1)
 
         c, _ = self.gru(c, state)
+
+        if DEBUGDUMP:
+            debugdump('feature_net_gru.f32', c)
 
         return c
 
@@ -218,27 +238,50 @@ class BBWENet(torch.nn.Module):
         # split into latent_channels channels
         y16 = self.af1(x, cf, debug=debug)
 
+        if DEBUGDUMP:
+            debugdump('bbwenet_af1_1.f32', y16[:, 0:1, :]) # first channel is bypass channel
+            debugdump('bbwenet_af1_2.f32', y16[:, 1:2, :])
+            debugdump('bbwenet_af1_3.f32', y16[:, 2:3, :])
+
         # first 2x upsampling step
         y32 = self.upsampler.hq_2x_up(y16)
         y32_out = y32[:, 0:1, :] # first channel is bypass channel
+
+        if DEBUGDUMP:
+            debugdump('bbwenet_up2_1.f32', y32_out)
+            debugdump('bbwenet_up2_2.f32', y32[:, 1:2, :])
+            debugdump('bbwenet_up2_3.f32', y32[:, 2:3, :])
 
         # extend frequencies
         idx = 1
         if self.shape_extension:
             y32_shape = self.tdshape1(y32[:, idx:idx+1, :], cf)
             y32_out = torch.cat((y32_out, y32_shape), dim=1)
+            if DEBUGDUMP:
+                debugdump('bbwenet_up2_shape.f32', y32_shape)
             idx += 1
 
         if self.func_extension:
             y32_func = self.nlfunc(y32[:, idx:idx+1, :])
             y32_out = torch.cat((y32_out, y32_func), dim=1)
+            if DEBUGDUMP:
+                debugdump('bbwenet_up2_func.f32', y32_func)
 
         # mix-select
         y32_out = self.af2(y32_out, cf)
+        if DEBUGDUMP:
+            debugdump('bbwenet_af2_1.f32', y32_out[:, 0:1, :])
+            debugdump('bbwenet_af2_2.f32', y32_out[:, 1:2, :])
+            debugdump('bbwenet_af2_3.f32', y32_out[:, 2:3, :])
 
         # 1.5x upsampling
         y48 = self.upsampler.interpolate_3_2(y32_out)
         y48_out = y48[:, 0:1, :] # first channel is bypass channel
+
+        if DEBUGDUMP:
+            debugdump('bbwenet_up15_1.f32', y48_out)
+            debugdump('bbwenet_up15_2.f32', y48[:, 1:2, :])
+            debugdump('bbwenet_up15_3.f32', y48[:, 2:3, :])
 
         # extend frequencies
         idx = 1
@@ -246,12 +289,19 @@ class BBWENet(torch.nn.Module):
             y48_shape = self.tdshape2(y48[:, idx:idx+1, :], cf)
             y48_out = torch.cat((y48_out, y48_shape), dim=1)
             idx += 1
+            if DEBUGDUMP:
+                debugdump('bbwenet_up15_shape.f32', y48_shape)
 
         if self.func_extension:
             y48_func = self.nlfunc(y48[:, idx:idx+1, :])
             y48_out = torch.cat((y48_out, y48_func), dim=1)
+            if DEBUGDUMP:
+                debugdump('bbwenet_up15_func.f32', y48_func)
 
         # 2nd mixing
         y48_out = self.af3(y48_out, cf)
+
+        if DEBUGDUMP:
+            debugdump('bbwenet_af3_1.f32', y48_out)
 
         return y48_out

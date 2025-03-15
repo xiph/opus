@@ -346,6 +346,7 @@ void adashape_process_frame(
     int feature_dim,
     int frame_size,
     int avg_pool_k,
+    int interpolate_k,
     int arch
 )
 {
@@ -354,10 +355,12 @@ void adashape_process_frame(
     float tmp_buffer[ADASHAPE_MAX_FRAME_SIZE];
     int i, k;
     int tenv_size;
+    int hidden_dim = frame_size / interpolate_k;
     float mean;
     float *tenv;
 
     celt_assert(frame_size % avg_pool_k == 0);
+    celt_assert(frame_size % interpolate_k == 0);
     celt_assert(feature_dim + frame_size / avg_pool_k + 1 < ADASHAPE_MAX_INPUT_DIM);
 
     tenv_size = frame_size / avg_pool_k;
@@ -396,8 +399,8 @@ void adashape_process_frame(
 #ifdef DEBUG_NNDSP
     print_float_vector("alpha1_out", out_buffer, frame_size);
 #endif
-    /* compute leaky ReLU by hand. ToDo: try tanh activation */
-    for (i = 0; i < frame_size; i ++)
+    /* compute leaky ReLU by hand. */
+    for (i = 0; i < hidden_dim; i ++)
     {
         float tmp = out_buffer[i] + tmp_buffer[i];
         in_buffer[i] = tmp >= 0 ? tmp : 0.2 * tmp;
@@ -405,7 +408,26 @@ void adashape_process_frame(
 #ifdef DEBUG_NNDSP
     print_float_vector("post_alpha1", in_buffer, frame_size);
 #endif
-    compute_generic_conv1d(alpha2, out_buffer, hAdaShape->conv_alpha2_state, in_buffer, frame_size, ACTIVATION_LINEAR, arch);
+    compute_generic_conv1d(alpha2, tmp_buffer, hAdaShape->conv_alpha2_state, in_buffer, hidden_dim, ACTIVATION_LINEAR, arch);
+
+#ifdef DEBUG_NNDSP
+    print_float_vector("alpha2_out", tmp_buffer, hidden_dim);
+#endif
+
+    /* upsampling by linear interpolation */
+    for (i = 0; i < hidden_dim; i ++)
+    {
+        for (k = 0; k < interpolate_k; k++)
+        {
+            float alpha = (float) (k + 1) / interpolate_k;
+            out_buffer[i * interpolate_k + k] = alpha * tmp_buffer[i] + (1.f - alpha) * hAdaShape->interpolate_state[0];
+        }
+        hAdaShape->interpolate_state[0] = tmp_buffer[i];
+    }
+
+#ifdef DEBUG_NNDSP
+    print_float_vector("interpolate_out", out_buffer, frame_size);
+#endif
 
     /* shape signal */
     for (i = 0; i < frame_size; i ++)
