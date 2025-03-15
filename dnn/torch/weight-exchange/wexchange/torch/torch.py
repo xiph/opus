@@ -156,12 +156,16 @@ def dump_torch_adaptive_comb1d_weights(where, adaconv, name='adaconv', scale=1/1
 def dump_torch_tdshaper(where, shaper, name='tdshaper', quantize=False, scale=1/128):
 
     if isinstance(where, CWriter):
+        interpolate_k = 1
+        if hasattr(shaper, 'interpolate_k'):
+            interpolate_k = shaper.interpolate_k
         where.header.write(f"""
 #define {name.upper()}_FEATURE_DIM {shaper.feature_dim}
 #define {name.upper()}_FRAME_SIZE {shaper.frame_size}
 #define {name.upper()}_AVG_POOL_K {shaper.avg_pool_k}
 #define {name.upper()}_INNOVATE {1 if shaper.innovate else 0}
 #define {name.upper()}_POOL_AFTER {1 if shaper.pool_after else 0}
+#define {name.upper()}_INTERPOLATE_K {interpolate_k}
 """
         )
 

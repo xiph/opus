@@ -249,6 +249,11 @@ typedef struct {
     OSCEState state;
     int method;
 } silk_OSCE_struct;
+
+typedef struct {
+    OSCEBWEFeatureState features;
+    OSCEBWEState state;
+} silk_OSCE_BWE_struct;
 #endif
 
 /* Struct for Packet Loss Concealment */
@@ -285,6 +290,9 @@ typedef struct {
 typedef struct {
 #ifdef ENABLE_OSCE
     silk_OSCE_struct            osce;
+#ifdef ENABLE_OSCE_BWE
+    silk_OSCE_BWE_struct        osce_bwe;
+#endif
 #endif
 #define SILK_DECODER_STATE_RESET_START prev_gain_Q16
     opus_int32                  prev_gain_Q16;

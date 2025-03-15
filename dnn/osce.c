@@ -37,13 +37,71 @@
 #include "nndsp.h"
 #include "float_cast.h"
 #include "arch.h"
-
+/*#define OSCE_DEBUG*/
 #ifdef OSCE_DEBUG
 #include <stdio.h>
 /*#define WRITE_FEATURES*/
 /*#define DEBUG_LACE*/
 /*#define DEBUG_NOLACE*/
+#define DEBUG_BBWENET
 #define FINIT(fid, name, mode) do{if (fid == NULL) {fid = fopen(name, mode);}} while(0)
+#endif
+
+#if 0
+#include <stdio.h>
+static void print_float_array(FILE *fid, const char  *name, const float *array, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        fprintf(fid, "%s[%d]: %f\n", name, i, array[i]);
+    }
+}
+
+static void print_int_array(FILE *fid, const char  *name, const int *array, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        fprintf(fid, "%s[%d]: %d\n", name, i, array[i]);
+    }
+}
+
+static void print_int8_array(FILE *fid, const char  *name, const opus_int8 *array, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        fprintf(fid, "%s[%d]: %d\n", name, i, array[i]);
+    }
+}
+
+static void print_linear_layer(FILE *fid, const char *name, LinearLayer *layer)
+{
+    int i, n_in, n_out, n_total;
+    char tmp[256];
+
+    n_in = layer->nb_inputs;
+    n_out = layer->nb_outputs;
+    n_total = n_in * n_out;
+
+    fprintf(fid, "\nprinting layer %s...\n", name);
+    fprintf(fid, "%s.nb_inputs: %d\n%s.nb_outputs: %d\n", name, n_in, name, n_out);
+
+    if (layer->bias !=NULL){}
+    if (layer->subias !=NULL){}
+    if (layer->weights !=NULL){}
+    if (layer->float_weights !=NULL){}
+
+    if (layer->bias != NULL) {sprintf(tmp, "%s.bias", name); print_float_array(fid, tmp, layer->bias, n_out);}
+    if (layer->subias != NULL) {sprintf(tmp, "%s.subias", name); print_float_array(fid, tmp, layer->subias, n_out);}
+    if (layer->weights != NULL) {sprintf(tmp, "%s.weights", name); print_int8_array(fid, tmp, layer->weights, n_total);}
+    if (layer->float_weights != NULL) {sprintf(tmp, "%s.float_weights", name); print_float_array(fid, tmp, layer->float_weights, n_total);}
+    /*if (layer->weights_idx != NULL) {sprintf(tmp, "%s.weights_idx", name); print_float_array(fid, tmp, layer->weights_idx, n_total);}*/
+    if (layer->diag != NULL) {sprintf(tmp, "%s.diag", name); print_float_array(fid, tmp, layer->diag, n_in);}
+    if (layer->scale != NULL) {sprintf(tmp, "%s.scale", name); print_float_array(fid, tmp, layer->scale, n_out);}
+
+}
 #endif
 
 #ifdef ENABLE_OSCE_TRAINING_DATA
@@ -54,6 +112,7 @@
 
 extern const WeightArray lacelayers_arrays[];
 extern const WeightArray nolacelayers_arrays[];
+extern const WeightArray bbwenetlayers_arrays[];
 
 /* LACE */
 
@@ -639,6 +698,7 @@ static void nolace_process_20ms_frame(
             NOLACE_TDSHAPE1_FEATURE_DIM,
             NOLACE_TDSHAPE1_FRAME_SIZE,
             NOLACE_TDSHAPE1_AVG_POOL_K,
+            1,
             arch
         );
 
@@ -695,6 +755,7 @@ static void nolace_process_20ms_frame(
             NOLACE_TDSHAPE2_FEATURE_DIM,
             NOLACE_TDSHAPE2_FRAME_SIZE,
             NOLACE_TDSHAPE2_AVG_POOL_K,
+            1,
             arch
         );
 
@@ -747,6 +808,7 @@ static void nolace_process_20ms_frame(
             NOLACE_TDSHAPE3_FEATURE_DIM,
             NOLACE_TDSHAPE3_FRAME_SIZE,
             NOLACE_TDSHAPE3_AVG_POOL_K,
+            1,
             arch
         );
 
@@ -786,6 +848,523 @@ static void nolace_process_20ms_frame(
 
 #endif /* #ifndef DISABLE_NOLACE */
 
+
+#ifdef ENABLE_OSCE_BWE
+#ifndef DISABLE_BBWENET
+static void bbwe_feature_net(
+    BBWENet *hBBWENET,
+    BBWENetState *state,
+    float *output,
+    const float *features,
+    int num_frames,
+    int arch
+)
+{
+    float input_buffer[4 * BBWENET_FNET_GRU_STATE_SIZE];
+    float output_buffer[4 * BBWENET_FNET_GRU_STATE_SIZE];
+    int i_subframe;
+    int i_frame;
+
+#ifdef DEBUG_BBWENET
+    static FILE *f_features=NULL, *f_conv1=NULL, *f_conv2=NULL, *f_tconv=NULL, *f_gru=NULL;
+
+    FINIT(f_features, "debug/bbwenet_features.f32", "wb");
+    FINIT(f_conv1, "debug/bbwenet_conv1.f32", "wb");
+    FINIT(f_conv2, "debug/bbwenet_conv2.f32", "wb");
+    FINIT(f_tconv, "debug/bbwenet_tconv.f32", "wb");
+    FINIT(f_gru, "debug/bbwenet_gru.f32", "wb");
+
+    fwrite(features, sizeof(*features), num_frames * BBWENET_FEATURE_DIM, f_features);
+#endif
+
+    /* adjust buffer sizes if any of this breaks */
+    celt_assert(BBWENET_FNET_GRU_STATE_SIZE == BBWENET_FNET_TCONV_OUT_CHANNELS);
+    celt_assert(BBWENET_FNET_TCONV_OUT_CHANNELS == BBWENET_FNET_CONV2_OUT_SIZE);
+    celt_assert(BBWENET_FNET_CONV2_OUT_SIZE == BBWENET_FNET_CONV1_OUT_SIZE);
+
+    /* first conv layer */
+    for (i_frame = 0; i_frame < num_frames; i_frame++)
+    {
+        compute_generic_conv1d(
+            &hBBWENET->layers.bbwenet_fnet_conv1,
+            output_buffer + i_frame * BBWENET_FNET_CONV1_OUT_SIZE,
+            state->feature_net_conv1_state,
+            features + i_frame * BBWENET_FEATURE_DIM,
+            BBWENET_FEATURE_DIM,
+            ACTIVATION_TANH,
+            arch
+        );
+#ifdef DEBUG_BBWENET
+        fwrite(output_buffer + i_frame * BBWENET_FNET_CONV1_OUT_SIZE, sizeof(float), BBWENET_FNET_CONV1_OUT_SIZE, f_conv1);
+#endif
+    }
+    OPUS_COPY(input_buffer, output_buffer, num_frames * BBWENET_FNET_CONV1_OUT_SIZE);
+
+    /* second conv layer */
+    for (i_frame = 0; i_frame < num_frames; i_frame++)
+    {
+        compute_generic_conv1d(
+            &hBBWENET->layers.bbwenet_fnet_conv2,
+            output_buffer + i_frame * BBWENET_FNET_CONV2_OUT_SIZE,
+            state->feature_net_conv2_state,
+            input_buffer + i_frame * BBWENET_FNET_CONV1_OUT_SIZE,
+            BBWENET_FNET_CONV1_OUT_SIZE,
+            ACTIVATION_TANH,
+            arch
+        );
+#ifdef DEBUG_BBWENET
+        fwrite(output_buffer + i_frame * BBWENET_FNET_CONV2_OUT_SIZE, sizeof(float), BBWENET_FNET_CONV2_OUT_SIZE, f_conv2);
+#endif
+    }
+    OPUS_COPY(input_buffer, output_buffer, num_frames * BBWENET_FNET_CONV2_OUT_SIZE);
+
+    /* tconv upsampling*/
+    for (i_frame = 0; i_frame < num_frames; i_frame++)
+    {
+        compute_generic_dense(
+            &hBBWENET->layers.bbwenet_fnet_tconv,
+            output_buffer + i_frame * BBWENET_FNET_TCONV_OUT_CHANNELS * BBWENET_FNET_TCONV_STRIDE,
+            input_buffer + i_frame * BBWENET_FNET_CONV2_OUT_SIZE,
+            ACTIVATION_TANH,
+            arch
+        );
+#ifdef DEBUG_BBWENET
+        fwrite(output_buffer + i_frame * BBWENET_FNET_TCONV_OUT_CHANNELS * BBWENET_FNET_TCONV_STRIDE, sizeof(float), BBWENET_FNET_TCONV_OUT_CHANNELS * BBWENET_FNET_TCONV_STRIDE, f_tconv);
+#endif
+    }
+    OPUS_COPY(input_buffer, output_buffer, num_frames * BBWENET_FNET_TCONV_OUT_CHANNELS * BBWENET_FNET_TCONV_STRIDE);
+
+    /* GRU */
+    celt_assert(BBWENET_FNET_TCONV_STRIDE == 2)
+    for (i_subframe = 0; i_subframe < BBWENET_FNET_TCONV_STRIDE * num_frames; i_subframe ++)
+    {
+        compute_generic_gru(
+            &hBBWENET->layers.bbwenet_fnet_gru_input,
+            &hBBWENET->layers.bbwenet_fnet_gru_recurrent,
+            state->feature_net_gru_state,
+            input_buffer + i_subframe * BBWENET_FNET_TCONV_OUT_CHANNELS,
+            arch
+        );
+#ifdef DEBUG_BBWENET
+        fwrite(state->feature_net_gru_state, sizeof(float), BBWENET_FNET_GRU_STATE_SIZE, f_gru);
+#endif
+        OPUS_COPY(output + i_subframe * BBWENET_FNET_GRU_STATE_SIZE, state->feature_net_gru_state, BBWENET_FNET_GRU_STATE_SIZE);
+    }
+}
+
+static float hq_2x_even[3] = {0.026641845703125, 0.228668212890625, -0.4036407470703125};
+static float hq_2x_odd[3]  = {0.104583740234375, 0.3932037353515625, -0.152496337890625};
+
+static float frac_01_24[8] = {
+    0.00576782, -0.01831055,  0.01882935,  0.9328308,
+    0.09143066, -0.04196167,  0.01296997, -0.00140381
+};
+
+static float frac_17_24[8] = {
+    -3.14331055e-03,  2.73437500e-02, -1.06414795e-01,  3.64685059e-01,
+    8.03863525e-01, -1.02233887e-01,  1.61437988e-02, -1.22070312e-04
+};
+
+static float frac_09_24[8] = {
+    -0.00146484,  0.02313232, -0.12072754,  0.7315979,
+    0.4621277, -0.12075806,  0.0295105 , -0.00326538
+};
+
+static void apply_valin_activation(float *x, int len)
+{
+    int i;
+    for (i = 0; i < len; i++)
+    {
+        x[i] *= sin(log(fabs(x[i]) + 1e-6f));
+    }
+}
+
+
+#define DELAY_SAMPLES 8 /* ToDo: this probably should be 7, bug in python code? */
+static void interpol_3_2(resamp_state *state, float *x_out, const float *x_in, int num_samples)
+{
+    int i_sample, i_out = 0;
+    float buffer[8 * BBWENET_FRAME_SIZE16 + DELAY_SAMPLES];
+
+    celt_assert(num_samples > 1);
+    celt_assert(num_samples < 8 * BBWENET_FRAME_SIZE16);
+    celt_assert(num_samples % 2 == 0);
+
+    OPUS_COPY(buffer, state->interpol_buffer, DELAY_SAMPLES);
+    OPUS_COPY(buffer + DELAY_SAMPLES, x_in, num_samples);
+
+    for (i_sample = 0; i_sample < num_samples; i_sample+=2)
+    {
+        x_out[i_out++] = buffer[i_sample + 0] * frac_01_24[0] +
+                         buffer[i_sample + 1] * frac_01_24[1] +
+                         buffer[i_sample + 2] * frac_01_24[2] +
+                         buffer[i_sample + 3] * frac_01_24[3] +
+                         buffer[i_sample + 4] * frac_01_24[4] +
+                         buffer[i_sample + 5] * frac_01_24[5] +
+                         buffer[i_sample + 6] * frac_01_24[6] +
+                         buffer[i_sample + 7] * frac_01_24[7];
+
+        x_out[i_out++] = buffer[i_sample + 0] * frac_17_24[0] +
+                         buffer[i_sample + 1] * frac_17_24[1] +
+                         buffer[i_sample + 2] * frac_17_24[2] +
+                         buffer[i_sample + 3] * frac_17_24[3] +
+                         buffer[i_sample + 4] * frac_17_24[4] +
+                         buffer[i_sample + 5] * frac_17_24[5] +
+                         buffer[i_sample + 6] * frac_17_24[6] +
+                         buffer[i_sample + 7] * frac_17_24[7];
+
+        x_out[i_out++] = buffer[i_sample + 1] * frac_09_24[0] +
+                         buffer[i_sample + 2] * frac_09_24[1] +
+                         buffer[i_sample + 3] * frac_09_24[2] +
+                         buffer[i_sample + 4] * frac_09_24[3] +
+                         buffer[i_sample + 5] * frac_09_24[4] +
+                         buffer[i_sample + 6] * frac_09_24[5] +
+                         buffer[i_sample + 7] * frac_09_24[6] +
+                         buffer[i_sample + 8] * frac_09_24[7];
+    }
+
+    /* copy last samples to buffer */
+    OPUS_COPY(state->interpol_buffer, buffer + num_samples, DELAY_SAMPLES);
+}
+
+static void upsamp_2x(resamp_state *state, float *x_out, const float *x_in, int num_samples)
+{
+    float buffer [4 * BBWENET_FRAME_SIZE16];
+    float *S_even = state->upsamp_buffer[0];
+    float *S_odd = state->upsamp_buffer[1];
+    int k;
+    float x, X, Y, tmp1, tmp2, tmp3;
+
+    celt_assert(num_samples > 1);
+    celt_assert(num_samples < 4 * BBWENET_FRAME_SIZE16);
+
+    OPUS_COPY(buffer, x_in, num_samples);
+
+    for (k = 0; k < num_samples; k++)
+    {
+        x = buffer[k];
+        /* even sample, first pass, */
+        Y = x - S_even[0];
+        X = Y * hq_2x_even[0];
+        tmp1 = S_even[0] + X;
+        S_even[0] = x + X;
+
+        /* ...second pass, */
+        Y = tmp1 - S_even[1];
+        X = Y * hq_2x_even[1];
+        tmp2 = S_even[1] + X;
+        S_even[1] = tmp1 + X;
+
+        /* ...third pass */
+        Y = tmp2 - S_even[2];
+        X = Y * (1 + hq_2x_even[2]);
+        tmp3 = S_even[2] + X;
+        S_even[2] = tmp2 + X;
+
+        x_out[2 * k] = tmp3;
+
+        /* odd sample, first pass, */
+        Y = x - S_odd[0];
+        X = Y * hq_2x_odd[0];
+        tmp1 = S_odd[0] + X;
+        S_odd[0] = x + X;
+
+        /* ...second pass, */
+        Y = tmp1 - S_odd[1];
+        X = Y * hq_2x_odd[1];
+        tmp2 = S_odd[1] + X;
+        S_odd[1] = tmp1 + X;
+
+        /* ...third pass */
+        Y = tmp2 - S_odd[2];
+        X = Y * (1 + hq_2x_odd[2]);
+        tmp3 = S_odd[2] + X;
+        S_odd[2] = tmp2 + X;
+
+        x_out[2 * k + 1] = tmp3;
+    }
+}
+
+static void bbwenet_process_frames(
+    BBWENet *hBBWENET,
+    BBWENetState *state,
+    float *x_out,
+    const float *x_in,
+    const float *features,
+    int num_frames,
+    int arch
+)
+{
+    float latent_features[4 * BBWENET_COND_DIM];
+    int i_subframe, num_subframes = 2 * num_frames, i_channel;
+    float x_buffer1[3 * 3 * 4 * 3*BBWENET_FRAME_SIZE16] = {0}; /* 3x3 channels, 4 subframes, 48 kHz */
+    float x_buffer2[3 * 3 * 4 * 3*BBWENET_FRAME_SIZE16] = {0};
+    BBWENETLayers *layers = &hBBWENET->layers;
+
+#ifdef DEBUG_BBWENET
+    static FILE *f_latent=NULL, *f_xin=NULL, *f_af1_1=NULL, *f_af1_2=NULL, *f_af1_3=NULL;
+    static FILE *f_up2_1=NULL, *f_up2_2=NULL, *f_up2_3=NULL, *f2_up_shape=NULL, *f2_up_func=NULL;
+    static FILE *f_af2_1=NULL, *f_af2_2=NULL, *f_af2_3=NULL;
+    static FILE *f_up15_1=NULL, *f_up15_2=NULL, *f_up15_3=NULL;
+    static FILE *f_up15_shape=NULL, *f_up15_func=NULL;
+    static FILE *f_af3_1=NULL;
+
+    FINIT(f_latent, "dnn/torch/osce/debugdump/feature_net_gru.f32", "rb");
+    FINIT(f_xin, "debug/bbwenet_x_in.f32", "wb");
+    FINIT(f_af1_1, "debug/bbwenet_af1_1.f32", "wb");
+    FINIT(f_af1_2, "debug/bbwenet_af1_2.f32", "wb");
+    FINIT(f_af1_3, "debug/bbwenet_af1_3.f32", "wb");
+    FINIT(f_up2_1, "debug/bbwenet_up2_1.f32", "wb");
+    FINIT(f_up2_2, "debug/bbwenet_up2_2.f32", "wb");
+    FINIT(f_up2_3, "debug/bbwenet_up2_3.f32", "wb");
+    FINIT(f2_up_func, "debug/bbwenet_up2_func.f32", "wb");
+    FINIT(f2_up_shape, "debug/bbwenet_up2_shape.f32", "wb");
+    FINIT(f_af2_1, "debug/bbwenet_af2_1.f32", "wb");
+    FINIT(f_af2_2, "debug/bbwenet_af2_2.f32", "wb");
+    FINIT(f_af2_3, "debug/bbwenet_af2_3.f32", "wb");
+    FINIT(f_up15_1, "debug/bbwenet_up15_1.f32", "wb");
+    FINIT(f_up15_2, "debug/bbwenet_up15_2.f32", "wb");
+    FINIT(f_up15_3, "debug/bbwenet_up15_3.f32", "wb");
+    FINIT(f_up15_shape, "debug/bbwenet_up15_shape.f32", "wb");
+    FINIT(f_up15_func, "debug/bbwenet_up15_func.f32", "wb");
+    FINIT(f_af3_1, "debug/bbwenet_af3_1.f32", "wb");
+    fwrite(x_in, sizeof(*x_in), num_subframes * BBWENET_AF1_FRAME_SIZE, f_xin);
+#endif
+
+    /* feature net */
+    bbwe_feature_net(hBBWENET, state, latent_features, features, num_frames, arch);
+#ifdef DEBUG_BBWENET
+    if (f_latent != NULL){
+        fread(latent_features, sizeof(*latent_features), num_subframes * BBWENET_COND_DIM, f_latent);
+    }
+#endif
+
+
+    /* signal net
+     * first adaptive filtering stage, three output channels */
+    for (i_subframe = 0; i_subframe < num_subframes; i_subframe++)
+    {
+        adaconv_process_frame(
+            &state->af1_state,
+            x_buffer1 + i_subframe * BBWENET_AF1_FRAME_SIZE * BBWENET_AF1_OUT_CHANNELS,
+            x_in + i_subframe * BBWENET_AF1_FRAME_SIZE,
+            latent_features + i_subframe * BBWENET_COND_DIM,
+            &layers->bbwenet_af1_kernel,
+            &layers->bbwenet_af1_gain,
+            BBWENET_COND_DIM,
+            BBWENET_AF1_FRAME_SIZE,
+            BBWENET_AF1_OVERLAP_SIZE,
+            BBWENET_AF1_IN_CHANNELS,
+            BBWENET_AF1_OUT_CHANNELS,
+            BBWENET_AF1_KERNEL_SIZE,
+            BBWENET_AF1_LEFT_PADDING,
+            BBWENET_AF1_FILTER_GAIN_A,
+            BBWENET_AF1_FILTER_GAIN_B,
+            BBWENET_AF1_SHAPE_GAIN,
+            hBBWENET->window16,
+            arch);
+
+#ifdef DEBUG_BBWENET
+        fwrite(x_buffer1 + i_subframe * BBWENET_AF1_FRAME_SIZE * BBWENET_AF1_OUT_CHANNELS, sizeof(float), BBWENET_AF1_FRAME_SIZE, f_af1_1);
+        fwrite(x_buffer1 + i_subframe * BBWENET_AF1_FRAME_SIZE * BBWENET_AF1_OUT_CHANNELS + BBWENET_AF1_FRAME_SIZE, sizeof(float), BBWENET_AF1_FRAME_SIZE, f_af1_2);
+        fwrite(x_buffer1 + i_subframe * BBWENET_AF1_FRAME_SIZE * BBWENET_AF1_OUT_CHANNELS + 2 * BBWENET_AF1_FRAME_SIZE, sizeof(float), BBWENET_AF1_FRAME_SIZE, f_af1_3);
+#endif
+    }
+
+    /* 1st round of non-linear extension */
+    for (i_subframe = 0; i_subframe < num_subframes; i_subframe++)
+    {
+
+        /* 2x upsampling on individual channels */
+        celt_assert(BBWENET_AF1_OUT_CHANNELS == 3);
+        celt_assert(2 * BBWENET_AF1_FRAME_SIZE == BBWENET_TDSHAPE1_FRAME_SIZE);
+        for (i_channel = 0; i_channel < 3; i_channel ++)
+        {
+            upsamp_2x(
+                &state->resampler_state[i_channel],
+                x_buffer2 + i_subframe * BBWENET_TDSHAPE1_FRAME_SIZE * BBWENET_AF1_OUT_CHANNELS + i_channel * BBWENET_TDSHAPE1_FRAME_SIZE,
+                x_buffer1 + i_subframe * BBWENET_AF1_FRAME_SIZE * BBWENET_AF1_OUT_CHANNELS + i_channel * BBWENET_AF1_FRAME_SIZE,
+                BBWENET_AF1_FRAME_SIZE
+            );
+        }
+
+#ifdef DEBUG_BBWENET
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF1_OUT_CHANNELS * BBWENET_TDSHAPE1_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE1_FRAME_SIZE, f_up2_1);
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF1_OUT_CHANNELS * BBWENET_TDSHAPE1_FRAME_SIZE + BBWENET_TDSHAPE1_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE1_FRAME_SIZE, f_up2_2);
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF1_OUT_CHANNELS * BBWENET_TDSHAPE1_FRAME_SIZE + 2 * BBWENET_TDSHAPE1_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE1_FRAME_SIZE, f_up2_3);
+#endif
+
+        /* tdshape on second channel (in place) */
+        adashape_process_frame(
+            &state->tdshape1_state,
+            x_buffer2 + i_subframe * BBWENET_AF1_OUT_CHANNELS * BBWENET_TDSHAPE1_FRAME_SIZE + BBWENET_TDSHAPE1_FRAME_SIZE,
+            x_buffer2 + i_subframe * BBWENET_AF1_OUT_CHANNELS * BBWENET_TDSHAPE1_FRAME_SIZE + BBWENET_TDSHAPE1_FRAME_SIZE,
+            latent_features + i_subframe * BBWENET_COND_DIM,
+            &layers->bbwenet_tdshape1_alpha1_f,
+            &layers->bbwenet_tdshape1_alpha1_t,
+            &layers->bbwenet_tdshape1_alpha2,
+            BBWENET_TDSHAPE1_FEATURE_DIM,
+            BBWENET_TDSHAPE1_FRAME_SIZE,
+            BBWENET_TDSHAPE1_AVG_POOL_K,
+            BBWENET_TDSHAPE1_INTERPOLATE_K,
+            arch
+        );
+
+#ifdef DEBUG_BBWENET
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF1_OUT_CHANNELS * BBWENET_TDSHAPE1_FRAME_SIZE + BBWENET_TDSHAPE1_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE1_FRAME_SIZE, f2_up_shape);
+#endif
+
+        /* non-linear activation of third channel (in place)*/
+        apply_valin_activation(
+            x_buffer2 + i_subframe * BBWENET_AF1_OUT_CHANNELS * BBWENET_TDSHAPE1_FRAME_SIZE + 2 * BBWENET_TDSHAPE1_FRAME_SIZE,
+            BBWENET_TDSHAPE1_FRAME_SIZE
+        );
+#ifdef DEBUG_BBWENET
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF1_OUT_CHANNELS * BBWENET_TDSHAPE1_FRAME_SIZE + 2 * BBWENET_TDSHAPE1_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE1_FRAME_SIZE, f2_up_func);
+#endif
+
+    }
+
+    /* mixing */
+    for (i_subframe = 0; i_subframe < num_subframes; i_subframe++)
+    {
+        adaconv_process_frame(
+            &state->af2_state,
+            x_buffer1 + i_subframe * BBWENET_AF2_FRAME_SIZE * BBWENET_AF2_OUT_CHANNELS,
+            x_buffer2 + i_subframe * BBWENET_AF2_FRAME_SIZE * BBWENET_AF1_OUT_CHANNELS,
+            latent_features + i_subframe * BBWENET_COND_DIM,
+            &layers->bbwenet_af2_kernel,
+            &layers->bbwenet_af2_gain,
+            BBWENET_COND_DIM,
+            BBWENET_AF2_FRAME_SIZE,
+            BBWENET_AF2_OVERLAP_SIZE,
+            BBWENET_AF2_IN_CHANNELS,
+            BBWENET_AF2_OUT_CHANNELS,
+            BBWENET_AF2_KERNEL_SIZE,
+            BBWENET_AF2_LEFT_PADDING,
+            BBWENET_AF2_FILTER_GAIN_A,
+            BBWENET_AF2_FILTER_GAIN_B,
+            BBWENET_AF2_SHAPE_GAIN,
+            hBBWENET->window32,
+            arch);
+#ifdef DEBUG_BBWENET
+        fwrite(x_buffer1 + i_subframe * BBWENET_AF2_FRAME_SIZE * BBWENET_AF2_OUT_CHANNELS, sizeof(float), BBWENET_AF2_FRAME_SIZE, f_af2_1);
+        fwrite(x_buffer1 + i_subframe * BBWENET_AF2_FRAME_SIZE * BBWENET_AF2_OUT_CHANNELS + BBWENET_AF2_FRAME_SIZE, sizeof(float), BBWENET_AF2_FRAME_SIZE, f_af2_2);
+        fwrite(x_buffer1 + i_subframe * BBWENET_AF2_FRAME_SIZE * BBWENET_AF2_OUT_CHANNELS + 2 * BBWENET_AF2_FRAME_SIZE, sizeof(float), BBWENET_AF2_FRAME_SIZE, f_af2_3);
+#endif
+    }
+
+    /* second round of extension */
+    for (i_subframe = 0; i_subframe < num_subframes; i_subframe++)
+    {
+        /* 1.5x interpolation on individual channels */
+        celt_assert(BBWENET_AF2_OUT_CHANNELS == 3);
+        celt_assert(3 * BBWENET_AF2_FRAME_SIZE == 2 * BBWENET_TDSHAPE2_FRAME_SIZE);
+        for (i_channel = 0; i_channel < 3; i_channel ++)
+        {
+            interpol_3_2(
+                &state->resampler_state[i_channel],
+                x_buffer2 + i_subframe * BBWENET_AF3_FRAME_SIZE * BBWENET_AF2_OUT_CHANNELS + i_channel * BBWENET_TDSHAPE2_FRAME_SIZE,
+                x_buffer1 + i_subframe * BBWENET_TDSHAPE1_FRAME_SIZE * BBWENET_AF2_OUT_CHANNELS + i_channel * BBWENET_TDSHAPE1_FRAME_SIZE,
+                BBWENET_TDSHAPE1_FRAME_SIZE
+            );
+        }
+
+#ifdef DEBUG_BBWENET
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF2_OUT_CHANNELS * BBWENET_TDSHAPE2_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE2_FRAME_SIZE, f_up15_1);
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF2_OUT_CHANNELS * BBWENET_TDSHAPE2_FRAME_SIZE + BBWENET_TDSHAPE2_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE2_FRAME_SIZE, f_up15_2);
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF2_OUT_CHANNELS * BBWENET_TDSHAPE2_FRAME_SIZE + 2 * BBWENET_TDSHAPE2_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE2_FRAME_SIZE, f_up15_3);
+#endif
+
+        /* tdshape on second channel (in place) */
+        adashape_process_frame(
+            &state->tdshape2_state,
+            x_buffer2 + i_subframe * BBWENET_AF2_OUT_CHANNELS * BBWENET_TDSHAPE2_FRAME_SIZE + BBWENET_TDSHAPE2_FRAME_SIZE,
+            x_buffer2 + i_subframe * BBWENET_AF2_OUT_CHANNELS * BBWENET_TDSHAPE2_FRAME_SIZE + BBWENET_TDSHAPE2_FRAME_SIZE,
+            latent_features + i_subframe * BBWENET_COND_DIM,
+            &layers->bbwenet_tdshape2_alpha1_f,
+            &layers->bbwenet_tdshape2_alpha1_t,
+            &layers->bbwenet_tdshape2_alpha2,
+            BBWENET_TDSHAPE2_FEATURE_DIM,
+            BBWENET_TDSHAPE2_FRAME_SIZE,
+            BBWENET_TDSHAPE2_AVG_POOL_K,
+            BBWENET_TDSHAPE2_INTERPOLATE_K,
+            arch
+        );
+
+#ifdef DEBUG_BBWENET
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF2_OUT_CHANNELS * BBWENET_TDSHAPE2_FRAME_SIZE + BBWENET_TDSHAPE2_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE2_FRAME_SIZE, f_up15_shape);
+#endif
+
+        /* non-linear activation of third channel (in place)*/
+        apply_valin_activation(
+            x_buffer2 + i_subframe * BBWENET_AF2_OUT_CHANNELS * BBWENET_TDSHAPE2_FRAME_SIZE + 2 * BBWENET_TDSHAPE2_FRAME_SIZE,
+            BBWENET_TDSHAPE2_FRAME_SIZE
+        );
+#ifdef DEBUG_BBWENET
+        fwrite(x_buffer2 + i_subframe * BBWENET_AF2_OUT_CHANNELS * BBWENET_TDSHAPE2_FRAME_SIZE + 2 * BBWENET_TDSHAPE2_FRAME_SIZE, sizeof(float), BBWENET_TDSHAPE2_FRAME_SIZE, f_up15_func);
+#endif
+    }
+
+    /* final mixing */
+    celt_assert(BBWENET_AF3_OUT_CHANNELS == 1);
+    for (i_subframe = 0; i_subframe < num_subframes; i_subframe++)
+    {
+        adaconv_process_frame(
+            &state->af3_state,
+            x_out + i_subframe * BBWENET_AF3_FRAME_SIZE,
+            x_buffer2 + i_subframe * BBWENET_TDSHAPE2_FRAME_SIZE * BBWENET_AF2_OUT_CHANNELS,
+            latent_features + i_subframe * BBWENET_COND_DIM,
+            &layers->bbwenet_af3_kernel,
+            &layers->bbwenet_af3_gain,
+            BBWENET_COND_DIM,
+            BBWENET_AF3_FRAME_SIZE,
+            BBWENET_AF3_OVERLAP_SIZE,
+            BBWENET_AF3_IN_CHANNELS,
+            BBWENET_AF3_OUT_CHANNELS,
+            BBWENET_AF3_KERNEL_SIZE,
+            BBWENET_AF3_LEFT_PADDING,
+            BBWENET_AF3_FILTER_GAIN_A,
+            BBWENET_AF3_FILTER_GAIN_B,
+            BBWENET_AF3_SHAPE_GAIN,
+            hBBWENET->window48,
+            arch);
+    }
+
+#ifdef DEBUG_BBWENET
+    fwrite(x_out, sizeof(float), num_subframes * BBWENET_AF3_FRAME_SIZE, f_af3_1);
+#endif
+}
+
+static void reset_bbwenet_state(BBWENetState *state)
+{
+    OPUS_CLEAR(state, 1);
+
+    init_adaconv_state(&state->af1_state);
+    init_adaconv_state(&state->af2_state);
+    init_adaconv_state(&state->af3_state);
+    init_adashape_state(&state->tdshape1_state);
+    init_adashape_state(&state->tdshape2_state);
+}
+
+static int init_bbwenet(BBWENet *hBBWENET, const WeightArray *weights)
+{
+    int ret = 0;
+    OPUS_CLEAR(hBBWENET, 1);
+    celt_assert(weights != NULL);
+
+    ret = init_bbwenetlayers(&hBBWENET->layers, weights);
+
+    compute_overlap_window(hBBWENET->window16, BBWENET_AF1_OVERLAP_SIZE);
+    compute_overlap_window(hBBWENET->window32, BBWENET_AF2_OVERLAP_SIZE);
+    compute_overlap_window(hBBWENET->window48, BBWENET_AF3_OVERLAP_SIZE);
+
+    return ret;
+}
+
+#endif
+#endif /* ENABLE_OSCE_BWE */
+
 /* API */
 
 void osce_reset(silk_OSCE_struct *hOSCE, int method)
@@ -815,63 +1394,25 @@ void osce_reset(silk_OSCE_struct *hOSCE, int method)
     hOSCE->features.reset = 2;
 }
 
+#ifdef ENABLE_OSCE_BWE
 
-#if 0
-#include <stdio.h>
-static void print_float_array(FILE *fid, const char  *name, const float *array, int n)
+void osce_bwe_reset(silk_OSCE_BWE_struct *hOSCEBWE)
 {
-    int i;
-    for (i = 0; i < n; i++)
+    int k;
+    OPUS_CLEAR(&hOSCEBWE->features, 1);
+#if 1
+    /* weird python initialization: Fix eventually! */
+    for (k = 0; k <= OSCE_BWE_MAX_INSTAFREQ_BIN; k ++)
     {
-        fprintf(fid, "%s[%d]: %f\n", name, i, array[i]);
+        hOSCEBWE->features.last_spec[2*k] = 1e-9;
     }
-}
-
-static void print_int_array(FILE *fid, const char  *name, const int *array, int n)
-{
-    int i;
-    for (i = 0; i < n; i++)
-    {
-        fprintf(fid, "%s[%d]: %d\n", name, i, array[i]);
-    }
-}
-
-static void print_int8_array(FILE *fid, const char  *name, const opus_int8 *array, int n)
-{
-    int i;
-    for (i = 0; i < n; i++)
-    {
-        fprintf(fid, "%s[%d]: %d\n", name, i, array[i]);
-    }
-}
-
-static void print_linear_layer(FILE *fid, const char *name, LinearLayer *layer)
-{
-    int i, n_in, n_out, n_total;
-    char tmp[256];
-
-    n_in = layer->nb_inputs;
-    n_out = layer->nb_outputs;
-    n_total = n_in * n_out;
-
-    fprintf(fid, "\nprinting layer %s...\n", name);
-    fprintf(fid, "%s.nb_inputs: %d\n%s.nb_outputs: %d\n", name, n_in, name, n_out);
-
-    if (layer->bias !=NULL){}
-    if (layer->subias !=NULL){}
-    if (layer->weights !=NULL){}
-    if (layer->float_weights !=NULL){}
-
-    if (layer->bias != NULL) {sprintf(tmp, "%s.bias", name); print_float_array(fid, tmp, layer->bias, n_out);}
-    if (layer->subias != NULL) {sprintf(tmp, "%s.subias", name); print_float_array(fid, tmp, layer->subias, n_out);}
-    if (layer->weights != NULL) {sprintf(tmp, "%s.weights", name); print_int8_array(fid, tmp, layer->weights, n_total);}
-    if (layer->float_weights != NULL) {sprintf(tmp, "%s.float_weights", name); print_float_array(fid, tmp, layer->float_weights, n_total);}
-    //if (layer->weights_idx != NULL) {sprintf(tmp, "%s.weights_idx", name); print_float_array(fid, tmp, layer->weights_idx, n_total);}
-    if (layer->diag != NULL) {sprintf(tmp, "%s.diag", name); print_float_array(fid, tmp, layer->diag, n_in);}
-    if (layer->scale != NULL) {sprintf(tmp, "%s.scale", name); print_float_array(fid, tmp, layer->scale, n_out);}
-
-}
 #endif
+    reset_bbwenet_state(&hOSCEBWE->state.bbwenet);
+}
+
+#endif /* ENABLE_OSCE_BWE */
+
+
 
 int osce_load_models(OSCEModel *model, const void *data, int len)
 {
@@ -891,6 +1432,11 @@ int osce_load_models(OSCEModel *model, const void *data, int len)
         if (ret == 0) {ret = init_nolace(&model->nolace, list);}
 #endif
 
+#ifdef ENABLE_OSCE_BWE
+#ifndef DISABLE_BBWENET
+        if (ret == 0) {ret = init_bbwenet(&model->bbwenet, list);}
+#endif
+#endif /* ENABLE_OSCE_BWE */
         free(list);
     } else
     {
@@ -905,12 +1451,86 @@ int osce_load_models(OSCEModel *model, const void *data, int len)
         if (ret == 0) {ret = init_nolace(&model->nolace, nolacelayers_arrays);}
 #endif
 
+#ifdef ENABLE_OSCE_BWE
+#ifndef DISABLE_BBWENET
+        if (ret == 0) {ret = init_bbwenet(&model->bbwenet, bbwenetlayers_arrays);}
+#endif
+#endif /* ENABLE_OSCE_BWE */
 #endif /* USE_WEIGHTS_FILE */
     }
 
     ret = ret ? -1 : 0;
     return ret;
 }
+
+#ifdef ENABLE_OSCE_BWE
+void osce_bwe(
+    OSCEModel                   *model,                         /* I    OSCE model struct                           */
+    silk_OSCE_BWE_struct        *psOSCEBWE,                     /* I/O  OSCE BWE state                              */
+    opus_int16                  xq48[],                         /* O    bandwidth-extended speech                   */
+    opus_int16                  xq16[],                         /* I    Decoded speech                              */
+    opus_int32                  xq16_len,                       /* I    Length of xq16 in samples                   */
+    int                         arch                            /* I    Run-time architecture                       */
+ )
+ {
+    float in_buffer[320];
+    float out_buffer[3*320];
+    float features[2 * OSCE_BWE_FEATURE_DIM];
+    int num_frames, i;
+
+    /* currently restricting to 10 or 20-ms frames */
+    celt_assert(xq16_len == 160 || xq16_len == 320);
+
+    num_frames = xq16_len / 160;
+
+    /* scale input */
+    for (i = 0; i < xq16_len; i++)
+    {
+        in_buffer[i] = ((float) xq16[i]) * (1.f/32768.f);
+    }
+
+    osce_bwe_calculate_features(&psOSCEBWE->features, features, xq16, xq16_len);
+
+#if 0
+    /* just upsampling for now */
+    upsamp_2x(&psOSCEBWE->state.bbwenet.resampler_state[0], out_buffer, in_buffer, xq16_len);
+    interpol_3_2(&psOSCEBWE->state.bbwenet.resampler_state[0], out_buffer, out_buffer, 2 * xq16_len);
+
+#else
+    /* process frames */
+    bbwenet_process_frames(
+        &model->bbwenet,
+        &psOSCEBWE->state.bbwenet,
+        out_buffer,
+        in_buffer,
+        features,
+        num_frames,
+        arch
+    );
+#endif
+
+    /* scale and delay output */
+    OPUS_COPY(xq48, psOSCEBWE->state.bbwenet.outbut_buffer, OSCE_BWE_OUTPUT_DELAY);
+    for (i = 0; i < 3 * xq16_len - OSCE_BWE_OUTPUT_DELAY; i++)
+    {
+        float tmp = 32768.f * out_buffer[i];
+        if (tmp > 32767.f) tmp = 32767.f;
+        if (tmp < -32767.f) tmp = -32767.f;
+        xq48[i + OSCE_BWE_OUTPUT_DELAY] = float2int(tmp);
+    }
+
+    for (i = 0; i < OSCE_BWE_OUTPUT_DELAY; i++)
+    {
+        float tmp = 32768.f * out_buffer[3 * xq16_len - OSCE_BWE_OUTPUT_DELAY + i];
+        if (tmp > 32767.f) tmp = 32767.f;
+        if (tmp < -32767.f) tmp = -32767.f;
+        psOSCEBWE->state.bbwenet.outbut_buffer[i] = float2int(tmp);
+    }
+
+
+ }
+
+ #endif
 
 void osce_enhance_frame(
     OSCEModel                   *model,                         /* I    OSCE model struct                           */
