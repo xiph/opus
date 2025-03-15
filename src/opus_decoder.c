@@ -435,6 +435,21 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 #ifndef DISABLE_NOLACE
      if (st->complexity >= 7) {st->DecControl.osce_method = OSCE_METHOD_NOLACE;}
 #endif
+#ifdef ENABLE_OSCE_BWE
+     if (st->complexity >= 4 && st->DecControl.enable_osce_bwe &&
+         st->Fs == 48000 && st->DecControl.internalSampleRate == 16000 &&
+         ((mode == MODE_SILK_ONLY) || (data == NULL))) {
+         /* request WB -> FB signal extension */
+         st->DecControl.osce_extended_mode = OSCE_MODE_SILK_BBWE;
+     } else {
+         /* at this point, mode can only be MODE_SILK_ONLY or MODE_HYBRID */
+         st->DecControl.osce_extended_mode = mode == MODE_SILK_ONLY ? OSCE_MODE_SILK_ONLY : OSCE_MODE_HYBRID;
+     }
+     if (st->prev_mode == MODE_CELT_ONLY) {
+         /* Update extended mode for CELT->SILK transition */
+         st->DecControl.prev_osce_extended_mode = OSCE_MODE_CELT_ONLY;
+     }
+#endif
 #endif
 
      lost_flag = data == NULL ? 1 : 2 * !!decode_fec;
@@ -563,7 +578,11 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    /* MUST be after PLC */
    MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(start_band)));
 
+#ifdef ENABLE_OSCE_BWE
+   if (mode != MODE_SILK_ONLY && st->DecControl.osce_extended_mode != OSCE_MODE_SILK_BBWE)
+#else
    if (mode != MODE_SILK_ONLY)
+#endif
    {
       int celt_frame_size = IMIN(F20, frame_size);
       /* Make sure to discard any previous CELT state */
@@ -1016,6 +1035,28 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
        *value = st->complexity;
    }
    break;
+#ifdef ENABLE_OSCE_BWE
+   case OPUS_SET_OSCE_BWE_REQUEST:
+   {
+       opus_int32 value = va_arg(ap, opus_int32);
+       if(value<0 || value>1)
+       {          goto bad_arg;
+       }
+       st->DecControl.enable_osce_bwe = value;
+
+      }
+   break;
+   case OPUS_GET_OSCE_BWE_REQUEST:
+   {
+       opus_int32 *value = va_arg(ap, opus_int32*);
+       if (!value)
+       {
+          goto bad_arg;
+       }
+       *value = st->DecControl.enable_osce_bwe;
+   }
+   break;
+#endif
    case OPUS_GET_FINAL_RANGE_REQUEST:
    {
       opus_uint32 *value = va_arg(ap, opus_uint32*);

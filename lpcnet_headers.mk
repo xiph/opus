@@ -37,7 +37,8 @@ dnn/osce_structs.h \
 dnn/osce_features.h \
 dnn/nndsp.h \
 dnn/lace_data.h \
-dnn/nolace_data.h
+dnn/nolace_data.h \
+dnn/bbwenet_data.h
 
 LOSSGEN_HEAD = \
 dnn/lossgen.h \
