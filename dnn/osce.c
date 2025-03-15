@@ -912,6 +912,12 @@ int osce_load_models(OSCEModel *model, const void *data, int len)
     return ret;
 }
 
+#ifdef OSCE_ENABLE_BBWE
+// osce_load_bbwe_model
+// osce_bbwe_process_frame
+// osce_bbwe_reset
+#endif
+
 void osce_enhance_frame(
     OSCEModel                   *model,                         /* I    OSCE model struct                           */
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */

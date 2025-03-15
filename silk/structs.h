@@ -285,6 +285,9 @@ typedef struct {
 typedef struct {
 #ifdef ENABLE_OSCE
     silk_OSCE_struct            osce;
+#ifdef OSCE_ENABLE_BBWE
+// silk_OSCE_BBWE_struct (features and state)
+#endif
 #endif
 #define SILK_DECODER_STATE_RESET_START prev_gain_Q16
     opus_int32                  prev_gain_Q16;
