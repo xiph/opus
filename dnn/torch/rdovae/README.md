@@ -8,24 +8,31 @@ skip straight to the Inference section.
 
 ## Data preparation
 
+First, fetch all the data from the datasets.txt file using:
+```
+./download_datasets.sh
+```
+
+Then concatenate and resample the data into a single 16-kHz file:
+```
+./process_speech.sh
+```
+The script will produce an all_speech.pcm speech file in raw 16-bit PCM format.
+
+
 For data preparation you need to build Opus as detailed in the top-level README.
 You will need to use the --enable-dred configure option.
 The build will produce an executable named "dump_data".
 To prepare the training data, run:
 ```
-./dump_data -train in_speech.pcm out_features.f32 out_speech.pcm
+./dump_data -train all_speech.pcm all_features.f32 /dev/null
 ```
-Where the in_speech.pcm speech file is a raw 16-bit PCM file sampled at 16 kHz.
-The speech data used for training the model can be found at:
-https://media.xiph.org/lpcnet/speech/tts_speech_negative_16k.sw
-The out_speech.pcm file isn't needed for DRED, but it is needed to train
-the FARGAN vocoder (see dnn/torch/fargan/ for details).
 
 ## Training
 
 To perform training, run the following command:
 ```
-python ./train_rdovae.py --cuda-visible-devices 0 --sequence-length 400 --split-mode random_split --state-dim 80 --batch-size 512 --epochs 400 --lambda-max 0.04 --lr 0.003 --lr-decay-factor 0.0001 out_features.f32 output_dir
+python ./train_rdovae.py --sequence-length 400 --split-mode random_split --state-dim 80 --batch-size 512 --epochs 400 --lambda-max 0.04 --lr 0.003 --lr-decay-factor 0.0001 all_features.f32 output_dir
 ```
 The final model will be in output_dir/checkpoints/chechpoint_400.pth.
 

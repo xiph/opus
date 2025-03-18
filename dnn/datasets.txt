@@ -1,8 +1,6 @@
-The following datasets can be used to train a language-independent LPCNet model.
-A good choice is to include all the data from these datasets, except for
-hi_fi_tts for which only a small subset is recommended (since it's very large
-but has few speakers). Note that this data typically needs to be resampled
-before it can be used.
+The following datasets can be used to train a language-independent FARGAN model
+and a Deep REDundancy (DRED) model. Note that this data typically needs to be
+resampled before it can be used.
 
 https://www.openslr.org/resources/30/si_lk.tar.gz
 https://www.openslr.org/resources/32/af_za.tar.gz
@@ -61,7 +59,6 @@ https://www.openslr.org/resources/83/welsh_english_female.zip
 https://www.openslr.org/resources/83/welsh_english_male.zip
 https://www.openslr.org/resources/86/yo_ng_female.zip
 https://www.openslr.org/resources/86/yo_ng_male.zip
-https://www.openslr.org/resources/109/hi_fi_tts_v0.tar.gz
 
 The corresponding citations for all these datasets are:
 
@@ -164,10 +161,3 @@ The corresponding citations for all these datasets are:
     doi = {10.21437/Interspeech.2020-1096},
     url = {http://dx.doi.org/10.21437/Interspeech.2020-1096},
   }
-
-@article{bakhturina2021hi,
-  title={{Hi-Fi Multi-Speaker English TTS Dataset}},
-  author={Bakhturina, Evelina and Lavrukhin, Vitaly and Ginsburg, Boris and Zhang, Yang},
-  journal={arXiv preprint arXiv:2104.01497},
-  year={2021}
-}
