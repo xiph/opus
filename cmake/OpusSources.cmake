@@ -52,6 +52,7 @@ get_opus_sources(DNN_SOURCES_SSE4_1 lpcnet_sources.mk dnn_sources_sse4_1)
 get_opus_sources(DNN_SOURCES_AVX2 lpcnet_sources.mk dnn_sources_avx2)
 get_opus_sources(DNN_SOURCES_NEON lpcnet_sources.mk dnn_sources_arm_neon)
 get_opus_sources(DNN_SOURCES_DOTPROD lpcnet_sources.mk dnn_sources_arm_dotprod)
+get_opus_sources(DNN_SOURCES_ARM_RTCD lpcnet_sources.mk dnn_sources_arm_rtcd)
 
 get_opus_sources(opus_demo_SOURCES Makefile.am opus_demo_sources)
 get_opus_sources(opus_custom_demo_SOURCES Makefile.am opus_custom_demo_sources)
