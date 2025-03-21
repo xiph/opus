@@ -687,6 +687,46 @@ static int ec_dec_depth(ec_dec *dec, opus_int32 cap, opus_int32 *last) {
    return depth;
 }
 
+#define MSWAP16(a,b) do {opus_val16 tmp = a;a=b;b=tmp;} while(0)
+static opus_val16 median_of_5_val16(const opus_val16 *x)
+{
+   opus_val16 t0, t1, t2, t3, t4;
+   t2 = x[2];
+   if (x[0] > x[1])
+   {
+      t0 = x[1];
+      t1 = x[0];
+   } else {
+      t0 = x[0];
+      t1 = x[1];
+   }
+   if (x[3] > x[4])
+   {
+      t3 = x[4];
+      t4 = x[3];
+   } else {
+      t3 = x[3];
+      t4 = x[4];
+   }
+   if (t0 > t3)
+   {
+      MSWAP16(t0, t3);
+      MSWAP16(t1, t4);
+   }
+   if (t2 > t1)
+   {
+      if (t1 < t3)
+         return MIN16(t2, t3);
+      else
+         return MIN16(t4, t1);
+   } else {
+      if (t2 < t3)
+         return MIN16(t1, t3);
+      else
+         return MIN16(t2, t4);
+   }
+}
+
 void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, int start, int end, int qext_end, const celt_glog *bandLogE, const celt_glog *qext_bandLogE,
       opus_int32 total, int *extra_pulses, int *extra_equant, int C, int LM, ec_ctx *ec, int encode, opus_val16 tone_freq, opus_val32 toneishness)
 {
@@ -723,6 +763,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       VARDECL(opus_val16, flatE);
       VARDECL(int, Ncoef);
       VARDECL(opus_val16, min);
+      VARDECL(opus_val16, follower);
 
       ALLOC(flatE, tot_bands, opus_val16);
       ALLOC(min, tot_bands, opus_val16);
@@ -758,6 +799,21 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
                flatE[end+i] = MAXG(flatE[end+i], PSHR32(qext_bandLogE[NB_QEXT_BANDS+i] - GCONST(0.0625f)*qext_mode->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(end+i+5)*(end+i+5), DB_SHIFT-10));
             }
          }
+      }
+      ALLOC(follower, tot_bands, opus_val16);
+      for (i=start+2;i<tot_bands-2;i++) {
+         follower[i] = median_of_5_val16(&flatE[i-2]);
+      }
+      follower[start] = follower[start+1] = follower[start+2];
+      follower[tot_bands-1] = follower[tot_bands-2] = follower[tot_bands-3];
+      for (i=start+1;i<tot_bands;i++) {
+         follower[i] = MAX16(follower[i], follower[i-1]-QCONST16(1.f, 10));
+      }
+      for (i=tot_bands-2;i>=start;i--) {
+         follower[i] = MAX16(follower[i], follower[i+1]-QCONST16(1.f, 10));
+      }
+      for (i=start;i<tot_bands;i++) flatE[i] -= MULT16_16_Q15(Q15ONE-PSHR32(toneishness, 14), follower[i]);
+      if (qext_mode != NULL) {
          for (i=0;i<qext_end;i++) flatE[end+i] = flatE[end+i] + QCONST16(3.f, 10) + QCONST16(.2f, 10)*i;
       }
       /* Approximate fill level assuming all bands contribute fully. */
