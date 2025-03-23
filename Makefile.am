@@ -315,6 +315,10 @@ lossgen_demo_SOURCES = dnn/lossgen_demo.c $(LOSSGEN_SOURCES)
 lossgen_demo_LDADD = $(LIBM)
 endif
 
+noinst_PROGRAMS += bwe_demo
+bwe_demo_SOURCES = dnn/bwe_demo.c
+bwe_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
+
 endif
 
 
