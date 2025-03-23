@@ -22,6 +22,14 @@ if DUMP:
         s = 0.5 * s / s.max()
         wavfile.write(filename, fs, (2**15 * s).astype(np.int16))
 
+DEBUGDUMP=True
+if DEBUGDUMP:
+    import os
+    debugdumpdir='debugdump'
+    os.makedirs(debugdumpdir, exist_ok=True)
+
+    def debugdump(filename, data):
+        data.detach().numpy().tofile(os.path.join(debugdumpdir, filename))
 
 
 class FloatFeatureNet(nn.Module):
@@ -62,10 +70,13 @@ class FloatFeatureNet(nn.Module):
         return count
 
 
-    def forward(self, features, state=None):
+    def forward(self, features, state=None, debug=False):
         """ features shape: (batch_size, num_frames, feature_dim) """
 
         batch_size = features.size(0)
+
+        if DEBUGDUMP:
+            debugdump('features.f32', features.float())
 
         if state is None:
             state = torch.zeros((1, batch_size, self.num_channels), device=features.device)
@@ -77,13 +88,22 @@ class FloatFeatureNet(nn.Module):
             c = torch.tanh(self.conv2(F.pad(c, [2, 0])))
         else:
             c = torch.tanh(self.conv1(F.pad(features, [2, 0])))
+            if DEBUGDUMP:
+                debugdump('feature_net_conv1_activated.f32', c.permute(0, 2, 1))
             c = torch.tanh(self.conv2(F.pad(c, [2, 0])))
+            if DEBUGDUMP:
+                debugdump('feature_net_conv2_activated.f32', c.permute(0, 2, 1))
 
         c = torch.tanh(self.tconv(c))
+        if DEBUGDUMP:
+            debugdump('feature_net_tconv_activated.f32', c.permute(0, 2, 1))
 
         c = c.permute(0, 2, 1)
 
         c, _ = self.gru(c, state)
+
+        if DEBUGDUMP:
+            debugdump('feature_net_gru.f32', c)
 
         return c
 
