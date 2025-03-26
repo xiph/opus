@@ -93,7 +93,7 @@ then
 fi
 
 #Run valgrind 5% of the time (minus the asan cases)
-if [ "`seq 20 | shuf -n1`" -ne 1 -o "$sanitize" = "-fsanitize=address -fno-sanitize-recover=all" ]
+if [ "`seq 20 | shuf -n1`" -ne 1 -o "$sanitize" = "-fsanitize=address -fno-sanitize-recover=all" -o "$math" = "-ffast-math" ]
 then
         make check > makecheck_output.txt 2>&1
 else
