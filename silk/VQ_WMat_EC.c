@@ -32,20 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 /* Entropy constrained matrix-weighted VQ, hard-coded to 5-element vectors, for a single input data vector */
-void silk_VQ_WMat_EC_c(
-    opus_int8                   *ind,                           /* O    index of best codebook vector               */
-    opus_int32                  *res_nrg_Q15,                   /* O    best residual energy                        */
-    opus_int32                  *rate_dist_Q8,                  /* O    best total bitrate                          */
-    opus_int                    *gain_Q7,                       /* O    sum of absolute LTP coefficients            */
-    const opus_int32            *XX_Q17,                        /* I    correlation matrix                          */
-    const opus_int32            *xX_Q17,                        /* I    correlation vector                          */
-    const opus_int8             *cb_Q7,                         /* I    codebook                                    */
-    const opus_uint8            *cb_gain_Q7,                    /* I    codebook effective gain                     */
-    const opus_uint8            *cl_Q5,                         /* I    code length for each codebook vector        */
-    const opus_int              subfr_len,                      /* I    number of samples per subframe              */
-    const opus_int32            max_gain_Q7,                    /* I    maximum sum of absolute LTP coefficients    */
-    const opus_int              L                               /* I    number of vectors in codebook               */
-)
+SILK_VQ_WMAT_EC_DECL(c)
 {
     opus_int   k, gain_tmp_Q7;
     const opus_int8 *cb_row_Q7;
