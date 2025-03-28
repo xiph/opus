@@ -40,6 +40,7 @@ def print_vector(writer, vector, name, dtype='float', reshape_8x4=False, static=
 
     dtype_suffix = {
         'float' : 'float',
+        'opus_uint8' : 'uint8',
         'opus_int8' : 'int8',
         'opus_uint16' : 'uint16',
         'opus_int16' : 'int16',
@@ -54,7 +55,7 @@ f'''
 #ifndef USE_WEIGHTS_FILE
 '''
         )
-    writer.weight_arrays.append(name)
+        writer.weight_arrays.append(name)
 
     if reshape_8x4:
         vector = vector.reshape((vector.shape[0]//4, 4, vector.shape[1]//8, 8))
