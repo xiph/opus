@@ -929,7 +929,7 @@ int main(int argc, char *argv[])
                for(i=0;i<frame_size*channels;i++)
                {
                   float_bits s;
-                  s.i=fbytes[4*i+3]<<24|fbytes[4*i+2]<<16|fbytes[4*i+1]<<8|fbytes[4*i];
+                  s.i=(opus_uint32)fbytes[4*i+3]<<24|fbytes[4*i+2]<<16|fbytes[4*i+1]<<8|fbytes[4*i];
                   in[i]=(int)floor(.5 + s.f*8388608);
                }
             }
@@ -1133,7 +1133,7 @@ int main(int argc, char *argv[])
             /* count bits */
             bits += len*8;
             bits_max = ( len*8 > bits_max ) ? len*8 : bits_max;
-            bits2 += len*len*64;
+            bits2 += len*(double)len*64;
             if (!decode_only)
             {
                 nrg = 0.0;
