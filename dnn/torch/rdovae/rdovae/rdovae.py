@@ -551,6 +551,7 @@ class RDOVAE(nn.Module):
                  cond_size2,
                  state_dim=24,
                  split_mode='split',
+                 chunks_per_offset=4,
                  clip_weights=False,
                  pvq_num_pulses=82,
                  state_dropout_rate=0,
@@ -564,6 +565,7 @@ class RDOVAE(nn.Module):
         self.cond_size      = cond_size
         self.cond_size2     = cond_size2
         self.split_mode     = split_mode
+        self.chunks_per_offset = chunks_per_offset
         self.state_dim      = state_dim
         self.pvq_num_pulses = pvq_num_pulses
         self.state_dropout_rate = state_dropout_rate
@@ -670,7 +672,7 @@ class RDOVAE(nn.Module):
             states_q = states_q * mask
 
         # decoder
-        chunks = self.get_decoder_chunks(z.size(1), mode=self.split_mode)
+        chunks = self.get_decoder_chunks(z.size(1), mode=self.split_mode, chunks_per_offset=self.chunks_per_offset)
 
         outputs_hq = []
         outputs_sq = []
