@@ -74,7 +74,7 @@ if __name__ == "__main__":
     output_folder = args.export_folder
     os.makedirs(output_folder, exist_ok=True)
 
-    writer = wexchange.c_export.c_writer.CWriter(os.path.join(output_folder, args.export_filename), model_struct_name=args.struct_name)
+    writer = wexchange.c_export.c_writer.CWriter(os.path.join(output_folder, args.export_filename), model_struct_name=args.struct_name, add_typedef=True)
 
     for name, module in model.named_modules():
 
