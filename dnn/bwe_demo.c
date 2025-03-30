@@ -36,6 +36,7 @@
 #include "lpcnet.h"
 #include "os_support.h"
 #include "cpu_support.h"
+#include "osce_features.h"
 
 
 void usage(void) {
@@ -60,7 +61,40 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    printf("BWE coming soon!\n");
+    printf("Feature calculation with signal (100 * (n % 90)) - 8900\n");
+    int n = 0, i;
+    opus_int16 frame[160];
+    int frame_counter = 0;
+    float features[32 + 2 * 41];
+
+    for (frame_counter = 0; frame_counter < 10; frame_counter ++)
+    {
+        for (i = 0; i < 160; i ++ )
+        {
+            frame[i] = 100 * n++ - 8900;
+            n = n % 90;
+        }
+
+        osce_bwe_calculate_features(features, frame, 160);
+
+        printf("frame[%d]\n", frame_counter);
+        printf("lmspec: ");
+        for (i = 0; i < 32; i ++)
+        {
+            printf(" %f ", features[i]);
+        }
+        printf("\nphasediff: ");
+        for (;i < 32 + 2 * 41; i ++)
+        {
+            printf(" %f ", features[i]);
+        }
+        printf("\n\n");
+
+        fwrite(frame, sizeof(frame[0]), 160, fout);
+
+    }
+
+
 
     fclose(fin);
     fclose(fout);

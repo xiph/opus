@@ -65,7 +65,7 @@ def gen_filterbank(N, Fs=16000, keep_size=False):
     RE = RE/norm[:, np.newaxis]
     return torch.from_numpy(RE)
 
-def create_filter_bank(num_bands, n_fft=320, fs=16000, scale='bark', round_center_bins=False, return_upper=False, normalize=False):
+def create_filter_bank(num_bands, n_fft=320, fs=16000, scale='bark', round_center_bins=False, return_upper=False, normalize=False, return_center_bins=False):
 
     f0 = 0
     num_bins = n_fft // 2 + 1
@@ -110,6 +110,9 @@ def create_filter_bank(num_bands, n_fft=320, fs=16000, scale='bark', round_cente
 
     if normalize:
         filter_bank = filter_bank / np.sum(filter_bank, axis=1).reshape(-1, 1)
+
+    if return_center_bins:
+        return filter_bank, center_bins
 
     return filter_bank
 
@@ -232,7 +235,7 @@ def instafreq(x, frame_size, max_bin, window=None):
     X = np.fft.fft(x_unfold, n=frame_size, axis=-1)
 
     # instantaneus frequency
-    X_trunc = X[..., :max_bin + 1] + 1e-9
+    X_trunc = X[..., :max_bin + 1]  + 1e-9
     Y = X_trunc[1:] * np.conj(X_trunc[:-1])
     Y = Y / (np.abs(Y) + 1e-9)
 

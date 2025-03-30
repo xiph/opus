@@ -44,6 +44,11 @@ void osce_calculate_features(
     opus_int32                  num_bits                        /* I    Size of SILK payload in bits                */
 );
 
+void osce_bwe_calculate_features(
+   float                       *features,                      /* O    input features                              */
+   const opus_int16            xq[],                           /* I    Decoded speech                              */
+   int                         num_samples                     /* I    number of input samples                     */
+);
 
 void osce_cross_fade_10ms(float *x_enhanced, float *x_in, int length);
 
