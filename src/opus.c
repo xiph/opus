@@ -1,4 +1,5 @@
 /* Copyright (c) 2011 Xiph.Org Foundation, Skype Limited
+   Copyright (c) 2024 Arm Limited
    Written by Jean-Marc Valin and Koen Vos */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -30,23 +31,29 @@
 #endif
 
 #include "opus.h"
+#include "celt/mathops.h"
 #include "opus_private.h"
 
 #ifndef DISABLE_FLOAT_API
-OPUS_EXPORT void opus_pcm_soft_clip(float *_x, int N, int C, float *declip_mem)
+
+static void opus_pcm_soft_clip_impl(float *_x, int N, int C, float *declip_mem, int arch)
 {
    int c;
    int i;
    float *x;
+   int all_within_neg1pos1;
 
    if (C<1 || N<1 || !_x || !declip_mem) return;
 
    /* First thing: saturate everything to +/- 2 which is the highest level our
       non-linearity can handle. At the point where the signal reaches +/-2,
       the derivative will be zero anyway, so this doesn't introduce any
-      discontinuity in the derivative. */
-   for (i=0;i<N*C;i++)
-      _x[i] = MAX16(-2.f, MIN16(2.f, _x[i]));
+      discontinuity in the derivative.
+
+      Implementation might provide a hint, if none of the samples exceed +/-1. */
+
+   all_within_neg1pos1 = opus_limit2_checkwithin1(_x, N*C, arch);
+
    for (c=0;c<C;c++)
    {
       float a;
@@ -72,10 +79,15 @@ OPUS_EXPORT void opus_pcm_soft_clip(float *_x, int N, int C, float *declip_mem)
          float maxval;
          int special=0;
          int peak_pos;
-         for (i=curr;i<N;i++)
+         if (all_within_neg1pos1)
          {
-            if (x[i*C]>1 || x[i*C]<-1)
-               break;
+            i = N;
+         } else {
+            for (i=curr;i<N;i++)
+            {
+               if (x[i*C]>1 || x[i*C]<-1)
+                  break;
+            }
          }
          if (i==N)
          {
@@ -135,6 +147,17 @@ OPUS_EXPORT void opus_pcm_soft_clip(float *_x, int N, int C, float *declip_mem)
       declip_mem[c] = a;
    }
 }
+
+void opus_pcm_soft_clip_with_arch(float *_x, int N, int C, float *declip_mem, int arch)
+{
+   opus_pcm_soft_clip_impl(_x, N, C, declip_mem, arch);
+}
+
+OPUS_EXPORT void opus_pcm_soft_clip(float *_x, int N, int C, float *declip_mem)
+{
+   opus_pcm_soft_clip_impl(_x, N, C, declip_mem, 0);
+}
+
 #endif
 
 int encode_size(int size, unsigned char *data)
