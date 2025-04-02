@@ -825,8 +825,11 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       ext.frame = -1;
       ext.data = NULL;
       while (ext.frame < i) {
+         OpusExtensionIterator iter_copy;
+         iter_copy = iter;
          ret = opus_extension_iterator_find(&iter, &ext, QEXT_EXTENSION_ID);
          if (ret <= 0) break;
+         if (ext.frame > i) iter = iter_copy;
       }
       if (ext.frame != i) ext.data = NULL;
 #endif
