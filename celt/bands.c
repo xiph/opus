@@ -231,8 +231,8 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       g = celt_exp2_db(MIN32(32.f, lg));
 #else
       /* Handle the integer part of the log energy */
-      shift = NORM_SHIFT+1-(lg>>DB_SHIFT)-16;
-      if (shift>=29)
+      shift = 17-(lg>>DB_SHIFT);
+      if (shift>=31)
       {
          shift=0;
          g=0;
@@ -246,22 +246,14 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
          /* To avoid overflow, we're
             capping the gain here, which is equivalent to a cap of 18 on lg.
             This shouldn't trigger unless the bitstream is already corrupted. */
-         if (shift < NORM_SHIFT-32)
-         {
-            g = 2147483647;
-            shift = NORM_SHIFT-32;
-         }
-         do {
-            *f++ = PSHR32(MULT32_32_Q31(SHL32(*x, -shift), g), 2);
-            x++;
-         } while (++j<band_end);
-      } else
+         g = 2147483647;
+         shift = 0;
+      }
 #endif
-         /* Be careful of the fixed-point "else" just above when changing this code */
-         do {
-            *f++ = PSHR32(MULT32_32_Q31(*x, g), shift+2);
-            x++;
-         } while (++j<band_end);
+      do {
+         *f++ = PSHR32(MULT32_32_Q31(SHL32(*x, 30-NORM_SHIFT), g), shift);
+         x++;
+      } while (++j<band_end);
    }
    celt_assert(start <= end);
    OPUS_CLEAR(&freq[bound], N-bound);
