@@ -74,6 +74,7 @@ typedef struct {
     float conv_alpha1f_state[ADASHAPE_MAX_INPUT_DIM];
     float conv_alpha1t_state[ADASHAPE_MAX_INPUT_DIM];
     float conv_alpha2_state[ADASHAPE_MAX_FRAME_SIZE];
+    float interpolate_state[1];
 } AdaShapeState;
 
 void init_adaconv_state(AdaConvState *hAdaConv);
@@ -137,6 +138,7 @@ void adashape_process_frame(
     int feature_dim,
     int frame_size,
     int avg_pool_k,
+    int interpolate_k,
     int arch
 );
 

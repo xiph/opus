@@ -46,6 +46,7 @@ void usage(void) {
 
 int main(int argc, char **argv) {
     int arch;
+    (void)arch;
     FILE *fin, *fout;
     arch = opus_select_arch();
     if (argc != 3) usage();
@@ -61,7 +62,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    printf("Feature calculation with signal (100 * (n % 90)) - 8900\n");
+    printf("Feature calculation with signal (100 * (n \% 90)) - 8900\n");
     int n = 0, i;
     opus_int16 frame[160];
     int frame_counter = 0;
