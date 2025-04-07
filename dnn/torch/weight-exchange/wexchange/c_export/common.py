@@ -297,7 +297,6 @@ def print_conv1d_layer(writer : CWriter,
     writer.header.write(f"\n#define {name.upper()}_OUT_SIZE {weight.shape[2]}\n")
     writer.header.write(f"\n#define {name.upper()}_IN_SIZE {weight.shape[1]}\n")
     writer.header.write(f"\n#define {name.upper()}_STATE_SIZE ({weight.shape[1]} * ({weight.shape[0] - 1}))\n")
-    writer.header.write(f"\n#define {name.upper()}_DELAY {(weight.shape[0] - 1) // 2}\n") # CAVE: delay is not a property of the conv layer
 
     return weight.shape[0] * weight.shape[1]
 
