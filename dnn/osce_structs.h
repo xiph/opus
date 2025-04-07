@@ -28,6 +28,8 @@
 #ifndef OSCE_STRUCTS_H
 #define OSCE_STRUCTS_H
 
+#define DISABLE_BBWENET /* disabled until opus_data is updated */
+
 #include "opus_types.h"
 #include "osce_config.h"
 #ifndef DISABLE_LACE
@@ -35,6 +37,10 @@
 #endif
 #ifndef DISABLE_NOLACE
 #include "nolace_data.h"
+#endif
+#ifndef DISABLE_BBWENET
+#include "bbwenet_data.h"
+#include "resampler_structs.h"
 #endif
 #include "nndsp.h"
 #include "nnet.h"
@@ -94,6 +100,20 @@ typedef struct {
     float preemph_mem;
     float deemph_mem;
 } NoLACEState;
+
+#ifndef DISABLE_BBWENET
+/* BBWENet */
+typedef struct {
+    float feature_net_conv1_state[BBWENET_FNET_CONV1_STATE_SIZE];
+    float feature_net_conv2_state[BBWENET_FNET_CONV2_STATE_SIZE];
+    float feature_net_gru_state[BBWENET_FNET_GRU_STATE_SIZE];
+    AdaConvState af1_state;
+    AdaConvState af2_state;
+    AdaShapeState tdshape1_state;
+    AdaShapeState tdshape2_state;
+    silk_resampler_state_struct resampler_state;
+} BBWENetState;
+#endif
 
 typedef struct {
     NOLACELayers layers;
