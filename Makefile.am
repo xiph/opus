@@ -323,6 +323,12 @@ lossgen_demo_SOURCES = dnn/lossgen_demo.c $(LOSSGEN_SOURCES)
 lossgen_demo_LDADD = $(LIBM)
 endif
 
+if ENABLE_QEXT
+noinst_PROGRAMS += qext_compare
+qext_compare_SOURCES = src/qext_compare.c
+qext_compare_LDADD = libopus.la $(LIBM)
+endif
+
 endif
 
 
