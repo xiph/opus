@@ -166,6 +166,7 @@ AC_ARG_ENABLE([qext],
 AS_IF([test "$enable_qext" = "yes"],[
   AC_DEFINE([ENABLE_QEXT], [1], [Scalable quality extension])
 ])
+AM_CONDITIONAL([ENABLE_QEXT], [test "$enable_qext" = "yes"])
 
 AC_ARG_ENABLE([custom-modes],
     [AS_HELP_STRING([--enable-custom-modes], [enable non-Opus modes, e.g. 44.1 kHz & 2^n frames])],,
