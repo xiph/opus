@@ -51,7 +51,18 @@ static void *opus_realloc(void *_ptr,size_t _size){
   return check_alloc(realloc(_ptr,_size));
 }
 
-static size_t read_pcm16(float **_samples,FILE *_fin,int _nchannels){
+#define FORMAT_S16_LE 0
+#define FORMAT_S24_LE 1
+#define FORMAT_F32_LE 2
+
+static const int format_size[3] = {2, 3, 4};
+typedef union {
+    int i;
+    float f;
+} float_bits;
+
+
+static size_t read_pcm(float **_samples,FILE *_fin,int _nchannels, int format){
   unsigned char  buf[1024];
   float         *samples;
   size_t         nsamples;
@@ -60,8 +71,10 @@ static size_t read_pcm16(float **_samples,FILE *_fin,int _nchannels){
   size_t         nread;
   samples=NULL;
   nsamples=csamples=0;
+  int size = format_size[format];
+
   for(;;){
-    nread=fread(buf,2*_nchannels,1024/(2*_nchannels),_fin);
+    nread=fread(buf,size*_nchannels,1024/(size*_nchannels),_fin);
     if(nread<=0)break;
     if(nsamples+nread>csamples){
       do csamples=csamples<<1|1;
@@ -69,15 +82,38 @@ static size_t read_pcm16(float **_samples,FILE *_fin,int _nchannels){
       samples=(float *)opus_realloc(samples,
        _nchannels*csamples*sizeof(*samples));
     }
-    for(xi=0;xi<nread;xi++){
-      int ci;
-      for(ci=0;ci<_nchannels;ci++){
-        int s;
-        s=buf[2*(xi*_nchannels+ci)+1]<<8|buf[2*(xi*_nchannels+ci)];
-        s=((s&0xFFFF)^0x8000)-0x8000;
-        samples[(nsamples+xi)*_nchannels+ci]=s;
+    if (format==FORMAT_S16_LE) {
+      for(xi=0;xi<nread;xi++){
+        int ci;
+        for(ci=0;ci<_nchannels;ci++){
+          int s;
+          s=buf[2*(xi*_nchannels+ci)+1]<<8|buf[2*(xi*_nchannels+ci)];
+          s=((s&0xFFFF)^0x8000)-0x8000;
+          samples[(nsamples+xi)*_nchannels+ci]=s;
+        }
       }
-    }
+    } else if (format==FORMAT_S24_LE) {
+       for(xi=0;xi<nread;xi++){
+         int ci;
+         for(ci=0;ci<_nchannels;ci++){
+           int s;
+           s=buf[3*(xi*_nchannels+ci)+2]<<16|buf[3*(xi*_nchannels+ci)+1]<<8|buf[3*(xi*_nchannels+ci)];
+           s=((s&0xFFFFFF)^0x800000)-0x800000;
+           samples[(nsamples+xi)*_nchannels+ci]=(1.f/256.f)*s;
+         }
+       }
+     } else if (format==FORMAT_F32_LE) {
+        for(xi=0;xi<nread;xi++){
+          int ci;
+          for(ci=0;ci<_nchannels;ci++){
+            float_bits s;
+            s.i=(unsigned)buf[4*(xi*_nchannels+ci)+3]<<24|buf[4*(xi*_nchannels+ci)+2]<<16|buf[4*(xi*_nchannels+ci)+1]<<8|buf[4*(xi*_nchannels+ci)];
+            samples[(nsamples+xi)*_nchannels+ci] = s.f*32768;
+          }
+        }
+      } else {
+        exit(1);
+      }
     nsamples+=nread;
   }
   *_samples=(float *)opus_realloc(samples,
@@ -163,7 +199,7 @@ static const int BANDS[NBANDS+1]={
 #define TEST_WIN_STEP (120*2)
 
 void usage(const char *_argv0) {
-   fprintf(stderr,"Usage: %s [-s] [-48] [-r rate2] <file1.sw> <file2.sw>\n",
+   fprintf(stderr,"Usage: %s [-s] [-48k] [-s16|-s24|-f32] [-r rate2] <file1.sw> <file2.sw>\n",
     _argv0);
 }
 
@@ -195,6 +231,7 @@ int main(int _argc,const char **_argv){
   size_t   test_win_size;
   size_t   test_win_step;
   int      max_compare;
+  int      format;
   const char *argv0 = _argv[0];
   if(_argc<3){
     usage(argv0);
@@ -208,13 +245,26 @@ int main(int _argc,const char **_argv){
   test_win_size=TEST_WIN_SIZE;
   test_win_step=TEST_WIN_STEP;
   downsample=1;
+  format=FORMAT_S16_LE;
   while (_argc > 3) {
     if(strcmp(_argv[1],"-s")==0){
       nchannels=2;
       _argv++;
       _argc--;
-    } else if(strcmp(_argv[1],"-48")==0){
+    } else if(strcmp(_argv[1],"-48k")==0){
       base_rate=48000;
+      _argv++;
+      _argc--;
+    } else if(strcmp(_argv[1],"-s16")==0){
+      format=FORMAT_S16_LE;
+      _argv++;
+      _argc--;
+    } else if(strcmp(_argv[1],"-s24")==0){
+      format=FORMAT_S24_LE;
+      _argv++;
+      _argc--;
+    } else if(strcmp(_argv[1],"-f32")==0){
+      format=FORMAT_F32_LE;
       _argv++;
       _argc--;
     } else if(strcmp(_argv[1],"-r")==0){
@@ -267,12 +317,12 @@ int main(int _argc,const char **_argv){
     return EXIT_FAILURE;
   }
   /*Read in the data and allocate scratch space.*/
-  xlength=read_pcm16(&x,fin1,2);
+  xlength=read_pcm(&x,fin1,2,format);
   if(nchannels==1){
     for(xi=0;xi<xlength;xi++)x[xi]=.5*(x[2*xi]+x[2*xi+1]);
   }
   fclose(fin1);
-  ylength=read_pcm16(&y,fin2,nchannels);
+  ylength=read_pcm(&y,fin2,nchannels,format);
   fclose(fin2);
   if(xlength!=ylength*downsample){
     fprintf(stderr,"Sample counts do not match (%lu!=%lu).\n",
