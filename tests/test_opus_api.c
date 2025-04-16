@@ -1208,7 +1208,7 @@ opus_int32 test_enc_api(void)
    cfgs++;
    VG_UNDEF(&i,sizeof(i));
    if(opus_encoder_ctl(enc,OPUS_GET_BITRATE(&i))!=OPUS_OK)test_failed();
-   if(i>700000||i<256000)test_failed();
+   if(i>1700000||i<256000)test_failed();
    cfgs++;
    CHECK_SETGET(OPUS_SET_BITRATE(i),OPUS_GET_BITRATE(&i),-12345,0,
      500,256000,
