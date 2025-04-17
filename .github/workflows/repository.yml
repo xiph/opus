@@ -12,4 +12,4 @@ jobs:
           fetch-depth: 0
       - name: Check Whitespaces
         run: |
-          git diff-tree --check origin/opus-ng HEAD
+          git diff-tree --check origin/main HEAD
