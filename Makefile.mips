@@ -48,7 +48,7 @@ WARNINGS = -Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -W
 
 CFLAGS  += -mips32r2 -mno-mips16 -std=gnu99 -O2 -g $(WARNINGS) -DENABLE_ASSERTIONS -DMIPSr1_ASM -DOPUS_BUILD -mdspr2 -march=74kc -mtune=74kc -mmt -mgp32
 
-CINCLUDES = include silk celt
+CINCLUDES = . include silk celt
 
 ifdef FIXED_POINT
 CFLAGS += -DFIXED_POINT=1 -DDISABLE_FLOAT_API
