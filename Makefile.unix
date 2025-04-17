@@ -46,7 +46,7 @@ ldlibs-from-libs        = $(addprefix -l,$(1))
 
 WARNINGS = -Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow
 CFLAGS  += -O2 -g $(WARNINGS) -DOPUS_BUILD
-CINCLUDES = include silk celt
+CINCLUDES = . include silk celt
 
 ifdef FIXED_POINT
 CFLAGS += -DFIXED_POINT=1 -DDISABLE_FLOAT_API
