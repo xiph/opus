@@ -130,4 +130,5 @@ makefile:
     - !reference [.snippets, git_prep]
   script:
     - make -f Makefile.unix -j8
+    - make -f Makefile.unix check -j8
     - make -f Makefile.unix clean
