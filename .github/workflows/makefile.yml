@@ -1,0 +1,26 @@
+name: Makefile
+
+on: [push, pull_request]
+
+jobs:
+
+ MakefileBuild:
+    name: Makefile/${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Linux/GCC",
+            os: ubuntu-latest,
+            compiler: gcc,
+          }
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: make -f Makefile.unix -j 2
+      - name: Test
+        run: make -f Makefile.unix check -j 2
+      - name: Clean
+        run: make -f Makefile.unix clean
