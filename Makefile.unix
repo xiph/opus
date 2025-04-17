@@ -159,7 +159,7 @@ clean:
 	rm -f opus_demo$(EXESUFFIX) opus_compare$(EXESUFFIX) $(TARGET) \
                 test_opus_api$(EXESUFFIX) test_opus_decode$(EXESUFFIX) \
                 test_opus_encode$(EXESUFFIX) test_opus_extensions$(EXESUFFIX) \
-                test_opus_padding$(EXESUFFIX)
+                test_opus_padding$(EXESUFFIX) \
 		$(OBJS) $(OPUSDEMO_OBJS) $(OPUSCOMPARE_OBJS) $(TESTOPUSAPI_OBJS) \
                 $(TESTOPUSDECODE_OBJS) $(TESTOPUSENCODE_OBJS) \
                 $(TESTOPUSEXTENSIONS_OBJS) $(TESTOPUSPADDING_OBJS)
