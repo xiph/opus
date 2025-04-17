@@ -313,7 +313,7 @@
           On the receiving side, the decoder can take advantage of this
           additional information when it loses a packet and the next packet
           is available.  In order to use the FEC data, the jitter buffer needs
-          to provide access to payloads with the FEC data.  
+          to provide access to payloads with the FEC data.
           Instead of performing loss concealment for a missing packet, the
           receiver can then configure its decoder to decode the FEC data from the next packet.
         </t>
@@ -554,7 +554,7 @@
             multiple of an Opus frame size rounded up to the next full integer
             value, up to a maximum value of 120, as defined in <xref
             target='opus-rtp-payload-format'/>. If no value is
-              specified, the default is 20. 
+              specified, the default is 20.
               <vspace blankLines='1'/></t>
 
             <t hangText="maxaveragebitrate:"> specifies the maximum average
@@ -666,7 +666,7 @@
           <t> Change controller: IETF Payload Working Group delegated from the IESG</t>
       </section>
     </section>
-    
+
     <section title='SDP Considerations'>
         <t>The information described in the media type specification has a
         specific mapping to fields in the Session Description Protocol (SDP)
@@ -848,7 +848,7 @@
             and MUST be removed from the answer.</t>
 
           </list></t>
-      
+
         <t>
 	  The Opus parameters in an SDP Offer/Answer exchange are completely
           orthogonal, and there is no relationship between the SDP Offer and
@@ -912,7 +912,7 @@
     </section>
 
     <section title='Acknowledgements'>
-    <t>Many people have made useful comments and suggestions contributing to this document. 
+    <t>Many people have made useful comments and suggestions contributing to this document.
       In particular, we would like to thank
       Tina le Grand, Cullen Jennings, Jonathan Lennox, Gregory Maxwell, Colin Perkins, Jan Skoglund,
       Timothy B. Terriberry, Martin Thompson, Justin Uberti, Magnus Westerlund, and Mo Zanaty.</t>
@@ -942,7 +942,7 @@
       &rfc5124;
       &rfc5405;
       &rfc7202;
-      
+
       <reference anchor='rmcat' target='https://datatracker.ietf.org/wg/rmcat/documents/'>
         <front>
           <title>rmcat documents</title>
