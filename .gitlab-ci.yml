@@ -123,6 +123,7 @@ meson arm64:
 
 makefile:
   stage: build
+  image: 'gcc'
   before_script:
     - apt-get update &&
       apt-get install -y zip doxygen git make wget
