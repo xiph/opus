@@ -120,3 +120,13 @@ meson arm64:
   variables:
     # arm64 build has a compiler warning still, so let's not use --werror for now
     MESON_EXTRA_ARGS: '-Dwerror=false'
+
+makefile:
+  stage: build
+  before_script:
+    - apt-get update &&
+      apt-get install -y zip doxygen git make wget
+    - !reference [.snippets, git_prep]
+  script:
+    - make -f Makefile.unix -j8
+    - make -f Makefile.unix clean
