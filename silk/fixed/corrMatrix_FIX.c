@@ -147,4 +147,3 @@ void silk_corrMatrix_FIX(
         }
     }
 }
-

@@ -174,4 +174,3 @@ model.fit(x_train, y_train,
           batch_size=batch_size,
           epochs=206, initial_epoch=205, validation_data=(x_train, y_train))
 model.save("newweights10a1c_ep206.hdf5")
-

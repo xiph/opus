@@ -381,4 +381,3 @@ int main(int _argc, char **_argv)
   fprintf(stderr, "All projection tests passed.\n");
   return 0;
 }
-
