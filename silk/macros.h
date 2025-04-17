@@ -152,4 +152,3 @@ static OPUS_INLINE opus_int32 silk_CLZ32(opus_int32 in32)
 #endif
 
 #endif /* SILK_MACROS_H */
-

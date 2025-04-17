@@ -643,4 +643,3 @@ int clt_compute_allocation(const CELTMode *m, int start, int end, const int *off
    RESTORE_STACK;
    return codedBands;
 }
-

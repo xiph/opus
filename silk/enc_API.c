@@ -590,4 +590,3 @@ opus_int silk_Encode(                                   /* O    Returns error co
     RESTORE_STACK;
     return ret;
 }
-
