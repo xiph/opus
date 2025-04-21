@@ -624,6 +624,8 @@ class RDOVAE(nn.Module):
                 split_points = [start + stride * int(i * length / chunks_per_offset / stride) for i in range(chunks_per_offset)] + [stop]
             elif mode == 'random_split':
                 split_points = [stride * x + start for x in random_split(0, (stop - start)//stride - 1, chunks_per_offset - 1, 1)]
+            elif mode == 'skewed_split':
+                split_points = [start + stride * int(i * length / 4 / chunks_per_offset / stride) for i in range(chunks_per_offset)] + [stop]
             else:
                 raise ValueError(f"get_decoder_chunks_generic: unknown mode {mode}")
 
