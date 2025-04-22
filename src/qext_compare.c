@@ -137,8 +137,10 @@ static void band_energy(float *_out,float *_ps,const int *_bands,int _nbands,
   s=c+_window_sz;
   x=s+_window_sz;
   ps_sz=_window_sz/2;
+  /* Blackman-Harris window. */
   for(xj=0;xj<_window_sz;xj++){
-    window[xj]=0.5F-0.5F*OPUS_COSF((2*OPUS_PI/(_window_sz-1))*xj);
+    double n = (xj+.5)/_window_sz;
+    window[xj]=0.35875 - 0.48829*cos(2*OPUS_PI*n) + 0.14128*cos(4*OPUS_PI*n) - 0.01168*cos(6*OPUS_PI*n);
   }
   for(xj=0;xj<_window_sz;xj++){
     c[xj]=OPUS_COSF((2*OPUS_PI/_window_sz)*xj);
@@ -456,13 +458,17 @@ int main(int _argc,const char **_argv){
     Ef4=0;
     for(bi=0;bi<ybands;bi++){
       double Eb;
+      double w;
       Eb=0;
+      w = .5+.5*tanh(.5*(22-bi));
       for(xj=BANDS[bi];xj<BANDS[bi+1]&&xj<max_compare;xj++){
         for(ci=0;ci<nchannels;ci++){
           float re;
           float im;
           re=Y[(xi*yfreqs+xj)*nchannels+ci]/X[(xi*nfreqs+xj)*nchannels+ci];
           im=re-log(re)-1;
+          /* Per-band error weighting. */
+          im *= w;
           Eb+=im;
         }
       }
