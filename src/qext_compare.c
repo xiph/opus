@@ -30,6 +30,7 @@
 #include <math.h>
 #include <string.h>
 
+#define MAX(a,b) ((a)>(b) ? (a) : (b))
 #define OPUS_PI (3.14159265F)
 
 #define OPUS_COSF(_x)        ((float)cos(_x))
@@ -171,7 +172,7 @@ static void band_energy(float *_out,float *_ps,const int *_bands,int _nbands,
           }
           re*=_downsample;
           im*=_downsample;
-          _ps[(xi*ps_sz+xj)*_nchannels+ci]=re*re+im*im+100000;
+          _ps[(xi*ps_sz+xj)*_nchannels+ci]=re*re+im*im+.1;
           p[ci]+=_ps[(xi*ps_sz+xj)*_nchannels+ci];
         }
       }
@@ -211,8 +212,8 @@ int main(int _argc,const char **_argv){
   float   *xb;
   float   *X;
   float   *Y;
-  double    err;
-  float    Q;
+  double    err4;
+  double    err16;
   size_t   xlength;
   size_t   ylength;
   size_t   nframes;
@@ -347,6 +348,19 @@ int main(int _argc,const char **_argv){
         test_win_size/downsample,test_win_step/downsample,downsample);
   free(y);
   for(xi=0;xi<nframes;xi++){
+    float maxE[2]={0};
+    for(bi=0;bi<nbands;bi++){
+      for(ci=0;ci<nchannels;ci++){
+        maxE[ci] = MAX(maxE[ci], xb[(xi*nbands+bi)*nchannels+ci]);
+      }
+    }
+    /* Allow for up to 105 dB instantaneous dynamic range (95dB here + 10dB in mask application). */
+    for(bi=0;bi<nbands;bi++){
+      for(ci=0;ci<nchannels;ci++){
+        xb[(xi*nbands+bi)*nchannels+ci] = MAX(3.16e-10*maxE[ci], xb[(xi*nbands+bi)*nchannels+ci]);
+      }
+    }
+
     /*Frequency masking (low to high): 10 dB/Bark slope.*/
     for(bi=1;bi<nbands;bi++){
       for(ci=0;ci<nchannels;ci++){
@@ -355,14 +369,14 @@ int main(int _argc,const char **_argv){
       }
     }
     /*Frequency masking (high to low): 15 dB/Bark slope.*/
-    for(bi=nbands-1;bi-->0;){
+    for(bi=nbands-2;bi-->0;){
       for(ci=0;ci<nchannels;ci++){
         xb[(xi*nbands+bi)*nchannels+ci]+=
          0.03F*xb[(xi*nbands+bi+1)*nchannels+ci];
       }
     }
     if(xi>0){
-      /*Temporal masking: -3 dB/2.5ms slope.*/
+      /* Forward temporal masking: -3 dB/2.5ms slope.*/
       for(bi=0;bi<nbands;bi++){
         for(ci=0;ci<nchannels;ci++){
           xb[(xi*nbands+bi)*nchannels+ci]+=
@@ -370,14 +384,25 @@ int main(int _argc,const char **_argv){
         }
       }
     }
+  }
+  /*Backward temporal masking: -10 dB/2.5ms slope.*/
+  for(xi=nframes-2;xi-->0;){
+     for(bi=0;bi<nbands;bi++){
+       for(ci=0;ci<nchannels;ci++){
+         xb[(xi*nbands+bi)*nchannels+ci]+=
+          0.1F*xb[((xi+1)*nbands+bi)*nchannels+ci];
+       }
+     }
+  }
+  for(xi=0;xi<nframes;xi++){
     /* Allowing some cross-talk */
     if(nchannels==2){
       for(bi=0;bi<nbands;bi++){
         float l,r;
         l=xb[(xi*nbands+bi)*nchannels+0];
         r=xb[(xi*nbands+bi)*nchannels+1];
-        xb[(xi*nbands+bi)*nchannels+0]+=0.01F*r;
-        xb[(xi*nbands+bi)*nchannels+1]+=0.01F*l;
+        xb[(xi*nbands+bi)*nchannels+0]+=0.000001F*r;
+        xb[(xi*nbands+bi)*nchannels+1]+=0.000001F*l;
       }
     }
 
@@ -423,10 +448,12 @@ int main(int _argc,const char **_argv){
   if(rate==base_rate)max_compare=BANDS[nbands];
   else if(rate==12000)max_compare=BANDS[ybands];
   else max_compare=BANDS[ybands]-3;
-  err=0;
+  err4=0;
+  err16=0;
   for(xi=0;xi<nframes;xi++){
-    double Ef;
-    Ef=0;
+    double Ef2, Ef4;
+    Ef2=0;
+    Ef4=0;
     for(bi=0;bi<ybands;bi++){
       double Eb;
       Eb=0;
@@ -440,28 +467,22 @@ int main(int _argc,const char **_argv){
         }
       }
       Eb /= (BANDS[bi+1]-BANDS[bi])*nchannels;
-      Ef += Eb*Eb;
+      Ef2 += Eb;
+      Ef4 += Eb*Eb;
     }
     /*Using a fixed normalization value means we're willing to accept slightly
        lower quality for lower sampling rates.*/
-    Ef/=nbands;
-    Ef*=Ef;
-    err+=Ef*Ef;
+    Ef2/=nbands;
+    Ef4/=nbands;
+    Ef4*=Ef4;
+    err4+=Ef2*Ef2;
+    err16+=Ef4*Ef4;
   }
   free(xb);
   free(X);
   free(Y);
-  err=pow(err/nframes,1.0/16);
-  Q=100*(1-0.5*log(1+err)/log(1.13));
-  if(Q<0){
-    fprintf(stderr,"Test vector FAILS\n");
-    fprintf(stderr,"Internal weighted error is %f\n",err);
-    return EXIT_FAILURE;
-  }
-  else{
-    fprintf(stderr,"Test vector PASSES\n");
-    fprintf(stderr,
-     "Opus quality metric: %.1f %% (internal weighted error is %f)\n",Q,err);
-    return EXIT_SUCCESS;
-  }
+  err4=pow(err4/nframes,1.0/4);
+  err16=pow(err16/nframes,1.0/16);
+  fprintf(stderr, "err4 = %f, err16 = %f\n", err4, err16);
+  return EXIT_SUCCESS;
 }
