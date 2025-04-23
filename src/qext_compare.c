@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include "mini_kfft.c"
 
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 #define OPUS_PI (3.14159265F)
@@ -55,6 +56,11 @@ static void *opus_realloc(void *_ptr,size_t _size){
 #define FORMAT_S16_LE 0
 #define FORMAT_S24_LE 1
 #define FORMAT_F32_LE 2
+
+#define NBANDS (28)
+#define NFREQS (240*2)
+#define TEST_WIN_SIZE (480*2)
+#define TEST_WIN_STEP (120*2)
 
 static const int format_size[3] = {2, 3, 4};
 typedef union {
@@ -125,37 +131,29 @@ static size_t read_pcm(float **_samples,FILE *_fin,int _nchannels, int format){
 static void band_energy(float *_out,float *_ps,const int *_bands,int _nbands,
  const float *_in,int _nchannels,size_t _nframes,int _window_sz,
  int _step,int _downsample){
-  float *window;
-  float *x;
-  float *c;
-  float *s;
+  float window[TEST_WIN_SIZE];
+  float x[TEST_WIN_SIZE];
   size_t xi;
   int    xj;
   int    ps_sz;
-  window=(float *)opus_malloc((3+_nchannels)*_window_sz*sizeof(*window));
-  c=window+_window_sz;
-  s=c+_window_sz;
-  x=s+_window_sz;
+  kiss_fft_cpx X[2][NFREQS+1];
+  kiss_fftr_cfg kfft;
   ps_sz=_window_sz/2;
   /* Blackman-Harris window. */
   for(xj=0;xj<_window_sz;xj++){
     double n = (xj+.5)/_window_sz;
     window[xj]=0.35875 - 0.48829*cos(2*OPUS_PI*n) + 0.14128*cos(4*OPUS_PI*n) - 0.01168*cos(6*OPUS_PI*n);
   }
-  for(xj=0;xj<_window_sz;xj++){
-    c[xj]=OPUS_COSF((2*OPUS_PI/_window_sz)*xj);
-  }
-  for(xj=0;xj<_window_sz;xj++){
-    s[xj]=OPUS_SINF((2*OPUS_PI/_window_sz)*xj);
-  }
+  kfft = kiss_fftr_alloc(_window_sz, 0, NULL, NULL);
   for(xi=0;xi<_nframes;xi++){
     int ci;
     int xk;
     int bi;
     for(ci=0;ci<_nchannels;ci++){
       for(xk=0;xk<_window_sz;xk++){
-        x[ci*_window_sz+xk]=window[xk]*_in[(xi*_step+xk)*_nchannels+ci];
+        x[xk]=window[xk]*_in[(xi*_step+xk)*_nchannels+ci];
       }
+      kiss_fftr(kfft, x, X[ci]);
     }
     for(bi=xj=0;bi<_nbands;bi++){
       float p[2]={0};
@@ -163,17 +161,8 @@ static void band_energy(float *_out,float *_ps,const int *_bands,int _nbands,
         for(ci=0;ci<_nchannels;ci++){
           float re;
           float im;
-          int   ti;
-          ti=0;
-          re=im=0;
-          for(xk=0;xk<_window_sz;xk++){
-            re+=c[ti]*x[ci*_window_sz+xk];
-            im-=s[ti]*x[ci*_window_sz+xk];
-            ti+=xj;
-            if(ti>=_window_sz)ti-=_window_sz;
-          }
-          re*=_downsample;
-          im*=_downsample;
+          re = X[ci][xj].r*_downsample;
+          im = X[ci][xj].i*_downsample;
           _ps[(xi*ps_sz+xj)*_nchannels+ci]=re*re+im*im+.1;
           p[ci]+=_ps[(xi*ps_sz+xj)*_nchannels+ci];
         }
@@ -186,11 +175,9 @@ static void band_energy(float *_out,float *_ps,const int *_bands,int _nbands,
       }
     }
   }
-  free(window);
+  free(kfft);
 }
 
-#define NBANDS (28)
-#define NFREQS (240*2)
 
 /*Bands on which we compute the pseudo-NMR (Bark-derived
   CELT bands).*/
@@ -198,8 +185,6 @@ static const int BANDS[NBANDS+1]={
   0,2,4,6,8,10,12,14,16,20,24,28,32,40,48,56,68,80,96,120,156,200, 240,280,320,360,400,440,480
 };
 
-#define TEST_WIN_SIZE (480*2)
-#define TEST_WIN_STEP (120*2)
 
 void usage(const char *_argv0) {
    fprintf(stderr,"Usage: %s [-s] [-48k] [-s16|-s24|-f32] [-r rate2] <file1.sw> <file2.sw>\n",
