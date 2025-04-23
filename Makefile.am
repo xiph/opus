@@ -368,7 +368,8 @@ EXTRA_DIST = opus.pc.in \
              doc/meson.build \
              tests/run_vectors.sh \
              celt/arm/arm2gnu.pl \
-             celt/arm/celt_pitch_xcorr_arm.s
+             celt/arm/celt_pitch_xcorr_arm.s \
+             src/mini_kfft.c
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = opus.pc
