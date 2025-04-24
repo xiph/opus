@@ -220,6 +220,7 @@ int main(int _argc,const char **_argv){
   size_t   test_win_step;
   int      max_compare;
   int      format;
+  double rms=-1;
   const char *argv0 = _argv[0];
   if(_argc<3){
     usage(argv0);
@@ -321,6 +322,15 @@ int main(int _argc,const char **_argv){
     fprintf(stderr,"Insufficient sample data (%lu<%lu).\n",
      (unsigned long)xlength,test_win_size);
     return EXIT_FAILURE;
+  }
+  if (nchannels==2 && downsample==1){
+    size_t i;
+    rms=0;
+    for (i=0;i<xlength*nchannels;i++){
+      double e=x[i]-y[i];
+      rms+=e*e;
+    }
+    rms=sqrt(rms/(xlength*nchannels));
   }
   nframes=(xlength-test_win_size+test_win_step)/test_win_step;
   xb=(float *)opus_malloc(nframes*nbands*nchannels*sizeof(*xb));
@@ -474,6 +484,6 @@ int main(int _argc,const char **_argv){
   free(Y);
   err4=pow(err4/nframes,1.0/4);
   err16=pow(err16/nframes,1.0/16);
-  fprintf(stderr, "err4 = %f, err16 = %f\n", err4, err16);
+  fprintf(stderr, "err4 = %f, err16 = %f, rms = %f\n", err4, err16, rms);
   return EXIT_SUCCESS;
 }
