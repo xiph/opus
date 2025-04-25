@@ -452,9 +452,9 @@ int main(int _argc,const char **_argv){
     Ef2=0;
     Ef4=0;
     for(bi=0;bi<ybands;bi++){
-      double Eb;
+      double Eb2, Eb4;
       double w;
-      Eb=0;
+      Eb2=Eb4=0;
       w = .5+.5*tanh(.5*(22-bi));
       for(xj=BANDS[bi];xj<BANDS[bi+1]&&xj<max_compare;xj++){
         for(ci=0;ci<nchannels;ci++){
@@ -464,12 +464,19 @@ int main(int _argc,const char **_argv){
           im=re-log(re)-1;
           /* Per-band error weighting. */
           im *= w;
-          Eb+=im;
+          Eb2+=im;
+          /* Same for 4th power, but make it less sensitive to very low energies. */
+          re=(Y[(xi*yfreqs+xj)*nchannels+ci]+10)/(X[(xi*nfreqs+xj)*nchannels+ci]+10);
+          im=re-log(re)-1;
+          /* Per-band error weighting. */
+          im *= w;
+          Eb4+=im;
         }
       }
-      Eb /= (BANDS[bi+1]-BANDS[bi])*nchannels;
-      Ef2 += Eb;
-      Ef4 += Eb*Eb;
+      Eb2 /= (BANDS[bi+1]-BANDS[bi])*nchannels;
+      Eb4 /= (BANDS[bi+1]-BANDS[bi])*nchannels;
+      Ef2 += Eb2;
+      Ef4 += Eb4*Eb4;
     }
     /*Using a fixed normalization value means we're willing to accept slightly
        lower quality for lower sampling rates.*/
