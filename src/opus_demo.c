@@ -742,7 +742,7 @@ int main(int argc, char *argv[])
        opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
 
        opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
-       opus_encoder_ctl(enc, OPUS_SET_LSB_DEPTH(16));
+       opus_encoder_ctl(enc, OPUS_SET_LSB_DEPTH((format == FORMAT_S16_LE) ? 16 : 24));
        opus_encoder_ctl(enc, OPUS_SET_EXPERT_FRAME_DURATION(variable_duration));
        if (dred_duration > 0)
        {
