@@ -133,6 +133,8 @@ extern "C" {
 #define OPUS_GET_BITRATE_REQUEST             4003
 #define OPUS_SET_MAX_BANDWIDTH_REQUEST       4004
 #define OPUS_GET_MAX_BANDWIDTH_REQUEST       4005
+#define OPUS_SET_MIN_BANDWIDTH_REQUEST       40050
+#define OPUS_GET_MIN_BANDWIDTH_REQUEST       40051
 #define OPUS_SET_VBR_REQUEST                 4006
 #define OPUS_GET_VBR_REQUEST                 4007
 #define OPUS_SET_BANDWIDTH_REQUEST           4008
@@ -405,6 +407,29 @@ extern "C" {
   * </dl>
   * @hideinitializer */
 #define OPUS_GET_MAX_BANDWIDTH(x) OPUS_GET_MAX_BANDWIDTH_REQUEST, __opus_check_int_ptr(x)
+
+ /** Configures the minimum bandpass that the encoder will select automatically.
+	* LACE and NoLACE are currently only applied when the frame size is 20 ms (the default) 
+	* and the bandwidth is at least wideband, to use LACE and NOLACE for low bandwidth
+	* and keep OPUS_AUTO for other bandwidth, we may need OPUS_SET_MIN_BANDWIDTH
+	* @see OPUS_GET_MIN_BANDWIDTH
+	* @param[in] x <tt>opus_int32</tt>: Allowed values:
+	* <dl>
+	* <dt>OPUS_BANDWIDTH_NARROWBAND</dt>    <dd>4 kHz passband</dd>
+	* <dt>OPUS_BANDWIDTH_WIDEBAND</dt>      <dd>8 kHz passband</dd>
+	* </dl>
+	* @hideinitializer */
+#define OPUS_SET_MIN_BANDWIDTH(x) OPUS_SET_MIN_BANDWIDTH_REQUEST, __opus_check_int(x)
+
+/** Gets the encoder's configured minimum allowed bandpass.
+	* @see OPUS_SET_MIN_BANDWIDTH
+	* @param[out] x <tt>opus_int32 *</tt>: Allowed values:
+	* <dl>
+	* <dt>#OPUS_BANDWIDTH_NARROWBAND</dt>    <dd>4 kHz passband</dd>
+	* <dt>#OPUS_BANDWIDTH_WIDEBAND</dt>      <dd>8 kHz passband</dd>
+	* </dl>
+	* @hideinitializer */
+#define OPUS_GET_MIN_BANDWIDTH(x) OPUS_GET_MIN_BANDWIDTH_REQUEST, __opus_check_int_ptr(x)
 
 /** Sets the encoder's bandpass to a specific value.
   * This prevents the encoder from automatically selecting the bandpass based
