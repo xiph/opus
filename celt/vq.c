@@ -220,8 +220,13 @@ opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch)
    (void)arch;
    ALLOC(y, N, celt_norm);
    ALLOC(signx, N, int);
-   norm_scaledown(X, N, NORM_SHIFT-14);
-
+#ifdef FIXED_POINT
+   {
+      int shift = (celt_ilog2(1+celt_inner_prod_norm_shift(X, X, N, arch))+1)/2;
+      shift = IMAX(0, shift+(NORM_SHIFT-14)-14);
+      norm_scaledown(X, N, shift);
+   }
+#endif
    /* Get rid of the sign */
    sum = 0;
    j=0; do {
