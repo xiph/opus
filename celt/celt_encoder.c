@@ -590,7 +590,7 @@ void celt_preemphasis(const opus_res * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTR
 #else
    (void)clip; /* Avoids a warning about clip being unused. */
 #endif
-#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API) || defined(ENABLE_QEXT)
    if (coef[1] != 0)
    {
       opus_val16 coef1 = coef[1];
