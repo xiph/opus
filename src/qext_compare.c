@@ -457,16 +457,20 @@ int main(int _argc,const char **_argv){
       Eb2=Eb4=0;
       w = .5+.5*tanh(.5*(22-bi));
       for(xj=BANDS[bi];xj<BANDS[bi+1]&&xj<max_compare;xj++){
+        float f, thresh;
+        f = xj*OPUS_PI/240;
+        /* Shape the lower threshold similar to 1/(1 - 0.85*z^-1) deemphasis filter at 48 kHz. */
+        thresh = .1/(.15*.15 + f*f);
         for(ci=0;ci<nchannels;ci++){
           float re;
           float im;
-          re=Y[(xi*yfreqs+xj)*nchannels+ci]/X[(xi*nfreqs+xj)*nchannels+ci];
+          re=(Y[(xi*yfreqs+xj)*nchannels+ci]+thresh)/(X[(xi*nfreqs+xj)*nchannels+ci]+thresh);
           im=re-log(re)-1;
           /* Per-band error weighting. */
           im *= w;
           Eb2+=im;
           /* Same for 4th power, but make it less sensitive to very low energies. */
-          re=(Y[(xi*yfreqs+xj)*nchannels+ci]+10)/(X[(xi*nfreqs+xj)*nchannels+ci]+10);
+          re=(Y[(xi*yfreqs+xj)*nchannels+ci]+10*thresh)/(X[(xi*nfreqs+xj)*nchannels+ci]+10*thresh);
           im=re-log(re)-1;
           /* Per-band error weighting. */
           im *= w;
