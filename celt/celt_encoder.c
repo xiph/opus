@@ -124,8 +124,13 @@ struct OpusCustomEncoder {
    celt_glog spec_avg;
 
 #ifdef RESYNTH
+#ifdef ENABLE_QEXT
+   /* +MAX_PERIOD/2 to make space for overlap */
+   celt_sig syn_mem[2][2*DEC_PITCH_BUF_SIZE+MAX_PERIOD];
+#else
    /* +MAX_PERIOD/2 to make space for overlap */
    celt_sig syn_mem[2][DEC_PITCH_BUF_SIZE+MAX_PERIOD/2];
+#endif
 #endif
 
    celt_sig in_mem[1]; /* Size = channels*mode->overlap */
@@ -2649,11 +2654,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       }
 
       c=0; do {
-         OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, DEC_PITCH_BUF_SIZE-N+overlap/2);
+         OPUS_MOVE(st->syn_mem[c], st->syn_mem[c]+N, QEXT_SCALE(DEC_PITCH_BUF_SIZE)-N+overlap/2);
       } while (++c<CC);
 
       c=0; do {
-         out_mem[c] = st->syn_mem[c]+DEC_PITCH_BUF_SIZE-N;
+         out_mem[c] = st->syn_mem[c]+QEXT_SCALE(DEC_PITCH_BUF_SIZE)-N;
       } while (++c<CC);
 
       celt_synthesis(mode, X, out_mem, oldBandE, start, effEnd,
