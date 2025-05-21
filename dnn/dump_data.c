@@ -32,6 +32,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 #include "kiss_fft.h"
 #include "common.h"
 #include <math.h>
@@ -43,7 +44,129 @@
 #include "lpcnet_private.h"
 #include "os_support.h"
 #include "cpu_support.h"
+#include "kiss_fft.h"
+#include "_kiss_fft_guts.h"
 
+#define SEQUENCE_LENGTH 2000
+#define SEQUENCE_SAMPLES (SEQUENCE_LENGTH*FRAME_SIZE)
+
+#ifdef CUSTOM_MODES
+#define ENABLE_RIR
+#else
+#if defined(_MSC_VER)
+#pragma message ("dump_data tool built without reverb support.")
+#else
+#warning "dump_data tool built without reverb support."
+#endif
+#endif
+
+#ifdef ENABLE_RIR
+
+#define RIR_FFT_SIZE 32000
+#define RIR_MAX_DURATION (RIR_FFT_SIZE/2)
+#define FILENAME_MAX_SIZE 1000
+
+struct rir_list {
+  int nb_rirs;
+  int block_size;
+  kiss_fft_state *fft;
+  kiss_fft_cpx **rir;
+  kiss_fft_cpx **early;
+};
+
+kiss_fft_cpx *load_rir(const char *rir_file, kiss_fft_state *fft, int early) {
+  kiss_fft_cpx *x, *X;
+  float rir[RIR_MAX_DURATION];
+  int len;
+  int i;
+  FILE *f;
+  f = fopen(rir_file, "rb");
+  if (f==NULL) {
+    fprintf(stderr, "cannot open RIR file %s: %s\n", rir_file, strerror(errno));
+    exit(1);
+  }
+  x = (kiss_fft_cpx*)calloc(fft->nfft, sizeof(*x));
+  X = (kiss_fft_cpx*)calloc(fft->nfft, sizeof(*X));
+  len = fread(rir, sizeof(*rir), RIR_MAX_DURATION, f);
+  if (early) {
+    for (i=0;i<240;i++) {
+      rir[480+i] *= (1 - i/240.f);
+    }
+    OPUS_CLEAR(&rir[240+480], RIR_MAX_DURATION-240-480);
+  }
+  for (i=0;i<len;i++) x[i].r = rir[i];
+  opus_fft_c(fft, x, X);
+  free(x);
+  fclose(f);
+  return X;
+}
+
+void load_rir_list(const char *list_file, struct rir_list *rirs) {
+  int allocated;
+  char rir_filename[FILENAME_MAX_SIZE];
+  FILE *f;
+  f = fopen(list_file, "rb");
+  if (f==NULL) {
+    fprintf(stderr, "cannot open %s: %s\n", list_file, strerror(errno));
+    exit(1);
+  }
+  rirs->nb_rirs = 0;
+  allocated = 2;
+  rirs->fft = opus_fft_alloc_twiddles(RIR_FFT_SIZE, NULL, NULL, NULL, 0);
+  rirs->rir = malloc(allocated*sizeof(rirs->rir[0]));
+  rirs->early = malloc(allocated*sizeof(rirs->early[0]));
+  while (fgets(rir_filename, FILENAME_MAX_SIZE, f) != NULL) {
+    /* Chop trailing newline. */
+    rir_filename[strcspn(rir_filename, "\n")] = 0;
+    if (rirs->nb_rirs+1 > allocated) {
+      allocated *= 2;
+      rirs->rir = realloc(rirs->rir, allocated*sizeof(rirs->rir[0]));
+      rirs->early = realloc(rirs->early, allocated*sizeof(rirs->early[0]));
+    }
+    rirs->rir[rirs->nb_rirs] = load_rir(rir_filename, rirs->fft, 0);
+    rirs->early[rirs->nb_rirs] = load_rir(rir_filename, rirs->fft, 1);
+    rirs->nb_rirs++;
+  }
+  fclose(f);
+}
+
+void rir_filter_sequence(const struct rir_list *rirs, float *audio, int rir_id, int early) {
+  int i;
+  kiss_fft_cpx x[RIR_FFT_SIZE] = {{0,0}};
+  kiss_fft_cpx y[RIR_FFT_SIZE] = {{0,0}};
+  kiss_fft_cpx X[RIR_FFT_SIZE] = {{0,0}};
+  const kiss_fft_cpx *Y;
+  if (early) Y = rirs->early[rir_id];
+  else Y = rirs->rir[rir_id];
+  i=0;
+  while (i<SEQUENCE_SAMPLES) {
+    int j;
+    OPUS_COPY(&x[0], &x[RIR_FFT_SIZE/2], RIR_FFT_SIZE/2);
+    for (j=0;j<IMIN(SEQUENCE_SAMPLES-i, RIR_FFT_SIZE/2);j++) x[RIR_FFT_SIZE/2+j].r = audio[i+j];
+    for (;j<RIR_FFT_SIZE/2;j++) x[RIR_FFT_SIZE/2+j].r = 0;
+    opus_fft_c(rirs->fft, x, X);
+    for (j=0;j<RIR_FFT_SIZE;j++) {
+      kiss_fft_cpx tmp;
+      C_MUL(tmp, X[j], Y[j]);
+      X[j].r = tmp.r*RIR_FFT_SIZE/2;
+      X[j].i = tmp.i*RIR_FFT_SIZE/2;
+    }
+    opus_ifft_c(rirs->fft, X, y);
+    for (j=0;j<IMIN(SEQUENCE_SAMPLES-i, RIR_FFT_SIZE/2);j++) audio[i+j] = y[RIR_FFT_SIZE/2+j].r;
+    i += RIR_FFT_SIZE/2;
+  }
+}
+#endif
+
+
+static unsigned rand_lcg(unsigned *seed) {
+  *seed = 1664525**seed + 1013904223;
+  return *seed;
+}
+
+static float randf(float f) {
+  return f*rand()/(double)RAND_MAX;
+}
 
 static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
   int i;
@@ -61,11 +184,30 @@ static float uni_rand(void) {
   return rand()/(double)RAND_MAX-.5;
 }
 
+static void rand_filt(float *a) {
+  if (rand()%3!=0) {
+    a[0] = a[1] = 0;
+  }
+  else if (uni_rand()>0) {
+    float r, theta;
+    r = rand()/(double)RAND_MAX;
+    r = .7*r*r;
+    theta = rand()/(double)RAND_MAX;
+    theta = M_PI*theta*theta;
+    a[0] = -2*r*cos(theta);
+    a[1] = r*r;
+  } else {
+    float r0,r1;
+    r0 = 1.4*uni_rand();
+    r1 = 1.4*uni_rand();
+    a[0] = -r0-r1;
+    a[1] = r0*r1;
+  }
+}
+
 static void rand_resp(float *a, float *b) {
-  a[0] = .75*uni_rand();
-  a[1] = .75*uni_rand();
-  b[0] = .75*uni_rand();
-  b[1] = .75*uni_rand();
+  rand_filt(a);
+  rand_filt(b);
 }
 
 static opus_int16 float2short(float x)
@@ -75,35 +217,56 @@ static opus_int16 float2short(float x)
   return IMAX(-32767, IMIN(32767, i));
 }
 
-int main(int argc, char **argv) {
+static float weighted_rms(float *x) {
   int i;
-  char *argv0;
+  float tmp[SEQUENCE_SAMPLES];
+  float weighting_b[2] = {-2.f, 1.f};
+  float weighting_a[2] = {-1.89f, .895f};
+  float mem[2] = {0};
+  float mse = 1e-15f;
+  biquad(tmp, mem, x, weighting_b, weighting_a, SEQUENCE_SAMPLES);
+  for (i=0;i<SEQUENCE_SAMPLES;i++) mse += tmp[i]*tmp[i];
+  return 0.9506*sqrt(mse/SEQUENCE_SAMPLES);
+}
+
+
+short speech16[SEQUENCE_LENGTH*FRAME_SIZE];
+short noise16[SEQUENCE_LENGTH*FRAME_SIZE] = {0};
+float x[SEQUENCE_LENGTH*FRAME_SIZE];
+float n[SEQUENCE_LENGTH*FRAME_SIZE];
+float xn[SEQUENCE_LENGTH*FRAME_SIZE];
+
+
+int main(int argc, char **argv) {
+  int i, j;
+  const char *argv0;
+  const char *noise_filename=NULL;
+  const char *rir_filename=NULL;
   int count=0;
   static const float a_hp[2] = {-1.99599, 0.99600};
   static const float b_hp[2] = {-2, 1};
+  float a_noise[2] = {0};
+  float b_noise[2] = {0};
   float a_sig[2] = {0};
   float b_sig[2] = {0};
-  float mem_hp_x[2]={0};
-  float mem_resp_x[2]={0};
   float mem_preemph=0;
-  float x[FRAME_SIZE];
-  int gain_change_count=0;
-  FILE *f1;
+  FILE *f1, *f2=NULL;
   FILE *ffeat;
   FILE *fpcm=NULL;
   opus_int16 pcm[FRAME_SIZE]={0};
-  opus_int16 tmp[FRAME_SIZE] = {0};
   float speech_gain=1;
-  float old_speech_gain = 1;
-  int one_pass_completed = 0;
   LPCNetEncState *st;
   int training = -1;
   int burg = 0;
   int pitch = 0;
-  FILE *fnoise = NULL;
   float noise_gain = 0;
-  long noise_size=0;
   int arch;
+  long speech_length, noise_length=0;
+  int maxCount;
+  unsigned seed;
+#ifdef ENABLE_RIR
+  struct rir_list rirs;
+#endif
   srand(getpid());
   arch = opus_select_arch();
   st = lpcnet_encoder_create();
@@ -119,27 +282,39 @@ int main(int argc, char **argv) {
   else if (argc == 5 && strcmp(argv[1], "-ptrain")==0) {
       pitch = 1;
       training = 1;
-      fnoise = fopen(argv[2], "rb");
-      fseek(fnoise, 0, SEEK_END);
-      noise_size = ftell(fnoise);
-      fseek(fnoise, 0, SEEK_SET);
+      noise_filename = argv[2];
       argv++;
   }
   else if (argc == 4 && strcmp(argv[1], "-ptest")==0) {
       pitch = 1;
       training = 0;
   }
-  else if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
-  else if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
+  else if (argc == 7 && strcmp(argv[1], "-train")==0) {
+     training = 1;
+     noise_filename = argv[2];
+     rir_filename = argv[3];
+     argv+=2;
+  } else if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
   if (training == -1) {
-    fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv0);
-    fprintf(stderr, "  or   %s -test <speech> <features out>\n", argv0);
+    fprintf(stderr, "usage: %s -train <noise> <rir_list> <speech> <features out> <pcm out>\n", argv0);
+    fprintf(stderr, "       %s -ptrain <noise> <speech> <features out>\n", argv0);
+    fprintf(stderr, "       %s -test <speech> <features out>\n", argv0);
     return 1;
   }
   f1 = fopen(argv[2], "r");
   if (f1 == NULL) {
     fprintf(stderr,"Error opening input .s16 16kHz speech input file: %s\n", argv[2]);
     exit(1);
+  }
+  if (noise_filename != NULL) {
+     f2 = fopen(noise_filename, "r");
+     if (f2 == NULL) {
+        fprintf(stderr,"Error opening input .s16 16kHz speech input file: %s\n", noise_filename);
+        exit(1);
+     }
+     fseek(f2, 0, SEEK_END);
+     noise_length = ftell(f2);
+     fseek(f2, 0, SEEK_SET);
   }
   ffeat = fopen(argv[3], "wb");
   if (ffeat == NULL) {
@@ -153,84 +328,152 @@ int main(int argc, char **argv) {
       exit(1);
     }
   }
-  while (1) {
-    size_t ret;
-    ret = fread(tmp, sizeof(opus_int16), FRAME_SIZE, f1);
-    if (feof(f1) || ret != FRAME_SIZE) {
-      if (!training) break;
-      rewind(f1);
-      ret = fread(tmp, sizeof(opus_int16), FRAME_SIZE, f1);
-      if (ret != FRAME_SIZE) {
-        fprintf(stderr, "error reading\n");
-        exit(1);
-      }
-      one_pass_completed = 1;
-    }
-    for (i=0;i<FRAME_SIZE;i++) x[i] = tmp[i];
-    if (count*FRAME_SIZE_5MS>=10000000 && one_pass_completed) break;
-    if (training && ++gain_change_count > 2821) {
-      speech_gain = pow(10., (-30+(rand()%40))/20.);
-      if (rand()&1) speech_gain = -speech_gain;
-      if (rand()%20==0) speech_gain *= .01;
-      if (!pitch && rand()%100==0) speech_gain = 0;
-      gain_change_count = 0;
-      rand_resp(a_sig, b_sig);
-      if (fnoise != NULL) {
-        long pos;
-        /* Randomize the fraction because rand() only gives us 31 bits. */
-        float frac_pos = rand()/(float)RAND_MAX;
-        pos = (long)(frac_pos*noise_size);
-        /* 32-bit alignment. */
-        pos = pos/4 * 4;
-        if (pos > noise_size-500000) pos = noise_size-500000;
-        noise_gain = pow(10., (-15+(rand()%40))/20.);
-        if (rand()%10==0) noise_gain = 0;
-        fseek(fnoise, pos, SEEK_SET);
-      }
-    }
-    if (fnoise != NULL) {
-      opus_int16 noise[FRAME_SIZE];
-      ret = fread(noise, sizeof(opus_int16), FRAME_SIZE, fnoise);
-      for (i=0;i<FRAME_SIZE;i++) x[i] += noise[i]*noise_gain;
-    }
-    biquad(x, mem_hp_x, x, b_hp, a_hp, FRAME_SIZE);
-    biquad(x, mem_resp_x, x, b_sig, a_sig, FRAME_SIZE);
-    for (i=0;i<FRAME_SIZE;i++) {
-      float g;
-      float f = (float)i/FRAME_SIZE;
-      g = f*speech_gain + (1-f)*old_speech_gain;
-      x[i] *= g;
-    }
-    if (burg) {
-      float ceps[2*NB_BANDS];
-      burg_cepstral_analysis(ceps, x);
-      fwrite(ceps, sizeof(float), 2*NB_BANDS, ffeat);
-    }
-    preemphasis(x, &mem_preemph, x, PREEMPHASIS, FRAME_SIZE);
-    /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
-    for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(x[i]);
-    compute_frame_features(st, x, arch);
-
-    if (pitch) {
-      signed char pitch_features[PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES];
-      for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
-        pitch_features[i] = (int)floor(.5f + 127.f*st->xcorr_features[i]);
-      }
-      for (i=0;i<PITCH_IF_FEATURES;i++) {
-        pitch_features[i+PITCH_MAX_PERIOD-PITCH_MIN_PERIOD] = (int)floor(.5f + 127.f*st->if_features[i]);
-      }
-      fwrite(pitch_features, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES, 1, ffeat);
-    } else {
-      fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
-    }
-    /*if(pitch) fwrite(pcm, FRAME_SIZE, 2, stdout);*/
-    if (fpcm) fwrite(pcm, FRAME_SIZE, 2, fpcm);
-    /*if (fpcm) fwrite(pcm, sizeof(opus_int16), FRAME_SIZE, fpcm);*/
-    for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(x[i+FRAME_SIZE-TRAINING_OFFSET]);
-    old_speech_gain = speech_gain;
-    count++;
+#ifdef ENABLE_RIR
+  if (rir_filename != NULL) {
+     load_rir_list(rir_filename, &rirs);
   }
+#endif
+
+  seed = getpid();
+  srand(seed);
+
+  fseek(f1, 0, SEEK_END);
+  speech_length = ftell(f1);
+  fseek(f1, 0, SEEK_SET);
+#ifndef ENABLE_RIR
+  fprintf(stderr, "WARNING: dump_data was built without RIR support\n");
+#endif
+
+  maxCount = 20000;
+  for (count=0;count<maxCount;count++) {
+    int rir_id;
+    int sequence_length;
+    long speech_pos, noise_pos;
+    int start_pos=0;
+    float E[SEQUENCE_LENGTH] = {0};
+    float mem[2]={0};
+    int frame;
+    float speech_rms, noise_rms;
+    if ((count%1000)==0) fprintf(stderr, "%d\r", count);
+    speech_pos = (rand_lcg(&seed)*2.3283e-10)*speech_length;
+    if (speech_pos > speech_length-(long)sizeof(speech16)) speech_pos = speech_length-sizeof(speech16);
+    speech_pos -= speech_pos&1;
+    fseek(f1, speech_pos, SEEK_SET);
+    fread(speech16, sizeof(speech16), 1, f1);
+    if (f2!=NULL) {
+       noise_pos = (rand_lcg(&seed)*2.3283e-10)*noise_length;
+       if (noise_pos > noise_length-(long)sizeof(noise16)) noise_pos = noise_length-sizeof(noise16);
+       noise_pos -= noise_pos&1;
+       fseek(f2, noise_pos, SEEK_SET);
+       fread(noise16, sizeof(noise16), 1, f2);
+    }
+    if (rand()%4) start_pos = 0;
+    else start_pos = -(int)(1000*log(rand()/(float)RAND_MAX));
+    start_pos = IMIN(start_pos, SEQUENCE_LENGTH*FRAME_SIZE);
+
+    speech_gain = pow(10., (-30+(rand()%40))/20.);
+    if (rand()&1) speech_gain = -speech_gain;
+    if (rand()%20==0) speech_gain *= .01;
+    if (!pitch && rand()%100==0) speech_gain = 0;
+
+    noise_gain = pow(10., (-40+randf(25.f)+randf(15.f))/20.);
+    if (rand()%2!=0) noise_gain = 0;
+    if (rand()%12==0) {
+      noise_gain *= 0.03;
+    }
+    noise_gain *= speech_gain;
+    rand_resp(a_noise, b_noise);
+    rand_resp(a_sig, b_sig);
+
+    for (frame=0;frame<SEQUENCE_LENGTH;frame++) {
+      E[frame] = 0;
+      for(j=0;j<FRAME_SIZE;j++) {
+        float s = speech16[frame*FRAME_SIZE+j];
+        E[frame] += s*s;
+        x[frame*FRAME_SIZE+j] = speech16[frame*FRAME_SIZE+j];
+        n[frame*FRAME_SIZE+j] = noise16[frame*FRAME_SIZE+j];
+      }
+    }
+
+    OPUS_CLEAR(mem, 2);
+    biquad(x, mem, x, b_hp, a_hp, SEQUENCE_LENGTH*FRAME_SIZE);
+    OPUS_CLEAR(mem, 2);
+    biquad(x, mem, x, b_sig, a_sig, SEQUENCE_LENGTH*FRAME_SIZE);
+    OPUS_CLEAR(mem, 2);
+    biquad(n, mem, n, b_hp, a_hp, SEQUENCE_LENGTH*FRAME_SIZE);
+    OPUS_CLEAR(mem, 2);
+    biquad(n, mem, n, b_noise, a_noise, SEQUENCE_LENGTH*FRAME_SIZE);
+
+    speech_rms = weighted_rms(x);
+    noise_rms = weighted_rms(n);
+
+    speech_gain *= 3000.f/(1+speech_rms);
+    noise_gain *= 3000.f/(1+noise_rms);
+    for (j=0;j<SEQUENCE_SAMPLES;j++) {
+      x[j] *= speech_gain;
+      n[j] *= noise_gain;
+      xn[j] = x[j] + n[j];
+    }
+#ifdef ENABLE_RIR
+    if (rir_filename!=NULL && rand()%3==0) {
+      rir_id = rand()%rirs.nb_rirs;
+      rir_filter_sequence(&rirs, x, rir_id, 1);
+      rir_filter_sequence(&rirs, xn, rir_id, 0);
+    }
+#endif
+    if (rand()%4==0) {
+      /* Apply input clipping to 0 dBFS (don't clip target). */
+      for (j=0;j<SEQUENCE_SAMPLES;j++) {
+        xn[j] = MIN16(32767.f, MAX16(-32767.f, xn[j]));
+      }
+    }
+    if (rand()%2==0) {
+      /* Apply 16-bit quantization. */
+      for (j=0;j<SEQUENCE_SAMPLES;j++) {
+        xn[j] = floor(.5f + xn[j]);
+      }
+    }
+#if 0
+    for (frame=0;frame<SEQUENCE_LENGTH;frame++) {
+       short tmp[FRAME_SIZE];
+       for (j=0;j<FRAME_SIZE;j++) tmp[j] = MIN16(32767, MAX16(-32767, xn[frame*FRAME_SIZE+j]));
+       fwrite(tmp, FRAME_SIZE, 2, fout);
+    }
+#endif
+
+    sequence_length = IMIN(SEQUENCE_LENGTH, SEQUENCE_LENGTH/2 + rand()%(SEQUENCE_LENGTH/2+1));
+    for (frame=0;frame<sequence_length;frame++) {
+       float *xf = &xn[frame*FRAME_SIZE];
+       if (burg) {
+         float ceps[2*NB_BANDS];
+         burg_cepstral_analysis(ceps, xf);
+         fwrite(ceps, sizeof(float), 2*NB_BANDS, ffeat);
+       }
+       preemphasis(xf, &mem_preemph, xf, PREEMPHASIS, FRAME_SIZE);
+       /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
+       for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(xf[i]);
+       compute_frame_features(st, xf, arch);
+
+       if (pitch) {
+         signed char pitch_features[PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES];
+         for (i=0;i<PITCH_MAX_PERIOD-PITCH_MIN_PERIOD;i++) {
+           pitch_features[i] = (int)floor(.5f + 127.f*st->xcorr_features[i]);
+         }
+         for (i=0;i<PITCH_IF_FEATURES;i++) {
+           pitch_features[i+PITCH_MAX_PERIOD-PITCH_MIN_PERIOD] = (int)floor(.5f + 127.f*st->if_features[i]);
+         }
+         fwrite(pitch_features, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES, 1, ffeat);
+       } else {
+         fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
+       }
+       /*if(pitch) fwrite(pcm, FRAME_SIZE, 2, stdout);*/
+       if (fpcm) fwrite(pcm, FRAME_SIZE, 2, fpcm);
+       for (i=0;i<TRAINING_OFFSET;i++) pcm[i] = float2short(xf[i+FRAME_SIZE-TRAINING_OFFSET]);
+    }
+  }
+
   fclose(f1);
+  fclose(f2);
   fclose(ffeat);
   if (fpcm) fclose(fpcm);
   lpcnet_encoder_destroy(st);
