@@ -187,7 +187,7 @@ static const int BANDS[NBANDS+1]={
 
 
 void usage(const char *_argv0) {
-   fprintf(stderr,"Usage: %s [-s] [-48k] [-s16|-s24|-f32] [-r rate2] <file1.sw> <file2.sw>\n",
+   fprintf(stderr,"Usage: %s [-s] [-48k] [-s16|-s24|-f32] [-r rate2] [-thresholds err4 err16 rms] <file1.sw> <file2.sw>\n",
     _argv0);
 }
 
@@ -222,6 +222,8 @@ int main(int _argc,const char **_argv){
   int      format;
   double rms=-1;
   const char *argv0 = _argv[0];
+  double err4_threshold=-1, err16_threshold=-1, rms_threshold=-1;
+  int compare_thresholds=0;
   if(_argc<3){
     usage(argv0);
     return EXIT_FAILURE;
@@ -256,6 +258,17 @@ int main(int _argc,const char **_argv){
       format=FORMAT_F32_LE;
       _argv++;
       _argc--;
+    } else if(strcmp(_argv[1],"-thresholds")==0){
+      if (_argc < 7) {
+        usage(argv0);
+        return EXIT_FAILURE;
+      }
+      err4_threshold=atof(_argv[2]);
+      err16_threshold=atof(_argv[3]);
+      rms_threshold=atof(_argv[4]);
+      compare_thresholds=1;
+      _argv+=4;
+      _argc-=4;
     } else if(strcmp(_argv[1],"-r")==0){
       rate=atoi(_argv[2]);
       if(rate!=8000&&rate!=12000&&rate!=16000&&rate!=24000&&rate!=48000&&rate!=96000){
@@ -496,5 +509,13 @@ int main(int _argc,const char **_argv){
   err4=pow(err4/nframes,1.0/4);
   err16=pow(err16/nframes,1.0/16);
   fprintf(stderr, "err4 = %f, err16 = %f, rms = %f\n", err4, err16, rms);
+  if (compare_thresholds) {
+    if (err4 <= err4_threshold && err16 <= err16_threshold && rms <= rms_threshold) {
+      fprintf(stderr, "Comparison PASSED\n");
+    } else {
+      fprintf(stderr, "*** Comparison FAILED *** (thresholds were %f %f %f)\n", err4_threshold, err16_threshold, rms_threshold);
+      return EXIT_FAILURE;
+    }
+  }
   return EXIT_SUCCESS;
 }
