@@ -1298,30 +1298,28 @@ static int tone_lpc(const opus_val16 *x, int len, int delay, opus_val32 *lpc) {
 }
 
 /* Detects pure of nearly pure tones so we can prevent them from causing problems with the encoder. */
-static opus_val16 tone_detect(const celt_sig *in, const celt_sig *prefilter_mem, int CC, int N, int overlap, opus_val32 *toneishness, opus_int32 Fs) {
+static opus_val16 tone_detect(const celt_sig *in, int CC, int N, opus_val32 *toneishness, opus_int32 Fs) {
    int i;
    int delay = 1;
    int fail;
    opus_val32 lpc[2];
    opus_val16 freq;
    VARDECL(opus_val16, x);
-   ALLOC(x, N+overlap, opus_val16);
+   ALLOC(x, N, opus_val16);
    /* Shift by SIG_SHIFT+1 (+2 for stereo) to account for HF gain of the preemphasis filter. */
    if (CC==2) {
-      for (i=0;i<N;i++) x[i+overlap] = PSHR32(ADD32(in[i], in[i+N+overlap]), SIG_SHIFT+2);
-      for (i=0;i<overlap;i++) x[i] = PSHR32(ADD32(prefilter_mem[COMBFILTER_MAXPERIOD-overlap+i], prefilter_mem[2*COMBFILTER_MAXPERIOD-overlap+i]), SIG_SHIFT+2);
+      for (i=0;i<N;i++) x[i] = PSHR32(ADD32(in[i], in[i+N]), SIG_SHIFT+3);
    } else {
-      for (i=0;i<N;i++) x[i+overlap] = PSHR32(in[i], SIG_SHIFT+1);
-      for (i=0;i<overlap;i++) x[i] = PSHR32(prefilter_mem[COMBFILTER_MAXPERIOD-overlap+i], SIG_SHIFT+1);
+      for (i=0;i<N;i++) x[i] = PSHR32(in[i], SIG_SHIFT+2);
    }
 #ifdef FIXED_POINT
-   normalize_tone_input(x, N+overlap);
+   normalize_tone_input(x, N);
 #endif
-   fail = tone_lpc(x, N+overlap, delay, lpc);
+   fail = tone_lpc(x, N, delay, lpc);
    /* If our LPC filter resonates too close to DC, retry the analysis with down-sampling. */
    while (delay <= Fs/3000 && (fail || (lpc[0] > QCONST32(1.f, 29) && lpc[1] < 0))) {
       delay *= 2;
-      fail = tone_lpc(x, N+overlap, delay, lpc);
+      fail = tone_lpc(x, N, delay, lpc);
    }
    /* Check that our filter has complex roots. */
    if (!fail && MULT32_32_Q31(lpc[0],lpc[0]) + MULT32_32_Q31(QCONST32(3.999999, 29), lpc[1]) < 0) {
@@ -1861,7 +1859,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    } while (++c<CC);
 
 
-   tone_freq = tone_detect(in+overlap, prefilter_mem, 1, N, overlap, &toneishness, mode->Fs);
+   tone_freq = tone_detect(in, CC, N+overlap, &toneishness, mode->Fs);
    isTransient = 0;
    shortBlocks = 0;
    if (st->complexity >= 1 && !st->lfe)
