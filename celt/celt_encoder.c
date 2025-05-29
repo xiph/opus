@@ -1857,10 +1857,22 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 #endif
       celt_preemphasis(pcm+c, in+c*(N+overlap)+overlap, N, CC, st->upsample,
                   mode->preemph, st->preemph_memE+c, need_clip);
+      OPUS_COPY(in+c*(N+overlap), &prefilter_mem[(1+c)*COMBFILTER_MAXPERIOD-overlap], overlap);
    } while (++c<CC);
 
 
    tone_freq = tone_detect(in+overlap, prefilter_mem, 1, N, overlap, &toneishness, mode->Fs);
+   isTransient = 0;
+   shortBlocks = 0;
+   if (st->complexity >= 1 && !st->lfe)
+   {
+      /* Reduces the likelihood of energy instability on fricatives at low bitrate
+         in hybrid mode. It seems like we still want to have real transients on vowels
+         though (small SILK quantization offset value). */
+      int allow_weak_transients = hybrid && effectiveBytes<15 && st->silk_info.signalType != 2;
+      isTransient = transient_analysis(in, N+overlap, CC,
+            &tf_estimate, &tf_chan, allow_weak_transients, &weak_transient, tone_freq, toneishness);
+   }
    /* Find pitch period and gain */
    {
       int enabled;
@@ -1890,18 +1902,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          ec_enc_bits(enc, qg, 3);
          ec_enc_icdf(enc, prefilter_tapset, tapset_icdf, 2);
       }
-   }
-
-   isTransient = 0;
-   shortBlocks = 0;
-   if (st->complexity >= 1 && !st->lfe)
-   {
-      /* Reduces the likelihood of energy instability on fricatives at low bitrate
-         in hybrid mode. It seems like we still want to have real transients on vowels
-         though (small SILK quantization offset value). */
-      int allow_weak_transients = hybrid && effectiveBytes<15 && st->silk_info.signalType != 2;
-      isTransient = transient_analysis(in, N+overlap, CC,
-            &tf_estimate, &tf_chan, allow_weak_transients, &weak_transient, tone_freq, toneishness);
    }
    if (LM>0 && ec_tell(enc)+3<=total_bits)
    {
