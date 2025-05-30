@@ -333,12 +333,12 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       /* Forward pass to compute the post-echo threshold*/
       for (i=0;i<len2;i++)
       {
-         opus_val16 x2 = PSHR32(MULT16_16(tmp[2*i],tmp[2*i]) + MULT16_16(tmp[2*i+1],tmp[2*i+1]),16);
-         mean += x2;
+         opus_val32 x2 = PSHR32(MULT16_16(tmp[2*i],tmp[2*i]) + MULT16_16(tmp[2*i+1],tmp[2*i+1]),4);
+         mean += PSHR32(x2, 12);
 #ifdef FIXED_POINT
          /* FIXME: Use PSHR16() instead */
-         tmp[i] = mem0 + PSHR32(x2-mem0,forward_shift);
-         mem0 = tmp[i];
+         mem0 = mem0 + PSHR32(x2-mem0,forward_shift);
+         tmp[i] = PSHR32(mem0, 12);
 #else
          mem0 = x2 + (1.f-forward_decay)*mem0;
          tmp[i] = forward_decay*mem0;
@@ -353,9 +353,9 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          /* Backward masking: 13.9 dB/ms. */
 #ifdef FIXED_POINT
          /* FIXME: Use PSHR16() instead */
-         tmp[i] = mem0 + PSHR32(tmp[i]-mem0,3);
-         mem0 = tmp[i];
-         maxE = MAX16(maxE, mem0);
+         mem0 = mem0 + PSHR32(SHL32(tmp[i],4)-mem0,3);
+         tmp[i] = PSHR32(mem0, 4);
+         maxE = MAX16(maxE, tmp[i]);
 #else
          mem0 = tmp[i] + 0.875f*mem0;
          tmp[i] = 0.125f*mem0;
