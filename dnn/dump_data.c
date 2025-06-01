@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
     if (!pitch && rand()%100==0) speech_gain = 0;
 
     noise_gain = pow(10., (-40+randf(25.f)+randf(15.f))/20.);
-    if (rand()%8!=0) noise_gain = 0;
+    if (rand()%2!=0) noise_gain = 0;
     if (rand()%12==0) {
       noise_gain *= 0.03;
     }
@@ -385,7 +385,7 @@ int main(int argc, char **argv) {
       n[j] *= noise_gain;
       xn[j] = x[j] + n[j];
     }
-    if (rand()%5==0) {
+    if (rand()%3==0) {
       rir_id = rand()%rirs.nb_rirs;
       rir_filter_sequence(&rirs, x, rir_id, 1);
       rir_filter_sequence(&rirs, xn, rir_id, 0);
