@@ -234,12 +234,14 @@ int main(int argc, char **argv) {
   float a_sig[2] = {0};
   float b_sig[2] = {0};
   float mem_preemph=0;
+  float mem_clean_preemph=0;
   FILE *f1, *f2;
   FILE *ffeat;
+  FILE *clean_ffeat=NULL;
   FILE *fpcm=NULL;
   opus_int16 pcm[FRAME_SIZE]={0};
   float speech_gain=1;
-  LPCNetEncState *st;
+  LPCNetEncState *st, *clean_st;
   int training = -1;
   int burg = 0;
   int pitch = 0;
@@ -252,6 +254,7 @@ int main(int argc, char **argv) {
   srand(getpid());
   arch = opus_select_arch();
   st = lpcnet_encoder_create();
+  clean_st = lpcnet_encoder_create();
   argv0=argv[0];
   if (argc == 5 && strcmp(argv[1], "-btrain")==0) {
       burg = 1;
@@ -274,7 +277,7 @@ int main(int argc, char **argv) {
       pitch = 1;
       training = 0;
   }
-  else if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
+  else if (argc == 6 && strcmp(argv[1], "-train")==0) training = 1;
   else if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
   if (training == -1) {
     fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv0);
@@ -295,6 +298,14 @@ int main(int argc, char **argv) {
   if (ffeat == NULL) {
     fprintf(stderr,"Error opening output feature file: %s\n", argv[3]);
     exit(1);
+  }
+  if (training && !pitch && !burg) {
+    clean_ffeat = fopen(argv[4], "wb");
+    if (clean_ffeat == NULL) {
+      fprintf(stderr,"Error opening clean feature file: %s\n", argv[4]);
+      exit(1);
+    }
+    argv++;
   }
   if (training && !pitch) {
     fpcm = fopen(argv[4], "wb");
@@ -412,16 +423,20 @@ int main(int argc, char **argv) {
 
     sequence_length = IMIN(SEQUENCE_LENGTH, SEQUENCE_LENGTH/2 + rand()%(SEQUENCE_LENGTH/2+1));
     for (frame=0;frame<sequence_length;frame++) {
+       float *clean;
        float *xf = &xn[frame*FRAME_SIZE];
+       clean = &x[frame*FRAME_SIZE];
        if (burg) {
          float ceps[2*NB_BANDS];
          burg_cepstral_analysis(ceps, xf);
          fwrite(ceps, sizeof(float), 2*NB_BANDS, ffeat);
        }
        preemphasis(xf, &mem_preemph, xf, PREEMPHASIS, FRAME_SIZE);
+       preemphasis(clean, &mem_clean_preemph, clean, PREEMPHASIS, FRAME_SIZE);
        /* PCM is delayed by 1/2 frame to make the features centered on the frames. */
        for (i=0;i<FRAME_SIZE-TRAINING_OFFSET;i++) pcm[i+TRAINING_OFFSET] = float2short(xf[i]);
        compute_frame_features(st, xf, arch);
+       compute_frame_features(clean_st, clean, arch);
 
        if (pitch) {
          signed char pitch_features[PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES];
@@ -434,6 +449,7 @@ int main(int argc, char **argv) {
          fwrite(pitch_features, PITCH_MAX_PERIOD-PITCH_MIN_PERIOD+PITCH_IF_FEATURES, 1, ffeat);
        } else {
          fwrite(st->features, sizeof(float), NB_TOTAL_FEATURES, ffeat);
+         if (!burg && training) fwrite(clean_st->features, sizeof(float), NB_TOTAL_FEATURES, clean_ffeat);
        }
        /*if(pitch) fwrite(pcm, FRAME_SIZE, 2, stdout);*/
        if (fpcm) fwrite(pcm, FRAME_SIZE, 2, fpcm);
