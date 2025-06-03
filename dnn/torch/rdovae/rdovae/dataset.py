@@ -33,6 +33,7 @@ import numpy as np
 class RDOVAEDataset(torch.utils.data.Dataset):
     def __init__(self,
                 feature_file,
+                clean_feature_file,
                 sequence_length,
                 num_used_features=20,
                 num_features=36,
@@ -51,8 +52,11 @@ class RDOVAEDataset(torch.utils.data.Dataset):
         if sequence_length % enc_stride:
             raise ValueError(f"RDOVAEDataset.__init__: enc_stride {enc_stride} does not divide sequence length {sequence_length}")
 
+        #self.features = np.reshape(np.fromfile(feature_file, dtype=np.float32), (-1, num_features))
         self.features = np.reshape(np.memmap(feature_file, dtype=np.float32), (-1, num_features))
         self.features = self.features[:, :num_used_features]
+        self.clean_features = np.reshape(np.memmap(clean_feature_file, dtype=np.float32), (-1, num_features))
+        self.clean_features = self.clean_features[:, :num_used_features]
         self.num_sequences = self.features.shape[0] // sequence_length
 
     def __len__(self):
@@ -60,8 +64,9 @@ class RDOVAEDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         features = self.features[index * self.sequence_length: (index + 1) * self.sequence_length, :]
+        clean_features = self.clean_features[index * self.sequence_length: (index + 1) * self.sequence_length, :]
         q_ids = np.random.randint(0, self.quant_levels, (1)).astype(np.int64)
         q_ids = np.repeat(q_ids, self.sequence_length // self.enc_stride, axis=0)
         rate_lambda = self.lambda_min * np.exp(q_ids.astype(np.float32) / self.denominator).astype(np.float32)
 
-        return features, rate_lambda, q_ids
+        return features, clean_features, rate_lambda, q_ids

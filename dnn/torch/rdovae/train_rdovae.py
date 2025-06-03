@@ -39,6 +39,7 @@ from rdovae import RDOVAE, RDOVAEDataset, distortion_loss, hard_rate_estimate, s
 parser = argparse.ArgumentParser()
 
 parser.add_argument('features', type=str, help='path to feature file in .f32 format')
+parser.add_argument('clean_features', type=str, help='path to clean feature file in .f32 format')
 parser.add_argument('output', type=str, help='path to output folder')
 
 parser.add_argument('--cuda-visible-devices', type=str, help="comma separates list of cuda visible device indices, default: ''", default="")
@@ -118,6 +119,7 @@ num_features = 20
 
 # training data
 feature_file = args.features
+clean_feature_file = args.clean_features
 
 # model
 checkpoint['model_args']    = (num_features, latent_dim, quant_levels, cond_size, cond_size2)
@@ -141,7 +143,7 @@ if args.train_decoder_only:
         p.requires_grad = False
 
 # dataloader
-checkpoint['dataset_args'] = (feature_file, sequence_length, num_features, 36)
+checkpoint['dataset_args'] = (feature_file, clean_feature_file, sequence_length, num_features, 36)
 checkpoint['dataset_kwargs'] = {'lambda_min': lambda_min, 'lambda_max': lambda_max, 'enc_stride': model.enc_stride, 'quant_levels': quant_levels}
 dataset = RDOVAEDataset(*checkpoint['dataset_args'], **checkpoint['dataset_kwargs'])
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
@@ -181,13 +183,14 @@ if __name__ == '__main__':
         running_first_frame_loss = 0
 
         with tqdm.tqdm(dataloader, unit='batch') as tepoch:
-            for i, (features, rate_lambda, q_ids) in enumerate(tepoch):
+            for i, (features, clean_features, rate_lambda, q_ids) in enumerate(tepoch):
 
                 # zero out gradients
                 optimizer.zero_grad()
 
                 # push inputs to device
                 features    = features.to(device)
+                clean_features = clean_features.to(device)
                 q_ids       = q_ids.to(device)
                 rate_lambda = rate_lambda.to(device)
 
@@ -227,16 +230,16 @@ if __name__ == '__main__':
                 # hard quantized decoder input
                 distortion_loss_hard_quant = torch.zeros_like(rate_loss)
                 for dec_features, start, stop in outputs_hard_quant:
-                    distortion_loss_hard_quant += distortion_loss(features[..., start : stop, :], dec_features, rate_lambda_upsamp[..., start : stop]) / len(outputs_hard_quant)
+                    distortion_loss_hard_quant += distortion_loss(clean_features[..., start : stop, :], dec_features, rate_lambda_upsamp[..., start : stop]) / len(outputs_hard_quant)
 
                 first_frame_loss = torch.zeros_like(rate_loss)
                 for dec_features, start, stop in outputs_hard_quant:
-                    first_frame_loss += distortion_loss(features[..., stop-4 : stop, :], dec_features[..., -4:, :], rate_lambda_upsamp[..., stop - 4 : stop]) / len(outputs_hard_quant)
+                    first_frame_loss += distortion_loss(clean_features[..., stop-4 : stop, :], dec_features[..., -4:, :], rate_lambda_upsamp[..., stop - 4 : stop]) / len(outputs_hard_quant)
 
                 # soft quantized decoder input
                 distortion_loss_soft_quant = torch.zeros_like(rate_loss)
                 for dec_features, start, stop in outputs_soft_quant:
-                    distortion_loss_soft_quant += distortion_loss(features[..., start : stop, :], dec_features, rate_lambda_upsamp[..., start : stop]) / len(outputs_soft_quant)
+                    distortion_loss_soft_quant += distortion_loss(clean_features[..., start : stop, :], dec_features, rate_lambda_upsamp[..., start : stop]) / len(outputs_soft_quant)
 
                 # total loss
                 total_loss = rate_loss + (distortion_loss_hard_quant + distortion_loss_soft_quant) / 2
