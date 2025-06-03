@@ -51,7 +51,7 @@ class RDOVAEDataset(torch.utils.data.Dataset):
         if sequence_length % enc_stride:
             raise ValueError(f"RDOVAEDataset.__init__: enc_stride {enc_stride} does not divide sequence length {sequence_length}")
 
-        self.features = np.reshape(np.fromfile(feature_file, dtype=np.float32), (-1, num_features))
+        self.features = np.reshape(np.memmap(feature_file, dtype=np.float32), (-1, num_features))
         self.features = self.features[:, :num_used_features]
         self.num_sequences = self.features.shape[0] // sequence_length
 
