@@ -1339,7 +1339,7 @@ static opus_val16 tone_detect(const celt_sig *in, int CC, int N, opus_val32 *ton
 }
 
 static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem, int CC, int N,
-      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes, AnalysisInfo *analysis, opus_val16 tone_freq, opus_val32 toneishness)
+      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, opus_val16 tf_estimate, int nbAvailableBytes, AnalysisInfo *analysis, opus_val16 tone_freq, opus_val32 toneishness)
 {
    int c;
    VARDECL(celt_sig, _pre);
@@ -1351,6 +1351,8 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
    int pf_on;
    int qg;
    int overlap;
+   opus_val32 before[2]={0}, after[2]={0};
+   int cancel_pitch=0;
    SAVE_STACK;
 
    mode = st->mode;
@@ -1426,7 +1428,12 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
 
    /* Adjusting the threshold based on rate and continuity */
    if (abs(pitch_index-st->prefilter_period)*10>pitch_index)
+   {
       pf_threshold += QCONST16(.2f,15);
+      /* Completely disable the prefilter on strong transients without continuity. */
+      if (tf_estimate > QCONST16(.98f, 14))
+         gain1 = 0;
+   }
    if (nbAvailableBytes<25)
       pf_threshold += QCONST16(.1f,15);
    if (nbAvailableBytes<35)
@@ -1461,9 +1468,11 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
    /*printf("%d %f\n", pitch_index, gain1);*/
 
    c=0; do {
+      int i;
       int offset = mode->shortMdctSize-overlap;
       st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
       OPUS_COPY(in+c*(N+overlap), st->in_mem+c*(overlap), overlap);
+      for (i=0;i<N;i++) before[c] += ABS32(SHR32(in[c*(N+overlap)+overlap+i], 12));
       if (offset)
          comb_filter(in+c*(N+overlap)+overlap, pre[c]+COMBFILTER_MAXPERIOD,
                st->prefilter_period, st->prefilter_period, offset, -st->prefilter_gain, -st->prefilter_gain,
@@ -1472,6 +1481,36 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       comb_filter(in+c*(N+overlap)+overlap+offset, pre[c]+COMBFILTER_MAXPERIOD+offset,
             st->prefilter_period, pitch_index, N-offset, -st->prefilter_gain, -gain1,
             st->prefilter_tapset, prefilter_tapset, mode->window, overlap, st->arch);
+      for (i=0;i<N;i++) after[c] += ABS32(SHR32(in[c*(N+overlap)+overlap+i], 12));
+   } while (++c<CC);
+
+   if (CC==2) {
+      opus_val16 thresh[2];
+      thresh[0] = MULT16_16_Q15(MULT16_16_Q15(QCONST16(.25f, 15), gain1), before[0]) + MULT16_16_Q15(QCONST16(.01f,15), before[1]);
+      thresh[1] = MULT16_16_Q15(MULT16_16_Q15(QCONST16(.25f, 15), gain1), before[1]) + MULT16_16_Q15(QCONST16(.01f,15), before[0]);
+      /* Don't use the filter if one channel gets significantly worse. */
+      if (after[0]-before[0] > thresh[0] || after[1]-before[1] > thresh[1]) cancel_pitch = 1;
+      /* Use the filter only if at least one channel gets significantly better. */
+      if (before[0]-after[0] <  thresh[0] && before[1]-after[1] < thresh[1]) cancel_pitch = 1;
+   } else {
+      /* Check that the mono channel actually got better. */
+      if (after[0] > before[0]) cancel_pitch = 1;
+   }
+   /* If needed, revert to a gain of zero. */
+   if (cancel_pitch) {
+      c=0; do {
+         int offset = mode->shortMdctSize-overlap;
+         OPUS_COPY(in+c*(N+overlap)+overlap, pre[c]+COMBFILTER_MAXPERIOD, N);
+         comb_filter(in+c*(N+overlap)+overlap+offset, pre[c]+COMBFILTER_MAXPERIOD+offset,
+                     st->prefilter_period, pitch_index, overlap, -st->prefilter_gain, -0,
+                     st->prefilter_tapset, prefilter_tapset, mode->window, overlap, st->arch);
+      } while (++c<CC);
+      gain1 = 0;
+      pf_on = 0;
+      qg = 0;
+   }
+
+   c=0; do {
       OPUS_COPY(st->in_mem+c*(overlap), in+c*(N+overlap)+N, overlap);
 
       if (N>COMBFILTER_MAXPERIOD)
@@ -1879,7 +1918,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
             && st->complexity >= 5;
 
       prefilter_tapset = st->tapset_decision;
-      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes, &st->analysis, tone_freq, toneishness);
+      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, tf_estimate, nbAvailableBytes, &st->analysis, tone_freq, toneishness);
       if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && (!st->analysis.valid || st->analysis.tonality > .3)
             && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
          pitch_change = 1;
