@@ -241,6 +241,8 @@ static OPUS_INLINE int SHL32_(opus_int64 a, int shift, char *file, int line)
 #define PSHR32(a,shift) (celt_mips--,SHR32(ADD32((a),(((opus_val32)(1)<<((shift))>>1))),shift))
 #define VSHR32(a, shift) (((shift)>0) ? SHR32(a, shift) : SHL32(a, -(shift)))
 
+#define SHR64(a,shift) (celt_mips++,(a) >> (shift))
+
 #define ROUND16(x,a) (celt_mips--,EXTRACT16(PSHR32((x),(a))))
 #define SROUND16(x,a) (celt_mips--,EXTRACT16(SATURATE(PSHR32(x,a), 32767)));
 

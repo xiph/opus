@@ -114,6 +114,9 @@
 /** 32-bit arithmetic shift right where the argument can be negative */
 #define VSHR32(a, shift) (((shift)>0) ? SHR32(a, shift) : SHL32(a, -(shift)))
 
+/** Arithmetic shift-right of a 64-bit value */
+#define SHR64(a,shift) ((a) >> (shift))
+
 /** "RAW" macros, should not be used outside of this header file */
 #define SHR(a,shift) ((a) >> (shift))
 #define SHL(a,shift) SHL32(a,shift)

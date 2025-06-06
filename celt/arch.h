@@ -315,6 +315,8 @@ static OPUS_INLINE int celt_isnan(float x)
 #define PSHR32(a,shift) (a)
 #define VSHR32(a,shift) (a)
 
+#define SHR64(a,shift) (a)
+
 #define PSHR(a,shift)   (a)
 #define SHR(a,shift)    (a)
 #define SHL(a,shift)    (a)
