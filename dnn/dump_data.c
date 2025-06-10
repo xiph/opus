@@ -359,8 +359,8 @@ int main(int argc, char **argv) {
     if (!pitch && rand()%100==0) speech_gain = 0;
 
     noise_gain = pow(10., (-40+randf(25.f)+randf(15.f))/20.);
-    if (rand()%2!=0) noise_gain = 0;
-    if (rand()%12==0) {
+    if (rand()%8!=0) noise_gain = 0;
+    if (rand()%5==0) {
       noise_gain *= 0.03;
     }
     noise_gain *= speech_gain;
@@ -395,11 +395,15 @@ int main(int argc, char **argv) {
       x[j] *= speech_gain;
       n[j] *= noise_gain;
       xn[j] = x[j] + n[j];
+      //x[j] = x[j] + .1*n[j];
     }
-    if (rand()%3==0) {
+    if (rand()%5==0) {
       rir_id = rand()%rirs.nb_rirs;
       rir_filter_sequence(&rirs, x, rir_id, 1);
       rir_filter_sequence(&rirs, xn, rir_id, 0);
+    }
+    for (j=0;j<SEQUENCE_SAMPLES;j++) {
+      x[j] = .9*x[j] + .1*xn[j];
     }
     if (rand()%4==0) {
       /* Apply input clipping to 0 dBFS (don't clip target). */
