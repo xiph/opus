@@ -27,4 +27,4 @@ fi
 
 
 
-tar xvomf $model
+tar xvzomf $model
