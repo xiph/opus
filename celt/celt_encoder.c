@@ -1563,7 +1563,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       int constrained_vbr, opus_val16 stereo_saving, int tot_boost,
       opus_val16 tf_estimate, int pitch_change, celt_glog maxDepth,
       int lfe, int has_surround_mask, celt_glog surround_masking,
-      celt_glog temporal_vbr)
+      celt_glog temporal_vbr ARG_QEXT(int enable_qext))
 {
    /* The target rate in 8th bits per frame */
    opus_int32 target;
@@ -1640,6 +1640,9 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       opus_int32 floor_depth;
       int bins;
       bins = eBands[nbEBands-2]<<LM;
+#ifdef ENABLE_QEXT
+      if (enable_qext) bins  = mode->shortMdctSize<<LM;
+#endif
       /*floor_depth = SHR32(MULT16_16((C*bins<<BITRES),celt_log2(SHL32(MAX16(1,sample_max),13))), DB_SHIFT);*/
       floor_depth = (opus_int32)SHR32(MULT16_32_Q15((C*bins<<BITRES),maxDepth), DB_SHIFT-15);
       floor_depth = IMAX(floor_depth, target>>2);
@@ -2393,7 +2396,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
            st->lastCodedBands, C, st->intensity, st->constrained_vbr,
            st->stereo_saving, tot_boost, tf_estimate, pitch_change, maxDepth,
            st->lfe, st->energy_mask!=NULL, surround_masking,
-           temporal_vbr);
+           temporal_vbr ARG_QEXT(st->enable_qext));
      } else {
         target = base_target;
         /* Tonal frames (offset<100) need more bits than noisy (offset>100) ones. */
