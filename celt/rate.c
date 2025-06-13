@@ -657,6 +657,14 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
    int tot_samples;
    VARDECL(int, depth);
 
+#ifdef FUZZING
+   float depth_std;
+#endif
+   SAVE_STACK;
+#ifdef FUZZING
+   depth_std = -10.f*log(1e-8+(float)rand()/RAND_MAX);
+   depth_std = FMAX(0, FMIN(48, depth_std));
+#endif
    if (qext_mode != NULL) {
       celt_assert(end==m->nbEBands);
       tot_bands = end + qext_end;
@@ -729,6 +737,10 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
          depth[i] = PSHR32(MIN32(cap[i], MAX32(0, flatE[i]-fill)), 10-2);
 #else
          depth[i] = (int)floor(.5+4*MIN32(cap[i], MAX32(0, flatE[i]-fill)));
+#endif
+#ifdef FUZZING
+         depth[i] = (int)-depth_std*log(1e-8+(float)rand()/RAND_MAX);
+         depth[i] = IMAX(0, IMIN(cap[i]<<2, depth[i]));
 #endif
          if (ec_tell_frac(ec) + 47 < ec->storage*8<<BITRES)
             ec_enc_uint(ec, depth[i], 57);
