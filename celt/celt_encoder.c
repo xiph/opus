@@ -1486,8 +1486,8 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
 
    if (CC==2) {
       opus_val16 thresh[2];
-      thresh[0] = MULT16_16_Q15(MULT16_16_Q15(QCONST16(.25f, 15), gain1), before[0]) + MULT16_16_Q15(QCONST16(.01f,15), before[1]);
-      thresh[1] = MULT16_16_Q15(MULT16_16_Q15(QCONST16(.25f, 15), gain1), before[1]) + MULT16_16_Q15(QCONST16(.01f,15), before[0]);
+      thresh[0] = MULT16_32_Q15(MULT16_16_Q15(QCONST16(.25f, 15), gain1), before[0]) + MULT16_32_Q15(QCONST16(.01f,15), before[1]);
+      thresh[1] = MULT16_32_Q15(MULT16_16_Q15(QCONST16(.25f, 15), gain1), before[1]) + MULT16_32_Q15(QCONST16(.01f,15), before[0]);
       /* Don't use the filter if one channel gets significantly worse. */
       if (after[0]-before[0] > thresh[0] || after[1]-before[1] > thresh[1]) cancel_pitch = 1;
       /* Use the filter only if at least one channel gets significantly better. */
