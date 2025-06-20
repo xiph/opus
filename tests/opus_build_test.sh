@@ -6,7 +6,7 @@ oldvectors=`realpath "$3"`
 newvectors=`realpath "$4"`
 base=`basename "$tarball" .tar.gz`
 
-tar xvf "$tarball" > /dev/null 2>&1
+tar xvzf "$tarball" > /dev/null 2>&1
 cd "$base"
 
 if [ $? -ne 0 ]
