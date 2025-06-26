@@ -19,6 +19,7 @@ parser.add_argument("--normalize", action="store_true", help="apply normalizatio
 parser.add_argument("--db_max", type=float, help="max DB for random normalization", default=0)
 parser.add_argument("--db_min", type=float, help="min DB for random normalization", default=0)
 parser.add_argument("--verbose", action="store_true")
+parser.add_argument("--seed", type=int, help="random seed", default=0)
 
 def read_filelist(basedir, filelist):
     with open(filelist, "r") as f:
@@ -74,11 +75,13 @@ def concatenate(filelist : str, output : str, target_fs: int, normalize=True, db
 
             f.write(x1.astype(np.int16).tobytes())
 
-            overlap_mem = x1[-overlap_size]
+            overlap_mem = x1[-overlap_size:]
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
+
+    np.random.seed(args.seed)
 
     filelist = read_filelist(args.basedir, args.filelist)
 
