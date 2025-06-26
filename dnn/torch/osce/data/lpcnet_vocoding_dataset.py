@@ -203,7 +203,7 @@ class LPCNetVocodingDataset(Dataset):
 
         # convert periods
         if 'periods' in self.input_features:
-            sample['periods'] = (0.1 + 50 * sample['periods'] + 100).astype('int16')
+            sample['periods'] = np.round(np.clip(256. / 2 ** (sample['periods'] + 1.5), 32, 255)).astype('int')
 
         signal_start = (self.frame_offset + index       * self.frames_per_sample) * self.frame_length
         signal_stop  = (self.frame_offset + (index + 1) * self.frames_per_sample) * self.frame_length
