@@ -134,7 +134,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
 endfunction()
 
 function(opus_detect_neon COMPILER_SUPPORT_NEON)
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "(arm|aarch64)")
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "(arm|aarch64|ARM)")
     message(STATUS "Check NEON support by compiler")
     check_include_file(arm_neon.h HAVE_ARM_NEON_H)
     if(HAVE_ARM_NEON_H)
