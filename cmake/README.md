@@ -109,7 +109,7 @@ Note: Examples can go out of date. Always refer to documentation for latest refe
 ### Cross compiling for Android
 
 ```shell
-cmake .. -DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a
+cmake .. -DCMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/27.2.12479018/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a
 ```
 
 For more information about cross compiling for android, you can refer to the [Cross compiling for Android documentation](https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling-for-android).
