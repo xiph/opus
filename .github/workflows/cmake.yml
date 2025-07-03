@@ -21,7 +21,6 @@ jobs:
           chmod +x cmakeinstall.sh
           sudo ./cmakeinstall.sh --prefix=/usr/local --exclude-subdir
           rm cmakeinstall.sh
-          sudo apt-get install libidn11
       - name: Create Work Dir
         run: mkdir build
       - name: Configure
