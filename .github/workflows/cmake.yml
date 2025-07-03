@@ -25,7 +25,10 @@ jobs:
         run: mkdir build
       - name: Configure
         working-directory: ./build
-        run: cmake .. -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON
+        run: |
+          which cmake
+          cmake --version
+          cmake .. -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON
       - name: Build
         working-directory: ./build
         run: make -j 2 -s
@@ -46,6 +49,8 @@ jobs:
         run: sudo apt-get install -y mingw-w64
       - name: Create Work Dir
         run: mkdir build
+      - name: CMake Version
+        run: cmake --version
       - name: Configure
         working-directory: ./build
         run: cmake .. -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc
@@ -240,6 +245,8 @@ jobs:
         run: ./autogen.sh
       - name: Create Work Dir
         run: mkdir build
+      - name: CMake Version
+        run: cmake --version
       - name: Configure
         working-directory: ./build
         run: cmake .. ${{ matrix.config.args }} -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -DOPUS_BUILD_PROGRAMS=ON -DBUILD_TESTING=ON
