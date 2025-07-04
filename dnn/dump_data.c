@@ -70,7 +70,7 @@ kiss_fft_cpx *load_rir(const char *rir_file, kiss_fft_state *fft, int early) {
   FILE *f;
   f = fopen(rir_file, "rb");
   if (f==NULL) {
-    fprintf(stderr, "cannot open %s: %s\n", rir_file, strerror(errno));
+    fprintf(stderr, "cannot open RIR file %s: %s\n", rir_file, strerror(errno));
     exit(1);
   }
   x = (kiss_fft_cpx*)calloc(fft->nfft, sizeof(*x));
@@ -217,7 +217,7 @@ static float weighted_rms(float *x) {
 
 
 short speech16[SEQUENCE_LENGTH*FRAME_SIZE];
-short noise16[SEQUENCE_LENGTH*FRAME_SIZE];
+short noise16[SEQUENCE_LENGTH*FRAME_SIZE] = {0};
 float x[SEQUENCE_LENGTH*FRAME_SIZE];
 float n[SEQUENCE_LENGTH*FRAME_SIZE];
 float xn[SEQUENCE_LENGTH*FRAME_SIZE];
@@ -225,7 +225,9 @@ float xn[SEQUENCE_LENGTH*FRAME_SIZE];
 
 int main(int argc, char **argv) {
   int i, j;
-  char *argv0;
+  const char *argv0;
+  const char *noise_filename=NULL;
+  const char *rir_filename=NULL;
   int count=0;
   static const float a_hp[2] = {-1.99599, 0.99600};
   static const float b_hp[2] = {-2, 1};
@@ -234,7 +236,7 @@ int main(int argc, char **argv) {
   float a_sig[2] = {0};
   float b_sig[2] = {0};
   float mem_preemph=0;
-  FILE *f1, *f2;
+  FILE *f1, *f2=NULL;
   FILE *ffeat;
   FILE *fpcm=NULL;
   opus_int16 pcm[FRAME_SIZE]={0};
@@ -245,7 +247,7 @@ int main(int argc, char **argv) {
   int pitch = 0;
   float noise_gain = 0;
   int arch;
-  long speech_length, noise_length;
+  long speech_length, noise_length=0;
   int maxCount;
   unsigned seed;
   struct rir_list rirs;
@@ -264,21 +266,23 @@ int main(int argc, char **argv) {
   else if (argc == 5 && strcmp(argv[1], "-ptrain")==0) {
       pitch = 1;
       training = 1;
-      f2 = fopen(argv[2], "rb");
-      fseek(f2, 0, SEEK_END);
-      noise_length = ftell(f2);
-      fseek(f2, 0, SEEK_SET);
+      noise_filename = argv[2];
       argv++;
   }
   else if (argc == 4 && strcmp(argv[1], "-ptest")==0) {
       pitch = 1;
       training = 0;
   }
-  else if (argc == 5 && strcmp(argv[1], "-train")==0) training = 1;
-  else if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
+  else if (argc == 7 && strcmp(argv[1], "-train")==0) {
+     training = 1;
+     noise_filename = argv[2];
+     rir_filename = argv[3];
+     argv+=2;
+  } else if (argc == 4 && strcmp(argv[1], "-test")==0) training = 0;
   if (training == -1) {
-    fprintf(stderr, "usage: %s -train <speech> <features out> <pcm out>\n", argv0);
-    fprintf(stderr, "  or   %s -test <speech> <features out>\n", argv0);
+    fprintf(stderr, "usage: %s -train <noise> <rir_list> <speech> <features out> <pcm out>\n", argv0);
+    fprintf(stderr, "       %s -ptrain <noise> <speech> <features out>\n", argv0);
+    fprintf(stderr, "       %s -test <speech> <features out>\n", argv0);
     return 1;
   }
   f1 = fopen(argv[2], "r");
@@ -286,10 +290,15 @@ int main(int argc, char **argv) {
     fprintf(stderr,"Error opening input .s16 16kHz speech input file: %s\n", argv[2]);
     exit(1);
   }
-  f2 = fopen("noise.sw", "r");
-  if (f1 == NULL) {
-    fprintf(stderr,"Error opening input .s16 16kHz speech input file: %s\n", argv[2]);
-    exit(1);
+  if (noise_filename != NULL) {
+     f2 = fopen(noise_filename, "r");
+     if (f2 == NULL) {
+        fprintf(stderr,"Error opening input .s16 16kHz speech input file: %s\n", noise_filename);
+        exit(1);
+     }
+     fseek(f2, 0, SEEK_END);
+     noise_length = ftell(f2);
+     fseek(f2, 0, SEEK_SET);
   }
   ffeat = fopen(argv[3], "wb");
   if (ffeat == NULL) {
@@ -303,7 +312,9 @@ int main(int argc, char **argv) {
       exit(1);
     }
   }
-  load_rir_list("list.txt", &rirs);
+  if (rir_filename != NULL) {
+     load_rir_list(rir_filename, &rirs);
+  }
 
   seed = getpid();
   srand(seed);
@@ -312,15 +323,12 @@ int main(int argc, char **argv) {
   speech_length = ftell(f1);
   fseek(f1, 0, SEEK_SET);
 
-  fseek(f2, 0, SEEK_END);
-  noise_length = ftell(f2);
-  fseek(f2, 0, SEEK_SET);
 
   maxCount = 20000;
   for (count=0;count<maxCount;count++) {
     int rir_id;
     int sequence_length;
-    long speech_pos, noise_pos, fgnoise_pos;
+    long speech_pos, noise_pos;
     int start_pos=0;
     float E[SEQUENCE_LENGTH] = {0};
     float mem[2]={0};
@@ -328,16 +336,17 @@ int main(int argc, char **argv) {
     float speech_rms, noise_rms;
     if ((count%1000)==0) fprintf(stderr, "%d\r", count);
     speech_pos = (rand_lcg(&seed)*2.3283e-10)*speech_length;
-    noise_pos = (rand_lcg(&seed)*2.3283e-10)*noise_length;
     if (speech_pos > speech_length-(long)sizeof(speech16)) speech_pos = speech_length-sizeof(speech16);
-    if (noise_pos > noise_length-(long)sizeof(noise16)) noise_pos = noise_length-sizeof(noise16);
     speech_pos -= speech_pos&1;
-    noise_pos -= noise_pos&1;
-    fgnoise_pos -= fgnoise_pos&1;
     fseek(f1, speech_pos, SEEK_SET);
-    fseek(f2, noise_pos, SEEK_SET);
     fread(speech16, sizeof(speech16), 1, f1);
-    fread(noise16, sizeof(noise16), 1, f2);
+    if (f2!=NULL) {
+       noise_pos = (rand_lcg(&seed)*2.3283e-10)*noise_length;
+       if (noise_pos > noise_length-(long)sizeof(noise16)) noise_pos = noise_length-sizeof(noise16);
+       noise_pos -= noise_pos&1;
+       fseek(f2, noise_pos, SEEK_SET);
+       fread(noise16, sizeof(noise16), 1, f2);
+    }
     if (rand()%4) start_pos = 0;
     else start_pos = -(int)(1000*log(rand()/(float)RAND_MAX));
     start_pos = IMIN(start_pos, SEQUENCE_LENGTH*FRAME_SIZE);
@@ -385,7 +394,7 @@ int main(int argc, char **argv) {
       n[j] *= noise_gain;
       xn[j] = x[j] + n[j];
     }
-    if (rand()%3==0) {
+    if (rir_filename!=NULL && rand()%3==0) {
       rir_id = rand()%rirs.nb_rirs;
       rir_filter_sequence(&rirs, x, rir_id, 1);
       rir_filter_sequence(&rirs, xn, rir_id, 0);
