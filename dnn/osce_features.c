@@ -458,22 +458,15 @@ void osce_calculate_features(
 }
 
 
-#define OSCE_BWE_MAX_INSTAFREQ_BIN 40
-#define OSCE_BWE_HALF_WINDOW_SIZE 160
-#define OSCE_BWE_WINDOW_SIZE (2 * (OSCE_BWE_HALF_WINDOW_SIZE))
-#define OSCE_BWE_NUM_BANDS 32
-
+#ifdef ENABLE_OSCE_BWE
 void osce_bwe_calculate_features(
+    OSCEBWEFeatureState         *psFeatures,                    /* I/O  BWE feature state                          */
     float                       *features,                      /* O    input features                              */
     const opus_int16            xq[],                           /* I    Decoded speech                              */
     int                         num_samples                     /* I    number of input samples                     */
  )
  {
-    static int init;
-    static float signal_history[OSCE_BWE_HALF_WINDOW_SIZE];
-    static float last_spec[2 * OSCE_BWE_MAX_INSTAFREQ_BIN + 2] = {0};
-
-    int n, k;
+    int n, k, num_frames, frame;
     kiss_fft_cpx fft_buffer[OSCE_BWE_WINDOW_SIZE];
     float spec[2 * OSCE_BWE_MAX_INSTAFREQ_BIN + 2];
     float buffer[OSCE_BWE_WINDOW_SIZE];
@@ -481,74 +474,72 @@ void osce_bwe_calculate_features(
     float *lmspec, *instafreq;
 
     /* OSCE_BWE_WINDOW_SIZE == 320 is a hard requirement */
-    celt_assert(num_samples == OSCE_BWE_HALF_WINDOW_SIZE && OSCE_BWE_WINDOW_SIZE == 320);
+    celt_assert((num_samples % OSCE_BWE_HALF_WINDOW_SIZE == 0) && (OSCE_BWE_WINDOW_SIZE == 320));
 
-    if (init == 0)
+    num_frames = num_samples / OSCE_BWE_HALF_WINDOW_SIZE;
+
+    for (frame = 0; frame < num_frames; frame++)
     {
-        /* ToDo: fix python and retrain */
-        for (k = 0; k <= OSCE_BWE_MAX_INSTAFREQ_BIN; k ++)
+        /* clear features */
+        OPUS_CLEAR(features + frame * OSCE_BWE_FEATURE_DIM, OSCE_BWE_FEATURE_DIM);
+
+        lmspec = features + frame * OSCE_BWE_FEATURE_DIM;
+        instafreq = lmspec + OSCE_BWE_NUM_BANDS;
+
+        OPUS_COPY(buffer, psFeatures->signal_history, OSCE_BWE_HALF_WINDOW_SIZE);
+        for (n = 0; n < num_samples; n++)
         {
-            last_spec[2*k] = 1e-9;
+            buffer[n + OSCE_BWE_HALF_WINDOW_SIZE] = (float) xq[n] / (1U<<15);
         }
-        init = 1;
+
+        /* update signal history buffer */
+        OPUS_COPY(psFeatures->signal_history, buffer + OSCE_BWE_HALF_WINDOW_SIZE, OSCE_BWE_HALF_WINDOW_SIZE);
+
+        /* apply window */
+        for (n = 0; n < OSCE_BWE_WINDOW_SIZE; n ++)
+        {
+            buffer[n] *= osce_window[n];
+        }
+
+        /* DFT */
+        forward_transform(fft_buffer, buffer);
+
+        /* instafreq */
+        for (k = 0; k <= OSCE_BWE_MAX_INSTAFREQ_BIN; k++)
+        {
+            float aux_r, aux_i, aux_abs;
+            float re1, re2, im1, im2;
+            spec[2*k]   = OSCE_BWE_WINDOW_SIZE * fft_buffer[k].r + 1e-9; /* ToDo: remove 1e-9 from python code*/
+            spec[2*k+1] = OSCE_BWE_WINDOW_SIZE * fft_buffer[k].i;
+            re1 = spec[2*k];
+            im1 = spec[2*k+1];
+            re2 = psFeatures->last_spec[2*k];
+            im2 = psFeatures->last_spec[2*k+1];
+            aux_r = re1 * re2 + im1 * im2;
+            aux_i = im1 * re2 - re1 * im2;
+            aux_abs = sqrt(aux_r * aux_r + aux_i * aux_i);
+            instafreq[k] = aux_r / (aux_abs + 1e-9);
+            instafreq[k + OSCE_BWE_MAX_INSTAFREQ_BIN + 1] = aux_i / (aux_abs + 1e-9);
+        }
+
+        /* erb-scale magnitude spectrogram */
+        for (k = 0; k < OSCE_SPEC_NUM_FREQS; k ++)
+        {
+            mag_spec[k] = OSCE_BWE_WINDOW_SIZE * sqrt(fft_buffer[k].r * fft_buffer[k].r + fft_buffer[k].i * fft_buffer[k].i);
+        }
+
+        apply_filterbank(lmspec, mag_spec, center_bins_bwe, band_weights_bwe, OSCE_BWE_NUM_BANDS);
+
+        for (k = 0; k < OSCE_BWE_NUM_BANDS; k++)
+        {
+            lmspec[k] = log(lmspec[k] + 1e-9);
+        }
+
+        /* update instafreq buffer */
+        OPUS_COPY(psFeatures->last_spec, spec, 2 * OSCE_BWE_MAX_INSTAFREQ_BIN + 2);
     }
-
-    lmspec = features;
-    instafreq = features + OSCE_BWE_NUM_BANDS;
-
-    OPUS_COPY(buffer, signal_history, OSCE_BWE_HALF_WINDOW_SIZE);
-    for (n = 0; n < num_samples; n++)
-    {
-        buffer[n + OSCE_BWE_HALF_WINDOW_SIZE] = (float) xq[n] / (1U<<15);
-    }
-
-    /* update signal history buffer */
-    OPUS_COPY(signal_history, buffer + OSCE_BWE_HALF_WINDOW_SIZE, OSCE_BWE_HALF_WINDOW_SIZE);
-
-    /* apply window */
-    for (n = 0; n < OSCE_BWE_WINDOW_SIZE; n ++)
-    {
-        buffer[n] *= osce_window[n];
-    }
-
-    /* DFT */
-    forward_transform(fft_buffer, buffer);
-
-    /* instafreq */
-    for (k = 0; k <= OSCE_BWE_MAX_INSTAFREQ_BIN; k++)
-    {
-
-        float aux_r, aux_i, aux_abs;
-        float re1, re2, im1, im2;
-        spec[2*k]   = OSCE_BWE_WINDOW_SIZE * fft_buffer[k].r + 1e-9; /* ToDo: remove 1e-9 from python code*/
-        spec[2*k+1] = OSCE_BWE_WINDOW_SIZE * fft_buffer[k].i;
-        re1 = spec[2*k];
-        im1 = spec[2*k+1];
-        re2 = last_spec[2*k];
-        im2 = last_spec[2*k+1];
-        aux_r = re1 * re2 + im1 * im2;
-        aux_i = im1 * re2 - re1 * im2;
-        aux_abs = sqrt(aux_r * aux_r + aux_i * aux_i);
-        instafreq[k] = aux_r / (aux_abs + 1e-9);
-        instafreq[k + OSCE_BWE_MAX_INSTAFREQ_BIN + 1] = aux_i / (aux_abs + 1e-9);
-    }
-
-    /* erb-scale magnitude spectrogram */
-    for (k = 0; k < OSCE_SPEC_NUM_FREQS; k ++)
-    {
-        mag_spec[k] = OSCE_BWE_WINDOW_SIZE * sqrt(fft_buffer[k].r * fft_buffer[k].r + fft_buffer[k].i * fft_buffer[k].i);
-    }
-
-    apply_filterbank(lmspec, mag_spec, center_bins_bwe, band_weights_bwe, OSCE_BWE_NUM_BANDS);
-
-    for (k = 0; k < OSCE_BWE_NUM_BANDS; k++)
-    {
-        lmspec[k] = log(lmspec[k] + 1e-9);
-    }
-
-    /* update instafreq buffer */
-    OPUS_COPY(last_spec, spec, 2 * OSCE_BWE_MAX_INSTAFREQ_BIN + 2);
 }
+#endif /* ENABLE_OSCE_BWE */
 
 void osce_cross_fade_10ms(float *x_enhanced, float *x_in, int length)
 {

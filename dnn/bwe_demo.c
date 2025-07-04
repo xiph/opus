@@ -37,6 +37,9 @@
 #include "os_support.h"
 #include "cpu_support.h"
 #include "osce_features.h"
+#include "osce_structs.h"
+#include "osce.h"
+#include "silk/structs.h"
 
 
 void usage(void) {
@@ -46,9 +49,17 @@ void usage(void) {
 
 int main(int argc, char **argv) {
     int arch;
-    (void)arch;
     FILE *fin, *fout;
+    silk_OSCE_BWE_struct *hOSCEBWE;
+    OSCEModel *osce;
+
+
     arch = opus_select_arch();
+    hOSCEBWE = calloc(1, sizeof(*hOSCEBWE));
+    osce = calloc(1, sizeof(*osce));
+    osce_load_models(osce, NULL, arch);
+    osce_bwe_reset(hOSCEBWE);
+
     if (argc != 3) usage();
     fin = fopen(argv[1], "rb");
     if (fin == NULL) {
@@ -62,40 +73,25 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    printf("Feature calculation with signal (100 * (n \% 90)) - 8900\n");
-    int n = 0, i;
-    opus_int16 frame[160];
-    int frame_counter = 0;
-    float features[32 + 2 * 41];
+    int16_t x_in[160];
+    int16_t x_out[480];
 
-    for (frame_counter = 0; frame_counter < 10; frame_counter ++)
-    {
-        for (i = 0; i < 160; i ++ )
-        {
-            frame[i] = 100 * n++ - 8900;
-            n = n % 90;
-        }
 
-        osce_bwe_calculate_features(features, frame, 160);
+    while(fread(x_in, sizeof(x_in[0]), 160, fin) == 160) {
+        osce_bwe(
+            osce,
+            hOSCEBWE,
+            x_out,
+            x_in,
+            160,
+            arch
+        );
 
-        printf("frame[%d]\n", frame_counter);
-        printf("lmspec: ");
-        for (i = 0; i < 32; i ++)
-        {
-            printf(" %f ", features[i]);
-        }
-        printf("\nphasediff: ");
-        for (;i < 32 + 2 * 41; i ++)
-        {
-            printf(" %f ", features[i]);
-        }
-        printf("\n\n");
-
-        fwrite(frame, sizeof(frame[0]), 160, fout);
-
+        fwrite(x_out, sizeof(x_out[0]), 480, fout);
     }
 
-
+    free(hOSCEBWE);
+    free(osce);
 
     fclose(fin);
     fclose(fout);

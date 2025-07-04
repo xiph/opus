@@ -28,7 +28,8 @@ dnn/osce.c \
 dnn/osce_features.c \
 dnn/nndsp.c \
 dnn/lace_data.c \
-dnn/nolace_data.c
+dnn/nolace_data.c \
+dnn/bbwenet_data.c
 
 LOSSGEN_SOURCES = \
 dnn/lossgen.c \
