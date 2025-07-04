@@ -30,3 +30,6 @@ dnn/dred_rdovae_enc_data.c
 dnn/dred_rdovae_dec_data.c
 dnn/lossgen_data.c
 dnn/lossgen_data.h
+dnn/models/bbwenet_v1.pth
+dnn/bbwenet_data.h
+dnn/bbwenet_data.c
