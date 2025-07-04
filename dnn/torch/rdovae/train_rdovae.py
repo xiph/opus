@@ -206,7 +206,7 @@ if __name__ == '__main__':
 
                 if type(args.initial_checkpoint) == type(None):
                     latent_lambda = (1. - .5/(1.+batch/1000))
-                    state_lambda = (1. - .9/(1.+batch/6000))
+                    state_lambda = (1. - .95/(1.+batch/20000))
                 else:
                     latent_lambda = 1.
                     state_lambda = 1.
