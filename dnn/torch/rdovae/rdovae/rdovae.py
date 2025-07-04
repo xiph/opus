@@ -329,25 +329,33 @@ class CoreEncoder(nn.Module):
 
         # layers
         self.dense_1 = nn.Linear(self.input_dim, 64)
-        self.gru1 = nn.GRU(64, 64, batch_first=True)
-        self.conv1 = MyConv(128, 96, softquant=True)
-        self.gru2 = nn.GRU(224, 64, batch_first=True)
-        self.conv2 = MyConv(288, 96, dilation=2, softquant=True)
-        self.gru3 = nn.GRU(384, 64, batch_first=True)
-        self.conv3 = MyConv(448, 96, dilation=2, softquant=True)
-        self.gru4 = nn.GRU(544, 64, batch_first=True)
-        self.conv4 = MyConv(608, 96, dilation=2, softquant=True)
-        self.gru5 = nn.GRU(704, 64, batch_first=True)
-        self.conv5 = MyConv(768, 96, dilation=2, softquant=True)
+        self.gru1 = nn.GRU(64, 32, batch_first=True)
+        self.conv1 = MyConv(96, 64, softquant=True)
+        self.gru2 = nn.GRU(160, 32, batch_first=True)
+        self.conv2 = MyConv(192, 64, dilation=2, softquant=True)
+        self.gru3 = nn.GRU(256, 32, batch_first=True)
+        self.conv3 = MyConv(288, 64, dilation=2, softquant=True)
+        self.gru4 = nn.GRU(352, 32, batch_first=True)
+        self.conv4 = MyConv(384, 64, dilation=2, softquant=True)
+        self.gru5 = nn.GRU(448, 32, batch_first=True)
+        self.conv5 = MyConv(480, 64, dilation=2, softquant=True)
 
-        self.z_dense = nn.Linear(864, self.output_dim)
+        self.z_dense = nn.Linear(544, self.output_dim)
 
 
-        self.state_dense_1 = nn.Linear(864, self.STATE_HIDDEN)
+        self.state_dense_1 = nn.Linear(544, self.STATE_HIDDEN)
 
         self.state_dense_2 = nn.Linear(self.STATE_HIDDEN, self.state_size)
         nb_params = sum(p.numel() for p in self.parameters())
         print(f"encoder: {nb_params} weights")
+        # initialize weights
+        self.apply(init_weights)
+        self.sparsifier = []
+        self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
 
         # initialize weights
         self.apply(init_weights)
@@ -362,6 +370,10 @@ class CoreEncoder(nn.Module):
             self.state_dense_1 = soft_quant(self.state_dense_1)
             self.state_dense_2 = soft_quant(self.state_dense_2)
 
+
+    def sparsify(self):
+        for sparsifier in self.sparsifier:
+            sparsifier.step()
 
     def forward(self, features):
 
@@ -418,24 +430,24 @@ class CoreDecoder(nn.Module):
 
         # layers
         self.dense_1    = nn.Linear(self.input_size, 96)
-        self.gru1 = nn.GRU(96, 96, batch_first=True)
-        self.conv1 = MyConv(192, 32, softquant=softquant)
-        self.gru2 = nn.GRU(224, 96, batch_first=True)
-        self.conv2 = MyConv(320, 32, softquant=softquant)
-        self.gru3 = nn.GRU(352, 96, batch_first=True)
-        self.conv3 = MyConv(448, 32, softquant=softquant)
-        self.gru4 = nn.GRU(480, 96, batch_first=True)
-        self.conv4 = MyConv(576, 32, softquant=softquant)
-        self.gru5 = nn.GRU(608, 96, batch_first=True)
-        self.conv5 = MyConv(704, 32, softquant=softquant)
-        self.output  = nn.Linear(736, self.FRAMES_PER_STEP * self.output_dim)
-        self.glu1 = GLU(96, softquant=softquant)
-        self.glu2 = GLU(96, softquant=softquant)
-        self.glu3 = GLU(96, softquant=softquant)
-        self.glu4 = GLU(96, softquant=softquant)
-        self.glu5 = GLU(96, softquant=softquant)
+        self.gru1 = nn.GRU(96, 64, batch_first=True)
+        self.conv1 = MyConv(160, 32, softquant=softquant)
+        self.gru2 = nn.GRU(192, 64, batch_first=True)
+        self.conv2 = MyConv(256, 32, softquant=softquant)
+        self.gru3 = nn.GRU(288, 64, batch_first=True)
+        self.conv3 = MyConv(352, 32, softquant=softquant)
+        self.gru4 = nn.GRU(384, 64, batch_first=True)
+        self.conv4 = MyConv(448, 32, softquant=softquant)
+        self.gru5 = nn.GRU(480, 64, batch_first=True)
+        self.conv5 = MyConv(544, 32, softquant=softquant)
+        self.output  = nn.Linear(576, self.FRAMES_PER_STEP * self.output_dim)
+        self.glu1 = GLU(64, softquant=softquant)
+        self.glu2 = GLU(64, softquant=softquant)
+        self.glu3 = GLU(64, softquant=softquant)
+        self.glu4 = GLU(64, softquant=softquant)
+        self.glu5 = GLU(64, softquant=softquant)
         self.hidden_init = nn.Linear(self.state_size, 128)
-        self.gru_init = nn.Linear(128, 480)
+        self.gru_init = nn.Linear(128, 320)
 
         nb_params = sum(p.numel() for p in self.parameters())
         print(f"decoder: {nb_params} weights")
@@ -465,11 +477,11 @@ class CoreDecoder(nn.Module):
 
         hidden = torch.tanh(self.hidden_init(initial_state))
         gru_state = torch.tanh(self.gru_init(hidden).permute(1, 0, 2))
-        h1_state = gru_state[:,:,:96].contiguous()
-        h2_state = gru_state[:,:,96:192].contiguous()
-        h3_state = gru_state[:,:,192:288].contiguous()
-        h4_state = gru_state[:,:,288:384].contiguous()
-        h5_state = gru_state[:,:,384:].contiguous()
+        h1_state = gru_state[:,:,:64].contiguous()
+        h2_state = gru_state[:,:,64:128].contiguous()
+        h3_state = gru_state[:,:,128:192].contiguous()
+        h4_state = gru_state[:,:,192:256].contiguous()
+        h5_state = gru_state[:,:,256:].contiguous()
 
         # run decoding layer stack
         x = n(torch.tanh(self.dense_1(z)))
@@ -591,7 +603,7 @@ class RDOVAE(nn.Module):
             self.apply(self.weight_clip_fn)
 
     def sparsify(self):
-        #self.core_encoder.module.sparsify()
+        self.core_encoder.module.sparsify()
         self.core_decoder.module.sparsify()
 
     def get_decoder_chunks(self, z_frames, mode='split', chunks_per_offset = 4):
