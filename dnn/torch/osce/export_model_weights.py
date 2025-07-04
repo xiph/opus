@@ -183,6 +183,7 @@ if __name__ == "__main__":
         cwriter.header.write(f'''
 #define {model_name.upper()}_FEATURE_DIM {model.feature_dim}
 #define {model_name.upper()}_FRAME_SIZE16 {model.frame_size16}
+#define {model_name.upper()}_COND_DIM {model.cond_dim}
 ''')
 
 

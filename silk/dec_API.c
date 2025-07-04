@@ -49,9 +49,6 @@ typedef struct {
     opus_int                         prev_decode_only_middle;
 #ifdef ENABLE_OSCE
     OSCEModel                        osce_model;
-#ifdef OSCE_ENABLE_BBWE
-    //OSCEBBWEModel bbwe_model;
-#endif
 #endif
 } silk_decoder;
 
@@ -68,9 +65,6 @@ opus_int silk_LoadOSCEModels(void *decState, const unsigned char *data, int len)
 
     ret = osce_load_models(&((silk_decoder *)decState)->osce_model, data, len);
     ((silk_decoder *)decState)->osce_model.loaded = (ret == 0);
-#ifdef OSCE_ENABLE_BBWE
-    // osce_load_bbwe_model
-#endif
     return ret;
 #else
     (void) decState;

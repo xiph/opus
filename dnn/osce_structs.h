@@ -28,7 +28,7 @@
 #ifndef OSCE_STRUCTS_H
 #define OSCE_STRUCTS_H
 
-#define DISABLE_BBWENET /* disabled until opus_data is updated */
+//#define DISABLE_BBWENET /* disabled until opus_data is updated */
 
 #include "opus_types.h"
 #include "osce_config.h"
@@ -55,6 +55,38 @@ typedef struct {
     float               signal_history[OSCE_FEATURES_MAX_HISTORY];
     int                 reset;
 } OSCEFeatureState;
+
+typedef struct {
+    float signal_history[OSCE_BWE_HALF_WINDOW_SIZE];
+    float last_spec[2 * OSCE_BWE_MAX_INSTAFREQ_BIN + 2];
+} OSCEBWEFeatureState;
+
+#ifndef DISABLE_BBWENET
+/* BBWENet */
+typedef struct {
+    float upsamp_buffer[2][3];
+    float interpol_buffer[8];
+} resamp_state;
+
+typedef struct {
+    float feature_net_conv1_state[BBWENET_FNET_CONV1_STATE_SIZE];
+    float feature_net_conv2_state[BBWENET_FNET_CONV2_STATE_SIZE];
+    float feature_net_gru_state[BBWENET_FNET_GRU_STATE_SIZE];
+    AdaConvState af1_state;
+    AdaConvState af2_state;
+    AdaConvState af3_state;
+    AdaShapeState tdshape1_state;
+    AdaShapeState tdshape2_state;
+    resamp_state resampler_state[3];
+} BBWENetState;
+
+typedef struct {
+    BBWENETLayers layers;
+    float window16[BBWENET_AF1_OVERLAP_SIZE];
+    float window32[BBWENET_AF2_OVERLAP_SIZE];
+    float window48[BBWENET_AF3_OVERLAP_SIZE];
+} BBWENet;
+#endif
 
 
 #ifndef DISABLE_LACE
@@ -101,20 +133,6 @@ typedef struct {
     float deemph_mem;
 } NoLACEState;
 
-#ifndef DISABLE_BBWENET
-/* BBWENet */
-typedef struct {
-    float feature_net_conv1_state[BBWENET_FNET_CONV1_STATE_SIZE];
-    float feature_net_conv2_state[BBWENET_FNET_CONV2_STATE_SIZE];
-    float feature_net_gru_state[BBWENET_FNET_GRU_STATE_SIZE];
-    AdaConvState af1_state;
-    AdaConvState af2_state;
-    AdaShapeState tdshape1_state;
-    AdaShapeState tdshape2_state;
-    silk_resampler_state_struct resampler_state;
-} BBWENetState;
-#endif
-
 typedef struct {
     NOLACELayers layers;
     float window[LACE_OVERLAP_SIZE];
@@ -131,6 +149,9 @@ typedef struct {
 #ifndef DISABLE_NOLACE
     NoLACE nolace;
 #endif
+#ifndef DISABLE_BBWENET
+    BBWENet bbwenet;
+#endif
 } OSCEModel;
 
 typedef union {
@@ -141,5 +162,11 @@ typedef union {
     NoLACEState nolace;
 #endif
 } OSCEState;
+
+typedef struct {
+    #ifndef DISABLE_BBWENET
+    BBWENetState bbwenet;
+    #endif
+} OSCEBWEState;
 
 #endif
