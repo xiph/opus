@@ -308,7 +308,7 @@ class CoreEncoder(nn.Module):
     FRAMES_PER_STEP = 2
     CONV_KERNEL_SIZE = 4
 
-    def __init__(self, feature_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False):
+    def __init__(self, feature_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False, adapt=False):
         """ core encoder for RDOVAE
 
             Computes latents, initial states, and rate estimates from features and lambda parameter
@@ -349,13 +349,19 @@ class CoreEncoder(nn.Module):
         nb_params = sum(p.numel() for p in self.parameters())
         print(f"encoder: {nb_params} weights")
         # initialize weights
+        if adapt:
+            start = 0
+            stop = 0
+        else:
+            start = sparsify_start
+            stop = sparsify_stop
         self.apply(init_weights)
         self.sparsifier = []
-        self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
 
         # initialize weights
         self.apply(init_weights)
@@ -410,7 +416,7 @@ class CoreDecoder(nn.Module):
 
     FRAMES_PER_STEP = 4
 
-    def __init__(self, input_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False):
+    def __init__(self, input_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False, adapt=False):
         """ core decoder for RDOVAE
 
             Computes features from latents, initial state, and quantization index
@@ -452,13 +458,19 @@ class CoreDecoder(nn.Module):
         nb_params = sum(p.numel() for p in self.parameters())
         print(f"decoder: {nb_params} weights")
         # initialize weights
+        if adapt:
+            start = 0
+            stop = 0
+        else:
+            start = sparsify_start
+            stop = sparsify_stop
         self.apply(init_weights)
         self.sparsifier = []
-        self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
 
         if softquant:
             self.gru1 = soft_quant(self.gru1, names=['weight_hh_l0', 'weight_ih_l0'])
@@ -567,7 +579,8 @@ class RDOVAE(nn.Module):
                  clip_weights=False,
                  pvq_num_pulses=82,
                  state_dropout_rate=0,
-                 softquant=False):
+                 softquant=False,
+                 adapt=False):
 
         super(RDOVAE, self).__init__()
 
@@ -584,8 +597,8 @@ class RDOVAE(nn.Module):
 
         # submodules encoder and decoder share the statistical model
         self.statistical_model = StatisticalModel(quant_levels, latent_dim, state_dim)
-        self.core_encoder = nn.DataParallel(CoreEncoder(feature_dim, latent_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant))
-        self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim, feature_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant))
+        self.core_encoder = nn.DataParallel(CoreEncoder(feature_dim, latent_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant, adapt=adapt))
+        self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim, feature_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant, adapt=adapt))
 
         self.enc_stride = CoreEncoder.FRAMES_PER_STEP
         self.dec_stride = CoreDecoder.FRAMES_PER_STEP
