@@ -119,9 +119,11 @@ num_features = 20
 # training data
 feature_file = args.features
 
+adapt = type(args.initial_checkpoint) != type(None)
+
 # model
 checkpoint['model_args']    = (num_features, latent_dim, quant_levels, cond_size, cond_size2)
-checkpoint['model_kwargs']  = {'state_dim': state_dim, 'split_mode' : split_mode, 'pvq_num_pulses': args.pvq_num_pulses, 'state_dropout_rate': args.state_dropout_rate, 'softquant': softquant, 'chunks_per_offset': args.chunks_per_offset}
+checkpoint['model_kwargs']  = {'state_dim': state_dim, 'split_mode' : split_mode, 'pvq_num_pulses': args.pvq_num_pulses, 'state_dropout_rate': args.state_dropout_rate, 'softquant': softquant, 'chunks_per_offset': args.chunks_per_offset, 'adapt': adapt}
 model = RDOVAE(*checkpoint['model_args'], **checkpoint['model_kwargs'])
 
 if type(args.initial_checkpoint) != type(None):
