@@ -50,6 +50,18 @@
 #define SEQUENCE_LENGTH 2000
 #define SEQUENCE_SAMPLES (SEQUENCE_LENGTH*FRAME_SIZE)
 
+#ifdef CUSTOM_MODES
+#define ENABLE_RIR
+#else
+#if defined(_MSC_VER)
+#pragma message ("dump_data tool built without reverb support.")
+#else
+#warning "dump_data tool built without reverb support."
+#endif
+#endif
+
+#ifdef ENABLE_RIR
+
 #define RIR_FFT_SIZE 32000
 #define RIR_MAX_DURATION (RIR_FFT_SIZE/2)
 #define FILENAME_MAX_SIZE 1000
@@ -144,6 +156,8 @@ void rir_filter_sequence(const struct rir_list *rirs, float *audio, int rir_id, 
     i += RIR_FFT_SIZE/2;
   }
 }
+#endif
+
 
 static unsigned rand_lcg(unsigned *seed) {
   *seed = 1664525**seed + 1013904223;
@@ -250,7 +264,9 @@ int main(int argc, char **argv) {
   long speech_length, noise_length=0;
   int maxCount;
   unsigned seed;
+#ifdef ENABLE_RIR
   struct rir_list rirs;
+#endif
   srand(getpid());
   arch = opus_select_arch();
   st = lpcnet_encoder_create();
@@ -312,9 +328,11 @@ int main(int argc, char **argv) {
       exit(1);
     }
   }
+#ifdef ENABLE_RIR
   if (rir_filename != NULL) {
      load_rir_list(rir_filename, &rirs);
   }
+#endif
 
   seed = getpid();
   srand(seed);
@@ -322,7 +340,9 @@ int main(int argc, char **argv) {
   fseek(f1, 0, SEEK_END);
   speech_length = ftell(f1);
   fseek(f1, 0, SEEK_SET);
-
+#ifndef ENABLE_RIR
+  fprintf(stderr, "WARNING: dump_data was built without RIR support\n");
+#endif
 
   maxCount = 20000;
   for (count=0;count<maxCount;count++) {
@@ -394,11 +414,13 @@ int main(int argc, char **argv) {
       n[j] *= noise_gain;
       xn[j] = x[j] + n[j];
     }
+#ifdef ENABLE_RIR
     if (rir_filename!=NULL && rand()%3==0) {
       rir_id = rand()%rirs.nb_rirs;
       rir_filter_sequence(&rirs, x, rir_id, 1);
       rir_filter_sequence(&rirs, xn, rir_id, 0);
     }
+#endif
     if (rand()%4==0) {
       /* Apply input clipping to 0 dBFS (don't clip target). */
       for (j=0;j<SEQUENCE_SAMPLES;j++) {
