@@ -22,7 +22,7 @@ if DUMP:
         s = 0.5 * s / s.max()
         wavfile.write(filename, fs, (2**15 * s).astype(np.int16))
 
-DEBUGDUMP=True
+DEBUGDUMP=False
 if DEBUGDUMP:
     import os
     debugdumpdir='debugdump'
