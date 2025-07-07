@@ -37,13 +37,13 @@
 #include "nndsp.h"
 #include "float_cast.h"
 #include "arch.h"
-//#define OSCE_DEBUG
+#define OSCE_DEBUG
 #ifdef OSCE_DEBUG
 #include <stdio.h>
 /*#define WRITE_FEATURES*/
 /*#define DEBUG_LACE*/
 /*#define DEBUG_NOLACE*/
-/*#define DEBUG_BBWENET*/
+#define DEBUG_BBWENET
 #define FINIT(fid, name, mode) do{if (fid == NULL) {fid = fopen(name, mode);}} while(0)
 #endif
 

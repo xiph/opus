@@ -379,11 +379,18 @@ opus_int silk_Decode(                                   /* O    Returns error co
     for( n = 0; n < silk_min( decControl->nChannelsAPI, decControl->nChannelsInternal ); n++ ) {
 
         /* Resample decoded signal to API_sampleRate */
-#ifdef OSCE_ENABLE_BBWE
+#if defined(ENABLE_OSCE_BWE) && 0
             // do blind bandwidth extension here if internal FS is 16 kHz,  API_sampleRate is 48 kHz and mode is SILK only
-#endif
+        if (decControl->API_sampleRate == 48000 &&
+            channel_state[ n ].fs_kHz == 16) {
+            osce_bwe(&psDec->osce_model, &channel_state[ n ].osce_bwe,
+                     resample_out_ptr, &samplesOut1_tmp[ n ][ 2 ], nSamplesOutDec, arch);
+        } else {
+            ret += silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
+        }
+#else
         ret += silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
-
+#endif
         /* Interleave if stereo output and stereo stream */
         if( decControl->nChannelsAPI == 2 ) {
             for( i = 0; i < *nSamplesOut; i++ ) {
