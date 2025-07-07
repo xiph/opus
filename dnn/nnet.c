@@ -119,7 +119,7 @@ void compute_glu(const LinearLayer *layer, float *output, const float *input, in
    }
 }
 
-#define MAX_CONV_INPUTS_ALL DRED_MAX_CONV_INPUTS
+#define MAX_CONV_INPUTS_ALL IMAX(DRED_MAX_CONV_INPUTS, 1024)
 
 void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int activation, int arch)
 {
