@@ -47,6 +47,8 @@ void usage(void) {
     exit(1);
 }
 
+#define BWE_FRAME_SIZE 320
+
 int main(int argc, char **argv) {
     int arch;
     FILE *fin, *fout;
@@ -73,21 +75,21 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    int16_t x_in[160];
-    int16_t x_out[480];
+    int16_t x_in[BWE_FRAME_SIZE];
+    int16_t x_out[3 * BWE_FRAME_SIZE];
 
 
-    while(fread(x_in, sizeof(x_in[0]), 160, fin) == 160) {
+    while(fread(x_in, sizeof(x_in[0]), BWE_FRAME_SIZE, fin) == BWE_FRAME_SIZE) {
         osce_bwe(
             osce,
             hOSCEBWE,
             x_out,
             x_in,
-            160,
+            BWE_FRAME_SIZE,
             arch
         );
 
-        fwrite(x_out, sizeof(x_out[0]), 480, fout);
+        fwrite(x_out, sizeof(x_out[0]), 3 * BWE_FRAME_SIZE, fout);
     }
 
     free(hOSCEBWE);

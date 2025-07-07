@@ -485,11 +485,12 @@ void osce_bwe_calculate_features(
 
         lmspec = features + frame * OSCE_BWE_FEATURE_DIM;
         instafreq = lmspec + OSCE_BWE_NUM_BANDS;
+        const opus_int16 *x = xq + frame * OSCE_BWE_HALF_WINDOW_SIZE;
 
         OPUS_COPY(buffer, psFeatures->signal_history, OSCE_BWE_HALF_WINDOW_SIZE);
-        for (n = 0; n < num_samples; n++)
+        for (n = 0; n < OSCE_BWE_HALF_WINDOW_SIZE; n++)
         {
-            buffer[n + OSCE_BWE_HALF_WINDOW_SIZE] = (float) xq[n] / (1U<<15);
+            buffer[n + OSCE_BWE_HALF_WINDOW_SIZE] = (float) x[n] / (1U<<15);
         }
 
         /* update signal history buffer */
