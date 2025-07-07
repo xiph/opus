@@ -3,7 +3,7 @@ dnn/models/nolace_v2.pth
 dnn/models/nolace_192_v2.pth
 dnn/models/nolace_160_v2.pth
 dnn/models/fargan_sq1Ab_adv_50.pth
-dnn/models/rdovae_sparse5m_32.pth
+dnn/models/rdovae_aug1b10.pth
 dnn/models/plc4ar_16.pth
 dnn/models/pitch_vsmallconv1.pth
 dnn/models/lossgen3_2000.pth
