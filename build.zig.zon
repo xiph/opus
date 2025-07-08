@@ -1,0 +1,16 @@
+.{
+    .name = .opus,
+    .version = "1.4",
+    .fingerprint = 0x7118c1b0edaa1264,
+    .minimum_zig_version = "0.14.1",
+    .paths = .{
+        "celt",
+        "include",
+        "silk",
+        "src",
+        "AUTHORS",
+        "COPYING",
+        "README.md",
+        "build.zig",
+    },
+}
