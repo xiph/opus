@@ -382,7 +382,6 @@ opus_int silk_Decode(                                   /* O    Returns error co
     /* Set up pointers to temp buffers */
     ALLOC( samplesOut2_tmp, *nSamplesOut, opus_int16 );
     resample_out_ptr = samplesOut2_tmp;
-    printf("decControl->osce_extended_mode = %d decControl->prev_osce_extended_mode = %d\n", decControl->osce_extended_mode, decControl->prev_osce_extended_mode);
     for( n = 0; n < silk_min( decControl->nChannelsAPI, decControl->nChannelsInternal ); n++ ) {
 
 #if defined(ENABLE_OSCE_BWE) && defined(ENABLE_OSCE)
