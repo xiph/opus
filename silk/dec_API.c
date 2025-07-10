@@ -36,6 +36,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifdef ENABLE_OSCE
 #include "osce.h"
 #include "osce_structs.h"
+#ifdef ENABLE_OSCE_BWE
+#include "osce_features.h"
+#include "src/opus_private.h"
+#endif
 #endif
 
 /************************/
@@ -154,6 +158,9 @@ opus_int silk_Decode(                                   /* O    Returns error co
     silk_decoder_state *channel_state = psDec->channel_state;
     opus_int has_side;
     opus_int stereo_to_mono;
+#if defined(ENABLE_OSCE_BWE) && defined(ENABLE_OSCE)
+    ALLOC(resamp_buffer, 3 * MAX_FRAME_LENGTH, opus_int16);
+#endif
     SAVE_STACK;
 
     celt_assert( decControl->nChannelsInternal == 1 || decControl->nChannelsInternal == 2 );
@@ -375,20 +382,44 @@ opus_int silk_Decode(                                   /* O    Returns error co
     /* Set up pointers to temp buffers */
     ALLOC( samplesOut2_tmp, *nSamplesOut, opus_int16 );
     resample_out_ptr = samplesOut2_tmp;
-
+    printf("decControl->osce_extended_mode = %d decControl->prev_osce_extended_mode = %d\n", decControl->osce_extended_mode, decControl->prev_osce_extended_mode);
     for( n = 0; n < silk_min( decControl->nChannelsAPI, decControl->nChannelsInternal ); n++ ) {
 
-        /* Resample decoded signal to API_sampleRate */
-#if defined(ENABLE_OSCE_BWE) && 0
-            // do blind bandwidth extension here if internal FS is 16 kHz,  API_sampleRate is 48 kHz and mode is SILK only
-        if (decControl->API_sampleRate == 48000 &&
-            channel_state[ n ].fs_kHz == 16) {
+#if defined(ENABLE_OSCE_BWE) && defined(ENABLE_OSCE)
+        /* Resample or extend decoded signal to API_sampleRate */
+        if (decControl->osce_extended_mode == MODE_SILK_BBWE) {
+            silk_assert(decControl->API_sampleRate == 48000);
+
+            if (decControl->prev_osce_extended_mode != MODE_SILK_BBWE) {
+                /* Reset the BWE state */
+                osce_bwe_reset( &channel_state[ n ].osce_bwe );
+            }
+
             osce_bwe(&psDec->osce_model, &channel_state[ n ].osce_bwe,
-                     resample_out_ptr, &samplesOut1_tmp[ n ][ 2 ], nSamplesOutDec, arch);
+                resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec, arch);
+
+            /* keep resampler up to date for instantaneous switching */
+            memset(resamp_buffer, 0, sizeof(resamp_buffer));
+            silk_resampler( &channel_state[ n ].resampler_state, resamp_buffer, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
+
+            if (decControl->prev_osce_extended_mode == MODE_SILK_ONLY ||
+                decControl->prev_osce_extended_mode == MODE_HYBRID) {
+                    /* cross-fade with upsampled signal */
+                    osce_bwe_cross_fade_10ms(resample_out_ptr, resamp_buffer, 480);
+            }
         } else {
             ret += silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
+#if defined(ENABLE_OSCE_BWE) && defined(ENABLE_OSCE)
+            if (decControl->prev_osce_extended_mode == MODE_SILK_BBWE) {
+                osce_bwe(&psDec->osce_model, &channel_state[ n ].osce_bwe,
+                    resamp_buffer, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec, arch);
+                /* cross-fade with upsampled signal */
+                osce_bwe_cross_fade_10ms(resample_out_ptr, resamp_buffer, 480);
+            }
+#endif
         }
 #else
+        /* Resample decoded signal to API_sampleRate */
         ret += silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
 #endif
         /* Interleave if stereo output and stereo stream */
@@ -402,6 +433,10 @@ opus_int silk_Decode(                                   /* O    Returns error co
             }
         }
     }
+
+#ifdef ENABLE_OSCE_BWE
+    decControl->prev_osce_extended_mode = decControl->osce_extended_mode;
+#endif
 
     /* Create two channel output from mono stream */
     if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 1 ) {

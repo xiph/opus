@@ -551,6 +551,22 @@ void osce_cross_fade_10ms(float *x_enhanced, float *x_in, int length)
     {
         x_enhanced[i] = osce_window[i] * x_enhanced[i] + (1.f - osce_window[i]) * x_in[i];
     }
+}
 
 
+void osce_bwe_cross_fade_10ms(opus_int16 *x_fadein, opus_int16 *x_fadeout, int length)
+{
+    int i;
+    celt_assert(length >= 480);
+
+    for (i = 0; i < 160; i++)
+    {
+        float diff = i == 159 ? 0.f : osce_window[i + 1] - osce_window[i];
+        float w_curr = osce_window[i];
+        x_fadein[3*i + 0] = (int) (w_curr * x_fadein[3*i + 0] + (1.f - w_curr) * x_fadeout[3*i + 0] + 0.5);
+        w_curr += diff / 3.f;
+        x_fadein[3*i + 1] = (int) (w_curr * x_fadein[3*i + 1] + (1.f - w_curr) * x_fadeout[3*i + 1] + 0.5);
+        w_curr += diff / 3.f;
+        x_fadein[3*i + 2] = (int) (w_curr * x_fadein[3*i + 2] + (1.f - w_curr) * x_fadeout[3*i + 2] + 0.5);
+    }
 }
