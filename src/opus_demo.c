@@ -140,6 +140,7 @@ void print_usage( char* argv[] )
 #endif
     fprintf(stderr, "-lossfile <file>     : simulate packet loss, reading loss from file\n" );
     fprintf(stderr, "-dred <frames>       : add Deep REDundancy (in units of 10-ms frames)\n" );
+    fprintf(stderr, "-enc_loss            : Apply loss on the encoder side (store empty packets)\n" );
 }
 
 #define FORMAT_S16_LE 0
@@ -425,6 +426,7 @@ int main(int argc, char *argv[])
     int lost_count=0;
     FILE *packet_loss_file=NULL;
     int dred_duration=0;
+    int encoder_loss=0;
 #ifdef ENABLE_OSCE_TRAINING_DATA
     int silk_random_switching = 0;
     int silk_frame_counter = 0;
@@ -623,6 +625,10 @@ int main(int argc, char *argv[])
         } else if( strcmp( argv[ args ], "-dred" ) == 0 ) {
             dred_duration = atoi( argv[ args + 1 ] );
             args += 2;
+        } else if( strcmp( argv[ args ], "-enc_loss") == 0 ) {
+            check_encoder_option(decode_only, "-enc_loss");
+            encoder_loss = 1;
+            args++;
         } else if( strcmp( argv[ args ], "-sweep" ) == 0 ) {
             check_encoder_option(decode_only, "-sweep");
             sweep_bps = atoi( argv[ args + 1 ] );
@@ -986,9 +992,26 @@ int main(int argc, char *argv[])
            len = new_len;
         }
 #endif
+        if (encode_only && !encoder_loss) {
+            lost = 0;
+        } else if (packet_loss_file != NULL) {
+            if ( fscanf(packet_loss_file, "%d", &lost) != 1) {
+                lost = 0;
+            }
+#ifdef ENABLE_LOSSGEN
+        } else if (lossgen_perc >= 0) {
+            lost = sample_loss(&lossgen, lossgen_perc*.01f);
+#endif
+        } else {
+            lost = (packet_loss_perc>0) && (rand()%100 < packet_loss_perc);
+        }
         if (encode_only)
         {
             unsigned char int_field[4];
+            if (lost) {
+               enc_final_range = 0;
+               len = 0;
+            }
             int_to_char(len, int_field);
             if (fwrite(int_field, 1, 4, fout) != 4) {
                fprintf(stderr, "Error writing.\n");
@@ -1009,17 +1032,6 @@ int main(int argc, char *argv[])
             int run_decoder;
             int dred_input=0;
             int dred_end=0;
-            if (packet_loss_file != NULL) {
-                if ( fscanf(packet_loss_file, "%d", &lost) != 1) {
-                    lost = 0;
-                }
-#ifdef ENABLE_LOSSGEN
-            } else if (lossgen_perc >= 0) {
-               lost = sample_loss(&lossgen, lossgen_perc*.01f);
-#endif
-            } else {
-              lost = (packet_loss_perc>0) && (rand()%100 < packet_loss_perc);
-            }
             if (len == 0) lost = 1;
             if (lost)
             {
