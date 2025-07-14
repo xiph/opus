@@ -38,6 +38,10 @@
 #include "os_support.h"
 #include "fargan.h"
 #include "cpu_support.h"
+#include "dred_rdovae_dec.h"
+#include "dred_rdovae_dec_data.h"
+#include "dred_rdovae_stats_data.h"
+#include "entdec.h"
 
 #ifdef USE_WEIGHTS_FILE
 # if __unix__
@@ -111,6 +115,10 @@ void free_blob(void *blob, int len) {
 #define MODE_ADDLPC 5
 #define MODE_FWGAN_SYNTHESIS 6
 #define MODE_FARGAN_SYNTHESIS 7
+#define MODE_DRED_DECODING 8
+
+#define DRED_CHUNKS 50
+#define MAX_DRED_PACKET 100000
 
 void usage(void) {
     fprintf(stderr, "usage: lpcnet_demo -features <input.pcm> <features.f32>\n");
@@ -122,10 +130,19 @@ void usage(void) {
     exit(1);
 }
 
+void dred_decode_latents(ec_dec *dec, float *x, const opus_uint8 *scale, const opus_uint8 *r, const opus_uint8 *p0, int dim);
+
+static opus_uint32 char_to_int(unsigned char ch[4])
+{
+    return ((opus_uint32)ch[0]<<24) | ((opus_uint32)ch[1]<<16)
+         | ((opus_uint32)ch[2]<< 8) |  (opus_uint32)ch[3];
+}
+
 int main(int argc, char **argv) {
     int mode=0;
     int arch;
     FILE *fin, *fout;
+    int q0=-1;
 #ifdef USE_WEIGHTS_FILE
     int len;
     void *data;
@@ -135,7 +152,9 @@ int main(int argc, char **argv) {
     if (argc < 4) usage();
     if (strcmp(argv[1], "-features") == 0) mode=MODE_FEATURES;
     else if (strcmp(argv[1], "-fargan-synthesis") == 0) mode=MODE_FARGAN_SYNTHESIS;
-    else if (strcmp(argv[1], "-addlpc") == 0){
+    else if (strcmp(argv[1], "-dred-decoding") == 0) {
+       mode=MODE_DRED_DECODING;
+    } else if (strcmp(argv[1], "-addlpc") == 0){
         mode=MODE_ADDLPC;
     } else {
         usage();
@@ -193,6 +212,83 @@ int main(int argc, char **argv) {
             fargan_synthesize(&fargan, fpcm, features);
             for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + MIN32(32767, MAX32(-32767, 32768.f*fpcm[i])));
             fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
+        }
+    } else if (mode == MODE_DRED_DECODING) {
+        size_t ret;
+        int i;
+        float features[2*DRED_CHUNKS*DRED_NUM_FEATURES];
+        float latents[DRED_CHUNKS*DRED_LATENT_DIM];
+        float initial_state[DRED_STATE_DIM];
+        ec_dec dec;
+        unsigned char bits[MAX_DRED_PACKET];
+        RDOVAEDecState rdovae_dec;
+        RDOVAEDec rdovae_dec_model;
+        init_rdovaedec(&rdovae_dec_model, rdovaedec_arrays);
+        while (1) {
+           unsigned char ch[4];
+           int nb_bytes;
+           int nb_chunks;
+           int state_qoffset;
+           ret = fread(ch, 4, 1, fin);
+           if (feof(fin) || ret != 1) break;
+           q0 = char_to_int(ch);
+           state_qoffset = q0*DRED_STATE_DIM;
+           ret = fread(ch, 4, 1, fin);
+           if (feof(fin) || ret != 1) break;
+           nb_chunks = char_to_int(ch);
+           ret = fread(ch, 4, 1, fin);
+           if (feof(fin) || ret != 1) break;
+           nb_bytes = char_to_int(ch);
+           if (nb_bytes > MAX_DRED_PACKET) {
+              fprintf(stderr, "packet too big: %d\n", nb_bytes);
+              exit(1);
+           }
+
+           ret = fread(bits, 1, nb_bytes, fin);
+           if (feof(fin) || (int)ret != nb_bytes) break;
+
+           ec_dec_init(&dec,  bits, nb_bytes);
+           memset(&rdovae_dec, 0, sizeof(rdovae_dec));
+           dred_decode_latents(
+                 &dec,
+                 initial_state,
+                 dred_state_quant_scales_q8 + state_qoffset,
+                 dred_state_r_q8 + state_qoffset,
+                 dred_state_p0_q8 + state_qoffset,
+                 DRED_STATE_DIM);
+
+           dred_rdovae_dec_init_states(&rdovae_dec, &rdovae_dec_model, initial_state, arch);
+           for (i=nb_chunks-1;i>=0;i-=2) {
+              int k;
+              float dec_tmp[4*DRED_NUM_FEATURES];
+              int offset = q0 * DRED_LATENT_DIM;
+
+              dred_decode_latents(
+                    &dec,
+                    &latents[i*DRED_LATENT_DIM],
+                    dred_latent_quant_scales_q8 + offset,
+                    dred_latent_r_q8 + offset,
+                    dred_latent_p0_q8 + offset,
+                    DRED_LATENT_DIM
+              );
+
+              dred_rdovae_decode_qframe(
+                    &rdovae_dec,
+                    &rdovae_dec_model,
+                    dec_tmp,
+                    &latents[i*DRED_LATENT_DIM],
+                    arch);
+              for (k=0;k<4;k++) {
+                 OPUS_COPY(&features[(2*i-2+k)*DRED_NUM_FEATURES], &dec_tmp[(3-k)*DRED_NUM_FEATURES], DRED_NUM_FEATURES);
+              }
+           }
+           for (i=0;i<nb_chunks;i++) {
+              float tmp[NB_TOTAL_FEATURES] = {0};
+              OPUS_COPY(tmp, &features[2*i*DRED_NUM_FEATURES], DRED_NUM_FEATURES);
+              fwrite(tmp, sizeof(float), NB_TOTAL_FEATURES, fout);
+              OPUS_COPY(tmp, &features[(2*i+1)*DRED_NUM_FEATURES], DRED_NUM_FEATURES);
+              fwrite(tmp, sizeof(float), NB_TOTAL_FEATURES, fout);
+           }
         }
     } else if (mode == MODE_ADDLPC) {
         float features[36];
