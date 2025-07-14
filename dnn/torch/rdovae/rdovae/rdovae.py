@@ -38,10 +38,11 @@ import sys
 import os
 source_dir = os.path.split(os.path.abspath(__file__))[0]
 sys.path.append(os.path.join(source_dir, "../../lpcnet/"))
-from utils.sparsification import GRUSparsifier
+#from utils.sparsification import GRUSparsifier
 from torch.nn.utils import weight_norm
 sys.path.append(os.path.join(source_dir, "../../dnntools"))
 from dnntools.quantization import soft_quant
+from dnntools.sparsification import GRUSparsifier, LinearSparsifier
 
 # Quantization and rate related utily functions
 
@@ -243,22 +244,40 @@ sparsify_exponent  = 3
 #sparsify_stop      = 0
 
 sparse_params1 = {
-#                'W_hr' : (1.0, [8, 4], True),
-#                'W_hz' : (1.0, [8, 4], True),
-#                'W_hn' : (1.0, [8, 4], True),
                 'W_ir' : (0.6, [8, 4], False),
                 'W_iz' : (0.4, [8, 4], False),
                 'W_in' : (0.8, [8, 4], False)
                 }
 
 sparse_params2 = {
-#                'W_hr' : (1.0, [8, 4], True),
-#                'W_hz' : (1.0, [8, 4], True),
-#                'W_hn' : (1.0, [8, 4], True),
+                'W_ir' : (0.5, [8, 4], False),
+                'W_iz' : (0.35, [8, 4], False),
+                'W_in' : (0.6, [8, 4], False)
+                }
+
+sparse_params3 = {
+                'W_ir' : (0.4, [8, 4], False),
+                'W_iz' : (0.3, [8, 4], False),
+                'W_in' : (0.5, [8, 4], False)
+                }
+
+sparse_params4 = {
                 'W_ir' : (0.3, [8, 4], False),
                 'W_iz' : (0.2, [8, 4], False),
                 'W_in' : (0.4, [8, 4], False)
                 }
+
+sparse_params5 = {
+                'W_ir' : (0.2, [8, 4], False),
+                'W_iz' : (0.15, [8, 4], False),
+                'W_in' : (0.3, [8, 4], False)
+                }
+
+conv_params = [(1.0, [8, 4]),
+               (0.8, [8, 4]),
+               (0.6, [8, 4]),
+               (0.4, [8, 4]),
+               (0.3, [8, 4])]
 
 
 class MyConv(nn.Module):
@@ -267,13 +286,15 @@ class MyConv(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.dilation=dilation
-        self.conv = nn.Conv1d(input_dim, output_dim, kernel_size=2, padding='valid', dilation=dilation)
+        self.conv_dense = nn.Linear(input_dim, output_dim, bias=True)
+        self.conv = nn.Conv1d(output_dim, output_dim, kernel_size=2, padding='valid', dilation=dilation)
 
         if softquant:
             self.conv = soft_quant(self.conv)
 
     def forward(self, x, state=None):
         device = x.device
+        x = torch.tanh(self.conv_dense(x))
         conv_in = torch.cat([torch.zeros_like(x[:,0:self.dilation,:], device=device), x], -2).permute(0, 2, 1)
         return torch.tanh(self.conv(conv_in)).permute(0, 2, 1)
 
@@ -358,10 +379,15 @@ class CoreEncoder(nn.Module):
         self.apply(init_weights)
         self.sparsifier = []
         self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params3)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params4)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params5)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv1.conv_dense, conv_params[1-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv2.conv_dense, conv_params[2-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv3.conv_dense, conv_params[3-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv4.conv_dense, conv_params[4-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv5.conv_dense, conv_params[5-1])], start, stop, sparsify_interval, sparsify_exponent))
 
         # initialize weights
         self.apply(init_weights)
@@ -467,10 +493,15 @@ class CoreDecoder(nn.Module):
         self.apply(init_weights)
         self.sparsifier = []
         self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params3)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params4)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params5)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv1.conv_dense, conv_params[1-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv2.conv_dense, conv_params[2-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv3.conv_dense, conv_params[3-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv4.conv_dense, conv_params[4-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv5.conv_dense, conv_params[5-1])], start, stop, sparsify_interval, sparsify_exponent))
 
         if softquant:
             self.gru1 = soft_quant(self.gru1, names=['weight_hh_l0', 'weight_ih_l0'])

@@ -190,7 +190,12 @@ f"""
         ('core_encoder.module.dense_1'       , 'enc_dense1',   'TANH', False,),
         ('core_encoder.module.z_dense'       , 'enc_zdense',   'LINEAR', True,),
         ('core_encoder.module.state_dense_1' , 'gdense1'    ,   'TANH', True,),
-        ('core_encoder.module.state_dense_2' , 'gdense2'    ,   'TANH', True)
+        ('core_encoder.module.state_dense_2' , 'gdense2'    ,   'TANH', True),
+        ('core_encoder.module.conv1.conv_dense' , 'enc_conv_dense1',   'TANH', True),
+        ('core_encoder.module.conv2.conv_dense' , 'enc_conv_dense2',   'TANH', True),
+        ('core_encoder.module.conv3.conv_dense' , 'enc_conv_dense3',   'TANH', True),
+        ('core_encoder.module.conv4.conv_dense' , 'enc_conv_dense4',   'TANH', True),
+        ('core_encoder.module.conv5.conv_dense' , 'enc_conv_dense5',   'TANH', True)
     ]
 
     for name, export_name, _, quantize in encoder_dense_layers:
@@ -234,6 +239,11 @@ f"""
         ('core_decoder.module.output'       , 'dec_output',  'LINEAR', True),
         ('core_decoder.module.hidden_init'  , 'dec_hidden_init',        'TANH', False),
         ('core_decoder.module.gru_init'     , 'dec_gru_init','TANH', True),
+        ('core_decoder.module.conv1.conv_dense' , 'dec_conv_dense1',   'TANH', True),
+        ('core_decoder.module.conv2.conv_dense' , 'dec_conv_dense2',   'TANH', True),
+        ('core_decoder.module.conv3.conv_dense' , 'dec_conv_dense3',   'TANH', True),
+        ('core_decoder.module.conv4.conv_dense' , 'dec_conv_dense4',   'TANH', True),
+        ('core_decoder.module.conv5.conv_dense' , 'dec_conv_dense5',   'TANH', True),
     ]
 
     for name, export_name, _, quantize in decoder_dense_layers:
