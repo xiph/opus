@@ -281,11 +281,8 @@ int main(int argc, char **argv) {
               }
            }
            for (i=0;i<nb_chunks;i++) {
-              float tmp[NB_TOTAL_FEATURES] = {0};
-              OPUS_COPY(tmp, &features[2*i*DRED_NUM_FEATURES], DRED_NUM_FEATURES);
-              fwrite(tmp, sizeof(float), NB_TOTAL_FEATURES, fout);
-              OPUS_COPY(tmp, &features[(2*i+1)*DRED_NUM_FEATURES], DRED_NUM_FEATURES);
-              fwrite(tmp, sizeof(float), NB_TOTAL_FEATURES, fout);
+              fwrite(&features[2*i*DRED_NUM_FEATURES], sizeof(float), NB_FEATURES, fout);
+              fwrite(&features[(2*i+1)*DRED_NUM_FEATURES], sizeof(float), NB_FEATURES, fout);
            }
         }
     } else {
