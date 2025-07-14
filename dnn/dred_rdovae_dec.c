@@ -94,6 +94,7 @@ void dred_rdovae_decode_qframe(
 {
     float buffer[DEC_DENSE1_OUT_SIZE + DEC_GRU1_OUT_SIZE + DEC_GRU2_OUT_SIZE + DEC_GRU3_OUT_SIZE + DEC_GRU4_OUT_SIZE + DEC_GRU5_OUT_SIZE
                  + DEC_CONV1_OUT_SIZE + DEC_CONV2_OUT_SIZE + DEC_CONV3_OUT_SIZE + DEC_CONV4_OUT_SIZE + DEC_CONV5_OUT_SIZE];
+    float conv_tmp[DRED_MAX_CONV_INPUTS];
     int output_index = 0;
 
     /* run encoder stack and concatenate output in buffer*/
@@ -103,36 +104,41 @@ void dred_rdovae_decode_qframe(
     compute_generic_gru(&model->dec_gru1_input, &model->dec_gru1_recurrent, dec_state->gru1_state, buffer, arch);
     compute_glu(&model->dec_glu1, &buffer[output_index], dec_state->gru1_state, arch);
     output_index += DEC_GRU1_OUT_SIZE;
-    conv1_cond_init(dec_state->conv1_state, output_index, 1, &dec_state->initialized);
-    compute_generic_conv1d(&model->dec_conv1, &buffer[output_index], dec_state->conv1_state, buffer, output_index, ACTIVATION_TANH, arch);
+    conv1_cond_init(dec_state->conv1_state, DEC_CONV1_IN_SIZE, 1, &dec_state->initialized);
+    compute_generic_dense(&model->dec_conv_dense1, conv_tmp, buffer, ACTIVATION_TANH, arch);
+    compute_generic_conv1d(&model->dec_conv1, &buffer[output_index], dec_state->conv1_state, conv_tmp, DEC_CONV1_OUT_SIZE, ACTIVATION_TANH, arch);
     output_index += DEC_CONV1_OUT_SIZE;
 
     compute_generic_gru(&model->dec_gru2_input, &model->dec_gru2_recurrent, dec_state->gru2_state, buffer, arch);
     compute_glu(&model->dec_glu2, &buffer[output_index], dec_state->gru2_state, arch);
     output_index += DEC_GRU2_OUT_SIZE;
-    conv1_cond_init(dec_state->conv2_state, output_index, 1, &dec_state->initialized);
-    compute_generic_conv1d(&model->dec_conv2, &buffer[output_index], dec_state->conv2_state, buffer, output_index, ACTIVATION_TANH, arch);
+    conv1_cond_init(dec_state->conv2_state, DEC_CONV2_IN_SIZE, 1, &dec_state->initialized);
+    compute_generic_dense(&model->dec_conv_dense2, conv_tmp, buffer, ACTIVATION_TANH, arch);
+    compute_generic_conv1d(&model->dec_conv2, &buffer[output_index], dec_state->conv2_state, conv_tmp, DEC_CONV2_OUT_SIZE, ACTIVATION_TANH, arch);
     output_index += DEC_CONV2_OUT_SIZE;
 
     compute_generic_gru(&model->dec_gru3_input, &model->dec_gru3_recurrent, dec_state->gru3_state, buffer, arch);
     compute_glu(&model->dec_glu3, &buffer[output_index], dec_state->gru3_state, arch);
     output_index += DEC_GRU3_OUT_SIZE;
-    conv1_cond_init(dec_state->conv3_state, output_index, 1, &dec_state->initialized);
-    compute_generic_conv1d(&model->dec_conv3, &buffer[output_index], dec_state->conv3_state, buffer, output_index, ACTIVATION_TANH, arch);
+    conv1_cond_init(dec_state->conv3_state, DEC_CONV3_IN_SIZE, 1, &dec_state->initialized);
+    compute_generic_dense(&model->dec_conv_dense3, conv_tmp, buffer, ACTIVATION_TANH, arch);
+    compute_generic_conv1d(&model->dec_conv3, &buffer[output_index], dec_state->conv3_state, conv_tmp, DEC_CONV3_OUT_SIZE, ACTIVATION_TANH, arch);
     output_index += DEC_CONV3_OUT_SIZE;
 
     compute_generic_gru(&model->dec_gru4_input, &model->dec_gru4_recurrent, dec_state->gru4_state, buffer, arch);
     compute_glu(&model->dec_glu4, &buffer[output_index], dec_state->gru4_state, arch);
     output_index += DEC_GRU4_OUT_SIZE;
-    conv1_cond_init(dec_state->conv4_state, output_index, 1, &dec_state->initialized);
-    compute_generic_conv1d(&model->dec_conv4, &buffer[output_index], dec_state->conv4_state, buffer, output_index, ACTIVATION_TANH, arch);
+    conv1_cond_init(dec_state->conv4_state, DEC_CONV4_IN_SIZE, 1, &dec_state->initialized);
+    compute_generic_dense(&model->dec_conv_dense4, conv_tmp, buffer, ACTIVATION_TANH, arch);
+    compute_generic_conv1d(&model->dec_conv4, &buffer[output_index], dec_state->conv4_state, conv_tmp, DEC_CONV4_OUT_SIZE, ACTIVATION_TANH, arch);
     output_index += DEC_CONV4_OUT_SIZE;
 
     compute_generic_gru(&model->dec_gru5_input, &model->dec_gru5_recurrent, dec_state->gru5_state, buffer, arch);
     compute_glu(&model->dec_glu5, &buffer[output_index], dec_state->gru5_state, arch);
     output_index += DEC_GRU5_OUT_SIZE;
-    conv1_cond_init(dec_state->conv5_state, output_index, 1, &dec_state->initialized);
-    compute_generic_conv1d(&model->dec_conv5, &buffer[output_index], dec_state->conv5_state, buffer, output_index, ACTIVATION_TANH, arch);
+    conv1_cond_init(dec_state->conv5_state, DEC_CONV5_IN_SIZE, 1, &dec_state->initialized);
+    compute_generic_dense(&model->dec_conv_dense5, conv_tmp, buffer, ACTIVATION_TANH, arch);
+    compute_generic_conv1d(&model->dec_conv5, &buffer[output_index], dec_state->conv5_state, conv_tmp, DEC_CONV5_OUT_SIZE, ACTIVATION_TANH, arch);
     output_index += DEC_CONV5_OUT_SIZE;
 
     compute_generic_dense(&model->dec_output, qframe, buffer, ACTIVATION_LINEAR, arch);
