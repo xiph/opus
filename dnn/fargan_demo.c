@@ -112,8 +112,8 @@ void free_blob(void *blob, int len) {
 
 #define MODE_FEATURES 2
 /*#define MODE_SYNTHESIS 3*/
-#define MODE_ADDLPC 5
-#define MODE_FWGAN_SYNTHESIS 6
+/*#define MODE_ADDLPC 5*/
+/*#define MODE_FWGAN_SYNTHESIS 6*/
 #define MODE_FARGAN_SYNTHESIS 7
 #define MODE_DRED_DECODING 8
 
@@ -154,8 +154,6 @@ int main(int argc, char **argv) {
     else if (strcmp(argv[1], "-fargan-synthesis") == 0) mode=MODE_FARGAN_SYNTHESIS;
     else if (strcmp(argv[1], "-dred-decoding") == 0) {
        mode=MODE_DRED_DECODING;
-    } else if (strcmp(argv[1], "-addlpc") == 0){
-        mode=MODE_ADDLPC;
     } else {
         usage();
     }
@@ -184,13 +182,13 @@ int main(int argc, char **argv) {
             ret = fread(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fin);
             if (feof(fin) || ret != LPCNET_FRAME_SIZE) break;
             lpcnet_compute_single_frame_features(net, pcm, features, arch);
-            fwrite(features, sizeof(float), NB_TOTAL_FEATURES, fout);
+            fwrite(features, sizeof(float), NB_FEATURES, fout);
         }
         lpcnet_encoder_destroy(net);
     } else if (mode == MODE_FARGAN_SYNTHESIS) {
         FARGANState fargan;
         size_t ret, i;
-        float in_features[5*NB_TOTAL_FEATURES];
+        float in_features[5*NB_FEATURES];
         float zeros[320] = {0};
         fargan_init(&fargan);
 #ifdef USE_WEIGHTS_FILE
@@ -199,15 +197,15 @@ int main(int argc, char **argv) {
         /* uncomment the following to align with Python code */
         /*ret = fread(&in_features[0], sizeof(in_features[0]), NB_TOTAL_FEATURES, fin);*/
         for (i=0;i<5;i++) {
-          ret = fread(&in_features[i*NB_FEATURES], sizeof(in_features[0]), NB_TOTAL_FEATURES, fin);
+          ret = fread(&in_features[i*NB_FEATURES], sizeof(in_features[0]), NB_FEATURES, fin);
         }
         fargan_cont(&fargan, zeros, in_features);
         while (1) {
             float features[NB_FEATURES];
             float fpcm[LPCNET_FRAME_SIZE];
             opus_int16 pcm[LPCNET_FRAME_SIZE];
-            ret = fread(in_features, sizeof(features[0]), NB_TOTAL_FEATURES, fin);
-            if (feof(fin) || ret != NB_TOTAL_FEATURES) break;
+            ret = fread(in_features, sizeof(features[0]), NB_FEATURES, fin);
+            if (feof(fin) || ret != NB_FEATURES) break;
             OPUS_COPY(features, in_features, NB_FEATURES);
             fargan_synthesize(&fargan, fpcm, features);
             for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + MIN32(32767, MAX32(-32767, 32768.f*fpcm[i])));
@@ -290,17 +288,6 @@ int main(int argc, char **argv) {
               fwrite(tmp, sizeof(float), NB_TOTAL_FEATURES, fout);
            }
         }
-    } else if (mode == MODE_ADDLPC) {
-        float features[36];
-        size_t ret;
-
-        while (1) {
-            ret = fread(features, sizeof(features[0]), 36, fin);
-            if (ret != 36 || feof(fin)) break;
-            lpc_from_cepstrum(&features[20], &features[0]);
-            fwrite(features, sizeof(features[0]), 36, fout);
-        }
-
     } else {
         fprintf(stderr, "unknown action\n");
     }
