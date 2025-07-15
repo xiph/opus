@@ -302,9 +302,12 @@ endif
 
 if EXTRA_PROGRAMS
 if ENABLE_DEEP_PLC
-noinst_PROGRAMS += fargan_demo dump_data dump_weights_blob
+noinst_PROGRAMS += fargan_demo dump_data dump_weights_blob dred_compare
 fargan_demo_SOURCES = dnn/fargan_demo.c
 fargan_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
+
+dred_compare_SOURCES = dnn/dred_compare.c
+dred_compare_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 
 dump_data_SOURCES = dnn/dump_data.c
 dump_data_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
@@ -361,6 +364,7 @@ EXTRA_DIST = opus.pc.in \
              tests/meson.build \
              doc/meson.build \
              tests/run_vectors.sh \
+	     celt/mini_kfft.c \
              celt/arm/arm2gnu.pl \
              celt/arm/celt_pitch_xcorr_arm.s
 
