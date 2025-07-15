@@ -289,6 +289,7 @@ int main(int _argc,const char **_argv){
   size_t   test_win_step;
   int      max_compare;
   int      format;
+  int      skip=0;
   const char *argv0 = _argv[0];
   double err4_threshold=-1, err16_threshold=-1, pitch_threshold=-1;
   int compare_thresholds=0;
@@ -321,6 +322,10 @@ int main(int _argc,const char **_argv){
       format=FORMAT_F32_LE;
       _argv++;
       _argc--;
+    } else if(strcmp(_argv[1],"-skip")==0){
+      skip=atoi(_argv[2]);
+      _argv+=2;
+      _argc-=2;
     } else if(strcmp(_argv[1],"-thresholds")==0){
       if (_argc < 7) {
         usage(argv0);
@@ -359,6 +364,9 @@ int main(int _argc,const char **_argv){
   fclose(fin1);
   ylength=read_pcm(&y,fin2,nchannels,format);
   fclose(fin2);
+  skip *= nchannels;
+  y += skip/downsample;
+  ylength -= skip/downsample;
   if (ylength*downsample > xlength) ylength = xlength/downsample;
   if(xlength!=ylength*downsample){
     fprintf(stderr,"Sample counts do not match (%lu!=%lu).\n",
@@ -401,7 +409,7 @@ int main(int _argc,const char **_argv){
   free(x);
   spectrum(Y,BANDS,ybands,y,nchannels,nframes,
         test_win_size/downsample,test_win_step/downsample,downsample);
-  free(y);
+  free(y-skip/downsample);
 
   norm[0]=1;
   for(xj=1;xj<NFREQS;xj++){
