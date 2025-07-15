@@ -169,6 +169,8 @@ int main(int argc, char **argv) {
     } else if (mode == MODE_FARGAN_SYNTHESIS) {
         FARGANState fargan;
         size_t ret, i;
+        int skip = LPCNET_FRAME_SIZE/2;
+        int stop=0;
         float in_features[5*NB_FEATURES];
         float zeros[320] = {0};
         fargan_init(&fargan);
@@ -176,9 +178,9 @@ int main(int argc, char **argv) {
         fargan_load_model(&fargan, data, len);
 #endif
         /* uncomment the following to align with Python code */
-        /*ret = fread(&in_features[0], sizeof(in_features[0]), NB_TOTAL_FEATURES, fin);*/
-        for (i=0;i<5;i++) {
-          ret = fread(&in_features[i*NB_FEATURES], sizeof(in_features[0]), NB_FEATURES, fin);
+        ret = fread(&in_features[0], sizeof(in_features[0]), NB_FEATURES, fin);
+        for (i=1;i<5;i++) {
+           OPUS_COPY(&in_features[i*NB_FEATURES], &in_features[0], NB_FEATURES);
         }
         fargan_cont(&fargan, zeros, in_features);
         while (1) {
@@ -186,11 +188,19 @@ int main(int argc, char **argv) {
             float fpcm[LPCNET_FRAME_SIZE];
             opus_int16 pcm[LPCNET_FRAME_SIZE];
             ret = fread(in_features, sizeof(features[0]), NB_FEATURES, fin);
-            if (feof(fin) || ret != NB_FEATURES) break;
-            OPUS_COPY(features, in_features, NB_FEATURES);
+            if (stop || feof(fin) || ret != NB_FEATURES) {
+               stop++;
+            } else {
+               OPUS_COPY(features, in_features, NB_FEATURES);
+            }
             fargan_synthesize(&fargan, fpcm, features);
             for (i=0;i<LPCNET_FRAME_SIZE;i++) pcm[i] = (int)floor(.5 + MIN32(32767, MAX32(-32767, 32768.f*fpcm[i])));
-            fwrite(pcm, sizeof(pcm[0]), LPCNET_FRAME_SIZE, fout);
+            if (stop==2) {
+               fwrite(pcm+skip, sizeof(pcm[0]), LPCNET_FRAME_SIZE/2, fout);
+               break;
+            }
+            fwrite(pcm+skip, sizeof(pcm[0]), LPCNET_FRAME_SIZE-skip, fout);
+            skip=0;
         }
     } else {
         fprintf(stderr, "unknown action\n");
