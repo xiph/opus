@@ -290,7 +290,7 @@ int main(int _argc,const char **_argv){
   int      max_compare;
   int      format;
   const char *argv0 = _argv[0];
-  double err4_threshold=-1, err16_threshold=-1;
+  double err4_threshold=-1, err16_threshold=-1, pitch_threshold=-1;
   int compare_thresholds=0;
   float decayL[NFREQS], decayR[NFREQS];
   float norm[NFREQS];
@@ -328,9 +328,10 @@ int main(int _argc,const char **_argv){
       }
       err4_threshold=atof(_argv[2]);
       err16_threshold=atof(_argv[3]);
+      pitch_threshold=atof(_argv[4]);
       compare_thresholds=1;
-      _argv+=3;
-      _argc-=3;
+      _argv+=4;
+      _argc-=4;
     } else {
       usage(argv0);
       return EXIT_FAILURE;
@@ -358,6 +359,7 @@ int main(int _argc,const char **_argv){
   fclose(fin1);
   ylength=read_pcm(&y,fin2,nchannels,format);
   fclose(fin2);
+  if (ylength*downsample > xlength) ylength = xlength/downsample;
   if(xlength!=ylength*downsample){
     fprintf(stderr,"Sample counts do not match (%lu!=%lu).\n",
      (unsigned long)xlength,(unsigned long)ylength*downsample);
@@ -514,7 +516,7 @@ int main(int _argc,const char **_argv){
   fprintf(stderr, "err4 = %f, err16 = %f, pitch = %f\n",
           err4, err16, pitch_error);
   if (compare_thresholds) {
-    if (err4 <= err4_threshold && err16 <= err16_threshold) {
+    if (err4 <= err4_threshold && err16 <= err16_threshold && pitch_error <= pitch_threshold) {
       fprintf(stderr, "Comparison PASSED\n");
     } else {
       fprintf(stderr, "*** Comparison FAILED ***"
