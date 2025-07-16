@@ -25,6 +25,8 @@ sox in.wav in.raw
 sox -r 48000 -b 16 -e signed-integer -c 1 out.raw out.wav
 ```
 
+Note that DNN features are only available in the floating point version of the codec.
+
 # Integration with Opus codec
 This branch also features a preview of integrated BWE in the Opus decoder. Note,
 however, that the final model will undergo slight changes to enable 8-bit
@@ -34,13 +36,13 @@ To use blind BWE on a 16 kHz input signal in.raw, first run the encoder e.g. wit
 parameters
 
 ```
-./opus_demo -e voip 16000 1 10000 in.raw bs.opus
+./opus_demo -e voip 16000 1 10000 in.raw data.bin
 ```
 
 Then run the decoder with
 
 ```
-./opus_demo -d 48000 -dec_complexity 10 -enable_osce_bwe bs.opus out.raw
+./opus_demo -d 48000 -dec_complexity 10 -enable_osce_bwe data.bin out.raw
 ```
 
 
