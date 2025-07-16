@@ -52,7 +52,31 @@ do
     fi
     "$DRED_COMPARE" -features -thresholds .5 .15 .02 "$VECTOR_PATH/vector${i}_dred_dec.f32" tmp.f32 >> logs_dred_decode.txt 2>&1
     float_ret=$?
-    if [ "$float_ret" -eq "0" ] || [ "$float_ret2" -eq "0" ]; then
+    if [ "$float_ret" -eq "0" ]; then
+        echo "output matches reference"
+    else
+        echo "ERROR: output does not match reference"
+        exit 1
+    fi
+    echo
+done
+
+for i in 1 2 3 4 5 6 7 8
+do
+    if [ -e "$VECTOR_PATH/vector${i}_features.f32" ]; then
+        echo "Testing vector${i}_features.f32"
+    else
+        echo "Bitstream file not found: vector${i}_features.f32"
+    fi
+    if "$FARGAN_DEMO" -fargan-synthesis "$VECTOR_PATH/vector${i}_features.f32" tmp.sw >> logs_dred_synthesis.txt 2>&1; then
+        echo "successfully decoded"
+    else
+        echo "ERROR: decoding failed"
+        exit 1
+    fi
+    "$DRED_COMPARE" -audio -thresholds 0.25 1.0 0.15 "$VECTOR_PATH/vector${i}_orig.sw" tmp.sw >> logs_dred_synthesis.txt 2>&1
+    float_ret=$?
+    if [ "$float_ret" -eq "0" ] ; then
         echo "output matches reference"
     else
         echo "ERROR: output does not match reference"
