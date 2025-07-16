@@ -72,6 +72,7 @@ typedef struct {
     float feature_net_conv1_state[BBWENET_FNET_CONV1_STATE_SIZE];
     float feature_net_conv2_state[BBWENET_FNET_CONV2_STATE_SIZE];
     float feature_net_gru_state[BBWENET_FNET_GRU_STATE_SIZE];
+    opus_int16 outbut_buffer[OSCE_BWE_OUTPUT_DELAY];
     AdaConvState af1_state;
     AdaConvState af2_state;
     AdaConvState af3_state;

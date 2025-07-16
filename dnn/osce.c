@@ -1506,14 +1506,24 @@ void osce_bwe(
     );
 #endif
 
-    /* scale output */
-    for (int i = 0; i < 3 * xq16_len; i++)
+    /* scale and delay output */
+    OPUS_COPY(xq48, psOSCEBWE->state.bbwenet.outbut_buffer, OSCE_BWE_OUTPUT_DELAY);
+    for (int i = 0; i < 3 * xq16_len - OSCE_BWE_OUTPUT_DELAY; i++)
     {
         float tmp = 32768.f * out_buffer[i];
         if (tmp > 32767.f) tmp = 32767.f;
         if (tmp < -32767.f) tmp = -32767.f;
-        xq48[i] = float2int(tmp);
+        xq48[i + OSCE_BWE_OUTPUT_DELAY] = float2int(tmp);
     }
+
+    for (int i = 0; i < OSCE_BWE_OUTPUT_DELAY; i++)
+    {
+        float tmp = 32768.f * out_buffer[3 * xq16_len - OSCE_BWE_OUTPUT_DELAY + i];
+        if (tmp > 32767.f) tmp = 32767.f;
+        if (tmp < -32767.f) tmp = -32767.f;
+        psOSCEBWE->state.bbwenet.outbut_buffer[i] = float2int(tmp);
+    }
+
 
  }
 
