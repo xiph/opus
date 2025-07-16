@@ -9,6 +9,7 @@ CMD_PATH=$1
 VECTOR_PATH=$2
 
 : ${FARGAN_DEMO:=$CMD_PATH/fargan_demo}
+: ${OPUS_DEMO:=$CMD_PATH/opus_demo}
 : ${DRED_COMPARE:=$CMD_PATH/dred_compare}
 
 if [ -d "$VECTOR_PATH" ]; then
@@ -75,6 +76,30 @@ do
         exit 1
     fi
     "$DRED_COMPARE" -audio -thresholds 0.25 1.0 0.15 "$VECTOR_PATH/vector${i}_orig.sw" tmp.sw >> logs_dred_synthesis.txt 2>&1
+    float_ret=$?
+    if [ "$float_ret" -eq "0" ] ; then
+        echo "output matches reference"
+    else
+        echo "ERROR: output does not match reference"
+        exit 1
+    fi
+    echo
+done
+
+for i in 1 2 3 4 5 6 7 8
+do
+    if [ -e "$VECTOR_PATH/vector${i}_opus.bit" ]; then
+        echo "Testing vector${i}_opus.bit"
+    else
+        echo "Bitstream file not found: vector${i}_opus.bit"
+    fi
+    if "$OPUS_DEMO" -d 16000 1 "$VECTOR_PATH/vector${i}_opus.bit" tmp.sw >> logs_dred_opus.txt 2>&1; then
+        echo "successfully decoded"
+    else
+        echo "ERROR: decoding failed"
+        exit 1
+    fi
+    "$DRED_COMPARE" -audio -thresholds 0.5 1.5 0.25 "$VECTOR_PATH/vector${i}_orig.sw" tmp.sw >> logs_dred_opus.txt 2>&1
     float_ret=$?
     if [ "$float_ret" -eq "0" ] ; then
         echo "output matches reference"
