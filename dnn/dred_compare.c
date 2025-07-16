@@ -81,6 +81,18 @@ static void biquad(float *y, float mem[2], const float *x,
   }
 }
 
+static void buf_to_float(const unsigned char *buf, float *x, int len) {
+   float_bits s;
+   int i;
+   for (i=0;i<len;i++) {
+      s.i=(unsigned)buf[4*i+3]<<24
+            |buf[4*i+2]<<16
+            |buf[4*i+1]<<8
+            |buf[4*i];
+      x[i] = s.f;
+   }
+}
+
 static size_t read_pcm(float **_samples,FILE *_fin,int _nchannels,
                        int format){
   unsigned char  buf[1024];
@@ -204,8 +216,13 @@ static const int BANDS[NBANDS+1]={
 
 
 void usage(const char *_argv0) {
-  fprintf(stderr,"Usage: %s [-s16|-s24|-f32] [-thresholds err4 err16]"
-  " <file1.sw> <file2.sw>\n", _argv0);
+  fprintf(stderr,"Usage: %s -audio [-s16|-s24|-f32]"
+  " [-thresholds err4 err16 pitch]"
+  " <file1> <file2>\n", _argv0);
+  fprintf(stderr,"       %s -features"
+  " [-thresholds tot max pitch]"
+  " <file1.f32> <file2.f32>\n", _argv0);
+
 }
 
 /* Taken from ancient CELT code */
@@ -262,7 +279,7 @@ static void compute_xcorr(const float *x, float *xcorr) {
 }
 
 #define LOUDNESS 0.2f
-int main(int _argc,const char **_argv){
+int compare_audio(int _argc,const char **_argv, const char *argv0){
   FILE    *fin1;
   FILE    *fin2;
   float   *x;
@@ -290,7 +307,6 @@ int main(int _argc,const char **_argv){
   int      max_compare;
   int      format;
   int      skip=0;
-  const char *argv0 = _argv[0];
   double err4_threshold=-1, err16_threshold=-1, pitch_threshold=-1;
   int compare_thresholds=0;
   float decayL[NFREQS], decayR[NFREQS];
@@ -528,9 +544,111 @@ int main(int _argc,const char **_argv){
       fprintf(stderr, "Comparison PASSED\n");
     } else {
       fprintf(stderr, "*** Comparison FAILED ***"
-      " (thresholds were %f %f)\n", err4_threshold, err16_threshold);
+      " (thresholds were %f %f %f)\n", err4_threshold, err16_threshold, pitch_threshold);
       return EXIT_FAILURE;
     }
   }
   return EXIT_SUCCESS;
+}
+
+#define NB_FEATURES 20
+
+int compare_features(int _argc,const char **_argv, const char *argv0){
+   FILE    *fin1=NULL;
+   FILE    *fin2=NULL;
+   int i;
+   float mse[NB_FEATURES]={0};
+   int count=0;
+   int pitch_count=0;
+   float pitch_error=0;
+   float tot_error=0, max_error=0;
+   float tot_threshold=-1, max_threshold=-1, pitch_threshold=-1;
+   int compare_thresholds=0;
+   if(strcmp(_argv[1],"-thresholds")==0){
+     if (_argc < 7) {
+       usage(argv0);
+       return EXIT_FAILURE;
+     }
+     tot_threshold=atof(_argv[2]);
+     max_threshold=atof(_argv[3]);
+     pitch_threshold=atof(_argv[4]);
+     compare_thresholds=1;
+     _argv+=4;
+     _argc-=4;
+   }
+   if(_argc!=3) {
+      usage(argv0);
+      return EXIT_FAILURE;
+   }
+   fin1=fopen(_argv[1],"rb");
+   if(fin1==NULL){
+     fprintf(stderr,"Error opening '%s'.\n",_argv[1]);
+     return EXIT_FAILURE;
+   }
+   fin2=fopen(_argv[2],"rb");
+   if(fin2==NULL){
+     fprintf(stderr,"Error opening '%s'.\n",_argv[2]);
+     fclose(fin1);
+     return EXIT_FAILURE;
+   }
+   while (1) {
+      int ret;
+      float x[NB_FEATURES], y[NB_FEATURES];
+      unsigned char buf[NB_FEATURES*4];
+      ret = fread(buf, NB_FEATURES*4, 1, fin1);
+      if (ret != 1) break;
+      buf_to_float(buf, x, NB_FEATURES);
+      ret = fread(buf, NB_FEATURES*4, 1, fin2);
+      if (ret != 1) {
+         fprintf(stderr, "Error: truncated test file\n");
+         return EXIT_FAILURE;
+      }
+      buf_to_float(buf, y, NB_FEATURES);
+      for (i=0;i<NB_FEATURES;i++) {
+         float e = (x[i]-y[i]);
+         mse[i] += e*e;
+      }
+      if (x[NB_FEATURES-1] > .2) {
+         pitch_error += fabs(x[NB_FEATURES-2]-y[NB_FEATURES-2]);
+         pitch_count++;
+      }
+      count++;
+   }
+   pitch_error /= pitch_count;
+   for(i=0;i<NB_FEATURES;i++) {
+      mse[i] /= count;
+      if (i != NB_FEATURES-2) {
+         tot_error += mse[i];
+         max_error = MAX(max_error, mse[i]);
+      }
+   }
+   tot_error = sqrt(tot_error);
+   max_error = sqrt(max_error);
+   fprintf(stderr, "total = %f, max = %f, pitch = %f\n", tot_error, max_error, pitch_error);
+   if (compare_thresholds) {
+     if (tot_error <= tot_threshold && max_error <= max_threshold && pitch_error <= pitch_threshold) {
+       fprintf(stderr, "Comparison PASSED\n");
+     } else {
+       fprintf(stderr, "*** Comparison FAILED ***"
+       " (thresholds were %f %f %f)\n", tot_threshold, max_threshold, pitch_threshold);
+       return EXIT_FAILURE;
+     }
+   }
+   if (fin1) fclose(fin1);
+   if (fin2) fclose(fin2);
+   return EXIT_SUCCESS;
+}
+
+int main(int _argc,const char **_argv){
+  if (_argc<3) {
+     usage(_argv[0]);
+  } else if (strcmp(_argv[1], "-audio")==0) {
+     return compare_audio(_argc-1, _argv+1, _argv[0]);
+  } else if (strcmp(_argv[1], "-features")==0) {
+     return compare_features(_argc-1, _argv+1, _argv[0]);
+  } else {
+     fprintf(stderr, "%s: First argument must be either -audio or -features\n\n", _argv[0]);
+     usage(_argv[0]);
+  }
+  return EXIT_FAILURE;
 }
