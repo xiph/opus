@@ -26,6 +26,7 @@ parser.add_argument("--static_noise_prob", type=float, help="portion of items to
 parser.add_argument("--random_dc_prob", type=float, help="portion of items to which random dc offset will be added (default: 0.1)", default=0.1)
 parser.add_argument("--rirdir", type=str, default=None, help="folder with room impulse responses in wav format (defaul: None)")
 parser.add_argument("--rir_prob", type=float, default=0.0, help="portion of items to which a random rir is applied (default: 0)")
+parser.add_argument("--disable_lowpass", action="store_true", help="disable 20 kHz low-pass filter (default: False)")
 parser.add_argument("--verbose", action="store_true")
 
 def read_filelist(basedir, filelist):
@@ -245,6 +246,7 @@ def concatenate(filelist : str,
                 rand_dc_prob : float=0,
                 rirs : List = None,
                 rir_prob : float = 0,
+                disable_lowpass : bool = False,
                 verbose=False):
 
     overlap_size = int(40 * target_fs / 8000)
@@ -270,7 +272,8 @@ def concatenate(filelist : str,
 
             x = trim_silence(x, target_fs)
 
-            x = apply_20kHz_lp(x, target_fs)
+            if not disable_lowpass:
+                x = apply_20kHz_lp(x, target_fs)
 
             bwidth = estimate_bandwidth(x, target_fs)
             if bwidth != 'fb':
@@ -362,4 +365,5 @@ if __name__ == "__main__":
                 rand_dc_prob=args.random_dc_prob,
                 rirs=rirs,
                 rir_prob=args.rir_prob,
+                disable_lowpass=args.disable_lowpass,
                 verbose=args.verbose)
