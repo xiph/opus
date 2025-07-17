@@ -48,7 +48,7 @@ class FloatFeatureNet(nn.Module):
         self.upsamp_factor = upsamp_factor
         self.lookahead = lookahead
 
-        self.conv1 = nn.Conv1d(feature_dim, num_channels, 3)
+        self.conv1 = nn.Conv1d(feature_dim, num_channels, 1)
         self.conv2 = nn.Conv1d(num_channels, num_channels, 3)
 
         self.gru = nn.GRU(num_channels, num_channels, batch_first=True)
@@ -83,16 +83,12 @@ class FloatFeatureNet(nn.Module):
 
 
         features = features.permute(0, 2, 1)
-        if self.lookahead:
-            c = torch.tanh(self.conv1(F.pad(features, [1, 1])))
-            c = torch.tanh(self.conv2(F.pad(c, [2, 0])))
-        else:
-            c = torch.tanh(self.conv1(F.pad(features, [2, 0])))
-            if DEBUGDUMP:
-                debugdump('feature_net_conv1_activated.f32', c.permute(0, 2, 1))
-            c = torch.tanh(self.conv2(F.pad(c, [2, 0])))
-            if DEBUGDUMP:
-                debugdump('feature_net_conv2_activated.f32', c.permute(0, 2, 1))
+        c = torch.tanh(self.conv1((features)))
+        if DEBUGDUMP:
+            debugdump('feature_net_conv1_activated.f32', c.permute(0, 2, 1))
+        c = torch.tanh(self.conv2(F.pad(c, [2, 0])))
+        if DEBUGDUMP:
+            debugdump('feature_net_conv2_activated.f32', c.permute(0, 2, 1))
 
         c = torch.tanh(self.tconv(c))
         if DEBUGDUMP:
@@ -134,6 +130,7 @@ class Folder(torch.nn.Module):
 
 class BBWENet(torch.nn.Module):
     FRAME_SIZE16k=80
+    VERSION=2
 
     def __init__(self,
                  feature_dim,
@@ -203,12 +200,13 @@ class BBWENet(torch.nn.Module):
 
         latent_channels = 1
         if self.shape_extension: latent_channels += 1
+        latent_channels2 = latent_channels
         if self.func_extension: latent_channels += 1
 
         # spectral shaping
         self.af1 = LimitedAdaptiveConv1d(1, latent_channels, self.kernel_size16, cond_dim, frame_size=self.frame_size16, overlap_size=self.frame_size16//2, use_bias=False, padding=[self.kernel_size16 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2, softquant=softquant)
-        self.af2 = LimitedAdaptiveConv1d(latent_channels, latent_channels, self.kernel_size32, cond_dim, frame_size=self.frame_size32, overlap_size=self.frame_size32//2, use_bias=False, padding=[self.kernel_size32 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2, softquant=softquant)
-        self.af3 = LimitedAdaptiveConv1d(latent_channels, 1, self.kernel_size48, cond_dim, frame_size=self.frame_size48, overlap_size=self.frame_size48//2, use_bias=False, padding=[self.kernel_size48 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2, softquant=softquant)
+        self.af2 = LimitedAdaptiveConv1d(latent_channels, latent_channels2, self.kernel_size32, cond_dim, frame_size=self.frame_size32, overlap_size=self.frame_size32//2, use_bias=False, padding=[self.kernel_size32 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2, softquant=softquant)
+        self.af3 = LimitedAdaptiveConv1d(latent_channels2, 1, self.kernel_size48, cond_dim, frame_size=self.frame_size48, overlap_size=self.frame_size48//2, use_bias=False, padding=[self.kernel_size48 - 1, 0], gain_limits_db=conv_gain_limits_db, norm_p=2, softquant=softquant)
 
 
     def flop_count(self, rate=16000, verbose=False):
@@ -291,12 +289,6 @@ class BBWENet(torch.nn.Module):
             idx += 1
             if DEBUGDUMP:
                 debugdump('bbwenet_up15_shape.f32', y48_shape)
-
-        if self.func_extension:
-            y48_func = self.nlfunc(y48[:, idx:idx+1, :])
-            y48_out = torch.cat((y48_out, y48_func), dim=1)
-            if DEBUGDUMP:
-                debugdump('bbwenet_up15_func.f32', y48_func)
 
         # 2nd mixing
         y48_out = self.af3(y48_out, cf)
