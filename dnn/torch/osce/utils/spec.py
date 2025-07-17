@@ -235,7 +235,7 @@ def instafreq(x, frame_size, max_bin, window=None):
     X = np.fft.fft(x_unfold, n=frame_size, axis=-1)
 
     # instantaneus frequency
-    X_trunc = X[..., :max_bin + 1]  + 1e-9
+    X_trunc = X[..., :max_bin + 1]
     Y = X_trunc[1:] * np.conj(X_trunc[:-1])
     Y = Y / (np.abs(Y) + 1e-9)
 
