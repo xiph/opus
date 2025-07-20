@@ -558,15 +558,15 @@ void osce_bwe_cross_fade_10ms(opus_int16 *x_fadein, opus_int16 *x_fadeout, int l
 {
     int i;
     celt_assert(length >= 480);
-
+    float f = 1.f / 3;
     for (i = 0; i < 160; i++)
     {
         float diff = i == 159 ? 0.f : osce_window[i + 1] - osce_window[i];
         float w_curr = osce_window[i];
         x_fadein[3*i + 0] = (int) (w_curr * x_fadein[3*i + 0] + (1.f - w_curr) * x_fadeout[3*i + 0] + 0.5);
-        w_curr += diff / 3.f;
+        w_curr += diff * f;
         x_fadein[3*i + 1] = (int) (w_curr * x_fadein[3*i + 1] + (1.f - w_curr) * x_fadeout[3*i + 1] + 0.5);
-        w_curr += diff / 3.f;
+        w_curr += diff * f;
         x_fadein[3*i + 2] = (int) (w_curr * x_fadein[3*i + 2] + (1.f - w_curr) * x_fadeout[3*i + 2] + 0.5);
     }
 }
