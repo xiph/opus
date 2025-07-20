@@ -436,7 +436,9 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
      if (st->complexity >= 7) {st->DecControl.osce_method = OSCE_METHOD_NOLACE;}
 #endif
 #ifdef ENABLE_OSCE_BWE
-     if (st->complexity >= 4 && st->DecControl.enable_osce_bwe && st->Fs == 48000 && st->DecControl.internalSampleRate == 16000 && mode == MODE_SILK_ONLY) {
+     if (st->complexity >= 4 && st->DecControl.enable_osce_bwe &&
+         st->Fs == 48000 && st->DecControl.internalSampleRate == 16000 &&
+         ((mode == MODE_SILK_ONLY) || (data == NULL))) {
          /* request WB -> FB signal extension */
          st->DecControl.osce_extended_mode = OSCE_MODE_SILK_BBWE;
      } else {
@@ -1029,7 +1031,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
        *value = st->complexity;
    }
    break;
-#if defined(ENABLE_OSCE) && defined(ENABLE_OSCE_BWE)
+#ifdef ENABLE_OSCE_BWE
    case OPUS_SET_OSCE_BWE_REQUEST:
    {
        opus_int32 value = va_arg(ap, opus_int32);
@@ -1039,6 +1041,16 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
        st->DecControl.enable_osce_bwe = value;
 
       }
+   break;
+   case OPUS_GET_OSCE_BWE_REQUEST:
+   {
+       opus_int32 *value = va_arg(ap, opus_int32*);
+       if (!value)
+       {
+          goto bad_arg;
+       }
+       *value = st->DecControl.enable_osce_bwe;
+   }
    break;
 #endif
    case OPUS_GET_FINAL_RANGE_REQUEST:

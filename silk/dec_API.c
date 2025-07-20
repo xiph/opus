@@ -157,7 +157,7 @@ opus_int silk_Decode(                                   /* O    Returns error co
     silk_decoder_state *channel_state = psDec->channel_state;
     opus_int has_side;
     opus_int stereo_to_mono;
-#if defined(ENABLE_OSCE_BWE) && defined(ENABLE_OSCE)
+#ifdef ENABLE_OSCE_BWE
     ALLOC(resamp_buffer, 3 * MAX_FRAME_LENGTH, opus_int16);
 #endif
     SAVE_STACK;
