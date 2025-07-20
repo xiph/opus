@@ -86,7 +86,6 @@ void osce_enhance_frame(
 );
 
 
-
 int osce_load_models(OSCEModel *hModel, const void *data, int len);
 void osce_reset(silk_OSCE_struct *hOSCE, int method);
 

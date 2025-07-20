@@ -334,6 +334,7 @@ void adacomb_process_frame(
     hAdaComb->last_global_gain = global_gain;
 }
 
+
 void adashape_process_frame(
     AdaShapeState *hAdaShape,
     float *x_out,
