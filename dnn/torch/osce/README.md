@@ -21,9 +21,12 @@ First step is to convert all training items to 16 kHz and 16 bit pcm and then co
 which on top provides some random scaling. Data is taken from the datasets listed in dnn/datasets.txt and the exact list of items used for training and validation is
 located in dnn/torch/osce/resources.
 
-Second step is to run a patched version of opus_demo in the dataset folder, which will produce the coded output and add feature files. To build the patched opus_demo binary, check out the exp-neural-silk-enhancement branch and build opus_demo the usual way. Then run
+Second step is to run the opus_demo binary build with the --enable-osce-training-data flag, i.e. `./configure --disable-shared --enable-osce-training-data && make clean && make -j`
 
-`cd dataset && <path_to_patched_opus_demo>/opus_demo voip 16000 1 9000 -silk_random_switching 249 clean.s16 coded.s16 `
+
+which will enable writing decoder features to disk. To create the training data, then run
+
+`cd dataset && <path_to_opus_demo_with_training_data>/opus_demo voip 16000 1 9000 -silk_random_switching 249 clean.s16 coded.s16 `
 
 The argument to -silk_random_switching specifies the number of frames after which parameters are switched randomly.
 
@@ -57,9 +60,16 @@ for running the training script in foreground or
 
 to run it in background. In the latter case the output is written to `<output folder>/out.txt`.
 
+## Exporting a model to C
+To integrate a newly trained model into Opus, export model weights to opus/dnn by running
+
+`python export_model_weigths.py <path_to_checkpoint> ../../ [--quantize]`
+
+and then build opus with --enable-osce. Note, however that running autogen.sh again will overwrite any local changes to the model weights.
+
 ## Inference
 Generating inference data is analogous to generating training data. Given an item 'item1.wav' run
-`mkdir item1.se && sox item1.wav -r 16000 -e signed-integer -b 16 item1.raw && cd item1.se && <path_to_patched_opus_demo>/opus_demo voip 16000 1 <bitrate> ../item1.raw noisy.s16`
+`mkdir item1.se && sox item1.wav -r 16000 -e signed-integer -b 16 item1.raw && cd item1.se && <path_to_opus_demo_with_training_data>/opus_demo voip 16000 1 <bitrate> ../item1.raw noisy.s16`
 
 The folder item1.se then serves as input for the test_model.py script or for the --testdata argument of train_model.py resp. adv_train_model.py
 
