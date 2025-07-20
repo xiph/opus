@@ -89,14 +89,14 @@ schedules = {
     ],
     'bbwenet' : [
         ('feature_net.conv1', dict(quantize=False, scale=None)),
-        ('feature_net.conv2', dict(quantize=False, scale=None)),
-        ('feature_net.gru', dict(quantize=False, scale=None)),
-        ('feature_net.tconv', dict(quantize=False, scale=None)),
-        ('tdshape1', dict(quantize=False, scale=None)),
-        ('tdshape2', dict(quantize=False, scale=None)),
-        ('af1', dict(quantize=False, scale=None)),
-        ('af2', dict(quantize=False, scale=None)),
-        ('af3', dict(quantize=False, scale=None)),
+        ('feature_net.conv2', dict(quantize=True, scale=None)),
+        ('feature_net.gru', dict(quantize=True, scale=None, recurrent_scale=None, input_sparse=sparse_default, recurrent_sparse=sparse_default)),
+        ('feature_net.tconv', dict(quantize=True, scale=None)),
+        ('tdshape1', dict(quantize=True, scale=None)),
+        ('tdshape2', dict(quantize=True, scale=None)),
+        ('af1', dict(quantize=True, scale=None)),
+        ('af2', dict(quantize=True, scale=None)),
+        ('af3', dict(quantize=True, scale=None)),
     ]
 }
 
