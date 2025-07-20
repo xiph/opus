@@ -436,15 +436,16 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
      if (st->complexity >= 7) {st->DecControl.osce_method = OSCE_METHOD_NOLACE;}
 #endif
 #ifdef ENABLE_OSCE_BWE
-     if (st->complexity >= 4 && st->DecControl.enable_osce_bwe  && st->Fs == 48000) {
-         st->DecControl.osce_extended_mode = MODE_SILK_BBWE;
+     if (st->complexity >= 4 && st->DecControl.enable_osce_bwe && st->Fs == 48000 && st->DecControl.internalSampleRate == 16000 && mode == MODE_SILK_ONLY) {
+         /* request WB -> FB signal extension */
+         st->DecControl.osce_extended_mode = OSCE_MODE_SILK_BBWE;
      } else {
-         st->DecControl.osce_extended_mode = MODE_SILK_ONLY;
+         /* at this point, mode can only be MODE_SILK_ONLY or MODE_HYBRID */
+         st->DecControl.osce_extended_mode = mode == MODE_SILK_ONLY ? OSCE_MODE_SILK_ONLY : OSCE_MODE_HYBRID;
      }
-     if (st->prev_mode == MODE_CELT_ONLY)
-     {
+     if (st->prev_mode == MODE_CELT_ONLY) {
          /* Update extended mode for CELT->SILK transition */
-         st->DecControl.prev_osce_extended_mode = MODE_CELT_ONLY;
+         st->DecControl.prev_osce_extended_mode = OSCE_MODE_CELT_ONLY;
      }
 #endif
 #endif

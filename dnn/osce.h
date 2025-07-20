@@ -42,6 +42,12 @@
 #include "osce_structs.h"
 #include "structs.h"
 
+
+#define OSCE_MODE_SILK_ONLY     1000
+#define OSCE_MODE_HYBRID        1001
+#define OSCE_MODE_CELT_ONLY     1002
+#define OSCE_MODE_SILK_BBWE     1003
+
 #define OSCE_METHOD_NONE 0
 #ifndef DISABLE_LACE
 #define OSCE_METHOD_LACE 1

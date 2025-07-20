@@ -1129,7 +1129,7 @@ static void bbwenet_process_frames(
     fwrite(x_in, sizeof(*x_in), num_subframes * BBWENET_AF1_FRAME_SIZE, f_xin);
 #endif
 
-    // feature net
+    /* feature net */
     bbwe_feature_net(hBBWENET, state, latent_features, features, num_frames, arch);
 #ifdef DEBUG_BBWENET
     if (f_latent != NULL){
@@ -1138,8 +1138,8 @@ static void bbwenet_process_frames(
 #endif
 
 
-    // signal net
-    // first adaptive filtering stage, three output channels //
+    /* signal net
+     * first adaptive filtering stage, three output channels */
     for (i_subframe = 0; i_subframe < num_subframes; i_subframe++)
     {
         adaconv_process_frame(
