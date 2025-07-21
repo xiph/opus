@@ -578,7 +578,11 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    /* MUST be after PLC */
    MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(start_band)));
 
+#ifdef ENABLE_OSCE_BWE
+   if (mode != MODE_SILK_ONLY && st->DecControl.osce_extended_mode != OSCE_MODE_SILK_BBWE)
+#else
    if (mode != MODE_SILK_ONLY)
+#endif
    {
       int celt_frame_size = IMIN(F20, frame_size);
       /* Make sure to discard any previous CELT state */
