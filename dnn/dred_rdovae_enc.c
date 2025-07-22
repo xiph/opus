@@ -69,35 +69,35 @@ void dred_rdovae_encode_dframe(
     OPUS_COPY(&buffer[output_index], enc_state->gru1_state, ENC_GRU1_OUT_SIZE);
     output_index += ENC_GRU1_OUT_SIZE;
     conv1_cond_init(enc_state->conv1_state, output_index, 1, &enc_state->initialized);
-    compute_generic_conv1d(&model->enc_conv1, &buffer[output_index], enc_state->conv1_state, buffer, output_index, ACTIVATION_TANH, arch);
+    compute_generic_conv1d(&model->enc_conv1, &buffer[output_index], enc_state->conv1_state, buffer, ENC_CONV1_IN_SIZE, ACTIVATION_TANH, arch);
     output_index += ENC_CONV1_OUT_SIZE;
 
     compute_generic_gru(&model->enc_gru2_input, &model->enc_gru2_recurrent, enc_state->gru2_state, buffer, arch);
     OPUS_COPY(&buffer[output_index], enc_state->gru2_state, ENC_GRU2_OUT_SIZE);
     output_index += ENC_GRU2_OUT_SIZE;
     conv1_cond_init(enc_state->conv2_state, output_index, 2, &enc_state->initialized);
-    compute_generic_conv1d_dilation(&model->enc_conv2, &buffer[output_index], enc_state->conv2_state, buffer, output_index, 2, ACTIVATION_TANH, arch);
+    compute_generic_conv1d_dilation(&model->enc_conv2, &buffer[output_index], enc_state->conv2_state, buffer, ENC_CONV2_IN_SIZE, 2, ACTIVATION_TANH, arch);
     output_index += ENC_CONV2_OUT_SIZE;
 
     compute_generic_gru(&model->enc_gru3_input, &model->enc_gru3_recurrent, enc_state->gru3_state, buffer, arch);
     OPUS_COPY(&buffer[output_index], enc_state->gru3_state, ENC_GRU3_OUT_SIZE);
     output_index += ENC_GRU3_OUT_SIZE;
     conv1_cond_init(enc_state->conv3_state, output_index, 2, &enc_state->initialized);
-    compute_generic_conv1d_dilation(&model->enc_conv3, &buffer[output_index], enc_state->conv3_state, buffer, output_index, 2, ACTIVATION_TANH, arch);
+    compute_generic_conv1d_dilation(&model->enc_conv3, &buffer[output_index], enc_state->conv3_state, buffer, ENC_CONV3_IN_SIZE, 2, ACTIVATION_TANH, arch);
     output_index += ENC_CONV3_OUT_SIZE;
 
     compute_generic_gru(&model->enc_gru4_input, &model->enc_gru4_recurrent, enc_state->gru4_state, buffer, arch);
     OPUS_COPY(&buffer[output_index], enc_state->gru4_state, ENC_GRU4_OUT_SIZE);
     output_index += ENC_GRU4_OUT_SIZE;
     conv1_cond_init(enc_state->conv4_state, output_index, 2, &enc_state->initialized);
-    compute_generic_conv1d_dilation(&model->enc_conv4, &buffer[output_index], enc_state->conv4_state, buffer, output_index, 2, ACTIVATION_TANH, arch);
+    compute_generic_conv1d_dilation(&model->enc_conv4, &buffer[output_index], enc_state->conv4_state, buffer, ENC_CONV4_IN_SIZE, 2, ACTIVATION_TANH, arch);
     output_index += ENC_CONV4_OUT_SIZE;
 
     compute_generic_gru(&model->enc_gru5_input, &model->enc_gru5_recurrent, enc_state->gru5_state, buffer, arch);
     OPUS_COPY(&buffer[output_index], enc_state->gru5_state, ENC_GRU5_OUT_SIZE);
     output_index += ENC_GRU5_OUT_SIZE;
     conv1_cond_init(enc_state->conv5_state, output_index, 2, &enc_state->initialized);
-    compute_generic_conv1d_dilation(&model->enc_conv5, &buffer[output_index], enc_state->conv5_state, buffer, output_index, 2, ACTIVATION_TANH, arch);
+    compute_generic_conv1d_dilation(&model->enc_conv5, &buffer[output_index], enc_state->conv5_state, buffer, ENC_CONV5_IN_SIZE, 2, ACTIVATION_TANH, arch);
     output_index += ENC_CONV5_OUT_SIZE;
 
     compute_generic_dense(&model->enc_zdense, padded_latents, buffer, ACTIVATION_LINEAR, arch);
