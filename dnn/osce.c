@@ -973,7 +973,7 @@ static void apply_valin_activation(float *x, int len)
     int i;
     for (i = 0; i < len; i++)
     {
-        x[i] *= sinf(logf(fabsf(x[i]) + 1e-6f));
+        x[i] *= sin(log(fabs(x[i]) + 1e-6f));
     }
 }
 
@@ -1095,7 +1095,7 @@ static void bbwenet_process_frames(
 {
     float latent_features[4 * BBWENET_COND_DIM];
     int i_subframe, num_subframes = 2 * num_frames, i_channel;
-    float x_buffer1[3 * 3 * 4 * 3*BBWENET_FRAME_SIZE16] = {0}; // 3x3 channels, 4 subframes, 48 kHz
+    float x_buffer1[3 * 3 * 4 * 3*BBWENET_FRAME_SIZE16] = {0}; /* 3x3 channels, 4 subframes, 48 kHz */
     float x_buffer2[3 * 3 * 4 * 3*BBWENET_FRAME_SIZE16] = {0};
     BBWENETLayers *layers = &hBBWENET->layers;
 
@@ -1396,10 +1396,11 @@ void osce_reset(silk_OSCE_struct *hOSCE, int method)
 
 void osce_bwe_reset(silk_OSCE_BWE_struct *hOSCEBWE)
 {
+    int k;
     OPUS_CLEAR(&hOSCEBWE->features, 1);
 #if 1
     /* weird python initialization: Fix eventually! */
-    for (int k = 0; k <= OSCE_BWE_MAX_INSTAFREQ_BIN; k ++)
+    for (k = 0; k <= OSCE_BWE_MAX_INSTAFREQ_BIN; k ++)
     {
         hOSCEBWE->features.last_spec[2*k] = 1e-9;
     }
@@ -1473,7 +1474,7 @@ void osce_bwe(
     float in_buffer[320];
     float out_buffer[3*320];
     float features[2 * OSCE_BWE_FEATURE_DIM];
-    int num_frames;
+    int num_frames, i;
 
     /* currently restricting to 10 or 20-ms frames */
     celt_assert(xq16_len == 160 || xq16_len == 320);
@@ -1481,7 +1482,7 @@ void osce_bwe(
     num_frames = xq16_len / 160;
 
     /* scale input */
-    for (int i = 0; i < xq16_len; i++)
+    for (i = 0; i < xq16_len; i++)
     {
         in_buffer[i] = ((float) xq16[i]) * (1.f/32768.f);
     }
@@ -1508,7 +1509,7 @@ void osce_bwe(
 
     /* scale and delay output */
     OPUS_COPY(xq48, psOSCEBWE->state.bbwenet.outbut_buffer, OSCE_BWE_OUTPUT_DELAY);
-    for (int i = 0; i < 3 * xq16_len - OSCE_BWE_OUTPUT_DELAY; i++)
+    for (i = 0; i < 3 * xq16_len - OSCE_BWE_OUTPUT_DELAY; i++)
     {
         float tmp = 32768.f * out_buffer[i];
         if (tmp > 32767.f) tmp = 32767.f;
@@ -1516,7 +1517,7 @@ void osce_bwe(
         xq48[i + OSCE_BWE_OUTPUT_DELAY] = float2int(tmp);
     }
 
-    for (int i = 0; i < OSCE_BWE_OUTPUT_DELAY; i++)
+    for (i = 0; i < OSCE_BWE_OUTPUT_DELAY; i++)
     {
         float tmp = 32768.f * out_buffer[3 * xq16_len - OSCE_BWE_OUTPUT_DELAY + i];
         if (tmp > 32767.f) tmp = 32767.f;

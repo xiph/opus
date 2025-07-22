@@ -28,7 +28,6 @@
 #ifndef OSCE_STRUCTS_H
 #define OSCE_STRUCTS_H
 
-//#define DISABLE_BBWENET /* disabled until opus_data is updated */
 
 #include "opus_types.h"
 #include "osce_config.h"
