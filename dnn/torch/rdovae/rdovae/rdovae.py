@@ -505,6 +505,7 @@ class CoreDecoder(nn.Module):
         self.sparsifier.append(LinearSparsifier([(self.conv4.conv_dense, conv_params[4-1])], start, stop, sparsify_interval, sparsify_exponent))
         self.sparsifier.append(LinearSparsifier([(self.conv5.conv_dense, conv_params[5-1])], start, stop, sparsify_interval, sparsify_exponent))
         self.sparsifier.append(LinearSparsifier([(self.output, dense_params)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.gru_init, dense_params)], start, stop, sparsify_interval, sparsify_exponent))
 
         if softquant:
             self.gru1 = soft_quant(self.gru1, names=['weight_hh_l0', 'weight_ih_l0'])
