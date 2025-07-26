@@ -243,7 +243,6 @@ f"""
         ('core_decoder.module.glu4.gate'    , 'dec_glu4',    'TANH', True),
         ('core_decoder.module.glu5.gate'    , 'dec_glu5',    'TANH', True),
         ('core_decoder.module.hidden_init'  , 'dec_hidden_init',        'TANH', False),
-        ('core_decoder.module.gru_init'     , 'dec_gru_init','TANH', True),
     ]
 
     for name, export_name, _, quantize in decoder_dense_layers:
@@ -257,6 +256,7 @@ f"""
         ('core_decoder.module.conv3.conv_dense' , 'dec_conv_dense3',   'TANH', True),
         ('core_decoder.module.conv4.conv_dense' , 'dec_conv_dense4',   'TANH', True),
         ('core_decoder.module.conv5.conv_dense' , 'dec_conv_dense5',   'TANH', True),
+        ('core_decoder.module.gru_init'     , 'dec_gru_init','TANH', True),
     ]
 
     for name, export_name, _, quantize in decoder_sparse_dense_layers:
