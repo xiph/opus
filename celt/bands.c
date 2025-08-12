@@ -1444,8 +1444,8 @@ static unsigned quant_band_stereo(struct band_ctx *ctx, celt_norm *X, celt_norm 
 # ifdef ENABLE_QEXT
    (void)imid;
    (void)iside;
-   mid = cos(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)));
-   side = sin(.5*M_PI*sctx.itheta_q30*(1.f/(1<<30)));
+   mid = celt_cos_norm2(sctx.itheta_q30*(1.f/(1<<30)));
+   side = celt_cos_norm2(1.f-sctx.itheta_q30*(1.f/(1<<30)));
 # else
    mid = (1.f/32768)*imid;
    side = (1.f/32768)*iside;
