@@ -542,8 +542,6 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
 static int celt_plc_pitch_search(CELTDecoder *st, celt_sig *decode_mem[2], int C, int arch)
 {
    int pitch_index;
-   int decode_buffer_size;
-   int plc_pitch_lag_max, plc_pitch_lag_min;
 #ifdef ENABLE_QEXT
    int qext_scale;
 #endif
@@ -552,18 +550,15 @@ static int celt_plc_pitch_search(CELTDecoder *st, celt_sig *decode_mem[2], int C
 #ifdef ENABLE_QEXT
    qext_scale = st->qext_scale;
 #endif
-   decode_buffer_size = QEXT_SCALE(DECODE_BUFFER_SIZE);
-   plc_pitch_lag_max = QEXT_SCALE(PLC_PITCH_LAG_MAX);
-   plc_pitch_lag_min = QEXT_SCALE(PLC_PITCH_LAG_MIN);
-   ALLOC( lp_pitch_buf, decode_buffer_size>>1, opus_val16 );
+   ALLOC( lp_pitch_buf, DECODE_BUFFER_SIZE>>1, opus_val16 );
    pitch_downsample(decode_mem, lp_pitch_buf,
-         decode_buffer_size, C, arch);
-   pitch_search(lp_pitch_buf+(plc_pitch_lag_max>>1), lp_pitch_buf,
-         decode_buffer_size-plc_pitch_lag_max,
-         plc_pitch_lag_max-plc_pitch_lag_min, &pitch_index, arch);
-   pitch_index = plc_pitch_lag_max-pitch_index;
+         DECODE_BUFFER_SIZE>>1, C, QEXT_SCALE(2), arch);
+   pitch_search(lp_pitch_buf+(PLC_PITCH_LAG_MAX>>1), lp_pitch_buf,
+         DECODE_BUFFER_SIZE-PLC_PITCH_LAG_MAX,
+         PLC_PITCH_LAG_MAX-PLC_PITCH_LAG_MIN, &pitch_index, arch);
+   pitch_index = PLC_PITCH_LAG_MAX-pitch_index;
    RESTORE_STACK;
-   return pitch_index;
+   return QEXT_SCALE(pitch_index);
 }
 
 static void prefilter_and_fold(CELTDecoder * OPUS_RESTRICT st, int N)
