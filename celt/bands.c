@@ -43,10 +43,6 @@
 #include "quant_bands.h"
 #include "pitch.h"
 
-#ifndef M_PI
-#define M_PI 3.141592653
-#endif
-
 int hysteresis_decision(opus_val16 val, const opus_val16 *thresholds, const opus_val16 *hysteresis, int N, int prev)
 {
    int i;
