@@ -1450,7 +1450,7 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       VARDECL(opus_val16, pitch_buf);
       ALLOC(pitch_buf, (max_period+N)>>1, opus_val16);
 
-      pitch_downsample(pre, pitch_buf, max_period+N, CC, st->arch);
+      pitch_downsample(pre, pitch_buf, (max_period+N)>>1, CC, 2, st->arch);
       /* Don't search for the fir last 1.5 octave of the range because
          there's too many false-positives due to short-term correlation */
       pitch_search(pitch_buf+(max_period>>1), pitch_buf, N,
