@@ -1463,7 +1463,7 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       if (pitch_index > max_period-QEXT_SCALE(2))
          pitch_index = max_period-QEXT_SCALE(2);
 #ifdef ENABLE_QEXT
-   pitch_index /= qext_scale;
+      pitch_index /= qext_scale;
 #endif
       gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
       /*printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);*/
