@@ -552,7 +552,7 @@ static int celt_plc_pitch_search(CELTDecoder *st, celt_sig *decode_mem[2], int C
 #endif
    ALLOC( lp_pitch_buf, DECODE_BUFFER_SIZE>>1, opus_val16 );
    pitch_downsample(decode_mem, lp_pitch_buf,
-         DECODE_BUFFER_SIZE>>1, C, qext_scale*2, arch);
+         DECODE_BUFFER_SIZE>>1, C, QEXT_SCALE(2), arch);
    pitch_search(lp_pitch_buf+(PLC_PITCH_LAG_MAX>>1), lp_pitch_buf,
          DECODE_BUFFER_SIZE-PLC_PITCH_LAG_MAX,
          PLC_PITCH_LAG_MAX-PLC_PITCH_LAG_MIN, &pitch_index, arch);
