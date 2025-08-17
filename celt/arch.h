@@ -121,7 +121,7 @@ void celt_fatal(const char *str, const char *file, int line)
 /* Set this if opus_int64 is a native type of the CPU. */
 /* Assume that all LP64 architectures have fast 64-bit types; also x86_64
    (which can be ILP32 for x32) and Win64 (which is LLP64). */
-#if defined(__x86_64__) || defined(__LP64__) || defined(_WIN64)
+#if defined(__x86_64__) || defined(__LP64__) || defined(_WIN64) || defined (__mips)
 #define OPUS_FAST_INT64 1
 #else
 #define OPUS_FAST_INT64 0
