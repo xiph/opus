@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "main_FIX.h"
 
-#if defined(MIPSr1_ASM)
+#if defined(__mips_dsp)
 #include "mips/warped_autocorrelation_FIX_mipsr1.h"
 #endif
 

@@ -53,7 +53,7 @@
 #include "mathops.h"
 #include "stack_alloc.h"
 
-#if defined(MIPSr1_ASM)
+#if defined(FIXED_POINT) && defined(__mips_dsp)
 #include "mips/mdct_mipsr1.h"
 #endif
 
