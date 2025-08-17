@@ -37,20 +37,16 @@
 
 #undef S_MUL_ADD
 static inline int S_MUL_ADD(int a, int b, int c, int d) {
-    int m;
-    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
-    asm volatile("madd $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
-    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
-    return m;
+    long long acc = __builtin_mips_mult(a, b);
+    acc = __builtin_mips_madd(acc, c, d);
+    return __builtin_mips_extr_w(acc, 15);
 }
 
 #undef S_MUL_SUB
 static inline int S_MUL_SUB(int a, int b, int c, int d) {
-    int m;
-    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a), "r" ((int)b));
-    asm volatile("msub $ac1, %0, %1" : : "r" ((int)c), "r" ((int)d));
-    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m): "i" (15));
-    return m;
+    long long acc = __builtin_mips_mult(a, b);
+    acc = __builtin_mips_msub(acc, c, d);
+    return __builtin_mips_extr_w(acc, 15);
 }
 
 #undef C_MUL
@@ -58,13 +54,12 @@ static inline int S_MUL_SUB(int a, int b, int c, int d) {
 static inline kiss_fft_cpx C_MUL_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
     kiss_fft_cpx m;
 
-    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a.r), "r" ((int)b.r));
-    asm volatile("msub $ac1, %0, %1" : : "r" ((int)a.i), "r" ((int)b.i));
-    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m.r): "i" (15));
-    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a.r), "r" ((int)b.i));
-    asm volatile("madd $ac1, %0, %1" : : "r" ((int)a.i), "r" ((int)b.r));
-    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m.i): "i" (15));
-
+    long long acc1 = __builtin_mips_mult((int)a.r, (int)b.r);
+    long long acc2 = __builtin_mips_mult((int)a.r, (int)b.i);
+    acc1 = __builtin_mips_msub(acc1, (int)a.i, (int)b.i);
+    acc2 = __builtin_mips_madd(acc2, (int)a.i, (int)b.r);
+    m.r = __builtin_mips_extr_w(acc1, 15);
+    m.i = __builtin_mips_extr_w(acc2, 15);
     return m;
 }
 #undef C_MULC
@@ -72,13 +67,12 @@ static inline kiss_fft_cpx C_MUL_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
 static inline kiss_fft_cpx C_MULC_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
     kiss_fft_cpx m;
 
-    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a.r), "r" ((int)b.r));
-    asm volatile("madd $ac1, %0, %1" : : "r" ((int)a.i), "r" ((int)b.i));
-    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m.r): "i" (15));
-    asm volatile("MULT $ac1, %0, %1" : : "r" ((int)a.i), "r" ((int)b.r));
-    asm volatile("msub $ac1, %0, %1" : : "r" ((int)a.r), "r" ((int)b.i));
-    asm volatile("EXTR.W %0,$ac1, %1" : "=r" (m.i): "i" (15));
-
+    long long acc1 = __builtin_mips_mult((int)a.r, (int)b.r);
+    long long acc2 = __builtin_mips_mult((int)a.i, (int)b.r);
+    acc1 = __builtin_mips_madd(acc1, (int)a.i, (int)b.i);
+    acc2 = __builtin_mips_msub(acc2, (int)a.r, (int)b.i);
+    m.r = __builtin_mips_extr_w(acc1, 15);
+    m.i = __builtin_mips_extr_w(acc2, 15);
     return m;
 }
 

@@ -97,18 +97,17 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
    {
       opus_val16 f;
       opus_val32 res;
+      long long acc;
       f = MULT16_16_Q15(window[i],window[i]);
       x0= x[i-T1+2];
 
-      asm volatile("MULT $ac1, %0, %1" : : "r" ((int)MULT16_16_Q15((Q15ONE-f),g00)), "r" ((int)x[i-T0]));
-
-      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)MULT16_16_Q15((Q15ONE-f),g01)), "r" ((int)ADD32(x[i-T0-1],x[i-T0+1])));
-      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)MULT16_16_Q15((Q15ONE-f),g02)), "r" ((int)ADD32(x[i-T0-2],x[i-T0+2])));
-      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)MULT16_16_Q15(f,g10)), "r" ((int)x2));
-      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)MULT16_16_Q15(f,g11)), "r" ((int)ADD32(x3,x1)));
-      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)MULT16_16_Q15(f,g12)), "r" ((int)ADD32(x4,x0)));
-
-      asm volatile("EXTR.W %0,$ac1, %1" : "=r" (res): "i" (15));
+      acc = __builtin_mips_mult((int)MULT16_16_Q15((Q15ONE-f),g00), (int)x[i-T0]);
+      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15((Q15ONE-f),g01), (int)ADD32(x[i-T0-1],x[i-T0+1]));
+      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15((Q15ONE-f),g02), (int)ADD32(x[i-T0-2],x[i-T0+2]));
+      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15(f,g10), (int)x2);
+      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15(f,g11), (int)ADD32(x3,x1));
+      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15(f,g12), (int)ADD32(x4,x0));
+      res = __builtin_mips_extr_w(acc, 15);
 
       y[i] = x[i] + res;
 
@@ -134,13 +133,14 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
    for (i=overlap;i<N;i++)
    {
       opus_val32 res;
+      long long acc;
       x0=x[i-T1+2];
 
-      asm volatile("MULT $ac1, %0, %1" : : "r" ((int)g10), "r" ((int)x2));
+      acc = __builtin_mips_mult((int)g10, (int)x2);
+      acc = __builtin_mips_madd(acc, (int)g11, (int)ADD32(x3,x1));
+      acc = __builtin_mips_madd(acc, (int)g12, (int)ADD32(x4,x0));
+      res = __builtin_mips_extr_w(acc, 15);
 
-      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)g11), "r" ((int)ADD32(x3,x1)));
-      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)g12), "r" ((int)ADD32(x4,x0)));
-      asm volatile("EXTR.W %0,$ac1, %1" : "=r" (res): "i" (15));
       y[i] = x[i] + res;
       x4=x3;
       x3=x2;
