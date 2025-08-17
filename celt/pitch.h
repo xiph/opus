@@ -42,7 +42,7 @@
 #include "x86/pitch_sse.h"
 #endif
 
-#if defined(MIPSr1_ASM)
+#if defined(FIXED_POINT) && defined(__mips_dsp)
 #include "mips/pitch_mipsr1.h"
 #endif
 
