@@ -64,7 +64,7 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
 }
 
 #define OVERRIDE_renormalise_vector
-void renormalise_vector(celt_norm *X, int N, opus_val16 gain, int arch)
+void renormalise_vector(celt_norm *X, int N, opus_val32 gain, int arch)
 {
    int i;
 #ifdef FIXED_POINT
@@ -102,7 +102,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val16 gain, int arch)
    k = celt_ilog2(E)>>1;
 #endif
    t = VSHR32(E, 2*(k-7));
-   g = MULT16_16_P15(celt_rsqrt_norm(t),gain);
+   g = MULT32_32_Q31(celt_rsqrt_norm(t),gain);
 
    xptr = X;
    for (i=0;i<N;i++)
