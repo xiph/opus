@@ -39,26 +39,22 @@ static inline void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, c
       int N, opus_val32 *xy1, opus_val32 *xy2, int arch)
 {
    int j;
-   opus_val32 xy01=0;
-   opus_val32 xy02=0;
+   long long acc1 = 0;
+   long long acc2 = 0;
 
    (void)arch;
 
-   asm volatile("MULT $ac1, $0, $0");
-   asm volatile("MULT $ac2, $0, $0");
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
-   for (j=0;j<N;j++)
+   for (j=0;j<N;j+=2)
    {
-      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)x[j]), "r" ((int)y01[j]));
-      asm volatile("MADD $ac2, %0, %1" : : "r" ((int)x[j]), "r" ((int)y02[j]));
-      ++j;
-      asm volatile("MADD $ac1, %0, %1" : : "r" ((int)x[j]), "r" ((int)y01[j]));
-      asm volatile("MADD $ac2, %0, %1" : : "r" ((int)x[j]), "r" ((int)y02[j]));
+       acc1 = __builtin_mips_madd(acc1, (int)x[j],   (int)y01[j]);
+       acc2 = __builtin_mips_madd(acc2, (int)x[j],   (int)y02[j]);
+       acc1 = __builtin_mips_madd(acc1, (int)x[j+1], (int)y01[j+1]);
+       acc2 = __builtin_mips_madd(acc2, (int)x[j+1], (int)y02[j+1]);
    }
-   asm volatile ("mflo %0, $ac1": "=r"(xy01));
-   asm volatile ("mflo %0, $ac2": "=r"(xy02));
-   *xy1 = xy01;
-   *xy2 = xy02;
+
+   *xy1 = (opus_val32)acc1;
+   *xy2 = (opus_val32)acc2;
 }
 
 static inline void xcorr_kernel_mips(const opus_val16 * x,
