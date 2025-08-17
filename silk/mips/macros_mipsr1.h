@@ -78,9 +78,9 @@ static inline int silk_SMLAWW(int a, int b, int c)
 static inline opus_int32 silk_CLZ16(opus_int16 in16)
 {
     int re32;
-    opus_int32 in32 = (opus_int32 )in16;
+    opus_uint32 in32 = (opus_uint16)in16;
     re32 = mips_clz(in32);
-    re32-=16;
+    re32 -= 16;
     return re32;
 }
 
