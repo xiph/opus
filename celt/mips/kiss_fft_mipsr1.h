@@ -30,19 +30,14 @@
 #error "This file should only be included from _kiss_fft_guts.h"
 #endif
 
-#ifdef FIXED_POINT
 
-#define S_MUL_ADD(a, b, c, d) (S_MUL(a,b)+S_MUL(c,d))
-#define S_MUL_SUB(a, b, c, d) (S_MUL(a,b)-S_MUL(c,d))
 
-#undef S_MUL_ADD
 static inline int S_MUL_ADD(int a, int b, int c, int d) {
     long long acc = __builtin_mips_mult(a, b);
     acc = __builtin_mips_madd(acc, c, d);
     return __builtin_mips_extr_w(acc, 15);
 }
 
-#undef S_MUL_SUB
 static inline int S_MUL_SUB(int a, int b, int c, int d) {
     long long acc = __builtin_mips_mult(a, b);
     acc = __builtin_mips_msub(acc, c, d);
@@ -76,7 +71,6 @@ static inline kiss_fft_cpx C_MULC_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
     return m;
 }
 
-#endif /* FIXED_POINT */
 
 #define OVERRIDE_kf_bfly5
 static void kf_bfly5(
