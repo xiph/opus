@@ -4,7 +4,7 @@ name: DRED
 on: [push, pull_request]
 
 env:
-  NDK_VERSION: 27.2.12479018
+  NDK_VERSION: 27.3.13750724
 
 jobs:
   CMakeBuild:
