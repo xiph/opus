@@ -30,6 +30,7 @@
 #error "This file should only be included from _kiss_fft_guts.h"
 #endif
 
+#if defined(__mips_dsp)
 
 
 static inline int S_MUL_ADD(int a, int b, int c, int d) {
@@ -71,8 +72,60 @@ static inline kiss_fft_cpx C_MULC_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
     return m;
 }
 
+#define OVERRIDE_kf_bfly5
+
+/* MIPS32r1 to MIPS32r5 */
+#elif __mips == 32 && defined (__mips_isa_rev) && __mips_isa_rev < 6
+
+static inline int S_MUL_ADD(int a, int b, int c, int d) {
+    long long acc;
+
+    asm volatile ("mult %[a], %[b]  \n"
+                  "madd %[c], %[d]  \n"
+        : "=x"(acc)
+        : [a] "r"(a), [b] "r"(b), [c] "r"(c), [d] "r"(d)
+        :
+    );
+    return (int)(acc >> 15);
+}
+
+static inline int S_MUL_SUB(int a, int b, int c, int d) {
+    long long acc;
+
+    asm volatile ("mult %[a], %[b]  \n"
+                  "msub %[c], %[d]  \n"
+        : "=x"(acc)
+        : [a] "r"(a), [b] "r"(b), [c] "r"(c), [d] "r"(d)
+        :
+    );
+    return (int)(acc >> 15);
+}
+
+#undef C_MUL
+#   define C_MUL(m,a,b) (m=C_MUL_fun(a,b))
+static inline kiss_fft_cpx C_MUL_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
+    kiss_fft_cpx m;
+
+    m.r = S_MUL_SUB((int)a.r, (int)b.r, (int)a.i, (int)b.i);
+    m.i = S_MUL_ADD((int)a.r, (int)b.i, (int)a.i, (int)b.r);
+    return m;
+}
+
+#undef C_MULC
+#   define C_MULC(m,a,b) (m=C_MULC_fun(a,b))
+static inline kiss_fft_cpx C_MULC_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
+    kiss_fft_cpx m;
+
+    m.r = S_MUL_ADD((int)a.r, (int)b.r, (int)a.i, (int)b.i);
+    m.i = S_MUL_ADD((int)a.i, (int)b.r, (int)a.r, (int)b.i);
+    return m;
+}
 
 #define OVERRIDE_kf_bfly5
+
+#endif /* __mips_dsp or MIPS32r1-r5 */
+
+#ifdef OVERRIDE_kf_bfly5
 static void kf_bfly5(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
@@ -150,6 +203,7 @@ static void kf_bfly5(
       }
    }
 }
+#endif /* OVERRIDE_kf_bfly5 */
 
 
 #endif /* KISS_FFT_MIPSR1_H */
