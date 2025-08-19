@@ -338,7 +338,6 @@ endif
 EXTRA_DIST = opus.pc.in \
              opus-uninstalled.pc.in \
              opus.m4 \
-             Makefile.mips \
              Makefile.unix \
              CMakeLists.txt \
              cmake/CFeatureCheck.cmake \
