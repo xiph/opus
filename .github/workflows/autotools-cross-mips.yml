@@ -1,0 +1,75 @@
+name: Autotools-cross-MIPS
+
+on: [push, pull_request]
+
+jobs:
+
+ AutoMakeBuild:
+    name: AutoMake/${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "MIPS32/GCC",
+            os: ubuntu-latest,
+            vcpu: 24Kf,
+            toolchain-triple: mipsel-unknown-linux-musl,
+            buildconfig: ,
+            cflags: -mips32 -mtune=24kf,
+          }
+        - {
+            name: "MIPS32/GCC/Fixed",
+            os: ubuntu-latest,
+            vcpu: 24Kc,
+            toolchain-triple: mipsel-unknown-linux-muslsf,
+            buildconfig: --enable-fixed-point,
+            cflags: -mips32 -mtune=24kc,
+          }
+        - {
+            name: "MIPS32/GCC/Fixed/DSP",
+            os: ubuntu-latest,
+            vcpu: 24KEc,
+            toolchain-triple: mipsel-unknown-linux-muslsf,
+            buildconfig: --enable-fixed-point,
+            cflags: -mips32r2 -mdsp -mtune=24kec,
+          }
+        - {
+            name: "MIPS64/GCC",
+            os: ubuntu-latest,
+            vcpu: MIPS64R2-generic,
+            toolchain-triple: mips64el-unknown-linux-musl,
+            buildconfig: ,
+            cflags: -mips64,
+          }
+        - {
+            name: "MIPS64/GCC/Fixed",
+            os: ubuntu-latest,
+            vcpu: MIPS64R2-generic,
+            toolchain-triple: mips64el-unknown-linux-musl,
+            buildconfig: --enable-fixed-point,
+            cflags: -mips64,
+          }
+        - {
+            name: "MIPS64/GCC/Fixed/DSP",
+            os: ubuntu-latest,
+            vcpu: mips64dspr2,
+            toolchain-triple: mips64el-unknown-linux-musl,
+            buildconfig: --enable-fixed-point,
+            cflags: -mips64r2 -mdsp,
+          }
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install QEMU
+        run:  sudo apt-get update && sudo apt-get install -y qemu-user
+      - name: Install prebuilt toolchain
+        run:  wget https://github.com/cross-tools/musl-cross/releases/download/20250815/${{ matrix.config.toolchain-triple }}.tar.xz -O toolchain.tar.xz  && sudo tar -C /opt/ -xf toolchain.tar.xz
+      - name: Autogen
+        run:  ./autogen.sh
+      - name: Configure
+        run:  CC=/opt/${{ matrix.config.toolchain-triple }}/bin/${{ matrix.config.toolchain-triple }}-gcc CFLAGS="${{ matrix.config.cflags }} -g -O2 -fvisibility=hidden -D_FORTIFY_SOURCE=2 -W -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes" ./configure --disable-shared --enable-assertions --enable-custom-modes --enable-check-asm --host=${{ matrix.config.toolchain-triple }} ${{ matrix.config.buildconfig }}
+      - name: Build
+        run:  make -j 2
+      - name: Test
+        run:  QEMU_LD_PREFIX=/opt/${{ matrix.config.toolchain-triple }}/${{ matrix.config.toolchain-triple }}/sysroot/ QEMU_CPU=${{ matrix.config.vcpu }} make check -j 2
