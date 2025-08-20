@@ -39,7 +39,7 @@
 #include "rate.h"
 #include "pitch.h"
 
-#if defined(FIXED_POINT) && defined(__mips_dsp)
+#if defined(FIXED_POINT) && defined(__mips_dsp) && __mips == 32
 #include "mips/vq_mipsr1.h"
 #endif
 
