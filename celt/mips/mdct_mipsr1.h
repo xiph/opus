@@ -55,6 +55,7 @@
 #include "mathops.h"
 #include "stack_alloc.h"
 
+#if defined (__mips_dsp)
 static inline int S_MUL_ADD_PSR(int a, int b, int c, int d, int shift) {
     long long acc = __builtin_mips_mult(a, b);
     acc = __builtin_mips_madd(acc, c, d);
@@ -67,8 +68,45 @@ static inline int S_MUL_SUB_PSR(int a, int b, int c, int d, int shift) {
     return __builtin_mips_extr_w(acc, 15+shift);
 }
 
-/* Forward MDCT trashes the input array */
 #define OVERRIDE_clt_mdct_forward
+#define OVERRIDE_clt_mdct_backward
+
+#elif defined(__mips_isa_rev) && __mips_isa_rev < 6
+
+static inline int S_MUL_ADD_PSR(int a, int b, int c, int d, int shift) {
+    long long acc;
+
+    asm volatile (
+            "mult %[a], %[b]  \n"
+            "madd %[c], %[d]  \n"
+        : [acc] "=x"(acc)
+        : [a] "r"(a), [b] "r"(b), [c] "r"(c), [d] "r"(d)
+        :
+    );
+    return (int)(acc >> (15 + shift));
+}
+
+static inline int S_MUL_SUB_PSR(int a, int b, int c, int d, int shift) {
+    long long acc;
+
+    asm volatile (
+            "mult %[a], %[b]  \n"
+            "msub %[c], %[d]  \n"
+        : [acc] "=x"(acc)
+        : [a] "r"(a), [b] "r"(b), [c] "r"(c), [d] "r"(d)
+        :
+    );
+    return (int)(acc >> (15 + shift));
+}
+
+#define OVERRIDE_clt_mdct_forward
+#define OVERRIDE_clt_mdct_backward
+
+#endif
+
+#if defined (OVERRIDE_clt_mdct_forward)
+
+/* Forward MDCT trashes the input array */
 void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
       const celt_coef *window, int overlap, int shift, int stride, int arch)
 {
@@ -213,7 +251,10 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    RESTORE_STACK;
 }
 
-#define OVERRIDE_clt_mdct_backward
+#endif /* OVERRIDE_clt_mdct_forward */
+
+#if defined(OVERRIDE_clt_mdct_backward)
+
 void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
       const celt_coef * OPUS_RESTRICT window, int overlap, int shift, int stride, int arch)
 {
@@ -336,4 +377,7 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
       }
    }
 }
+
+#endif /* OVERRIDE_clt_mdct_backward */
+
 #endif /* MDCT_MIPSR1_H__ */

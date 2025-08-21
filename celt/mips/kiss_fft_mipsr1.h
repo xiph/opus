@@ -32,17 +32,14 @@
 
 #ifdef FIXED_POINT
 
-#define S_MUL_ADD(a, b, c, d) (S_MUL(a,b)+S_MUL(c,d))
-#define S_MUL_SUB(a, b, c, d) (S_MUL(a,b)-S_MUL(c,d))
+#if __mips == 32 && defined (__mips_dsp)
 
-#undef S_MUL_ADD
 static inline int S_MUL_ADD(int a, int b, int c, int d) {
     long long acc = __builtin_mips_mult(a, b);
     acc = __builtin_mips_madd(acc, c, d);
     return __builtin_mips_extr_w(acc, 15);
 }
 
-#undef S_MUL_SUB
 static inline int S_MUL_SUB(int a, int b, int c, int d) {
     long long acc = __builtin_mips_mult(a, b);
     acc = __builtin_mips_msub(acc, c, d);
@@ -76,9 +73,66 @@ static inline kiss_fft_cpx C_MULC_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
     return m;
 }
 
-#endif /* FIXED_POINT */
+#define OVERRIDE_kf_bfly5
+
+#elif __mips == 32 && defined(__mips_isa_rev) && __mips_isa_rev < 6
+
+static inline int S_MUL_ADD(int a, int b, int c, int d) {
+    long long acc;
+
+    asm volatile (
+            "mult %[a], %[b]  \n"
+            "madd %[c], %[d]  \n"
+        : [acc] "=x"(acc)
+        : [a] "r"(a), [b] "r"(b), [c] "r"(c), [d] "r"(d)
+        :
+    );
+    return (int)(acc >> 15);
+}
+
+static inline int S_MUL_SUB(int a, int b, int c, int d) {
+    long long acc;
+
+    asm volatile (
+            "mult %[a], %[b]  \n"
+            "msub %[c], %[d]  \n"
+        : [acc] "=x"(acc)
+        : [a] "r"(a), [b] "r"(b), [c] "r"(c), [d] "r"(d)
+        :
+    );
+    return (int)(acc >> 15);
+}
+
+#undef C_MUL
+#   define C_MUL(m,a,b) (m=C_MUL_fun(a,b))
+static inline kiss_fft_cpx C_MUL_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
+    kiss_fft_cpx m;
+
+    m.r = S_MUL_SUB(a.r, b.r, a.i, b.i);
+    m.i = S_MUL_ADD(a.r, b.i, a.i, b.r);
+
+    return m;
+}
+
+#undef C_MULC
+#   define C_MULC(m,a,b) (m=C_MULC_fun(a,b))
+static inline kiss_fft_cpx C_MULC_fun(kiss_fft_cpx a, kiss_twiddle_cpx b) {
+    kiss_fft_cpx m;
+
+    m.r = S_MUL_ADD(a.r, b.r, a.i, b.i);
+    m.i = S_MUL_SUB(a.i, b.r, a.r, b.i);
+
+    return m;
+}
 
 #define OVERRIDE_kf_bfly5
+
+#endif
+
+#endif /* FIXED_POINT */
+
+#if defined(OVERRIDE_kf_bfly5)
+
 static void kf_bfly5(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
@@ -157,5 +211,6 @@ static void kf_bfly5(
    }
 }
 
+#endif /* defined(OVERRIDE_kf_bfly5) */
 
 #endif /* KISS_FFT_MIPSR1_H */
