@@ -33,6 +33,7 @@
 #ifndef CELT_FIXED_GENERIC_MIPSR1_H
 #define CELT_FIXED_GENERIC_MIPSR1_H
 
+#if defined (__mips_dsp) && __mips == 32
 
 #undef MULT16_32_Q16
 static inline int MULT16_32_Q16(int a, int b)
@@ -74,5 +75,12 @@ static inline int MULT16_16_P15(int a, int b)
     int r = a * b;
     return __builtin_mips_shra_r_w(r, 15);
 }
+
+#elif __mips == 32
+
+#undef MULT16_32_Q16
+#define MULT16_32_Q16(a,b) ((opus_val32)SHR((opus_int64)(SHL32((a), 16))*(b),32))
+
+#endif
 
 #endif /* CELT_FIXED_GENERIC_MIPSR1_H */
