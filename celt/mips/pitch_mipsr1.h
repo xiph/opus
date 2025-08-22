@@ -40,6 +40,7 @@
 #define MIPS_MAC(acc,a,b) \
     __builtin_mips_madd((acc), (int)(a), (int)(b))
 
+#define OVERRIDE_CELT_INNER_PROD
 #define OVERRIDE_DUAL_INNER_PROD
 #define OVERRIDE_XCORR_KERNEL
 
@@ -49,11 +50,50 @@
 #define accumulator_t opus_int32
 #define MIPS_MAC MAC16_16
 
+#define OVERRIDE_CELT_INNER_PROD
 #define OVERRIDE_DUAL_INNER_PROD
 #define OVERRIDE_XCORR_KERNEL
 
 #endif /* any other MIPS */
 
+
+#if defined(OVERRIDE_CELT_INNER_PROD)
+static OPUS_INLINE opus_val32 celt_inner_prod(const opus_val16 *x,
+      const opus_val16 *y, int N, int arch)
+{
+   int j;
+   accumulator_t acc = 0;
+
+   (void)arch;
+
+   for (j = 0; j < N - 3; j += 4)
+   {
+      acc = MIPS_MAC(acc, x[j],   y[j]);
+      acc = MIPS_MAC(acc, x[j+1], y[j+1]);
+      acc = MIPS_MAC(acc, x[j+2], y[j+2]);
+      acc = MIPS_MAC(acc, x[j+3], y[j+3]);
+   }
+
+   switch (N & 3) {
+   case 3:
+      acc = MIPS_MAC(acc, x[j],   y[j]);
+      acc = MIPS_MAC(acc, x[j+1], y[j+1]);
+      acc = MIPS_MAC(acc, x[j+2], y[j+2]);
+      break;
+   case 2:
+      acc = MIPS_MAC(acc, x[j],   y[j]);
+      acc = MIPS_MAC(acc, x[j+1], y[j+1]);
+      break;
+   case 1:
+      acc = MIPS_MAC(acc, x[j],   y[j]);
+      break;
+   case 0:
+      break;
+   }
+
+   return (opus_val32)acc;
+}
+#endif /* OVERRIDE_CELT_INNER_PROD */
 
 #if defined(OVERRIDE_DUAL_INNER_PROD)
 static inline void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
