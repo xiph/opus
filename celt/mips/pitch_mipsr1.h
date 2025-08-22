@@ -34,28 +34,63 @@
 #ifndef PITCH_MIPSR1_H
 #define PITCH_MIPSR1_H
 
+#if defined (__mips_dsp) && __mips == 32
+
+#define accumulator_t opus_int64
+#define MIPS_MAC(acc,a,b) \
+    __builtin_mips_madd((acc), (int)(a), (int)(b))
+
 #define OVERRIDE_DUAL_INNER_PROD
+#define OVERRIDE_XCORR_KERNEL
+
+#else /* any other MIPS */
+
+/* using madd is slower due to single accumulator */
+#define accumulator_t opus_int32
+#define MIPS_MAC MAC16_16
+
+#define OVERRIDE_DUAL_INNER_PROD
+#define OVERRIDE_XCORR_KERNEL
+
+#endif /* any other MIPS */
+
+
+#if defined(OVERRIDE_DUAL_INNER_PROD)
 static inline void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, const opus_val16 *y02,
       int N, opus_val32 *xy1, opus_val32 *xy2, int arch)
 {
    int j;
-   long long acc1 = 0;
-   long long acc2 = 0;
+   accumulator_t acc1 = 0;
+   accumulator_t acc2 = 0;
 
    (void)arch;
 
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
-   for (j=0;j<N;j+=2)
+   for (j = 0; j < N - 3; j += 4)
    {
-       acc1 = __builtin_mips_madd(acc1, (int)x[j],   (int)y01[j]);
-       acc2 = __builtin_mips_madd(acc2, (int)x[j],   (int)y02[j]);
-       acc1 = __builtin_mips_madd(acc1, (int)x[j+1], (int)y01[j+1]);
-       acc2 = __builtin_mips_madd(acc2, (int)x[j+1], (int)y02[j+1]);
+      acc1 = MIPS_MAC(acc1, x[j],   y01[j]);
+      acc2 = MIPS_MAC(acc2, x[j],   y02[j]);
+      acc1 = MIPS_MAC(acc1, x[j+1], y01[j+1]);
+      acc2 = MIPS_MAC(acc2, x[j+1], y02[j+1]);
+      acc1 = MIPS_MAC(acc1, x[j+2], y01[j+2]);
+      acc2 = MIPS_MAC(acc2, x[j+2], y02[j+2]);
+      acc1 = MIPS_MAC(acc1, x[j+3], y01[j+3]);
+      acc2 = MIPS_MAC(acc2, x[j+3], y02[j+3]);
+   }
+
+   if (j < N) {
+      acc1 = MIPS_MAC(acc1, x[j],   y01[j]);
+      acc2 = MIPS_MAC(acc2, x[j],   y02[j]);
+      acc1 = MIPS_MAC(acc1, x[j+1], y01[j+1]);
+      acc2 = MIPS_MAC(acc2, x[j+1], y02[j+1]);
    }
 
    *xy1 = (opus_val32)acc1;
    *xy2 = (opus_val32)acc2;
 }
+#endif /* OVERRIDE_DUAL_INNER_PROD */
+
+#if defined(OVERRIDE_XCORR_KERNEL)
 
 static inline void xcorr_kernel_mips(const opus_val16 * x,
       const opus_val16 * y, opus_val32 sum[4], int len)
@@ -63,13 +98,12 @@ static inline void xcorr_kernel_mips(const opus_val16 * x,
    int j;
    opus_val16 y_0, y_1, y_2, y_3;
 
-    opus_int64 sum_0, sum_1, sum_2, sum_3;
-    sum_0 =  (opus_int64)sum[0];
-    sum_1 =  (opus_int64)sum[1];
-    sum_2 =  (opus_int64)sum[2];
-    sum_3 =  (opus_int64)sum[3];
+    accumulator_t sum_0, sum_1, sum_2, sum_3;
+    sum_0 =  (accumulator_t)sum[0];
+    sum_1 =  (accumulator_t)sum[1];
+    sum_2 =  (accumulator_t)sum[2];
+    sum_3 =  (accumulator_t)sum[3];
 
-    y_3=0; /* gcc doesn't realize that y_3 can't be used uninitialized */
     y_0=*y++;
     y_1=*y++;
     y_2=*y++;
@@ -79,69 +113,73 @@ static inline void xcorr_kernel_mips(const opus_val16 * x,
         tmp = *x++;
         y_3=*y++;
 
-        sum_0 = __builtin_mips_madd( sum_0, tmp, y_0);
-        sum_1 = __builtin_mips_madd( sum_1, tmp, y_1);
-        sum_2 = __builtin_mips_madd( sum_2, tmp, y_2);
-        sum_3 = __builtin_mips_madd( sum_3, tmp, y_3);
+        sum_0 = MIPS_MAC(sum_0, tmp, y_0);
+        sum_1 = MIPS_MAC(sum_1, tmp, y_1);
+        sum_2 = MIPS_MAC(sum_2, tmp, y_2);
+        sum_3 = MIPS_MAC(sum_3, tmp, y_3);
 
         tmp=*x++;
         y_0=*y++;
 
-        sum_0 = __builtin_mips_madd( sum_0, tmp, y_1 );
-        sum_1 = __builtin_mips_madd( sum_1, tmp, y_2 );
-        sum_2 = __builtin_mips_madd( sum_2, tmp, y_3);
-        sum_3 = __builtin_mips_madd( sum_3, tmp, y_0);
+        sum_0 = MIPS_MAC(sum_0, tmp, y_1);
+        sum_1 = MIPS_MAC(sum_1, tmp, y_2);
+        sum_2 = MIPS_MAC(sum_2, tmp, y_3);
+        sum_3 = MIPS_MAC(sum_3, tmp, y_0);
 
        tmp=*x++;
        y_1=*y++;
 
-       sum_0 = __builtin_mips_madd( sum_0, tmp, y_2 );
-       sum_1 = __builtin_mips_madd( sum_1, tmp, y_3 );
-       sum_2 = __builtin_mips_madd( sum_2, tmp, y_0);
-       sum_3 = __builtin_mips_madd( sum_3, tmp, y_1);
+       sum_0 = MIPS_MAC(sum_0, tmp, y_2);
+       sum_1 = MIPS_MAC(sum_1, tmp, y_3);
+       sum_2 = MIPS_MAC(sum_2, tmp, y_0);
+       sum_3 = MIPS_MAC(sum_3, tmp, y_1);
 
 
       tmp=*x++;
       y_2=*y++;
 
-       sum_0 = __builtin_mips_madd( sum_0, tmp, y_3 );
-       sum_1 = __builtin_mips_madd( sum_1, tmp, y_0 );
-       sum_2 = __builtin_mips_madd( sum_2, tmp, y_1);
-       sum_3 = __builtin_mips_madd( sum_3, tmp, y_2);
-
-   }
-   if (j++<len)
-   {
-      opus_val16 tmp = *x++;
-      y_3=*y++;
-
-       sum_0 = __builtin_mips_madd( sum_0, tmp, y_0 );
-       sum_1 = __builtin_mips_madd( sum_1, tmp, y_1 );
-       sum_2 = __builtin_mips_madd( sum_2, tmp, y_2);
-       sum_3 = __builtin_mips_madd( sum_3, tmp, y_3);
+      sum_0 = MIPS_MAC(sum_0, tmp, y_3);
+      sum_1 = MIPS_MAC(sum_1, tmp, y_0);
+      sum_2 = MIPS_MAC(sum_2, tmp, y_1);
+      sum_3 = MIPS_MAC(sum_3, tmp, y_2);
    }
 
-   if (j++<len)
-   {
-      opus_val16 tmp=*x++;
-      y_0=*y++;
+   switch (len & 3) {
+   case 3:
+      sum_0 = MIPS_MAC(sum_0, x[2], y_2);
+      sum_1 = MIPS_MAC(sum_1, x[2], y[0]);
+      sum_2 = MIPS_MAC(sum_2, x[2], y[1]);
+      sum_3 = MIPS_MAC(sum_3, x[2], y[2]);
 
-      sum_0 = __builtin_mips_madd( sum_0, tmp, y_1 );
-      sum_1 = __builtin_mips_madd( sum_1, tmp, y_2 );
-      sum_2 = __builtin_mips_madd( sum_2, tmp, y_3);
-      sum_3 = __builtin_mips_madd( sum_3, tmp, y_0);
-   }
+      sum_0 = MIPS_MAC(sum_0, x[1], y_1);
+      sum_1 = MIPS_MAC(sum_1, x[1], y_2);
+      sum_2 = MIPS_MAC(sum_2, x[1], y[0]);
+      sum_3 = MIPS_MAC(sum_3, x[1], y[1]);
 
-   if (j<len)
-   {
-      opus_val16 tmp=*x++;
-      y_1=*y++;
+      sum_0 = MIPS_MAC(sum_0, x[0], y_0);
+      sum_1 = MIPS_MAC(sum_1, x[0], y_1);
+      sum_2 = MIPS_MAC(sum_2, x[0], y_2);
+      sum_3 = MIPS_MAC(sum_3, x[0], y[0]);
+      break;
+   case 2:
+      sum_0 = MIPS_MAC(sum_0, x[1], y_1);
+      sum_1 = MIPS_MAC(sum_1, x[1], y_2);
+      sum_2 = MIPS_MAC(sum_2, x[1], y[0]);
+      sum_3 = MIPS_MAC(sum_3, x[1], y[1]);
 
-       sum_0 = __builtin_mips_madd( sum_0, tmp, y_2 );
-       sum_1 = __builtin_mips_madd( sum_1, tmp, y_3 );
-       sum_2 = __builtin_mips_madd( sum_2, tmp, y_0);
-       sum_3 = __builtin_mips_madd( sum_3, tmp, y_1);
-
+      sum_0 = MIPS_MAC(sum_0, x[0], y_0);
+      sum_1 = MIPS_MAC(sum_1, x[0], y_1);
+      sum_2 = MIPS_MAC(sum_2, x[0], y_2);
+      sum_3 = MIPS_MAC(sum_3, x[0], y[0]);
+      break;
+   case 1:
+      sum_0 = MIPS_MAC(sum_0, x[0], y_0);
+      sum_1 = MIPS_MAC(sum_1, x[0], y_1);
+      sum_2 = MIPS_MAC(sum_2, x[0], y_2);
+      sum_3 = MIPS_MAC(sum_3, x[0], y[0]);
+      break;
+   case 0:
+      break;
    }
 
    sum[0] = (opus_val32)sum_0;
@@ -150,8 +188,12 @@ static inline void xcorr_kernel_mips(const opus_val16 * x,
    sum[3] = (opus_val32)sum_3;
 }
 
-#define OVERRIDE_XCORR_KERNEL
 #define xcorr_kernel(x, y, sum, len, arch) \
     ((void)(arch), xcorr_kernel_mips(x, y, sum, len))
+
+#undef accumulator_t
+#undef MIPS_MAC
+
+#endif /* OVERRIDE_XCORR_KERNEL */
 
 #endif /* PITCH_MIPSR1_H */
