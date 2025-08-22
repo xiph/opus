@@ -33,34 +33,6 @@
 #ifndef CELT_FIXED_GENERIC_MIPSR1_H
 #define CELT_FIXED_GENERIC_MIPSR1_H
 
-#undef MULT16_32_Q15_ADD
-static inline int MULT16_32_Q15_ADD(int a, int b, int c, int d) {
-    long long acc = __builtin_mips_mult(a, b);
-    acc = __builtin_mips_madd(acc, c, d);
-    return __builtin_mips_extr_w(acc, 15);
-}
-
-#undef MULT16_32_Q15_SUB
-static inline int MULT16_32_Q15_SUB(int a, int b, int c, int d) {
-    long long acc = __builtin_mips_mult(a, b);
-    acc = __builtin_mips_msub(acc, c, d);
-    return __builtin_mips_extr_w(acc, 15);
-}
-
-#undef MULT16_16_Q15_ADD
-static inline int MULT16_16_Q15_ADD(int a, int b, int c, int d) {
-    long long acc = __builtin_mips_mult(a, b);
-    acc = __builtin_mips_madd(acc, c, d);
-    return __builtin_mips_extr_w(acc, 15);
-}
-
-#undef MULT16_16_Q15_SUB
-static inline int MULT16_16_Q15_SUB(int a, int b, int c, int d) {
-    long long acc = __builtin_mips_mult(a, b);
-    acc = __builtin_mips_msub(acc, c, d);
-    return __builtin_mips_extr_w(acc, 15);
-}
-
 
 #undef MULT16_32_Q16
 static inline int MULT16_32_Q16(int a, int b)
