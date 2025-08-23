@@ -34,11 +34,16 @@
 #ifndef PITCH_MIPSR1_H
 #define PITCH_MIPSR1_H
 
+#include "fixed_generic_mipsr1.h"
+
 #if defined (__mips_dsp) && __mips == 32
 
 #define accumulator_t opus_int64
 #define MIPS_MAC(acc,a,b) \
     __builtin_mips_madd((acc), (int)(a), (int)(b))
+
+#define MIPS_MAC16x16_2X(acc,a2x,b2x) \
+    __builtin_mips_dpaq_s_w_ph((acc), (a2x), (b2x))
 
 #define OVERRIDE_CELT_INNER_PROD
 #define OVERRIDE_DUAL_INNER_PROD
@@ -58,14 +63,72 @@
 
 
 #if defined(OVERRIDE_CELT_INNER_PROD)
+
 static OPUS_INLINE opus_val32 celt_inner_prod(const opus_val16 *x,
       const opus_val16 *y, int N, int arch)
 {
    int j;
    accumulator_t acc = 0;
 
-   (void)arch;
+#if defined (MIPS_MAC16x16_2X)
+   const v2i16 *x2x;
+   const v2i16 *y2x;
+   int loops;
 
+   /* misaligned */
+   if (((long)x | (long)y) & 3)
+       goto fallback;
+
+   x2x = __builtin_assume_aligned(x, 4);
+   y2x = __builtin_assume_aligned(y, 4);
+   loops = N / 8;
+   for (j = 0; j < loops; j++)
+   {
+      acc = MIPS_MAC16x16_2X(acc, x2x[0], y2x[0]);
+      acc = MIPS_MAC16x16_2X(acc, x2x[1], y2x[1]);
+      acc = MIPS_MAC16x16_2X(acc, x2x[2], y2x[2]);
+      acc = MIPS_MAC16x16_2X(acc, x2x[3], y2x[3]);
+      x2x += 4; y2x += 4;
+   }
+
+   switch (N & 7) {
+   case 7:
+      acc = MIPS_MAC16x16_2X(acc, x2x[0], y2x[0]);
+      acc = MIPS_MAC16x16_2X(acc, x2x[1], y2x[1]);
+      acc = MIPS_MAC16x16_2X(acc, x2x[2], y2x[2]);
+      acc = MIPS_MAC(acc, x[N-1], y[N-1]);
+      break;
+   case 6:
+      acc = MIPS_MAC16x16_2X(acc, x2x[0], y2x[0]);
+      acc = MIPS_MAC16x16_2X(acc, x2x[1], y2x[1]);
+      acc = MIPS_MAC16x16_2X(acc, x2x[2], y2x[2]);
+      break;
+   case 5:
+      acc = MIPS_MAC16x16_2X(acc, x2x[0], y2x[0]);
+      acc = MIPS_MAC16x16_2X(acc, x2x[1], y2x[1]);
+      acc = MIPS_MAC(acc, x[N-1], y[N-1]);
+      break;
+   case 4:
+      acc = MIPS_MAC16x16_2X(acc, x2x[0], y2x[0]);
+      acc = MIPS_MAC16x16_2X(acc, x2x[1], y2x[1]);
+      break;
+   case 3:
+      acc = MIPS_MAC16x16_2X(acc, x2x[0], y2x[0]);
+      acc = MIPS_MAC(acc, x[N-1], y[N-1]);
+      break;
+   case 2:
+      acc = MIPS_MAC16x16_2X(acc, x2x[0], y2x[0]);
+      break;
+   case 1:
+      acc = MIPS_MAC(acc, x[N-1], y[N-1]);
+      break;
+   case 0:
+      break;
+   }
+   return __builtin_mips_extr_w(acc, 1);
+
+fallback:
+#endif
    for (j = 0; j < N - 3; j += 4)
    {
       acc = MIPS_MAC(acc, x[j],   y[j]);
@@ -91,6 +154,8 @@ static OPUS_INLINE opus_val32 celt_inner_prod(const opus_val16 *x,
       break;
    }
 
+   (void)arch;
+
    return (opus_val32)acc;
 }
 #endif /* OVERRIDE_CELT_INNER_PROD */
@@ -103,8 +168,61 @@ static inline void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, c
    accumulator_t acc1 = 0;
    accumulator_t acc2 = 0;
 
-   (void)arch;
+#if defined (MIPS_MAC16x16_2X)
+   const v2i16 *x2x;
+   const v2i16 *y01_2x;
+   const v2i16 *y02_2x;
 
+   /* misaligned */
+   if (((long)x | (long)y01 | (long)y02) & 3)
+       goto fallback;
+
+   x2x = __builtin_assume_aligned(x, 4);
+   y01_2x = __builtin_assume_aligned(y01, 4);
+   y02_2x = __builtin_assume_aligned(y02, 4);
+   N /= 2;
+
+   for (j = 0; j < N - 3; j += 4)
+   {
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j],   y01_2x[j]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j],   y02_2x[j]);
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j+1], y01_2x[j+1]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j+1], y02_2x[j+1]);
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j+2], y01_2x[j+2]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j+2], y02_2x[j+2]);
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j+3], y01_2x[j+3]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j+3], y02_2x[j+3]);
+   }
+
+   switch (N & 3) {
+   case 3:
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j],   y01_2x[j]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j],   y02_2x[j]);
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j+1], y01_2x[j+1]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j+1], y02_2x[j+1]);
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j+2], y01_2x[j+2]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j+2], y02_2x[j+2]);
+      break;
+   case 2:
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j],   y01_2x[j]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j],   y02_2x[j]);
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j+1], y01_2x[j+1]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j+1], y02_2x[j+1]);
+      break;
+   case 1:
+      acc1 = MIPS_MAC16x16_2X(acc1, x2x[j],   y01_2x[j]);
+      acc2 = MIPS_MAC16x16_2X(acc2, x2x[j],   y02_2x[j]);
+      break;
+   case 0:
+      break;
+   }
+
+   *xy1 = __builtin_mips_extr_w(acc1, 1);
+   *xy2 = __builtin_mips_extr_w(acc2, 1);
+   return;
+
+fallback:
+#endif
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
    for (j = 0; j < N - 3; j += 4)
    {
@@ -124,6 +242,8 @@ static inline void dual_inner_prod(const opus_val16 *x, const opus_val16 *y01, c
       acc1 = MIPS_MAC(acc1, x[j+1], y01[j+1]);
       acc2 = MIPS_MAC(acc2, x[j+1], y02[j+1]);
    }
+
+   (void)arch;
 
    *xy1 = (opus_val32)acc1;
    *xy2 = (opus_val32)acc2;
