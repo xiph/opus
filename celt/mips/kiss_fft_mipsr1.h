@@ -213,4 +213,59 @@ static void kf_bfly5(
 
 #endif /* defined(OVERRIDE_kf_bfly5) */
 
+#define OVERRIDE_fft_downshift
+/* Just unroll tight loop, should be ok for any mips */
+static void fft_downshift(kiss_fft_cpx *x, int N, int *total, int step) {
+    int shift;
+    shift = IMIN(step, *total);
+    *total -= shift;
+    if (shift == 1) {
+        int i;
+        for (i = 0; i < N - 1; i += 2) {
+            x[i].r   = SHR32(x[i].r,   1);
+            x[i].i   = SHR32(x[i].i,   1);
+            x[i+1].r = SHR32(x[i+1].r, 1);
+            x[i+1].i = SHR32(x[i+1].i, 1);
+        }
+        if (N & 1) {
+            x[i].r = SHR32(x[i].r, 1);
+            x[i].i = SHR32(x[i].i, 1);
+        }
+    } else if (shift > 0) {
+        int i;
+        for (i = 0; i < N - 3; i += 4) {
+            x[i].r   = PSHR32(x[i].r,   shift);
+            x[i].i   = PSHR32(x[i].i,   shift);
+            x[i+1].r = PSHR32(x[i+1].r, shift);
+            x[i+1].i = PSHR32(x[i+1].i, shift);
+            x[i+2].r = PSHR32(x[i+2].r, shift);
+            x[i+2].i = PSHR32(x[i+2].i, shift);
+            x[i+3].r = PSHR32(x[i+3].r, shift);
+            x[i+3].i = PSHR32(x[i+3].i, shift);
+        }
+        switch (N & 3) {
+        case 3:
+            x[i].r   = PSHR32(x[i].r,   shift);
+            x[i].i   = PSHR32(x[i].i,   shift);
+            x[i+1].r = PSHR32(x[i+1].r, shift);
+            x[i+1].i = PSHR32(x[i+1].i, shift);
+            x[i+2].r = PSHR32(x[i+2].r, shift);
+            x[i+2].i = PSHR32(x[i+2].i, shift);
+            break;
+        case 2:
+            x[i].r   = PSHR32(x[i].r,   shift);
+            x[i].i   = PSHR32(x[i].i,   shift);
+            x[i+1].r = PSHR32(x[i+1].r, shift);
+            x[i+1].i = PSHR32(x[i+1].i, shift);
+            break;
+        case 1:
+            x[i].r   = PSHR32(x[i].r,   shift);
+            x[i].i   = PSHR32(x[i].i,   shift);
+            break;
+        case 0:
+            break;
+        }
+    }
+}
+
 #endif /* KISS_FFT_MIPSR1_H */

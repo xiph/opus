@@ -535,6 +535,7 @@ void opus_fft_free(const kiss_fft_state *cfg, int arch)
 #endif /* CUSTOM_MODES */
 
 #ifdef FIXED_POINT
+#ifndef OVERRIDE_fft_downshift
 static void fft_downshift(kiss_fft_cpx *x, int N, int *total, int step) {
    int shift;
    shift = IMIN(step, *total);
@@ -553,6 +554,7 @@ static void fft_downshift(kiss_fft_cpx *x, int N, int *total, int step) {
       }
    }
 }
+#endif /* OVERRIDE_fft_downshift */
 #else
 #define fft_downshift(x, N, total, step)
 #endif
