@@ -33,7 +33,7 @@ import argparse
 import torch
 import tqdm
 
-from rdovae import RDOVAE, RDOVAEDataset, distortion_loss, hard_rate_estimate, soft_rate_estimate
+from rdovae import RDOVAE, RDOVAEDataset, dist_func, hard_rate_estimate, soft_rate_estimate, IDCT
 
 
 parser = argparse.ArgumentParser()
@@ -162,6 +162,8 @@ if __name__ == '__main__':
 
     # push model to device
     model.to(device)
+    idct = IDCT(18, device=device)
+    distortion_loss = dist_func(idct)
 
     # training loop
 
@@ -207,8 +209,8 @@ if __name__ == '__main__':
                 statistical_model   = model_output['statistical_model']
 
                 if type(args.initial_checkpoint) == type(None):
-                    latent_lambda = (1. - .5/(1.+batch/1000))
-                    state_lambda = (1. - .95/(1.+batch/25000))
+                    latent_lambda = (1. - .9/(1.+batch/1000))
+                    state_lambda = (1. - .99/((1.+batch/100000)**2))
                 else:
                     latent_lambda = 1.
                     state_lambda = 1.
