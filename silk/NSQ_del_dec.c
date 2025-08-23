@@ -61,9 +61,6 @@ typedef struct {
 
 typedef NSQ_sample_struct  NSQ_sample_pair[ 2 ];
 
-#if defined(FIXED_POINT) && defined(__mips_dsp) && __mips == 32
-#include "mips/NSQ_del_dec_mipsr1.h"
-#endif
 static OPUS_INLINE void silk_nsq_del_dec_scale_states(
     const silk_encoder_state *psEncC,               /* I    Encoder State                       */
     silk_nsq_state      *NSQ,                       /* I/O  NSQ state                           */
