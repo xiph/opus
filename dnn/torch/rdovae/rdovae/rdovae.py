@@ -36,6 +36,7 @@ from torch import nn
 import torch.nn.functional as F
 import sys
 import os
+import math
 source_dir = os.path.split(os.path.abspath(__file__))[0]
 sys.path.append(os.path.join(source_dir, "../../lpcnet/"))
 #from utils.sparsification import GRUSparsifier
@@ -159,20 +160,48 @@ def noise_quantize(x):
 
 
 # loss functions
+class IDCT(nn.Module):
+    def __init__(self, N, device=None):
+        super(IDCT, self).__init__()
 
+        self.N = N
+        n = torch.arange(N, device=device)
+        k = torch.arange(N, device=device)
+        self.table = torch.cos(torch.pi/N * (n[:,None]+.5) * k[None,:])
+        self.table[:,0] = self.table[:,0] * math.sqrt(.5)
+        self.table = self.table / math.sqrt(N/2)
 
-def distortion_loss(y_true, y_pred, rate_lambda=None):
+    def forward(self, x):
+        return F.linear(x, self.table, None)
+
+def dist_func(idct):
+  def distortion_loss(y_true, y_pred, rate_lambda=None):
     """ custom distortion loss for LPCNet features """
 
     if y_true.size(-1) != 20:
         raise ValueError('distortion loss is designed to work with 20 features')
 
     ceps_error   = y_pred[..., :18] - y_true[..., :18]
-    pitch_error  = 2*(y_pred[..., 18:19] - y_true[..., 18:19])
-    corr_error   = y_pred[..., 19:] - y_true[..., 19:]
-    pitch_weight = torch.relu(y_true[..., 19:] + 0.5) ** 2
+    pitch_error  = 2*(y_pred[..., 18] - y_true[..., 18])
+    corr_error   = y_pred[..., 19] - y_true[..., 19]
+    pitch_weight = torch.relu(y_true[..., 19] + 0.5) ** 2
+    band_pred = 10**(idct(y_pred[..., :18]))
+    band_true = 10**(idct(y_true[..., :18]))
+    band_pred = band_pred**.25
+    band_true = band_true**.25
 
-    loss = torch.mean(ceps_error ** 2 + (10/18) * torch.abs(pitch_error) * pitch_weight + (1/18) * corr_error ** 2, dim=-1)
+    #eband = (band_pred-band_true)**2 / (torch.std(band_true, axis=-2, keepdim=True)**2+.01*torch.mean(band_true**2, axis=-2, keepdim=True))
+    eband = (band_pred-band_true)**2 / torch.mean(band_true**2, axis=-2, keepdim=True)
+    eband = eband * (1.15-torch.arange(18)[None,None,:]/36).to(y_pred.device)
+    eband = torch.mean(eband, axis=-1)
+    eband4 = eband**2
+
+    #loss = torch.mean(ceps_error ** 2 + (10/18) * torch.abs(pitch_error) * pitch_weight + (1/18) * corr_error ** 2, dim=-1)
+    ceps_error = idct(ceps_error)
+    ceps_error = torch.mean(ceps_error ** 2, dim=-1)
+
+    loss = .05*ceps_error + 1*eband + torch.minimum(20*eband, 25*eband4) + 14/18 * torch.abs(pitch_error) * pitch_weight + 2/18 * corr_error ** 2
+
 
     if type(rate_lambda) != type(None):
         loss = loss / torch.sqrt(rate_lambda)
@@ -180,7 +209,7 @@ def distortion_loss(y_true, y_pred, rate_lambda=None):
     loss = torch.mean(loss)
 
     return loss
-
+  return distortion_loss
 
 # sampling functions
 
