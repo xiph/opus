@@ -250,27 +250,27 @@ sparse_params1 = {
                 }
 
 sparse_params2 = {
-                'W_ir' : (0.5, [8, 4], False),
-                'W_iz' : (0.35, [8, 4], False),
-                'W_in' : (0.6, [8, 4], False)
-                }
-
-sparse_params3 = {
-                'W_ir' : (0.4, [8, 4], False),
-                'W_iz' : (0.3, [8, 4], False),
-                'W_in' : (0.5, [8, 4], False)
-                }
-
-sparse_params4 = {
-                'W_ir' : (0.3, [8, 4], False),
-                'W_iz' : (0.2, [8, 4], False),
+                'W_ir' : (0.35, [8, 4], False),
+                'W_iz' : (0.25, [8, 4], False),
                 'W_in' : (0.4, [8, 4], False)
                 }
 
-sparse_params5 = {
-                'W_ir' : (0.2, [8, 4], False),
+sparse_params3 = {
+                'W_ir' : (0.25, [8, 4], False),
                 'W_iz' : (0.15, [8, 4], False),
                 'W_in' : (0.3, [8, 4], False)
+                }
+
+sparse_params4 = {
+                'W_ir' : (0.15, [8, 4], False),
+                'W_iz' : (0.1, [8, 4], False),
+                'W_in' : (0.2, [8, 4], False)
+                }
+
+sparse_params5 = {
+                'W_ir' : (0.15, [8, 4], False),
+                'W_iz' : (0.1, [8, 4], False),
+                'W_in' : (0.2, [8, 4], False)
                 }
 
 conv_params = [(1.0, [8, 4]),
