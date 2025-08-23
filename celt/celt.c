@@ -54,7 +54,7 @@
 #define PACKAGE_VERSION "unknown"
 #endif
 
-#if defined(FIXED_POINT) && defined(__mips_dsp) && __mips == 32
+#if defined(FIXED_POINT) && defined(__mips)
 #include "mips/celt_mipsr1.h"
 #endif
 
