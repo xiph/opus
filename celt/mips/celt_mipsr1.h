@@ -36,6 +36,16 @@
 
 #define CELT_C
 
+#if defined (__mips_dsp) && __mips == 32
+
+#define OVERRIDE_COMB_FILTER_CONST
+#define OVERRIDE_comb_filter
+#elif defined(__mips_isa_rev) && __mips_isa_rev < 6
+
+#define OVERRIDE_COMB_FILTER_CONST
+#define OVERRIDE_comb_filter
+#endif
+
 #include "os_support.h"
 #include "mdct.h"
 #include <math.h>
@@ -53,8 +63,43 @@
 #include "celt_lpc.h"
 #include "vq.h"
 
-#define OVERRIDE_COMB_FILTER_CONST
-#define OVERRIDE_comb_filter
+#if defined (__mips_dsp) && __mips == 32
+
+#define MIPS_MULT __builtin_mips_mult
+#define MIPS_MADD __builtin_mips_madd
+#define MIPS_EXTR __builtin_mips_extr_w
+
+#elif defined(__mips_isa_rev) && __mips_isa_rev < 6
+
+static inline long long MIPS_MULT(int a, int b) {
+    long long acc;
+
+    asm volatile (
+            "mult %[a], %[b]  \n"
+        : [acc] "=x"(acc)
+        : [a] "r"(a), [b] "r"(b)
+        :
+    );
+    return acc;
+}
+
+static inline long long MIPS_MADD(long long acc, int a, int b) {
+    asm volatile (
+            "madd %[a], %[b]  \n"
+        : [acc] "+x"(acc)
+        : [a] "r"(a), [b] "r"(b)
+        :
+    );
+    return acc;
+}
+
+static inline opus_val32 MIPS_EXTR(long long acc, int shift) {
+    return (opus_val32)(acc >> shift);
+}
+
+#endif
+
+#if defined (OVERRIDE_comb_filter)
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
       const opus_val16 *window, int overlap, int arch)
@@ -101,13 +146,13 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       f = MULT16_16_Q15(window[i],window[i]);
       x0= x[i-T1+2];
 
-      acc = __builtin_mips_mult((int)MULT16_16_Q15((Q15ONE-f),g00), (int)x[i-T0]);
-      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15((Q15ONE-f),g01), (int)ADD32(x[i-T0-1],x[i-T0+1]));
-      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15((Q15ONE-f),g02), (int)ADD32(x[i-T0-2],x[i-T0+2]));
-      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15(f,g10), (int)x2);
-      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15(f,g11), (int)ADD32(x3,x1));
-      acc = __builtin_mips_madd(acc, (int)MULT16_16_Q15(f,g12), (int)ADD32(x4,x0));
-      res = __builtin_mips_extr_w(acc, 15);
+      acc = MIPS_MULT((int)MULT16_16_Q15((Q15ONE-f),g00), (int)x[i-T0]);
+      acc = MIPS_MADD(acc, (int)MULT16_16_Q15((Q15ONE-f),g01), (int)ADD32(x[i-T0-1],x[i-T0+1]));
+      acc = MIPS_MADD(acc, (int)MULT16_16_Q15((Q15ONE-f),g02), (int)ADD32(x[i-T0-2],x[i-T0+2]));
+      acc = MIPS_MADD(acc, (int)MULT16_16_Q15(f,g10), (int)x2);
+      acc = MIPS_MADD(acc, (int)MULT16_16_Q15(f,g11), (int)ADD32(x3,x1));
+      acc = MIPS_MADD(acc, (int)MULT16_16_Q15(f,g12), (int)ADD32(x4,x0));
+      res = MIPS_EXTR(acc, 15);
 
       y[i] = x[i] + res;
 
@@ -136,10 +181,10 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       long long acc;
       x0=x[i-T1+2];
 
-      acc = __builtin_mips_mult((int)g10, (int)x2);
-      acc = __builtin_mips_madd(acc, (int)g11, (int)ADD32(x3,x1));
-      acc = __builtin_mips_madd(acc, (int)g12, (int)ADD32(x4,x0));
-      res = __builtin_mips_extr_w(acc, 15);
+      acc = MIPS_MULT((int)g10, (int)x2);
+      acc = MIPS_MADD(acc, (int)g11, (int)ADD32(x3,x1));
+      acc = MIPS_MADD(acc, (int)g12, (int)ADD32(x4,x0));
+      res = MIPS_EXTR(acc, 15);
 
       y[i] = x[i] + res;
       x4=x3;
@@ -148,5 +193,6 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       x1=x0;
    }
 }
+#endif /* OVERRIDE_comb_filter */
 
 #endif /* CELT_MIPSR1_H__ */
