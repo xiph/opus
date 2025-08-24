@@ -128,15 +128,9 @@ static OPUS_INLINE void limit_warped_coefs(
     silk_assert( 0 );
 }
 
-/* Disable MIPS DSP version until it's updated. */
-#if 0 && defined(__mips_dsp) && __mips == 32
-#include "mips/noise_shape_analysis_FIX_mipsr1.h"
-#endif
-
 /**************************************************************/
 /* Compute noise shaping coefficients and initial gain values */
 /**************************************************************/
-#ifndef OVERRIDE_silk_noise_shape_analysis_FIX
 void silk_noise_shape_analysis_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state FIX                                                           */
     silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Encoder control FIX                                                         */
@@ -404,4 +398,3 @@ void silk_noise_shape_analysis_FIX(
     }
     RESTORE_STACK;
 }
-#endif /* OVERRIDE_silk_noise_shape_analysis_FIX */
