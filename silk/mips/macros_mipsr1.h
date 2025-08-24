@@ -34,6 +34,8 @@ static inline int mips_clz(opus_uint32 x)
     return x ? __builtin_clz(x) : 32;
 }
 
+#if defined (__mips_dsp) && __mips == 32
+
 #undef silk_SMULWB
 static inline int silk_SMULWB(int a, int b)
 {
@@ -91,5 +93,18 @@ static inline opus_int32 silk_CLZ32(opus_int32 in32)
     re32 = mips_clz(in32);
     return re32;
 }
+
+
+#elif defined (__mips_isa_rev) && __mips == 32
+
+#undef silk_SMULWB
+static inline int silk_SMULWB(int a, int b)
+{
+    long long ac = (long long)a * (int)(b << 16);
+
+    return ac >> 32;
+}
+
+#endif
 
 #endif /* SILK_MACROS_MIPSR1_H__ */
