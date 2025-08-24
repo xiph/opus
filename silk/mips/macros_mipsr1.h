@@ -29,10 +29,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef SILK_MACROS_MIPSR1_H__
 #define SILK_MACROS_MIPSR1_H__
 
-static inline int mips_clz(opus_uint32 x)
-{
-    return x ? __builtin_clz(x) : 32;
-}
 
 #if defined (__mips_dsp) && __mips == 32
 
@@ -76,6 +72,25 @@ static inline int silk_SMLAWW(int a, int b, int c)
     return res;
 }
 
+#elif defined (__mips_isa_rev) && __mips == 32
+
+#undef silk_SMULWB
+static inline int silk_SMULWB(int a, int b)
+{
+    long long ac = (long long)a * (int)(b << 16);
+
+    return ac >> 32;
+}
+
+#endif
+
+#if defined (__mips_isa_rev) /* MIPS32r1+ */
+
+static inline int mips_clz(opus_uint32 x)
+{
+    return x ? __builtin_clz(x) : 32;
+}
+
 #define OVERRIDE_silk_CLZ16
 static inline opus_int32 silk_CLZ16(opus_int16 in16)
 {
@@ -94,17 +109,6 @@ static inline opus_int32 silk_CLZ32(opus_int32 in32)
     return re32;
 }
 
-
-#elif defined (__mips_isa_rev) && __mips == 32
-
-#undef silk_SMULWB
-static inline int silk_SMULWB(int a, int b)
-{
-    long long ac = (long long)a * (int)(b << 16);
-
-    return ac >> 32;
-}
-
-#endif
+#endif /* __mips_isa_rev */
 
 #endif /* SILK_MACROS_MIPSR1_H__ */
