@@ -42,7 +42,7 @@
 #include "x86/pitch_sse.h"
 #endif
 
-#if defined(FIXED_POINT) && defined(__mips_dsp) && __mips == 32
+#if defined(FIXED_POINT) && defined(__mips)
 #include "mips/pitch_mipsr1.h"
 #endif
 

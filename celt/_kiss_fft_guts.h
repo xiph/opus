@@ -102,7 +102,7 @@
 #if defined(OPUS_ARM_INLINE_EDSP)
 #include "arm/kiss_fft_armv5e.h"
 #endif
-#if defined(__mips_dsp) && __mips == 32
+#if defined(__mips)
 #include "mips/kiss_fft_mipsr1.h"
 #endif
 

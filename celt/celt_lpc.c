@@ -59,8 +59,15 @@ int          p
       for (i = 0; i < p; i++) {
          /* Sum up this iteration's reflection coefficient */
          opus_val32 rr = 0;
+#if defined (FIXED_POINT) && OPUS_FAST_INT64
+         opus_int64 acc = 0;
+         for (j = 0; j < i; j++)
+            acc += (opus_int64)(lpc[j]) * (opus_int64)(ac[i - j]);
+         rr = (opus_val32)SHR(acc, 31);
+#else
          for (j = 0; j < i; j++)
             rr += MULT32_32_Q31(lpc[j],ac[i - j]);
+#endif
          rr += SHR32(ac[i + 1],6);
          r = -frac_div32(SHL32(rr,6), error);
          /*  Update LPC coefficients and total error */
