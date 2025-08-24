@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "main_FIX.h"
 
-#if defined(__mips_dsp) && __mips == 32
+#if defined(__mips)
 #include "mips/warped_autocorrelation_FIX_mipsr1.h"
 #endif
 
