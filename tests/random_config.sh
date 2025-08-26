@@ -52,7 +52,7 @@ lib=`echo -e "\n--disable-static\n--disable-shared" | shuf -n1`
 arithmetic=`echo -e "\n--enable-deep-plc\n--enable-dred\n--enable-osce\n--enable-dred --enable-osce\n--enable-fixed-point\n--enable-fixed-point --enable-fixed-point-debug\n--enable-fixed-point --disable-float-api\n--enable-fixed-point --enable-fixed-point-debug --disable-float-api" | shuf -n1`
 
 custom=`echo -e "\n--enable-custom-modes\n--enable-opus-custom-api" | shuf -n1`
-res=`echo -e "--enable-fixed-res24\n--enable-fixed-res24 --enable-qext\n" | shuf -n1`
+res=`echo -e "--disable-fixed-res24\n--enable-qext\n" | shuf -n1`
 
 asm=`echo -e "\n--disable-asm\n--disable-rtcd\n--disable-intrinsics" | shuf -n1`
 #asm=`echo -e "\n--disable-asm\n--disable-intrinsics" | shuf -n1`
