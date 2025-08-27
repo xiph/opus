@@ -82,6 +82,15 @@ static inline int silk_SMULWB(int a, int b)
     return ac >> 32;
 }
 
+/* a32 + (b32 * (opus_int32)((opus_int16)(c32))) >> 16 output have to be 32bit int */
+#undef silk_SMLAWB
+static inline int silk_SMLAWB(int a, int b, int c)
+{
+    long long ac = (long long)b * (int)(c << 16);
+
+    return a + (ac >> 32);
+}
+
 #endif
 
 #if defined (__mips_isa_rev) /* MIPS32r1+ */
