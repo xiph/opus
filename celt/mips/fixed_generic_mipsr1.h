@@ -148,6 +148,30 @@ static OPUS_INLINE opus_val32 celt_maxabs16(const opus_val16 *x, int len)
    return (opus_val32)maxlo + 1;
 }
 
+#undef SATURATE
+static OPUS_INLINE int SATURATE(int x, int a)
+{
+    if (__builtin_constant_p(a) && __builtin_popcount(a + 1) == 1) {
+        const int shift = __builtin_clz(a + 1);
+        int ret = __builtin_mips_shll_s_w(x, shift);
+        return ret >> shift;
+    }
+    return SATURATE_generic(x, a);
+}
+
+#undef SATURATE16
+#define SATURATE16(x) EXTRACT16(SATURATE(x, 32767))
+
+#undef SAT16
+#define SAT16(x) EXTRACT16(SATURATE(x, 32767))
+
+#undef SIG2WORD16
+static OPUS_INLINE opus_val16 SIG2WORD16(celt_sig x)
+{
+   x = PSHR32(x, SIG_SHIFT);
+   return SATURATE16(x);
+}
+
 #elif __mips == 32
 
 #undef MULT16_32_Q16

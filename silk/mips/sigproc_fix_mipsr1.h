@@ -57,4 +57,10 @@ static inline int silk_RSHIFT_ROUND(int a, int shift)
     return r;
 }
 
+#undef silk_ADD_POS_SAT32
+static inline int silk_ADD_POS_SAT32(int a, int b)
+{
+    return __builtin_mips_addq_s_w(a, b);
+}
+
 #endif /* SILK_SIGPROC_FIX_MIPSR1_H */

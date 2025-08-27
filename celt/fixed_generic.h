@@ -129,7 +129,8 @@
 #define SHR(a,shift) ((a) >> (shift))
 #define SHL(a,shift) SHL32(a,shift)
 #define PSHR(a,shift) (SHR((a)+((EXTEND32(1)<<((shift))>>1)),shift))
-#define SATURATE(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
+#define SATURATE_generic(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
+#define SATURATE(x,a) SATURATE_generic((x), (a))
 
 #define SATURATE16(x) (EXTRACT16((x)>32767 ? 32767 : (x)<-32768 ? -32768 : (x)))
 
@@ -200,10 +201,6 @@
 /** Divide a 32-bit value by a 32-bit value. Result fits in 32 bits */
 #define DIV32(a,b) (((opus_val32)(a))/((opus_val32)(b)))
 
-#if defined(__mips)
-#include "mips/fixed_generic_mipsr1.h"
-#endif
-
 static OPUS_INLINE opus_val16 SIG2WORD16_generic(celt_sig x)
 {
    x = PSHR32(x, SIG_SHIFT);
@@ -212,5 +209,9 @@ static OPUS_INLINE opus_val16 SIG2WORD16_generic(celt_sig x)
    return EXTRACT16(x);
 }
 #define SIG2WORD16(x) (SIG2WORD16_generic(x))
+
+#if defined(__mips)
+#include "mips/fixed_generic_mipsr1.h"
+#endif
 
 #endif

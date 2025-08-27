@@ -72,6 +72,18 @@ static inline int silk_SMLAWW(int a, int b, int c)
     return res;
 }
 
+#undef silk_ADD_SAT32
+static inline int silk_ADD_SAT32(int a, int b)
+{
+    return __builtin_mips_addq_s_w(a, b);
+}
+
+#undef silk_SUB_SAT32
+static inline int silk_SUB_SAT32(int a, int b)
+{
+    return __builtin_mips_subq_s_w(a, b);
+}
+
 #elif defined (__mips_isa_rev) && __mips == 32
 
 #undef silk_SMULWB
