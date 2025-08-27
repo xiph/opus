@@ -171,6 +171,10 @@ int main(int argc, char **argv) {
     }
 #ifdef USE_WEIGHTS_FILE
     data = load_blob(filename, &len);
+    if (data==NULL) {
+        fprintf(stderr, "Can't open blob file %s\n", filename);
+	exit(1);
+    }
 #endif
     if (mode == MODE_FEATURES) {
         LPCNetEncState *net;
