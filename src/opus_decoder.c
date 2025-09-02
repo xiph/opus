@@ -931,7 +931,8 @@ int opus_decode24(OpusDecoder *st, const unsigned char *data,
        ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0, NULL, 0);
        if (ret > 0)
        {
-          for (i=0;i<ret*st->channels;i++)
+          nb_samples = ret * st->channels;
+          for (i=0;i<nb_samples;i++)
              pcm[i] = RES2INT24(out[i]);
        }
        RESTORE_STACK;
