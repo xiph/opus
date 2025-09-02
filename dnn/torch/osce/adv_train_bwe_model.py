@@ -69,6 +69,8 @@ parser.add_argument('--device', type=str, help='compute device', default=None)
 parser.add_argument('--initial-checkpoint', type=str, help='initial checkpoint', default=None)
 parser.add_argument('--testdata', type=str, help='path to features and signal for testing', default=None)
 parser.add_argument('--no-redirect', action='store_true', help='disables re-direction of stdout')
+parser.add_argument('--initial-epoch', type=int, help='initial epoch number for training', default=1)
+
 
 args = parser.parse_args()
 
@@ -347,7 +349,7 @@ optimizer_to(optimizer_disc, device)
 retain_grads(model)
 retain_grads(disc)
 
-for ep in range(1, epochs + 1):
+for ep in range(args.initial_epoch, epochs + 1):
     print(f"training epoch {ep}...")
 
     model.to(device)
