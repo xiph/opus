@@ -29,10 +29,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef SILK_MACROS_MIPSR1_H__
 #define SILK_MACROS_MIPSR1_H__
 
-static inline int mips_clz(opus_uint32 x)
-{
-    return x ? __builtin_clz(x) : 32;
-}
+
+#if defined (__mips_dsp) && __mips == 32
 
 #undef silk_SMULWB
 static inline int silk_SMULWB(int a, int b)
@@ -74,6 +72,46 @@ static inline int silk_SMLAWW(int a, int b, int c)
     return res;
 }
 
+#undef silk_ADD_SAT32
+static inline int silk_ADD_SAT32(int a, int b)
+{
+    return __builtin_mips_addq_s_w(a, b);
+}
+
+#undef silk_SUB_SAT32
+static inline int silk_SUB_SAT32(int a, int b)
+{
+    return __builtin_mips_subq_s_w(a, b);
+}
+
+#elif defined (__mips_isa_rev) && __mips == 32
+
+#undef silk_SMULWB
+static inline int silk_SMULWB(int a, int b)
+{
+    long long ac = (long long)a * (int)(b << 16);
+
+    return ac >> 32;
+}
+
+/* a32 + (b32 * (opus_int32)((opus_int16)(c32))) >> 16 output have to be 32bit int */
+#undef silk_SMLAWB
+static inline int silk_SMLAWB(int a, int b, int c)
+{
+    long long ac = (long long)b * (int)(c << 16);
+
+    return a + (ac >> 32);
+}
+
+#endif
+
+#if defined (__mips_isa_rev) /* MIPS32r1+ */
+
+static inline int mips_clz(opus_uint32 x)
+{
+    return x ? __builtin_clz(x) : 32;
+}
+
 #define OVERRIDE_silk_CLZ16
 static inline opus_int32 silk_CLZ16(opus_int16 in16)
 {
@@ -91,5 +129,7 @@ static inline opus_int32 silk_CLZ32(opus_int32 in32)
     re32 = mips_clz(in32);
     return re32;
 }
+
+#endif /* __mips_isa_rev */
 
 #endif /* SILK_MACROS_MIPSR1_H__ */
