@@ -1264,6 +1264,8 @@ int opus_packet_has_lbrr(const unsigned char packet[], opus_int32 len)
    ret = opus_packet_parse(packet, len, NULL, frames, size, NULL);
    if (ret <= 0)
       return ret;
+   if (size[0] == 0)
+      return 0;
    lbrr = (frames[0][0] >> (7-nb_frames)) & 0x1;
    if (packet_stream_channels == 2)
       lbrr = lbrr || ((frames[0][0] >> (6-2*nb_frames)) & 0x1);
