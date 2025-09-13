@@ -323,7 +323,7 @@ static OPUS_INLINE int interp_bits2pulses(const CELTMode *m, int start, int end,
          In the first case, we'd be coding a bit to signal we're going to waste
           all the other bits.
          In the second case, we'd be coding a bit to redistribute all the bits
-          we just signaled should be cocentrated in this band. */
+          we just signaled should be concentrated in this band. */
       if (j<=skip_start)
       {
          /* Give the bit we reserved to end skipping back. */
