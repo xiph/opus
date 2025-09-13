@@ -182,6 +182,8 @@ f"""
 
     latent_in = model.get_submodule('core_decoder.module.dense_1')
     state_in = model.get_submodule('core_decoder.module.hidden_init')
+    latent_mask = np.append(latent_mask, True)
+    latent_scale = torch.cat([latent_scale, torch.tensor([1.])])
     latent_in.weight = torch.nn.Parameter(latent_in.weight[:,latent_mask]*latent_scale)
     state_in.weight = torch.nn.Parameter(state_in.weight[:,state_mask]*state_scale)
 

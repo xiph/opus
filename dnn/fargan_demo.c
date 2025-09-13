@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
         size_t ret;
         int i;
         float features[2*DRED_CHUNKS*DRED_NUM_FEATURES];
-        float latents[DRED_CHUNKS*DRED_LATENT_DIM];
+        float latents[DRED_CHUNKS*(DRED_LATENT_DIM+1)];
         float initial_state[DRED_STATE_DIM];
         ec_dec dec;
         unsigned char bits[MAX_DRED_PACKET];
@@ -274,18 +274,19 @@ int main(int argc, char **argv) {
 
               dred_decode_latents(
                     &dec,
-                    &latents[i*DRED_LATENT_DIM],
+                    &latents[i*(DRED_LATENT_DIM+1)],
                     dred_latent_quant_scales_q8 + offset,
                     dred_latent_r_q8 + offset,
                     dred_latent_p0_q8 + offset,
                     DRED_LATENT_DIM
               );
+              latents[i*(DRED_LATENT_DIM+1)+DRED_LATENT_DIM] = q0*.125-1;
 
               dred_rdovae_decode_qframe(
                     &rdovae_dec,
                     &rdovae_dec_model,
                     dec_tmp,
-                    &latents[i*DRED_LATENT_DIM],
+                    &latents[i*(DRED_LATENT_DIM+1)],
                     arch);
               for (k=0;k<4;k++) {
                  OPUS_COPY(&features[(2*i-2+k)*DRED_NUM_FEATURES], &dec_tmp[(3-k)*DRED_NUM_FEATURES], DRED_NUM_FEATURES);

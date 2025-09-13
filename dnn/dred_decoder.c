@@ -114,13 +114,13 @@ int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int mi
       offset = q_level*DRED_LATENT_DIM;
       dred_decode_latents(
           &ec,
-          &dec->latents[(i/2)*DRED_LATENT_DIM],
+          &dec->latents[(i/2)*(DRED_LATENT_DIM+1)],
           dred_latent_quant_scales_q8 + offset,
           dred_latent_r_q8 + offset,
           dred_latent_p0_q8 + offset,
           DRED_LATENT_DIM
           );
-
+      dec->latents[(i/2)*(DRED_LATENT_DIM+1)+DRED_LATENT_DIM] = q_level*.125-1;
       offset = 2 * i * DRED_NUM_FEATURES;
   }
   dec->process_stage = 1;
