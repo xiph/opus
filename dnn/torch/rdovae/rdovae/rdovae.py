@@ -662,7 +662,7 @@ class RDOVAE(nn.Module):
         # submodules encoder and decoder share the statistical model
         self.statistical_model = StatisticalModel(quant_levels, latent_dim, state_dim)
         self.core_encoder = nn.DataParallel(CoreEncoder(feature_dim, latent_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant, adapt=adapt))
-        self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim, feature_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant, adapt=adapt))
+        self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim+1, feature_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant, adapt=adapt))
 
         self.enc_stride = CoreEncoder.FRAMES_PER_STEP
         self.dec_stride = CoreDecoder.FRAMES_PER_STEP
@@ -749,6 +749,8 @@ class RDOVAE(nn.Module):
         # quantization
         z_q = hard_quantize(z) / statistical_model['quant_scale'][:,:,:self.latent_dim]
         z_n = noise_quantize(z) / statistical_model['quant_scale'][:,:,:self.latent_dim]
+        z_q = torch.cat([z_q, q_id[:,:,None]*.125-1], -1)
+        z_n = torch.cat([z_n, q_id[:,:,None]*.125-1], -1)
         #states_q = soft_pvq(states, self.pvq_num_pulses)
         states = states * statistical_model['quant_scale'][:,:,self.latent_dim:]
         states = soft_dead_zone(states, statistical_model['dead_zone'][:,:,self.latent_dim:])

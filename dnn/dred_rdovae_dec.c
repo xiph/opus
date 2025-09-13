@@ -54,7 +54,7 @@ void DRED_rdovae_decode_all(const RDOVAEDec *model, float *features, const float
             &dec,
             model,
             &features[2*i*DRED_NUM_FEATURES],
-            &latents[(i/2)*DRED_LATENT_DIM],
+            &latents[(i/2)*(DRED_LATENT_DIM+1)],
             arch);
     }
 }
