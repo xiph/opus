@@ -46,10 +46,16 @@
 #  define MAY_HAVE_NEON(name) MAY_HAVE_MEDIA(name)
 # endif
 
+# if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+#  define MAY_HAVE_NEON_INTR(name) name ## _neon
+# else
+#  define MAY_HAVE_NEON_INTR(name) MAY_HAVE_NEON(name)
+# endif
+
 # if defined(OPUS_ARM_MAY_HAVE_DOTPROD)
 #  define MAY_HAVE_DOTPROD(name) name ## _dotprod
 # else
-#  define MAY_HAVE_DOTPROD(name) MAY_HAVE_NEON(name)
+#  define MAY_HAVE_DOTPROD(name) MAY_HAVE_NEON_INTR(name)
 # endif
 
 # if defined(OPUS_ARM_PRESUME_EDSP)
@@ -70,10 +76,16 @@
 #  define PRESUME_NEON(name) PRESUME_MEDIA(name)
 # endif
 
+# if defined(OPUS_ARM_PRESUME_NEON_INTR)
+#  define PRESUME_NEON_INTR(name) name ## _neon
+# else
+#  define PRESUME_NEON_INTR(name) PRESUME_NEON(name)
+# endif
+
 # if defined(OPUS_ARM_PRESUME_DOTPROD)
 #  define PRESUME_DOTPROD(name) name ## _dotprod
 # else
-#  define PRESUME_DOTPROD(name) PRESUME_NEON(name)
+#  define PRESUME_DOTPROD(name) PRESUME_NEON_INTR(name)
 # endif
 
 # if defined(OPUS_HAVE_RTCD)
