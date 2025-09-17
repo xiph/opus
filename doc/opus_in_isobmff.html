@@ -137,7 +137,7 @@ Table of Contents
         4.3.2 Opus Specific Box<a name="4.3.2"></a>
             Exactly one Opus Specific Box shall be present in each OpusSampleEntry.
             The Opus Specific Box contains an OpusDecoderConfigurationRecord which contains the Version field and
-            this specification defines version 0 of this record. If incompatible changes occured in the fields after
+            this specification defines version 0 of this record. If incompatible changes occurred in the fields after
             the Version field within the OpusDecoderConfigurationRecord in the future versions of this specification,
             another version will be defined.
             This box refers to Ogg Opus [3] at many parts but all the data are stored as big-endian format.
@@ -297,7 +297,7 @@ Table of Contents
         4.5.2 Composition on all active tracks (informative)<a name="4.5.2"></a>
             By the application of alternate_group in the Track Header Box, whole audio channels in all active tracks from
             non-alternate group and/or different alternate group from each other are composited into the presentation. If
-            an Opus sample consists of multiple Opus bitstreams, it can be splitted into individual Opus bitstreams and
+            an Opus sample consists of multiple Opus bitstreams, it can be split into individual Opus bitstreams and
             reconstructed into new Opus samples as long as every Opus bitstream has the same total duration in each Opus
             sample. This nature can be utilized to encapsulate a single Opus bitstream in each track without breaking the
             original channel layout.
@@ -597,7 +597,7 @@ Table of Contents
                                             CoupledCount = 2
                                             ChannelMapping
                                                 0 -> 0: front left
-                                                1 -> 4: fron center
+                                                1 -> 4: front center
                                                 2 -> 1: front right
                                                 3 -> 2: side left
                                                 4 -> 3: side right

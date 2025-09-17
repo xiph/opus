@@ -397,7 +397,7 @@ implementation can add or modify these control parameters without affecting inte
 important encoder control parameters in the reference encoder are listed below.
 </t>
 
-<section title="Bitrate" toc="exlcude">
+<section title="Bitrate" toc="exclude">
 <t>
 Opus supports all bitrates from 6&nbsp;kb/s to 510&nbsp;kb/s. All other parameters being
 equal, higher bitrate results in higher quality. For a frame size of 20&nbsp;ms, these
@@ -412,7 +412,7 @@ are the bitrate "sweet spots" for Opus in various configurations:
 </t>
 </section>
 
-<section title="Number of Channels (Mono/Stereo)" toc="exlcude">
+<section title="Number of Channels (Mono/Stereo)" toc="exclude">
 <t>
 Opus can transmit either mono or stereo frames within a single stream.
 When decoding a mono frame in a stereo decoder, the left and right channels are
@@ -426,7 +426,7 @@ The number of channels encoded can be selected in real-time, but by default the
 </t>
 </section>
 
-<section title="Audio Bandwidth" toc="exlcude">
+<section title="Audio Bandwidth" toc="exclude">
 <t>
 The audio bandwidths supported by Opus are listed in
  <xref target="audio-bandwidth"/>.
@@ -445,7 +445,7 @@ The audio bandwidth can be explicitly specified in real-time, but by default
 </section>
 
 
-<section title="Frame Duration" toc="exlcude">
+<section title="Frame Duration" toc="exclude">
 <t>
 Opus can encode frames of 2.5, 5, 10, 20, 40 or 60&nbsp;ms.
 It can also combine multiple frames into packets of up to 120&nbsp;ms.
@@ -459,7 +459,7 @@ For this reason, 20&nbsp;ms frames are a good choice for most applications.
 </t>
 </section>
 
-<section title="Complexity" toc="exlcude">
+<section title="Complexity" toc="exclude">
 <t>
 There are various aspects of the Opus encoding process where trade-offs
 can be made between CPU complexity and quality/bitrate. In the reference
@@ -477,7 +477,7 @@ resolution and the pitch post-filter.</t>
 </t>
 </section>
 
-<section title="Packet Loss Resilience" toc="exlcude">
+<section title="Packet Loss Resilience" toc="exclude">
 <t>
 Audio codecs often exploit inter-frame correlations to reduce the
 bitrate at a cost in error propagation: after losing one packet
@@ -488,7 +488,7 @@ choose a trade-off between bitrate and amount of error propagation.
 </t>
 </section>
 
-<section title="Forward Error Correction (FEC)" toc="exlcude">
+<section title="Forward Error Correction (FEC)" toc="exclude">
 <t>
    Another mechanism providing robustness against packet loss is the in-band
    Forward Error Correction (FEC).  Packets that are determined to
@@ -498,7 +498,7 @@ choose a trade-off between bitrate and amount of error propagation.
 </t>
 </section>
 
-<section title="Constant/Variable Bitrate" toc="exlcude">
+<section title="Constant/Variable Bitrate" toc="exclude">
 <t>
 Opus is more efficient when operating with variable bitrate (VBR), which is
 the default. However, in some (rare) applications, constant bitrate (CBR)
@@ -517,7 +517,7 @@ CBR due to the bit reservoir).
 </t>
 </section>
 
-<section title="Discontinuous Transmission (DTX)" toc="exlcude">
+<section title="Discontinuous Transmission (DTX)" toc="exclude">
 <t>
    Discontinuous Transmission (DTX) reduces the bitrate during silence
    or background noise.  When DTX is enabled, only one frame is encoded
