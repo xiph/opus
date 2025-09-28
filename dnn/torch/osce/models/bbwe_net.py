@@ -39,6 +39,7 @@ class FloatFeatureNet(nn.Module):
                  num_channels=256,
                  upsamp_factor=2,
                  lookahead=False,
+                 kernel_size1=3,
                  softquant=False):
 
         super().__init__()
@@ -47,8 +48,11 @@ class FloatFeatureNet(nn.Module):
         self.num_channels = num_channels
         self.upsamp_factor = upsamp_factor
         self.lookahead = lookahead
+        self.kernel_size1 = kernel_size1
 
-        self.conv1 = nn.Conv1d(feature_dim, num_channels, 3)
+        assert self.kernel_size1 % 2 == 1
+
+        self.conv1 = nn.Conv1d(feature_dim, num_channels, self.kernel_size1)
         self.conv2 = nn.Conv1d(num_channels, num_channels, 3)
 
         self.gru = nn.GRU(num_channels, num_channels, batch_first=True)
@@ -84,10 +88,10 @@ class FloatFeatureNet(nn.Module):
 
         features = features.permute(0, 2, 1)
         if self.lookahead:
-            c = torch.tanh(self.conv1(F.pad(features, [1, 1])))
+            c = torch.tanh(self.conv1(F.pad(features, [self.kernel_size1 // 2, self.kernel_size1//2])))
             c = torch.tanh(self.conv2(F.pad(c, [2, 0])))
         else:
-            c = torch.tanh(self.conv1(F.pad(features, [2, 0])))
+            c = torch.tanh(self.conv1(F.pad(features, [self.kernel_size1 - 1, 0])))
             if DEBUGDUMP:
                 debugdump('feature_net_conv1_activated.f32', c.permute(0, 2, 1))
             c = torch.tanh(self.conv2(F.pad(c, [2, 0])))
@@ -138,6 +142,7 @@ class BBWENet(torch.nn.Module):
     def __init__(self,
                  feature_dim,
                  cond_dim=128,
+                 kernel_size1=3,
                  kernel_size16=15,
                  kernel_size32=15,
                  kernel_size48=15,
@@ -160,6 +165,7 @@ class BBWENet(torch.nn.Module):
 
         self.feature_dim            = feature_dim
         self.cond_dim               = cond_dim
+        self.kernel_size1           = kernel_size1
         self.kernel_size16          = kernel_size16
         self.kernel_size32          = kernel_size32
         self.kernel_size48          = kernel_size48
@@ -180,7 +186,7 @@ class BBWENet(torch.nn.Module):
         self.upsampler = SilkUpsampler()
 
         # feature net
-        self.feature_net = FloatFeatureNet(feature_dim=feature_dim, num_channels=cond_dim, softquant=softquant, lookahead=lookahead)
+        self.feature_net = FloatFeatureNet(feature_dim=feature_dim, num_channels=cond_dim, kernel_size1=kernel_size1, softquant=softquant, lookahead=lookahead)
 
         # non-linear transforms
 
