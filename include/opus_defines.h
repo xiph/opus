@@ -175,6 +175,8 @@ extern "C" {
 /*#define OPUS_GET_DNN_BLOB_REQUEST 4053 */
 #define OPUS_SET_OSCE_BWE_REQUEST 4054
 #define OPUS_GET_OSCE_BWE_REQUEST 4055
+#define OPUS_SET_DC_FILTER_REQUEST 4056
+#define OPUS_GET_DC_FILTER_REQUEST 4057
 
 /** Defines for the presence of extended APIs. */
 #define OPUS_HAVE_OPUS_PROJECTION_H
@@ -649,6 +651,14 @@ extern "C" {
 /** Provide external DNN weights from binary object (only when explicitly built without the weights)
   * @hideinitializer */
 #define OPUS_SET_DNN_BLOB(data, len) OPUS_SET_DNN_BLOB_REQUEST, __opus_check_void_ptr(data), __opus_check_int(len)
+
+/** Configures the encoder's use of dc_reject filter.
+  * @hideinitializer */
+#define OPUS_SET_DC_FILTER(x) OPUS_SET_DC_FILTER_REQUEST, __opus_check_int(x)
+
+/** Gets the encoder's configured dc_reject filter status.
+  * @hideinitializer */
+#define OPUS_GET_DC_FILTER(x) OPUS_GET_DC_FILTER_REQUEST, __opus_check_int(x)
 
 
 /**@}*/
