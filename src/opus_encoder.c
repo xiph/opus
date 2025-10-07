@@ -144,6 +144,7 @@ struct OpusEncoder {
 #endif
     int          nonfinal_frame; /* current frame is not the final in a packet */
     opus_uint32  rangeFinal;
+    int dc_filter;
 };
 
 /* Transition tables for the voice and music. First column is the
@@ -298,6 +299,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->first = 1;
     st->mode = MODE_HYBRID;
     st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
+    st->dc_filter = 0;
 
 #ifndef DISABLE_FLOAT_API
     tonality_analysis_init(&st->analysis, st->Fs);
@@ -1923,9 +1925,16 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
          }
        }
 #endif
+#ifdef ENABLE_QEXT
+      /* FIXME: Avoid glitching when we switch qext on/off dynamically. */
+    } else if (st->dc_filter && !st->enable_qext) {
+#else
+      /* FIXME: Avoid glitching when we switch dc_filter on/off dynamically. */
+    } else if (st->dc_filter) {
+#endif
+       dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     } else {
-       for (i=0;i<frame_size*st->channels;i++)
-          pcm_buf[total_buffer*st->channels + i] = pcm[i];
+       OPUS_COPY(&pcm_buf[total_buffer*st->channels], pcm, frame_size*st->channels);
     }
 #ifndef FIXED_POINT
     if (float_api)
@@ -2914,6 +2923,26 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                goto bad_arg;
             }
             *value = st->use_vbr;
+        }
+        break;
+        case OPUS_SET_DC_FILTER_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if(value<0 || value>1)
+            {
+               goto bad_arg;
+            }
+            st->dc_filter = value;
+        }
+        break;
+        case OPUS_GET_DC_FILTER_REQUEST:
+        {
+            opus_int32 *value = va_arg(ap, opus_int32*);
+            if (!value)
+            {
+               goto bad_arg;
+            }
+            *value = st->dc_filter;
         }
         break;
         case OPUS_SET_VOICE_RATIO_REQUEST:
