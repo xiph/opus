@@ -686,6 +686,24 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       st->rng = seed;
 
       celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch);
+
+      /* Run the postfilter with the last parameters. */
+      c=0; do {
+         st->postfilter_period=IMAX(st->postfilter_period, COMBFILTER_MINPERIOD);
+         st->postfilter_period_old=IMAX(st->postfilter_period_old, COMBFILTER_MINPERIOD);
+         comb_filter(out_syn[c], out_syn[c], st->postfilter_period_old, st->postfilter_period, mode->shortMdctSize,
+               st->postfilter_gain_old, st->postfilter_gain, st->postfilter_tapset_old, st->postfilter_tapset,
+               mode->window, overlap, st->arch);
+         if (LM!=0)
+            comb_filter(out_syn[c]+mode->shortMdctSize, out_syn[c]+mode->shortMdctSize, st->postfilter_period, st->postfilter_period, N-mode->shortMdctSize,
+                  st->postfilter_gain, st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
+                  mode->window, overlap, st->arch);
+
+      } while (++c<C);
+      st->postfilter_period_old = st->postfilter_period;
+      st->postfilter_gain_old = st->postfilter_gain;
+      st->postfilter_tapset_old = st->postfilter_tapset;
+
       st->prefilter_and_fold = 0;
       /* Skip regular PLC until we get two consecutive packets. */
       st->skip_plc = 1;
