@@ -1924,12 +1924,8 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
        }
 #endif
     } else {
-#ifdef ENABLE_QEXT
-       /* FIXME: Avoid glitching when we switch qext on/off dynamically. */
-       if (st->enable_qext) OPUS_COPY(&pcm_buf[total_buffer*st->channels], pcm, frame_size*st->channels);
-       else
-#endif
-       dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
+       for (i=0;i<frame_size*st->channels;i++)
+          pcm_buf[total_buffer*st->channels + i] = pcm[i];
     }
 #ifndef FIXED_POINT
     if (float_api)
