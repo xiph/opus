@@ -194,16 +194,12 @@ static const opus_int32 fec_thresholds[] = {
 
 int opus_encoder_get_size(int channels)
 {
-    int silkEncSizeBytes, celtEncSizeBytes;
     int ret;
-    if (channels<1 || channels > 2)
+    ret = opus_encoder_init(NULL, 48000, channels, OPUS_APPLICATION_AUDIO);
+    if (ret < 0)
         return 0;
-    ret = silk_Get_Encoder_Size( &silkEncSizeBytes, channels );
-    if (ret)
-        return 0;
-    silkEncSizeBytes = align(silkEncSizeBytes);
-    celtEncSizeBytes = celt_encoder_get_size(channels);
-    return align(sizeof(OpusEncoder))+silkEncSizeBytes+celtEncSizeBytes;
+    else
+        return ret;
 }
 
 int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int application)
@@ -211,7 +207,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     void *silk_enc;
     CELTEncoder *celt_enc;
     int err;
-    int ret, silkEncSizeBytes;
+    int ret, silkEncSizeBytes, celtEncSizeBytes;
 
    if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000
 #ifdef ENABLE_QEXT
@@ -222,12 +218,16 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
         && application != OPUS_APPLICATION_RESTRICTED_LOWDELAY))
         return OPUS_BAD_ARG;
 
-    OPUS_CLEAR((char*)st, opus_encoder_get_size(channels));
     /* Create SILK encoder */
     ret = silk_Get_Encoder_Size( &silkEncSizeBytes, channels );
     if (ret)
         return OPUS_BAD_ARG;
     silkEncSizeBytes = align(silkEncSizeBytes);
+    celtEncSizeBytes = celt_encoder_get_size(channels);
+    if (st == NULL) {
+        return align(sizeof(OpusEncoder))+silkEncSizeBytes+celtEncSizeBytes;
+    }
+    OPUS_CLEAR((char*)st, opus_encoder_get_size(channels));
     st->silk_enc_offset = align(sizeof(OpusEncoder));
     st->celt_enc_offset = st->silk_enc_offset+silkEncSizeBytes;
     silk_enc = (char*)st+st->silk_enc_offset;
