@@ -125,7 +125,7 @@ void print_usage( char* argv[] )
         "<bits per second>  [options] <input> <output>\n", argv[0]);
     fprintf(stderr, "       %s -d <sampling rate (Hz)> <channels (1/2)> "
         "[options] <input> <output>\n\n", argv[0]);
-    fprintf(stderr, "application: voip | audio | restricted-lowdelay\n" );
+    fprintf(stderr, "application: voip | audio | restricted-lowdelay | restricted-silk | restricted-celt\n" );
     fprintf(stderr, "options:\n" );
     fprintf(stderr, "-e                   : only runs the encoder (output the bit-stream)\n" );
     fprintf(stderr, "-d                   : only runs the decoder (reads the bit-stream as input)\n" );
@@ -488,6 +488,10 @@ int main(int argc, char *argv[])
           application = OPUS_APPLICATION_VOIP;
        else if (strcmp(argv[args], "restricted-lowdelay")==0)
           application = OPUS_APPLICATION_RESTRICTED_LOWDELAY;
+       else if (strcmp(argv[args], "restricted-silk")==0)
+          application = OPUS_APPLICATION_RESTRICTED_SILK;
+       else if (strcmp(argv[args], "restricted-celt")==0)
+          application = OPUS_APPLICATION_RESTRICTED_CELT;
        else if (strcmp(argv[args], "audio")!=0) {
           fprintf(stderr, "unknown application: %s\n", argv[args]);
           print_usage(argv);
