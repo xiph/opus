@@ -167,6 +167,9 @@ typedef struct OpusEncoder OpusEncoder;
   * @param[in] channels <tt>int</tt>: Number of channels.
   *                                   This must be 1 or 2.
   * @returns The size in bytes.
+  * @note Since this function does not take the application as input, it will overestimate
+  * the size required for OPUS_APPLICATION_RESTRICTED_SILK and OPUS_APPLICATION_RESTRICTED_CELT.
+  * That is generally not a problem, except when trying to know the size to use for a copy.
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT int opus_encoder_get_size(int channels);
 

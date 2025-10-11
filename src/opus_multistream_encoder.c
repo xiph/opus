@@ -73,8 +73,8 @@ static opus_val32 *ms_get_preemph_mem(OpusMSEncoder *st)
    char *ptr;
    int coupled_size, mono_size;
 
-   coupled_size = opus_encoder_get_size(2);
-   mono_size = opus_encoder_get_size(1);
+   coupled_size = opus_encoder_init(NULL, st->Fs, 2, st->application);
+   mono_size = opus_encoder_init(NULL, st->Fs, 1, st->application);
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    for (s=0;s<st->layout.nb_streams;s++)
    {
@@ -93,8 +93,8 @@ static opus_val32 *ms_get_window_mem(OpusMSEncoder *st)
    char *ptr;
    int coupled_size, mono_size;
 
-   coupled_size = opus_encoder_get_size(2);
-   mono_size = opus_encoder_get_size(1);
+   coupled_size = opus_encoder_init(NULL, st->Fs, 2, st->application);
+   mono_size = opus_encoder_init(NULL, st->Fs, 1, st->application);
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    for (s=0;s<st->layout.nb_streams;s++)
    {
@@ -454,6 +454,23 @@ static int opus_multistream_encoder_init_impl(
        (streams+coupled_streams>channels))
       return OPUS_BAD_ARG;
 
+   coupled_size = opus_encoder_init(NULL, Fs, 2, application);
+   if (coupled_size < 0)
+      return coupled_size;
+   mono_size = opus_encoder_init(NULL, Fs, 1, application);
+   if (mono_size < 0)
+      return mono_size;
+   if (st == NULL)
+   {
+      int surround_size=0;
+      if (mapping_type == MAPPING_TYPE_SURROUND) {
+         surround_size = channels*(MAX_OVERLAP*sizeof(opus_val32) + sizeof(opus_val32));
+      }
+
+      return align(sizeof(OpusMSEncoder)) + coupled_streams*align(coupled_size)
+             + (streams-coupled_streams)*align(mono_size) + surround_size;
+   }
+
    st->arch = opus_select_arch();
    st->layout.nb_channels = channels;
    st->layout.nb_streams = streams;
@@ -462,6 +479,7 @@ static int opus_multistream_encoder_init_impl(
       st->lfe_stream = -1;
    st->bitrate_bps = OPUS_AUTO;
    st->application = application;
+   st->Fs = Fs;
    st->variable_duration = OPUS_FRAMESIZE_ARG;
    for (i=0;i<st->layout.nb_channels;i++)
       st->layout.mapping[i] = mapping[i];
@@ -473,9 +491,6 @@ static int opus_multistream_encoder_init_impl(
        !validate_ambisonics(st->layout.nb_channels, NULL, NULL))
       return OPUS_BAD_ARG;
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
-   coupled_size = opus_encoder_get_size(2);
-   mono_size = opus_encoder_get_size(1);
-
    for (i=0;i<st->layout.nb_coupled_streams;i++)
    {
       ret = opus_encoder_init((OpusEncoder*)ptr, Fs, 2, application);
@@ -528,10 +543,11 @@ int opus_multistream_surround_encoder_init(
 )
 {
    MappingType mapping_type;
+   int lfe_stream;
 
    if ((channels>255) || (channels<1))
       return OPUS_BAD_ARG;
-   st->lfe_stream = -1;
+   lfe_stream = -1;
    if (mapping_family==0)
    {
       if (channels==1)
@@ -555,7 +571,7 @@ int opus_multistream_surround_encoder_init(
       for (i=0;i<channels;i++)
          mapping[i] = vorbis_mappings[channels-1].mapping[i];
       if (channels>=6)
-         st->lfe_stream = *streams-1;
+         lfe_stream = *streams-1;
    } else if (mapping_family==255)
    {
       int i;
@@ -584,9 +600,12 @@ int opus_multistream_surround_encoder_init(
    {
       mapping_type = MAPPING_TYPE_NONE;
    }
+   if (st != NULL) {
+      st->lfe_stream = lfe_stream;
+   }
    return opus_multistream_encoder_init_impl(st, Fs, channels, *streams,
-                                             *coupled_streams, mapping,
-                                             application, mapping_type);
+         *coupled_streams, mapping,
+         application, mapping_type);
 }
 
 OpusMSEncoder *opus_multistream_encoder_create(
@@ -601,6 +620,7 @@ OpusMSEncoder *opus_multistream_encoder_create(
 {
    int ret;
    OpusMSEncoder *st;
+   opus_int32 size;
    if ((channels>255) || (channels<1) || (coupled_streams>streams) ||
        (streams<1) || (coupled_streams<0) || (streams>255-coupled_streams) ||
        (streams+coupled_streams>channels))
@@ -609,7 +629,14 @@ OpusMSEncoder *opus_multistream_encoder_create(
          *error = OPUS_BAD_ARG;
       return NULL;
    }
-   st = (OpusMSEncoder *)opus_alloc(opus_multistream_encoder_get_size(streams, coupled_streams));
+   size = opus_multistream_encoder_init(NULL, Fs, channels, streams, coupled_streams, mapping, application);
+   if (size < 0)
+   {
+      if (error)
+         *error = size;
+      return NULL;
+   }
+   st = (OpusMSEncoder *)opus_alloc(size);
    if (st==NULL)
    {
       if (error)
@@ -647,11 +674,11 @@ OpusMSEncoder *opus_multistream_surround_encoder_create(
          *error = OPUS_BAD_ARG;
       return NULL;
    }
-   size = opus_multistream_surround_encoder_get_size(channels, mapping_family);
-   if (!size)
+   size = opus_multistream_surround_encoder_init(NULL, Fs, channels, mapping_family, streams, coupled_streams, mapping, application);
+   if (size < 0)
    {
       if (error)
-         *error = OPUS_UNIMPLEMENTED;
+         *error = size;
       return NULL;
    }
    st = (OpusMSEncoder *)opus_alloc(size);
@@ -831,7 +858,7 @@ int opus_multistream_encode_native
    unsigned char tmp_data[MS_FRAME_TMP];
    OpusRepacketizer rp;
    opus_int32 vbr;
-   const CELTMode *celt_mode;
+   const CELTMode *celt_mode=NULL;
    opus_int32 bitrates[256];
    celt_glog bandLogE[42];
    opus_val32 *mem = NULL;
@@ -850,9 +877,10 @@ int opus_multistream_encode_native
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_VBR(&vbr));
-   opus_encoder_ctl((OpusEncoder*)ptr, CELT_GET_MODE(&celt_mode));
+   if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
+      opus_encoder_ctl((OpusEncoder*)ptr, CELT_GET_MODE(&celt_mode));
 
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, Fs);
+   frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, Fs);
    if (frame_size <= 0)
    {
       RESTORE_STACK;
@@ -870,11 +898,11 @@ int opus_multistream_encode_native
       return OPUS_BUFFER_TOO_SMALL;
    }
    ALLOC(buf, 2*frame_size, opus_res);
-   coupled_size = opus_encoder_get_size(2);
-   mono_size = opus_encoder_get_size(1);
+   coupled_size = opus_encoder_init(NULL, st->Fs, 2, st->application);
+   mono_size = opus_encoder_init(NULL, st->Fs, 1, st->application);
 
    ALLOC(bandSMR, 21*st->layout.nb_channels, celt_glog);
-   if (st->mapping_type == MAPPING_TYPE_SURROUND)
+   if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
    {
       surround_analysis(celt_mode, pcm, bandSMR, mem, preemph_mem, frame_size, celt_mode->overlap, st->layout.nb_channels, Fs, copy_channel_in, st->arch);
    }
@@ -953,7 +981,7 @@ int opus_multistream_encode_native
          (*copy_channel_in)(buf+1, 2,
             pcm, st->layout.nb_channels, right, frame_size, user_data);
          ptr += align(coupled_size);
-         if (st->mapping_type == MAPPING_TYPE_SURROUND)
+         if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
          {
             for (i=0;i<21;i++)
             {
@@ -969,7 +997,7 @@ int opus_multistream_encode_native
          (*copy_channel_in)(buf, 1,
             pcm, st->layout.nb_channels, chan, frame_size, user_data);
          ptr += align(mono_size);
-         if (st->mapping_type == MAPPING_TYPE_SURROUND)
+         if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
          {
             for (i=0;i<21;i++)
                bandLogE[i] = bandSMR[21*chan+i];
@@ -977,7 +1005,7 @@ int opus_multistream_encode_native
          c1 = chan;
          c2 = -1;
       }
-      if (st->mapping_type == MAPPING_TYPE_SURROUND)
+      if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
          opus_encoder_ctl(enc, OPUS_SET_ENERGY_MASK(bandLogE));
       /* number of bytes left (+Toc) */
       curr_max = max_data_bytes - tot_size;
@@ -1120,8 +1148,8 @@ int opus_multistream_encoder_ctl_va_list(OpusMSEncoder *st, int request,
    char *ptr;
    int ret = OPUS_OK;
 
-   coupled_size = opus_encoder_get_size(2);
-   mono_size = opus_encoder_get_size(1);
+   coupled_size = opus_encoder_init(NULL, st->Fs, 2, st->application);
+   mono_size = opus_encoder_init(NULL, st->Fs, 1, st->application);
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    switch (request)
    {
