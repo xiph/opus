@@ -101,6 +101,7 @@ struct OpusMSEncoder {
    int arch;
    int lfe_stream;
    int application;
+   opus_int32 Fs;
    int variable_duration;
    MappingType mapping_type;
    opus_int32 bitrate_bps;
@@ -181,7 +182,7 @@ void opus_pcm_soft_clip_impl(float *_x, int N, int C, float *declip_mem, int arc
 
 int encode_size(int size, unsigned char *data);
 
-opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs);
+opus_int32 frame_size_select(int application, opus_int32 frame_size, int variable_duration, opus_int32 Fs);
 
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_size,
       unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
