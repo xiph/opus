@@ -445,7 +445,10 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
    /* Prevent the transient detector from confusing the partial cycle of a
       very low frequency tone with a transient. */
    if (toneishness > QCONST32(.98f, 29) && tone_freq < QCONST16(0.026f, 13))
+   {
       is_transient = 0;
+      mask_metric = 0;
+   }
    /* For low bitrates, define "weak transients" that need to be
       handled differently to avoid partial collapse. */
    if (allow_weak_transients && is_transient && mask_metric<600) {
@@ -2017,6 +2020,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       isTransient = transient_analysis(in, N+overlap, CC,
             &tf_estimate, &tf_chan, allow_weak_transients, &weak_transient, tone_freq, toneishness);
    }
+   toneishness = MIN32(toneishness, QCONST32(1.f, 29)-SHL32(tf_estimate, 15));
    /* Find pitch period and gain */
    {
       int enabled;
@@ -2523,6 +2527,26 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       /* Don't give any bits for the first 80 kb/s per channel. Then 80% of the excess. */
       opus_int32 offset = C*80000*frame_size/mode->Fs/8;
       qext_bytes = IMAX(nbCompressedBytes-1275, IMAX(0, (nbCompressedBytes-offset)*4/5));
+      if (qext_bytes > 20) {
+         opus_int32 target;
+         opus_val16 scale;
+         target = ((nbCompressedBytes-qext_bytes/3)*8<<BITRES);
+         if (!vbr_rate) {
+            opus_val16 tf_estimate2;
+            target -= ((40*C+20)<<BITRES);
+            tf_estimate2 = MIN32(QCONST16(1.f, 14), 2*EXTEND32(tf_estimate));
+            target = compute_vbr(mode, &st->analysis, target, LM, equiv_rate,
+                  st->lastCodedBands, C, st->intensity, st->constrained_vbr,
+                  st->stereo_saving, tot_boost, tf_estimate2, pitch_change, maxDepth,
+                  st->lfe, st->energy_mask!=NULL, surround_masking,
+                  temporal_vbr ARG_QEXT(st->enable_qext));
+            target += tell;
+         }
+         scale = PSHR32(toneishness,14);
+         scale = Q15ONE - MULT16_16_Q15(scale, scale);
+         qext_bytes += MULT16_32_Q15(scale, (nbCompressedBytes-(target/(8<<BITRES))) - qext_bytes);
+         qext_bytes = IMAX(nbCompressedBytes-1275, IMAX(21, qext_bytes));
+      }
       padding_len_bytes = (qext_bytes+253)/254;
       qext_bytes = IMIN(qext_bytes, nbCompressedBytes-min_allowed-padding_len_bytes-1);
       padding_len_bytes = (qext_bytes+253)/254;
