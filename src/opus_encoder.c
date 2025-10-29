@@ -804,7 +804,7 @@ void downmix_int24(const void *_x, opus_val32 *y, int subframe, int offset, int 
    }
 }
 
-opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
+opus_int32 frame_size_select(int application, opus_int32 frame_size, int variable_duration, opus_int32 Fs)
 {
    int new_size;
    if (frame_size<Fs/400)
@@ -825,6 +825,8 @@ opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_
    if (400*new_size!=Fs   && 200*new_size!=Fs   && 100*new_size!=Fs   &&
         50*new_size!=Fs   &&  25*new_size!=Fs   &&  50*new_size!=3*Fs &&
         50*new_size!=4*Fs &&  50*new_size!=5*Fs &&  50*new_size!=6*Fs)
+      return -1;
+   if (application == OPUS_APPLICATION_FORCED_SILK && frame_size < Fs/100)
       return -1;
    return new_size;
 }
@@ -1506,8 +1508,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 
     /* Override the chosen mode to make sure we meet the requested frame size */
     if (st->mode != MODE_CELT_ONLY && frame_size < st->Fs/100)
+    {
+       celt_assert(st->application != OPUS_APPLICATION_FORCED_SILK);
        st->mode = MODE_CELT_ONLY;
-    if (st->lfe)
+    }
+    if (st->lfe && st->application != OPUS_APPLICATION_FORCED_SILK)
        st->mode = MODE_CELT_ONLY;
 
     if (st->prev_mode > 0 &&
@@ -1914,6 +1919,11 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
        if (redundancy_bytes == 0)
           redundancy = 0;
     }
+    if (st->application == OPUS_APPLICATION_FORCED_SILK)
+    {
+       redundancy = 0;
+       redundancy_bytes = 0;
+    }
 
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, curr_bandwidth); */
     bytes_target = IMIN(max_data_bytes-redundancy_bytes, st->bitrate_bps * frame_size / (st->Fs * 8)) - 1;
@@ -2157,8 +2167,11 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
                rewritten is tmp_prefill[] and even then only the part after the ramp really
                gets used (rather than sent to the encoder and discarded) */
             prefill_offset = st->channels*(st->encoder_buffer-st->delay_compensation-st->Fs/400);
-            gain_fade(st->delay_buffer+prefill_offset, st->delay_buffer+prefill_offset,
-                  0, Q15ONE, celt_mode->overlap, st->Fs/400, st->channels, celt_mode->window, st->Fs);
+            if (celt_mode != NULL)
+            {
+               gain_fade(st->delay_buffer+prefill_offset, st->delay_buffer+prefill_offset,
+                     0, Q15ONE, celt_mode->overlap, st->Fs/400, st->channels, celt_mode->window, st->Fs);
+            }
             OPUS_CLEAR(st->delay_buffer, prefill_offset);
             pcm_silk = st->delay_buffer;
             silk_Encode( silk_enc, &st->silk_mode, pcm_silk, st->encoder_buffer, NULL, &zero, prefill, activity );
@@ -2259,7 +2272,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     }
     /* gain_fade() and stereo_fade() need to be after the buffer copying
        because we don't want any of this to affect the SILK part */
-    if( st->prev_HB_gain < Q15ONE || HB_gain < Q15ONE ) {
+    if( ( st->prev_HB_gain < Q15ONE || HB_gain < Q15ONE ) && celt_mode != NULL ) {
        gain_fade(pcm_buf, pcm_buf,
              st->prev_HB_gain, HB_gain, celt_mode->overlap, frame_size, st->channels, celt_mode->window, st->Fs);
     }
@@ -2286,8 +2299,11 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
             g1 *= (1.f/16384);
             g2 *= (1.f/16384);
 #endif
-            stereo_fade(pcm_buf, pcm_buf, g1, g2, celt_mode->overlap,
-                  frame_size, st->channels, celt_mode->window, st->Fs);
+            if ( celt_mode != NULL )
+            {
+                stereo_fade(pcm_buf, pcm_buf, g1, g2, celt_mode->overlap,
+                     frame_size, st->channels, celt_mode->window, st->Fs);
+            }
             st->hybrid_stereo_width_Q14 = st->silk_mode.stereoWidth_Q14;
         }
     }
@@ -2609,7 +2625,7 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
                 unsigned char *data, opus_int32 max_data_bytes)
 {
    int frame_size;
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, 16,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
 }
@@ -2622,7 +2638,7 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
    VARDECL(opus_res, in);
    ALLOC_STACK;
 
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    if (frame_size <= 0)
    {
       RESTORE_STACK;
@@ -2644,7 +2660,7 @@ opus_int32 opus_encode24(OpusEncoder *st, const opus_int32 *pcm, int analysis_fr
                 unsigned char *data, opus_int32 max_data_bytes)
 {
    int frame_size;
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, MAX_ENCODING_DEPTH,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_int24, 0);
 }
@@ -2657,7 +2673,7 @@ opus_int32 opus_encode24(OpusEncoder *st, const opus_int32 *pcm, int analysis_fr
    VARDECL(opus_res, in);
    ALLOC_STACK;
 
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    if (frame_size <= 0)
    {
       RESTORE_STACK;
@@ -2682,7 +2698,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
                       unsigned char *data, opus_int32 out_data_bytes)
 {
    int frame_size;
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, MAX_ENCODING_DEPTH,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
 }
@@ -2695,7 +2711,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
    VARDECL(opus_res, in);
    ALLOC_STACK;
 
-   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    if (frame_size <= 0)
    {
       RESTORE_STACK;
@@ -2732,7 +2748,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_APPLICATION_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (st->application == OPUS_APPLICATION_FORCED_SILK || st->application == OPUS_APPLICATION_FORCED_CELT)
+            if (st->application == OPUS_APPLICATION_FORCED_SILK || st->application == OPUS_APPLICATION_FORCED_CELT
+                || value == OPUS_APPLICATION_FORCED_SILK || value == OPUS_APPLICATION_FORCED_CELT)
             {
                ret = OPUS_BAD_ARG;
                break;
@@ -3238,7 +3255,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             celt_glog *value = va_arg(ap, celt_glog*);
             st->energy_masking = value;
-            ret = celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_MASK(value));
+            if (st->application != OPUS_APPLICATION_FORCED_SILK)
+               ret = celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_MASK(value));
         }
         break;
         case OPUS_GET_IN_DTX_REQUEST:
@@ -3290,6 +3308,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            {
               goto bad_arg;
            }
+           celt_assert(celt_enc != NULL);
            ret = celt_encoder_ctl(celt_enc, CELT_GET_MODE(value));
         }
         break;
