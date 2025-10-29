@@ -101,6 +101,7 @@ struct OpusMSEncoder {
    int arch;
    int lfe_stream;
    int application;
+   opus_int32 Fs;
    int variable_duration;
    MappingType mapping_type;
    opus_int32 bitrate_bps;
