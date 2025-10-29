@@ -459,7 +459,7 @@ static int opus_multistream_encoder_init_impl(
    if (st == NULL)
    {
       return align(sizeof(OpusMSEncoder)) + coupled_streams*align(coupled_size)
-             + (streams-coupled_streams)*mono_size;
+             + (streams-coupled_streams)*align(mono_size);
    }
 
    st->arch = opus_select_arch();
@@ -535,6 +535,7 @@ int opus_multistream_surround_encoder_init(
 {
    MappingType mapping_type;
    int lfe_stream;
+   opus_int32 ret;
 
    if ((channels>255) || (channels<1))
       return OPUS_BAD_ARG;
@@ -594,9 +595,15 @@ int opus_multistream_surround_encoder_init(
    if (st != NULL) {
       st->lfe_stream = lfe_stream;
    }
-   return opus_multistream_encoder_init_impl(st, Fs, channels, *streams,
-                                             *coupled_streams, mapping,
-                                             application, mapping_type);
+   ret = opus_multistream_encoder_init_impl(st, Fs, channels, *streams,
+         *coupled_streams, mapping,
+         application, mapping_type);
+   if (st == NULL) {
+      if (channels>2) {
+         ret += channels*(MAX_OVERLAP*sizeof(opus_val32) + sizeof(opus_val32));
+      }
+   }
+   return ret;
 }
 
 OpusMSEncoder *opus_multistream_encoder_create(
