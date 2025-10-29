@@ -221,9 +221,9 @@ extern "C" {
  * @hideinitializer */
 #define OPUS_APPLICATION_RESTRICTED_LOWDELAY 2051
 /** Experts only: forces SILK encoding don't allocate CELT state at all. Disables OPUS_SET_APPLICATION. */
-#define OPUS_APPLICATION_FORCED_SILK         2052
+#define OPUS_APPLICATION_RESTRICTED_SILK     2052
 /** Experts only: forces CELT encoding don't allocate SILK state at all. Disables OPUS_SET_APPLICATION. */
-#define OPUS_APPLICATION_FORCED_CELT         2053
+#define OPUS_APPLICATION_RESTRICTED_CELT     2053
 
 #define OPUS_SIGNAL_VOICE                    3001 /**< Signal being encoded is voice */
 #define OPUS_SIGNAL_MUSIC                    3002 /**< Signal being encoded is music */

@@ -862,7 +862,7 @@ int opus_multistream_encode_native
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_SAMPLE_RATE(&Fs));
    opus_encoder_ctl((OpusEncoder*)ptr, OPUS_GET_VBR(&vbr));
-   if (st->application != OPUS_APPLICATION_FORCED_SILK)
+   if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
       opus_encoder_ctl((OpusEncoder*)ptr, CELT_GET_MODE(&celt_mode));
 
    frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, Fs);
@@ -887,7 +887,7 @@ int opus_multistream_encode_native
    mono_size = opus_encoder_init(NULL, st->Fs, 1, st->application);
 
    ALLOC(bandSMR, 21*st->layout.nb_channels, celt_glog);
-   if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_FORCED_SILK)
+   if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
    {
       surround_analysis(celt_mode, pcm, bandSMR, mem, preemph_mem, frame_size, celt_mode->overlap, st->layout.nb_channels, Fs, copy_channel_in, st->arch);
    }
@@ -966,7 +966,7 @@ int opus_multistream_encode_native
          (*copy_channel_in)(buf+1, 2,
             pcm, st->layout.nb_channels, right, frame_size, user_data);
          ptr += align(coupled_size);
-         if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_FORCED_SILK)
+         if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
          {
             for (i=0;i<21;i++)
             {
@@ -982,7 +982,7 @@ int opus_multistream_encode_native
          (*copy_channel_in)(buf, 1,
             pcm, st->layout.nb_channels, chan, frame_size, user_data);
          ptr += align(mono_size);
-         if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_FORCED_SILK)
+         if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
          {
             for (i=0;i<21;i++)
                bandLogE[i] = bandSMR[21*chan+i];
@@ -990,7 +990,7 @@ int opus_multistream_encode_native
          c1 = chan;
          c2 = -1;
       }
-      if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_FORCED_SILK)
+      if (st->mapping_type == MAPPING_TYPE_SURROUND && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
          opus_encoder_ctl(enc, OPUS_SET_ENERGY_MASK(bandLogE));
       /* number of bytes left (+Toc) */
       curr_max = max_data_bytes - tot_size;

@@ -217,8 +217,8 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
          )||(channels!=1&&channels!=2)||
         (application != OPUS_APPLICATION_VOIP && application != OPUS_APPLICATION_AUDIO
         && application != OPUS_APPLICATION_RESTRICTED_LOWDELAY
-        && application != OPUS_APPLICATION_FORCED_SILK
-        && application != OPUS_APPLICATION_FORCED_CELT))
+        && application != OPUS_APPLICATION_RESTRICTED_SILK
+        && application != OPUS_APPLICATION_RESTRICTED_CELT))
         return OPUS_BAD_ARG;
 
     /* Create SILK encoder */
@@ -226,9 +226,9 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     if (ret)
         return OPUS_BAD_ARG;
     silkEncSizeBytes = align(silkEncSizeBytes);
-    if (application == OPUS_APPLICATION_FORCED_CELT)
+    if (application == OPUS_APPLICATION_RESTRICTED_CELT)
         silkEncSizeBytes = 0;
-    if (application != OPUS_APPLICATION_FORCED_SILK)
+    if (application != OPUS_APPLICATION_RESTRICTED_SILK)
         celtEncSizeBytes = celt_encoder_get_size(channels);
     tot_size = align(sizeof(OpusEncoder))+silkEncSizeBytes+celtEncSizeBytes;
     if (st == NULL) {
@@ -244,7 +244,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
 
     st->arch = opus_select_arch();
 
-    if (application != OPUS_APPLICATION_FORCED_CELT)
+    if (application != OPUS_APPLICATION_RESTRICTED_CELT)
     {
        silk_enc = (char*)st+st->silk_enc_offset;
        ret = silk_InitEncoder( silk_enc, st->channels, st->arch, &st->silk_mode );
@@ -270,7 +270,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
 
     /* Create CELT encoder */
     /* Initialize CELT encoder */
-    if (application != OPUS_APPLICATION_FORCED_SILK)
+    if (application != OPUS_APPLICATION_RESTRICTED_SILK)
     {
        celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
        err = celt_encoder_init(celt_enc, Fs, channels, st->arch);
@@ -623,8 +623,8 @@ OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int application, i
          )||(channels!=1&&channels!=2)||
        (application != OPUS_APPLICATION_VOIP && application != OPUS_APPLICATION_AUDIO
        && application != OPUS_APPLICATION_RESTRICTED_LOWDELAY
-       && application != OPUS_APPLICATION_FORCED_SILK
-       && application != OPUS_APPLICATION_FORCED_CELT))
+       && application != OPUS_APPLICATION_RESTRICTED_SILK
+       && application != OPUS_APPLICATION_RESTRICTED_CELT))
    {
       if (error)
          *error = OPUS_BAD_ARG;
@@ -826,7 +826,7 @@ opus_int32 frame_size_select(int application, opus_int32 frame_size, int variabl
         50*new_size!=Fs   &&  25*new_size!=Fs   &&  50*new_size!=3*Fs &&
         50*new_size!=4*Fs &&  50*new_size!=5*Fs &&  50*new_size!=6*Fs)
       return -1;
-   if (application == OPUS_APPLICATION_FORCED_SILK && frame_size < Fs/100)
+   if (application == OPUS_APPLICATION_RESTRICTED_SILK && frame_size < Fs/100)
       return -1;
    return new_size;
 }
@@ -1214,21 +1214,21 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
       return OPUS_BUFFER_TOO_SMALL;
     }
 
-    if (st->application != OPUS_APPLICATION_FORCED_CELT)
+    if (st->application != OPUS_APPLICATION_RESTRICTED_CELT)
         silk_enc = (char*)st+st->silk_enc_offset;
-    if (st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
         celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
 
     lsb_depth = IMIN(lsb_depth, st->lsb_depth);
 
-    if (st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
         celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
 #ifndef DISABLE_FLOAT_API
     analysis_info.valid = 0;
 #ifdef FIXED_POINT
-    if (st->silk_mode.complexity >= 10 && st->Fs>=16000 && st->Fs<=48000 && st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->silk_mode.complexity >= 10 && st->Fs>=16000 && st->Fs<=48000 && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
 #else
-    if (st->silk_mode.complexity >= 7 && st->Fs>=16000 && st->Fs<=48000 && st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->silk_mode.complexity >= 7 && st->Fs>=16000 && st->Fs<=48000 && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
 #endif
     {
        is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
@@ -1441,10 +1441,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 #endif
 
     /* Mode selection depending on application and signal type */
-    if (st->application == OPUS_APPLICATION_FORCED_SILK)
+    if (st->application == OPUS_APPLICATION_RESTRICTED_SILK)
     {
        st->mode = MODE_SILK_ONLY;
-    } else if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY || st->application == OPUS_APPLICATION_FORCED_CELT)
+    } else if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY || st->application == OPUS_APPLICATION_RESTRICTED_CELT)
     {
        st->mode = MODE_CELT_ONLY;
     } else if (st->user_forced_mode == OPUS_AUTO)
@@ -1509,10 +1509,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
     /* Override the chosen mode to make sure we meet the requested frame size */
     if (st->mode != MODE_CELT_ONLY && frame_size < st->Fs/100)
     {
-       celt_assert(st->application != OPUS_APPLICATION_FORCED_SILK);
+       celt_assert(st->application != OPUS_APPLICATION_RESTRICTED_SILK);
        st->mode = MODE_CELT_ONLY;
     }
-    if (st->lfe && st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->lfe && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
        st->mode = MODE_CELT_ONLY;
 
     if (st->prev_mode > 0 &&
@@ -1651,7 +1651,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 #endif
     st->silk_mode.LBRR_coded = decide_fec(st->silk_mode.useInBandFEC, st->silk_mode.packetLossPercentage,
           st->silk_mode.LBRR_coded, st->mode, &st->bandwidth, equiv_rate);
-    if (st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
         celt_encoder_ctl(celt_enc, OPUS_SET_LSB_DEPTH(lsb_depth));
 
     /* CELT mode doesn't support mediumband, use wideband instead */
@@ -1662,7 +1662,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 
     curr_bandwidth = st->bandwidth;
 
-    if (st->application == OPUS_APPLICATION_FORCED_SILK && curr_bandwidth > OPUS_BANDWIDTH_WIDEBAND)
+    if (st->application == OPUS_APPLICATION_RESTRICTED_SILK && curr_bandwidth > OPUS_BANDWIDTH_WIDEBAND)
        st->bandwidth = curr_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
     /* Chooses the appropriate mode for speech
        *NEVER* switch to/from CELT-only mode here as this will invalidate some assumptions */
@@ -1866,15 +1866,15 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
 
     max_data_bytes = IMIN(orig_max_data_bytes, 1276);
     st->rangeFinal = 0;
-    if (st->application != OPUS_APPLICATION_FORCED_CELT)
+    if (st->application != OPUS_APPLICATION_RESTRICTED_CELT)
        silk_enc = (char*)st+st->silk_enc_offset;
-    if (st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
     {
        celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
        celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
     }
     curr_bandwidth = st->bandwidth;
-    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY || st->application == OPUS_APPLICATION_FORCED_CELT)
+    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY || st->application == OPUS_APPLICATION_RESTRICTED_CELT)
        delay_compensation = 0;
     else
        delay_compensation = st->delay_compensation;
@@ -1919,7 +1919,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
        if (redundancy_bytes == 0)
           redundancy = 0;
     }
-    if (st->application == OPUS_APPLICATION_FORCED_SILK)
+    if (st->application == OPUS_APPLICATION_RESTRICTED_SILK)
     {
        redundancy = 0;
        redundancy_bytes = 0;
@@ -2222,7 +2222,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     }
 
     /* CELT processing */
-    if (st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
     {
         int endband=21;
 
@@ -2401,7 +2401,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
     }
 
-    if (st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
        celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(start_band));
 
     data[-1] = 0;
@@ -2740,7 +2740,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
     ret = OPUS_OK;
     va_start(ap, request);
 
-    if (st->application != OPUS_APPLICATION_FORCED_SILK)
+    if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
        celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
 
     switch (request)
@@ -2748,8 +2748,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_APPLICATION_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (st->application == OPUS_APPLICATION_FORCED_SILK || st->application == OPUS_APPLICATION_FORCED_CELT
-                || value == OPUS_APPLICATION_FORCED_SILK || value == OPUS_APPLICATION_FORCED_CELT)
+            if (st->application == OPUS_APPLICATION_RESTRICTED_SILK || st->application == OPUS_APPLICATION_RESTRICTED_CELT
+                || value == OPUS_APPLICATION_RESTRICTED_SILK || value == OPUS_APPLICATION_RESTRICTED_CELT)
             {
                ret = OPUS_BAD_ARG;
                break;
@@ -2904,7 +2904,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                goto bad_arg;
             }
             st->silk_mode.complexity = value;
-            if (st->application != OPUS_APPLICATION_FORCED_SILK)
+            if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
                celt_encoder_ctl(celt_enc, OPUS_SET_COMPLEXITY(value));
         }
         break;
@@ -2947,7 +2947,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                goto bad_arg;
             }
             st->silk_mode.packetLossPercentage = value;
-            if (st->application != OPUS_APPLICATION_FORCED_SILK)
+            if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
                celt_encoder_ctl(celt_enc, OPUS_SET_PACKET_LOSS_PERC(value));
         }
         break;
@@ -3050,7 +3050,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                goto bad_arg;
             }
             *value = st->Fs/400;
-            if (st->application != OPUS_APPLICATION_RESTRICTED_LOWDELAY && st->application != OPUS_APPLICATION_FORCED_CELT)
+            if (st->application != OPUS_APPLICATION_RESTRICTED_LOWDELAY && st->application != OPUS_APPLICATION_RESTRICTED_CELT)
                 *value += st->delay_compensation;
         }
         break;
@@ -3141,7 +3141,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             {
                goto bad_arg;
             }
-            if (st->application != OPUS_APPLICATION_FORCED_SILK)
+            if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
                celt_encoder_ctl(celt_enc, OPUS_SET_PHASE_INVERSION_DISABLED(value));
         }
         break;
@@ -3152,7 +3152,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             {
                goto bad_arg;
             }
-            if (st->application != OPUS_APPLICATION_FORCED_SILK)
+            if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
                celt_encoder_ctl(celt_enc, OPUS_GET_PHASE_INVERSION_DISABLED(value));
             else
                *value = 0;
@@ -3216,9 +3216,9 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            start = (char*)&st->OPUS_ENCODER_RESET_START;
            OPUS_CLEAR(start, sizeof(OpusEncoder) - (start - (char*)st));
 
-           if (st->application != OPUS_APPLICATION_FORCED_SILK)
+           if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
               celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
-           if (st->application != OPUS_APPLICATION_FORCED_CELT)
+           if (st->application != OPUS_APPLICATION_RESTRICTED_CELT)
               silk_InitEncoder( silk_enc, st->channels, st->arch, &dummy );
 #ifdef ENABLE_DRED
            /* Initialize DRED Encoder */
@@ -3247,7 +3247,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             opus_int32 value = va_arg(ap, opus_int32);
             st->lfe = value;
-            if (st->application != OPUS_APPLICATION_FORCED_SILK)
+            if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
                ret = celt_encoder_ctl(celt_enc, OPUS_SET_LFE(value));
         }
         break;
@@ -3255,7 +3255,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             celt_glog *value = va_arg(ap, celt_glog*);
             st->energy_masking = value;
-            if (st->application != OPUS_APPLICATION_FORCED_SILK)
+            if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
                ret = celt_encoder_ctl(celt_enc, OPUS_SET_ENERGY_MASK(value));
         }
         break;

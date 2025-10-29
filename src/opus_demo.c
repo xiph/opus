@@ -488,10 +488,10 @@ int main(int argc, char *argv[])
           application = OPUS_APPLICATION_VOIP;
        else if (strcmp(argv[args], "restricted-lowdelay")==0)
           application = OPUS_APPLICATION_RESTRICTED_LOWDELAY;
-       else if (strcmp(argv[args], "forced-silk")==0)
-          application = OPUS_APPLICATION_FORCED_SILK;
-       else if (strcmp(argv[args], "forced-celt")==0)
-          application = OPUS_APPLICATION_FORCED_CELT;
+       else if (strcmp(argv[args], "restricted-silk")==0)
+          application = OPUS_APPLICATION_RESTRICTED_SILK;
+       else if (strcmp(argv[args], "restricted-celt")==0)
+          application = OPUS_APPLICATION_RESTRICTED_CELT;
        else if (strcmp(argv[args], "audio")!=0) {
           fprintf(stderr, "unknown application: %s\n", argv[args]);
           print_usage(argv);
