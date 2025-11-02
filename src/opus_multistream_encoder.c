@@ -487,9 +487,9 @@ static int opus_multistream_encoder_init_impl(
    for (;i<st->layout.nb_streams;i++)
    {
       ret = opus_encoder_init((OpusEncoder*)ptr, Fs, 1, application);
+      if(ret!=OPUS_OK)return ret;
       if (i==st->lfe_stream)
          opus_encoder_ctl((OpusEncoder*)ptr, OPUS_SET_LFE(1));
-      if(ret!=OPUS_OK)return ret;
       ptr += align(mono_size);
    }
    if (mapping_type == MAPPING_TYPE_SURROUND)
