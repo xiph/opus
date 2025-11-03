@@ -826,7 +826,7 @@ opus_int32 frame_size_select(int application, opus_int32 frame_size, int variabl
         50*new_size!=Fs   &&  25*new_size!=Fs   &&  50*new_size!=3*Fs &&
         50*new_size!=4*Fs &&  50*new_size!=5*Fs &&  50*new_size!=6*Fs)
       return -1;
-   if (application == OPUS_APPLICATION_RESTRICTED_SILK && frame_size < Fs/100)
+   if (application == OPUS_APPLICATION_RESTRICTED_SILK && new_size < Fs/100)
       return -1;
    return new_size;
 }
