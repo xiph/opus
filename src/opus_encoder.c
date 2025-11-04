@@ -728,7 +728,7 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
   if (st->user_bitrate_bps==OPUS_AUTO)
     return 60*st->Fs/frame_size + st->Fs*st->channels;
   else if (st->user_bitrate_bps==OPUS_BITRATE_MAX)
-    return max_data_bytes*8*st->Fs/frame_size;
+    return IMIN(1500000, max_data_bytes*8*(st->Fs/1000)/frame_size*1000);
   else
     return st->user_bitrate_bps;
 }
@@ -1926,7 +1926,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     }
 
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, curr_bandwidth); */
-    bytes_target = IMIN(max_data_bytes-redundancy_bytes, st->bitrate_bps * frame_size / (st->Fs * 8)) - 1;
+    bytes_target = IMIN(max_data_bytes-redundancy_bytes, (st->bitrate_bps/8) * frame_size / st->Fs) - 1;
 
     data += 1;
 

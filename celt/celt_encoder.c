@@ -1891,8 +1891,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 
    if (st->vbr && st->bitrate!=OPUS_BITRATE_MAX)
    {
-      opus_int32 den=mode->Fs>>BITRES;
-      vbr_rate=(st->bitrate*frame_size+(den>>1))/den;
+      opus_int32 den=mode->Fs>>(BITRES+2);
+      vbr_rate=((st->bitrate*frame_size>>2)+(den>>1))/den;
 #if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
       if (st->signalling)
          vbr_rate -= 8<<BITRES;
