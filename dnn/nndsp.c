@@ -35,6 +35,7 @@
 #include "nnet.h"
 #include "os_support.h"
 #include "pitch.h"
+#include "mathops.h"
 
 #include <math.h>
 
@@ -358,6 +359,7 @@ void adashape_process_frame(
     int hidden_dim = frame_size / interpolate_k;
     float mean;
     float *tenv;
+    float f = 1.0f / avg_pool_k;
 
     celt_assert(frame_size % avg_pool_k == 0);
     celt_assert(frame_size % interpolate_k == 0);
@@ -377,7 +379,7 @@ void adashape_process_frame(
         {
             tenv[i] += fabs(x_in[i * avg_pool_k + k]);
         }
-        tenv[i] = log(tenv[i] / avg_pool_k + 1.52587890625e-05f);
+        tenv[i] = celt_log(tenv[i] * f + 1.52587890625e-05f);
         mean += tenv[i];
     }
     mean /= tenv_size;
@@ -429,10 +431,11 @@ void adashape_process_frame(
     print_float_vector("interpolate_out", out_buffer, frame_size);
 #endif
 
+    compute_activation(out_buffer, out_buffer, frame_size, ACTIVATION_EXP, arch);
     /* shape signal */
     for (i = 0; i < frame_size; i ++)
     {
-        x_out[i] = exp(out_buffer[i]) * x_in[i];
+        x_out[i] = out_buffer[i] * x_in[i];
     }
 
 }

@@ -107,6 +107,8 @@ void RTCD_SUF(compute_activation_)(float *output, const float *input, int N, int
       for (i=0;i<N;i++)
          output[i] = sum*output[i];
 #endif
+   } else if (activation == ACTIVATION_EXP) {
+      softmax(output, input, N);
    } else {
       celt_assert(activation == ACTIVATION_LINEAR);
       if (input != output) {

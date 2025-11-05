@@ -37,6 +37,7 @@
 #include "nndsp.h"
 #include "float_cast.h"
 #include "arch.h"
+#include "mathops.h"
 /*#define OSCE_DEBUG*/
 #ifdef OSCE_DEBUG
 #include <stdio.h>
@@ -973,9 +974,19 @@ static float frac_09_24[8] = {
 static void apply_valin_activation(float *x, int len)
 {
     int i;
+    float y[2 * BBWENET_TDSHAPE2_FRAME_SIZE];
+    celt_assert(len <= 2 * BBWENET_TDSHAPE2_FRAME_SIZE);
     for (i = 0; i < len; i++)
     {
-        x[i] *= sin(log(fabs(x[i]) + 1e-6f));
+        y[i] = fabs(x[i]) + 1e-6f;
+    }
+    for (i = 0; i < len; i++)
+    {
+        y[i] = celt_log(y[i]);
+    }
+    for (i = 0; i < len; i++)
+    {
+        x[i] *= celt_sin(y[i]);
     }
 }
 
