@@ -182,6 +182,8 @@ f"""
 
     latent_in = model.get_submodule('core_decoder.module.dense_1')
     state_in = model.get_submodule('core_decoder.module.hidden_init')
+    latent_mask = np.append(latent_mask, True)
+    latent_scale = torch.cat([latent_scale, torch.tensor([1.])])
     latent_in.weight = torch.nn.Parameter(latent_in.weight[:,latent_mask]*latent_scale)
     state_in.weight = torch.nn.Parameter(state_in.weight[:,state_mask]*state_scale)
 
@@ -189,14 +191,25 @@ f"""
     encoder_dense_layers = [
         ('core_encoder.module.dense_1'       , 'enc_dense1',   'TANH', False,),
         ('core_encoder.module.z_dense'       , 'enc_zdense',   'LINEAR', True,),
-        ('core_encoder.module.state_dense_1' , 'gdense1'    ,   'TANH', True,),
-        ('core_encoder.module.state_dense_2' , 'gdense2'    ,   'TANH', True)
+        ('core_encoder.module.state_dense_2' , 'gdense2'    ,   'TANH', True),
     ]
 
     for name, export_name, _, quantize in encoder_dense_layers:
         layer = model.get_submodule(name)
         dump_torch_weights(enc_writer, layer, name=export_name, verbose=True, quantize=quantize, scale=None)
 
+    encoder_sparse_dense_layers = [
+        ('core_encoder.module.state_dense_1' , 'gdense1'    ,   'TANH', True,),
+        ('core_encoder.module.conv1.conv_dense' , 'enc_conv_dense1',   'TANH', True),
+        ('core_encoder.module.conv2.conv_dense' , 'enc_conv_dense2',   'TANH', True),
+        ('core_encoder.module.conv3.conv_dense' , 'enc_conv_dense3',   'TANH', True),
+        ('core_encoder.module.conv4.conv_dense' , 'enc_conv_dense4',   'TANH', True),
+        ('core_encoder.module.conv5.conv_dense' , 'enc_conv_dense5',   'TANH', True)
+    ]
+
+    for name, export_name, _, quantize in encoder_sparse_dense_layers:
+        layer = model.get_submodule(name)
+        dump_torch_weights(enc_writer, layer, name=export_name, verbose=True, sparse=True, quantize=quantize, scale=None)
 
     encoder_gru_layers = [
         ('core_encoder.module.gru1'       , 'enc_gru1',   'TANH', True),
@@ -231,14 +244,26 @@ f"""
         ('core_decoder.module.glu3.gate'    , 'dec_glu3',    'TANH', True),
         ('core_decoder.module.glu4.gate'    , 'dec_glu4',    'TANH', True),
         ('core_decoder.module.glu5.gate'    , 'dec_glu5',    'TANH', True),
-        ('core_decoder.module.output'       , 'dec_output',  'LINEAR', True),
         ('core_decoder.module.hidden_init'  , 'dec_hidden_init',        'TANH', False),
-        ('core_decoder.module.gru_init'     , 'dec_gru_init','TANH', True),
     ]
 
     for name, export_name, _, quantize in decoder_dense_layers:
         layer = model.get_submodule(name)
         dump_torch_weights(dec_writer, layer, name=export_name, verbose=True, quantize=quantize, scale=None)
+
+    decoder_sparse_dense_layers = [
+        ('core_decoder.module.output'       , 'dec_output',  'LINEAR', True),
+        ('core_decoder.module.conv1.conv_dense' , 'dec_conv_dense1',   'TANH', True),
+        ('core_decoder.module.conv2.conv_dense' , 'dec_conv_dense2',   'TANH', True),
+        ('core_decoder.module.conv3.conv_dense' , 'dec_conv_dense3',   'TANH', True),
+        ('core_decoder.module.conv4.conv_dense' , 'dec_conv_dense4',   'TANH', True),
+        ('core_decoder.module.conv5.conv_dense' , 'dec_conv_dense5',   'TANH', True),
+        ('core_decoder.module.gru_init'     , 'dec_gru_init','TANH', True),
+    ]
+
+    for name, export_name, _, quantize in decoder_sparse_dense_layers:
+        layer = model.get_submodule(name)
+        dump_torch_weights(dec_writer, layer, name=export_name, verbose=True, sparse=True, quantize=quantize, scale=None)
 
 
     decoder_gru_layers = [

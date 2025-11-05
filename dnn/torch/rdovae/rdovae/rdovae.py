@@ -36,12 +36,14 @@ from torch import nn
 import torch.nn.functional as F
 import sys
 import os
+import math
 source_dir = os.path.split(os.path.abspath(__file__))[0]
 sys.path.append(os.path.join(source_dir, "../../lpcnet/"))
-from utils.sparsification import GRUSparsifier
+#from utils.sparsification import GRUSparsifier
 from torch.nn.utils import weight_norm
 sys.path.append(os.path.join(source_dir, "../../dnntools"))
 from dnntools.quantization import soft_quant
+from dnntools.sparsification import GRUSparsifier, LinearSparsifier
 
 # Quantization and rate related utily functions
 
@@ -158,20 +160,48 @@ def noise_quantize(x):
 
 
 # loss functions
+class IDCT(nn.Module):
+    def __init__(self, N, device=None):
+        super(IDCT, self).__init__()
 
+        self.N = N
+        n = torch.arange(N, device=device)
+        k = torch.arange(N, device=device)
+        self.table = torch.cos(torch.pi/N * (n[:,None]+.5) * k[None,:])
+        self.table[:,0] = self.table[:,0] * math.sqrt(.5)
+        self.table = self.table / math.sqrt(N/2)
 
-def distortion_loss(y_true, y_pred, rate_lambda=None):
+    def forward(self, x):
+        return F.linear(x, self.table, None)
+
+def dist_func(idct):
+  def distortion_loss(y_true, y_pred, rate_lambda=None):
     """ custom distortion loss for LPCNet features """
 
     if y_true.size(-1) != 20:
         raise ValueError('distortion loss is designed to work with 20 features')
 
     ceps_error   = y_pred[..., :18] - y_true[..., :18]
-    pitch_error  = 2*(y_pred[..., 18:19] - y_true[..., 18:19])
-    corr_error   = y_pred[..., 19:] - y_true[..., 19:]
-    pitch_weight = torch.relu(y_true[..., 19:] + 0.5) ** 2
+    pitch_error  = 2*(y_pred[..., 18] - y_true[..., 18])
+    corr_error   = y_pred[..., 19] - y_true[..., 19]
+    pitch_weight = torch.relu(y_true[..., 19] + 0.5) ** 2
+    band_pred = 10**(idct(y_pred[..., :18]))
+    band_true = 10**(idct(y_true[..., :18]))
+    band_pred = band_pred**.25
+    band_true = band_true**.25
 
-    loss = torch.mean(ceps_error ** 2 + (10/18) * torch.abs(pitch_error) * pitch_weight + (1/18) * corr_error ** 2, dim=-1)
+    #eband = (band_pred-band_true)**2 / (torch.std(band_true, axis=-2, keepdim=True)**2+.01*torch.mean(band_true**2, axis=-2, keepdim=True))
+    eband = (band_pred-band_true)**2 / torch.mean(band_true**2, axis=-2, keepdim=True)
+    eband = eband * (1.15-torch.arange(18)[None,None,:]/36).to(y_pred.device)
+    eband = torch.mean(eband, axis=-1)
+    eband4 = eband**2
+
+    #loss = torch.mean(ceps_error ** 2 + (10/18) * torch.abs(pitch_error) * pitch_weight + (1/18) * corr_error ** 2, dim=-1)
+    ceps_error = idct(ceps_error)
+    ceps_error = torch.mean(ceps_error ** 2, dim=-1)
+
+    loss = .05*ceps_error + 1*eband + torch.minimum(20*eband, 25*eband4) + 14/18 * torch.abs(pitch_error) * pitch_weight + 2/18 * corr_error ** 2
+
 
     if type(rate_lambda) != type(None):
         loss = loss / torch.sqrt(rate_lambda)
@@ -179,7 +209,7 @@ def distortion_loss(y_true, y_pred, rate_lambda=None):
     loss = torch.mean(loss)
 
     return loss
-
+  return distortion_loss
 
 # sampling functions
 
@@ -243,23 +273,42 @@ sparsify_exponent  = 3
 #sparsify_stop      = 0
 
 sparse_params1 = {
-#                'W_hr' : (1.0, [8, 4], True),
-#                'W_hz' : (1.0, [8, 4], True),
-#                'W_hn' : (1.0, [8, 4], True),
                 'W_ir' : (0.6, [8, 4], False),
                 'W_iz' : (0.4, [8, 4], False),
                 'W_in' : (0.8, [8, 4], False)
                 }
 
 sparse_params2 = {
-#                'W_hr' : (1.0, [8, 4], True),
-#                'W_hz' : (1.0, [8, 4], True),
-#                'W_hn' : (1.0, [8, 4], True),
-                'W_ir' : (0.3, [8, 4], False),
-                'W_iz' : (0.2, [8, 4], False),
+                'W_ir' : (0.35, [8, 4], False),
+                'W_iz' : (0.25, [8, 4], False),
                 'W_in' : (0.4, [8, 4], False)
                 }
 
+sparse_params3 = {
+                'W_ir' : (0.25, [8, 4], False),
+                'W_iz' : (0.15, [8, 4], False),
+                'W_in' : (0.3, [8, 4], False)
+                }
+
+sparse_params4 = {
+                'W_ir' : (0.15, [8, 4], False),
+                'W_iz' : (0.1, [8, 4], False),
+                'W_in' : (0.2, [8, 4], False)
+                }
+
+sparse_params5 = {
+                'W_ir' : (0.15, [8, 4], False),
+                'W_iz' : (0.1, [8, 4], False),
+                'W_in' : (0.2, [8, 4], False)
+                }
+
+conv_params = [(1.0, [8, 4]),
+               (0.8, [8, 4]),
+               (0.6, [8, 4]),
+               (0.4, [8, 4]),
+               (0.3, [8, 4])]
+
+dense_params = (0.5, [8, 4])
 
 class MyConv(nn.Module):
     def __init__(self, input_dim, output_dim, dilation=1, softquant=False):
@@ -267,13 +316,15 @@ class MyConv(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.dilation=dilation
-        self.conv = nn.Conv1d(input_dim, output_dim, kernel_size=2, padding='valid', dilation=dilation)
+        self.conv_dense = nn.Linear(input_dim, output_dim, bias=True)
+        self.conv = nn.Conv1d(output_dim, output_dim, kernel_size=2, padding='valid', dilation=dilation)
 
         if softquant:
             self.conv = soft_quant(self.conv)
 
     def forward(self, x, state=None):
         device = x.device
+        x = torch.tanh(self.conv_dense(x))
         conv_in = torch.cat([torch.zeros_like(x[:,0:self.dilation,:], device=device), x], -2).permute(0, 2, 1)
         return torch.tanh(self.conv(conv_in)).permute(0, 2, 1)
 
@@ -308,7 +359,7 @@ class CoreEncoder(nn.Module):
     FRAMES_PER_STEP = 2
     CONV_KERNEL_SIZE = 4
 
-    def __init__(self, feature_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False):
+    def __init__(self, feature_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False, adapt=False):
         """ core encoder for RDOVAE
 
             Computes latents, initial states, and rate estimates from features and lambda parameter
@@ -329,25 +380,45 @@ class CoreEncoder(nn.Module):
 
         # layers
         self.dense_1 = nn.Linear(self.input_dim, 64)
-        self.gru1 = nn.GRU(64, 64, batch_first=True)
-        self.conv1 = MyConv(128, 96, softquant=True)
-        self.gru2 = nn.GRU(224, 64, batch_first=True)
-        self.conv2 = MyConv(288, 96, dilation=2, softquant=True)
-        self.gru3 = nn.GRU(384, 64, batch_first=True)
-        self.conv3 = MyConv(448, 96, dilation=2, softquant=True)
-        self.gru4 = nn.GRU(544, 64, batch_first=True)
-        self.conv4 = MyConv(608, 96, dilation=2, softquant=True)
-        self.gru5 = nn.GRU(704, 64, batch_first=True)
-        self.conv5 = MyConv(768, 96, dilation=2, softquant=True)
+        self.gru1 = nn.GRU(64, 32, batch_first=True)
+        self.conv1 = MyConv(96, 64, softquant=True)
+        self.gru2 = nn.GRU(160, 32, batch_first=True)
+        self.conv2 = MyConv(192, 64, dilation=2, softquant=True)
+        self.gru3 = nn.GRU(256, 32, batch_first=True)
+        self.conv3 = MyConv(288, 64, dilation=2, softquant=True)
+        self.gru4 = nn.GRU(352, 32, batch_first=True)
+        self.conv4 = MyConv(384, 64, dilation=2, softquant=True)
+        self.gru5 = nn.GRU(448, 32, batch_first=True)
+        self.conv5 = MyConv(480, 64, dilation=2, softquant=True)
 
-        self.z_dense = nn.Linear(864, self.output_dim)
+        self.z_dense = nn.Linear(544, self.output_dim)
 
 
-        self.state_dense_1 = nn.Linear(864, self.STATE_HIDDEN)
+        self.state_dense_1 = nn.Linear(544, self.STATE_HIDDEN)
 
         self.state_dense_2 = nn.Linear(self.STATE_HIDDEN, self.state_size)
         nb_params = sum(p.numel() for p in self.parameters())
         print(f"encoder: {nb_params} weights")
+        # initialize weights
+        if adapt:
+            start = 0
+            stop = 0
+        else:
+            start = sparsify_start
+            stop = sparsify_stop
+        self.apply(init_weights)
+        self.sparsifier = []
+        self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params3)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params4)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params5)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv1.conv_dense, conv_params[1-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv2.conv_dense, conv_params[2-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv3.conv_dense, conv_params[3-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv4.conv_dense, conv_params[4-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv5.conv_dense, conv_params[5-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.state_dense_1, dense_params)], start, stop, sparsify_interval, sparsify_exponent))
 
         # initialize weights
         self.apply(init_weights)
@@ -362,6 +433,10 @@ class CoreEncoder(nn.Module):
             self.state_dense_1 = soft_quant(self.state_dense_1)
             self.state_dense_2 = soft_quant(self.state_dense_2)
 
+
+    def sparsify(self):
+        for sparsifier in self.sparsifier:
+            sparsifier.step()
 
     def forward(self, features):
 
@@ -398,7 +473,7 @@ class CoreDecoder(nn.Module):
 
     FRAMES_PER_STEP = 4
 
-    def __init__(self, input_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False):
+    def __init__(self, input_dim, output_dim, cond_size, cond_size2, state_size=24, softquant=False, adapt=False):
         """ core decoder for RDOVAE
 
             Computes features from latents, initial state, and quantization index
@@ -418,35 +493,48 @@ class CoreDecoder(nn.Module):
 
         # layers
         self.dense_1    = nn.Linear(self.input_size, 96)
-        self.gru1 = nn.GRU(96, 96, batch_first=True)
-        self.conv1 = MyConv(192, 32, softquant=softquant)
-        self.gru2 = nn.GRU(224, 96, batch_first=True)
-        self.conv2 = MyConv(320, 32, softquant=softquant)
-        self.gru3 = nn.GRU(352, 96, batch_first=True)
-        self.conv3 = MyConv(448, 32, softquant=softquant)
-        self.gru4 = nn.GRU(480, 96, batch_first=True)
-        self.conv4 = MyConv(576, 32, softquant=softquant)
-        self.gru5 = nn.GRU(608, 96, batch_first=True)
-        self.conv5 = MyConv(704, 32, softquant=softquant)
-        self.output  = nn.Linear(736, self.FRAMES_PER_STEP * self.output_dim)
-        self.glu1 = GLU(96, softquant=softquant)
-        self.glu2 = GLU(96, softquant=softquant)
-        self.glu3 = GLU(96, softquant=softquant)
-        self.glu4 = GLU(96, softquant=softquant)
-        self.glu5 = GLU(96, softquant=softquant)
+        self.gru1 = nn.GRU(96, 64, batch_first=True)
+        self.conv1 = MyConv(160, 32, softquant=softquant)
+        self.gru2 = nn.GRU(192, 64, batch_first=True)
+        self.conv2 = MyConv(256, 32, softquant=softquant)
+        self.gru3 = nn.GRU(288, 64, batch_first=True)
+        self.conv3 = MyConv(352, 32, softquant=softquant)
+        self.gru4 = nn.GRU(384, 64, batch_first=True)
+        self.conv4 = MyConv(448, 32, softquant=softquant)
+        self.gru5 = nn.GRU(480, 64, batch_first=True)
+        self.conv5 = MyConv(544, 32, softquant=softquant)
+        self.output  = nn.Linear(576, self.FRAMES_PER_STEP * self.output_dim)
+        self.glu1 = GLU(64, softquant=softquant)
+        self.glu2 = GLU(64, softquant=softquant)
+        self.glu3 = GLU(64, softquant=softquant)
+        self.glu4 = GLU(64, softquant=softquant)
+        self.glu5 = GLU(64, softquant=softquant)
         self.hidden_init = nn.Linear(self.state_size, 128)
-        self.gru_init = nn.Linear(128, 480)
+        self.gru_init = nn.Linear(128, 320)
 
         nb_params = sum(p.numel() for p in self.parameters())
         print(f"decoder: {nb_params} weights")
         # initialize weights
+        if adapt:
+            start = 0
+            stop = 0
+        else:
+            start = sparsify_start
+            stop = sparsify_stop
         self.apply(init_weights)
         self.sparsifier = []
-        self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params1)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
-        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params2)], sparsify_start, sparsify_stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru1, sparse_params1)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru2, sparse_params2)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru3, sparse_params3)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru4, sparse_params4)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(GRUSparsifier([(self.gru5, sparse_params5)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv1.conv_dense, conv_params[1-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv2.conv_dense, conv_params[2-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv3.conv_dense, conv_params[3-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv4.conv_dense, conv_params[4-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.conv5.conv_dense, conv_params[5-1])], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.output, dense_params)], start, stop, sparsify_interval, sparsify_exponent))
+        self.sparsifier.append(LinearSparsifier([(self.gru_init, dense_params)], start, stop, sparsify_interval, sparsify_exponent))
 
         if softquant:
             self.gru1 = soft_quant(self.gru1, names=['weight_hh_l0', 'weight_ih_l0'])
@@ -465,11 +553,11 @@ class CoreDecoder(nn.Module):
 
         hidden = torch.tanh(self.hidden_init(initial_state))
         gru_state = torch.tanh(self.gru_init(hidden).permute(1, 0, 2))
-        h1_state = gru_state[:,:,:96].contiguous()
-        h2_state = gru_state[:,:,96:192].contiguous()
-        h3_state = gru_state[:,:,192:288].contiguous()
-        h4_state = gru_state[:,:,288:384].contiguous()
-        h5_state = gru_state[:,:,384:].contiguous()
+        h1_state = gru_state[:,:,:64].contiguous()
+        h2_state = gru_state[:,:,64:128].contiguous()
+        h3_state = gru_state[:,:,128:192].contiguous()
+        h4_state = gru_state[:,:,192:256].contiguous()
+        h5_state = gru_state[:,:,256:].contiguous()
 
         # run decoding layer stack
         x = n(torch.tanh(self.dense_1(z)))
@@ -555,7 +643,8 @@ class RDOVAE(nn.Module):
                  clip_weights=False,
                  pvq_num_pulses=82,
                  state_dropout_rate=0,
-                 softquant=False):
+                 softquant=False,
+                 adapt=False):
 
         super(RDOVAE, self).__init__()
 
@@ -572,8 +661,8 @@ class RDOVAE(nn.Module):
 
         # submodules encoder and decoder share the statistical model
         self.statistical_model = StatisticalModel(quant_levels, latent_dim, state_dim)
-        self.core_encoder = nn.DataParallel(CoreEncoder(feature_dim, latent_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant))
-        self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim, feature_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant))
+        self.core_encoder = nn.DataParallel(CoreEncoder(feature_dim, latent_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant, adapt=adapt))
+        self.core_decoder = nn.DataParallel(CoreDecoder(latent_dim+1, feature_dim, cond_size, cond_size2, state_size=state_dim, softquant=softquant, adapt=adapt))
 
         self.enc_stride = CoreEncoder.FRAMES_PER_STEP
         self.dec_stride = CoreDecoder.FRAMES_PER_STEP
@@ -591,7 +680,7 @@ class RDOVAE(nn.Module):
             self.apply(self.weight_clip_fn)
 
     def sparsify(self):
-        #self.core_encoder.module.sparsify()
+        self.core_encoder.module.sparsify()
         self.core_decoder.module.sparsify()
 
     def get_decoder_chunks(self, z_frames, mode='split', chunks_per_offset = 4):
@@ -660,6 +749,8 @@ class RDOVAE(nn.Module):
         # quantization
         z_q = hard_quantize(z) / statistical_model['quant_scale'][:,:,:self.latent_dim]
         z_n = noise_quantize(z) / statistical_model['quant_scale'][:,:,:self.latent_dim]
+        z_q = torch.cat([z_q, q_id[:,:,None]*.125-1], -1)
+        z_n = torch.cat([z_n, q_id[:,:,None]*.125-1], -1)
         #states_q = soft_pvq(states, self.pvq_num_pulses)
         states = states * statistical_model['quant_scale'][:,:,self.latent_dim:]
         states = soft_dead_zone(states, statistical_model['dead_zone'][:,:,self.latent_dim:])
