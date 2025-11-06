@@ -724,13 +724,16 @@ static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, 
 
 static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int max_data_bytes)
 {
+  int max_bitrate, user_bitrate;
   if(!frame_size)frame_size=st->Fs/400;
+  max_bitrate = max_data_bytes*8*(st->Fs/1000)/frame_size*1000;
   if (st->user_bitrate_bps==OPUS_AUTO)
-    return 60*st->Fs/frame_size + st->Fs*st->channels;
+     user_bitrate = 60*st->Fs/frame_size + st->Fs*st->channels;
   else if (st->user_bitrate_bps==OPUS_BITRATE_MAX)
-    return IMIN(1500000, max_data_bytes*8*(st->Fs/1000)/frame_size*1000);
+     user_bitrate = 1500000;
   else
-    return st->user_bitrate_bps;
+     user_bitrate = st->user_bitrate_bps;
+  return IMIN(user_bitrate, max_bitrate);
 }
 
 #ifndef DISABLE_FLOAT_API
