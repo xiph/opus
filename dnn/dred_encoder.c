@@ -128,7 +128,11 @@ void filter_df2t(const float *in, float *out, int len, float b0, const float *b,
     }
 }
 
+#ifdef ENABLE_QEXT
+#define MAX_DOWNMIX_BUFFER (1920*2)
+#else
 #define MAX_DOWNMIX_BUFFER (960*2)
+#endif
 static void dred_convert_to_16k(DREDEnc *enc, const float *in, int in_len, float *out, int out_len)
 {
     float downmix[MAX_DOWNMIX_BUFFER];
@@ -152,9 +156,15 @@ static void dred_convert_to_16k(DREDEnc *enc, const float *in, int in_len, float
         case 48000:
             up = 1;
             break;
+#ifdef ENABLE_QEXT
+        case 96000:
+            up = 1;
+            break;
+#endif
         default:
             celt_assert(0);
     }
+    celt_assert(up*in_len <= MAX_DOWNMIX_BUFFER);
     OPUS_CLEAR(downmix, up*in_len);
     if (enc->channels == 1) {
         for (i=0;i<in_len;i++) downmix[up*i] = FLOAT2INT16(up*in[i]);
@@ -172,7 +182,7 @@ static void dred_convert_to_16k(DREDEnc *enc, const float *in, int in_len, float
         filter_df2t(downmix, downmix, up*in_len, b0, filter_b, filter_a, RESAMPLING_ORDER, enc->resample_mem);
         for (i=0;i<out_len;i++) out[i] = downmix[3*i];
     } else if (enc->Fs == 12000) {
-        /* ellip(7, .2, 70, 7750/24000) */
+        /* ellip(7, .2, 70, 5800/24000) */
         static const float filter_b[8] = {-0.001017101081f,  0.003673127243f,   0.001009165267f,  0.001009165267f,  0.003673127243f, -0.001017101081f,  0.002033596776f, 0.f};
         static const float filter_a[8] = {-4.930414411612f, 11.291643096504f, -15.322037343815f, 13.216403930898f, -7.220409219553f,  2.310550142771f, -0.334338618782f, 0.f};
         float b0 = 0.002033596776f;
@@ -184,6 +194,15 @@ static void dred_convert_to_16k(DREDEnc *enc, const float *in, int in_len, float
         static const float filter_a[8] = {-1.393651933659f, 2.609789872676f, -2.403541968806f, 2.056814957331f, -1.148908574570f, 0.473001413788f, -0.110359852412f, 0.f};
         float b0 = 0.020109185709f;
         filter_df2t(downmix, out, out_len, b0, filter_b, filter_a, RESAMPLING_ORDER, enc->resample_mem);
+#ifdef ENABLE_QEXT
+    } else if (enc->Fs == 96000) {
+        /* ellip(7, .2, 70, 7750/48000) */
+        static const float filter_b[8] = { -0.002160290245f, 0.002887088080f, -0.001214921271f, -0.001214921271f, 0.002887088080f, -0.002160290245f, 0.000880286074f, 0.f};
+        static const float filter_a[8] = {-5.813483928050f, 14.932091805554f, -21.900933283269f, 19.774128964756f, -10.978028462771f, 3.467650469467f, -0.480641240411f, 0.f};
+        float b0 = 0.000880286074f;
+        filter_df2t(downmix, downmix, up*in_len, b0, filter_b, filter_a, RESAMPLING_ORDER, enc->resample_mem);
+        for (i=0;i<out_len;i++) out[i] = downmix[6*i];
+#endif
     } else {
         celt_assert(0);
     }
