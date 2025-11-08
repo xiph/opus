@@ -992,7 +992,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       } while (++c<C);
 
 #ifdef ENABLE_DEEP_PLC
-      if (lpcnet != NULL && lpcnet->loaded && (st->complexity >= 5 || lpcnet->fec_fill_pos > 0)) {
+      if (lpcnet != NULL && st->mode->Fs != 96000 && lpcnet->loaded && (st->complexity >= 5 || lpcnet->fec_fill_pos > 0)) {
          float overlap_mem;
          int samples_needed16k;
          celt_sig *buf;
