@@ -1151,9 +1151,9 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
                 opus_int32 dred_bitrate_bps,
 #endif
 #ifndef DISABLE_FLOAT_API
-                AnalysisInfo *analysis_info, int is_silence,
+                AnalysisInfo *analysis_info,
 #endif
-                int redundancy, int celt_to_silk, int prefill,
+                int is_silence, int redundancy, int celt_to_silk, int prefill,
                 opus_int32 equiv_rate, int to_celt);
 
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_size,
@@ -1183,8 +1183,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
     AnalysisInfo analysis_info;
     int analysis_read_pos_bak=-1;
     int analysis_read_subframe_bak=-1;
-    int is_silence = 0;
 #endif
+    int is_silence = 0;
 #ifdef ENABLE_DRED
     opus_int32 dred_bitrate_bps;
 #endif
@@ -1220,6 +1220,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 
     if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
         celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
+    is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
 #ifndef DISABLE_FLOAT_API
     analysis_info.valid = 0;
 #ifdef FIXED_POINT
@@ -1228,7 +1229,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
     if (st->silk_mode.complexity >= 7 && st->Fs>=16000 && st->Fs<=48000 && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
 #endif
     {
-       is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
        analysis_read_pos_bak = st->analysis.read_pos;
        analysis_read_subframe_bak = st->analysis.read_subframe;
        run_analysis(&st->analysis, celt_mode, analysis_pcm, analysis_size, frame_size,
@@ -1247,12 +1247,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
     (void)downmix;
 #endif
 
-#ifndef DISABLE_FLOAT_API
     /* Reset voice_ratio if this frame is not silent or if analysis is disabled.
      * Otherwise, preserve voice_ratio from the last non-silent frame */
     if (!is_silence)
       st->voice_ratio = -1;
-
+#ifndef DISABLE_FLOAT_API
     st->detected_bandwidth = 0;
     if (analysis_info.valid)
     {
@@ -1287,11 +1286,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 
     /* Track the peak signal energy */
 #ifndef DISABLE_FLOAT_API
-    if (!is_silence && (!analysis_info.valid || analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD))
+    if (!analysis_info.valid || analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD)
 #endif
     {
-       st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999f, 15), st->peak_signal_energy),
-             compute_frame_energy(pcm, frame_size, st->channels, st->arch));
+       if (!is_silence)
+       {
+          st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999f, 15), st->peak_signal_energy),
+                compute_frame_energy(pcm, frame_size, st->channels, st->arch));
+       }
     }
     if (st->channels==2 && st->force_channels!=1)
        stereo_width = compute_stereo_width(pcm, frame_size, st->Fs, &st->width_mem);
@@ -1438,7 +1440,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 #ifndef DISABLE_FLOAT_API
     st->silk_mode.useDTX = st->use_dtx && !(analysis_info.valid || is_silence);
 #else
-    st->silk_mode.useDTX = st->use_dtx;
+    st->silk_mode.useDTX = st->use_dtx && !is_silence;
 #endif
 
     /* Mode selection depending on application and signal type */
@@ -1768,21 +1770,20 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
           curr_max = IMIN(max_len_sum-tot_size, curr_max);
 #ifndef DISABLE_FLOAT_API
           if (analysis_read_pos_bak != -1) {
-            is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
             /* Get analysis for current frame. */
             tonality_get_info(&st->analysis, &analysis_info, enc_frame_size);
           }
 #endif
+          is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
 
           tmp_len = opus_encode_frame_native(st, pcm+i*(st->channels*enc_frame_size), enc_frame_size, curr_data, curr_max, float_api, first_frame,
 #ifdef ENABLE_DRED
-          dred_bitrate_bps,
+                    dred_bitrate_bps,
 #endif
 #ifndef DISABLE_FLOAT_API
-          &analysis_info,
-          is_silence,
+                    &analysis_info,
 #endif
-                    frame_redundancy, celt_to_silk, prefill,
+                    is_silence, frame_redundancy, celt_to_silk, prefill,
                     equiv_rate, frame_to_celt
               );
           if (tmp_len<0)
@@ -1817,9 +1818,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 #endif
 #ifndef DISABLE_FLOAT_API
                 &analysis_info,
-                is_silence,
 #endif
-                redundancy, celt_to_silk, prefill,
+                is_silence, redundancy, celt_to_silk, prefill,
                 equiv_rate, to_celt
           );
       RESTORE_STACK;
@@ -1834,9 +1834,9 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
                 opus_int32 dred_bitrate_bps,
 #endif
 #ifndef DISABLE_FLOAT_API
-                AnalysisInfo *analysis_info, int is_silence,
+                AnalysisInfo *analysis_info,
 #endif
-                int redundancy, int celt_to_silk, int prefill,
+                int is_silence, int redundancy, int celt_to_silk, int prefill,
                 opus_int32 equiv_rate, int to_celt)
 {
     void *silk_enc=NULL;
@@ -1883,12 +1883,12 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
 
     frame_rate = st->Fs/frame_size;
 
-#ifndef DISABLE_FLOAT_API
     if (is_silence)
     {
        activity = !is_silence;
-    } else if (analysis_info->valid)
-    {
+    }
+#ifndef DISABLE_FLOAT_API
+    else if (analysis_info->valid) {
        activity = analysis_info->activity_probability >= DTX_ACTIVITY_THRESHOLD;
        if (!activity)
        {
@@ -1896,9 +1896,9 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
            opus_val32 noise_energy = compute_frame_energy(pcm, frame_size, st->channels, st->arch);
            activity = st->peak_signal_energy < (PSEUDO_SNR_THRESHOLD * noise_energy);
        }
-    } else
+    }
 #endif
-    if (st->mode == MODE_CELT_ONLY) {
+    else if (st->mode == MODE_CELT_ONLY) {
        opus_val32 noise_energy = compute_frame_energy(pcm, frame_size, st->channels, st->arch);
        /* Boosting peak energy a bit because we didn't just average the active frames. */
        activity = 2*st->peak_signal_energy < (QCONST16(PSEUDO_SNR_THRESHOLD, 0) * (opus_val64)noise_energy);
