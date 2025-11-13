@@ -128,7 +128,6 @@ struct OpusEncoder {
     int          first;
     celt_glog * energy_masking;
     StereoWidthState width_mem;
-    opus_res     delay_buffer[MAX_ENCODER_BUFFER*2];
 #ifndef DISABLE_FLOAT_API
     int          detected_bandwidth;
     int          nb_no_activity_ms_Q1;
@@ -144,6 +143,7 @@ struct OpusEncoder {
 #endif
     int          nonfinal_frame; /* current frame is not the final in a packet */
     opus_uint32  rangeFinal;
+    opus_res     delay_buffer[MAX_ENCODER_BUFFER*2];
 };
 
 /* Transition tables for the voice and music. First column is the
@@ -209,6 +209,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     int err;
     int ret, silkEncSizeBytes, celtEncSizeBytes=0;
     int tot_size;
+    int base_size;
 
    if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000
 #ifdef ENABLE_QEXT
@@ -230,12 +231,17 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
         silkEncSizeBytes = 0;
     if (application != OPUS_APPLICATION_RESTRICTED_SILK)
         celtEncSizeBytes = celt_encoder_get_size(channels);
-    tot_size = align(sizeof(OpusEncoder))+silkEncSizeBytes+celtEncSizeBytes;
+    base_size = align(sizeof(OpusEncoder));
+    if (application == OPUS_APPLICATION_RESTRICTED_SILK || application == OPUS_APPLICATION_RESTRICTED_CELT) {
+       base_size = align(base_size - MAX_ENCODER_BUFFER*2*sizeof(opus_res));
+    } else if (channels==1)
+       base_size = align(base_size - MAX_ENCODER_BUFFER*sizeof(opus_res));
+    tot_size = base_size+silkEncSizeBytes+celtEncSizeBytes;
     if (st == NULL) {
         return tot_size;
     }
     OPUS_CLEAR((char*)st, tot_size);
-    st->silk_enc_offset = align(sizeof(OpusEncoder));
+    st->silk_enc_offset = base_size;
     st->celt_enc_offset = st->silk_enc_offset+silkEncSizeBytes;
 
     st->stream_channels = st->channels = channels;
@@ -296,7 +302,10 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->force_channels = OPUS_AUTO;
     st->user_forced_mode = OPUS_AUTO;
     st->voice_ratio = -1;
-    st->encoder_buffer = st->Fs/100;
+    if (application != OPUS_APPLICATION_RESTRICTED_CELT && application != OPUS_APPLICATION_RESTRICTED_SILK)
+       st->encoder_buffer = st->Fs/100;
+    else
+       st->encoder_buffer = 0;
     st->lsb_depth = 24;
     st->variable_duration = OPUS_FRAMESIZE_ARG;
 
@@ -1877,7 +1886,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
        celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
     }
     curr_bandwidth = st->bandwidth;
-    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY || st->application == OPUS_APPLICATION_RESTRICTED_CELT)
+    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY || st->application == OPUS_APPLICATION_RESTRICTED_CELT || OPUS_APPLICATION_RESTRICTED_SILK)
        delay_compensation = 0;
     else
        delay_compensation = st->delay_compensation;
@@ -2159,7 +2168,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
            }
         }
 
-        if (prefill)
+        if (prefill && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
         {
             opus_int32 zero=0;
             int prefill_offset;
@@ -2262,7 +2271,8 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     }
 
     ALLOC(tmp_prefill, st->channels*st->Fs/400, opus_res);
-    if (st->mode != MODE_SILK_ONLY && st->mode != st->prev_mode && st->prev_mode > 0)
+    if (st->mode != MODE_SILK_ONLY && st->mode != st->prev_mode && st->prev_mode > 0
+          && st->application != OPUS_APPLICATION_RESTRICTED_CELT && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
     {
        OPUS_COPY(tmp_prefill, &st->delay_buffer[(st->encoder_buffer-total_buffer-st->Fs/400)*st->channels], st->channels*st->Fs/400);
     }
@@ -2441,7 +2451,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
             celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(celt_bitrate));
         }
 #endif
-        if (st->mode != st->prev_mode && st->prev_mode > 0)
+        if (st->mode != st->prev_mode && st->prev_mode > 0 && st->application != OPUS_APPLICATION_RESTRICTED_CELT)
         {
            unsigned char dummy[2];
            celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
