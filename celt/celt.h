@@ -147,6 +147,15 @@ typedef struct {
 #define CELT_SET_SILK_INFO_REQUEST    10028
 #define CELT_SET_SILK_INFO(x) CELT_SET_SILK_INFO_REQUEST, __celt_check_silkinfo_ptr(x)
 
+
+static OPUS_INLINE opus_int32 bits_to_bitrate(opus_int32 bits, opus_int32 Fs, opus_int32 frame_size) {
+   return bits*(6*Fs/frame_size)/6;
+}
+
+static OPUS_INLINE opus_int32 bitrate_to_bits(opus_int32 bitrate, opus_int32 Fs, opus_int32 frame_size) {
+   return bitrate*6/(6*Fs/frame_size);
+}
+
 /* Encoder stuff */
 
 int celt_encoder_get_size(int channels);

@@ -914,11 +914,11 @@ int opus_multistream_encode_native
    {
       if (st->bitrate_bps == OPUS_AUTO)
       {
-         max_data_bytes = IMIN(max_data_bytes, 3*rate_sum/(3*8*Fs/frame_size));
+         max_data_bytes = IMIN(max_data_bytes, (bitrate_to_bits(rate_sum, Fs, frame_size)+4)/8);
       } else if (st->bitrate_bps != OPUS_BITRATE_MAX)
       {
          max_data_bytes = IMIN(max_data_bytes, IMAX(smallest_packet,
-                          3*st->bitrate_bps/(3*8*Fs/frame_size)));
+                          (bitrate_to_bits(st->bitrate_bps, Fs, frame_size)+4)/8));
       }
    }
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
@@ -1018,7 +1018,7 @@ int opus_multistream_encode_native
       /* Repacketizer will add one or two bytes for self-delimited frames */
       if (s != st->layout.nb_streams-1) curr_max -=  curr_max>253 ? 2 : 1;
       if (!vbr && s == st->layout.nb_streams-1)
-         opus_encoder_ctl(enc, OPUS_SET_BITRATE(curr_max*(8*Fs/frame_size)));
+         opus_encoder_ctl(enc, OPUS_SET_BITRATE(bits_to_bitrate(curr_max*8, Fs, frame_size)));
       len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth,
             pcm, analysis_frame_size, c1, c2, st->layout.nb_channels, downmix, float_api);
       if (len<0)

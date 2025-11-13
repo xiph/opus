@@ -702,13 +702,13 @@ static opus_int32 compute_dred_bitrate(OpusEncoder *st, opus_int32 bitrate_bps, 
    qmax = 15;
    target_dred_bitrate = IMAX(0, (int)(dred_frac*(bitrate_bps-bitrate_offset)));
    if (st->dred_duration > 0) {
-      opus_int32 target_bits = target_dred_bitrate*frame_size/st->Fs;
+      opus_int32 target_bits = bitrate_to_bits(target_dred_bitrate, st->Fs, frame_size);
       max_dred_bits = estimate_dred_bitrate(q0, dQ, qmax, st->dred_duration, target_bits, &target_chunks);
    } else {
       max_dred_bits = 0;
       target_chunks=0;
    }
-   dred_bitrate = IMIN(target_dred_bitrate, max_dred_bits*st->Fs/frame_size);
+   dred_bitrate = IMIN(target_dred_bitrate, bits_to_bitrate(max_dred_bits, st->Fs, frame_size));
    /* If we can't afford enough bits, don't bother with DRED at all. */
    if (target_chunks < 2)
       dred_bitrate = 0;
@@ -724,7 +724,7 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 {
   opus_int32 max_bitrate, user_bitrate;
   if(!frame_size)frame_size=st->Fs/400;
-  max_bitrate = max_data_bytes*8*(6*st->Fs/frame_size)/6;
+  max_bitrate = bits_to_bitrate(max_data_bytes*8, st->Fs, frame_size);
   if (st->user_bitrate_bps==OPUS_AUTO)
      user_bitrate = 60*st->Fs/frame_size + st->Fs*st->channels;
   else if (st->user_bitrate_bps==OPUS_BITRATE_MAX)
@@ -1304,11 +1304,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
     frame_rate = st->Fs/frame_size;
     if (!st->use_vbr)
     {
-       /* Multiply by 12 to make sure the division is exact. */
-       int frame_rate12 = 12*st->Fs/frame_size;
-       /* We need to make sure that "int" values always fit in 16 bits. */
-       cbr_bytes = IMIN( (12*st->bitrate_bps/8 + frame_rate12/2)/frame_rate12, max_data_bytes);
-       st->bitrate_bps = cbr_bytes*(opus_int32)frame_rate12*8/12;
+       cbr_bytes = IMIN((bitrate_to_bits(st->bitrate_bps, st->Fs, frame_size)+4)/8, max_data_bytes);
+       st->bitrate_bps = bits_to_bitrate(cbr_bytes*8, st->Fs, frame_size);
        /* Make sure we provide at least one byte to avoid failing. */
        max_data_bytes = IMAX(1, cbr_bytes);
     }
@@ -1384,7 +1381,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
        RESTORE_STACK;
        return ret;
     }
-    max_rate = frame_rate*max_data_bytes*8;
+    max_rate = bits_to_bitrate(max_data_bytes*8, st->Fs, frame_size);
 
     /* Equivalent 20-ms rate for mode/channel/bandwidth decisions */
     equiv_rate = compute_equiv_rate(st->bitrate_bps, st->channels, st->Fs/frame_size,
@@ -1503,7 +1500,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 #endif
 
        /* If max_data_bytes represents less than 6 kb/s, switch to CELT-only mode */
-       if (max_data_bytes < (frame_rate > 50 ? 9000 : 6000)*frame_size / (st->Fs * 8))
+       if (max_data_bytes < bitrate_to_bits(frame_rate > 50 ? 9000 : 6000, st->Fs, frame_size)/8)
           st->mode = MODE_CELT_ONLY;
     } else {
        st->mode = st->user_forced_mode;
@@ -1762,10 +1759,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
           frame_to_celt = to_celt && i==nb_frames-1;
           frame_redundancy = redundancy && (frame_to_celt || (!to_celt && i==0));
 
-          curr_max = IMIN(3*st->bitrate_bps/(3*8*st->Fs/enc_frame_size), max_len_sum/nb_frames);
+          curr_max = IMIN(bitrate_to_bits(st->bitrate_bps, st->Fs, enc_frame_size)/8, max_len_sum/nb_frames);
 #ifdef ENABLE_DRED
-          curr_max = IMIN(curr_max, (max_len_sum-3*dred_bitrate_bps/(3*8*st->Fs/frame_size))/nb_frames);
-          if (first_frame) curr_max += 3*dred_bitrate_bps/(3*8*st->Fs/frame_size);
+          curr_max = IMIN(curr_max, (max_len_sum-bitrate_to_bits(dred_bitrate_bps, st->Fs, frame_size)/8)/nb_frames);
+          if (first_frame) curr_max += bitrate_to_bits(dred_bitrate_bps, st->Fs, frame_size)/8;
 #endif
           curr_max = IMIN(max_len_sum-tot_size, curr_max);
 #ifndef DISABLE_FLOAT_API
@@ -1847,7 +1844,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     int max_data_bytes;
     opus_int32 nBytes;
     ec_enc enc;
-    int bytes_target;
+    int bits_target;
     int start_band = 0;
     int redundancy_bytes = 0; /* Number of bytes to use for redundancy frame */
     int nb_compr_bytes;
@@ -1932,7 +1929,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     }
 
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, curr_bandwidth); */
-    bytes_target = IMIN(max_data_bytes-redundancy_bytes, (st->bitrate_bps/8) * frame_size / st->Fs) - 1;
+    bits_target = IMIN(8*(max_data_bytes-redundancy_bytes), bitrate_to_bits(st->bitrate_bps, st->Fs, frame_size)) - 8;
 
     data += 1;
 
@@ -2023,7 +2020,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         const opus_res *pcm_silk;
 
         /* Distribute bits between SILK and CELT */
-        total_bitRate = 8 * bytes_target * frame_rate;
+        total_bitRate = bits_to_bitrate(bits_target, st->Fs, frame_size);
         if( st->mode == MODE_HYBRID ) {
             /* Base rate for SILK */
             st->silk_mode.bitRate = compute_silk_rate_for_hybrid(total_bitRate,
@@ -2103,7 +2100,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         st->silk_mode.maxInternalSampleRate = 16000;
         if (st->mode == MODE_SILK_ONLY)
         {
-           opus_int32 effective_max_rate = frame_rate*max_data_bytes*8;
+           opus_int32 effective_max_rate = bits_to_bitrate(max_data_bytes*8, st->Fs, frame_size);
            if (frame_rate > 50)
               effective_max_rate = effective_max_rate*2/3;
            if (effective_max_rate < 8000)
@@ -2159,7 +2156,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
               opus_int32 maxBitRate = compute_silk_rate_for_hybrid(st->silk_mode.maxBits*st->Fs / frame_size,
                     curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr, st->silk_mode.LBRR_coded,
                     st->stream_channels);
-              st->silk_mode.maxBits = maxBitRate * frame_size / st->Fs;
+              st->silk_mode.maxBits = bitrate_to_bits(maxBitRate, st->Fs, frame_size);
            }
         }
 
@@ -2377,7 +2374,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         if (st->dred_duration > 0)
         {
             int max_celt_bytes;
-            opus_int32 dred_bytes = dred_bitrate_bps/(frame_rate*8);
+            opus_int32 dred_bytes = bitrate_to_bits(dred_bitrate_bps, st->Fs, frame_size)/8;
             /* Allow CELT to steal up to 25% of the remaining bits. */
             max_celt_bytes = nb_compr_bytes - dred_bytes*3/4;
             /* But try to give CELT at least 5 bytes to prevent a mismatch with

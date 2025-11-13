@@ -1891,8 +1891,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
 
    if (st->vbr && st->bitrate!=OPUS_BITRATE_MAX)
    {
-      opus_int32 den=mode->Fs>>(BITRES+2);
-      vbr_rate=((st->bitrate*(frame_size>>2))+(den>>1))/den;
+      vbr_rate = bitrate_to_bits(st->bitrate, mode->Fs, frame_size)<<BITRES;
 #if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
       if (st->signalling)
          vbr_rate -= 8<<BITRES;
@@ -2525,7 +2524,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    if (st->enable_qext) {
       int new_compressedBytes;
       /* Don't give any bits for the first 80 kb/s per channel. Then 80% of the excess. */
-      opus_int32 offset = C*80000*frame_size/mode->Fs/8;
+      opus_int32 offset = bitrate_to_bits(C*80000, mode->Fs, frame_size)/8;
       qext_bytes = IMAX(nbCompressedBytes-1275, IMAX(0, (nbCompressedBytes-offset)*4/5));
       if (qext_bytes > 20) {
          opus_int32 target;
