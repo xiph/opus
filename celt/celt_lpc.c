@@ -63,7 +63,7 @@ int          p
          opus_int64 acc = 0;
          for (j = 0; j < i; j++)
             acc += (opus_int64)(lpc[j]) * (opus_int64)(ac[i - j]);
-         rr = (opus_val32)SHR(acc, 31);
+         rr = (opus_val32)SHR64(acc, 31);
 #else
          for (j = 0; j < i; j++)
             rr += MULT32_32_Q31(lpc[j],ac[i - j]);
