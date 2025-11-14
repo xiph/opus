@@ -130,6 +130,7 @@ void usage(void) {
     exit(1);
 }
 
+#ifdef ENABLE_DRED
 void dred_decode_latents(ec_dec *dec, float *x, const opus_uint8 *scale, const opus_uint8 *r, const opus_uint8 *p0, int dim);
 
 static opus_uint32 char_to_int(unsigned char ch[4])
@@ -137,12 +138,12 @@ static opus_uint32 char_to_int(unsigned char ch[4])
     return ((opus_uint32)ch[0]<<24) | ((opus_uint32)ch[1]<<16)
          | ((opus_uint32)ch[2]<< 8) |  (opus_uint32)ch[3];
 }
+#endif
 
 int main(int argc, char **argv) {
     int mode=0;
     int arch;
     FILE *fin, *fout;
-    int q0=-1;
 #ifdef USE_WEIGHTS_FILE
     int len;
     void *data;
@@ -236,9 +237,10 @@ int main(int argc, char **argv) {
         unsigned char bits[MAX_DRED_PACKET];
         RDOVAEDecState rdovae_dec;
         RDOVAEDec rdovae_dec_model;
+        int q0=-1;
 #ifdef USE_WEIGHTS_FILE
-	WeightArray *rdovaedec_arrays;
-	parse_weights(&rdovaedec_arrays, data, len);
+        WeightArray *rdovaedec_arrays;
+        parse_weights(&rdovaedec_arrays, data, len);
 #endif
         init_rdovaedec(&rdovae_dec_model, rdovaedec_arrays);
         while (1) {

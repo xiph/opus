@@ -549,6 +549,8 @@ static int celt_plc_pitch_search(CELTDecoder *st, celt_sig *decode_mem[2], int C
    SAVE_STACK;
 #ifdef ENABLE_QEXT
    qext_scale = st->qext_scale;
+#else
+   (void)st;
 #endif
    ALLOC( lp_pitch_buf, DECODE_BUFFER_SIZE>>1, opus_val16 );
    pitch_downsample(decode_mem, lp_pitch_buf,
