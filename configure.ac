@@ -717,17 +717,38 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
            #include <time.h>
          ]],
          [[
-             unsigned char utest[[16]] = {1};
-             __m256 mtest;
-             __m256i mtest1;
-             __m256i mtest2;
-             mtest = _mm256_set1_ps((float)time(NULL));
-             mtest = _mm256_fmadd_ps(mtest, mtest, mtest);
-             mtest1 = _mm256_set_m128i(_mm_loadu_si64(utest), _mm_loadu_si64(utest));
-             mtest2 =
-              _mm256_cvtepi16_epi32(_mm_loadu_si128(utest));
-             return _mm256_extract_epi16(_mm256_xor_si256(
-              _mm256_xor_si256(mtest1, mtest2), _mm256_cvttps_epi32(mtest)), 0);
+              /* Ensure the buffer is 16-byte aligned using proper data type
+                 for proper SIMD operations */
+              __attribute__((aligned(16))) unsigned short utest[[8]] = {1, 2, 3, 4, 5, 6, 7, 8};
+              __m256 mtest;   /* Variable for AVX 256-bit float operations */
+              __m256i mtest1; /* Variable for AVX 256-bit integer operations */
+              __m256i mtest2; /* Another variable for AVX 256-bit integer operations */
+
+              /* Initialize the float vector with the current time */
+              mtest = _mm256_set1_ps((float)time(NULL));
+
+              /* Perform a fused multiply-add operation */
+              mtest = _mm256_fmadd_ps(mtest, mtest, mtest);
+
+              /* Load the unsigned short buffer into 128-bit registers and
+                 combine into a 256-bit register */
+                 mtest1 = _mm256_set_m128i(
+                      _mm_loadu_si128((const __m128i_u *)utest), /* Cast to correct type */
+                      _mm_loadu_si128((const __m128i_u *)utest)
+                 );;
+
+                 /* Convert 16-bit integers to 32-bit integers */
+                 mtest2 =
+                  _mm256_cvtepi16_epi32(_mm_loadu_si128((const __m128i_u *)utest));
+
+                  /* Perform XOR operations on the vectors and extract the first 16-bit value */
+                  return _mm256_extract_epi16(
+                        _mm256_xor_si256(
+                            _mm256_xor_si256(mtest1, mtest2),
+                            _mm256_cvttps_epi32(mtest)
+                         ),
+                         0
+                  );
          ]]
       )
       AS_IF([test x"$OPUS_X86_MAY_HAVE_AVX2" = x"1" && test x"$OPUS_X86_PRESUME_AVX2" != x"1"],
