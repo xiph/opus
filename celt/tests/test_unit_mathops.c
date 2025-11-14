@@ -808,6 +808,9 @@ int main(void)
       testcelt_float2int16(use_ref_impl[i], 1031);
       testopus_limit2_checkwithin1(use_ref_impl[i]);
    }
+#else
+   (void)i;
+   (void)use_ref_impl;
 #endif
    return ret;
 }

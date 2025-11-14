@@ -475,6 +475,7 @@ void opus_custom_mode_destroy(CELTMode *mode)
 
    opus_free((CELTMode *)mode);
 #else
+   (void)arch;
    celt_assert(0);
 #endif
 }
