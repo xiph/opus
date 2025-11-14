@@ -131,6 +131,7 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-d                   : only runs the decoder (reads the bit-stream as input)\n" );
     fprintf(stderr, "-cbr                 : enable constant bitrate; default: variable bitrate\n" );
     fprintf(stderr, "-cvbr                : enable constrained variable bitrate; default: unconstrained\n" );
+    fprintf(stderr, "-dc_filter           : enable dc reject filter; default: false\n" );
     fprintf(stderr, "-delayed-decision    : use look-ahead for speech/music detection (experts only); default: disabled\n" );
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB> : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
     fprintf(stderr, "-framesize <2.5|5|10|20|40|60|80|100|120> : frame size in ms; default: 20 \n" );
@@ -389,6 +390,7 @@ int main(int argc, char *argv[])
     unsigned char *fbytes=NULL;
     opus_int32 sampling_rate;
     int use_vbr;
+    int dc_filter;
     int max_payload_bytes;
     int complexity;
     int dec_complexity;
@@ -537,6 +539,7 @@ int main(int argc, char *argv[])
 
     /* defaults: */
     use_vbr = 1;
+    dc_filter = 0;
     max_payload_bytes = MAX_PACKET;
     complexity = 10;
     dec_complexity = 0;
@@ -551,6 +554,10 @@ int main(int argc, char *argv[])
             check_encoder_option(decode_only, "-cbr");
             use_vbr = 0;
             args++;
+        } else if ( strcmp( argv[ args ], "-dc_filter" ) == 0 ) {
+            check_encoder_option(decode_only, "-dc_filter");
+            dc_filter = 1;
+            ++args;
         } else if( strcmp( argv[ args ], "-bandwidth" ) == 0 ) {
             check_encoder_option(decode_only, "-bandwidth");
             if (strcmp(argv[ args + 1 ], "NB")==0)
@@ -786,6 +793,7 @@ int main(int argc, char *argv[])
        opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
        opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
        opus_encoder_ctl(enc, OPUS_SET_VBR(use_vbr));
+       opus_encoder_ctl(enc, OPUS_SET_DC_FILTER(dc_filter));
        opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(cvbr));
        opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
        opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(use_inbandfec));
