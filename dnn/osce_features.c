@@ -185,7 +185,7 @@ static void apply_filterbank(float *x_out, float *x_in, const int *center_bins, 
     int b, i;
     float frac;
 
-    celt_assert(x_in != x_out)
+    celt_assert(x_in != x_out);
 
     x_out[0] = 0;
     for (b = 0; b < num_bands - 1; b++)
@@ -262,7 +262,7 @@ static void calculate_cepstrum(float *cepstrum, float *signal)
     float *spec = &buffer[OSCE_SPEC_NUM_FREQS + 3];
     int n;
 
-    celt_assert(cepstrum != signal)
+    celt_assert(cepstrum != signal);
 
     for (n = 0; n < OSCE_SPEC_WINDOW_SIZE; n++)
     {
@@ -292,7 +292,7 @@ static void calculate_cepstrum(float *cepstrum, float *signal)
 static void calculate_acorr(float *acorr, float *signal, int lag)
 {
     int n, k;
-    celt_assert(acorr != signal)
+    celt_assert(acorr != signal);
 
     for (k = -2; k <= 2; k++)
     {
@@ -360,7 +360,7 @@ static int pitch_postprocessing(OSCEFeatureState *psFeatures, int lag, int type)
     psFeatures->last_type = type;
 
     /* with the current setup this should never happen (but who knows...) */
-    celt_assert(new_lag)
+    celt_assert(new_lag);
 
     return new_lag;
 }
@@ -439,7 +439,7 @@ void osce_calculate_features(
         calculate_acorr(pfeatures + OSCE_ACORR_START, frame, periods[k]);
 
         /* ltp */
-        celt_assert(OSCE_LTP_LENGTH == LTP_ORDER)
+        celt_assert(OSCE_LTP_LENGTH == LTP_ORDER);
         for (i = 0; i < OSCE_LTP_LENGTH; i++)
         {
             pfeatures[OSCE_LTP_START + i] = (float) psDecCtrl->LTPCoef_Q14[k * LTP_ORDER + i] / (1U << 14);

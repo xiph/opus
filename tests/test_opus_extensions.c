@@ -709,9 +709,11 @@ void test_opus_repacketizer_out_range_impl(void)
          second_count++;
       }
       if (i < 2)
-         opus_test_assert(ext_out[i].frame == 0)
-      else
-         opus_test_assert(ext_out[i].frame == 2)
+      {
+         opus_test_assert(ext_out[i].frame == 0);
+      } else {
+         opus_test_assert(ext_out[i].frame == 2);
+      }
    }
    opus_test_assert(first_count == 2);
    opus_test_assert(second_count == 2);

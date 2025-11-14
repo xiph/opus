@@ -936,7 +936,7 @@ static void bbwe_feature_net(
     OPUS_COPY(input_buffer, output_buffer, num_frames * BBWENET_FNET_TCONV_OUT_CHANNELS * BBWENET_FNET_TCONV_STRIDE);
 
     /* GRU */
-    celt_assert(BBWENET_FNET_TCONV_STRIDE == 2)
+    celt_assert(BBWENET_FNET_TCONV_STRIDE == 2);
     for (i_subframe = 0; i_subframe < BBWENET_FNET_TCONV_STRIDE * num_frames; i_subframe ++)
     {
         compute_generic_gru(
