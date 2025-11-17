@@ -74,7 +74,7 @@ void celt_fir_sse4_1(const opus_val16 *x,
          celt_assert(memcmp(sums, sums_c, sizeof(sums)) == 0);
       }
 #endif
-      vecSum = _mm_loadu_si128((__m128i *)sums);
+      vecSum = _mm_loadu_si128((__m128i *)(void*)sums);
       vecSum = _mm_add_epi32(vecSum, vecNoA);
       vecSum = _mm_srai_epi32(vecSum, SIG_SHIFT);
       vecX = OP_CVTEPI16_EPI32_M64(x + i);

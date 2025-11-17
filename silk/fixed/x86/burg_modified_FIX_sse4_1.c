@@ -162,10 +162,10 @@ void silk_burg_modified_sse4_1(
                 for( k = 0; k < n - 3; k += 4 ) {
                     PTR_3210   = OP_CVTEPI16_EPI32_M64( &x_ptr[ n - k - 1 - 3 ] );
                     SUBFR_3210 = OP_CVTEPI16_EPI32_M64( &x_ptr[ subfr_length - n + k ] );
-                    FIRST_3210 = _mm_loadu_si128( (__m128i *)&C_first_row[ k ] );
+                    FIRST_3210 = _mm_loadu_si128( (__m128i *)(void*)&C_first_row[ k ] );
                     PTR_3210   = _mm_shuffle_epi32( PTR_3210,  _MM_SHUFFLE( 0, 1, 2, 3 ) );
-                    LAST_3210  = _mm_loadu_si128( (__m128i *)&C_last_row[ k ] );
-                    ATMP_3210  = _mm_loadu_si128( (__m128i *)&Af_QA[ k ] );
+                    LAST_3210  = _mm_loadu_si128( (__m128i *)(void*)&C_last_row[ k ] );
+                    ATMP_3210  = _mm_loadu_si128( (__m128i *)(void*)&Af_QA[ k ] );
 
                     T1_3210 = _mm_mullo_epi32( PTR_3210, X1_3210 );
                     T2_3210 = _mm_mullo_epi32( SUBFR_3210, X2_3210 );
@@ -180,8 +180,8 @@ void silk_burg_modified_sse4_1(
                     PTR_3210   = _mm_mullo_epi32( ATMP_3210, PTR_3210 );
                     SUBFR_3210   = _mm_mullo_epi32( ATMP_3210, SUBFR_3210 );
 
-                    _mm_storeu_si128( (__m128i *)&C_first_row[ k ], FIRST_3210 );
-                    _mm_storeu_si128( (__m128i *)&C_last_row[ k ], LAST_3210 );
+                    _mm_storeu_si128( (__m128i *)(void*)&C_first_row[ k ], FIRST_3210 );
+                    _mm_storeu_si128( (__m128i *)(void*)&C_last_row[ k ], LAST_3210 );
 
                     TMP1_3210 = _mm_add_epi32( TMP1_3210, PTR_3210 );
                     TMP2_3210 = _mm_add_epi32( TMP2_3210, SUBFR_3210 );
@@ -243,14 +243,14 @@ void silk_burg_modified_sse4_1(
                         xmm_x_ptr_n_k_x2x0 = _mm_blend_epi16( xmm_x_ptr_n_k_x2x0, xmm_x_ptr_n_k_x3x1, 0xCC );
                         xmm_x_ptr_sub_x2x0 = _mm_blend_epi16( xmm_x_ptr_sub_x2x0, xmm_x_ptr_sub_x3x1, 0xCC );
 
-                        X1_3210  = _mm_loadu_si128( (__m128i *)&CAf[ k ] );
-                        PTR_3210 = _mm_loadu_si128( (__m128i *)&CAb[ k ] );
+                        X1_3210  = _mm_loadu_si128( (__m128i *)(void*)&CAf[ k ] );
+                        PTR_3210 = _mm_loadu_si128( (__m128i *)(void*)&CAb[ k ] );
 
                         X1_3210  = _mm_add_epi32( X1_3210, xmm_x_ptr_n_k_x2x0 );
                         PTR_3210 = _mm_add_epi32( PTR_3210, xmm_x_ptr_sub_x2x0 );
 
-                        _mm_storeu_si128( (__m128i *)&CAf[ k ], X1_3210 );
-                        _mm_storeu_si128( (__m128i *)&CAb[ k ], PTR_3210 );
+                        _mm_storeu_si128( (__m128i *)(void*)&CAf[ k ], X1_3210 );
+                        _mm_storeu_si128( (__m128i *)(void*)&CAb[ k ], PTR_3210 );
                     }
 
                     for( ; k <= n; k++ ) {
