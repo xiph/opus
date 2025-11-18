@@ -39,6 +39,7 @@
 #include "../float_cast.h"
 #include "../mathops.h"
 #include "../pitch.h"
+#include <stddef.h>
 #if defined(OPUS_CHECK_ASM)
 #include <stdlib.h>
 #endif
@@ -385,7 +386,7 @@ void celt_pitch_xcorr_float_neon(const opus_val16 *_x, const opus_val16 *_y,
    int i;
    (void)arch;
    celt_assert(max_pitch > 0);
-   celt_sig_assert((((unsigned char *)_x-(unsigned char *)NULL)&3)==0);
+   celt_sig_assert((((size_t)_x)&3)==0);
 
    for (i = 0; i < (max_pitch-3); i += 4) {
       xcorr_kernel_neon_float((const float32_t *)_x, (const float32_t *)_y+i,
