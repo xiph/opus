@@ -76,7 +76,7 @@ opus_int64 silk_inner_prod16_sse4_1(
     acc2 = _mm_shuffle_epi32( acc1, _MM_SHUFFLE( 0, 0, 3, 2 ) );
     acc1 = _mm_add_epi64( acc1, acc2 );
 
-    _mm_storel_epi64( (__m128i *)&sum, acc1 );
+    _mm_storel_epi64( (__m128i *)(void *)&sum, acc1 );
 
     for( ; i < len; i++ ) {
         sum = silk_SMLALBB( sum, inVec1[ i ], inVec2[ i ] );

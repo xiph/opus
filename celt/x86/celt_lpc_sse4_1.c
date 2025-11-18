@@ -80,7 +80,7 @@ void celt_fir_sse4_1(const opus_val16 *x,
       vecX = OP_CVTEPI16_EPI32_M64(x + i);
       vecSum = _mm_add_epi32(vecSum, vecX);
       vecSum = _mm_packs_epi32(vecSum, vecSum);
-      _mm_storel_epi64((__m128i *)(y + i), vecSum);
+      _mm_storel_epi64((__m128i *)(void *)(y + i), vecSum);
    }
    for (;i<N;i++)
    {
