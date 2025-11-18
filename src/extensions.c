@@ -501,11 +501,9 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
    for (f=0;f<nb_frames;f++)
    {
       opus_int32 last_long_idx;
-      opus_int32 trailing_short_len;
       int repeat_count;
       repeat_count = 0;
       last_long_idx = -1;
-      trailing_short_len = 0;
       if (f + 1 < nb_frames)
       {
          for (i=frame_min_idx[f];i<frame_max_idx[f];i++)
@@ -535,11 +533,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                    instance, so we can modify its L flag. */
                if (extensions[i].id >= 32) {
                   last_long_idx = frame_repeat_idx[nb_frames-1];
-                  trailing_short_len = 0;
                }
-               /* Otherwise, keep track of how many payload bytes follow the
-                   last long extension. */
-               else trailing_short_len += extensions[i].len;
                /* Using the repeat mechanism almost always makes the
                    encoding smaller (or at least no larger).
                   However, there's one case where that might not be true: if
