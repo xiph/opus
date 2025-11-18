@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
 
 #if 1 /* Set to zero to use the encoder's output instead */
          /* This is to simulate packet loss */
-         lost = percent_loss != 0 && (float)rand()/RAND_MAX<.01*percent_loss;
+         lost = percent_loss != 0 && (float)rand()/(float)RAND_MAX<.01*percent_loss;
          if (lost)
             /*if (errors && (errors%2==0))*/
             ret = opus_custom_decode24(dec, NULL, len, out, frame_size);

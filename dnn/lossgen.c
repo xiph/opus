@@ -134,7 +134,7 @@ static int sample_loss_impl(
   compute_generic_gru_lossgen(&model->lossgen_gru1_input, &model->lossgen_gru1_recurrent, st->gru1_state, tmp, 0);
   compute_generic_gru_lossgen(&model->lossgen_gru2_input, &model->lossgen_gru2_recurrent, st->gru2_state, st->gru1_state, 0);
   compute_generic_dense_lossgen(&model->lossgen_dense_out, &out, st->gru2_state, ACTIVATION_SIGMOID, 0);
-  loss = (float)rand()/RAND_MAX < out;
+  loss = (float)rand()/(float)RAND_MAX < out;
   st->last_loss = loss;
   return loss;
 }
