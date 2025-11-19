@@ -197,8 +197,8 @@ int lpcnet_plc_conceal(LPCNetPLCState *st, opus_int16 *pcm) {
   st->plc_bak[1] = st->plc_net;
   if (get_fec_or_pred(st, st->features)) st->loss_count = 0;
   else st->loss_count++;
-  if (st->loss_count >= 10) st->features[0] = MAX16(-10, st->features[0]+att_table[9] - 2*(st->loss_count-9));
-  else st->features[0] = MAX16(-10, st->features[0]+att_table[st->loss_count]);
+  if (st->loss_count >= 10) st->features[0] = MAX16(-15, st->features[0]+att_table[9] - 2*(st->loss_count-9));
+  else st->features[0] = MAX16(-15, st->features[0]+att_table[st->loss_count]);
   fargan_synthesize_int(&st->fargan, pcm, &st->features[0]);
   queue_features(st, st->features);
   if (st->analysis_pos - FRAME_SIZE >= 0) st->analysis_pos -= FRAME_SIZE;
