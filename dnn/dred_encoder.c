@@ -167,9 +167,9 @@ static void dred_convert_to_16k(DREDEnc *enc, const float *in, int in_len, float
     celt_assert(up*in_len <= MAX_DOWNMIX_BUFFER);
     OPUS_CLEAR(downmix, up*in_len);
     if (enc->channels == 1) {
-        for (i=0;i<in_len;i++) downmix[up*i] = FLOAT2INT16(up*in[i]);
+        for (i=0;i<in_len;i++) downmix[up*i] = FLOAT2INT16(up*in[i])+VERY_SMALL;
     } else {
-        for (i=0;i<in_len;i++) downmix[up*i] = FLOAT2INT16(.5*up*(in[2*i]+in[2*i+1]));
+        for (i=0;i<in_len;i++) downmix[up*i] = FLOAT2INT16(.5*up*(in[2*i]+in[2*i+1]))+VERY_SMALL;
     }
     if (enc->Fs == 16000) {
         OPUS_COPY(out, downmix, out_len);
