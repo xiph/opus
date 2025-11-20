@@ -87,13 +87,13 @@ typedef struct {
    int offset;
 } SILKInfo;
 
-#define __celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
+#define celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
 
-#define __celt_check_analysis_ptr(ptr) ((ptr) + ((ptr) - (const AnalysisInfo*)(ptr)))
+#define celt_check_analysis_ptr(ptr) ((ptr) + ((ptr) - (const AnalysisInfo*)(ptr)))
 
-#define __celt_check_silkinfo_ptr(ptr) ((ptr) + ((ptr) - (const SILKInfo*)(ptr)))
+#define celt_check_silkinfo_ptr(ptr) ((ptr) + ((ptr) - (const SILKInfo*)(ptr)))
 
-#define __celt_check_glog_ptr(ptr) ((ptr) + ((ptr) - (celt_glog*)(ptr)))
+#define celt_check_glog_ptr(ptr) ((ptr) + ((ptr) - (celt_glog*)(ptr)))
 
 /* Encoder/decoder Requests */
 
@@ -104,48 +104,48 @@ typedef struct {
     1=Short term interframe prediction allowed
     2=Long term prediction allowed
  */
-#define CELT_SET_PREDICTION(x) CELT_SET_PREDICTION_REQUEST, __opus_check_int(x)
+#define CELT_SET_PREDICTION(x) CELT_SET_PREDICTION_REQUEST, opus_check_int(x)
 
 #define CELT_SET_INPUT_CLIPPING_REQUEST    10004
-#define CELT_SET_INPUT_CLIPPING(x) CELT_SET_INPUT_CLIPPING_REQUEST, __opus_check_int(x)
+#define CELT_SET_INPUT_CLIPPING(x) CELT_SET_INPUT_CLIPPING_REQUEST, opus_check_int(x)
 
 #define CELT_GET_AND_CLEAR_ERROR_REQUEST   10007
-#define CELT_GET_AND_CLEAR_ERROR(x) CELT_GET_AND_CLEAR_ERROR_REQUEST, __opus_check_int_ptr(x)
+#define CELT_GET_AND_CLEAR_ERROR(x) CELT_GET_AND_CLEAR_ERROR_REQUEST, opus_check_int_ptr(x)
 
 #define CELT_SET_CHANNELS_REQUEST    10008
-#define CELT_SET_CHANNELS(x) CELT_SET_CHANNELS_REQUEST, __opus_check_int(x)
+#define CELT_SET_CHANNELS(x) CELT_SET_CHANNELS_REQUEST, opus_check_int(x)
 
 
 /* Internal */
 #define CELT_SET_START_BAND_REQUEST    10010
-#define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, __opus_check_int(x)
+#define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, opus_check_int(x)
 
 #define CELT_SET_END_BAND_REQUEST    10012
-#define CELT_SET_END_BAND(x) CELT_SET_END_BAND_REQUEST, __opus_check_int(x)
+#define CELT_SET_END_BAND(x) CELT_SET_END_BAND_REQUEST, opus_check_int(x)
 
 #define CELT_GET_MODE_REQUEST    10015
 /** Get the CELTMode used by an encoder or decoder */
-#define CELT_GET_MODE(x) CELT_GET_MODE_REQUEST, __celt_check_mode_ptr_ptr(x)
+#define CELT_GET_MODE(x) CELT_GET_MODE_REQUEST, celt_check_mode_ptr_ptr(x)
 
 #define CELT_SET_SIGNALLING_REQUEST    10016
-#define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, __opus_check_int(x)
+#define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, opus_check_int(x)
 
 #define CELT_SET_TONALITY_REQUEST    10018
-#define CELT_SET_TONALITY(x) CELT_SET_TONALITY_REQUEST, __opus_check_int(x)
+#define CELT_SET_TONALITY(x) CELT_SET_TONALITY_REQUEST, opus_check_int(x)
 #define CELT_SET_TONALITY_SLOPE_REQUEST    10020
-#define CELT_SET_TONALITY_SLOPE(x) CELT_SET_TONALITY_SLOPE_REQUEST, __opus_check_int(x)
+#define CELT_SET_TONALITY_SLOPE(x) CELT_SET_TONALITY_SLOPE_REQUEST, opus_check_int(x)
 
 #define CELT_SET_ANALYSIS_REQUEST    10022
-#define CELT_SET_ANALYSIS(x) CELT_SET_ANALYSIS_REQUEST, __celt_check_analysis_ptr(x)
+#define CELT_SET_ANALYSIS(x) CELT_SET_ANALYSIS_REQUEST, celt_check_analysis_ptr(x)
 
 #define OPUS_SET_LFE_REQUEST    10024
-#define OPUS_SET_LFE(x) OPUS_SET_LFE_REQUEST, __opus_check_int(x)
+#define OPUS_SET_LFE(x) OPUS_SET_LFE_REQUEST, opus_check_int(x)
 
 #define OPUS_SET_ENERGY_MASK_REQUEST    10026
-#define OPUS_SET_ENERGY_MASK(x) OPUS_SET_ENERGY_MASK_REQUEST, __celt_check_glog_ptr(x)
+#define OPUS_SET_ENERGY_MASK(x) OPUS_SET_ENERGY_MASK_REQUEST, celt_check_glog_ptr(x)
 
 #define CELT_SET_SILK_INFO_REQUEST    10028
-#define CELT_SET_SILK_INFO(x) CELT_SET_SILK_INFO_REQUEST, __celt_check_silkinfo_ptr(x)
+#define CELT_SET_SILK_INFO(x) CELT_SET_SILK_INFO_REQUEST, celt_check_silkinfo_ptr(x)
 
 
 static OPUS_INLINE opus_int32 bits_to_bitrate(opus_int32 bits, opus_int32 Fs, opus_int32 frame_size) {
