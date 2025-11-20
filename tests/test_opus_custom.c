@@ -674,7 +674,6 @@ void test_opus_custom(const int num_encoders, const int num_setting_changes) {
 }
 
 int main(int _argc, char **_argv) {
-   int args = 1;
    char * strtol_str = NULL;
    const char * env_seed;
    int env_used;
@@ -686,8 +685,9 @@ int main(int _argc, char **_argv) {
    env_seed=getenv("SEED");
    if (_argc > 1)
        iseed = strtol(_argv[1], &strtol_str, 10);  /* the first input argument might be the seed */
-   if(strtol_str!=NULL && strtol_str[0]=='\0')   /* iseed is a valid number */
-      args++;
+   if(strtol_str!=NULL && strtol_str[0]=='\0') {
+      /* iseed is a valid number */
+   }
    else if(env_seed) {
       iseed=atoi(env_seed);
       env_used=1;
