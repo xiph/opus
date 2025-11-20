@@ -27,6 +27,7 @@
 #ifndef LOSSGEN_H
 #define LOSSGEN_H
 
+#define SUPPRESS_PERF_WARNINGS
 
 #include "lossgen_data.h"
 
