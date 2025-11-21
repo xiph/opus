@@ -152,7 +152,7 @@ AS_IF([test "$enable_float_api" = "no"],[
 ])
 
 AC_ARG_ENABLE([fixed-res24],
-	      [AS_HELP_STRING([--disable-fixed-res24], [Use 24-bit internal resolution for fixed-point implementation])],,
+	      [AS_HELP_STRING([--disable-fixed-res24], [Use 16-bit (instead of 24-bit) internal resolution for fixed-point implementation])],,
     [enable_fixed_res24=yes])
 
 AS_IF([test "$enable_fixed_res24" = "yes"],[
