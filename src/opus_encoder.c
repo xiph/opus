@@ -766,6 +766,13 @@ void downmix_float(const void *_x, opus_val32 *y, int subframe, int offset, int 
             y[j] += FLOAT2SIG(x[(j+offset)*C+c]);
       }
    }
+   /* Cap signal to +6 dBFS to avoid problems in the analysis. */
+   for (j=0;j<subframe;j++)
+   {
+      if (y[j] < -65536.f) y[j] = -65536.f;
+      if (y[j] >  65536.f) y[j] =  65536.f;
+      if (celt_isnan(y[j])) y[j] = 0;
+   }
 }
 #endif
 
