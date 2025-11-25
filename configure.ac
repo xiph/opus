@@ -34,11 +34,9 @@ AM_INIT_AUTOMAKE([no-define])
 AM_MAINTAINER_MODE([enable])
 
 AC_CANONICAL_HOST
-AC_MINGW32
-AM_PROG_LIBTOOL
+LT_INIT
+AC_PROG_CC
 AM_PROG_CC_C_O
-
-AC_PROG_CC_C99
 AC_C_CONST
 AC_C_INLINE
 
@@ -48,8 +46,6 @@ AC_DEFINE([OPUS_BUILD], [], [This is a build of OPUS])
 
 #Use a hacked up version of autoconf's AC_C_RESTRICT because it's not
 #strong enough a test to detect old buggy versions of GCC (e.g. 2.95.3)
-#Note: Both this and the test for variable-size arrays below are also
-#      done by AC_PROG_CC_C99, but not thoroughly enough apparently.
 AC_CACHE_CHECK([for C/C++ restrict keyword], ac_cv_c_restrict,
   [ac_cv_c_restrict=no
    # The order here caters to the fact that C++ does not require restrict.
@@ -225,7 +221,7 @@ esac
 AC_ARG_ENABLE([float-approx],
     [AS_HELP_STRING([--enable-float-approx], [enable fast approximations for floating point])],
     [if test "$enable_float_approx" = "yes"; then
-       AC_WARN([Floating point approximations are not supported on all platforms.])
+       AC_MSG_WARN([Floating point approximations are not supported on all platforms.])
      fi
     ],
     [enable_float_approx=$has_float_approx])
@@ -966,7 +962,7 @@ AC_ARG_ENABLE([osce],
 )
 
 AS_IF([test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"], [
-       AC_DEFINE([ENABLE_OSCE], [1], [Enable Opus Speech Coding Enhancement]),
+       AC_DEFINE([ENABLE_OSCE], [1], [Enable Opus Speech Coding Enhancement])
        AC_DEFINE([ENABLE_OSCE_BWE], [1], [Enable Opus Speech Coding Enhancement Blind BWE])
 ])
 
