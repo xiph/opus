@@ -454,15 +454,15 @@ AS_VAR_SET_IF([ARM_DOTPROD_INTR_CFLAGS], [], [AS_VAR_SET([ARM_DOTPROD_INTR_CFLAG
 AC_DEFUN([OPUS_PATH_NE10],
    [
       AC_ARG_WITH(NE10,
-                  AC_HELP_STRING([--with-NE10=PFX],[Prefix where libNE10 is installed (optional)]),
+                  AS_HELP_STRING([--with-NE10=PFX],[prefix where libNE10 is installed (optional)]),
                   NE10_prefix="$withval", NE10_prefix="")
       AC_ARG_WITH(NE10-libraries,
-                  AC_HELP_STRING([--with-NE10-libraries=DIR],
-                        [Directory where libNE10 library is installed (optional)]),
+                  AS_HELP_STRING([--with-NE10-libraries=DIR],
+                                 [directory where libNE10 library is installed (optional)]),
                   NE10_libraries="$withval", NE10_libraries="")
       AC_ARG_WITH(NE10-includes,
-                  AC_HELP_STRING([--with-NE10-includes=DIR],
-                                 [Directory where libNE10 header files are installed (optional)]),
+                  AS_HELP_STRING([--with-NE10-includes=DIR],
+                                 [directory where libNE10 header files are installed (optional)]),
                   NE10_includes="$withval", NE10_includes="")
 
       if test "x$NE10_libraries" != "x" ; then
