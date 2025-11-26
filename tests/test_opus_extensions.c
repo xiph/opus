@@ -259,7 +259,7 @@ void test_extensions_parse_success(void)
       {4, 4, (const unsigned char *)NULL, 0}
    };
    opus_extension_data ext_out[10];
-   int nb_ext;
+   opus_int32 nb_ext;
    int nb_frames;
    int len, result;
    unsigned char packet[32];
@@ -299,7 +299,7 @@ void test_extensions_parse_zero(void)
    static const opus_extension_data ext[] = {
       {32, 1, (const unsigned char *)"DRED", 4},
    };
-   int nb_ext;
+   opus_int32 nb_ext;
    int nb_frames;
    int len, result;
    unsigned char packet[32];
@@ -325,7 +325,7 @@ void test_extensions_parse_fail(void)
       {4, 10, (const unsigned char *)"c", 1}
    };
    opus_extension_data ext_out[10];
-   int nb_ext;
+   opus_int32 nb_ext;
    int nb_frames;
    int len, result;
    unsigned char packet[32];
@@ -406,7 +406,7 @@ void test_extensions_parse_fail(void)
     ext_out, with extensions in ext_out appearing in frame order, and the order
     within a frame matching the order within a frame in ext_in. */
 static void check_ext_data(const opus_extension_data *ext_in,
- const opus_extension_data *ext_out, int nb_ext)
+ const opus_extension_data *ext_out, opus_int32 nb_ext)
 {
    opus_int32 i;
    opus_int32 j;
@@ -582,7 +582,7 @@ void test_random_extensions_parse(void)
    {
       opus_extension_data ext_out[MAX_NB_EXTENSIONS];
       int nb_frames;
-      int nb_ext;
+      opus_int32 nb_ext;
       unsigned char payload[MAX_EXTENSION_SIZE];
       int len;
       int j;
@@ -643,7 +643,7 @@ void test_opus_repacketizer_out_range_impl(void)
    opus_int32 padding_len;
    opus_extension_data ext_out[10];
    int i;
-   int nb_ext;
+   opus_int32 nb_ext;
    int res, len;
    int first_count = 0, second_count = 0;
    static const opus_extension_data ext[] = {
