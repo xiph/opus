@@ -6,6 +6,7 @@ silk/API.h \
 silk/typedef.h \
 silk/define.h \
 silk/main.h \
+silk/main_overrides.h \
 silk/x86/main_sse.h \
 silk/PLC.h \
 silk/structs.h \
