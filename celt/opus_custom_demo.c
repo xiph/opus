@@ -434,9 +434,10 @@ int main(int argc, char *argv[])
             for(i=0;i<(ret-skip)*channels;i++)
             {
                opus_int32 s;
-               s=(out[i+(skip*channels)]+128)>>8;
-               if (s > 32767) s = 32767;
-               if (s < -32767) s = -32767;
+               s=out[i+(skip*channels)];
+               if (s > 0x007fff00) s = 0x007fff00;
+               if (s < -0x007fff00) s = -0x007fff00;
+               s=(s+128)>>8;
                fbytes[2*i]=s&0xFF;
                fbytes[2*i+1]=(s>>8)&0xFF;
             }
@@ -445,8 +446,8 @@ int main(int argc, char *argv[])
             {
                opus_int32 s;
                s=out[i+(skip*channels)];
-               if (s > 8388607) s = 8388607;
-               if (s < -8388607) s = -8388607;
+               if (s > 0x007fffff) s = 0x007fffff;
+               if (s < -0x007fffff) s = -0x007fffff;
                fbytes[3*i]=s&0xFF;
                fbytes[3*i+1]=(s>>8)&0xFF;
                fbytes[3*i+2]=(s>>16)&0xFF;
