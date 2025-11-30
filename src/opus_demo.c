@@ -216,6 +216,29 @@ static const int silk16_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 480,   2}
 };
 
+static const int silk_bw_switch_test[][4] = {
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND,       960, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND,     960, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND,     960, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND,  960, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND,       960, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND,       960, 2},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND,     960, 2},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND,     960, 2},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND,  960, 2},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND,       960, 2},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND,       480, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND,     480, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND,     480, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND,  480, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND,       480, 1},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND,       480, 2},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND,     480, 2},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND,     480, 2},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND,  480, 2},
+    {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND,       480, 2}
+};
+
 static const int hybrid24_test[][4] = {
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 960, 1},
       {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 480, 1},
@@ -690,6 +713,11 @@ int main(int argc, char *argv[])
             check_encoder_option(decode_only, "-silk16k_test");
             mode_list = silk16_test;
             nb_modes_in_list = 8;
+            args++;
+        } else if( strcmp( argv[ args ], "-silk_bw_switch_test" ) == 0 ) {
+            check_encoder_option(decode_only, "-silk_bw_switch_test");
+            mode_list = silk_bw_switch_test;
+            nb_modes_in_list = 20;
             args++;
         } else if( strcmp( argv[ args ], "-hybrid24k_test" ) == 0 ) {
             check_encoder_option(decode_only, "-hybrid24k_test");
