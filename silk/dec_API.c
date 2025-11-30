@@ -405,7 +405,8 @@ opus_int silk_Decode(                                   /* O    Returns error co
             }
         } else {
             ret += silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
-            if (decControl->prev_osce_extended_mode == OSCE_MODE_SILK_BBWE) {
+            if (decControl->prev_osce_extended_mode == OSCE_MODE_SILK_BBWE && decControl->internalSampleRate == 16000) {
+                /* fade out if internal sample rate did not change */
                 osce_bwe(&psDec->osce_model, &channel_state[ n ].osce_bwe,
                     resamp_buffer, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec, arch);
                 /* cross-fade with upsampled signal */
