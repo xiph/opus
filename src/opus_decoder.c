@@ -743,7 +743,6 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
       init_frames = (st->lpcnet.blend == 0) ? 2 : 0;
       features_per_frame = IMAX(1, frame_size/F10);
       needed_feature_frames = init_frames + features_per_frame;
-      lpcnet_plc_fec_clear(&st->lpcnet);
       for (i=0;i<needed_feature_frames;i++) {
          int feature_offset;
          /* We floor instead of rounding because 5-ms overlap compensates for the missing 0.5 rounding offset. */
