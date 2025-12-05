@@ -194,6 +194,46 @@ void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
 #endif
 #endif
 
+#ifdef ENABLE_QEXT
+void comb_filter_qext(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
+      opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
+      const celt_coef *window, int overlap, int arch)
+{
+   VARDECL(opus_val32, mem_buf);
+   VARDECL(opus_val32, buf);
+   celt_coef new_window[120];
+   int s;
+   int i;
+   int N2;
+   int overlap2;
+   SAVE_STACK;
+   /* Using ALLOC() instead of a regular stack allocation to minimize real stack use when using the pseudostack.
+      This is useful on some embedded systems. */
+   ALLOC(mem_buf, COMBFILTER_MAXPERIOD+960, opus_val32);
+   ALLOC(buf, COMBFILTER_MAXPERIOD+960, opus_val32);
+   N2 = N/2;
+   overlap2=overlap/2;
+   /* At 96 kHz, we double the period and the spacing between taps, which is equivalent
+      to creating a mirror image of the filter around 24 kHz. It also means we can process
+      the even and odd samples completely independently. */
+   for (s=0;s<2;s++) {
+      opus_val32 *yptr;
+      for (i=0;i<overlap2;i++) new_window[i] = window[2*i+s];
+      for (i=0;i<COMBFILTER_MAXPERIOD+N2;i++) mem_buf[i] = x[2*i+s-2*COMBFILTER_MAXPERIOD];
+      if (x==y) {
+         yptr = mem_buf+COMBFILTER_MAXPERIOD;
+      } else {
+         for (i=0;i<N2;i++) buf[i] = y[2*i+s];
+         yptr = buf;
+      }
+      comb_filter(yptr, mem_buf+COMBFILTER_MAXPERIOD, T0, T1, N2, g0, g1, tapset0, tapset1, new_window, overlap2, arch);
+      for (i=0;i<N2;i++) y[2*i+s] = yptr[i];
+   }
+   RESTORE_STACK;
+   return;
+}
+#endif
+
 #ifndef OVERRIDE_comb_filter
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
@@ -209,30 +249,7 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
          {QCONST16(0.7998046875f, 15), QCONST16(0.1000976562f, 15), QCONST16(0.f, 15)}};
 #ifdef ENABLE_QEXT
    if (overlap==240) {
-      opus_val32 mem_buf[COMBFILTER_MAXPERIOD+960];
-      opus_val32 buf[COMBFILTER_MAXPERIOD+960];
-      celt_coef new_window[120];
-      int s;
-      int N2;
-      int overlap2;
-      N2 = N/2;
-      overlap2=overlap/2;
-      /* At 96 kHz, we double the period and the spacing between taps, which is equivalent
-         to creating a mirror image of the filter around 24 kHz. It also means we can process
-         the even and odd samples completely independently. */
-      for (s=0;s<2;s++) {
-         opus_val32 *yptr;
-         for (i=0;i<overlap2;i++) new_window[i] = window[2*i+s];
-         for (i=0;i<COMBFILTER_MAXPERIOD+N2;i++) mem_buf[i] = x[2*i+s-2*COMBFILTER_MAXPERIOD];
-         if (x==y) {
-            yptr = mem_buf+COMBFILTER_MAXPERIOD;
-         } else {
-            for (i=0;i<N2;i++) buf[i] = y[2*i+s];
-            yptr = buf;
-         }
-         comb_filter(yptr, mem_buf+COMBFILTER_MAXPERIOD, T0, T1, N2, g0, g1, tapset0, tapset1, new_window, overlap2, arch);
-         for (i=0;i<N2;i++) y[2*i+s] = yptr[i];
-      }
+      comb_filter_qext(y, x, T0, T1, N, g0, g1, tapset0, tapset1, window, overlap, arch);
       return;
    }
 #endif
