@@ -136,8 +136,8 @@ static void band_energy(float *_out,float *_ps,const int *_bands,int _nbands,
   size_t xi;
   int    xj;
   int    ps_sz;
-  kiss_fft_cpx X[2][NFREQS+1];
-  kiss_fftr_cfg kfft;
+  mini_kiss_fft_cpx X[2][NFREQS+1];
+  mini_kiss_fftr_cfg kfft;
   ps_sz=_window_sz/2;
   /* Blackman-Harris window. */
   for(xj=0;xj<_window_sz;xj++){
