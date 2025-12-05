@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
-#include "kiss_fft.h"
 #include "common.h"
 #include <math.h>
 #include "freq.h"
@@ -44,8 +43,8 @@
 #include "lpcnet_private.h"
 #include "os_support.h"
 #include "cpu_support.h"
-#include "kiss_fft.h"
-#include "_kiss_fft_guts.h"
+
+#include "mini_kfft.c"
 
 #ifndef M_PI
 #define M_PI 3.141592653589793f
@@ -54,15 +53,7 @@
 #define SEQUENCE_LENGTH 2000
 #define SEQUENCE_SAMPLES (SEQUENCE_LENGTH*FRAME_SIZE)
 
-#ifdef CUSTOM_MODES
 #define ENABLE_RIR
-#else
-#if defined(_MSC_VER)
-#pragma message ("dump_data tool built without reverb support.")
-#else
-#warning "dump_data tool built without reverb support."
-#endif
-#endif
 
 #ifdef ENABLE_RIR
 
@@ -73,13 +64,14 @@
 struct rir_list {
   int nb_rirs;
   int block_size;
-  kiss_fft_state *fft;
-  kiss_fft_cpx **rir;
-  kiss_fft_cpx **early;
+  mini_kiss_fft_state *fft;
+  mini_kiss_fft_state *ifft;
+  mini_kiss_fft_cpx **rir;
+  mini_kiss_fft_cpx **early;
 };
 
-kiss_fft_cpx *load_rir(const char *rir_file, kiss_fft_state *fft, int early) {
-  kiss_fft_cpx *x, *X;
+mini_kiss_fft_cpx *load_rir(const char *rir_file, mini_kiss_fft_state *fft, int early) {
+  mini_kiss_fft_cpx *x, *X;
   float rir[RIR_MAX_DURATION];
   int len;
   int i;
@@ -89,8 +81,8 @@ kiss_fft_cpx *load_rir(const char *rir_file, kiss_fft_state *fft, int early) {
     fprintf(stderr, "cannot open RIR file %s: %s\n", rir_file, strerror(errno));
     exit(1);
   }
-  x = (kiss_fft_cpx*)calloc(fft->nfft, sizeof(*x));
-  X = (kiss_fft_cpx*)calloc(fft->nfft, sizeof(*X));
+  x = (mini_kiss_fft_cpx*)calloc(fft->nfft, sizeof(*x));
+  X = (mini_kiss_fft_cpx*)calloc(fft->nfft, sizeof(*X));
   len = fread(rir, sizeof(*rir), RIR_MAX_DURATION, f);
   if (early) {
     for (i=0;i<240;i++) {
@@ -99,7 +91,7 @@ kiss_fft_cpx *load_rir(const char *rir_file, kiss_fft_state *fft, int early) {
     OPUS_CLEAR(&rir[240+480], RIR_MAX_DURATION-240-480);
   }
   for (i=0;i<len;i++) x[i].r = rir[i];
-  opus_fft_c(fft, x, X);
+  mini_kiss_fft(fft, x, X);
   free(x);
   fclose(f);
   return X;
@@ -116,7 +108,8 @@ void load_rir_list(const char *list_file, struct rir_list *rirs) {
   }
   rirs->nb_rirs = 0;
   allocated = 2;
-  rirs->fft = opus_fft_alloc_twiddles(RIR_FFT_SIZE, NULL, NULL, NULL, 0);
+  rirs->fft = mini_kiss_fft_alloc(RIR_FFT_SIZE, 0, NULL, NULL);
+  rirs->ifft = mini_kiss_fft_alloc(RIR_FFT_SIZE, 1, NULL, NULL);
   rirs->rir = malloc(allocated*sizeof(rirs->rir[0]));
   rirs->early = malloc(allocated*sizeof(rirs->early[0]));
   while (fgets(rir_filename, FILENAME_MAX_SIZE, f) != NULL) {
@@ -136,10 +129,10 @@ void load_rir_list(const char *list_file, struct rir_list *rirs) {
 
 void rir_filter_sequence(const struct rir_list *rirs, float *audio, int rir_id, int early) {
   int i;
-  kiss_fft_cpx x[RIR_FFT_SIZE] = {{0,0}};
-  kiss_fft_cpx y[RIR_FFT_SIZE] = {{0,0}};
-  kiss_fft_cpx X[RIR_FFT_SIZE] = {{0,0}};
-  const kiss_fft_cpx *Y;
+  mini_kiss_fft_cpx x[RIR_FFT_SIZE] = {{0,0}};
+  mini_kiss_fft_cpx y[RIR_FFT_SIZE] = {{0,0}};
+  mini_kiss_fft_cpx X[RIR_FFT_SIZE] = {{0,0}};
+  const mini_kiss_fft_cpx *Y;
   if (early) Y = rirs->early[rir_id];
   else Y = rirs->rir[rir_id];
   i=0;
@@ -148,14 +141,14 @@ void rir_filter_sequence(const struct rir_list *rirs, float *audio, int rir_id, 
     OPUS_COPY(&x[0], &x[RIR_FFT_SIZE/2], RIR_FFT_SIZE/2);
     for (j=0;j<IMIN(SEQUENCE_SAMPLES-i, RIR_FFT_SIZE/2);j++) x[RIR_FFT_SIZE/2+j].r = audio[i+j];
     for (;j<RIR_FFT_SIZE/2;j++) x[RIR_FFT_SIZE/2+j].r = 0;
-    opus_fft_c(rirs->fft, x, X);
+    mini_kiss_fft(rirs->fft, x, X);
     for (j=0;j<RIR_FFT_SIZE;j++) {
-      kiss_fft_cpx tmp;
+      mini_kiss_fft_cpx tmp;
       C_MUL(tmp, X[j], Y[j]);
-      X[j].r = tmp.r*RIR_FFT_SIZE/2;
-      X[j].i = tmp.i*RIR_FFT_SIZE/2;
+      X[j].r = tmp.r*(1.f/(2.f*RIR_FFT_SIZE));
+      X[j].i = tmp.i*(1.f/(2.f*RIR_FFT_SIZE));
     }
-    opus_ifft_c(rirs->fft, X, y);
+    mini_kiss_fft(rirs->ifft, X, y);
     for (j=0;j<IMIN(SEQUENCE_SAMPLES-i, RIR_FFT_SIZE/2);j++) audio[i+j] = y[RIR_FFT_SIZE/2+j].r;
     i += RIR_FFT_SIZE/2;
   }
