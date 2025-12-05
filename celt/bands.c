@@ -1606,6 +1606,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    VARDECL(celt_norm, X_save2);
    VARDECL(celt_norm, Y_save2);
    VARDECL(celt_norm, norm_save2);
+   VARDECL(unsigned char, bytes_save);
    int resynth_alloc;
    celt_norm *lowband_scratch;
    int B;
@@ -1625,6 +1626,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    int ext_b;
    opus_int32 ext_balance=0;
    opus_int32 ext_tell=0;
+   VARDECL(unsigned char, ext_bytes_save);
 #endif
    SAVE_STACK;
 
@@ -1672,7 +1674,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    ctx.ext_total_bits = ext_total_bits;
    ctx.extra_bands = end == NB_QEXT_BANDS || end == 2;
    if (ctx.extra_bands) theta_rdo = 0;
+   ALLOC(ext_bytes_save, theta_rdo ? QEXT_PACKET_SIZE_CAP : ALLOC_NONE, unsigned char);
 #endif
+   ALLOC(bytes_save, theta_rdo ? 1275 : ALLOC_NONE, unsigned char);
+
    /* Avoid injecting noise in the first band on transients. */
    ctx.avoid_split_noise = B > 1;
    for (i=start;i<end;i++)
@@ -1808,12 +1813,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                unsigned cm, cm2;
                int nstart_bytes, nend_bytes, save_bytes;
                unsigned char *bytes_buf;
-               unsigned char bytes_save[1275];
 #ifdef ENABLE_QEXT
                ec_ctx ext_ec_save, ext_ec_save2;
                unsigned char *ext_bytes_buf;
                int ext_nstart_bytes, ext_nend_bytes, ext_save_bytes;
-               unsigned char ext_bytes_save[QEXT_PACKET_SIZE_CAP];
 #endif
                opus_val16 w[2];
                compute_channel_weights(bandE[i], bandE[i+m->nbEBands], w);
