@@ -207,10 +207,13 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
          {QCONST16(0.3066406250f, 15), QCONST16(0.2170410156f, 15), QCONST16(0.1296386719f, 15)},
          {QCONST16(0.4638671875f, 15), QCONST16(0.2680664062f, 15), QCONST16(0.f, 15)},
          {QCONST16(0.7998046875f, 15), QCONST16(0.1000976562f, 15), QCONST16(0.f, 15)}};
+   SAVE_STACK;
 #ifdef ENABLE_QEXT
    if (overlap==240) {
-      opus_val32 mem_buf[COMBFILTER_MAXPERIOD+960];
-      opus_val32 buf[COMBFILTER_MAXPERIOD+960];
+      VARDECL(opus_val32, mem_buf);
+      VARDECL(opus_val32, buf);
+      ALLOC(mem_buf, COMBFILTER_MAXPERIOD+960, opus_val32);
+      ALLOC(buf, COMBFILTER_MAXPERIOD+960, opus_val32);
       celt_coef new_window[120];
       int s;
       int N2;
@@ -233,6 +236,7 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
          comb_filter(yptr, mem_buf+COMBFILTER_MAXPERIOD, T0, T1, N2, g0, g1, tapset0, tapset1, new_window, overlap2, arch);
          for (i=0;i<N2;i++) y[2*i+s] = yptr[i];
       }
+      RESTORE_STACK;
       return;
    }
 #endif
@@ -241,6 +245,7 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       /* OPT: Happens to work without the OPUS_MOVE(), but only because the current encoder already copies x to y */
       if (x!=y)
          OPUS_MOVE(y, x, N);
+      RESTORE_STACK;
       return;
    }
    /* When the gain is zero, T0 and/or T1 is set to zero. We need
@@ -288,11 +293,13 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       /* OPT: Happens to work without the OPUS_MOVE(), but only because the current encoder already copies x to y */
       if (x!=y)
          OPUS_MOVE(y+overlap, x+overlap, N-overlap);
+      RESTORE_STACK;
       return;
    }
 
    /* Compute the part with the constant filter. */
    comb_filter_const(y+i, x+i, T1, N-i, g10, g11, g12, arch);
+   RESTORE_STACK;
 }
 #endif /* OVERRIDE_comb_filter */
 
