@@ -156,6 +156,7 @@ noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD) $(LPCNET_HEAD)
 if EXTRA_PROGRAMS
 noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
                   celt/tests/test_unit_dft \
+                  celt/tests/test_unit_mini_kfft \
                   celt/tests/test_unit_entropy \
                   celt/tests/test_unit_laplace \
                   celt/tests/test_unit_mathops \
@@ -177,6 +178,7 @@ noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
 
 TESTS = celt/tests/test_unit_cwrs32 \
         celt/tests/test_unit_dft \
+        celt/tests/test_unit_mini_kfft \
         celt/tests/test_unit_entropy \
         celt/tests/test_unit_laplace \
         celt/tests/test_unit_mathops \
@@ -259,6 +261,9 @@ celt_tests_test_unit_dft_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(NE10_LIBS) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_dft_LDADD += libarmasm.la
 endif
+
+celt_tests_test_unit_mini_kfft_SOURCES = celt/tests/test_unit_mini_kfft.c
+celt_tests_test_unit_mini_kfft_LDADD = $(LIBM)
 
 celt_tests_test_unit_entropy_SOURCES = celt/tests/test_unit_entropy.c
 celt_tests_test_unit_entropy_LDADD = $(LIBM)
