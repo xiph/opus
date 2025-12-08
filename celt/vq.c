@@ -848,6 +848,7 @@ unsigned cubic_unquant(celt_norm *X, int N, int res, int B, ec_dec *dec, opus_va
    if (B!=1) K=IMAX(1, K-1);
    if (K==1) {
       OPUS_CLEAR(X, N);
+      RESTORE_STACK;
       return 0;
    }
    face = ec_dec_uint(dec, N);
