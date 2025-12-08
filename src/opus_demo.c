@@ -787,11 +787,14 @@ int main(int argc, char *argv[])
     if (mode_list)
     {
        int size;
+       int sample_size=2;
+       if (format == FORMAT_S24_LE) sample_size=3;
+       else if (format == FORMAT_F32_LE) sample_size=4;
        fseek(fin, 0, SEEK_END);
        size = ftell(fin);
        fprintf(stderr, "File size is %d bytes\n", size);
        fseek(fin, 0, SEEK_SET);
-       mode_switch_time = size/sizeof(short)/channels/nb_modes_in_list;
+       mode_switch_time = size/sample_size/channels/nb_modes_in_list;
        fprintf(stderr, "Switching mode every %d samples\n", mode_switch_time);
     }
 
@@ -985,7 +988,7 @@ int main(int argc, char *argv[])
                 opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(mode_list[curr_mode][1]));
                 opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(mode_list[curr_mode][0]));
                 opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(mode_list[curr_mode][3]));
-                frame_size = mode_list[curr_mode][2];
+                frame_size = mode_list[curr_mode][2]*sampling_rate/48000;
             }
 #ifdef ENABLE_OSCE_TRAINING_DATA
             if (silk_random_switching)
