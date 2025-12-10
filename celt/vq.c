@@ -445,6 +445,7 @@ static int op_pvq_refine(const opus_val32 *Xn, int *iy, int *iy0, int K, int up,
    }
    for (i=0;i<N;i++) iysum += iy[i];
    if (abs(iysum - K) > 32) {
+      RESTORE_STACK;
       return 1;
    }
    dir = iysum < K ? 1 : -1;
@@ -461,6 +462,7 @@ static int op_pvq_refine(const opus_val32 *Xn, int *iy, int *iy0, int K, int up,
       rounding[roundpos] -= SHL32(dir, 15);
       iysum+=dir;
    }
+   RESTORE_STACK;
    return 0;
 }
 
@@ -506,6 +508,7 @@ static opus_val32 op_pvq_search_extra(const celt_norm *X, int *iy, int *up_iy, i
       }
       refine[i] = up_iy[i]-up*iy[i];
    }
+   RESTORE_STACK;
 #ifdef FIXED_POINT
    return (yy + (1<<2*shift>>1))>>2*shift;
 #else

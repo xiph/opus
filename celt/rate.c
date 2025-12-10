@@ -763,6 +763,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       for (i=start;i<m->nbEBands+qext_end;i++) {
          extra_pulses[i] = extra_equant[i] = 0;
       }
+      RESTORE_STACK;
       return;
    }
    ALLOC(depth, tot_bands, int);
@@ -870,5 +871,6 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
          extra_pulses[end+i] = ((((qext_mode->eBands[i+1]-qext_mode->eBands[i])<<LM)-1)*C * depth[end+i] * (1<<BITRES) + 2)>>2;
       }
    }
+   RESTORE_STACK;
 }
 #endif
