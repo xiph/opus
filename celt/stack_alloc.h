@@ -143,9 +143,9 @@ extern char *global_stack_top;
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
 #ifdef ENABLE_HARDENING
 #include "arch.h"
-#define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)/(sizeof(char))),(void)(((int)((size)*(sizeof(type)/(sizeof(char)))) <= (scratch_ptr)+GLOBAL_STACK_SIZE-(stack))?0:CELT_FATAL("pseudostack overflow")),(stack)+=(size)*(sizeof(type)/(sizeof(char))),(type*)((stack)-(size)*(sizeof(type)/(sizeof(char)))))
+#define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)/(sizeof(char))),(void)(((int)((size)*(sizeof(type)/(sizeof(char)))) <= (scratch_ptr)+GLOBAL_STACK_SIZE-(stack))?0:CELT_FATAL("pseudostack overflow")),(stack)+=(size)*(sizeof(type)/(sizeof(char))),(type*)(void*)((stack)-(size)*(sizeof(type)/(sizeof(char)))))
 #else
-#define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)/(sizeof(char))),(stack)+=(size)*(sizeof(type)/(sizeof(char))),(type*)((stack)-(size)*(sizeof(type)/(sizeof(char)))))
+#define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)/(sizeof(char))),(stack)+=(size)*(sizeof(type)/(sizeof(char))),(type*)(void*)((stack)-(size)*(sizeof(type)/(sizeof(char)))))
 #endif
 
 #if 0 /* Set this to 1 to instrument pseudostack usage */
