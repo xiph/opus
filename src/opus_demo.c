@@ -297,10 +297,10 @@ static const int celt_test[][4] = {
 };
 
 static const int celt_hq_test[][4] = {
-      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      960, 2},
-      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      480, 2},
-      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      240, 2},
       {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      120, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      240, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      480, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      960, 2},
 };
 
 #if 0 /* This is a hack that replaces the normal encoder/decoder with the multistream version */
