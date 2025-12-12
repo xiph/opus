@@ -969,7 +969,7 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
    int i;
    int N;
    int silk_rate;
-   static int rate_table[][5] = {
+   static const int rate_table[][5] = {
   /*  |total| |-------- SILK------------|
               |-- No FEC -| |--- FEC ---|
                10ms   20ms   10ms   20ms */
