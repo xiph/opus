@@ -17,13 +17,16 @@ fi
 configure_path="$2"
 config="random_config.txt"
 
-case `seq 3 | shuf -n1` in
+case `seq 4 | shuf -n1` in
 1)
 approx=--enable-float-approx
 math=-ffast-math
 ;;
 2)
 approx=--enable-float-approx
+;;
+3)
+approx=--disable-float-approx
 ;;
 *)
 approx=
@@ -58,7 +61,7 @@ asm=`echo -e "\n--disable-asm\n--disable-rtcd\n--disable-intrinsics" | shuf -n1`
 #asm=`echo -e "\n--disable-asm\n--disable-intrinsics" | shuf -n1`
 
 assert=`echo -e "\n--enable-assertions" | shuf -n1`
-harden=`echo -e "\n--enable-hardening" | shuf -n1`
+harden=`echo -e "\n--enable-hardening\n--disable-hardening" | shuf -n1`
 fuzz=`echo -e "\n--enable-fuzzing" | shuf -n1`
 checkasm=`echo -e "\n--enable-check-asm" | shuf -n1`
 rfc8251=`echo -e "\n--disable-rfc8251" | shuf -n1`
