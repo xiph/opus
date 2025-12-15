@@ -968,6 +968,12 @@ AS_IF([test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"]
 
 AM_CONDITIONAL([ENABLE_OSCE], [test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
 
+AS_IF([test "$enable_fixed_point" = "yes"], [
+  AS_IF([test "$enable_dred" = "yes" || test "$enable_deep_plc" = "yes" || test "$enable_osce" = "yes"], [
+    AC_MSG_ERROR([--enable-fixed-point cannot be used with --enable-deep-plc, --enable-dred, and --enable-osce.])
+  ])
+])
+
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "$HAVE_DOXYGEN" = "yes"])
 
 AC_ARG_ENABLE([extra-programs],
