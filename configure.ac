@@ -182,7 +182,7 @@ AS_IF([test "$enable_opus_custom_api" = "yes"],[
   PC_BUILD="$PC_BUILD, Opus custom API"
 ])
 
-AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes" -o "$enable_opus_custom_api" == "yes"])
+AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes" || test "$enable_opus_custom_api" = "yes"])
 
 AC_ARG_ENABLE([dred],
     [AS_HELP_STRING([--enable-dred], [use Deep REDundancy (DRED)])],,
@@ -870,7 +870,7 @@ AM_CONDITIONAL([HAVE_AVX2],
     [test x"$OPUS_X86_MAY_HAVE_AVX2" = x"1"])
 
 AM_CONDITIONAL([HAVE_RTCD],
- [test x"$enable_rtcd" = x"yes" -a x"$rtcd_support" != x"no"])
+ [test x"$enable_rtcd" = x"yes" && test x"$rtcd_support" != x"no"])
 AS_IF([test x"$enable_rtcd" = x"yes"],[
     AS_IF([test x"$rtcd_support" != x"no"],[
         AC_DEFINE([OPUS_HAVE_RTCD], [1],
