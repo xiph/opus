@@ -351,18 +351,27 @@ int main(int argc, char **argv) {
     float mem[2]={0};
     int frame;
     float speech_rms, noise_rms;
+    int ret;
     if ((count%1000)==0) fprintf(stderr, "%d\r", count);
     speech_pos = (rand_lcg(&seed)*2.3283e-10)*speech_length;
     if (speech_pos > speech_length-(long)sizeof(speech16)) speech_pos = speech_length-sizeof(speech16);
     speech_pos -= speech_pos&1;
     fseek(f1, speech_pos, SEEK_SET);
-    fread(speech16, sizeof(speech16), 1, f1);
+    ret = fread(speech16, sizeof(speech16), 1, f1);
+    if (ret != 1) {
+       fprintf(stderr, "reading speech failed\n");
+       return 1;
+    }
     if (f2!=NULL) {
        noise_pos = (rand_lcg(&seed)*2.3283e-10)*noise_length;
        if (noise_pos > noise_length-(long)sizeof(noise16)) noise_pos = noise_length-sizeof(noise16);
        noise_pos -= noise_pos&1;
        fseek(f2, noise_pos, SEEK_SET);
-       fread(noise16, sizeof(noise16), 1, f2);
+       ret = fread(noise16, sizeof(noise16), 1, f2);
+       if (ret != 1) {
+          fprintf(stderr, "reading noise failed\n");
+          return 1;
+       }
     }
     if (rand()%4) start_pos = 0;
     else start_pos = -(int)(1000*log(rand()/(float)RAND_MAX));
