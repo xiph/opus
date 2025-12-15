@@ -828,11 +828,11 @@ extern "C" {
   * @hideinitializer */
  #define OPUS_GET_OSCE_BWE(x) OPUS_GET_OSCE_BWE_REQUEST, opus_check_int_ptr(x)
 
-/** If set to 1, enables quality extension (QEXT), otherwise disables it (default). Warning: This will *hurt* audio quality unless operating at
-    a very high bitrate.
+/** If set to 1, the decoder will ignore all extensions found in the padding area
+  * (does not affect DRED, which is decoded separately).
   * @hideinitializer */
 #define OPUS_SET_IGNORE_EXTENSIONS(x) OPUS_SET_IGNORE_EXTENSIONS_REQUEST, opus_check_int(x)
-/** Gets the encoder's configured quality extension (QEXT).
+/** Gets whether the decoder is ignoring extensions.
   * @hideinitializer */
 #define OPUS_GET_IGNORE_EXTENSIONS(x) OPUS_GET_IGNORE_EXTENSIONS_REQUEST, opus_check_int_ptr(x)
 
