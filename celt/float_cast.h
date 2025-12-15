@@ -154,6 +154,14 @@ static OPUS_INLINE opus_int16 FLOAT2INT16(float x)
    x = MIN32(x, 32767);
    return (opus_int16)float2int(x);
 }
+
+static OPUS_INLINE opus_int32 FLOAT2INT24(float x)
+{
+   x = x*(CELT_SIG_SCALE*256.f);
+   x = MAX32(x, -16777216);
+   x = MIN32(x, 16777216);
+   return float2int(x);
+}
 #endif /* DISABLE_FLOAT_API */
 
 #endif /* FLOAT_CAST_H */

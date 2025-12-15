@@ -156,7 +156,7 @@ typedef opus_val32 opus_res;
 #define INT16TORES(a)   SHL32(EXTEND32(a), RES_SHIFT)
 #define INT24TORES(a)   (a)
 #define ADD_RES(a, b)   ADD32(a, b)
-#define FLOAT2RES(a)    float2int(32768.f*256.f*(a))
+#define FLOAT2RES(a)    FLOAT2INT24(a)
 #define RES2SIG(a)      SHL32((a), SIG_SHIFT-RES_SHIFT)
 #define MULT16_RES_Q15(a,b) MULT16_32_Q15(a,b)
 #define MAX_ENCODING_DEPTH 24

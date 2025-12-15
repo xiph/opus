@@ -97,7 +97,7 @@ static OPUS_INLINE opus_val32 celt_maxabs16(const opus_val16 *x, int len)
 }
 #endif
 
-#ifdef ENABLE_RES24
+#if defined(ENABLE_RES24) && defined(FIXED_POINT)
 static OPUS_INLINE opus_res celt_maxabs_res(const opus_res *x, int len)
 {
    int i;
