@@ -1788,7 +1788,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
             tonality_get_info(&st->analysis, &analysis_info, enc_frame_size);
           }
 #endif
-          is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
+          is_silence = is_digital_silence(pcm+i*(st->channels*enc_frame_size), enc_frame_size, st->channels, lsb_depth);
 
           tmp_len = opus_encode_frame_native(st, pcm+i*(st->channels*enc_frame_size), enc_frame_size, curr_data, curr_max, float_api, first_frame,
 #ifdef ENABLE_DRED
