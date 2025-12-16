@@ -1015,8 +1015,8 @@ int opus_multistream_encode_native
       if (Fs/frame_size == 10)
         curr_max -= st->layout.nb_streams-s-1;
       curr_max = IMIN(curr_max,MS_FRAME_TMP);
-      /* Repacketizer will add one or two bytes for self-delimited frames */
-      if (s != st->layout.nb_streams-1) curr_max -=  curr_max>253 ? 2 : 1;
+      /* Repacketizer will add one or two bytes for self-delimited frames (and more if extensions are used). */
+      if (s != st->layout.nb_streams-1) curr_max -=  1 + curr_max/254;
       if (!vbr && s == st->layout.nb_streams-1)
          opus_encoder_ctl(enc, OPUS_SET_BITRATE(bits_to_bitrate(curr_max*8, Fs, frame_size)));
       len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max, lsb_depth,
