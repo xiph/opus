@@ -1359,6 +1359,7 @@ static opus_val16 tone_detect(const celt_sig *in, int CC, int N, opus_val32 *ton
    opus_val32 lpc[2];
    opus_val16 freq;
    VARDECL(opus_val16, x);
+   SAVE_STACK;
    ALLOC(x, N, opus_val16);
    /* Shift by SIG_SHIFT+2 (+3 for stereo) to account for HF gain of the preemphasis filter. */
    if (CC==2) {
@@ -1389,6 +1390,7 @@ static opus_val16 tone_detect(const celt_sig *in, int CC, int N, opus_val32 *ton
       *toneishness=0;
    }
    /*printf("%f %f %f %f\n", freq, lpc[0], lpc[1], *toneishness);*/
+   RESTORE_STACK;
    return freq;
 }
 
