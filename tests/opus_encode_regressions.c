@@ -1021,6 +1021,28 @@ static int silk_gain_assert(void)
     return 0;
 }
 
+#ifdef ENABLE_QEXT
+int qext_repacketize_fail(void)
+{
+    OpusEncoder *enc;
+    int err;
+    unsigned char data[9000];
+    int data_len;
+    static const short pcm[960] =
+        { -20454, -7680,-12281,  -250, -1809,-22758,-22784,-20480,     3 };
+
+    enc = opus_encoder_create(16000, 1, OPUS_APPLICATION_VOIP, &err);
+    opus_encoder_ctl(enc, OPUS_SET_VBR(0));
+    opus_encoder_ctl(enc, OPUS_SET_QEXT(1));
+    opus_encoder_ctl(enc, OPUS_SET_BITRATE(OPUS_BITRATE_MAX));
+    data_len = opus_encode(enc, pcm, 960, data, 9000);
+    /* returns OPUS_INTERNAL_ERROR (-3) */
+    opus_test_assert(data_len > 0 && data_len <= 9000);
+    opus_encoder_destroy(enc);
+    return 0;
+}
+#endif
+
 void regression_test(void)
 {
    fprintf(stderr, "Running simple tests for bugs that have been fixed previously\n");
@@ -1031,4 +1053,7 @@ void regression_test(void)
    ec_enc_shrink_assert();
    ec_enc_shrink_assert2();
    silk_gain_assert();
+#ifdef ENABLE_QEXT
+   qext_repacketize_fail();
+#endif
 }

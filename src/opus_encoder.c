@@ -1781,6 +1781,11 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
           curr_max = IMIN(curr_max, (max_len_sum-bitrate_to_bits(dred_bitrate_bps, st->Fs, frame_size)/8)/nb_frames);
           if (first_frame) curr_max += bitrate_to_bits(dred_bitrate_bps, st->Fs, frame_size)/8;
 #endif
+#ifdef ENABLE_QEXT
+          /* Leave room for signaling the extension size once we repacketize. */
+          if (st->enable_qext)
+             curr_max -= curr_max/254;
+#endif
           curr_max = IMIN(max_len_sum-tot_size, curr_max);
 #ifndef DISABLE_FLOAT_API
           if (analysis_read_pos_bak != -1) {
