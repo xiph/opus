@@ -401,13 +401,14 @@ static OPUS_INLINE void silk_LBRR_encode_FIX(
     VARDECL(silk_nsq_state, sNSQ_LBRR);
     SAVE_STACK;
 
-    /* Using ALLOC() instead of a regular stack allocation to minimize real stack use when using the pseudostack.
-       This is useful on some embedded systems. */
-    ALLOC(sNSQ_LBRR, 1, silk_nsq_state);
     /*******************************************/
     /* Control use of inband LBRR              */
     /*******************************************/
     if( psEnc->sCmn.LBRR_enabled && psEnc->sCmn.speech_activity_Q8 > SILK_FIX_CONST( LBRR_SPEECH_ACTIVITY_THRES, 8 ) ) {
+        /* Using ALLOC() instead of a regular stack allocation to minimize real stack use when using the pseudostack.
+           This is useful on some embedded systems. */
+        ALLOC(sNSQ_LBRR, 1, silk_nsq_state);
+
         psEnc->sCmn.LBRR_flags[ psEnc->sCmn.nFramesEncoded ] = 1;
 
         /* Copy noise shaping quantizer state and quantization indices from regular encoding */
