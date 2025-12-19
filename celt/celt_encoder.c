@@ -595,6 +595,13 @@ void celt_preemphasis(const opus_res * OPUS_RESTRICT pcmp, celt_sig * OPUS_RESTR
       for (i=0;i<Nu;i++)
          inp[i*upsample] = MAX32(-65536.f, MIN32(65536.f,inp[i*upsample]));
    }
+#elif defined(ENABLE_RES24)
+   if (clip)
+   {
+      /* Clip input to avoid encoding non-portable files */
+      for (i=0;i<Nu;i++)
+         inp[i*upsample] = MAX32(-(65536<<SIG_SHIFT), MIN32(65536<<SIG_SHIFT,inp[i*upsample]));
+   }
 #else
    (void)clip; /* Avoids a warning about clip being unused. */
 #endif
@@ -2000,7 +2007,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
    }
    c=0; do {
       int need_clip=0;
-#ifndef FIXED_POINT
+#ifdef FIXED_POINT
+      need_clip = st->clip && sample_max>65536<<RES_SHIFT;
+#else
       need_clip = st->clip && sample_max>65536.f;
 #endif
       celt_preemphasis(pcm+c, in+c*(N+overlap)+overlap, N, CC, st->upsample,

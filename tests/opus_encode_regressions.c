@@ -36,6 +36,7 @@
 #include <math.h>
 #include <string.h>
 #include "opus_multistream.h"
+#include "opus_projection.h"
 #include "opus.h"
 #include "test_opus_common.h"
 
@@ -1021,6 +1022,52 @@ static int silk_gain_assert(void)
     return 0;
 }
 
+int projection_overflow(void)
+{
+    OpusProjectionEncoder *enc;
+    int err;
+    unsigned char data[10000];
+    int data_len;
+    int streams;
+    int coupled_streams;
+    static const short pcm[1920*36] =
+    {
+     -6426, -6426, -6426, -6426, -7962, 20498,  -245, -5637,  5969,
+      2571,  2595, 11786,-32768,  -246,   255,-20446, -2828, -2828,
+         0,-32453, 32659,-11334,-21846,-21846,-21846, 12000, 25563,
+     30307,-32583, -3829,-31489, -1025, 20969,  2839, 25406, 25443,
+     25421,  3921,-18169,-32768,     0,   203, -2289,    -1, 32767,
+     -8449, 16384, 16384, 20852,   222,  5952, 29760,  4096,   116,
+      4096,  2560,   736,  2872,  2781,  1802,-32758,-32640,-32640,
+    -32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,
+    -32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,
+    -32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,
+    -32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,
+    -32640,-32640,-32640,-32640,  8970,-22006, 12000, 31097, 31353,
+     31097, 31097, 31097, 31097, 31097, 31097, 31097, 31097, 31097,
+     31097, 31097, 31097, 31097, 31097, 31097, 31097, 31097, 31097,
+     31097, 31097, 31097, 31097, 31097, 31097, 31097, 31097, 31097,
+     31097,-29831, -2973,-21846,-21821,-21846, 12000,     0,   255,
+     29712,     0, 12340, -8181, 20482, -5365,  2570, 32519,  -514,
+    -17793,-21805,-18077,-22005, -9373,-21846, -8064,-21970,-21898,
+       -16,  -124, -5637,  5969, 24587, 24655, 26703, 18767, 20303,
+     20303, 20303, 20559, 20303, -5041,   176, -2896, -5873,    21
+    };
+
+    enc = opus_projection_ambisonics_encoder_create(96000, 36, 3, &streams,
+        &coupled_streams, OPUS_APPLICATION_AUDIO, &err);
+#ifndef ENABLE_QEXT
+    opus_test_assert(err == OPUS_BAD_ARG);
+    return 0;
+#endif
+    opus_projection_encoder_ctl(enc, OPUS_SET_QEXT(1));
+    data_len = opus_projection_encode(enc, pcm, 1920, data, 10000);
+    opus_test_assert(data_len > 0 && data_len <= 10000);
+    opus_projection_encoder_destroy(enc);
+    return 0;
+}
+
+
 #ifdef ENABLE_QEXT
 int qext_repacketize_fail(void)
 {
@@ -1088,6 +1135,7 @@ void regression_test(void)
    ec_enc_shrink_assert();
    ec_enc_shrink_assert2();
    silk_gain_assert();
+   projection_overflow();
 #ifdef ENABLE_QEXT
    qext_repacketize_fail();
 #ifdef ENABLE_DRED
