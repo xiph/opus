@@ -177,7 +177,6 @@ typedef opus_val16 opus_res;
 #endif
 
 #define RES2VAL16(a)    RES2INT16(a)
-#define FLOAT2SIG(a)    float2int(((opus_int32)32768<<SIG_SHIFT)*(a))
 #define INT16TOSIG(a)   SHL32(EXTEND32(a), SIG_SHIFT)
 #define INT24TOSIG(a)   SHL32(a, SIG_SHIFT-8)
 

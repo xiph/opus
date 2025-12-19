@@ -1022,6 +1022,24 @@ static int silk_gain_assert(void)
     return 0;
 }
 
+#ifndef DISABLE_FLOAT_API
+int analysis_overflow(void)
+{
+    OpusEncoder *enc;
+    int err;
+    unsigned char data[200];
+    int data_len;
+    static const float pcm[320*2] = { 1e9, 1e9 };
+
+    enc = opus_encoder_create(16000, 2, OPUS_APPLICATION_AUDIO, &err);
+    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(10));
+    data_len = opus_encode_float(enc, pcm, 320, data, 200);
+    opus_test_assert(data_len > 0 && data_len <= 200);
+    opus_encoder_destroy(enc);
+    return 0;
+}
+#endif
+
 int projection_overflow(void)
 {
     OpusProjectionEncoder *enc;
@@ -1135,6 +1153,9 @@ void regression_test(void)
    ec_enc_shrink_assert();
    ec_enc_shrink_assert2();
    silk_gain_assert();
+#ifndef DISABLE_FLOAT_API
+   analysis_overflow();
+#endif
    projection_overflow();
 #ifdef ENABLE_QEXT
    qext_repacketize_fail();

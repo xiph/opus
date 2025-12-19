@@ -162,6 +162,15 @@ static OPUS_INLINE opus_int32 FLOAT2INT24(float x)
    x = MIN32(x, 16777216);
    return float2int(x);
 }
+#ifdef FIXED_POINT
+static OPUS_INLINE opus_int32 FLOAT2SIG(float x)
+{
+   x = x*((opus_int32)32768<<SIG_SHIFT);
+   x = MAX32(x, -(65536<<SIG_SHIFT));
+   x = MIN32(x, 65536<<SIG_SHIFT);
+   return float2int(x);
+}
+#endif
 #endif /* DISABLE_FLOAT_API */
 
 #endif /* FLOAT_CAST_H */
