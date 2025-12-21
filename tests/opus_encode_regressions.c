@@ -1154,6 +1154,25 @@ int qext_repacketize_fail(void)
     return 0;
 }
 
+int qext_stereo_overflow(void)
+{
+    OpusEncoder *enc;
+    int err;
+    unsigned char data[2000];
+    int data_len;
+    int i;
+    static short pcm[11520*2];
+
+    for (i = 0; i < 11520*2; ++i)
+        pcm[i] = 32767;
+    enc = opus_encoder_create(96000, 2, OPUS_APPLICATION_RESTRICTED_LOWDELAY, &err);
+    data_len = opus_encode(enc, pcm, 11520, data, 2000);
+    opus_test_assert(data_len > 0 && data_len <= 2000);
+    opus_encoder_destroy(enc);
+    return 0;
+}
+
+
 #ifdef ENABLE_DRED
 int qext_dred_combination(void)
 {
@@ -1207,6 +1226,7 @@ void regression_test(void)
    projection_overflow();
 #ifdef ENABLE_QEXT
    qext_repacketize_fail();
+   qext_stereo_overflow();
 #ifdef ENABLE_DRED
    qext_dred_combination();
 #endif

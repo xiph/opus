@@ -859,7 +859,9 @@ opus_val16 compute_stereo_width(const opus_res *pcm, int frame_size, opus_int32 
    int frame_rate;
    int i;
    opus_val16 short_alpha;
-
+#ifdef FIXED_POINT
+   int shift = celt_ilog2(frame_size)-2;
+#endif
    frame_rate = Fs/frame_size;
    short_alpha = Q15ONE - MULT16_16(25, Q15ONE)/IMAX(50,frame_rate);
    xx=xy=yy=0;
@@ -893,9 +895,9 @@ opus_val16 compute_stereo_width(const opus_res *pcm, int frame_size, opus_int32 
       pxy += SHR32(MULT16_16(x,y),2);
       pyy += SHR32(MULT16_16(y,y),2);
 
-      xx += SHR32(pxx, 10);
-      xy += SHR32(pxy, 10);
-      yy += SHR32(pyy, 10);
+      xx += SHR32(pxx, shift);
+      xy += SHR32(pxy, shift);
+      yy += SHR32(pyy, shift);
    }
 #ifndef FIXED_POINT
    if (!(xx < 1e9f) || celt_isnan(xx) || !(yy < 1e9f) || celt_isnan(yy))
