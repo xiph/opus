@@ -1038,6 +1038,53 @@ int analysis_overflow(void)
     opus_encoder_destroy(enc);
     return 0;
 }
+
+int projection_overflow2(void)
+{
+    OpusProjectionEncoder *enc;
+    int err;
+    unsigned char data[480];
+    int data_len;
+    int streams;
+    int coupled_streams;
+    static const float pcm[30*9] =
+    {
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,
+        2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34, 2e34,    0, -8e9
+    };
+
+    enc = opus_projection_ambisonics_encoder_create(12000, 9, 3, &streams,
+        &coupled_streams, OPUS_APPLICATION_RESTRICTED_LOWDELAY, &err);
+    data_len = opus_projection_encode_float(enc, pcm, 30, data, 480);
+    opus_test_assert(data_len > 0 && data_len <= 480);
+    opus_projection_encoder_destroy(enc);
+    return 0;
+}
 #endif
 
 int projection_overflow(void)
@@ -1155,6 +1202,7 @@ void regression_test(void)
    silk_gain_assert();
 #ifndef DISABLE_FLOAT_API
    analysis_overflow();
+   projection_overflow2();
 #endif
    projection_overflow();
 #ifdef ENABLE_QEXT

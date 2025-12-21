@@ -1922,7 +1922,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     else if (st->mode == MODE_CELT_ONLY) {
        opus_val32 noise_energy = compute_frame_energy(pcm, frame_size, st->channels, st->arch);
        /* Boosting peak energy a bit because we didn't just average the active frames. */
-       activity = 2*st->peak_signal_energy < (QCONST16(PSEUDO_SNR_THRESHOLD, 0) * (opus_val64)noise_energy);
+       activity = st->peak_signal_energy < (QCONST16(PSEUDO_SNR_THRESHOLD, 0) * (opus_val64)HALF32(noise_energy));
     }
 
     /* For the first frame at a new SILK bandwidth */
