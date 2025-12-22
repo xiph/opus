@@ -52,11 +52,6 @@ static const float compensation[] = {
 };
 
 
-extern const kiss_fft_state kfft;
-extern const float half_window[OVERLAP_SIZE];
-extern const float dct_table[NB_BANDS*NB_BANDS];
-
-
 static void compute_band_energy_inverse(float *bandE, const kiss_fft_cpx *X) {
   int i;
   float sum[NB_BANDS] = {0};

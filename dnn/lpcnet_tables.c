@@ -4,6 +4,7 @@
 #include "config.h"
 #endif
 #include "kiss_fft.h"
+#include "freq.h"
 
 static const arch_fft_state arch_fft = {0, NULL};
 

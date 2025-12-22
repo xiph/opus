@@ -48,6 +48,10 @@
 #define NB_BANDS 18
 #define NB_BANDS_1 (NB_BANDS - 1)
 
+extern const kiss_fft_state kfft;
+extern const float half_window[OVERLAP_SIZE];
+extern const float dct_table[NB_BANDS*NB_BANDS];
+
 void lpcn_compute_band_energy(float *bandE, const kiss_fft_cpx *X);
 void burg_cepstral_analysis(float *ceps, const float *x);
 
