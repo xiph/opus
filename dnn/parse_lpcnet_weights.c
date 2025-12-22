@@ -56,7 +56,7 @@ int parse_weights(WeightArray **list, const void *data, int len)
 {
   int nb_arrays=0;
   int capacity=20;
-  *list = opus_alloc(capacity*sizeof(WeightArray));
+  *list = (WeightArray*)opus_alloc(capacity*sizeof(WeightArray));
   while (len > 0) {
     int ret;
     WeightArray array = {NULL, 0, 0, 0};
@@ -65,7 +65,7 @@ int parse_weights(WeightArray **list, const void *data, int len)
       if (nb_arrays+1 >= capacity) {
         /* Make sure there's room for the ending NULL element too. */
         capacity = capacity*3/2;
-        *list = opus_realloc(*list, capacity*sizeof(WeightArray));
+        *list = (WeightArray*)opus_realloc(*list, capacity*sizeof(WeightArray));
       }
       (*list)[nb_arrays++] = array;
     } else {
@@ -78,7 +78,7 @@ int parse_weights(WeightArray **list, const void *data, int len)
   return nb_arrays;
 }
 
-static const void *find_array_entry(const WeightArray *arrays, const char *name) {
+static const WeightArray *find_array_entry(const WeightArray *arrays, const char *name) {
   while (arrays->name && strcmp(arrays->name, name) != 0) arrays++;
   return arrays;
 }
@@ -102,7 +102,7 @@ static const void *find_idx_check(const WeightArray *arrays, const char *name, i
   const WeightArray *a = find_array_entry(arrays, name);
   *total_blocks = 0;
   if (a == NULL) return NULL;
-  idx = a->data;
+  idx = (const int*)a->data;
   remain = a->size/sizeof(int);
   while (remain > 0) {
     int nb_blocks;
@@ -141,35 +141,35 @@ int linear_init(LinearLayer *layer, const WeightArray *arrays,
   layer->diag = NULL;
   layer->scale = NULL;
   if (bias != NULL) {
-    if ((layer->bias = find_array_check(arrays, bias, nb_outputs*sizeof(layer->bias[0]))) == NULL) return 1;
+    if ((layer->bias = (const float*)find_array_check(arrays, bias, nb_outputs*sizeof(layer->bias[0]))) == NULL) return 1;
   }
   if (subias != NULL) {
-    if ((layer->subias = find_array_check(arrays, subias, nb_outputs*sizeof(layer->subias[0]))) == NULL) return 1;
+    if ((layer->subias = (const float*)find_array_check(arrays, subias, nb_outputs*sizeof(layer->subias[0]))) == NULL) return 1;
   }
   if (weights_idx != NULL) {
     int total_blocks;
-    if ((layer->weights_idx = find_idx_check(arrays, weights_idx, nb_inputs, nb_outputs, &total_blocks)) == NULL) return 1;
+    if ((layer->weights_idx = (const int*)find_idx_check(arrays, weights_idx, nb_inputs, nb_outputs, &total_blocks)) == NULL) return 1;
     if (weights != NULL) {
-      if ((layer->weights = find_array_check(arrays, weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->weights[0]))) == NULL) return 1;
+      if ((layer->weights = (const opus_int8*)find_array_check(arrays, weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->weights[0]))) == NULL) return 1;
     }
     if (float_weights != NULL) {
-      layer->float_weights = opt_array_check(arrays, float_weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->float_weights[0]), &err);
+      layer->float_weights = (const float*)opt_array_check(arrays, float_weights, SPARSE_BLOCK_SIZE*total_blocks*sizeof(layer->float_weights[0]), &err);
       if (err) return 1;
     }
   } else {
     if (weights != NULL) {
-      if ((layer->weights = find_array_check(arrays, weights, nb_inputs*nb_outputs*sizeof(layer->weights[0]))) == NULL) return 1;
+      if ((layer->weights = (const opus_int8*)find_array_check(arrays, weights, nb_inputs*nb_outputs*sizeof(layer->weights[0]))) == NULL) return 1;
     }
     if (float_weights != NULL) {
-      layer->float_weights = opt_array_check(arrays, float_weights, nb_inputs*nb_outputs*sizeof(layer->float_weights[0]), &err);
+      layer->float_weights = (const float*)opt_array_check(arrays, float_weights, nb_inputs*nb_outputs*sizeof(layer->float_weights[0]), &err);
       if (err) return 1;
     }
   }
   if (diag != NULL) {
-    if ((layer->diag = find_array_check(arrays, diag, nb_outputs*sizeof(layer->diag[0]))) == NULL) return 1;
+    if ((layer->diag = (const float*)find_array_check(arrays, diag, nb_outputs*sizeof(layer->diag[0]))) == NULL) return 1;
   }
   if (weights != NULL) {
-    if ((layer->scale = find_array_check(arrays, scale, nb_outputs*sizeof(layer->scale[0]))) == NULL) return 1;
+    if ((layer->scale = (const float*)find_array_check(arrays, scale, nb_outputs*sizeof(layer->scale[0]))) == NULL) return 1;
   }
   layer->nb_inputs = nb_inputs;
   layer->nb_outputs = nb_outputs;
@@ -188,10 +188,10 @@ int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
   layer->bias = NULL;
   layer->float_weights = NULL;
   if (bias != NULL) {
-    if ((layer->bias = find_array_check(arrays, bias, out_channels*sizeof(layer->bias[0]))) == NULL) return 1;
+    if ((layer->bias = (const float*)find_array_check(arrays, bias, out_channels*sizeof(layer->bias[0]))) == NULL) return 1;
   }
   if (float_weights != NULL) {
-    layer->float_weights = opt_array_check(arrays, float_weights, in_channels*out_channels*ktime*kheight*sizeof(layer->float_weights[0]), &err);
+    layer->float_weights = (const float*)opt_array_check(arrays, float_weights, in_channels*out_channels*ktime*kheight*sizeof(layer->float_weights[0]), &err);
     if (err) return 1;
   }
   layer->in_channels = in_channels;

@@ -62,7 +62,7 @@ int lpcnet_encoder_load_model(LPCNetEncState *st, const void *data, int len) {
 
 LPCNetEncState *lpcnet_encoder_create(void) {
   LPCNetEncState *st;
-  st = opus_alloc(lpcnet_encoder_get_size());
+  st = (LPCNetEncState*)opus_alloc(lpcnet_encoder_get_size());
   lpcnet_encoder_init(st);
   return st;
 }
