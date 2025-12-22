@@ -110,15 +110,15 @@ void load_rir_list(const char *list_file, struct rir_list *rirs) {
   allocated = 2;
   rirs->fft = mini_kiss_fft_alloc(RIR_FFT_SIZE, 0, NULL, NULL);
   rirs->ifft = mini_kiss_fft_alloc(RIR_FFT_SIZE, 1, NULL, NULL);
-  rirs->rir = malloc(allocated*sizeof(rirs->rir[0]));
-  rirs->early = malloc(allocated*sizeof(rirs->early[0]));
+  rirs->rir = (mini_kiss_fft_cpx**)malloc(allocated*sizeof(rirs->rir[0]));
+  rirs->early = (mini_kiss_fft_cpx**)malloc(allocated*sizeof(rirs->early[0]));
   while (fgets(rir_filename, FILENAME_MAX_SIZE, f) != NULL) {
     /* Chop trailing newline. */
     rir_filename[strcspn(rir_filename, "\n")] = 0;
     if (rirs->nb_rirs+1 > allocated) {
       allocated *= 2;
-      rirs->rir = realloc(rirs->rir, allocated*sizeof(rirs->rir[0]));
-      rirs->early = realloc(rirs->early, allocated*sizeof(rirs->early[0]));
+      rirs->rir = (mini_kiss_fft_cpx**)realloc(rirs->rir, allocated*sizeof(rirs->rir[0]));
+      rirs->early = (mini_kiss_fft_cpx**)realloc(rirs->early, allocated*sizeof(rirs->early[0]));
     }
     rirs->rir[rirs->nb_rirs] = load_rir(rir_filename, rirs->fft, 0);
     rirs->early[rirs->nb_rirs] = load_rir(rir_filename, rirs->fft, 1);

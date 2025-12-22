@@ -57,8 +57,8 @@ int main(int argc, char **argv) {
 
 
     arch = opus_select_arch();
-    hOSCEBWE = calloc(1, sizeof(*hOSCEBWE));
-    osce = calloc(1, sizeof(*osce));
+    hOSCEBWE = (silk_OSCE_BWE_struct *)calloc(1, sizeof(*hOSCEBWE));
+    osce = (OSCEModel *)calloc(1, sizeof(*osce));
     osce_load_models(osce, NULL, arch);
     osce_bwe_reset(hOSCEBWE);
 

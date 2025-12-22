@@ -134,7 +134,7 @@ opus_int32 test_dec_api(void)
          dec = opus_decoder_create(fs, c, 0);
          if(dec!=NULL)test_failed();
          cfgs++;
-         dec=malloc(opus_decoder_get_size(2));
+         dec=(OpusDecoder*)malloc(opus_decoder_get_size(2));
          if(dec==NULL)test_failed();
          err = opus_decoder_init(dec,fs,c);
          if(err!=OPUS_BAD_ARG)test_failed();
@@ -241,7 +241,7 @@ opus_int32 test_dec_api(void)
    fprintf(stdout,"    OPUS_GET_GAIN ................................ OK.\n");
 
    /*Reset the decoder*/
-   dec2=malloc(opus_decoder_get_size(2));
+   dec2=(OpusDecoder*)malloc(opus_decoder_get_size(2));
    memcpy(dec2,dec,opus_decoder_get_size(2));
    if(opus_decoder_ctl(dec, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
    if(memcmp(dec2,dec,opus_decoder_get_size(2))==0)test_failed();
@@ -403,7 +403,7 @@ opus_int32 test_msdec_api(void)
          dec = opus_multistream_decoder_create(fs, c, 1, c-1, mapping, 0);
          if(dec!=NULL)test_failed();
          cfgs++;
-         dec=malloc(opus_multistream_decoder_get_size(1,1));
+         dec=(OpusMSDecoder*)malloc(opus_multistream_decoder_get_size(1,1));
          if(dec==NULL)test_failed();
          err = opus_multistream_decoder_init(dec,fs,c,1,c-1, mapping);
          if(err!=OPUS_BAD_ARG)test_failed();
@@ -1121,7 +1121,7 @@ opus_int32 test_enc_api(void)
          if(enc!=NULL)test_failed();
          cfgs++;
          opus_encoder_destroy(enc);
-         enc=malloc(opus_encoder_get_size(2));
+         enc=(OpusEncoder*)malloc(opus_encoder_get_size(2));
          if(enc==NULL)test_failed();
          err = opus_encoder_init(enc, fs, c, OPUS_APPLICATION_VOIP);
          if(err!=OPUS_BAD_ARG)test_failed();
@@ -1463,10 +1463,10 @@ int test_repacketizer_api(void)
    fprintf(stdout,"\n  Repacketizer tests\n");
    fprintf(stdout,"  ---------------------------------------------------\n");
 
-   packet=malloc(max_out);
+   packet=(unsigned char *)malloc(max_out);
    if(packet==NULL)test_failed();
    memset(packet,0,max_out);
-   po=malloc(max_out+256);
+   po=(unsigned char *)malloc(max_out+256);
    if(po==NULL)test_failed();
 
    i=opus_repacketizer_get_size();
@@ -1474,7 +1474,7 @@ int test_repacketizer_api(void)
    cfgs++;
    fprintf(stdout,"    opus_repacketizer_get_size()=%d ............. OK.\n",i);
 
-   rp=malloc(i);
+   rp=(OpusRepacketizer*)malloc(i);
    rp=opus_repacketizer_init(rp);
    if(rp==NULL)test_failed();
    cfgs++;

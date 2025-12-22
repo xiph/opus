@@ -391,7 +391,7 @@ void test_extensions_parse_fail(void)
    {
       /* about 8 MB */
 #define LENSIZE ((1U<<31)/255 + 1)
-      unsigned char *buf = malloc(LENSIZE+1);
+      unsigned char *buf = (unsigned char *)malloc(LENSIZE+1);
       len = LENSIZE+1;
       buf[0] = 33<<1 | 1;
       memset(buf + 1, 0xFF, LENSIZE - 1);
