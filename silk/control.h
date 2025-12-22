@@ -30,10 +30,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "typedef.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /* Decoder API flags */
 #define FLAG_DECODE_NORMAL                      0
@@ -164,9 +160,5 @@ typedef struct {
 #endif
 #endif
 } silk_DecControlStruct;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

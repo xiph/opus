@@ -28,10 +28,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef SILK_SIGPROC_FIX_H
 #define SILK_SIGPROC_FIX_H
 
-#ifdef  __cplusplus
-extern "C"
-{
-#endif
 
 /*#define silk_MACRO_COUNT */          /* Used to enable WMOPS counting */
 
@@ -641,9 +637,5 @@ static OPUS_INLINE opus_int64 silk_max_64(opus_int64 a, opus_int64 b)
 #include "xtensa/SigProc_FIX_lx7.h"
 #endif
 
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif /* SILK_SIGPROC_FIX_H */
