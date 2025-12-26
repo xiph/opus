@@ -124,7 +124,13 @@ jobs:
             name: "MacOSX/Framework/X64/Release",
             os: macos-latest,
             config: Release,
-            args: -DBUILD_FRAMEWORK=ON -DCMAKE_INSTALL_PREFIX=install
+            args: -DOPUS_BUILD_FRAMEWORK=ON -DCMAKE_INSTALL_PREFIX=install -DBUILD_TESTING=ON -DCMAKE_OSX_ARCHITECTURES=x86_64
+          }
+        - {
+            name: "MacOSX/Framework/arm64/Release",
+            os: macos-latest,
+            config: Release,
+            args: -DOPUS_BUILD_FRAMEWORK=ON -DCMAKE_INSTALL_PREFIX=install -DBUILD_TESTING=ON -DCMAKE_OSX_ARCHITECTURES=arm64
           }
           # use unix makefiles for iOS to avoid Xcode to complain about signing.
         - {
