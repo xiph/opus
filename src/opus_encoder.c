@@ -2607,7 +2607,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
        dred_chunks = IMIN((st->dred_duration+5)/4, DRED_NUM_REDUNDANCY_FRAMES/2);
        if (st->use_vbr) dred_chunks = IMIN(dred_chunks, st->dred_target_chunks);
        /* Remaining space for DRED, accounting for cost the 3 extra bytes for code 3, padding length, and extension number. */
-       dred_bytes_left = IMIN(DRED_MAX_DATA_SIZE, max_data_bytes-ret-3);
+       dred_bytes_left = IMIN(DRED_MAX_DATA_SIZE, orig_max_data_bytes-ret-3);
        /* Account for the extra bytes required to signal large padding length. */
        dred_bytes_left -= (dred_bytes_left+1+DRED_EXPERIMENTAL_BYTES)/255;
        /* Check whether we actually have something to encode. */
@@ -2628,7 +2628,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
               extension.frame = 0;
               extension.data = buf;
               extension.len = dred_bytes;
-              ret = opus_packet_pad_impl(data, ret, max_data_bytes, !st->use_vbr, &extension, 1);
+              ret = opus_packet_pad_impl(data, ret, orig_max_data_bytes, !st->use_vbr, &extension, 1);
               if (ret < 0)
               {
                  RESTORE_STACK;
