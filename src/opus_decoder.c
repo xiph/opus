@@ -236,7 +236,7 @@ static void smooth_fade(const opus_res *in1, const opus_res *in2,
 #else
 static void smooth_fade(const opus_res *in1, const opus_res *in2,
       opus_res *out, int overlap, int channels,
-      const opus_val16 *window, opus_int32 Fs)
+      const celt_coef *window, opus_int32 Fs)
 {
    int i, c;
    int inc = 48000/Fs;
@@ -244,7 +244,8 @@ static void smooth_fade(const opus_res *in1, const opus_res *in2,
    {
       for (i=0;i<overlap;i++)
       {
-         opus_val16 w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+         opus_val16 w = COEF2VAL16(window[i*inc]);
+         w = MULT16_16_Q15(w, w);
          out[i*channels+c] = SHR32(MAC16_16(MULT16_16(w,in2[i*channels+c]),
                                    Q15ONE-w, in1[i*channels+c]), 15);
       }
