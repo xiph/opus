@@ -1085,6 +1085,34 @@ int projection_overflow2(void)
     opus_projection_encoder_destroy(enc);
     return 0;
 }
+
+int projection_overflow3(void)
+{
+   OpusProjectionEncoder *enc;
+   int err;
+   int i;
+   int data_len;
+   int streams;
+   int coupled_streams;
+   float pcm[60*4];
+   unsigned char data[500];
+
+   enc = opus_projection_ambisonics_encoder_create(24000, 4, 3, &streams,
+       &coupled_streams, OPUS_APPLICATION_AUDIO, &err);
+
+   for (i = 0; i < 60*4; ++i)
+       pcm[i] = -1e38;
+   data_len = opus_projection_encode_float(enc, pcm, 60, data, 500);
+   opus_test_assert(data_len >= 5 && data_len <= 500);
+
+   for (i = 0; i < 60*4; ++i)
+       pcm[i] = 1e38;
+   data_len = opus_projection_encode_float(enc, pcm, 60, data, 500);
+   opus_test_assert(data_len >= 5 && data_len <= 500);
+
+   opus_projection_encoder_destroy(enc);
+   return 0;
+}
 #endif
 
 int projection_overflow(void)
@@ -1222,6 +1250,7 @@ void regression_test(void)
 #ifndef DISABLE_FLOAT_API
    analysis_overflow();
    projection_overflow2();
+   projection_overflow3();
 #endif
    projection_overflow();
 #ifdef ENABLE_QEXT
