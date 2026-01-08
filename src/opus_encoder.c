@@ -863,7 +863,7 @@ opus_val16 compute_stereo_width(const opus_res *pcm, int frame_size, opus_int32 
    int shift = celt_ilog2(frame_size)-2;
 #endif
    frame_rate = Fs/frame_size;
-   short_alpha = Q15ONE - MULT16_16(25, Q15ONE)/IMAX(50,frame_rate);
+   short_alpha = MULT16_16(25, Q15ONE)/IMAX(50,frame_rate);
    xx=xy=yy=0;
    /* Unroll by 4. The frame size is always a multiple of 4 *except* for
       2.5 ms frames at 12 kHz. Since this setting is very rare (and very
