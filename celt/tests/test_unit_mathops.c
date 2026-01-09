@@ -68,7 +68,7 @@ void testdiv(void)
 #endif
       if (fabs(prod-1) > .00025)
       {
-         fprintf (stderr, "div failed: 1/%d="WORD" (product = %f)\n", i, val, prod);
+         fprintf (stderr, "div failed: 1/%d=" WORD " (product = %f)\n", i, val, prod);
          ret = 1;
       }
    }
@@ -85,7 +85,7 @@ void testsqrt(void)
       ratio = val/sqrt(i);
       if (fabs(ratio - 1) > .0005 && fabs(val-sqrt(i)) > 2)
       {
-         fprintf (stderr, "sqrt failed: sqrt(%d)="WORD" (ratio = %f)\n", i, val, ratio);
+         fprintf (stderr, "sqrt failed: sqrt(%d)=" WORD " (ratio = %f)\n", i, val, ratio);
          ret = 1;
       }
       i+= i>>10;
@@ -178,7 +178,7 @@ void testexp2(void)
    float max_error = 0;
    for (x=-11.0;x<24.0;x+=0.0007f)
    {
-      float error = fabs(x-(1.442695040888963387*log(celt_exp2(x))));
+      float error = fabs(x-(1.442695040888963387*log((double)celt_exp2(x))));
       if (max_error < error)
       {
          max_error = error;
@@ -259,7 +259,7 @@ void test_atan2(void) {
             /* atan2(0,0) is undefined behavior. */
             continue;
          }
-         float error = fabs(0.636619772367581f*(float)atan2(y, x) - celt_atan2p_norm(y, x));
+         float error = fabs(0.636619772367581f*(float)atan2((double)y, (double)x) - celt_atan2p_norm(y, x));
          if (max_error < error)
          {
             max_error = error;
@@ -332,7 +332,7 @@ void testexp2(void)
       float error2 = fabs(exp(0.6931471805599453094*x/1024.0)-celt_exp2(x)/65536.0);
       if (error1>0.0002&&error2>0.00004)
       {
-         fprintf (stderr, "celt_exp2 failed: x = "WORD", error1 = %f, error2 = %f\n", x,error1,error2);
+         fprintf (stderr, "celt_exp2 failed: x = " WORD ", error1 = %f, error2 = %f\n", x,error1,error2);
          ret = 1;
       }
    }
@@ -425,7 +425,7 @@ void testrsqrt(void)
       x = DOUBLE_TO_FIX_INT(fx, 31);
       quantized_fx = FIX_INT_TO_DOUBLE(x, 31);
       error = fabs(FIX_INT_TO_DOUBLE(celt_rsqrt_norm32(x), 29) -
-                   1/sqrt(quantized_fx));
+                   1/sqrt((double)quantized_fx));
       if (max_error < error)
       {
          max_error = error;
