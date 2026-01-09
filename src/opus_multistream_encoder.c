@@ -733,7 +733,7 @@ static void surround_rate_allocation(
       bitrate = nb_normal*(channel_offset + Fs + 10000) + 8000*nb_lfe;
    } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
    {
-      bitrate = nb_normal*300000 + nb_lfe*128000;
+      bitrate = nb_normal*750000 + nb_lfe*128000;
    } else {
       bitrate = st->bitrate_bps;
    }
@@ -787,7 +787,7 @@ static void ambisonics_rate_allocation(
          (Fs+60*Fs/frame_size) + st->layout.nb_streams * (opus_int32)15000;
    } else if (st->bitrate_bps==OPUS_BITRATE_MAX)
    {
-      total_rate = nb_channels * 320000;
+      total_rate = nb_channels * 750000;
    } else
    {
       total_rate = st->bitrate_bps;
@@ -832,7 +832,12 @@ static opus_int32 rate_allocation(
 }
 
 /* Max size in case the encoder decides to return six frames (6 x 20 ms = 120 ms) */
+#ifdef ENABLE_QEXT
+#define MS_FRAME_TMP (6*QEXT_PACKET_SIZE_CAP+12)
+#else
 #define MS_FRAME_TMP (6*1275+12)
+#endif
+
 int opus_multistream_encode_native
 (
     OpusMSEncoder *st,
@@ -1160,7 +1165,7 @@ int opus_multistream_encoder_ctl_va_list(OpusMSEncoder *st, int request,
       {
          if (value <= 0)
             goto bad_arg;
-         value = IMIN(300000*st->layout.nb_channels, IMAX(500*st->layout.nb_channels, value));
+         value = IMIN(750000*st->layout.nb_channels, IMAX(500*st->layout.nb_channels, value));
       }
       st->bitrate_bps = value;
    }
