@@ -391,7 +391,7 @@ int compare_audio(int _argc,const char **_argv, const char *argv0){
   }
   if(xlength<test_win_size){
     fprintf(stderr,"Insufficient sample data (%lu<%lu).\n",
-     (unsigned long)xlength,test_win_size);
+     (unsigned long)xlength,(unsigned long)test_win_size);
     return EXIT_FAILURE;
   }
   nframes=(xlength-test_win_size+test_win_step)/test_win_step;
