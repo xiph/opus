@@ -45,8 +45,8 @@
 
 #ifdef FIXED_POINT
 #define WORD "%d"
-#define FIX_INT_TO_DOUBLE(x,q) ((double)(x) / (double)(1L << q))
-#define DOUBLE_TO_FIX_INT(x,q) (((double)x * (double)(1L << q)))
+#define FIX_INT_TO_DOUBLE(x,q) (ldexp((double)(x), -(q)))
+#define DOUBLE_TO_FIX_INT(x,q) (ldexp((double)(x), (q)))
 #else
 #define WORD "%f"
 #endif
