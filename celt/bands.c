@@ -245,6 +245,9 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
          g = 2147483647;
          shift = 0;
       }
+      /* Cap the gain just slightly lower to avoid overflows when using the
+         32-bit version of operators. */
+      if (shift==0) g = MIN32(g, (opus_int32)32766<<16);
 #endif
       do {
          *f++ = PSHR32(MULT32_32_Q31(SHL32(*x, 30-NORM_SHIFT), g), shift);
