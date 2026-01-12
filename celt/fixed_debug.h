@@ -45,6 +45,7 @@ extern opus_int64 celt_mips;
 #define MULT16_16SU(a,b) ((opus_val32)(opus_val16)(a)*(opus_val32)(opus_uint16)(b))
 #define MULT32_32_Q31(a,b) ADD32(ADD32(SHL32(MULT16_16(SHR32((a),16),SHR((b),16)),1), SHR32(MULT16_16SU(SHR32((a),16),((b)&0x0000ffff)),15)), SHR32(MULT16_16SU(SHR32((b),16),((a)&0x0000ffff)),15))
 #define MULT32_32_P31(a,b) ADD32(SHL32(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR32(128+(opus_int32)(MULT16_16U(((a)&0x0000ffff),((b)&0x0000ffff))>>(16+7)) + SHR32(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),7) + SHR32(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),7), 8) )
+#define MULT32_32_P31_ovflw(a,b) ADD32_ovflw(SHL32(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR32(128+(opus_int32)(MULT16_16U(((a)&0x0000ffff),((b)&0x0000ffff))>>(16+7)) + SHR32(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),7) + SHR32(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),7), 8) )
 #define MULT32_32_Q32(a,b) ADD32(ADD32(MULT16_16(SHR((a),16),SHR((b),16)), SHR(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),16)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),16))
 
 /** 16x32 multiplication, followed by a 16-bit shift right. Results fits in 32 bits */

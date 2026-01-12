@@ -74,9 +74,11 @@
 /** 32x32 multiplication, followed by a 31-bit shift right (with rounding). Results fits in 32 bits */
 #if OPUS_FAST_INT64
 #define MULT32_32_P31(a,b) ((opus_val32)SHR(1073741824+(opus_int64)(a)*(opus_int64)(b),31))
+#define MULT32_32_P31_ovflw(a,b) MULT32_32_P31(a,b)
 #else
 #define MULT16_16U(a,b) ((opus_uint32)(a)*(opus_uint32)(b))
 #define MULT32_32_P31(a,b) ADD32(SHL(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR32(128+(opus_int32)SHR(MULT16_16U(((a)&0x0000ffff),((b)&0x0000ffff)),16+7) + SHR32(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),7) + SHR32(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),7), 8) )
+#define MULT32_32_P31_ovflw(a,b) ADD32_ovflw(SHL(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR32(128+(opus_int32)SHR(MULT16_16U(((a)&0x0000ffff),((b)&0x0000ffff)),16+7) + SHR32(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),7) + SHR32(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),7), 8) )
 #endif
 
 /** 32x32 multiplication, followed by a 32-bit shift right. Results fits in 32 bits */
