@@ -1370,7 +1370,7 @@ static opus_val16 tone_detect(const celt_sig *in, int CC, int N, opus_val32 *ton
    ALLOC(x, N, opus_val16);
    /* Shift by SIG_SHIFT+2 (+3 for stereo) to account for HF gain of the preemphasis filter. */
    if (CC==2) {
-      for (i=0;i<N;i++) x[i] = PSHR32(ADD32(in[i], in[i+N]), SIG_SHIFT+3);
+      for (i=0;i<N;i++) x[i] = PSHR32(ADD32(SHR32(in[i], 1), SHR32(in[i+N], 1)), SIG_SHIFT+2);
    } else {
       for (i=0;i<N;i++) x[i] = PSHR32(in[i], SIG_SHIFT+2);
    }

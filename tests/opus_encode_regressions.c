@@ -1162,6 +1162,45 @@ int projection_overflow(void)
 
 
 #ifdef ENABLE_QEXT
+int projection_overflow4(void)
+{
+    OpusProjectionEncoder *enc;
+    int err;
+    unsigned char data[1000];
+    int data_len;
+    int streams;
+    int coupled_streams;
+    static const short pcm[480*36] =
+    {
+          5760, -3050,   -25,     1, -6144,-32583,-32640,-32641,-32640,
+        -32640,-30080,-32640,-32640,-32384,-32640,-32640,-32640,-32640,
+        -32640,-21984,-15446,-32640,-32640,-32513,-32640,-18048,  2944,
+        -26624,    -1, 32767,-15105, 12031,     0, 32639, -2593,    16,
+         -8182,  3858,  3855,  3855,  3855,  3855,  3855,     0,     0,
+          3855,  3855,  3855,  3855,   176, 32512,   176,  4608, 32732,
+            -1,  8704, -2896, -2828,   244, 15104,-27775,-18049,  2944,
+        -26624,    -1, -7937, -9426, 25443,-18058,  2944, 27648,   204,
+         -2289, -1025, 32767, -8449, 16384, 13312, 20852,   -34,    64,
+         29760,  4096,   116,  4096,  2560,   736,  2896,  2781, 25610,
+        -32717,  8970,-22006, 12000, 31097, 31097, 31157, 25465,  8291,
+        -21846,-21821, -6742, 12000,     0, 32767,  -514, 20320, 20320,
+         20328, 20297,-32640,-32640,-21075,-21111,-13139,-32640,-32640,
+        -32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,-27520,
+        -32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,-32640,
+        -32640,-32640,-32640,-32640,-32640,-32640,-32513,-32640,-18048
+    };
+
+    enc = opus_projection_ambisonics_encoder_create(96000, 36, 3, &streams,
+        &coupled_streams, OPUS_APPLICATION_AUDIO, &err);
+    opus_projection_encoder_ctl(enc, OPUS_SET_QEXT(1));
+    opus_projection_encoder_ctl(enc, OPUS_SET_BITRATE(256000));
+    data_len = opus_projection_encode(enc, pcm, 480, data, 1000);
+    opus_test_assert(data_len > 0 && data_len <= 1000);
+
+    opus_projection_encoder_destroy(enc);
+    return 0;
+}
+
 int qext_repacketize_fail(void)
 {
     OpusEncoder *enc;
@@ -1254,6 +1293,7 @@ void regression_test(void)
 #endif
    projection_overflow();
 #ifdef ENABLE_QEXT
+   projection_overflow4();
    qext_repacketize_fail();
    qext_stereo_overflow();
 #ifdef ENABLE_DRED
