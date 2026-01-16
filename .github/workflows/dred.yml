@@ -58,7 +58,7 @@ jobs:
             args: -G "Unix Makefiles" -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64
           }
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Install AutoConf, AutoMake and LibTool # Needed for autogen.sh
@@ -108,7 +108,7 @@ jobs:
             automakeconfig:
           }
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Install AutoConf, AutoMake and LibTool on MacOSX

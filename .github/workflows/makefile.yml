@@ -17,7 +17,7 @@ jobs:
             compiler: gcc,
           }
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Build
         run: make -f Makefile.unix -j 2
       - name: Test

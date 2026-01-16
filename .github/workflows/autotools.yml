@@ -36,7 +36,7 @@ jobs:
             buildconfig: --enable-assertions --enable-custom-modes --enable-dred --enable-osce
           }
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         # No AutoMake on Mac so let's install it
       - name: Install AutoConf, AutoMake and LibTool on MacOSX
         if: matrix.config.os == 'macos-latest'
