@@ -595,7 +595,7 @@ void test_rcp_norm32(void)
    opus_val32 x;
    int q_input = 31;
 
-   for (fx = 0.5; fx <= 1.0; fx += 0.0000007)
+   for (fx = 0.5; fx < 1.0; fx += 0.0000007)
    {
       x = DOUBLE_TO_FIX_INT(fx, q_input);
       quantized_fx = FIX_INT_TO_DOUBLE(x, q_input);
