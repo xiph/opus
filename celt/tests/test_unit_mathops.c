@@ -301,7 +301,7 @@ void testlog2_db(void)
       if (error > error_threshold)
       {
          fprintf(stderr, "celt_log2_db failed: error: [%.5e > %.5e] (x = %f)\n",
-                 error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+                 error, error_threshold, FIX_INT_TO_DOUBLE(x, q_input));
          ret = 1;
       }
    }
@@ -492,7 +492,7 @@ void testatan_norm(void)
       {
          fprintf(stderr,
                  "celt_atan_norm failed: error: [%.5e > %.5e] (x = %f)\n",
-                 error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+                 error, error_threshold, FIX_INT_TO_DOUBLE(x, q_input));
          ret = 1;
       }
    }
@@ -532,8 +532,9 @@ void testatan2p_norm(void)
          if (error > error_threshold)
          {
             fprintf(stderr,
-                  "celt_atan2p_norm failed: error: [%.5e > %.5e] (x = %f)\n",
-                  error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+                  "celt_atan2p_norm failed: error: [%.5e > %.5e] (y/x = %f/%f)\n",
+                  error, error_threshold, FIX_INT_TO_DOUBLE(y, q_input),
+                  FIX_INT_TO_DOUBLE(x, q_input));
             ret = 1;
          }
       }
@@ -570,7 +571,7 @@ void test_cos_norm32(void)
       {
          fprintf(stderr,
                  "celt_cos_norm32 failed: error: [%.5e > %.5e] (x = %f)\n",
-                 error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+                 error, error_threshold, FIX_INT_TO_DOUBLE(x, q_input));
          ret = 1;
       }
    }
