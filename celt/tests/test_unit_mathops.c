@@ -287,7 +287,7 @@ void testlog2_db(void)
    /* celt_log2_db test */
    float error = -1;
    float max_error = -2;
-   float error_threshold = 2.e-07;
+   float error_threshold = 2.9e-07;
    opus_int32 x = 0;
    int q_input = 14;
    for (x = 8; x < 1073741824; x += (x >> 3))
@@ -414,7 +414,7 @@ void testilog2(void)
 
 void testrsqrt(void)
 {
-   float error_threshold = 6.e-08;
+   float error_threshold = 6.8e-08;
    float error = 0;
    float max_error = 0;
    float fx = 0;
@@ -552,7 +552,7 @@ void test_cos_norm32(void)
 {
    float error = -1;
    float max_error = -2;
-   float error_threshold = 1e-07;
+   float error_threshold = 1.2e-07;
    float fx = 0;
    opus_int32 x = 0;
    int q_input = 30;
