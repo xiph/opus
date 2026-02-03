@@ -5,4 +5,4 @@ exe = executable('test_unit_LPC_inv_pred_gain',
   dependencies: libm,
   install: false)
 
-test(test_name, exe)
+test('test_unit_LPC_inv_pred_gain', exe)
