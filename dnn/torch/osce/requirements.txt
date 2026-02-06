@@ -1,5 +1,5 @@
 pyyaml==6.0.1
-torch==2.0.1
+torch==2.8.0
 numpy==1.25.2
 scipy==1.11.2
 pesq==0.0.4
