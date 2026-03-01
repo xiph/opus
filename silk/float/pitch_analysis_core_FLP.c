@@ -82,7 +82,7 @@ opus_int silk_pitch_analysis_core_FLP(      /* O    Voicing estimate: 0 voiced, 
     opus_int   i, k, d, j;
     silk_float frame_8kHz[  PE_MAX_FRAME_LENGTH_MS * 8 ];
     silk_float frame_4kHz[  PE_MAX_FRAME_LENGTH_MS * 4 ];
-    opus_int16 frame_8_FIX[ PE_MAX_FRAME_LENGTH_MS * 8 ];
+    opus_int16 frame_8_FIX[ PE_MAX_FRAME_LENGTH_MS * 8 ] = {0};
     opus_int16 frame_4_FIX[ PE_MAX_FRAME_LENGTH_MS * 4 ];
     opus_int32 filt_state[ 6 ];
     silk_float threshold, contour_bias;
@@ -165,7 +165,7 @@ opus_int silk_pitch_analysis_core_FLP(      /* O    Voicing estimate: 0 voiced, 
     /******************************************************************************
     * FIRST STAGE, operating in 4 khz
     ******************************************************************************/
-    silk_memset(C, 0, sizeof(silk_float) * nb_subfr * ((PE_MAX_LAG >> 1) + 5));
+    silk_memset(C, 0, sizeof(silk_float) * (size_t)nb_subfr * ((PE_MAX_LAG >> 1) + 5));
     target_ptr = &frame_4kHz[ silk_LSHIFT( sf_length_4kHz, 2 ) ];
     for( k = 0; k < nb_subfr >> 1; k++ ) {
         /* Check that we are within range of the array */
