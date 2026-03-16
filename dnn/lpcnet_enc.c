@@ -44,7 +44,8 @@
 #include "_kiss_fft_guts.h"
 #include "celt_lpc.h"
 #include "mathops.h"
-
+#include "burg.h"
+#include "silk/SigProc_FIX.h"
 
 int lpcnet_encoder_get_size(void) {
   return sizeof(LPCNetEncState);
@@ -71,12 +72,18 @@ void lpcnet_encoder_destroy(LPCNetEncState *st) {
   opus_free(st);
 }
 
-static void frame_analysis(LPCNetEncState *st, kiss_fft_cpx *X, float *Ex, const float *in) {
+static void frame_analysis(LPCNetEncState *st, kiss_fft_cpx *X, float *Ex, const float *in, float *burg_lpc, float *burg_gain) {
   float x[WINDOW_SIZE];
+  float g;
   OPUS_COPY(x, st->analysis_mem, OVERLAP_SIZE);
   OPUS_COPY(&x[OVERLAP_SIZE], in, FRAME_SIZE);
   OPUS_COPY(st->analysis_mem, &in[FRAME_SIZE-OVERLAP_SIZE], OVERLAP_SIZE);
   apply_window(x);
+  if (burg_lpc != NULL) {
+     g = silk_burg_analysis(burg_lpc, x, 1e-3, WINDOW_SIZE-1, 1, LPC_ORDER);
+     g /= WINDOW_SIZE - 2*(LPC_ORDER-1);
+     *burg_gain = g;
+  }
   forward_transform(X, x);
   lpcn_compute_band_energy(Ex, X);
 }
@@ -121,11 +128,13 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
   float xy, xx, yy;
   int pitch;
   float ener_norm[PITCH_MAX_PERIOD - PITCH_MIN_PERIOD];
+  float burg_lpc[LPC_ORDER];
+  float burg_gain;
   /* [b,a]=ellip(2, 2, 20, 1200/8000); */
   static const float lp_b[2] = {-0.84946f, 1.f};
   static const float lp_a[2] = {-1.54220f, 0.70781f};
   OPUS_COPY(aligned_in, &st->analysis_mem[OVERLAP_SIZE-TRAINING_OFFSET], TRAINING_OFFSET);
-  frame_analysis(st, X, Ex, in);
+  frame_analysis(st, X, Ex, in, burg_lpc, &burg_gain);
   st->if_features[0] = MAX16(-1.f, MIN16(1.f, (1.f/64)*(10.f*celt_log10(1e-15f + X[0].r*X[0].r)-6.f)));
   for (i=1;i<PITCH_IF_MAX_FREQ;i++) {
     kiss_fft_cpx prod;
@@ -194,6 +203,34 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
   frame_corr = log(1.f+exp(5.f*frame_corr))/log(1+exp(5.f));
   st->features[NB_BANDS] = st->dnn_pitch;
   st->features[NB_BANDS + 1] = frame_corr-.5f;
+  /*for (i=0;i<18;i++) printf("%f ", st->features[i]);
+  for (i=0;i<16;i++) printf("%f ", st->lpc[i]);*/
+  {
+    float xlpc[WINDOW_SIZE];
+    float Eburg[NB_BANDS];
+    kiss_fft_cpx LPC[FREQ_SIZE];
+    logMax = -2;
+    follow = -2;
+    OPUS_CLEAR(xlpc, WINDOW_SIZE);
+    xlpc[0] = 1;
+    for (i=0;i<LPC_ORDER;i++) xlpc[i+1] = -burg_lpc[i]*pow(.995, i+1);
+    forward_transform(LPC, xlpc);
+    compute_band_energy_inverse(Eburg, LPC);
+    for (i=0;i<NB_BANDS;i++) Eburg[i] *= .45*burg_gain*(1.f/((float)WINDOW_SIZE*WINDOW_SIZE*WINDOW_SIZE));
+    for (i=0;i<NB_BANDS;i++) {
+      Ly[i] = log10(1e-2+Eburg[i]);
+      Ly[i] = MAX16(logMax-8, MAX16(follow-2.5, Ly[i]));
+      logMax = MAX16(logMax, Ly[i]);
+      follow = MAX16(follow-2.5, Ly[i]);
+    }
+    dct(st->features, Ly);
+    st->features[0] += - 4;
+    OPUS_COPY(st->lpc, burg_lpc, LPC_ORDER);
+    for (i=0;i<LPC_ORDER;i++) st->lpc[i] = -st->lpc[i];
+  }
+  /*for (i=0;i<18;i++) printf("%f ", st->features[i]);
+  for (i=0;i<16;i++) printf("%f ", st->lpc[i]);
+  printf("\n");*/
 }
 
 void preemphasis(float *y, float *mem, const float *x, float coef, int N) {

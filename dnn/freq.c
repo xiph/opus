@@ -52,7 +52,7 @@ static const float compensation[] = {
 };
 
 
-static void compute_band_energy_inverse(float *bandE, const kiss_fft_cpx *X) {
+void compute_band_energy_inverse(float *bandE, const kiss_fft_cpx *X) {
   int i;
   float sum[NB_BANDS] = {0};
   for (i=0;i<NB_BANDS-1;i++)
