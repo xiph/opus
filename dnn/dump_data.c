@@ -352,11 +352,13 @@ int main(int argc, char **argv) {
     int frame;
     float speech_rms, noise_rms;
     int ret;
-    if ((count%1000)==0) fprintf(stderr, "%d\r", count);
-    speech_pos = (rand_lcg(&seed)*2.3283e-10)*speech_length;
-    if (speech_pos > speech_length-(long)sizeof(speech16)) speech_pos = speech_length-sizeof(speech16);
-    speech_pos -= speech_pos&1;
-    fseek(f1, speech_pos, SEEK_SET);
+    if (training) {
+       if ((count%1000)==0) fprintf(stderr, "%d\r", count);
+       speech_pos = (rand_lcg(&seed)*2.3283e-10)*speech_length;
+       if (speech_pos > speech_length-(long)sizeof(speech16)) speech_pos = speech_length-sizeof(speech16);
+       speech_pos -= speech_pos&1;
+       fseek(f1, speech_pos, SEEK_SET);
+    }
     ret = fread(speech16, sizeof(speech16), 1, f1);
     if (ret != 1) {
        fprintf(stderr, "reading speech failed\n");
@@ -373,24 +375,25 @@ int main(int argc, char **argv) {
           return 1;
        }
     }
-    if (rand()%4) start_pos = 0;
-    else start_pos = -(int)(1000*log(rand()/(float)RAND_MAX));
-    start_pos = IMIN(start_pos, SEQUENCE_LENGTH*FRAME_SIZE);
+    if (training) {
+       if (rand()%4) start_pos = 0;
+       else start_pos = -(int)(1000*log(rand()/(float)RAND_MAX));
+       start_pos = IMIN(start_pos, SEQUENCE_LENGTH*FRAME_SIZE);
 
-    speech_gain = pow(10., (-30+(rand()%40))/20.);
-    if (rand()&1) speech_gain = -speech_gain;
-    if (rand()%20==0) speech_gain *= .01;
-    if (!pitch && rand()%100==0) speech_gain = 0;
+       speech_gain = pow(10., (-30+(rand()%40))/20.);
+       if (rand()&1) speech_gain = -speech_gain;
+       if (rand()%20==0) speech_gain *= .01;
+       if (!pitch && rand()%100==0) speech_gain = 0;
 
-    noise_gain = pow(10., (-40+randf(25.f)+randf(15.f))/20.);
-    if (rand()%2!=0) noise_gain = 0;
-    if (rand()%12==0) {
-      noise_gain *= 0.03;
+       noise_gain = pow(10., (-40+randf(25.f)+randf(15.f))/20.);
+       if (rand()%2!=0) noise_gain = 0;
+       if (rand()%12==0) {
+          noise_gain *= 0.03;
+       }
+       noise_gain *= speech_gain;
+       rand_resp(a_noise, b_noise);
+       rand_resp(a_sig, b_sig);
     }
-    noise_gain *= speech_gain;
-    rand_resp(a_noise, b_noise);
-    rand_resp(a_sig, b_sig);
-
     for (frame=0;frame<SEQUENCE_LENGTH;frame++) {
       E[frame] = 0;
       for(j=0;j<FRAME_SIZE;j++) {
@@ -413,31 +416,37 @@ int main(int argc, char **argv) {
     speech_rms = weighted_rms(x);
     noise_rms = weighted_rms(n);
 
-    speech_gain *= 3000.f/(1+speech_rms);
-    noise_gain *= 3000.f/(1+noise_rms);
+    if (training) {
+       speech_gain *= 3000.f/(1+speech_rms);
+       noise_gain *= 3000.f/(1+noise_rms);
+       for (j=0;j<SEQUENCE_SAMPLES;j++) {
+          x[j] *= speech_gain;
+          n[j] *= noise_gain;
+       }
+    }
     for (j=0;j<SEQUENCE_SAMPLES;j++) {
-      x[j] *= speech_gain;
-      n[j] *= noise_gain;
-      xn[j] = x[j] + n[j];
+       xn[j] = x[j] + n[j];
     }
+    if (training) {
 #ifdef ENABLE_RIR
-    if (rir_filename!=NULL && rand()%3==0) {
-      rir_id = rand()%rirs.nb_rirs;
-      rir_filter_sequence(&rirs, x, rir_id, 1);
-      rir_filter_sequence(&rirs, xn, rir_id, 0);
-    }
+       if (rir_filename!=NULL && rand()%3==0) {
+          rir_id = rand()%rirs.nb_rirs;
+          rir_filter_sequence(&rirs, x, rir_id, 1);
+          rir_filter_sequence(&rirs, xn, rir_id, 0);
+       }
 #endif
-    if (rand()%4==0) {
-      /* Apply input clipping to 0 dBFS (don't clip target). */
-      for (j=0;j<SEQUENCE_SAMPLES;j++) {
-        xn[j] = MIN16(32767.f, MAX16(-32767.f, xn[j]));
-      }
-    }
-    if (rand()%2==0) {
-      /* Apply 16-bit quantization. */
-      for (j=0;j<SEQUENCE_SAMPLES;j++) {
-        xn[j] = floor(.5f + xn[j]);
-      }
+       if (rand()%4==0) {
+          /* Apply input clipping to 0 dBFS (don't clip target). */
+          for (j=0;j<SEQUENCE_SAMPLES;j++) {
+             xn[j] = MIN16(32767.f, MAX16(-32767.f, xn[j]));
+          }
+       }
+       if (rand()%2==0) {
+          /* Apply 16-bit quantization. */
+          for (j=0;j<SEQUENCE_SAMPLES;j++) {
+             xn[j] = floor(.5f + xn[j]);
+          }
+       }
     }
 #if 0
     for (frame=0;frame<SEQUENCE_LENGTH;frame++) {
@@ -447,7 +456,8 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    sequence_length = IMIN(SEQUENCE_LENGTH, SEQUENCE_LENGTH/2 + rand()%(SEQUENCE_LENGTH/2+1));
+    if (training) sequence_length = IMIN(SEQUENCE_LENGTH, SEQUENCE_LENGTH/2 + rand()%(SEQUENCE_LENGTH/2+1));
+    else sequence_length = SEQUENCE_LENGTH;
     for (frame=0;frame<sequence_length;frame++) {
        float *xf = &xn[frame*FRAME_SIZE];
        if (burg) {
