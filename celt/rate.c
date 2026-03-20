@@ -772,6 +772,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       VARDECL(int, Ncoef);
       VARDECL(opus_val16, min);
       VARDECL(opus_val16, follower);
+      VARDECL(opus_val16, dyn_cap);
 
       ALLOC(flatE, tot_bands, opus_val16);
       ALLOC(min, tot_bands, opus_val16);
@@ -789,10 +790,13 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
             flatE[i] = MAXG(flatE[i], PSHR32(bandLogE[m->nbEBands+i] - GCONST(0.0625f)*m->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(i+5)*(i+5), DB_SHIFT-10));
          }
       }
+      flatE[end-4] += QCONST16(.25f, 10);
+      flatE[end-3] += QCONST16(.5f, 10);
+      flatE[end-2] += QCONST16(1.2f, 10);
       flatE[end-1] += QCONST16(2.f, 10);
       if (qext_mode != NULL) {
          opus_val16 min_depth = 0;
-         /* If we have enough bits, give at least 1 bit of depth to all higher bands. */
+         /* If we have enough bits, give at least 1 bit of depth to all higher bands up to 40 kHz. */
          if (total >= 3*C*(qext_mode->eBands[qext_end]-qext_mode->eBands[start])<<LM<<BITRES && (toneishness < QCONST32(.98f, 29) || tone_freq > 1.33f))
             min_depth = QCONST16(1.f, 10);
          for (i=0;i<qext_end;i++) {
@@ -820,38 +824,72 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       for (i=tot_bands-2;i>=start;i--) {
          follower[i] = MAX16(follower[i], follower[i+1]-QCONST16(1.f, 10));
       }
-      for (i=start;i<tot_bands;i++) flatE[i] -= MULT16_16_Q15(Q15ONE-PSHR32(toneishness, 14), follower[i]);
       if (qext_mode != NULL) {
-         for (i=0;i<qext_end;i++) flatE[end+i] = flatE[end+i] + QCONST16(3.f, 10) + QCONST16(.2f, 10)*i;
+         for (i=0;i<qext_end;i++) flatE[end+i] = flatE[end+i] + QCONST16(4.f, 10) + QCONST16(.3f, 10)*i;
       }
-      /* Approximate fill level assuming all bands contribute fully. */
+      ALLOC(dyn_cap, tot_bands, opus_val16);
+      /* It's not really worth exceeding this "dynamic cap" that corresponds to about 20-bit
+         resolution unless we have the bits to do so in all of the bands.*/
+      for (i=0;i<tot_bands;i++) dyn_cap[i] = MAX32(0, MIN32(flatE[i]+QCONST16(9.f, 10), SHL32(cap[i], 10)));
       sum = 0;
       for (i=start;i<tot_bands;i++) {
-         sum += MULT16_16(Ncoef[i], flatE[i]);
+         sum += MULT16_16(Ncoef[i], dyn_cap[i]);
       }
       total >>= BITRES;
-      fill = (SHL32(total, 10) + sum)/tot_samples;
-      /* Iteratively refine the fill level considering the depth min and cap. */
-      for (iter=0;iter<10;iter++) {
-         sum = 0;
-         for (i=start;i<tot_bands;i++)
-            sum += Ncoef[i] * MIN32(SHL32(cap[i], 10), MAX32(min[i], flatE[i]-fill));
-         fill -= (SHL32(total, 10) - sum)/tot_samples;
-      }
-      for (i=start;i<tot_bands;i++) {
+      if (sum <= SHL32(total, 10)) {
+         int dyn_tot_samples=0;
+         opus_val32 overfill;
+         for (i=start;i<tot_bands;i++) {
+            if (dyn_cap[i] > 0) dyn_tot_samples += Ncoef[i];
+         }
+         dyn_tot_samples = IMAX(dyn_tot_samples, 1);
+         overfill = (SHL32(total, 10) - sum)/dyn_tot_samples;
+
+         for (i=start;i<tot_bands;i++) {
+            if (dyn_cap[i] > 0) dyn_cap[i] = MIN32(SHL32(cap[i], 10), dyn_cap[i]+overfill);
+         }
+
+         for (i=start;i<tot_bands;i++) {
 #ifdef FIXED_POINT
-         depth[i] = PSHR32(MIN32(SHL32(cap[i], 10), MAX32(min[i], flatE[i]-fill)), 10-2);
+            depth[i] = PSHR32(dyn_cap[i], 10-2);
 #else
-         depth[i] = (int)floor(.5+4*MIN32(SHL32(cap[i], 10), MAX32(min[i], flatE[i]-fill)));
+            depth[i] = (int)floor(.5+4*dyn_cap[i]);
+#endif
+            if (ec_tell_frac(ec) + 80 < ec->storage*8<<BITRES)
+               ec_enc_depth(ec, depth[i], 4*cap[i], &last);
+            else
+               depth[i] = 0;
+         }
+      } else {
+         for (i=start;i<tot_bands;i++) flatE[i] -= MULT16_16_Q15(Q15ONE-PSHR32(toneishness, 14), follower[i]);
+         /* Approximate fill level assuming all bands contribute fully. */
+         sum = 0;
+         for (i=start;i<tot_bands;i++) {
+            sum += MULT16_16(Ncoef[i], flatE[i]);
+         }
+         fill = (SHL32(total, 10) + sum)/tot_samples;
+         /* Iteratively refine the fill level considering the depth min and cap. */
+         for (iter=0;iter<20;iter++) {
+            sum = 0;
+            for (i=start;i<tot_bands;i++)
+               sum += Ncoef[i] * MIN32(dyn_cap[i], MAX32(min[i], flatE[i]-fill));
+            fill -= (SHL32(total, 10) - sum)/tot_samples;
+         }
+         for (i=start;i<tot_bands;i++) {
+#ifdef FIXED_POINT
+            depth[i] = PSHR32(MIN32(dyn_cap[i], MAX32(min[i], flatE[i]-fill)), 10-2);
+#else
+            depth[i] = (int)floor(.5+4*MIN32(dyn_cap[i], MAX32(min[i], flatE[i]-fill)));
 #endif
 #ifdef FUZZING
-         depth[i] = (int)-depth_std*log(1e-8+(float)rand()/(float)RAND_MAX);
-         depth[i] = IMAX(0, IMIN(cap[i]<<2, depth[i]));
+            depth[i] = (int)-depth_std*log(1e-8+(float)rand()/(float)RAND_MAX);
+            depth[i] = IMAX(0, IMIN(cap[i]<<2, depth[i]));
 #endif
-         if (ec_tell_frac(ec) + 80 < ec->storage*8<<BITRES)
-            ec_enc_depth(ec, depth[i], 4*cap[i], &last);
-         else
-            depth[i] = 0;
+            if (ec_tell_frac(ec) + 80 < ec->storage*8<<BITRES)
+               ec_enc_depth(ec, depth[i], 4*cap[i], &last);
+            else
+               depth[i] = 0;
+         }
       }
    } else {
       for (i=start;i<tot_bands;i++) {
