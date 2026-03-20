@@ -137,7 +137,7 @@ static void dred_convert_to_16k(DREDEnc *enc, const float *in, int in_len, float
 {
     float downmix[MAX_DOWNMIX_BUFFER];
     int i;
-    int up;
+    int up = 0;
     celt_assert(enc->channels*in_len <= MAX_DOWNMIX_BUFFER);
     celt_assert(in_len * (opus_int32)16000 == out_len * enc->Fs);
     switch(enc->Fs) {
