@@ -1615,7 +1615,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    int update_lowband = 1;
    int C = Y_ != NULL ? 2 : 1;
    int norm_offset;
-   int theta_rdo = encode && Y_!=NULL && !dual_stereo && complexity>=8;
+   int theta_rdo = 0 && encode && Y_!=NULL && !dual_stereo && complexity>=8;
 #ifdef RESYNTH
    int resynth = 1;
 #else
