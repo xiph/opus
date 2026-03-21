@@ -46,6 +46,10 @@
 
 #include "mini_kfft.c"
 
+#include "silk/A2NLSF.c"
+#include "silk/bwexpander_32.c"
+#include "silk/table_LSF_cos.c"
+
 #ifndef M_PI
 #define M_PI 3.141592653589793f
 #endif
@@ -53,7 +57,7 @@
 #define SEQUENCE_LENGTH 2000
 #define SEQUENCE_SAMPLES (SEQUENCE_LENGTH*FRAME_SIZE)
 
-#define ENABLE_RIR
+/*#define ENABLE_RIR*/
 
 #ifdef ENABLE_RIR
 
@@ -341,7 +345,7 @@ int main(int argc, char **argv) {
   fprintf(stderr, "WARNING: dump_data was built without RIR support\n");
 #endif
 
-  maxCount = 20000;
+  maxCount = 5000;
   for (count=0;count<maxCount;count++) {
     int rir_id;
     int sequence_length;
@@ -456,7 +460,7 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    if (training) sequence_length = IMIN(SEQUENCE_LENGTH, SEQUENCE_LENGTH/2 + rand()%(SEQUENCE_LENGTH/2+1));
+    if (0&&training) sequence_length = IMIN(SEQUENCE_LENGTH, SEQUENCE_LENGTH/2 + rand()%(SEQUENCE_LENGTH/2+1));
     else sequence_length = SEQUENCE_LENGTH;
     for (frame=0;frame<sequence_length;frame++) {
        float *xf = &xn[frame*FRAME_SIZE];

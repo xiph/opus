@@ -206,6 +206,8 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
   /*for (i=0;i<18;i++) printf("%f ", st->features[i]);
   for (i=0;i<16;i++) printf("%f ", st->lpc[i]);*/
   {
+    opus_int16 NLSF_Q15[LPC_ORDER];
+    opus_int32 a_fix_Q16[LPC_ORDER];
     float xlpc[WINDOW_SIZE];
     float Eburg[NB_BANDS];
     kiss_fft_cpx LPC[FREQ_SIZE];
@@ -226,7 +228,13 @@ void compute_frame_features(LPCNetEncState *st, const float *in, int arch) {
     dct(st->features, Ly);
     st->features[0] += - 4;
     OPUS_COPY(st->lpc, burg_lpc, LPC_ORDER);
+    for (i=0;i<LPC_ORDER;i++) a_fix_Q16[i] = (int)floor(.5+burg_lpc[i]*65536.f);
     for (i=0;i<LPC_ORDER;i++) st->lpc[i] = -st->lpc[i];
+    silk_A2NLSF( NLSF_Q15, a_fix_Q16, LPC_ORDER );
+    for (i=0;i<LPC_ORDER;i++) st->features[NB_BANDS+2+i] = NLSF_Q15[i]*(1.f/32768.);
+    st->features[NB_BANDS-1] = log(burg_gain)-5;
+    /*for (i=0;i<NB_TOTAL_FEATURES;i++) printf("%f ", st->features[i]);
+    printf("\n");*/
   }
   /*for (i=0;i<18;i++) printf("%f ", st->features[i]);
   for (i=0;i<16;i++) printf("%f ", st->lpc[i]);
