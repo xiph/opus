@@ -790,10 +790,6 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
             flatE[i] = MAXG(flatE[i], PSHR32(bandLogE[m->nbEBands+i] - GCONST(0.0625f)*m->logN[i] + SHL32(eMeans[i],DB_SHIFT-4) - GCONST(.0062f)*(i+5)*(i+5), DB_SHIFT-10));
          }
       }
-      flatE[end-4] += QCONST16(.25f, 10);
-      flatE[end-3] += QCONST16(.5f, 10);
-      flatE[end-2] += QCONST16(1.2f, 10);
-      flatE[end-1] += QCONST16(2.f, 10);
       if (qext_mode != NULL) {
          opus_val16 min_depth = 0;
          /* If we have enough bits, give at least 1 bit of depth to all higher bands up to 40 kHz. */
@@ -826,7 +822,16 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       }
       if (qext_mode != NULL) {
          for (i=0;i<qext_end;i++) flatE[end+i] = flatE[end+i] + QCONST16(4.f, 10) + QCONST16(.3f, 10)*i;
+         for (i=0;i<qext_end;i++) follower[end+i] = follower[end+i] + QCONST16(5.f, 10) + QCONST16(.6f, 10)*i;
       }
+      flatE[end-4] += QCONST16(.25f, 10);
+      flatE[end-3] += QCONST16(.5f, 10);
+      flatE[end-2] += QCONST16(1.2f, 10);
+      flatE[end-1] += QCONST16(2.f, 10);
+      follower[end-4] += QCONST16(.25f, 10);
+      follower[end-3] += QCONST16(.5f, 10);
+      follower[end-2] += QCONST16(1.2f, 10);
+      follower[end-1] += QCONST16(2.f, 10);
       ALLOC(dyn_cap, tot_bands, opus_val16);
       /* It's not really worth exceeding this "dynamic cap" that corresponds to about 20-bit
          resolution unless we have the bits to do so in all of the bands.*/
