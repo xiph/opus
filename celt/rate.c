@@ -826,6 +826,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       }
       if (qext_mode != NULL) {
          for (i=0;i<qext_end;i++) flatE[end+i] = flatE[end+i] + QCONST16(4.f, 10) + QCONST16(.3f, 10)*i;
+         for (i=0;i<qext_end;i++) follower[end+i] = follower[end+i] + QCONST16(4.f, 10) + QCONST16(.3f, 10)*i;
       }
       ALLOC(dyn_cap, tot_bands, opus_val16);
       /* It's not really worth exceeding this "dynamic cap" that corresponds to about 20-bit
