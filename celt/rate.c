@@ -755,7 +755,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       tot_samples = (m->eBands[end]-m->eBands[start])*C<<LM;
    }
    ALLOC(cap, tot_bands, opus_int32);
-   for (i=start;i<end;i++) cap[i] = 12;
+   for (i=start;i<end;i++) cap[i] = 14;
    if (qext_mode != NULL) {
       for (i=0;i<qext_end;i++) cap[end+i] = 14;
    }
