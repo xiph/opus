@@ -535,6 +535,16 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
          g = g1;
       }
    }
+   if (T < minperiod*2) {
+      opus_val16 g1, g2;
+      int T1, T2;
+      T1 = T*5/8;
+      T2 = T*6/8;
+      dual_inner_prod(x, &x[-T1], &x[-T2], N, &xy, &xy2, arch);
+      g1 = compute_pitch_gain(xy, xx, yy_lookup[T1]);
+      g2 = compute_pitch_gain(xy2, xx, yy_lookup[T2]);
+      if (g1 >= g || g2 >= g) g = 0;
+   }
    best_xy = MAX32(0, best_xy);
    if (best_yy <= best_xy)
       pg = Q15ONE;
