@@ -2554,7 +2554,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
          }
          scale = PSHR32(toneishness,14);
          scale = Q15ONE - MULT16_16_Q15(scale, scale);
-         qext_bytes += MULT16_32_Q15(scale, (nbCompressedBytes-(target/(8<<BITRES))) - qext_bytes);
          qext_bytes = IMAX(nbCompressedBytes-1275, IMAX(21, qext_bytes));
       }
       padding_len_bytes = (qext_bytes+253)/254;
