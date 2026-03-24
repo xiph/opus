@@ -844,7 +844,7 @@ static void compute_theta(struct band_ctx *ctx, struct split_ctx *sctx,
       if (*ext_b >= 2*N<<BITRES && ctx->ext_total_bits-ec_tell_frac(ctx->ext_ec)-1 > 2<<BITRES) {
          int extra_bits;
          int ext_tell = ec_tell_frac(ctx->ext_ec);
-         extra_bits = IMIN(12, IMAX(2, celt_sudiv(*ext_b, (2*N-1)<<BITRES)));
+         extra_bits = IMIN(14, IMAX(2, celt_sudiv(*ext_b, (2*N-1)<<BITRES)));
          if (encode) {
             itheta_q30 = itheta_q30 - (itheta<<16);
             itheta_q30 = (itheta_q30*(opus_int64)qn*((1<<extra_bits)-1)+(1<<29))>>30;
@@ -1088,7 +1088,7 @@ static unsigned quant_partition(struct band_ctx *ctx, celt_norm *X,
          extra_bits = (ext_remaining_bits-(N<<BITRES))/(N-1)>>BITRES;
          extra_bits = IMAX(extra_bits-1, 0);
       }
-      extra_bits = IMIN(12, extra_bits);
+      extra_bits = IMIN(14, extra_bits);
 #endif
       /* This is the basic no-split case */
       q = bits2pulses(m, i, LM, b);
