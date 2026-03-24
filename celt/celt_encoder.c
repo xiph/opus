@@ -1229,6 +1229,7 @@ static celt_glog dynalloc_analysis(const celt_glog *bandLogE, const celt_glog *b
             follower[i] = follower[i] +  GCONST(1.f/64.f)*analysis->leak_boost[i];
       }
 #endif
+      if (effectiveBytes>320) follower[0] += MIN32(GCONST(1.5f), GCONST(1e-3f)*(effectiveBytes-320));
       for (i=start;i<end;i++)
       {
          int width;
