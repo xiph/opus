@@ -31,6 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "SigProc_FIX.h"
 #include "celt_lpc.h"
+#include <arm_neon.h>
+#include "stack_alloc.h"
 
 /*******************************************/
 /* LPC analysis filter                     */
@@ -46,7 +48,7 @@ POSSIBILITY OF SUCH DAMAGE.
    C89-compliant. */
 #define USE_CELT_FIR 0
 
-void silk_LPC_analysis_filter(
+void silk_LPC_analysis_filter_c(
     opus_int16                  *out,               /* O    Output signal                                               */
     const opus_int16            *in,                /* I    Input signal                                                */
     const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
@@ -108,4 +110,69 @@ void silk_LPC_analysis_filter(
     /* Set first d output samples to zero */
     silk_memset( out, 0, d * sizeof( opus_int16 ) );
 #endif
+}
+
+/* NEON optimized LPC analysis filter - processes 8 outputs at a time
+ * Computes: out[i] = in[i] - sum(B[j] * in[i-d+j], j=0..d-1)
+ * where B is in Q12 format
+ */
+void silk_LPC_analysis_filter(
+    opus_int16                  *out,               /* O    Output signal                                               */
+    const opus_int16            *in,                /* I    Input signal                                                */
+    const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
+    const opus_int32            len,                /* I    Signal length                                               */
+    const opus_int32            d,                  /* I    Filter order                                                */
+    int                         arch                /* I    Run-time architecture                                       */
+)
+{
+    int ix, j;
+    (void)arch;
+
+    celt_assert(d >= 6);
+    celt_assert((d & 1) == 0);
+    celt_assert(d <= len);
+
+    for(ix = d; ix < len; ix++) {
+        const opus_int16 *in_ptr = &in[ix - 1];
+        int32x4_t acc0 = vdupq_n_s32(0);
+        int32x4_t acc1 = vdupq_n_s32(0);
+
+        /* Process coefficients int groups of 8 */
+        for(j = 0; j < (d & ~7); j += 8) {
+            int16x4_t b_vec0 = vld1_s16(&B[j]);
+            int16x4_t b_vec1 = vld1_s16(&B[j + 4]);
+            int16x4_t in_vec0 = vld1_s16(&in_ptr[-j-3]);
+            int16x4_t in_vec1 = vld1_s16(&in_ptr[-j-7]);
+            in_vec0 = vrev64_s16(in_vec0);
+            in_vec1 = vrev64_s16(in_vec1);
+            acc0 = vmlal_s16(acc0, b_vec0, in_vec0);
+            acc1 = vmlal_s16(acc1, b_vec1, in_vec1);
+        }
+
+        acc0 = vaddq_s32(acc0, acc1);
+        int32x2_t sum = vpadd_s32(vget_low_s32(acc0), vget_high_s32(acc0));
+        opus_int32 out32_Q12 = vget_lane_s32(vpadd_s32(sum, sum), 0);
+
+        /* Handle remaining coefficients */
+        for(; j < d; j++) {
+            out32_Q12 = silk_SMLABB_ovflw(out32_Q12, in_ptr[-j], B[j]);
+        }
+
+        /* Subtract predicton */
+        out32_Q12 = silk_SUB32_ovflw(silk_LSHIFT((opus_int32)in_ptr[1], 12), out32_Q12);
+
+        /* Scale to Q0 and saturate */
+        opus_int32 out32 = silk_RSHIFT_ROUND(out32_Q12, 12);
+        out[ix] = (opus_int16)silk_SAT16(out32);
+    }
+
+    silk_memset(out, 0, d * sizeof(opus_int16));
+
+#ifdef OPUS_CHECK_ASM
+    VARDECL( opus_int16, out_c );
+    ALLOC( out_c, len, opus_int16 );
+    silk_LPC_analysis_filter_c( out_c, in, B, len, d, arch );
+    silk_assert( !memcmp( out, out_c, len * sizeof(opus_int16) ) );
+#endif
+
 }
