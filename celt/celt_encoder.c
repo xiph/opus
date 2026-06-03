@@ -2758,7 +2758,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       } while (++c<CC);
 
       /* We reuse freq[] as scratch space for the de-emphasis */
-      deemphasis(out_mem, (opus_res*)pcm, N, CC, st->upsample, mode->preemph, st->preemph_memD, 0);
+      deemphasis(out_mem, (opus_res*)pcm, N, CC, st->upsample, mode->preemph, st->preemph_memD, 0, st->arch);
       st->prefilter_period_old = st->prefilter_period;
       st->prefilter_gain_old = st->prefilter_gain;
       st->prefilter_tapset_old = st->prefilter_tapset;
