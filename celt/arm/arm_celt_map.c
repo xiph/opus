@@ -100,6 +100,35 @@ void (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
   celt_pitch_xcorr_float_neon,     /* Neon */
   celt_pitch_xcorr_float_neon      /* DOTPROD */
 };
+
+#   if defined(__aarch64__)
+void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK+1])(opus_val32 *y,
+    opus_val32 *x, int T, int N, opus_val16 g10, opus_val16 g11, opus_val16 g12) = {
+  comb_filter_const_c,             /* ARMv4 */
+  comb_filter_const_c,             /* EDSP */
+  comb_filter_const_c,             /* Media */
+  comb_filter_const_neon,          /* Neon */
+  comb_filter_const_neon           /* DOTPROD */
+};
+
+void (*const DEEMPHASIS_STEREO_SIMPLE_IMPL[OPUS_ARCHMASK+1])(celt_sig *in[],
+    opus_res *pcm, int N, opus_val16 coef, celt_sig *mem) = {
+  deemphasis_stereo_simple_c,      /* ARMv4 */
+  deemphasis_stereo_simple_c,      /* EDSP */
+  deemphasis_stereo_simple_c,      /* Media */
+  deemphasis_stereo_simple_neon,   /* Neon */
+  deemphasis_stereo_simple_neon    /* DOTPROD */
+};
+
+opus_val32 (*const CELT_DEEMPHASIS_IMPL[OPUS_ARCHMASK+1])(opus_res *y,
+    const opus_val32 *x, opus_val16 coef0, opus_val32 m, int N) = {
+  celt_deemphasis_c,               /* ARMv4 */
+  celt_deemphasis_c,               /* EDSP */
+  celt_deemphasis_c,               /* Media */
+  celt_deemphasis_neon,            /* Neon */
+  celt_deemphasis_neon             /* DOTPROD */
+};
+#   endif /* __aarch64__ */
 #  endif
 # endif /* FIXED_POINT */
 

@@ -234,7 +234,8 @@ tests_test_opus_custom_SOURCES = tests/test_opus_custom.c tests/test_opus_common
 tests_test_opus_custom_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 endif
 
-CELT_OBJ = $(CELT_SOURCES:.c=.lo)
+CELT_OBJ_TEMP = $(CELT_SOURCES:.c=.lo)
+CELT_OBJ = $(CELT_OBJ_TEMP:.S=.lo)
 SILK_OBJ = $(SILK_SOURCES:.c=.lo)
 LPCNET_OBJ = $(LPCNET_SOURCES:.c=.lo)
 OPUS_OBJ = $(OPUS_SOURCES:.c=.lo)
@@ -509,12 +510,15 @@ $(AVX2_OBJ): CFLAGS += $(OPUS_X86_AVX2_CFLAGS)
 endif
 
 if HAVE_ARM_NEON_INTR
-ARM_NEON_INTR_OBJ = $(CELT_SOURCES_ARM_NEON_INTR:.c=.lo) \
+CELT_ARM_NEON_INTR_OBJ_TEMP = $(CELT_SOURCES_ARM_NEON_INTR:.c=.lo)
+ARM_NEON_INTR_OBJ = $(CELT_ARM_NEON_INTR_OBJ_TEMP:.S=.lo) \
                     $(SILK_SOURCES_ARM_NEON_INTR:.c=.lo) \
                     $(DNN_SOURCES_NEON:.c=.lo) \
                     $(SILK_SOURCES_FIXED_ARM_NEON_INTR:.c=.lo)
 $(ARM_NEON_INTR_OBJ): CFLAGS += \
  $(OPUS_ARM_NEON_INTR_CFLAGS)  $(NE10_CFLAGS)
+$(ARM_NEON_INTR_OBJ): CCASFLAGS += \
+ $(OPUS_ARM_NEON_INTR_CFLAGS)
 endif
 
 if HAVE_ARM_DOTPROD
