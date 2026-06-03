@@ -6,6 +6,11 @@ get_package_version(PACKAGE_VERSION PROJECT_VERSION)
 
 project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
 
+# Enable the assembler for our aarch64 NEON kernels.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(aarch64|arm64)")
+  enable_language(ASM)
+endif()
+
 include(OpusFunctions)
 include(OpusBuildtype)
 include(OpusConfig)

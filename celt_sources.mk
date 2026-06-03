@@ -48,6 +48,7 @@ celt/arm/armopts.s.in
 
 CELT_SOURCES_ARM_NEON_INTR = \
 celt/arm/celt_neon_intr.c \
+celt/arm/celt_neon_aarch64.S \
 celt/arm/pitch_neon_intr.c
 
 CELT_SOURCES_ARM_NE10 = \
