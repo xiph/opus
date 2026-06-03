@@ -199,5 +199,22 @@ void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
     ((void)(arch),comb_filter_const_c(y, x, T, N, g10, g11, g12))
 #endif
 
+/* Per-channel and stereo deemphasis (downsample==1, !accum). C reference
+   plus the runtime-dispatched NEON overrides on aarch64 (see pitch_arm.h). */
+opus_val32 celt_deemphasis_c(opus_res *y, const opus_val32 *x,
+      opus_val16 coef0, opus_val32 m, int N);
+
+void deemphasis_stereo_simple_c(celt_sig *in[], opus_res *pcm, int N,
+      opus_val16 coef0, celt_sig *mem);
+
+#ifndef OVERRIDE_CELT_DEEMPHASIS
+# define celt_deemphasis(y, x, coef, m, N, arch) \
+    ((void)(arch), celt_deemphasis_c(y, x, coef, m, N))
+#endif
+
+#ifndef OVERRIDE_DEEMPHASIS_STEREO_SIMPLE
+# define deemphasis_stereo_simple(in, pcm, N, coef, mem, arch) \
+    ((void)(arch), deemphasis_stereo_simple_c(in, pcm, N, coef, mem))
+#endif
 
 #endif
