@@ -398,4 +398,10 @@ void celt_pitch_xcorr_float_neon(const opus_val16 *_x, const opus_val16 *_y,
       xcorr[i] = celt_inner_prod_neon(_x, _y+i, len);
    }
 }
+
+/* comb_filter_const_neon, celt_deemphasis_neon (mono) and
+   deemphasis_stereo_simple_neon live in celt_neon_aarch64.S (float,
+   aarch64 only); arm_celt_map.c dispatches them via the
+   COMB_FILTER_CONST_IMPL, CELT_DEEMPHASIS_IMPL and
+   DEEMPHASIS_STEREO_SIMPLE_IMPL tables. */
 #endif
