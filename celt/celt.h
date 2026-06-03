@@ -257,7 +257,7 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
 void init_caps(const CELTMode *m,int *cap,int LM,int C);
 
 #ifdef RESYNTH
-void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem, int accum);
+void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem, int accum, int arch);
 void celt_synthesis(const CELTMode *mode, celt_norm *X, celt_sig * out_syn[],
       celt_glog *oldBandE, int start, int effEnd, int C, int CC, int isTransient,
       int LM, int downsample, int silence, int arch ARG_QEXT(const CELTMode *qext_mode) ARG_QEXT(const celt_glog *qext_bandLogE) ARG_QEXT(int qext_end));
