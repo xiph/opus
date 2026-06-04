@@ -10,7 +10,7 @@ lib_LTLIBRARIES = libopus.la
 DIST_SUBDIRS = doc
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/celt -I$(top_srcdir)/silk \
-              -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed $(NE10_CFLAGS) \
+              -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed \
               -I$(top_srcdir)/dnn
 
 include celt_sources.mk
@@ -107,10 +107,6 @@ CELT_SOURCES += $(CELT_SOURCES_ARM_NEON_INTR)
 SILK_SOURCES += $(SILK_SOURCES_ARM_NEON_INTR)
 endif
 
-if HAVE_ARM_NE10
-CELT_SOURCES += $(CELT_SOURCES_ARM_NE10)
-endif
-
 if OPUS_ARM_EXTERNAL_ASM
 noinst_LTLIBRARIES = libarmasm.la
 libarmasm_la_SOURCES = $(CELT_SOURCES_ARM_ASM:.s=-gnu.S)
@@ -144,7 +140,7 @@ endif
 
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(LPCNET_SOURCES) $(OPUS_SOURCES)
 libopus_la_LDFLAGS = -no-undefined -version-info @OPUS_LT_CURRENT@:@OPUS_LT_REVISION@:@OPUS_LT_AGE@
-libopus_la_LIBADD = $(NE10_LIBS) $(LIBM)
+libopus_la_LIBADD = $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 libopus_la_LIBADD += libarmasm.la
 endif
@@ -198,11 +194,11 @@ if ENABLE_LOSSGEN
 opus_demo_SOURCES += $(LOSSGEN_SOURCES)
 endif
 
-opus_demo_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+opus_demo_LDADD = libopus.la $(LIBM)
 
 repacketizer_demo_SOURCES = src/repacketizer_demo.c
 
-repacketizer_demo_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+repacketizer_demo_LDADD = libopus.la $(LIBM)
 
 opus_compare_SOURCES = src/opus_compare.c
 opus_compare_LDADD = $(LIBM)
@@ -211,23 +207,23 @@ trivial_example_SOURCES = doc/trivial_example.c
 trivial_example_LDADD = libopus.la $(LIBM)
 
 tests_test_opus_api_SOURCES = tests/test_opus_api.c tests/test_opus_common.h
-tests_test_opus_api_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+tests_test_opus_api_LDADD = libopus.la $(LIBM)
 
 tests_test_opus_encode_SOURCES = tests/test_opus_encode.c tests/opus_encode_regressions.c tests/test_opus_common.h
-tests_test_opus_encode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+tests_test_opus_encode_LDADD = libopus.la $(LIBM)
 
 tests_test_opus_decode_SOURCES = tests/test_opus_decode.c tests/test_opus_common.h
-tests_test_opus_decode_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+tests_test_opus_decode_LDADD = libopus.la $(LIBM)
 
 tests_test_opus_padding_SOURCES = tests/test_opus_padding.c tests/test_opus_common.h
-tests_test_opus_padding_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+tests_test_opus_padding_LDADD = libopus.la $(LIBM)
 
 tests_test_opus_dred_SOURCES = tests/test_opus_dred.c tests/test_opus_common.h
-tests_test_opus_dred_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+tests_test_opus_dred_LDADD = libopus.la $(LIBM)
 
 if CUSTOM_MODES
 tests_test_opus_custom_SOURCES = tests/test_opus_custom.c tests/test_opus_common.h
-tests_test_opus_custom_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
+tests_test_opus_custom_LDADD = libopus.la $(LIBM)
 endif
 
 CELT_OBJ = $(CELT_SOURCES:.c=.lo)
@@ -236,19 +232,19 @@ LPCNET_OBJ = $(LPCNET_SOURCES:.c=.lo)
 OPUS_OBJ = $(OPUS_SOURCES:.c=.lo)
 
 tests_test_opus_extensions_SOURCES = tests/test_opus_extensions.c tests/test_opus_common.h
-tests_test_opus_extensions_LDADD = $(OPUS_OBJ) $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+tests_test_opus_extensions_LDADD = $(OPUS_OBJ) $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 tests_test_opus_extensions_LDADD += libarmasm.la
 endif
 
 tests_test_opus_projection_SOURCES = tests/test_opus_projection.c tests/test_opus_common.h
-tests_test_opus_projection_LDADD = $(OPUS_OBJ) $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+tests_test_opus_projection_LDADD = $(OPUS_OBJ) $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 tests_test_opus_projection_LDADD += libarmasm.la
 endif
 
 silk_tests_test_unit_LPC_inv_pred_gain_SOURCES = silk/tests/test_unit_LPC_inv_pred_gain.c
-silk_tests_test_unit_LPC_inv_pred_gain_LDADD = $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(NE10_LIBS) $(LIBM)
+silk_tests_test_unit_LPC_inv_pred_gain_LDADD = $(SILK_OBJ) $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 silk_tests_test_unit_LPC_inv_pred_gain_LDADD += libarmasm.la
 endif
@@ -257,7 +253,7 @@ celt_tests_test_unit_cwrs32_SOURCES = celt/tests/test_unit_cwrs32.c
 celt_tests_test_unit_cwrs32_LDADD = $(LIBM)
 
 celt_tests_test_unit_dft_SOURCES = celt/tests/test_unit_dft.c
-celt_tests_test_unit_dft_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_dft_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_dft_LDADD += libarmasm.la
 endif
@@ -272,19 +268,19 @@ celt_tests_test_unit_laplace_SOURCES = celt/tests/test_unit_laplace.c
 celt_tests_test_unit_laplace_LDADD = $(LIBM)
 
 celt_tests_test_unit_mathops_SOURCES = celt/tests/test_unit_mathops.c
-celt_tests_test_unit_mathops_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_mathops_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_mathops_LDADD += libarmasm.la
 endif
 
 celt_tests_test_unit_mdct_SOURCES = celt/tests/test_unit_mdct.c
-celt_tests_test_unit_mdct_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_mdct_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_mdct_LDADD += libarmasm.la
 endif
 
 celt_tests_test_unit_rotation_SOURCES = celt/tests/test_unit_rotation.c
-celt_tests_test_unit_rotation_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(NE10_LIBS) $(LIBM)
+celt_tests_test_unit_rotation_LDADD = $(CELT_OBJ) $(LPCNET_OBJ) $(LIBM)
 if OPUS_ARM_EXTERNAL_ASM
 celt_tests_test_unit_rotation_LDADD += libarmasm.la
 endif
@@ -510,7 +506,7 @@ ARM_NEON_INTR_OBJ = $(CELT_SOURCES_ARM_NEON_INTR:.c=.lo) \
                     $(DNN_SOURCES_NEON:.c=.lo) \
                     $(SILK_SOURCES_FIXED_ARM_NEON_INTR:.c=.lo)
 $(ARM_NEON_INTR_OBJ): CFLAGS += \
- $(OPUS_ARM_NEON_INTR_CFLAGS)  $(NE10_CFLAGS)
+ $(OPUS_ARM_NEON_INTR_CFLAGS)
 endif
 
 if HAVE_ARM_DOTPROD

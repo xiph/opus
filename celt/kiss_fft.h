@@ -109,10 +109,6 @@ typedef struct kiss_fft_state{
     arch_fft_state *arch_fft;
 } kiss_fft_state;
 
-#if defined(HAVE_ARM_NE10)
-#include "arm/fft_arm.h"
-#endif
-
 /*typedef struct kiss_fft_state* kiss_fft_cfg;*/
 
 /**
@@ -165,31 +161,6 @@ void opus_fft_free_arch_c(kiss_fft_state *st);
 int opus_fft_alloc_arch_c(kiss_fft_state *st);
 
 #if !defined(OVERRIDE_OPUS_FFT)
-/* Is run-time CPU detection enabled on this platform? */
-#if defined(OPUS_HAVE_RTCD) && (defined(HAVE_ARM_NE10))
-
-extern int (*const OPUS_FFT_ALLOC_ARCH_IMPL[OPUS_ARCHMASK+1])(
- kiss_fft_state *st);
-
-#define opus_fft_alloc_arch(_st, arch) \
-         ((*OPUS_FFT_ALLOC_ARCH_IMPL[(arch)&OPUS_ARCHMASK])(_st))
-
-extern void (*const OPUS_FFT_FREE_ARCH_IMPL[OPUS_ARCHMASK+1])(
- kiss_fft_state *st);
-#define opus_fft_free_arch(_st, arch) \
-         ((*OPUS_FFT_FREE_ARCH_IMPL[(arch)&OPUS_ARCHMASK])(_st))
-
-extern void (*const OPUS_FFT[OPUS_ARCHMASK+1])(const kiss_fft_state *cfg,
- const kiss_fft_cpx *fin, kiss_fft_cpx *fout);
-#define opus_fft(_cfg, _fin, _fout, arch) \
-   ((*OPUS_FFT[(arch)&OPUS_ARCHMASK])(_cfg, _fin, _fout))
-
-extern void (*const OPUS_IFFT[OPUS_ARCHMASK+1])(const kiss_fft_state *cfg,
- const kiss_fft_cpx *fin, kiss_fft_cpx *fout);
-#define opus_ifft(_cfg, _fin, _fout, arch) \
-   ((*OPUS_IFFT[(arch)&OPUS_ARCHMASK])(_cfg, _fin, _fout))
-
-#else /* else for if defined(OPUS_HAVE_RTCD) && (defined(HAVE_ARM_NE10)) */
 
 #define opus_fft_alloc_arch(_st, arch) \
          ((void)(arch), opus_fft_alloc_arch_c(_st))
@@ -203,7 +174,6 @@ extern void (*const OPUS_IFFT[OPUS_ARCHMASK+1])(const kiss_fft_state *cfg,
 #define opus_ifft(_cfg, _fin, _fout, arch) \
          ((void)(arch), opus_ifft_c(_cfg, _fin, _fout))
 
-#endif /* end if defined(OPUS_HAVE_RTCD) && (defined(HAVE_ARM_NE10)) */
 #endif /* end if !defined(OVERRIDE_OPUS_FFT) */
 
 #endif

@@ -4,11 +4,6 @@
 #include "modes.h"
 #include "rate.h"
 
-#ifdef HAVE_ARM_NE10
-#define OVERRIDE_FFT 1
-#include "static_modes_float_arm_ne10.h"
-#endif
-
 #ifndef DEF_WINDOW120
 #define DEF_WINDOW120
 static const celt_coef window120[120] = {
