@@ -50,7 +50,3 @@ CELT_SOURCES_ARM_NEON_INTR = \
 celt/arm/celt_neon_intr.c \
 celt/arm/celt_neon_aarch64.S \
 celt/arm/pitch_neon_intr.c
-
-CELT_SOURCES_ARM_NE10 = \
-celt/arm/celt_fft_ne10.c \
-celt/arm/celt_mdct_ne10.c
