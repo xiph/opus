@@ -380,6 +380,7 @@ EXTRA_DIST = opus.pc.in \
              tests/meson.build \
              doc/meson.build \
              tests/run_vectors.sh \
+             tests/dred_vectors.sh \
              celt/mini_kfft.c \
              celt/arm/meson.build \
              celt/arm/arm2gnu.pl \

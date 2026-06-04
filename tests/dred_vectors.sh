@@ -62,6 +62,11 @@ do
     echo
 done
 
+echo "=============="
+echo "Testing vocoder"
+echo "=============="
+echo
+
 for i in 1 2 3 4 5 6 7 8
 do
     if [ -e "$VECTOR_PATH/vector${i}_features.f32" ]; then
@@ -85,6 +90,11 @@ do
     fi
     echo
 done
+
+echo "=============="
+echo "Testing DRED system"
+echo "=============="
+echo
 
 for i in 1 2 3 4 5 6 7 8
 do
