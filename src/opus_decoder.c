@@ -1560,7 +1560,7 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
    if (payload != NULL)
    {
       int max_dred_features;
-      max_dred_features = 100*max_dred_samples/sampling_rate;
+      max_dred_features = (100*max_dred_samples + sampling_rate - 1)/sampling_rate;
       dred_ec_decode(dred, payload, payload_len, max_dred_features, dred_frame_offset);
       if (!defer_processing)
          opus_dred_process(dred_dec, dred, dred);
