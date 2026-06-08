@@ -343,7 +343,7 @@ int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int
       return 0;
     }
     ec_bak = ec_encoder;
-    for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-latent_offset-1); i += 2)
+    for (i = 0; i < IMIN(2*max_chunks, enc->latents_buffer_fill-latent_offset); i += 2)
     {
         int active;
         q_level = compute_quantizer(q0, dQ, qmax, i/2);
