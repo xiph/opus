@@ -484,7 +484,7 @@ void opus_custom_mode_destroy(CELTMode *mode)
 #ifdef ENABLE_QEXT
 
 static const opus_int16 qext_eBands_180[] = {
-/* 20k  22k  24k  26k  28k  30k  32k  34k  36k  38k  40k  42k  44k  47k  48k */
+/* 20k  22k  24k  26k  28k  30k  33k  35k  37k  39k  41k  43k  45k  46k  48k */
     74,  82,  90,  98, 106, 114, 122, 130, 138, 146, 154, 162, 168, 174, 180
 };
 
