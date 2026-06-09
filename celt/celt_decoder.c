@@ -1504,7 +1504,7 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       ec_dec_init(&dummy_dec, NULL, 0);
       OPUS_CLEAR(zeros, end);
       ext_balance = qext_bytes*(8<<BITRES) - ec_tell_frac(&ext_dec);
-      for (i=0;i<qext_end;i++) ext_balance -= extra_pulses[nbEBands+i] + C*(extra_quant[nbEBands+1]<<BITRES);
+      for (i=0;i<qext_end;i++) ext_balance -= extra_pulses[nbEBands+i] + C*(extra_quant[nbEBands+i]<<BITRES);
       unquant_fine_energy(qext_mode, 0, qext_end, st->qext_oldBandE, NULL, &extra_quant[nbEBands], &ext_dec, C);
       quant_all_bands(0, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
             NULL, &extra_pulses[nbEBands], shortBlocks, spread_decision, qext_dual_stereo, qext_intensity, zeros,

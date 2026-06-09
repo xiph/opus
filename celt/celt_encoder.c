@@ -2685,7 +2685,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       ec_enc_init(&dummy_enc, NULL, 0);
       OPUS_CLEAR(zeros, end);
       ext_balance = qext_bytes*(8<<BITRES) - ec_tell_frac(&ext_enc);
-      for (i=0;i<qext_end;i++) ext_balance -= extra_pulses[nbEBands+i] + C*(extra_quant[nbEBands+1]<<BITRES);
+      for (i=0;i<qext_end;i++) ext_balance -= extra_pulses[nbEBands+i] + C*(extra_quant[nbEBands+i]<<BITRES);
       quant_fine_energy(qext_mode, 0, qext_end, qext_oldBandE, qext_error, NULL, &extra_quant[nbEBands], &ext_enc, C);
       quant_all_bands(1, qext_mode, 0, qext_end, X, C==2 ? X+N : NULL, qext_collapse_masks,
             qext_bandE, &extra_pulses[nbEBands], shortBlocks, st->spread_decision,
