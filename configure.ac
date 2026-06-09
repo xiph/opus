@@ -213,7 +213,7 @@ AM_CONDITIONAL([ENABLE_LOSSGEN], [test "$enable_lossgen" = "yes"])
 
 has_float_approx=no
 case "$host_cpu" in
-i[[3456]]86 | x86_64 | arm* | aarch64* | powerpc64 | powerpc32 | ia64)
+i[[3456]]86 | x86_64 | arm* | aarch64* | riscv* | powerpc64 | powerpc32 | ia64)
   has_float_approx=yes
   ;;
 esac
