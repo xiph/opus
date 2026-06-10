@@ -49,29 +49,11 @@
 
 #if defined(__aarch64__) && !defined(FIXED_POINT)
 
-        .arch   armv8-a
+#include "celt_arm_asm.h"
 
-        .section .rodata
-        .align  2
-LSIG2RES_inv_scale:
+        const   LSIG2RES_inv_scale, align=2
         .float  3.0517578125e-5         /* 1.f / CELT_SIG_SCALE */
-
-        .text
-
-        .macro  function name
-        .global \name
-#ifdef __ELF__
-        .type   \name, %function
-#endif
-        .align  2
-\name\():
-        .endm
-
-        .macro  endfunc name
-#ifdef __ELF__
-        .size   \name, .-\name
-#endif
-        .endm
+        endconst LSIG2RES_inv_scale
 
 
 /*
@@ -155,8 +137,7 @@ LSIG2RES_inv_scale:
         ext     v6.16b, v20.16b, v4.16b, #8
         ext     v7.16b, v20.16b, v4.16b, #4
 
-        adrp    x3, LSIG2RES_inv_scale      /* (S) */
-        add     x3, x3, :lo12:LSIG2RES_inv_scale
+        movrel  x3, LSIG2RES_inv_scale      /* (S) */
         ld1r    {v24.4s}, [x3]
 
         /* (M) v0 = {1, c, c^2, c^3} * m  (FFmpeg: v4 * y_last) */
@@ -220,8 +201,7 @@ LSIG2RES_inv_scale:
         ext     v6.16b, v20.16b, v4.16b, #8
         ext     v7.16b, v20.16b, v4.16b, #4
 
-        adrp    x6, LSIG2RES_inv_scale      /* (S) */
-        add     x6, x6, :lo12:LSIG2RES_inv_scale
+        movrel  x6, LSIG2RES_inv_scale      /* (S) */
         ld1r    {v24.4s}, [x6]
 
         /* (M) */
