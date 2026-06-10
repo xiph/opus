@@ -62,13 +62,11 @@
  *       lookup-table (non-_ns) variants of every codelet; the shared
  *       macros are kept verbatim, including their no_perm=0 paths.
  *
- *   (S) Split-radix trim. CELT's largest sub-FFT under the MDCT is 960 =
- *       15*64, so fft_sr only ever runs its len=64 path. The len>=128
- *       recombination blocks, the SR_TRANSFORM_DEF chain and the general
- *       deinterleave loop (which reference ff_tx_tab_128..131072_float)
- *       are removed; the len==64 flow falls straight into the 64-point
- *       custom deinterleave. SR_COMBINE_4/FULL/D2/DINT and cmp_imm were
- *       only used by the removed blocks.
+ *   (S) Split-radix trim. CELT's largest sub-FFT under the MDCT is 512
+ *       (power-of-two custom modes; the 15*M chain tops out at 64), so the
+ *       len >= 1024 recombination block and the SR_TRANSFORM_DEF chain
+ *       (which reference ff_tx_tab_1024..131072_float) are removed, as is
+ *       cmp_imm (only used by that chain).
  *
  * Calling convention (same as FFmpeg's av_tx_fn):
  *   x0 = const OpusTXContext *s   (field offsets: len@0, map@8, exp@16,
@@ -1040,6 +1038,242 @@ const celt_tx_tab_64_float, align=4
         .word   0x00000000    // 0
 endconst celt_tx_tab_64_float
 
+const celt_tx_tab_128_float, align=4
+        .word   0x3f800000    // 1
+        .word   0x3f7fb10f    // 0.99879545
+        .word   0x3f7ec46d    // 0.99518472
+        .word   0x3f7d3aac    // 0.989176512
+        .word   0x3f7b14be    // 0.980785251
+        .word   0x3f7853f8    // 0.970031261
+        .word   0x3f74fa0b    // 0.956940353
+        .word   0x3f710908    // 0.941544056
+        .word   0x3f6c835e    // 0.923879504
+        .word   0x3f676bd8    // 0.903989315
+        .word   0x3f61c598    // 0.881921291
+        .word   0x3f5b941a    // 0.857728601
+        .word   0x3f54db31    // 0.831469595
+        .word   0x3f4d9f02    // 0.803207517
+        .word   0x3f45e403    // 0.773010433
+        .word   0x3f3daef9    // 0.740951121
+        .word   0x3f3504f3    // 0.707106769
+        .word   0x3f2beb4a    // 0.671558976
+        .word   0x3f226799    // 0.634393275
+        .word   0x3f187fc0    // 0.59569931
+        .word   0x3f0e39da    // 0.555570245
+        .word   0x3f039c3d    // 0.514102757
+        .word   0x3ef15aea    // 0.471396744
+        .word   0x3edae880    // 0.427555084
+        .word   0x3ec3ef15    // 0.382683426
+        .word   0x3eac7cd4    // 0.336889863
+        .word   0x3e94a031    // 0.290284663
+        .word   0x3e78cfcc    // 0.242980182
+        .word   0x3e47c5c2    // 0.195090324
+        .word   0x3e164083    // 0.146730468
+        .word   0x3dc8bd36    // 0.0980171412
+        .word   0x3d48fb30    // 0.0490676761
+        .word   0x00000000    // 0
+endconst celt_tx_tab_128_float
+
+const celt_tx_tab_256_float, align=4
+        .word   0x3f800000    // 1
+        .word   0x3f7fec43    // 0.999698818
+        .word   0x3f7fb10f    // 0.99879545
+        .word   0x3f7f4e6d    // 0.997290432
+        .word   0x3f7ec46d    // 0.99518472
+        .word   0x3f7e1324    // 0.992479563
+        .word   0x3f7d3aac    // 0.989176512
+        .word   0x3f7c3b28    // 0.985277653
+        .word   0x3f7b14be    // 0.980785251
+        .word   0x3f79c79d    // 0.975702107
+        .word   0x3f7853f8    // 0.970031261
+        .word   0x3f76ba07    // 0.963776052
+        .word   0x3f74fa0b    // 0.956940353
+        .word   0x3f731447    // 0.949528158
+        .word   0x3f710908    // 0.941544056
+        .word   0x3f6ed89e    // 0.932992816
+        .word   0x3f6c835e    // 0.923879504
+        .word   0x3f6a09a7    // 0.914209783
+        .word   0x3f676bd8    // 0.903989315
+        .word   0x3f64aa59    // 0.893224299
+        .word   0x3f61c598    // 0.881921291
+        .word   0x3f5ebe05    // 0.870086968
+        .word   0x3f5b941a    // 0.857728601
+        .word   0x3f584853    // 0.84485358
+        .word   0x3f54db31    // 0.831469595
+        .word   0x3f514d3d    // 0.817584813
+        .word   0x3f4d9f02    // 0.803207517
+        .word   0x3f49d112    // 0.78834641
+        .word   0x3f45e403    // 0.773010433
+        .word   0x3f41d870    // 0.757208824
+        .word   0x3f3daef9    // 0.740951121
+        .word   0x3f396842    // 0.724247098
+        .word   0x3f3504f3    // 0.707106769
+        .word   0x3f3085bb    // 0.689540565
+        .word   0x3f2beb4a    // 0.671558976
+        .word   0x3f273656    // 0.653172851
+        .word   0x3f226799    // 0.634393275
+        .word   0x3f1d7fd1    // 0.615231574
+        .word   0x3f187fc0    // 0.59569931
+        .word   0x3f13682a    // 0.575808167
+        .word   0x3f0e39da    // 0.555570245
+        .word   0x3f08f59b    // 0.534997642
+        .word   0x3f039c3d    // 0.514102757
+        .word   0x3efc5d27    // 0.492898196
+        .word   0x3ef15aea    // 0.471396744
+        .word   0x3ee63375    // 0.449611336
+        .word   0x3edae880    // 0.427555084
+        .word   0x3ecf7bca    // 0.405241311
+        .word   0x3ec3ef15    // 0.382683426
+        .word   0x3eb8442a    // 0.359895051
+        .word   0x3eac7cd4    // 0.336889863
+        .word   0x3ea09ae5    // 0.313681751
+        .word   0x3e94a031    // 0.290284663
+        .word   0x3e888e93    // 0.266712755
+        .word   0x3e78cfcc    // 0.242980182
+        .word   0x3e605c13    // 0.219101235
+        .word   0x3e47c5c2    // 0.195090324
+        .word   0x3e2f10a2    // 0.170961887
+        .word   0x3e164083    // 0.146730468
+        .word   0x3dfab273    // 0.122410677
+        .word   0x3dc8bd36    // 0.0980171412
+        .word   0x3d96a905    // 0.0735645667
+        .word   0x3d48fb30    // 0.0490676761
+        .word   0x3cc90ab0    // 0.024541229
+        .word   0x00000000    // 0
+endconst celt_tx_tab_256_float
+
+const celt_tx_tab_512_float, align=4
+        .word   0x3f800000    // 1
+        .word   0x3f7ffb11    // 0.999924719
+        .word   0x3f7fec43    // 0.999698818
+        .word   0x3f7fd397    // 0.999322355
+        .word   0x3f7fb10f    // 0.99879545
+        .word   0x3f7f84ab    // 0.998118103
+        .word   0x3f7f4e6d    // 0.997290432
+        .word   0x3f7f0e58    // 0.996312618
+        .word   0x3f7ec46d    // 0.99518472
+        .word   0x3f7e70b0    // 0.993906975
+        .word   0x3f7e1324    // 0.992479563
+        .word   0x3f7dabcc    // 0.990902662
+        .word   0x3f7d3aac    // 0.989176512
+        .word   0x3f7cbfc9    // 0.987301409
+        .word   0x3f7c3b28    // 0.985277653
+        .word   0x3f7baccd    // 0.983105481
+        .word   0x3f7b14be    // 0.980785251
+        .word   0x3f7a7302    // 0.97831738
+        .word   0x3f79c79d    // 0.975702107
+        .word   0x3f791298    // 0.972939968
+        .word   0x3f7853f8    // 0.970031261
+        .word   0x3f778bc5    // 0.966976464
+        .word   0x3f76ba07    // 0.963776052
+        .word   0x3f75dec6    // 0.960430503
+        .word   0x3f74fa0b    // 0.956940353
+        .word   0x3f740bdd    // 0.953306019
+        .word   0x3f731447    // 0.949528158
+        .word   0x3f721352    // 0.945607305
+        .word   0x3f710908    // 0.941544056
+        .word   0x3f6ff573    // 0.937339008
+        .word   0x3f6ed89e    // 0.932992816
+        .word   0x3f6db293    // 0.928506076
+        .word   0x3f6c835e    // 0.923879504
+        .word   0x3f6b4b0c    // 0.919113874
+        .word   0x3f6a09a7    // 0.914209783
+        .word   0x3f68bf3c    // 0.909168005
+        .word   0x3f676bd8    // 0.903989315
+        .word   0x3f660f88    // 0.898674488
+        .word   0x3f64aa59    // 0.893224299
+        .word   0x3f633c5a    // 0.887639642
+        .word   0x3f61c598    // 0.881921291
+        .word   0x3f604621    // 0.876070082
+        .word   0x3f5ebe05    // 0.870086968
+        .word   0x3f5d2d53    // 0.863972843
+        .word   0x3f5b941a    // 0.857728601
+        .word   0x3f59f26a    // 0.851355195
+        .word   0x3f584853    // 0.84485358
+        .word   0x3f5695e5    // 0.838224709
+        .word   0x3f54db31    // 0.831469595
+        .word   0x3f531849    // 0.824589312
+        .word   0x3f514d3d    // 0.817584813
+        .word   0x3f4f7a1f    // 0.81045717
+        .word   0x3f4d9f02    // 0.803207517
+        .word   0x3f4bbbf8    // 0.795836926
+        .word   0x3f49d112    // 0.78834641
+        .word   0x3f47de65    // 0.780737221
+        .word   0x3f45e403    // 0.773010433
+        .word   0x3f43e200    // 0.765167236
+        .word   0x3f41d870    // 0.757208824
+        .word   0x3f3fc767    // 0.749136388
+        .word   0x3f3daef9    // 0.740951121
+        .word   0x3f3b8f3b    // 0.732654274
+        .word   0x3f396842    // 0.724247098
+        .word   0x3f373a23    // 0.715730846
+        .word   0x3f3504f3    // 0.707106769
+        .word   0x3f32c8c9    // 0.698376238
+        .word   0x3f3085bb    // 0.689540565
+        .word   0x3f2e3bde    // 0.680601001
+        .word   0x3f2beb4a    // 0.671558976
+        .word   0x3f299415    // 0.662415802
+        .word   0x3f273656    // 0.653172851
+        .word   0x3f24d225    // 0.643831551
+        .word   0x3f226799    // 0.634393275
+        .word   0x3f1ff6cb    // 0.624859512
+        .word   0x3f1d7fd1    // 0.615231574
+        .word   0x3f1b02c6    // 0.605511069
+        .word   0x3f187fc0    // 0.59569931
+        .word   0x3f15f6d9    // 0.585797846
+        .word   0x3f13682a    // 0.575808167
+        .word   0x3f10d3cd    // 0.565731823
+        .word   0x3f0e39da    // 0.555570245
+        .word   0x3f0b9a6b    // 0.545324981
+        .word   0x3f08f59b    // 0.534997642
+        .word   0x3f064b82    // 0.524589658
+        .word   0x3f039c3d    // 0.514102757
+        .word   0x3f00e7e4    // 0.50353837
+        .word   0x3efc5d27    // 0.492898196
+        .word   0x3ef6e0cb    // 0.482183784
+        .word   0x3ef15aea    // 0.471396744
+        .word   0x3eebcbbb    // 0.460538715
+        .word   0x3ee63375    // 0.449611336
+        .word   0x3ee0924f    // 0.438616246
+        .word   0x3edae880    // 0.427555084
+        .word   0x3ed53641    // 0.416429549
+        .word   0x3ecf7bca    // 0.405241311
+        .word   0x3ec9b953    // 0.393992037
+        .word   0x3ec3ef15    // 0.382683426
+        .word   0x3ebe1d4a    // 0.371317208
+        .word   0x3eb8442a    // 0.359895051
+        .word   0x3eb263ef    // 0.348418683
+        .word   0x3eac7cd4    // 0.336889863
+        .word   0x3ea68f12    // 0.32531029
+        .word   0x3ea09ae5    // 0.313681751
+        .word   0x3e9aa086    // 0.302005947
+        .word   0x3e94a031    // 0.290284663
+        .word   0x3e8e9a22    // 0.27851969
+        .word   0x3e888e93    // 0.266712755
+        .word   0x3e827dc0    // 0.254865646
+        .word   0x3e78cfcc    // 0.242980182
+        .word   0x3e6c9a7f    // 0.231058106
+        .word   0x3e605c13    // 0.219101235
+        .word   0x3e541501    // 0.207111374
+        .word   0x3e47c5c2    // 0.195090324
+        .word   0x3e3b6ecf    // 0.183039889
+        .word   0x3e2f10a2    // 0.170961887
+        .word   0x3e22abb6    // 0.15885815
+        .word   0x3e164083    // 0.146730468
+        .word   0x3e09cf86    // 0.134580702
+        .word   0x3dfab273    // 0.122410677
+        .word   0x3de1bc2e    // 0.110222206
+        .word   0x3dc8bd36    // 0.0980171412
+        .word   0x3dafb680    // 0.0857973099
+        .word   0x3d96a905    // 0.0735645667
+        .word   0x3d7b2b74    // 0.061320737
+        .word   0x3d48fb30    // 0.0490676761
+        .word   0x3d16c32c    // 0.0368072242
+        .word   0x3cc90ab0    // 0.024541229
+        .word   0x3c490e90    // 0.0122715384
+        .word   0x00000000    // 0
+endconst celt_tx_tab_512_float
+
 .macro SETUP_SR_RECOMB len, re, im, dec
         ldr             w5, =(\len - 4*7)
         movrel          \re, celt_tx_tab_\len\()_float // LIBOPUS DELTA (T): was X(ff_tx_tab_*_float)
@@ -1314,9 +1548,141 @@ endconst celt_tx_tab_64_float
         fadd            \e0\().4s, \e0\().4s, \t1\().4s
 .endm
 
-// LIBOPUS DELTA (S): SR_COMBINE_4, SR_COMBINE_FULL, SR_COMBINE_D2 and
-// SR_COMBINE_DINT were only used by the len >= 128 recombination blocks,
-// which are trimmed; see the header comment.
+.macro SR_COMBINE_4 len, part, off
+        add             x10, x1, x21
+        add             x11, x1, x21, lsl #1
+        add             x12, x1, x22
+
+        ldp             q0,  q1,  [x1,  #((0 + \part)*32 + \off)]
+        ldp             q4,  q5,  [x1,  #((2 + \part)*32 + \off)]
+        ldp             q2,  q3,  [x10, #((0 + \part)*32 + \off)]
+        ldp             q6,  q7,  [x10, #((2 + \part)*32 + \off)]
+
+        ldp             q8,  q9,  [x11, #((0 + \part)*32 + \off)]
+        ldp             q10, q11, [x11, #((2 + \part)*32 + \off)]
+        ldp             q12, q13, [x12, #((0 + \part)*32 + \off)]
+        ldp             q14, q15, [x12, #((2 + \part)*32 + \off)]
+
+        SR_COMBINE      v0,  v1,  v2,  v3,  v4,  v6,  v5,  v7, \
+                        v8,  v9, v10, v11, v12, v13, v14, v15, \
+                        x7,  x8, x9, 0
+
+        stp             q0,  q1,  [x1,  #((0 + \part)*32 + \off)]
+        stp             q4,  q5,  [x1,  #((2 + \part)*32 + \off)]
+        stp             q2,  q3,  [x10, #((0 + \part)*32 + \off)]
+        stp             q6,  q7,  [x10, #((2 + \part)*32 + \off)]
+
+        stp             q8,  q9,  [x11, #((0 + \part)*32 + \off)]
+        stp             q12, q13, [x11, #((2 + \part)*32 + \off)]
+        stp             q10, q11, [x12, #((0 + \part)*32 + \off)]
+        stp             q14, q15, [x12, #((2 + \part)*32 + \off)]
+.endm
+
+.macro SR_COMBINE_FULL len, off=0
+        add             x10, x1, x21
+        add             x11, x1, x21, lsl #1
+        add             x12, x1, x22
+
+        SR_COMBINE_4    \len, 0, \off
+        SR_COMBINE_4    \len, 1, \off
+        SR_COMBINE_4    \len, 4, \off
+        SR_COMBINE_4    \len, 5, \off
+.endm
+
+.macro SR_COMBINE_D2 part, off
+        add             x10,  x1, #((\part)*32 + \off)
+        add             x11, x14, #((\part)*32 + \off)
+        add             x12, x15, #((\part)*32 + \off)
+        add             x13, x16, #((\part)*32 + \off)
+
+        ldp             q0,  q1,  [x10]
+        ldp             q4,  q5,  [x10, #(2*32)]
+        ldp             q2,  q3,  [x11]
+        ldp             q6,  q7,  [x11, #(2*32)]
+
+        ldp             q8,  q9,  [x12]
+        ldp             q10, q11, [x12, #(2*32)]
+        ldp             q12, q13, [x13]
+        ldp             q14, q15, [x13, #(2*32)]
+
+        SR_COMBINE      v0,  v1,  v2,  v3,  v4,  v6,  v5,  v7, \
+                        v8,  v9, v10, v11, v12, v13, v14, v15, \
+                        x7,  x8, x9, 0, \
+                        v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27
+
+        zip1            v16.2d, v0.2d, v4.2d
+        zip2            v17.2d, v0.2d, v4.2d
+        zip1            v18.2d, v1.2d, v5.2d
+        zip2            v19.2d, v1.2d, v5.2d
+
+        zip1            v20.2d, v2.2d, v6.2d
+        zip2            v21.2d, v2.2d, v6.2d
+        zip1            v22.2d, v3.2d, v7.2d
+        zip2            v23.2d, v3.2d, v7.2d
+
+        ldp             q0,  q1,  [x10, #(1*32)]
+        ldp             q4,  q5,  [x10, #(3*32)]
+        ldp             q2,  q3,  [x11, #(1*32)]
+        ldp             q6,  q7,  [x11, #(3*32)]
+
+        st1             { v16.4s, v17.4s, v18.4s, v19.4s }, [x10], #64
+        st1             { v20.4s, v21.4s, v22.4s, v23.4s }, [x11], #64
+
+        zip1            v20.2d, v8.2d, v12.2d
+        zip2            v21.2d, v8.2d, v12.2d
+        zip1            v22.2d, v9.2d, v13.2d
+        zip2            v23.2d, v9.2d, v13.2d
+        zip1            v24.2d, v10.2d, v14.2d
+        zip2            v25.2d, v10.2d, v14.2d
+        zip1            v26.2d, v11.2d, v15.2d
+        zip2            v27.2d, v11.2d, v15.2d
+
+        ldp             q8,  q9,  [x12, #(1*32)]
+        ldp             q10, q11, [x12, #(3*32)]
+        ldp             q12, q13, [x13, #(1*32)]
+        ldp             q14, q15, [x13, #(3*32)]
+
+        st1             { v20.4s, v21.4s, v22.4s, v23.4s }, [x12], #64
+        st1             { v24.4s, v25.4s, v26.4s, v27.4s }, [x13], #64
+
+        SR_COMBINE      v0,  v1,  v2,  v3,  v4,  v6,  v5,  v7, \
+                        v8,  v9, v10, v11, v12, v13, v14, v15, \
+                        x7,  x8, x9, 0, \
+                        v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27
+
+        zip1            v16.2d, v0.2d, v4.2d
+        zip2            v17.2d, v0.2d, v4.2d
+        zip1            v18.2d, v1.2d, v5.2d
+        zip2            v19.2d, v1.2d, v5.2d
+        st1             { v16.4s, v17.4s, v18.4s, v19.4s }, [x10]
+
+        zip1            v16.2d, v2.2d, v6.2d
+        zip2            v17.2d, v2.2d, v6.2d
+        zip1            v18.2d, v3.2d, v7.2d
+        zip2            v19.2d, v3.2d, v7.2d
+        st1             { v16.4s, v17.4s, v18.4s, v19.4s }, [x11]
+
+        zip1            v20.2d, v8.2d, v12.2d
+        zip2            v21.2d, v8.2d, v12.2d
+        zip1            v22.2d, v9.2d, v13.2d
+        zip2            v23.2d, v9.2d, v13.2d
+        st1             { v20.4s, v21.4s, v22.4s, v23.4s }, [x12]
+
+        zip1            v24.2d, v10.2d, v14.2d
+        zip2            v25.2d, v10.2d, v14.2d
+        zip1            v26.2d, v11.2d, v15.2d
+        zip2            v27.2d, v11.2d, v15.2d
+        st1             { v24.4s, v25.4s, v26.4s, v27.4s }, [x13]
+.endm
+
+.macro SR_COMBINE_DINT off=0
+        add             x14, x1, x21
+        add             x15, x1, x21, lsl #1
+        add             x16, x1, x22
+
+        SR_COMBINE_D2   0, \off
+        SR_COMBINE_D2   4, \off
+.endm
 
 .macro FFT32_FN name, no_perm
 function celt_tx_fft32_\name\()_neon, export=1 // LIBOPUS DELTA (P)
@@ -1378,7 +1744,8 @@ FFT32_FN ns_float, 1
 // LIBOPUS DELTA (I): FFT32_FN float not instantiated.
 
 // LIBOPUS DELTA (S): cmp_imm and SR_TRANSFORM_DEF (the len >= 2048 transform
-// chain) are trimmed; CELT's largest split-radix sub-FFT is 64.
+// chain) are trimmed; CELT's largest split-radix sub-FFT is 512 (power-of-two
+// custom modes), so the 1024 block and above are removed below.
 
 .macro FFT_SPLIT_RADIX_FN name, no_perm
 function celt_tx_fft_sr_\name\()_neon, export=1 // LIBOPUS DELTA (P)
@@ -1444,10 +1811,141 @@ function celt_tx_fft_sr_\name\()_neon, export=1 // LIBOPUS DELTA (P)
         ext             v26.16b, v26.16b, v26.16b, #8
         ext             v27.16b, v27.16b, v27.16b, #8
 
-        // LIBOPUS DELTA (S): FFmpeg branches here on the global target
-        // (cmp w19, #64; b.eq 2f) and otherwise continues with the len > 64
-        // recombination; lengths > 64 are trimmed, so fall straight into the
-        // 64-point deinterleave.
+        cmp             w19, #64
+        b.eq            2f // custom deinterleave
+
+        // TODO: investigate doing the 2 combines like in deinterleave
+        // TODO: experiment with spilling to gprs and converting to HALF or full
+        SR_COMBINE_LITE v0,  v1,  v8,  v9,  \
+                        v2,  v3,  v16, v17, \
+                        v24, v25, v26, v27, \
+                        v28, v29, v30, 0
+
+        stp             q0,  q1,  [x1, #32* 0]
+        stp             q8,  q9,  [x1, #32* 4]
+        stp             q2,  q3,  [x1, #32* 8]
+        stp             q16, q17, [x1, #32*12]
+
+        SR_COMBINE_HALF v4,  v5,  v12, v13, \
+                        v6,  v7,  v20, v21, \
+                        v24, v25, v26, v27, \
+                        v28, v29, v30, v0, v1, v8, 1
+
+        stp             q4,  q20, [x1, #32* 2]
+        stp             q12, q21, [x1, #32* 6]
+        stp             q6,  q5,  [x1, #32*10]
+        stp             q7,  q13, [x1, #32*14]
+
+        ldp             q2,  q3,  [x1, #32*1]
+        ldp             q6,  q7,  [x1, #32*3]
+        ldp             q12, q13, [x1, #32*5]
+        ldp             q16, q17, [x1, #32*7]
+
+        SR_COMBINE      v2,  v3,  v12, v13, v6,  v16, v7,  v17, \
+                        v10, v11, v14, v15, v18, v19, v22, v23, \
+                        x7,  x8,  x9,  0, \
+                        v24, v25, v26, v27, v28, v29, v30, v8, v0, v1, v4, v5
+
+        stp             q2,  q3,  [x1, #32* 1]
+        stp             q6,  q7,  [x1, #32* 3]
+        stp             q12, q13, [x1, #32* 5]
+        stp             q16, q17, [x1, #32* 7]
+
+        stp             q10, q11, [x1, #32* 9]
+        stp             q18, q19, [x1, #32*11]
+        stp             q14, q15, [x1, #32*13]
+        stp             q22, q23, [x1, #32*15]
+
+        cmp             w20, #64
+        b.gt            128f
+        ret
+128:
+        AARCH64_SIGN_LINK_REGISTER
+        stp             x20, x30, [sp, #-16]!
+        mov             w20, #32
+        add             x1, x1, #16*32
+        bl              32b
+        add             x1, x1, #8*32
+        bl              32b
+        ldp             x20, x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
+        sub             x1, x1, #24*32
+
+        SETUP_SR_RECOMB 128, x7, x8, x9
+
+        cmp             w19, #128
+        b.eq            0f
+
+        SR_COMBINE_FULL 128
+
+        cmp             w20, #128
+        b.gt            256f
+        ret
+256:
+        AARCH64_SIGN_LINK_REGISTER
+        stp             x20, x30, [sp, #-16]!
+        mov             w20, #64
+        add             x1, x1, #32*32
+        bl              32b
+        add             x1, x1, #16*32
+        bl              32b
+        ldp             x20, x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
+        sub             x1, x1, #48*32
+
+        SETUP_SR_RECOMB 256, x7, x8, x9
+
+        cmp             w19, #256
+        b.eq            0f
+
+        SR_COMBINE_FULL 256
+        SR_COMBINE_FULL 256, 8*32
+
+        cmp             w20, #256
+        b.gt            512f
+        ret
+512:
+        AARCH64_SIGN_LINK_REGISTER
+        stp             x20, x30, [sp, #-16]!
+        mov             w20, #128
+        add             x1, x1, #64*32
+        bl              32b
+        add             x1, x1, #32*32
+        bl              32b
+        ldp             x20, x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
+        sub             x1, x1, #96*32
+
+        SETUP_SR_RECOMB 512, x7, x8, x9
+
+        cmp             w19, #512
+        b.eq            0f
+
+        mov             x5, 4
+5125:
+        SR_COMBINE_FULL 512
+        add             x1, x1, 8*32
+        subs            w5, w5, 1
+        b.gt            5125b
+
+        // LIBOPUS DELTA (S): lengths > 512 trimmed
+        // (FFmpeg continues: cmp w20, #512; b.gt 1024f)
+        ret
+
+0: // general deinterleave loop
+        SR_COMBINE_DINT
+        add             x1, x1, #32*8
+        subs            w19, w19, #32*4
+        b.gt            0b
+
+        ldp             x19, x20, [sp, #16]
+        ldp             d14, d15, [sp, #16*2]
+        ldp             d12, d13, [sp, #16*3]
+        ldp             d10, d11, [sp, #16*4]
+        ldp             d8,  d9,  [sp, #16*5]
+        ldp             x21, x22, [sp], #16*6
+
+        ret
 
 2: // special case for 64 point deinterleave
         mov             x10, v23.d[0]
