@@ -271,6 +271,7 @@ static void dred_encode_latents(ec_enc *enc, const float *x, const opus_uint8 *s
 static int dred_voice_active(const unsigned char *activity_mem, int offset) {
     int i;
     for (i=0;i<16;i++) {
+        if (8*offset + i >= DRED_MAX_FRAMES*4) break;
         if (activity_mem[8*offset + i] == 1) return 1;
     }
     return 0;
