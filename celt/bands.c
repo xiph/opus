@@ -1672,7 +1672,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 #ifdef ENABLE_QEXT
    ctx.ext_ec = ext_ec;
    ctx.ext_total_bits = ext_total_bits;
-   ctx.extra_bands = end == NB_QEXT_BANDS || end == 2;
+   ctx.extra_bands = (cap == NULL);
    if (ctx.extra_bands || ext_total_bits!=0) theta_rdo = 0;
    ALLOC(ext_bytes_save, theta_rdo ? QEXT_PACKET_SIZE_CAP : ALLOC_NONE, unsigned char);
 #endif
