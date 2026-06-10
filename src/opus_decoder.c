@@ -1528,6 +1528,7 @@ OpusDRED *opus_dred_alloc(int *error)
       *error = OPUS_ALLOC_FAIL;
     return NULL;
   }
+  OPUS_CLEAR(dec, 1);
   return dec;
 #else
   if (error)
