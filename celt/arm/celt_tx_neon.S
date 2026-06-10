@@ -1,0 +1,1551 @@
+/* Copyright (c) Lynne
+   Copyright (c) 2026 Xiph.Org Foundation */
+/*
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
+
+   - Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+   - Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+   OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+/*
+ * AArch64 NEON inverse MDCT for CELT, ported from FFmpeg's
+ *   libavutil/aarch64/tx_float_neon.S  (commit d229b4c1242870)
+ *
+ * The code is deliberately kept STRUCTURALLY IDENTICAL to FFmpeg's so
+ * that future updates to that file can be applied here mechanically.
+ * The transform tree for the CELT inverse MDCT sizes N/2 = 15*M*2,
+ * M = {4, 8, 16, 32, 64}, is
+ *
+ *   celt_tx_mdct_inv_float_neon            mirrors ff_tx_mdct_inv_float_neon
+ *    -> celt_tx_fft_pfa_15xM_ns_float_neon   ff_tx_fft_pfa_15xM_ns_float_neon
+ *        -> celt_tx_fft4_fwd_float_neon      ff_tx_fft4_fwd_float_neon
+ *           celt_tx_fft8_ns_float_neon       ff_tx_fft8_ns_float_neon
+ *           celt_tx_fft16_ns_float_neon      ff_tx_fft16_ns_float_neon
+ *           celt_tx_fft32_ns_float_neon      ff_tx_fft32_ns_float_neon
+ *           celt_tx_fft_sr_ns_float_neon     ff_tx_fft_sr_ns_float_neon
+ *
+ * driven by small AVTXContext-compatible structs and pre-baked tables in
+ * celt_mdct_tx.c / celt_tx_tables.h instead of FFmpeg's runtime av_tx_init().
+ * Lines that differ from FFmpeg are flagged with `LIBOPUS DELTA`. The
+ * classes of delta are:
+ *
+ *   (P) Prefix. Functions are renamed ff_tx_* -> celt_tx_* so that libopus
+ *       can be linked into the same image as libavutil. endfunc/endconst
+ *       take the symbol name (celt_arm_asm.h needs it for ELF .size).
+ *
+ *   (T) Tables. FFmpeg initializes ff_tx_tab_{53,32,64}_float at runtime
+ *       (ff_tx_init_tabs_float); here they are pre-baked, bit-exact, as
+ *       local consts, so X(ff_tx_tab_*) external references become local
+ *       celt_tx_tab_* ones.
+ *
+ *   (I) Instantiations. Only the codelets reachable from the CELT inverse
+ *       MDCT (the preshuffled variants listed above) are emitted. FFmpeg
+ *       additionally emits fft2, fft4_inv, fft15 and the runtime
+ *       lookup-table (non-_ns) variants of every codelet; the shared
+ *       macros are kept verbatim, including their no_perm=0 paths.
+ *
+ *   (S) Split-radix trim. CELT's largest sub-FFT under the MDCT is 960 =
+ *       15*64, so fft_sr only ever runs its len=64 path. The len>=128
+ *       recombination blocks, the SR_TRANSFORM_DEF chain and the general
+ *       deinterleave loop (which reference ff_tx_tab_128..131072_float)
+ *       are removed; the len==64 flow falls straight into the 64-point
+ *       custom deinterleave. SR_COMBINE_4/FULL/D2/DINT and cmp_imm were
+ *       only used by the removed blocks.
+ *
+ * Calling convention (same as FFmpeg's av_tx_fn):
+ *   x0 = const OpusTXContext *s   (field offsets: len@0, map@8, exp@16,
+ *                                  tmp@24, sub@32, fn@40 -- LP64)
+ *   x1 = void *out
+ *   x2 = void *in
+ *   x3 = ptrdiff_t stride (bytes)
+ */
+
+#include "celt_arm_asm.h"
+
+#if defined(__aarch64__) && !defined(FIXED_POINT)
+
+/* Open `doc/transforms.md` (FFmpeg) to see the code upon which the
+ * transforms here were based upon.
+ *
+ * File conventions:
+ * GPRs:    x0-x3   - arguments, untouched
+ *          x4      - Lookup table base pointer
+ *          x5-x6   - macro ld1 temps/function scratch
+ *          x7-x9   - FFT table state
+ *          x10-x17 - lookup table/macro scratch
+ *          w19-w20 - current/target length when needed
+ *          x21-x22 - len*2, len*6
+ *
+ * Vectors: v0-v7   - coefficients
+ *          v8-v15  - coefficients when needed, otherwise untouched
+ *          v16-v30 - used as needed
+ *          v31     - -1.0, +1.0, -1.0, +1.0. Never touched after loading.
+ *
+ * Stack:   backup for v8-v15 and x19-x22 when needed, and transform lengths
+ */
+
+#define M_SQRT1_2 0.707106781186547524401
+#define COS16_1   0.92387950420379638671875
+#define COS16_3   0.3826834261417388916015625
+
+/* We only ever load this once at the start, and then live with losing an
+ * entire register as we need to lug this all the time everywhere.
+ * Clearly should be integrated into an fsadd and fmlsa, but "muh RISC!". */
+const subadd, align=4
+        .float -1.0,  1.0, -1.0,  1.0
+endconst subadd
+
+.macro LOAD_SUBADD
+        movrel          x5, subadd
+        ld1             { v31.4s }, [x5]
+.endm
+
+.macro SETUP_LUT no_lut=0
+.if \no_lut == 0
+        ldr             x4, [x0, #8]
+.endif
+.endm
+
+.macro LOAD_INPUT dst1, dst2, dst3, dst4, src, no_lut=0, discont=0
+.if \no_lut == 1
+.if \discont == 1
+        ldp             q\dst1\(), q\dst2\(), [\src\()]
+        ldp             q\dst3\(), q\dst4\(), [\src\(), #32]
+        add             \src\(), \src\(), #64
+.else
+        ld1             { v\dst1\().4s, v\dst2\().4s, v\dst3\().4s, v\dst4\().4s }, [\src], #64
+.endif
+.else
+        ldp             w10, w11, [x4, #0 ]
+        ldp             w12, w13, [x4, #8 ]
+        ldp             w14, w15, [x4, #16]
+        ldp             w16, w17, [x4, #24]
+
+        add             x4, x4, #32
+
+        ldr             d\dst1, [\src, x10, lsl #3]
+        add             x11, \src, x11, lsl #3
+        ldr             d\dst2, [\src, x12, lsl #3]
+        add             x13, \src, x13, lsl #3
+        ldr             d\dst3, [\src, x14, lsl #3]
+        add             x15, \src, x15, lsl #3
+        ldr             d\dst4, [\src, x16, lsl #3]
+        add             x17, \src, x17, lsl #3
+
+        ld1             { v\dst1\().d }[1], [x11]
+        ld1             { v\dst2\().d }[1], [x13]
+        ld1             { v\dst3\().d }[1], [x15]
+        ld1             { v\dst4\().d }[1], [x17]
+.endif
+.endm
+
+.macro FFT4 e0, o0, standalone
+        fadd            v16.4s, \e0\().4s, \o0\().4s         // r1..4
+        fsub            \e0\().4s, \e0\().4s, \o0\().4s      // t1..4
+
+        rev64           v18.4s, \e0\().4s
+
+        zip2            \o0\().2d, v16.2d, \e0\().2d
+        zip1            v17.2d, v16.2d, \e0\().2d
+
+        mov             \o0\().d[1], v18.d[1]
+
+        fadd            \e0\().4s, v17.4s, \o0\().4s         // a1,2 b1,4
+        fsub            v16.4s,    v17.4s, \o0\().4s         // a3,4 b3,2
+
+        mov             \o0\().16b, v16.16b                  // Swap once again...
+        mov             \o0\().s[3], \e0\().s[3]
+        mov             \e0\().s[3], v16.s[3]
+
+.if \standalone == 0
+        uzp2            \o0\().2d, \e0\().2d, \o0\().2d
+        uzp1            \e0\().2d, \e0\().2d, v16.2d
+.endif
+.endm
+
+// Identical to FFT4, but does 2 transforms in parallel, with no deinterleaving
+.macro FFT4_X2 e0, o0, e1, o1, \
+               t0=v16, t1=v17, t2=v18, t3=v19, t4=v20, t5=v21, t6=v22
+
+        fadd            \t0\().4s, \e0\().4s, \o0\().4s                     // r1234
+        fadd            \t2\().4s, \e1\().4s, \o1\().4s                     // r1234
+        fsub            \e0\().4s, \e0\().4s, \o0\().4s                     // t1234
+        fsub            \e1\().4s, \e1\().4s, \o1\().4s                     // t1234
+
+        rev64           \t4\().4s, \e0\().4s
+        rev64           \t5\().4s, \e1\().4s
+
+        zip2            \o0\().2d, \t0\().2d, \t4\().2d                     // t3,4 r3,4
+        zip2            \o1\().2d, \t2\().2d, \t5\().2d                     // t3,4 r3,4
+
+        fneg            \t3\().4s, \t4\().4s
+        fneg            \t4\().4s, \t5\().4s
+
+        mov             \o0\().s[3], \t3\().s[3]
+        mov             \o1\().s[3], \t4\().s[3]
+
+        zip1            \t1\().2d, \t0\().2d, \e0\().2d                     // t1,2 r1,2
+        zip1            \t3\().2d, \t2\().2d, \e1\().2d                     // t1,2 r1,2
+
+        fsub            \t4\().4s, \t1\().4s, \o0\().4s                     // a34 b32
+        fadd            \t5\().4s, \t1\().4s, \o0\().4s                     // a12 b14
+        fsub            \t2\().4s, \t3\().4s, \o1\().4s                     // a34 b32
+        fadd            \t3\().4s, \t3\().4s, \o1\().4s                     // a12 b14
+
+        zip1            \e0\().2d, \t5\().2d, \t4\().2d                     // a1234
+        zip2            \o0\().2d, \t5\().2d, \t4\().2d                     // b1432
+        zip1            \e1\().2d, \t3\().2d, \t2\().2d                     // a1234
+        zip2            \o1\().2d, \t3\().2d, \t2\().2d                     // b1432
+.endm
+
+const tab_8pt, align=4
+        .float M_SQRT1_2, -M_SQRT1_2, -M_SQRT1_2,  M_SQRT1_2
+endconst tab_8pt
+
+.macro FFT8 e0, e1, o0, o1, \
+            t0=v16, t1=v17, t2=v18, t3=v19, t4=v20, t5=v21, t6=v22
+
+        movrel          x5, tab_8pt
+
+        fsub            \t1\().4s, \e1\().4s, \o1\().4s             // j1234
+        fadd            \o1\().4s, \e1\().4s, \o1\().4s             // k1234
+        fsub            \t0\().4s, \e0\().4s, \o0\().4s             // r1234
+        fadd            \o0\().4s, \e0\().4s, \o0\().4s             // q1234
+
+        ld1             { \t5\().4s }, [x5]
+
+        ext             \t4\().16b, \o1\().16b, \o1\().16b, #12
+        rev64           \t4\().4s,  \t4\().4s
+
+        ext             \t2\().16b, \o0\().16b, \t4\().16b, #8      // o0[0,1], o1[3,2]
+        mov             \o0\().d[1], \t4\().d[1]                    // o0[3, 4]; o1[1, 4]
+
+        fsub            \e1\().4s, \o0\().4s, \t2\().4s             // s34, g43
+        fadd            \t2\().4s, \o0\().4s, \t2\().4s             // s12, g12
+
+        rev64           \t6\().4s, v31.4s                           // 1, -1, 1, -1
+        dup             \o0\().2d, \t0\().d[0]                      // r1212
+        dup             \o1\().2d, \t0\().d[1]                      // r3434
+
+        rev64           \t4\().4s, \e1\().4s                        // xxg34
+        rev64           \o1\().4s, \o1\().4s                        // r4343
+
+        ext             \t6\().16b, v31.16b, \t6\().16b, #8         // -1, 1, 1, -1
+        zip1            \t3\().2d, \t2\().2d, \e1\().2d             // s1234
+        zip2            \t2\().2d, \t2\().2d, \t4\().2d             // g1234
+
+        fadd            \e0\().4s, \t3\().4s, \t2\().4s             // out_e1
+        fsub            \e1\().4s, \t3\().4s, \t2\().4s             // out_e2
+
+        fmul            \t1\().4s, \t1\().4s, \t5\().4s             // j * +--+M_SQRT1_2
+        fmls            \o0\().4s, \o1\().4s, \t6\().4s             // z1234
+
+        rev64           \t4\().4s, \t1\().4s                        // j2143
+        fmla            \t1\().4s, \t4\().4s, v31.4s                // l2143
+
+        rev64           \t4\().4s, \t1\().4s                        // l1234
+        ext             \t4\().16b, \t4\().16b, \t4\().16b, #8      // l3412
+
+        fmla            \t4\().4s, \t1\().4s, v31.4s                // t1234
+
+        fadd            \o1\().4s, \o0\().4s, \t4\().4s             // out_o2
+        fsub            \o0\().4s, \o0\().4s, \t4\().4s             // out_o1
+.endm
+
+// Identical as FFT8, but does 2 transforms in parallel
+.macro FFT8_X2 e0, e1, o0, o1, e2, e3, o2, o3
+
+        movrel          x5, tab_8pt
+
+        fadd            v19.4s, \e3\().4s, \o3\().4s             // k1234
+        fadd            v17.4s, \e1\().4s, \o1\().4s             // k1234
+        fadd            v18.4s, \e2\().4s, \o2\().4s             // q1234
+        fadd            v16.4s, \e0\().4s, \o0\().4s             // q1234
+
+        ld1             { v23.4s }, [x5]
+
+        ext             v22.16b, v19.16b, v19.16b, #12
+        ext             v21.16b, v17.16b, v17.16b, #12
+
+        rev64           v22.4s,  v22.4s
+        rev64           v21.4s,  v21.4s
+
+        ext             v19.16b, v18.16b, v22.16b, #8
+        ext             v17.16b, v16.16b, v21.16b, #8
+
+        mov             v18.d[1], v22.d[1]
+        mov             v21.d[0], v16.d[0]
+
+        fadd            v22.4s, v18.4s, v19.4s                   // s12, g12
+        fsub            v19.4s, v18.4s, v19.4s                   // s34, g43
+        fsub            v18.4s, v21.4s, v17.4s                   // s34, g43
+        fadd            v16.4s, v21.4s, v17.4s                   // s12, g12
+
+        fsub            \e0\().4s, \e0\().4s, \o0\().4s          // r1234
+        fsub            v20.4s, \e1\().4s, \o1\().4s             // j1234
+        fsub            \e2\().4s, \e2\().4s, \o2\().4s          // r1234
+        fsub            v21.4s, \e3\().4s, \o3\().4s             // j1234
+
+        rev64           v24.4s, v31.4s                           // 1, -1, 1, -1
+        zip1            v17.2d, v16.2d, v18.2d                   // s1234
+        zip1            \e1\().2d, v22.2d, v19.2d                // s1234
+
+        rev64           v18.4s, v18.4s                           // xxg34
+        rev64           v19.4s, v19.4s                           // xxg34
+
+        zip2            v16.2d, v16.2d, v18.2d                   // g1234
+        zip2            \e3\().2d, v22.2d, v19.2d                // g1234
+
+        dup             \o0\().2d, \e0\().d[0]                   // r1212
+        dup             \o1\().2d, \e0\().d[1]                   // r3434
+        dup             \o2\().2d, \e2\().d[0]                   // r1212
+        dup             \o3\().2d, \e2\().d[1]                   // r3434
+
+        fadd            \e2\().4s, \e1\().4s, \e3\().4s          // out_e1
+        fsub            \e3\().4s, \e1\().4s, \e3\().4s          // out_e2
+        fadd            \e0\().4s, v17.4s, v16.4s                // out_e1
+        fsub            \e1\().4s, v17.4s, v16.4s                // out_e2
+
+        ext             v24.16b, v31.16b, v24.16b, #8            // -1, 1, 1, -1
+        rev64           \o1\().4s, \o1\().4s                     // r4343
+        rev64           \o3\().4s, \o3\().4s                     // r4343
+
+        fmul            v19.4s, v20.4s, v23.4s                   // j * +--+M_SQRT1_2
+        fmul            v21.4s, v21.4s, v23.4s                   // j * +--+M_SQRT1_2
+
+        rev64           v20.4s, v19.4s                           // j2143
+        rev64           v18.4s, v21.4s                           // j2143
+
+        fmls            \o0\().4s, \o1\().4s, v24.4s             // z1234
+        fmls            \o2\().4s, \o3\().4s, v24.4s             // z1234
+
+        fmla            v19.4s, v20.4s, v31.4s                   // l2143
+        fmla            v21.4s, v18.4s, v31.4s                   // l2143
+
+        rev64           v20.4s, v19.4s                           // l1234
+        rev64           v18.4s, v21.4s                           // l1234
+        ext             v20.16b, v20.16b, v20.16b, #8            // l3412
+        ext             v18.16b, v18.16b, v18.16b, #8            // l3412
+
+        fmla            v20.4s, v19.4s, v31.4s                   // t1234
+        fmla            v18.4s, v21.4s, v31.4s                   // t1234
+
+        fadd            \o1\().4s, \o0\().4s, v20.4s             // out_o2
+        fadd            \o3\().4s, \o2\().4s, v18.4s             // out_o2
+        fsub            \o0\().4s, \o0\().4s, v20.4s             // out_o1
+        fsub            \o2\().4s, \o2\().4s, v18.4s             // out_o1
+.endm
+
+const tab_16pt, align=4
+        .float   -COS16_1,    COS16_1,   -COS16_3,    COS16_3    // Could be +-+- too
+        .float    COS16_3,    COS16_3,    COS16_1,    COS16_1
+        .float        1.0,        1.0,  M_SQRT1_2,  M_SQRT1_2
+endconst tab_16pt
+
+// 16-point FFT
+// t3, t4, t5, t6 must be sequential
+.macro FFT16 e0, e1, e2, e3, o0, o1, o2, o3, \
+             t0=v16, t1=v17, t2=v18, t3=v19, t4=v20, t5=v21, t6=v22
+
+        FFT8            \e0, \e1, \e2, \e3, \t0, \t1, \t2, \t3, \t4, \t5, \t6
+        FFT4_X2         \o0, \o1, \o2, \o3, \t0, \t1, \t2, \t3, \t4, \t5, \t6
+
+        movrel          x5, tab_16pt
+
+        rev64           \t0\().4s, \o0\().4s                     // z[ 8, 9].imre
+        rev64           \t1\().4s, \o2\().4s                     // z[10,11].imre
+
+        ins             \t0\().d[0], xzr
+        ins             \t1\().d[0], xzr
+
+        ld1             { \t4\().4s, \t5\().4s, \t6\().4s }, [x5]
+        // TODO: We could derive \t4\() or \t5\() from either, but it seems cheaper to load
+
+        fmla            \o2\().4s, \t1\().4s, v31.4s             // s[4567]
+        fmls            \o0\().4s, \t0\().4s, v31.4s             // s[0123]
+
+        fmul            \t2\().4s, \o1\().4s, \t4\().4s
+        fmul            \t3\().4s, \o3\().4s, \t4\().4s
+
+        rev64           \o3\().4s, \o3\().4s
+        rev64           \o1\().4s, \o1\().4s
+
+        fmla            \t3\().4s, \o3\().4s, \t5\().4s          // s[12, 13, 14, 15]
+        fmls            \t2\().4s, \o1\().4s, \t5\().4s          // s[ 8,  9, 10, 11]
+
+        fmul            \t1\().4s, \o2\().4s, \t6\().4s          // s[4567] * mult
+        fmul            \t0\().4s, \o0\().4s, \t6\().4s          // s[0123] * mult
+
+        mov             \o1\().16b, \t3\().16b
+        mov             \o2\().16b, \t1\().16b
+
+        fsub            \t3\().4s, \t3\().4s, \t2\().4s          // y34, u34
+        fsub            \t1\().4s, \t1\().4s, \t0\().4s          // w34, x34
+
+        fadd            \t2\().4s, \t2\().4s, \o1\().4s          // y56, u56
+        rev64           \t3\().4s, \t3\().4s
+        fadd            \t0\().4s, \t0\().4s, \o2\().4s          // w56, x56
+        rev64           \t1\().4s, \t1\().4s
+
+        fmul            \t2\().4s, \t2\().4s, v31.4s
+        fmul            \t1\().4s, \t1\().4s, v31.4s
+
+        fadd            \o3\().4s, \e3\().4s, \t3\().4s
+        fsub            \o2\().4s, \e3\().4s, \t3\().4s
+        fsub            \o1\().4s, \e2\().4s, \t2\().4s
+        fadd            \o0\().4s, \e2\().4s, \t2\().4s
+
+        fsub            \e2\().4s, \e0\().4s, \t0\().4s
+        fadd            \e0\().4s, \e0\().4s, \t0\().4s
+        fsub            \e3\().4s, \e1\().4s, \t1\().4s
+        fadd            \e1\().4s, \e1\().4s, \t1\().4s
+.endm
+
+// LIBOPUS DELTA (I): ff_tx_fft2_float_neon is not instantiated (unreachable
+// from the CELT inverse MDCT sizes).
+
+.macro FFT4_FN name, inv
+function celt_tx_fft4_\name\()_float_neon, export=1 // LIBOPUS DELTA (P): ff_tx_ -> celt_tx_
+        ld1             {v0.4s, v1.4s}, [x2]
+
+.if \inv == 1
+        mov             v2.d[0], v0.d[1]
+        mov             v0.d[1], v1.d[1]
+        mov             v1.d[1], v2.d[0]
+.endif
+
+        FFT4            v0, v1, 1
+
+        st1             { v0.4s, v1.4s }, [x1]
+        ret
+endfunc celt_tx_fft4_\name\()_float_neon
+.endm
+
+FFT4_FN fwd, 0
+// LIBOPUS DELTA (I): FFT4_FN inv not instantiated (the preshuffled chain
+// encodes the direction in the maps and always uses the fwd kernel).
+
+.macro FFT8_FN name, no_perm
+function celt_tx_fft8_\name\()_neon, export=1 // LIBOPUS DELTA (P)
+        SETUP_LUT       \no_perm
+        LOAD_INPUT      0, 1, 2, 3, x2, \no_perm
+
+        LOAD_SUBADD
+        FFT8            v0, v1, v2, v3
+
+        zip1            v16.2d, v0.2d, v2.2d
+        zip2            v17.2d, v0.2d, v2.2d
+        zip1            v18.2d, v1.2d, v3.2d
+        zip2            v19.2d, v1.2d, v3.2d
+        st1             { v16.4s, v17.4s, v18.4s, v19.4s }, [x1]
+
+        ret
+endfunc celt_tx_fft8_\name\()_neon
+.endm
+
+FFT8_FN ns_float, 1
+// LIBOPUS DELTA (I): FFT8_FN float (runtime-LUT variant) not instantiated.
+
+.macro FFT16_FN name, no_perm
+function celt_tx_fft16_\name\()_neon, export=1 // LIBOPUS DELTA (P)
+        SETUP_LUT       \no_perm
+        LOAD_INPUT      0, 1, 2, 3, x2, \no_perm
+        LOAD_INPUT      4, 5, 6, 7, x2, \no_perm
+
+        LOAD_SUBADD
+        FFT16           v0, v1, v2, v3, v4, v5, v6, v7
+
+        zip1            v20.2d, v0.2d, v4.2d
+        zip2            v21.2d, v0.2d, v4.2d
+        zip1            v22.2d, v1.2d, v6.2d
+        zip2            v23.2d, v1.2d, v6.2d
+        st1             { v20.4s, v21.4s, v22.4s, v23.4s }, [x1], #64
+
+        zip1            v24.2d, v2.2d, v5.2d
+        zip2            v25.2d, v2.2d, v5.2d
+        zip1            v26.2d, v3.2d, v7.2d
+        zip2            v27.2d, v3.2d, v7.2d
+        st1             { v24.4s, v25.4s, v26.4s, v27.4s }, [x1]
+
+        ret
+endfunc celt_tx_fft16_\name\()_neon
+.endm
+
+FFT16_FN ns_float, 1
+// LIBOPUS DELTA (I): FFT16_FN float not instantiated.
+
+const tab_15pt, align=4
+        .float           1.0,  1.0, -1.0,  -1.0
+endconst tab_15pt
+
+// LIBOPUS DELTA (T): ff_tx_tab_53_float is filled at runtime by FFmpeg's
+// ff_tx_init_tab_53 (cos/sin(2pi/5), cos/sin(2pi/10) doubled, then the 3pt
+// constants); pre-baked here, bit-exact.
+const celt_tx_tab_53_float, align=4
+        .word   0x3e9e377a    // 0.309017003  cos(2*pi/5)
+        .word   0x3e9e377a    // 0.309017003
+        .word   0x3f4f1bbd    // 0.809017003  cos(2*pi/10)
+        .word   0x3f4f1bbd    // 0.809017003
+        .word   0x3f737871    // 0.95105654   sin(2*pi/5)
+        .word   0x3f737871    // 0.95105654
+        .word   0x3f167918    // 0.587785244  sin(2*pi/10)
+        .word   0x3f167918    // 0.587785244
+        .word   0x3f5db3d7    // 0.866025388  cos(2*pi/12)
+        .word   0x3f5db3d7    // 0.866025388
+        .word   0x3f000000    // 0.5          cos(2*pi/6)
+        .word   0xbf000000    // -0.5         cos(8*pi/6)
+endconst celt_tx_tab_53_float
+
+/* Tab_53 twiddles (v28..v30) duplicated/pre-signed once, instead of per
+ * transform: v8/v9 = -+tab[8,9]/[10,11], v25/v28/v29 = tab[0,1]/[2,3]/[4,5],
+ * v10 = +-tab[6,7]. v30 keeps tab[8..11]. Callers preserve d8-d10. */
+.macro FFT15_DERIVE_CONSTS
+        dup             v8.2d,  v30.d[0]
+        dup             v9.2d,  v30.d[1]
+        dup             v10.2d, v29.d[1]
+        dup             v25.2d, v28.d[0]
+        dup             v28.2d, v28.d[1]
+        dup             v29.2d, v29.d[0]
+        fmul            v8.4s,  v8.4s,  v31.4s
+        fmul            v9.4s,  v9.4s,  v31.4s
+        fmul            v10.4s, v10.4s, v24.4s
+.endm
+
+.macro FFT15_LOAD no_perm, advance=0
+.if \no_perm == 1
+        // Writebacks leave x2 a whole transform (120B) ahead for the PFA loop
+        ld1             { v0.4s },                [x2], #16   // in[0,1]
+        ld1r            { v1.2d },                [x2], #8    // in[2] duplicated
+        ld1             { v2.4s, v3.4s, v4.4s },  [x2], #48   // in[3..8]
+        ld1             { v5.4s, v6.4s, v7.4s },  [x2], #48   // in[9..14]
+.else
+        ldp             w10, w11, [x4]          // lut[0,1]
+        ldr             w12, [x4, #8]           // lut[2]
+        ldp             w13, w14, [x4, #12]     // lut[3,4]
+        ldp             w15, w16, [x4, #20]     // lut[5,6]
+
+        ldr             d0, [x2, x10, lsl #3]
+        add             x10, x2, x11, lsl #3
+        add             x12, x2, x12, lsl #3
+        ld1             { v0.d }[1], [x10]
+        ld1r            { v1.2d }, [x12]
+
+        ldr             d2, [x2, x13, lsl #3]
+        add             x13, x2, x14, lsl #3
+        ldr             d3, [x2, x15, lsl #3]
+        add             x15, x2, x16, lsl #3
+        ld1             { v2.d }[1], [x13]
+        ld1             { v3.d }[1], [x15]
+
+        ldp             w10, w11, [x4, #28]     // lut[7,8]
+        ldp             w12, w13, [x4, #36]     // lut[9,10]
+        ldp             w14, w15, [x4, #44]     // lut[11,12]
+        ldp             w16, w17, [x4, #52]     // lut[13,14]
+.if \advance == 1
+        add             x4, x4, #60
+.endif
+
+        ldr             d4, [x2, x10, lsl #3]
+        add             x10, x2, x11, lsl #3
+        ldr             d5, [x2, x12, lsl #3]
+        add             x12, x2, x13, lsl #3
+        ldr             d6, [x2, x14, lsl #3]
+        add             x14, x2, x15, lsl #3
+        ldr             d7, [x2, x16, lsl #3]
+        add             x16, x2, x17, lsl #3
+        ld1             { v4.d }[1], [x10]
+        ld1             { v5.d }[1], [x12]
+        ld1             { v6.d }[1], [x14]
+        ld1             { v7.d }[1], [x16]
+.endif
+.endm
+
+// Single 15-point FFT (see doc/transforms.md and the AVX2 FFT15); each ymm
+// becomes a pair of quads holding 2 complex each. Uses the derived constants
+// and tab_15pt in v24 (dc fold sign); with hoist_strides=1 the caller
+// provides x6/x7 = stride*3/*5.
+.macro FFT15_CORE hoist_strides=0
+.if \hoist_strides == 0
+        add             x6, x3, x3, lsl #1                  // stride*3
+        add             x7, x3, x3, lsl #2                  // stride*5
+.endif
+        add             x8, x1, x7                          // &out[5]
+        add             x9, x8, x7                          // &out[10]
+
+        // 4x parallel 3pt over in[3..14] (the in[11..14] -+ signs are folded
+        // into the twiddles: k = in[11..14] + Q4 -+ Q0), interleaved with the
+        // dc 3pt over in[0..2] ([dc] tagged, v0 = dc[0] dup, v1 = dc[1,2])
+        fsub            v16.4s,  v2.4s,  v4.4s              // q[0,1]raw = in[3,4]-in[7,8]
+        ext             v26.16b, v0.16b, v0.16b, #8         // [dc] (in1, in0)
+        fsub            v17.4s,  v3.4s,  v5.4s              // q[2,3]raw = in[5,6]-in[9,10]
+        fadd            v27.4s,  v0.4s,  v26.4s             // [dc] pc[1]raw = in0+in1
+        fadd            v2.4s,   v2.4s,  v4.4s              // q[4,5]raw
+        fsub            v20.4s,  v0.4s,  v26.4s             // [dc] (in0-in1, in1-in0)
+        fadd            v3.4s,   v3.4s,  v5.4s              // q[6,7]raw
+        rev64           v20.4s,  v20.4s                     // [dc] pc[0]raw in hi half
+        rev64           v16.4s,  v16.4s                     // q[0,1]raw re/im-swapped
+        ext             v21.16b, v20.16b, v27.16b, #8       // [dc] (pc[0], pc[1])
+        rev64           v17.4s,  v17.4s                     // q[2,3]raw re/im-swapped
+        fadd            v0.4s,   v1.4s,  v27.4s             // [dc] dc[0] = in2 + pc[1]raw (dup)
+        fadd            v22.4s,  v6.4s,  v2.4s              // y[0,1] = in[11,12] + q[4,5]
+        fmul            v21.4s,  v21.4s, v30.4s             // [dc] pc[0,1] scaled by tab[8..11]
+        fadd            v23.4s,  v7.4s,  v3.4s              // y[2,3] = in[13,14] + q[6,7]
+        fmul            v16.4s,  v16.4s, v8.4s              // Q0[0,1]
+        ext             v26.16b, v21.16b, v21.16b, #8       // [dc] (pc[1], pc[0])
+        fmul            v17.4s,  v17.4s, v8.4s              // Q0[2,3]
+        fmla            v21.4s,  v26.4s, v24.4s             // [dc] (dc[1]_int, dc[2]_int)
+        fmla            v6.4s,   v2.4s,  v9.4s              // M[0,1] = in[11,12] + q*Q4mult
+        fmla            v7.4s,   v3.4s,  v9.4s              // M[2,3] = in[13,14] + q*Q4mult
+        fmla            v1.4s,   v21.4s, v31.4s             // [dc] v1 = (dc[1], dc[2])  — DC done
+        fsub            v4.4s,   v6.4s,  v16.4s             // k[0,1] = M[0,1] - Q0[0,1]
+        fsub            v5.4s,   v7.4s,  v17.4s             // k[2,3] = M[2,3] - Q0[2,3]
+        fadd            v2.4s,   v6.4s,  v16.4s             // k[4,5] = M[0,1] + Q0[0,1]
+        fadd            v3.4s,   v7.4s,  v17.4s             // k[6,7] = M[2,3] + Q0[2,3]
+
+        // 4pt butterflies on y (v22,v23), k[0..3] (v4,v5), k[4..7] (v2,v3);
+        // one shared swapped operand per pair leaves the hi t's half-swapped,
+        // which the dup-symmetric twiddles absorb and the output stage uses
+        ext             v16.16b, v23.16b, v23.16b, #8        // (y3, y2)
+        ext             v17.16b, v5.16b,  v5.16b,  #8        // (k3, k2)
+        ext             v20.16b, v3.16b,  v3.16b,  #8        // (k7, k6)
+        fsub            v21.4s, v22.4s, v16.4s               // (t3, t2)
+        fadd            v22.4s, v22.4s, v16.4s               // (t0, t1)
+        fsub            v26.4s, v4.4s,  v17.4s               // (t7, t6)
+        fadd            v4.4s,  v4.4s,  v17.4s               // (t4, t5)
+        fsub            v27.4s, v2.4s,  v20.4s               // (t11, t10)
+        fadd            v2.4s,  v2.4s,  v20.4s               // (t8, t9)
+
+        // the 3 direct outputs: out[0,10,5] = dc[0,1,2] + t[0,4,8] + t[1,5,9]
+        ext             v16.16b, v22.16b, v22.16b, #8        // (t1, t0)
+        zip1            v17.2d, v4.2d, v2.2d                  // (t4, t8)
+        zip2            v20.2d, v4.2d, v2.2d                  // (t5, t9)
+        fadd            v16.4s, v16.4s, v22.4s                // t[0]+t[1]
+        fadd            v17.4s, v17.4s, v20.4s                // (t[4]+t[5], t[8]+t[9])
+        fadd            v16.4s, v16.4s, v0.4s                 // out[0]
+        fadd            v17.4s, v17.4s, v1.4s                 // (out[10], out[5])
+        st1             { v16.d }[0], [x1]
+        st1             { v17.d }[1], [x8]
+        st1             { v17.d }[0], [x9]
+
+        // twiddles; swap(t * tab) = swap(t) * tab as every multiplier is
+        // dup-symmetric. lo chunks seed the accumulator with dc[] (= the
+        // output stage's dc preadd): m = dc + t*v25 - swap(t)*v28; hi chunks
+        // r = t*v29 + swap(t)*v10, v10's +- giving r[3] += t[2]/r[2] -= t[3]
+        // in half-swapped order. Accumulates are spread out for the A53
+        ext             v16.16b, v22.16b, v22.16b, #8         // (t1, t0)
+        mov             v6.16b,  v0.16b                       // m0 = dc[0]
+        ext             v17.16b, v21.16b, v21.16b, #8         // (t2, t3)
+        fmul            v7.4s,  v21.4s, v29.4s                // (r3, r2)
+        fmla            v6.4s,  v22.4s, v25.4s                // m0 += t[0,1]*r_lo
+        dup             v18.2d, v1.d[0]                       // m1 = dc[1]
+        fmla            v18.4s, v4.4s,  v25.4s                // m1 += t[4,5]*r_lo
+        fmls            v6.4s,  v16.4s, v28.4s                // m0 -= swap*nt_lo
+        ext             v16.16b, v4.16b,  v4.16b,  #8         // (t5, t4)
+        fmla            v7.4s,  v17.4s, v10.4s                // (r3, r2) += swap*nt_hi
+        ext             v17.16b, v26.16b, v26.16b, #8         // (t6, t7)
+        fmls            v18.4s, v16.4s, v28.4s                // m1 -= swap*nt_lo
+        fmul            v23.4s, v26.4s, v29.4s                // (r7, r6)
+        dup             v19.2d, v1.d[1]                       // m2 = dc[2]
+        fmla            v19.4s, v2.4s,  v25.4s                // m2 += t[8,9]*r_lo
+        ext             v16.16b, v2.16b,  v2.16b,  #8         // (t9, t8)
+        fmla            v23.4s, v17.4s, v10.4s                // (r7, r6)
+        ext             v17.16b, v27.16b, v27.16b, #8         // (t10, t11)
+        fmul            v5.4s,  v27.4s, v29.4s                // (r11, r10)
+        fmls            v19.4s, v16.4s, v28.4s                // m2 -= swap*nt_lo
+        fmla            v5.4s,  v17.4s, v10.4s                // (r11, r10)
+
+        // output butterflies around rot(x) = (x.im, -x.re): out = m +- rot(r_hi).
+        // The half-swap makes rev(r_hi) a plain rev64, and u = rev*v31 is
+        // exact (+-1.0), so each +-rot pair is one non-destructive fsub/fadd
+        rev64           v16.4s, v7.4s                         // (r3.im, r3.re, r2.im, r2.re)
+        rev64           v17.4s, v23.4s                        // (r7.im, r7.re, r6.im, r6.re)
+        rev64           v20.4s, v5.4s                         // (r11.im, ..., r10.re)
+        fmul            v16.4s, v16.4s, v31.4s                // u0
+        fmul            v17.4s, v17.4s, v31.4s                // u1
+        fmul            v20.4s, v20.4s, v31.4s                // u2
+        fsub            v7.4s,  v6.4s,  v16.4s                // (out6, out3)   = m0 + rot
+        fadd            v6.4s,  v6.4s,  v16.4s                // (out9, out12)  = m0 - rot
+        fsub            v23.4s, v18.4s, v17.4s                // (out1, out13)
+        fadd            v22.4s, v18.4s, v17.4s                // (out4, out7)
+        fsub            v5.4s,  v19.4s, v20.4s                // (out11, out8)
+        fadd            v4.4s,  v19.4s, v20.4s                // (out14, out2)
+
+        add             x10, x1, x6, lsl #1                   // &out[6]
+        add             x11, x1, x6                           // &out[3]
+        st1             { v7.d }[0], [x10]
+        st1             { v7.d }[1], [x11]
+        add             x12, x8, x3, lsl #2                   // &out[9]
+        add             x13, x1, x6, lsl #2                   // &out[12]
+        st1             { v6.d }[0], [x12]
+        st1             { v6.d }[1], [x13]
+        add             x10, x1, x3                           // &out[1]
+        add             x11, x9, x6                           // &out[13]
+        st1             { v23.d }[0], [x10]
+        st1             { v23.d }[1], [x11]
+        add             x12, x1, x3, lsl #2                   // &out[4]
+        add             x13, x8, x3, lsl #1                   // &out[7]
+        st1             { v22.d }[0], [x12]
+        st1             { v22.d }[1], [x13]
+        add             x10, x9, x3                           // &out[11]
+        add             x11, x1, x3, lsl #3                   // &out[8]
+        st1             { v5.d }[0], [x10]
+        st1             { v5.d }[1], [x11]
+        add             x12, x9, x3, lsl #2                   // &out[14]
+        add             x13, x1, x3, lsl #1                   // &out[2]
+        st1             { v4.d }[0], [x12]
+        st1             { v4.d }[1], [x13]
+.endm
+
+// LIBOPUS DELTA (I): the standalone ff_tx_fft15_(ns_)float_neon functions are
+// not instantiated; the PFA kernel below inlines FFT15_LOAD/FFT15_CORE.
+
+// 15xM PFA (len = 15*M, M a power of two), like the x86 fft_pfa_15xM:
+// dim1 = M 15pt transforms scattered into s->tmp at sub_map[i], spaced M
+// apart; dim2 = 15 in-place M-pt subtransforms (plain blr, the uniform ABI
+// needs no asm-call variant); post = out[i*stride] = s->tmp[out_map[i]].
+// AVTXContext offsets: len=0, map=8, tmp=24, sub=32, fn[0]=40.
+.macro PFA_15_FN name, no_perm
+function celt_tx_fft_pfa_15xM_\name\()_neon, export=1 // LIBOPUS DELTA (P)
+        stp             x29, x30, [sp, #-128]!
+        stp             x19, x20, [sp, #16]
+        stp             x21, x22, [sp, #32]
+        stp             x23, x24, [sp, #48]
+        stp             x25, x26, [sp, #64]
+        stp             x27, x28, [sp, #80]
+        stp             d8,  d9,  [sp, #96]
+        str             d10, [sp, #112]
+
+        mov             x25, x0                     // root context
+        mov             x26, x1                     // user out
+        mov             x27, x3                     // user stride (bytes)
+
+        ldr             w19, [x0, #0]               // len = 15*M
+        ldr             x20, [x0, #24]              // s->tmp
+        ldr             x23, [x0, #32]              // s->sub
+        ldr             w24, [x23, #0]              // M
+        ldr             x28, [x23, #8]              // sub_map
+        lsl             x3,  x24, #3                // M*8 = 15pt output stride
+.if \no_perm == 0
+        ldr             x4,  [x0, #8]               // in_map, advanced by the loads
+.endif
+
+        movrel          x5, celt_tx_tab_53_float    // LIBOPUS DELTA (T): was X(ff_tx_tab_53_float)
+        ld1             { v28.4s, v29.4s, v30.4s }, [x5]
+        movrel          x5, tab_15pt
+        ld1             { v24.4s }, [x5]
+        LOAD_SUBADD                                 // v31
+        FFT15_DERIVE_CONSTS
+        add             x6,  x3, x3, lsl #1         // stride*3
+        add             x7,  x3, x3, lsl #2         // stride*5
+1:
+        ldrh            w10, [x28], #2              // sub_map[i] (int16)
+        add             x1,  x20, x10, lsl #3
+        FFT15_LOAD      \no_perm, advance=1
+        FFT15_CORE      hoist_strides=1
+        subs            w19, w19, #15
+        b.gt            1b
+
+        ldr             x28, [x25, #40]             // ctx->fn[0]
+        mov             x21, x20                    // column base
+        mov             w19, #15
+2:
+        mov             x0,  x23
+        mov             x1,  x21
+        mov             x2,  x21
+        mov             x3,  #8
+        blr             x28                         // M-point FFT, in-place
+        add             x21, x21, x24, lsl #3
+        subs            w19, w19, #1
+        b.gt            2b
+
+        // out[i*stride] = s->tmp[out_map[i]], unrolled by 4 (len % 60 == 0)
+        ldr             w19, [x25, #0]              // len
+        ldr             x22, [x25, #8]              // s->map (out scatter map only)
+        mov             x10, x26
+        lsl             x11, x27, #1                // 2*stride
+        add             x12, x27, x11               // 3*stride
+3:
+        ldp             w13, w15, [x22], #8         // out_map[i..i+3], int16 packed
+        ubfx            w14, w13, #16, #16          // out_map[i+1]
+        uxth            w13, w13                    // out_map[i]
+        ubfx            w16, w15, #16, #16          // out_map[i+3]
+        uxth            w15, w15                    // out_map[i+2]
+        ldr             d0,  [x20, x13, lsl #3]
+        ldr             d1,  [x20, x14, lsl #3]
+        ldr             d2,  [x20, x15, lsl #3]
+        ldr             d3,  [x20, x16, lsl #3]
+        str             d0,  [x10]
+        str             d1,  [x10, x27]
+        str             d2,  [x10, x11]
+        str             d3,  [x10, x12]
+        add             x10, x10, x11, lsl #1
+        subs            w19, w19, #4
+        b.gt            3b
+
+        ldp             x19, x20, [sp, #16]
+        ldp             x21, x22, [sp, #32]
+        ldp             x23, x24, [sp, #48]
+        ldp             x25, x26, [sp, #64]
+        ldp             x27, x28, [sp, #80]
+        ldp             d8,  d9,  [sp, #96]
+        ldr             d10, [sp, #112]
+        ldp             x29, x30, [sp], #128
+        ret
+endfunc celt_tx_fft_pfa_15xM_\name\()_neon
+.endm
+
+PFA_15_FN ns_float, 1
+// LIBOPUS DELTA (I): PFA_15_FN float (runtime-LUT variant) not instantiated.
+// NOTE: if reinstated, its FFT15_LOAD no_perm==0 in_map gather still reads the
+// map as 32-bit words; the maps are now opus_int16, so those loads need the
+// same halfword/extract treatment applied to the ns/out_map/mdct paths. The
+// in half of the PFA map is also no longer baked at all (it was unread here
+// and equal to the mdct gather map >> 1), so the data itself would have to
+// come back too.
+
+// Inverse MDCT (see ff_tx_mdct_inv): pre-rotation, in-place N/2pt FFT,
+// post-rotation. out is the N/2-complex buffer z, in the N-real input.
+// Where ld2 can split the re/im planes the multiplies are planar and fused
+// (fmul + fmls/fmla); the gather and the odd tail use interleaved pairs
+// (trn1/trn2 broadcast, rev64 swap, the v31 fmla).
+// LIBOPUS DELTA (T): exp holds only the natural-order twiddles. FFmpeg also
+// keeps a second copy pre-permuted by the gather map in exp[0..len2) for the
+// strided path; the values are identical, so the gather loop below indexes
+// the one table through the map it already loads.
+// AVTXContext offsets: len=0, map=8 (doubled in init), exp=16, sub=32, fn=40.
+function celt_tx_mdct_inv_float_neon, export=1 // LIBOPUS DELTA (P)
+        stp             x29, x30, [sp, #-48]!
+        stp             x19, x20, [sp, #16]
+        stp             x21, x22, [sp, #32]
+
+        mov             x19, x1                     // z
+        mov             x20, x0                     // ctx
+        ldr             w21, [x0, #0]               // N
+        ldr             x22, [x0, #16]              // exp
+        ldr             x4,  [x0, #8]               // map (doubled)
+
+        LOAD_SUBADD
+
+        sub             x5,  x21, #1
+        madd            x14, x5,  x3,  x2           // in2 = in + (N-1)*stride
+        lsr             w7,  w21, #1                // len2
+
+        cmp             x3,  #4                     // contiguous input and
+        b.ne            6f                          // len2 % 4 == 0 takes the
+        tst             w21, #7                     // single-sweep path
+        b.eq            3f
+
+6:
+        // pre-rotation via gather: z[i] = (in2[-k], in1[k])*exp[k/2], 2
+        // cx/iter (the map is pre-doubled, so k*4 = (k/2)*sizeof(complex))
+        mov             x13, x19
+1:
+        ldr             w5,  [x4], #4               // k0, k1 (int16 packed)
+        lsr             w6,  w5,  #16               // k1
+        uxth            w5,  w5                     // k0
+        madd            x8,  x5,  x3,  x2           // &in[k0]      (im0)
+        msub            x9,  x5,  x3,  x14          // &in2[-k0]    (re0)
+        madd            x10, x6,  x3,  x2           // &in[k1]      (im1)
+        msub            x11, x6,  x3,  x14          // &in2[-k1]    (re1)
+        add             x15, x22, x5, lsl #2        // &exp[k0/2]
+        add             x16, x22, x6, lsl #2        // &exp[k1/2]
+        ldr             s0,  [x9]
+        ld1             { v0.s }[1], [x8]
+        ld1             { v0.s }[2], [x11]
+        ld1             { v0.s }[3], [x10]          // (re0, im0, re1, im1) = tmp
+        ldr             d1,  [x15]
+        ld1             { v1.d }[1], [x16]          // exp[k0/2], exp[k1/2]
+        trn1            v2.4s, v0.4s, v0.4s         // re dup
+        trn2            v3.4s, v0.4s, v0.4s         // im dup
+        rev64           v4.4s, v1.4s                // exp swapped
+        fmul            v5.4s, v2.4s, v1.4s
+        fmul            v6.4s, v3.4s, v4.4s
+        fmla            v5.4s, v6.4s, v31.4s        // z = tmp*exp
+        st1             { v5.4s }, [x13], #16
+        subs            w7,  w7,  #2
+        b.gt            1b
+        b               4f
+
+        // pre-rotation, contiguous: the input is effectively (im, re, im, ...)
+        // interleaved, so sweep it once from both ends with the planes
+        // ld2-split: low ims pair with high res (outputs p, p+1) and high ims
+        // with low res (outputs p'-1, p', p' = len2-1-p), scattered through
+        // the inverse map (2nd half of s->map) with the natural twiddles
+3:
+        mov             x15, x22                    // exp                 (asc)
+        add             x4,  x4,  x21               // map + len2 (int16)  (asc)
+        sub             x10, x14, #12               // &in[N-4]            (desc)
+        add             x12, x22, x21, lsl #2
+        sub             x12, x12, #16               // exp + (len2-2)      (desc)
+        add             x13, x4,  x21               // map + N (int16)
+        sub             x13, x13, #4                // map + (N-2)         (desc)
+5:
+        ld2             { v6.2s, v7.2s }, [x2], #16  // (im_p, im_p1) (re_p', re_p'm1)
+        ld2             { v16.2s, v17.2s }, [x10]    // (im_p'm1, im_p') (re_p1, re_p)
+        sub             x10, x10, #16
+        rev64           v17.2s, v17.2s              // (re_p, re_p1)
+        ld2             { v1.2s, v2.2s }, [x15], #16 // A: er, ei
+        rev64           v7.2s, v7.2s                // (re_p'm1, re_p')
+        ld2             { v3.2s, v4.2s }, [x12]      // B: er, ei
+        sub             x12, x12, #16
+        fmul            v5.2s,  v17.2s, v1.2s       // A: re*er
+        fmul            v18.2s, v17.2s, v2.2s       // A: re*ei
+        fmul            v19.2s, v7.2s,  v3.2s       // B: re*er
+        fmul            v20.2s, v7.2s,  v4.2s       // B: re*ei
+        fmls            v5.2s,  v6.2s,  v2.2s       // A: z.re plane
+        fmla            v18.2s, v6.2s,  v1.2s       // A: z.im plane
+        fmls            v19.2s, v16.2s, v4.2s       // B: z.re plane
+        fmla            v20.2s, v16.2s, v3.2s       // B: z.im plane
+        ldr             w16, [x4], #4               // inv_map[p, p+1] (int16 packed)
+        lsr             w17, w16, #16               // inv_map[p+1]
+        uxth            w16, w16                    // inv_map[p]
+        zip1            v0.2s,  v5.2s,  v18.2s      // z_p
+        zip2            v1.2s,  v5.2s,  v18.2s      // z_p1
+        str             d0,  [x19, w16, uxtw #3]
+        str             d1,  [x19, w17, uxtw #3]
+        ldr             w16, [x13]                  // inv_map[p'-1, p'] (int16 packed)
+        sub             x13, x13, #4
+        lsr             w17, w16, #16               // inv_map[p']
+        uxth            w16, w16                    // inv_map[p'-1]
+        zip1            v2.2s,  v19.2s, v20.2s      // z_p'm1
+        zip2            v3.2s,  v19.2s, v20.2s      // z_p'
+        str             d2,  [x19, w16, uxtw #3]
+        str             d3,  [x19, w17, uxtw #3]
+        subs            w7,  w7,  #4
+        b.gt            5b
+
+4:
+        ldr             x5,  [x20, #40]             // fn[0]
+        ldr             x0,  [x20, #32]             // sub[0]
+        mov             x1,  x19
+        mov             x2,  x19
+        mov             x3,  #8
+        blr             x5                          // N/2pt FFT, in-place
+
+        // post-rotation over symmetric pairs (i0 = len4+i, i1 = len4-1-i),
+        // 2 pairs/iter, planes ld2-split: r = swap(z)*swap(e), the im parts
+        // crossing partners (z[i0] = (r_i0.re, r_i1.im) and vice versa), so
+        // each side stores its re plane zipped with the other's reversed ims
+        mov             x15, x22                    // exp_post = exp (natural order)
+        add             x8,  x19, x21, lsl #1       // p_i0 = z + len4
+        sub             x9,  x8,  #16               // p_i1 = z + len4 - 2
+        add             x10, x15, x21, lsl #1       // e_i0 = exp_post + len4
+        sub             x11, x10, #16               // e_i1 = exp_post + len4 - 2
+        lsr             w7,  w21, #2                // len4
+        lsr             w6,  w7,  #1                // pairs of pairs
+        cbz             w6,  8f                     // N == 4: lone middle pair
+2:
+        ld2             { v0.2s, v1.2s }, [x8]       // z asc (i0, i0+1): re, im planes
+        ld2             { v2.2s, v3.2s }, [x9]       // z desc (i1-1, i1)
+        ld2             { v4.2s, v5.2s }, [x10], #16 // e asc: er, ei
+        ld2             { v6.2s, v7.2s }, [x11]      // e desc
+        sub             x11, x11, #16
+        fmul            v16.2s, v1.2s, v5.2s        // asc:  z.im*e.im
+        fmul            v18.2s, v1.2s, v4.2s        // asc:  z.im*e.re
+        fmul            v20.2s, v3.2s, v7.2s        // desc: z.im*e.im
+        fmul            v22.2s, v3.2s, v6.2s        // desc: z.im*e.re
+        fmls            v16.2s, v0.2s, v4.2s        // re plane (r_i0,   r_i0+1)
+        fmla            v18.2s, v0.2s, v5.2s        // im plane (r_i0,   r_i0+1)
+        fmls            v20.2s, v2.2s, v6.2s        // re plane (r_i1-1, r_i1)
+        fmla            v22.2s, v2.2s, v7.2s        // im plane (r_i1-1, r_i1)
+        rev64           v22.2s, v22.2s              // (r_i1.im,   r_i1-1.im)
+        rev64           v18.2s, v18.2s              // (r_i0+1.im, r_i0.im)
+        zip1            v0.4s, v16.4s, v22.4s       // (z[i0], z[i0+1])
+        zip1            v2.4s, v20.4s, v18.4s       // (z[i1-1], z[i1])
+        st1             { v0.4s }, [x8], #16
+        st1             { v2.4s }, [x9]
+        sub             x9,  x9,  #16
+        subs            w6,  w6,  #1
+        b.gt            2b
+8:
+        // odd len4 (N % 8 == 4): one leftover pair, (i0, i1) = (len2-1, 0).
+        // x8/x10 already point at it; x9/x11 sit one complex below their slot.
+        tbz             w7,  #0, 9f
+        LOAD_SUBADD                                 // v31 (clobbered by the FFT)
+        add             x9,  x9,  #8
+        add             x11, x11, #8
+        ldr             d0,  [x8]                   // z[i0]
+        ld1             { v0.d }[1], [x9]           // v0 = (z[i0], z[i1])
+        ldr             d1,  [x10]                  // exp[i0]
+        ld1             { v1.d }[1], [x11]          // v1 = (exp[i0], exp[i1])
+        rev64           v2.4s, v0.4s                // swap(z)   = a
+        rev64           v3.4s, v1.4s                // swap(exp) = b
+        trn1            v4.4s, v2.4s, v2.4s         // a.re dup
+        trn2            v5.4s, v2.4s, v2.4s         // a.im dup
+        fmul            v6.4s, v4.4s, v3.4s         // a.re*b
+        fmul            v7.4s, v5.4s, v1.4s         // a.im*b_swap (b_swap = orig exp)
+        fmla            v6.4s, v7.4s, v31.4s        // v6 = (r0.re, r0.im, r1.re, r1.im)
+        mov             v16.16b, v6.16b
+        ins             v16.s[1], v6.s[3]           // (r0.re, r1.im, r1.re, r1.im)
+        ins             v16.s[3], v6.s[1]           // (r0.re, r1.im, r1.re, r0.im)
+        st1             { v16.d }[0], [x8]          // z[i0] = (r0.re, r1.im)
+        st1             { v16.d }[1], [x9]          // z[i1] = (r1.re, r0.im)
+9:
+        ldp             x19, x20, [sp, #16]
+        ldp             x21, x22, [sp, #32]
+        ldp             x29, x30, [sp], #48
+        ret
+endfunc celt_tx_mdct_inv_float_neon
+
+// LIBOPUS DELTA (T): ff_tx_tab_{32,64}_float are filled at runtime by
+// FFmpeg's ff_tx_init_tab_{32,64} (cos(i*2pi/len), i < len/4, then 0);
+// pre-baked here, bit-exact.
+const celt_tx_tab_32_float, align=4
+        .word   0x3f800000    // 1
+        .word   0x3f7b14be    // 0.980785251
+        .word   0x3f6c835e    // 0.923879504
+        .word   0x3f54db31    // 0.831469595
+        .word   0x3f3504f3    // 0.707106769
+        .word   0x3f0e39da    // 0.555570245
+        .word   0x3ec3ef15    // 0.382683426
+        .word   0x3e47c5c2    // 0.195090324
+        .word   0x00000000    // 0
+endconst celt_tx_tab_32_float
+
+const celt_tx_tab_64_float, align=4
+        .word   0x3f800000    // 1
+        .word   0x3f7ec46d    // 0.99518472
+        .word   0x3f7b14be    // 0.980785251
+        .word   0x3f74fa0b    // 0.956940353
+        .word   0x3f6c835e    // 0.923879504
+        .word   0x3f61c598    // 0.881921291
+        .word   0x3f54db31    // 0.831469595
+        .word   0x3f45e403    // 0.773010433
+        .word   0x3f3504f3    // 0.707106769
+        .word   0x3f226799    // 0.634393275
+        .word   0x3f0e39da    // 0.555570245
+        .word   0x3ef15aea    // 0.471396744
+        .word   0x3ec3ef15    // 0.382683426
+        .word   0x3e94a031    // 0.290284663
+        .word   0x3e47c5c2    // 0.195090324
+        .word   0x3dc8bd36    // 0.0980171412
+        .word   0x00000000    // 0
+endconst celt_tx_tab_64_float
+
+.macro SETUP_SR_RECOMB len, re, im, dec
+        ldr             w5, =(\len - 4*7)
+        movrel          \re, celt_tx_tab_\len\()_float // LIBOPUS DELTA (T): was X(ff_tx_tab_*_float)
+        add             \im, \re, x5
+        mov             \dec, #-32
+
+.if \len > 32
+        mov             x21, #2*\len
+        add             x22, x21, x21, lsl #1
+.endif
+.endm
+
+.macro SR_COMBINE e0, e1, e2, e3, e4, e5, e6, e7, \
+                  o0, o1, o2, o3, o4, o5, o6, o7, \
+                  re, im, dec, swap_im, \
+                  t0=v16, t1=v17, t2=v18, t3=v19, t4=v20, t5=v21, \
+                  t6=v22, t7=v23, t8=v24, t9=v25, ta=v26, tb=v27
+
+        ld1             { \t8\().4s, \t9\().4s }, [\im], \dec
+        ld1             { \t0\().4s, \t1\().4s }, [\re], #32
+
+.if \swap_im == 1
+        ext             \t2\().16b, \t9\().16b, \t9\().16b, #8
+        ext             \t3\().16b, \t8\().16b, \t8\().16b, #8
+.else
+        ext             \t2\().16b, \t8\().16b, \t8\().16b, #8
+        ext             \t3\().16b, \t9\().16b, \t9\().16b, #8
+.endif
+
+        trn1            \t4\().4s, \t0\().4s, \t0\().4s      // cos0022
+        trn2            \t0\().4s, \t0\().4s, \t0\().4s      // cos4466
+        trn1            \t5\().4s, \t1\().4s, \t1\().4s      // cos1133
+        trn2            \t1\().4s, \t1\().4s, \t1\().4s      // cos5577
+
+        rev64           \t6\().4s, \o0\().4s                 // E m2[0,1].imre
+        rev64           \t7\().4s, \o2\().4s                 // O m2[0,1].imre
+        rev64           \t8\().4s, \o4\().4s                 // E m2[2,3].imre
+        rev64           \t9\().4s, \o6\().4s                 // O m2[2,3].imre
+
+        fmul            \t6\().4s, \t6\().4s, \t4\().4s      // E m2[0,1].imre*t1[0,2]
+        fmul            \t7\().4s, \t7\().4s, \t0\().4s      // O m2[0,1].imre*t1[0,2]
+        fmul            \t8\().4s, \t8\().4s, \t4\().4s      // E m2[2,3].imre*t1[0,2]
+        fmul            \t9\().4s, \t9\().4s, \t0\().4s      // O m2[2,3].imre*t1[0,2]
+
+        rev64           \ta\().4s, \o1\().4s                 // E m3[0,1].imre
+        rev64           \tb\().4s, \o3\().4s                 // O m3[0,1].imre
+        rev64           \t4\().4s, \o5\().4s                 // E m3[2,3].imre
+        rev64           \t0\().4s, \o7\().4s                 // O m3[2,3].imre
+
+        fmul            \ta\().4s, \ta\().4s, \t5\().4s      // E m3[0,1].imre*t1[4,6]
+        fmul            \tb\().4s, \tb\().4s, \t1\().4s      // O m3[0,1].imre*t1[4,6]
+        fmul            \t4\().4s, \t4\().4s, \t5\().4s      // E m3[2,3].imre*t1[4,6]
+        fmul            \t0\().4s, \t0\().4s, \t1\().4s      // O m3[2,3].imre*t1[4,6]
+
+        trn1            \t5\().4s, \t3\().4s, \t3\().4s      // wim2200
+        trn2            \t3\().4s, \t3\().4s, \t3\().4s      // wim3311
+        trn1            \t1\().4s, \t2\().4s, \t2\().4s      // wim6644
+        trn2            \t2\().4s, \t2\().4s, \t2\().4s      // wim7755
+
+        fmul            \t5\().4s, \t5\().4s, v31.4s
+        fmul            \t3\().4s, \t3\().4s, v31.4s
+        fmul            \t1\().4s, \t1\().4s, v31.4s
+        fmul            \t2\().4s, \t2\().4s, v31.4s
+
+        fmla            \t7\().4s, \o2\().4s, \t5\().4s      // O w0123
+        fmls            \t9\().4s, \o6\().4s, \t5\().4s      // O j0123
+        fmla            \t6\().4s, \o0\().4s, \t3\().4s      // E w0123
+        fmls            \t8\().4s, \o4\().4s, \t3\().4s      // E j0123
+
+        fmla            \ta\().4s, \o1\().4s, \t2\().4s      // E w4567
+        fmla            \tb\().4s, \o3\().4s, \t1\().4s      // O w4567
+        fmls            \t4\().4s, \o5\().4s, \t2\().4s      // E j4567
+        fmls            \t0\().4s, \o7\().4s, \t1\().4s      // O j4567
+
+        fsub            \t2\().4s, \t7\().4s, \t9\().4s
+        fsub            \t1\().4s, \t8\().4s, \t6\().4s
+        fsub            \t3\().4s, \t4\().4s, \ta\().4s
+        fsub            \t5\().4s, \t0\().4s, \tb\().4s
+
+        fadd            \t6\().4s, \t8\().4s, \t6\().4s
+        fadd            \t7\().4s, \t9\().4s, \t7\().4s
+        fadd            \t8\().4s, \t4\().4s, \ta\().4s
+        fadd            \t9\().4s, \t0\().4s, \tb\().4s
+
+        fmul            \t1\().4s, \t1\().4s, v31.4s
+        fmul            \t2\().4s, \t2\().4s, v31.4s
+        fmul            \t3\().4s, \t3\().4s, v31.4s
+        fmul            \t5\().4s, \t5\().4s, v31.4s
+
+        rev64           \t6\().4s, \t6\().4s
+        rev64           \t8\().4s, \t8\().4s
+        rev64           \t7\().4s, \t7\().4s
+        rev64           \t9\().4s, \t9\().4s
+
+        fsub            \o0\().4s, \e0\().4s, \t6\().4s
+        fsub            \o1\().4s, \e1\().4s, \t8\().4s
+        fsub            \o2\().4s, \e2\().4s, \t1\().4s
+        fsub            \o3\().4s, \e3\().4s, \t3\().4s
+
+        fsub            \o4\().4s, \e4\().4s, \t7\().4s
+        fsub            \o5\().4s, \e6\().4s, \t9\().4s
+        fadd            \o6\().4s, \e5\().4s, \t2\().4s
+        fsub            \o7\().4s, \e7\().4s, \t5\().4s
+
+        fadd            \e0\().4s, \e0\().4s, \t6\().4s
+        fadd            \e1\().4s, \e1\().4s, \t8\().4s
+        fadd            \e2\().4s, \e2\().4s, \t1\().4s
+        fadd            \e3\().4s, \e3\().4s, \t3\().4s
+
+        fadd            \e4\().4s, \e4\().4s, \t7\().4s
+        fsub            \e5\().4s, \e5\().4s, \t2\().4s      // swapped
+        fadd            \e6\().4s, \e6\().4s, \t9\().4s      // swapped
+        fadd            \e7\().4s, \e7\().4s, \t5\().4s
+.endm
+
+.macro SR_COMBINE_HALF e0, e1, e2, e3, \
+                       o0, o1, o2, o3, \
+                       c0, c1, c2, c3, \
+                       t0, t1, t2, t3, t4, t5, part
+
+.if \part == 0
+        trn1            \t4\().4s, \c0\().4s, \c0\().4s   // cos0022
+        trn1            \c1\().4s, \c1\().4s, \c1\().4s   // cos1133
+.else
+        trn2            \t4\().4s, \c0\().4s, \c0\().4s   // cos0022
+        trn2            \c1\().4s, \c1\().4s, \c1\().4s   // cos1133
+.endif
+.if \part == 0
+        trn2            \t5\().4s, \c2\().4s, \c2\().4s   // wim7755
+        trn2            \c3\().4s, \c3\().4s, \c3\().4s   // wim3311
+.else
+        trn1            \t5\().4s, \c2\().4s, \c2\().4s   // wim7755
+        trn1            \c3\().4s, \c3\().4s, \c3\().4s   // wim3311
+.endif
+
+        fmul            \t5\().4s, \t5\().4s, v31.4s
+        fmul            \c3\().4s, \c3\().4s, v31.4s
+
+        rev64           \t0\().4s, \o0\().4s              // E m2[0,1].imre
+        rev64           \t1\().4s, \o2\().4s              // E m2[2,3].imre
+        rev64           \t2\().4s, \o1\().4s              // E m3[0,1].imre
+        rev64           \t3\().4s, \o3\().4s              // E m3[2,3].imre
+
+        fmul            \o0\().4s, \o0\().4s, \c3\().4s   // E m2[0,1].imre*t1[0,2]
+        fmul            \o1\().4s, \o1\().4s, \t5\().4s   // E m3[0,1].imre*t1[4,6]
+        fmla            \o0\().4s, \t0\().4s, \t4\().4s   // E w0123
+        fmla            \o1\().4s, \t2\().4s, \c1\().4s   // E w4567
+
+        fmul            \t1\().4s, \t1\().4s, \t4\().4s   // E m2[2,3].imre*t1[0,2]
+        fmul            \t3\().4s, \t3\().4s, \c1\().4s   // E m3[2,3].imre*t1[4,6]
+        fmls            \t1\().4s, \o2\().4s, \c3\().4s   // E j0123
+        fmls            \t3\().4s, \o3\().4s, \t5\().4s   // E j4567
+
+        fsub            \t0\().4s, \t1\().4s, \o0\().4s
+        fadd            \t1\().4s, \t1\().4s, \o0\().4s
+        fadd            \t2\().4s, \t3\().4s, \o1\().4s
+        fsub            \t3\().4s, \t3\().4s, \o1\().4s
+
+        fmul            \t0\().4s, \t0\().4s, v31.4s
+        fmul            \t3\().4s, \t3\().4s, v31.4s
+
+        rev64           \t1\().4s, \t1\().4s
+        rev64           \t2\().4s, \t2\().4s
+
+.if \part == 0
+        fsub            \o0\().4s, \e0\().4s, \t1\().4s
+        fsub            \o1\().4s, \e1\().4s, \t2\().4s
+        fsub            \o2\().4s, \e2\().4s, \t0\().4s
+        fsub            \o3\().4s, \e3\().4s, \t3\().4s
+.else
+        fsub            \o0\().4s, \e0\().4s, \t1\().4s
+        fadd            \o2\().4s, \e1\().4s, \t2\().4s
+        fsub            \o1\().4s, \e2\().4s, \t0\().4s
+        fadd            \o3\().4s, \e3\().4s, \t3\().4s
+.endif
+
+.if \part == 0
+        fadd            \e0\().4s, \e0\().4s, \t1\().4s
+        fadd            \e1\().4s, \e1\().4s, \t2\().4s
+        fadd            \e2\().4s, \e2\().4s, \t0\().4s
+        fadd            \e3\().4s, \e3\().4s, \t3\().4s
+.else
+        fadd            \e0\().4s, \e0\().4s, \t1\().4s
+        fsub            \e1\().4s, \e1\().4s, \t2\().4s   // swapped
+        fadd            \e2\().4s, \e2\().4s, \t0\().4s   // swapped
+        fsub            \e3\().4s, \e3\().4s, \t3\().4s
+.endif
+.endm
+
+/* Same as SR_COMBINE_HALF, but heroically tries to use 3 temporary registers
+ * without touching the tables. */
+.macro SR_COMBINE_LITE e0, e1, e2, e3, \
+                       o0, o1, o2, o3, \
+                       c0, c1, c2, c3, \
+                       t0, t1, t2, part
+
+        rev64           \t0\().4s, \o0\().4s              // E m2[0,1].imre
+        rev64           \t1\().4s, \o2\().4s              // E m2[2,3].imre
+.if \part == 0
+        trn2            \t2\().4s, \c3\().4s, \c3\().4s   // wim3311
+.else
+        trn1            \t2\().4s, \c3\().4s, \c3\().4s   // wim3311
+.endif
+        fmul            \t2\().4s, \t2\().4s, v31.4s
+        fmul            \o2\().4s, \o2\().4s, \t2\().4s
+        fmul            \o0\().4s, \o0\().4s, \t2\().4s   // E m2[0,1].imre*t1[0,2]
+.if \part == 0
+        trn1            \t2\().4s, \c0\().4s, \c0\().4s   // cos0022
+.else
+        trn2            \t2\().4s, \c0\().4s, \c0\().4s   // cos0022
+.endif
+        fmul            \t1\().4s, \t1\().4s, \t2\().4s   // E m2[2,3].imre*t1[0,2]
+        fmla            \o0\().4s, \t0\().4s, \t2\().4s   // E w0123
+        fsub            \t1\().4s, \t1\().4s, \o2\().4s   // E j0123
+
+        rev64           \t2\().4s, \o1\().4s              // E m3[0,1].imre
+        rev64           \o2\().4s, \o3\().4s              // E m3[2,3].imre
+
+.if \part == 0
+        trn2            \t0\().4s, \c2\().4s, \c2\().4s   // wim7755
+.else
+        trn1            \t0\().4s, \c2\().4s, \c2\().4s   // wim7755
+.endif
+        fmul            \t0\().4s, \t0\().4s, v31.4s
+
+        fmul            \o1\().4s, \o1\().4s, \t0\().4s   // E m3[0,1].imre*t1[4,6]
+        fmul            \o3\().4s, \o3\().4s, \t0\().4s
+
+.if \part == 0
+        trn1            \t0\().4s, \c1\().4s, \c1\().4s   // cos1133
+.else
+        trn2            \t0\().4s, \c1\().4s, \c1\().4s   // cos1133
+.endif
+        fmul            \o2\().4s, \o2\().4s, \t0\().4s   // E m3[2,3].imre*t1[4,6]
+        fmla            \o1\().4s, \t2\().4s, \t0\().4s   // E w4567
+        fsub            \o2\().4s, \o2\().4s, \o3\().4s   // E j4567
+
+        fsub            \t0\().4s, \t1\().4s, \o0\().4s
+        fadd            \o0\().4s, \t1\().4s, \o0\().4s
+        fadd            \t2\().4s, \o2\().4s, \o1\().4s
+        fsub            \t1\().4s, \o2\().4s, \o1\().4s
+
+        fmul            \t0\().4s, \t0\().4s, v31.4s
+        fmul            \t1\().4s, \t1\().4s, v31.4s
+
+        rev64           \t2\().4s, \t2\().4s
+        rev64           \o0\().4s, \o0\().4s
+
+.if \part == 0
+        fsub            \o1\().4s, \e1\().4s, \t2\().4s
+        fsub            \o2\().4s, \e2\().4s, \t0\().4s
+        fsub            \o3\().4s, \e3\().4s, \t1\().4s
+.else
+        fadd            \o2\().4s, \e1\().4s, \t0\().4s
+        fsub            \o1\().4s, \e2\().4s, \t2\().4s
+        fadd            \o3\().4s, \e3\().4s, \t1\().4s
+.endif
+
+.if \part == 0
+        fadd            \e1\().4s, \e1\().4s, \t2\().4s
+        fadd            \e2\().4s, \e2\().4s, \t0\().4s
+        fadd            \e3\().4s, \e3\().4s, \t1\().4s
+.else
+        fsub            \e1\().4s, \e1\().4s, \t0\().4s   // swapped
+        fadd            \e2\().4s, \e2\().4s, \t2\().4s   // swapped
+        fsub            \e3\().4s, \e3\().4s, \t1\().4s
+.endif
+
+        mov             \t1\().16b, \o0\().16b
+
+        fsub            \o0\().4s, \e0\().4s, \t1\().4s
+        fadd            \e0\().4s, \e0\().4s, \t1\().4s
+.endm
+
+// LIBOPUS DELTA (S): SR_COMBINE_4, SR_COMBINE_FULL, SR_COMBINE_D2 and
+// SR_COMBINE_DINT were only used by the len >= 128 recombination blocks,
+// which are trimmed; see the header comment.
+
+.macro FFT32_FN name, no_perm
+function celt_tx_fft32_\name\()_neon, export=1 // LIBOPUS DELTA (P)
+        stp             d14, d15, [sp, #-16*4]!
+        stp             d8,  d9,  [sp, #16*3]
+        stp             d10, d11, [sp, #16*2]
+        stp             d12, d13, [sp, #16]
+
+        LOAD_SUBADD
+        SETUP_SR_RECOMB 32, x7, x8, x9
+
+        SETUP_LUT       \no_perm
+        LOAD_INPUT      0,  1,  2,  3,  x2, \no_perm
+        LOAD_INPUT      4,  5,  6,  7,  x2, \no_perm
+        LOAD_INPUT      8,  9,  10, 11, x2, \no_perm
+        LOAD_INPUT      12, 13, 14, 15, x2, \no_perm
+
+        FFT8_X2         v8, v9, v10, v11, v12, v13, v14, v15
+        FFT16           v0, v1, v2, v3, v4, v5, v6, v7
+
+        SR_COMBINE      v0,  v1,  v2,  v3,  v4,  v5,  v6,  v7, \
+                        v8,  v9, v10, v11, v12, v13, v14, v15, \
+                        x7,  x8,  x9, 0
+
+        zip1            v16.2d, v0.2d, v4.2d
+        zip2            v17.2d, v0.2d, v4.2d
+        zip1            v18.2d, v1.2d, v6.2d
+        zip2            v19.2d, v1.2d, v6.2d
+        st1             { v16.4s, v17.4s, v18.4s, v19.4s }, [x1], #64
+
+        zip1            v20.2d, v2.2d, v5.2d
+        zip2            v21.2d, v2.2d, v5.2d
+        zip1            v22.2d, v3.2d, v7.2d
+        zip2            v23.2d, v3.2d, v7.2d
+        st1             { v20.4s, v21.4s, v22.4s, v23.4s }, [x1], #64
+
+        zip1            v24.2d, v8.2d, v12.2d
+        zip2            v25.2d, v8.2d, v12.2d
+        zip1            v26.2d, v9.2d, v13.2d
+        zip2            v27.2d, v9.2d, v13.2d
+        st1             { v24.4s, v25.4s, v26.4s, v27.4s }, [x1], #64
+
+        zip1            v28.2d, v10.2d, v14.2d
+        zip2            v29.2d, v10.2d, v14.2d
+        zip1            v30.2d, v11.2d, v15.2d
+        zip2            v31.2d, v11.2d, v15.2d
+        st1             { v28.4s, v29.4s, v30.4s, v31.4s }, [x1]
+
+        ldp             d12, d13, [sp, #16]
+        ldp             d10, d11, [sp, #16*2]
+        ldp             d8,  d9,  [sp, #16*3]
+        ldp             d14, d15, [sp], #16*4
+
+        ret
+endfunc celt_tx_fft32_\name\()_neon
+.endm
+
+FFT32_FN ns_float, 1
+// LIBOPUS DELTA (I): FFT32_FN float not instantiated.
+
+// LIBOPUS DELTA (S): cmp_imm and SR_TRANSFORM_DEF (the len >= 2048 transform
+// chain) are trimmed; CELT's largest split-radix sub-FFT is 64.
+
+.macro FFT_SPLIT_RADIX_FN name, no_perm
+function celt_tx_fft_sr_\name\()_neon, export=1 // LIBOPUS DELTA (P)
+        stp             x21, x22, [sp, #-16*6]!
+        stp             d8,  d9,  [sp, #16*5]
+        stp             d10, d11, [sp, #16*4]
+        stp             d12, d13, [sp, #16*3]
+        stp             d14, d15, [sp, #16*2]
+        stp             x19, x20, [sp, #16]
+
+        ldr             w19, [x0, #0] // global target
+        mov             w20, w19      // local length
+
+        LOAD_SUBADD
+        SETUP_LUT       \no_perm
+
+32:
+        SETUP_SR_RECOMB 32, x7, x8, x9
+
+        LOAD_INPUT      0,  1,  2,  3,  x2, \no_perm
+        LOAD_INPUT      4,  6,  5,  7,  x2, \no_perm, 1
+        LOAD_INPUT      8,  9,  10, 11, x2, \no_perm
+        LOAD_INPUT      12, 13, 14, 15, x2, \no_perm
+
+        FFT8_X2         v8, v9, v10, v11, v12, v13, v14, v15
+        FFT16           v0, v1, v2, v3, v4, v6, v5, v7
+
+        SR_COMBINE      v0,  v1,  v2,  v3,  v4,  v6,  v5,  v7,  \
+                        v8,  v9,  v10, v11, v12, v13, v14, v15, \
+                        x7,  x8,  x9,  0
+
+        stp             q2,  q3,  [x1, #32*1]
+        stp             q6,  q7,  [x1, #32*3]
+        stp             q10, q11, [x1, #32*5]
+        stp             q14, q15, [x1, #32*7]
+
+        cmp             w20, #32
+        b.gt            64f
+
+        stp             q0,  q1,  [x1, #32*0]
+        stp             q4,  q5,  [x1, #32*2]
+        stp             q8,  q9,  [x1, #32*4]
+        stp             q12, q13, [x1, #32*6]
+
+        ret
+64:
+        SETUP_SR_RECOMB 64, x7, x8, x9
+
+        LOAD_INPUT      2,  3,  10, 11, x2, \no_perm, 1
+        LOAD_INPUT      6,  14, 7,  15, x2, \no_perm, 1
+
+        FFT16           v2, v3, v10, v11, v6, v14, v7, v15
+
+        LOAD_INPUT      16, 17, 18, 19, x2, \no_perm
+        LOAD_INPUT      20, 22, 21, 23, x2, \no_perm, 1
+
+        FFT16           v16, v17, v18, v19, v20, v22, v21, v23, \
+                        v24, v25, v26, v27, v28, v29, v30
+
+        ld1             { v26.4s, v27.4s }, [x8], x9
+        ldp             q24, q25, [x7], #32
+
+        ext             v26.16b, v26.16b, v26.16b, #8
+        ext             v27.16b, v27.16b, v27.16b, #8
+
+        // LIBOPUS DELTA (S): FFmpeg branches here on the global target
+        // (cmp w19, #64; b.eq 2f) and otherwise continues with the len > 64
+        // recombination; lengths > 64 are trimmed, so fall straight into the
+        // 64-point deinterleave.
+
+2: // special case for 64 point deinterleave
+        mov             x10, v23.d[0]
+        mov             x11, v23.d[1]
+
+        SR_COMBINE_LITE v0,  v1,  v8,  v9,  \
+                        v2,  v3,  v16, v17, \
+                        v24, v25, v26, v27, \
+                        v28, v29, v30, 0
+
+        SR_COMBINE_HALF v4,  v5,  v12, v13, \
+                        v6,  v7,  v20, v21, \
+                        v24, v25, v26, v27, \
+                        v28, v29, v30, v23, v24, v26, 1
+
+        zip1            v23.2d, v0.2d, v4.2d
+        zip2            v24.2d, v0.2d, v4.2d
+        zip1            v25.2d, v1.2d, v20.2d
+        zip2            v26.2d, v1.2d, v20.2d
+
+        zip1            v27.2d, v8.2d, v12.2d
+        zip2            v28.2d, v8.2d, v12.2d
+        zip1            v29.2d, v9.2d, v21.2d
+        zip2            v30.2d, v9.2d, v21.2d
+
+        mov             v20.16b, v5.16b
+        mov             v21.16b, v7.16b
+        mov             x12, x1
+        add             x13, x1, #32* 4
+        add             x14, x1, #32* 8
+        add             x15, x1, #32*12
+
+        zip1            v4.2d,  v2.2d, v6.2d
+        zip2            v5.2d,  v2.2d, v6.2d
+        zip1            v6.2d,  v3.2d, v20.2d
+        zip2            v7.2d,  v3.2d, v20.2d
+
+        zip1            v0.2d, v16.2d, v21.2d
+        zip2            v1.2d, v16.2d, v21.2d
+        zip1            v2.2d, v17.2d, v13.2d
+        zip2            v3.2d, v17.2d, v13.2d
+
+        // stp is faster by a little on A53, but this is faster on M1s (theory)
+        ldp             q8,  q9, [x1, #32*1]
+        ldp             q12, q13, [x1, #32*5]
+
+        st1             { v23.4s, v24.4s, v25.4s, v26.4s }, [x12], #64  // 32* 0...1
+        st1             { v27.4s, v28.4s, v29.4s, v30.4s }, [x13], #64  // 32* 4...5
+        st1             {  v4.4s,  v5.4s,  v6.4s,  v7.4s }, [x14], #64  // 32* 8...9
+        st1             {  v0.4s,  v1.4s,  v2.4s,  v3.4s }, [x15], #64  // 32*12..13
+
+        mov             v23.d[0], x10
+        mov             v23.d[1], x11
+
+        ldp             q6,  q7, [x1, #32*3]
+        ldp             q16, q17, [x1, #32*7]
+
+        SR_COMBINE      v8,  v9,  v12, v13, v6,  v16, v7,  v17, \
+                        v10, v11, v14, v15, v18, v19, v22, v23, \
+                        x7,  x8,  x9,  0, \
+                        v24, v25, v26, v27, v28, v29, v30, v4, v0, v1, v5, v20
+
+        zip1            v0.2d, v8.2d, v6.2d
+        zip2            v1.2d, v8.2d, v6.2d
+        zip1            v2.2d, v9.2d, v7.2d
+        zip2            v3.2d, v9.2d, v7.2d
+        st1             {  v0.4s,  v1.4s,  v2.4s,  v3.4s }, [x12]
+
+        zip1            v4.2d, v12.2d, v16.2d
+        zip2            v5.2d, v12.2d, v16.2d
+        zip1            v6.2d, v13.2d, v17.2d
+        zip2            v7.2d, v13.2d, v17.2d
+        st1             {  v4.4s,  v5.4s,  v6.4s,  v7.4s }, [x13]
+
+        zip1            v0.2d, v10.2d, v18.2d
+        zip2            v1.2d, v10.2d, v18.2d
+        zip1            v2.2d, v11.2d, v19.2d
+        zip2            v3.2d, v11.2d, v19.2d
+        st1             {  v0.4s,  v1.4s,  v2.4s,  v3.4s }, [x14]
+
+        zip1            v4.2d, v14.2d, v22.2d
+        zip2            v5.2d, v14.2d, v22.2d
+        zip1            v6.2d, v15.2d, v23.2d
+        zip2            v7.2d, v15.2d, v23.2d
+        st1             {  v4.4s,  v5.4s,  v6.4s,  v7.4s }, [x15]
+
+        ldp             x19, x20, [sp, #16]
+        ldp             d14, d15, [sp, #16*2]
+        ldp             d12, d13, [sp, #16*3]
+        ldp             d10, d11, [sp, #16*4]
+        ldp             d8,  d9,  [sp, #16*5]
+        ldp             x21, x22, [sp], #16*6
+
+        ret
+endfunc celt_tx_fft_sr_\name\()_neon
+.endm
+
+FFT_SPLIT_RADIX_FN ns_float, 1
+// LIBOPUS DELTA (I): FFT_SPLIT_RADIX_FN float not instantiated.
+
+#endif /* __aarch64__ && !FIXED_POINT */
