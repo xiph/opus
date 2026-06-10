@@ -166,7 +166,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       if (ret<0)
       {
          RESTORE_STACK;
-         return OPUS_INTERNAL_ERROR;
+         return OPUS_INVALID_PACKET;
       }
       /* renumber the extension frame numbers */
       for (j=0;j<frame_ext_count;j++)
