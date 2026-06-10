@@ -165,7 +165,7 @@ void lossgen_init(LossGenState *st)
 int lossgen_load_model(LossGenState *st, const void *data, int len) {
   WeightArray *list;
   int ret;
-  parse_weights(&list, data, len);
+  if (parse_weights(&list, data, len) < 0) return -1;
   ret = init_lossgen(&st->model, list);
   opus_free(list);
   if (ret == 0) return 0;

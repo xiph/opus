@@ -71,7 +71,7 @@ void pitchdnn_init(PitchDNNState *st)
 int pitchdnn_load_model(PitchDNNState *st, const void *data, int len) {
   WeightArray *list;
   int ret;
-  parse_weights(&list, data, len);
+  if (parse_weights(&list, data, len) < 0) return OPUS_BAD_ARG;
   ret = init_pitchdnn(&st->model, list);
   opus_free(list);
   if (ret == 0) return 0;

@@ -1433,7 +1433,7 @@ int osce_load_models(OSCEModel *model, const void *data, int len)
     if (data != NULL  && len)
     {
         /* init from buffer */
-        parse_weights(&list, data, len);
+        if (parse_weights(&list, data, len) < 0) return -1;
 
 #ifndef DISABLE_LACE
         if (ret == 0) {ret = init_lace(&model->lace, list);}
