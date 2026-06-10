@@ -410,7 +410,7 @@ void osce_calculate_features(
     {
         pfeatures = features + k * OSCE_FEATURE_DIM;
         frame = &buffer[OSCE_FEATURES_MAX_HISTORY + k * 80];
-        memset(pfeatures, 0, OSCE_FEATURE_DIM); /* precaution */
+        OPUS_CLEAR(pfeatures, OSCE_FEATURE_DIM); /* precaution */
 
         /* clean spectrum from lpcs (update every other frame) */
         if (k % 2 == 0)

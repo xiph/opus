@@ -262,7 +262,11 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
          /* figure out how much space we need for the extensions */
          ext_len = opus_packet_extensions_generate(NULL, maxlen-tot_size,
           all_extensions, ext_count, count, 0);
-         if (ext_len < 0) return ext_len;
+         if (ext_len < 0)
+         {
+            RESTORE_STACK;
+            return ext_len;
+         }
          if (!pad)
             pad_amount = ext_len + (ext_len ? (ext_len+253)/254 : 1);
       }

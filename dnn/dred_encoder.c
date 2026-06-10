@@ -237,7 +237,7 @@ void dred_compute_latents(DREDEnc *enc, const float *pcm, int frame_size, int ex
             }
         }
 
-        pcm += process_size;
+        pcm += process_size*enc->channels;
         frame_size16k -= process_size16k;
     }
 }
