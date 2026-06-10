@@ -1003,27 +1003,27 @@ int main(int argc, char *argv[])
             curr_read = (int)num_read;
             tot_in += curr_read;
             if (format == FORMAT_S16_LE) {
-               for(i=0;i<frame_size*channels;i++)
+               for(i=0;i<curr_read*channels;i++)
                {
                   opus_int32 s;
                   s=fbytes[2*i+1]<<8|fbytes[2*i];
                   s=((s&0xFFFF)^0x8000)-0x8000;
-                  in[i]=s*256;
+                  in[remaining*channels + i]=s*256;
                }
             } else if (format == FORMAT_S24_LE) {
-               for(i=0;i<frame_size*channels;i++)
+               for(i=0;i<curr_read*channels;i++)
                {
                   opus_int32 s;
                   s=fbytes[3*i+2]<<16|fbytes[3*i+1]<<8|fbytes[3*i];
                   s=((s&0xFFFFFF)^0x800000)-0x800000;
-                  in[i]=s;
+                  in[remaining*channels + i]=s;
                }
             } else if (format == FORMAT_F32_LE) {
-               for(i=0;i<frame_size*channels;i++)
+               for(i=0;i<curr_read*channels;i++)
                {
                   float_bits s;
                   s.i=(opus_uint32)fbytes[4*i+3]<<24|fbytes[4*i+2]<<16|fbytes[4*i+1]<<8|fbytes[4*i];
-                  in[i]=(int)floor(.5 + s.f*8388608);
+                  in[remaining*channels + i]=(int)floor(.5 + s.f*8388608);
                }
             }
             if (curr_read+remaining < frame_size)
