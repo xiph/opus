@@ -35,4 +35,40 @@
 
 #include "mdct.h"
 
+/* The AArch64 NEON inverse MDCT ported from FFmpeg's libavutil/tx
+   (celt_tx_neon.S / celt_mdct_tx.c), float only. */
+#if !defined(FIXED_POINT) && defined(__aarch64__) && \
+    (defined(OPUS_ARM_MAY_HAVE_NEON_INTR) || defined(OPUS_ARM_PRESUME_NEON_INTR))
+#define OPUS_ARM_TX_MDCT (1)
+#endif
+
+#if defined(OPUS_ARM_TX_MDCT)
+
+/* NEON inverse MDCT for the 48 kHz and 96 kHz mode sizes, falling back to
+   clt_mdct_backward_c() for other (custom mode) sizes. The forward MDCT is
+   not ported yet. */
+void clt_mdct_backward_tx(const mdct_lookup *l, kiss_fft_scalar *in,
+      kiss_fft_scalar * OPUS_RESTRICT out,
+      const celt_coef * OPUS_RESTRICT window,
+      int overlap, int shift, int stride, int arch);
+
+# if defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_MAY_HAVE_NEON_INTR) \
+     && !defined(OPUS_ARM_PRESUME_NEON_INTR)
+extern void (*const CLT_MDCT_BACKWARD_IMPL[OPUS_ARCHMASK+1])(
+      const mdct_lookup *l, kiss_fft_scalar *in,
+      kiss_fft_scalar * OPUS_RESTRICT out,
+      const celt_coef * OPUS_RESTRICT window,
+      int overlap, int shift, int stride, int arch);
+
+#  define OVERRIDE_CLT_MDCT_BACKWARD (1)
+#  define clt_mdct_backward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
+      ((*CLT_MDCT_BACKWARD_IMPL[(_arch)&OPUS_ARCHMASK])(_l, _in, _out, _window, _overlap, _shift, _stride, _arch))
+# elif defined(OPUS_ARM_PRESUME_NEON_INTR)
+#  define OVERRIDE_CLT_MDCT_BACKWARD (1)
+#  define clt_mdct_backward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
+      clt_mdct_backward_tx(_l, _in, _out, _window, _overlap, _shift, _stride, _arch)
+# endif
+
+#endif /* OPUS_ARM_TX_MDCT */
+
 #endif
