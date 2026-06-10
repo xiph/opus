@@ -350,7 +350,10 @@ opus_int32 opus_packet_pad_impl(unsigned char *data, opus_int32 len, opus_int32 
    OPUS_COPY(copy, data, len);
    ret = opus_repacketizer_cat(&rp, copy, len);
    if (ret != OPUS_OK)
+   {
+      RESTORE_STACK;
       return ret;
+   }
    ret = opus_repacketizer_out_range_impl(&rp, 0, rp.nb_frames, data, new_len, 0, pad, extensions, nb_extensions);
    RESTORE_STACK;
    return ret;
