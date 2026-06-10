@@ -65,13 +65,13 @@ int main(int argc, char **argv) {
     if (argc != 3) usage();
     fin = fopen(argv[1], "rb");
     if (fin == NULL) {
-        fprintf(stderr, "Can't open %s\n", argv[2]);
+        fprintf(stderr, "Can't open %s\n", argv[1]);
         exit(1);
     }
 
     fout = fopen(argv[2], "wb");
     if (fout == NULL) {
-        fprintf(stderr, "Can't open %s\n", argv[3]);
+        fprintf(stderr, "Can't open %s\n", argv[2]);
         exit(1);
     }
 
