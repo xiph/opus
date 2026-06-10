@@ -300,7 +300,7 @@ int dred_encode_silk_frame(DREDEnc *enc, unsigned char *buf, int max_chunks, int
         delayed_dred = 1;
         enc->last_extra_dred_offset = 0;
     }
-    while (latent_offset < enc->latents_buffer_fill && !dred_voice_active(activity_mem, latent_offset)) {
+    while (latent_offset < enc->latents_buffer_fill - 1 && !dred_voice_active(activity_mem, latent_offset)) {
        latent_offset++;
        extra_dred_offset++;
     }
