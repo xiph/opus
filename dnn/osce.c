@@ -1448,7 +1448,7 @@ int osce_load_models(OSCEModel *model, const void *data, int len)
         if (ret == 0) {ret = init_bbwenet(&model->bbwenet, list);}
 #endif
 #endif /* ENABLE_OSCE_BWE */
-        free(list);
+        opus_free(list);
     } else
     {
 #ifdef USE_WEIGHTS_FILE
