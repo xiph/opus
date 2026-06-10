@@ -2588,6 +2588,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_res * pcm, in
       } else {
          ec_enc_init(&ext_enc, NULL, 0);
          qext_bytes = 0;
+         nbCompressedBytes = IMIN(nbCompressedBytes, 1275);
+         ec_enc_shrink(enc, nbCompressedBytes);
       }
    } else {
       ec_enc_init(&ext_enc, NULL, 0);
