@@ -75,7 +75,7 @@ int lpcnet_plc_init(LPCNetPLCState *st) {
 int lpcnet_plc_load_model(LPCNetPLCState *st, const void *data, int len) {
   WeightArray *list;
   int ret;
-  parse_weights(&list, data, len);
+  if (parse_weights(&list, data, len) < 0) return OPUS_BAD_ARG;
   ret = init_plcmodel(&st->model, list);
   opus_free(list);
   if (ret == 0) {
