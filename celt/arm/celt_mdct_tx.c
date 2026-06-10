@@ -37,8 +37,10 @@
  *      N/2  = 120, 240, 480, 960 [, 1920 with ENABLE_QEXT]
  *      FFT  =  60, 120, 240, 480 [,  960]   = 15 * M,  M = 4 .. 64
  *
- * (the 1920 family is unreachable without qext: only the 96 kHz mode uses
- * N = 3840, and custom frame sizes cap at 1024, or 2048 under qext).
+ * plus, under CUSTOM_MODES, the power-of-two custom mode sizes
+ * N/2 = {64 .. 1024} (sub-FFT = fft32/fft_sr directly, no PFA stage).
+ * Neither gated family is reachable otherwise: 96 kHz modes need qext and
+ * custom frame sizes cap at 1024 (2048 under qext).
  *
  * Tables are dumped with scale = -1.0f, which makes the FFmpeg transform
  * numerically identical to clt_mdct_backward_c()'s pre-rotation + FFT +
@@ -123,6 +125,18 @@ static const OpusTXContext celt_tx_pfa_480 = { 480, 1, celt_tx_pfa_map_480, NULL
 static const OpusTXContext celt_tx_pfa_960 = { 960, 1, celt_tx_pfa_map_960, NULL, NULL, &celt_tx_p2_64, celt_tx_fft_sr_ns_float_neon };
 #endif
 
+#if defined(CUSTOM_MODES)
+/* Power-of-two sub-FFTs for the Opus custom mode sizes. The preshuffled
+   kernels read only len (the input permutation is folded into the MDCT
+   gather map by FFmpeg's init), and there is no PFA stage, hence no map
+   and no scratch buffer. */
+static const OpusTXContext celt_tx_sr_32  = {  32, 1, NULL, NULL, NULL, NULL, NULL };
+static const OpusTXContext celt_tx_sr_64  = {  64, 1, NULL, NULL, NULL, NULL, NULL };
+static const OpusTXContext celt_tx_sr_128 = { 128, 1, NULL, NULL, NULL, NULL, NULL };
+static const OpusTXContext celt_tx_sr_256 = { 256, 1, NULL, NULL, NULL, NULL, NULL };
+static const OpusTXContext celt_tx_sr_512 = { 512, 1, NULL, NULL, NULL, NULL, NULL };
+#endif
+
 /* Inverse MDCT roots; for the 15*M sizes .sub is relinked per call to the
    stack copy of the PFA context, the power-of-two ones run fully const. */
 static const OpusTXContext celt_tx_mdct_120  = {  120, 1, celt_tx_mdct_map_120,  (const void *)celt_tx_mdct_exp_120,  NULL, &celt_tx_pfa_60,  celt_tx_fft_pfa_15xM_ns_float_neon };
@@ -131,6 +145,14 @@ static const OpusTXContext celt_tx_mdct_480  = {  480, 1, celt_tx_mdct_map_480, 
 static const OpusTXContext celt_tx_mdct_960  = {  960, 1, celt_tx_mdct_map_960,  (const void *)celt_tx_mdct_exp_960,  NULL, &celt_tx_pfa_480, celt_tx_fft_pfa_15xM_ns_float_neon };
 #if defined(ENABLE_QEXT)
 static const OpusTXContext celt_tx_mdct_1920 = { 1920, 1, celt_tx_mdct_map_1920, (const void *)celt_tx_mdct_exp_1920, NULL, &celt_tx_pfa_960, celt_tx_fft_pfa_15xM_ns_float_neon };
+#endif
+
+#if defined(CUSTOM_MODES)
+static const OpusTXContext celt_tx_mdct_64   = {   64, 1, celt_tx_mdct_map_64,   (const void *)celt_tx_mdct_exp_64,   NULL, &celt_tx_sr_32,  celt_tx_fft32_ns_float_neon };
+static const OpusTXContext celt_tx_mdct_128  = {  128, 1, celt_tx_mdct_map_128,  (const void *)celt_tx_mdct_exp_128,  NULL, &celt_tx_sr_64,  celt_tx_fft_sr_ns_float_neon };
+static const OpusTXContext celt_tx_mdct_256  = {  256, 1, celt_tx_mdct_map_256,  (const void *)celt_tx_mdct_exp_256,  NULL, &celt_tx_sr_128, celt_tx_fft_sr_ns_float_neon };
+static const OpusTXContext celt_tx_mdct_512  = {  512, 1, celt_tx_mdct_map_512,  (const void *)celt_tx_mdct_exp_512,  NULL, &celt_tx_sr_256, celt_tx_fft_sr_ns_float_neon };
+static const OpusTXContext celt_tx_mdct_1024 = { 1024, 1, celt_tx_mdct_map_1024, (const void *)celt_tx_mdct_exp_1024, NULL, &celt_tx_sr_512, celt_tx_fft_sr_ns_float_neon };
 #endif
 
 static const OpusTXContext *celt_tx_mdct_kernel(int len)
@@ -142,6 +164,13 @@ static const OpusTXContext *celt_tx_mdct_kernel(int len)
       case  960: return &celt_tx_mdct_960;
 #if defined(ENABLE_QEXT)
       case 1920: return &celt_tx_mdct_1920;
+#endif
+#if defined(CUSTOM_MODES)
+      case   64: return &celt_tx_mdct_64;
+      case  128: return &celt_tx_mdct_128;
+      case  256: return &celt_tx_mdct_256;
+      case  512: return &celt_tx_mdct_512;
+      case 1024: return &celt_tx_mdct_1024;
 #endif
       default:   return NULL;
    }

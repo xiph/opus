@@ -98,4 +98,26 @@ EXTERN_ASM\name\():
 #endif
         .endm
 
+/* Pointer-authentication hints for functions that spill/reload lr, as in
+   FFmpeg's asm.S; no-ops unless the build enables branch protection. */
+        .macro  AARCH64_SIGN_LINK_REGISTER
+#if defined(__ARM_FEATURE_PAC_DEFAULT)
+#if (__ARM_FEATURE_PAC_DEFAULT & 1)
+        paciasp
+#elif (__ARM_FEATURE_PAC_DEFAULT & 2)
+        pacibsp
+#endif
+#endif
+        .endm
+
+        .macro  AARCH64_VALIDATE_LINK_REGISTER
+#if defined(__ARM_FEATURE_PAC_DEFAULT)
+#if (__ARM_FEATURE_PAC_DEFAULT & 1)
+        autiasp
+#elif (__ARM_FEATURE_PAC_DEFAULT & 2)
+        autibsp
+#endif
+#endif
+        .endm
+
 #endif /* CELT_ARM_ASM_H */
