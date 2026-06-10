@@ -128,6 +128,17 @@ opus_val32 (*const CELT_DEEMPHASIS_IMPL[OPUS_ARCHMASK+1])(opus_res *y,
   celt_deemphasis_neon,            /* Neon */
   celt_deemphasis_neon             /* DOTPROD */
 };
+
+void (*const CLT_MDCT_BACKWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
+    kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
+    const celt_coef * OPUS_RESTRICT window,
+    int overlap, int shift, int stride, int arch) = {
+  clt_mdct_backward_c,             /* ARMv4 */
+  clt_mdct_backward_c,             /* EDSP */
+  clt_mdct_backward_c,             /* Media */
+  clt_mdct_backward_tx,            /* Neon */
+  clt_mdct_backward_tx             /* DOTPROD */
+};
 #   endif /* __aarch64__ */
 #  endif
 # endif /* FIXED_POINT */
