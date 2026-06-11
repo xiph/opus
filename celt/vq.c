@@ -523,7 +523,9 @@ static opus_val32 op_pvq_search_extra(const celt_norm *X, int *iy, int *up_iy, i
    than smaller ones. */
 static void ec_enc_refine(ec_enc *enc, opus_int32 refine, opus_int32 up, int extra_bits, int use_entropy) {
    int large;
-   large = abs(refine)>up/2;
+   /* Take advantage of the aliasing between large=0 and large=1 for refine=up/2+1.
+      In that case, code it with large=0 since it's cheaper. */
+   large = abs(refine)>up/2 && refine != up/2+1;
    ec_enc_bit_logp(enc, large, use_entropy ? 3 : 1);
    if (large) {
       ec_enc_bits(enc, refine < 0, 1);
