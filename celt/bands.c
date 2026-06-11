@@ -1748,9 +1748,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       ctx.tf_change = tf_change;
       if (i>=m->effEBands)
       {
+         celt_assert(eBands[i+1]-eBands[i] <= eBands[m->nbEBands-1]-eBands[start]);
          X=norm;
          if (Y_!=NULL)
-            Y = norm;
+            Y = norm2;
          lowband_scratch = NULL;
       }
       if (last && !theta_rdo)
