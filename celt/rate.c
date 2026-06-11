@@ -793,7 +793,7 @@ void clt_compute_extra_allocation(const CELTMode *m, const CELTMode *qext_mode, 
       if (qext_mode != NULL) {
          opus_val16 min_depth = 0;
          /* If we have enough bits, give at least 1 bit of depth to all higher bands up to 40 kHz. */
-         if (total >= 3*C*(qext_mode->eBands[qext_end]-qext_mode->eBands[start])<<LM<<BITRES && (toneishness < QCONST32(.98f, 29) || tone_freq > QCONST16(1.33f, 13)))
+         if (total >= 3*C*(qext_mode->eBands[qext_end]-qext_mode->eBands[0])<<LM<<BITRES && (toneishness < QCONST32(.98f, 29) || tone_freq > QCONST16(1.33f, 13)))
             min_depth = QCONST16(1.f, 10);
          for (i=0;i<qext_end;i++) {
             Ncoef[end+i] = (qext_mode->eBands[i+1]-qext_mode->eBands[i])*C<<LM;
