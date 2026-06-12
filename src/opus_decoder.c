@@ -733,6 +733,8 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
 #ifdef ENABLE_DRED
+   if (dred != NULL && dred->process_stage != 2)
+      return OPUS_BAD_ARG;
    if (dred != NULL && dred->process_stage == 2) {
       int F10;
       int features_per_frame;
@@ -1612,7 +1614,6 @@ int opus_decoder_dred_decode(OpusDecoder *st, const OpusDRED *dred, opus_int32 d
    VARDECL(float, out);
    int ret, i;
    ALLOC_STACK;
-
    if(frame_size<=0)
    {
       RESTORE_STACK;
