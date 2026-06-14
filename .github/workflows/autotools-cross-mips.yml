@@ -2,6 +2,8 @@ name: Autotools-cross-MIPS
 
 on: [push, pull_request]
 
+permissions: read-all
+
 jobs:
 
  AutoMakeBuild:
@@ -60,7 +62,7 @@ jobs:
             cflags: -mips64r2 -mdsp,
           }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Install QEMU
         run:  sudo apt-get update && sudo apt-get install -y qemu-user
       - name: Install prebuilt toolchain
