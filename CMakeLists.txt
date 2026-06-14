@@ -563,7 +563,10 @@ if(NOT OPUS_DISABLE_INTRINSICS)
         target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
         add_sources_group(opus celt ${celt_sources_arm_rtcd})
         add_sources_group(opus silk ${silk_sources_arm_rtcd})
-        add_sources_group(opus lpcnet ${dnn_sources_arm_rtcd})
+        if(OPUS_DNN)
+          add_sources_group(opus lpcnet ${dnn_sources_arm_rtcd})
+          add_sources_group(opus lpcnet ${dnn_sources_arm_neon})
+        endif()
       else()
         message(ERROR "Runtime cpu capability detection needed for MAY_HAVE_NEON")
       endif()
@@ -576,7 +579,9 @@ if(NOT OPUS_DISABLE_INTRINSICS)
 
     add_sources_group(opus celt ${celt_sources_arm_neon_intr})
     add_sources_group(opus silk ${silk_sources_arm_neon_intr})
-    if (OPUS_DNN)
+    if(OPUS_DNN AND NOT OPUS_MAY_HAVE_NEON)
+      # When NEON is presumed (no RTCD), add nnet_neon directly.
+      # When MAY_HAVE_NEON (RTCD), nnet_neon is already added in the block above.
       add_sources_group(opus lpcnet ${dnn_sources_arm_neon})
     endif()
 
