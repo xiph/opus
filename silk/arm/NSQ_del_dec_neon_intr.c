@@ -508,35 +508,93 @@ static OPUS_INLINE int32x4_t silk_SMLAWB_lane1_neon(
     return vaddq_s32( out_s32x4, vqdmulhq_lane_s32( in_s32x4, coef_s32x2, 1 ) );
 }
 
+static OPUS_INLINE int32x4_t silk_SMLAWB_lane_0_neon(
+    const int32x4_t out_s32x4,
+    const int32x4_t in_s32x4,
+    const int32x4_t coef_s32x4
+)
+{
+    return vaddq_s32( out_s32x4, vqdmulhq_laneq_s32( in_s32x4, coef_s32x4, 0 ) );
+}
+
+static OPUS_INLINE int32x4_t silk_SMLAWB_lane_1_neon(
+    const int32x4_t out_s32x4,
+    const int32x4_t in_s32x4,
+    const int32x4_t coef_s32x4
+)
+{
+    return vaddq_s32( out_s32x4, vqdmulhq_laneq_s32( in_s32x4, coef_s32x4, 1 ) );
+}
+
+static OPUS_INLINE int32x4_t silk_SMLAWB_lane_2_neon(
+    const int32x4_t out_s32x4,
+    const int32x4_t in_s32x4,
+    const int32x4_t coef_s32x4
+)
+{
+    return vaddq_s32( out_s32x4, vqdmulhq_laneq_s32( in_s32x4, coef_s32x4, 2 ) );
+}
+
+static OPUS_INLINE int32x4_t silk_SMLAWB_lane_3_neon(
+    const int32x4_t out_s32x4,
+    const int32x4_t in_s32x4,
+    const int32x4_t coef_s32x4
+)
+{
+    return vaddq_s32( out_s32x4, vqdmulhq_laneq_s32( in_s32x4, coef_s32x4, 3 ) );
+}
+
 /* Note: This function has different return value than silk_noise_shape_quantizer_short_prediction_neon(). */
 /*       Therefore here we append "_local" to the function name to avoid confusion.                        */
 static OPUS_INLINE int32x4_t silk_noise_shape_quantizer_short_prediction_neon_local(const opus_int32 *buf32, const opus_int32 *a_Q12_arch, opus_int order)
 {
-    const int32x4_t a_Q12_arch0_s32x4 = vld1q_s32( a_Q12_arch + 0 );
-    const int32x4_t a_Q12_arch1_s32x4 = vld1q_s32( a_Q12_arch + 4 );
-    const int32x4_t a_Q12_arch2_s32x4 = vld1q_s32( a_Q12_arch + 8 );
-    const int32x4_t a_Q12_arch3_s32x4 = vld1q_s32( a_Q12_arch + 12 );
-    int32x4_t LPC_pred_Q14_s32x4;
-
     silk_assert( order == 10 || order == 16 );
+
+    int32x4_t LPC_pred_Q14_s32x4;
+    int32x4_t a_s32x4_0, a_s32x4_1, b0, b1, b2, b3, b4, b5, b6, b7;
+
     /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
     LPC_pred_Q14_s32x4 = vdupq_n_s32( silk_RSHIFT( order, 1 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane0_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  0 * NEON_MAX_DEL_DEC_STATES ), vget_low_s32(  a_Q12_arch0_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane1_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  1 * NEON_MAX_DEL_DEC_STATES ), vget_low_s32(  a_Q12_arch0_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane0_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  2 * NEON_MAX_DEL_DEC_STATES ), vget_high_s32( a_Q12_arch0_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane1_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  3 * NEON_MAX_DEL_DEC_STATES ), vget_high_s32( a_Q12_arch0_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane0_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  4 * NEON_MAX_DEL_DEC_STATES ), vget_low_s32(  a_Q12_arch1_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane1_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  5 * NEON_MAX_DEL_DEC_STATES ), vget_low_s32(  a_Q12_arch1_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane0_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  6 * NEON_MAX_DEL_DEC_STATES ), vget_high_s32( a_Q12_arch1_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane1_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  7 * NEON_MAX_DEL_DEC_STATES ), vget_high_s32( a_Q12_arch1_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane0_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  8 * NEON_MAX_DEL_DEC_STATES ), vget_low_s32(  a_Q12_arch2_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane1_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 +  9 * NEON_MAX_DEL_DEC_STATES ), vget_low_s32(  a_Q12_arch2_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane0_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 + 10 * NEON_MAX_DEL_DEC_STATES ), vget_high_s32( a_Q12_arch2_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane1_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 + 11 * NEON_MAX_DEL_DEC_STATES ), vget_high_s32( a_Q12_arch2_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane0_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 + 12 * NEON_MAX_DEL_DEC_STATES ), vget_low_s32(  a_Q12_arch3_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane1_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 + 13 * NEON_MAX_DEL_DEC_STATES ), vget_low_s32(  a_Q12_arch3_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane0_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 + 14 * NEON_MAX_DEL_DEC_STATES ), vget_high_s32( a_Q12_arch3_s32x4 ) );
-    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane1_neon( LPC_pred_Q14_s32x4, vld1q_s32( buf32 + 15 * NEON_MAX_DEL_DEC_STATES ), vget_high_s32( a_Q12_arch3_s32x4 ) );
+
+    __asm__ __volatile__ (
+        "ldp %q[a0], %q[a1], [%[aptr]]\n"
+        "ldp %q[b0], %q[b1], [%[buf], #0]\n"
+        "ldp %q[b2], %q[b3], [%[buf], #32]\n"
+        "ldp %q[b4], %q[b5], [%[buf], #64]\n"
+        "ldp %q[b6], %q[b7], [%[buf], #96]\n"
+        : [a0]"=w"(a_s32x4_0), [a1]"=w"(a_s32x4_1), [b0]"=w"(b0), [b1]"=w"(b1), [b2]"=w"(b2), [b3]"=w"(b3), [b4]"=w"(b4), [b5]"=w"(b5), [b6]"=w"(b6), [b7]"=w"(b7)
+        : [aptr]"r"(a_Q12_arch), [buf]"r"(buf32)
+    );
+    /* Block 0: coeffs 0-3 */
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_0_neon( LPC_pred_Q14_s32x4, b0, a_s32x4_0 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_1_neon( LPC_pred_Q14_s32x4, b1, a_s32x4_0 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_2_neon( LPC_pred_Q14_s32x4, b2, a_s32x4_0 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_3_neon( LPC_pred_Q14_s32x4, b3, a_s32x4_0 );
+    /* Block 1: coeffs 4-7 */
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_0_neon( LPC_pred_Q14_s32x4, b4, a_s32x4_1 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_1_neon( LPC_pred_Q14_s32x4, b5, a_s32x4_1 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_2_neon( LPC_pred_Q14_s32x4, b6, a_s32x4_1 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_3_neon( LPC_pred_Q14_s32x4, b7, a_s32x4_1 );
+
+    __asm__ __volatile__ (
+        "ldp %q[a0], %q[a1], [%[aptr], #32]\n"
+        "ldp %q[b0], %q[b1], [%[buf], #128]\n"
+        "ldp %q[b2], %q[b3], [%[buf], #160]\n"
+        "ldp %q[b4], %q[b5], [%[buf], #192]\n"
+        "ldp %q[b6], %q[b7], [%[buf], #224]\n"
+        : [a0]"=w"(a_s32x4_0), [a1]"=w"(a_s32x4_1), [b0]"=w"(b0), [b1]"=w"(b1), [b2]"=w"(b2), [b3]"=w"(b3), [b4]"=w"(b4), [b5]"=w"(b5), [b6]"=w"(b6), [b7]"=w"(b7)
+        : [aptr]"r"(a_Q12_arch), [buf]"r"(buf32)
+    );
+    /* Block 2: coeffs 8-11 */
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_0_neon( LPC_pred_Q14_s32x4, b0, a_s32x4_0 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_1_neon( LPC_pred_Q14_s32x4, b1, a_s32x4_0 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_2_neon( LPC_pred_Q14_s32x4, b2, a_s32x4_0 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_3_neon( LPC_pred_Q14_s32x4, b3, a_s32x4_0 );
+    /* Block 3: coeffs 12-15 */
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_0_neon( LPC_pred_Q14_s32x4, b4, a_s32x4_1 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_1_neon( LPC_pred_Q14_s32x4, b5, a_s32x4_1 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_2_neon( LPC_pred_Q14_s32x4, b6, a_s32x4_1 );
+    LPC_pred_Q14_s32x4 = silk_SMLAWB_lane_3_neon( LPC_pred_Q14_s32x4, b7, a_s32x4_1 );
 
     return LPC_pred_Q14_s32x4;
 }
@@ -579,6 +637,11 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
     opus_int32   a_Q12_arch[MAX_LPC_ORDER];
     const int32x2_t warping_Q16_s32x2 = vdup_n_s32( silk_LSHIFT32( warping_Q16, 16 ) >> 1 );
     const opus_int32 LF_shp_Q29 = silk_LSHIFT32( LF_shp_Q14, 16 ) >> 1;
+    static const int numOthers = (int)( ( sizeof( NSQ_del_decs_struct ) - sizeof( ( (NSQ_del_decs_struct *)0 )->sLPC_Q14 ) )
+        / ( NEON_MAX_DEL_DEC_STATES * sizeof( opus_int32 ) ) );
+    /* Precompute Tilt_Q14_Q16 and LF_shp_Q14_Q15 to avoid repeated calculation in loop */
+    const opus_int32 Tilt_Q14_Q16 = silk_LSHIFT32( Tilt_Q14, 16 ) >> 1;
+    const opus_int32 LF_shp_Q14_Q15 = silk_LSHIFT32( LF_shp_Q14 >> 16, 15 );
     opus_int32 AR_shp_Q28[ MAX_SHAPE_LPC_ORDER ];
     const uint32x4_t rand_multiplier_u32x4 = vdupq_n_u32( RAND_MULTIPLIER );
     const uint32x4_t rand_increment_u32x4 = vdupq_n_u32( RAND_INCREMENT );
@@ -595,14 +658,11 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
     pred_lag_ptr = &sLTP_Q15[ NSQ->sLTP_buf_idx - lag + LTP_ORDER / 2 ];
     Gain_Q10     = silk_RSHIFT( Gain_Q16, 6 );
 
-    for( i = 0; i < ( MAX_SHAPE_LPC_ORDER - 7 ); i += 8 ) {
+    /* MAX_SHAPE_LPC_ORDER = 24, which is divisible by 8, so no scalar fallback needed */
+    for( i = 0; i < MAX_SHAPE_LPC_ORDER; i += 8 ) {
       const int16x8_t t_s16x8 = vld1q_s16( AR_shp_Q13 +  i );
       vst1q_s32( AR_shp_Q28 + i + 0, vshll_n_s16( vget_low_s16(  t_s16x8 ), 15 ) );
       vst1q_s32( AR_shp_Q28 + i + 4, vshll_n_s16( vget_high_s16( t_s16x8 ), 15 ) );
-    }
-
-    for( ; i < MAX_SHAPE_LPC_ORDER; i++ ) {
-      AR_shp_Q28[i] = silk_LSHIFT32( AR_shp_Q13[i], 15 );
     }
 
     silk_short_prediction_create_arch_coef_neon_local( a_Q12_arch, a_Q12, predictLPCOrder );
@@ -610,9 +670,12 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
     for( i = 0; i < length; i++ ) {
         int32x4_t Seed_s32x4, LPC_pred_Q14_s32x4;
         int32x4_t sign_s32x4, tmp1_s32x4, tmp2_s32x4;
-        int32x4_t n_AR_Q14_s32x4, n_LF_Q14_s32x4;
+        int32x4_t n_AR_Q14_s32x4, n_LF_Q14_s32x4, LF_AR_Q14_cached;
         int32x2_t AR_shp_Q28_s32x2;
         int16x4_t r_Q10_s16x4, rr_Q10_s16x4;
+
+        /* Cache LF_AR_Q14 to avoid repeated loads */
+        LF_AR_Q14_cached = vld1q_s32( psDelDec->LF_AR_Q14 );
 
         /* Perform common calculations used in all states */
 
@@ -662,27 +725,49 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
         AR_shp_Q28_s32x2 = vld1_s32( AR_shp_Q28 );
         n_AR_Q14_s32x4 = vaddq_s32( vdupq_n_s32( silk_RSHIFT( shapingLPCOrder, 1 ) ), vqdmulhq_lane_s32( tmp2_s32x4, AR_shp_Q28_s32x2, 0 ) );
 
-        /* Loop over allpass sections */
-        for( j = 2; j < shapingLPCOrder; j += 2 ) {
-            /* Output of allpass section */
-            tmp2_s32x4 = vsubq_s32( vld1q_s32( psDelDec->sAR2_Q14[ j + 0 ] ), tmp1_s32x4 );
-            tmp2_s32x4 = silk_SMLAWB_lane0_neon( vld1q_s32( psDelDec->sAR2_Q14[ j - 1 ] ), tmp2_s32x4, warping_Q16_s32x2 );
-            vst1q_s32( psDelDec->sAR2_Q14[ j - 1 ], tmp1_s32x4 );
-            n_AR_Q14_s32x4 = vaddq_s32( n_AR_Q14_s32x4, vqdmulhq_lane_s32( tmp1_s32x4, AR_shp_Q28_s32x2, 1 ) );
-            /* Output of allpass section */
-            tmp1_s32x4 = vsubq_s32( vld1q_s32( psDelDec->sAR2_Q14[ j + 1 ] ), tmp2_s32x4 );
-            tmp1_s32x4 = silk_SMLAWB_lane0_neon( vld1q_s32( psDelDec->sAR2_Q14[ j + 0 ] ), tmp1_s32x4, warping_Q16_s32x2 );
-            vst1q_s32( psDelDec->sAR2_Q14[ j + 0 ], tmp2_s32x4 );
-            AR_shp_Q28_s32x2 = vld1_s32( &AR_shp_Q28[ j ] );
-            n_AR_Q14_s32x4 = vaddq_s32( n_AR_Q14_s32x4, vqdmulhq_lane_s32( tmp2_s32x4, AR_shp_Q28_s32x2, 0 ) );
+        /* shapingLPCOrder is always even: 12, 14, 16, 20, 24 */
+        #define ALLPASS_SECTION( j ) \
+                tmp2_s32x4 = vsubq_s32( vld1q_s32( psDelDec->sAR2_Q14[ (j) + 0 ] ), tmp1_s32x4 ); \
+                tmp2_s32x4 = silk_SMLAWB_lane0_neon( vld1q_s32( psDelDec->sAR2_Q14[ (j) - 1 ] ), tmp2_s32x4, warping_Q16_s32x2 ); \
+                vst1q_s32( psDelDec->sAR2_Q14[ (j) - 1 ], tmp1_s32x4 ); \
+                n_AR_Q14_s32x4 = vaddq_s32( n_AR_Q14_s32x4, vqdmulhq_lane_s32( tmp1_s32x4, AR_shp_Q28_s32x2, 1 ) ); \
+                tmp1_s32x4 = vsubq_s32( vld1q_s32( psDelDec->sAR2_Q14[ (j) + 1 ] ), tmp2_s32x4 ); \
+                tmp1_s32x4 = silk_SMLAWB_lane0_neon( vld1q_s32( psDelDec->sAR2_Q14[ (j) + 0 ] ), tmp1_s32x4, warping_Q16_s32x2 ); \
+                vst1q_s32( psDelDec->sAR2_Q14[ (j) + 0 ], tmp2_s32x4 ); \
+                AR_shp_Q28_s32x2 = vld1_s32( &AR_shp_Q28[ (j) ] ); \
+                n_AR_Q14_s32x4 = vaddq_s32( n_AR_Q14_s32x4, vqdmulhq_lane_s32( tmp2_s32x4, AR_shp_Q28_s32x2, 0 ) );
+
+        ALLPASS_SECTION( 2 );
+        ALLPASS_SECTION( 4 );
+        ALLPASS_SECTION( 6 );
+        ALLPASS_SECTION( 8 );
+        ALLPASS_SECTION( 10 );
+        if ( shapingLPCOrder > 12 ) {
+            ALLPASS_SECTION( 12 );
+            if ( shapingLPCOrder > 14 ) {
+                ALLPASS_SECTION( 14 );
+                if ( shapingLPCOrder > 16 ) {
+                    ALLPASS_SECTION( 16 );
+                    if ( shapingLPCOrder > 18 ) {
+                        ALLPASS_SECTION( 18 );
+                        if ( shapingLPCOrder > 20 ) {
+                            ALLPASS_SECTION( 20 );
+                            if ( shapingLPCOrder > 22 ) {
+                                ALLPASS_SECTION( 22 );
+                            }
+                        }
+                    }
+                }
+            }
         }
+        #undef ALLPASS_SECTION
         vst1q_s32( psDelDec->sAR2_Q14[ shapingLPCOrder - 1 ], tmp1_s32x4 );
         n_AR_Q14_s32x4 = vaddq_s32( n_AR_Q14_s32x4, vqdmulhq_lane_s32( tmp1_s32x4, AR_shp_Q28_s32x2, 1 ) );
         n_AR_Q14_s32x4 = vshlq_n_s32( n_AR_Q14_s32x4, 1 );                                                                                        /* Q11 -> Q12 */
-        n_AR_Q14_s32x4 = vaddq_s32( n_AR_Q14_s32x4, vqdmulhq_n_s32( vld1q_s32( psDelDec->LF_AR_Q14 ), silk_LSHIFT32( Tilt_Q14, 16 ) >> 1 ) );     /* Q12 */
+        n_AR_Q14_s32x4 = vaddq_s32( n_AR_Q14_s32x4, vqdmulhq_n_s32( LF_AR_Q14_cached, Tilt_Q14_Q16 ) );     /* Q12 */
         n_AR_Q14_s32x4 = vshlq_n_s32( n_AR_Q14_s32x4, 2 );                                                                                        /* Q12 -> Q14 */
         n_LF_Q14_s32x4 = vqdmulhq_n_s32( vld1q_s32( psDelDec->Shape_Q14[ *smpl_buf_idx ] ), LF_shp_Q29 );                                         /* Q12 */
-        n_LF_Q14_s32x4 = vaddq_s32( n_LF_Q14_s32x4, vqdmulhq_n_s32( vld1q_s32( psDelDec->LF_AR_Q14 ), silk_LSHIFT32( LF_shp_Q14 >> 16 , 15 ) ) ); /* Q12 */
+        n_LF_Q14_s32x4 = vaddq_s32( n_LF_Q14_s32x4, vqdmulhq_n_s32( LF_AR_Q14_cached, LF_shp_Q14_Q15 ) ); /* Q12 */
         n_LF_Q14_s32x4 = vshlq_n_s32( n_LF_Q14_s32x4, 2 );                                                                                        /* Q12 -> Q14 */
 
         /* Input minus prediction plus noise feedback                       */
@@ -867,15 +952,34 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
         /* Replace a state if best from second set outperforms worst in first set */
         if( RDmin_Q10 < RDmax_Q10 ) {
             opus_int32 (*ptr)[NEON_MAX_DEL_DEC_STATES] = psDelDec->RandState;
-            const int numOthers = (int)( ( sizeof( NSQ_del_decs_struct ) - sizeof( ( (NSQ_del_decs_struct *)0 )->sLPC_Q14 ) )
-                / ( NEON_MAX_DEL_DEC_STATES * sizeof( opus_int32 ) ) );
+
             /* Only ( predictLPCOrder - 1 ) of sLPC_Q14 buffer need to be updated, though the first several     */
             /* useless sLPC_Q14[] will be different comparing with C when predictLPCOrder < NSQ_LPC_BUF_LENGTH. */
             /* Here just update constant ( NSQ_LPC_BUF_LENGTH - 1 ) for simplicity.                             */
             for( j = i + 1; j < i + NSQ_LPC_BUF_LENGTH; j++ ) {
                 psDelDec->sLPC_Q14[ j ][ RDmax_ind ] = psDelDec->sLPC_Q14[ j ][ RDmin_ind ];
             }
-            for( j = 0; j < numOthers; j++ ) {
+            /* unroll with software prefetch to hide memory latency */
+            for( j = 0; j + 15 < numOthers; j += 16) {
+                __builtin_prefetch( &ptr[ j + 32 ][ 0 ], 0, 1 );
+                ptr[ j + 0 ][ RDmax_ind ] = ptr[ j + 0 ][ RDmin_ind ];
+                ptr[ j + 1 ][ RDmax_ind ] = ptr[ j + 1 ][ RDmin_ind ];
+                ptr[ j + 2 ][ RDmax_ind ] = ptr[ j + 2 ][ RDmin_ind ];
+                ptr[ j + 3 ][ RDmax_ind ] = ptr[ j + 3 ][ RDmin_ind ];
+                ptr[ j + 4 ][ RDmax_ind ] = ptr[ j + 4 ][ RDmin_ind ];
+                ptr[ j + 5 ][ RDmax_ind ] = ptr[ j + 5 ][ RDmin_ind ];
+                ptr[ j + 6 ][ RDmax_ind ] = ptr[ j + 6 ][ RDmin_ind ];
+                ptr[ j + 7 ][ RDmax_ind ] = ptr[ j + 7 ][ RDmin_ind ];
+                ptr[ j + 8 ][ RDmax_ind ] = ptr[ j + 8 ][ RDmin_ind ];
+                ptr[ j + 9 ][ RDmax_ind ] = ptr[ j + 9 ][ RDmin_ind ];
+                ptr[ j + 10 ][ RDmax_ind ] = ptr[ j + 10 ][ RDmin_ind ];
+                ptr[ j + 11 ][ RDmax_ind ] = ptr[ j + 11 ][ RDmin_ind ];
+                ptr[ j + 12 ][ RDmax_ind ] = ptr[ j + 12 ][ RDmin_ind ];
+                ptr[ j + 13 ][ RDmax_ind ] = ptr[ j + 13 ][ RDmin_ind ];
+                ptr[ j + 14 ][ RDmax_ind ] = ptr[ j + 14 ][ RDmin_ind ];
+                ptr[ j + 15 ][ RDmax_ind ] = ptr[ j + 15 ][ RDmin_ind ];
+            }
+            for( ; j < numOthers; j++ ) {
                 ptr[ j ][ RDmax_ind ] = ptr[ j ][ RDmin_ind ];
             }
 
