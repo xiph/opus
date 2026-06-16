@@ -44,6 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #if (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
 #include "arm/NSQ_del_dec_arm.h"
+#include "arm/VAD_arm.h"
 #endif
 
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */
