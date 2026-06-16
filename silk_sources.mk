@@ -165,4 +165,5 @@ silk/float/x86/inner_product_FLP_avx2.c
 
 SILK_SOURCES_FLOAT_ARM_NEON_INTR = \
 silk/float/arm/inner_product_FLP_neon_intr.c \
-silk/float/arm/warped_autocorrelation_FLP_neon_intr.c
+silk/float/arm/warped_autocorrelation_FLP_neon_intr.c \
+silk/float/arm/energy_FLP_neon_intr.c

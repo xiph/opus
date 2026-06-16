@@ -81,6 +81,19 @@ void silk_warped_autocorrelation_FLP_neon(
 
 #endif
 
+/* silk_energy_FLP also takes no arch argument -> PRESUME only. */
+double silk_energy_FLP_neon(
+    const silk_float    *data,
+    opus_int            dataSize
+);
+
+#if defined(OPUS_ARM_PRESUME_NEON_INTR)
+
+#define OVERRIDE_energy_FLP
+#define silk_energy_FLP(data, dataSize) silk_energy_FLP_neon(data, dataSize)
+
+#endif
+
 #endif /* OPUS_ARM_MAY_HAVE_NEON_INTR */
 
 #endif /* !FIXED_POINT */
