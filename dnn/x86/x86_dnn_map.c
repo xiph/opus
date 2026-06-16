@@ -34,7 +34,7 @@
 
 #if defined(OPUS_HAVE_RTCD)
 
-#if (defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(OPUS_X86_PRESUME_AVX2))
+#if (defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(OPUS_X86_PRESUME_AVX2) && !defined(OPUS_X86_PRESUME_AVX512VNNI))
 
 void (*const DNN_COMPUTE_LINEAR_IMPL[OPUS_ARCHMASK + 1])(
          const LinearLayer *linear,
@@ -45,7 +45,8 @@ void (*const DNN_COMPUTE_LINEAR_IMPL[OPUS_ARCHMASK + 1])(
   compute_linear_c,
   MAY_HAVE_SSE2(compute_linear),
   MAY_HAVE_SSE4_1(compute_linear), /* sse4.1  */
-  MAY_HAVE_AVX2(compute_linear)  /* avx  */
+  MAY_HAVE_AVX2(compute_linear),   /* avx  */
+  MAY_HAVE_AVX512VNNI(compute_linear) /* avx512vnni  */
 };
 
 void (*const DNN_COMPUTE_ACTIVATION_IMPL[OPUS_ARCHMASK + 1])(
@@ -58,7 +59,8 @@ void (*const DNN_COMPUTE_ACTIVATION_IMPL[OPUS_ARCHMASK + 1])(
   compute_activation_c,
   MAY_HAVE_SSE2(compute_activation),
   MAY_HAVE_SSE4_1(compute_activation), /* sse4.1  */
-  MAY_HAVE_AVX2(compute_activation)  /* avx  */
+  MAY_HAVE_AVX2(compute_activation),   /* avx  */
+  MAY_HAVE_AVX2(compute_activation)  /* avx512vnni (no VNNI variant) */
 };
 
 void (*const DNN_COMPUTE_CONV2D_IMPL[OPUS_ARCHMASK + 1])(
@@ -74,7 +76,8 @@ void (*const DNN_COMPUTE_CONV2D_IMPL[OPUS_ARCHMASK + 1])(
   compute_conv2d_c,
   MAY_HAVE_SSE2(compute_conv2d),
   MAY_HAVE_SSE4_1(compute_conv2d), /* sse4.1  */
-  MAY_HAVE_AVX2(compute_conv2d)  /* avx  */
+  MAY_HAVE_AVX2(compute_conv2d),   /* avx  */
+  MAY_HAVE_AVX2(compute_conv2d)  /* avx512vnni (no VNNI variant) */
 };
 
 #endif

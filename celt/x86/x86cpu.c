@@ -39,7 +39,8 @@
   ((defined(OPUS_X86_MAY_HAVE_SSE) && !defined(OPUS_X86_PRESUME_SSE)) || \
   (defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(OPUS_X86_PRESUME_SSE2)) || \
   (defined(OPUS_X86_MAY_HAVE_SSE4_1) && !defined(OPUS_X86_PRESUME_SSE4_1)) || \
-  (defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(OPUS_X86_PRESUME_AVX2)))
+  (defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(OPUS_X86_PRESUME_AVX2)) || \
+  (defined(OPUS_X86_MAY_HAVE_AVX512VNNI) && !defined(OPUS_X86_PRESUME_AVX512VNNI)))
 
 #if defined(_MSC_VER)
 
@@ -99,6 +100,26 @@ static void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
 
 #endif
 
+#if defined(OPUS_X86_MAY_HAVE_AVX512VNNI)
+/* Returns the low 32 bits of the extended control register XCR0, which tells
+   us whether the OS has enabled saving/restoring of the relevant vector state.
+   This must only be called once OSXSAVE (CPUID.1:ECX[27]) has been confirmed,
+   otherwise XGETBV is an illegal instruction. */
+static opus_uint32 get_xcr0(void)
+{
+#if defined(_MSC_VER)
+    return (opus_uint32)_xgetbv(0);
+#elif defined(CPU_INFO_BY_ASM) || defined(CPU_INFO_BY_C)
+    opus_uint32 eax, edx;
+    __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
+    (void)edx;
+    return eax;
+#else
+    return 0;
+#endif
+}
+#endif
+
 typedef struct CPU_Feature{
     /*  SIMD: 128-bit */
     int HW_SSE;
@@ -106,6 +127,9 @@ typedef struct CPU_Feature{
     int HW_SSE41;
     /*  SIMD: 256-bit */
     int HW_AVX2;
+    /*  256-bit VNNI int8 dot product (EVEX-encoded vpdpbusd), requires
+        AVX512F + AVX512VL + AVX512_VNNI and OS support for AVX-512 state. */
+    int HW_AVX512VNNI;
 } CPU_Feature;
 
 static void opus_cpu_feature_check(CPU_Feature *cpu_feature)
@@ -117,14 +141,35 @@ static void opus_cpu_feature_check(CPU_Feature *cpu_feature)
     nIds = info[0];
 
     if (nIds >= 1){
+        unsigned int leaf1_ecx;
         cpuid(info, 1);
+        leaf1_ecx = info[2];
         cpu_feature->HW_SSE = (info[3] & (1 << 25)) != 0;
         cpu_feature->HW_SSE2 = (info[3] & (1 << 26)) != 0;
         cpu_feature->HW_SSE41 = (info[2] & (1 << 19)) != 0;
         cpu_feature->HW_AVX2 = (info[2] & (1 << 28)) != 0 && (info[2] & (1 << 12)) != 0;
+        cpu_feature->HW_AVX512VNNI = 0;
         if (cpu_feature->HW_AVX2 && nIds >= 7) {
             cpuid(info, 7);
             cpu_feature->HW_AVX2 = cpu_feature->HW_AVX2 && (info[1] & (1 << 5)) != 0;
+#if defined(OPUS_X86_MAY_HAVE_AVX512VNNI)
+            /* leaf 7, sub-leaf 0: EBX[16]=AVX512F, EBX[31]=AVX512VL,
+               ECX[11]=AVX512_VNNI. The 256-bit EVEX vpdpbusd we emit for this
+               tier needs F+VL+VNNI. We also require that the OS has enabled
+               AVX-512 register state (XCR0 bits 5,6,7, on top of the SSE/AVX
+               bits 1,2), otherwise the EVEX-encoded instructions fault. */
+            if (cpu_feature->HW_AVX2
+             && (info[1] & (1u << 16)) != 0   /* AVX512F     */
+             && (info[1] & (1u << 31)) != 0   /* AVX512VL    */
+             && (info[2] & (1u << 11)) != 0   /* AVX512_VNNI */
+             && (leaf1_ecx & (1u << 27)) != 0 /* OSXSAVE     */) {
+                opus_uint32 xcr0 = get_xcr0();
+                unsigned int avx512_state = (1u << 1) | (1u << 2)
+                                          | (1u << 5) | (1u << 6) | (1u << 7);
+                cpu_feature->HW_AVX512VNNI =
+                    (xcr0 & avx512_state) == avx512_state;
+            }
+#endif
         } else {
             cpu_feature->HW_AVX2 = 0;
         }
@@ -134,6 +179,7 @@ static void opus_cpu_feature_check(CPU_Feature *cpu_feature)
         cpu_feature->HW_SSE2 = 0;
         cpu_feature->HW_SSE41 = 0;
         cpu_feature->HW_AVX2 = 0;
+        cpu_feature->HW_AVX512VNNI = 0;
     }
 }
 
@@ -164,6 +210,12 @@ static int opus_select_arch_impl(void)
     arch++;
 
     if (!cpu_feature.HW_AVX2)
+    {
+        return arch;
+    }
+    arch++;
+
+    if (!cpu_feature.HW_AVX512VNNI)
     {
         return arch;
     }

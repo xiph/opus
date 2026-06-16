@@ -207,6 +207,14 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
                          OFF)
   add_feature_info(OPUS_X86_MAY_HAVE_AVX2 OPUS_X86_MAY_HAVE_AVX2 ${OPUS_X86_MAY_HAVE_AVX2_HELP_STR})
 
+  set(OPUS_X86_MAY_HAVE_AVX512VNNI_HELP_STR "does runtime check for AVX512-VNNI support.")
+  cmake_dependent_option(OPUS_X86_MAY_HAVE_AVX512VNNI
+                         ${OPUS_X86_MAY_HAVE_AVX512VNNI_HELP_STR}
+                         ON
+                         "AVX512VNNI_SUPPORTED; NOT OPUS_DISABLE_INTRINSICS"
+                         OFF)
+  add_feature_info(OPUS_X86_MAY_HAVE_AVX512VNNI OPUS_X86_MAY_HAVE_AVX512VNNI ${OPUS_X86_MAY_HAVE_AVX512VNNI_HELP_STR})
+
   # PRESUME depends on MAY HAVE, but PRESUME will override runtime detection
   set(OPUS_X86_PRESUME_SSE_HELP_STR "assume target CPU has SSE1 support (override runtime check).")
   set(OPUS_X86_PRESUME_SSE2_HELP_STR "assume target CPU has SSE2 support (override runtime check).")
@@ -253,6 +261,14 @@ if(OPUS_CPU_X86 OR OPUS_CPU_X64)
                          "OPUS_X86_MAY_HAVE_AVX2; NOT OPUS_DISABLE_INTRINSICS"
                          OFF)
   add_feature_info(OPUS_X86_PRESUME_AVX2 OPUS_X86_PRESUME_AVX2 ${OPUS_X86_PRESUME_AVX2_HELP_STR})
+
+  set(OPUS_X86_PRESUME_AVX512VNNI_HELP_STR "assume target CPU has AVX512-VNNI support (override runtime check).")
+  cmake_dependent_option(OPUS_X86_PRESUME_AVX512VNNI
+                         ${OPUS_X86_PRESUME_AVX512VNNI_HELP_STR}
+                         OFF
+                         "OPUS_X86_MAY_HAVE_AVX512VNNI; NOT OPUS_DISABLE_INTRINSICS"
+                         OFF)
+  add_feature_info(OPUS_X86_PRESUME_AVX512VNNI OPUS_X86_PRESUME_AVX512VNNI ${OPUS_X86_PRESUME_AVX512VNNI_HELP_STR})
 endif()
 
 feature_summary(WHAT ALL)
@@ -430,7 +446,8 @@ if(NOT OPUS_DISABLE_INTRINSICS)
   if(((OPUS_X86_MAY_HAVE_SSE AND NOT OPUS_X86_PRESUME_SSE) OR
      (OPUS_X86_MAY_HAVE_SSE2 AND NOT OPUS_X86_PRESUME_SSE2) OR
      (OPUS_X86_MAY_HAVE_SSE4_1 AND NOT OPUS_X86_PRESUME_SSE4_1) OR
-     (OPUS_X86_MAY_HAVE_AVX2 AND NOT OPUS_X86_PRESUME_AVX2)) AND
+     (OPUS_X86_MAY_HAVE_AVX2 AND NOT OPUS_X86_PRESUME_AVX2) OR
+     (OPUS_X86_MAY_HAVE_AVX512VNNI AND NOT OPUS_X86_PRESUME_AVX512VNNI)) AND
       RUNTIME_CPU_CAPABILITY_DETECTION)
     target_compile_definitions(opus PRIVATE OPUS_HAVE_RTCD)
     if(NOT MSVC)
@@ -539,6 +556,28 @@ if(NOT OPUS_DISABLE_INTRINSICS)
       target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_SSE4_1)
       if(NOT MSVC)
         target_compile_options(opus PRIVATE -mavx2 -mfma -mavx)
+      endif()
+    endif()
+  endif()
+
+  if(AVX512VNNI_SUPPORTED)
+    if(OPUS_X86_MAY_HAVE_AVX512VNNI)
+      if(OPUS_DNN)
+        add_sources_group(opus lpcnet ${dnn_sources_avx512vnni})
+      endif()
+      target_compile_definitions(opus PRIVATE OPUS_X86_MAY_HAVE_AVX512VNNI)
+      if(MSVC)
+        set(AVX512VNNI_FLAGS "${AVX512VNNI_FLAGS} /arch:AVX512")
+      else()
+        # Keep vectors 256-bit wide: the win is the int8 dot-product instruction.
+        set(AVX512VNNI_FLAGS "${AVX512VNNI_FLAGS} -mavx -mfma -mavx2 -mavx512f -mavx512vl -mavx512vnni -mprefer-vector-width=256")
+      endif()
+      set_source_files_properties(${dnn_sources_avx512vnni} PROPERTIES COMPILE_FLAGS ${AVX512VNNI_FLAGS})
+    endif()
+    if(OPUS_X86_PRESUME_AVX512VNNI)
+      target_compile_definitions(opus PRIVATE OPUS_X86_PRESUME_AVX512VNNI)
+      if(NOT MSVC)
+        target_compile_options(opus PRIVATE -mavx -mfma -mavx2 -mavx512f -mavx512vl -mavx512vnni -mprefer-vector-width=256)
       endif()
     endif()
   endif()

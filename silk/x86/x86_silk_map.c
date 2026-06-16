@@ -53,7 +53,8 @@ opus_int64 (*const SILK_INNER_PROD16_IMPL[ OPUS_ARCHMASK + 1 ] )(
   silk_inner_prod16_c,
   silk_inner_prod16_c,
   MAY_HAVE_SSE4_1( silk_inner_prod16 ), /* sse4.1 */
-  MAY_HAVE_SSE4_1( silk_inner_prod16 )  /* avx */
+  MAY_HAVE_SSE4_1( silk_inner_prod16 ), /* avx */
+  MAY_HAVE_SSE4_1( silk_inner_prod16 )  /* avx512vnni */
 };
 
 #endif
@@ -66,7 +67,8 @@ opus_int (*const SILK_VAD_GETSA_Q8_IMPL[ OPUS_ARCHMASK + 1 ] )(
   silk_VAD_GetSA_Q8_c,
   silk_VAD_GetSA_Q8_c,
   MAY_HAVE_SSE4_1( silk_VAD_GetSA_Q8 ), /* sse4.1 */
-  MAY_HAVE_SSE4_1( silk_VAD_GetSA_Q8 )  /* avx */
+  MAY_HAVE_SSE4_1( silk_VAD_GetSA_Q8 ), /* avx */
+  MAY_HAVE_SSE4_1( silk_VAD_GetSA_Q8 )  /* avx512vnni */
 };
 
 void (*const SILK_NSQ_IMPL[ OPUS_ARCHMASK + 1 ] )(
@@ -90,7 +92,8 @@ void (*const SILK_NSQ_IMPL[ OPUS_ARCHMASK + 1 ] )(
   silk_NSQ_c,
   silk_NSQ_c,
   MAY_HAVE_SSE4_1( silk_NSQ ), /* sse4.1 */
-  MAY_HAVE_SSE4_1( silk_NSQ )  /* avx */
+  MAY_HAVE_SSE4_1( silk_NSQ ), /* avx */
+  MAY_HAVE_SSE4_1( silk_NSQ )  /* avx512vnni */
 };
 
 void (*const SILK_VQ_WMAT_EC_IMPL[ OPUS_ARCHMASK + 1 ] )(
@@ -111,7 +114,8 @@ void (*const SILK_VQ_WMAT_EC_IMPL[ OPUS_ARCHMASK + 1 ] )(
   silk_VQ_WMat_EC_c,
   silk_VQ_WMat_EC_c,
   MAY_HAVE_SSE4_1( silk_VQ_WMat_EC ), /* sse4.1 */
-  MAY_HAVE_SSE4_1( silk_VQ_WMat_EC )  /* avx */
+  MAY_HAVE_SSE4_1( silk_VQ_WMat_EC ), /* avx */
+  MAY_HAVE_SSE4_1( silk_VQ_WMat_EC )  /* avx512vnni */
 };
 
 void (*const SILK_NSQ_DEL_DEC_IMPL[ OPUS_ARCHMASK + 1 ] )(
@@ -135,7 +139,8 @@ void (*const SILK_NSQ_DEL_DEC_IMPL[ OPUS_ARCHMASK + 1 ] )(
   silk_NSQ_del_dec_c,
   silk_NSQ_del_dec_c,
   MAY_HAVE_SSE4_1( silk_NSQ_del_dec ), /* sse4.1 */
-  MAY_HAVE_AVX2( silk_NSQ_del_dec )  /* avx */
+  MAY_HAVE_AVX2( silk_NSQ_del_dec ), /* avx */
+  MAY_HAVE_AVX2( silk_NSQ_del_dec )  /* avx512vnni */
 };
 
 #if defined(FIXED_POINT)
@@ -155,7 +160,8 @@ void (*const SILK_BURG_MODIFIED_IMPL[ OPUS_ARCHMASK + 1 ] )(
   silk_burg_modified_c,
   silk_burg_modified_c,
   MAY_HAVE_SSE4_1( silk_burg_modified ), /* sse4.1 */
-  MAY_HAVE_SSE4_1( silk_burg_modified )  /* avx */
+  MAY_HAVE_SSE4_1( silk_burg_modified ), /* avx */
+  MAY_HAVE_SSE4_1( silk_burg_modified )  /* avx512vnni */
 };
 
 #endif
@@ -171,7 +177,8 @@ double (*const SILK_INNER_PRODUCT_FLP_IMPL[ OPUS_ARCHMASK + 1 ] )(
   silk_inner_product_FLP_c,
   silk_inner_product_FLP_c,
   silk_inner_product_FLP_c, /* sse4.1 */
-  MAY_HAVE_AVX2( silk_inner_product_FLP )  /* avx */
+  MAY_HAVE_AVX2( silk_inner_product_FLP ), /* avx */
+  MAY_HAVE_AVX2( silk_inner_product_FLP )  /* avx512vnni */
 };
 
 #endif

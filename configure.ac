@@ -414,11 +414,15 @@ AM_CONDITIONAL([HAVE_SSE], [false])
 AM_CONDITIONAL([HAVE_SSE2], [false])
 AM_CONDITIONAL([HAVE_SSE4_1], [false])
 AM_CONDITIONAL([HAVE_AVX2], [false])
+AM_CONDITIONAL([HAVE_AVX512VNNI], [false])
 
 m4_define([DEFAULT_X86_SSE_CFLAGS], [-msse])
 m4_define([DEFAULT_X86_SSE2_CFLAGS], [-msse2])
 m4_define([DEFAULT_X86_SSE4_1_CFLAGS], [-msse4.1])
 m4_define([DEFAULT_X86_AVX2_CFLAGS], [-mavx -mfma -mavx2])
+dnl 256-bit EVEX vpdpbusd: keep vectors 256-bit wide (the win is the int8
+dnl dot-product instruction, not wider vectors).
+m4_define([DEFAULT_X86_AVX512VNNI_CFLAGS], [-mavx -mfma -mavx2 -mavx512f -mavx512vl -mavx512vnni -mprefer-vector-width=256])
 m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
 m4_define([DEFAULT_ARM_DOTPROD_INTR_CFLAGS], ["-march=armv8.2-a+dotprod"])
 # With GCC on ARM32 softfp architectures (e.g. Android, or older Ubuntu) you need to specify
@@ -437,6 +441,7 @@ AC_ARG_VAR([X86_SSE_CFLAGS], [C compiler flags to compile SSE intrinsics @<:@def
 AC_ARG_VAR([X86_SSE2_CFLAGS], [C compiler flags to compile SSE2 intrinsics @<:@default=]DEFAULT_X86_SSE2_CFLAGS[@:>@])
 AC_ARG_VAR([X86_SSE4_1_CFLAGS], [C compiler flags to compile SSE4.1 intrinsics @<:@default=]DEFAULT_X86_SSE4_1_CFLAGS[@:>@])
 AC_ARG_VAR([X86_AVX2_CFLAGS], [C compiler flags to compile AVX2 intrinsics @<:@default=]DEFAULT_X86_AVX2_CFLAGS[@:>@])
+AC_ARG_VAR([X86_AVX512VNNI_CFLAGS], [C compiler flags to compile AVX512-VNNI intrinsics @<:@default=]DEFAULT_X86_AVX512VNNI_CFLAGS[@:>@])
 AC_ARG_VAR([ARM_NEON_INTR_CFLAGS], [C compiler flags to compile ARM NEON intrinsics @<:@default=]DEFAULT_ARM_NEON_INTR_CFLAGS / DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS[@:>@])
 AC_ARG_VAR([ARM_DOTPROD_INTR_CFLAGS], [C compiler flags to compile ARM DOTPROD intrinsics @<:@default=]DEFAULT_ARM_DOTPROD_INTR_CFLAGS[@:>@])
 
@@ -444,6 +449,7 @@ AS_VAR_SET_IF([X86_SSE_CFLAGS], [], [AS_VAR_SET([X86_SSE_CFLAGS], "DEFAULT_X86_S
 AS_VAR_SET_IF([X86_SSE2_CFLAGS], [], [AS_VAR_SET([X86_SSE2_CFLAGS], "DEFAULT_X86_SSE2_CFLAGS")])
 AS_VAR_SET_IF([X86_SSE4_1_CFLAGS], [], [AS_VAR_SET([X86_SSE4_1_CFLAGS], "DEFAULT_X86_SSE4_1_CFLAGS")])
 AS_VAR_SET_IF([X86_AVX2_CFLAGS], [], [AS_VAR_SET([X86_AVX2_CFLAGS], "DEFAULT_X86_AVX2_CFLAGS")])
+AS_VAR_SET_IF([X86_AVX512VNNI_CFLAGS], [], [AS_VAR_SET([X86_AVX512VNNI_CFLAGS], "DEFAULT_X86_AVX512VNNI_CFLAGS")])
 AS_VAR_SET_IF([ARM_NEON_INTR_CFLAGS], [], [AS_VAR_SET([ARM_NEON_INTR_CFLAGS], ["$RESOLVED_DEFAULT_ARM_NEON_INTR_CFLAGS"])])
 AS_VAR_SET_IF([ARM_DOTPROD_INTR_CFLAGS], [], [AS_VAR_SET([ARM_DOTPROD_INTR_CFLAGS], ["DEFAULT_ARM_DOTPROD_INTR_CFLAGS"])])
 
@@ -732,6 +738,28 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
              AC_SUBST([OPUS_X86_AVX2_CFLAGS])
           ]
       )
+      OPUS_CHECK_INTRINSICS(
+         [AVX512-VNNI],
+         [$X86_AVX512VNNI_CFLAGS],
+         [OPUS_X86_MAY_HAVE_AVX512VNNI],
+         [OPUS_X86_PRESUME_AVX512VNNI],
+         [[#include <immintrin.h>
+           #include <time.h>
+         ]],
+         [[
+             __m256i a = _mm256_set1_epi8(1);
+             __m256i b = _mm256_set1_epi8((char)time(NULL));
+             __m256i acc = _mm256_setzero_si256();
+             acc = _mm256_dpbusds_epi32(acc, a, b);
+             return _mm256_extract_epi32(acc, 0);
+         ]]
+      )
+      AS_IF([test x"$OPUS_X86_MAY_HAVE_AVX512VNNI" = x"1" && test x"$OPUS_X86_PRESUME_AVX512VNNI" != x"1"],
+          [
+             OPUS_X86_AVX512VNNI_CFLAGS="$X86_AVX512VNNI_CFLAGS"
+             AC_SUBST([OPUS_X86_AVX512VNNI_CFLAGS])
+          ]
+      )
          AS_IF([test x"$rtcd_support" = x"no"], [rtcd_support=""])
          AS_IF([test x"$OPUS_X86_MAY_HAVE_SSE" = x"1"],
          [
@@ -782,6 +810,18 @@ AS_IF([test x"$enable_intrinsics" = x"yes"],[
          ],
          [
             AC_MSG_WARN([Compiler does not support AVX2 intrinsics])
+         ])
+         AS_IF([test x"$OPUS_X86_MAY_HAVE_AVX512VNNI" = x"1"],
+         [
+            AC_DEFINE([OPUS_X86_MAY_HAVE_AVX512VNNI], 1, [Compiler supports X86 AVX512-VNNI Intrinsics])
+            intrinsics_support="$intrinsics_support AVX512-VNNI"
+
+            AS_IF([test x"$OPUS_X86_PRESUME_AVX512VNNI" = x"1"],
+               [AC_DEFINE([OPUS_X86_PRESUME_AVX512VNNI], 1, [Define if binary requires AVX512-VNNI intrinsics support])],
+               [rtcd_support="$rtcd_support AVX512-VNNI"])
+         ],
+         [
+            AC_MSG_WARN([Compiler does not support AVX512-VNNI intrinsics])
          ])
 
          AS_IF([test x"$intrinsics_support" = x""],
@@ -868,6 +908,8 @@ AM_CONDITIONAL([HAVE_SSE4_1],
     [test x"$OPUS_X86_MAY_HAVE_SSE4_1" = x"1"])
 AM_CONDITIONAL([HAVE_AVX2],
     [test x"$OPUS_X86_MAY_HAVE_AVX2" = x"1"])
+AM_CONDITIONAL([HAVE_AVX512VNNI],
+    [test x"$OPUS_X86_MAY_HAVE_AVX512VNNI" = x"1"])
 
 AM_CONDITIONAL([HAVE_RTCD],
  [test x"$enable_rtcd" = x"yes" && test x"$rtcd_support" != x"no"])

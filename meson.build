@@ -383,6 +383,7 @@ have_sse = false
 have_sse2 = false
 have_sse4_1 = false
 have_avx2 = false
+have_avx512vnni = false
 have_neon_intr = false
 have_dotprod_intr = false
 
@@ -507,6 +508,9 @@ if not opt_intrinsics.disabled()
       [ 'SSE2', 'emmintrin.h', '__m128i', '_mm_setzero_si128()', ['-msse2'], [] ],
       [ 'SSE4.1', 'smmintrin.h', '__m128i', '_mm_setzero_si128(); mtest = _mm_cmpeq_epi64(mtest, mtest)', ['-msse4.1'], [] ],
       [ 'AVX2', 'immintrin.h', '__m256i', '_mm256_abs_epi32(_mm256_setzero_si256())', ['-mavx', '-mfma', '-mavx2'], ['/arch:AVX2'] ],
+      # 256-bit EVEX vpdpbusd. Kept 256-bit wide on purpose (-mprefer-vector-width=256):
+      # the speedup is the single-instruction int8 dot product, not wider vectors.
+      [ 'AVX512VNNI', 'immintrin.h', '__m256i', '_mm256_dpbusds_epi32(_mm256_setzero_si256(), _mm256_setzero_si256(), _mm256_setzero_si256())', ['-mavx', '-mfma', '-mavx2', '-mavx512f', '-mavx512vl', '-mavx512vnni', '-mprefer-vector-width=256'], ['/arch:AVX512'] ],
     ]
 
     foreach intrin : x86_intrinsics

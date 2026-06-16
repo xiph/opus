@@ -53,7 +53,8 @@ void (*const CELT_FIR_IMPL[OPUS_ARCHMASK + 1])(
   celt_fir_c,
   celt_fir_c,
   MAY_HAVE_SSE4_1(celt_fir), /* sse4.1  */
-  MAY_HAVE_SSE4_1(celt_fir)  /* avx  */
+  MAY_HAVE_SSE4_1(celt_fir), /* avx  */
+  MAY_HAVE_SSE4_1(celt_fir)  /* avx512vnni  */
 };
 
 void (*const XCORR_KERNEL_IMPL[OPUS_ARCHMASK + 1])(
@@ -66,7 +67,8 @@ void (*const XCORR_KERNEL_IMPL[OPUS_ARCHMASK + 1])(
   xcorr_kernel_c,
   xcorr_kernel_c,
   MAY_HAVE_SSE4_1(xcorr_kernel), /* sse4.1  */
-  MAY_HAVE_SSE4_1(xcorr_kernel)  /* avx  */
+  MAY_HAVE_SSE4_1(xcorr_kernel), /* avx  */
+  MAY_HAVE_SSE4_1(xcorr_kernel)  /* avx512vnni  */
 };
 
 #endif
@@ -83,7 +85,8 @@ opus_val32 (*const CELT_INNER_PROD_IMPL[OPUS_ARCHMASK + 1])(
   celt_inner_prod_c,
   MAY_HAVE_SSE2(celt_inner_prod),
   MAY_HAVE_SSE4_1(celt_inner_prod), /* sse4.1  */
-  MAY_HAVE_SSE4_1(celt_inner_prod)  /* avx  */
+  MAY_HAVE_SSE4_1(celt_inner_prod), /* avx  */
+  MAY_HAVE_SSE4_1(celt_inner_prod)  /* avx512vnni  */
 };
 
 #endif
@@ -104,7 +107,8 @@ void (*const PITCH_XCORR_IMPL[OPUS_ARCHMASK + 1])(
   celt_pitch_xcorr_c,
   celt_pitch_xcorr_c,
   celt_pitch_xcorr_c,
-  MAY_HAVE_AVX2(celt_pitch_xcorr)
+  MAY_HAVE_AVX2(celt_pitch_xcorr), /* avx  */
+  MAY_HAVE_AVX2(celt_pitch_xcorr)  /* avx512vnni  */
 };
 
 #endif
@@ -122,6 +126,7 @@ void (*const XCORR_KERNEL_IMPL[OPUS_ARCHMASK + 1])(
   MAY_HAVE_SSE(xcorr_kernel),
   MAY_HAVE_SSE(xcorr_kernel),
   MAY_HAVE_SSE(xcorr_kernel),
+  MAY_HAVE_SSE(xcorr_kernel),
   MAY_HAVE_SSE(xcorr_kernel)
 };
 
@@ -131,6 +136,7 @@ opus_val32 (*const CELT_INNER_PROD_IMPL[OPUS_ARCHMASK + 1])(
          int              N
 ) = {
   celt_inner_prod_c,                /* non-sse */
+  MAY_HAVE_SSE(celt_inner_prod),
   MAY_HAVE_SSE(celt_inner_prod),
   MAY_HAVE_SSE(celt_inner_prod),
   MAY_HAVE_SSE(celt_inner_prod),
@@ -146,6 +152,7 @@ void (*const DUAL_INNER_PROD_IMPL[OPUS_ARCHMASK + 1])(
                     opus_val32       *xy2
 ) = {
   dual_inner_prod_c,                /* non-sse */
+  MAY_HAVE_SSE(dual_inner_prod),
   MAY_HAVE_SSE(dual_inner_prod),
   MAY_HAVE_SSE(dual_inner_prod),
   MAY_HAVE_SSE(dual_inner_prod),
@@ -165,6 +172,7 @@ void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK + 1])(
   MAY_HAVE_SSE(comb_filter_const),
   MAY_HAVE_SSE(comb_filter_const),
   MAY_HAVE_SSE(comb_filter_const),
+  MAY_HAVE_SSE(comb_filter_const),
   MAY_HAVE_SSE(comb_filter_const)
 };
 
@@ -177,6 +185,7 @@ opus_val16 (*const OP_PVQ_SEARCH_IMPL[OPUS_ARCHMASK + 1])(
 ) = {
   op_pvq_search_c,                /* non-sse */
   op_pvq_search_c,
+  MAY_HAVE_SSE2(op_pvq_search),
   MAY_HAVE_SSE2(op_pvq_search),
   MAY_HAVE_SSE2(op_pvq_search),
   MAY_HAVE_SSE2(op_pvq_search)

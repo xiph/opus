@@ -126,7 +126,20 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
         PARENT_SCOPE)
   endif()
 
-  if(SSE1_SUPPORTED OR SSE2_SUPPORTED OR SSE4_1_SUPPORTED OR AVX2_SUPPORTED)
+  # AVX512-VNNI provides the EVEX-encoded 256-bit vpdpbusd int8 dot product.
+  if(HAVE_IMMINTRIN_H)
+    if(MSVC)
+      check_flag(AVX512VNNI /arch:AVX512)
+    else()
+      check_flag(AVX512VNNI -mavx512vnni)
+    endif()
+  else()
+    set(AVX512VNNI_SUPPORTED
+        0
+        PARENT_SCOPE)
+  endif()
+
+  if(SSE1_SUPPORTED OR SSE2_SUPPORTED OR SSE4_1_SUPPORTED OR AVX2_SUPPORTED OR AVX512VNNI_SUPPORTED)
     set(COMPILER_SUPPORT_SIMD 1 PARENT_SCOPE)
   else()
     message(STATUS "No SIMD support in compiler")
