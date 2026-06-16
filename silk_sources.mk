@@ -96,7 +96,8 @@ SILK_SOURCES_ARM_NEON_INTR = \
 silk/arm/biquad_alt_neon_intr.c \
 silk/arm/LPC_inv_pred_gain_neon_intr.c \
 silk/arm/NSQ_del_dec_neon_intr.c \
-silk/arm/NSQ_neon.c
+silk/arm/NSQ_neon.c \
+silk/arm/VAD_neon_intr.c
 
 SILK_SOURCES_FIXED = \
 silk/fixed/LTP_analysis_filter_FIX.c \
