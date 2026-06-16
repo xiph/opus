@@ -60,6 +60,27 @@ extern double (*const SILK_INNER_PRODUCT_FLP_IMPL[OPUS_ARCHMASK + 1])(
 
 #endif
 
+void silk_warped_autocorrelation_FLP_neon(
+          silk_float    *corr,
+    const silk_float    *input,
+    const silk_float    warping,
+    const opus_int      length,
+    const opus_int      order
+);
+
+/* silk_warped_autocorrelation_FLP has no arch argument at its call site, so it
+   cannot be dispatched through an arch-indexed RTCD table.  We therefore only
+   override it on PRESUME-NEON targets (e.g. aarch64, where NEON is baseline);
+   ARMv7 runtime-detection builds keep the C reference.  Adding an arch
+   parameter to the signature would enable RTCD here too. */
+#if defined(OPUS_ARM_PRESUME_NEON_INTR)
+
+#define OVERRIDE_warped_autocorrelation_FLP
+#define silk_warped_autocorrelation_FLP(corr, input, warping, length, order) \
+    silk_warped_autocorrelation_FLP_neon(corr, input, warping, length, order)
+
+#endif
+
 #endif /* OPUS_ARM_MAY_HAVE_NEON_INTR */
 
 #endif /* !FIXED_POINT */
