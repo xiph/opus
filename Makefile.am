@@ -45,6 +45,9 @@ endif
 if HAVE_AVX2
 SILK_SOURCES += $(SILK_SOURCES_FLOAT_AVX2)
 endif
+if HAVE_ARM_NEON_INTR
+SILK_SOURCES += $(SILK_SOURCES_FLOAT_ARM_NEON_INTR)
+endif
 endif
 
 if DISABLE_FLOAT_API
@@ -508,7 +511,8 @@ if HAVE_ARM_NEON_INTR
 ARM_NEON_INTR_OBJ = $(CELT_SOURCES_ARM_NEON_INTR:.c=.lo) \
                     $(SILK_SOURCES_ARM_NEON_INTR:.c=.lo) \
                     $(DNN_SOURCES_NEON:.c=.lo) \
-                    $(SILK_SOURCES_FIXED_ARM_NEON_INTR:.c=.lo)
+                    $(SILK_SOURCES_FIXED_ARM_NEON_INTR:.c=.lo) \
+                    $(SILK_SOURCES_FLOAT_ARM_NEON_INTR:.c=.lo)
 $(ARM_NEON_INTR_OBJ): CFLAGS += \
  $(OPUS_ARM_NEON_INTR_CFLAGS)  $(NE10_CFLAGS)
 endif

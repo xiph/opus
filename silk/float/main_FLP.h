@@ -93,13 +93,17 @@ void silk_noise_shape_analysis_FLP(
 );
 
 /* Autocorrelations for a warped frequency axis */
-void silk_warped_autocorrelation_FLP(
+void silk_warped_autocorrelation_FLP_c(
     silk_float                      *corr,                              /* O    Result [order + 1]                          */
     const silk_float                *input,                             /* I    Input data to correlate                     */
     const silk_float                warping,                            /* I    Warping coefficient                         */
     const opus_int                  length,                             /* I    Length of input                             */
     const opus_int                  order                               /* I    Correlation order (even)                    */
 );
+#ifndef OVERRIDE_warped_autocorrelation_FLP
+#define silk_warped_autocorrelation_FLP(corr, input, warping, length, order) \
+    silk_warped_autocorrelation_FLP_c(corr, input, warping, length, order)
+#endif
 
 /* Calculation of LTP state scaling */
 void silk_LTP_scale_ctrl_FLP(

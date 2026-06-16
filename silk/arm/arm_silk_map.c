@@ -31,6 +31,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FIX.h"
 #include "NSQ.h"
 #include "SigProc_FIX.h"
+#ifndef FIXED_POINT
+# include "SigProc_FLP.h"
+#endif
 
 #if defined(OPUS_HAVE_RTCD)
 
@@ -121,6 +124,23 @@ void (*const SILK_WARPED_AUTOCORRELATION_FIX_IMPL[OPUS_ARCHMASK + 1])(
       silk_warped_autocorrelation_FIX_c,    /* Media */
       silk_warped_autocorrelation_FIX_neon, /* Neon */
       silk_warped_autocorrelation_FIX_neon, /* dotprod */
+};
+
+# endif
+
+# if !defined(FIXED_POINT) && \
+ defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR)
+
+double (*const SILK_INNER_PRODUCT_FLP_IMPL[OPUS_ARCHMASK + 1])(
+    const silk_float    *data1,
+    const silk_float    *data2,
+    opus_int            dataSize
+) = {
+      silk_inner_product_FLP_c,    /* ARMv4 */
+      silk_inner_product_FLP_c,    /* EDSP */
+      silk_inner_product_FLP_c,    /* Media */
+      silk_inner_product_FLP_neon, /* Neon */
+      silk_inner_product_FLP_neon, /* dotprod */
 };
 
 # endif
