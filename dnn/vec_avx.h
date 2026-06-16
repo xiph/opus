@@ -792,6 +792,14 @@ static inline void sparse_cgemv8x4(float *_out, const opus_int8 *w, const int *i
       vy0 = _mm256_setzero_si256();
       j=0;
 #if 1 /* Unrolling by 4 gives some gain, comment out if it does not. */
+      /* Four independent accumulators keep several (high-latency) vpdpbusds
+         in flight on the VNNI path. Bit-exact with the single-accumulator
+         form for the AVX2 emulation (wrapping adds) and for VNNI whenever the
+         per-output sum stays within int32, as it does for real weights. */
+      __m256i vy1, vy2, vy3;
+      vy1 = _mm256_setzero_si256();
+      vy2 = _mm256_setzero_si256();
+      vy3 = _mm256_setzero_si256();
       for (;j<colblocks-3;j+=4)
       {
          __m256i vxj;
@@ -802,17 +810,20 @@ static inline void sparse_cgemv8x4(float *_out, const opus_int8 *w, const int *i
          w += 32;
          vxj = _mm256_broadcastd_epi32(_mm_loadu_si32(&x[*idx++]));
          vw = _mm256_loadu_si256((const __m256i *)(void*)w);
-         vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
+         vy1 = opus_mm256_dpbusds_epi32(vy1, vxj, vw);
          w += 32;
          vxj = _mm256_broadcastd_epi32(_mm_loadu_si32(&x[*idx++]));
          vw = _mm256_loadu_si256((const __m256i *)(void*)w);
-         vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
+         vy2 = opus_mm256_dpbusds_epi32(vy2, vxj, vw);
          w += 32;
          vxj = _mm256_broadcastd_epi32(_mm_loadu_si32(&x[*idx++]));
          vw = _mm256_loadu_si256((const __m256i *)(void*)w);
-         vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
+         vy3 = opus_mm256_dpbusds_epi32(vy3, vxj, vw);
          w += 32;
       }
+      vy0 = _mm256_add_epi32(vy0, vy1);
+      vy2 = _mm256_add_epi32(vy2, vy3);
+      vy0 = _mm256_add_epi32(vy0, vy2);
 #endif
       for (;j<colblocks;j++)
       {
@@ -841,6 +852,16 @@ static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale,
       vy0 = _mm256_setzero_si256();
       j=0;
 #if 1 /* Unrolling by 4 gives some gain, comment out if it does not. */
+      /* Use four independent accumulators so the (relatively high-latency)
+         vpdpbusds on the VNNI path is not serialized on a single register;
+         this keeps several int8 dot products in flight. The AVX2 emulation
+         accumulates with wrapping 32-bit adds, so the split is exact there;
+         on VNNI it is exact whenever the per-output sum does not saturate
+         int32, which holds for the quantized weights used in practice. */
+      __m256i vy1, vy2, vy3;
+      vy1 = _mm256_setzero_si256();
+      vy2 = _mm256_setzero_si256();
+      vy3 = _mm256_setzero_si256();
       for (;j<cols-12;j+=16)
       {
          __m256i vxj;
@@ -851,17 +872,20 @@ static inline void cgemv8x4(float *_out, const opus_int8 *w, const float *scale,
          w += 32;
          vxj = _mm256_broadcastd_epi32(_mm_loadu_si32(&x[j+4]));
          vw = _mm256_loadu_si256((const __m256i *)(void*)w);
-         vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
+         vy1 = opus_mm256_dpbusds_epi32(vy1, vxj, vw);
          w += 32;
          vxj = _mm256_broadcastd_epi32(_mm_loadu_si32(&x[j+8]));
          vw = _mm256_loadu_si256((const __m256i *)(void*)w);
-         vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
+         vy2 = opus_mm256_dpbusds_epi32(vy2, vxj, vw);
          w += 32;
          vxj = _mm256_broadcastd_epi32(_mm_loadu_si32(&x[j+12]));
          vw = _mm256_loadu_si256((const __m256i *)(void*)w);
-         vy0 = opus_mm256_dpbusds_epi32(vy0, vxj, vw);
+         vy3 = opus_mm256_dpbusds_epi32(vy3, vxj, vw);
          w += 32;
       }
+      vy0 = _mm256_add_epi32(vy0, vy1);
+      vy2 = _mm256_add_epi32(vy2, vy3);
+      vy0 = _mm256_add_epi32(vy0, vy2);
 #endif
       for (;j<cols;j+=4)
       {
