@@ -15,6 +15,8 @@ get_opus_sources(SILK_SOURCES_FIXED_SSE4_1 silk_sources.mk
                  silk_sources_fixed_sse4_1)
 get_opus_sources(SILK_SOURCES_AVX2 silk_sources.mk silk_sources_avx2)
 get_opus_sources(SILK_SOURCES_FLOAT_AVX2 silk_sources.mk silk_sources_float_avx2)
+get_opus_sources(SILK_SOURCES_FLOAT_ARM_NEON_INTR silk_sources.mk
+                 silk_sources_float_arm_neon_intr)
 get_opus_sources(SILK_SOURCES_ARM_RTCD silk_sources.mk silk_sources_arm_rtcd)
 get_opus_sources(SILK_SOURCES_ARM_NEON_INTR silk_sources.mk
                  silk_sources_arm_neon_intr)

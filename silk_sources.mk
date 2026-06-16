@@ -162,3 +162,6 @@ silk/float/sort_FLP.c
 
 SILK_SOURCES_FLOAT_AVX2 = \
 silk/float/x86/inner_product_FLP_avx2.c
+
+SILK_SOURCES_FLOAT_ARM_NEON_INTR = \
+silk/float/arm/inner_product_FLP_neon_intr.c
