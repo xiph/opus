@@ -959,7 +959,7 @@ static OPUS_INLINE void silk_nsq_del_dec_scale_states_avx2(
     inv_gain_Q26 = silk_sar_round_32(inv_gain_Q31, 5);
     for (i = 0; i < psEncC->subfr_length; i+=4)
     {
-        __m256i x = _mm256_cvtepi16_epi64(_mm_loadu_si64(&x16[i]));
+        __m256i x = _mm256_cvtepi16_epi64(_mm_loadl_epi64(&x16[i]));
         x = _mm256_slli_epi64(_mm256_mul_epi32(x, _mm256_set1_epi32(inv_gain_Q26)), 16);
         _mm_storeu_si128((__m128i*)(void*)&x_sc_Q10[i], silk_cvtepi64_epi32_high(x));
     }
