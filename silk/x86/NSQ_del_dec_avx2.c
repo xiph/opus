@@ -71,7 +71,7 @@ static OPUS_INLINE int verify_assumptions(const silk_encoder_state *psEncC)
 }
 
 /* Intrinsics not defined on MSVC */
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #include <intsafe.h>
 static inline int __builtin_sadd_overflow(opus_int32 a, opus_int32 b, opus_int32* res)
 {
