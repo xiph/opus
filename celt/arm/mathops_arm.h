@@ -37,7 +37,7 @@
 
 static inline int32x4_t vroundf(float32x4_t x)
 {
-#  if defined(__aarch64__) || (defined(__ARM_ARCH) && __ARM_ARCH >= 8)
+#  if defined(__aarch64__) || (defined(__ARM_ARCH) && __ARM_ARCH >= 8 && defined(__clang__))
     return vcvtaq_s32_f32(x);
 #  else
     uint32x4_t sign = vandq_u32(vreinterpretq_u32_f32(x), vdupq_n_u32(0x80000000));
