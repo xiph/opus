@@ -11,12 +11,14 @@ celt/kiss_fft.c \
 celt/laplace.c \
 celt/mathops.c \
 celt/mdct.c \
+celt/mdct_pfa.c \
 celt/modes.c \
 celt/pitch.c \
 celt/celt_lpc.c \
 celt/quant_bands.c \
 celt/rate.c \
-celt/vq.c
+celt/vq.c \
+celt/celt_tx_tables.c
 
 CELT_SOURCES_X86_RTCD = \
 celt/x86/x86cpu.c \
