@@ -1,5 +1,8 @@
 /* Copyright (c) 2026 Lynne */
 /* Ported and relicensed from FFmpeg, libavutil/aarch64/tx_float_neon.S */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -494,23 +497,7 @@ const tab_15pt, align=4
         .float           1.0,  1.0, -1.0,  -1.0
 endconst tab_15pt
 
-// LIBOPUS DELTA (T): ff_tx_tab_53_float is filled at runtime by FFmpeg's
-// ff_tx_init_tab_53 (cos/sin(2pi/5), cos/sin(2pi/10) doubled, then the 3pt
-// constants); pre-baked here, bit-exact.
-const celt_tx_tab_53_float, align=4
-        .word   0x3e9e377a    // 0.309017003  cos(2*pi/5)
-        .word   0x3e9e377a    // 0.309017003
-        .word   0x3f4f1bbd    // 0.809017003  cos(2*pi/10)
-        .word   0x3f4f1bbd    // 0.809017003
-        .word   0x3f737871    // 0.95105654   sin(2*pi/5)
-        .word   0x3f737871    // 0.95105654
-        .word   0x3f167918    // 0.587785244  sin(2*pi/10)
-        .word   0x3f167918    // 0.587785244
-        .word   0x3f5db3d7    // 0.866025388  cos(2*pi/12)
-        .word   0x3f5db3d7    // 0.866025388
-        .word   0x3f000000    // 0.5          cos(2*pi/6)
-        .word   0xbf000000    // -0.5         cos(8*pi/6)
-endconst celt_tx_tab_53_float
+
 
 /* Tab_53 twiddles (v28..v30) duplicated/pre-signed once, instead of per
  * transform: v8/v9 = -+tab[8,9]/[10,11], v25/v28/v29 = tab[0,1]/[2,3]/[4,5],
@@ -745,7 +732,7 @@ function celt_tx_fft_pfa_15xM_\name\()_neon, export=1 // LIBOPUS DELTA (P)
         ldr             x4,  [x0, #8]               // in_map, advanced by the loads
 .endif
 
-        movrel          x5, celt_tx_tab_53_float    // LIBOPUS DELTA (T): was X(ff_tx_tab_53_float)
+        movrel          x5, X(celt_tx_tab_53)
         ld1             { v28.4s, v29.4s, v30.4s }, [x5]
         movrel          x5, tab_15pt
         ld1             { v24.4s }, [x5]
@@ -1003,280 +990,14 @@ function celt_tx_mdct_inv_float_neon, export=1 // LIBOPUS DELTA (P)
         ret
 endfunc celt_tx_mdct_inv_float_neon
 
-// LIBOPUS DELTA (T): ff_tx_tab_{32,64}_float are filled at runtime by
-// FFmpeg's ff_tx_init_tab_{32,64} (cos(i*2pi/len), i < len/4, then 0);
-// pre-baked here, bit-exact.
-const celt_tx_tab_32_float, align=4
-        .word   0x3f800000    // 1
-        .word   0x3f7b14be    // 0.980785251
-        .word   0x3f6c835e    // 0.923879504
-        .word   0x3f54db31    // 0.831469595
-        .word   0x3f3504f3    // 0.707106769
-        .word   0x3f0e39da    // 0.555570245
-        .word   0x3ec3ef15    // 0.382683426
-        .word   0x3e47c5c2    // 0.195090324
-        .word   0x00000000    // 0
-endconst celt_tx_tab_32_float
 
-const celt_tx_tab_64_float, align=4
-        .word   0x3f800000    // 1
-        .word   0x3f7ec46d    // 0.99518472
-        .word   0x3f7b14be    // 0.980785251
-        .word   0x3f74fa0b    // 0.956940353
-        .word   0x3f6c835e    // 0.923879504
-        .word   0x3f61c598    // 0.881921291
-        .word   0x3f54db31    // 0.831469595
-        .word   0x3f45e403    // 0.773010433
-        .word   0x3f3504f3    // 0.707106769
-        .word   0x3f226799    // 0.634393275
-        .word   0x3f0e39da    // 0.555570245
-        .word   0x3ef15aea    // 0.471396744
-        .word   0x3ec3ef15    // 0.382683426
-        .word   0x3e94a031    // 0.290284663
-        .word   0x3e47c5c2    // 0.195090324
-        .word   0x3dc8bd36    // 0.0980171412
-        .word   0x00000000    // 0
-endconst celt_tx_tab_64_float
 
-const celt_tx_tab_128_float, align=4
-        .word   0x3f800000    // 1
-        .word   0x3f7fb10f    // 0.99879545
-        .word   0x3f7ec46d    // 0.99518472
-        .word   0x3f7d3aac    // 0.989176512
-        .word   0x3f7b14be    // 0.980785251
-        .word   0x3f7853f8    // 0.970031261
-        .word   0x3f74fa0b    // 0.956940353
-        .word   0x3f710908    // 0.941544056
-        .word   0x3f6c835e    // 0.923879504
-        .word   0x3f676bd8    // 0.903989315
-        .word   0x3f61c598    // 0.881921291
-        .word   0x3f5b941a    // 0.857728601
-        .word   0x3f54db31    // 0.831469595
-        .word   0x3f4d9f02    // 0.803207517
-        .word   0x3f45e403    // 0.773010433
-        .word   0x3f3daef9    // 0.740951121
-        .word   0x3f3504f3    // 0.707106769
-        .word   0x3f2beb4a    // 0.671558976
-        .word   0x3f226799    // 0.634393275
-        .word   0x3f187fc0    // 0.59569931
-        .word   0x3f0e39da    // 0.555570245
-        .word   0x3f039c3d    // 0.514102757
-        .word   0x3ef15aea    // 0.471396744
-        .word   0x3edae880    // 0.427555084
-        .word   0x3ec3ef15    // 0.382683426
-        .word   0x3eac7cd4    // 0.336889863
-        .word   0x3e94a031    // 0.290284663
-        .word   0x3e78cfcc    // 0.242980182
-        .word   0x3e47c5c2    // 0.195090324
-        .word   0x3e164083    // 0.146730468
-        .word   0x3dc8bd36    // 0.0980171412
-        .word   0x3d48fb30    // 0.0490676761
-        .word   0x00000000    // 0
-endconst celt_tx_tab_128_float
 
-const celt_tx_tab_256_float, align=4
-        .word   0x3f800000    // 1
-        .word   0x3f7fec43    // 0.999698818
-        .word   0x3f7fb10f    // 0.99879545
-        .word   0x3f7f4e6d    // 0.997290432
-        .word   0x3f7ec46d    // 0.99518472
-        .word   0x3f7e1324    // 0.992479563
-        .word   0x3f7d3aac    // 0.989176512
-        .word   0x3f7c3b28    // 0.985277653
-        .word   0x3f7b14be    // 0.980785251
-        .word   0x3f79c79d    // 0.975702107
-        .word   0x3f7853f8    // 0.970031261
-        .word   0x3f76ba07    // 0.963776052
-        .word   0x3f74fa0b    // 0.956940353
-        .word   0x3f731447    // 0.949528158
-        .word   0x3f710908    // 0.941544056
-        .word   0x3f6ed89e    // 0.932992816
-        .word   0x3f6c835e    // 0.923879504
-        .word   0x3f6a09a7    // 0.914209783
-        .word   0x3f676bd8    // 0.903989315
-        .word   0x3f64aa59    // 0.893224299
-        .word   0x3f61c598    // 0.881921291
-        .word   0x3f5ebe05    // 0.870086968
-        .word   0x3f5b941a    // 0.857728601
-        .word   0x3f584853    // 0.84485358
-        .word   0x3f54db31    // 0.831469595
-        .word   0x3f514d3d    // 0.817584813
-        .word   0x3f4d9f02    // 0.803207517
-        .word   0x3f49d112    // 0.78834641
-        .word   0x3f45e403    // 0.773010433
-        .word   0x3f41d870    // 0.757208824
-        .word   0x3f3daef9    // 0.740951121
-        .word   0x3f396842    // 0.724247098
-        .word   0x3f3504f3    // 0.707106769
-        .word   0x3f3085bb    // 0.689540565
-        .word   0x3f2beb4a    // 0.671558976
-        .word   0x3f273656    // 0.653172851
-        .word   0x3f226799    // 0.634393275
-        .word   0x3f1d7fd1    // 0.615231574
-        .word   0x3f187fc0    // 0.59569931
-        .word   0x3f13682a    // 0.575808167
-        .word   0x3f0e39da    // 0.555570245
-        .word   0x3f08f59b    // 0.534997642
-        .word   0x3f039c3d    // 0.514102757
-        .word   0x3efc5d27    // 0.492898196
-        .word   0x3ef15aea    // 0.471396744
-        .word   0x3ee63375    // 0.449611336
-        .word   0x3edae880    // 0.427555084
-        .word   0x3ecf7bca    // 0.405241311
-        .word   0x3ec3ef15    // 0.382683426
-        .word   0x3eb8442a    // 0.359895051
-        .word   0x3eac7cd4    // 0.336889863
-        .word   0x3ea09ae5    // 0.313681751
-        .word   0x3e94a031    // 0.290284663
-        .word   0x3e888e93    // 0.266712755
-        .word   0x3e78cfcc    // 0.242980182
-        .word   0x3e605c13    // 0.219101235
-        .word   0x3e47c5c2    // 0.195090324
-        .word   0x3e2f10a2    // 0.170961887
-        .word   0x3e164083    // 0.146730468
-        .word   0x3dfab273    // 0.122410677
-        .word   0x3dc8bd36    // 0.0980171412
-        .word   0x3d96a905    // 0.0735645667
-        .word   0x3d48fb30    // 0.0490676761
-        .word   0x3cc90ab0    // 0.024541229
-        .word   0x00000000    // 0
-endconst celt_tx_tab_256_float
 
-const celt_tx_tab_512_float, align=4
-        .word   0x3f800000    // 1
-        .word   0x3f7ffb11    // 0.999924719
-        .word   0x3f7fec43    // 0.999698818
-        .word   0x3f7fd397    // 0.999322355
-        .word   0x3f7fb10f    // 0.99879545
-        .word   0x3f7f84ab    // 0.998118103
-        .word   0x3f7f4e6d    // 0.997290432
-        .word   0x3f7f0e58    // 0.996312618
-        .word   0x3f7ec46d    // 0.99518472
-        .word   0x3f7e70b0    // 0.993906975
-        .word   0x3f7e1324    // 0.992479563
-        .word   0x3f7dabcc    // 0.990902662
-        .word   0x3f7d3aac    // 0.989176512
-        .word   0x3f7cbfc9    // 0.987301409
-        .word   0x3f7c3b28    // 0.985277653
-        .word   0x3f7baccd    // 0.983105481
-        .word   0x3f7b14be    // 0.980785251
-        .word   0x3f7a7302    // 0.97831738
-        .word   0x3f79c79d    // 0.975702107
-        .word   0x3f791298    // 0.972939968
-        .word   0x3f7853f8    // 0.970031261
-        .word   0x3f778bc5    // 0.966976464
-        .word   0x3f76ba07    // 0.963776052
-        .word   0x3f75dec6    // 0.960430503
-        .word   0x3f74fa0b    // 0.956940353
-        .word   0x3f740bdd    // 0.953306019
-        .word   0x3f731447    // 0.949528158
-        .word   0x3f721352    // 0.945607305
-        .word   0x3f710908    // 0.941544056
-        .word   0x3f6ff573    // 0.937339008
-        .word   0x3f6ed89e    // 0.932992816
-        .word   0x3f6db293    // 0.928506076
-        .word   0x3f6c835e    // 0.923879504
-        .word   0x3f6b4b0c    // 0.919113874
-        .word   0x3f6a09a7    // 0.914209783
-        .word   0x3f68bf3c    // 0.909168005
-        .word   0x3f676bd8    // 0.903989315
-        .word   0x3f660f88    // 0.898674488
-        .word   0x3f64aa59    // 0.893224299
-        .word   0x3f633c5a    // 0.887639642
-        .word   0x3f61c598    // 0.881921291
-        .word   0x3f604621    // 0.876070082
-        .word   0x3f5ebe05    // 0.870086968
-        .word   0x3f5d2d53    // 0.863972843
-        .word   0x3f5b941a    // 0.857728601
-        .word   0x3f59f26a    // 0.851355195
-        .word   0x3f584853    // 0.84485358
-        .word   0x3f5695e5    // 0.838224709
-        .word   0x3f54db31    // 0.831469595
-        .word   0x3f531849    // 0.824589312
-        .word   0x3f514d3d    // 0.817584813
-        .word   0x3f4f7a1f    // 0.81045717
-        .word   0x3f4d9f02    // 0.803207517
-        .word   0x3f4bbbf8    // 0.795836926
-        .word   0x3f49d112    // 0.78834641
-        .word   0x3f47de65    // 0.780737221
-        .word   0x3f45e403    // 0.773010433
-        .word   0x3f43e200    // 0.765167236
-        .word   0x3f41d870    // 0.757208824
-        .word   0x3f3fc767    // 0.749136388
-        .word   0x3f3daef9    // 0.740951121
-        .word   0x3f3b8f3b    // 0.732654274
-        .word   0x3f396842    // 0.724247098
-        .word   0x3f373a23    // 0.715730846
-        .word   0x3f3504f3    // 0.707106769
-        .word   0x3f32c8c9    // 0.698376238
-        .word   0x3f3085bb    // 0.689540565
-        .word   0x3f2e3bde    // 0.680601001
-        .word   0x3f2beb4a    // 0.671558976
-        .word   0x3f299415    // 0.662415802
-        .word   0x3f273656    // 0.653172851
-        .word   0x3f24d225    // 0.643831551
-        .word   0x3f226799    // 0.634393275
-        .word   0x3f1ff6cb    // 0.624859512
-        .word   0x3f1d7fd1    // 0.615231574
-        .word   0x3f1b02c6    // 0.605511069
-        .word   0x3f187fc0    // 0.59569931
-        .word   0x3f15f6d9    // 0.585797846
-        .word   0x3f13682a    // 0.575808167
-        .word   0x3f10d3cd    // 0.565731823
-        .word   0x3f0e39da    // 0.555570245
-        .word   0x3f0b9a6b    // 0.545324981
-        .word   0x3f08f59b    // 0.534997642
-        .word   0x3f064b82    // 0.524589658
-        .word   0x3f039c3d    // 0.514102757
-        .word   0x3f00e7e4    // 0.50353837
-        .word   0x3efc5d27    // 0.492898196
-        .word   0x3ef6e0cb    // 0.482183784
-        .word   0x3ef15aea    // 0.471396744
-        .word   0x3eebcbbb    // 0.460538715
-        .word   0x3ee63375    // 0.449611336
-        .word   0x3ee0924f    // 0.438616246
-        .word   0x3edae880    // 0.427555084
-        .word   0x3ed53641    // 0.416429549
-        .word   0x3ecf7bca    // 0.405241311
-        .word   0x3ec9b953    // 0.393992037
-        .word   0x3ec3ef15    // 0.382683426
-        .word   0x3ebe1d4a    // 0.371317208
-        .word   0x3eb8442a    // 0.359895051
-        .word   0x3eb263ef    // 0.348418683
-        .word   0x3eac7cd4    // 0.336889863
-        .word   0x3ea68f12    // 0.32531029
-        .word   0x3ea09ae5    // 0.313681751
-        .word   0x3e9aa086    // 0.302005947
-        .word   0x3e94a031    // 0.290284663
-        .word   0x3e8e9a22    // 0.27851969
-        .word   0x3e888e93    // 0.266712755
-        .word   0x3e827dc0    // 0.254865646
-        .word   0x3e78cfcc    // 0.242980182
-        .word   0x3e6c9a7f    // 0.231058106
-        .word   0x3e605c13    // 0.219101235
-        .word   0x3e541501    // 0.207111374
-        .word   0x3e47c5c2    // 0.195090324
-        .word   0x3e3b6ecf    // 0.183039889
-        .word   0x3e2f10a2    // 0.170961887
-        .word   0x3e22abb6    // 0.15885815
-        .word   0x3e164083    // 0.146730468
-        .word   0x3e09cf86    // 0.134580702
-        .word   0x3dfab273    // 0.122410677
-        .word   0x3de1bc2e    // 0.110222206
-        .word   0x3dc8bd36    // 0.0980171412
-        .word   0x3dafb680    // 0.0857973099
-        .word   0x3d96a905    // 0.0735645667
-        .word   0x3d7b2b74    // 0.061320737
-        .word   0x3d48fb30    // 0.0490676761
-        .word   0x3d16c32c    // 0.0368072242
-        .word   0x3cc90ab0    // 0.024541229
-        .word   0x3c490e90    // 0.0122715384
-        .word   0x00000000    // 0
-endconst celt_tx_tab_512_float
 
 .macro SETUP_SR_RECOMB len, re, im, dec
         ldr             w5, =(\len - 4*7)
-        movrel          \re, celt_tx_tab_\len\()_float // LIBOPUS DELTA (T): was X(ff_tx_tab_*_float)
+        movrel          \re, X(celt_tx_tab_\len\())
         add             \im, \re, x5
         mov             \dec, #-32
 
@@ -1856,9 +1577,12 @@ function celt_tx_fft_sr_\name\()_neon, export=1 // LIBOPUS DELTA (P)
         stp             q14, q15, [x1, #32*13]
         stp             q22, q23, [x1, #32*15]
 
+#ifdef CUSTOM_MODES
         cmp             w20, #64
         b.gt            128f
+#endif
         ret
+#ifdef CUSTOM_MODES
 128:
         AARCH64_SIGN_LINK_REGISTER
         stp             x20, x30, [sp, #-16]!
@@ -1946,6 +1670,7 @@ function celt_tx_fft_sr_\name\()_neon, export=1 // LIBOPUS DELTA (P)
         ldp             x21, x22, [sp], #16*6
 
         ret
+#endif
 
 2: // special case for 64 point deinterleave
         mov             x10, v23.d[0]
