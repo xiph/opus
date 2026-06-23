@@ -87,18 +87,25 @@ int clt_mdct_init(mdct_lookup *l,int N, int maxshift, int arch)
      return 0;
    for (shift=0;shift<=maxshift;shift++)
    {
-      /* We have enough points that sine isn't necessary */
+      int N4 = N2 >> 1;
+      /* Interleave cosine (real) and -sine (imag) as complex pairs */
 #if defined(FIXED_POINT)
 #ifndef ENABLE_QEXT
-      for (i=0;i<N2;i++)
-         trig[i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(EXTEND32(i),17),N2+16384),N));
+      for (i=0;i<N4;i++) {
+         trig[2*i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(EXTEND32(i),17),N2+16384),N));
+         trig[2*i+1] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(EXTEND32(i+N4),17),N2+16384),N));
+      }
 #else
-      for (i=0;i<N2;i++)
-         trig[i] = (kiss_twiddle_scalar)MAX32(-2147483647,MIN32(2147483647,floor(.5+2147483648*cos(2*M_PI*(i+.125)/N))));
+      for (i=0;i<N4;i++) {
+         trig[2*i] = (kiss_twiddle_scalar)MAX32(-2147483647,MIN32(2147483647,floor(.5+2147483648*cos(2*M_PI*(i+.125)/N))));
+         trig[2*i+1] = (kiss_twiddle_scalar)MAX32(-2147483647,MIN32(2147483647,floor(.5+2147483648*cos(2*M_PI*(i+N4+.125)/N))));
+      }
 #endif
 #else
-      for (i=0;i<N2;i++)
-         trig[i] = (kiss_twiddle_scalar)cos(2*PI*(i+.125)/N);
+      for (i=0;i<N4;i++) {
+         trig[2*i] = (kiss_twiddle_scalar)cos(2*PI*(i+.125)/N);
+         trig[2*i+1] = (kiss_twiddle_scalar)cos(2*PI*(i+N4+.125)/N);
+      }
 #endif
       trig += N2;
       N2 >>= 1;
@@ -117,6 +124,7 @@ void clt_mdct_clear(mdct_lookup *l, int arch)
 
 #endif /* CUSTOM_MODES */
 
+#if !defined(OPUS_USE_PFA_MDCT) || defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 /* Forward MDCT trashes the input array */
 #ifndef OVERRIDE_clt_mdct_forward
 void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * OPUS_RESTRICT out,
@@ -204,8 +212,8 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
          kiss_fft_cpx yc;
          kiss_twiddle_scalar t0, t1;
          kiss_fft_scalar re, im, yr, yi;
-         t0 = t[i];
-         t1 = t[N4+i];
+         t0 = t[2*i];
+         t1 = t[2*i+1];
          re = *yp++;
          im = *yp++;
          yr = S_MUL(re,t0)  -  S_MUL(im,t1);
@@ -245,11 +253,11 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
          kiss_fft_scalar yr, yi;
          kiss_fft_scalar t0, t1;
 #ifdef ENABLE_QEXT
-         t0 = S_MUL2(t[i], scale);
-         t1 = S_MUL2(t[N4+i], scale);
+         t0 = S_MUL2(t[2*i], scale);
+         t1 = S_MUL2(t[2*i+1], scale);
 #else
-         t0 = t[i];
-         t1 = t[N4+i];
+         t0 = t[2*i];
+         t1 = t[2*i+1];
 #endif
          yr = PSHR32(S_MUL(fp->i,t1) - S_MUL(fp->r,t0), headroom);
          yi = PSHR32(S_MUL(fp->r,t1) + S_MUL(fp->i,t0), headroom);
@@ -317,8 +325,8 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_sca
          rev = *bitrev++;
          x1 = SHL32_ovflw(*xp1, pre_shift);
          x2 = SHL32_ovflw(*xp2, pre_shift);
-         yr = ADD32_ovflw(S_MUL(x2, t[i]), S_MUL(x1, t[N4+i]));
-         yi = SUB32_ovflw(S_MUL(x1, t[i]), S_MUL(x2, t[N4+i]));
+         yr = ADD32_ovflw(S_MUL(x2, t[2*i]), S_MUL(x1, t[2*i+1]));
+         yi = SUB32_ovflw(S_MUL(x1, t[2*i]), S_MUL(x2, t[2*i+1]));
          /* We swap real and imag because we use an FFT instead of an IFFT. */
          yp[2*rev+1] = yr;
          yp[2*rev] = yi;
@@ -345,8 +353,8 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_sca
          /* We swap real and imag because we're using an FFT instead of an IFFT. */
          re = yp0[1];
          im = yp0[0];
-         t0 = t[i];
-         t1 = t[N4+i];
+         t0 = t[2*i];
+         t1 = t[2*i+1];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
          yr = PSHR32_ovflw(ADD32_ovflw(S_MUL(re,t0), S_MUL(im,t1)), post_shift);
          yi = PSHR32_ovflw(SUB32_ovflw(S_MUL(re,t1), S_MUL(im,t0)), post_shift);
@@ -356,8 +364,8 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_sca
          yp0[0] = yr;
          yp1[1] = yi;
 
-         t0 = t[(N4-i-1)];
-         t1 = t[(N2-i-1)];
+         t0 = t[2*(N4-i-1)];
+         t1 = t[2*(N4-i-1)+1];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
          yr = PSHR32_ovflw(ADD32_ovflw(S_MUL(re,t0), S_MUL(im,t1)), post_shift);
          yi = PSHR32_ovflw(SUB32_ovflw(S_MUL(re,t1), S_MUL(im,t0)), post_shift);
@@ -388,3 +396,4 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_sca
    }
 }
 #endif /* OVERRIDE_clt_mdct_backward */
+#endif

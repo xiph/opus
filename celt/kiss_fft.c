@@ -41,6 +41,16 @@
 #include "mathops.h"
 #include "stack_alloc.h"
 
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
+#define OPUS_CUSTOM 1
+#endif
+
+
+#if defined(OPUS_USE_PFA_MDCT)
+extern void opus_fft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, kiss_fft_cpx *fout);
+extern void opus_ifft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, kiss_fft_cpx *fout);
+#endif
+
 #ifndef M_PI
 #define M_PI 3.141592653
 #endif
@@ -49,6 +59,7 @@
    complex numbers.  It also declares the kf_ internal functions.
 */
 
+#if !defined(OPUS_USE_PFA_MDCT) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC)
 static void kf_bfly2(
                      kiss_fft_cpx * Fout,
                      int m,
@@ -611,9 +622,22 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int dow
     }
     fft_downshift(fout, st->nfft, &downshift, downshift);
 }
+#endif
 
 void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
+#if defined(OPUS_USE_PFA_MDCT)
+   if (st->nfft == 60 || st->nfft == 120 || st->nfft == 240 || st->nfft == 480 || st->nfft == 960)
+   {
+      opus_fft_pfa_c(st, fin, fout);
+      return;
+   }
+#if !defined(OPUS_CUSTOM) && !defined(ENABLE_DEEP_PLC)
+   celt_assert2(0, "PFA FFT called with unsupported size in non-custom mode");
+#endif
+#endif
+
+#if !defined(OPUS_USE_PFA_MDCT) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC)
    int i;
    celt_coef scale;
 #ifdef FIXED_POINT
@@ -632,11 +656,24 @@ void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *f
       fout[st->bitrev[i]].i = S_MUL2(x.i, scale);
    }
    opus_fft_impl(st, fout ARG_FIXED(scale_shift));
+#endif
 }
 
 
 void opus_ifft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
+#if defined(OPUS_USE_PFA_MDCT)
+   if (st->nfft == 60 || st->nfft == 120 || st->nfft == 240 || st->nfft == 480 || st->nfft == 960)
+   {
+      opus_ifft_pfa_c(st, fin, fout);
+      return;
+   }
+#if !defined(OPUS_CUSTOM) && !defined(ENABLE_DEEP_PLC)
+   celt_assert2(0, "PFA IFFT called with unsupported size in non-custom mode");
+#endif
+#endif
+
+#if !defined(OPUS_USE_PFA_MDCT) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC)
    int i;
    celt_assert2 (fin != fout, "In-place FFT not supported");
    /* Bit-reverse the input */
@@ -647,4 +684,5 @@ void opus_ifft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *
    opus_fft_impl(st, fout ARG_FIXED(0));
    for (i=0;i<st->nfft;i++)
       fout[i].i = -fout[i].i;
+#endif
 }
