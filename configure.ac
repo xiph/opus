@@ -184,6 +184,15 @@ AS_IF([test "$enable_opus_custom_api" = "yes"],[
 
 AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes" || test "$enable_opus_custom_api" = "yes"])
 
+AC_ARG_ENABLE([pfa],
+    [AS_HELP_STRING([--enable-pfa], [enable PFA FFT/MDCT (experimental)])],,
+    [enable_pfa=no])
+
+AS_IF([test "$enable_pfa" = "yes"],[
+  AC_DEFINE([ENABLE_PFA], [1], [Enable PFA])
+])
+AM_CONDITIONAL([ENABLE_PFA], [test "$enable_pfa" = "yes"])
+
 AC_ARG_ENABLE([dred],
     [AS_HELP_STRING([--enable-dred], [use Deep REDundancy (DRED)])],,
     [enable_dred=no])
@@ -1013,6 +1022,7 @@ AC_MSG_NOTICE([
       Intrinsics Optimizations: ...... ${intrinsics_support}
       Run-time CPU detection: ........ ${rtcd_support}
       Custom modes: .................. ${enable_custom_modes}
+      PFA support: ................... ${enable_pfa}
       Assertion checking: ............ ${enable_assertions}
       Hardening: ..................... ${enable_hardening}
       Fuzzing: ....................... ${enable_fuzzing}

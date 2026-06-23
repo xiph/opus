@@ -33,7 +33,7 @@ celt/static_modes_float.h \
 celt/static_modes_fixed.h \
 celt/arm/armcpu.h \
 celt/arm/celt_arm_asm.h \
-celt/arm/celt_tx_tables.h \
+celt/celt_tx_tables.h \
 celt/arm/fixed_armv4.h \
 celt/arm/fixed_armv5e.h \
 celt/arm/fixed_arm64.h \
