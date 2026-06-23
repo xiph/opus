@@ -1,5 +1,8 @@
 /* Copyright (c) 2026 Lynne */
 /* Ported and relicensed from FFmpeg, libavcodec/aarch64/opusdsp_neon.S */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions

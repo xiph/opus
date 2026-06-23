@@ -226,7 +226,8 @@ tests_test_opus_custom_SOURCES = tests/test_opus_custom.c tests/test_opus_common
 tests_test_opus_custom_LDADD = libopus.la $(LIBM)
 endif
 
-CELT_OBJ = $(CELT_SOURCES:.c=.lo)
+CELT_OBJ_TEMP = $(CELT_SOURCES:.c=.lo)
+CELT_OBJ = $(CELT_OBJ_TEMP:.S=.lo)
 SILK_OBJ = $(SILK_SOURCES:.c=.lo)
 LPCNET_OBJ = $(LPCNET_SOURCES:.c=.lo)
 OPUS_OBJ = $(OPUS_SOURCES:.c=.lo)

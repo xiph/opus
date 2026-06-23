@@ -104,6 +104,10 @@ set(OPUS_OSCE_HELP_STR "enable OSCE.")
 option(OPUS_OSCE ${OPUS_OSCE_HELP_STR} OFF)
 add_feature_info(OPUS_OSCE OPUS_OSCE ${OPUS_OSCE_HELP_STR})
 
+set(OPUS_PFA_HELP_STR "enable PFA FFT/MDCT (experimental).")
+option(OPUS_PFA ${OPUS_PFA_HELP_STR} OFF)
+add_feature_info(OPUS_PFA OPUS_PFA ${OPUS_PFA_HELP_STR})
+
 if(APPLE)
   set(OPUS_BUILD_FRAMEWORK_HELP_STR "build Framework bundle for Apple systems.")
   option(OPUS_BUILD_FRAMEWORK ${OPUS_BUILD_FRAMEWORK_HELP_STR} OFF)
@@ -429,6 +433,10 @@ endif()
 if (OPUS_OSCE)
   add_sources_group(opus lpcnet ${osce_headers} ${osce_sources})
   target_compile_definitions(opus PRIVATE ENABLE_OSCE ENABLE_OSCE_BWE)
+endif()
+
+if (OPUS_PFA)
+  target_compile_definitions(opus PRIVATE ENABLE_PFA)
 endif()
 
 if(NOT OPUS_DISABLE_INTRINSICS)
