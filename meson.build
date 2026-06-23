@@ -163,6 +163,7 @@ feat = [
   [ 'deep-plc', 'ENABLE_DEEP_PLC' ],
   [ 'dred', 'ENABLE_DRED' ],
   [ 'osce', 'ENABLE_OSCE' ],
+  [ 'pfa', 'ENABLE_PFA' ],
 ]
 
 foreach opt : feat
