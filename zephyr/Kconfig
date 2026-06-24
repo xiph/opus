@@ -1,0 +1,4 @@
+config LIBOPUS
+	bool "Enable Opus codec library"
+	help
+	  Enable Opus codec library.
