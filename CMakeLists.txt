@@ -4,6 +4,13 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(OpusPackageVersion)
 get_package_version(PACKAGE_VERSION PROJECT_VERSION)
 
+# root project detection
+if(DEFINED PROJECT_NAME)
+  set(root_project OFF)
+else()
+  set(root_project ON)
+endif()
+
 project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
 
 include(OpusFunctions)
@@ -83,12 +90,16 @@ set(OPUS_DNN_FLOAT_DEBUG_HELP_STR "Run DNN computations as float for debugging p
 option(OPUS_DNN_FLOAT_DEBUG ${OPUS_DNN_FLOAT_DEBUG_HELP_STR} OFF)
 add_feature_info(OPUS_DNN_FLOAT_DEBUG OPUS_DNN_FLOAT_DEBUG ${OPUS_DNN_FLOAT_DEBUG_HELP_STR})
 
+set(OPUS_INSTALL_HELP_STR "Install Opus targets")
+option(OPUS_INSTALL ${OPUS_INSTALL_HELP_STR} ${root_project})
+add_feature_info(OPUS_INSTALL OPUS_INSTALL ${OPUS_INSTALL_HELP_STR})
+
 set(OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR "install pkg-config module.")
-option(OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR} ON)
+option(OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR} ${OPUS_INSTALL})
 add_feature_info(OPUS_INSTALL_PKG_CONFIG_MODULE OPUS_INSTALL_PKG_CONFIG_MODULE ${OPUS_INSTALL_PKG_CONFIG_MODULE_HELP_STR})
 
 set(OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR "install CMake package config module.")
-option(OPUS_INSTALL_CMAKE_CONFIG_MODULE ${OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR} ON)
+option(OPUS_INSTALL_CMAKE_CONFIG_MODULE ${OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR} ${OPUS_INSTALL})
 add_feature_info(OPUS_INSTALL_CMAKE_CONFIG_MODULE OPUS_INSTALL_CMAKE_CONFIG_MODULE ${OPUS_INSTALL_CMAKE_CONFIG_MODULE_HELP_STR})
 
 set(OPUS_DRED_HELP_STR "enable DRED.")
@@ -613,53 +624,58 @@ if(OPUS_BUILD_FRAMEWORK)
                         OUTPUT_NAME Opus)
 endif()
 
-install(TARGETS opus
-        EXPORT OpusTargets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        FRAMEWORK DESTINATION ${CMAKE_INSTALL_PREFIX}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/opus)
+if (OPUS_INSTALL)
+  install(TARGETS opus
+          EXPORT OpusTargets
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+          FRAMEWORK DESTINATION ${CMAKE_INSTALL_PREFIX}
+          PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/opus)
 
-if(OPUS_INSTALL_PKG_CONFIG_MODULE)
-  set(prefix ${CMAKE_INSTALL_PREFIX})
-  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-  set(libdir ${CMAKE_INSTALL_FULL_LIBDIR})
-  set(includedir ${CMAKE_INSTALL_FULL_INCLUDEDIR})
-  set(VERSION ${PACKAGE_VERSION})
-  if(HAVE_LIBM)
-    set(LIBM "-lm")
+  if(OPUS_INSTALL_PKG_CONFIG_MODULE)
+    set(prefix ${CMAKE_INSTALL_PREFIX})
+    set(exec_prefix ${CMAKE_INSTALL_PREFIX})
+    set(libdir ${CMAKE_INSTALL_FULL_LIBDIR})
+    set(includedir ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+    set(VERSION ${PACKAGE_VERSION})
+    if(HAVE_LIBM)
+      set(LIBM "-lm")
+    endif()
+    configure_file(opus.pc.in opus.pc)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/opus.pc
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
   endif()
-  configure_file(opus.pc.in opus.pc)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/opus.pc
-          DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-endif()
 
-if(OPUS_INSTALL_CMAKE_CONFIG_MODULE)
-  set(CPACK_GENERATOR TGZ)
-  include(CPack)
-  set(CMAKE_INSTALL_PACKAGEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
-  install(EXPORT OpusTargets
-          NAMESPACE Opus::
-          DESTINATION ${CMAKE_INSTALL_PACKAGEDIR})
+  if(OPUS_INSTALL_CMAKE_CONFIG_MODULE)
+    set(CPACK_GENERATOR TGZ)
+    include(CPack)
+    set(CMAKE_INSTALL_PACKAGEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+    install(EXPORT OpusTargets
+            NAMESPACE Opus::
+            DESTINATION ${CMAKE_INSTALL_PACKAGEDIR})
 
-  include(CMakePackageConfigHelpers)
+    include(CMakePackageConfigHelpers)
 
-  set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-  configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/OpusConfig.cmake.in
-                                OpusConfig.cmake
-                                INSTALL_DESTINATION
-                                ${CMAKE_INSTALL_PACKAGEDIR}
-                                PATH_VARS
-                                INCLUDE_INSTALL_DIR
-                                INSTALL_PREFIX
-                                ${CMAKE_INSTALL_PREFIX})
-  write_basic_package_version_file(OpusConfigVersion.cmake
-                                   VERSION ${PROJECT_VERSION}
-                                   COMPATIBILITY SameMajorVersion)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/OpusConfig.cmake
-                ${CMAKE_CURRENT_BINARY_DIR}/OpusConfigVersion.cmake
-          DESTINATION ${CMAKE_INSTALL_PACKAGEDIR})
+    set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+    configure_package_config_file(
+      ${PROJECT_SOURCE_DIR}/cmake/OpusConfig.cmake.in
+      OpusConfig.cmake
+      INSTALL_DESTINATION
+      ${CMAKE_INSTALL_PACKAGEDIR}
+      PATH_VARS
+      INCLUDE_INSTALL_DIR
+      INSTALL_PREFIX
+      ${CMAKE_INSTALL_PREFIX})
+
+    write_basic_package_version_file(OpusConfigVersion.cmake
+                                    VERSION ${PROJECT_VERSION}
+                                    COMPATIBILITY SameMajorVersion)
+
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/OpusConfig.cmake
+                  ${CMAKE_CURRENT_BINARY_DIR}/OpusConfigVersion.cmake
+            DESTINATION ${CMAKE_INSTALL_PACKAGEDIR})
+  endif()
 endif()
 
 if(OPUS_BUILD_PROGRAMS)
