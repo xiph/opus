@@ -168,8 +168,24 @@ void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK + 1])(
   MAY_HAVE_SSE(comb_filter_const)
 };
 
+#if defined(OPUS_X86_TX_MDCT)
+void (*const CLT_MDCT_BACKWARD_IMPL[OPUS_ARCHMASK + 1])(
+      const mdct_lookup *l, kiss_fft_scalar *in,
+      kiss_fft_scalar * OPUS_RESTRICT out,
+      const celt_coef * OPUS_RESTRICT window,
+      int overlap, int shift, int stride, int arch
+) = {
+  clt_mdct_backward_c,                /* non-sse */
+  MAY_HAVE_SSE(clt_mdct_backward),    /* sse */
+  MAY_HAVE_SSE(clt_mdct_backward),    /* sse2 */
+  MAY_HAVE_SSE(clt_mdct_backward),    /* sse4.1 */
+  MAY_HAVE_SSE(clt_mdct_backward)     /* avx */
+};
+#endif
+
 
 #endif
+
 
 #if defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(OPUS_X86_PRESUME_SSE2)
 opus_val16 (*const OP_PVQ_SEARCH_IMPL[OPUS_ARCHMASK + 1])(

@@ -90,25 +90,19 @@ static OPUS_INLINE cpx crot(cpx a) {
    return (cpx){-a.i, a.r};
 }
 
-struct OpusTXContext {
-   opus_int32 len;
-   opus_int32 inv;
-   const opus_int16 *map;
-   const void *exp;
-   void *tmp;
-   const struct OpusTXContext *sub;
-   void *fn;
-};
+#include "celt_tx.h"
+
 
 #include <stddef.h>
-#include "arm/celt_tx_tables.h"
-#include "arm/celt_tx_twiddles.h"
+#include "celt_tx_tables.h"
+#include "celt_tx_twiddles.h"
+
 
 static void celt_tx_fft_pfa_15xM_ns_c(const struct OpusTXContext *s, void *out, void *in, ptrdiff_t stride ARG_FIXED(int downshift));
 static void get_pfa_crt_params(int M, int *K3, int *K4);
 
 
-static void celt_tx_fft_p2_c(cpx *out, const cpx *in, int N ARG_FIXED(int *downshift_ptr)) {
+void celt_tx_fft_p2_c(cpx *out, const cpx *in, int N ARG_FIXED(int *downshift_ptr)) {
    int i, j, len, half_len;
 #ifndef FIXED_POINT
    int downshift_val = 0;
@@ -410,6 +404,7 @@ void clt_mdct_backward_pfa_c(const mdct_lookup *l, kiss_fft_scalar *in,
       cur_n >>= 1;
       trig += cur_n;
    }
+
 
    int pre_shift = 0;
    int post_shift = 0;

@@ -69,22 +69,8 @@
 
 #include <stddef.h>
 
-typedef struct OpusTXContext OpusTXContext;
-typedef void (*opus_tx_fn)(const OpusTXContext *s, void *out, void *in,
-                           ptrdiff_t stride);
+#include "celt_tx.h"
 
-/* Mirror of the part of FFmpeg's AVTXContext the assembly reads. The field
-   offsets are part of the asm ABI: len@0, inv@4, map@8, exp@16, tmp@24,
-   sub@32, fn@40 (LP64). */
-struct OpusTXContext {
-   opus_int32 len;             /* Length of the transform */
-   opus_int32 inv;             /* If transform is inverse */
-   const opus_int16 *map;      /* Lookup table(s); int16 (max index 1920 < 2^15) */
-   const void *exp;            /* Pre-baked multiplication factors */
-   void *tmp;                  /* Temporary buffer, if needed */
-   const OpusTXContext *sub;   /* Subtransform context */
-   opus_tx_fn fn;              /* Function for the subtransform (fn[0]) */
-};
 
 /* The assembly hard-codes the offsets above; fail the build if the ABI
    assumption doesn't hold. */

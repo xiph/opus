@@ -24,7 +24,10 @@ celt/x86/x86cpu.c \
 celt/x86/x86_celt_map.c
 
 CELT_SOURCES_SSE = \
-celt/x86/pitch_sse.c
+celt/x86/pitch_sse.c \
+celt/x86/celt_mdct_tx.c \
+celt/x86/celt_tx_sse.c
+
 
 CELT_SOURCES_SSE2 = \
 celt/x86/pitch_sse2.c \

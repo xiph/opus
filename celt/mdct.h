@@ -79,9 +79,16 @@ void clt_mdct_forward_pfa_c(const mdct_lookup *l, kiss_fft_scalar *in,
                         const celt_coef *window, int overlap,
                         int shift, int stride, int arch);
 
+void celt_tx_fft_p2_c(kiss_fft_cpx *out, const kiss_fft_cpx *in, int N ARG_FIXED(int *downshift_ptr));
+
 #if defined(OPUS_ARM_MAY_HAVE_NEON_INTR) || defined(OPUS_ARM_PRESUME_NEON_INTR)
 #include "arm/mdct_arm.h"
 #endif
+
+#if defined(OPUS_X86_MAY_HAVE_SSE) || defined(OPUS_X86_PRESUME_SSE)
+#include "x86/mdct_x86.h"
+#endif
+
 
 
 
