@@ -340,8 +340,8 @@ static void celt_tx_mdct_inv_c(const struct OpusTXContext *s, kiss_fft_scalar *o
       int j = k >> 1;
       kiss_fft_scalar im = in[k * stride];
       kiss_fft_scalar re = in[(N2 - 1 - k) * stride];
-      kiss_twiddle_scalar trig_r = trig[2 * j + 1]; /* -sin(theta_j) */
-      kiss_twiddle_scalar trig_i = trig[2 * j];     /*  cos(theta_j) */
+      kiss_twiddle_scalar trig_r = trig[2 * j];     /* -sin(theta_j) */
+      kiss_twiddle_scalar trig_i = trig[2 * j + 1]; /*  cos(theta_j) */
 #ifdef FIXED_POINT
       re = SHL32_ovflw(re, pre_shift);
       im = SHL32_ovflw(im, pre_shift);
@@ -363,10 +363,10 @@ static void celt_tx_mdct_inv_c(const struct OpusTXContext *s, kiss_fft_scalar *o
       int i1 = N4 - 1 - i;
       cpx z0 = z[i0];
       cpx z1 = z[i1];
-      kiss_twiddle_scalar e0_r = trig[2 * i0 + 1];
-      kiss_twiddle_scalar e0_i = trig[2 * i0];
-      kiss_twiddle_scalar e1_r = trig[2 * i1 + 1];
-      kiss_twiddle_scalar e1_i = trig[2 * i1];
+      kiss_twiddle_scalar e0_r = trig[2 * i0];     /* -sin */
+      kiss_twiddle_scalar e0_i = trig[2 * i0 + 1]; /*  cos */
+      kiss_twiddle_scalar e1_r = trig[2 * i1];     /* -sin */
+      kiss_twiddle_scalar e1_i = trig[2 * i1 + 1]; /*  cos */
 #ifdef FIXED_POINT
       kiss_fft_scalar r0_r = PSHR32_ovflw(ADD32_ovflw(S_MUL(z0.i, e0_i), S_MUL(z0.r, e0_r)), post_shift);
       kiss_fft_scalar r0_i = PSHR32_ovflw(SUB32_ovflw(S_MUL(z0.i, e0_r), S_MUL(z0.r, e0_i)), post_shift);
@@ -517,13 +517,13 @@ static void celt_tx_mdct_fwd_c(const struct OpusTXContext *s, kiss_fft_scalar *o
       for (i = 0; i < N4; i++) {
          int k = s->map[i];
          int j = k >> 1;
-         kiss_twiddle_scalar t0 = trig[2 * j];
-         kiss_twiddle_scalar t1 = trig[2 * j + 1];
+         kiss_twiddle_scalar t0 = trig[2 * j];      /* -sin */
+         kiss_twiddle_scalar t1 = trig[2 * j + 1];  /*  cos */
          kiss_fft_scalar re = f[k];
          kiss_fft_scalar im = f[k + 1];
 #ifdef FIXED_POINT
-         kiss_fft_scalar yr = SUB32_ovflw(S_MUL(re, t0), S_MUL(im, t1));
-         kiss_fft_scalar yi = ADD32_ovflw(S_MUL(im, t0), S_MUL(re, t1));
+         kiss_fft_scalar yr = SUB32_ovflw(S_MUL(re, t1), S_MUL(im, t0));
+         kiss_fft_scalar yi = ADD32_ovflw(S_MUL(im, t1), S_MUL(re, t0));
 #ifdef ENABLE_QEXT
          z[i].r = yr;
          z[i].i = yi;
@@ -533,8 +533,8 @@ static void celt_tx_mdct_fwd_c(const struct OpusTXContext *s, kiss_fft_scalar *o
 #endif
          maxval = MAX32(maxval, MAX32(ABS32(z[i].r), ABS32(z[i].i)));
 #else
-         float yr = re * t0 - im * t1;
-         float yi = im * t0 + re * t1;
+         float yr = re * t1 - im * t0;
+         float yi = im * t1 + re * t0;
          z[i] = (cpx){yr * scale, yi * scale};
 #endif
       }
@@ -554,8 +554,8 @@ static void celt_tx_mdct_fwd_c(const struct OpusTXContext *s, kiss_fft_scalar *o
 
    /* Post-rotation */
    for (i = 0; i < N4; i++) {
-      kiss_twiddle_scalar t0 = trig[2 * i];
-      kiss_twiddle_scalar t1 = trig[2 * i + 1];
+      kiss_twiddle_scalar t0 = trig[2 * i];      /* -sin */
+      kiss_twiddle_scalar t1 = trig[2 * i + 1];  /*  cos */
       cpx fp = z[i];
       kiss_fft_scalar fp_r = fp.r;
       kiss_fft_scalar fp_i = fp.i;
@@ -564,11 +564,11 @@ static void celt_tx_mdct_fwd_c(const struct OpusTXContext *s, kiss_fft_scalar *o
       t0 = S_MUL2(t0, scale);
       t1 = S_MUL2(t1, scale);
 #endif
-      kiss_fft_scalar yr = PSHR32(SUB32_ovflw(S_MUL(fp_i, t1), S_MUL(fp_r, t0)), headroom);
-      kiss_fft_scalar yi = PSHR32(ADD32_ovflw(S_MUL(fp_r, t1), S_MUL(fp_i, t0)), headroom);
+      kiss_fft_scalar yr = PSHR32(SUB32_ovflw(S_MUL(fp_i, t0), S_MUL(fp_r, t1)), headroom);
+      kiss_fft_scalar yi = PSHR32(ADD32_ovflw(S_MUL(fp_r, t0), S_MUL(fp_i, t1)), headroom);
 #else
-      float yr = fp_i * t1 - fp_r * t0;
-      float yi = fp_r * t1 + fp_i * t0;
+      float yr = fp_i * t0 - fp_r * t1;
+      float yi = fp_r * t0 + fp_i * t1;
 #endif
       out[2 * i * stride] = yr;
       out[(N2 - 1 - 2 * i) * stride] = yi;
