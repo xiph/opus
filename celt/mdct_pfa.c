@@ -28,6 +28,8 @@
 #include "config.h"
 #endif
 
+#if defined(OPUS_USE_PFA_MDCT)
+
 #include "mdct.h"
 #include "_kiss_fft_guts.h"
 #include "stack_alloc.h"
@@ -101,15 +103,67 @@ struct OpusTXContext {
 };
 
 #include <stddef.h>
-#include "arm/celt_tx_tables.h"
-#include "arm/celt_tx_twiddles.h"
+#include <stdio.h>
+#include <math.h>
+#include "celt_tx_tables.h"
 
 static void celt_tx_fft_pfa_15xM_ns_c(const struct OpusTXContext *s, void *out, void *in, ptrdiff_t stride ARG_FIXED(int downshift));
 static void get_pfa_crt_params(int M, int *K3, int *K4);
 
 
+static OPUS_INLINE cpx get_p2_twiddle(int N, int j) {
+   cpx w;
+   const float *tab;
+   int tab_N;
+   int idx;
+   int quarter;
+   int half;
+   float r, i;
+
+   if (N <= 32) {
+      tab = celt_tx_tab_32_float;
+      tab_N = 32;
+   } else {
+      tab_N = N;
+      if (N == 64) tab = celt_tx_tab_64_float;
+      else if (N == 128) tab = celt_tx_tab_128_float;
+      else if (N == 256) tab = celt_tx_tab_256_float;
+      else tab = celt_tx_tab_512_float;
+   }
+
+   idx = j * (tab_N / N);
+   quarter = tab_N >> 2;
+   half = tab_N >> 1;
+
+   if (idx < quarter) {
+      r = tab[idx];
+      i = tab[quarter - idx];
+   } else if (idx > quarter) {
+      r = -tab[half - idx];
+      i = tab[idx - quarter];
+   } else {
+      r = 0.0f;
+      i = 1.0f;
+   }
+
+#ifndef FIXED_POINT
+   w.r = r;
+   w.i = i;
+#else
+#ifdef ENABLE_QEXT
+   w.r = (kiss_fft_scalar)lrint(r * 2147483647.0);
+   w.i = (kiss_fft_scalar)lrint(i * 2147483647.0);
+#else
+   w.r = (kiss_fft_scalar)lrintf(r * 32767.0f);
+   w.i = (kiss_fft_scalar)lrintf(i * 32767.0f);
+#endif
+#endif
+   return w;
+}
+
 static void celt_tx_fft_p2_c(cpx *out, const cpx *in, int N ARG_FIXED(int *downshift_ptr)) {
    int i, j, len, half_len;
+   int log2N;
 #ifndef FIXED_POINT
    int downshift_val = 0;
    int *downshift_ptr = &downshift_val;
@@ -120,7 +174,7 @@ static void celt_tx_fft_p2_c(cpx *out, const cpx *in, int N ARG_FIXED(int *downs
    ALLOC(buf, N, cpx);
 
    /* Bit-reversal permutation */
-   int log2N = 0;
+   log2N = 0;
    for (i = N >> 1; i > 0; i >>= 1) log2N++;
 
    for (i = 0; i < N; i++) {
@@ -132,15 +186,14 @@ static void celt_tx_fft_p2_c(cpx *out, const cpx *in, int N ARG_FIXED(int *downs
       buf[rev] = in[i];
    }
 
-   /* Cooley-Tukey butterfly stages using pre-baked twiddle table */
+   /* Cooley-Tukey butterfly stages using twiddles from cosine tables */
    /* We use C_MULC to multiply by conjugate twiddles, computing DFT directly */
    for (len = 2; len <= N; len <<= 1) {
       half_len = len >> 1;
-      int tw_offset = half_len - 1;
       PFA_DOWNSHIFT(buf, N, downshift_ptr, 1);
       for (i = 0; i < N; i += len) {
          for (j = 0; j < half_len; j++) {
-            cpx w = p2_twiddle_table[tw_offset + j];
+            cpx w = get_p2_twiddle(len, j);
             cpx u = buf[i + j];
             cpx t;
             C_MULC(t, buf[i + j + half_len], w);
@@ -739,3 +792,5 @@ void opus_ifft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, kiss_fft
    RESTORE_STACK;
 }
 #endif
+
+#endif /* OPUS_USE_PFA_MDCT */

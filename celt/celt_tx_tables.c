@@ -24,53 +24,18 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*
- * Pre-baked lookup tables for the AArch64 NEON inverse MDCT in
- * celt_tx_neon.S / celt_mdct_tx.c, for the CELT inverse MDCT sizes
- * N/2 = {120, 240, 480, 960, 1920} (the 48 kHz mode's four shifts plus the
- * 96 kHz/qext mode's larger transform; both modes share the middle sizes)
- * and the power-of-two sizes N/2 = {64, 128, 256, 512, 1024} used by Opus
- * custom modes (sub-FFT = fft32/fft_sr directly, no PFA, so those have no
- * pfa/p2 tables and need no scratch buffer).
- *
- * The tables are a bit-exact dump of what FFmpeg's libavutil/tx generates at
- * runtime for  av_tx_init(AV_TX_FLOAT_MDCT, inv=1, len=N/2, scale=-1.0f)  on
- * AArch64 (FFmpeg commit d229b4c1242870a8b80942f149a4b81bd25b7c5e):
- *
- *   celt_tx_mdct_map_<L>  L ints     first L/2: input gather map for the
- *                                    pre-rotation, composed with the PFA/
- *                                    fft15 input permutation and pre-doubled;
- *                                    second L/2: its inverse, used by the
- *                                    stride==4 contiguous path to scatter
- *   celt_tx_mdct_exp_<L>  L/2 cx     pre/post-rotation twiddles in natural
- *                                    index order, sqrt(|scale|) folded in;
- *                                    interleaved re/im floats. FFmpeg keeps a
- *                                    second copy pre-permuted by the gather
- *                                    map; the values are identical, so the
- *                                    asm indexes the one table via the map
- *   celt_tx_pfa_map_<L/2> L/2 ints   PFA compound out map (Ruritanian/CRT);
- *                                    the in map FFmpeg generates alongside
- *                                    it is unread by the preshuffled 15xM
- *                                    kernel (it equals the gather map >> 1)
- *   celt_tx_p2_map_<M>    M ints     split-radix parity scatter map of the
- *                                    M-point sub-FFT, read by the PFA kernel
- *
- * The N/2 = 1920 tables (96 kHz/qext mode) are gated behind ENABLE_QEXT,
- * and the power-of-two tables behind CUSTOM_MODES; neither size family is
- * reachable in builds without the matching option.
- *
- * scale=-1.0f makes the FFmpeg transform numerically identical to libopus's
- * clt_mdct_backward_c() (verified to ~2e-7 max relative error across all
- * sizes, strides 1/2/4/8 and overlaps); FFmpeg's own CELT decoder uses
- * -1.0f/32768 only because its internal signal scale is 1/32768 of ours.
- */
+/* This file is grid-generated. Do not edit. */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-#ifndef CELT_TX_TABLES_H
-#define CELT_TX_TABLES_H
+#include "celt_tx_tables.h"
 
-#include "opus_types.h"
+#if defined(NEED_CELT_TX_TABLES)
 
-static const opus_int16 celt_tx_mdct_map_120[120] = {
+typedef kiss_fft_cpx cpx;
+
+const opus_int16 celt_tx_mdct_map_120[120] = {
    80, 40, 0, 56, 32, 8, 104, 16, 112, 88, 64, 96,
    72, 48, 24, 110, 70, 30, 86, 62, 38, 14, 46, 22,
    118, 94, 6, 102, 78, 54, 20, 100, 60, 116, 92, 68,
@@ -83,8 +48,7 @@ static const opus_int16 celt_tx_mdct_map_120[120] = {
    11, 50, 31, 27, 6, 52, 43, 15, 8, 59, 33, 24,
 };
 
-/* value range [-0.867657, 0.0229054] */
-static const float celt_tx_mdct_exp_120[120] = {
+const float celt_tx_mdct_exp_120[120] = {
    -0.0032724866f,    0.99999464f,  -0.029448174f,     0.9995663f,   -0.05560368f,     0.9984529f,
     -0.081721075f,     0.9966552f,   -0.10778246f,     0.9941745f,   -0.13376999f,     0.9910124f,
      -0.15966582f,     0.9871711f,   -0.18545224f,    0.98265326f,   -0.21111155f,      0.977462f,
@@ -107,7 +71,7 @@ static const float celt_tx_mdct_exp_120[120] = {
       -0.9971688f,    0.07519627f,   -0.99879545f,   0.049067676f,    -0.9997376f,   0.022905443f,
 };
 
-static const opus_int16 celt_tx_pfa_map_60[60] = {
+const opus_int16 celt_tx_pfa_map_60[60] = {
    0, 5, 10, 15, 16, 21, 26, 31, 32, 37, 42, 47,
    48, 53, 58, 3, 4, 9, 14, 19, 20, 25, 30, 35,
    36, 41, 46, 51, 52, 57, 2, 7, 8, 13, 18, 23,
@@ -115,11 +79,11 @@ static const opus_int16 celt_tx_pfa_map_60[60] = {
    12, 17, 22, 27, 28, 33, 38, 43, 44, 49, 54, 59,
 };
 
-static const opus_int16 celt_tx_p2_map_4[4] = {
+const opus_int16 celt_tx_p2_map_4[4] = {
    0, 3, 2, 1,
 };
 
-static const opus_int16 celt_tx_mdct_map_240[240] = {
+const opus_int16 celt_tx_mdct_map_240[240] = {
    160, 80, 0, 112, 64, 16, 208, 32, 224, 176, 128, 192,
    144, 96, 48, 190, 110, 30, 142, 94, 46, 238, 62, 14,
    206, 158, 222, 174, 126, 78, 220, 140, 60, 172, 124, 76,
@@ -142,8 +106,7 @@ static const opus_int16 celt_tx_mdct_map_240[240] = {
    73, 55, 30, 26, 8, 110, 104, 76, 63, 57, 39, 21,
 };
 
-/* value range [-0.866842, 0.0114535] */
-static const float celt_tx_mdct_exp_240[240] = {
+const float celt_tx_mdct_exp_240[240] = {
    -0.0016362454f,     0.9999987f,  -0.014725683f,     0.9998916f,  -0.027812598f,    0.99961317f,
     -0.040894747f,    0.99916345f,   -0.05396989f,    0.99854255f,   -0.06703579f,     0.9977506f,
     -0.080090195f,     0.9967876f,   -0.09313088f,    0.99565387f,  -0.106155604f,    0.99434954f,
@@ -186,7 +149,7 @@ static const float celt_tx_mdct_exp_240[240] = {
      -0.99929196f,    0.03762478f,    -0.9996988f,   0.024541229f,   -0.99993443f,   0.011453473f,
 };
 
-static const opus_int16 celt_tx_pfa_map_120[120] = {
+const opus_int16 celt_tx_pfa_map_120[120] = {
    0, 9, 18, 27, 36, 45, 54, 63, 64, 73, 82, 91,
    100, 109, 118, 7, 8, 17, 26, 35, 44, 53, 62, 71,
    72, 81, 90, 99, 108, 117, 6, 15, 16, 25, 34, 43,
@@ -199,11 +162,11 @@ static const opus_int16 celt_tx_pfa_map_120[120] = {
    28, 37, 46, 55, 56, 65, 74, 83, 92, 101, 110, 119,
 };
 
-static const opus_int16 celt_tx_p2_map_8[8] = {
+const opus_int16 celt_tx_p2_map_8[8] = {
    0, 3, 5, 6, 4, 7, 1, 2,
 };
 
-static const opus_int16 celt_tx_mdct_map_480[480] = {
+const opus_int16 celt_tx_mdct_map_480[480] = {
    320, 160, 0, 224, 128, 32, 416, 64, 448, 352, 256, 384,
    288, 192, 96, 350, 190, 30, 254, 158, 62, 446, 94, 478,
    382, 286, 414, 318, 222, 126, 380, 220, 60, 284, 188, 92,
@@ -246,8 +209,7 @@ static const opus_int16 celt_tx_mdct_map_480[480] = {
    194, 169, 151, 148, 123, 115, 102, 75, 69, 56, 36, 23,
 };
 
-/* value range [-0.866434, 0.00572683] */
-static const float celt_tx_mdct_exp_480[480] = {
+const float celt_tx_mdct_exp_480[480] = {
     -0.000818123f,    0.99999964f, -0.0073630414f,     0.9999729f,  -0.013907644f,    0.99990326f,
     -0.020451652f,    0.99979085f,  -0.026994782f,     0.9996356f,   -0.03353676f,     0.9994375f,
     -0.040077295f,     0.9991966f,  -0.046616115f,     0.9989129f,   -0.05315294f,    0.99858636f,
@@ -330,7 +292,7 @@ static const float celt_tx_mdct_exp_480[480] = {
        -0.999823f,    0.01881572f,    -0.9999247f,   0.012271538f,    -0.9999836f,    0.00572683f,
 };
 
-static const opus_int16 celt_tx_pfa_map_240[240] = {
+const opus_int16 celt_tx_pfa_map_240[240] = {
    0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187,
    204, 221, 238, 15, 16, 33, 50, 67, 84, 101, 118, 135,
    152, 169, 186, 203, 220, 237, 14, 31, 32, 49, 66, 83,
@@ -353,12 +315,12 @@ static const opus_int16 celt_tx_pfa_map_240[240] = {
    52, 69, 86, 103, 120, 137, 154, 171, 188, 205, 222, 239,
 };
 
-static const opus_int16 celt_tx_p2_map_16[16] = {
+const opus_int16 celt_tx_p2_map_16[16] = {
    0, 12, 3, 11, 5, 15, 6, 10, 4, 14, 7, 9,
    1, 13, 2, 8,
 };
 
-static const opus_int16 celt_tx_mdct_map_960[960] = {
+const opus_int16 celt_tx_mdct_map_960[960] = {
    640, 320, 0, 448, 256, 64, 832, 128, 896, 704, 512, 768,
    576, 384, 192, 670, 350, 30, 478, 286, 94, 862, 158, 926,
    734, 542, 798, 606, 414, 222, 700, 380, 60, 508, 316, 124,
@@ -441,8 +403,7 @@ static const opus_int16 celt_tx_mdct_map_960[960] = {
    192, 412, 150, 389, 129, 349, 101, 316, 66, 298, 38, 258,
 };
 
-/* value range [-0.86623, 0.00286343] */
-static const float celt_tx_mdct_exp_960[960] = {
+const float celt_tx_mdct_exp_960[960] = {
    -0.00040906153f,     0.99999994f,  -0.0036815456f,      0.9999932f,    -0.00695399f,      0.9999758f,
     -0.0102263605f,      0.9999477f,   -0.013498621f,     0.99990886f,   -0.016770737f,     0.99985933f,
      -0.020042673f,     0.99979913f,   -0.023314396f,      0.9997282f,   -0.026585868f,     0.99964654f,
@@ -605,7 +566,7 @@ static const float celt_tx_mdct_exp_960[960] = {
        -0.9999557f,   0.0094082765f,    -0.99998116f,   0.0061358847f,     -0.9999959f,    0.002863427f,
 };
 
-static const opus_int16 celt_tx_pfa_map_480[480] = {
+const opus_int16 celt_tx_pfa_map_480[480] = {
    0, 33, 66, 99, 132, 165, 198, 231, 264, 297, 330, 363,
    396, 429, 462, 15, 48, 81, 114, 147, 180, 213, 246, 279,
    312, 345, 378, 411, 444, 477, 30, 63, 64, 97, 130, 163,
@@ -648,15 +609,13 @@ static const opus_int16 celt_tx_pfa_map_480[480] = {
    116, 149, 182, 215, 248, 281, 314, 347, 380, 413, 446, 479,
 };
 
-static const opus_int16 celt_tx_p2_map_32[32] = {
+const opus_int16 celt_tx_p2_map_32[32] = {
    0, 24, 12, 19, 3, 27, 11, 21, 5, 29, 15, 22,
    6, 30, 10, 20, 4, 28, 14, 23, 7, 31, 9, 17,
    1, 25, 13, 18, 2, 26, 8, 16,
 };
 
-#if defined(ENABLE_QEXT)
-/* N/2 = 1920: only reachable through the 96 kHz qext mode. */
-static const opus_int16 celt_tx_mdct_map_1920[1920] = {
+const opus_int16 celt_tx_mdct_map_1920[1920] = {
    1280, 640, 0, 896, 512, 128, 1664, 256, 1792, 1408, 1024, 1536,
    1152, 768, 384, 1310, 670, 30, 926, 542, 158, 1694, 286, 1822,
    1438, 1054, 1566, 1182, 798, 414, 1340, 700, 60, 956, 572, 188,
@@ -819,8 +778,7 @@ static const opus_int16 celt_tx_mdct_map_1920[1920] = {
    191, 890, 631, 387, 126, 832, 583, 315, 68, 779, 513, 264,
 };
 
-/* value range [-0.866128, 0.00143171] */
-static const float celt_tx_mdct_exp_1920[1920] = {
+const float celt_tx_mdct_exp_1920[1920] = {
    -0.00020453078f,            1.0f,   -0.001840776f,     0.99999833f,   -0.003477016f,       0.999994f,
      -0.005113247f,     0.99998695f,   -0.006749464f,     0.99997723f,   -0.008385663f,     0.99996483f,
       -0.01002184f,     0.99994975f,    -0.01165799f,     0.99993205f,   -0.013294108f,      0.9999116f,
@@ -1143,7 +1101,7 @@ static const float celt_tx_mdct_exp_1920[1920] = {
        -0.9999889f,   0.0047041904f,     -0.9999953f,   0.0030679568f,      -0.999999f,   0.0014317149f,
 };
 
-static const opus_int16 celt_tx_pfa_map_960[960] = {
+const opus_int16 celt_tx_pfa_map_960[960] = {
    0, 65, 130, 195, 260, 325, 390, 455, 520, 585, 650, 715,
    780, 845, 910, 15, 80, 145, 210, 275, 340, 405, 470, 535,
    600, 665, 730, 795, 860, 925, 30, 95, 160, 225, 290, 355,
@@ -1226,7 +1184,7 @@ static const opus_int16 celt_tx_pfa_map_960[960] = {
    244, 309, 374, 439, 504, 569, 634, 699, 764, 829, 894, 959,
 };
 
-static const opus_int16 celt_tx_p2_map_64[64] = {
+const opus_int16 celt_tx_p2_map_64[64] = {
    0, 48, 24, 44, 12, 60, 19, 35, 3, 51, 27, 43,
    11, 59, 21, 37, 5, 53, 29, 47, 15, 63, 22, 38,
    6, 54, 30, 42, 10, 58, 20, 36, 4, 52, 28, 46,
@@ -1234,11 +1192,8 @@ static const opus_int16 celt_tx_p2_map_64[64] = {
    1, 49, 25, 45, 13, 61, 18, 34, 2, 50, 26, 40,
    8, 56, 16, 32,
 };
-#endif /* ENABLE_QEXT */
 
-#if defined(CUSTOM_MODES)
-/* Power-of-two sizes: only reachable through Opus custom modes. */
-static const opus_int16 celt_tx_mdct_map_64[64] = {
+const opus_int16 celt_tx_mdct_map_64[64] = {
    0, 48, 56, 8, 32, 16, 24, 40, 60, 44, 28, 12,
    4, 52, 36, 20, 62, 46, 54, 6, 30, 14, 22, 38,
    2, 50, 58, 10, 34, 18, 26, 42, 0, 24, 12, 19,
@@ -1247,8 +1202,7 @@ static const opus_int16 celt_tx_mdct_map_64[64] = {
    2, 26, 8, 16,
 };
 
-/* value range [-0.00613588, 0.0429383] */
-static const float celt_tx_mdct_exp_64[64] = {
+const float celt_tx_mdct_exp_64[64] = {
    -0.0061358847f,    0.99998116f,  -0.055195246f,    0.99847555f,   -0.10412163f,     0.9945646f,
      -0.15279719f,     0.9882576f,   -0.20110464f,     0.9795698f,   -0.24892761f,     0.9685221f,
       -0.2961509f,     0.9551412f,   -0.34266073f,     0.9394592f,   -0.38834503f,    0.92151403f,
@@ -1262,7 +1216,7 @@ static const float celt_tx_mdct_exp_64[64] = {
       -0.9957674f,   0.091908954f,   -0.99907774f,    0.04293826f,
 };
 
-static const opus_int16 celt_tx_mdct_map_128[128] = {
+const opus_int16 celt_tx_mdct_map_128[128] = {
    0, 96, 112, 16, 64, 32, 48, 80, 120, 88, 56, 24,
    8, 104, 72, 40, 124, 92, 108, 12, 60, 28, 44, 76,
    4, 100, 116, 20, 68, 36, 52, 84, 126, 94, 110, 14,
@@ -1276,8 +1230,7 @@ static const opus_int16 celt_tx_mdct_map_128[128] = {
    2, 50, 26, 40, 8, 56, 16, 32,
 };
 
-/* value range [-0.00306796, 0.0214741] */
-static const float celt_tx_mdct_exp_128[128] = {
+const float celt_tx_mdct_exp_128[128] = {
    -0.0030679568f,     0.9999953f,  -0.027608145f,     0.9996188f,  -0.052131705f,    0.99864024f,
     -0.076623864f,    0.99706006f,   -0.10106986f,     0.9948793f,   -0.12545498f,     0.9920993f,
      -0.14976454f,    0.98872167f,   -0.17398387f,     0.9847485f,    -0.1980984f,     0.9801821f,
@@ -1302,7 +1255,7 @@ static const float celt_tx_mdct_exp_128[128] = {
       -0.9997694f,    0.02147408f,
 };
 
-static const opus_int16 celt_tx_mdct_map_256[256] = {
+const opus_int16 celt_tx_mdct_map_256[256] = {
    0, 192, 224, 32, 128, 64, 96, 160, 240, 176, 112, 48,
    16, 208, 144, 80, 248, 184, 216, 24, 120, 56, 88, 152,
    8, 200, 232, 40, 136, 72, 104, 168, 252, 188, 220, 28,
@@ -1327,8 +1280,7 @@ static const opus_int16 celt_tx_mdct_map_256[256] = {
    16, 112, 32, 64,
 };
 
-/* value range [-0.00153398, 0.0107377] */
-static const float celt_tx_mdct_exp_256[256] = {
+const float celt_tx_mdct_exp_256[256] = {
    -0.0015339801f,     0.9999988f, -0.0138053885f,     0.9999047f,  -0.026074719f,       0.99966f,
      -0.03834012f,     0.9992648f,   -0.05059975f,    0.99871904f,   -0.06285176f,    0.99802285f,
       -0.0750943f,     0.9971764f,  -0.087325536f,     0.9961798f,  -0.099543616f,     0.9950332f,
@@ -1374,7 +1326,7 @@ static const float celt_tx_mdct_exp_256[256] = {
       -0.9997353f,   0.023007682f,   -0.99994236f,   0.010737659f,
 };
 
-static const opus_int16 celt_tx_mdct_map_512[512] = {
+const opus_int16 celt_tx_mdct_map_512[512] = {
    0, 384, 448, 64, 256, 128, 192, 320, 480, 352, 224, 96,
    32, 416, 288, 160, 496, 368, 432, 48, 240, 112, 176, 304,
    16, 400, 464, 80, 272, 144, 208, 336, 504, 376, 440, 56,
@@ -1420,8 +1372,7 @@ static const opus_int16 celt_tx_mdct_map_512[512] = {
    16, 208, 112, 160, 32, 224, 64, 128,
 };
 
-/* value range [-0.00076699, 0.00536891] */
-static const float celt_tx_mdct_exp_512[512] = {
+const float celt_tx_mdct_exp_512[512] = {
    -0.0007669903f,     0.9999997f, -0.0069028586f,    0.99997616f,  -0.013038468f,      0.999915f,
     -0.019173585f,     0.9998162f,  -0.025307981f,     0.9996797f,  -0.031441424f,     0.9995056f,
     -0.037573684f,    0.99929386f,   -0.04370453f,     0.9990445f,  -0.049833726f,    0.99875754f,
@@ -1510,7 +1461,7 @@ static const float celt_tx_mdct_exp_512[512] = {
       -0.9999856f,   0.005368907f,
 };
 
-static const opus_int16 celt_tx_mdct_map_1024[1024] = {
+const opus_int16 celt_tx_mdct_map_1024[1024] = {
    0, 768, 896, 128, 512, 256, 384, 640, 960, 704, 448, 192,
    64, 832, 576, 320, 992, 736, 864, 96, 480, 224, 352, 608,
    32, 800, 928, 160, 544, 288, 416, 672, 1008, 752, 880, 112,
@@ -1599,8 +1550,7 @@ static const opus_int16 celt_tx_mdct_map_1024[1024] = {
    64, 448, 128, 256,
 };
 
-/* value range [-0.000383495, 0.00268446] */
-static const float celt_tx_mdct_exp_1024[1024] = {
+const float celt_tx_mdct_exp_1024[1024] = {
    -0.00038349518f,     0.99999994f,    -0.00345145f,     0.99999404f,   -0.006519372f,      0.9999787f,
      -0.009587233f,     0.99995404f,   -0.012655004f,     0.99991995f,   -0.015722655f,      0.9998764f,
       -0.01879016f,     0.99982345f,   -0.021857485f,      0.9997611f,   -0.024924606f,     0.99968934f,
@@ -1773,6 +1723,294 @@ static const float celt_tx_mdct_exp_1024[1024] = {
        -0.9998882f,    0.014955755f,     -0.9999293f,    0.011888071f,     -0.9999611f,    0.008820275f,
       -0.99998343f,   0.0057523963f,     -0.9999964f,    0.002684463f,
 };
-#endif /* CUSTOM_MODES */
 
-#endif /* CELT_TX_TABLES_H */
+
+#if !defined(__aarch64__) || defined(FIXED_POINT)
+/* FFT Twiddle Tables from assembly */
+
+const float celt_tx_tab_53_float[12] = {
+   0.309017003f,
+   0.309017003f,
+   0.809017003f,
+   0.809017003f,
+   0.95105654f,
+   0.95105654f,
+   0.587785244f,
+   0.587785244f,
+   0.866025388f,
+   0.866025388f,
+   0.5f,
+   -0.5f,
+};
+
+const float celt_tx_tab_32_float[9] = {
+   1.0f,
+   0.980785251f,
+   0.923879504f,
+   0.831469595f,
+   0.707106769f,
+   0.555570245f,
+   0.382683426f,
+   0.195090324f,
+   0.0f,
+};
+
+const float celt_tx_tab_64_float[17] = {
+   1.0f,
+   0.99518472f,
+   0.980785251f,
+   0.956940353f,
+   0.923879504f,
+   0.881921291f,
+   0.831469595f,
+   0.773010433f,
+   0.707106769f,
+   0.634393275f,
+   0.555570245f,
+   0.471396744f,
+   0.382683426f,
+   0.290284663f,
+   0.195090324f,
+   0.0980171412f,
+   0.0f,
+};
+
+const float celt_tx_tab_128_float[33] = {
+   1.0f,
+   0.99879545f,
+   0.99518472f,
+   0.989176512f,
+   0.980785251f,
+   0.970031261f,
+   0.956940353f,
+   0.941544056f,
+   0.923879504f,
+   0.903989315f,
+   0.881921291f,
+   0.857728601f,
+   0.831469595f,
+   0.803207517f,
+   0.773010433f,
+   0.740951121f,
+   0.707106769f,
+   0.671558976f,
+   0.634393275f,
+   0.59569931f,
+   0.555570245f,
+   0.514102757f,
+   0.471396744f,
+   0.427555084f,
+   0.382683426f,
+   0.336889863f,
+   0.290284663f,
+   0.242980182f,
+   0.195090324f,
+   0.146730468f,
+   0.0980171412f,
+   0.0490676761f,
+   0.0f,
+};
+
+const float celt_tx_tab_256_float[65] = {
+   1.0f,
+   0.999698818f,
+   0.99879545f,
+   0.997290432f,
+   0.99518472f,
+   0.992479563f,
+   0.989176512f,
+   0.985277653f,
+   0.980785251f,
+   0.975702107f,
+   0.970031261f,
+   0.963776052f,
+   0.956940353f,
+   0.949528158f,
+   0.941544056f,
+   0.932992816f,
+   0.923879504f,
+   0.914209783f,
+   0.903989315f,
+   0.893224299f,
+   0.881921291f,
+   0.870086968f,
+   0.857728601f,
+   0.84485358f,
+   0.831469595f,
+   0.817584813f,
+   0.803207517f,
+   0.78834641f,
+   0.773010433f,
+   0.757208824f,
+   0.740951121f,
+   0.724247098f,
+   0.707106769f,
+   0.689540565f,
+   0.671558976f,
+   0.653172851f,
+   0.634393275f,
+   0.615231574f,
+   0.59569931f,
+   0.575808167f,
+   0.555570245f,
+   0.534997642f,
+   0.514102757f,
+   0.492898196f,
+   0.471396744f,
+   0.449611336f,
+   0.427555084f,
+   0.405241311f,
+   0.382683426f,
+   0.359895051f,
+   0.336889863f,
+   0.313681751f,
+   0.290284663f,
+   0.266712755f,
+   0.242980182f,
+   0.219101235f,
+   0.195090324f,
+   0.170961887f,
+   0.146730468f,
+   0.122410677f,
+   0.0980171412f,
+   0.0735645667f,
+   0.0490676761f,
+   0.024541229f,
+   0.0f,
+};
+
+const float celt_tx_tab_512_float[129] = {
+   1.0f,
+   0.999924719f,
+   0.999698818f,
+   0.999322355f,
+   0.99879545f,
+   0.998118103f,
+   0.997290432f,
+   0.996312618f,
+   0.99518472f,
+   0.993906975f,
+   0.992479563f,
+   0.990902662f,
+   0.989176512f,
+   0.987301409f,
+   0.985277653f,
+   0.983105481f,
+   0.980785251f,
+   0.97831738f,
+   0.975702107f,
+   0.972939968f,
+   0.970031261f,
+   0.966976464f,
+   0.963776052f,
+   0.960430503f,
+   0.956940353f,
+   0.953306019f,
+   0.949528158f,
+   0.945607305f,
+   0.941544056f,
+   0.937339008f,
+   0.932992816f,
+   0.928506076f,
+   0.923879504f,
+   0.919113874f,
+   0.914209783f,
+   0.909168005f,
+   0.903989315f,
+   0.898674488f,
+   0.893224299f,
+   0.887639642f,
+   0.881921291f,
+   0.876070082f,
+   0.870086968f,
+   0.863972843f,
+   0.857728601f,
+   0.851355195f,
+   0.84485358f,
+   0.838224709f,
+   0.831469595f,
+   0.824589312f,
+   0.817584813f,
+   0.81045717f,
+   0.803207517f,
+   0.795836926f,
+   0.78834641f,
+   0.780737221f,
+   0.773010433f,
+   0.765167236f,
+   0.757208824f,
+   0.749136388f,
+   0.740951121f,
+   0.732654274f,
+   0.724247098f,
+   0.715730846f,
+   0.707106769f,
+   0.698376238f,
+   0.689540565f,
+   0.680601001f,
+   0.671558976f,
+   0.662415802f,
+   0.653172851f,
+   0.643831551f,
+   0.634393275f,
+   0.624859512f,
+   0.615231574f,
+   0.605511069f,
+   0.59569931f,
+   0.585797846f,
+   0.575808167f,
+   0.565731823f,
+   0.555570245f,
+   0.545324981f,
+   0.534997642f,
+   0.524589658f,
+   0.514102757f,
+   0.50353837f,
+   0.492898196f,
+   0.482183784f,
+   0.471396744f,
+   0.460538715f,
+   0.449611336f,
+   0.438616246f,
+   0.427555084f,
+   0.416429549f,
+   0.405241311f,
+   0.393992037f,
+   0.382683426f,
+   0.371317208f,
+   0.359895051f,
+   0.348418683f,
+   0.336889863f,
+   0.32531029f,
+   0.313681751f,
+   0.302005947f,
+   0.290284663f,
+   0.27851969f,
+   0.266712755f,
+   0.254865646f,
+   0.242980182f,
+   0.231058106f,
+   0.219101235f,
+   0.207111374f,
+   0.195090324f,
+   0.183039889f,
+   0.170961887f,
+   0.15885815f,
+   0.146730468f,
+   0.134580702f,
+   0.122410677f,
+   0.110222206f,
+   0.0980171412f,
+   0.0857973099f,
+   0.0735645667f,
+   0.061320737f,
+   0.0490676761f,
+   0.0368072242f,
+   0.024541229f,
+   0.0122715384f,
+   0.0f,
+};
+
+#endif
+
+#endif /* NEED_CELT_TX_TABLES */
