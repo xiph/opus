@@ -495,6 +495,15 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         OPUS_COPY(pcm, pcm_silk, frame_size*st->channels);
      }
    }
+#ifdef ENABLE_OSCE_BWE
+   else {
+      /* CELT-only frames never enter the SILK section above, so the extended
+         mode would otherwise retain a stale value (e.g. OSCE_MODE_SILK_BBWE
+         from a preceding WB SILK frame), which incorrectly skips the CELT
+         decode below and desyncs the range decoder. */
+      st->DecControl.osce_extended_mode = OSCE_MODE_CELT_ONLY;
+   }
+#endif
 
    start_band = 0;
    if (!decode_fec && mode != MODE_CELT_ONLY && data != NULL
