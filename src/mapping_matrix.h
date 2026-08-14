@@ -57,6 +57,20 @@ void mapping_matrix_init(
     opus_int32 data_size
 );
 
+/* As mapping_matrix_init(), but `data` holds the transpose of the matrix wanted:
+ * a `cols` x `rows` matrix, from which the `rows` x `cols` transpose is written.
+ * The built-in ambisonic matrices use this to derive a demixing matrix from the
+ * mixing matrix, which for an orthogonal mixing matrix is exactly its transpose.
+ */
+void mapping_matrix_init_transposed(
+    MappingMatrix * const matrix,
+    int rows,
+    int cols,
+    int gain,
+    const opus_int16 *data,
+    opus_int32 data_size
+);
+
 #ifndef DISABLE_FLOAT_API
 void mapping_matrix_multiply_channel_in_float(
     const MappingMatrix *matrix,
@@ -119,7 +133,33 @@ void mapping_matrix_multiply_channel_out_int24(
     int output_rows,
     int frame_size
 );
-/* Pre-computed mixing and demixing matrices for 1st to 3rd-order ambisonics.
+/* Highest ambisonic order with a built-in projection matrix. */
+#define MAPPING_MATRIX_MAX_AMBISONIC_ORDER 14
+
+/* A mapping matrix can only be stored in an Ogg OpusHead (RFC 8486 section 3.2) if
+ * its cell data fits in one Ogg page: 65025 octets of payload less the 21-octet
+ * OpusHead prefix. Ambisonic orders up to 12 satisfy this (order 12 is 171x171
+ * cells = 58482 octets); orders 13 and 14 do not, and can only be carried by a
+ * container without that limit.
+ */
+#define MAPPING_MATRIX_MAX_OGG_HEADER_OCTETS 65004
+
+/* Look up the built-in projection mixing matrix for ambisonic order `order`
+ * (1 to MAPPING_MATRIX_MAX_AMBISONIC_ORDER). Returns OPUS_BAD_ARG if no table
+ * exists for that order, in which case the outputs are untouched. The matching
+ * demixing matrix is this matrix transposed; see mapping_matrix_init_transposed().
+ */
+int mapping_matrix_get_ambisonic(
+    int order,
+    const MappingMatrix **matrix,
+    const opus_int16 **data,
+    opus_int32 *data_size
+);
+
+/* Pre-computed projection mixing matrices for 1st to 14th-order ambisonics. 1st to
+ * 5th order live in mapping_matrix.c, 6th to 14th in mapping_matrix_hoa.c. Each
+ * order's demixing matrix is the exact transpose of its mixing matrix and is not
+ * stored.
  *   foa: first-order ambisonics
  *   soa: second-order ambisonics
  *   toa: third-order ambisonics
@@ -139,19 +179,31 @@ extern const opus_int16 mapping_matrix_fourthoa_mixing_data[729];
 extern const MappingMatrix mapping_matrix_fifthoa_mixing;
 extern const opus_int16 mapping_matrix_fifthoa_mixing_data[1444];
 
-extern const MappingMatrix mapping_matrix_foa_demixing;
-extern const opus_int16 mapping_matrix_foa_demixing_data[36];
+extern const MappingMatrix mapping_matrix_sixthoa_mixing;
+extern const opus_int16 mapping_matrix_sixthoa_mixing_data[2601];
 
-extern const MappingMatrix mapping_matrix_soa_demixing;
-extern const opus_int16 mapping_matrix_soa_demixing_data[121];
+extern const MappingMatrix mapping_matrix_seventhoa_mixing;
+extern const opus_int16 mapping_matrix_seventhoa_mixing_data[4356];
 
-extern const MappingMatrix mapping_matrix_toa_demixing;
-extern const opus_int16 mapping_matrix_toa_demixing_data[324];
+extern const MappingMatrix mapping_matrix_eighthoa_mixing;
+extern const opus_int16 mapping_matrix_eighthoa_mixing_data[6889];
 
-extern const MappingMatrix mapping_matrix_fourthoa_demixing;
-extern const opus_int16 mapping_matrix_fourthoa_demixing_data[729];
+extern const MappingMatrix mapping_matrix_ninthoa_mixing;
+extern const opus_int16 mapping_matrix_ninthoa_mixing_data[10404];
 
-extern const MappingMatrix mapping_matrix_fifthoa_demixing;
-extern const opus_int16 mapping_matrix_fifthoa_demixing_data[1444];
+extern const MappingMatrix mapping_matrix_tenthoa_mixing;
+extern const opus_int16 mapping_matrix_tenthoa_mixing_data[15129];
+
+extern const MappingMatrix mapping_matrix_eleventhoa_mixing;
+extern const opus_int16 mapping_matrix_eleventhoa_mixing_data[21316];
+
+extern const MappingMatrix mapping_matrix_twelfthoa_mixing;
+extern const opus_int16 mapping_matrix_twelfthoa_mixing_data[29241];
+
+extern const MappingMatrix mapping_matrix_thirteenthoa_mixing;
+extern const opus_int16 mapping_matrix_thirteenthoa_mixing_data[39204];
+
+extern const MappingMatrix mapping_matrix_fourteenthoa_mixing;
+extern const opus_int16 mapping_matrix_fourteenthoa_mixing_data[51529];
 
 #endif /* MAPPING_MATRIX_H */
