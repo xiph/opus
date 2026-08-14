@@ -42,14 +42,13 @@ opus_int32 mapping_matrix_get_size(int rows, int cols)
   opus_int32 size;
 
   /* Mapping Matrix must only support up to 255 channels in or out.
-   * Additionally, the total cell count must be <= 65004 octets in order
-   * for the matrix to be stored in an OGG header.
+   * Note that a matrix larger than MAPPING_MATRIX_MAX_OGG_HEADER_OCTETS cannot
+   * be stored in an Ogg OpusHead; that is a container limit, checked by the
+   * muxer, and it excludes only 13th- and 14th-order ambisonics.
    */
   if (rows > 255 || cols > 255)
       return 0;
   size = rows * (opus_int32)cols * sizeof(opus_int16);
-  if (size > 65004)
-    return 0;
 
   return align(sizeof(MappingMatrix)) + align(size);
 }
@@ -995,3 +994,73 @@ const opus_int16 mapping_matrix_fifthoa_demixing_data[1444] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+
+/* Built-in projection matrices by ambisonic order, so that callers do not need a
+ * branch per order. Index 0 is unused: order 0 (mono) has no projection matrix.
+ */
+typedef struct {
+  const MappingMatrix *matrix;
+  const opus_int16 *data;
+  opus_int32 data_size;
+} AmbisonicMatrix;
+
+#define MAPPING_MATRIX_ENTRY(stem, kind) \
+  { &mapping_matrix_ ## stem ## _ ## kind, mapping_matrix_ ## stem ## _ ## kind ## _data, \
+    sizeof(mapping_matrix_ ## stem ## _ ## kind ## _data) }
+
+static const AmbisonicMatrix ambisonic_mixing_matrices[
+    MAPPING_MATRIX_MAX_AMBISONIC_ORDER + 1] = {
+  { NULL, NULL, 0 },
+  MAPPING_MATRIX_ENTRY(foa, mixing),
+  MAPPING_MATRIX_ENTRY(soa, mixing),
+  MAPPING_MATRIX_ENTRY(toa, mixing),
+  MAPPING_MATRIX_ENTRY(fourthoa, mixing),
+  MAPPING_MATRIX_ENTRY(fifthoa, mixing),
+  MAPPING_MATRIX_ENTRY(sixthoa, mixing),
+  MAPPING_MATRIX_ENTRY(seventhoa, mixing),
+  MAPPING_MATRIX_ENTRY(eighthoa, mixing),
+  MAPPING_MATRIX_ENTRY(ninthoa, mixing),
+  MAPPING_MATRIX_ENTRY(tenthoa, mixing),
+  MAPPING_MATRIX_ENTRY(eleventhoa, mixing),
+  MAPPING_MATRIX_ENTRY(twelfthoa, mixing),
+  MAPPING_MATRIX_ENTRY(thirteenthoa, mixing),
+  MAPPING_MATRIX_ENTRY(fourteenthoa, mixing)
+};
+
+static const AmbisonicMatrix ambisonic_demixing_matrices[
+    MAPPING_MATRIX_MAX_AMBISONIC_ORDER + 1] = {
+  { NULL, NULL, 0 },
+  MAPPING_MATRIX_ENTRY(foa, demixing),
+  MAPPING_MATRIX_ENTRY(soa, demixing),
+  MAPPING_MATRIX_ENTRY(toa, demixing),
+  MAPPING_MATRIX_ENTRY(fourthoa, demixing),
+  MAPPING_MATRIX_ENTRY(fifthoa, demixing),
+  MAPPING_MATRIX_ENTRY(sixthoa, demixing),
+  MAPPING_MATRIX_ENTRY(seventhoa, demixing),
+  MAPPING_MATRIX_ENTRY(eighthoa, demixing),
+  MAPPING_MATRIX_ENTRY(ninthoa, demixing),
+  MAPPING_MATRIX_ENTRY(tenthoa, demixing),
+  MAPPING_MATRIX_ENTRY(eleventhoa, demixing),
+  MAPPING_MATRIX_ENTRY(twelfthoa, demixing),
+  MAPPING_MATRIX_ENTRY(thirteenthoa, demixing),
+  MAPPING_MATRIX_ENTRY(fourteenthoa, demixing)
+};
+
+int mapping_matrix_get_ambisonic(int order, int demixing,
+  const MappingMatrix **matrix, const opus_int16 **data, opus_int32 *data_size)
+{
+  const AmbisonicMatrix *entry;
+
+  if (order < 1 || order > MAPPING_MATRIX_MAX_AMBISONIC_ORDER)
+    return OPUS_BAD_ARG;
+
+  entry = demixing ? &ambisonic_demixing_matrices[order]
+                   : &ambisonic_mixing_matrices[order];
+  if (matrix)
+    *matrix = entry->matrix;
+  if (data)
+    *data = entry->data;
+  if (data_size)
+    *data_size = entry->data_size;
+  return OPUS_OK;
+}
