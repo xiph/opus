@@ -164,6 +164,7 @@ noinst_PROGRAMS = celt/tests/test_unit_cwrs32 \
                   celt/tests/test_unit_rotation \
                   celt/tests/test_unit_types \
                   opus_compare \
+                  osce_compare \
                   opus_demo \
                   repacketizer_demo \
                   silk/tests/test_unit_LPC_inv_pred_gain \
@@ -206,6 +207,9 @@ repacketizer_demo_LDADD = libopus.la $(NE10_LIBS) $(LIBM)
 
 opus_compare_SOURCES = src/opus_compare.c
 opus_compare_LDADD = $(LIBM)
+
+osce_compare_SOURCES = src/osce_compare.c
+osce_compare_LDADD = $(LIBM)
 
 trivial_example_SOURCES = doc/trivial_example.c
 trivial_example_LDADD = libopus.la $(LIBM)

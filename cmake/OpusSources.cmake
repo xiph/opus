@@ -57,6 +57,7 @@ get_opus_sources(DNN_SOURCES_ARM_RTCD lpcnet_sources.mk dnn_sources_arm_rtcd)
 get_opus_sources(opus_demo_SOURCES Makefile.am opus_demo_sources)
 get_opus_sources(opus_custom_demo_SOURCES Makefile.am opus_custom_demo_sources)
 get_opus_sources(opus_compare_SOURCES Makefile.am opus_compare_sources)
+get_opus_sources(osce_compare_SOURCES Makefile.am osce_compare_sources)
 get_opus_sources(tests_test_opus_api_SOURCES Makefile.am test_opus_api_sources)
 get_opus_sources(tests_test_opus_encode_SOURCES Makefile.am
                  test_opus_encode_sources)

@@ -138,21 +138,20 @@ def osce_scheduled_dump(writer, prefix, model, schedule):
     for name, kwargs in schedule:
         dump_torch_weights(writer, model.get_submodule(name), prefix + export_name(name), **kwargs, verbose=True)
 
-if __name__ == "__main__":
-    args = parser.parse_args()
-
-    checkpoint_path = args.checkpoint
-    outdir = args.output_dir
+def export_model(checkpoint_path, outdir, quantize=False, transform=None, strict=True):
     os.makedirs(outdir, exist_ok=True)
 
     # dump message
     message = f"Auto generated from checkpoint {os.path.basename(checkpoint_path)} (sha1: {sha1(checkpoint_path)})"
 
     # create model and load weights
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
     model = model_dict[checkpoint['setup']['model']['name']](*checkpoint['setup']['model']['args'], **checkpoint['setup']['model']['kwargs'])
-    model.load_state_dict(checkpoint['state_dict'])
+    model.load_state_dict(checkpoint['state_dict'], strict=strict)
     remove_all_weight_norm(model, verbose=True)
+
+    if transform is not None:
+        transform(model)
 
     # CWriter
     model_name = checkpoint['setup']['model']['name']
@@ -189,9 +188,15 @@ if __name__ == "__main__":
 
 
     # dump layers
-    if model_name in schedules and args.quantize:
+    if model_name in schedules and quantize:
         osce_scheduled_dump(cwriter, model_name, model, schedules[model_name])
     else:
         osce_dump_generic(cwriter, model_name, model)
 
     cwriter.close()
+
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+
+    export_model(args.checkpoint, args.output_dir, quantize=args.quantize)
