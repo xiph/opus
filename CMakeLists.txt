@@ -580,6 +580,19 @@ if(NOT OPUS_DISABLE_INTRINSICS)
       add_sources_group(opus lpcnet ${dnn_sources_arm_neon})
     endif()
 
+    # Armv8.2 DOTPROD: build the int8 dot-product DNN kernels with the dotprod
+    # -march flag so cgemv8x4 uses vdotq_s32 instead of the slower vmull_s8 /
+    # vpadalq_s16 emulation. Dispatched at runtime via the RTCD table, matching
+    # the Autotools and Meson builds (the source was previously never compiled).
+    if(COMPILER_SUPPORT_DOTPROD AND OPUS_MAY_HAVE_DOTPROD)
+      target_compile_definitions(opus PRIVATE OPUS_ARM_MAY_HAVE_DOTPROD)
+      if(OPUS_DNN)
+        add_sources_group(opus lpcnet ${dnn_sources_arm_dotprod})
+        set_source_files_properties(${dnn_sources_arm_dotprod}
+                                    PROPERTIES COMPILE_FLAGS "-march=armv8.2-a+dotprod")
+      endif()
+    endif()
+
     # silk arm neon depends on main_Fix.h
     target_include_directories(opus PRIVATE silk/fixed)
 
