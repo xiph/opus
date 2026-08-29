@@ -15,10 +15,10 @@ include(CMakeDependentOption)
 include(FeatureSummary)
 
 # Detect clang-cl
-set(MSVC_CLANG_CL false BOOL)
+set(MSVC_CLANG_CL FALSE)
 if (MSVC)
     if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-        set(MSVC_CLANG_CL true BOOL)
+        set(MSVC_CLANG_CL TRUE)
     endif()
 endif()
 
