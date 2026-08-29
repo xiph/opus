@@ -87,6 +87,7 @@ struct OpusEncoder {
     int          signal_type;
     int          user_bandwidth;
     int          max_bandwidth;
+    int          min_bandwidth;
     int          user_forced_mode;
     int          voice_ratio;
     opus_int32   Fs;
@@ -298,6 +299,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->signal_type = OPUS_AUTO;
     st->user_bandwidth = OPUS_AUTO;
     st->max_bandwidth = OPUS_BANDWIDTH_FULLBAND;
+    st->min_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
     st->force_channels = OPUS_AUTO;
     st->user_forced_mode = OPUS_AUTO;
     st->voice_ratio = -1;
@@ -1619,6 +1621,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
            mode transitions. */
         if (bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
            bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+        /* If have minbandwidth (currently just use wideband to apply LACE & NOLACE)*/
+        if(st->min_bandwidth == OPUS_BANDWIDTH_WIDEBAND && bandwidth < st->min_bandwidth)
+           bandwidth = st->min_bandwidth;
         st->bandwidth = st->auto_bandwidth = bandwidth;
         /* Prevents any transition to SWB/FB until the SILK layer has fully
            switched to WB mode and turned the variable LP filter off */
@@ -2122,7 +2127,13 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
             /* Don't allow bandwidth reduction at lowest bitrates in hybrid mode */
             st->silk_mode.minInternalSampleRate = 16000;
         } else {
-            st->silk_mode.minInternalSampleRate = 8000;
+            if (st->min_bandwidth == OPUS_BANDWIDTH_WIDEBAND) {
+                st->silk_mode.minInternalSampleRate = 16000;
+            }
+            else {
+                st->silk_mode.minInternalSampleRate = 8000;
+            }
+            
         }
 
         st->silk_mode.maxInternalSampleRate = 16000;
@@ -2884,6 +2895,33 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                goto bad_arg;
             }
             *value = st->max_bandwidth;
+        }
+        break;
+        case OPUS_SET_MIN_BANDWIDTH_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < OPUS_BANDWIDTH_NARROWBAND || value > OPUS_BANDWIDTH_FULLBAND)
+            {
+                goto bad_arg;
+            }
+            if (value == OPUS_BANDWIDTH_WIDEBAND) {
+                st->min_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+                st->silk_mode.minInternalSampleRate = 16000;
+            }
+            else {
+                st->min_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
+                st->silk_mode.minInternalSampleRate = 8000;
+            }
+        }
+        break;
+        case OPUS_GET_MIN_BANDWIDTH_REQUEST:
+        {
+            opus_int32* value = va_arg(ap, opus_int32*);
+            if (!value)
+            {
+                goto bad_arg;
+            }
+            *value = st->min_bandwidth;
         }
         break;
         case OPUS_SET_BANDWIDTH_REQUEST:
