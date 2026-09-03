@@ -171,19 +171,32 @@ extern void
 #  endif
 
 # if defined(__aarch64__)
+#  if defined(CUSTOM_MODES)
+#   define CELT_ARM_MAYBE_FALLBACK(cond, asm_expr, c_expr) ((cond) ? (c_expr) : (asm_expr))
+#  else
+#   define CELT_ARM_MAYBE_FALLBACK(cond, asm_expr, c_expr) (asm_expr)
+#  endif
+
 #  if !defined(OVERRIDE_COMB_FILTER_CONST)
 #   if defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_MAY_HAVE_NEON_INTR) \
        && !defined(OPUS_ARM_PRESUME_NEON_INTR)
 extern void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK+1])(opus_val32 *y,
       opus_val32 *x, int T, int N, opus_val16 g10, opus_val16 g11, opus_val16 g12);
 #    define OVERRIDE_COMB_FILTER_CONST (1)
-#    define comb_filter_const(y, x, T, N, g10, g11, g12, arch) \
-       ((*COMB_FILTER_CONST_IMPL[(arch)&OPUS_ARCHMASK])(y, x, T, N, g10, g11, g12))
 #    define NON_STATIC_COMB_FILTER_CONST_C
+#    define comb_filter_const(y, x, T, N, g10, g11, g12, arch) \
+       CELT_ARM_MAYBE_FALLBACK((N) & 7, \
+          ((*COMB_FILTER_CONST_IMPL[(arch)&OPUS_ARCHMASK])(y, x, T, N, g10, g11, g12)), \
+          comb_filter_const_c(y, x, T, N, g10, g11, g12))
 #   elif defined(OPUS_ARM_PRESUME_NEON_INTR)
 #    define OVERRIDE_COMB_FILTER_CONST (1)
+#    if defined(CUSTOM_MODES)
+#     define NON_STATIC_COMB_FILTER_CONST_C
+#    endif
 #    define comb_filter_const(y, x, T, N, g10, g11, g12, arch) \
-       ((void)(arch), comb_filter_const_neon(y, x, T, N, g10, g11, g12))
+       CELT_ARM_MAYBE_FALLBACK((N) & 7, \
+          ((void)(arch), comb_filter_const_neon(y, x, T, N, g10, g11, g12)), \
+          comb_filter_const_c(y, x, T, N, g10, g11, g12))
 #   endif
 #  endif
 
@@ -194,11 +207,15 @@ extern void (*const DEEMPHASIS_STEREO_SIMPLE_IMPL[OPUS_ARCHMASK+1])(
       celt_sig *in[], opus_res *pcm, int N, opus_val16 coef, celt_sig *mem);
 #    define OVERRIDE_DEEMPHASIS_STEREO_SIMPLE (1)
 #    define deemphasis_stereo_simple(in, pcm, N, coef, mem, arch) \
-       ((*DEEMPHASIS_STEREO_SIMPLE_IMPL[(arch)&OPUS_ARCHMASK])(in, pcm, N, coef, mem))
+       CELT_ARM_MAYBE_FALLBACK((N) & 3, \
+          ((*DEEMPHASIS_STEREO_SIMPLE_IMPL[(arch)&OPUS_ARCHMASK])(in, pcm, N, coef, mem)), \
+          deemphasis_stereo_simple_c(in, pcm, N, coef, mem))
 #   elif defined(OPUS_ARM_PRESUME_NEON_INTR)
 #    define OVERRIDE_DEEMPHASIS_STEREO_SIMPLE (1)
 #    define deemphasis_stereo_simple(in, pcm, N, coef, mem, arch) \
-       ((void)(arch), deemphasis_stereo_simple_neon(in, pcm, N, coef, mem))
+       CELT_ARM_MAYBE_FALLBACK((N) & 3, \
+          ((void)(arch), deemphasis_stereo_simple_neon(in, pcm, N, coef, mem)), \
+          deemphasis_stereo_simple_c(in, pcm, N, coef, mem))
 #   endif
 #  endif
 
@@ -209,11 +226,15 @@ extern opus_val32 (*const CELT_DEEMPHASIS_IMPL[OPUS_ARCHMASK+1])(opus_res *y,
       const opus_val32 *x, opus_val16 coef0, opus_val32 m, int N);
 #    define OVERRIDE_CELT_DEEMPHASIS (1)
 #    define celt_deemphasis(y, x, coef, m, N, arch) \
-       ((*CELT_DEEMPHASIS_IMPL[(arch)&OPUS_ARCHMASK])(y, x, coef, m, N))
+       CELT_ARM_MAYBE_FALLBACK((N) & 3, \
+          ((*CELT_DEEMPHASIS_IMPL[(arch)&OPUS_ARCHMASK])(y, x, coef, m, N)), \
+          celt_deemphasis_c(y, x, coef, m, N))
 #   elif defined(OPUS_ARM_PRESUME_NEON_INTR)
 #    define OVERRIDE_CELT_DEEMPHASIS (1)
 #    define celt_deemphasis(y, x, coef, m, N, arch) \
-       ((void)(arch), celt_deemphasis_neon(y, x, coef, m, N))
+       CELT_ARM_MAYBE_FALLBACK((N) & 3, \
+          ((void)(arch), celt_deemphasis_neon(y, x, coef, m, N)), \
+          celt_deemphasis_c(y, x, coef, m, N))
 #   endif
 #  endif
 # endif /* __aarch64__ */
