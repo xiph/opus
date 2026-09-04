@@ -45,21 +45,15 @@
 typedef kiss_fft_cpx cpx;
 
 
-#ifdef FIXED_POINT
-#ifdef ENABLE_QEXT
-#define SIN_2PI_3  1859775393L /* 0.866025388 * 2147483648 */
-#define COS_2PI_5  663608942L  /* 0.309017003 * 2147483648 */
-#define SIN_2PI_5  2042378317L /* 0.951056540 * 2147483648 */
-#define COS_4PI_5  1737350766L /* 0.809016994 * 2147483648 */
-#define SIN_4PI_5  1262259218L /* 0.587785252 * 2147483648 */
-#else
-#define SIN_2PI_3  28378  /* 0.866025388 * 32768 */
-#define COS_2PI_5  10126  /* 0.309017003 * 32768 */
-#define SIN_2PI_5  31164  /* 0.951056540 * 32768 */
-#define COS_4PI_5  26509  /* 0.809016994 * 32768 */
-#define SIN_4PI_5  19261  /* 0.587785252 * 32768 */
-#endif
+#include "celt_tx_tables.h"
 
+#define COS_2PI_5  celt_tx_tab_53[0]
+#define COS_4PI_5  celt_tx_tab_53[2]
+#define SIN_2PI_5  celt_tx_tab_53[4]
+#define SIN_4PI_5  celt_tx_tab_53[6]
+#define SIN_2PI_3  celt_tx_tab_53[8]
+
+#ifdef FIXED_POINT
 static void pfa_downshift(cpx *x, int N, int *total, int step) {
    int i;
    int shift = IMIN(step, *total);
@@ -78,11 +72,6 @@ static void pfa_downshift(cpx *x, int N, int *total, int step) {
 }
 #define PFA_DOWNSHIFT(x, N, total, step) pfa_downshift(x, N, total, step)
 #else
-#define SIN_2PI_3  0.866025388f
-#define COS_2PI_5  0.309017003f
-#define SIN_2PI_5  0.951056540f
-#define COS_4PI_5  0.809016994f
-#define SIN_4PI_5  0.587785252f
 #define PFA_DOWNSHIFT(x, N, total, step) (void)(x); (void)(N); (void)(total); (void)(step)
 #endif
 
@@ -100,7 +89,6 @@ struct OpusTXContext {
 };
 
 #include <stddef.h>
-#include "celt_tx_tables.h"
 static const opus_int16 p4[4]   = { 0, 2, 1, 3 };
 static const opus_int16 p8[8]   = { 0, 4, 2, 6, 1, 5, 7, 3 };
 static const opus_int16 p16[16] = { 0, 8, 4, 12, 2, 10, 14, 6, 1, 9, 5, 13, 15, 7, 3, 11 };

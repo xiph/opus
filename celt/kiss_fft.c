@@ -489,7 +489,11 @@ kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,
         st->scale = 1.f/nfft;
 #endif
 #if defined(ENABLE_PFA)
-        if (nfft == 60 || nfft == 120 || nfft == 240 || nfft == 480 || nfft == 960)
+        if (nfft == 60 || nfft == 120 || nfft == 240 || nfft == 480
+#if defined(ENABLE_QEXT)
+            || nfft == 960
+#endif
+           )
         {
            st->twiddles = NULL;
            st->shift = -1;
@@ -639,7 +643,11 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int dow
 void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
 #if defined(ENABLE_PFA)
-   if (st->nfft == 60 || st->nfft == 120 || st->nfft == 240 || st->nfft == 480 || st->nfft == 960)
+   if (st->nfft == 60 || st->nfft == 120 || st->nfft == 240 || st->nfft == 480
+#if defined(ENABLE_QEXT)
+       || st->nfft == 960
+#endif
+      )
    {
       int i;
       celt_coef scale = st->scale;
@@ -690,7 +698,11 @@ void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *f
 void opus_ifft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
 #if defined(ENABLE_PFA)
-   if (st->nfft == 60 || st->nfft == 120 || st->nfft == 240 || st->nfft == 480 || st->nfft == 960)
+   if (st->nfft == 60 || st->nfft == 120 || st->nfft == 240 || st->nfft == 480
+#if defined(ENABLE_QEXT)
+       || st->nfft == 960
+#endif
+      )
    {
       opus_ifft_pfa_c(st, fin, fout ARG_FIXED(0));
       return;
