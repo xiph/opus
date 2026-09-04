@@ -842,6 +842,13 @@ opus_int32 frame_size_select(int application, opus_int32 frame_size, int variabl
       return -1;
    if (new_size>frame_size)
       return -1;
+   /* Every legal duration below is at most 6*Fs/50 (120 ms), so a caller
+      passing a frame_size large enough to overflow the multiplications
+      that follow can only be trying to smuggle through an out-of-range
+      value: new_size can't legitimately reach here already bigger than
+      Fs itself, so reject it before the overflow-prone checks run. */
+   if (new_size>Fs)
+      return -1;
    if (400*new_size!=Fs   && 200*new_size!=Fs   && 100*new_size!=Fs   &&
         50*new_size!=Fs   &&  25*new_size!=Fs   &&  50*new_size!=3*Fs &&
         50*new_size!=4*Fs &&  50*new_size!=5*Fs &&  50*new_size!=6*Fs)
