@@ -29,8 +29,8 @@
  * .S files (the C preprocessor runs on .S, so __APPLE__/__ELF__ are visible).
  * A minimal subset of FFmpeg's libavutil/aarch64/asm.S covering both ELF
  * (Linux/Android) and Mach-O (Apple): function/endfunc/const/endconst/movrel,
- * leading-underscore symbol prefixing on Apple, and the BTI/PAC branch
- * protection hooks. Windows omitted.
+ * leading-underscore symbol prefixing on Apple, hidden visibility, and the
+ * BTI/PAC branch protection hooks. Windows omitted.
  */
 
 #ifndef CELT_ARM_ASM_H
@@ -108,8 +108,13 @@
         .align  \align
         .if \export
         .global EXTERN_ASM\name
+/* Global for the C glue but not part of libopus's ABI: the C code is built
+   with -fvisibility=hidden, so match it here. */
 #ifdef __ELF__
         .type   EXTERN_ASM\name, %function
+        .hidden EXTERN_ASM\name
+#elif defined(__APPLE__)
+        .private_extern EXTERN_ASM\name
 #endif
 EXTERN_ASM\name\():
         AARCH64_VALID_CALL_TARGET
