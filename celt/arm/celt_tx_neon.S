@@ -81,9 +81,18 @@
  *   x3 = ptrdiff_t stride (bytes)
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#if defined(__aarch64__)
+
+/* Included outside the FIXED_POINT guard: the .note.gnu.property it emits
+   must be present even when the kernels are compiled out, or the linker
+   drops BTI/PAC for the whole library. */
 #include "celt_arm_asm.h"
 
-#if defined(__aarch64__) && !defined(FIXED_POINT)
+#if !defined(FIXED_POINT)
 
 /* Open `doc/transforms.md` (FFmpeg) to see the code upon which the
  * transforms here were based upon.
@@ -2047,4 +2056,5 @@ endfunc celt_tx_fft_sr_\name\()_neon
 FFT_SPLIT_RADIX_FN ns_float, 1
 // LIBOPUS DELTA (I): FFT_SPLIT_RADIX_FN float not instantiated.
 
-#endif /* __aarch64__ && !FIXED_POINT */
+#endif /* !FIXED_POINT */
+#endif /* __aarch64__ */

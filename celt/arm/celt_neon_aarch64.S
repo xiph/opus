@@ -47,9 +47,18 @@
  *   (C) Stereo: every channel-A line has a channel-B twin.
  */
 
-#if defined(__aarch64__) && !defined(FIXED_POINT)
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#if defined(__aarch64__)
+
+/* Included outside the FIXED_POINT guard: the .note.gnu.property it emits
+   must be present even when the kernels are compiled out, or the linker
+   drops BTI/PAC for the whole library. */
 #include "celt_arm_asm.h"
+
+#if !defined(FIXED_POINT)
 
         const   LSIG2RES_inv_scale, align=2
         .float  3.0517578125e-5         /* 1.f / CELT_SIG_SCALE */
@@ -266,4 +275,5 @@
         ret
         endfunc deemphasis_stereo_simple_neon
 
-#endif /* __aarch64__ && !FIXED_POINT */
+#endif /* !FIXED_POINT */
+#endif /* __aarch64__ */
