@@ -184,6 +184,23 @@ AS_IF([test "$enable_opus_custom_api" = "yes"],[
 
 AM_CONDITIONAL([CUSTOM_MODES], [test "$enable_custom_modes" = "yes" || test "$enable_opus_custom_api" = "yes"])
 
+AC_ARG_ENABLE([ambisonics-max-order],
+    [AS_HELP_STRING([--enable-ambisonics-max-order=N],
+        [highest ambisonic order the projection encoder can encode, 1 to 14
+         (default: 5, or 14 if no N is given). The built-in projection matrices
+         cost 5.2 KiB of .rodata at order 5 and 358 KiB at order 14. Decoding is
+         unaffected: the demixing matrix comes from the OpusHead.])],,
+    [enable_ambisonics_max_order=5])
+
+AS_IF([test "$enable_ambisonics_max_order" = "yes"],[enable_ambisonics_max_order=14])
+
+AS_CASE([$enable_ambisonics_max_order],
+  [1|2|3|4|5|6|7|8|9|10|11|12|13|14],[],
+  [AC_MSG_ERROR([--enable-ambisonics-max-order must be an integer from 1 to 14, or "yes" for 14; got "$enable_ambisonics_max_order".])])
+
+AC_DEFINE_UNQUOTED([OPUS_AMBISONICS_MAX_ORDER], [$enable_ambisonics_max_order],
+  [Highest ambisonic order with a built-in projection matrix])
+
 AC_ARG_ENABLE([dred],
     [AS_HELP_STRING([--enable-dred], [use Deep REDundancy (DRED)])],,
     [enable_dred=no])
@@ -1097,6 +1114,7 @@ AC_MSG_NOTICE([
       Intrinsics Optimizations: ...... ${intrinsics_support}
       Run-time CPU detection: ........ ${rtcd_support}
       Custom modes: .................. ${enable_custom_modes}
+      Max ambisonics order: .......... ${enable_ambisonics_max_order}
       Assertion checking: ............ ${enable_assertions}
       Hardening: ..................... ${enable_hardening}
       Fuzzing: ....................... ${enable_fuzzing}

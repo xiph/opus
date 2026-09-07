@@ -197,6 +197,12 @@ jobs:
             args: "-DOPUS_CUSTOM_MODES=ON"
           }
         - {
+            name: "MaxAmbisonicsOrder/Windows/Lib/X64/Release",
+            os: windows-latest,
+            config: Release,
+            args: -G "Visual Studio 18 2026" -A x64 -DOPUS_AMBISONICS_MAX_ORDER=14
+          }
+        - {
             name: "AssertionsFuzz/Windows/Lib/X64/Release",
             os: windows-latest,
             config: Release,

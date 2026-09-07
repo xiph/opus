@@ -183,6 +183,9 @@ opt_intrinsics = get_option('intrinsics')
 extra_programs = get_option('extra-programs')
 opt_tests = get_option('tests')
 
+ambisonics_max_order = get_option('ambisonics-max-order')
+opus_conf.set('OPUS_AMBISONICS_MAX_ORDER', ambisonics_max_order)
+
 disable_float_api = not get_option('float-api')
 if disable_float_api
   opus_conf.set('DISABLE_FLOAT_API', 1)
@@ -732,6 +735,7 @@ summary(
 summary(
   {
     'Custom modes': opt_custom_modes,
+    'Max ambisonics order': ambisonics_max_order,
     'Assertions': opt_assertions,
     'Hardening': opt_hardening,
     'Fuzzing': opt_fuzzing,

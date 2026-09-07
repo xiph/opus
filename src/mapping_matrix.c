@@ -350,6 +350,7 @@ const opus_int16 mapping_matrix_foa_mixing_data[36] = {
          0,      0,      0,  32767
 };
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 2
 /* Order-2 ambisonics: 9 ACN channels + 2 non-diegetic = 11 streams.
    maxDet (Fekete) nodes, degree 2 (9 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -374,7 +375,9 @@ const opus_int16 mapping_matrix_soa_mixing_data[121] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 3
 /* Order-3 ambisonics: 16 ACN channels + 2 non-diegetic = 18 streams.
    maxDet (Fekete) nodes, degree 3 (16 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -424,7 +427,9 @@ const opus_int16 mapping_matrix_toa_mixing_data[324] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 4
 /* Order-4 ambisonics: 25 ACN channels + 2 non-diegetic = 27 streams.
    maxDet (Fekete) nodes, degree 4 (25 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -525,7 +530,9 @@ const opus_int16 mapping_matrix_fourthoa_mixing_data[729] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 5
 /* Order-5 ambisonics: 36 ACN channels + 2 non-diegetic = 38 streams.
    maxDet (Fekete) nodes, degree 5 (36 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -715,6 +722,7 @@ const opus_int16 mapping_matrix_fifthoa_mixing_data[1444] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
 
 /* Built-in projection mixing matrices by ambisonic order, so that callers do not need
@@ -734,19 +742,45 @@ static const AmbisonicMatrix ambisonic_mixing_matrices[
     MAPPING_MATRIX_MAX_AMBISONIC_ORDER + 1] = {
   { NULL, NULL, 0 },
   MAPPING_MATRIX_ENTRY(foa),
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 2
   MAPPING_MATRIX_ENTRY(soa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 3
   MAPPING_MATRIX_ENTRY(toa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 4
   MAPPING_MATRIX_ENTRY(fourthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 5
   MAPPING_MATRIX_ENTRY(fifthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 6
   MAPPING_MATRIX_ENTRY(sixthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 7
   MAPPING_MATRIX_ENTRY(seventhoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 8
   MAPPING_MATRIX_ENTRY(eighthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 9
   MAPPING_MATRIX_ENTRY(ninthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 10
   MAPPING_MATRIX_ENTRY(tenthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 11
   MAPPING_MATRIX_ENTRY(eleventhoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 12
   MAPPING_MATRIX_ENTRY(twelfthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 13
   MAPPING_MATRIX_ENTRY(thirteenthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 14
   MAPPING_MATRIX_ENTRY(fourteenthoa)
+#endif
 };
 
 int mapping_matrix_get_ambisonic(int order, const MappingMatrix **matrix,

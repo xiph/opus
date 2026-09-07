@@ -861,8 +861,13 @@ int main(int _argc, char **_argv)
   for (order = 1; order <= MAX_AMBISONIC_ORDER; order++)
     test_matrix_roundtrip(order);
 
-  /* Test encode/decode pipeline. */
-  test_encode_decode(64 * 18, 18, 3);
+  /* Test encode/decode pipeline, at third order or the highest order built into
+     this configuration, whichever is lower. */
+  {
+    int test_order = MAX_AMBISONIC_ORDER < 3 ? MAX_AMBISONIC_ORDER : 3;
+    int channels = (test_order + 1) * (test_order + 1) + 2;
+    test_encode_decode(64 * channels, channels, 3);
+  }
 
   /* Test encode/decode of synthetic ambisonic material at every order, with and
      without the two non-diegetic channels. */

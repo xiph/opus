@@ -40,6 +40,7 @@
 #include "arch.h"
 #include "mapping_matrix.h"
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 6
 /* Order-6 ambisonics: 49 ACN channels + 2 non-diegetic = 51 streams.
    maxDet (Fekete) nodes, degree 6 (49 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -374,7 +375,9 @@ const opus_int16 mapping_matrix_sixthoa_mixing_data[2601] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 7
 /* Order-7 ambisonics: 64 ACN channels + 2 non-diegetic = 66 streams.
    maxDet (Fekete) nodes, degree 7 (64 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -928,7 +931,9 @@ const opus_int16 mapping_matrix_seventhoa_mixing_data[4356] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 8
 /* Order-8 ambisonics: 81 ACN channels + 2 non-diegetic = 83 streams.
    maxDet (Fekete) nodes, degree 8 (81 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -1799,7 +1804,9 @@ const opus_int16 mapping_matrix_eighthoa_mixing_data[6889] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 9
 /* Order-9 ambisonics: 100 ACN channels + 2 non-diegetic = 102 streams.
    maxDet (Fekete) nodes, degree 9 (100 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -3109,7 +3116,9 @@ const opus_int16 mapping_matrix_ninthoa_mixing_data[10404] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 10
 /* Order-10 ambisonics: 121 ACN channels + 2 non-diegetic = 123 streams.
    maxDet (Fekete) nodes, degree 10 (121 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -5010,7 +5019,9 @@ const opus_int16 mapping_matrix_tenthoa_mixing_data[15129] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 11
 /* Order-11 ambisonics: 144 ACN channels + 2 non-diegetic = 146 streams.
    maxDet (Fekete) nodes, degree 11 (144 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -7684,7 +7695,9 @@ const opus_int16 mapping_matrix_eleventhoa_mixing_data[21316] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 12
 /* Order-12 ambisonics: 169 ACN channels + 2 non-diegetic = 171 streams.
    maxDet (Fekete) nodes, degree 12 (169 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -11349,7 +11362,9 @@ const opus_int16 mapping_matrix_twelfthoa_mixing_data[29241] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 13
 /* Order-13 ambisonics: 196 ACN channels + 2 non-diegetic = 198 streams.
    maxDet (Fekete) nodes, degree 13 (196 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -16259,7 +16274,9 @@ const opus_int16 mapping_matrix_thirteenthoa_mixing_data[39204] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 14
 /* Order-14 ambisonics: 225 ACN channels + 2 non-diegetic = 227 streams.
    maxDet (Fekete) nodes, degree 14 (225 points), orthogonalized: the mixing
    matrix has orthonormal columns, so cond = 1, no gain field is needed, and the
@@ -22710,3 +22727,4 @@ const opus_int16 mapping_matrix_fourteenthoa_mixing_data[51529] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif

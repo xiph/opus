@@ -13,6 +13,7 @@ option('osce', type : 'feature', value : 'disabled', description : 'Enable Opus 
 option('dnn-debug-float', type : 'feature', value : 'disabled', description : 'Compute DNN using float weights')
 
 option('custom-modes', type : 'boolean', value : false, description : 'Enable non-Opus modes, e.g. 44.1 kHz & 2^n frames')
+option('ambisonics-max-order', type : 'integer', min : 1, max : 14, value : 5, description : 'Highest ambisonic order the projection encoder can encode. The built-in projection matrices cost 5.2 KiB of .rodata at order 5 and 358 KiB at order 14; decoding is unaffected')
 option('extra-programs', type : 'feature', value : 'auto', description : 'Extra programs (demo and tests)')
 option('assertions', type : 'boolean', value : false, description : 'Additional software error checking')
 option('hardening', type : 'boolean', value : true, description : 'Run-time checks that are cheap and safe for use in production')
