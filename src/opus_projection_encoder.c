@@ -159,8 +159,7 @@ opus_int32 opus_projection_ambisonics_encoder_get_size(int channels,
   int nb_streams;
   int nb_coupled_streams;
   int order_plus_one;
-  int mixing_matrix_rows, mixing_matrix_cols;
-  int demixing_matrix_rows, demixing_matrix_cols;
+  const MappingMatrix *table;
   opus_int32 mixing_matrix_size, demixing_matrix_size;
   opus_int32 encoder_size;
   int ret;
@@ -170,51 +169,16 @@ opus_int32 opus_projection_ambisonics_encoder_get_size(int channels,
   if (ret != OPUS_OK)
     return 0;
 
-  if (order_plus_one == 2)
-  {
-    mixing_matrix_rows = mapping_matrix_foa_mixing.rows;
-    mixing_matrix_cols = mapping_matrix_foa_mixing.cols;
-    demixing_matrix_rows = mapping_matrix_foa_demixing.rows;
-    demixing_matrix_cols = mapping_matrix_foa_demixing.cols;
-  }
-  else if (order_plus_one == 3)
-  {
-    mixing_matrix_rows = mapping_matrix_soa_mixing.rows;
-    mixing_matrix_cols = mapping_matrix_soa_mixing.cols;
-    demixing_matrix_rows = mapping_matrix_soa_demixing.rows;
-    demixing_matrix_cols = mapping_matrix_soa_demixing.cols;
-  }
-  else if (order_plus_one == 4)
-  {
-    mixing_matrix_rows = mapping_matrix_toa_mixing.rows;
-    mixing_matrix_cols = mapping_matrix_toa_mixing.cols;
-    demixing_matrix_rows = mapping_matrix_toa_demixing.rows;
-    demixing_matrix_cols = mapping_matrix_toa_demixing.cols;
-  }
-  else if (order_plus_one == 5)
-  {
-    mixing_matrix_rows = mapping_matrix_fourthoa_mixing.rows;
-    mixing_matrix_cols = mapping_matrix_fourthoa_mixing.cols;
-    demixing_matrix_rows = mapping_matrix_fourthoa_demixing.rows;
-    demixing_matrix_cols = mapping_matrix_fourthoa_demixing.cols;
-  }
-  else if (order_plus_one == 6)
-  {
-    mixing_matrix_rows = mapping_matrix_fifthoa_mixing.rows;
-    mixing_matrix_cols = mapping_matrix_fifthoa_mixing.cols;
-    demixing_matrix_rows = mapping_matrix_fifthoa_demixing.rows;
-    demixing_matrix_cols = mapping_matrix_fifthoa_demixing.cols;
-  }
-  else
+  /* Use the pre-computed matrix for this order, if there is one. */
+  if (mapping_matrix_get_ambisonic(order_plus_one - 1, &table, NULL, NULL) != OPUS_OK)
     return 0;
 
-  mixing_matrix_size =
-    mapping_matrix_get_size(mixing_matrix_rows, mixing_matrix_cols);
+  mixing_matrix_size = mapping_matrix_get_size(table->rows, table->cols);
   if (!mixing_matrix_size)
     return 0;
 
-  demixing_matrix_size =
-    mapping_matrix_get_size(demixing_matrix_rows, demixing_matrix_cols);
+  /* The demixing matrix is the mixing matrix transposed. */
+  demixing_matrix_size = mapping_matrix_get_size(table->cols, table->rows);
   if (!demixing_matrix_size)
     return 0;
 
@@ -234,6 +198,9 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
 {
   MappingMatrix *mixing_matrix;
   MappingMatrix *demixing_matrix;
+  const MappingMatrix *table;
+  const opus_int16 *table_data;
+  opus_int32 table_data_size;
   OpusMSEncoder *ms_encoder;
   int i;
   int ret;
@@ -251,89 +218,27 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
   if (mapping_family == 3)
   {
     /* Assign mixing matrix based on available pre-computed matrices. */
-    mixing_matrix = get_mixing_matrix(st);
-    if (order_plus_one == 2)
-    {
-      mapping_matrix_init(mixing_matrix, mapping_matrix_foa_mixing.rows,
-        mapping_matrix_foa_mixing.cols, mapping_matrix_foa_mixing.gain,
-        mapping_matrix_foa_mixing_data,
-        sizeof(mapping_matrix_foa_mixing_data));
-    }
-    else if (order_plus_one == 3)
-    {
-      mapping_matrix_init(mixing_matrix, mapping_matrix_soa_mixing.rows,
-        mapping_matrix_soa_mixing.cols, mapping_matrix_soa_mixing.gain,
-        mapping_matrix_soa_mixing_data,
-        sizeof(mapping_matrix_soa_mixing_data));
-    }
-    else if (order_plus_one == 4)
-    {
-      mapping_matrix_init(mixing_matrix, mapping_matrix_toa_mixing.rows,
-        mapping_matrix_toa_mixing.cols, mapping_matrix_toa_mixing.gain,
-        mapping_matrix_toa_mixing_data,
-        sizeof(mapping_matrix_toa_mixing_data));
-    }
-    else if (order_plus_one == 5)
-    {
-      mapping_matrix_init(mixing_matrix, mapping_matrix_fourthoa_mixing.rows,
-        mapping_matrix_fourthoa_mixing.cols, mapping_matrix_fourthoa_mixing.gain,
-        mapping_matrix_fourthoa_mixing_data,
-        sizeof(mapping_matrix_fourthoa_mixing_data));
-    }
-    else if (order_plus_one == 6)
-    {
-      mapping_matrix_init(mixing_matrix, mapping_matrix_fifthoa_mixing.rows,
-        mapping_matrix_fifthoa_mixing.cols, mapping_matrix_fifthoa_mixing.gain,
-        mapping_matrix_fifthoa_mixing_data,
-        sizeof(mapping_matrix_fifthoa_mixing_data));
-    }
-    else
+    if (mapping_matrix_get_ambisonic(order_plus_one - 1, &table, &table_data,
+                                     &table_data_size) != OPUS_OK)
       return OPUS_BAD_ARG;
+
+    mixing_matrix = get_mixing_matrix(st);
+    mapping_matrix_init(mixing_matrix, table->rows, table->cols, table->gain,
+      table_data, table_data_size);
 
     st->mixing_matrix_size_in_bytes = mapping_matrix_get_size(
       mixing_matrix->rows, mixing_matrix->cols);
     if (!st->mixing_matrix_size_in_bytes)
       return OPUS_BAD_ARG;
 
-    /* Assign demixing matrix based on available pre-computed matrices. */
+    /* The mixing matrix has orthonormal columns, so its inverse is its transpose:
+     * derive the demixing matrix from the same table rather than storing a second
+     * copy of it. The gain carries over unchanged because a transpose has the same
+     * peak magnitude, and no built-in matrix needs a gain field at all.
+     */
     demixing_matrix = get_enc_demixing_matrix(st);
-    if (order_plus_one == 2)
-    {
-      mapping_matrix_init(demixing_matrix, mapping_matrix_foa_demixing.rows,
-        mapping_matrix_foa_demixing.cols, mapping_matrix_foa_demixing.gain,
-        mapping_matrix_foa_demixing_data,
-        sizeof(mapping_matrix_foa_demixing_data));
-    }
-    else if (order_plus_one == 3)
-    {
-      mapping_matrix_init(demixing_matrix, mapping_matrix_soa_demixing.rows,
-        mapping_matrix_soa_demixing.cols, mapping_matrix_soa_demixing.gain,
-        mapping_matrix_soa_demixing_data,
-        sizeof(mapping_matrix_soa_demixing_data));
-    }
-    else if (order_plus_one == 4)
-    {
-      mapping_matrix_init(demixing_matrix, mapping_matrix_toa_demixing.rows,
-        mapping_matrix_toa_demixing.cols, mapping_matrix_toa_demixing.gain,
-        mapping_matrix_toa_demixing_data,
-        sizeof(mapping_matrix_toa_demixing_data));
-    }
-      else if (order_plus_one == 5)
-    {
-      mapping_matrix_init(demixing_matrix, mapping_matrix_fourthoa_demixing.rows,
-        mapping_matrix_fourthoa_demixing.cols, mapping_matrix_fourthoa_demixing.gain,
-        mapping_matrix_fourthoa_demixing_data,
-        sizeof(mapping_matrix_fourthoa_demixing_data));
-    }
-    else if (order_plus_one == 6)
-    {
-      mapping_matrix_init(demixing_matrix, mapping_matrix_fifthoa_demixing.rows,
-        mapping_matrix_fifthoa_demixing.cols, mapping_matrix_fifthoa_demixing.gain,
-        mapping_matrix_fifthoa_demixing_data,
-        sizeof(mapping_matrix_fifthoa_demixing_data));
-    }
-    else
-      return OPUS_BAD_ARG;
+    mapping_matrix_init_transposed(demixing_matrix, table->cols, table->rows,
+      table->gain, table_data, table_data_size);
 
     st->demixing_matrix_size_in_bytes = mapping_matrix_get_size(
       demixing_matrix->rows, demixing_matrix->cols);

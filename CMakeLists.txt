@@ -8,11 +8,23 @@ project(Opus LANGUAGES C VERSION ${PROJECT_VERSION})
 
 include(OpusFunctions)
 include(OpusBuildtype)
+
+# Must be set before OpusConfig generates config.h, which carries it to both the
+# library and the tests.
+set(OPUS_AMBISONICS_MAX_ORDER 5 CACHE STRING
+    "highest ambisonic order the projection encoder can encode, 1 to 14.")
+if(NOT OPUS_AMBISONICS_MAX_ORDER MATCHES "^([1-9]|1[0-4])$")
+  message(FATAL_ERROR
+          "OPUS_AMBISONICS_MAX_ORDER must be an integer from 1 to 14, got '${OPUS_AMBISONICS_MAX_ORDER}'.")
+endif()
+
 include(OpusConfig)
 include(OpusSources)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
 include(FeatureSummary)
+add_feature_info(OPUS_AMBISONICS_MAX_ORDER ON
+                 "highest ambisonic order the projection encoder can encode: ${OPUS_AMBISONICS_MAX_ORDER}. The built-in projection matrices cost 5.2 KiB of .rodata at order 5 and 358 KiB at order 14; decoding is unaffected.")
 
 # Detect clang-cl
 set(MSVC_CLANG_CL false BOOL)

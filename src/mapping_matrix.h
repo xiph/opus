@@ -57,6 +57,20 @@ void mapping_matrix_init(
     opus_int32 data_size
 );
 
+/* As mapping_matrix_init(), but `data` holds the transpose of the matrix wanted:
+ * a `cols` x `rows` matrix, from which the `rows` x `cols` transpose is written.
+ * The built-in ambisonic matrices use this to derive a demixing matrix from the
+ * mixing matrix, which for an orthogonal mixing matrix is exactly its transpose.
+ */
+void mapping_matrix_init_transposed(
+    MappingMatrix * const matrix,
+    int rows,
+    int cols,
+    int gain,
+    const opus_int16 *data,
+    opus_int32 data_size
+);
+
 #ifndef DISABLE_FLOAT_API
 void mapping_matrix_multiply_channel_in_float(
     const MappingMatrix *matrix,
@@ -119,7 +133,55 @@ void mapping_matrix_multiply_channel_out_int24(
     int output_rows,
     int frame_size
 );
-/* Pre-computed mixing and demixing matrices for 1st to 3rd-order ambisonics.
+
+/* Highest ambisonic order this source tree has a table for. */
+#define MAPPING_MATRIX_HIGHEST_AMBISONIC_ORDER 14
+
+/* Highest ambisonic order whose table is actually compiled in. The tables cost
+ * 5.2 KiB of .rodata at order 5 and 358 KiB at order 14, so only the low orders
+ * are built by default; raise this to encode higher orders. Set it with
+ * --enable-ambisonics-max-order=N (autotools), -DOPUS_AMBISONICS_MAX_ORDER=N
+ * (CMake) or -Dambisonics-max-order=N (meson).
+ *
+ * This is an encoder-side limit only. A decoder takes the demixing matrix from
+ * the OpusHead channel mapping table (RFC 8486 section 3.2) and never reads
+ * these tables, so it decodes every order regardless of how this is set.
+ */
+#if !defined(OPUS_AMBISONICS_MAX_ORDER)
+# define OPUS_AMBISONICS_MAX_ORDER 5
+#endif
+
+#if OPUS_AMBISONICS_MAX_ORDER < 1 || \
+    OPUS_AMBISONICS_MAX_ORDER > MAPPING_MATRIX_HIGHEST_AMBISONIC_ORDER
+# error "OPUS_AMBISONICS_MAX_ORDER must be between 1 and 14."
+#endif
+
+#define MAPPING_MATRIX_MAX_AMBISONIC_ORDER OPUS_AMBISONICS_MAX_ORDER
+
+/* A mapping matrix can only be stored in an Ogg OpusHead (RFC 8486 section 3.2) if
+ * its cell data fits in one Ogg page: 65025 octets of payload less the 21-octet
+ * OpusHead prefix. Ambisonic orders up to 12 satisfy this (order 12 is 171x171
+ * cells = 58482 octets); orders 13 and 14 do not, and can only be carried by a
+ * container without that limit.
+ */
+#define MAPPING_MATRIX_MAX_OGG_HEADER_OCTETS 65004
+
+/* Look up the built-in projection mixing matrix for ambisonic order `order`
+ * (1 to MAPPING_MATRIX_MAX_AMBISONIC_ORDER). Returns OPUS_BAD_ARG if no table
+ * exists for that order, in which case the outputs are untouched. The matching
+ * demixing matrix is this matrix transposed; see mapping_matrix_init_transposed().
+ */
+int mapping_matrix_get_ambisonic(
+    int order,
+    const MappingMatrix **matrix,
+    const opus_int16 **data,
+    opus_int32 *data_size
+);
+
+/* Pre-computed projection mixing matrices for 1st to 14th-order ambisonics. 1st to
+ * 5th order live in mapping_matrix.c, 6th to 14th in mapping_matrix_hoa.c. Each
+ * order's demixing matrix is the exact transpose of its mixing matrix and is not
+ * stored. Orders above MAPPING_MATRIX_MAX_AMBISONIC_ORDER are not compiled in.
  *   foa: first-order ambisonics
  *   soa: second-order ambisonics
  *   toa: third-order ambisonics
@@ -127,31 +189,69 @@ void mapping_matrix_multiply_channel_out_int24(
 extern const MappingMatrix mapping_matrix_foa_mixing;
 extern const opus_int16 mapping_matrix_foa_mixing_data[36];
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 2
 extern const MappingMatrix mapping_matrix_soa_mixing;
 extern const opus_int16 mapping_matrix_soa_mixing_data[121];
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 3
 extern const MappingMatrix mapping_matrix_toa_mixing;
 extern const opus_int16 mapping_matrix_toa_mixing_data[324];
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 4
 extern const MappingMatrix mapping_matrix_fourthoa_mixing;
 extern const opus_int16 mapping_matrix_fourthoa_mixing_data[729];
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 5
 extern const MappingMatrix mapping_matrix_fifthoa_mixing;
 extern const opus_int16 mapping_matrix_fifthoa_mixing_data[1444];
+#endif
 
-extern const MappingMatrix mapping_matrix_foa_demixing;
-extern const opus_int16 mapping_matrix_foa_demixing_data[36];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 6
+extern const MappingMatrix mapping_matrix_sixthoa_mixing;
+extern const opus_int16 mapping_matrix_sixthoa_mixing_data[2601];
+#endif
 
-extern const MappingMatrix mapping_matrix_soa_demixing;
-extern const opus_int16 mapping_matrix_soa_demixing_data[121];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 7
+extern const MappingMatrix mapping_matrix_seventhoa_mixing;
+extern const opus_int16 mapping_matrix_seventhoa_mixing_data[4356];
+#endif
 
-extern const MappingMatrix mapping_matrix_toa_demixing;
-extern const opus_int16 mapping_matrix_toa_demixing_data[324];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 8
+extern const MappingMatrix mapping_matrix_eighthoa_mixing;
+extern const opus_int16 mapping_matrix_eighthoa_mixing_data[6889];
+#endif
 
-extern const MappingMatrix mapping_matrix_fourthoa_demixing;
-extern const opus_int16 mapping_matrix_fourthoa_demixing_data[729];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 9
+extern const MappingMatrix mapping_matrix_ninthoa_mixing;
+extern const opus_int16 mapping_matrix_ninthoa_mixing_data[10404];
+#endif
 
-extern const MappingMatrix mapping_matrix_fifthoa_demixing;
-extern const opus_int16 mapping_matrix_fifthoa_demixing_data[1444];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 10
+extern const MappingMatrix mapping_matrix_tenthoa_mixing;
+extern const opus_int16 mapping_matrix_tenthoa_mixing_data[15129];
+#endif
+
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 11
+extern const MappingMatrix mapping_matrix_eleventhoa_mixing;
+extern const opus_int16 mapping_matrix_eleventhoa_mixing_data[21316];
+#endif
+
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 12
+extern const MappingMatrix mapping_matrix_twelfthoa_mixing;
+extern const opus_int16 mapping_matrix_twelfthoa_mixing_data[29241];
+#endif
+
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 13
+extern const MappingMatrix mapping_matrix_thirteenthoa_mixing;
+extern const opus_int16 mapping_matrix_thirteenthoa_mixing_data[39204];
+#endif
+
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 14
+extern const MappingMatrix mapping_matrix_fourteenthoa_mixing;
+extern const opus_int16 mapping_matrix_fourteenthoa_mixing_data[51529];
+#endif
 
 #endif /* MAPPING_MATRIX_H */

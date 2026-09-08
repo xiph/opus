@@ -35,6 +35,12 @@ jobs:
             compiler: gcc,
             buildconfig: --enable-assertions --enable-custom-modes --enable-dred --enable-osce
           }
+        - {
+            name: "Linux/GCC/MaxAmbisonicsOrder",
+            os: ubuntu-latest,
+            compiler: gcc,
+            buildconfig: --enable-assertions --enable-ambisonics-max-order=14
+          }
     steps:
       - uses: actions/checkout@v6
         # No AutoMake on Mac so let's install it
