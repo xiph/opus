@@ -69,17 +69,22 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in,
       const celt_coef * OPUS_RESTRICT window,
       int overlap, int shift, int stride, int arch);
 
+void opus_fft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, kiss_fft_cpx *fout ARG_FIXED(int downshift));
+void opus_ifft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, kiss_fft_cpx *fout ARG_FIXED(int fft_shift));
+
 #if defined(OPUS_ARM_MAY_HAVE_NEON_INTR) || defined(OPUS_ARM_PRESUME_NEON_INTR)
 #include "arm/mdct_arm.h"
 #endif
 
+
+
 #if !defined(OVERRIDE_CLT_MDCT_FORWARD)
-#define clt_mdct_forward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
+# define clt_mdct_forward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
    clt_mdct_forward_c(_l, _in, _out, _window, _overlap, _shift, _stride, _arch)
 #endif
 
 #if !defined(OVERRIDE_CLT_MDCT_BACKWARD)
-#define clt_mdct_backward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
+# define clt_mdct_backward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
    clt_mdct_backward_c(_l, _in, _out, _window, _overlap, _shift, _stride, _arch)
 #endif
 

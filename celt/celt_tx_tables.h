@@ -69,6 +69,10 @@
 #ifndef CELT_TX_TABLES_H
 #define CELT_TX_TABLES_H
 
+#include <stddef.h>
+#include "opus_types.h"
+#include "arch.h"
+
 /* Define OPUS_ARM_TX_MDCT helper if we are building for ARM Neon float */
 #ifndef OPUS_ARM_TX_MDCT
 #if !defined(FIXED_POINT) && defined(__aarch64__) && \
@@ -77,10 +81,38 @@
 #endif
 #endif
 
-/* Tables are needed if ARM Neon TX MDCT is enabled */
-#if defined(OPUS_ARM_TX_MDCT)
+/* Tables are needed if either C PFA is enabled or ARM Neon TX MDCT is enabled */
+#if defined(ENABLE_PFA) || defined(OPUS_ARM_TX_MDCT)
 #define NEED_CELT_TX_TABLES (1)
 #endif
+
+
+typedef struct OpusTXContext OpusTXContext;
+typedef void (*opus_tx_fn)(const OpusTXContext *s, void *out, void *in,
+                           ptrdiff_t stride ARG_FIXED(int downshift));
+
+/* Mirror of the part of FFmpeg's AVTXContext the assembly reads. The field
+   offsets are part of the asm ABI: len@0, inv@4, map@8, exp@16, tmp@24,
+   sub@32, fn@40 (LP64). */
+struct OpusTXContext {
+   opus_int32 len;             /* Length of the transform */
+   opus_int32 inv;             /* If transform is inverse */
+   const opus_int16 *map;      /* Lookup table(s); int16 (max index 1920 < 2^15) */
+   const void *exp;            /* Pre-baked multiplication factors */
+   void *tmp;                  /* Temporary buffer, if needed */
+   const OpusTXContext *sub;   /* Subtransform context */
+   opus_tx_fn fn;              /* Function for the subtransform (fn[0]) */
+};
+
+/* The assembly hard-codes the offsets above; fail the build if the ABI
+   assumption doesn't hold. */
+typedef char opus_tx_check_len[(offsetof(OpusTXContext, len) ==  0) ? 1 : -1];
+typedef char opus_tx_check_map[(offsetof(OpusTXContext, map) ==  8) ? 1 : -1];
+typedef char opus_tx_check_exp[(offsetof(OpusTXContext, exp) == 16) ? 1 : -1];
+typedef char opus_tx_check_tmp[(offsetof(OpusTXContext, tmp) == 24) ? 1 : -1];
+typedef char opus_tx_check_sub[(offsetof(OpusTXContext, sub) == 32) ? 1 : -1];
+typedef char opus_tx_check_fn [(offsetof(OpusTXContext, fn)  == 40) ? 1 : -1];
+
 
 #if defined(NEED_CELT_TX_TABLES)
 

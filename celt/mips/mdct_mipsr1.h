@@ -210,7 +210,11 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
 #ifdef FIXED_POINT
          maxval = MAX32(maxval, MAX32(ABS32(yc.r), ABS32(yc.i)));
 #endif
+#if defined(ENABLE_PFA)
+         f2[i] = yc;
+#else
          f2[st->bitrev[i]] = yc;
+#endif
       }
 #ifdef FIXED_POINT
       headroom = IMAX(0, IMIN(scale_shift, 28-celt_ilog2(maxval)));
@@ -218,7 +222,11 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    }
 
    /* N/4 complex FFT, does not downscale anymore */
+#if defined(ENABLE_PFA)
+   opus_fft_pfa_c(st, f2, f2 ARG_FIXED(scale_shift-headroom));
+#else
    opus_fft_impl(st, f2 ARG_FIXED(scale_shift-headroom));
+#endif
 
    /* Post-rotate */
    {
@@ -301,6 +309,17 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
       const opus_int16 * OPUS_RESTRICT bitrev = l->kfft[shift]->bitrev;
       for(i=0;i<N4;i++)
       {
+#if defined(ENABLE_PFA)
+         kiss_fft_scalar yr, yi;
+         opus_val32 x1, x2;
+         x1 = SHL32_ovflw(*xp1, pre_shift);
+         x2 = SHL32_ovflw(*xp2, pre_shift);
+         yr = S_MUL_ADD(x2,t[2*i+1] , x1,t[2*i]);
+         yi = S_MUL_SUB(x1,t[2*i+1] , x2,t[2*i]);
+         (void)bitrev;
+         yp[2*i+1] = yr;
+         yp[2*i] = yi;
+#else
          int rev;
          kiss_fft_scalar yr, yi;
          opus_val32 x1, x2;
@@ -312,13 +331,18 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          /* We swap real and imag because we use an FFT instead of an IFFT. */
          yp[2*rev+1] = yr;
          yp[2*rev] = yi;
+#endif
          /* Storing the pre-rotation directly in the bitrev order. */
          xp1+=2*stride;
          xp2-=2*stride;
       }
    }
 
+#if defined(ENABLE_PFA)
+   opus_fft_pfa_c(l->kfft[shift], (kiss_fft_cpx*)(out+(overlap>>1)), (kiss_fft_cpx*)(out+(overlap>>1)) ARG_FIXED(fft_shift));
+#else
    opus_fft_impl(l->kfft[shift], (kiss_fft_cpx*)(out+(overlap>>1)) ARG_FIXED(fft_shift));
+#endif
 
    /* Post-rotate and de-shuffle from both ends of the buffer at once to make
       it in-place. */

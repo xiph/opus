@@ -47,6 +47,9 @@
 /* NEON inverse MDCT for the 48 kHz and 96 kHz mode sizes, falling back to
    clt_mdct_backward_c() for other (custom mode) sizes. The forward MDCT is
    not ported yet. */
+struct OpusTXContext;
+const struct OpusTXContext *celt_tx_mdct_kernel(int len);
+
 void clt_mdct_backward_tx(const mdct_lookup *l, kiss_fft_scalar *in,
       kiss_fft_scalar * OPUS_RESTRICT out,
       const celt_coef * OPUS_RESTRICT window,

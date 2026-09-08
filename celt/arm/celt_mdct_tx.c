@@ -68,33 +68,6 @@
 #if defined(OPUS_ARM_TX_MDCT)
 
 #include <stddef.h>
-
-typedef struct OpusTXContext OpusTXContext;
-typedef void (*opus_tx_fn)(const OpusTXContext *s, void *out, void *in,
-                           ptrdiff_t stride);
-
-/* Mirror of the part of FFmpeg's AVTXContext the assembly reads. The field
-   offsets are part of the asm ABI: len@0, inv@4, map@8, exp@16, tmp@24,
-   sub@32, fn@40 (LP64). */
-struct OpusTXContext {
-   opus_int32 len;             /* Length of the transform */
-   opus_int32 inv;             /* If transform is inverse */
-   const opus_int16 *map;      /* Lookup table(s); int16 (max index 1920 < 2^15) */
-   const void *exp;            /* Pre-baked multiplication factors */
-   void *tmp;                  /* Temporary buffer, if needed */
-   const OpusTXContext *sub;   /* Subtransform context */
-   opus_tx_fn fn;              /* Function for the subtransform (fn[0]) */
-};
-
-/* The assembly hard-codes the offsets above; fail the build if the ABI
-   assumption doesn't hold. */
-typedef char opus_tx_check_len[(offsetof(OpusTXContext, len) ==  0) ? 1 : -1];
-typedef char opus_tx_check_map[(offsetof(OpusTXContext, map) ==  8) ? 1 : -1];
-typedef char opus_tx_check_exp[(offsetof(OpusTXContext, exp) == 16) ? 1 : -1];
-typedef char opus_tx_check_tmp[(offsetof(OpusTXContext, tmp) == 24) ? 1 : -1];
-typedef char opus_tx_check_sub[(offsetof(OpusTXContext, sub) == 32) ? 1 : -1];
-typedef char opus_tx_check_fn [(offsetof(OpusTXContext, fn)  == 40) ? 1 : -1];
-
 #include "celt_tx_tables.h"
 
 void celt_tx_fft4_fwd_float_neon(const OpusTXContext *s, void *out, void *in, ptrdiff_t stride);
@@ -155,7 +128,7 @@ static const OpusTXContext celt_tx_mdct_512  = {  512, 1, celt_tx_mdct_map_512, 
 static const OpusTXContext celt_tx_mdct_1024 = { 1024, 1, celt_tx_mdct_map_1024, NULL, NULL, &celt_tx_sr_512, celt_tx_fft_sr_ns_float_neon };
 #endif
 
-static const OpusTXContext *celt_tx_mdct_kernel(int len)
+const OpusTXContext *celt_tx_mdct_kernel(int len)
 {
    switch (len) {
       case  120: return &celt_tx_mdct_120;
