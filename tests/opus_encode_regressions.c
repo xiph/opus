@@ -1022,6 +1022,30 @@ static int silk_gain_assert(void)
     return 0;
 }
 
+static int frame_size_select_overflow(void)
+{
+    OpusEncoder *enc;
+    int err;
+    int data_len;
+    unsigned char data[16];
+    /* Dummy input: with the bug fixed, frame_size_select() rejects
+       frame_size below before opus_encode() ever reads from pcm, so this
+       buffer is never touched and doesn't need to be anywhere near
+       frame_size long. */
+    static const short pcm[1] = { 0 };
+    /* At Fs=8000, 200*frame_size wraps around to exactly 8000 in 32-bit
+       signed arithmetic, which used to let frame_size_select() mistake
+       this frame_size for a valid one instead of rejecting it. */
+    opus_int32 frame_size = 1073741864;
+
+    enc = opus_encoder_create(8000, 1, OPUS_APPLICATION_VOIP, &err);
+    data_len = opus_encode(enc, pcm, frame_size, data, sizeof(data));
+    opus_test_assert(data_len == OPUS_BAD_ARG);
+
+    opus_encoder_destroy(enc);
+    return 0;
+}
+
 #ifndef DISABLE_FLOAT_API
 int analysis_overflow(void)
 {
@@ -1468,6 +1492,7 @@ void regression_test(void)
    ec_enc_shrink_assert();
    ec_enc_shrink_assert2();
    silk_gain_assert();
+   frame_size_select_overflow();
 #ifndef DISABLE_FLOAT_API
    analysis_overflow();
    projection_overflow2();

@@ -842,9 +842,13 @@ opus_int32 frame_size_select(int application, opus_int32 frame_size, int variabl
       return -1;
    if (new_size>frame_size)
       return -1;
-   if (400*new_size!=Fs   && 200*new_size!=Fs   && 100*new_size!=Fs   &&
-        50*new_size!=Fs   &&  25*new_size!=Fs   &&  50*new_size!=3*Fs &&
-        50*new_size!=4*Fs &&  50*new_size!=5*Fs &&  50*new_size!=6*Fs)
+   /* new_size (and thus frame_size) comes straight from the caller and can be
+      an arbitrary value, so these multiplications are done in 64 bits to
+      avoid a signed overflow that could otherwise wrap one of them around to
+      match Fs and defeat this check. */
+   if ((opus_int64)400*new_size!=Fs   && (opus_int64)200*new_size!=Fs   && (opus_int64)100*new_size!=Fs   &&
+        (opus_int64)50*new_size!=Fs   &&  (opus_int64)25*new_size!=Fs   &&  (opus_int64)50*new_size!=3*Fs &&
+        (opus_int64)50*new_size!=4*Fs && (opus_int64)50*new_size!=5*Fs && (opus_int64)50*new_size!=6*Fs)
       return -1;
    if (application == OPUS_APPLICATION_RESTRICTED_SILK && new_size < Fs/100)
       return -1;
