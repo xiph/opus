@@ -501,7 +501,7 @@ kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,
         } else
 #endif
         {
-           if (base != NULL)
+           if (base != NULL && base->twiddles != NULL)
            {
               st->twiddles = base->twiddles;
               st->shift = 0;
