@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FIX.h"
 #include "NSQ.h"
 #include "SigProc_FIX.h"
+#include "resampler_private.h"
 
 #if defined(OPUS_HAVE_RTCD)
 
@@ -50,6 +51,19 @@ void (*const SILK_BIQUAD_ALT_STRIDE2_IMPL[OPUS_ARCHMASK + 1])(
       silk_biquad_alt_stride2_c,    /* Media */
       silk_biquad_alt_stride2_neon, /* Neon */
       silk_biquad_alt_stride2_neon, /* dotprod */
+};
+
+opus_int16 *(*const SILK_RESAMPLER_PRIVATE_IIR_FIR_INTERPOL_IMPL[OPUS_ARCHMASK + 1])(
+        opus_int16                  *out,               /* O     Output signal                                              */
+        opus_int16                  *buf,               /* I     Buffer of 2x upsampled input                               */
+        opus_int32                  max_index_Q16,      /* I     Interpolation end point, Q16                               */
+        opus_int32                  index_increment_Q16 /* I     Interpolation step, Q16                                    */
+) = {
+      silk_resampler_private_IIR_FIR_INTERPOL_c,    /* ARMv4 */
+      silk_resampler_private_IIR_FIR_INTERPOL_c,    /* EDSP */
+      silk_resampler_private_IIR_FIR_INTERPOL_c,    /* Media */
+      silk_resampler_private_IIR_FIR_INTERPOL_neon, /* Neon */
+      silk_resampler_private_IIR_FIR_INTERPOL_neon, /* dotprod */
 };
 
 opus_int32 (*const SILK_LPC_INVERSE_PRED_GAIN_IMPL[OPUS_ARCHMASK + 1])( /* O   Returns inverse prediction gain in energy domain, Q30        */
