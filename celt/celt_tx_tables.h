@@ -104,15 +104,6 @@ struct OpusTXContext {
    opus_tx_fn fn;              /* Function for the subtransform (fn[0]) */
 };
 
-/* The assembly hard-codes the offsets above; fail the build if the ABI
-   assumption doesn't hold. */
-typedef char opus_tx_check_len[(offsetof(OpusTXContext, len) ==  0) ? 1 : -1];
-typedef char opus_tx_check_map[(offsetof(OpusTXContext, map) ==  8) ? 1 : -1];
-typedef char opus_tx_check_exp[(offsetof(OpusTXContext, exp) == 16) ? 1 : -1];
-typedef char opus_tx_check_tmp[(offsetof(OpusTXContext, tmp) == 24) ? 1 : -1];
-typedef char opus_tx_check_sub[(offsetof(OpusTXContext, sub) == 32) ? 1 : -1];
-typedef char opus_tx_check_fn [(offsetof(OpusTXContext, fn)  == 40) ? 1 : -1];
-
 
 #if defined(NEED_CELT_TX_TABLES)
 

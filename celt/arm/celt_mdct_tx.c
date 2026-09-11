@@ -70,6 +70,16 @@
 #include <stddef.h>
 #include "celt_tx_tables.h"
 
+/* The assembly hard-codes the offsets above; fail the build if the ABI
+   assumption doesn't hold. */
+typedef char opus_tx_check_len[(offsetof(OpusTXContext, len) ==  0) ? 1 : -1];
+typedef char opus_tx_check_map[(offsetof(OpusTXContext, map) ==  8) ? 1 : -1];
+typedef char opus_tx_check_exp[(offsetof(OpusTXContext, exp) == 16) ? 1 : -1];
+typedef char opus_tx_check_tmp[(offsetof(OpusTXContext, tmp) == 24) ? 1 : -1];
+typedef char opus_tx_check_sub[(offsetof(OpusTXContext, sub) == 32) ? 1 : -1];
+typedef char opus_tx_check_fn [(offsetof(OpusTXContext, fn)  == 40) ? 1 : -1];
+
+
 void celt_tx_fft4_fwd_float_neon(const OpusTXContext *s, void *out, void *in, ptrdiff_t stride);
 void celt_tx_fft8_ns_float_neon(const OpusTXContext *s, void *out, void *in, ptrdiff_t stride);
 void celt_tx_fft16_ns_float_neon(const OpusTXContext *s, void *out, void *in, ptrdiff_t stride);
