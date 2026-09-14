@@ -321,6 +321,8 @@ if not opt_asm.disabled()
         else
           rtcd_support += ['EDSP']
         endif
+      else
+        opus_conf.set('OPUS_ARM_MAY_HAVE_EDSP', 0)
       endif
       if opus_arm_may_have_media
         opus_conf.set('OPUS_ARM_MAY_HAVE_MEDIA', 1)
@@ -330,6 +332,8 @@ if not opt_asm.disabled()
         else
           rtcd_support += ['Media']
         endif
+      else
+        opus_conf.set('OPUS_ARM_MAY_HAVE_MEDIA', 0)
       endif
       if opus_arm_may_have_neon
         opus_conf.set('OPUS_ARM_MAY_HAVE_NEON', 1)
@@ -339,6 +343,8 @@ if not opt_asm.disabled()
         else
           rtcd_support += ['NEON']
         endif
+      else
+        opus_conf.set('OPUS_ARM_MAY_HAVE_NEON', 0)
       endif
       if opus_arm_may_have_dotprod
         opus_conf.set('OPUS_ARM_MAY_HAVE_DOTPROD', 1)
