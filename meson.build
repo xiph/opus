@@ -451,9 +451,9 @@ if not opt_intrinsics.disabled()
 
     if opus_arm_may_have_aarch64_neon_intr
       intrinsics_support += [intrin_name]
-      opus_conf.set('OPUS_X86_MAY_HAVE_AARCH64_NEON_INTR', 1)
+      opus_conf.set('OPUS_ARM_MAY_HAVE_AARCH64_NEON_INTR', 1)
       if opus_arm_presume_aarch64_neon_intr
-        opus_conf.set('OPUS_X86_PRESUME_AARCH64_NEON_INTR', 1)
+        opus_conf.set('OPUS_ARM_PRESUME_AARCH64_NEON_INTR', 1)
       endif
     else
       message('Compiler does not support @0@ intrinsics'.format(intrin_name))
