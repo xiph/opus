@@ -1458,9 +1458,31 @@ int qext_dred_combination(void)
 #endif
 
 
+static int frame_size_select_overflow(void)
+{
+    /* GH-491: 200*new_size wraps to exactly equal Fs (8000) for this
+       frame_size, so every branch of frame_size_select()'s validity
+       check that used to rely on that multiplication was defeated,
+       letting an enormous frame_size straight through to a stack
+       allocation sized by it in opus_encode(). */
+    OpusEncoder *enc;
+    int err;
+    unsigned char data[2000];
+    short pcm[2];
+    int ret;
+
+    enc = opus_encoder_create(8000, 1, OPUS_APPLICATION_AUDIO, &err);
+    opus_test_assert(err == OPUS_OK);
+    ret = opus_encode(enc, pcm, 1073741864, data, sizeof(data));
+    opus_test_assert(ret == OPUS_BAD_ARG);
+    opus_encoder_destroy(enc);
+    return 0;
+}
+
 void regression_test(void)
 {
    fprintf(stderr, "Running simple tests for bugs that have been fixed previously\n");
+   frame_size_select_overflow();
    celt_ec_internal_error();
    mscbr_encode_fail10();
    mscbr_encode_fail();
