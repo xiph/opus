@@ -36,9 +36,9 @@ opus_int32 silk_LPC_inverse_pred_gain_neon(         /* O   Returns inverse predi
     const opus_int              order               /* I   Prediction order                                             */
 );
 
-#  if !defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_PRESUME_NEON)
+#  if !defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_PRESUME_NEON_INTR)
 #   define OVERRIDE_silk_LPC_inverse_pred_gain            (1)
-#   define silk_LPC_inverse_pred_gain(A_Q12, order, arch) ((void)(arch), PRESUME_NEON(silk_LPC_inverse_pred_gain)(A_Q12, order))
+#   define silk_LPC_inverse_pred_gain(A_Q12, order, arch) ((void)(arch), silk_LPC_inverse_pred_gain_neon(A_Q12, order))
 #  endif
 # endif
 
