@@ -312,6 +312,24 @@ CELTMode *opus_custom_mode_create(opus_int32 Fs, int frame_size, int *error)
       return NULL;
    }
 
+#ifdef ENABLE_QEXT
+   {
+      int shortMdctSize = frame_size>>LM;
+      int qext_scale = (Fs == 96000 && (shortMdctSize==240 || shortMdctSize==180)) ? 2 : 1;
+      /* The encoder and decoder only double their internal buffers (and
+         thus support frames longer than 1024 samples) for the 96 kHz modes
+         above. The mirrored 96 kHz post-filter is also selected based on the
+         overlap being 240, so don't allow that overlap at other rates. */
+      if ((frame_size > 1024 && qext_scale != 2) ||
+          (((shortMdctSize>>2)<<2) == 240 && Fs != 96000))
+      {
+         if (error)
+            *error = OPUS_BAD_ARG;
+         return NULL;
+      }
+   }
+#endif
+
    mode = opus_alloc(sizeof(CELTMode));
    if (mode==NULL)
       goto failure;
