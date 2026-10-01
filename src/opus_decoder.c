@@ -696,10 +696,12 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
          opus_val32 x;
 #ifdef ENABLE_RES24
          x = MULT32_32_Q16(pcm[i],gain);
+         /* Same headroom as the rest of the fixed-point pipeline. */
+         pcm[i] = SATURATE(x, SIG_SAT>>(SIG_SHIFT-RES_SHIFT));
 #else
          x = MULT16_32_P16(pcm[i],gain);
-#endif
          pcm[i] = SATURATE(x, 32767);
+#endif
       }
    }
 
