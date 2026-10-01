@@ -78,6 +78,11 @@ struct OpusCustomMode {
 
 #ifdef ENABLE_QEXT
 #define QEXT_PACKET_SIZE_CAP 3825
+/* Largest extension payload the decoder is willing to use. Uncompressed
+   24-bit stereo audio at 96 kHz is 11520 bytes per 20-ms frame, so no
+   meaningful payload can get anywhere near this. It also keeps the
+   qext_bytes*8<<BITRES bit budget computations far from overflowing. */
+#define QEXT_PAYLOAD_SIZE_CAP 12000
 #define NB_QEXT_BANDS 14
 void compute_qext_mode(CELTMode *qext, const CELTMode *m);
 #endif
