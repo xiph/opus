@@ -1693,6 +1693,21 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
         st->mode = MODE_HYBRID;
     if (st->mode == MODE_HYBRID && curr_bandwidth <= OPUS_BANDWIDTH_WIDEBAND)
         st->mode = MODE_SILK_ONLY;
+    /* At very low bitrates, the hybrid rate split can leave CELT with less than
+       its minimum bitrate (500 b/s), in which case CELT's OPUS_SET_BITRATE
+       would fail and CELT would run uncontrolled. Use SILK-only instead. */
+    if (st->mode == MODE_HYBRID)
+    {
+        opus_int32 silk_rate;
+        silk_rate = compute_silk_rate_for_hybrid(st->bitrate_bps, curr_bandwidth,
+              st->Fs == 50 * frame_size, st->use_vbr, st->silk_mode.LBRR_coded,
+              st->stream_channels);
+        if (st->bitrate_bps - silk_rate <= 500)
+        {
+            st->mode = MODE_SILK_ONLY;
+            st->bandwidth = curr_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+        }
+    }
 
     /* Can't support higher than >60 ms frames, and >20 ms when in Hybrid or CELT-only modes */
     if ((frame_size > st->Fs/50 && (st->mode != MODE_SILK_ONLY)) || frame_size > 3*st->Fs/50)
@@ -2451,7 +2466,8 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         if (st->mode == MODE_HYBRID)
         {
             if( st->use_vbr ) {
-                celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps-st->silk_mode.bitRate));
+                /* Never go below the minimum rate CELT accepts (the ctl would fail). */
+                celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(IMAX(501, st->bitrate_bps-st->silk_mode.bitRate)));
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR_CONSTRAINT(0));
             }
         } else {
@@ -2470,7 +2486,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
             celt_encoder_ctl(celt_enc, OPUS_SET_VBR(1));
             celt_encoder_ctl(celt_enc, OPUS_SET_VBR_CONSTRAINT(0));
             if (st->mode == MODE_HYBRID) {
-                celt_bitrate -= st->silk_mode.bitRate;
+                celt_bitrate = IMAX(501, celt_bitrate - st->silk_mode.bitRate);
             }
             celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(celt_bitrate));
         }
