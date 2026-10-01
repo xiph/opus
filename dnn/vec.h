@@ -322,9 +322,13 @@ static inline float lpcnet_exp2(float x)
       float f;
       opus_uint32 i;
    } res;
-   integer = floor(x);
-   if (integer < -50)
+   /* Clamp the input like the SIMD versions do. The negated comparison
+      also catches NaN. */
+   if (!(x > -50.f))
       return 0;
+   if (x > 50.f)
+      x = 50.f;
+   integer = floor(x);
    frac = x-integer;
    /* K0 = 1, K1 = log(2), K2 = 3-4*log(2), K3 = 3*log(2) - 2 */
    res.f = 0.99992522f + frac * (0.69583354f
