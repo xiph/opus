@@ -627,7 +627,7 @@ static void prefilter_and_fold(CELTDecoder * OPUS_RESTRICT st, int N)
       comb_filter(etmp, decode_mem[c]+decode_buffer_size-N,
          st->postfilter_period_old, st->postfilter_period, overlap,
          -st->postfilter_gain_old, -st->postfilter_gain,
-         st->postfilter_tapset_old, st->postfilter_tapset, NULL, 0, st->arch);
+         st->postfilter_tapset_old, st->postfilter_tapset, mode->window, overlap, st->arch);
 
       /* Simulate TDAC on the concealed audio so that it blends with the
          MDCT of the next frame. */
