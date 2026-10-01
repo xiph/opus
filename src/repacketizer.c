@@ -174,6 +174,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    {
       int j, ret;
       opus_int32 frame_ext_count;
+      opus_int32 kept;
       frame_ext_count = total_ext_count - ext_count;
       ret = opus_packet_extensions_parse(rp->paddings[i], rp->padding_len[i],
          &all_extensions[ext_count], &frame_ext_count, rp->padding_nb_frames[i]);
@@ -182,12 +183,17 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
          RESTORE_STACK;
          return OPUS_INVALID_PACKET;
       }
-      /* renumber the extension frame numbers */
+      /* renumber the extension frame numbers, dropping extensions that
+         belong to frames beyond the requested range */
+      kept = 0;
       for (j=0;j<frame_ext_count;j++)
       {
-         all_extensions[ext_count+j].frame += i-begin;
+         opus_extension_data ext = all_extensions[ext_count+j];
+         ext.frame += i-begin;
+         if (ext.frame < count)
+            all_extensions[ext_count+kept++] = ext;
       }
-      ext_count += frame_ext_count;
+      ext_count += kept;
    }
 
    ptr = data;
