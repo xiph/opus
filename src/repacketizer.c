@@ -34,6 +34,12 @@
 #include "os_support.h"
 #include "stack_alloc.h"
 
+/* Maximum total number of extensions we are willing to repacketize. A packet
+   can contain one zero-length extension per padding byte, repeated for each
+   of up to 48 frames, so the count is not otherwise bounded by the packet
+   size. Real packets only carry a handful of extensions per frame. */
+#define MAX_REPACKETIZER_EXTENSIONS (48*255)
+
 
 int opus_repacketizer_get_size(void)
 {
@@ -147,6 +153,14 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       int n = opus_packet_extensions_count(rp->paddings[i], rp->padding_len[i],
        rp->padding_nb_frames[i]);
       if (n > 0) total_ext_count += n;
+      /* The number of extensions is only bounded by the amount of padding
+         (times the number of frames when using the repeat mechanism), so
+         bound it explicitly to keep the stack allocation sane. */
+      if (total_ext_count > MAX_REPACKETIZER_EXTENSIONS)
+      {
+         RESTORE_STACK;
+         return OPUS_INVALID_PACKET;
+      }
    }
    ALLOC(all_extensions, total_ext_count ? total_ext_count : ALLOC_NONE, opus_extension_data);
    /* copy over any extensions that were passed in */
