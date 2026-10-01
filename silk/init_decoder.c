@@ -61,6 +61,10 @@ opus_int silk_reset_decoder(
 #ifdef ENABLE_OSCE
     /* Reset OSCE state and method */
     osce_reset(&psDec->osce, OSCE_DEFAULT_METHOD);
+#ifdef ENABLE_OSCE_BWE
+    /* Reset OSCE BWE state */
+    osce_bwe_reset(&psDec->osce_bwe);
+#endif
 #endif
 
     return 0;
