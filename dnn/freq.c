@@ -37,7 +37,6 @@
 #include "pitch.h"
 #include "arch.h"
 #include "burg.h"
-#include <assert.h>
 #include "os_support.h"
 
 #define SQUARE(x) ((x)*(x))
@@ -159,8 +158,8 @@ static void compute_burg_cepstrum(const float *pcm, float *burg_cepstrum, int le
   float Ly[NB_BANDS];
   float logMax = -2;
   float follow = -2;
-  assert(order <= LPC_ORDER);
-  assert(len <= FRAME_SIZE);
+  celt_assert(order <= LPC_ORDER);
+  celt_assert(len <= FRAME_SIZE);
   for (i=0;i<len-1;i++) burg_in[i] = pcm[i+1] - PREEMPHASIS*pcm[i];
   g = silk_burg_analysis(burg_lpc, burg_in, 1e-3, len-1, 1, order);
   g /= len - 2*(order-1);
