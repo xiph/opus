@@ -31,7 +31,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <math.h>
 #include <string.h>
-#include <assert.h>
 
 #include "arch.h"
 #include "burg.h"
@@ -63,7 +62,7 @@ static double silk_energy_FLP(
         result += data[ i ] * (double)data[ i ];
     }
 
-    assert( result >= 0.0 );
+    celt_sig_assert( result >= 0.0 );
     return result;
 }
 
@@ -112,7 +111,7 @@ float silk_burg_analysis(              /* O    returns residual energy          
     double           CAf[ SILK_MAX_ORDER_LPC + 1 ], CAb[ SILK_MAX_ORDER_LPC + 1 ];
     double           Af[ SILK_MAX_ORDER_LPC ];
 
-    assert( subfr_length * nb_subfr <= MAX_FRAME_SIZE );
+    celt_assert( subfr_length * nb_subfr <= MAX_FRAME_SIZE );
 
     /* Compute autocorrelations, added over subframes */
     C0 = silk_energy_FLP( x, nb_subfr * subfr_length );
@@ -170,12 +169,12 @@ float silk_burg_analysis(              /* O    returns residual energy          
             nrg_b += CAb[ k + 1 ] * Atmp;
             nrg_f += CAf[ k + 1 ] * Atmp;
         }
-        assert( nrg_f > 0.0 );
-        assert( nrg_b > 0.0 );
+        celt_sig_assert( nrg_f > 0.0 );
+        celt_sig_assert( nrg_b > 0.0 );
 
         /* Calculate the next order reflection (parcor) coefficient */
         rc = -2.0 * num / ( nrg_f + nrg_b );
-        assert( rc > -1.0 && rc < 1.0 );
+        celt_sig_assert( rc > -1.0 && rc < 1.0 );
 
         /* Update inverse prediction gain */
         tmp1 = invGain * ( 1.0 - rc * rc );
