@@ -471,6 +471,9 @@ static int opus_multistream_encoder_init_impl(
              + (streams-coupled_streams)*align(mono_size) + surround_size;
    }
 
+   if (mapping == NULL)
+      return OPUS_BAD_ARG;
+
    st->arch = opus_select_arch();
    st->layout.nb_channels = channels;
    st->layout.nb_streams = streams;
@@ -871,6 +874,10 @@ int opus_multistream_encode_native
    int frame_size;
    opus_int32 rate_sum;
    opus_int32 smallest_packet;
+
+   if (!st || !pcm || (!data && max_data_bytes > 0))
+      return OPUS_BAD_ARG;
+
    ALLOC_STACK;
 
    if (st->mapping_type == MAPPING_TYPE_SURROUND)
@@ -1153,6 +1160,9 @@ int opus_multistream_encoder_ctl_va_list(OpusMSEncoder *st, int request,
    char *ptr;
    int ret = OPUS_OK;
 
+   if (!st)
+      return OPUS_BAD_ARG;
+
    coupled_size = opus_encoder_init(NULL, st->Fs, 2, st->application);
    mono_size = opus_encoder_init(NULL, st->Fs, 1, st->application);
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
@@ -1359,5 +1369,6 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
 
 void opus_multistream_encoder_destroy(OpusMSEncoder *st)
 {
-    opus_free(st);
+    if (st)
+        opus_free(st);
 }

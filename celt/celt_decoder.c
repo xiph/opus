@@ -277,7 +277,8 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_init(CELTDecoder *st, const CELTMod
 #if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 void opus_custom_decoder_destroy(CELTDecoder *st)
 {
-   opus_free(st);
+   if (st)
+      opus_free(st);
 }
 #endif /* CUSTOM_MODES */
 

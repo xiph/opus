@@ -240,7 +240,7 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
   int order_plus_one;
   unsigned char mapping[255];
 
-  if (streams == NULL || coupled_streams == NULL) {
+  if (st == NULL || streams == NULL || coupled_streams == NULL) {
     return OPUS_BAD_ARG;
   }
 
@@ -401,6 +401,8 @@ int opus_projection_encode(OpusProjectionEncoder *st, const opus_int16 *pcm,
                            int frame_size, unsigned char *data,
                            opus_int32 max_data_bytes)
 {
+  if (!st)
+    return OPUS_BAD_ARG;
   return opus_multistream_encode_native(get_multistream_encoder(st),
     opus_projection_copy_channel_in_short, pcm, frame_size, data,
     max_data_bytes, 16, downmix_int, 0, get_mixing_matrix(st));
@@ -410,6 +412,8 @@ int opus_projection_encode24(OpusProjectionEncoder *st, const opus_int32 *pcm,
                            int frame_size, unsigned char *data,
                            opus_int32 max_data_bytes)
 {
+  if (!st)
+    return OPUS_BAD_ARG;
   return opus_multistream_encode_native(get_multistream_encoder(st),
     opus_projection_copy_channel_in_int24, pcm, frame_size, data,
     max_data_bytes, MAX_ENCODING_DEPTH, downmix_int, 0, get_mixing_matrix(st));
@@ -420,6 +424,8 @@ int opus_projection_encode_float(OpusProjectionEncoder *st, const float *pcm,
                                  int frame_size, unsigned char *data,
                                  opus_int32 max_data_bytes)
 {
+  if (!st)
+    return OPUS_BAD_ARG;
   return opus_multistream_encode_native(get_multistream_encoder(st),
     opus_projection_copy_channel_in_float, pcm, frame_size, data,
     max_data_bytes, MAX_ENCODING_DEPTH, downmix_float, 1, get_mixing_matrix(st));
@@ -428,7 +434,8 @@ int opus_projection_encode_float(OpusProjectionEncoder *st, const float *pcm,
 
 void opus_projection_encoder_destroy(OpusProjectionEncoder *st)
 {
-  opus_free(st);
+  if (st)
+    opus_free(st);
 }
 
 int opus_projection_encoder_ctl(OpusProjectionEncoder *st, int request, ...)
@@ -437,6 +444,9 @@ int opus_projection_encoder_ctl(OpusProjectionEncoder *st, int request, ...)
   MappingMatrix *demixing_matrix;
   OpusMSEncoder *ms_encoder;
   int ret = OPUS_OK;
+
+  if (!st)
+    return OPUS_BAD_ARG;
 
   ms_encoder = get_multistream_encoder(st);
   demixing_matrix = get_enc_demixing_matrix(st);

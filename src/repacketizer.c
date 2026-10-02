@@ -42,6 +42,7 @@ int opus_repacketizer_get_size(void)
 
 OpusRepacketizer *opus_repacketizer_init(OpusRepacketizer *rp)
 {
+   if (!rp) return NULL;
    rp->nb_frames = 0;
    return rp;
 }
@@ -56,7 +57,8 @@ OpusRepacketizer *opus_repacketizer_create(void)
 
 void opus_repacketizer_destroy(OpusRepacketizer *rp)
 {
-   opus_free(rp);
+   if (rp)
+      opus_free(rp);
 }
 
 static int opus_repacketizer_cat_impl(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len, int self_delimited)
@@ -64,6 +66,7 @@ static int opus_repacketizer_cat_impl(OpusRepacketizer *rp, const unsigned char 
    unsigned char tmp_toc;
    int curr_nb_frames,ret;
    /* Set of check ToC */
+   if (!rp || !data) return OPUS_BAD_ARG;
    if (len<1) return OPUS_INVALID_PACKET;
    if (rp->nb_frames == 0)
    {
@@ -108,6 +111,8 @@ int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_
 
 int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp)
 {
+   if (!rp)
+      return 0;
    return rp->nb_frames;
 }
 
@@ -123,6 +128,10 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    int ext_begin=0, ext_len=0;
    int ext_count, total_ext_count;
    VARDECL(opus_extension_data, all_extensions);
+
+   if (!rp || !data || maxlen <= 0)
+      return OPUS_BAD_ARG;
+
    SAVE_STACK;
 
    if (begin<0 || begin>=end || end>rp->nb_frames)

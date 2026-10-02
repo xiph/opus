@@ -204,6 +204,8 @@ int opus_packet_get_samples_per_frame(const unsigned char *data,
       opus_int32 Fs)
 {
    int audiosize;
+   if (!data)
+      return OPUS_BAD_ARG;
    if (data[0]&0x80)
    {
       audiosize = ((data[0]>>3)&0x3);
@@ -243,7 +245,7 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       *padding_len = 0;
    }
 
-   if (size==NULL || len<0)
+   if (size==NULL || len<0 || (len>0 && data==NULL))
       return OPUS_BAD_ARG;
    if (len==0)
       return OPUS_INVALID_PACKET;

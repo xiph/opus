@@ -2663,6 +2663,8 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
                 unsigned char *data, opus_int32 max_data_bytes)
 {
    int frame_size;
+   if (!st || !pcm || (!data && max_data_bytes > 0))
+      return OPUS_BAD_ARG;
    frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, max_data_bytes, 16,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
@@ -2676,6 +2678,11 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
    VARDECL(opus_res, in);
    ALLOC_STACK;
 
+   if (!st || !pcm || (!data && max_data_bytes > 0))
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    if (frame_size <= 0)
    {
@@ -2736,6 +2743,8 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
                       unsigned char *data, opus_int32 out_data_bytes)
 {
    int frame_size;
+   if (!st || !pcm || (!data && out_data_bytes > 0))
+      return OPUS_BAD_ARG;
    frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, MAX_ENCODING_DEPTH,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
@@ -2749,6 +2758,11 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
    VARDECL(opus_res, in);
    ALLOC_STACK;
 
+   if (!st || !pcm || (!data && max_data_bytes > 0))
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    frame_size = frame_size_select(st->application, analysis_frame_size, st->variable_duration, st->Fs);
    if (frame_size <= 0)
    {
@@ -2774,6 +2788,9 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
     int ret;
     CELTEncoder *celt_enc=NULL;
     va_list ap;
+
+    if (!st)
+       return OPUS_BAD_ARG;
 
     ret = OPUS_OK;
     va_start(ap, request);
@@ -3361,5 +3378,6 @@ bad_arg:
 
 void opus_encoder_destroy(OpusEncoder *st)
 {
-    opus_free(st);
+    if (st)
+        opus_free(st);
 }

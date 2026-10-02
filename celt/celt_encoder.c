@@ -259,7 +259,8 @@ int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels,
 #if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 void opus_custom_encoder_destroy(CELTEncoder *st)
 {
-   opus_free(st);
+   if (st)
+      opus_free(st);
 }
 #endif /* CUSTOM_MODES */
 

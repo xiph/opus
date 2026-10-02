@@ -152,6 +152,10 @@ int opus_projection_decoder_init(OpusProjectionDecoder *st, opus_int32 Fs,
   int i, ret;
   unsigned char mapping[255];
   VARDECL(opus_int16, buf);
+
+  if (!st || !demixing_matrix)
+    return OPUS_BAD_ARG;
+
   ALLOC_STACK;
 
   /* Verify supplied matrix size. */
@@ -240,6 +244,8 @@ int opus_projection_decode(OpusProjectionDecoder *st, const unsigned char *data,
                            opus_int32 len, opus_int16 *pcm, int frame_size,
                            int decode_fec)
 {
+  if (!st)
+    return OPUS_BAD_ARG;
   return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
     pcm, opus_projection_copy_channel_out_short, frame_size, decode_fec, OPTIONAL_CLIP,
     get_dec_demixing_matrix(st));
@@ -249,6 +255,8 @@ int opus_projection_decode24(OpusProjectionDecoder *st, const unsigned char *dat
                            opus_int32 len, opus_int32 *pcm, int frame_size,
                            int decode_fec)
 {
+  if (!st)
+    return OPUS_BAD_ARG;
   return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
     pcm, opus_projection_copy_channel_out_int24, frame_size, decode_fec, 0,
     get_dec_demixing_matrix(st));
@@ -258,6 +266,8 @@ int opus_projection_decode24(OpusProjectionDecoder *st, const unsigned char *dat
 int opus_projection_decode_float(OpusProjectionDecoder *st, const unsigned char *data,
                                  opus_int32 len, float *pcm, int frame_size, int decode_fec)
 {
+  if (!st)
+    return OPUS_BAD_ARG;
   return opus_multistream_decode_native(get_multistream_decoder(st), data, len,
     pcm, opus_projection_copy_channel_out_float, frame_size, decode_fec, 0,
     get_dec_demixing_matrix(st));
@@ -269,6 +279,9 @@ int opus_projection_decoder_ctl(OpusProjectionDecoder *st, int request, ...)
   va_list ap;
   int ret = OPUS_OK;
 
+  if (!st)
+    return OPUS_BAD_ARG;
+
   va_start(ap, request);
   ret = opus_multistream_decoder_ctl_va_list(get_multistream_decoder(st),
     request, ap);
@@ -278,5 +291,6 @@ int opus_projection_decoder_ctl(OpusProjectionDecoder *st, int request, ...)
 
 void opus_projection_decoder_destroy(OpusProjectionDecoder *st)
 {
-  opus_free(st);
+  if (st)
+    opus_free(st);
 }

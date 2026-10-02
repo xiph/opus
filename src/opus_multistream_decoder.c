@@ -77,7 +77,7 @@ int opus_multistream_decoder_init(
    int i, ret;
    char *ptr;
 
-   if ((channels>255) || (channels<1) || (coupled_streams>streams) ||
+   if (!st || !mapping || (channels>255) || (channels<1) || (coupled_streams>streams) ||
        (streams<1) || (coupled_streams<0) || (streams>255-coupled_streams))
       return OPUS_BAD_ARG;
 
@@ -194,6 +194,10 @@ int opus_multistream_decode_native(
    char *ptr;
    int do_plc=0;
    VARDECL(opus_res, buf);
+
+   if (!st || !pcm || (!data && len > 0) || frame_size <= 0)
+      return OPUS_BAD_ARG;
+
    ALLOC_STACK;
 
    VALIDATE_MS_DECODER(st);
@@ -434,6 +438,9 @@ int opus_multistream_decoder_ctl_va_list(OpusMSDecoder *st, int request,
    char *ptr;
    int ret = OPUS_OK;
 
+   if (!st)
+      return OPUS_BAD_ARG;
+
    coupled_size = opus_decoder_get_size(2);
    mono_size = opus_decoder_get_size(1);
    ptr = (char*)st + align(sizeof(OpusMSDecoder));
@@ -561,5 +568,6 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
 
 void opus_multistream_decoder_destroy(OpusMSDecoder *st)
 {
-    opus_free(st);
+    if (st)
+        opus_free(st);
 }
