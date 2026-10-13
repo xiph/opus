@@ -195,7 +195,7 @@ void comb_filter_const_c(opus_val32 *y, opus_val32 *x, int T, int N,
 #endif
 
 #ifdef ENABLE_QEXT
-void comb_filter_qext(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
+static void comb_filter_qext(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
       const celt_coef *window, int overlap, int arch)
 {
@@ -226,7 +226,7 @@ void comb_filter_qext(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
          for (i=0;i<N2;i++) buf[i] = y[2*i+s];
          yptr = buf;
       }
-      comb_filter(yptr, mem_buf+COMBFILTER_MAXPERIOD, T0, T1, N2, g0, g1, tapset0, tapset1, new_window, overlap2, arch);
+      comb_filter(yptr, mem_buf+COMBFILTER_MAXPERIOD, T0, T1, N2, g0, g1, tapset0, tapset1, new_window, overlap2, arch, 1);
       for (i=0;i<N2;i++) y[2*i+s] = yptr[i];
    }
    RESTORE_STACK;
@@ -237,7 +237,7 @@ void comb_filter_qext(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
 #ifndef OVERRIDE_comb_filter
 void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
       opus_val16 g0, opus_val16 g1, int tapset0, int tapset1,
-      const celt_coef *window, int overlap, int arch)
+      const celt_coef *window, int overlap, int arch ARG_QEXT(int qext_scale))
 {
    int i;
    /* printf ("%d %d %f %f\n", T0, T1, g0, g1); */
@@ -248,7 +248,9 @@ void comb_filter(opus_val32 *y, opus_val32 *x, int T0, int T1, int N,
          {QCONST16(0.4638671875f, 15), QCONST16(0.2680664062f, 15), QCONST16(0.f, 15)},
          {QCONST16(0.7998046875f, 15), QCONST16(0.1000976562f, 15), QCONST16(0.f, 15)}};
 #ifdef ENABLE_QEXT
-   if (overlap==240) {
+   /* The 96 kHz modes double the history buffers and halve the period, which
+      is what the mirrored filter expects. */
+   if (qext_scale == 2) {
       comb_filter_qext(y, x, T0, T1, N, g0, g1, tapset0, tapset1, window, overlap, arch);
       return;
    }

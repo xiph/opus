@@ -627,7 +627,7 @@ static void prefilter_and_fold(CELTDecoder * OPUS_RESTRICT st, int N)
       comb_filter(etmp, decode_mem[c]+decode_buffer_size-N,
          st->postfilter_period_old, st->postfilter_period, overlap,
          -st->postfilter_gain_old, -st->postfilter_gain,
-         st->postfilter_tapset_old, st->postfilter_tapset, NULL, 0, st->arch);
+         st->postfilter_tapset_old, st->postfilter_tapset, NULL, 0, st->arch ARG_QEXT(qext_scale));
 
       /* Simulate TDAC on the concealed audio so that it blends with the
          MDCT of the next frame. */
@@ -816,11 +816,11 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          st->postfilter_period_old=IMAX(st->postfilter_period_old, COMBFILTER_MINPERIOD);
          comb_filter(out_syn[c], out_syn[c], st->postfilter_period_old, st->postfilter_period, mode->shortMdctSize,
                st->postfilter_gain_old, st->postfilter_gain, st->postfilter_tapset_old, st->postfilter_tapset,
-               mode->window, overlap, st->arch);
+               mode->window, overlap, st->arch ARG_QEXT(qext_scale));
          if (LM!=0)
             comb_filter(out_syn[c]+mode->shortMdctSize, out_syn[c]+mode->shortMdctSize, st->postfilter_period, st->postfilter_period, N-mode->shortMdctSize,
                   st->postfilter_gain, st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
-                  mode->window, overlap, st->arch);
+                  mode->window, overlap, st->arch ARG_QEXT(qext_scale));
 
       } while (++c<C);
       st->postfilter_period_old = st->postfilter_period;
@@ -1565,11 +1565,11 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       st->postfilter_period_old=IMAX(st->postfilter_period_old, COMBFILTER_MINPERIOD);
       comb_filter(out_syn[c], out_syn[c], st->postfilter_period_old, st->postfilter_period, mode->shortMdctSize,
             st->postfilter_gain_old, st->postfilter_gain, st->postfilter_tapset_old, st->postfilter_tapset,
-            mode->window, overlap, st->arch);
+            mode->window, overlap, st->arch ARG_QEXT(qext_scale));
       if (LM!=0)
          comb_filter(out_syn[c]+mode->shortMdctSize, out_syn[c]+mode->shortMdctSize, st->postfilter_period, postfilter_pitch, N-mode->shortMdctSize,
                st->postfilter_gain, postfilter_gain, st->postfilter_tapset, postfilter_tapset,
-               mode->window, overlap, st->arch);
+               mode->window, overlap, st->arch ARG_QEXT(qext_scale));
 
    } while (++c<CC);
    st->postfilter_period_old = st->postfilter_period;

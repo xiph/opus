@@ -46,6 +46,14 @@
 #define OVERRIDE_comb_filter
 #endif
 
+/* The comb_filter() below assumes 16-bit window coefficients and does not
+   implement the 96 kHz variant, so use the generic one (and its
+   comb_filter_const_c()) with QEXT. */
+#ifdef ENABLE_QEXT
+#undef OVERRIDE_COMB_FILTER_CONST
+#undef OVERRIDE_comb_filter
+#endif
+
 #include "os_support.h"
 #include "mdct.h"
 #include <math.h>
