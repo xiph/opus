@@ -273,7 +273,11 @@ CELTMode *opus_custom_mode_create(opus_int32 Fs, int frame_size, int *error)
       return NULL;
    }
 #ifdef ENABLE_QEXT
-   if (frame_size < 40 || frame_size > 2048 || frame_size%2!=0)
+   /* Frames longer than 1024 samples are only supported for the 96 kHz modes
+      for which the encoder and decoder double their internal buffers
+      (qext_scale == 2, i.e. a short MDCT of 240 or 180 samples). */
+   if (frame_size < 40 || frame_size%2!=0 ||
+       (frame_size > 1024 && !(Fs == 96000 && (frame_size == 1920 || frame_size == 1440))))
 #else
    if (frame_size < 40 || frame_size > 1024 || frame_size%2!=0)
 #endif
