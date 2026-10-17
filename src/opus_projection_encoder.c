@@ -153,8 +153,8 @@ static OpusMSEncoder *get_multistream_encoder(OpusProjectionEncoder *st)
     st->demixing_matrix_size_in_bytes));
 }
 
-opus_int32 opus_projection_ambisonics_encoder_get_size(int channels,
-                                                       int mapping_family)
+static int get_encoder_size(int channels, int mapping_family,
+                            opus_int32 *size)
 {
   int nb_streams;
   int nb_coupled_streams;
@@ -167,28 +167,40 @@ opus_int32 opus_projection_ambisonics_encoder_get_size(int channels,
   ret = get_streams_from_channels(channels, mapping_family, &nb_streams,
                                   &nb_coupled_streams, &order_plus_one);
   if (ret != OPUS_OK)
-    return 0;
+    return ret;
 
   /* Use the pre-computed matrix for this order, if there is one. */
-  if (mapping_matrix_get_ambisonic(order_plus_one - 1, &table, NULL, NULL) != OPUS_OK)
-    return 0;
+  ret = mapping_matrix_get_ambisonic(order_plus_one - 1, &table, NULL, NULL);
+  if (ret != OPUS_OK)
+    return ret;
 
   mixing_matrix_size = mapping_matrix_get_size(table->rows, table->cols);
   if (!mixing_matrix_size)
-    return 0;
+    return OPUS_BAD_ARG;
 
   /* The demixing matrix is the mixing matrix transposed. */
   demixing_matrix_size = mapping_matrix_get_size(table->cols, table->rows);
   if (!demixing_matrix_size)
-    return 0;
+    return OPUS_BAD_ARG;
 
   encoder_size =
       opus_multistream_encoder_get_size(nb_streams, nb_coupled_streams);
   if (!encoder_size)
-    return 0;
+    return OPUS_BAD_ARG;
 
-  return align(sizeof(OpusProjectionEncoder)) +
+  *size = align(sizeof(OpusProjectionEncoder)) +
     mixing_matrix_size + demixing_matrix_size + encoder_size;
+  return OPUS_OK;
+}
+
+opus_int32 opus_projection_ambisonics_encoder_get_size(int channels,
+                                                       int mapping_family)
+{
+  opus_int32 size;
+
+  if (get_encoder_size(channels, mapping_family, &size) != OPUS_OK)
+    return 0;
+  return size;
 }
 
 int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int32 Fs,
@@ -218,9 +230,10 @@ int opus_projection_ambisonics_encoder_init(OpusProjectionEncoder *st, opus_int3
   if (mapping_family == 3)
   {
     /* Assign mixing matrix based on available pre-computed matrices. */
-    if (mapping_matrix_get_ambisonic(order_plus_one - 1, &table, &table_data,
-                                     &table_data_size) != OPUS_OK)
-      return OPUS_BAD_ARG;
+    ret = mapping_matrix_get_ambisonic(order_plus_one - 1, &table, &table_data,
+                                       &table_data_size);
+    if (ret != OPUS_OK)
+      return ret;
 
     mixing_matrix = get_mixing_matrix(st);
     mapping_matrix_init(mixing_matrix, table->rows, table->cols, table->gain,
@@ -268,15 +281,15 @@ OpusProjectionEncoder *opus_projection_ambisonics_encoder_create(
     opus_int32 Fs, int channels, int mapping_family, int *streams,
     int *coupled_streams, int application, int *error)
 {
-  int size;
+  opus_int32 size;
   int ret;
   OpusProjectionEncoder *st;
 
   /* Allocate space for the projection encoder. */
-  size = opus_projection_ambisonics_encoder_get_size(channels, mapping_family);
-  if (!size) {
+  ret = get_encoder_size(channels, mapping_family, &size);
+  if (ret != OPUS_OK) {
     if (error)
-      *error = OPUS_ALLOC_FAIL;
+      *error = ret;
     return NULL;
   }
   st = (OpusProjectionEncoder *)opus_alloc(size);
