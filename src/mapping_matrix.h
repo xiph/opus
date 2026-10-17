@@ -57,6 +57,18 @@ void mapping_matrix_init(
     opus_int32 data_size
 );
 
+/* As mapping_matrix_init(), but initializes `matrix` to the transpose of `data`, a
+ * `cols` x `rows` matrix.
+ */
+void mapping_matrix_init_transposed(
+    MappingMatrix * const matrix,
+    int rows,
+    int cols,
+    int gain,
+    const opus_int16 *data,
+    opus_int32 data_size
+);
+
 #ifndef DISABLE_FLOAT_API
 void mapping_matrix_multiply_channel_in_float(
     const MappingMatrix *matrix,
@@ -119,7 +131,22 @@ void mapping_matrix_multiply_channel_out_int24(
     int output_rows,
     int frame_size
 );
-/* Pre-computed mixing and demixing matrices for 1st to 3rd-order ambisonics.
+/* Highest ambisonic order with a built-in projection matrix. */
+#define MAPPING_MATRIX_MAX_AMBISONIC_ORDER 12
+
+/* Get the built-in projection mixing matrix for ambisonic `order`; the demixing
+ * matrix is its transpose. Any output may be NULL. Returns OPUS_BAD_ARG, leaving the
+ * outputs untouched, if there is no matrix for that order.
+ */
+int mapping_matrix_get_ambisonic(
+    int order,
+    const MappingMatrix **matrix,
+    const opus_int16 **data,
+    opus_int32 *data_size
+);
+
+/* Pre-computed projection mixing matrices for 1st- to 5th-order (mapping_matrix.c)
+ * and 6th- to 12th-order ambisonics (mapping_matrix_hoa.c).
  *   foa: first-order ambisonics
  *   soa: second-order ambisonics
  *   toa: third-order ambisonics
@@ -139,19 +166,25 @@ extern const opus_int16 mapping_matrix_fourthoa_mixing_data[729];
 extern const MappingMatrix mapping_matrix_fifthoa_mixing;
 extern const opus_int16 mapping_matrix_fifthoa_mixing_data[1444];
 
-extern const MappingMatrix mapping_matrix_foa_demixing;
-extern const opus_int16 mapping_matrix_foa_demixing_data[36];
+extern const MappingMatrix mapping_matrix_sixthoa_mixing;
+extern const opus_int16 mapping_matrix_sixthoa_mixing_data[2601];
 
-extern const MappingMatrix mapping_matrix_soa_demixing;
-extern const opus_int16 mapping_matrix_soa_demixing_data[121];
+extern const MappingMatrix mapping_matrix_seventhoa_mixing;
+extern const opus_int16 mapping_matrix_seventhoa_mixing_data[4356];
 
-extern const MappingMatrix mapping_matrix_toa_demixing;
-extern const opus_int16 mapping_matrix_toa_demixing_data[324];
+extern const MappingMatrix mapping_matrix_eighthoa_mixing;
+extern const opus_int16 mapping_matrix_eighthoa_mixing_data[6889];
 
-extern const MappingMatrix mapping_matrix_fourthoa_demixing;
-extern const opus_int16 mapping_matrix_fourthoa_demixing_data[729];
+extern const MappingMatrix mapping_matrix_ninthoa_mixing;
+extern const opus_int16 mapping_matrix_ninthoa_mixing_data[10404];
 
-extern const MappingMatrix mapping_matrix_fifthoa_demixing;
-extern const opus_int16 mapping_matrix_fifthoa_demixing_data[1444];
+extern const MappingMatrix mapping_matrix_tenthoa_mixing;
+extern const opus_int16 mapping_matrix_tenthoa_mixing_data[15129];
+
+extern const MappingMatrix mapping_matrix_eleventhoa_mixing;
+extern const opus_int16 mapping_matrix_eleventhoa_mixing_data[21316];
+
+extern const MappingMatrix mapping_matrix_twelfthoa_mixing;
+extern const opus_int16 mapping_matrix_twelfthoa_mixing_data[29241];
 
 #endif /* MAPPING_MATRIX_H */
