@@ -36,6 +36,7 @@
 #include "arch.h"
 #include "mapping_matrix.h"
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 6
 const MappingMatrix mapping_matrix_sixthoa_mixing = { 51, 51, 0 };
 const opus_int16 mapping_matrix_sixthoa_mixing_data[2601] = {
       4805,   4282,   4553,   4882,   4534,   4685,   4635,   4743,
@@ -365,7 +366,9 @@ const opus_int16 mapping_matrix_sixthoa_mixing_data[2601] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 7
 const MappingMatrix mapping_matrix_seventhoa_mixing = { 66, 66, 0 };
 const opus_int16 mapping_matrix_seventhoa_mixing_data[4356] = {
       4104,   4163,   4236,   3846,   4168,   3890,   4168,   4163,
@@ -914,7 +917,9 @@ const opus_int16 mapping_matrix_seventhoa_mixing_data[4356] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 8
 const MappingMatrix mapping_matrix_eighthoa_mixing = { 83, 83, 0 };
 const opus_int16 mapping_matrix_eighthoa_mixing_data[6889] = {
       3640,   3716,   3627,   3743,   3460,   3711,   3652,   3912,
@@ -1780,7 +1785,9 @@ const opus_int16 mapping_matrix_eighthoa_mixing_data[6889] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 9
 const MappingMatrix mapping_matrix_ninthoa_mixing = { 102, 102, 0 };
 const opus_int16 mapping_matrix_ninthoa_mixing_data[10404] = {
       3306,   3402,   3402,   3034,   3208,   3306,   3250,   3306,
@@ -3085,7 +3092,9 @@ const opus_int16 mapping_matrix_ninthoa_mixing_data[10404] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 10
 const MappingMatrix mapping_matrix_tenthoa_mixing = { 123, 123, 0 };
 const opus_int16 mapping_matrix_tenthoa_mixing_data[15129] = {
       3205,   3056,   3082,   3032,   3182,   3124,   2862,   2912,
@@ -4981,7 +4990,9 @@ const opus_int16 mapping_matrix_tenthoa_mixing_data[15129] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 11
 const MappingMatrix mapping_matrix_eleventhoa_mixing = { 146, 146, 0 };
 const opus_int16 mapping_matrix_eleventhoa_mixing_data[21316] = {
       2619,   2725,   2720,   2520,   2613,   2745,   2759,   2899,
@@ -7650,7 +7661,9 @@ const opus_int16 mapping_matrix_eleventhoa_mixing_data[21316] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 12
 const MappingMatrix mapping_matrix_twelfthoa_mixing = { 171, 171, 0 };
 const opus_int16 mapping_matrix_twelfthoa_mixing_data[29241] = {
       2609,   2503,   2592,   2359,   2563,   2591,   2553,   2589,
@@ -11310,3 +11323,4 @@ const opus_int16 mapping_matrix_twelfthoa_mixing_data[29241] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif

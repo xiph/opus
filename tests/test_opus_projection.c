@@ -192,12 +192,17 @@ void test_simple_matrix(void)
   opus_free(simple_matrix);
 }
 
-void test_creation_arguments(const int channels, const int mapping_family)
+/* `st_init` must have room for MAX_AMBISONIC_CHANNELS, the most that init() can
+ * accept, since get_size() gives no size for the channel counts it rejects.
+ */
+void test_creation_arguments(const int channels, const int mapping_family,
+                             OpusProjectionEncoder *st_init)
 {
   int streams;
   int coupled_streams;
   int enc_error;
   int dec_error;
+  int expected_error;
   int ret;
   OpusProjectionEncoder *st_enc = NULL;
   OpusProjectionDecoder *st_dec = NULL;
@@ -208,11 +213,35 @@ void test_creation_arguments(const int channels, const int mapping_family)
   int order_plus_one = (int)floor(sqrt((float)channels));
   int nondiegetic_channels = channels - order_plus_one * order_plus_one;
 
-  int is_channels_valid = 0;
-  int is_projection_valid = 0;
+  /* RFC 8486 permits (order + 1)^2 channels, optionally plus stereo,
+   * for orders 0 through 14. Not every valid order has a built-in matrix. */
+  if (mapping_family != 3 || order_plus_one < 1 || order_plus_one > 15 ||
+      (nondiegetic_channels != 0 && nondiegetic_channels != 2))
+    expected_error = OPUS_BAD_ARG;
+  else if (order_plus_one < 2 || order_plus_one > MAX_AMBISONIC_ORDER + 1)
+    expected_error = OPUS_UNIMPLEMENTED;
+  else
+    expected_error = OPUS_OK;
 
   st_enc = opus_projection_ambisonics_encoder_create(Fs, channels,
     mapping_family, &streams, &coupled_streams, application, &enc_error);
+  if (enc_error != expected_error ||
+      (st_enc != NULL) != (expected_error == OPUS_OK))
+  {
+    fprintf(stderr, "Channels: %d, Family: %d, create: %d, expected: %d\n",
+      channels, mapping_family, enc_error, expected_error);
+    test_failed();
+  }
+
+  ret = opus_projection_ambisonics_encoder_init(st_init, Fs, channels,
+    mapping_family, &streams, &coupled_streams, application);
+  if (ret != expected_error)
+  {
+    fprintf(stderr, "Channels: %d, Family: %d, init: %d, expected: %d\n",
+      channels, mapping_family, ret, expected_error);
+    test_failed();
+  }
+
   if (st_enc != NULL)
   {
     opus_int32 matrix_size;
@@ -224,32 +253,25 @@ void test_creation_arguments(const int channels, const int mapping_family)
       test_failed();
 
     matrix = (unsigned char *)opus_alloc(matrix_size);
+    if (matrix == NULL)
+      test_failed();
     ret = opus_projection_encoder_ctl(st_enc,
       OPUS_PROJECTION_GET_DEMIXING_MATRIX_REQUEST, matrix, matrix_size);
+    if (ret != OPUS_OK)
+      test_failed();
 
     opus_projection_encoder_destroy(st_enc);
 
     st_dec = opus_projection_decoder_create(Fs, channels, streams,
       coupled_streams, matrix, matrix_size, &dec_error);
-    if (st_dec != NULL)
+    if (st_dec == NULL || dec_error != OPUS_OK)
     {
-      opus_projection_decoder_destroy(st_dec);
+      fprintf(stderr, "Channels: %d, Family: %d, decoder create: %d\n",
+        channels, mapping_family, dec_error);
+      test_failed();
     }
+    opus_projection_decoder_destroy(st_dec);
     opus_free(matrix);
-  }
-
-  is_channels_valid = (order_plus_one >= 2 &&
-    order_plus_one <= MAX_AMBISONIC_ORDER + 1) &&
-    (nondiegetic_channels == 0 || nondiegetic_channels == 2);
-  is_projection_valid = (enc_error == OPUS_OK && dec_error == OPUS_OK);
-  if (is_channels_valid ^ is_projection_valid)
-  {
-    fprintf(stderr, "Channels: %d, Family: %d\n", channels, mapping_family);
-    fprintf(stderr, "Order+1: %d, Non-diegetic Channels: %d\n",
-      order_plus_one, nondiegetic_channels);
-    fprintf(stderr, "Streams: %d, Coupled Streams: %d\n",
-      streams, coupled_streams);
-    test_failed();
   }
 }
 
@@ -808,16 +830,30 @@ int main(int _argc, char **_argv)
   test_simple_matrix();
 
   /* Test full range of channels in creation arguments. */
-  for (i = 0; i < 255; i++)
-    test_creation_arguments(i, 3);
+  {
+    opus_int32 size = opus_projection_ambisonics_encoder_get_size(
+      MAX_AMBISONIC_CHANNELS, 3);
+    OpusProjectionEncoder *st_init = NULL;
+    if (size > 0)
+      st_init = (OpusProjectionEncoder *)opus_alloc(size);
+    if (st_init == NULL)
+      test_failed();
+    for (i = 0; i < 255; i++)
+      test_creation_arguments(i, 3, st_init);
+    opus_free(st_init);
+  }
 
   /* Test that every built-in matrix pair inverts itself. */
   fprintf(stderr, "Mapping matrix round trip:\n");
   for (order = 1; order <= MAX_AMBISONIC_ORDER; order++)
     test_matrix_roundtrip(order);
 
-  /* Test encode/decode pipeline. */
-  test_encode_decode(64 * 18, 18, 3);
+  /* Test encode/decode pipeline, at 3rd order or the highest order built. */
+  {
+    int test_order = MAX_AMBISONIC_ORDER < 3 ? MAX_AMBISONIC_ORDER : 3;
+    int channels = (test_order + 1) * (test_order + 1) + 2;
+    test_encode_decode(64 * channels, channels, 3);
+  }
 
   /* Test encode/decode of synthetic ambisonic material at every order, with and
      without the two non-diegetic channels. */

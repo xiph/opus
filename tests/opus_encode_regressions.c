@@ -1506,6 +1506,13 @@ static int multiframe_large_buffer(void)
     return 0;
 }
 
+/* Whether the encoder has a built-in projection matrix for this many
+   ambisonic channels. The highest order is a build-time option. */
+static int projection_order_built(int channels)
+{
+   return opus_projection_ambisonics_encoder_get_size(channels, 3) != 0;
+}
+
 void regression_test(void)
 {
    fprintf(stderr, "Running simple tests for bugs that have been fixed previously\n");
@@ -1520,13 +1527,18 @@ void regression_test(void)
    silk_gain_assert();
 #ifndef DISABLE_FLOAT_API
    analysis_overflow();
-   projection_overflow2();
+   if (projection_order_built(9))
+      projection_overflow2();
    projection_overflow3();
 #endif
-   projection_overflow();
+   if (projection_order_built(36))
+      projection_overflow();
 #ifdef ENABLE_QEXT
-   projection_overflow4();
-   projection_overflow5();
+   if (projection_order_built(36))
+   {
+      projection_overflow4();
+      projection_overflow5();
+   }
    qext_repacketize_fail();
    qext_stereo_overflow();
 #ifdef ENABLE_DRED
