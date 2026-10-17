@@ -193,6 +193,20 @@ AS_IF([test "$enable_pfa" = "yes"],[
 ])
 AM_CONDITIONAL([ENABLE_PFA], [test "$enable_pfa" = "yes"])
 
+AC_ARG_ENABLE([ambisonics-max-order],
+    [AS_HELP_STRING([--enable-ambisonics-max-order=N],
+        [highest ambisonic order the projection encoder supports, 1 to 12 (default 5, or 12 if N is omitted)])],,
+    [enable_ambisonics_max_order=5])
+
+AS_IF([test "$enable_ambisonics_max_order" = "yes"],[enable_ambisonics_max_order=12])
+
+AS_CASE([$enable_ambisonics_max_order],
+  [1|2|3|4|5|6|7|8|9|10|11|12],[],
+  [AC_MSG_ERROR([--enable-ambisonics-max-order must be 1 to 12, got "$enable_ambisonics_max_order"])])
+
+AC_DEFINE_UNQUOTED([OPUS_AMBISONICS_MAX_ORDER], [$enable_ambisonics_max_order],
+  [Highest ambisonic order the projection encoder supports])
+
 AC_ARG_ENABLE([dred],
     [AS_HELP_STRING([--enable-dred], [use Deep REDundancy (DRED)])],,
     [enable_dred=no])
@@ -1023,6 +1037,7 @@ AC_MSG_NOTICE([
       Run-time CPU detection: ........ ${rtcd_support}
       Custom modes: .................. ${enable_custom_modes}
       PFA support: ................... ${enable_pfa}
+      Max ambisonics order: .......... ${enable_ambisonics_max_order}
       Assertion checking: ............ ${enable_assertions}
       Hardening: ..................... ${enable_hardening}
       Fuzzing: ....................... ${enable_fuzzing}

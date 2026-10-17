@@ -39,6 +39,8 @@
 #include "opus_projection.h"
 #include "opus.h"
 #include "test_opus_common.h"
+#include "arch.h"
+#include "../src/mapping_matrix.h"
 
 
 static int celt_ec_internal_error(void)
@@ -1470,13 +1472,19 @@ void regression_test(void)
    silk_gain_assert();
 #ifndef DISABLE_FLOAT_API
    analysis_overflow();
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 2
    projection_overflow2();
+#endif
    projection_overflow3();
 #endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 5
    projection_overflow();
+#endif
 #ifdef ENABLE_QEXT
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 5
    projection_overflow4();
    projection_overflow5();
+#endif
    qext_repacketize_fail();
    qext_stereo_overflow();
 #ifdef ENABLE_DRED
