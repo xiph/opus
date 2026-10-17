@@ -330,6 +330,7 @@ const opus_int16 mapping_matrix_foa_mixing_data[36] = {
          0,      0,      0,  32767
 };
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 2
 const MappingMatrix mapping_matrix_soa_mixing = { 11, 11, 0 };
 const opus_int16 mapping_matrix_soa_mixing_data[121] = {
      11093,  10836,  10836,  11093,  10836,  10836,  10836,  10836,
@@ -349,7 +350,9 @@ const opus_int16 mapping_matrix_soa_mixing_data[121] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 3
 const MappingMatrix mapping_matrix_toa_mixing = { 18, 18, 0 };
 const opus_int16 mapping_matrix_toa_mixing_data[324] = {
       7921,   7921,   7921,   7921,   7921,   8956,   7921,   8956,
@@ -394,7 +397,9 @@ const opus_int16 mapping_matrix_toa_mixing_data[324] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 4
 const MappingMatrix mapping_matrix_fourthoa_mixing = { 27, 27, 0 };
 const opus_int16 mapping_matrix_fourthoa_mixing_data[729] = {
       6669,   6694,   6696,   6558,   6472,   6669,   5961,   6749,
@@ -490,7 +495,9 @@ const opus_int16 mapping_matrix_fourthoa_mixing_data[729] = {
          0,      0,      0,      0,      0,      0,      0,      0,
      32767
 };
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 5
 const MappingMatrix mapping_matrix_fifthoa_mixing = { 38, 38, 0 };
 const opus_int16 mapping_matrix_fifthoa_mixing_data[1444] = {
       5618,   5234,   5408,   5538,   5638,   5638,   5487,   5508,
@@ -675,6 +682,7 @@ const opus_int16 mapping_matrix_fifthoa_mixing_data[1444] = {
          0,      0,      0,      0,      0,      0,      0,      0,
          0,      0,      0,  32767
 };
+#endif
 
 /* The built-in mixing matrices, indexed by ambisonic order. Order 0 has none. */
 typedef struct {
@@ -691,17 +699,39 @@ static const AmbisonicMatrix ambisonic_mixing_matrices[
     MAPPING_MATRIX_MAX_AMBISONIC_ORDER + 1] = {
   { NULL, NULL, 0 },
   MAPPING_MATRIX_ENTRY(foa),
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 2
   MAPPING_MATRIX_ENTRY(soa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 3
   MAPPING_MATRIX_ENTRY(toa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 4
   MAPPING_MATRIX_ENTRY(fourthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 5
   MAPPING_MATRIX_ENTRY(fifthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 6
   MAPPING_MATRIX_ENTRY(sixthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 7
   MAPPING_MATRIX_ENTRY(seventhoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 8
   MAPPING_MATRIX_ENTRY(eighthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 9
   MAPPING_MATRIX_ENTRY(ninthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 10
   MAPPING_MATRIX_ENTRY(tenthoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 11
   MAPPING_MATRIX_ENTRY(eleventhoa),
+#endif
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 12
   MAPPING_MATRIX_ENTRY(twelfthoa)
+#endif
 };
 
 int mapping_matrix_get_ambisonic(int order, const MappingMatrix **matrix,

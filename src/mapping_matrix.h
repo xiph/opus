@@ -131,8 +131,18 @@ void mapping_matrix_multiply_channel_out_int24(
     int output_rows,
     int frame_size
 );
-/* Highest ambisonic order with a built-in projection matrix. */
-#define MAPPING_MATRIX_MAX_AMBISONIC_ORDER 12
+/* Highest ambisonic order with a built-in projection matrix, 1 to 12, set with
+ * --enable-ambisonics-max-order (autotools), OPUS_AMBISONICS_MAX_ORDER (CMake) or
+ * ambisonics-max-order (meson). This limits only the encoder: the decoder takes its
+ * demixing matrix from the stream.
+ */
+#ifndef OPUS_AMBISONICS_MAX_ORDER
+# define OPUS_AMBISONICS_MAX_ORDER 5
+#endif
+#if OPUS_AMBISONICS_MAX_ORDER < 1 || OPUS_AMBISONICS_MAX_ORDER > 12
+# error "OPUS_AMBISONICS_MAX_ORDER must be between 1 and 12."
+#endif
+#define MAPPING_MATRIX_MAX_AMBISONIC_ORDER OPUS_AMBISONICS_MAX_ORDER
 
 /* Get the built-in projection mixing matrix for ambisonic `order`; the demixing
  * matrix is its transpose. Any output may be NULL. Returns OPUS_BAD_ARG, leaving the
@@ -146,7 +156,8 @@ int mapping_matrix_get_ambisonic(
 );
 
 /* Pre-computed projection mixing matrices for 1st- to 5th-order (mapping_matrix.c)
- * and 6th- to 12th-order ambisonics (mapping_matrix_hoa.c).
+ * and 6th- to 12th-order ambisonics (mapping_matrix_hoa.c). Only orders up to
+ * MAPPING_MATRIX_MAX_AMBISONIC_ORDER are compiled in.
  *   foa: first-order ambisonics
  *   soa: second-order ambisonics
  *   toa: third-order ambisonics
