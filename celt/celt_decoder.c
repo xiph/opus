@@ -1608,12 +1608,12 @@ int celt_decode_with_ec_dred(CELTDecoder * OPUS_RESTRICT st, const unsigned char
       for (i=0;i<start;i++)
       {
          oldBandE[c*nbEBands+i]=0;
-         oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=-GCONST(28.f);
+         oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=backgroundLogE[c*nbEBands+i]=-GCONST(28.f);
       }
       for (i=end;i<nbEBands;i++)
       {
          oldBandE[c*nbEBands+i]=0;
-         oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=-GCONST(28.f);
+         oldLogE[c*nbEBands+i]=oldLogE2[c*nbEBands+i]=backgroundLogE[c*nbEBands+i]=-GCONST(28.f);
       }
    } while (++c<2);
    st->rng = dec->rng;
@@ -1816,7 +1816,7 @@ int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
       case OPUS_RESET_STATE:
       {
          int i;
-         celt_glog *oldBandE, *oldLogE, *oldLogE2;
+         celt_glog *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
          int decode_buffer_size;
 #ifdef ENABLE_QEXT
          int qext_scale = st->qext_scale;
@@ -1825,11 +1825,12 @@ int opus_custom_decoder_ctl(CELTDecoder * OPUS_RESTRICT st, int request, ...)
          oldBandE = (celt_glog*)(st->_decode_mem+(decode_buffer_size+st->overlap)*st->channels);
          oldLogE = oldBandE + 2*st->mode->nbEBands;
          oldLogE2 = oldLogE + 2*st->mode->nbEBands;
+         backgroundLogE = oldLogE2 + 2*st->mode->nbEBands;
          OPUS_CLEAR((char*)&st->DECODER_RESET_START,
                opus_custom_decoder_get_size(st->mode, st->channels)-
                ((char*)&st->DECODER_RESET_START - (char*)st));
          for (i=0;i<2*st->mode->nbEBands;i++)
-            oldLogE[i]=oldLogE2[i]=-GCONST(28.f);
+            oldBandE[i]=oldLogE[i]=oldLogE2[i]=backgroundLogE[i]=-GCONST(28.f);
          st->skip_plc = 1;
          st->last_frame_type = FRAME_NONE;
       }
