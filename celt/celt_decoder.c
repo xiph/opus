@@ -834,6 +834,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       st->skip_plc = 1;
    } else {
       int exc_length;
+      int buf_len;
       /* Pitch-based PLC */
       const celt_coef *window;
       opus_val16 *exc;
@@ -858,10 +859,11 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 #endif
 
       /* We want the excitation for 2 pitch periods in order to look for a
-         decaying signal, but we can't get more than MAX_PERIOD. */
-      exc_length = IMIN(2*pitch_index, max_period);
+         decaying signal. */
+      exc_length = 2*pitch_index;
+      buf_len = IMAX(max_period, exc_length);
 
-      ALLOC(_exc, max_period+CELT_LPC_ORDER, opus_val16);
+      ALLOC(_exc, buf_len+CELT_LPC_ORDER, opus_val16);
       ALLOC(fir_tmp, exc_length, opus_val16);
       exc = _exc+CELT_LPC_ORDER;
       window = mode->window;
@@ -875,15 +877,15 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          int j;
 
          buf = decode_mem[c];
-         for (i=0;i<max_period+CELT_LPC_ORDER;i++)
-            exc[i-CELT_LPC_ORDER] = SROUND16(buf[decode_buffer_size-max_period-CELT_LPC_ORDER+i], SIG_SHIFT);
+         for (i=0;i<buf_len+CELT_LPC_ORDER;i++)
+            exc[i-CELT_LPC_ORDER] = SROUND16(buf[decode_buffer_size-buf_len-CELT_LPC_ORDER+i], SIG_SHIFT);
 
          if (st->last_frame_type != FRAME_PLC_PERIODIC && !(last_neural && curr_neural))
          {
             opus_val32 ac[CELT_LPC_ORDER+1];
             /* Compute LPC coefficients for the last MAX_PERIOD samples before
                the first loss so we can work in the excitation-filter domain. */
-            _celt_autocorr(exc, ac, window, overlap,
+            _celt_autocorr(exc+buf_len-max_period, ac, window, overlap,
                    CELT_LPC_ORDER, max_period, st->arch);
             /* Add a noise floor of -40 dB. */
 #ifdef FIXED_POINT
@@ -925,9 +927,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          {
             /* Compute the excitation for exc_length samples before the loss. We need the copy
                because celt_fir() cannot filter in-place. */
-            celt_fir(exc+max_period-exc_length, lpc+c*CELT_LPC_ORDER,
+            celt_fir(exc+buf_len-exc_length, lpc+c*CELT_LPC_ORDER,
                   fir_tmp, exc_length, CELT_LPC_ORDER, st->arch);
-            OPUS_COPY(exc+max_period-exc_length, fir_tmp, exc_length);
+            OPUS_COPY(exc+buf_len-exc_length, fir_tmp, exc_length);
          }
 
          /* Check if the waveform is decaying, and if so how fast.
@@ -937,7 +939,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             opus_val32 E1=1, E2=1;
             int decay_length;
 #ifdef FIXED_POINT
-            int shift = IMAX(0,2*celt_zlog2(celt_maxabs16(&exc[max_period-exc_length], exc_length))-20);
+            int shift = IMAX(0,2*celt_zlog2(celt_maxabs16(&exc[buf_len-exc_length], exc_length))-19);
 #ifdef ENABLE_QEXT
             if (st->qext_scale==2) shift++;
 #endif
@@ -946,9 +948,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             for (i=0;i<decay_length;i++)
             {
                opus_val16 e;
-               e = exc[max_period-decay_length+i];
+               e = exc[buf_len-decay_length+i];
                E1 += SHR32(MULT16_16(e, e), shift);
-               e = exc[max_period-2*decay_length+i];
+               e = exc[buf_len-2*decay_length+i];
                E2 += SHR32(MULT16_16(e, e), shift);
             }
             E1 = MIN32(E1, E2);
@@ -963,7 +965,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          /* Extrapolate from the end of the excitation with a period of
             "pitch_index", scaling down each period by an additional factor of
             "decay". */
-         extrapolation_offset = max_period-pitch_index;
+         extrapolation_offset = buf_len-pitch_index;
          /* We need to extrapolate enough samples to cover a complete MDCT
             window (including overlap/2 samples on both sides). */
          extrapolation_len = N+overlap;
@@ -982,7 +984,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             /* Compute the energy of the previously decoded signal whose
                excitation we're copying. */
             tmp = SROUND16(
-                  buf[decode_buffer_size-max_period-N+extrapolation_offset+j],
+                  buf[decode_buffer_size-buf_len-N+extrapolation_offset+j],
                   SIG_SHIFT);
             S1 += SHR32(MULT16_16(tmp, tmp), 11);
          }
