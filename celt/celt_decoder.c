@@ -860,8 +860,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
       /* We want the excitation for 2 pitch periods in order to look for a
          decaying signal. */
-      exc_length = 2*pitch_index;
-      buf_len = IMAX(max_period, exc_length);
+      exc_length = buf_len = IMAX(max_period, 2*pitch_index);
 
       ALLOC(_exc, buf_len+CELT_LPC_ORDER, opus_val16);
       ALLOC(fir_tmp, exc_length, opus_val16);
@@ -876,6 +875,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          int extrapolation_len;
          int j;
 
+         pitch_index = st->last_pitch_index;
          buf = decode_mem[c];
          for (i=0;i<buf_len+CELT_LPC_ORDER;i++)
             exc[i-CELT_LPC_ORDER] = SROUND16(buf[decode_buffer_size-buf_len-CELT_LPC_ORDER+i], SIG_SHIFT);
@@ -939,12 +939,12 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             opus_val32 E1=1, E2=1;
             int decay_length;
 #ifdef FIXED_POINT
-            int shift = IMAX(0,2*celt_zlog2(celt_maxabs16(&exc[buf_len-exc_length], exc_length))-20);
+            int shift = IMAX(0,2*celt_zlog2(celt_maxabs16(&exc[buf_len-2*pitch_index], 2*pitch_index))-20);
 #ifdef ENABLE_QEXT
             if (st->qext_scale==2) shift++;
 #endif
 #endif
-            decay_length = exc_length>>1;
+            decay_length = pitch_index;
             for (i=0;i<decay_length;i++)
             {
                opus_val16 e;
@@ -955,6 +955,37 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             }
             E1 = MIN32(E1, E2);
             decay = celt_sqrt(frac_div32(SHR32(E1, 1), E2));
+         }
+         /* Use a large integer multiple of the pitch period to avoid repeating
+            a short sequence too many times, stopping before any >6 dB change. */
+         {
+            int k, K;
+            opus_val32 E0=1;
+#ifdef FIXED_POINT
+            int shift = IMAX(0, 2*celt_zlog2(celt_maxabs16(exc, buf_len))-20);
+#ifdef ENABLE_QEXT
+            if (st->qext_scale==2) shift++;
+#endif
+#endif
+            K = buf_len/pitch_index;
+            for (i=0;i<pitch_index;i++)
+            {
+               opus_val16 e = exc[buf_len-pitch_index+i];
+               E0 += SHR32(MULT16_16(e, e), shift);
+            }
+            for (k=2;k<=K;k++)
+            {
+               opus_val32 Ek=1;
+               for (i=0;i<pitch_index;i++)
+               {
+                  opus_val16 e = exc[buf_len-k*pitch_index+i];
+                  Ek += SHR32(MULT16_16(e, e), shift);
+               }
+               if (Ek < MULT16_32_Q15(QCONST16(.25f, 15), E0)
+                     || E0 < MULT16_32_Q15(QCONST16(.25f, 15), Ek))
+                  break;
+            }
+            pitch_index *= k-1;
          }
 
          /* Move the decoder memory one frame to the left to give us room to
