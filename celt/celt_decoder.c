@@ -845,6 +845,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       int last_neural;
       VARDECL(opus_val16, _exc);
       VARDECL(opus_val16, fir_tmp);
+      VARDECL(celt_sig, old_overlap);
+      VARDECL(opus_val32, etmp);
 
       curr_neural = curr_frame_type == FRAME_PLC_NEURAL || curr_frame_type == FRAME_DRED;
       last_neural = st->last_frame_type == FRAME_PLC_NEURAL || st->last_frame_type == FRAME_DRED;
@@ -866,6 +868,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 
       ALLOC(_exc, buf_len+CELT_LPC_ORDER, opus_val16);
       ALLOC(fir_tmp, exc_length, opus_val16);
+      ALLOC(old_overlap, overlap>>1, celt_sig);
+      ALLOC(etmp, overlap, opus_val32);
       exc = _exc+CELT_LPC_ORDER;
       window = mode->window;
       c=0; do {
@@ -996,9 +1000,10 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             pitch_index *= k-1;
          }
 
-         /* Move the decoder memory one frame to the left to give us room to
-            add the data for the new frame. We ignore the overlap that extends
-            past the end of the buffer, because we aren't going to use it. */
+         /* Save the folded right-overlap tail from the previous MDCT frame before
+            moving the decoder memory one frame to the left. */
+         if (st->last_frame_type == FRAME_NORMAL)
+            OPUS_COPY(old_overlap, &buf[decode_buffer_size], overlap>>1);
          OPUS_MOVE(buf, buf+N, decode_buffer_size-N);
 
          /* Extrapolate from the end of the excitation with a period of
@@ -1102,6 +1107,32 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
                         MULT16_32_Q15(ratio, buf[decode_buffer_size-N+i]);
                }
             }
+         }
+
+         if (st->last_frame_type == FRAME_NORMAL)
+         {
+            comb_filter(etmp, buf+decode_buffer_size-N,
+                  st->postfilter_period_old, st->postfilter_period, overlap,
+                  -st->postfilter_gain_old, -st->postfilter_gain,
+                  st->postfilter_tapset_old, st->postfilter_tapset,
+                  NULL, 0, st->arch ARG_QEXT(qext_scale));
+            for (i=0;i<overlap/2;i++)
+            {
+               opus_val16 w1 = COEF2VAL16(window[i]);
+               opus_val16 w2 = COEF2VAL16(window[overlap-1-i]);
+               celt_sig x2 = old_overlap[i];
+               celt_sig x1 = MULT16_32_Q15(w2, etmp[overlap-1-i])
+                     - MULT16_32_Q15(w1, etmp[i]);
+               buf[decode_buffer_size-N+i] =
+                     MULT16_32_Q15(w2, x2) - MULT16_32_Q15(w1, x1);
+               buf[decode_buffer_size-N+overlap-1-i] =
+                     MULT16_32_Q15(w1, x2) + MULT16_32_Q15(w2, x1);
+            }
+            comb_filter(buf+decode_buffer_size-N, buf+decode_buffer_size-N,
+                  st->postfilter_period_old, st->postfilter_period, overlap,
+                  st->postfilter_gain_old, st->postfilter_gain,
+                  st->postfilter_tapset_old, st->postfilter_tapset,
+                  NULL, 0, st->arch ARG_QEXT(qext_scale));
          }
 
       } while (++c<C);
