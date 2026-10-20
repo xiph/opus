@@ -55,6 +55,10 @@
 #include "mathops.h"
 #include "stack_alloc.h"
 
+/* These optimizations assume Q15 coefficients; the generic C code will be used
+   for floating point (float coefficients) or QEXT (Q31 coefficients). */
+#if defined(FIXED_POINT) && !defined(ENABLE_QEXT)
+
 #if defined (__mips_dsp)
 static inline int S_MUL_ADD_PSR(int a, int b, int c, int d, int shift) {
     long long acc = __builtin_mips_mult(a, b);
@@ -103,6 +107,7 @@ static inline int S_MUL_SUB_PSR(int a, int b, int c, int d, int shift) {
 #define OVERRIDE_clt_mdct_backward
 
 #endif
+#endif /* defined(FIXED_POINT) && !defined(ENABLE_QEXT) */
 
 #if defined (OVERRIDE_clt_mdct_forward)
 
