@@ -782,7 +782,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       }
 
       /* Energy decay */
-      decay = loss_duration==0 ? GCONST(1.5f) : GCONST(.5f);
+      decay = (1<<LM)*GCONST(.0625f);
+      if (st->last_frame_type != FRAME_PLC_NOISE)
+         decay += MAXG(GCONST(1.f), loss_duration*GCONST(.0625f));
       c=0; do
       {
          for (i=start;i<end;i++)
