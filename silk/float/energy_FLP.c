@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "SigProc_FLP.h"
 
 /* sum of squares of a silk_float array, with result as double */
-double silk_energy_FLP(
+double silk_energy_FLP_c(
     const silk_float    *data,
     opus_int            dataSize
 )
