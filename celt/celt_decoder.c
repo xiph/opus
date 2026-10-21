@@ -1023,9 +1023,9 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             buf[decode_buffer_size-N+i] =
                   SHL32(EXTEND32(MULT16_16_Q15(attenuation,
                         exc[extrapolation_offset+j])), SIG_SHIFT);
-            /* Compute the energy of the previously decoded signal whose
+            /* Compute the expected energy of the attenuated signal whose
                excitation we're copying. */
-            tmp = sig[extrapolation_offset+j];
+            tmp = MULT16_16_Q15(attenuation, sig[extrapolation_offset+j]);
             S1 += SHR32(MULT16_16(tmp, tmp), shift1);
          }
          {
