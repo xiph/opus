@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "resampler_private.h"
 #include "stack_alloc.h"
 
-static OPUS_INLINE opus_int16 *silk_resampler_private_IIR_FIR_INTERPOL(
+opus_int16 *silk_resampler_private_IIR_FIR_INTERPOL_c(
     opus_int16  *out,
     opus_int16  *buf,
     opus_int32  max_index_Q16,
@@ -89,7 +89,7 @@ void silk_resampler_private_IIR_FIR(
         silk_resampler_private_up2_HQ( S->sIIR, &buf[ RESAMPLER_ORDER_FIR_12 ], in, nSamplesIn );
 
         max_index_Q16 = silk_LSHIFT32( nSamplesIn, 16 + 1 );         /* + 1 because 2x upsampling */
-        out = silk_resampler_private_IIR_FIR_INTERPOL( out, buf, max_index_Q16, index_increment_Q16 );
+        out = silk_resampler_private_IIR_FIR_INTERPOL( out, buf, max_index_Q16, index_increment_Q16, S->arch );
         in += nSamplesIn;
         inLen -= nSamplesIn;
 
