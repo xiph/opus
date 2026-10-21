@@ -837,13 +837,13 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
       int buf_len;
       /* Pitch-based PLC */
       const celt_coef *window;
-      opus_val16 *exc;
+      opus_val16 *sig;
       opus_val16 fade = Q15ONE;
       int pitch_index;
       int curr_neural;
       int last_neural;
-      VARDECL(opus_val16, _exc);
-      VARDECL(opus_val16, fir_tmp);
+      VARDECL(opus_val16, _sig);
+      VARDECL(opus_val16, exc);
 
       curr_neural = curr_frame_type == FRAME_PLC_NEURAL || curr_frame_type == FRAME_DRED;
       last_neural = st->last_frame_type == FRAME_PLC_NEURAL || st->last_frame_type == FRAME_DRED;
@@ -859,13 +859,12 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
 #endif
 
       /* We want the excitation for 2 pitch periods in order to look for a
-         decaying signal. */
-      exc_length = 2*pitch_index;
-      buf_len = IMAX(max_period, exc_length);
+         decaying signal, and at least max_period to search for pitch multiples. */
+      exc_length = buf_len = IMAX(max_period, 2*pitch_index);
 
-      ALLOC(_exc, buf_len+CELT_LPC_ORDER, opus_val16);
-      ALLOC(fir_tmp, exc_length, opus_val16);
-      exc = _exc+CELT_LPC_ORDER;
+      ALLOC(_sig, buf_len+CELT_LPC_ORDER, opus_val16);
+      ALLOC(exc, exc_length, opus_val16);
+      sig = _sig+CELT_LPC_ORDER;
       window = mode->window;
       c=0; do {
          opus_val16 decay;
@@ -876,16 +875,17 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          int extrapolation_len;
          int j;
 
+         pitch_index = st->last_pitch_index;
          buf = decode_mem[c];
          for (i=0;i<buf_len+CELT_LPC_ORDER;i++)
-            exc[i-CELT_LPC_ORDER] = SROUND16(buf[decode_buffer_size-buf_len-CELT_LPC_ORDER+i], SIG_SHIFT);
+            sig[i-CELT_LPC_ORDER] = SROUND16(buf[decode_buffer_size-buf_len-CELT_LPC_ORDER+i], SIG_SHIFT);
 
          if (st->last_frame_type != FRAME_PLC_PERIODIC && !(last_neural && curr_neural))
          {
             opus_val32 ac[CELT_LPC_ORDER+1];
             /* Compute LPC coefficients for the last MAX_PERIOD samples before
                the first loss so we can work in the excitation-filter domain. */
-            _celt_autocorr(exc+buf_len-max_period, ac, window, overlap,
+            _celt_autocorr(sig+buf_len-max_period, ac, window, overlap,
                    CELT_LPC_ORDER, max_period, st->arch);
             /* Add a noise floor of -40 dB. */
 #ifdef FIXED_POINT
@@ -924,13 +924,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          }
          /* Initialize the LPC history with the samples just before the start
             of the region for which we're computing the excitation. */
-         {
-            /* Compute the excitation for exc_length samples before the loss. We need the copy
-               because celt_fir() cannot filter in-place. */
-            celt_fir(exc+buf_len-exc_length, lpc+c*CELT_LPC_ORDER,
-                  fir_tmp, exc_length, CELT_LPC_ORDER, st->arch);
-            OPUS_COPY(exc+buf_len-exc_length, fir_tmp, exc_length);
-         }
+         celt_fir(sig+buf_len-exc_length, lpc+c*CELT_LPC_ORDER,
+               exc, exc_length, CELT_LPC_ORDER, st->arch);
 
          /* Check if the waveform is decaying, and if so how fast.
             We do this to avoid adding energy when concealing in a segment
@@ -939,12 +934,12 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             opus_val32 E1=1, E2=1;
             int decay_length;
 #ifdef FIXED_POINT
-            int shift = IMAX(0,2*celt_zlog2(celt_maxabs16(&exc[buf_len-exc_length], exc_length))-20);
+            int shift = IMAX(0,2*celt_zlog2(celt_maxabs16(&exc[buf_len-2*pitch_index], 2*pitch_index))-20);
 #ifdef ENABLE_QEXT
             if (st->qext_scale==2) shift++;
 #endif
 #endif
-            decay_length = exc_length>>1;
+            decay_length = pitch_index;
             for (i=0;i<decay_length;i++)
             {
                opus_val16 e;
@@ -955,6 +950,37 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
             }
             E1 = MIN32(E1, E2);
             decay = celt_sqrt(frac_div32(SHR32(E1, 1), E2));
+         }
+         /* Use a large integer multiple of the pitch period to avoid repeating
+            a short sequence too many times, stopping before any >6 dB change. */
+         {
+            int k, K;
+            opus_val32 E0=1;
+#ifdef FIXED_POINT
+            int shift = IMAX(0, 2*celt_zlog2(celt_maxabs16(exc, buf_len))-20);
+#ifdef ENABLE_QEXT
+            if (st->qext_scale==2) shift++;
+#endif
+#endif
+            K = buf_len/pitch_index;
+            for (i=0;i<pitch_index;i++)
+            {
+               opus_val16 e = exc[buf_len-pitch_index+i];
+               E0 += SHR32(MULT16_16(e, e), shift);
+            }
+            for (k=2;k<=K;k++)
+            {
+               opus_val32 Ek=1;
+               for (i=0;i<pitch_index;i++)
+               {
+                  opus_val16 e = exc[buf_len-k*pitch_index+i];
+                  Ek += SHR32(MULT16_16(e, e), shift);
+               }
+               if (Ek < MULT16_32_Q15(QCONST16(.25f, 15), E0)
+                     || E0 < MULT16_32_Q15(QCONST16(.25f, 15), Ek))
+                  break;
+            }
+            pitch_index *= k-1;
          }
 
          /* Move the decoder memory one frame to the left to give us room to
@@ -983,9 +1009,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
                         exc[extrapolation_offset+j])), SIG_SHIFT);
             /* Compute the energy of the previously decoded signal whose
                excitation we're copying. */
-            tmp = SROUND16(
-                  buf[decode_buffer_size-buf_len-N+extrapolation_offset+j],
-                  SIG_SHIFT);
+            tmp = sig[extrapolation_offset+j];
             S1 += SHR32(MULT16_16(tmp, tmp), 11);
          }
          {
