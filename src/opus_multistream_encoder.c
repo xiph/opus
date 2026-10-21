@@ -1316,6 +1316,51 @@ int opus_multistream_encoder_ctl_va_list(OpusMSEncoder *st, int request,
        *value = st->variable_duration;
    }
    break;
+#ifdef ENABLE_DRED
+   case OPUS_SET_DRED_DURATION_REQUEST:
+   {
+      int s;
+      opus_int32 value = va_arg(ap, opus_int32);
+      for (s=0;s<st->layout.nb_streams;s++)
+      {
+         OpusEncoder *enc;
+         enc = (OpusEncoder*)ptr;
+         if (s < st->layout.nb_coupled_streams)
+            ptr += align(coupled_size);
+         else
+            ptr += align(mono_size);
+         ret = opus_encoder_ctl(enc, OPUS_SET_DRED_DURATION(value));
+         if (ret != OPUS_OK)
+            break;
+      }
+   }
+   break;
+   case OPUS_GET_DRED_DURATION_REQUEST:
+   {
+      int s;
+      opus_int32 *value = va_arg(ap, opus_int32*);
+      if (!value)
+      {
+         goto bad_arg;
+      }
+      for (s=0;s<st->layout.nb_streams;s++)
+      {
+         opus_int32 tmp;
+         OpusEncoder *enc;
+         enc = (OpusEncoder*)ptr;
+         if (s < st->layout.nb_coupled_streams)
+            ptr += align(coupled_size);
+         else
+            ptr += align(mono_size);
+         ret = opus_encoder_ctl(enc, OPUS_GET_DRED_DURATION(&tmp));
+         if (ret != OPUS_OK)
+            break;
+         if (s == 0)
+            *value = tmp;
+      }
+   }
+   break;
+#endif
    case OPUS_RESET_STATE:
    {
       int s;
