@@ -1,6 +1,7 @@
 """
-This script is runs tests for qualifying a SILK enhancement method for use with the Opus codec according
-to the internet draft https://datatracker.ietf.org/doc/draft-buethe-opus-speech-coding-enhancement/.
+Run the objective SILK enhancement qualification tests using the normative
+osce_compare C tool, as specified in
+https://datatracker.ietf.org/doc/draft-ietf-mlcodec-opus-speech-coding-enhancement/.
 """
 
 
@@ -15,8 +16,6 @@ import subprocess
 import yaml
 import numpy as np
 
-from moc import compare as moc
-from moc import highband_compare
 
 DEBUG=False
 
@@ -49,7 +48,7 @@ parser.add_argument('--highband_pass_rate', type=float, default=0.90, help='mini
 parser.add_argument('--highband_threshold', type=float, default=0.0, help='highband pass margin tau: a clip passes if it beats the lowpass anchor by at least tau in every highband (default: 0.0)')
 parser.add_argument('--highband_informal_max_bitrate', type=int, default=6000, help='highband tests at bitrates <= this value are reported as informal (INFO), not gating (default: 6000)')
 parser.add_argument('--highband_informal_configs', type=str, default="9000:10", help='additional (bitrate:framesize_ms) configs to treat as informal (INFO, non-gating), comma-separated, e.g. "9000:10,12000:10". Default: "9000:10" (9 kb/s at 10 ms frames, where the WB baseband quality is too low to gate the bandwidth extension).')
-parser.add_argument('--osce_compare', type=str, default=None, help='path to the osce_compare C binary. If given, the metric is computed by that binary instead of the (default) in-process Python moc implementation. Python remains the default.')
+parser.add_argument('--osce_compare', type=str, required=True, help='path to the normative osce_compare C binary (REQUIRED)')
 parser.add_argument('--verbose', type=int, default=0, help='verbosity level: 0 for quiet (default), 1 test-level logging, 2 for group-level failure logging, >= 3 for full group-level logging')
 parser.add_argument('--num_workers', type=int, default=10, help='pool size for multiprocessing (default: 10)')
 
@@ -76,10 +75,10 @@ def run_opus_encoder(opus_demo_path, input_pcm_path, bitstream_path, application
     try:
         if verbose:
             print(f"running {call_args}...")
-            subprocess.run(call_args)
+            subprocess.run(call_args, check=True)
         else:
-            subprocess.run(call_args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except:
+            subprocess.run(call_args, stdout=subprocess.DEVNULL, check=True)
+    except (OSError, subprocess.CalledProcessError):
         return 1
 
     return 0
@@ -104,46 +103,32 @@ def run_opus_decoder(opus_demo_path, bitstream_path, output_pcm_path, fs, num_ch
     try:
         if verbose:
             print(f"running {call_args}...")
-            subprocess.run(call_args)
+            subprocess.run(call_args, check=True)
         else:
-            subprocess.run(call_args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except:
+            subprocess.run(call_args, stdout=subprocess.DEVNULL, check=True)
+    except (OSError, subprocess.CalledProcessError):
         return 1
 
     return 0
 
 def _run_osce_compare(osce_compare_bin, args):
-    out = subprocess.run([osce_compare_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    out = subprocess.run([osce_compare_bin] + args, stdout=subprocess.PIPE, check=True, text=True)
     return out.stdout.strip()
 
 
 def compute_moc_score(reference_pcm, test_pcm, fs_ref=16000, fs_test=16000, delay=91, osce_compare_bin=None):
-    if osce_compare_bin is not None:
-        out = _run_osce_compare(osce_compare_bin,
-                                ["-fs_ref", str(fs_ref), "-fs_test", str(fs_test), "-delay", str(delay),
-                                 reference_pcm, test_pcm])
-        return float(out)
-    x_ref = np.fromfile(reference_pcm, dtype=np.int16).astype(np.float32) / (2 ** 15)
-    x_cut = np.fromfile(test_pcm, dtype=np.int16).astype(np.float32) / (2 ** 15)
-
-    moc_score = moc(x_ref, x_cut[delay:], fs_x=fs_ref, fs_y=fs_test)
-
-    return moc_score
+    out = _run_osce_compare(osce_compare_bin,
+                            ["-fs_ref", str(fs_ref), "-fs_test", str(fs_test), "-delay", str(delay),
+                             reference_pcm, test_pcm])
+    return float(out)
 
 
 def compute_highband_pass(reference_pcm, test_pcm, delay=273, threshold=0.0, osce_compare_bin=None):
-    if osce_compare_bin is not None:
-        out = _run_osce_compare(osce_compare_bin,
-                                ["-highband", "-delay", str(delay), "-tau", str(threshold),
-                                 reference_pcm, test_pcm]).split()
-        margins = [float(t) for t in out[:4]]
-        passed = out[-1] == "PASS"
-        return passed, margins
-    x_ref = np.fromfile(reference_pcm, dtype=np.int16).astype(np.float32) / (2 ** 15)
-    x_test = np.fromfile(test_pcm, dtype=np.int16).astype(np.float32) / (2 ** 15)
-
-    passed, margins = highband_compare(x_ref, x_test[delay:], fs=48000, threshold=threshold)
-
+    out = _run_osce_compare(osce_compare_bin,
+                            ["-highband", "-delay", str(delay), "-tau", str(threshold),
+                             reference_pcm, test_pcm]).split()
+    margins = [float(t) for t in out[:4]]
+    passed = out[-1] == "PASS"
     return passed, margins
 
 
@@ -181,7 +166,7 @@ def run_test(test_base_dir, testname, out_dir, opus_demo, dec_options, ref_opus_
     log_prefix = f"{testname}"
 
     # extending methods extend WB -> FB, so the test signal is decoded at 48 kHz and
-    # scored on the 0-8 kHz lowband; the reference stays a 16 kHz (WB) decode.
+    # scored on the 0-8 kHz lowband; the reference decoder uses the same rate.
     fs_test = 48000 if extending else 16000
     test_delay = extending_delay if extending else dec_delay
 
@@ -203,9 +188,13 @@ def run_test(test_base_dir, testname, out_dir, opus_demo, dec_options, ref_opus_
     worst_group = None
 
     groups = sorted([g for g in os.listdir(test_dir) if os.path.isdir(os.path.join(test_dir, g))])
+    if not groups:
+        return (False, None, "no test groups")
     for group in groups:
         group_dir = os.path.join(test_dir, group)
         bitstreams = sorted(glob.glob(os.path.join(group_dir, f"*_{testname}.opus")))
+        if not bitstreams:
+            return (False, None, f"no test bitstreams in {group}")
         clips = [os.path.basename(bs)[:-len(f"_{testname}.opus")] for bs in bitstreams]
         results[group] = np.zeros((len(clips), 2))
         mocs[group] = dict()
@@ -243,7 +232,7 @@ def run_test(test_base_dir, testname, out_dir, opus_demo, dec_options, ref_opus_
             min_mean = np.mean(rel_diff).item()
             worst_group = group
 
-        if np.min(rel_diff) < THRESHOLD_A or np.mean(rel_diff) < THRESHOLD_B:
+        if not (np.min(rel_diff) > THRESHOLD_A and np.mean(rel_diff) > THRESHOLD_B):
             if verbose > 1: print(f"{log_prefix:46s} FAIL {group} mean(rel_diff): {np.mean(rel_diff):5.4f} min(rel_diff): {np.min(rel_diff):5.4f} @ {clips[min_idx]}")
             passed.append(False)
         else:
@@ -300,10 +289,12 @@ def main(test_dir, output_dir, opus_demo, decoder_options, reference_opus_demo=N
     if extending:
         print(f"extending mode: decoding test signals at 48 kHz and scoring the lowband (extending_delay={extending_delay})")
 
-    if osce_compare_bin is not None:
-        assert os.path.isfile(osce_compare_bin), f"osce_compare binary {osce_compare_bin} not found"
-        print(f"metric backend: osce_compare C binary ({osce_compare_bin})")
+    if not osce_compare_bin or not os.path.isfile(osce_compare_bin):
+        raise SystemExit(f"error: osce_compare binary {osce_compare_bin} not found")
+    print(f"metric backend: osce_compare C binary ({osce_compare_bin})")
 
+    if not tests:
+        raise SystemExit("error: no lowband tests (osce_test_*) found")
     print(f"found {len(tests)} tests")
 
     p = Pool(num_workers)
@@ -365,9 +356,9 @@ def main_highband(test_dir, output_dir, opus_demo, decoder_options, decoder_dela
 
     delay = extending_delay if extending_delay is not None else 3 * decoder_delay
 
-    if osce_compare_bin is not None:
-        assert os.path.isfile(osce_compare_bin), f"osce_compare binary {osce_compare_bin} not found"
-        print(f"metric backend: osce_compare C binary ({osce_compare_bin})")
+    if not osce_compare_bin or not os.path.isfile(osce_compare_bin):
+        raise SystemExit(f"error: osce_compare binary {osce_compare_bin} not found")
+    print(f"metric backend: osce_compare C binary ({osce_compare_bin})")
 
     os.makedirs(output_dir, exist_ok=True)
     print(f"found {len(tests)} highband tests (delay={delay}, tau={threshold}, pass_rate>{pass_rate:.0%}, informal bitrates <= {informal_max_bitrate})")

@@ -348,6 +348,10 @@ endif
 
 
 EXTRA_DIST = opus.pc.in \
+             scripts/osce/run_osce_tests.py \
+             scripts/osce/README.md \
+             scripts/osce/requirements.txt \
+             scripts/osce/test_run_osce_tests.py \
              opus-uninstalled.pc.in \
              opus.m4 \
              Makefile.unix \
