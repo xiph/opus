@@ -13,11 +13,20 @@ endif()
 
 include(OpusFunctions)
 include(OpusBuildtype)
+
+# Set before OpusConfig generates config.h.
+set(OPUS_AMBISONICS_MAX_ORDER_HELP_STR "highest ambisonic order the projection encoder supports, 1 to 12.")
+set(OPUS_AMBISONICS_MAX_ORDER 5 CACHE STRING ${OPUS_AMBISONICS_MAX_ORDER_HELP_STR})
+if(NOT OPUS_AMBISONICS_MAX_ORDER MATCHES "^([1-9]|1[0-2])$")
+  message(FATAL_ERROR "OPUS_AMBISONICS_MAX_ORDER must be 1 to 12, got '${OPUS_AMBISONICS_MAX_ORDER}'.")
+endif()
+
 include(OpusConfig)
 include(OpusSources)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
 include(FeatureSummary)
+add_feature_info(OPUS_AMBISONICS_MAX_ORDER ON "${OPUS_AMBISONICS_MAX_ORDER_HELP_STR} Set to ${OPUS_AMBISONICS_MAX_ORDER}.")
 
 # Detect clang-cl
 set(MSVC_CLANG_CL false BOOL)
