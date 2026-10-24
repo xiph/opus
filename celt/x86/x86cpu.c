@@ -49,6 +49,12 @@ static _inline void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
     __cpuid((int*)CPUInfo, InfoType);
 }
 
+static _inline unsigned int xgetbv_low(unsigned int index)
+{
+    /* Only the low 32 bits of the extended control register are needed. */
+    return (unsigned int)_xgetbv(index);
+}
+
 #else
 
 #if defined(CPU_INFO_BY_C)
@@ -97,6 +103,15 @@ static void cpuid(unsigned int CPUInfo[4], unsigned int InfoType)
 #endif
 }
 
+static unsigned int xgetbv_low(unsigned int index)
+{
+    /* Only the low 32 bits of the extended control register are needed. */
+    unsigned int eax, edx;
+    __asm__ __volatile__ ("xgetbv" : "=a" (eax), "=d" (edx) : "c" (index));
+    (void)edx;
+    return eax;
+}
+
 #endif
 
 typedef struct CPU_Feature{
@@ -122,6 +137,17 @@ static void opus_cpu_feature_check(CPU_Feature *cpu_feature)
         cpu_feature->HW_SSE2 = (info[3] & (1 << 26)) != 0;
         cpu_feature->HW_SSE41 = (info[2] & (1 << 19)) != 0;
         cpu_feature->HW_AVX2 = (info[2] & (1 << 28)) != 0 && (info[2] & (1 << 12)) != 0;
+        /* AVX (and thus AVX2) instructions fault unless the OS has enabled the
+           YMM register state. CPUID reporting AVX support is not enough: the OS
+           must set CR4.OSXSAVE (mirrored in CPUID.1:ECX.27) and enable the SSE
+           and AVX state bits in XCR0. Without this check opus can execute AVX2
+           code on a CPU where AVX is disabled in the OS/hypervisor and crash. */
+        if (cpu_feature->HW_AVX2 && (info[2] & (1 << 27)) != 0) {
+            unsigned int xcr0 = xgetbv_low(0);
+            cpu_feature->HW_AVX2 = (xcr0 & 0x6) == 0x6;
+        } else {
+            cpu_feature->HW_AVX2 = 0;
+        }
         if (cpu_feature->HW_AVX2 && nIds >= 7) {
             cpuid(info, 7);
             cpu_feature->HW_AVX2 = cpu_feature->HW_AVX2 && (info[1] & (1 << 5)) != 0;
