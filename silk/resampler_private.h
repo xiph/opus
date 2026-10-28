@@ -38,6 +38,21 @@ POSSIBILITY OF SUCH DAMAGE.
 #define RESAMPLER_MAX_BATCH_SIZE_IN             ( RESAMPLER_MAX_BATCH_SIZE_MS * RESAMPLER_MAX_FS_KHZ )
 
 /* Description: Hybrid IIR/FIR polyphase implementation of resampling */
+/* Interpolation kernel of silk_resampler_private_IIR_FIR(). Optimized
+   versions must be bit-exact with the C one; the accumulation is a plain
+   32-bit wrapping sum, so any summation order gives the same result. */
+opus_int16 *silk_resampler_private_IIR_FIR_INTERPOL_c(
+    opus_int16                  *out,               /* O    Output signal                                               */
+    opus_int16                  *buf,               /* I    Buffer of 2x upsampled input                                */
+    opus_int32                  max_index_Q16,      /* I    Interpolation end point, Q16                                */
+    opus_int32                  index_increment_Q16 /* I    Interpolation step, Q16                                     */
+);
+
+#if !defined(OVERRIDE_silk_resampler_private_IIR_FIR_INTERPOL)
+#define silk_resampler_private_IIR_FIR_INTERPOL(out, buf, max_index_Q16, index_increment_Q16, arch) \
+    ((void)(arch), silk_resampler_private_IIR_FIR_INTERPOL_c(out, buf, max_index_Q16, index_increment_Q16))
+#endif
+
 void silk_resampler_private_IIR_FIR(
     void                            *SS,            /* I/O  Resampler state             */
     opus_int16                      out[],          /* O    Output signal               */

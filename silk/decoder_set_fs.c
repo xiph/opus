@@ -50,7 +50,7 @@ opus_int silk_decoder_set_fs(
     /* Initialize resampler when switching internal or external sampling frequency */
     if( psDec->fs_kHz != fs_kHz || psDec->fs_API_hz != fs_API_Hz ) {
         /* Initialize the resampler for dec_API.c preparing resampling from fs_kHz to API_fs_Hz */
-        ret += silk_resampler_init( &psDec->resampler_state, silk_SMULBB( fs_kHz, 1000 ), fs_API_Hz, 0 );
+        ret += silk_resampler_init( &psDec->resampler_state, silk_SMULBB( fs_kHz, 1000 ), fs_API_Hz, 0, psDec->arch );
 
         psDec->fs_API_hz = fs_API_Hz;
     }
