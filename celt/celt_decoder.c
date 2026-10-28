@@ -71,6 +71,9 @@
 #define FRAME_PLC_NEURAL   4
 #define FRAME_DRED         5
 
+/* Number of samples the float de-emphasis filter processes per block. */
+#define DEEMPH_BLOCK 4
+
 /**********************************************************************/
 /*                                                                    */
 /*                             DECODER                                */
@@ -281,29 +284,135 @@ void opus_custom_decoder_destroy(CELTDecoder *st)
 }
 #endif /* CUSTOM_MODES */
 
+#ifndef FIXED_POINT
+/* Sets up the vector filter memory for deemphasis_block(): mv[k] = c^k * m.
+   The scalar memory can be read back as mv[0] after the last block. */
+static OPUS_INLINE void deemphasis_carry(celt_sig *mv, celt_sig m, opus_val16 coef0)
+{
+   celt_sig c1, c2, c3;
+   c1 = coef0;
+   c2 = c1*coef0;
+   c3 = c2*coef0;
+   mv[0] = m;
+   mv[1] = c1*m;
+   mv[2] = c2*m;
+   mv[3] = c3*m;
+}
+
+/* Applies the de-emphasis filter to DEEMPH_BLOCK samples at a time, with the
+   recurrence expanded so that only one add and one multiply per block remain
+   on the serial dependency chain. The scalar version is latency-bound on the
+   x[j] -> m -> x[j+1] chain; this form lets the compiler pipeline (and
+   vectorize) everything else.
+   The block is structured lane-for-lane like the aarch64 NEON kernel in
+   celt_neon_aarch64.S: the filter memory is carried across blocks as the
+   vector mv[k] = c^k * m, the shifted c^i * x columns are accumulated into
+   it (the fmla v0, v5/v6/v7 staircase), x is added last (fadd v1, v1, v0),
+   and the carry update is the broadcast mv[k] = c^(k+1) * out[3]
+   (fmul v0, v4, v2.s[3]). The remaining differences from the asm are
+   VERY_SMALL, which the asm does not add, and FMA contraction, which is up
+   to the compiler here.
+   Only used for float, where SATURATE() is a no-op; the fixed-point path
+   would need to saturate at every step. */
+static OPUS_INLINE void deemphasis_block(celt_sig * OPUS_RESTRICT out,
+      const celt_sig * OPUS_RESTRICT x, celt_sig * OPUS_RESTRICT mv,
+      opus_val16 coef0)
+{
+   celt_sig c1, c2, c3, c4;
+   celt_sig x0, x1, x2, x3;
+   celt_sig a0, a1, a2, a3;
+   c1 = coef0;
+   c2 = c1*coef0;
+   c3 = c2*coef0;
+   /* c2*c2 rather than c3*coef0, matching the asm's fmul s19, s17, s17. */
+   c4 = c2*c2;
+   /* Add VERY_SMALL to x[] first to reduce dependency chain. */
+   x0 = x[0] + VERY_SMALL;
+   x1 = x[1] + VERY_SMALL;
+   x2 = x[2] + VERY_SMALL;
+   x3 = x[3] + VERY_SMALL;
+   a0 = mv[0];
+   a1 = mv[1] + c1*x0;
+   a2 = mv[2] + c2*x0 + c1*x1;
+   a3 = mv[3] + c3*x0 + c2*x1 + c1*x2;
+   out[0] = x0 + a0;
+   out[1] = x1 + a1;
+   out[2] = x2 + a2;
+   out[3] = x3 + a3;
+   mv[0] = c1*out[3];
+   mv[1] = c2*out[3];
+   mv[2] = c3*out[3];
+   mv[3] = c4*out[3];
+}
+#endif
+
+/* Runs the whole de-emphasis filter over N samples, writing the result at
+   the given stride and optionally accumulating into y. stride and accum are
+   compile-time constants at every call site, so each call specializes to a
+   branch-free loop. In float builds the bulk of the samples go through
+   deemphasis_block(), with the scalar recurrence only handling the last
+   N%DEEMPH_BLOCK samples; in fixed-point builds only the scalar recurrence
+   is used. */
+static OPUS_INLINE celt_sig deemph_loop(opus_res * OPUS_RESTRICT y,
+      const celt_sig * OPUS_RESTRICT x, celt_sig m, opus_val16 coef0, int N,
+      int stride, int accum)
+{
+   int j;
+   j=0;
+#ifndef FIXED_POINT
+   {
+      celt_sig mv[DEEMPH_BLOCK];
+      deemphasis_carry(mv, m, coef0);
+      for (;j+DEEMPH_BLOCK<=N;j+=DEEMPH_BLOCK)
+      {
+         celt_sig t[DEEMPH_BLOCK];
+         int k;
+         deemphasis_block(t, x+j, mv, coef0);
+         for (k=0;k<DEEMPH_BLOCK;k++)
+         {
+            if (accum)
+               y[(j+k)*stride] = ADD_RES(y[(j+k)*stride], SIG2RES(t[k]));
+            else
+               y[(j+k)*stride] = SIG2RES(t[k]);
+         }
+      }
+      m = mv[0];
+   }
+#endif
+   for (;j<N;j++)
+   {
+      celt_sig tmp = SATURATE(x[j] + VERY_SMALL + m, SIG_SAT);
+      m = MULT16_32_Q15(coef0, tmp);
+      if (accum)
+         y[j*stride] = ADD_RES(y[j*stride], SIG2RES(tmp));
+      else
+         y[j*stride] = SIG2RES(tmp);
+   }
+   return m;
+}
+
 /* Single-channel de-emphasis scalar reference (mono, downsample==1, !accum).
    Matches the inner loop used inside deemphasis() below; non-static so the
    runtime dispatch table can take its address. */
 opus_val32 celt_deemphasis_c(opus_res *y, const opus_val32 *x, opus_val16 coef0,
       opus_val32 m, int N)
 {
-   int j;
-   for (j=0;j<N;j++)
-   {
-      celt_sig tmp = SATURATE(x[j] + VERY_SMALL + m, SIG_SAT);
-      m = MULT16_32_Q15(coef0, tmp);
-      y[j] = SIG2RES(tmp);
-   }
-   return m;
+   return deemph_loop(y, x, m, coef0, N, 1, 0);
 }
 
 /* Special case for stereo with no downsampling and no accumulation. This is
-   quite common and we can make it faster by processing both channels in the
-   same loop, reducing overhead due to the dependency loop in the IIR filter.
+   quite common and, in fixed point, we can make it faster by processing both
+   channels in the same loop, interleaving the two dependency chains of the
+   IIR filter. In float the block form of deemph_loop() already keeps the
+   dependency chain off the critical path, so one pass per channel is enough.
    Non-static so the runtime dispatch table can take its address. */
 void deemphasis_stereo_simple_c(celt_sig *in[], opus_res *pcm, int N, opus_val16 coef0,
       celt_sig *mem)
 {
+#ifndef FIXED_POINT
+   mem[0] = deemph_loop(pcm,   in[0], mem[0], coef0, N, 2, 0);
+   mem[1] = deemph_loop(pcm+1, in[1], mem[1], coef0, N, 2, 0);
+#else
    celt_sig * OPUS_RESTRICT x0;
    celt_sig * OPUS_RESTRICT x1;
    celt_sig m0, m1;
@@ -325,6 +434,7 @@ void deemphasis_stereo_simple_c(celt_sig *in[], opus_res *pcm, int N, opus_val16
    }
    mem[0] = m0;
    mem[1] = m1;
+#endif
 }
 
 #ifndef RESYNTH
@@ -377,7 +487,17 @@ void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, con
       if (downsample>1)
       {
          /* Shortcut for the standard (non-custom modes) case */
-         for (j=0;j<N;j++)
+         j=0;
+#ifndef FIXED_POINT
+         {
+            celt_sig mv[DEEMPH_BLOCK];
+            deemphasis_carry(mv, m, coef0);
+            for (;j+DEEMPH_BLOCK<=N;j+=DEEMPH_BLOCK)
+               deemphasis_block(scratch+j, x+j, mv, coef0);
+            m = mv[0];
+         }
+#endif
+         for (;j<N;j++)
          {
             celt_sig tmp = SATURATE(x[j] + VERY_SMALL + m, SIG_SAT);
             m = MULT16_32_Q15(coef0, tmp);
@@ -388,12 +508,7 @@ void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, con
          /* Shortcut for the standard (non-custom modes) case */
          if (accum)
          {
-            for (j=0;j<N;j++)
-            {
-               celt_sig tmp = SATURATE(x[j] + m + VERY_SMALL, SIG_SAT);
-               m = MULT16_32_Q15(coef0, tmp);
-               y[j*C] = ADD_RES(y[j*C], SIG2RES(tmp));
-            }
+            m = deemph_loop(y, x, m, coef0, N, C, 1);
          } else if (C == 1)
          {
             /* Mono: contiguous output, dispatch through celt_deemphasis()
@@ -401,12 +516,7 @@ void deemphasis(celt_sig *in[], opus_res *pcm, int N, int C, int downsample, con
             m = celt_deemphasis(y, x, coef0, m, N, arch);
          } else
          {
-            for (j=0;j<N;j++)
-            {
-               celt_sig tmp = SATURATE(x[j] + VERY_SMALL + m, SIG_SAT);
-               m = MULT16_32_Q15(coef0, tmp);
-               y[j*C] = SIG2RES(tmp);
-            }
+            m = deemph_loop(y, x, m, coef0, N, C, 0);
          }
       }
       mem[c] = m;
