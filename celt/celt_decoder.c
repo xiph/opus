@@ -1005,9 +1005,8 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          /* We need to extrapolate enough samples to cover a complete MDCT
             window (including overlap/2 samples on both sides). */
          extrapolation_len = N+overlap;
-         /* We also apply fading if this is not the first loss. Include fade in
-            decay so that in-frame period wraps attenuate by fade*decay too. */
-         attenuation = decay = MULT16_16_Q15(fade, decay);
+         /* We also apply fading if this is not the first loss. */
+         attenuation = MULT16_16_Q15(fade, decay);
 #ifdef FIXED_POINT
          shift1 = IMAX(0, 2*celt_zlog2(MULT16_16_Q15(attenuation,
                celt_maxabs16(&sig[extrapolation_offset], pitch_index)))-18);
