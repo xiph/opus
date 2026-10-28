@@ -891,7 +891,7 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM
          if (st->last_frame_type != FRAME_PLC_PERIODIC && !(last_neural && curr_neural))
          {
             opus_val32 ac[CELT_LPC_ORDER+1];
-            /* Compute LPC coefficients for the last MAX_PERIOD samples before
+            /* Compute LPC coefficients for the last max_period samples before
                the first loss so we can work in the excitation-filter domain. */
             _celt_autocorr(sig+exc_length-max_period, ac, window, overlap,
                    CELT_LPC_ORDER, max_period, st->arch);
