@@ -54,6 +54,36 @@
 #define PI (3.141592653589793238462643f)
 #define RAND_SAMPLE(a) (a[fast_rand() % sizeof(a)/sizeof(a[0])])
 
+static void test_frame_size_select(void)
+{
+   static const opus_int32 rates[] = {8000, 12000, 16000, 24000, 48000, 96000};
+   static const int durations[] = {1, 2, 4, 8, 16, 24, 32, 40, 48};
+   int i, j;
+
+   /* Issue #491: the duration check must not wrap into a valid frame size. */
+   opus_test_assert(frame_size_select(OPUS_APPLICATION_VOIP, 1073741864,
+         OPUS_FRAMESIZE_ARG, 8000) == -1);
+   for (i=0;i<(int)(sizeof(rates)/sizeof(rates[0]));i++)
+   {
+      opus_int32 Fs = rates[i];
+      for (j=0;j<(int)(sizeof(durations)/sizeof(durations[0]));j++)
+      {
+         opus_int32 size = (Fs/400)*durations[j];
+         opus_test_assert(frame_size_select(OPUS_APPLICATION_VOIP, size,
+               OPUS_FRAMESIZE_ARG, Fs) == size);
+         /* A forced duration can select a short frame from a long input. */
+         opus_test_assert(frame_size_select(OPUS_APPLICATION_VOIP, INT_MAX,
+               OPUS_FRAMESIZE_2_5_MS+j, Fs) == size);
+      }
+      opus_test_assert(frame_size_select(OPUS_APPLICATION_VOIP, 3*(Fs/25)+1,
+            OPUS_FRAMESIZE_ARG, Fs) == -1);
+      opus_test_assert(frame_size_select(OPUS_APPLICATION_VOIP, INT_MAX,
+            OPUS_FRAMESIZE_ARG, Fs) == -1);
+      opus_test_assert(frame_size_select(OPUS_APPLICATION_VOIP, Fs/400,
+            OPUS_FRAMESIZE_120_MS, Fs) == -1);
+   }
+}
+
 void generate_music(short *buf, opus_int32 len)
 {
    opus_int32 a1,b1,a2,b2;
@@ -735,6 +765,7 @@ int main(int _argc, char **_argv)
    fprintf(stderr,"Testing %s encoder. Random seed: %u (%.4X)\n", oversion, iseed, fast_rand() % 65535);
    if(env_used)fprintf(stderr,"  Random seed set from the environment (SEED=%s).\n", env_seed);
 
+   test_frame_size_select();
    regression_test();
 
    /*Setting TEST_OPUS_NOFUZZ tells the tool not to send garbage data
