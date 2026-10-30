@@ -840,7 +840,8 @@ opus_int32 frame_size_select(int application, opus_int32 frame_size, int variabl
    }
    else
       return -1;
-   if (new_size>frame_size)
+   /* Limit to 120 ms before multiplying new_size in the duration checks. */
+   if (new_size>frame_size || new_size>3*(Fs/25))
       return -1;
    if (400*new_size!=Fs   && 200*new_size!=Fs   && 100*new_size!=Fs   &&
         50*new_size!=Fs   &&  25*new_size!=Fs   &&  50*new_size!=3*Fs &&
