@@ -1400,7 +1400,7 @@ int dred_decoder_load_model(OpusDREDDecoder *dec, const unsigned char *data, int
 {
     WeightArray *list;
     int ret;
-    parse_weights(&list, data, len);
+    if (parse_weights(&list, data, len) < 0) return OPUS_BAD_ARG;
     ret = init_rdovaedec(&dec->model, list);
     opus_free(list);
     if (ret == 0) dec->loaded = 1;
