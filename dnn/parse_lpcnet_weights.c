@@ -109,17 +109,20 @@ static const void *find_idx_check(const WeightArray *arrays, const char *name, i
   const int *idx;
   const WeightArray *a = find_array_entry(arrays, name);
   *total_blocks = 0;
-  if (a == NULL) return NULL;
+  /* find_array_entry() returns the list terminator when the array is missing. */
+  if (a->name == NULL) return NULL;
   idx = (const int*)a->data;
   remain = a->size/sizeof(int);
   while (remain > 0) {
     int nb_blocks;
     int i;
+    /* Each group of 8 outputs lists at most one block per 4 inputs. */
+    if (nb_out < 8) return NULL;
     nb_blocks = *idx++;
-    if (remain < nb_blocks+1) return NULL;
+    if (nb_blocks < 0 || nb_blocks >= remain || nb_blocks > nb_in/4) return NULL;
     for (i=0;i<nb_blocks;i++) {
       int pos = *idx++;
-      if (pos < 0 || pos+3 >= nb_in || (pos&0x3)) return NULL;
+      if (pos < 0 || pos > nb_in-4 || (pos&0x3)) return NULL;
     }
     nb_out -= 8;
     remain -= nb_blocks+1;
