@@ -1479,10 +1479,38 @@ static int frame_size_select_overflow(void)
     return 0;
 }
 
+static int multiframe_large_buffer(void)
+{
+    /* The temporary buffer used to repacketize the frames of a 120-ms
+       packet used to be sized from the caller's buffer rather than from
+       the packet size cap. With a large buffer that was a large stack
+       allocation (and a pseudostack overflow), and with CBR and
+       OPUS_BITRATE_MAX the packet was padded to the whole buffer. */
+    OpusEncoder *enc;
+    int err, i;
+    static unsigned char data[100000];
+    static short pcm[5760*2];
+    int ret;
+
+    for (i = 0; i < 5760*2; ++i)
+        pcm[i] = (short)(8000*sin(i*.01) + 3000*sin(i*.0037));
+    enc = opus_encoder_create(48000, 2, OPUS_APPLICATION_AUDIO, &err);
+    opus_test_assert(err == OPUS_OK);
+    ret = opus_encode(enc, pcm, 5760, data, sizeof(data));
+    opus_test_assert(ret > 0 && ret <= 6*1276);
+    opus_encoder_ctl(enc, OPUS_SET_VBR(0));
+    opus_encoder_ctl(enc, OPUS_SET_BITRATE(OPUS_BITRATE_MAX));
+    ret = opus_encode(enc, pcm, 5760, data, sizeof(data));
+    opus_test_assert(ret > 0 && ret <= 6*1276);
+    opus_encoder_destroy(enc);
+    return 0;
+}
+
 void regression_test(void)
 {
    fprintf(stderr, "Running simple tests for bugs that have been fixed previously\n");
    frame_size_select_overflow();
+   multiframe_large_buffer();
    celt_ec_internal_error();
    mscbr_encode_fail10();
    mscbr_encode_fail();
