@@ -1768,12 +1768,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
        if (st->enable_qext) max_header_bytes += (nb_frames-1) + 1;
 #endif
 
-       if (st->use_vbr || st->user_bitrate_bps==OPUS_BITRATE_MAX)
-          repacketize_len = out_data_bytes;
-       else {
-          celt_assert(cbr_bytes>=0);
-          repacketize_len = IMIN(cbr_bytes, out_data_bytes);
-       }
+       /* max_data_bytes already accounts for the packet size cap and, in CBR
+          mode, for the bitrate, so there is no need to go back to the size of
+          the caller's buffer here. */
+       repacketize_len = max_data_bytes;
        max_len_sum = nb_frames + repacketize_len - max_header_bytes;
 
        ALLOC(tmp_data, max_len_sum, unsigned char);
