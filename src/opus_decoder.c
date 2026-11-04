@@ -745,6 +745,11 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
    if ((decode_fec || len==0 || data==NULL) && frame_size%(st->Fs/400)!=0)
       return OPUS_BAD_ARG;
+   /* Unlike for a regular packet, the duration of a PLC, FEC or DRED request
+      is not bounded by the packet, so cap it at one second. This also bounds
+      the temporary buffers of the wrappers that convert the output. */
+   if (decode_fec || len==0 || data==NULL)
+      frame_size = IMIN(frame_size, st->Fs);
 #ifdef ENABLE_DRED
    if (dred != NULL && dred->process_stage != 2)
       return OPUS_BAD_ARG;
@@ -930,6 +935,8 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
              return OPUS_INVALID_PACKET;
        }
        celt_assert(st->channels == 1 || st->channels == 2);
+       /* PLC and FEC requests are capped at one second (as in opus_decode_native()). */
+       frame_size = IMIN(frame_size, st->Fs);
        ALLOC(out, frame_size*st->channels, opus_res);
 
        ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, OPTIONAL_CLIP, NULL, 0);
@@ -979,6 +986,8 @@ int opus_decode24(OpusDecoder *st, const unsigned char *data,
              return OPUS_INVALID_PACKET;
        }
        celt_assert(st->channels == 1 || st->channels == 2);
+       /* PLC and FEC requests are capped at one second (as in opus_decode_native()). */
+       frame_size = IMIN(frame_size, st->Fs);
        ALLOC(out, frame_size*st->channels, opus_res);
 
        ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0, NULL, 0);
@@ -1027,6 +1036,8 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
          return OPUS_INVALID_PACKET;
    }
    celt_assert(st->channels == 1 || st->channels == 2);
+   /* PLC and FEC requests are capped at one second (as in opus_decode_native()). */
+   frame_size = IMIN(frame_size, st->Fs);
    ALLOC(out, frame_size*st->channels, opus_res);
 
    ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0, NULL, 0);
@@ -1638,6 +1649,8 @@ int opus_decoder_dred_decode(OpusDecoder *st, const OpusDRED *dred, opus_int32 d
    }
 
    celt_assert(st->channels == 1 || st->channels == 2);
+   /* DRED requests are capped at one second (as in opus_decode_native()). */
+   frame_size = IMIN(frame_size, st->Fs);
    ALLOC(out, frame_size*st->channels, float);
 
    ret = opus_decode_native(st, NULL, 0, out, frame_size, 0, 0, NULL, 1, dred, dred_offset);
@@ -1672,6 +1685,8 @@ int opus_decoder_dred_decode24(OpusDecoder *st, const OpusDRED *dred, opus_int32
    }
 
    celt_assert(st->channels == 1 || st->channels == 2);
+   /* DRED requests are capped at one second (as in opus_decode_native()). */
+   frame_size = IMIN(frame_size, st->Fs);
    ALLOC(out, frame_size*st->channels, float);
 
    ret = opus_decode_native(st, NULL, 0, out, frame_size, 0, 0, NULL, 1, dred, dred_offset);
