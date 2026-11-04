@@ -151,6 +151,8 @@ static void kf_bfly4(
       int j;
       kiss_fft_cpx scratch[6];
       const kiss_twiddle_cpx *tw1,*tw2,*tw3;
+      const size_t fstride2 = fstride*2;
+      const size_t fstride3 = fstride*3;
       const int m2=2*m;
       const int m3=3*m;
       kiss_fft_cpx * Fout_beg = Fout;
@@ -171,8 +173,8 @@ static void kf_bfly4(
             C_SUB( scratch[4] , scratch[0] , scratch[2] );
             C_SUB( Fout[m2], *Fout, scratch[3] );
             tw1 += fstride;
-            tw2 += fstride*2;
-            tw3 += fstride*3;
+            tw2 += fstride2;
+            tw3 += fstride3;
             C_ADDTO( *Fout , scratch[3] );
 
             Fout[m].r = ADD32_ovflw(scratch[5].r, scratch[4].i);
@@ -200,6 +202,7 @@ static void kf_bfly3(
    int i;
    size_t k;
    const size_t m2 = 2*m;
+   const size_t fstride2 = fstride*2;
    const kiss_twiddle_cpx *tw1,*tw2;
    kiss_fft_cpx scratch[5];
    kiss_twiddle_cpx epi3;
@@ -225,7 +228,7 @@ static void kf_bfly3(
          C_ADD(scratch[3],scratch[1],scratch[2]);
          C_SUB(scratch[0],scratch[1],scratch[2]);
          tw1 += fstride;
-         tw2 += fstride*2;
+         tw2 += fstride2;
 
          Fout[m].r = SUB32_ovflw(Fout->r, HALF_OF(scratch[3].r));
          Fout[m].i = SUB32_ovflw(Fout->i, HALF_OF(scratch[3].i));
@@ -259,7 +262,10 @@ static void kf_bfly5(
    kiss_fft_cpx *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
    int i, u;
    kiss_fft_cpx scratch[13];
-   const kiss_twiddle_cpx *tw;
+   const kiss_twiddle_cpx *tw, *tw1, *tw2, *tw3, *tw4;
+   const size_t fstride2 = fstride*2;
+   const size_t fstride3 = fstride*3;
+   const size_t fstride4 = fstride*4;
    kiss_twiddle_cpx ya,yb;
    kiss_fft_cpx * Fout_beg = Fout;
 
@@ -282,15 +288,16 @@ static void kf_bfly5(
       Fout2=Fout0+2*m;
       Fout3=Fout0+3*m;
       Fout4=Fout0+4*m;
+      tw1 = tw2 = tw3 = tw4 = tw;
 
       /* For non-custom modes, m is guaranteed to be a multiple of 4. */
       for ( u=0; u<m; ++u ) {
          scratch[0] = *Fout0;
 
-         C_MUL(scratch[1] ,*Fout1, tw[u*fstride]);
-         C_MUL(scratch[2] ,*Fout2, tw[2*u*fstride]);
-         C_MUL(scratch[3] ,*Fout3, tw[3*u*fstride]);
-         C_MUL(scratch[4] ,*Fout4, tw[4*u*fstride]);
+         C_MUL(scratch[1] ,*Fout1, *tw1);
+         C_MUL(scratch[2] ,*Fout2, *tw2);
+         C_MUL(scratch[3] ,*Fout3, *tw3);
+         C_MUL(scratch[4] ,*Fout4, *tw4);
 
          C_ADD( scratch[7],scratch[1],scratch[4]);
          C_SUB( scratch[10],scratch[1],scratch[4]);
@@ -317,6 +324,10 @@ static void kf_bfly5(
          C_ADD(*Fout2,scratch[11],scratch[12]);
          C_SUB(*Fout3,scratch[11],scratch[12]);
 
+         tw1 += fstride;
+         tw2 += fstride2;
+         tw3 += fstride3;
+         tw4 += fstride4;
          ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
       }
    }
