@@ -441,6 +441,54 @@ void test_soft_clip(void)
 }
 #endif
 
+/* The duration of a PLC or FEC request is not bounded by a packet, so the
+   decoder caps it at one second. */
+void test_long_plc_fec(void)
+{
+   static const int Fs = 48000;
+   static const int ch = 2;
+   static const int frame = 960;
+   OpusEncoder *enc;
+   OpusDecoder *dec;
+   opus_int16 *in, *out;
+   unsigned char packet[MAX_PACKET];
+   int err, i, len;
+   opus_int32 dur;
+   fprintf(stdout,"  Testing long PLC/FEC requests... ");
+   in = malloc(sizeof(*in)*frame*ch*4);
+   out = malloc(sizeof(*out)*3*Fs*ch);
+   if(!in||!out)test_failed();
+   for(i=0;i<frame*ch*4;i++)in[i]=(opus_int16)(8000*sin(i*.01)+3000*sin(i*.0037));
+   enc = opus_encoder_create(Fs, ch, OPUS_APPLICATION_VOIP, &err);
+   if(err!=OPUS_OK||enc==NULL)test_failed();
+   if(opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(1))!=OPUS_OK)test_failed();
+   if(opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(30))!=OPUS_OK)test_failed();
+   dec = opus_decoder_create(Fs, ch, &err);
+   if(err!=OPUS_OK||dec==NULL)test_failed();
+   len = 0;
+   for(i=0;i<4;i++)
+   {
+      len = opus_encode(enc, in+i*frame*ch, frame, packet, MAX_PACKET);
+      if(len<=0)test_failed();
+      /* Keep the last packet for the FEC request below. */
+      if(i<3&&opus_decode(dec, packet, len, out, frame, 0)!=frame)test_failed();
+   }
+   /* One second of PLC in a single request is fine... */
+   if(opus_decode(dec, NULL, 0, out, Fs, 0)!=Fs)test_failed();
+   /* ...and longer requests are capped at one second. */
+   if(opus_decode(dec, NULL, 0, out, 3*Fs, 0)!=Fs)test_failed();
+   if(opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&dur))!=OPUS_OK)test_failed();
+   if(dur!=Fs)test_failed();
+   /* Same for a FEC request (PLC followed by the FEC data of the packet). */
+   if(opus_decode(dec, packet, len, out, 3*Fs, 1)!=Fs)test_failed();
+   if(opus_decode(dec, packet, len, out, frame, 0)!=frame)test_failed();
+   opus_encoder_destroy(enc);
+   opus_decoder_destroy(dec);
+   free(in);
+   free(out);
+   printf("OK.\n");
+}
+
 int main(int _argc, char **_argv)
 {
    const char * oversion;
@@ -476,6 +524,7 @@ int main(int _argc, char **_argv)
 #ifndef DISABLE_FLOAT_API
    test_soft_clip();
 #endif
+   test_long_plc_fec();
 
    return 0;
 }
