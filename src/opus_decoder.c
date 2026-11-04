@@ -1243,7 +1243,8 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
           goto bad_arg;
        }
        ret = lpcnet_plc_load_model(&st->lpcnet, data, len);
-       ret = silk_LoadOSCEModels(silk_dec, data, len) || ret;
+       if (silk_LoadOSCEModels(silk_dec, data, len) != 0 || ret != 0)
+          ret = OPUS_BAD_ARG;
    }
    break;
 #endif
