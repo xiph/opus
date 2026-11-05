@@ -94,6 +94,7 @@ silk/arm/arm_silk_map.c
 
 SILK_SOURCES_ARM_NEON_INTR = \
 silk/arm/biquad_alt_neon_intr.c \
+silk/arm/LPC_analysis_filter_neon_intr.c \
 silk/arm/LPC_inv_pred_gain_neon_intr.c \
 silk/arm/NSQ_del_dec_neon_intr.c \
 silk/arm/NSQ_neon.c

@@ -48,6 +48,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "arm/LPC_inv_pred_gain_arm.h"
 #endif
 
+#if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+#include "arm/LPC_analysis_filter_arm.h"
+#endif
+
 /********************************************************************/
 /*                    SIGNAL PROCESSING FUNCTIONS                   */
 /********************************************************************/
@@ -116,7 +120,7 @@ void silk_biquad_alt_stride2_c(
 );
 
 /* Variable order MA prediction error filter. */
-void silk_LPC_analysis_filter(
+void silk_LPC_analysis_filter_c(
     opus_int16                  *out,               /* O    Output signal                                               */
     const opus_int16            *in,                /* I    Input signal                                                */
     const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
@@ -162,6 +166,7 @@ void silk_ana_filt_bank_1(
 #if !defined(OVERRIDE_silk_LPC_inverse_pred_gain)
 #define silk_LPC_inverse_pred_gain(A_Q12, order, arch)     ((void)(arch), silk_LPC_inverse_pred_gain_c(A_Q12, order))
 #endif
+
 
 /********************************************************************/
 /*                        SCALAR FUNCTIONS                          */

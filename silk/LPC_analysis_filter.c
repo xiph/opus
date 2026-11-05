@@ -46,7 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
    C89-compliant. */
 #define USE_CELT_FIR 0
 
-void silk_LPC_analysis_filter(
+void silk_LPC_analysis_filter_c(
     opus_int16                  *out,               /* O    Output signal                                               */
     const opus_int16            *in,                /* I    Input signal                                                */
     const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
