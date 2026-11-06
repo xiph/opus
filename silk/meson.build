@@ -13,7 +13,7 @@ silk_sources_fixed = sources['SILK_SOURCES_FIXED']
 silk_sources_fixed_sse4_1 = sources['SILK_SOURCES_FIXED_SSE4_1']
 
 silk_sources_float_sse4_1 = []
-silk_sources_float_neon_intr = []
+silk_sources_float_neon_intr = sources['SILK_SOURCES_FLOAT_ARM_NEON_INTR']
 silk_sources_float_avx2 = sources['SILK_SOURCES_FLOAT_AVX2']
 
 silk_sources_float = sources['SILK_SOURCES_FLOAT']
