@@ -37,6 +37,17 @@ POSSIBILITY OF SUCH DAMAGE.
 # if (defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && \
  !defined(OPUS_ARM_PRESUME_NEON_INTR))
 
+opus_int (*const SILK_VAD_GETSA_Q8_IMPL[OPUS_ARCHMASK + 1])(
+        silk_encoder_state          *psEncC,            /* I/O  Encoder state                               */
+        const opus_int16            pIn[]               /* I    PCM input                                   */
+) = {
+      silk_VAD_GetSA_Q8_c,    /* ARMv4 */
+      silk_VAD_GetSA_Q8_c,    /* EDSP */
+      silk_VAD_GetSA_Q8_c,    /* Media */
+      silk_VAD_GetSA_Q8_neon, /* Neon */
+      silk_VAD_GetSA_Q8_neon, /* dotprod */
+};
+
 void (*const SILK_BIQUAD_ALT_STRIDE2_IMPL[OPUS_ARCHMASK + 1])(
         const opus_int16            *in,                /* I     input signal                                               */
         const opus_int32            *B_Q28,             /* I     MA coefficients [3]                                        */
