@@ -80,13 +80,16 @@ opus_int silk_resampler_init(
     silk_resampler_state_struct *S,                 /* I/O  Resampler state                                             */
     opus_int32                  Fs_Hz_in,           /* I    Input sampling rate (Hz)                                    */
     opus_int32                  Fs_Hz_out,          /* I    Output sampling rate (Hz)                                   */
-    opus_int                    forEnc              /* I    If 1: encoder; if 0: decoder                                */
+    opus_int                    forEnc,             /* I    If 1: encoder; if 0: decoder                                */
+    int                         arch                /* I    Run-time architecture                                       */
 )
 {
     opus_int up2x;
 
     /* Clear state */
     silk_memset( S, 0, sizeof( silk_resampler_state_struct ) );
+
+    S->arch = arch;
 
     /* Input checking */
     if( forEnc ) {
