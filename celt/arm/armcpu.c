@@ -196,7 +196,7 @@ static opus_uint32 opus_cpu_capabilities(void)
 
 static opus_uint32 opus_cpu_capabilities(void)
 {
-  long hwcap = 0;
+  unsigned long hwcap;
   opus_uint32 flags = 0;
 
 # if defined(OPUS_ARM_MAY_HAVE_MEDIA) \
@@ -205,7 +205,10 @@ static opus_uint32 opus_cpu_capabilities(void)
   flags |= OPUS_CPU_ARM_MEDIA_FLAG;
 # endif
 
-  elf_aux_info(AT_HWCAP, &hwcap, sizeof hwcap);
+  if (elf_aux_info(AT_HWCAP, &hwcap, sizeof hwcap) != 0)
+  {
+    hwcap = 0;
+  }
 
 # if defined(OPUS_ARM_MAY_HAVE_EDSP) || defined(OPUS_ARM_MAY_HAVE_MEDIA) \
  || defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
