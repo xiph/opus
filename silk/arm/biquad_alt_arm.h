@@ -40,9 +40,9 @@ void silk_biquad_alt_stride2_neon(
     const opus_int32            len                 /* I     signal length (must be even)                               */
 );
 
-#  if !defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_PRESUME_NEON)
+#  if !defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_PRESUME_NEON_INTR)
 #   define OVERRIDE_silk_biquad_alt_stride2                   (1)
-#   define silk_biquad_alt_stride2(in, B_Q28, A_Q28, S, out, len, arch) ((void)(arch), PRESUME_NEON(silk_biquad_alt_stride2)(in, B_Q28, A_Q28, S, out, len))
+#   define silk_biquad_alt_stride2(in, B_Q28, A_Q28, S, out, len, arch) ((void)(arch), silk_biquad_alt_stride2_neon(in, B_Q28, A_Q28, S, out, len))
 #  endif
 # endif
 

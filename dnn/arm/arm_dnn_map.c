@@ -44,13 +44,13 @@ void (*const DNN_COMPUTE_LINEAR_IMPL[OPUS_ARCHMASK + 1])(
   compute_linear_c,                /* default */
   compute_linear_c,
   compute_linear_c,
-  MAY_HAVE_NEON(compute_linear),   /* neon  */
+  MAY_HAVE_NEON_INTR(compute_linear),   /* neon  */
   MAY_HAVE_DOTPROD(compute_linear) /* dotprod  */
 };
 
 #endif
 
-#if (defined(OPUS_ARM_MAY_HAVE_DOTPROD) || defined(OPUS_ARM_MAY_HAVE_NEON)) && !defined(OPUS_ARM_PRESUME_NEON)
+#if (defined(OPUS_ARM_MAY_HAVE_DOTPROD) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)) && !defined(OPUS_ARM_PRESUME_NEON_INTR)
 
 void (*const DNN_COMPUTE_ACTIVATION_IMPL[OPUS_ARCHMASK + 1])(
          float *output,
@@ -61,7 +61,7 @@ void (*const DNN_COMPUTE_ACTIVATION_IMPL[OPUS_ARCHMASK + 1])(
     compute_activation_c,                /* default */
     compute_activation_c,
     compute_activation_c,
-    MAY_HAVE_NEON(compute_activation),   /* neon  */
+    MAY_HAVE_NEON_INTR(compute_activation),   /* neon  */
     MAY_HAVE_DOTPROD(compute_activation) /* dotprod  */
 };
 
@@ -77,7 +77,7 @@ void (*const DNN_COMPUTE_CONV2D_IMPL[OPUS_ARCHMASK + 1])(
     compute_conv2d_c,                /* default */
     compute_conv2d_c,
     compute_conv2d_c,
-    MAY_HAVE_NEON(compute_conv2d),   /* neon  */
+    MAY_HAVE_NEON_INTR(compute_conv2d),   /* neon  */
     MAY_HAVE_DOTPROD(compute_conv2d) /* dotprod  */
 };
 

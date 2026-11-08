@@ -50,7 +50,7 @@ void compute_conv2d_dotprod(const Conv2dLayer *conv, float *out, float *mem, con
 #define OVERRIDE_COMPUTE_LINEAR
 #define compute_linear(linear, out, in, arch) ((void)(arch),compute_linear_neon(linear, out, in))
 
-#elif defined(OPUS_HAVE_RTCD) && (defined(OPUS_ARM_MAY_HAVE_DOTPROD) || defined(OPUS_ARM_MAY_HAVE_NEON))
+#elif defined(OPUS_HAVE_RTCD) && (defined(OPUS_ARM_MAY_HAVE_DOTPROD) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
 
 extern void (*const DNN_COMPUTE_LINEAR_IMPL[OPUS_ARCHMASK + 1])(
                     const LinearLayer *linear,
@@ -64,14 +64,14 @@ extern void (*const DNN_COMPUTE_LINEAR_IMPL[OPUS_ARCHMASK + 1])(
 
 #endif
 
-#if defined(OPUS_ARM_PRESUME_NEON)
+#if defined(OPUS_ARM_PRESUME_NEON_INTR)
 
 #define OVERRIDE_COMPUTE_ACTIVATION
 #define compute_activation(output, input, N, activation, arch) ((void)(arch),compute_activation_neon(output, input, N, activation))
 #define OVERRIDE_COMPUTE_CONV2D
 #define compute_conv2d(conv, out, mem, in, height, hstride, activation, arch) ((void)(arch),compute_conv2d_neon(conv, out, mem, in, height, hstride, activation))
 
-#elif defined(OPUS_HAVE_RTCD) && (defined(OPUS_ARM_MAY_HAVE_DOTPROD) || defined(OPUS_ARM_MAY_HAVE_NEON))
+#elif defined(OPUS_HAVE_RTCD) && (defined(OPUS_ARM_MAY_HAVE_DOTPROD) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
 
 extern void (*const DNN_COMPUTE_ACTIVATION_IMPL[OPUS_ARCHMASK + 1])(
                     float *output,
