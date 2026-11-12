@@ -25,23 +25,44 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#if !defined(SILK_LPC_ANALYSIS_FILTER_ARM_H)
+#ifndef SILK_LPC_ANALYSIS_FILTER_ARM_H
 # define SILK_LPC_ANALYSIS_FILTER_ARM_H
 
-# include "celt/cpu_support.h"
+# include "celt/arm/armcpu.h"
 
-/* NEON implementation (only). */
-extern void silk_LPC_analysis_filter_neon(
-        opus_int16                  *out,               /* O    Output signal                                               */
-        const opus_int16            *in,                /* I    Input signal                                                */
-        const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
-        const opus_int32            len,                /* I    Signal length                                               */
-        const opus_int32            d,                  /* I    Filter order                                                */
-        int                         arch                /* I    Run-time architecture                                       */
+# if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+void silk_LPC_analysis_filter_neon(     /* O    output signal                                        */
+    opus_int16                  *out,   /* O    Output signal                                         */
+    const opus_int16            *in,    /* I    Input signal                                          */
+    const opus_int16            *B,     /* I    MA prediction coefficients, Q12 [order]               */
+    const opus_int32            len,    /* I    Signal length                                         */
+    const opus_int32            d,      /* I    Filter order                                          */
+    int                         arch    /* I    Run-time architecture                                 */
 );
 
-/* NEON-presumed build (aarch64): route LPC_analysis_filter straight to NEON. */
-# define silk_LPC_analysis_filter(out, in, B, len, d, arch) \
-    silk_LPC_analysis_filter_neon(out, in, B, len, d, (arch))
+#  if !defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_PRESUME_NEON)
+#   define OVERRIDE_silk_LPC_analysis_filter            (1)
+#   define silk_LPC_analysis_filter(out,in,B,len,d,arch) ((void)(arch), PRESUME_NEON(silk_LPC_analysis_filter)(out,in,B,len,d,arch))
+#  endif
+# endif
+
+# if !defined(OVERRIDE_silk_LPC_analysis_filter)
+/*Is run-time CPU detection enabled on this platform?*/
+#  if defined(OPUS_HAVE_RTCD) && (defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR))
+extern void (*const SILK_LPC_ANALYSIS_FILTER_IMPL[OPUS_ARCHMASK+1])(
+        opus_int16                  *out,   /* O    Output signal                                         */
+        const opus_int16            *in,    /* I    Input signal                                          */
+        const opus_int16            *B,     /* I    MA prediction coefficients, Q12 [order]               */
+        const opus_int32            len,    /* I    Signal length                                         */
+        const opus_int32            d,      /* I    Filter order                                          */
+        int                         arch    /* I    Run-time architecture                                 */
+);
+#   define OVERRIDE_silk_LPC_analysis_filter            (1)
+#   define silk_LPC_analysis_filter(out,in,B,len,d,arch) ((*SILK_LPC_ANALYSIS_FILTER_IMPL[(arch)&OPUS_ARCHMASK])(out,in,B,len,d,arch))
+#  elif defined(OPUS_ARM_PRESUME_NEON_INTR)
+#   define OVERRIDE_silk_LPC_analysis_filter            (1)
+#   define silk_LPC_analysis_filter(out,in,B,len,d,arch) ((void)(arch), silk_LPC_analysis_filter_neon(out,in,B,len,d,arch))
+#  endif
+# endif
 
 #endif /* SILK_LPC_ANALYSIS_FILTER_ARM_H */

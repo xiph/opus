@@ -46,7 +46,11 @@ POSSIBILITY OF SUCH DAMAGE.
    C89-compliant. */
 #define USE_CELT_FIR 0
 
-void silk_LPC_analysis_filter_c(
+/* The routing macro (arm/LPC_analysis_filter_arm.h) may be active via
+   SigProc_FIX.h; disable it so this stays the scalar definition. */
+#undef silk_LPC_analysis_filter
+
+void silk_LPC_analysis_filter(
     opus_int16                  *out,               /* O    Output signal                                               */
     const opus_int16            *in,                /* I    Input signal                                                */
     const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
