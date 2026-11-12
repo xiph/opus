@@ -63,6 +63,21 @@ opus_int32 (*const SILK_LPC_INVERSE_PRED_GAIN_IMPL[OPUS_ARCHMASK + 1])( /* O   R
       silk_LPC_inverse_pred_gain_neon, /* dotprod */
 };
 
+void (*const SILK_LPC_ANALYSIS_FILTER_IMPL[OPUS_ARCHMASK + 1])(
+        opus_int16                  *out,               /* O    Output signal                                               */
+        const opus_int16            *in,                /* I    Input signal                                                */
+        const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
+        const opus_int32            len,                /* I    Signal length                                               */
+        const opus_int32            d,                  /* I    Filter order                                                */
+        int                         arch                /* I    Run-time architecture                                       */
+) = {
+      silk_LPC_analysis_filter,        /* ARMv4 */
+      silk_LPC_analysis_filter,        /* EDSP */
+      silk_LPC_analysis_filter,        /* Media */
+      silk_LPC_analysis_filter_neon,   /* Neon */
+      silk_LPC_analysis_filter_neon,   /* dotprod */
+};
+
 void  (*const SILK_NSQ_DEL_DEC_IMPL[OPUS_ARCHMASK + 1])(
         const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
         silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */

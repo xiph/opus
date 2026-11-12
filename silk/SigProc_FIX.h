@@ -125,6 +125,10 @@ void silk_LPC_analysis_filter(
     int                         arch                /* I    Run-time architecture                                       */
 );
 
+#if (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
+#include "arm/LPC_analysis_filter_arm.h"
+#endif
+
 /* Chirp (bandwidth expand) LP AR filter */
 void silk_bwexpander(
     opus_int16                  *ar,                /* I/O  AR filter to be expanded (without leading 1)                */
