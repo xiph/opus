@@ -110,6 +110,14 @@ extern "C" {
 # define OPUS_INLINE inline
 #endif
 
+#ifndef OPUS_HAS_BUILTIN
+# ifdef __has_builtin
+#  define OPUS_HAS_BUILTIN(x) __has_builtin(x)
+# else
+#  define OPUS_HAS_BUILTIN(x) 0
+# endif
+#endif
+
 /**Warning attributes for opus functions
   * NONNULL is not used in OPUS_BUILD to avoid the compiler optimizing out
   * some paranoid null checks. */
