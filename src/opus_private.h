@@ -70,6 +70,7 @@ typedef struct {
    int frame;
    const unsigned char *data;
    opus_int32 len;
+   int repeat; /* Additional consecutive frames (for 0-byte short extensions). */
 } opus_extension_data;
 
 void opus_extension_iterator_init(OpusExtensionIterator *iter,
@@ -244,6 +245,10 @@ int opus_multistream_decode_native(
 );
 
 opus_int32 opus_packet_extensions_parse(const unsigned char *data,
+ opus_int32 len, opus_extension_data *extensions, opus_int32 *nb_extensions,
+ int nb_frames);
+
+opus_int32 opus_packet_extensions_parse_rep(const unsigned char *data,
  opus_int32 len, opus_extension_data *extensions, opus_int32 *nb_extensions,
  int nb_frames);
 
