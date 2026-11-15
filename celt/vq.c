@@ -1,5 +1,6 @@
 /* Copyright (c) 2007-2008 CSIRO
    Copyright (c) 2007-2009 Xiph.Org Foundation
+   Copyright (c) 2026 Advanced Micro Devices, Inc.
    Written by Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -77,6 +78,38 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
    int i;
    opus_val16 ms;
    celt_norm *Xptr;
+
+#ifndef FIXED_POINT
+   /* For stride==1, carry the recurrence through a register across the
+      forward and backward sweeps instead of through X[].  The arithmetic and
+      its order match the general path below, so the result is identical
+      (norm_scaledown/up are no-ops in the float build). */
+   if (stride == 1 && len >= 3)
+   {
+      celt_norm carry, nc;
+      ms = NEG16(s);
+      carry = X[0];
+      for (i=0;i<len-1;i++)
+      {
+         celt_norm x2 = X[i+1];
+         nc   = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x2),  s, carry), 15));
+         X[i] = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, carry), ms, x2), 15));
+         carry = nc;
+      }
+      X[len-1] = carry;
+      carry = X[len-2];
+      for (i=len-3;i>=0;i--)
+      {
+         celt_norm x1 = X[i];
+         nc     = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x1),  ms, carry), 15));
+         X[i+1] = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, carry), s, x1), 15));
+         carry = nc;
+      }
+      X[0] = carry;
+      return;
+   }
+#endif
+
    Xptr = X;
    ms = NEG16(s);
    norm_scaledown(X, len, NORM_SHIFT-14);
