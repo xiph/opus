@@ -1,5 +1,6 @@
 /* Copyright (c) 2007-2008 CSIRO
    Copyright (c) 2007-2008 Xiph.Org Foundation
+   Copyright (c) 2026 Advanced Micro Devices, Inc.
    Written by Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -244,7 +245,7 @@ void clt_mdct_forward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scal
 #if defined(ENABLE_PFA)
    opus_fft_pfa_c(st, f2, f2 ARG_FIXED(scale_shift-headroom));
 #else
-   opus_fft_impl(st, f2 ARG_FIXED(scale_shift-headroom));
+   opus_fft_impl(st, f2 ARG_FIXED(scale_shift-headroom), arch);
 #endif
 
    /* Post-rotate */
@@ -358,7 +359,7 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_sca
 #if defined(ENABLE_PFA)
    opus_fft_pfa_c(l->kfft[shift], (kiss_fft_cpx*)(out+(overlap>>1)), (kiss_fft_cpx*)(out+(overlap>>1)) ARG_FIXED(fft_shift));
 #else
-   opus_fft_impl(l->kfft[shift], (kiss_fft_cpx*)(out+(overlap>>1)) ARG_FIXED(fft_shift));
+   opus_fft_impl(l->kfft[shift], (kiss_fft_cpx*)(out+(overlap>>1)) ARG_FIXED(fft_shift), arch);
 #endif
 
    /* Post-rotate and de-shuffle from both ends of the buffer at once to make
