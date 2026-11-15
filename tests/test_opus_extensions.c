@@ -1051,6 +1051,66 @@ void test_extensions_rep_and_pathological(void)
    expect_true(opus_repacketizer_cat(&rp, pkt1, len1) == OPUS_OK, "cat mix");
    res = opus_repacketizer_out(&rp, out_small, 65536);
    expect_true(res > 0 && res <= len1, "expected compact mixed RTE output");
+   {
+      opus_int16 *pcm = (opus_int16 *)malloc(sizeof(opus_int16) * 5760);
+      int err;
+      OpusDecoder *dec = opus_decoder_create(48000, 1, &err);
+      expect_true(err == OPUS_OK
+       && opus_decode(dec, pkt1, len1, pcm, 5760, 0) == 5760,
+       "expected opus_decode to succeed on 30 kB mixed RTE + late QEXT");
+      opus_decoder_destroy(dec);
+#ifdef ENABLE_QEXT
+      {
+         opus_int16 in_pcm[1920], pcm1[1920], pcm2[1920], pcm3[1920];
+         unsigned char f0_pkt[1280], f1_pkt[1280], cat_pkt[2600];
+         opus_int32 len_f0, len_f1, len_cat;
+         opus_uint32 rng1 = 0, rng2 = 1;
+         OpusEncoder *enc = opus_encoder_create(48000, 1,
+          OPUS_APPLICATION_RESTRICTED_LOWDELAY, &err);
+         OpusDecoder *dec1 = opus_decoder_create(48000, 1, &err);
+         OpusDecoder *dec2 = opus_decoder_create(48000, 1, &err);
+         OpusDecoder *dec3 = opus_decoder_create(48000, 1, &err);
+         for (k = 0; k < 1920; k++)
+            in_pcm[k] = (opus_int16)(((k * 1031) & 0x3FFF) - 0x2000);
+         opus_encoder_ctl(enc, OPUS_SET_BITRATE(256000));
+         opus_encoder_ctl(enc, OPUS_SET_QEXT(0));
+         len_f0 = opus_encode(enc, in_pcm, 960, f0_pkt, sizeof(f0_pkt));
+         opus_encoder_ctl(enc, OPUS_SET_QEXT(1));
+         len_f1 = opus_encode(enc, in_pcm + 960, 960, f1_pkt, sizeof(f1_pkt));
+         expect_true(len_f0 > 0 && len_f1 > 0, "expected QEXT encode success");
+         opus_repacketizer_init(&rp);
+         expect_true(opus_repacketizer_cat(&rp, f0_pkt, len_f0) == OPUS_OK
+          && opus_repacketizer_cat(&rp, f1_pkt, len_f1) == OPUS_OK, "cat qext");
+         len_cat = opus_repacketizer_out(&rp, cat_pkt, sizeof(cat_pkt));
+         expect_true(len_cat > 0, "expected repacketized QEXT packet");
+         expect_true(opus_decode(dec1, f0_pkt, len_f0, pcm1, 960, 0) == 960
+          && opus_decode(dec1, f1_pkt, len_f1, pcm1 + 960, 960, 0) == 960,
+          "expected single-frame QEXT decode to succeed");
+         opus_decoder_ctl(dec1, OPUS_GET_FINAL_RANGE(&rng1));
+         expect_true(opus_decode(dec2, cat_pkt, len_cat, pcm2, 1920, 0) == 1920,
+          "expected multi-frame QEXT decode to succeed");
+         opus_decoder_ctl(dec2, OPUS_GET_FINAL_RANGE(&rng2));
+         opus_decoder_ctl(dec3, OPUS_SET_IGNORE_EXTENSIONS(1));
+         expect_true(opus_decode(dec3, cat_pkt, len_cat, pcm3, 1920, 0) == 1920,
+          "expected ignore-extensions decode to succeed");
+         expect_true(memcmp(pcm1, pcm2, sizeof(pcm1)) == 0 && rng1 == rng2,
+          "expected multi-frame late QEXT decode to match single-frame decode");
+#ifndef FUZZING
+         expect_true((f1_pkt[0] & 0x03) == 3 && (f1_pkt[1] & 0x40) != 0,
+          "expected QEXT extension in frame 1");
+#endif
+         expect_true(memcmp(pcm1, pcm3, 960 * sizeof(opus_int16)) == 0
+          && (((f1_pkt[0] & 0x03) != 3 || (f1_pkt[1] & 0x40) == 0)
+          || memcmp(pcm1 + 960, pcm3 + 960, 960 * sizeof(opus_int16)) != 0),
+          "expected late QEXT payload to affect only frame 1");
+         opus_encoder_destroy(enc);
+         opus_decoder_destroy(dec1);
+         opus_decoder_destroy(dec2);
+         opus_decoder_destroy(dec3);
+      }
+#endif
+      free(pcm);
+   }
 
    free(ext_buf);
    free(pkt1);
