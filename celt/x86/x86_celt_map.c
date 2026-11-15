@@ -1,5 +1,6 @@
 /* Copyright (c) 2014, Cisco Systems, INC
    Written by XiangMingZhu WeiZhou MinPeng YanWang
+   Copyright (c) 2026, Advanced Micro Devices, Inc.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -137,21 +138,6 @@ opus_val32 (*const CELT_INNER_PROD_IMPL[OPUS_ARCHMASK + 1])(
   MAY_HAVE_SSE(celt_inner_prod)
 };
 
-void (*const DUAL_INNER_PROD_IMPL[OPUS_ARCHMASK + 1])(
-                    const opus_val16 *x,
-                    const opus_val16 *y01,
-                    const opus_val16 *y02,
-                    int               N,
-                    opus_val32       *xy1,
-                    opus_val32       *xy2
-) = {
-  dual_inner_prod_c,                /* non-sse */
-  MAY_HAVE_SSE(dual_inner_prod),
-  MAY_HAVE_SSE(dual_inner_prod),
-  MAY_HAVE_SSE(dual_inner_prod),
-  MAY_HAVE_SSE(dual_inner_prod)
-};
-
 void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK + 1])(
               opus_val32 *y,
               opus_val32 *x,
@@ -169,6 +155,31 @@ void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK + 1])(
 };
 
 
+#endif
+
+/* dual_inner_prod is dispatched through this table whenever either SSE or
+   AVX2 is runtime-selectable (the AVX2 slot is live even when SSE is
+   presumed, so the table is guarded by the union of both conditions). */
+#if (defined(OPUS_X86_MAY_HAVE_SSE) && !defined(OPUS_X86_PRESUME_SSE)) || \
+    (defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(OPUS_X86_PRESUME_AVX2))
+void (*const DUAL_INNER_PROD_IMPL[OPUS_ARCHMASK + 1])(
+                    const opus_val16 *x,
+                    const opus_val16 *y01,
+                    const opus_val16 *y02,
+                    int               N,
+                    opus_val32       *xy1,
+                    opus_val32       *xy2
+) = {
+  dual_inner_prod_c,                /* non-sse */
+  MAY_HAVE_SSE(dual_inner_prod),
+  MAY_HAVE_SSE(dual_inner_prod),
+  MAY_HAVE_SSE(dual_inner_prod),    /* sse4.1 */
+#if defined(OPUS_X86_MAY_HAVE_AVX2)
+  MAY_HAVE_AVX2(dual_inner_prod)    /* avx2 */
+#else
+  MAY_HAVE_SSE(dual_inner_prod)     /* avx */
+#endif
+};
 #endif
 
 #if defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(OPUS_X86_PRESUME_SSE2)

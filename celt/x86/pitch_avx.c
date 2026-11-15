@@ -1,4 +1,5 @@
-/* Copyright (c) 2023 Amazon */
+/* Copyright (c) 2023 Amazon
+   Copyright (c) 2026 Advanced Micro Devices, Inc. */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -96,6 +97,40 @@ void celt_pitch_xcorr_avx2(const float *_x, const float *_y, float *xcorr, int l
    {
       xcorr[i] = celt_inner_prod(_x, _y+i, len, arch);
    }
+}
+
+void dual_inner_prod_avx2(const opus_val16 *x, const opus_val16 *y01,
+      const opus_val16 *y02, int N, opus_val32 *xy1, opus_val32 *xy2)
+{
+   int i;
+   __m256 xsum1, xsum2;
+   __m128 lo, hi, s;
+   xsum1 = _mm256_setzero_ps();
+   xsum2 = _mm256_setzero_ps();
+   for (i=0;i<N-7;i+=8)
+   {
+      __m256 xi = _mm256_loadu_ps(x+i);
+      xsum1 = _mm256_fmadd_ps(xi, _mm256_loadu_ps(y01+i), xsum1);
+      xsum2 = _mm256_fmadd_ps(xi, _mm256_loadu_ps(y02+i), xsum2);
+   }
+   lo = _mm256_castps256_ps128(xsum1);
+   hi = _mm256_extractf128_ps(xsum1, 1);
+   s = _mm_add_ps(lo, hi);
+   s = _mm_add_ps(s, _mm_movehl_ps(s, s));
+   s = _mm_add_ss(s, _mm_shuffle_ps(s, s, 0x55));
+   _mm_store_ss(xy1, s);
+   lo = _mm256_castps256_ps128(xsum2);
+   hi = _mm256_extractf128_ps(xsum2, 1);
+   s = _mm_add_ps(lo, hi);
+   s = _mm_add_ps(s, _mm_movehl_ps(s, s));
+   s = _mm_add_ss(s, _mm_shuffle_ps(s, s, 0x55));
+   _mm_store_ss(xy2, s);
+   for (;i<N;i++)
+   {
+      *xy1 = MAC16_16(*xy1, x[i], y01[i]);
+      *xy2 = MAC16_16(*xy2, x[i], y02[i]);
+   }
+   _mm256_zeroupper();
 }
 
 #endif
