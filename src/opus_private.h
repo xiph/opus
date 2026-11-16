@@ -213,7 +213,7 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
 
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end,
       unsigned char *data, opus_int32 maxlen, int self_delimited, int pad,
-      const opus_extension_data *extensions, int nb_extensions);
+      const opus_extension_data *extensions, opus_int32 nb_extensions);
 
 int pad_frame(unsigned char *data, opus_int32 len, opus_int32 new_len);
 
@@ -261,6 +261,6 @@ opus_int32 opus_packet_extensions_count(const unsigned char *data,
 opus_int32 opus_packet_extensions_count_ext(const unsigned char *data,
  opus_int32 len, opus_int32 *nb_frame_exts, int nb_frames);
 
-opus_int32 opus_packet_pad_impl(unsigned char *data, opus_int32 len, opus_int32 new_len, int pad, const opus_extension_data  *extensions, int nb_extensions);
+opus_int32 opus_packet_pad_impl(unsigned char *data, opus_int32 len, opus_int32 new_len, int pad, const opus_extension_data  *extensions, opus_int32 nb_extensions);
 
 #endif /* OPUS_PRIVATE_H */

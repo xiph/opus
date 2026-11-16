@@ -112,20 +112,22 @@ int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp)
 }
 
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end,
-      unsigned char *data, opus_int32 maxlen, int self_delimited, int pad, const opus_extension_data *extensions, int nb_extensions)
+      unsigned char *data, opus_int32 maxlen, int self_delimited, int pad, const opus_extension_data *extensions, opus_int32 nb_extensions)
 {
-   int i, count;
+   opus_int32 i;
+   int count;
    opus_int32 tot_size;
    opus_int16 *len;
    const unsigned char **frames;
    unsigned char * ptr;
-   int ones_begin=0, ones_end=0;
-   int ext_begin=0, ext_len=0;
-   int ext_count, total_ext_count;
+   opus_int32 ones_begin=0, ones_end=0;
+   opus_int32 ext_begin=0, ext_len=0;
+   opus_int32 ext_count, total_ext_count;
    VARDECL(opus_extension_data, all_extensions);
    ALLOC_STACK;
 
-   if (begin<0 || begin>=end || end>rp->nb_frames)
+   if (begin<0 || begin>=end || end>rp->nb_frames || nb_extensions<0
+    || (nb_extensions>0 && extensions==NULL))
    {
       /*fprintf(stderr, "%d %d %d\n", begin, end, rp->nb_frames);*/
       RESTORE_STACK;
@@ -144,7 +146,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    total_ext_count = nb_extensions;
    for (i=0;i<end;i++)
    {
-      int n;
+      opus_int32 n;
       if (rp->padding_len[i] == 0 || i + rp->padding_nb_frames[i] <= begin)
          continue;
       n = opus_packet_extensions_count(rp->paddings[i], rp->padding_len[i],
@@ -159,16 +161,16 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    }
 
    /* incorporate any extensions from the repacketizer padding */
-   for (i=0;i<end;i++)
+   for (i=0;i<end && ext_count<total_ext_count;i++)
    {
-      int j, base, ret;
-      opus_int32 frame_ext_count;
+      opus_int32 j, base, frame_ext_count;
+      int ret;
       if (rp->padding_len[i] == 0 || i + rp->padding_nb_frames[i] <= begin)
          continue;
       base = ext_count;
       frame_ext_count = total_ext_count - ext_count;
       ret = opus_packet_extensions_parse(rp->paddings[i], rp->padding_len[i],
-         &all_extensions[base], &frame_ext_count, rp->padding_nb_frames[i]);
+         all_extensions + base, &frame_ext_count, rp->padding_nb_frames[i]);
       if (ret<0)
       {
          RESTORE_STACK;
@@ -177,7 +179,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       /* filter to [begin, end) and renumber the extension frame numbers */
       for (j=0;j<frame_ext_count;j++)
       {
-         int f = i + all_extensions[base+j].frame;
+         int f = (int)i + all_extensions[base+j].frame;
          if (f >= begin && f < end)
          {
             all_extensions[ext_count] = all_extensions[base+j];
@@ -225,7 +227,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    {
       /* Code 3 */
       int vbr;
-      int pad_amount=0;
+      opus_int32 pad_amount=0;
 
       /* Restart the process for the padding case */
       ptr = data;
@@ -278,14 +280,22 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
             return ext_len;
          }
          if (!pad)
-            pad_amount = ext_len + (ext_len ? (ext_len+253)/254 : 1);
+         {
+            opus_int32 pad_hdr = ext_len ? 1 + (ext_len-1)/254 : 1;
+            if (ext_len > maxlen - tot_size - pad_hdr)
+            {
+               RESTORE_STACK;
+               return OPUS_BUFFER_TOO_SMALL;
+            }
+            pad_amount = ext_len + pad_hdr;
+         }
       }
       if (pad_amount != 0)
       {
-         int nb_255s;
+         opus_int32 nb_255s;
          data[1] |= 0x40;
          nb_255s = (pad_amount-1)/255;
-         if (tot_size + ext_len + nb_255s + 1 > maxlen)
+         if (maxlen - tot_size - ext_len < nb_255s + 1)
          {
             RESTORE_STACK;
             return OPUS_BUFFER_TOO_SMALL;
@@ -320,7 +330,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
       ptr += len[i];
    }
    if (ext_len > 0) {
-      int ret = opus_packet_extensions_generate(&data[ext_begin], ext_len,
+      opus_int32 ret = opus_packet_extensions_generate(&data[ext_begin], ext_len,
        all_extensions, ext_count, count, 0);
       celt_assert(ret == ext_len);
    }
@@ -346,7 +356,7 @@ opus_int32 opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, opus
    return opus_repacketizer_out_range_impl(rp, 0, rp->nb_frames, data, maxlen, 0, 0, NULL, 0);
 }
 
-opus_int32 opus_packet_pad_impl(unsigned char *data, opus_int32 len, opus_int32 new_len, int pad, const opus_extension_data  *extensions, int nb_extensions)
+opus_int32 opus_packet_pad_impl(unsigned char *data, opus_int32 len, opus_int32 new_len, int pad, const opus_extension_data  *extensions, opus_int32 nb_extensions)
 {
    OpusRepacketizer rp;
    opus_int32 ret;

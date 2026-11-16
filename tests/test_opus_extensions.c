@@ -248,6 +248,25 @@ void test_extensions_generate_fail(void)
        neg_size_33, 1, 1, 1);
       expect_true(result == OPUS_BAD_ARG, "expected OPUS_BAD_ARG");
    }
+
+   /* length + lacing overflow for non-final long extension */
+   {
+      static const opus_extension_data huge_len[] = {
+         {33, 0, (const unsigned char *)"a", 0x7FFFFFFF},
+         {3, 0, NULL, 0}
+      };
+      memset(packet + 16, 0xFE, sizeof(packet) - 16);
+      result = opus_packet_extensions_generate(packet, 16, huge_len, 2, 1, 0);
+      expect_true(result == OPUS_BUFFER_TOO_SMALL && packet[16] == 0xFE,
+       "expected OPUS_BUFFER_TOO_SMALL without signed overflow");
+      expect_true(opus_packet_extensions_generate(NULL, 0x7FFFFFFF, huge_len,
+       2, 1, 0) == OPUS_BUFFER_TOO_SMALL,
+       "expected OPUS_BUFFER_TOO_SMALL on size query overflow");
+      expect_true(opus_packet_extensions_generate(packet, -1, NULL, 0, 1, 0)
+       == OPUS_BAD_ARG
+       && opus_packet_extensions_generate(packet, 16, NULL, 1, 1, 0)
+       == OPUS_BAD_ARG, "expected OPUS_BAD_ARG for negative len or NULL exts");
+   }
 }
 
 void test_extensions_parse_success(void)

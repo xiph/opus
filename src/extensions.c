@@ -330,7 +330,7 @@ opus_int32 opus_packet_extensions_count(const unsigned char *data,
  opus_int32 len, int nb_frames)
 {
    OpusExtensionIterator iter;
-   int count;
+   opus_int32 count;
    opus_extension_iterator_init(&iter, data, len, nb_frames);
    for (count=0; opus_extension_iterator_next(&iter, NULL) > 0; count++);
    return count;
@@ -342,7 +342,7 @@ opus_int32 opus_packet_extensions_count_ext(const unsigned char *data,
  opus_int32 len, opus_int32 *nb_frame_exts, int nb_frames) {
    OpusExtensionIterator iter;
    opus_extension_data ext;
-   int count;
+   opus_int32 count;
    opus_extension_iterator_init(&iter, data, len, nb_frames);
    OPUS_CLEAR(nb_frame_exts, nb_frames);
    for (count=0; opus_extension_iterator_next(&iter, &ext) > 0; count++) {
@@ -360,7 +360,7 @@ opus_int32 opus_packet_extensions_parse(const unsigned char *data,
  opus_int32 len, opus_extension_data *extensions, opus_int32 *nb_extensions,
  int nb_frames) {
    OpusExtensionIterator iter;
-   int count;
+   opus_int32 count;
    int ret;
    celt_assert(nb_extensions != NULL);
    celt_assert(extensions != NULL || *nb_extensions == 0);
@@ -389,8 +389,8 @@ opus_int32 opus_packet_extensions_parse_ext(const unsigned char *data,
    OpusExtensionIterator iter;
    opus_extension_data ext;
    opus_int32 nb_frames_cum[49];
-   int count;
-   int prev_total;
+   opus_int32 count;
+   opus_int32 prev_total;
    int ret;
    celt_assert(nb_extensions != NULL);
    celt_assert(extensions != NULL || *nb_extensions == 0);
@@ -398,7 +398,7 @@ opus_int32 opus_packet_extensions_parse_ext(const unsigned char *data,
    /* Convert the frame extension count array to a cumulative sum. */
    prev_total = 0;
    for (count=0; count<nb_frames; count++) {
-      int total;
+      opus_int32 total;
       total = nb_frame_exts[count] + prev_total;
       nb_frames_cum[count] = prev_total;
       prev_total = total;
@@ -420,7 +420,7 @@ opus_int32 opus_packet_extensions_parse_ext(const unsigned char *data,
    return ret;
 }
 
-static int write_extension_payload(unsigned char *data, opus_int32 len,
+static opus_int32 write_extension_payload(unsigned char *data, opus_int32 len,
  opus_int32 pos, const opus_extension_data *ext, int last) {
    celt_assert(ext->id >= 3 && ext->id <= 127);
    if (ext->id < 32)
@@ -440,7 +440,7 @@ static int write_extension_payload(unsigned char *data, opus_int32 len,
       length_bytes = 1 + ext->len/255;
       if (last)
          length_bytes = 0;
-      if (len-pos < length_bytes + ext->len)
+      if (len-pos < length_bytes || len-pos-length_bytes < ext->len)
          return OPUS_BUFFER_TOO_SMALL;
       if (!last)
       {
@@ -452,14 +452,14 @@ static int write_extension_payload(unsigned char *data, opus_int32 len,
          if (data) data[pos] = ext->len % 255;
          pos++;
       }
-      if (data) OPUS_COPY(&data[pos], ext->data, ext->len);
+      if (data && ext->len > 0) OPUS_COPY(&data[pos], ext->data, ext->len);
       pos += ext->len;
    }
    return pos;
 }
 
-static int write_extension(unsigned char *data, opus_int32 len, opus_int32 pos,
- const opus_extension_data *ext, int last) {
+static opus_int32 write_extension(unsigned char *data, opus_int32 len,
+ opus_int32 pos, const opus_extension_data *ext, int last) {
    if (len-pos < 1)
       return OPUS_BUFFER_TOO_SMALL;
    celt_assert(ext->id >= 3 && ext->id <= 127);
@@ -481,8 +481,9 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
    opus_int32 pos = 0;
    opus_int32 written = 0;
 
-   celt_assert(len >= 0);
-   if (nb_frames > 48) return OPUS_BAD_ARG;
+   if (len < 0 || nb_frames < 0 || nb_frames > 48 || nb_extensions < 0
+    || (nb_extensions > 0 && extensions == NULL))
+      return OPUS_BAD_ARG;
 
    /* Do a little work up-front to make this O(nb_extensions) instead of
        O(nb_extensions*nb_frames) so long as the extensions are in frame
@@ -501,7 +502,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
    for (f=0;f<nb_frames;f++)
    {
       opus_int32 last_long_idx;
-      int repeat_count;
+      opus_int32 repeat_count;
       repeat_count = 0;
       last_long_idx = -1;
       if (f + 1 < nb_frames)
@@ -551,7 +552,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                /* Advance the repeat pointers. */
                for (g=f+1; g<nb_frames; g++)
                {
-                  int j;
+                  opus_int32 j;
                   for (j=frame_repeat_idx[g]+1; j<frame_max_idx[g]
                    && extensions[j].frame != g; j++);
                   frame_repeat_idx[g] = j;
@@ -590,7 +591,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
             written++;
 
             if (repeat_count > 0 && frame_repeat_idx[f] == i) {
-               int nb_repeated;
+               opus_int32 nb_repeated;
                int last;
                int g;
                /* Add the repeat indicator. */
@@ -603,7 +604,7 @@ opus_int32 opus_packet_extensions_generate(unsigned char *data, opus_int32 len,
                pos++;
                for (g=f+1;g<nb_frames;g++)
                {
-                  int j;
+                  opus_int32 j;
                   for (j=frame_min_idx[g];j<frame_repeat_idx[g];j++)
                   {
                      if (extensions[j].frame == g)
