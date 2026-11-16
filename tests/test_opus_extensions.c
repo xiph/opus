@@ -811,6 +811,31 @@ void test_repacketizer_out_range_slice(void)
     "expected unpadded Code 0 packet when sliced range has no extensions");
 }
 
+void test_extension_iterator_frame_max(void)
+{
+   static const unsigned char l0_rte_then_ext[] = { 0x06, 0x04, (124<<1)|0 };
+   static const unsigned char last_f_l0_rte_junk[] = {
+      0x02, 0x06, 0x04, (124<<1)|0
+   };
+   OpusExtensionIterator iter;
+   opus_extension_data fext;
+
+   /* frame_max must stop when an L=0 RTE advances curr_frame to frame_max */
+   opus_extension_iterator_init(&iter, l0_rte_then_ext, sizeof(l0_rte_then_ext),
+    3);
+   opus_extension_iterator_set_frame_max(&iter, 1);
+   expect_true(opus_extension_iterator_find(&iter, &fext, 124) == 0,
+    "expected frame_max=1 to stop after L=0 RTE");
+
+   /* Setting frame_max > nb_frames must still clamp to nb_frames and ignore
+      trailing junk after an L=0 RTE in the last frame. */
+   opus_extension_iterator_init(&iter, last_f_l0_rte_junk,
+    sizeof(last_f_l0_rte_junk), 2);
+   opus_extension_iterator_set_frame_max(&iter, 5);
+   expect_true(opus_extension_iterator_find(&iter, &fext, 124) == 0,
+    "expected frame_max > nb_frames to clamp to nb_frames");
+}
+
 int main(int argc, char **argv)
 {
    int env_used;
@@ -840,6 +865,7 @@ int main(int argc, char **argv)
    test_random_extensions_parse();
    test_opus_repacketizer_out_range_impl();
    test_repacketizer_out_range_slice();
+   test_extension_iterator_frame_max();
    fprintf(stderr,"Tests completed successfully.\n");
    return 0;
 }

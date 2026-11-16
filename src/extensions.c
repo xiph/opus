@@ -148,7 +148,7 @@ void opus_extension_iterator_reset(OpusExtensionIterator *iter) {
     needed. */
 void opus_extension_iterator_set_frame_max(OpusExtensionIterator *iter,
  int frame_max) {
-   iter->frame_max = frame_max;
+   iter->frame_max = IMIN(frame_max, iter->nb_frames);
 }
 
 /* Return the next repeated extension.
@@ -210,8 +210,8 @@ static int opus_extension_iterator_next_repeat(OpusExtensionIterator *iter,
        not consume all of the data with an L == 0 long extension. */
    if (iter->repeat_l == 0) {
       iter->curr_frame++;
-      /* Ignore additional padding if this was already the last frame. */
-      if (iter->curr_frame >= iter->nb_frames) {
+      /* Ignore additional padding if we have reached frame_max. */
+      if (iter->curr_frame >= iter->frame_max) {
          iter->curr_len = 0;
       }
    }
