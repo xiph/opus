@@ -206,10 +206,11 @@ AC_ARG_ENABLE([deep-plc],
     [AS_HELP_STRING([--enable-deep-plc], [use deep PLC for SILK])],,
     [enable_deep_plc=no])
 
-AS_IF([test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes" || test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"],[
+AS_IF([test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes"],[
   AC_DEFINE([ENABLE_DEEP_PLC], [1], [Deep PLC])
 ])
-AM_CONDITIONAL([ENABLE_DEEP_PLC], [test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes" || test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
+AM_CONDITIONAL([ENABLE_DEEP_PLC], [test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes"])
+AM_CONDITIONAL([ENABLE_DNN], [test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes" || test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
 
 AC_ARG_ENABLE([lossgen],
     [AS_HELP_STRING([--enable-lossgen], [build opus_demo with packet loss simulator])],,

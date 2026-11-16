@@ -1,15 +1,17 @@
-DEEP_PLC_SOURCES = \
+DNN_SOURCES = \
+dnn/nnet.c \
+dnn/nnet_default.c \
+dnn/parse_lpcnet_weights.c \
 dnn/burg.c \
 dnn/freq.c \
+dnn/lpcnet_tables.c
+
+DEEP_PLC_SOURCES = \
 dnn/fargan.c \
 dnn/fargan_data.c \
 dnn/lpcnet_enc.c \
 dnn/lpcnet_plc.c \
-dnn/lpcnet_tables.c \
-dnn/nnet.c \
-dnn/nnet_default.c \
 dnn/plc_data.c \
-dnn/parse_lpcnet_weights.c \
 dnn/pitchdnn.c \
 dnn/pitchdnn_data.c
 

@@ -35,9 +35,19 @@
 #include "opus_types.h"
 #include "arch.h"
 #include "nnet.h"
+#ifdef ENABLE_DRED
 #include "dred_rdovae_constants.h"
+#else
+#define DRED_MAX_RNN_NEURONS 0
+#define DRED_MAX_CONV_INPUTS 0
+#endif
+#ifdef ENABLE_DEEP_PLC
 #include "plc_data.h"
 #include "fargan.h"
+#else
+#define PLC_MAX_RNN_UNITS 0
+#define FARGAN_MAX_RNN_NEURONS 0
+#endif
 #include "os_support.h"
 #include "vec.h"
 

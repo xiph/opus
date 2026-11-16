@@ -39,6 +39,8 @@ get_opus_sources(CELT_AM_SOURCES_ARM_ASM celt_sources.mk
 get_opus_sources(CELT_SOURCES_ARM_NEON_INTR celt_sources.mk
                  celt_sources_arm_neon_intr)
 
+get_opus_sources(DNN_HEAD lpcnet_headers.mk dnn_headers)
+get_opus_sources(DNN_SOURCES lpcnet_sources.mk dnn_sources)
 get_opus_sources(DEEP_PLC_HEAD lpcnet_headers.mk deep_plc_headers)
 get_opus_sources(DRED_HEAD lpcnet_headers.mk dred_headers)
 get_opus_sources(OSCE_HEAD lpcnet_headers.mk osce_headers)

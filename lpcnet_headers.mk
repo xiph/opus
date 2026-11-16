@@ -1,21 +1,23 @@
-DEEP_PLC_HEAD = \
-dnn/lpcnet.h \
+DNN_HEAD = \
 dnn/burg.h \
 dnn/common.h \
 dnn/freq.h \
-dnn/fargan.h \
-dnn/fargan_data.h \
-dnn/lpcnet_private.h \
 dnn/nnet.h \
-dnn/plc_data.h \
 dnn/vec.h \
 dnn/vec_avx.h \
 dnn/vec_neon.h \
-dnn/pitchdnn.h \
-dnn/pitchdnn_data.h \
 dnn/x86/dnn_x86.h \
 dnn/nnet_arch.h \
 dnn/arm/dnn_arm.h
+
+DEEP_PLC_HEAD = \
+dnn/lpcnet.h \
+dnn/fargan.h \
+dnn/fargan_data.h \
+dnn/lpcnet_private.h \
+dnn/plc_data.h \
+dnn/pitchdnn.h \
+dnn/pitchdnn_data.h
 
 DRED_HEAD = \
 dnn/dred_coding.h \
