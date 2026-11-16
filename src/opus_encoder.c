@@ -2651,6 +2651,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
               extension.frame = 0;
               extension.data = buf;
               extension.len = dred_bytes;
+              extension.repeat = 1;
               ret = opus_packet_pad_impl(data, ret, orig_max_data_bytes, !st->use_vbr, &extension, 1);
               if (ret < 0)
               {

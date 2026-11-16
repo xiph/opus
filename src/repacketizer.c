@@ -114,6 +114,7 @@ int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp)
 opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end,
       unsigned char *data, opus_int32 maxlen, int self_delimited, int pad, const opus_extension_data *extensions, opus_int32 nb_extensions)
 {
+   opus_int32 max_ext_count = 32768;
    opus_int32 i;
    int count;
    opus_int32 tot_size;
@@ -126,12 +127,38 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    VARDECL(opus_extension_data, all_extensions);
    ALLOC_STACK;
 
+#if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
+   {
+# ifdef ENABLE_VALGRIND
+      char *stack_end = global_stack_top;
+      const opus_int32 elem_bytes = 2 * (opus_int32)sizeof(opus_extension_data);
+# else
+      char *stack_end = scratch_ptr ? scratch_ptr + GLOBAL_STACK_SIZE : NULL;
+      const opus_int32 elem_bytes = (opus_int32)sizeof(opus_extension_data);
+# endif
+      int align_pad = (int)((ALIGNOF(opus_extension_data)
+       - ((size_t)global_stack & (ALIGNOF(opus_extension_data) - 1)))
+       & (ALIGNOF(opus_extension_data) - 1));
+      if (global_stack == NULL || stack_end == NULL
+       || stack_end - global_stack <= align_pad)
+         max_ext_count = 0;
+      else
+         max_ext_count = IMIN(max_ext_count,
+          (opus_int32)((stack_end - global_stack - align_pad) / elem_bytes));
+   }
+#endif
+
    if (begin<0 || begin>=end || end>rp->nb_frames || nb_extensions<0
     || (nb_extensions>0 && extensions==NULL))
    {
       /*fprintf(stderr, "%d %d %d\n", begin, end, rp->nb_frames);*/
       RESTORE_STACK;
       return OPUS_BAD_ARG;
+   }
+   if (nb_extensions > max_ext_count)
+   {
+      RESTORE_STACK;
+      return OPUS_ALLOC_FAIL;
    }
    count = end-begin;
 
@@ -142,16 +169,28 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    else
       tot_size = 0;
 
-   /* figure out total number of extensions */
+   /* figure out total number of collapsed extensions */
    total_ext_count = nb_extensions;
    for (i=0;i<end;i++)
    {
       opus_int32 n;
+      int ret;
       if (rp->padding_len[i] == 0 || i + rp->padding_nb_frames[i] <= begin)
          continue;
-      n = opus_packet_extensions_count(rp->paddings[i], rp->padding_len[i],
-       rp->padding_nb_frames[i]);
-      if (n > 0) total_ext_count += n;
+      ret = opus_packet_extensions_parse_rep(rp->paddings[i],
+       rp->padding_len[i], NULL, &n, rp->padding_nb_frames[i],
+       IMAX(0, begin - (int)i), IMIN(rp->padding_nb_frames[i], end - (int)i));
+      if (ret < 0)
+      {
+         RESTORE_STACK;
+         return OPUS_INVALID_PACKET;
+      }
+      if (n > max_ext_count - total_ext_count)
+      {
+         RESTORE_STACK;
+         return OPUS_ALLOC_FAIL;
+      }
+      total_ext_count += n;
    }
    ALLOC(all_extensions, total_ext_count ? total_ext_count : ALLOC_NONE, opus_extension_data);
    /* copy over any extensions that were passed in */
@@ -163,30 +202,29 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    /* incorporate any extensions from the repacketizer padding */
    for (i=0;i<end && ext_count<total_ext_count;i++)
    {
-      opus_int32 j, base, frame_ext_count;
+      opus_int32 j, frame_ext_count;
       int ret;
       if (rp->padding_len[i] == 0 || i + rp->padding_nb_frames[i] <= begin)
          continue;
-      base = ext_count;
       frame_ext_count = total_ext_count - ext_count;
-      ret = opus_packet_extensions_parse(rp->paddings[i], rp->padding_len[i],
-         all_extensions + base, &frame_ext_count, rp->padding_nb_frames[i]);
+      ret = opus_packet_extensions_parse_rep(rp->paddings[i],
+       rp->padding_len[i], all_extensions + ext_count, &frame_ext_count,
+       rp->padding_nb_frames[i], IMAX(0, begin - (int)i),
+       IMIN(rp->padding_nb_frames[i], end - (int)i));
       if (ret<0)
       {
          RESTORE_STACK;
          return OPUS_INVALID_PACKET;
       }
-      /* filter to [begin, end) and renumber the extension frame numbers */
+      /* renumber the extension frame numbers */
       for (j=0;j<frame_ext_count;j++)
       {
-         int f = (int)i + all_extensions[base+j].frame;
-         if (f >= begin && f < end)
-         {
-            all_extensions[ext_count] = all_extensions[base+j];
-            all_extensions[ext_count++].frame = f - begin;
-         }
+         all_extensions[ext_count+j].frame =
+          (opus_int8)(all_extensions[ext_count+j].frame + i - begin);
       }
+      ext_count += frame_ext_count;
    }
+   celt_assert(ext_count == total_ext_count);
 
    ptr = data;
    if (count==1)
