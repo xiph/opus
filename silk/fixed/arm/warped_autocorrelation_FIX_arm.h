@@ -42,10 +42,10 @@ void silk_warped_autocorrelation_FIX_neon(
     const opus_int                  order                                   /* I    Correlation order (even)                                                    */
 );
 
-#  if !defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_PRESUME_NEON)
+#  if !defined(OPUS_HAVE_RTCD) && defined(OPUS_ARM_PRESUME_NEON_INTR)
 #   define OVERRIDE_silk_warped_autocorrelation_FIX (1)
 #   define silk_warped_autocorrelation_FIX(corr, scale, input, warping_Q16, length, order, arch) \
-    ((void)(arch), PRESUME_NEON(silk_warped_autocorrelation_FIX)(corr, scale, input, warping_Q16, length, order))
+    ((void)(arch), silk_warped_autocorrelation_FIX_neon(corr, scale, input, warping_Q16, length, order))
 #  endif
 #  endif
 
