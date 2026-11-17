@@ -86,7 +86,7 @@ while (<>) {
     s/\bINCLUDE[ \t]*([^ \t\n]+)/.include \"$1\"/;
     s/\bGET[ \t]*([^ \t\n]+)/.include \"${ my $x=$1; $x =~ s|\.s|-gnu.S|; \$x }\"/;
     s/\bIMPORT\b/.extern/;
-    s/\bEXPORT\b\s*/.global $symprefix/;
+    s/\bEXPORT[ \t]*([^ \t\n]+)/.hidden $symprefix$1\n.global $symprefix$1/;
     s/^(\s+)\[/$1IF/;
     s/^(\s+)\|/$1ELSE/;
     s/^(\s+)\]/$1ENDIF/;
