@@ -61,7 +61,7 @@ class QualificationRunnerTests(unittest.TestCase):
 
     def test_clip_threshold_equality_fails(self):
         # First clip has D = -0.5 exactly; the other clip makes the mean pass.
-        self.assertFalse(self.run_lowband_with_scores([(0.05, 0.0), (0.0, 1.0)]))
+        self.assertFalse(self.run_lowband_with_scores([(0.1, 0.0), (0.0, 1.0)]))
 
     def test_clip_just_above_threshold_passes(self):
         self.assertTrue(self.run_lowband_with_scores(

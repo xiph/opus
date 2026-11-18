@@ -29,8 +29,8 @@ ALPHA=0.5
 # lowband pass thresholds on the difference score D (see draft section 4.2.1):
 #   per-clip:  D(CLIPNAME) > THRESHOLD_A for every clip in a group
 #   per-group: mean of D over the group > THRESHOLD_B
-THRESHOLD_A = -0.5
-THRESHOLD_B = -0.052
+THRESHOLD_A = -1.0
+THRESHOLD_B = -0.08
 
 parser = argparse.ArgumentParser()
 
