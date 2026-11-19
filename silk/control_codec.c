@@ -143,7 +143,7 @@ static opus_int silk_setup_resamplers(
     {
         if( psEnc->sCmn.fs_kHz == 0 ) {
             /* Initialize the resampler for enc_API.c preparing resampling from API_fs_Hz to fs_kHz */
-            ret += silk_resampler_init( &psEnc->sCmn.resampler_state, psEnc->sCmn.API_fs_Hz, fs_kHz * 1000, 1 );
+            ret += silk_resampler_init( &psEnc->sCmn.resampler_state, psEnc->sCmn.API_fs_Hz, fs_kHz * 1000, 1, psEnc->sCmn.arch );
         } else {
             VARDECL( opus_int16, x_buf_API_fs_Hz );
             VARDECL( silk_resampler_state_struct, temp_resampler_state );
@@ -169,7 +169,7 @@ static opus_int silk_setup_resamplers(
 
             /* Initialize resampler for temporary resampling of x_buf data to API_fs_Hz */
             ALLOC( temp_resampler_state, 1, silk_resampler_state_struct );
-            ret += silk_resampler_init( temp_resampler_state, silk_SMULBB( psEnc->sCmn.fs_kHz, 1000 ), psEnc->sCmn.API_fs_Hz, 0 );
+            ret += silk_resampler_init( temp_resampler_state, silk_SMULBB( psEnc->sCmn.fs_kHz, 1000 ), psEnc->sCmn.API_fs_Hz, 0, psEnc->sCmn.arch );
 
             /* Calculate number of samples to temporarily upsample */
             api_buf_samples = buf_length_ms * silk_DIV32_16( psEnc->sCmn.API_fs_Hz, 1000 );
@@ -179,7 +179,7 @@ static opus_int silk_setup_resamplers(
             ret += silk_resampler( temp_resampler_state, x_buf_API_fs_Hz, x_bufFIX, old_buf_samples );
 
             /* Initialize the resampler for enc_API.c preparing resampling from API_fs_Hz to fs_kHz */
-            ret += silk_resampler_init( &psEnc->sCmn.resampler_state, psEnc->sCmn.API_fs_Hz, silk_SMULBB( fs_kHz, 1000 ), 1 );
+            ret += silk_resampler_init( &psEnc->sCmn.resampler_state, psEnc->sCmn.API_fs_Hz, silk_SMULBB( fs_kHz, 1000 ), 1, psEnc->sCmn.arch );
 
             /* Correct resampler state by resampling buffered data from API_fs_Hz to fs_kHz */
             ret += silk_resampler( &psEnc->sCmn.resampler_state, x_bufFIX, x_buf_API_fs_Hz, api_buf_samples );

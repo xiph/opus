@@ -84,7 +84,8 @@ SILK_SOURCES_SSE4_1 = \
 silk/x86/NSQ_sse4_1.c \
 silk/x86/NSQ_del_dec_sse4_1.c \
 silk/x86/VAD_sse4_1.c \
-silk/x86/VQ_WMat_EC_sse4_1.c
+silk/x86/VQ_WMat_EC_sse4_1.c \
+silk/x86/resampler_private_IIR_FIR_sse4_1.c
 
 SILK_SOURCES_AVX2 =  \
 silk/x86/NSQ_del_dec_avx2.c
@@ -96,7 +97,8 @@ SILK_SOURCES_ARM_NEON_INTR = \
 silk/arm/biquad_alt_neon_intr.c \
 silk/arm/LPC_inv_pred_gain_neon_intr.c \
 silk/arm/NSQ_del_dec_neon_intr.c \
-silk/arm/NSQ_neon.c
+silk/arm/NSQ_neon.c \
+silk/arm/resampler_private_IIR_FIR_neon_intr.c
 
 SILK_SOURCES_FIXED = \
 silk/fixed/LTP_analysis_filter_FIX.c \
