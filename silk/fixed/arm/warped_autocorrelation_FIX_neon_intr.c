@@ -199,28 +199,29 @@ void silk_warped_autocorrelation_FIX_neon(
                     stateT++;
                 } while( --n );
             }
-        }
+            /* Calculate corr_QC[orderT] as sum of squared inputs */
+            {
+                const opus_int32 *input_QS_ptr = input_QST + MAX_SHAPE_LPC_ORDER;
+                int64x2_t corr_QC_orderT_s64x2 = vdupq_n_s64( 0 );
 
-        {
-            const opus_int16 *inputT = input;
-            int32x4_t t_s32x4;
-            int64x1_t t_s64x1;
-            int64x2_t t_s64x2 = vdupq_n_s64( 0 );
-            for( n = 0; n <= length - 8; n += 8 ) {
-                int16x8_t input_s16x8 = vld1q_s16( inputT );
-                t_s32x4 = vmull_s16( vget_low_s16( input_s16x8 ), vget_low_s16( input_s16x8 ) );
-                t_s32x4 = vmlal_s16( t_s32x4, vget_high_s16( input_s16x8 ), vget_high_s16( input_s16x8 ) );
-                t_s64x2 = vaddw_s32( t_s64x2, vget_low_s32( t_s32x4 ) );
-                t_s64x2 = vaddw_s32( t_s64x2, vget_high_s32( t_s32x4 ) );
-                inputT += 8;
+                for( n = 0; n <= length - 4; n += 4 ) {
+                    int32x4_t input_QS_s32x4 = vld1q_s32( input_QS_ptr );
+                    int64x2_t t_s64x2_0 = vmull_s32( vget_low_s32( input_QS_s32x4 ), vget_low_s32( input_QS_s32x4 ) );
+                    int64x2_t t_s64x2_1 = vmull_s32( vget_high_s32( input_QS_s32x4 ), vget_high_s32( input_QS_s32x4 ) );
+                    corr_QC_orderT_s64x2 = vsraq_n_s64( corr_QC_orderT_s64x2, t_s64x2_0, 2 * QS - QC );
+                    corr_QC_orderT_s64x2 = vsraq_n_s64( corr_QC_orderT_s64x2, t_s64x2_1, 2 * QS - QC );
+                    input_QS_ptr += 4;
+                }
+
+                int64x1_t sum_s64x1 = vadd_s64( vget_low_s64( corr_QC_orderT_s64x2 ), vget_high_s64( corr_QC_orderT_s64x2 ) );
+                corr_QC_orderT = vget_lane_s64( sum_s64x1, 0 );
+
+                for ( ; n < length; n++ ) {
+                    corr_QC_orderT += silk_RSHIFT64( silk_SMULL( input_QS_ptr[ 0 ], input_QS_ptr[ 0 ] ), 2 * QS - QC );
+                    input_QS_ptr++;
+                }
+                corr_QC[ orderT ] = corr_QC_orderT;
             }
-            t_s64x1 = vadd_s64( vget_low_s64( t_s64x2 ), vget_high_s64( t_s64x2 ) );
-            corr_QC_orderT = vget_lane_s64( t_s64x1, 0 );
-            for( ; n < length; n++ ) {
-                corr_QC_orderT += silk_SMULL( input[ n ], input[ n ] );
-            }
-            corr_QC_orderT = silk_LSHIFT64( corr_QC_orderT, QC );
-            corr_QC[ orderT ] = corr_QC_orderT;
         }
 
         corr_QCT = corr_QC + orderT - order;
