@@ -115,6 +115,28 @@ extern const WeightArray lacelayers_arrays[];
 extern const WeightArray nolacelayers_arrays[];
 extern const WeightArray bbwenetlayers_arrays[];
 
+/* Feature extraction and the first comb filter share the original PCM history.
+   Reconstruct preemphasis into scratch before any in-place filtering. */
+static void lace_comb_input(float *buffer, const opus_int16 *history,
+    const float *input, float preemph, float *preemph_mem, int history_valid)
+{
+    int i;
+    int offset = OSCE_FEATURES_MAX_HISTORY - ADACOMB_MAX_LAG - ADACOMB_MAX_KERNEL_SIZE;
+    celt_assert(offset > 0);
+    for (i = 0; i < ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE; i++)
+    {
+        float current = (float) history[offset + i] * (1.f / 32768.f);
+        float previous = (float) history[offset + i - 1] * (1.f / 32768.f);
+        /* No comb history exists before the model first runs (e.g. late blob loading). */
+        buffer[i] = history_valid ? current - preemph * previous : 0.f;
+    }
+    for (i = 0; i < 320; i++)
+    {
+        buffer[ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE + i] = input[i] - preemph * *preemph_mem;
+        *preemph_mem = input[i];
+    }
+}
+
 /* LACE */
 
 #ifndef DISABLE_LACE
@@ -240,6 +262,7 @@ static void lace_process_20ms_frame(
     LACEState *state,
     float *x_out,
     const float *x_in,
+    const opus_int16 *signal_history,
     const float *features,
     const float *numbits,
     const int *periods,
@@ -248,6 +271,7 @@ static void lace_process_20ms_frame(
 {
     float feature_buffer[4 * LACE_COND_DIM];
     float output_buffer[4 * LACE_FRAME_SIZE];
+    float comb_input[ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE + 320];
     int i_subframe, i_sample;
 
 #ifdef DEBUG_LACE
@@ -271,12 +295,9 @@ static void lace_process_20ms_frame(
     fwrite(periods, sizeof(*periods), 4, f_periods);
 #endif
 
-    /* pre-emphasis */
-    for (i_sample = 0; i_sample < 4 * LACE_FRAME_SIZE; i_sample ++)
-    {
-        output_buffer[i_sample] = x_in[i_sample] - LACE_PREEMPH * state->preemph_mem;
-        state->preemph_mem = x_in[i_sample];
-    }
+    /* Preemphasize shared PCM history and the current frame once. */
+    lace_comb_input(comb_input, signal_history, x_in, LACE_PREEMPH, &state->preemph_mem, state->cf1_state.last_pitch_lag != 0);
+    OPUS_COPY(output_buffer, comb_input + ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE, 320);
 
     /* run feature encoder */
     lace_feature_net(hLACE, state, feature_buffer, features, numbits, periods, arch);
@@ -291,8 +312,10 @@ static void lace_process_20ms_frame(
     {
         adacomb_process_frame(
             &state->cf1_state,
+            comb_input + i_subframe * LACE_FRAME_SIZE,
+            NULL,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
-            output_buffer + i_subframe * LACE_FRAME_SIZE,
+            comb_input + ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE + i_subframe * LACE_FRAME_SIZE,
             feature_buffer + i_subframe * LACE_COND_DIM,
             &hLACE->layers.lace_cf1_kernel,
             &hLACE->layers.lace_cf1_gain,
@@ -319,6 +342,8 @@ static void lace_process_20ms_frame(
     {
         adacomb_process_frame(
             &state->cf2_state,
+            state->cf2_history,
+            state->cf2_history,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             feature_buffer + i_subframe * LACE_COND_DIM,
@@ -346,6 +371,8 @@ static void lace_process_20ms_frame(
     {
         adaconv_process_frame(
             &state->af1_state,
+            state->af1_state_history,
+            state->af1_state_last_kernel,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             output_buffer + i_subframe * LACE_FRAME_SIZE,
             feature_buffer + i_subframe * LACE_COND_DIM,
@@ -511,6 +538,7 @@ static void nolace_process_20ms_frame(
     NoLACEState *state,
     float *x_out,
     const float *x_in,
+    const opus_int16 *signal_history,
     const float *features,
     const float *numbits,
     const int *periods,
@@ -521,6 +549,7 @@ static void nolace_process_20ms_frame(
     float feature_transform_buffer[4 * NOLACE_COND_DIM];
     float x_buffer1[8 * NOLACE_FRAME_SIZE];
     float x_buffer2[8 * NOLACE_FRAME_SIZE];
+    float comb_input[ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE + 320];
     int i_subframe, i_sample;
     NOLACELayers *layers = &hNoLACE->layers;
 
@@ -546,12 +575,9 @@ static void nolace_process_20ms_frame(
     fwrite(periods, sizeof(*periods), 4, f_periods);
 #endif
 
-    /* pre-emphasis */
-    for (i_sample = 0; i_sample < 4 * NOLACE_FRAME_SIZE; i_sample ++)
-    {
-        x_buffer1[i_sample] = x_in[i_sample] - NOLACE_PREEMPH * state->preemph_mem;
-        state->preemph_mem = x_in[i_sample];
-    }
+    /* Preemphasize shared PCM history and the current frame once. */
+    lace_comb_input(comb_input, signal_history, x_in, NOLACE_PREEMPH, &state->preemph_mem, state->cf1_state.last_pitch_lag != 0);
+    OPUS_COPY(x_buffer1, comb_input + ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE, 320);
 
     /* run feature encoder */
     nolace_feature_net(hNoLACE, state, feature_buffer, features, numbits, periods, arch);
@@ -567,8 +593,10 @@ static void nolace_process_20ms_frame(
         /* modifies signal in place */
         adacomb_process_frame(
             &state->cf1_state,
+            comb_input + i_subframe * NOLACE_FRAME_SIZE,
+            NULL,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
-            x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
+            comb_input + ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE + i_subframe * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
             &hNoLACE->layers.nolace_cf1_kernel,
             &hNoLACE->layers.nolace_cf1_gain,
@@ -608,6 +636,8 @@ static void nolace_process_20ms_frame(
         /* modifies signal in place */
         adacomb_process_frame(
             &state->cf2_state,
+            state->cf2_history,
+            state->cf2_history,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -648,6 +678,8 @@ static void nolace_process_20ms_frame(
     {
         adaconv_process_frame(
             &state->af1_state,
+            state->af1_state_history,
+            state->af1_state_last_kernel,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF1_OUT_CHANNELS,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -705,6 +737,8 @@ static void nolace_process_20ms_frame(
 
         adaconv_process_frame(
             &state->af2_state,
+            state->af2_state_history,
+            state->af2_state_last_kernel,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF2_OUT_CHANNELS,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF2_IN_CHANNELS,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -762,6 +796,8 @@ static void nolace_process_20ms_frame(
 
         adaconv_process_frame(
             &state->af3_state,
+            state->af3_state_history,
+            state->af3_state_last_kernel,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF3_OUT_CHANNELS,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF3_IN_CHANNELS,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -815,6 +851,8 @@ static void nolace_process_20ms_frame(
 
         adaconv_process_frame(
             &state->af4_state,
+            state->af4_state_history,
+            state->af4_state_last_kernel,
             x_buffer1 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF4_OUT_CHANNELS,
             x_buffer2 + i_subframe * NOLACE_FRAME_SIZE * NOLACE_AF4_IN_CHANNELS,
             feature_buffer + i_subframe * NOLACE_COND_DIM,
@@ -1157,6 +1195,8 @@ static void bbwenet_process_frames(
     {
         adaconv_process_frame(
             &state->af1_state,
+            state->af1_state_history,
+            state->af1_state_last_kernel,
             x_buffer1 + i_subframe * BBWENET_AF1_FRAME_SIZE * BBWENET_AF1_OUT_CHANNELS,
             x_in + i_subframe * BBWENET_AF1_FRAME_SIZE,
             latent_features + i_subframe * BBWENET_COND_DIM,
@@ -1241,6 +1281,8 @@ static void bbwenet_process_frames(
     {
         adaconv_process_frame(
             &state->af2_state,
+            state->af2_state_history,
+            state->af2_state_last_kernel,
             x_buffer1 + i_subframe * BBWENET_AF2_FRAME_SIZE * BBWENET_AF2_OUT_CHANNELS,
             x_buffer2 + i_subframe * BBWENET_AF2_FRAME_SIZE * BBWENET_AF1_OUT_CHANNELS,
             latent_features + i_subframe * BBWENET_COND_DIM,
@@ -1323,6 +1365,8 @@ static void bbwenet_process_frames(
     {
         adaconv_process_frame(
             &state->af3_state,
+            state->af3_state_history,
+            state->af3_state_last_kernel,
             x_out + i_subframe * BBWENET_AF3_FRAME_SIZE,
             x_buffer2 + i_subframe * BBWENET_TDSHAPE2_FRAME_SIZE * BBWENET_AF2_OUT_CHANNELS,
             latent_features + i_subframe * BBWENET_COND_DIM,
@@ -1586,12 +1630,12 @@ void osce_enhance_frame(
             break;
 #ifndef DISABLE_LACE
         case OSCE_METHOD_LACE:
-            lace_process_20ms_frame(&model->lace, &psDec->osce.state.lace, out_buffer, in_buffer, features, numbits, periods, arch);
+            lace_process_20ms_frame(&model->lace, &psDec->osce.state.lace, out_buffer, in_buffer, psDec->osce.features.signal_history, features, numbits, periods, arch);
             break;
 #endif
 #ifndef DISABLE_NOLACE
         case OSCE_METHOD_NOLACE:
-            nolace_process_20ms_frame(&model->nolace, &psDec->osce.state.nolace, out_buffer, in_buffer, features, numbits, periods, arch);
+            nolace_process_20ms_frame(&model->nolace, &psDec->osce.state.nolace, out_buffer, in_buffer, psDec->osce.features.signal_history, features, numbits, periods, arch);
             break;
 #endif
         default:
@@ -1657,6 +1701,11 @@ void osce_enhance_frame(
 
     fwrite(xq, psDec->nb_subfr * psDec->subfr_length, sizeof(xq[0]), fnoisy16k);
 #endif
+
+    /* Keep original PCM, not enhanced output, for features and comb 1. */
+    memmove(psDec->osce.features.signal_history, psDec->osce.features.signal_history + 320,
+        (OSCE_FEATURES_MAX_HISTORY - 320) * sizeof(opus_int16));
+    OPUS_COPY(psDec->osce.features.signal_history + OSCE_FEATURES_MAX_HISTORY - 320, xq, 320);
 
     if (psDec->osce.features.reset > 1)
     {

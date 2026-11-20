@@ -41,6 +41,8 @@ void adaconv_compare(
     float x_out_ref[512];
     float x_out[512];
     float window[40];
+    float history[ADACONV_MAX_KERNEL_SIZE * ADACONV_MAX_INPUT_CHANNELS] = {0};
+    float last_kernel[ADACONV_MAX_KERNEL_SIZE * ADACONV_MAX_INPUT_CHANNELS * ADACONV_MAX_OUTPUT_CHANNELS] = {0};
 
     init_adaconv_state(hAdaConv);
     compute_overlap_window(window, 40);
@@ -97,7 +99,7 @@ void adaconv_compare(
             exit(1);
         }
 
-        adaconv_process_frame(hAdaConv, x_out, x_in, features, kernel_layer, gain_layer, feature_dim,
+        adaconv_process_frame(hAdaConv, history, last_kernel, x_out, x_in, features, kernel_layer, gain_layer, feature_dim,
             frame_size, overlap_size, in_channels, out_channels, kernel_size, left_padding,
             filter_gain_a, filter_gain_b, shape_gain, window, 0);
 
@@ -143,6 +145,7 @@ void adacomb_compare(
     float x_out[512];
     int pitch_lag;
     float window[40];
+    float history[ADACOMB_MAX_KERNEL_SIZE + ADACOMB_MAX_LAG] = {0};
 
     init_adacomb_state(hAdaComb);
     compute_overlap_window(window, 40);
@@ -215,7 +218,7 @@ void adacomb_compare(
             exit(1);
         }
 
-        adacomb_process_frame(hAdaComb, x_out, x_in, features, kernel_layer, gain_layer, global_gain_layer,
+        adacomb_process_frame(hAdaComb, history, history, x_out, x_in, features, kernel_layer, gain_layer, global_gain_layer,
             pitch_lag, feature_dim, frame_size, overlap_size, kernel_size, left_padding, filter_gain_a, filter_gain_b, log_gain_limit, window, 0);
 
 

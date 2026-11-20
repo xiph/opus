@@ -132,6 +132,8 @@ static void transform_gains(
 
 void adaconv_process_frame(
     AdaConvState* hAdaConv,
+    float *history,
+    float *last_kernel,
     float *x_out,
     const float *x_in,
     const float *features,
@@ -162,6 +164,7 @@ void adaconv_process_frame(
     float *p_input;
     int i_in_channels, i_out_channels, i_sample;
 
+    (void) hAdaConv; /* Convolution buffers are supplied separately. */
     (void) feature_dim; /* ToDo: figure out whether we might need this information */
 
     celt_assert(shape_gain == 1);
@@ -179,7 +182,7 @@ void adaconv_process_frame(
     /* prepare input */
     for (i_in_channels=0; i_in_channels < in_channels; i_in_channels ++)
     {
-        OPUS_COPY(input_buffer + i_in_channels * (kernel_size + frame_size), hAdaConv->history + i_in_channels * kernel_size, kernel_size);
+        OPUS_COPY(input_buffer + i_in_channels * (kernel_size + frame_size), history + i_in_channels * kernel_size, kernel_size);
         OPUS_COPY(input_buffer + kernel_size + i_in_channels * (kernel_size + frame_size), x_in + frame_size * i_in_channels, frame_size);
     }
     p_input = input_buffer + kernel_size;
@@ -210,7 +213,7 @@ void adaconv_process_frame(
             OPUS_CLEAR(kernel0, ADACONV_MAX_KERNEL_SIZE);
             OPUS_CLEAR(kernel1, ADACONV_MAX_KERNEL_SIZE);
 
-            OPUS_COPY(kernel0, hAdaConv->last_kernel + KERNEL_INDEX(i_out_channels, i_in_channels, 0), kernel_size);
+            OPUS_COPY(kernel0, last_kernel + KERNEL_INDEX(i_out_channels, i_in_channels, 0), kernel_size);
             OPUS_COPY(kernel1, kernel_buffer + KERNEL_INDEX(i_out_channels, i_in_channels, 0), kernel_size);
             celt_pitch_xcorr(kernel0, p_input + i_in_channels * (frame_size + kernel_size) - left_padding, channel_buffer0, ADACONV_MAX_KERNEL_SIZE, overlap_size, arch);
             celt_pitch_xcorr(kernel1, p_input + i_in_channels * (frame_size + kernel_size) - left_padding, channel_buffer1, ADACONV_MAX_KERNEL_SIZE, frame_size, arch);
@@ -235,13 +238,15 @@ void adaconv_process_frame(
     /* buffer update */
     for (i_in_channels=0; i_in_channels < in_channels; i_in_channels ++)
     {
-        OPUS_COPY(hAdaConv->history + i_in_channels * kernel_size, p_input + i_in_channels * (frame_size + kernel_size) + frame_size - kernel_size, kernel_size);
+        OPUS_COPY(history + i_in_channels * kernel_size, p_input + i_in_channels * (frame_size + kernel_size) + frame_size - kernel_size, kernel_size);
     }
-    OPUS_COPY(hAdaConv->last_kernel, kernel_buffer, kernel_size * in_channels * out_channels);
+    OPUS_COPY(last_kernel, kernel_buffer, kernel_size * in_channels * out_channels);
 }
 
 void adacomb_process_frame(
     AdaCombState* hAdaComb,
+    const float *history,
+    float *history_out,
     float *x_out,
     const float *x_in,
     const float *features,
@@ -277,7 +282,7 @@ void adacomb_process_frame(
     OPUS_CLEAR(kernel_buffer, ADACOMB_MAX_KERNEL_SIZE);
     OPUS_CLEAR(input_buffer, ADACOMB_MAX_FRAME_SIZE + ADACOMB_MAX_LAG + ADACOMB_MAX_KERNEL_SIZE);
 
-    OPUS_COPY(input_buffer, hAdaComb->history, kernel_size + ADACOMB_MAX_LAG);
+    OPUS_COPY(input_buffer, history, kernel_size + ADACOMB_MAX_LAG);
     OPUS_COPY(input_buffer + kernel_size + ADACOMB_MAX_LAG, x_in, frame_size);
     p_input = input_buffer + kernel_size + ADACOMB_MAX_LAG;
 
@@ -330,7 +335,8 @@ void adacomb_process_frame(
 
     /* buffer update */
     OPUS_COPY(hAdaComb->last_kernel, kernel_buffer, kernel_size);
-    OPUS_COPY(hAdaComb->history, p_input + frame_size - kernel_size - ADACOMB_MAX_LAG, kernel_size + ADACOMB_MAX_LAG);
+    if (history_out != NULL)
+        OPUS_COPY(history_out, p_input + frame_size - kernel_size - ADACOMB_MAX_LAG, kernel_size + ADACOMB_MAX_LAG);
     hAdaComb->last_pitch_lag = pitch_lag;
     hAdaComb->last_global_gain = global_gain;
 }

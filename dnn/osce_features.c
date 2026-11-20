@@ -404,7 +404,8 @@ void osce_calculate_features(
     {
         buffer[OSCE_FEATURES_MAX_HISTORY + n] = (float) xq[n] / (1U<<15);
     }
-    OPUS_COPY(buffer, psFeatures->signal_history, OSCE_FEATURES_MAX_HISTORY);
+    for (n = 0; n < OSCE_FEATURES_MAX_HISTORY; n++)
+        buffer[n] = (float) psFeatures->signal_history[n] / (1U << 15);
 
     for (k = 0; k < num_subframes; k++)
     {
@@ -453,8 +454,7 @@ void osce_calculate_features(
 #endif
     }
 
-    /* buffer update */
-    OPUS_COPY(psFeatures->signal_history, &buffer[num_samples], OSCE_FEATURES_MAX_HISTORY);
+    /* The caller updates PCM history after enhancement, so comb 1 can share it. */
 }
 
 

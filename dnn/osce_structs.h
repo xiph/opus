@@ -50,7 +50,7 @@ typedef struct {
     int                 pitch_hangover_count;
     int                 last_lag;
     int                 last_type;
-    float               signal_history[OSCE_FEATURES_MAX_HISTORY];
+    opus_int16          signal_history[OSCE_FEATURES_MAX_HISTORY];
     int                 reset;
 } OSCEFeatureState;
 
@@ -71,9 +71,9 @@ typedef struct {
     float feature_net_conv2_state[BBWENET_FNET_CONV2_STATE_SIZE];
     float feature_net_gru_state[BBWENET_FNET_GRU_STATE_SIZE];
     opus_int16 outbut_buffer[OSCE_BWE_OUTPUT_DELAY];
-    AdaConvState af1_state;
-    AdaConvState af2_state;
-    AdaConvState af3_state;
+    ADACONV_STATE(af1_state, BBWENET_AF1);
+    ADACONV_STATE(af2_state, BBWENET_AF2);
+    ADACONV_STATE(af3_state, BBWENET_AF3);
     AdaShapeState tdshape1_state;
     AdaShapeState tdshape2_state;
     resamp_state resampler_state[3];
@@ -95,7 +95,8 @@ typedef struct {
     float feature_net_gru_state[LACE_COND_DIM];
     AdaCombState cf1_state;
     AdaCombState cf2_state;
-    AdaConvState af1_state;
+    float cf2_history[ADACOMB_MAX_KERNEL_SIZE + ADACOMB_MAX_LAG];
+    ADACONV_STATE(af1_state, LACE_AF1);
     float preemph_mem;
     float deemph_mem;
 } LACEState;
@@ -121,10 +122,11 @@ typedef struct {
     float post_af3_state[NOLACE_COND_DIM];
     AdaCombState cf1_state;
     AdaCombState cf2_state;
-    AdaConvState af1_state;
-    AdaConvState af2_state;
-    AdaConvState af3_state;
-    AdaConvState af4_state;
+    float cf2_history[ADACOMB_MAX_KERNEL_SIZE + ADACOMB_MAX_LAG];
+    ADACONV_STATE(af1_state, NOLACE_AF1);
+    ADACONV_STATE(af2_state, NOLACE_AF2);
+    ADACONV_STATE(af3_state, NOLACE_AF3);
+    ADACONV_STATE(af4_state, NOLACE_AF4);
     AdaShapeState tdshape1_state;
     AdaShapeState tdshape2_state;
     AdaShapeState tdshape3_state;

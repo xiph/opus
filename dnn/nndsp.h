@@ -55,15 +55,18 @@
 
 void print_float_vector(const char* name, const float *vec, int length);
 
+/* Each model reserves only the convolution buffers its layers need. */
+#define ADACONV_STATE(name, layer) \
+    AdaConvState name; \
+    float name ## _history[layer ## _KERNEL_SIZE * layer ## _IN_CHANNELS]; \
+    float name ## _last_kernel[layer ## _KERNEL_SIZE * layer ## _IN_CHANNELS * layer ## _OUT_CHANNELS]
+
 typedef struct {
-    float history[ADACONV_MAX_KERNEL_SIZE * ADACONV_MAX_INPUT_CHANNELS];
-    float last_kernel[ADACONV_MAX_KERNEL_SIZE * ADACONV_MAX_INPUT_CHANNELS * ADACONV_MAX_OUTPUT_CHANNELS];
     float last_gain;
 } AdaConvState;
 
 
 typedef struct {
-    float history[ADACOMB_MAX_KERNEL_SIZE + ADACOMB_MAX_LAG];
     float last_kernel[ADACOMB_MAX_KERNEL_SIZE];
     float last_global_gain;
     int last_pitch_lag;
@@ -87,6 +90,8 @@ void compute_overlap_window(float *window, int overlap_size);
 
 void adaconv_process_frame(
     AdaConvState* hAdaConv,
+    float *history,
+    float *last_kernel,
     float *x_out,
     const float *x_in,
     const float *features,
@@ -108,6 +113,8 @@ void adaconv_process_frame(
 
 void adacomb_process_frame(
     AdaCombState* hAdaComb,
+    const float *history,
+    float *history_out,
     float *x_out,
     const float *x_in,
     const float *features,
