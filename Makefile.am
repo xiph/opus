@@ -313,8 +313,14 @@ endif
 endif
 
 if EXTRA_PROGRAMS
+if ENABLE_DNN
+noinst_PROGRAMS += dump_weights_blob
+dump_weights_blob_SOURCES = dnn/write_lpcnet_weights.c
+dump_weights_blob_LDADD = $(LIBM)
+dump_weights_blob_CFLAGS = $(AM_CFLAGS) -DDUMP_BINARY_WEIGHTS
+endif
 if ENABLE_DEEP_PLC
-noinst_PROGRAMS += fargan_demo dump_data dump_weights_blob dred_compare
+noinst_PROGRAMS += fargan_demo dump_data dred_compare
 fargan_demo_SOURCES = dnn/fargan_demo.c
 fargan_demo_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 
@@ -324,9 +330,6 @@ dred_compare_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 dump_data_SOURCES = dnn/dump_data.c
 dump_data_LDADD = $(LPCNET_OBJ) $(CELT_OBJ) $(LIBM)
 
-dump_weights_blob_SOURCES = dnn/write_lpcnet_weights.c
-dump_weights_blob_LDADD = $(LIBM)
-dump_weights_blob_CFLAGS = $(AM_CFLAGS) -DDUMP_BINARY_WEIGHTS
 endif
 if ENABLE_DRED
 TESTS += tests/test_opus_dred

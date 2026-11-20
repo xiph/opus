@@ -41,14 +41,27 @@
 #ifdef USE_WEIGHTS_FILE
 #undef USE_WEIGHTS_FILE
 #endif
+#ifdef ENABLE_DEEP_PLC
 #include "pitchdnn_data.c"
 #include "fargan_data.c"
 #include "plc_data.c"
+#endif
+#ifdef ENABLE_DRED
 #include "dred_rdovae_enc_data.c"
 #include "dred_rdovae_dec_data.c"
+#endif
 #ifdef ENABLE_OSCE
+#ifndef DISABLE_LACE
 #include "lace_data.c"
+#endif
+#ifndef DISABLE_NOLACE
 #include "nolace_data.c"
+#endif
+#ifdef ENABLE_OSCE_BWE
+#ifndef DISABLE_BBWENET
+#include "bbwenet_data.c"
+#endif
+#endif
 #endif
 
 void write_weights(const WeightArray *list, FILE *fout)
@@ -79,17 +92,26 @@ void write_weights(const WeightArray *list, FILE *fout)
 int main(void)
 {
   FILE *fout = fopen("weights_blob.bin", "wb");
+#ifdef ENABLE_DEEP_PLC
   write_weights(pitchdnn_arrays, fout);
   write_weights(fargan_arrays, fout);
   write_weights(plcmodel_arrays, fout);
+#endif
+#ifdef ENABLE_DRED
   write_weights(rdovaeenc_arrays, fout);
   write_weights(rdovaedec_arrays, fout);
+#endif
 #ifdef ENABLE_OSCE
 #ifndef DISABLE_LACE
   write_weights(lacelayers_arrays, fout);
 #endif
 #ifndef DISABLE_NOLACE
   write_weights(nolacelayers_arrays, fout);
+#endif
+#ifdef ENABLE_OSCE_BWE
+#ifndef DISABLE_BBWENET
+  write_weights(bbwenetlayers_arrays, fout);
+#endif
 #endif
 #endif
   fclose(fout);
