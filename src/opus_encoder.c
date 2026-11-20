@@ -3289,6 +3289,10 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            st->mode = MODE_HYBRID;
            st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
            st->variable_HP_smth2_Q15 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
+           st->voice_ratio = -1;
+           st->silk_mode.LBRR_coded = 0;
+           st->silk_mode.allowBandwidthSwitch = 0;
+           st->silk_mode.inWBmodeWithoutVariableLP = 0;
         }
         break;
         case OPUS_SET_FORCE_MODE_REQUEST:
