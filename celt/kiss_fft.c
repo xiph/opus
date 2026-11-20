@@ -40,6 +40,9 @@
 #include "os_support.h"
 #include "mathops.h"
 #include "stack_alloc.h"
+#if defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(FIXED_POINT)
+#include "x86/kiss_fft_avx2.h"
+#endif
 
 #if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API)
 #define OPUS_CUSTOM 1
@@ -585,7 +588,7 @@ static void fft_downshift(kiss_fft_cpx *x, int N, int *total, int step) {
 #define fft_downshift(x, N, total, step)
 #endif
 
-void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int downshift))
+void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int downshift), int arch)
 {
     int m2, m;
     int p;
@@ -593,6 +596,7 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int dow
     int fstride[MAXFACTORS];
     int i;
     int shift;
+    (void)arch;
 
     /* st->shift can be -1 */
     shift = st->shift>0 ? st->shift : 0;
@@ -612,6 +616,11 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int dow
           m2 = st->factors[2*i-1];
        else
           m2 = 1;
+#ifdef KISS_FFT_HAVE_AVX2
+       /* Float only, so there is no fft_downshift() to skip. */
+       if (!OPUS_X86_USE_AVX2(arch) || !kf_bfly_avx2(fout, st->factors[2*i],
+             fstride[i]<<shift, st, m, fstride[i], m2))
+#endif
        switch (st->factors[2*i])
        {
        case 2:
@@ -640,9 +649,10 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int dow
 #endif /* !ENABLE_PFA || OPUS_CUSTOM || ENABLE_DEEP_PLC */
 #endif
 
-void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int arch)
 {
 #if defined(ENABLE_PFA)
+   (void)arch;
    if (st->nfft == 60 || st->nfft == 120 || st->nfft == 240 || st->nfft == 480
 #if defined(ENABLE_QEXT)
        || st->nfft == 960
@@ -690,14 +700,15 @@ void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *f
       fout[st->bitrev[i]].r = S_MUL2(x.r, scale);
       fout[st->bitrev[i]].i = S_MUL2(x.i, scale);
    }
-   opus_fft_impl(st, fout ARG_FIXED(scale_shift));
+   opus_fft_impl(st, fout ARG_FIXED(scale_shift), arch);
 #endif
 }
 
 
-void opus_ifft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void opus_ifft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int arch)
 {
 #if defined(ENABLE_PFA)
+   (void)arch;
    if (st->nfft == 60 || st->nfft == 120 || st->nfft == 240 || st->nfft == 480
 #if defined(ENABLE_QEXT)
        || st->nfft == 960
@@ -720,7 +731,7 @@ void opus_ifft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *
       fout[st->bitrev[i]] = fin[i];
    for (i=0;i<st->nfft;i++)
       fout[i].i = -fout[i].i;
-   opus_fft_impl(st, fout ARG_FIXED(0));
+   opus_fft_impl(st, fout ARG_FIXED(0), arch);
    for (i=0;i<st->nfft;i++)
       fout[i].i = -fout[i].i;
 #endif

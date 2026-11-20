@@ -109,4 +109,20 @@ static inline __m128i WORKAROUND_mm_loadu_si32(void const* mem_addr) {
 
 # endif
 
+/* Value returned by opus_select_arch() when AVX2 and FMA are available
+   (the RTCD tables are indexed C, SSE, SSE2, SSE4.1, AVX2). */
+# define OPUS_ARCH_X86_AVX2 (4)
+
+/* For AVX2 kernels that only replace a loop inside a C function, where a
+   separate RTCD table would be overkill: evaluates to non-zero when the
+   AVX2 code may be used for the given arch. */
+# if defined(OPUS_X86_PRESUME_AVX2)
+#  define OPUS_X86_USE_AVX2(arch) ((void)(arch), 1)
+# elif defined(OPUS_X86_MAY_HAVE_AVX2)
+#  include "cpu_support.h"
+#  define OPUS_X86_USE_AVX2(arch) (((arch)&OPUS_ARCHMASK) >= OPUS_ARCH_X86_AVX2)
+# else
+#  define OPUS_X86_USE_AVX2(arch) ((void)(arch), 0)
+# endif
+
 #endif

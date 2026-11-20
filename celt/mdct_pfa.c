@@ -486,7 +486,8 @@ static void opus_pfa_impl(const kiss_fft_state *st, const kiss_fft_cpx *fin, kis
          for (i = 0; i < nfft; i++)
             fout[i].i = -fout[i].i;
       }
-      opus_fft_impl(st, fout ARG_FIXED(shift));
+      /* No arch here: the PFA builds don't use SIMD in opus_fft_impl(). */
+      opus_fft_impl(st, fout ARG_FIXED(shift), 0);
       if (is_inverse) {
          for (i = 0; i < nfft; i++)
             fout[i].i = -fout[i].i;

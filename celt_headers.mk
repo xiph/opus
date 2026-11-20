@@ -48,6 +48,8 @@ celt/mips/fixed_generic_mipsr1.h \
 celt/mips/kiss_fft_mipsr1.h \
 celt/mips/mdct_mipsr1.h \
 celt/mips/pitch_mipsr1.h \
+celt/x86/float_avx2.h \
+celt/x86/kiss_fft_avx2.h \
 celt/x86/pitch_sse.h \
 celt/x86/vq_sse.h \
 celt/x86/x86_arch_macros.h \

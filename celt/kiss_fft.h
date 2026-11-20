@@ -148,10 +148,10 @@ kiss_fft_state *opus_fft_alloc(int nfft,void * mem,size_t * lenmem, int arch);
  * Note that each element is complex and can be accessed like
     f[k].r and f[k].i
  * */
-void opus_fft_c(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
-void opus_ifft_c(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
+void opus_fft_c(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int arch);
+void opus_ifft_c(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int arch);
 
-void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int downshift));
+void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int downshift), int arch);
 void opus_ifft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout);
 
 void opus_fft_free(const kiss_fft_state *cfg, int arch);
@@ -169,10 +169,10 @@ int opus_fft_alloc_arch_c(kiss_fft_state *st);
          ((void)(arch), opus_fft_free_arch_c(_st))
 
 #define opus_fft(_cfg, _fin, _fout, arch) \
-         ((void)(arch), opus_fft_c(_cfg, _fin, _fout))
+         opus_fft_c(_cfg, _fin, _fout, arch)
 
 #define opus_ifft(_cfg, _fin, _fout, arch) \
-         ((void)(arch), opus_ifft_c(_cfg, _fin, _fout))
+         opus_ifft_c(_cfg, _fin, _fout, arch)
 
 #endif /* end if !defined(OVERRIDE_OPUS_FFT) */
 
