@@ -1,6 +1,7 @@
 /* Copyright (c) 2007-2008 CSIRO
    Copyright (c) 2007-2009 Xiph.Org Foundation
    Copyright (c) 2007-2009 Timothy B. Terriberry
+   Copyright (c) 2026 Advanced Micro Devices, Inc.
    Written by Timothy B. Terriberry and Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -441,19 +442,31 @@ void get_required_bits(opus_int16 *_bits,int _n,int _maxk,int _frac){
 }
 #endif
 
+/* Branchless sign/magnitude evaluation of the PVQ codeword index.  The
+   per-coefficient sign-comparison branch in the pulse-index loop is
+   replaced with a sign-mask arithmetic sequence: i>>31 gives the sign
+   mask, (v+mask)^mask is abs(v), and the conditional CELT_PVQ_U() term is
+   masked instead of branched.  The computed index is identical to the
+   reference, so the encoded bitstream is unchanged. */
 static opus_uint32 icwrs(int _n,const int *_y){
   opus_uint32 i;
   int         j;
   int         k;
+  int         yj;
+  int         mask;
   celt_assert(_n>=2);
   j=_n-1;
-  i=_y[j]<0;
-  k=abs(_y[j]);
+  yj=_y[j];
+  i=(opus_uint32)(yj>>31)&1u;
+  mask=yj>>31;
+  k=(yj+mask)^mask;
   do{
     j--;
+    yj=_y[j];
     i+=CELT_PVQ_U(_n-j,k);
-    k+=abs(_y[j]);
-    if(_y[j]<0)i+=CELT_PVQ_U(_n-j,k+1);
+    mask=yj>>31;
+    k+=(yj+mask)^mask;
+    i+=CELT_PVQ_U(_n-j,k+1)&(opus_uint32)mask;
   }
   while(j>0);
   return i;
