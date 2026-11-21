@@ -54,5 +54,7 @@ void osce_bwe_calculate_features(
 #endif
 
 void osce_cross_fade_10ms(float *x_enhanced, float *x_in, int length);
+#ifdef ENABLE_OSCE_BWE
 void osce_bwe_cross_fade_10ms(opus_int16 *x_fadein, opus_int16* x_fadeout, int length);
+#endif
 #endif

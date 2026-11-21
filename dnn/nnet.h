@@ -31,6 +31,14 @@
 #include <stddef.h>
 #include "opus_types.h"
 
+#if defined(ENABLE_OSCE) && defined(ENABLE_TINYLACE) \
+    && defined(DISABLE_LACE) && defined(DISABLE_NOLACE) && defined(DISABLE_BBWENET) \
+    && !defined(ENABLE_DEEP_PLC) && !defined(ENABLE_DRED) \
+    && !defined(ENABLE_OSCE_BWE) && !defined(ENABLE_LOSSGEN)
+#define OPUS_TINYLACE_ONLY
+#define DISABLE_CONV2D
+#endif
+
 #define ACTIVATION_LINEAR  0
 #define ACTIVATION_SIGMOID 1
 #define ACTIVATION_TANH    2
@@ -89,8 +97,12 @@ typedef struct {
 void compute_generic_dense(const LinearLayer *layer, float *output, const float *input, int activation, int arch);
 void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *recurrent_weights, float *state, const float *in, int arch);
 void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int activation, int arch);
+#ifndef OPUS_TINYLACE_ONLY
 void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int dilation, int activation, int arch);
+#endif
+#ifndef OPUS_TINYLACE_ONLY
 void compute_glu(const LinearLayer *layer, float *output, const float *input, int arch);
+#endif
 void compute_gated_activation(const LinearLayer *layer, float *output, const float *input, int activation, int arch);
 
 
@@ -120,6 +132,7 @@ int linear_init(LinearLayer *layer, const WeightArray *arrays,
   int nb_inputs,
   int nb_outputs);
 
+#ifndef DISABLE_CONV2D
 int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
   const char *bias,
   const char *float_weights,
@@ -127,6 +140,7 @@ int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
   int out_channels,
   int ktime,
   int kheight);
+#endif
 
 
 void compute_linear_c(const LinearLayer *linear, float *out, const float *in);
@@ -154,7 +168,7 @@ void compute_conv2d_c(const Conv2dLayer *conv, float *out, float *mem, const flo
 #define compute_conv2d(conv, out, mem, in, height, hstride, activation, arch) ((void)(arch),compute_conv2d_c(conv, out, mem, in, height, hstride, activation))
 #endif
 
-#if defined(__x86_64__) && !defined(OPUS_X86_MAY_HAVE_SSE4_1) && !defined(OPUS_X86_MAY_HAVE_AVX2) &&!defined(SUPPRESS_PERF_WARNINGS)
+#if defined(__x86_64__) && !defined(OPUS_X86_MAY_HAVE_SSE4_1) && !defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(SUPPRESS_PERF_WARNINGS) && !defined(OPUS_TINYLACE_ONLY)
 #if defined(_MSC_VER)
 #pragma message ("Only SSE and SSE2 are available. On newer machines, enable SSSE3/AVX/AVX2 to get better performance")
 #else

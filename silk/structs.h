@@ -245,7 +245,9 @@ typedef struct {
     OSCEState state;
     int method;
 } silk_OSCE_struct;
+#endif
 
+#ifdef ENABLE_OSCE_BWE
 typedef struct {
     OSCEBWEFeatureState features;
     OSCEBWEState state;

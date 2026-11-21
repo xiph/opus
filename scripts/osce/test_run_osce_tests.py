@@ -60,12 +60,13 @@ class QualificationRunnerTests(unittest.TestCase):
                                        ref_dec_options=[], osce_compare_bin='osce_compare')[0]
 
     def test_clip_threshold_equality_fails(self):
-        # First clip has D = -0.5 exactly; the other clip makes the mean pass.
-        self.assertFalse(self.run_lowband_with_scores([(0.1, 0.0), (0.0, 1.0)]))
+        # First clip is exactly at THRESHOLD_A; the other makes the mean pass.
+        score = -runner.THRESHOLD_A * 0.1
+        self.assertFalse(self.run_lowband_with_scores([(score, 0.0), (0.0, 1.0)]))
 
     def test_clip_just_above_threshold_passes(self):
         self.assertTrue(self.run_lowband_with_scores(
-            [(math.nextafter(0.05, 0.0), 0.0), (0.0, 1.0)]))
+            [(math.nextafter(-runner.THRESHOLD_A * 0.1, 0.0), 0.0), (0.0, 1.0)]))
 
     def test_group_threshold_equality_fails(self):
         score = -runner.THRESHOLD_B * 0.1
@@ -75,6 +76,18 @@ class QualificationRunnerTests(unittest.TestCase):
     def test_group_just_above_threshold_passes(self):
         score = math.nextafter(-runner.THRESHOLD_B * 0.1, 0.0)
         self.assertTrue(self.run_lowband_with_scores([(score, 0.0)]))
+
+    def test_reference_default_disables_enhancement(self):
+        args = runner.parser.parse_args(['vectors', 'results', '--osce_compare', 'compare'])
+        self.assertEqual(args.reference_opus_demo_options, '-dec_complexity 0')
+        self.assertEqual(runner.unenhanced_reference_options([]), ['-dec_complexity', '0'])
+
+    def test_reference_rejects_enhancement(self):
+        for options in [['-dec_complexity', '1'], ['-dec_complexity', '5'],
+                        ['-dec_complexity', '0', '-dec_complexity', '7'],
+                        ['-enable_osce_bwe']]:
+            with self.subTest(options=options), self.assertRaises(SystemExit):
+                runner.unenhanced_reference_options(options)
 
     def test_empty_test_group_fails(self):
         with tempfile.TemporaryDirectory() as directory:

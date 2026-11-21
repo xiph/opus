@@ -1,4 +1,7 @@
-dnn_sources = sources['DEEP_PLC_SOURCES']
+dnn_sources = sources['DNN_SOURCES']
+if deep_plc_enabled
+  dnn_sources += sources['DEEP_PLC_SOURCES']
+endif
 
 dred_sources = sources['DRED_SOURCES']
 if opt_dred.enabled()
@@ -6,8 +9,14 @@ if opt_dred.enabled()
 endif
 
 osce_sources = sources['OSCE_SOURCES']
-if opt_osce.enabled()
+if osce_enabled
   dnn_sources += osce_sources
+endif
+if tinylace_enabled
+  dnn_sources += sources['TINYLACE_SOURCES']
+endif
+if opt_osce.enabled()
+  dnn_sources += sources['OSCE_FULL_SOURCES']
 endif
 
 dnn_sources_sse2 = sources['DNN_SOURCES_SSE2']
@@ -51,7 +60,7 @@ if host_machine.system() == 'windows'
 endif
 
 
-if opt_deep_plc.enabled()
+if dnn_enabled
  dnn_lib = static_library('opus-dnn',
   dnn_sources,
   c_args: dnn_c_args,

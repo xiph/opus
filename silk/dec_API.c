@@ -116,7 +116,7 @@ opus_int silk_InitDecoder(                              /* O    Returns error co
 #ifdef ENABLE_OSCE
     ((silk_decoder *)decState)->osce_model.loaded = 0;
 #endif
-#ifndef USE_WEIGHTS_FILE
+#if !defined(USE_WEIGHTS_FILE) || (defined(ENABLE_OSCE) && defined(ENABLE_TINYLACE))
     /* load osce models */
     silk_LoadOSCEModels(decState, NULL, 0);
 #endif
@@ -346,6 +346,9 @@ opus_int silk_Decode(                                   /* O    Returns error co
         if( n == 0 || has_side ) {
             opus_int FrameIndex;
             opus_int condCoding;
+#ifdef ENABLE_OSCE
+            int osce_method;
+#endif
 
             FrameIndex = channel_state[ 0 ].nFramesDecoded - n;
             /* Use independent coding if no previous frame available */
@@ -361,8 +364,13 @@ opus_int silk_Decode(                                   /* O    Returns error co
                 condCoding = CODE_CONDITIONALLY;
             }
 #ifdef ENABLE_OSCE
-            if ( channel_state[n].osce.method != decControl->osce_method ) {
-                osce_reset( &channel_state[n].osce, decControl->osce_method );
+            osce_method = decControl->osce_method;
+#ifdef ENABLE_TINYLACE
+            if (!psDec->osce_model.loaded && psDec->osce_model.tinylace_loaded && osce_method != OSCE_METHOD_NONE)
+                osce_method = OSCE_METHOD_TINYLACE;
+#endif
+            if ( channel_state[n].osce.method != osce_method ) {
+                osce_reset( &channel_state[n].osce, osce_method );
             }
 #endif
             ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding,

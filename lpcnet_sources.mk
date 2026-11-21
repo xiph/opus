@@ -2,11 +2,11 @@ DNN_SOURCES = \
 dnn/nnet.c \
 dnn/nnet_default.c \
 dnn/parse_lpcnet_weights.c \
-dnn/burg.c \
 dnn/freq.c \
 dnn/lpcnet_tables.c
 
 DEEP_PLC_SOURCES = \
+dnn/burg.c \
 dnn/fargan.c \
 dnn/fargan_data.c \
 dnn/lpcnet_enc.c \
@@ -28,7 +28,11 @@ dnn/dred_decoder.c
 OSCE_SOURCES = \
 dnn/osce.c \
 dnn/osce_features.c \
-dnn/nndsp.c \
+dnn/nndsp.c
+
+TINYLACE_SOURCES = dnn/tinylace_data.c
+
+OSCE_FULL_SOURCES = \
 dnn/lace_data.c \
 dnn/nolace_data.c \
 dnn/bbwenet_data.c

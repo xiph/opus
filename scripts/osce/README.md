@@ -19,10 +19,13 @@ There is no Python metric backend.
   The current location is
   <https://media.xiph.org/opus/ietf/osce_testvectors_v1.zip>.
 
-For the reference implementation, speech enhancement is enabled at decoder
-complexities 6 and above. The examples use `-dec_complexity 10` for the decoder
-under test and `-dec_complexity 5` to disable enhancement in the reference
-decoder. Configure Opus with `--enable-osce` to build an enhanced decoder.
+Configure Opus with `--enable-osce` for LACE/NoLACE and bandwidth extension,
+or `--enable-tinylace` for built-in TinyLACE. These options are independent
+and disabled by default. TinyLACE runs at decoder complexity 1 and above;
+LACE/NoLACE use complexities 6 and above when available. The examples use
+`-dec_complexity 10` for the decoder under test and `-dec_complexity 0`
+for the unenhanced reference. The runner rejects enhancement in reference
+decoder options.
 
 Run the following commands from the Opus source directory. Paths to other
 conforming decoder executables can be substituted for `./opus_demo`.
@@ -34,7 +37,7 @@ python3 scripts/osce/run_osce_tests.py osce_testvectors_v1 results/lowband \
   --osce_compare ./osce_compare \
   --opus_demo ./opus_demo --opus_demo_options="-dec_complexity 10" \
   --reference_opus_demo ./opus_demo \
-  --reference_opus_demo_options="-dec_complexity 5" \
+  --reference_opus_demo_options="-dec_complexity 0" \
   --decoder_delay 91
 ```
 
@@ -46,7 +49,7 @@ python3 scripts/osce/run_osce_tests.py osce_testvectors_v1 results/extending \
   --opus_demo ./opus_demo \
   --opus_demo_options="-dec_complexity 10 -enable_osce_bwe" \
   --reference_opus_demo ./opus_demo \
-  --reference_opus_demo_options="-dec_complexity 5" \
+  --reference_opus_demo_options="-dec_complexity 0" \
   --extending_delay 273
 ```
 

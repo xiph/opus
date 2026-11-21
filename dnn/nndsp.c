@@ -55,10 +55,13 @@ void init_adacomb_state(AdaCombState *hAdaComb)
     OPUS_CLEAR(hAdaComb, 1);
 }
 
+#ifndef OPUS_TINYLACE_ONLY
 void init_adashape_state(AdaShapeState *hAdaShape)
 {
     OPUS_CLEAR(hAdaShape, 1);
 }
+
+#endif
 
 void compute_overlap_window(float *window, int overlap_size)
 {
@@ -342,6 +345,7 @@ void adacomb_process_frame(
 }
 
 
+#ifndef OPUS_TINYLACE_ONLY
 void adashape_process_frame(
     AdaShapeState *hAdaShape,
     float *x_out,
@@ -445,3 +449,5 @@ void adashape_process_frame(
     }
 
 }
+
+#endif

@@ -39,7 +39,8 @@ class CWriter:
                  enable_binary_blob=True,
                  model_struct_name="Model",
                  nnet_header="nnet.h",
-                 add_typedef=False):
+                 add_typedef=False,
+                 enable_weights_file=True):
         """
         Writer class for creating source and header files for weight exports to C
 
@@ -58,6 +59,9 @@ class CWriter:
         enable_binary_blob: bool, optional
             if True, export is done in binary blob format and a model type is created; defaults to False
 
+        enable_weights_file: bool, optional
+            If False, weights remain compiled in even when USE_WEIGHTS_FILE is defined.
+
         create_state_struct: bool, optional
             if True, a state struct type is created in the header file; if False, state sizes are defined as macros; defaults to False
 
@@ -72,6 +76,7 @@ class CWriter:
 
         self.header_only = header_only
         self.enable_binary_blob = enable_binary_blob
+        self.enable_weights_file = enable_weights_file
         self.create_state_struct = create_state_struct
         self.model_struct_name = model_struct_name
         self.add_typedef = add_typedef
@@ -143,7 +148,7 @@ f"""
         # create weight array
         if len(set(self.weight_arrays)) != len(self.weight_arrays):
             raise ValueError("error: detected duplicates in weight arrays")
-        if self.enable_binary_blob: self.source.write("\n#ifndef USE_WEIGHTS_FILE\n")
+        if self.enable_binary_blob and self.enable_weights_file: self.source.write("\n#ifndef USE_WEIGHTS_FILE\n")
         self.source.write(f"const WeightArray {self.model_struct_name.lower()}_arrays[] = {{\n")
         for name in self.weight_arrays:
             self.source.write(f"#ifdef WEIGHTS_{name}_DEFINED\n")
@@ -152,7 +157,7 @@ f"""
         self.source.write("    {NULL, 0, 0, NULL}\n")
         self.source.write("};\n")
 
-        if self.enable_binary_blob: self.source.write("#endif /* USE_WEIGHTS_FILE */\n")
+        if self.enable_binary_blob and self.enable_weights_file: self.source.write("#endif /* USE_WEIGHTS_FILE */\n")
 
         # create init function definition
         init_prototype = f"int init_{self.model_struct_name.lower()}({self.model_struct_name} *model, const WeightArray *arrays)"

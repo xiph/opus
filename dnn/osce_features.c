@@ -68,12 +68,14 @@ static const int center_bins_noisy[18] = {
     136,    160
 };
 
+#ifdef ENABLE_OSCE_BWE
 static const int center_bins_bwe[32] = {
       0,   5,  10,  15,  20,  25,  30,  35,
      40,  45,  50,  55,  60,  65,  70,  75,
      80,  85,  90,  95, 100, 105, 110, 115,
     120, 125, 130, 135, 140, 145, 150, 160
 };
+#endif
 
 static const float band_weights_clean[64] = {
      0.666666666667f,     0.400000000000f,     0.333333333333f,     0.400000000000f,
@@ -102,6 +104,7 @@ static const float band_weights_noisy[18] = {
      0.041666666667f,     0.080000000000f
 };
 
+#ifdef ENABLE_OSCE_BWE
 static const float band_weights_bwe[32] = {
     0.333333333, 0.200000000, 0.200000000, 0.200000000,
     0.200000000, 0.200000000, 0.200000000, 0.200000000,
@@ -112,6 +115,7 @@ static const float band_weights_bwe[32] = {
     0.200000000, 0.200000000, 0.200000000, 0.200000000,
     0.200000000, 0.200000000, 0.133333333, 0.181818182
 };
+#endif
 
 static float osce_window[OSCE_SPEC_WINDOW_SIZE] = {
      0.004908718808f,     0.014725683311f,     0.024541228523f,     0.034354408400f,     0.044164277127f,
@@ -211,9 +215,9 @@ static void apply_filterbank(float *x_out, float *x_in, const int *center_bins, 
 
 static void mag_spec_320_onesided(float *out, float *in)
 {
-    celt_assert(OSCE_SPEC_WINDOW_SIZE == 320);
     kiss_fft_cpx buffer[OSCE_SPEC_WINDOW_SIZE];
     int k;
+    celt_assert(OSCE_SPEC_WINDOW_SIZE == 320);
     forward_transform(buffer, in);
 
     for (k = 0; k < OSCE_SPEC_NUM_FREQS; k++)
@@ -296,10 +300,10 @@ static void calculate_acorr(float *acorr, float *signal, int lag)
 
     for (k = -2; k <= 2; k++)
     {
-        acorr[k+2] = 0;
         float xx = 0;
         float xy = 0;
         float yy = 0;
+        acorr[k+2] = 0;
         for (n = 0; n < 80; n++)
         {
             /* obviously wasteful -> fix later */
@@ -480,12 +484,12 @@ void osce_bwe_calculate_features(
 
     for (frame = 0; frame < num_frames; frame++)
     {
+        const opus_int16 *x = xq + frame * OSCE_BWE_HALF_WINDOW_SIZE;
         /* clear features */
         OPUS_CLEAR(features + frame * OSCE_BWE_FEATURE_DIM, OSCE_BWE_FEATURE_DIM);
 
         lmspec = features + frame * OSCE_BWE_FEATURE_DIM;
         instafreq = lmspec + OSCE_BWE_NUM_BANDS;
-        const opus_int16 *x = xq + frame * OSCE_BWE_HALF_WINDOW_SIZE;
 
         OPUS_COPY(buffer, psFeatures->signal_history, OSCE_BWE_HALF_WINDOW_SIZE);
         for (n = 0; n < OSCE_BWE_HALF_WINDOW_SIZE; n++)
@@ -554,11 +558,12 @@ void osce_cross_fade_10ms(float *x_enhanced, float *x_in, int length)
 }
 
 
+#ifdef ENABLE_OSCE_BWE
 void osce_bwe_cross_fade_10ms(opus_int16 *x_fadein, opus_int16 *x_fadeout, int length)
 {
     int i;
-    celt_assert(length >= 480);
     float f = 1.f / 3;
+    celt_assert(length >= 480);
     for (i = 0; i < 160; i++)
     {
         float diff = i == 159 ? 0.f : osce_window[i + 1] - osce_window[i];
@@ -570,3 +575,4 @@ void osce_bwe_cross_fade_10ms(opus_int16 *x_fadein, opus_int16 *x_fadeout, int l
         x_fadein[3*i + 2] = (int) (w_curr * x_fadein[3*i + 2] + (1.f - w_curr) * x_fadeout[3*i + 2] + 0.5);
     }
 }
+#endif

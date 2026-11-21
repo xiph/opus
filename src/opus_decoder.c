@@ -443,6 +443,9 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
      st->DecControl.enable_deep_plc = st->complexity >= 5;
 #ifdef ENABLE_OSCE
      st->DecControl.osce_method = OSCE_METHOD_NONE;
+#ifdef ENABLE_TINYLACE
+     if (st->complexity >= 1) {st->DecControl.osce_method = OSCE_METHOD_TINYLACE;}
+#endif
 #ifndef DISABLE_LACE
      if (st->complexity >= 6) {st->DecControl.osce_method = OSCE_METHOD_LACE;}
 #endif

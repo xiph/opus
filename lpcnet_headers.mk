@@ -37,7 +37,11 @@ dnn/osce.h \
 dnn/osce_config.h \
 dnn/osce_structs.h \
 dnn/osce_features.h \
-dnn/nndsp.h \
+dnn/nndsp.h
+
+TINYLACE_HEAD = dnn/tinylace_data.h
+
+OSCE_FULL_HEAD = \
 dnn/lace_data.h \
 dnn/nolace_data.h \
 dnn/bbwenet_data.h

@@ -50,7 +50,7 @@ def print_vector(writer, vector, name, dtype='float', reshape_8x4=False, static=
 
 
     if binary_blob:
-        f.write(
+        if writer.enable_weights_file: f.write(
 f'''
 #ifndef USE_WEIGHTS_FILE
 '''
@@ -95,7 +95,7 @@ f'''
     if debug_float: f.write('#endif /*DISABLE_DEBUG_FLOAT*/\n')
 
     if binary_blob:
-        f.write(
+        if writer.enable_weights_file: f.write(
 f'''
 #endif /* USE_WEIGHTS_FILE */
 '''

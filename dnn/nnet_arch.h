@@ -153,6 +153,7 @@ void RTCD_SUF(compute_linear_) (const LinearLayer *linear, float *out, const flo
    }
 }
 
+#ifndef DISABLE_CONV2D
 /* Computes non-padded convolution for input [ ksize1 x in_channels x (len2+ksize2) ],
    kernel [ out_channels x in_channels x ksize1 x ksize2 ],
    storing the output as [ out_channels x len2 ].
@@ -241,6 +242,8 @@ void RTCD_SUF(compute_conv2d_)(const Conv2dLayer *conv, float *out, float *mem, 
      RTCD_SUF(compute_activation_)(&out[i*hstride], &out[i*hstride], height, activation);
    }
 }
+
+#endif
 
 #ifdef GCC_POP_OPTIONS
 #pragma GCC pop_options

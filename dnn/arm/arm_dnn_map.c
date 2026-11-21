@@ -65,6 +65,7 @@ void (*const DNN_COMPUTE_ACTIVATION_IMPL[OPUS_ARCHMASK + 1])(
     MAY_HAVE_DOTPROD(compute_activation) /* dotprod  */
 };
 
+#ifndef DISABLE_CONV2D
 void (*const DNN_COMPUTE_CONV2D_IMPL[OPUS_ARCHMASK + 1])(
          const Conv2dLayer *conv,
          float *out,
@@ -80,6 +81,7 @@ void (*const DNN_COMPUTE_CONV2D_IMPL[OPUS_ARCHMASK + 1])(
     MAY_HAVE_NEON(compute_conv2d),   /* neon  */
     MAY_HAVE_DOTPROD(compute_conv2d) /* dotprod  */
 };
+#endif
 
 
 #endif

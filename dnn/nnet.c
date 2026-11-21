@@ -55,7 +55,7 @@
 #include "osce.h"
 #endif
 
-#ifdef NO_OPTIMIZATIONS
+#if defined(NO_OPTIMIZATIONS) && !defined(OPUS_TINYLACE_ONLY) && !defined(SUPPRESS_PERF_WARNINGS)
 #if defined(_MSC_VER)
 #pragma message ("Compiling without any vectorization. This code will be very slow")
 #else
@@ -114,6 +114,7 @@ void compute_generic_gru(const LinearLayer *input_weights, const LinearLayer *re
      state[i] = h[i];
 }
 
+#ifndef OPUS_TINYLACE_ONLY
 void compute_glu(const LinearLayer *layer, float *output, const float *input, int arch)
 {
    int i;
@@ -128,6 +129,7 @@ void compute_glu(const LinearLayer *layer, float *output, const float *input, in
      for (i=0;i<layer->nb_outputs;i++) output[i] = input[i]*act2[i];
    }
 }
+#endif
 
 #define MAX_CONV_INPUTS_ALL IMAX(DRED_MAX_CONV_INPUTS, 1024)
 
@@ -143,6 +145,7 @@ void compute_generic_conv1d(const LinearLayer *layer, float *output, float *mem,
    if (layer->nb_inputs!=input_size) OPUS_COPY(mem, &tmp[input_size], layer->nb_inputs-input_size);
 }
 
+#ifndef OPUS_TINYLACE_ONLY
 void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, float *mem, const float *input, int input_size, int dilation, int activation, int arch)
 {
    float tmp[MAX_CONV_INPUTS_ALL];
@@ -161,3 +164,4 @@ void compute_generic_conv1d_dilation(const LinearLayer *layer, float *output, fl
      OPUS_COPY(&mem[input_size*dilation*(ksize-1)-input_size], input, input_size);
    }
 }
+#endif

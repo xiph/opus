@@ -175,6 +175,30 @@ foreach opt : feat
   set_variable('opt_' + opt[0].underscorify(), opt_foo)
 endforeach
 
+tinylace_enabled = get_option('tinylace').enabled()
+deep_plc_enabled = opt_deep_plc.enabled() or opt_dred.enabled()
+osce_enabled = tinylace_enabled or opt_osce.enabled()
+dnn_enabled = deep_plc_enabled or osce_enabled
+if opt_fixed_point and (deep_plc_enabled or osce_enabled)
+  error('fixed-point cannot be used with deep-plc, dred, osce, or tinylace')
+endif
+if deep_plc_enabled
+  opus_conf.set('ENABLE_DEEP_PLC', 1)
+endif
+if osce_enabled
+  opus_conf.set('ENABLE_OSCE', 1)
+endif
+if tinylace_enabled
+  opus_conf.set('ENABLE_TINYLACE', 1)
+endif
+if opt_osce.enabled()
+  opus_conf.set('ENABLE_OSCE_BWE', 1)
+else
+  opus_conf.set('DISABLE_LACE', 1)
+  opus_conf.set('DISABLE_NOLACE', 1)
+  opus_conf.set('DISABLE_BBWENET', 1)
+endif
+
 opt_asm = get_option('asm')
 opt_rtcd = get_option('rtcd')
 opt_intrinsics = get_option('intrinsics')
@@ -652,17 +676,31 @@ mk_files = [
 ]
 lines = run_command('meson/read-sources-list.py', mk_files, check: true).stdout().strip().split('\n')
 sources = {}
+dnn_source_groups = {
+  'DEEP_PLC': deep_plc_enabled,
+  'DRED': opt_dred.enabled(),
+  'OSCE_FULL': opt_osce.enabled(),
+  'LOSSGEN': false,
+}
 foreach l : lines
   a = l.split(' = ')
   var_name = a[0]
   file_list = a[1].split()
+  foreach group, enabled : dnn_source_groups
+    if var_name.startswith(group + '_') and not enabled
+      file_list = []
+    endif
+  endforeach
   sources += {var_name: files(file_list)}
 endforeach
 
 subdir('include')
 subdir('celt')
 subdir('silk')
-subdir('dnn')
+dnn_lib = []
+if dnn_enabled
+  subdir('dnn')
+endif
 subdir('src')
 
 configure_file(output: 'config.h', configuration: opus_conf)

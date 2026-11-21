@@ -41,6 +41,7 @@
 
 #define SQUARE(x) ((x)*(x))
 
+#ifdef ENABLE_DEEP_PLC
 static const opus_int16 eband5ms[] = {
 /*0  200 400 600 800  1k 1.2 1.4 1.6  2k 2.4 2.8 3.2  4k 4.8 5.6 6.8  8k*/
   0,  1,  2,  3,  4,  5,  6,  7,  8, 10, 12, 14, 16, 20, 24, 28, 34, 40
@@ -209,6 +210,8 @@ static void interp_band_gain(float *g, const float *bandE) {
 }
 
 
+#endif
+
 void dct(float *out, const float *in) {
   int i;
   for (i=0;i<NB_BANDS;i++) {
@@ -221,6 +224,7 @@ void dct(float *out, const float *in) {
   }
 }
 
+#ifdef ENABLE_DEEP_PLC
 static void idct(float *out, const float *in) {
   int i;
   for (i=0;i<NB_BANDS;i++) {
@@ -232,6 +236,8 @@ static void idct(float *out, const float *in) {
     out[i] = sum*sqrt(2./NB_BANDS);
   }
 }
+
+#endif
 
 void forward_transform(kiss_fft_cpx *out, const float *in) {
   int i;
@@ -247,6 +253,7 @@ void forward_transform(kiss_fft_cpx *out, const float *in) {
   }
 }
 
+#ifdef ENABLE_DEEP_PLC
 static void inverse_transform(float *out, const kiss_fft_cpx *in) {
   int i;
   kiss_fft_cpx x[WINDOW_SIZE];
@@ -320,3 +327,4 @@ void apply_window(float *x) {
     x[WINDOW_SIZE - 1 - i] *= half_window[i];
   }
 }
+#endif

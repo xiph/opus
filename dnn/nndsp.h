@@ -84,7 +84,10 @@ void init_adaconv_state(AdaConvState *hAdaConv);
 
 void init_adacomb_state(AdaCombState *hAdaComb);
 
+#ifndef OPUS_TINYLACE_ONLY
 void init_adashape_state(AdaShapeState *hAdaShape);
+#endif
+
 
 void compute_overlap_window(float *window, int overlap_size);
 
@@ -134,6 +137,7 @@ void adacomb_process_frame(
     int arch
 );
 
+#ifndef OPUS_TINYLACE_ONLY
 void adashape_process_frame(
     AdaShapeState *hAdaShape,
     float *x_out,
@@ -148,5 +152,7 @@ void adashape_process_frame(
     int interpolate_k,
     int arch
 );
+#endif
+
 
 #endif

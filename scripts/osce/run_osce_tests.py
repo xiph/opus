@@ -7,6 +7,7 @@ https://datatracker.ietf.org/doc/draft-ietf-mlcodec-opus-speech-coding-enhanceme
 
 import os
 import argparse
+import shlex
 import glob
 from itertools import repeat
 from functools import partial
@@ -39,7 +40,7 @@ parser.add_argument('outputdir', type=str, help='Output folder')
 parser.add_argument('--opus_demo', type=str, default='./opus_demo', help='test opus_demo binary')
 parser.add_argument('--opus_demo_options', type=str, default="", help='opus_demo option string (default="")')
 parser.add_argument('--reference_opus_demo', type=str, default=None, help='reference opus_demo binary (REQUIRED for the lowband test). REFMOC is computed by decoding each bitstream with this reference (unenhanced, conforming) decoder; any conforming Opus decoder is admissible. Not used by the highband test.')
-parser.add_argument('--reference_opus_demo_options', type=str, default="-dec_complexity 5", help='decoder option string for --reference_opus_demo (default: "-dec_complexity 5", matching how the shipped reference scores were generated)')
+parser.add_argument('--reference_opus_demo_options', type=str, default="-dec_complexity 0", help='decoder options for the unenhanced reference (default: "-dec_complexity 0"); enhancement and nonzero decoder complexity are rejected')
 parser.add_argument('--decoder_delay', type=int, default=91, help="decoder delay in samples @ 16kHz used for aligning decoded output to reference file (default: 91)")
 parser.add_argument('--extending', action='store_true', help='evaluate a bandwidth-extending method: decode the test signal at 48 kHz and score the 0-8 kHz lowband against the 16 kHz reference. Enable the method itself via --opus_demo_options (e.g. -enable_osce_bwe).')
 parser.add_argument('--extending_delay', type=int, default=None, help='decoder delay in samples @ 48kHz for aligning the extending (48 kHz) test output to the reference (default: 3 x --decoder_delay). The 48 kHz decode delay was measured to be ~3x the WB delay; the 16->48 kHz resampler adds no significant extra delay, and 3x keeps the lowband analysis frame-aligned with the 16 kHz reference scores.')
@@ -161,8 +162,25 @@ def run_highband_test(test_base_dir, testname, out_dir, opus_demo, dec_options, 
     return (testname, n_pass, n_total)
 
 
+def unenhanced_reference_options(options):
+    options = list(options or [])
+    if "-enable_osce_bwe" in options:
+        raise SystemExit("error: the reference decoder must not enable bandwidth extension")
+    for i, option in enumerate(options):
+        if option == "-dec_complexity":
+            try:
+                complexity = int(options[i + 1])
+            except (IndexError, ValueError):
+                raise SystemExit("error: reference -dec_complexity requires a value of 0")
+            if complexity != 0:
+                raise SystemExit("error: reference decoder complexity must be 0 to disable TinyLACE, LACE and NoLACE")
+    # Also guard the decoder's default complexity when no explicit option was supplied.
+    return options if "-dec_complexity" in options else options + ["-dec_complexity", "0"]
+
+
 def run_test(test_base_dir, testname, out_dir, opus_demo, dec_options, ref_opus_demo=None, ref_dec_options=None, dec_delay=91, extending=False, extending_delay=273, osce_compare_bin=None, verbose=0):
 
+    ref_dec_options = unenhanced_reference_options(ref_dec_options)
     log_prefix = f"{testname}"
 
     # extending methods extend WB -> FB, so the test signal is decoded at 48 kHz and
@@ -266,7 +284,7 @@ def run_test(test_base_dir, testname, out_dir, opus_demo, dec_options, ref_opus_
 
 
 
-def main(test_dir, output_dir, opus_demo, decoder_options, reference_opus_demo=None, reference_decoder_options="-dec_complexity 5", decoder_delay=91, extending=False, extending_delay=None, osce_compare_bin=None, verbose=0, num_workers=10):
+def main(test_dir, output_dir, opus_demo, decoder_options, reference_opus_demo=None, reference_decoder_options="-dec_complexity 0", decoder_delay=91, extending=False, extending_delay=None, osce_compare_bin=None, verbose=0, num_workers=10):
 
     tests = sorted([x for x in os.listdir(test_dir) if x.startswith("osce_test_")])
 
@@ -278,10 +296,7 @@ def main(test_dir, output_dir, opus_demo, decoder_options, reference_opus_demo=N
     if reference_opus_demo is None:
         raise SystemExit("error: --reference_opus_demo is required; REFMOC is computed by decoding each bitstream with a reference (unenhanced, conforming) Opus decoder")
     assert os.path.isfile(reference_opus_demo), f"reference opus_demo binary {reference_opus_demo} not found"
-    if len(reference_decoder_options) > 0:
-        ref_dec_options = reference_decoder_options.split(" ")
-    else:
-        ref_dec_options = []
+    ref_dec_options = unenhanced_reference_options(shlex.split(reference_decoder_options))
     print(f"computing reference scores with {reference_opus_demo} (options: '{reference_decoder_options}')")
 
     if extending and extending_delay is None:

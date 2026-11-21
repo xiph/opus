@@ -202,6 +202,16 @@ AS_IF([test "$enable_dred" = "yes"],[
 ])
 AM_CONDITIONAL([ENABLE_DRED], [test "$enable_dred" = "yes"])
 
+AC_ARG_ENABLE([tinylace],
+    [AS_HELP_STRING([--enable-tinylace], [enable built-in TinyLACE enhancement at decoder complexity 1 and above])],,
+    [enable_tinylace=no])
+
+AS_IF([test "$enable_tinylace" = "yes"], [
+  AS_IF([test "$enable_fixed_point" = "yes"], [AC_MSG_ERROR([TinyLACE requires floating-point support])])
+  AC_DEFINE([ENABLE_TINYLACE], [1], [Enable TinyLACE])
+])
+AM_CONDITIONAL([ENABLE_TINYLACE], [test "$enable_tinylace" = "yes"])
+
 AC_ARG_ENABLE([deep-plc],
     [AS_HELP_STRING([--enable-deep-plc], [use deep PLC for SILK])],,
     [enable_deep_plc=no])
@@ -210,7 +220,7 @@ AS_IF([test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes"],[
   AC_DEFINE([ENABLE_DEEP_PLC], [1], [Deep PLC])
 ])
 AM_CONDITIONAL([ENABLE_DEEP_PLC], [test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes"])
-AM_CONDITIONAL([ENABLE_DNN], [test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes" || test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
+AM_CONDITIONAL([ENABLE_DNN], [test "$enable_tinylace" = "yes" || test "$enable_deep_plc" = "yes" || test "$enable_dred" = "yes" || test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
 
 AC_ARG_ENABLE([lossgen],
     [AS_HELP_STRING([--enable-lossgen], [build opus_demo with packet loss simulator])],,
@@ -883,16 +893,23 @@ AS_IF([test "$enable_osce_training_data" = "yes"], [
 ], [AC_MSG_RESULT([no])])
 
 AC_ARG_ENABLE([osce],
-  AS_HELP_STRING([--enable-osce], [enable speech coding enhancement]),,
+  AS_HELP_STRING([--enable-osce], [enable LACE, NoLACE and blind bandwidth extension]),,
   [enable_osce=no]
 )
 
-AS_IF([test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"], [
+AS_IF([test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes" || test "$enable_tinylace" = "yes"], [
        AC_DEFINE([ENABLE_OSCE], [1], [Enable Opus Speech Coding Enhancement])
+])
+AS_IF([test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"], [
        AC_DEFINE([ENABLE_OSCE_BWE], [1], [Enable Opus Speech Coding Enhancement Blind BWE])
+], [
+       AC_DEFINE([DISABLE_LACE], [1], [Disable LACE])
+       AC_DEFINE([DISABLE_NOLACE], [1], [Disable NoLACE])
+       AC_DEFINE([DISABLE_BBWENET], [1], [Disable BBWENet])
 ])
 
-AM_CONDITIONAL([ENABLE_OSCE], [test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
+AM_CONDITIONAL([ENABLE_OSCE], [test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes" || test "$enable_tinylace" = "yes"])
+AM_CONDITIONAL([ENABLE_OSCE_BWE], [test "$enable_osce" = "yes" || test "$enable_osce_training_data" = "yes"])
 
 AS_IF([test "$enable_fixed_point" = "yes"], [
   AS_IF([test "$enable_dred" = "yes" || test "$enable_deep_plc" = "yes" || test "$enable_osce" = "yes"], [

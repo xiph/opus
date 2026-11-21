@@ -53,6 +53,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('checkpoint', type=str, help='LACE, NoLACE or BBWENet model checkpoint')
 parser.add_argument('output_dir', type=str, help='output folder')
 parser.add_argument('--quantize', action="store_true", help='quantization according to schedule')
+parser.add_argument('--tinylace', action="store_true", help='export LACE as built-in TinyLACE')
 
 sparse_default=False
 schedules = {
@@ -138,7 +139,7 @@ def osce_scheduled_dump(writer, prefix, model, schedule):
     for name, kwargs in schedule:
         dump_torch_weights(writer, model.get_submodule(name), prefix + export_name(name), **kwargs, verbose=True)
 
-def export_model(checkpoint_path, outdir, quantize=False, transform=None, strict=True):
+def export_model(checkpoint_path, outdir, quantize=False, transform=None, strict=True, tinylace=False):
     os.makedirs(outdir, exist_ok=True)
 
     # dump message
@@ -154,11 +155,14 @@ def export_model(checkpoint_path, outdir, quantize=False, transform=None, strict
         transform(model)
 
     # CWriter
-    model_name = checkpoint['setup']['model']['name']
-    cwriter = wexchange.c_export.CWriter(os.path.join(outdir, model_name + "_data"), message=message, model_struct_name=model_name.upper() + 'Layers', add_typedef=True)
+    architecture = checkpoint['setup']['model']['name']
+    if tinylace and architecture != 'lace':
+        raise ValueError('TinyLACE requires a LACE checkpoint')
+    model_name = 'tinylace' if tinylace else architecture
+    cwriter = wexchange.c_export.CWriter(os.path.join(outdir, model_name + "_data"), message=message, model_struct_name=model_name.upper() + 'Layers', add_typedef=True, enable_weights_file=not tinylace)
 
     # Add custom includes and global parameters
-    if model_name in {'lace', 'nolace'}:
+    if architecture in {'lace', 'nolace'}:
         cwriter.header.write(f'''
 #define {model_name.upper()}_PREEMPH {model.preemph}f
 #define {model_name.upper()}_FRAME_SIZE {model.FRAME_SIZE}
@@ -188,15 +192,21 @@ def export_model(checkpoint_path, outdir, quantize=False, transform=None, strict
 
 
     # dump layers
-    if model_name in schedules and quantize:
-        osce_scheduled_dump(cwriter, model_name, model, schedules[model_name])
+    if architecture in schedules and quantize:
+        osce_scheduled_dump(cwriter, model_name, model, schedules[architecture])
     else:
         osce_dump_generic(cwriter, model_name, model)
 
+    if tinylace:
+        cwriter.layer_dict = {
+            name.replace('tinylace_', 'lace_', 1):
+                (kind, init.replace('model->tinylace_', 'model->lace_'))
+            for name, (kind, init) in cwriter.layer_dict.items()
+        }
     cwriter.close()
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    export_model(args.checkpoint, args.output_dir, quantize=args.quantize)
+    export_model(args.checkpoint, args.output_dir, quantize=args.quantize, tinylace=args.tinylace)

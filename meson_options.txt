@@ -10,6 +10,7 @@ option('intrinsics', type : 'feature', value : 'auto', description : 'Intrinsics
 option('deep-plc', type : 'feature', value : 'disabled', description : 'Enable Deep Packet Loss Concealment (PLC)')
 option('dred', type : 'feature', value : 'disabled', description : 'Enable Deep Redundancy (DRED)')
 option('osce', type : 'feature', value : 'disabled', description : 'Enable Opus Speech Coding Enhancement (OSCE)')
+option('tinylace', type : 'feature', value : 'disabled', description : 'Enable built-in TinyLACE enhancement')
 option('pfa', type : 'feature', value : 'disabled', description : 'Enable PFA FFT/MDCT (experimental)')
 option('dnn-debug-float', type : 'feature', value : 'disabled', description : 'Compute DNN using float weights')
 

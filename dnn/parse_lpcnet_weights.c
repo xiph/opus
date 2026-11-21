@@ -188,6 +188,7 @@ int linear_init(LinearLayer *layer, const WeightArray *arrays,
   return 0;
 }
 
+#ifndef DISABLE_CONV2D
 int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
   const char *bias,
   const char *float_weights,
@@ -212,6 +213,7 @@ int conv2d_init(Conv2dLayer *layer, const WeightArray *arrays,
   layer->kheight = kheight;
   return 0;
 }
+#endif
 
 
 
