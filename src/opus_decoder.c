@@ -1131,8 +1131,9 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       silk_ResetDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
-#ifdef ENABLE_OSCE_BWE
       /* DecControl is not part of the cleared area */
+      st->DecControl.prevPitchLag = 0;
+#ifdef ENABLE_OSCE_BWE
       st->DecControl.prev_osce_extended_mode = OSCE_MODE_CELT_ONLY;
 #endif
 #ifdef ENABLE_DEEP_PLC
