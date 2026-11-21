@@ -9,7 +9,8 @@ src/opus_multistream_decoder.c \
 src/repacketizer.c \
 src/opus_projection_encoder.c \
 src/opus_projection_decoder.c \
-src/mapping_matrix.c
+src/mapping_matrix.c \
+src/mapping_matrix_hoa.c
 
 OPUS_SOURCES_FLOAT = \
 src/analysis.c \
