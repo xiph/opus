@@ -1,4 +1,5 @@
-/* Copyright (c) 2016  Jean-Marc Valin */
+/* Copyright (c) 2016  Jean-Marc Valin
+   Copyright (c) 2026 Advanced Micro Devices, Inc. */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -30,6 +31,14 @@
 #if defined(OPUS_X86_MAY_HAVE_SSE2) && !defined(FIXED_POINT)
 
 opus_val16 op_pvq_search_sse2(celt_norm *_X, int *iy, int K, int N, int arch);
+
+#if defined(OPUS_X86_MAY_HAVE_AVX2)
+/* AVX2 mid-size (13 <= N <= 48) PVQ search kernel, defined in
+   celt/x86/vq_avx2.c and built at the -mavx2 baseline via CELT_SOURCES_AVX2.
+   Selected at run time by op_pvq_search_sse2() when arch >= 4. */
+opus_val16 pvq_search_ymm(const celt_norm *OPUS_RESTRICT _X, int *OPUS_RESTRICT iy,
+                          int K, int N, int nvy, int pad);
+#endif
 
 #if defined(OPUS_X86_PRESUME_SSE2)
 
