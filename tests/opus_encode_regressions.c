@@ -1022,6 +1022,111 @@ static int silk_gain_assert(void)
     return 0;
 }
 
+/* External fixture (binary s16le, mono 48 kHz):
+   https://github.com/user-attachments/files/32614165/valkyrie_s16.txt
+   Set OPUS_VALKYRIE_RAW to its absolute path. */
+static void lbrr_valkyrie_regression(void)
+{
+    enum { FS = 48000, FRAME = 960, WINDOW = 240, NSAMPLES = 1039987 };
+    static const int starts[] = { FS * 65 / 10, FS * 111 / 10 };
+    const char *path = getenv("OPUS_VALKYRIE_RAW");
+    OpusEncoder *enc;
+    OpusDecoder *dec;
+    FILE *file;
+    opus_int16 *input, *output;
+    unsigned char packet[1500];
+    int i, offset, err, delay, padded, event;
+
+    if (path == NULL) {
+        fprintf(stderr,
+                "Skipping Valkyrie LBRR regression (set OPUS_VALKYRIE_RAW)\n");
+        return;
+    }
+
+    file = fopen(path, "rb");
+    if (file == NULL) {
+        perror(path);
+        opus_test_assert(0);
+    }
+
+    enc = opus_encoder_create(FS, 1, OPUS_APPLICATION_AUDIO, &err);
+    opus_test_assert(err == OPUS_OK && enc != NULL);
+    dec = opus_decoder_create(FS, 1, &err);
+    opus_test_assert(err == OPUS_OK && dec != NULL);
+
+    opus_test_assert(opus_encoder_ctl(enc, OPUS_SET_BITRATE(64000)) == OPUS_OK);
+    opus_test_assert(opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(9)) == OPUS_OK);
+    opus_test_assert(opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(1)) == OPUS_OK);
+    opus_test_assert(opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(30)) == OPUS_OK);
+    opus_test_assert(opus_encoder_ctl(enc, OPUS_SET_DTX(0)) == OPUS_OK);
+    opus_test_assert(opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&delay)) == OPUS_OK);
+    opus_test_assert(delay >= 0 && delay < FRAME);
+
+    padded = ((NSAMPLES + delay + FRAME - 1) / FRAME) * FRAME;
+    input = (opus_int16 *)calloc(padded, sizeof(*input));
+    output = (opus_int16 *)calloc(padded, sizeof(*output));
+    opus_test_assert(input != NULL && output != NULL);
+
+    /* valkyrie_s16.txt is binary mono 48-kHz s16 little-endian PCM. */
+    for (i = 0; i < NSAMPLES; i++) {
+        unsigned char bytes[2];
+        int sample;
+
+        opus_test_assert(fread(bytes, 1, 2, file) == 2);
+        sample = bytes[0] | (bytes[1] << 8);
+        if (sample >= 32768)
+            sample -= 65536;
+        input[i] = (opus_int16)sample;
+    }
+    opus_test_assert(fgetc(file) == EOF && !ferror(file));
+    opus_test_assert(fclose(file) == 0);
+
+    /* Preserve all encoder history and deliver every packet without FEC/PLC. */
+    for (offset = 0; offset < padded; offset += FRAME) {
+        int bytes = opus_encode(enc, input + offset, FRAME,
+                                packet, sizeof(packet));
+        opus_test_assert(bytes > 0);
+        opus_test_assert(opus_decode(dec, packet, bytes,
+                                    output + offset, FRAME, 0) == FRAME);
+    }
+
+    /* Check the two known noise bursts, not a general perceptual score. */
+    for (event = 0; event < 2; event++) {
+        double worst = 0;
+        int worst_at = 0;
+
+        for (offset = starts[event];
+             offset + WINDOW <= starts[event] + FS / 5;
+             offset += WINDOW) {
+            double error_energy = 0, reference_energy = 0, score;
+
+            for (i = 0; i < WINDOW; i++) {
+                double reference = input[offset + i];
+                double difference = output[offset + delay + i] - reference;
+                error_energy += difference * difference;
+                reference_energy += reference * reference;
+            }
+
+            score = sqrt(error_energy / WINDOW) /
+                    (sqrt(reference_energy / WINDOW) + 100.0);
+            if (score > worst) {
+                worst = score;
+                worst_at = offset;
+            }
+        }
+
+        fprintf(stderr,
+                "Valkyrie LBRR event=%d worst=%.6f input_sample=%d\n",
+                event + 1, worst, worst_at);
+        opus_test_assert(worst < 1.0);
+    }
+
+    opus_encoder_destroy(enc);
+    opus_decoder_destroy(dec);
+    free(output);
+    free(input);
+}
+
 #ifndef DISABLE_FLOAT_API
 int analysis_overflow(void)
 {
@@ -1518,6 +1623,7 @@ void regression_test(void)
    ec_enc_shrink_assert();
    ec_enc_shrink_assert2();
    silk_gain_assert();
+   lbrr_valkyrie_regression();
 #ifndef DISABLE_FLOAT_API
    analysis_overflow();
    projection_overflow2();

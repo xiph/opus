@@ -370,6 +370,12 @@ opus_int silk_Encode(                                   /* O    Returns error co
                         LBRR_symbol |= silk_LSHIFT( psEnc->state_Fxx[ n ].sCmn.LBRR_flags[ i ], i );
                     }
                     psEnc->state_Fxx[ n ].sCmn.LBRR_flag = LBRR_symbol > 0 ? 1 : 0;
+                    /* Coarsen LBRR on resumption to reduce the risk of starving
+                       primary coding in the next packet. */
+                    if( !psEnc->state_Fxx[ n ].sCmn.LBRR_flag ) {
+                        psEnc->state_Fxx[ n ].sCmn.LBRR_GainIncreases =
+                            silk_max_int( psEnc->state_Fxx[ n ].sCmn.LBRR_GainIncreases, 4 );
+                    }
                     if( LBRR_symbol && psEnc->state_Fxx[ n ].sCmn.nFramesPerPacket > 1 ) {
                         ec_enc_icdf( psRangeEnc, LBRR_symbol - 1, silk_LBRR_flags_iCDF_ptr[ psEnc->state_Fxx[ n ].sCmn.nFramesPerPacket - 2 ], 8 );
                     }
