@@ -175,6 +175,12 @@ foreach opt : feat
   set_variable('opt_' + opt[0].underscorify(), opt_foo)
 endforeach
 
+# DRED requires deep PLC
+if opt_dred.enabled()
+  opus_conf.set('ENABLE_DEEP_PLC', 1)
+  opt_deep_plc = opt_dred
+endif
+
 opt_asm = get_option('asm')
 opt_rtcd = get_option('rtcd')
 opt_intrinsics = get_option('intrinsics')
