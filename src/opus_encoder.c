@@ -124,6 +124,8 @@ struct OpusEncoder {
     int          silk_bw_switch;
     /* Sampling rate (at the API level) */
     int          first;
+    /* Previous frame was dropped by DTX */
+    int          prev_dtx;
     celt_glog * energy_masking;
     StereoWidthState width_mem;
 #ifndef DISABLE_FLOAT_API
@@ -2311,6 +2313,10 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         /* We may still decide to disable prediction later */
         if (st->silk_mode.reducedDependency)
            celt_pred = 0;
+        /* Don't predict from a frame the decoder won't have: at the start of the
+           stream, or when the previous frame was dropped by DTX. */
+        if (st->first || st->prev_dtx)
+           celt_pred = 0;
         celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(celt_pred));
     }
 
@@ -2581,12 +2587,14 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     st->prev_framesize = frame_size;
 
     st->first = 0;
+    st->prev_dtx = 0;
 
     /* DTX decision */
     if (st->use_dtx && !st->silk_mode.useDTX)
     {
        if (decide_dtx_mode(activity, &st->nb_no_activity_ms_Q1, 2*1000*frame_size/st->Fs))
        {
+          st->prev_dtx = 1;
           st->rangeFinal = 0;
           data[0] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
           RESTORE_STACK;
