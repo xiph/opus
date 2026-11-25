@@ -2311,6 +2311,10 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         /* We may still decide to disable prediction later */
         if (st->silk_mode.reducedDependency)
            celt_pred = 0;
+        /* Don't predict from a frame the decoder won't have: at the start of the
+           stream, or when the previous frame was dropped by DTX. */
+        if (st->first || st->nb_no_activity_ms_Q1 > NB_SPEECH_FRAMES_BEFORE_DTX*20*2)
+           celt_pred = 0;
         celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(celt_pred));
     }
 
