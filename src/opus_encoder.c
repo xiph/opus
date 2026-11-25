@@ -1906,6 +1906,8 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     int delay_compensation;
     int total_buffer;
     opus_int activity = VAD_NO_DECISION;
+    int next_mode;
+    int mode_switch;
     VARDECL(opus_res, pcm_buf);
     VARDECL(opus_res, tmp_prefill);
     SAVE_STACK;
@@ -2577,10 +2579,10 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
 
     st->rangeFinal ^= redundant_rng;
 
-    if (to_celt)
-        st->prev_mode = MODE_CELT_ONLY;
-    else
-        st->prev_mode = st->mode;
+    next_mode = to_celt ? MODE_CELT_ONLY : st->mode;
+    /* The decoder needs the frame that switches mode, so DTX must not drop it. */
+    mode_switch = redundancy || (st->prev_mode > 0 && next_mode != st->prev_mode);
+    st->prev_mode = next_mode;
     st->prev_channels = st->stream_channels;
     st->prev_framesize = frame_size;
 
@@ -2589,7 +2591,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     /* DTX decision */
     if (st->use_dtx && !st->silk_mode.useDTX)
     {
-       if (decide_dtx_mode(activity, &st->nb_no_activity_ms_Q1, 2*1000*frame_size/st->Fs))
+       if (decide_dtx_mode(activity || mode_switch, &st->nb_no_activity_ms_Q1, 2*1000*frame_size/st->Fs))
        {
           st->rangeFinal = 0;
           data[0] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
