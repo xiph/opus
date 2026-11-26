@@ -1874,6 +1874,20 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
     }
 }
 
+/* Keeps the end of the (delay-compensated) input for the next frame. */
+static void update_delay_buffer(OpusEncoder *st, const opus_res *pcm_buf, int frame_size, int total_buffer)
+{
+    if (st->channels*(st->encoder_buffer-(frame_size+total_buffer)) > 0)
+    {
+       OPUS_MOVE(st->delay_buffer, &st->delay_buffer[st->channels*frame_size], st->channels*(st->encoder_buffer-frame_size-total_buffer));
+       OPUS_COPY(&st->delay_buffer[st->channels*(st->encoder_buffer-frame_size-total_buffer)],
+             &pcm_buf[0],
+             (frame_size+total_buffer)*st->channels);
+    } else {
+       OPUS_COPY(st->delay_buffer, &pcm_buf[(frame_size+total_buffer-st->encoder_buffer)*st->channels], st->encoder_buffer*st->channels);
+    }
+}
+
 static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm, int frame_size,
                 unsigned char *data, opus_int32 orig_max_data_bytes,
                 int float_api, int first_frame,
@@ -2265,6 +2279,11 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         }
         if (nBytes==0)
         {
+           /* CELT does not run on this frame: keep its input history current and
+              restart it on the next frame, as when switching from SILK-only. */
+           update_delay_buffer(st, pcm_buf, frame_size, total_buffer);
+           st->prev_mode = MODE_SILK_ONLY;
+           st->prev_dtx = 1;
            st->rangeFinal = 0;
            data[-1] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
            RESTORE_STACK;
@@ -2329,15 +2348,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
        OPUS_COPY(tmp_prefill, &st->delay_buffer[(st->encoder_buffer-total_buffer-st->Fs/400)*st->channels], st->channels*st->Fs/400);
     }
 
-    if (st->channels*(st->encoder_buffer-(frame_size+total_buffer)) > 0)
-    {
-       OPUS_MOVE(st->delay_buffer, &st->delay_buffer[st->channels*frame_size], st->channels*(st->encoder_buffer-frame_size-total_buffer));
-       OPUS_COPY(&st->delay_buffer[st->channels*(st->encoder_buffer-frame_size-total_buffer)],
-             &pcm_buf[0],
-             (frame_size+total_buffer)*st->channels);
-    } else {
-       OPUS_COPY(st->delay_buffer, &pcm_buf[(frame_size+total_buffer-st->encoder_buffer)*st->channels], st->encoder_buffer*st->channels);
-    }
+    update_delay_buffer(st, pcm_buf, frame_size, total_buffer);
     /* gain_fade() and stereo_fade() need to be after the buffer copying
        because we don't want any of this to affect the SILK part */
     if( ( st->prev_HB_gain < Q15ONE || HB_gain < Q15ONE ) && celt_mode != NULL ) {
