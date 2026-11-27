@@ -1178,6 +1178,11 @@ int opus_multistream_encoder_ctl_va_list(OpusMSEncoder *st, int request,
       {
          goto bad_arg;
       }
+      if (st->bitrate_bps != OPUS_AUTO && st->bitrate_bps != OPUS_BITRATE_MAX)
+      {
+         *value = st->bitrate_bps;
+         break;
+      }
       *value = 0;
       for (s=0;s<st->layout.nb_streams;s++)
       {
