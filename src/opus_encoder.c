@@ -1731,6 +1731,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
        int tmp_len;
        int dtx_count = 0;
        int bak_to_mono;
+       int bak_force_channels;
 
        if (st->mode == MODE_SILK_ONLY)
        {
@@ -1781,6 +1782,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 
 
        bak_to_mono = st->silk_mode.toMono;
+       bak_force_channels = st->force_channels;
        if (bak_to_mono)
           st->force_channels = 1;
        else
@@ -1833,6 +1835,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
               );
           if (tmp_len<0)
           {
+             st->force_channels = bak_force_channels;
              RESTORE_STACK;
              return OPUS_INTERNAL_ERROR;
           } else if (tmp_len==1) {
@@ -1842,6 +1845,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 
           if (ret<0)
           {
+             st->force_channels = bak_force_channels;
              RESTORE_STACK;
              return OPUS_INTERNAL_ERROR;
           }
@@ -1854,6 +1858,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
           ret = OPUS_INTERNAL_ERROR;
        }
        st->silk_mode.toMono = bak_to_mono;
+       st->force_channels = bak_force_channels;
        RESTORE_STACK;
        return ret;
     } else {
