@@ -143,6 +143,26 @@ function(opus_detect_neon COMPILER_SUPPORT_NEON)
   endif()
 endfunction()
 
+function(opus_detect_dotprod COMPILER_SUPPORT_DOTPROD)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "(arm|aarch64|ARM)")
+    message(STATUS "Check DOTPROD support by compiler")
+    include(CheckCSourceCompiles)
+    set(CMAKE_REQUIRED_FLAGS "-march=armv8.2-a+dotprod")
+    check_c_source_compiles("
+#include <arm_neon.h>
+int main(void) {
+  int32x4_t acc = vdupq_n_s32(0);
+  int8x16_t a = vdupq_n_s8(1);
+  acc = vdotq_s32(acc, a, a);
+  return vgetq_lane_s32(acc, 0);
+}" COMPILER_SUPPORT_DOTPROD_INTR)
+    unset(CMAKE_REQUIRED_FLAGS)
+    if(COMPILER_SUPPORT_DOTPROD_INTR)
+      set(COMPILER_SUPPORT_DOTPROD 1 PARENT_SCOPE)
+    endif()
+  endif()
+endfunction()
+
 function(opus_supports_cpu_detection RUNTIME_CPU_CAPABILITY_DETECTION)
   set(RUNTIME_CPU_CAPABILITY_DETECTION 0 PARENT_SCOPE)
   if(OPUS_CPU_X86 OR OPUS_CPU_X64)
