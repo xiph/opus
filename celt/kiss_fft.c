@@ -2,6 +2,7 @@
   Lots of modifications by Jean-Marc Valin
   Copyright (c) 2005-2007, Xiph.Org Foundation
   Copyright (c) 2008,      Xiph.Org Foundation, CSIRO
+  Copyright (c) 2026,      Advanced Micro Devices, Inc.
 
   All rights reserved.
 
@@ -37,6 +38,7 @@
 
 #include "_kiss_fft_guts.h"
 #include "arch.h"
+#include "cpu_support.h"
 #include "os_support.h"
 #include "mathops.h"
 #include "stack_alloc.h"
@@ -55,6 +57,26 @@ extern void opus_ifft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, k
 #define M_PI 3.141592653
 #endif
 
+/* AVX2/FMA radix-{2,3,4} butterflies (float path only), defined in
+   celt/x86/kiss_fft_avx2.c and built at the -mavx2 baseline via
+   CELT_SOURCES_AVX2.  They are entered only when opus_select_arch()
+   reports AVX2 (arch >= 4), so a single binary still runs the scalar
+   kf_bfly path on pre-AVX2 CPUs. */
+#if defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(FIXED_POINT)
+void kf_bfly2_avx2(kiss_fft_cpx *Fout, int m, int N);
+void kf_bfly4_avx2(kiss_fft_cpx *Fout, const size_t fstride,
+                   const kiss_fft_state *st, int m, int N, int mm);
+# ifndef RADIX_TWO_ONLY
+void kf_bfly3_avx2(kiss_fft_cpx *Fout, const size_t fstride,
+                   const kiss_fft_state *st, int m, int N, int mm);
+# endif
+# if defined(OPUS_X86_PRESUME_AVX2)
+#  define KF_USE_AVX2(arch) ((void)(arch), 1)
+# else
+#  define KF_USE_AVX2(arch) ((arch) >= 4)
+# endif
+#endif
+
 /* The guts header contains all the multiplication and addition macros that are defined for
    complex numbers.  It also declares the kf_ internal functions.
 */
@@ -63,12 +85,22 @@ extern void opus_ifft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, k
 static void kf_bfly2(
                      kiss_fft_cpx * Fout,
                      int m,
-                     int N
+                     int N,
+                     int arch
                     )
 {
    kiss_fft_cpx * Fout2;
    int i;
    (void)m;
+#if defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(FIXED_POINT)
+   if (m == 4 && KF_USE_AVX2(arch))
+   {
+      kf_bfly2_avx2(Fout, m, N);
+      return;
+   }
+#else
+   (void)arch;
+#endif
 #ifdef CUSTOM_MODES
    if (m==1)
    {
@@ -122,11 +154,21 @@ static void kf_bfly4(
                      const kiss_fft_state *st,
                      int m,
                      int N,
-                     int mm
+                     int mm,
+                     int arch
                     )
 {
    int i;
 
+#if defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(FIXED_POINT)
+   if (m >= 4 && KF_USE_AVX2(arch))
+   {
+      kf_bfly4_avx2(Fout, fstride, st, m, N, mm);
+      return;
+   }
+#else
+   (void)arch;
+#endif
    if (m==1)
    {
       /* Degenerate case where all the twiddles are 1. */
@@ -194,7 +236,8 @@ static void kf_bfly3(
                      const kiss_fft_state *st,
                      int m,
                      int N,
-                     int mm
+                     int mm,
+                     int arch
                     )
 {
    int i;
@@ -205,6 +248,15 @@ static void kf_bfly3(
    kiss_twiddle_cpx epi3;
 
    kiss_fft_cpx * Fout_beg = Fout;
+#if defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(FIXED_POINT)
+   if (m >= 4 && KF_USE_AVX2(arch))
+   {
+      kf_bfly3_avx2(Fout, fstride, st, m, N, mm);
+      return;
+   }
+#else
+   (void)arch;
+#endif
 #ifdef FIXED_POINT
    /*epi3.r = -16384;*/ /* Unused */
    epi3.i = -QCONST32(0.86602540f, COEF_SHIFT-1);
@@ -585,7 +637,7 @@ static void fft_downshift(kiss_fft_cpx *x, int N, int *total, int step) {
 #define fft_downshift(x, N, total, step)
 #endif
 
-void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int downshift))
+void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int downshift), int arch)
 {
     int m2, m;
     int p;
@@ -616,16 +668,16 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int dow
        {
        case 2:
           fft_downshift(fout, st->nfft, &downshift, 1);
-          kf_bfly2(fout, m, fstride[i]);
+          kf_bfly2(fout, m, fstride[i], arch);
           break;
        case 4:
           fft_downshift(fout, st->nfft, &downshift, 2);
-          kf_bfly4(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+          kf_bfly4(fout,fstride[i]<<shift,st,m, fstride[i], m2, arch);
           break;
  #ifndef RADIX_TWO_ONLY
        case 3:
           fft_downshift(fout, st->nfft, &downshift, 2);
-          kf_bfly3(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+          kf_bfly3(fout,fstride[i]<<shift,st,m, fstride[i], m2, arch);
           break;
        case 5:
           fft_downshift(fout, st->nfft, &downshift, 3);
@@ -690,7 +742,7 @@ void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *f
       fout[st->bitrev[i]].r = S_MUL2(x.r, scale);
       fout[st->bitrev[i]].i = S_MUL2(x.i, scale);
    }
-   opus_fft_impl(st, fout ARG_FIXED(scale_shift));
+   opus_fft_impl(st, fout ARG_FIXED(scale_shift), opus_select_arch());
 #endif
 }
 
@@ -720,7 +772,7 @@ void opus_ifft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *
       fout[st->bitrev[i]] = fin[i];
    for (i=0;i<st->nfft;i++)
       fout[i].i = -fout[i].i;
-   opus_fft_impl(st, fout ARG_FIXED(0));
+   opus_fft_impl(st, fout ARG_FIXED(0), opus_select_arch());
    for (i=0;i<st->nfft;i++)
       fout[i].i = -fout[i].i;
 #endif
