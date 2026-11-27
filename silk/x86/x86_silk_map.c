@@ -37,6 +37,7 @@
 #endif
 #include "pitch.h"
 #include "main.h"
+#include "resampler_private.h"
 
 #if defined(OPUS_HAVE_RTCD) && !defined(OPUS_X86_PRESUME_AVX2)
 
@@ -57,6 +58,19 @@ opus_int64 (*const SILK_INNER_PROD16_IMPL[ OPUS_ARCHMASK + 1 ] )(
 };
 
 #endif
+
+opus_int16 *(*const SILK_RESAMPLER_PRIVATE_IIR_FIR_INTERPOL_IMPL[ OPUS_ARCHMASK + 1 ] )(
+    opus_int16 *out,
+    opus_int16 *buf,
+    opus_int32 max_index_Q16,
+    opus_int32 index_increment_Q16
+) = {
+  silk_resampler_private_IIR_FIR_INTERPOL_c,                  /* non-sse */
+  silk_resampler_private_IIR_FIR_INTERPOL_c,
+  silk_resampler_private_IIR_FIR_INTERPOL_c,
+  MAY_HAVE_SSE4_1( silk_resampler_private_IIR_FIR_INTERPOL ), /* sse4.1 */
+  MAY_HAVE_SSE4_1( silk_resampler_private_IIR_FIR_INTERPOL )  /* avx */
+};
 
 opus_int (*const SILK_VAD_GETSA_Q8_IMPL[ OPUS_ARCHMASK + 1 ] )(
     silk_encoder_state *psEncC,

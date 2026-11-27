@@ -95,5 +95,32 @@ extern opus_int64 (*const SILK_INNER_PROD16_IMPL[OPUS_ARCHMASK + 1])(
      ((*SILK_INNER_PROD16_IMPL[(arch) & OPUS_ARCHMASK])(inVec1, inVec2, len))
 
 #  endif
+
+opus_int16 *silk_resampler_private_IIR_FIR_INTERPOL_sse4_1(
+    opus_int16                  *out,               /* O    Output signal                                               */
+    opus_int16                  *buf,               /* I    Buffer of 2x upsampled input                                */
+    opus_int32                  max_index_Q16,      /* I    Interpolation end point, Q16                                */
+    opus_int32                  index_increment_Q16 /* I    Interpolation step, Q16                                     */
+);
+
+#  if defined(OPUS_X86_PRESUME_SSE4_1)
+
+#   define OVERRIDE_silk_resampler_private_IIR_FIR_INTERPOL
+#   define silk_resampler_private_IIR_FIR_INTERPOL(out, buf, max_index_Q16, index_increment_Q16, arch) \
+       ((void)(arch), silk_resampler_private_IIR_FIR_INTERPOL_sse4_1(out, buf, max_index_Q16, index_increment_Q16))
+
+#  elif defined(OPUS_HAVE_RTCD)
+
+extern opus_int16 *(*const SILK_RESAMPLER_PRIVATE_IIR_FIR_INTERPOL_IMPL[OPUS_ARCHMASK + 1])(
+                    opus_int16 *out,
+                    opus_int16 *buf,
+                    opus_int32 max_index_Q16,
+                    opus_int32 index_increment_Q16);
+
+#   define OVERRIDE_silk_resampler_private_IIR_FIR_INTERPOL
+#   define silk_resampler_private_IIR_FIR_INTERPOL(out, buf, max_index_Q16, index_increment_Q16, arch) \
+     ((*SILK_RESAMPLER_PRIVATE_IIR_FIR_INTERPOL_IMPL[(arch) & OPUS_ARCHMASK])(out, buf, max_index_Q16, index_increment_Q16))
+
+#  endif
 # endif
 #endif

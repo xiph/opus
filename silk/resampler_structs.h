@@ -47,6 +47,7 @@ typedef struct _silk_resampler_state_struct{
     opus_int         Fs_out_kHz;
     opus_int         inputDelay;
     const opus_int16 *Coefs;
+    int              arch;
 } silk_resampler_state_struct;
 
 #endif /* SILK_RESAMPLER_STRUCTS_H */

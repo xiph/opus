@@ -46,6 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #if (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
 #include "arm/biquad_alt_arm.h"
 #include "arm/LPC_inv_pred_gain_arm.h"
+#include "arm/resampler_private_IIR_FIR_arm.h"
 #endif
 
 /********************************************************************/
@@ -59,7 +60,8 @@ opus_int silk_resampler_init(
     silk_resampler_state_struct *S,                 /* I/O  Resampler state                                             */
     opus_int32                  Fs_Hz_in,           /* I    Input sampling rate (Hz)                                    */
     opus_int32                  Fs_Hz_out,          /* I    Output sampling rate (Hz)                                   */
-    opus_int                    forEnc              /* I    If 1: encoder; if 0: decoder                                */
+    opus_int                    forEnc,             /* I    If 1: encoder; if 0: decoder                                */
+    int                         arch                /* I    Run-time architecture                                       */
 );
 
 /*!
