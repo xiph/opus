@@ -1,5 +1,6 @@
 /* Copyright (c) 2013 Jean-Marc Valin and John Ridges
-   Copyright (c) 2014, Cisco Systems, INC MingXiang WeiZhou MinPeng YanWang*/
+   Copyright (c) 2014, Cisco Systems, INC MingXiang WeiZhou MinPeng YanWang
+   Copyright (c) 2026, Advanced Micro Devices, Inc. */
 /**
    @file pitch_sse.h
    @brief Pitch analysis
@@ -184,6 +185,32 @@ extern void (*const COMB_FILTER_CONST_IMPL[OPUS_ARCHMASK + 1])(
 
 #define NON_STATIC_COMB_FILTER_CONST_C
 
+#endif
+
+/* dual_inner_prod gets an AVX2 path even though SSE is presumed on this ABI:
+   when AVX2 is selectable at runtime, route through a dispatch table whose
+   top slot is the AVX2 kernel and whose lower slots keep the SSE/C versions.
+   This mirrors how celt_pitch_xcorr below is dispatched. */
+#if defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(FIXED_POINT)
+void dual_inner_prod_avx2(const opus_val16 *x, const opus_val16 *y01,
+    const opus_val16 *y02, int N, opus_val32 *xy1, opus_val32 *xy2);
+
+#if defined(OPUS_X86_PRESUME_AVX2)
+#undef dual_inner_prod
+#define dual_inner_prod(x, y01, y02, N, xy1, xy2, arch) \
+    ((void)(arch),dual_inner_prod_avx2(x, y01, y02, N, xy1, xy2))
+#elif defined(OPUS_HAVE_RTCD)
+#undef dual_inner_prod
+extern void (*const DUAL_INNER_PROD_IMPL[OPUS_ARCHMASK + 1])(
+              const opus_val16 *x,
+              const opus_val16 *y01,
+              const opus_val16 *y02,
+              int               N,
+              opus_val32       *xy1,
+              opus_val32       *xy2);
+#define dual_inner_prod(x, y01, y02, N, xy1, xy2, arch) \
+    ((*DUAL_INNER_PROD_IMPL[(arch) & OPUS_ARCHMASK])(x, y01, y02, N, xy1, xy2))
+#endif
 #endif
 
 void celt_pitch_xcorr_avx2(const float *_x, const float *_y, float *xcorr, int len, int max_pitch, int arch);
