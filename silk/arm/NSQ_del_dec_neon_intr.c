@@ -41,6 +41,12 @@ POSSIBILITY OF SUCH DAMAGE.
 /* If there are more states, C function is called, and this optimization must be expanded. */
 #define NEON_MAX_DEL_DEC_STATES 4
 
+#if defined(__aarch64__) || defined(_M_ARM64)
+# define SILK_AARCH64_NEON4_C10_COPY 1
+#else
+# define SILK_AARCH64_NEON4_C10_COPY 0
+#endif
+
 typedef struct {
     opus_int32 sLPC_Q14[ MAX_SUB_FRAME_LENGTH + NSQ_LPC_BUF_LENGTH ][ NEON_MAX_DEL_DEC_STATES ];
     opus_int32 RandState[ DECISION_DELAY ][     NEON_MAX_DEL_DEC_STATES ];
@@ -111,8 +117,52 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
     opus_int            warping_Q16,            /* I                                        */
     opus_int            nStatesDelayedDecision, /* I    Number of states in decision tree   */
     opus_int            *smpl_buf_idx,          /* I/O  Index to newest samples in buffers  */
-    opus_int            decisionDelay           /* I                                        */
+    opus_int            decisionDelay,          /* I                                        */
+    opus_int            use_neon4_c10_copy      /* I    Use narrow four-state copy          */
 );
+
+#if SILK_AARCH64_NEON4_C10_COPY
+# if defined(_MSC_VER)
+#  define SILK_NOINLINE __declspec(noinline)
+# elif defined(__GNUC__)
+#  define SILK_NOINLINE __attribute__((noinline))
+# else
+#  define SILK_NOINLINE
+# endif
+static SILK_NOINLINE void silk_neon4_c10_copy_state_lane(
+    opus_int32 (*rows)[NEON_MAX_DEL_DEC_STATES],
+    opus_int count,
+    opus_int destination,
+    opus_int source)
+{
+    opus_int32 *destination_ptr;
+    const opus_int32 *source_ptr;
+    opus_int row = 0;
+
+    if( destination == source ) return;
+    destination_ptr = &rows[ 0 ][ destination ];
+    source_ptr = &rows[ 0 ][ source ];
+# if defined(__clang__)
+#  pragma clang loop unroll(disable) vectorize(disable) interleave(disable)
+# elif defined(__GNUC__)
+#  pragma GCC unroll 0
+# endif
+    for( ; row + 3 < count; row += 4 ) {
+        destination_ptr[  0 ] = source_ptr[  0 ];
+        destination_ptr[  4 ] = source_ptr[  4 ];
+        destination_ptr[  8 ] = source_ptr[  8 ];
+        destination_ptr[ 12 ] = source_ptr[ 12 ];
+        destination_ptr += 4 * NEON_MAX_DEL_DEC_STATES;
+        source_ptr += 4 * NEON_MAX_DEL_DEC_STATES;
+    }
+    for( ; row < count; row++ ) {
+        destination_ptr[ 0 ] = source_ptr[ 0 ];
+        destination_ptr += NEON_MAX_DEL_DEC_STATES;
+        source_ptr += NEON_MAX_DEL_DEC_STATES;
+    }
+}
+# undef SILK_NOINLINE
+#endif
 
 static OPUS_INLINE void copy_winner_state_kernel(
     const NSQ_del_decs_struct *psDelDec,
@@ -267,6 +317,8 @@ void silk_NSQ_del_dec_neon(
         opus_int32          HarmShapeFIRPacked_Q14;
         opus_int            offset_Q10;
         opus_int32          RDmin_Q10, Gain_Q10;
+        const opus_int      use_neon4_c10_copy = SILK_AARCH64_NEON4_C10_COPY &&
+            psEncC->Complexity == 10 && psEncC->nStatesDelayedDecision == NEON_MAX_DEL_DEC_STATES;
         VARDECL( opus_int32, x_sc_Q10 );
         VARDECL( opus_int32, delayedGain_Q10 );
         VARDECL( NSQ_del_decs_struct, psDelDec );
@@ -389,7 +441,8 @@ void silk_NSQ_del_dec_neon(
             silk_noise_shape_quantizer_del_dec_neon( NSQ, psDelDec, psIndices->signalType, x_sc_Q10, pulses, pxq, sLTP_Q15,
                 delayedGain_Q10, A_Q12, B_Q14, AR_shp_Q13, lag, HarmShapeFIRPacked_Q14, Tilt_Q14[ k ], LF_shp_Q14[ k ],
                 Gains_Q16[ k ], Lambda_Q10, offset_Q10, psEncC->subfr_length, subfr++, psEncC->shapingLPCOrder,
-                psEncC->predictLPCOrder, psEncC->warping_Q16, psEncC->nStatesDelayedDecision, &smpl_buf_idx, decisionDelay );
+                psEncC->predictLPCOrder, psEncC->warping_Q16, psEncC->nStatesDelayedDecision, &smpl_buf_idx, decisionDelay,
+                use_neon4_c10_copy );
 
             x16    += psEncC->subfr_length;
             pulses += psEncC->subfr_length;
@@ -567,7 +620,8 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
     opus_int            warping_Q16,            /* I                                        */
     opus_int            nStatesDelayedDecision, /* I    Number of states in decision tree   */
     opus_int            *smpl_buf_idx,          /* I/O  Index to newest samples in buffers  */
-    opus_int            decisionDelay           /* I                                        */
+    opus_int            decisionDelay,          /* I                                        */
+    opus_int            use_neon4_c10_copy      /* I    Use narrow four-state copy          */
 )
 {
     opus_int     i, j, k, Winner_ind, RDmin_ind, RDmax_ind, last_smple_idx;
@@ -875,8 +929,17 @@ static OPUS_INLINE void silk_noise_shape_quantizer_del_dec_neon(
             for( j = i + 1; j < i + NSQ_LPC_BUF_LENGTH; j++ ) {
                 psDelDec->sLPC_Q14[ j ][ RDmax_ind ] = psDelDec->sLPC_Q14[ j ][ RDmin_ind ];
             }
-            for( j = 0; j < numOthers; j++ ) {
-                ptr[ j ][ RDmax_ind ] = ptr[ j ][ RDmin_ind ];
+#if SILK_AARCH64_NEON4_C10_COPY
+            if( use_neon4_c10_copy ) {
+                silk_neon4_c10_copy_state_lane( ptr, numOthers, RDmax_ind, RDmin_ind );
+            } else
+#else
+            (void)use_neon4_c10_copy;
+#endif
+            {
+                for( j = 0; j < numOthers; j++ ) {
+                    ptr[ j ][ RDmax_ind ] = ptr[ j ][ RDmin_ind ];
+                }
             }
 
             psSampleState[ 0 ].Q_Q10[ RDmax_ind ] = psSampleState[ 1 ].Q_Q10[ RDmin_ind ];
