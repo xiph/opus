@@ -722,11 +722,13 @@ void test_ambisonic_encode_decode(int order, opus_int32 bitrate_per_channel,
   fprintf(stderr, "  order %2d: %3d channels, %3d streams (%3d coupled), "
     "%3d kbit/s/ch, codec round trip %6.2f dB SNR (spread %4.2f)\n", order, channels,
     streams, coupled, bitrate_per_channel / 1000, mean, best - worst);
+#ifndef FUZZING
   if (mean < CODEC_ROUNDTRIP_MIN_SNR_DB)
   {
     fprintf(stderr, "Order %d: codec round trip is only %.2f dB.\n", order, mean);
     test_failed();
   }
+#endif
 }
 
 void test_encode_decode(opus_int32 bitrate, opus_int32 channels,
