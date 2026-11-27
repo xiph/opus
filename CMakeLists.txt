@@ -29,10 +29,10 @@ include(FeatureSummary)
 add_feature_info(OPUS_AMBISONICS_MAX_ORDER ON "${OPUS_AMBISONICS_MAX_ORDER_HELP_STR} Set to ${OPUS_AMBISONICS_MAX_ORDER}.")
 
 # Detect clang-cl
-set(MSVC_CLANG_CL false BOOL)
+set(MSVC_CLANG_CL FALSE)
 if (MSVC)
     if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-        set(MSVC_CLANG_CL true BOOL)
+        set(MSVC_CLANG_CL TRUE)
     endif()
 endif()
 
