@@ -183,8 +183,9 @@ static void lace_feature_net(
     /* scaling and dimensionality reduction */
     for (i_subframe = 0; i_subframe < 4; i_subframe ++)
     {
+        int pitch_index = IMAX(0, IMIN(periods[i_subframe], LACE_PITCH_MAX));
         OPUS_COPY(input_buffer, features + i_subframe * LACE_NUM_FEATURES, LACE_NUM_FEATURES);
-        OPUS_COPY(input_buffer + LACE_NUM_FEATURES, hLACE->layers.lace_pitch_embedding.float_weights + periods[i_subframe] * LACE_PITCH_EMBEDDING_DIM, LACE_PITCH_EMBEDDING_DIM);
+        OPUS_COPY(input_buffer + LACE_NUM_FEATURES, hLACE->layers.lace_pitch_embedding.float_weights + pitch_index * LACE_PITCH_EMBEDDING_DIM, LACE_PITCH_EMBEDDING_DIM);
         OPUS_COPY(input_buffer + LACE_NUM_FEATURES + LACE_PITCH_EMBEDDING_DIM, numbits_embedded, 2 * LACE_NUMBITS_EMBEDDING_DIM);
 
         compute_generic_conv1d(
@@ -454,8 +455,9 @@ static void nolace_feature_net(
     /* scaling and dimensionality reduction */
     for (i_subframe = 0; i_subframe < 4; i_subframe ++)
     {
+        int pitch_index = IMAX(0, IMIN(periods[i_subframe], NOLACE_PITCH_MAX));
         OPUS_COPY(input_buffer, features + i_subframe * NOLACE_NUM_FEATURES, NOLACE_NUM_FEATURES);
-        OPUS_COPY(input_buffer + NOLACE_NUM_FEATURES, hNoLACE->layers.nolace_pitch_embedding.float_weights + periods[i_subframe] * NOLACE_PITCH_EMBEDDING_DIM, NOLACE_PITCH_EMBEDDING_DIM);
+        OPUS_COPY(input_buffer + NOLACE_NUM_FEATURES, hNoLACE->layers.nolace_pitch_embedding.float_weights + pitch_index * NOLACE_PITCH_EMBEDDING_DIM, NOLACE_PITCH_EMBEDDING_DIM);
         OPUS_COPY(input_buffer + NOLACE_NUM_FEATURES + NOLACE_PITCH_EMBEDDING_DIM, numbits_embedded, 2 * NOLACE_NUMBITS_EMBEDDING_DIM);
 
         compute_generic_conv1d(
