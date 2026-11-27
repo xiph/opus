@@ -1,5 +1,6 @@
 /* Copyright (c) 2007-2008 CSIRO
    Copyright (c) 2007-2008 Xiph.Org Foundation
+   Copyright (c) 2026 Advanced Micro Devices, Inc.
    Written by Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -72,11 +73,38 @@ void clt_mdct_backward_c(const mdct_lookup *l, kiss_fft_scalar *in,
 void opus_fft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, kiss_fft_cpx *fout ARG_FIXED(int downshift));
 void opus_ifft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, kiss_fft_cpx *fout ARG_FIXED(int fft_shift));
 
+#if defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(FIXED_POINT)
+/* AVX2/FMA forward MDCT (float path), defined in celt/x86/mdct_avx2.c and
+   built at the -mavx2 baseline via CELT_SOURCES_AVX2. */
+void clt_mdct_forward_avx2(const mdct_lookup *l, kiss_fft_scalar *in,
+      kiss_fft_scalar * OPUS_RESTRICT out, const celt_coef *window,
+      int overlap, int shift, int stride, int arch);
+#endif
+
 #if defined(OPUS_ARM_MAY_HAVE_NEON_INTR) || defined(OPUS_ARM_PRESUME_NEON_INTR)
 #include "arm/mdct_arm.h"
 #endif
 
 
+#if defined(OPUS_X86_MAY_HAVE_AVX2) && !defined(FIXED_POINT) && \
+    !defined(OVERRIDE_CLT_MDCT_FORWARD)
+/* x86 AVX2 forward MDCT (float path); the backward MDCT stays on the C path. */
+# if defined(OPUS_X86_PRESUME_AVX2)
+#  define OVERRIDE_CLT_MDCT_FORWARD (1)
+#  define clt_mdct_forward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
+   clt_mdct_forward_avx2(_l, _in, _out, _window, _overlap, _shift, _stride, _arch)
+# elif defined(OPUS_HAVE_RTCD)
+extern void (*const CLT_MDCT_FORWARD_IMPL[OPUS_ARCHMASK+1])(
+      const mdct_lookup *l, kiss_fft_scalar *in,
+      kiss_fft_scalar * OPUS_RESTRICT out, const celt_coef *window,
+      int overlap, int shift, int stride, int arch);
+#  define OVERRIDE_CLT_MDCT_FORWARD (1)
+#  define clt_mdct_forward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \
+   ((*CLT_MDCT_FORWARD_IMPL[(_arch)&OPUS_ARCHMASK])(_l, _in, _out, \
+                                                    _window, _overlap, _shift, \
+                                                    _stride, _arch))
+# endif
+#endif
 
 #if !defined(OVERRIDE_CLT_MDCT_FORWARD)
 # define clt_mdct_forward(_l, _in, _out, _window, _overlap, _shift, _stride, _arch) \

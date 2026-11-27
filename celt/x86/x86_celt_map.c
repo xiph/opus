@@ -34,6 +34,7 @@
 #include "pitch.h"
 #include "pitch_sse.h"
 #include "vq.h"
+#include "mdct.h"
 
 #if defined(OPUS_HAVE_RTCD)
 
@@ -105,6 +106,18 @@ void (*const PITCH_XCORR_IMPL[OPUS_ARCHMASK + 1])(
   celt_pitch_xcorr_c,
   celt_pitch_xcorr_c,
   MAY_HAVE_AVX2(celt_pitch_xcorr)
+};
+
+void (*const CLT_MDCT_FORWARD_IMPL[OPUS_ARCHMASK + 1])(
+      const mdct_lookup *l, kiss_fft_scalar *in,
+      kiss_fft_scalar * OPUS_RESTRICT out, const celt_coef *window,
+      int overlap, int shift, int stride, int arch
+) = {
+  clt_mdct_forward_c,                /* non-sse */
+  clt_mdct_forward_c,
+  clt_mdct_forward_c,
+  clt_mdct_forward_c,
+  MAY_HAVE_AVX2(clt_mdct_forward)
 };
 
 #endif
