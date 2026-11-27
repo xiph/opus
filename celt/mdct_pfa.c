@@ -437,7 +437,7 @@ static const struct OpusTXContext *celt_tx_mdct_kernel_c(int len)
 }
 #endif
 
-#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API) || defined(ENABLE_DEEP_PLC)
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API) || defined(ENABLE_DEEP_PLC) || defined(ENABLE_OSCE)
 static OPUS_INLINE void pfa_copy_bitrev_input(const kiss_fft_state *st, const kiss_fft_cpx *fin, kiss_fft_cpx *fout)
 {
    int i;
@@ -479,7 +479,7 @@ static void opus_pfa_impl(const kiss_fft_state *st, const kiss_fft_cpx *fin, kis
    VARDECL(kiss_fft_cpx, tmp);
    SAVE_STACK;
 
-#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API) || defined(ENABLE_DEEP_PLC)
+#if defined(CUSTOM_MODES) || defined(ENABLE_OPUS_CUSTOM_API) || defined(ENABLE_DEEP_PLC) || defined(ENABLE_OSCE)
    if (tpl == NULL) {
       pfa_copy_bitrev_input(st, fin, fout);
       if (is_inverse) {

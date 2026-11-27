@@ -59,7 +59,7 @@ extern void opus_ifft_pfa_c(const kiss_fft_state *st, const kiss_fft_cpx *fin, k
    complex numbers.  It also declares the kf_ internal functions.
 */
 
-#if !defined(ENABLE_PFA) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC)
+#if !defined(ENABLE_PFA) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC) || defined(ENABLE_OSCE)
 static void kf_bfly2(
                      kiss_fft_cpx * Fout,
                      int m,
@@ -559,7 +559,7 @@ void opus_fft_free(const kiss_fft_state *cfg, int arch)
 
 #endif /* CUSTOM_MODES */
 
-#if !defined(ENABLE_PFA) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC)
+#if !defined(ENABLE_PFA) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC) || defined(ENABLE_OSCE)
 #ifdef FIXED_POINT
 #ifndef OVERRIDE_fft_downshift
 static void fft_downshift(kiss_fft_cpx *x, int N, int *total, int step) {
@@ -637,7 +637,7 @@ void opus_fft_impl(const kiss_fft_state *st,kiss_fft_cpx *fout ARG_FIXED(int dow
     }
     fft_downshift(fout, st->nfft, &downshift, downshift);
 }
-#endif /* !ENABLE_PFA || OPUS_CUSTOM || ENABLE_DEEP_PLC */
+#endif /* !ENABLE_PFA || OPUS_CUSTOM || ENABLE_DEEP_PLC || ENABLE_OSCE */
 #endif
 
 void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
@@ -667,12 +667,12 @@ void opus_fft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *f
       RESTORE_STACK;
       return;
    }
-#if !defined(OPUS_CUSTOM) && !defined(ENABLE_DEEP_PLC)
+#if !defined(OPUS_CUSTOM) && !defined(ENABLE_DEEP_PLC) && !defined(ENABLE_OSCE)
    celt_assert2(0, "PFA FFT called with unsupported size in non-custom mode");
 #endif
 #endif
 
-#if !defined(ENABLE_PFA) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC)
+#if !defined(ENABLE_PFA) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC) || defined(ENABLE_OSCE)
    int i;
    celt_coef scale;
 #ifdef FIXED_POINT
@@ -707,12 +707,12 @@ void opus_ifft_c(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *
       opus_ifft_pfa_c(st, fin, fout ARG_FIXED(0));
       return;
    }
-#if !defined(OPUS_CUSTOM) && !defined(ENABLE_DEEP_PLC)
+#if !defined(OPUS_CUSTOM) && !defined(ENABLE_DEEP_PLC) && !defined(ENABLE_OSCE)
    celt_assert2(0, "PFA IFFT called with unsupported size in non-custom mode");
 #endif
 #endif
 
-#if !defined(ENABLE_PFA) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC)
+#if !defined(ENABLE_PFA) || defined(OPUS_CUSTOM) || defined(ENABLE_DEEP_PLC) || defined(ENABLE_OSCE)
    int i;
    celt_assert2 (fin != fout, "In-place FFT not supported");
    /* Bit-reverse the input */
